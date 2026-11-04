@@ -24,10 +24,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\JpegSharp\JpegSharp.csproj" />
-      <ProjectReference Include="..\PngSharp\PngSharp\PngSharp.csproj" />
-      <ProjectReference Include="..\ZGF.Svg\ZGF.Svg.csproj" />
-      <ProjectReference Include="..\ZGF.Geometry\ZGF.Geometry.csproj" />
+      <ProjectReference Include="..\ZGF\JpegSharp\JpegSharp.csproj" />
+      <ProjectReference Include="..\ZGF\PngSharp\PngSharp\PngSharp.csproj" />
+      <ProjectReference Include="..\ZGF\ZGF.Svg\ZGF.Svg.csproj" />
+      <ProjectReference Include="..\ZGF\ZGF.Geometry\ZGF.Geometry.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -31,7 +31,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ZGF.ILSpy\ZGF.ILSpy.csproj" />
     <ProjectReference Include="..\ZGF.ILSpy.Core\ZGF.ILSpy.Core.csproj" />
-    <ProjectReference Include="..\ZGF.Gui.Immediate.Testing\ZGF.Gui.Immediate.Testing.csproj" />
+    <ProjectReference Include="..\ZGF\ZGF.Gui.Immediate.Testing\ZGF.Gui.Immediate.Testing.csproj" />
   </ItemGroup>
 
 </Project>
