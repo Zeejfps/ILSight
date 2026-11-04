@@ -1,6 +1,6 @@
 # ILSpy feature gaps
 
-What upstream ILSpy has that our app (`ZGF.ILSpy`) doesn't, as of ILSpy 11.1 (23 Sep 2026). 11.0
+What upstream ILSpy has that our app (`ILSight`) doesn't, as of ILSpy 11.1 (23 Sep 2026). 11.0
 ported upstream from WPF to Avalonia; the feature set carried over.
 
 Sources: https://github.com/icsharpcode/ILSpy/releases and the `v11.1` source.

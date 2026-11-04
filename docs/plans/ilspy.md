@@ -11,9 +11,9 @@ the model the UI reads, and the UI — is ours.
 
 | Project | Depends on | Holds |
 |---|---|---|
-| `ZGF.ILSpy.Core` | `ICSharpCode.Decompiler` | Assembly list, browse tree model, decompilation to tokenized documents, reference resolution, search. No GUI. |
-| `ZGF.ILSpy.Tests` | Core | xunit tests for Core, run against real assemblies (the test assembly, `System.Private.CoreLib`). |
-| `ZGF.ILSpy` | Core, `ZGF.Gui.Immediate`, `ZGF.Gui.Immediate.Widgets` | The app. |
+| `ILSight.Core` | `ICSharpCode.Decompiler` | Assembly list, browse tree model, decompilation to tokenized documents, reference resolution, search. No GUI. |
+| `ILSight.Tests` | Core | xunit tests for Core, run against real assemblies (the test assembly, `System.Private.CoreLib`). |
+| `ILSight` | Core, `ZGF.Gui.Immediate`, `ZGF.Gui.Immediate.Widgets` | The app. |
 
 Framework gaps the app needs are filled in `ZGF.Gui.Immediate` / `ZGF.Gui.Immediate.Widgets`, with
 tests in `ZGF.Gui.Immediate.Tests`, and are general-purpose — nothing ILSpy-specific there.
@@ -26,7 +26,7 @@ tests in `ZGF.Gui.Immediate.Tests`, and are general-purpose — nothing ILSpy-sp
   points at another settings file).
 - Browse tree: assembly → references / namespaces → types → nested types and members, lazily
   expanded (large expansions in the background behind a Loading row), with Lucide kind pictograms
-  (bundled in `ZGF.ILSpy/Assets/Fonts/Lucide`) colored by role from a per-theme `NodeIconPalette`,
+  (bundled in `ILSight/Assets/Fonts/Lucide`) colored by role from a per-theme `NodeIconPalette`,
   member signatures as labels, assemblies by simple name (version or folder added when two share
   one), and full identity and file in each row's tooltip.
 - Decompile the selected node to C# or IL (segmented switch), off the UI thread, with a busy
@@ -80,10 +80,10 @@ next one starts.
    `ZGF.Gui.Desktop` to a layer both frameworks share, and expose it to immediate apps.
 
 Tooltips, dropdowns and context menus render in native popup windows, as the retained framework's
-`PopupWindowFactory` does. Code is drawn in JetBrains Mono (bundled in `ZGF.ILSpy/Assets/Fonts`),
+`PopupWindowFactory` does. Code is drawn in JetBrains Mono (bundled in `ILSight/Assets/Fonts`),
 one family per face as GitBench's `MonoFonts` does.
 
-**Core agent** — `ZGF.ILSpy.Core`, `ZGF.ILSpy.Tests`:
+**Core agent** — `ILSight.Core`, `ILSight.Tests`:
 
 1. `AssemblyList`: load/unload by path, resolve references (runtime directory, sibling files, loaded
    assemblies), thread-safe.
@@ -97,11 +97,11 @@ one family per face as GitBench's `MonoFonts` does.
 
 ### Phase 2 (parallel) — done
 
-**Shell agent** — `ZGF.ILSpy` except the code view: `Program`, app state, window layout (menu bar,
+**Shell agent** — `ILSight` except the code view: `Program`, app state, window layout (menu bar,
 toolbar, split tree | tabs, search panel, status bar), open flows (args, native file picker,
 runtime picker), font registration, persistence, background decompile/search wiring with `Invalidate`, history, theme.
 
-**Code view agent** — `ZGF.ILSpy/CodeView*.cs`: a widget over `DecompiledDocument` (contract below).
+**Code view agent** — `ILSight/CodeView*.cs`: a widget over `DecompiledDocument` (contract below).
 
 ```csharp
 public sealed class CodeViewState { /* scroll, selection, find query, ... — owned by the widget */ }

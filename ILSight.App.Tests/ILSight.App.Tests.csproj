@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="ILSight.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\ILSight.Tests\Fixtures\Resources\*" LogicalName="%(Filename)%(Extension)" />
+    <Compile Include="..\ILSight.Tests\Shared\*.cs" Link="Shared\%(Filename)%(Extension)" />
+    <None Include="..\ILSight.Tests\Fixtures\SampleApp\SampleApp.dll" Link="Fixtures\SampleApp\SampleApp.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\ILSight.Tests\Fixtures\ApiDiff\Older\ApiDiffSample.dll" Link="Fixtures\ApiDiff\Older\ApiDiffSample.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\ILSight.Tests\Fixtures\ApiDiff\Newer\ApiDiffSample.dll" Link="Fixtures\ApiDiff\Newer\ApiDiffSample.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\Settings\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILSight\ILSight.csproj" />
+    <ProjectReference Include="..\ILSight.Core\ILSight.Core.csproj" />
+    <ProjectReference Include="..\ZGF\ZGF.Gui.Immediate.Testing\ZGF.Gui.Immediate.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

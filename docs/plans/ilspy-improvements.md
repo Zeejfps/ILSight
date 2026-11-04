@@ -1,11 +1,11 @@
 # ILSpy and immediate GUI improvements
 
-Open issues found in `ZGF.ILSpy`, `ZGF.ILSpy.Core`, `ZGF.Gui.Immediate` and `ZGF.Gui.Immediate.Widgets`
+Open issues found in `ILSight`, `ILSight.Core`, `ZGF.Gui.Immediate` and `ZGF.Gui.Immediate.Widgets`
 (review of 22 Oct 2026). Ordered by priority within each section.
 
 ## Correctness
 
-1. **Closing an assembly breaks its dependents.** `AssemblyList.Close` (`ZGF.ILSpy.Core/AssemblyList.cs:57`)
+1. **Closing an assembly breaks its dependents.** `AssemblyList.Close` (`ILSight.Core/AssemblyList.cs:57`)
    removes it from `_known`, but dependents keep a type system over the old `MetadataFile`. Analyzing or
    navigating through them makes `TypeSystemOf` (`:199`) throw "was not loaded by this list";
    `ResolveDefinition` re-reads the file by path and can apply old tokens to a changed file.
@@ -15,7 +15,7 @@ Open issues found in `ZGF.ILSpy`, `ZGF.ILSpy.Core`, `ZGF.Gui.Immediate` and `ZGF
    before the target-framework resolver, so .NET Framework assemblies bind `mscorlib`, WinForms and WPF to
    .NET 10. Fix: consult `RuntimeAssemblies` only for `.NETCoreApp`, `.NETStandard` or unknown targets.
 3. **Clear list doesn't stop in-flight opens.** `AssemblyLoading.OpenInBackground`
-   (`ZGF.ILSpy/AssemblyLoading.cs:20`) passes `CancellationToken.None`; `ClearList` only stops `Reload`.
+   (`ILSight/AssemblyLoading.cs:20`) passes `CancellationToken.None`; `ClearList` only stops `Reload`.
    Files still opening are re-listed after clearing. Fix: a list generation bumped by `Clear` that `TryList`
    checks, and opens owned by a cancellable type like `Reload`.
 4. **Reload doesn't own the tabs it releases.** `Refresh` (`AssemblyLoading.cs:62-75`) releases every tab
@@ -102,10 +102,10 @@ Open issues found in `ZGF.ILSpy`, `ZGF.ILSpy.Core`, `ZGF.Gui.Immediate` and `ZGF
 
 ## Readability
 
-- `ZGF.ILSpy`: `Bookmarks.cs` (`:276-284, 366, 381, 437`),
+- `ILSight`: `Bookmarks.cs` (`:276-284, 366, 381, 437`),
   `BrowseTree.cs` (`:221-227, 269, 306-353`), `NodeText.cs:23-36`, `DocumentsView.cs:374-404`,
   `AppSettings.cs:355-408`; 39 `is {` patterns in 12 files.
-- `ZGF.ILSpy.Core`: ~85 `is { }` checks and ~50 range slices; chained ternaries in `DocumentBuilder.cs:198-206`,
+- `ILSight.Core`: ~85 `is { }` checks and ~50 range slices; chained ternaries in `DocumentBuilder.cs:198-206`,
   `Analysis.cs:165-169`, `EntityText.cs:41-46`, `DecompilerOptions.cs:96`, `LoadedAssembly.cs:134-136`;
   `_ = parent.Children` in `LoadedAssembly.cs:138` and `Nodes.cs:28` instead of `LoadChildren()`;
   `Metadata/FlagsSchema*.cs`, `FilterState.cs`, `FilterStatePresenter.cs` use another style and role suffixes.

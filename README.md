@@ -16,4 +16,4 @@ dotnet test ILSight.sln
 ```
 
 Not affiliated with the ILSpy project. ILSight decompiles with ICSharpCode.Decompiler and contains code
-derived from ILSpy; see `ZGF.ILSpy.Core/LICENSE-ILSpy.txt`.
+derived from ILSpy; see `ILSight.Core/LICENSE-ILSpy.txt`.
