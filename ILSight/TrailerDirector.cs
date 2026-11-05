@@ -178,7 +178,7 @@ internal sealed class TrailerDirector
         foreach (var theme in new[] { "catppuccin-mocha", "dracula", "github-light" })
         {
             SetTheme(_app, ThemeId<ThemeFile>.Of(theme));
-            yield return Hold(0.5);
+            yield return Frames(2);
         }
     }
 
