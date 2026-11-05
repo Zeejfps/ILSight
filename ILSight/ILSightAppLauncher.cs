@@ -56,8 +56,8 @@ public static class ILSightAppLauncher
     private static void OpenWindow(ILSightApp app, SettingsLoadResult loadResult, LaunchConfig config)
     {
         var windowConfig = CreateWindowConfig(loadResult.Settings.Window);
-        var host = new ImmediateGuiHost(windowConfig, config.RenderBackend);
-        host.Run(app);
+        var host = new ImmediateGuiAppHost<UiState>(app, windowConfig, config.RenderBackend);
+        host.Run();
     }
 
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, told of what was
