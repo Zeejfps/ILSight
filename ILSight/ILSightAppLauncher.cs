@@ -13,10 +13,17 @@ public static class ILSightAppLauncher
     public static void LaunchApp(CommandLine commandLine)
     {
         using var instance = AppInstance.Claim(commandLine.SettingsPath);
-        if (ShouldHandOver(instance, commandLine) && instance.TryHandOver(commandLine))
+        if (TryHandOverToOpenWindow(instance, commandLine))
             return;
         instance.Listen();
         RunApp(commandLine, instance);
+    }
+
+    private static bool TryHandOverToOpenWindow(AppInstance instance, CommandLine commandLine)
+    {
+        if (!ShouldHandOver(instance, commandLine))
+            return false;
+        return instance.TryHandOver(commandLine);
     }
 
     private static bool ShouldHandOver(AppInstance instance, CommandLine commandLine)
@@ -29,7 +36,7 @@ public static class ILSightAppLauncher
     private static void RunApp(CommandLine commandLine, AppInstance instance)
     {
         var loadResult = LoadSettings(commandLine);
-        var appState = LoadAppState(loadResult, commandLine, new BrowseSession());
+        var appState = LoadAppState(loadResult, commandLine);
         var guiState = CreateUiState(appState);
         var app = CreateApp(appState, guiState, commandLine, instance);
         OpenWindow(app, appState, commandLine);
@@ -40,13 +47,14 @@ public static class ILSightAppLauncher
         return AppSettings.Load(commandLine.SettingsPath);
     }
 
-    /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, told of what was
+    /// <summary>The app state to start from: what <paramref name="loadSettingsResult"/> describes, told of what was
     /// wrong with the settings, with <paramref name="commandLine"/> followed. The screen is built over
     /// this; the files the command line names open once the app runs.</summary>
-    internal static AppState LoadAppState(SettingsLoadResult loadResult, CommandLine commandLine, BrowseSession session)
+    internal static AppState LoadAppState(SettingsLoadResult loadSettingsResult, CommandLine commandLine)
     {
-        var appState = AppState.Load(loadResult.Settings, session);
-        ReportSettingsProblem(appState, loadResult.Problem);
+        var session = new BrowseSession();
+        var appState = AppState.Load(loadSettingsResult.Settings, session);
+        ReportSettingsProblem(appState, loadSettingsResult.Problem);
         FollowStartupCommandLine(appState, commandLine);
         return appState;
     }
