@@ -25,11 +25,20 @@ internal sealed class TrailerDirector
     // On screen in the export scene, so it names nobody; deleted after the capture.
     private const string ExportFolder = @"G:\Exports\System.Private.CoreLib";
     private const uint CharacterMessage = 0x0102;
+    private const uint KeyDownMessage = 0x0100;
+    private const uint KeyUpMessage = 0x0101;
+    private const int EscapeKey = 0x1B;
     private const string GoFile = "go";
     private const string TimesFile = "times.txt";
 
     /// <summary>Asks the diagram on screen to fit, as its Fit to view button does.</summary>
     public static bool FitDiagram;
+
+    /// <summary>Asks the menu bar to open File on its next frame.</summary>
+    public static bool OpensFileMenu;
+
+    /// <summary>What the tree is to open its context menu on, on its next frame.</summary>
+    public static BrowseNode? TreeMenuNode;
 
     private readonly AppState _app;
     private readonly ImmediateGuiAppHost<UiState> _host;
@@ -193,7 +202,9 @@ internal sealed class TrailerDirector
             yield return wait;
         yield return Hold(0.5);
         Record();
-        yield return Hold(1);
+        yield return Frames(1);
+        foreach (var wait in ShowMenu(() => TreeMenuNode = member))
+            yield return wait;
         AnalyzerPanelView.Analyze(_screen!, _app, member);
         GiveTheAnalyzerRoom(_screen!.MainLayout.Dock.Root);
         yield return () => _app.Analyzer.Roots.OfType<AnalyzerSymbolNode>().Any();
@@ -332,6 +343,8 @@ internal sealed class TrailerDirector
         var picker = _screen!.NuGetPicker;
         Record();
         yield return Frames(1);
+        foreach (var wait in ShowMenu(() => OpensFileMenu = true))
+            yield return wait;
         picker.Open();
         yield return Frames(1);
         foreach (var keys in new[] { "Newt", "onso", "ft.J", "son" })
@@ -370,6 +383,8 @@ internal sealed class TrailerDirector
         yield return Hold(0.5);
         Record();
         yield return Frames(1);
+        foreach (var wait in ShowMenu(() => OpensFileMenu = true))
+            yield return wait;
         var setup = _screen!.ExportSetup;
         setup.Open(_app.Assemblies.Assemblies, _app.Assemblies.Assemblies.OfType<LoadedModule>().First());
         setup.Folder = ExportFolder;
@@ -403,6 +418,41 @@ internal sealed class TrailerDirector
         var window = Process.GetCurrentProcess().MainWindowHandle;
         foreach (var key in keys)
             PostMessage(window, CharacterMessage, key, 0);
+    }
+
+    /// <summary>Opens the File menu as a press on its title does. The bar has no public way to be
+    /// told, and this branch leaves the framework as it is, so this goes by reflection and fails
+    /// loudly if the framework renames what it uses. Recorded inside the bar, before its titles.</summary>
+    public static void OpenFileMenu(Ui<UiState> ui)
+    {
+        if (!OpensFileMenu)
+            return;
+        OpensFileMenu = false;
+        const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Static;
+        var find = typeof(UiWidgets).GetMethod("FindMenuBar", Hidden)
+            ?? throw new InvalidOperationException("The widgets have no FindMenuBar.");
+        var bar = find.Invoke(null, [ui])
+            ?? throw new InvalidOperationException("There is no menu bar to open.");
+        var open = bar.GetType().GetField("Open")
+            ?? throw new InvalidOperationException("The menu bar has no Open.");
+        open.SetValue(bar, ui.GetId("file"));
+    }
+
+    /// <summary>Presses Escape, which closes an open menu.</summary>
+    private static void PressEscape()
+    {
+        var window = Process.GetCurrentProcess().MainWindowHandle;
+        PostMessage(window, KeyDownMessage, EscapeKey, 0);
+        PostMessage(window, KeyUpMessage, EscapeKey, 0);
+    }
+
+    /// <summary>Shows a menu for the frames it takes to be seen, then closes it.</summary>
+    private IEnumerable<Func<bool>> ShowMenu(Action open)
+    {
+        open();
+        yield return Frames(2);
+        PressEscape();
+        yield return Frames(1);
     }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]

@@ -34,6 +34,11 @@ internal static class TreePaneView
         AnalyzeOnShortcut(ui);
         CloseOnDelete(ui);
         Respond(ui, result);
+        if (TrailerDirector.TreeMenuNode != null)
+        {
+            OpenContextMenu(ui, TrailerDirector.TreeMenuNode, new PointF(170f, 749f));
+            TrailerDirector.TreeMenuNode = null;
+        }
         ContextMenu(ui, assemblies, language);
     }
 

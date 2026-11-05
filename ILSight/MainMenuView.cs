@@ -150,6 +150,7 @@ internal static class MainMenuView
     private static void FileAndViewMenus(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Strings;
+        TrailerDirector.OpenFileMenu(ui);
         using (var file = ui.Menu(t.MenuFile, id: "file"))
         {
             if (file.IsOpen)
