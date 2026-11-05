@@ -30,13 +30,15 @@ public static class ILSightAppLauncher
     {
         var loadResult = LoadSettings(commandLine);
         var appState = LoadAppState(loadResult, commandLine, new BrowseSession());
-        var uiState = BuildScreen(appState);
-        var app = CreateApp(appState, uiState, commandLine, instance);
+        var guiState = CreateUiState(appState);
+        var app = CreateApp(appState, guiState, commandLine, instance);
         OpenWindow(app, appState, commandLine);
     }
 
-    private static SettingsLoadResult LoadSettings(CommandLine commandLine) =>
-        AppSettings.Load(commandLine.SettingsPath);
+    private static SettingsLoadResult LoadSettings(CommandLine commandLine)
+    {
+        return AppSettings.Load(commandLine.SettingsPath);
+    }
 
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, told of what was
     /// wrong with the settings, with <paramref name="commandLine"/> followed. The screen is built over
@@ -49,14 +51,20 @@ public static class ILSightAppLauncher
         return appState;
     }
 
-    private static UiState BuildScreen(AppState appState) =>
-        ILSightApp.CreateUiState(appState);
+    private static UiState CreateUiState(AppState appState)
+    {
+        return ILSightApp.CreateUiState(appState);
+    }
 
-    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, AppInstance instance) =>
-        new(appState, uiState, commandLine.Files, instance);
+    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, AppInstance instance)
+    {
+        return new ILSightApp(appState, uiState, commandLine.Files, instance);
+    }
 
-    private static void OpenWindow(ILSightApp app, AppState appState, CommandLine commandLine) =>
+    private static void OpenWindow(ILSightApp app, AppState appState, CommandLine commandLine)
+    {
         app.Run(CreateWindowConfig(appState.Window), commandLine.RenderBackend);
+    }
 
     /// <summary>The main window's config: <paramref name="window"/> as it was left, or the default size,
     /// centered, when there is none.</summary>
