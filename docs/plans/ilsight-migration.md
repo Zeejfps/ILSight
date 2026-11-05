@@ -94,18 +94,20 @@ Each stage keeps the pipeline green, so a failure belongs to the stage that intr
 - **Checkout:** `submodules: recursive`, `lfs: true` and `fetch-depth: 0`. MinVer needs the history, and the LFS objects inside `ZGF/` are pulled in a separate step. Watch the LFS bandwidth quota.
 - **Version:** MinVer reads `v*` tags through `MinVerTagPrefix`. The build fails on a `0.0.0` version.
 - **Build:** `dotnet publish -c Release -r <rid>`, then check for the exe and GLFW, that no `ILSight.dll` was published, and that GLFW is not an LFS pointer.
-- **Artifact:** debug files removed, as `ILSight-<version>-<rid>.tar.gz`, because a zipped artifact loses the executable bit.
+- **Artifact:** debug files removed, then packed by stage 2.
 
 ### Stage 2 — Packaging
 
-1. Add the `Velopack` package. It is AOT-compatible on net8+.
-2. The first step in `Program.cs` is `VelopackApp.Build().Run();`. It handles install/update hooks and may exit.
-3. Add a pack step to `release.yml`, and check that each installer installs and launches:
-   - all OSes: `vpk pack --packId ILSight --packTitle ILSight --packVersion <MinVer> --mainExe <exe> --icon <icon>`;
-   - macOS also: `--bundleId com.builtbyzee.ilsight` plus signing and notarization;
-   - Linux: produces an AppImage, which needs FUSE on the user's machine.
-4. Keep the `vpk` tool and the `Velopack` package on the same version.
-5. Icons: `.ico`, `.icns`, `.png`, designed in [ilsight-icon.md](ilsight-icon.md).
+`release.yml` packs each publish with `vpk` and uploads the installers and release files as a build artifact. Nothing is released. Check that each installer installs and launches.
+
+- **App:** the `Velopack` package, with `VelopackApp.Build().Run();` as the first step in `Program.cs`. It handles install/update hooks and exits for them.
+- **Pack:** `vpk pack --packId ILSight --packTitle ILSight --packAuthors builtbyzee --packVersion <MinVer> --mainExe <exe> --icon <icon> --channel <rid> --runtime <rid>`.
+  - **Channels:** each RID is its own channel. Both Macs would otherwise default to `osx` and overwrite each other's feed.
+  - **macOS:** also `--bundleId com.builtbyzee.ilsight`. Signing and notarization wait for decision 4.
+  - **Linux:** produces an AppImage, which needs FUSE on the user's machine.
+- **Versions:** the workflow installs `vpk` at the `Velopack` version in `Directory.Packages.props`, so the two can't drift.
+- **Icons:** `app.ico`, `Linux/app_icon_512.png`, and `AppIcon.icns`, compiled from `AppIcon.icon` by `actool` in the workflow. `vpk --icon` takes only an `.icns`, so the bundle gets the flat icon rather than the Liquid Glass `Assets.car`.
+- **Hooks:** the arguments are `--veloapp-install`, `-updated`, `-obsolete` and `-uninstall`, each followed by a version. There is no `--veloapp-version`.
 
 ### Stage 3 — Publishing
 

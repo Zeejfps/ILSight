@@ -1,5 +1,5 @@
-# Builds the NativeAOT app for every platform and uploads each one as a build artifact. Nothing is
-# released yet: Velopack's pack and upload steps come next, see docs/plans/ilsight-migration.md.
+# Builds the NativeAOT app for every platform, packs each with Velopack and uploads the installers and
+# release files as a build artifact. Nothing is released yet: see docs/plans/ilsight-migration.md.
 #
 # Run by hand from the Actions tab. It also runs on a pull request that changes this file, so a change
 # can be tried before it lands; `workflow_dispatch` only exists once the file is on the default branch.
@@ -25,10 +25,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { rid: win-x64, os: windows-latest, exe: ILSight.exe, glfw: glfw3.dll }
-          - { rid: osx-arm64, os: macos-latest, exe: ILSight, glfw: glfw3 }
-          - { rid: osx-x64, os: macos-latest, exe: ILSight, glfw: glfw3 }
-          - { rid: linux-x64, os: ubuntu-22.04, exe: ILSight, glfw: libglfw.so.3 }
+          - { rid: win-x64, os: windows-latest, exe: ILSight.exe, glfw: glfw3.dll, icon: ILSight/Assets/Icon/app.ico }
+          - { rid: osx-arm64, os: macos-latest, exe: ILSight, glfw: glfw3, icon: packaging/AppIcon.icns, pack_args: --bundleId com.builtbyzee.ilsight }
+          - { rid: osx-x64, os: macos-latest, exe: ILSight, glfw: glfw3, icon: packaging/AppIcon.icns, pack_args: --bundleId com.builtbyzee.ilsight }
+          - { rid: linux-x64, os: ubuntu-22.04, exe: ILSight, glfw: libglfw.so.3, icon: ILSight/Assets/Icon/Linux/app_icon_512.png }
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -83,15 +83,32 @@ jobs:
           find "$PUBLISH_DIR" -type f \( -name '*.pdb' -o -name '*.dbg' -o -name '*.xml' \) -delete
           rm -rf "$PUBLISH_DIR"/*.dSYM
 
-      # A tar keeps the executable bit, which a zipped artifact loses.
-      - name: Archive
+      # The tool has to match the package the app is built with, so it reads the version from there.
+      - name: Install vpk
         run: |
-          archive="ILSight-$VERSION-${{ matrix.rid }}.tar.gz"
-          tar -czf "$archive" -C "$PUBLISH_DIR" .
-          echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
+          version=$(sed -n 's/.*Include="Velopack" Version="\([^"]*\)".*/\1/p' Directory.Packages.props)
+          dotnet tool install vpk --version "$version" --tool-path .tools
+
+      - name: Compile the macOS icon
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p packaging
+          xcrun actool ILSight/Assets/Icon/AppIcon.icon --compile packaging --platform macosx \
+            --minimum-deployment-target 12.0 --app-icon AppIcon --output-partial-info-plist packaging/partial.plist
+
+      # Each RID is its own channel: both Macs would otherwise share the channel "osx", and each one's
+      # update feed would overwrite the other's.
+      - name: Pack
+        run: |
+          .tools/vpk --skip-updates -x pack \
+            --packId ILSight --packTitle ILSight --packAuthors builtbyzee --packVersion "$VERSION" \
+            --packDir "$PUBLISH_DIR" --mainExe ${{ matrix.exe }} --icon ${{ matrix.icon }} \
+            --channel ${{ matrix.rid }} --runtime ${{ matrix.rid }} --outputDir releases ${{ matrix.pack_args }}
 
       - uses: actions/upload-artifact@v7
         with:
-          path: ${{ env.ARCHIVE }}
-          archive: false
+          name: ILSight-${{ env.VERSION }}-${{ matrix.rid }}
+          path: releases
+          # What's in it is compressed already.
+          compression-level: 0
           if-no-files-found: error
