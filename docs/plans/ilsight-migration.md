@@ -80,7 +80,7 @@ Each stage keeps the pipeline green, so a failure belongs to the stage that intr
 
 ### Stage 1 — Build artifacts
 
-`.github/workflows/release.yml` publishes the NativeAOT app for each RID and uploads it as a build artifact. Nothing is released. Run it by hand, then run each artifact on its OS.
+`.github/workflows/release.yml` publishes the NativeAOT app for each RID. Run by hand, it stops at build artifacts, so a build can be tried on each OS before anything is released.
 
 - **Runners:**
 
@@ -98,7 +98,7 @@ Each stage keeps the pipeline green, so a failure belongs to the stage that intr
 
 ### Stage 2 — Packaging
 
-`release.yml` packs each publish with `vpk` and uploads the installers and release files as a build artifact. Nothing is released. Check that each installer installs and launches.
+`release.yml` packs each publish with `vpk`. Check that each installer installs and launches.
 
 - **App:** the `Velopack` package, with `VelopackApp.Build().Run();` as the first step in `Program.cs`. It handles install/update hooks and exits for them.
 - **Pack:** `vpk pack --packId ILSight --packTitle ILSight --packAuthors builtbyzee --packVersion <MinVer> --mainExe <exe> --icon <icon> --channel <rid> --runtime <rid>`.
@@ -106,15 +106,17 @@ Each stage keeps the pipeline green, so a failure belongs to the stage that intr
   - **macOS:** also `--bundleId com.builtbyzee.ilsight`. Signing and notarization wait for decision 4.
   - **Linux:** produces an AppImage, which needs FUSE on the user's machine.
 - **Versions:** the workflow installs `vpk` at the `Velopack` version in `Directory.Packages.props`, so the two can't drift.
-- **Icons:** `app.ico`, `Linux/app_icon_512.png`, and `AppIcon.icns`, compiled from `AppIcon.icon` by `actool` in the workflow. `vpk --icon` takes only an `.icns`, so the bundle gets the flat icon rather than the Liquid Glass `Assets.car`.
+- **Icons:** `app.ico`, `Linux/app_icon_512.png`, and for macOS `Assets.car` and `AppIcon.icns`, compiled from `AppIcon.icon` by `actool` in the workflow.
+- **macOS bundle:** the workflow assembles `ILSight.app` from `ILSight/Info.plist.in` and packs that, because `vpk --icon` can't put `Assets.car` in a bundle it builds from a folder.
 - **Hooks:** the arguments are `--veloapp-install`, `-updated`, `-obsolete` and `-uninstall`, each followed by a version. There is no `--veloapp-version`.
 
 ### Stage 3 — Publishing
 
-Decide code signing first (decision 4); macOS can follow Windows and Linux if it is still open.
+Pushing a `v*` tag runs `release.yml` through to one GitHub Release holding every channel's files, which is the feed installed apps update from. The setup follows GitBench's, whose releases already update installed apps.
 
-1. Trigger `release.yml` on a `v*` tag.
-2. Add `vpk upload github --publish`, which needs `contents: write`.
+- **Upload:** `gh release create` and `gh release upload`, in one job after every platform has packed. Not `vpk upload github`: it publishes a draft, and GitHub then tries to create the tag that started the run, which fails with 422 `already_exists`.
+- **Version:** the build fails if the version MinVer reads isn't the tag's.
+- **Signing:** decision 4 is still open, so macOS and Windows releases are unsigned.
 
 ### Stage 4 — Updates
 

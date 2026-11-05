@@ -1,11 +1,14 @@
-# Builds the NativeAOT app for every platform, packs each with Velopack and uploads the installers and
-# release files as a build artifact. Nothing is released yet: see docs/plans/ilsight-migration.md.
+# Builds the NativeAOT app for every platform and packs each with Velopack. A version tag such as v1.2.3
+# then publishes them all as one GitHub Release, which is the feed installed apps update from. See
+# docs/plans/ilsight-migration.md.
 #
-# Run by hand from the Actions tab. It also runs on a pull request that changes this file, so a change
-# can be tried before it lands; `workflow_dispatch` only exists once the file is on the default branch.
+# Run by hand from the Actions tab for the same build without a release, or on a pull request that
+# changes this file; each leaves the packed files as a build artifact.
 name: release
 
 on:
+  push:
+    tags: ["v*"]
   workflow_dispatch:
   pull_request:
     paths:
@@ -35,6 +38,7 @@ jobs:
         shell: bash
     env:
       PUBLISH_DIR: publish/${{ matrix.rid }}
+      PACK_DIR: publish/${{ matrix.rid }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -63,6 +67,10 @@ jobs:
           case "$version" in
             ""|0.0.0*) echo "::error::MinVer found no version tag: '$version'"; exit 1 ;;
           esac
+          # A release must be the version its tag says, or its files and its name disagree.
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME builds version $version"; exit 1
+          fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Publish
@@ -89,12 +97,29 @@ jobs:
           version=$(sed -n 's/.*Include="Velopack" Version="\([^"]*\)".*/\1/p' Directory.Packages.props)
           dotnet tool install vpk --version "$version" --tool-path .tools
 
+      # actool needs Xcode 26 for the Icon Composer source. Assets.car is the icon macOS 26 draws, and
+      # AppIcon.icns the same icon for older versions.
       - name: Compile the macOS icon
         if: runner.os == 'macOS'
         run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
           mkdir -p packaging
           xcrun actool ILSight/Assets/Icon/AppIcon.icon --compile packaging --platform macosx \
-            --minimum-deployment-target 12.0 --app-icon AppIcon --output-partial-info-plist packaging/partial.plist
+            --target-device mac --minimum-deployment-target 12.0 --app-icon AppIcon --include-all-app-icons \
+            --output-partial-info-plist packaging/partial.plist
+          test -f packaging/Assets.car && test -f packaging/AppIcon.icns
+
+      # vpk builds a bundle from a folder with --icon alone, which can't carry Assets.car. Given a .app
+      # it keeps what is there and adds its updater.
+      - name: Assemble the macOS bundle
+        if: runner.os == 'macOS'
+        run: |
+          app=bundle/ILSight.app
+          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+          cp -R "$PUBLISH_DIR/." "$app/Contents/MacOS/"
+          cp packaging/Assets.car packaging/AppIcon.icns "$app/Contents/Resources/"
+          sed "s/__VERSION__/$VERSION/g" ILSight/Info.plist.in > "$app/Contents/Info.plist"
+          echo "PACK_DIR=$app" >> "$GITHUB_ENV"
 
       # Each RID is its own channel: both Macs would otherwise share the channel "osx", and each one's
       # update feed would overwrite the other's.
@@ -102,7 +127,7 @@ jobs:
         run: |
           .tools/vpk --skip-updates -x pack \
             --packId ILSight --packTitle ILSight --packAuthors builtbyzee --packVersion "$VERSION" \
-            --packDir "$PUBLISH_DIR" --mainExe ${{ matrix.exe }} --icon ${{ matrix.icon }} \
+            --packDir "$PACK_DIR" --mainExe ${{ matrix.exe }} --icon ${{ matrix.icon }} \
             --channel ${{ matrix.rid }} --runtime ${{ matrix.rid }} --outputDir releases ${{ matrix.pack_args }}
 
       - uses: actions/upload-artifact@v7
@@ -112,3 +137,34 @@ jobs:
           # What's in it is compressed already.
           compression-level: 0
           if-no-files-found: error
+
+  # One job publishes everything, so that the platforms never race to create the release. Not with
+  # `vpk upload github`: it publishes a draft, and GitHub then tries to create the tag that started this
+  # run, which fails with 422 already_exists. `vpk pack` wrote each channel's feed, so uploading its
+  # files is all an installed app needs.
+  publish:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ILSight-*
+          path: releases
+          merge-multiple: true
+
+      # Running a tag again replaces its release and leaves the tag.
+      - name: Publish the release
+        run: |
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          gh release create "$TAG" --title "ILSight ${TAG#v}" --generate-notes
+          # assets.*.json is vpk's own build record, which no feed refers to.
+          mapfile -t files < <(find releases -type f ! -name 'assets.*.json')
+          printf 'Uploading: %s\n' "${files[@]}"
+          gh release upload "$TAG" "${files[@]}" --clobber
