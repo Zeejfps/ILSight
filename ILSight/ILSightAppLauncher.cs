@@ -1,5 +1,6 @@
 ﻿using ILSight.Core;
 using ZGF.Desktop;
+using ZGF.Gui.Immediate;
 using static ILSight.ExternalCommands;
 using static ILSight.Settings;
 
@@ -55,7 +56,8 @@ public static class ILSightAppLauncher
     private static void OpenWindow(ILSightApp app, SettingsLoadResult loadResult, LaunchConfig config)
     {
         var windowConfig = CreateWindowConfig(loadResult.Settings.Window);
-        app.Run(windowConfig, config.RenderBackend);
+        var host = new ImmediateGuiHost(windowConfig, config.RenderBackend);
+        host.Run(app);
     }
 
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, told of what was
