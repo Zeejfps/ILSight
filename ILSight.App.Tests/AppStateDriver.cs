@@ -140,7 +140,7 @@ internal sealed class AppStateDriver
     private readonly PostedActions _posted = PostedActions.OfThisTest();
     private readonly UiState? _ui;
 
-    public AppStateDriver(AppSettings? settings = null) : this(NoProblem(settings), ExternalCommand.Parse([]), withScreen: true)
+    public AppStateDriver(AppSettings? settings = null) : this(NoProblem(settings), CommandLine.Parse([]).Command, withScreen: true)
     {
     }
 
@@ -169,7 +169,7 @@ internal sealed class AppStateDriver
     }
 
     /// <summary>A driver with an app state and no screen, which shows that the features need none.</summary>
-    public static AppStateDriver WithoutScreen(AppSettings? settings = null) => new(NoProblem(settings), ExternalCommand.Parse([]), withScreen: false);
+    public static AppStateDriver WithoutScreen(AppSettings? settings = null) => new(NoProblem(settings), CommandLine.Parse([]).Command, withScreen: false);
 
     /// <summary>A driver with no screen that has opened the fixture assembly.</summary>
     public static AppStateDriver OpenedWithoutScreen()
@@ -286,7 +286,7 @@ internal sealed class AppDriver
     public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, Channel<ExternalCommand>? pendingCommands = null, ITextMeasurer? measurer = null)
     {
         Driver = new AppStateDriver(settings);
-        App = new ILSightWindow(AppState, Ui, ExternalCommand.Parse([]).Files, pendingCommands ?? Channel.CreateUnbounded<ExternalCommand>());
+        App = new ILSightWindow(AppState, Ui, CommandLine.Parse([]).Command.Files, pendingCommands ?? Channel.CreateUnbounded<ExternalCommand>());
         Background.Start(App.ApplyPendingCommands(), AppState.ReportError);
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;

@@ -67,7 +67,7 @@ public sealed class ExternalCommandPipe : IDisposable
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
         ForegroundRights.LendTo(processId);
-        await WriteArgumentsAsync(pipe, command.ListArguments(), token);
+        await WriteArgumentsAsync(pipe, CommandLine.ListArguments(command), token);
         var answer = await ReadByteAsync(pipe, token);
         return answer == Received;
     }
@@ -113,7 +113,7 @@ public sealed class ExternalCommandPipe : IDisposable
         var token = timeout.Token;
         await WriteIntAsync(pipe, Environment.ProcessId, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        if (!handler.TryHandle(ExternalCommand.Parse(args)))
+        if (!handler.TryHandle(CommandLine.Parse(args).Command))
             return;
         await pipe.WriteAsync(new[] { Received }, token);
         await pipe.FlushAsync(token);

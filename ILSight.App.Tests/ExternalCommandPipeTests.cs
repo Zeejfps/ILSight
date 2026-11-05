@@ -27,7 +27,7 @@ public sealed class ExternalCommandPipeTests
         first.ForwardTo(handler);
         using var later = new ExternalCommandPipe(address);
 
-        var handedOver = later.TryHandOverToRunningApp(ExternalCommand.Parse(["--navigateto=T:Some.Type", "relative.dll"]));
+        var handedOver = later.TryHandOverToRunningApp(CommandLine.Parse(["--navigateto=T:Some.Type", "relative.dll"]).Command);
 
         Assert.True(handedOver);
         Assert.True(handler.Commands.Reader.TryRead(out var handed));
@@ -46,7 +46,7 @@ public sealed class ExternalCommandPipeTests
         handler.Commands.Writer.TryComplete();
         using var later = new ExternalCommandPipe(address);
 
-        var handedOver = later.TryHandOverToRunningApp(ExternalCommand.Parse(["a.dll"]));
+        var handedOver = later.TryHandOverToRunningApp(CommandLine.Parse(["a.dll"]).Command);
 
         Assert.False(handedOver);
     }
@@ -58,7 +58,7 @@ public sealed class ExternalCommandPipeTests
         var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
         using var pipe = new ExternalCommandPipe(address);
 
-        var handedOver = pipe.TryHandOverToRunningApp(ExternalCommand.Parse(["a.dll"]));
+        var handedOver = pipe.TryHandOverToRunningApp(CommandLine.Parse(["a.dll"]).Command);
 
         Assert.False(handedOver);
     }
@@ -75,7 +75,7 @@ public sealed class ExternalCommandPipeTests
         app.Run();
         using var later = new ExternalCommandPipe(address);
 
-        Assert.True(later.TryHandOverToRunningApp(ExternalCommand.Parse(["--navigateto=" + GreetId, AppStateDriver.FixturePath])));
+        Assert.True(later.TryHandOverToRunningApp(CommandLine.Parse(["--navigateto=" + GreetId, AppStateDriver.FixturePath]).Command));
         app.RunUntil(() => app.Frames.FrontRequested);
         app.RunUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Method);
         app.Settle(1);
@@ -88,7 +88,7 @@ public sealed class ExternalCommandPipeTests
     public void A_command_handed_over_while_the_app_starts_is_followed_once_it_runs()
     {
         var handler = new ChannelHandler();
-        Assert.True(handler.TryHandle(ExternalCommand.Parse(["--language=IL"])));
+        Assert.True(handler.TryHandle(CommandLine.Parse(["--language=IL"]).Command));
         var app = new AppDriver(pendingCommands: handler.Commands);
 
         app.RunUntil(() => app.AppState.Language == DecompilationLanguage.IL);

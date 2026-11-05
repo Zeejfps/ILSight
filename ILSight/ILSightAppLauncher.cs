@@ -3,11 +3,11 @@
 public static class ILSightAppLauncher
 {
     /// <summary>Hands <paramref name="command"/> to the window already open with the same settings
-    /// and leaves, unless <paramref name="options"/> ask for a new window or none is open; else opens
+    /// and leaves, unless <paramref name="config"/> asks for a new window or none is open; else opens
     /// the app.</summary>
-    public static void LaunchApp(LaunchOptions options, ExternalCommand command)
+    public static void LaunchApp(LaunchConfig config, ExternalCommand command)
     {
-        var address = ExternalCommandAddress.ForSettingsFile(options.SettingsPath);
+        var address = ExternalCommandAddress.ForSettingsFile(config.SettingsPath);
         using var pipe = new ExternalCommandPipe(address);
         if (SingleInstanceLock.TryAcquire(address, out var instanceLock))
         {
@@ -15,13 +15,13 @@ public static class ILSightAppLauncher
             {
                 var app = new ILSightApp();
                 pipe.ForwardTo(app);
-                app.Run(options, command);
+                app.Run(config, command);
             }
         }
-        else if (options.NewInstance)
+        else if (config.NewInstance)
         {
             var app = new ILSightApp();
-            app.Run(options, command);
+            app.Run(config, command);
         }
         else
         {
@@ -29,7 +29,7 @@ public static class ILSightAppLauncher
             if (!handedOver)
             {
                 var app = new ILSightApp();
-                app.Run(options, command);
+                app.Run(config, command);
             }
         }
     }

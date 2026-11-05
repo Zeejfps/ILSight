@@ -19,15 +19,15 @@ public sealed class ILSightApp : IExternalCommandHandler
         return _pendingCommands.Writer.TryWrite(command);
     }
 
-    /// <summary>Opens the window as <paramref name="options"/> say, follows <paramref name="command"/>,
+    /// <summary>Opens the window as <paramref name="config"/> says, follows <paramref name="command"/>,
     /// and runs until the window closes.</summary>
-    public void Run(LaunchOptions options, ExternalCommand command)
+    public void Run(LaunchConfig config, ExternalCommand command)
     {
-        var loadResult = AppSettings.Load(options.SettingsPath);
+        var loadResult = AppSettings.Load(config.SettingsPath);
         var appState = LoadAppState(loadResult, command);
         var uiState = ILSightWindow.CreateUiState(appState);
         var window = new ILSightWindow(appState, uiState, command.Files, _pendingCommands);
-        window.Run(CreateWindowConfig(appState.Window), options.RenderBackend);
+        window.Run(CreateWindowConfig(appState.Window), config.RenderBackend);
     }
 
     /// <summary>The app state to start from: what <paramref name="loadSettingsResult"/> describes, told of what was
