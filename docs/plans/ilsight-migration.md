@@ -120,20 +120,21 @@ Pushing a `v*` tag runs `release.yml` through to one GitHub Release holding ever
 
 ### Stage 4 — Updates
 
-1. Feed: `GithubSource` pointed at `Zeejfps/ILSight`.
-2. Add an `Updates` feature file:
-   - check on startup when the app is installed, and skip when run from the IDE;
-   - download in the background;
-   - queue a `ViewCommand` that offers "Restart to update", then apply and restart;
-   - add a settings toggle for automatic checks.
-3. Tag two versions and check that the first updates to the second, on each RID.
+The app looks for a newer version, downloads it in the background and offers to restart into it. Copies that aren't installed, such as one run from the IDE, look for nothing. It lives in `ILSight/Updates.cs`.
+
+- **Feed:** `GithubSource` pointed at `Zeejfps/ILSight`, directly, with no redirector. Every installed copy asks there for the rest of its life, so the repository can't move without leaving a GitHub redirect behind.
+- **Channel:** not named in the code. `vpk pack --channel` bakes it into the install, so the app and `release.yml` can't disagree.
+- **Check:** on startup unless turned off, and from the About dialog. Only a check the user asked for says that it failed or found nothing.
+- **Offer:** "Restart to update" in the status bar and the About dialog. An update nobody restarts for is applied by the next launch, before the window opens.
+- **Restart:** `WaitExitThenApplyUpdates`, then a normal quit. `ApplyUpdatesAndRestart` calls `Environment.Exit`, which would skip `OnShutdown` and lose the window bounds and unsaved settings.
+- **Settings:** `CheckForUpdates`, on unless set, with a checkbox in the About dialog.
+- **Check after a release:** tag two versions and update from the first to the second on each RID. The first release an install can update from is the first one with this code in it.
 
 ## Phase 5 — About page
 
 - Opened from a new Help menu: About ILSight.
 - Shows:
   - app icon, name and version (`AssemblyInformationalVersion` from MinVer);
-  - a "Check for updates" button with its status;
   - links to the site, repo and issues;
   - "Built by Zee";
   - "Powered by ICSharpCode.Decompiler {version}. Not affiliated with the ILSpy project.";

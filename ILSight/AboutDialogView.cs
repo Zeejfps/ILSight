@@ -2,12 +2,13 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Localization;
 using static ILSight.Dialogs;
+using static ILSight.Updates;
 
 namespace ILSight;
 
-/// <summary>The app's icon beside its name, its version and Check for updates, which waits for the
-/// feature to come, over the versions of the decompiler, the runtime and the system; then the licenses
-/// folder where the app ships one, and Close.</summary>
+/// <summary>The app's icon beside its name, its version and what can be done about updates, over the
+/// versions of the decompiler, the runtime and the system; then the licenses folder where the app ships
+/// one, and Close.</summary>
 internal static class AboutDialogView
 {
     internal const string AppName = "ILSight";
@@ -17,7 +18,7 @@ internal static class AboutDialogView
 
     private static readonly string? ShippedLicenses = FindShippedLicenses();
 
-    public static void Render(Ui<UiState> ui)
+    public static void Render(Ui<UiState> ui, AppState appState)
     {
         var screen = ui.State;
         if (!screen.IsAboutOpen)
@@ -29,21 +30,23 @@ internal static class AboutDialogView
             return;
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.DialogGap }))
         {
-            Identity(ui);
+            Identity(ui, appState.Updates);
             Versions(ui);
         }
         Actions(ui);
     }
 
-    /// <summary>The app's icon beside its name, its version and Check for updates.</summary>
-    private static void Identity(Ui<UiState> ui)
+    /// <summary>The app's icon beside its name, its version and what can be done about updates.</summary>
+    private static void Identity(Ui<UiState> ui, AppUpdates updates)
     {
         var theme = ui.Theme;
         using var row = ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.DialogGap, AlignY = Align.Center });
         ui.AppIcon(theme.IconSize * IconScale);
         using var text = ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.Gap });
         NameAndVersion(ui);
-        CheckForUpdatesButton(ui);
+        UpdateButton(ui, updates);
+        UpdateResult(ui, updates.Status);
+        CheckAutomatically(ui, updates);
     }
 
     private static void NameAndVersion(Ui<UiState> ui)
@@ -56,11 +59,55 @@ internal static class AboutDialogView
         ui.Text(version, color: theme.TextMuted, wrap: true);
     }
 
-    /// <summary>The button that will look for a newer version, shown disabled until it can.</summary>
-    private static void CheckForUpdatesButton(Ui<UiState> ui)
+    /// <summary>Restarts into a downloaded update; else looks for one, in a copy that can update
+    /// itself, or says what is under way.</summary>
+    private static void UpdateButton(Ui<UiState> ui, AppUpdates updates)
     {
         var t = ui.State.Strings;
-        ui.Button(t.AboutCheckForUpdates, enabled: false, id: "about-updates", variant: ButtonVariant.Neutral);
+        if (updates.Status is UpdateStatus.Ready ready)
+        {
+            var label = ui.Memo("about-restart", (t, ready.Version), static a => a.t.AboutRestartToUpdate(a.Version));
+            if (ui.Button(label, id: "about-updates"))
+                ui.State.Later(static a => RestartToUpdate(a));
+            return;
+        }
+        var text = ButtonText(ui, updates.Status);
+        if (ui.Button(text, enabled: updates.CanCheck, id: "about-updates", variant: ButtonVariant.Neutral))
+            ui.State.Later(static a => CheckForUpdates(a));
+    }
+
+    private static string ButtonText(Ui<UiState> ui, UpdateStatus status)
+    {
+        var t = ui.State.Strings;
+        switch (status)
+        {
+            case UpdateStatus.Checking:
+                return t.AboutCheckingForUpdates;
+            case UpdateStatus.Downloading downloading:
+                return ui.Memo("about-downloading", (t, downloading.Version), static a => a.t.AboutDownloadingUpdate(a.Version));
+            case UpdateStatus.Restarting:
+                return t.AboutRestarting;
+            default:
+                return t.AboutCheckForUpdates;
+        }
+    }
+
+    /// <summary>What a check the user asked for came to.</summary>
+    private static void UpdateResult(Ui<UiState> ui, UpdateStatus status)
+    {
+        var t = ui.State.Strings;
+        if (status is UpdateStatus.UpToDate)
+            ui.Text(t.AboutUpToDate, color: ui.Theme.TextMuted, wrap: true);
+        else if (status is UpdateStatus.Failed)
+            ui.Text(t.AboutUpdateFailed, color: ui.Theme.Danger, wrap: true);
+    }
+
+    private static void CheckAutomatically(Ui<UiState> ui, AppUpdates updates)
+    {
+        var t = ui.State.Strings;
+        var check = updates.CheckAutomatically;
+        if (ui.Checkbox(t.AboutCheckAutomatically, ref check, id: "about-check-automatically", compact: true))
+            ui.State.Later(check, static (a, on) => SetCheckAutomatically(a, on));
     }
 
     /// <summary>A small row for each version, its name in a column as wide as the widest name.</summary>

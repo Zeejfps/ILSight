@@ -64,7 +64,8 @@ public static class Settings
             appState.Language,
             appState.DecompilerOptions,
             appState.ApiVisibility,
-            appState.Locale);
+            appState.Locale,
+            appState.Updates.CheckAutomatically);
     }
 
     /// <summary>The settings as the app state and the screen it was handed hold them now, to be written
@@ -82,6 +83,7 @@ public static class Settings
             Language = appState.Language,
             Decompiler = appState.DecompilerOptions,
             ApiVisibility = appState.ApiVisibility,
+            CheckForUpdates = appState.Updates.CheckAutomatically,
             Locale = appState.Locale,
             Bookmarks = appState.Bookmarks.Save(),
             Window = appState.Window,

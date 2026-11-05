@@ -31,6 +31,11 @@ internal static class StatusBarView
             {
                 if (ExportStatusView.Render(ui, appState.Export))
                     Dot(ui);
+                if (appState.Updates.Status is UpdateStatus.Ready)
+                {
+                    RestartToUpdateButton(ui);
+                    Dot(ui);
+                }
                 var activity = DescribeActivity(appState, t);
                 if (activity != null)
                 {
@@ -68,6 +73,27 @@ internal static class StatusBarView
     }
 
     private static void Dot(Ui<UiState> ui) => ui.Text("·", color: ui.Theme.TextDisabled, size: ui.Theme.FontSizeSmall);
+
+    private static void RestartToUpdateButton(Ui<UiState> ui)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        var i = ui.Clickable("restart-to-update");
+        if (i.Clicked)
+            ui.State.Later(static a => Updates.RestartToUpdate(a));
+
+        using (ui.Row(i.Id, new Box
+        {
+            Width = Sizing.Fit(),
+            Height = Sizing.Grow(),
+            Padding = new Spacing(theme.GapTight, 0f),
+            AlignY = Align.Center,
+            Background = i.Held ? theme.Pressed(theme.Surface) : i.Hovered ? theme.RowHover : 0u,
+        }))
+        {
+            ui.Text(t.StatusRestartToUpdate, color: theme.AccentText, size: theme.FontSizeSmall);
+        }
+    }
 
     private static void ErrorIndicator(Ui<UiState> ui, ErrorLog errors)
     {

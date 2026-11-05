@@ -17,7 +17,8 @@ public readonly record struct SavedSources(
     DecompilationLanguage Language,
     DecompilerOptions DecompilerOptions,
     ApiVisibility ApiVisibility,
-    Locale Locale);
+    Locale Locale,
+    bool CheckForUpdates);
 
 /// <summary>What the settings were saved from the last time, to save again only when it changed.</summary>
 public sealed class LastSave

@@ -227,6 +227,7 @@
   },
   "Locale": "De",
   "ApiVisibility": "All",
+  "CheckForUpdates": true,
   "SearchKinds": "Types, Literals",
   "Layout": {
     "Root": {

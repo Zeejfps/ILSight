@@ -550,6 +550,7 @@
   "status.show_exports": "Show the exports",
   "status.export_queued": {"one": "{count:N0} more queued", "other": "{count:N0} more queued"},
   "status.resolving": "Resolving…",
+  "status.restart_to_update": "Restart to update",
   "status.assemblies": { "one": "{count:N0} assembly", "other": "{count:N0} assemblies" },
   "status.errors": { "one": "{count:N0} error", "other": "{count:N0} errors" },
 
@@ -566,6 +567,13 @@
   "about.system": "System",
   "about.licenses": "Open licenses folder",
   "about.check_for_updates": "Check for updates",
+  "about.check_automatically": "Check for updates at startup",
+  "about.checking_for_updates": "Checking for updates…",
+  "about.downloading_update": "Downloading version {version}…",
+  "about.restart_to_update": "Restart to update to {version}",
+  "about.restarting": "Restarting…",
+  "about.up_to_date": "ILSight is up to date.",
+  "about.update_failed": "The update failed. Try again later.",
   "about.close": "Close",
 
   "picker.title": "Open from framework",

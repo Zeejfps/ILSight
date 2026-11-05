@@ -57,6 +57,9 @@ public sealed class AppState
     public AnalyzerTree Analyzer { get; }
 
     public ErrorLog Errors { get; } = new();
+
+    /// <summary>The newer version looked for, downloaded and offered, if any.</summary>
+    public AppUpdates Updates { get; internal set; }
     public DocumentTabs Tabs { get; } = new();
 
     /// <summary>The tabs reopened from the open list's saved documents that wait for what they showed.</summary>
@@ -206,6 +209,7 @@ public sealed class AppState
         Assemblies.UseLoadOptions(DecompilerOptions);
         Locale = ChooseLocale(settings);
         ApiVisibility = settings.ApiVisibility;
+        Updates = new AppUpdates(new GitHubUpdateFeed(), settings.CheckForUpdates);
         var first = AddTab();
         Tabs.MakeActive(first);
         Analyzer = new AnalyzerTree();

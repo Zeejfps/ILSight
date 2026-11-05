@@ -42,6 +42,9 @@ public sealed class AppSettings
     /// <summary>The interface language; null follows the system's.</summary>
     public Locale? Locale { get; set; }
     public ApiVisibility ApiVisibility { get; set; } = ApiVisibility.AllButCompilerGenerated;
+
+    /// <summary>Whether the app looks for a newer version when it starts.</summary>
+    public bool CheckForUpdates { get; set; } = true;
     public SearchKinds SearchKinds { get; set; } = SearchKinds.TypesAndMembers;
     /// <summary>Where the views and the open list's documents were docked; null for where they start out.</summary>
     public DockLayout? Layout { get; set; }
@@ -202,6 +205,7 @@ public sealed class AppSettings
             ApiVisibility = ApiVisibilityOf(
                 file.Read(nameof(SettingsFile.ApiVisibility), json.NullableApiVisibility),
                 file.Read(SettingsFile.OldShowNonPublic, json.NullableBoolean)),
+            CheckForUpdates = file.Read(nameof(SettingsFile.CheckForUpdates), json.NullableBoolean) ?? true,
             SearchKinds = file.Read(nameof(SettingsFile.SearchKinds), json.NullableSearchKinds) ?? SearchKinds.TypesAndMembers,
             Layout = ReadLayout(file, out layoutProblem),
             Bookmarks = ReadBookmarks(file),

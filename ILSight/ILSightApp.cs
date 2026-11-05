@@ -12,6 +12,7 @@ using static ILSight.IconTheming;
 using static ILSight.Settings;
 using static ILSight.ScreenSettings;
 using static ILSight.Theming;
+using static ILSight.Updates;
 
 namespace ILSight;
 
@@ -51,6 +52,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         RestoreAnalyses(_appState);
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
+        CheckOnStartup(_appState);
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -86,6 +88,13 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         OpenAskedWebPages(ui);
         OpenAskedFiles(ui);
         OpenAskedFolders(ui);
+        QuitIfAsked(ui);
+    }
+
+    private static void QuitIfAsked(Ui<UiState> ui)
+    {
+        if (ui.State.QuitAsked)
+            ui.Quit();
     }
 
     private static void OpenAskedWebPages(Ui<UiState> ui)

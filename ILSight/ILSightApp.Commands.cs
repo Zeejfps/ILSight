@@ -59,6 +59,9 @@ public sealed partial class ILSightApp
             case ViewCommand.OpenFile open:
                 uiState.FilesToOpen.Enqueue(open.Path);
                 break;
+            case ViewCommand.Quit:
+                uiState.QuitAsked = true;
+                break;
         }
     }
 
