@@ -1,11 +1,13 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using ILSight.Core;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using static ILSight.Bookmarks;
 using static ILSight.Comparisons;
 using static ILSight.Diagrams;
+using static ILSight.Exports;
 using static ILSight.Navigation;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
@@ -19,6 +21,8 @@ namespace ILSight;
 internal sealed class TrailerDirector
 {
     private const float AnalyzerRatio = 0.52f;
+    // On screen in the export scene, so it names nobody; deleted after the capture.
+    private const string ExportFolder = @"G:\Exports\Newtonsoft.Json";
     private const string GoFile = "go";
     private const string TimesFile = "times.txt";
 
@@ -42,6 +46,7 @@ internal sealed class TrailerDirector
         _host = host;
         _output = output;
         _script = Play(scene).GetEnumerator();
+        DrawEverythingInTheMainWindow(host);
     }
 
     /// <summary>The director of the scene the environment asks for, else null.</summary>
@@ -101,6 +106,9 @@ internal sealed class TrailerDirector
         "diagram" => Diagram(),
         "compare" => Compare(),
         "bookmarks" => BookmarksScene(),
+        "goto" => GoTo(),
+        "nuget" => NuGet(),
+        "export" => Export(),
         _ => throw new InvalidOperationException($"No scene called {scene}."),
     };
 
@@ -278,5 +286,97 @@ internal sealed class TrailerDirector
             return true;
         }
         return GiveTheAnalyzerRoom(split.First) || GiveTheAnalyzerRoom(split.Second);
+    }
+
+    /// <summary>Waits until <paramref name="count"/> more frames are saved, so that each state is on film.</summary>
+    private Func<bool> Frames(int count)
+    {
+        var until = _frames.Count + count;
+        return () => _frames.Count >= until;
+    }
+
+    private IEnumerable<Func<bool>> GoTo()
+    {
+        yield return HasAssembly;
+        yield return Hold(1);
+        foreach (var wait in Show(Find("Newtonsoft.Json", "JsonSerializer", "CreateDefault()")))
+            yield return wait;
+        yield return Hold(0.5);
+        Record();
+        yield return Frames(1);
+        var omnibar = _screen!.Omnibar;
+        SearchInOmnibar(_screen);
+        yield return Frames(1);
+        foreach (var typed in new[] { "Js", "Json", "JsonCo", "JsonConv", "JsonConvert" })
+        {
+            omnibar.Search.Query = typed;
+            yield return Frames(1);
+        }
+        yield return () => omnibar.Search.ShowsQuery && !omnibar.Search.IsBusy;
+        yield return Frames(2);
+        omnibar.StopSearch();
+        foreach (var wait in Show(Find("Newtonsoft.Json", "JsonConvert", "ToString(bool")))
+            yield return wait;
+        yield return Frames(2);
+    }
+
+    private IEnumerable<Func<bool>> NuGet()
+    {
+        yield return HasAssembly;
+        yield return Hold(1);
+        var picker = _screen!.NuGetPicker;
+        Record();
+        yield return Frames(1);
+        picker.Open();
+        yield return Frames(1);
+        picker.Query = "Newtonsoft.Json";
+        picker.SearchNow();
+        yield return () => !picker.IsSearching && picker.Results.Count > 0;
+        yield return Frames(1);
+        var package = picker.Results[0];
+        picker.Selection.Select(package, picker.Results);
+        yield return () => picker.CanOpen;
+        yield return Frames(2);
+        picker.Download();
+        yield return Frames(1);
+        yield return () => !picker.IsOpen;
+        yield return () => _app.Assemblies.Assemblies.Count >= 2;
+        yield return Hold(1);
+        yield return Frames(2);
+    }
+
+    private IEnumerable<Func<bool>> Export()
+    {
+        yield return HasAssembly;
+        yield return Hold(1);
+        foreach (var wait in Show(Find("Newtonsoft.Json", "JsonConvert", "ToString(bool")))
+            yield return wait;
+        yield return Hold(0.5);
+        Record();
+        yield return Frames(1);
+        var setup = _screen!.ExportSetup;
+        setup.Open(_app.Assemblies.Assemblies, _app.Assemblies.Assemblies.OfType<LoadedModule>().First());
+        setup.Folder = ExportFolder;
+        yield return Frames(2);
+        StartExport(_app, setup.CreateRequest());
+        setup.Close();
+        OpenExports(_screen);
+        yield return () => _app.FinishedExports.Count > 0;
+        yield return Frames(2);
+    }
+
+    /// <summary>Has popups and dialogs drawn in the main window instead of windows of their own, which
+    /// reading the main window's frame would miss. The host has no public way to ask for that, and this
+    /// branch leaves the framework as it is, so these two names are set by reflection; it fails loudly
+    /// if the framework renames them.</summary>
+    private static void DrawEverythingInTheMainWindow(ImmediateGuiAppHost<UiState> host)
+    {
+        foreach (var name in new[] { "_popupWindowsUnavailable", "_dialogWindowsUnavailable" })
+        {
+            var field = host.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field == null)
+                throw new InvalidOperationException($"The host has no field called {name}.");
+            field.SetValue(host, true);
+        }
     }
 }
