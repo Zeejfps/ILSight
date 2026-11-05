@@ -5,7 +5,7 @@ name: dependencies
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "ILSight.Core/**"
       - "ILSight.Tests/DependencyTests.cs"
