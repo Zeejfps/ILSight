@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Testing;
 using ZGF.Gui.Testing;
@@ -125,7 +124,7 @@ internal static class TempSettings
 internal static class Screens
 {
     /// <summary>A screen over an app state with nothing open, for drawing a widget alone.</summary>
-    public static UiState Blank() => ILSightWindow.CreateUiState(AppState.Load(new AppSettings { Locale = Locale.En }, TestSession.Shared));
+    public static UiState Blank() => ILSightApp.CreateUiState(AppState.Load(new AppSettings { Locale = Locale.En }, TestSession.Shared));
 }
 
 /// <summary>A <see cref="AppState"/> and, unless made without one, the screen over it, whose posted
@@ -147,9 +146,9 @@ internal sealed class AppStateDriver
     private AppStateDriver(SettingsLoadResult loadResult, ExternalCommand command, bool withScreen)
     {
         loadResult.Settings.Locale ??= Locale.En;
-        AppState = ILSightApp.LoadAppState(loadResult, command, TestSession.Shared);
+        AppState = ILSightAppLauncher.LoadAppState(loadResult, command, TestSession.Shared);
         if (withScreen)
-            _ui = ILSightWindow.CreateUiState(AppState);
+            _ui = ILSightApp.CreateUiState(AppState);
         RestoreAnalyses(AppState);
     }
 
@@ -204,9 +203,9 @@ internal sealed class AppStateDriver
     /// hands over what the settings keep of it, and the app runs what the screen asked of the app state.</summary>
     public void NextFrame()
     {
-        ILSightWindow.StartFrame(Ui, AppState);
-        ILSightWindow.KeepScreenChanges(Ui, AppState);
-        ILSightWindow.RunAppCommands(Ui, AppState);
+        ILSightApp.StartFrame(Ui, AppState);
+        ILSightApp.KeepScreenChanges(Ui, AppState);
+        ILSightApp.RunAppCommands(Ui, AppState);
     }
 
     /// <summary>Pumps until <paramref name="done"/>.</summary>
@@ -283,10 +282,12 @@ internal sealed class AppStateDriver
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
-    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, Channel<ExternalCommand>? pendingCommands = null, ITextMeasurer? measurer = null)
+    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, ExternalCommand? queuedCommand = null, ITextMeasurer? measurer = null)
     {
         Driver = new AppStateDriver(settings);
-        App = new ILSightWindow(AppState, Ui, CommandLine.Parse([]).Command.Files, pendingCommands ?? Channel.CreateUnbounded<ExternalCommand>());
+        App = new ILSightApp(AppState, Ui, CommandLine.Parse([]).Command.Files);
+        if (queuedCommand != null)
+            App.TryHandle(queuedCommand);
         Background.Start(App.ApplyPendingCommands(), AppState.ReportError);
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;
@@ -312,7 +313,7 @@ internal sealed class AppDriver
 
     /// <summary>The screen the app draws.</summary>
     public UiState Ui => Driver.Ui;
-    public ILSightWindow App { get; }
+    public ILSightApp App { get; }
     public UiFrames Frames { get; }
     public UiTheme Theme => Theming.ResolveTheme(AppState).Ui;
 

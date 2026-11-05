@@ -195,7 +195,7 @@ public sealed class ExternalCommandTests
     {
         var command = CommandLine.Parse(args).Command;
         var d = AppStateDriver.Started(new SettingsLoadResult(settings, new SettingsProblem.None()), command);
-        ILSightWindow.OpenStartupAssemblies(d.AppState, command.Files);
+        ILSightApp.OpenStartupAssemblies(d.AppState, command.Files);
         d.RunUntil(() => AreListed(d.AppState, command.AssemblyPaths));
         d.Settle();
         return d;

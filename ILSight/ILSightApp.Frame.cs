@@ -11,7 +11,7 @@ using static ILSight.Trees;
 
 namespace ILSight;
 
-public sealed partial class ILSightWindow
+public sealed partial class ILSightApp
 {
     /// <summary>The screen over <paramref name="appState"/>, restored from what its settings kept, with the
     /// active tab it starts with, the tabs reopened from the open list's documents docked where they were,

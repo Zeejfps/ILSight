@@ -133,7 +133,7 @@ public static class DocumentPanels
     internal static string OpenTabForPanel(UiState uiState)
     {
         var panel = uiState.Documents.NewPanel();
-        uiState.Later((uiState, panel), static (a, s) => ILSightWindow.OpenTabIn(s.uiState, a, s.panel, focus: false));
+        uiState.Later((uiState, panel), static (a, s) => ILSightApp.OpenTabIn(s.uiState, a, s.panel, focus: false));
         return panel;
     }
 
@@ -152,7 +152,7 @@ public static class DocumentPanels
         if (tab == null)
             return;
         uiState.Documents.Remove(tab);
-        uiState.Later((uiState, tab), static (a, s) => ILSightWindow.CloseTabAndFocusNext(s.uiState, a, s.tab));
+        uiState.Later((uiState, tab), static (a, s) => ILSightApp.CloseTabAndFocusNext(s.uiState, a, s.tab));
     }
 
     /// <summary>Focuses the tab of the panel the layout focuses now, else the first group's front tab.</summary>

@@ -1,7 +1,7 @@
 namespace ILSight;
 
 /// <summary>What the screen asks of the app state, which <see cref="UiState"/> queues while it draws
-/// and <see cref="ILSightWindow"/> runs, in the order queued, once the frame is drawn. Made only through
+/// and <see cref="ILSightApp"/> runs, in the order queued, once the frame is drawn. Made only through
 /// <see cref="UiState.Later(Action{AppState})"/> and its overload, from a <c>static</c> lambda handed
 /// what it acts on, so that a view drawn every frame allocates nothing until it asks.</summary>
 public abstract class AppCommand

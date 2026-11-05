@@ -8,7 +8,7 @@ using static ILSight.ScreenLayout;
 
 namespace ILSight;
 
-public sealed partial class ILSightWindow
+public sealed partial class ILSightApp
 {
     /// <summary>Runs the commands the features queued for the view, in the order they were queued, dropping
     /// commands about a node, tab, line or row that is gone since.</summary>

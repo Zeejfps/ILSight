@@ -68,10 +68,9 @@ public sealed class ExternalCommandPipeTests
     {
         using var temp = new TempDir();
         var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
-        var handler = new ChannelHandler();
+        var app = new AppDriver();
         using var first = new ExternalCommandPipe(address);
-        first.ForwardTo(handler);
-        var app = new AppDriver(pendingCommands: handler.Commands);
+        first.ForwardTo(app.App);
         app.Run();
         using var later = new ExternalCommandPipe(address);
 
@@ -87,9 +86,7 @@ public sealed class ExternalCommandPipeTests
     [Fact]
     public void A_command_handed_over_while_the_app_starts_is_followed_once_it_runs()
     {
-        var handler = new ChannelHandler();
-        Assert.True(handler.TryHandle(CommandLine.Parse(["--language=IL"]).Command));
-        var app = new AppDriver(pendingCommands: handler.Commands);
+        var app = new AppDriver(queuedCommand: CommandLine.Parse(["--language=IL"]).Command);
 
         app.RunUntil(() => app.AppState.Language == DecompilationLanguage.IL);
 
