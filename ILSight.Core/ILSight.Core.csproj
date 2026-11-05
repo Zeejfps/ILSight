@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ZGF\JpegSharp\JpegSharp.csproj" />
+      <ProjectReference Include="..\ZGF\JpegSharp\JpegSharp\JpegSharp.csproj" />
       <ProjectReference Include="..\ZGF\PngSharp\PngSharp\PngSharp.csproj" />
       <ProjectReference Include="..\ZGF\ZGF.Svg\ZGF.Svg.csproj" />
       <ProjectReference Include="..\ZGF\ZGF.Geometry\ZGF.Geometry.csproj" />

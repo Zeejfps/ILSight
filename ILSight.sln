@@ -49,7 +49,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZGF.Markdown", "ZGF\ZGF.Mar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILSight.Core", "ILSight.Core\ILSight.Core.csproj", "{61CF25DE-65D6-4489-94CB-8233112DD71E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JpegSharp", "ZGF\JpegSharp\JpegSharp.csproj", "{35145F5B-3B55-4E90-9C10-44EB34C94C4C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JpegSharp", "ZGF\JpegSharp\JpegSharp\JpegSharp.csproj", "{35145F5B-3B55-4E90-9C10-44EB34C94C4C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILSight.Tests", "ILSight.Tests\ILSight.Tests.csproj", "{C51B3FC4-0940-4E5E-9BC2-66B47742CAC3}"
 EndProject
