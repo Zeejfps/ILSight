@@ -22,7 +22,7 @@ internal sealed class TrailerDirector
 {
     private const float AnalyzerRatio = 0.52f;
     // On screen in the export scene, so it names nobody; deleted after the capture.
-    private const string ExportFolder = @"G:\Exports\Newtonsoft.Json";
+    private const string ExportFolder = @"G:\Exports\System.Private.CoreLib";
     private const string GoFile = "go";
     private const string TimesFile = "times.txt";
 
@@ -229,7 +229,7 @@ internal sealed class TrailerDirector
         yield return () => _app.Assemblies.Assemblies.OfType<LoadedModule>().Count() >= 2;
         yield return Hold(1);
         var modules = _app.Assemblies.Assemblies.OfType<LoadedModule>().ToList();
-        CompareAssemblies(_app, modules[0], modules[1], "Newtonsoft.Json 9.0 → 13.0");
+        CompareAssemblies(_app, modules[0], modules[1], _screen!.Strings.ComparisonTitle(modules[0].Name));
         yield return Hold(0.5);
         yield return IsIdle;
         yield return Hold(1);
@@ -342,6 +342,13 @@ internal sealed class TrailerDirector
         yield return () => !picker.IsOpen;
         yield return () => _app.Assemblies.Assemblies.Count >= 2;
         yield return Hold(1);
+        yield return Frames(1);
+        var session = _app.Session;
+        var node = session.RootOf(_app.Assemblies.Assemblies.Last());
+        foreach (var name in new[] { "Newtonsoft.Json", "JsonConvert" })
+            node = session.ChildrenOf(node).First(n => n.Text == name);
+        foreach (var wait in Show(node))
+            yield return wait;
         yield return Frames(2);
     }
 
@@ -349,7 +356,7 @@ internal sealed class TrailerDirector
     {
         yield return HasAssembly;
         yield return Hold(1);
-        foreach (var wait in Show(Find("Newtonsoft.Json", "JsonConvert", "ToString(bool")))
+        foreach (var wait in Show(Find("System", "String", "IsNullOrEmpty(")))
             yield return wait;
         yield return Hold(0.5);
         Record();

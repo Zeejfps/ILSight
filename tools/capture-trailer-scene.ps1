@@ -41,7 +41,7 @@ for ($i = 0; $i -lt 60 -and $app.MainWindowHandle -eq 0; $i++) { Start-Sleep -Mi
 Start-Sleep -Milliseconds 500
 [IO.File]::WriteAllText((Join-Path $out 'go'), '')
 
-if (-not $app.WaitForExit(90000)) { $app.Kill(); throw "$Scene did not finish in time." }
+if (-not $app.WaitForExit(240000)) { $app.Kill(); throw "$Scene did not finish in time." }
 $times = Get-Content (Join-Path $out 'times.txt')
 $last = [double]($times[-1] -split ' ')[1]
 "$Scene : $($times.Count) frames over $([math]::Round($last, 2))s, $([math]::Round($times.Count / $last, 1)) fps"
