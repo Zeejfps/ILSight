@@ -1,12 +1,12 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using static ILSight.CommandLines;
+using static ILSight.ExternalCommands;
 using static ILSight.Settings;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
-public sealed class CommandLineTests
+public sealed class ExternalCommandTests
 {
     private const string Other = "Other";
     private static readonly string OtherAssembly = typeof(AppState).Assembly.Location;
@@ -14,30 +14,30 @@ public sealed class CommandLineTests
     [Fact]
     public void Options_are_read_apart_from_the_files_to_open()
     {
-        var commandLine = CommandLine.Parse(["--language=il", "--list= Work ", "--clear-list", "a.dll"]);
+        var command = ExternalCommand.Parse(["--language=il", "--list= Work ", "--clear-list", "a.dll"]);
 
-        Assert.Equal(DecompilationLanguage.IL, commandLine.Language);
-        Assert.Equal("Work", commandLine.AssemblyList);
-        Assert.True(commandLine.ClearList);
-        Assert.Equal([Path.GetFullPath("a.dll")], commandLine.AssemblyPaths.Select(static p => p.Text));
+        Assert.Equal(DecompilationLanguage.IL, command.Language);
+        Assert.Equal("Work", command.AssemblyList);
+        Assert.True(command.ClearList);
+        Assert.Equal([Path.GetFullPath("a.dll")], command.AssemblyPaths.Select(static p => p.Text));
     }
 
     [Fact]
     public void What_to_navigate_to_and_a_new_window_are_read_from_their_options()
     {
-        var commandLine = CommandLine.Parse(["--navigateto= T:Some.Type ", "--newinstance"]);
+        var command = ExternalCommand.Parse(["--navigateto= T:Some.Type ", "--newinstance"]);
 
-        Assert.Equal("T:Some.Type", commandLine.NavigateTo);
-        Assert.True(commandLine.NewInstance);
-        Assert.Empty(commandLine.AssemblyPaths);
+        Assert.Equal("T:Some.Type", command.NavigateTo);
+        Assert.True(command.NewInstance);
+        Assert.Empty(command.AssemblyPaths);
     }
 
     [Fact]
     public void A_command_line_is_handed_over_with_its_files_made_absolute_and_reads_back_the_same()
     {
-        var commandLine = CommandLine.Parse(["--language=IL", "--list=Work", "--clear-list", "--navigateto=T:Some.Type", "--gl", "--newinstance", "a.dll"]);
+        var command = ExternalCommand.Parse(["--language=IL", "--list=Work", "--clear-list", "--navigateto=T:Some.Type", "--gl", "--newinstance", "a.dll"]);
 
-        var handed = CommandLine.Parse(commandLine.ListHandedArguments().ToArray());
+        var handed = ExternalCommand.Parse(command.ListHandedArguments().ToArray());
 
         Assert.Equal(DecompilationLanguage.IL, handed.Language);
         Assert.Equal("Work", handed.AssemblyList);
@@ -52,7 +52,7 @@ public sealed class CommandLineTests
     {
         var d = new AppStateDriver();
 
-        OpenCommandLineFiles(d.AppState, CommandLine.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Files);
+        OpenCommandFiles(d.AppState, ExternalCommand.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Files);
         d.RunUntil(() => d.AppState.Tabs.Active?.Node != null);
         d.Settle();
 
@@ -65,7 +65,7 @@ public sealed class CommandLineTests
     {
         var d = new AppStateDriver();
 
-        OpenCommandLineFiles(d.AppState, CommandLine.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Files);
+        OpenCommandFiles(d.AppState, ExternalCommand.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Files);
         d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
 
         Assert.Contains("T:Nowhere.Missing", Assert.Single(d.AppState.Errors.Entries).Words().Title);
@@ -74,31 +74,31 @@ public sealed class CommandLineTests
     [Fact]
     public void A_language_the_app_does_not_have_and_blank_values_are_ignored_as_given()
     {
-        var commandLine = CommandLine.Parse(["--language=VB", "--list=  ", "--navigateto=", "--settings= "]);
+        var command = ExternalCommand.Parse(["--language=VB", "--list=  ", "--navigateto=", "--settings= "]);
 
-        Assert.Null(commandLine.Language);
-        Assert.Null(commandLine.AssemblyList);
-        Assert.Null(commandLine.NavigateTo);
-        Assert.Equal(AppSettings.DefaultPath, commandLine.SettingsPath);
-        Assert.Equal(["--language=VB", "--list=  ", "--navigateto=", "--settings= "], commandLine.Ignored);
+        Assert.Null(command.Language);
+        Assert.Null(command.AssemblyList);
+        Assert.Null(command.NavigateTo);
+        Assert.Equal(AppSettings.DefaultPath, command.SettingsPath);
+        Assert.Equal(["--language=VB", "--list=  ", "--navigateto=", "--settings= "], command.Ignored);
     }
 
     [Fact]
     public void An_option_the_app_does_not_have_and_a_file_that_is_no_path_are_ignored_as_given()
     {
-        var commandLine = CommandLine.Parse(["--opengl", "--GL", "a\0.dll", "a.dll"]);
+        var command = ExternalCommand.Parse(["--opengl", "--GL", "a\0.dll", "a.dll"]);
 
-        Assert.Equal(RenderBackendKind.Auto, commandLine.RenderBackend);
-        Assert.Equal([Path.GetFullPath("a.dll")], commandLine.AssemblyPaths.Select(static p => p.Text));
-        Assert.Equal(["--opengl", "--GL", "a\0.dll"], commandLine.Ignored);
+        Assert.Equal(RenderBackendKind.Auto, command.RenderBackend);
+        Assert.Equal([Path.GetFullPath("a.dll")], command.AssemblyPaths.Select(static p => p.Text));
+        Assert.Equal(["--opengl", "--GL", "a\0.dll"], command.Ignored);
     }
 
     [Fact]
     public void The_arguments_ignored_are_handed_over_for_the_open_window_to_tell_of()
     {
-        var commandLine = CommandLine.Parse(["--language=VB", "--opengl", "a.dll"]);
+        var command = ExternalCommand.Parse(["--language=VB", "--opengl", "a.dll"]);
 
-        var handed = CommandLine.Parse(commandLine.ListHandedArguments().ToArray());
+        var handed = ExternalCommand.Parse(command.ListHandedArguments().ToArray());
 
         Assert.Equal(["--language=VB", "--opengl"], handed.Ignored);
         Assert.Equal([Path.GetFullPath("a.dll")], handed.AssemblyPaths.Select(static p => p.Text));
@@ -183,10 +183,10 @@ public sealed class CommandLineTests
     /// the way the app does, and opens the list and the files it names.</summary>
     private static AppStateDriver Start(AppSettings settings, params string[] args)
     {
-        var commandLine = CommandLine.Parse(args);
-        var d = AppStateDriver.Started(new SettingsLoadResult(settings, new SettingsProblem.None()), commandLine);
-        ILSightWindow.OpenStartupAssemblies(d.AppState, commandLine.Files);
-        d.RunUntil(() => AreListed(d.AppState, commandLine.AssemblyPaths));
+        var command = ExternalCommand.Parse(args);
+        var d = AppStateDriver.Started(new SettingsLoadResult(settings, new SettingsProblem.None()), command);
+        ILSightWindow.OpenStartupAssemblies(d.AppState, command.Files);
+        d.RunUntil(() => AreListed(d.AppState, command.AssemblyPaths));
         d.Settle();
         return d;
     }

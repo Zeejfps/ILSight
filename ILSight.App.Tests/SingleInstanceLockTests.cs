@@ -6,7 +6,7 @@ public sealed class SingleInstanceLockTests
     public void The_first_run_with_some_settings_gets_the_lock_and_later_ones_do_not()
     {
         using var temp = new TempDir();
-        var address = CommandLineAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
 
         var first = SingleInstanceLock.TryAcquire(address, out var firstLock);
         var later = SingleInstanceLock.TryAcquire(address, out var laterLock);
@@ -22,8 +22,8 @@ public sealed class SingleInstanceLockTests
     {
         using var temp = new TempDir();
 
-        var one = SingleInstanceLock.TryAcquire(CommandLineAddress.ForSettingsFile(temp.PathOf("one.json")), out var oneLock);
-        var other = SingleInstanceLock.TryAcquire(CommandLineAddress.ForSettingsFile(temp.PathOf("other.json")), out var otherLock);
+        var one = SingleInstanceLock.TryAcquire(ExternalCommandAddress.ForSettingsFile(temp.PathOf("one.json")), out var oneLock);
+        var other = SingleInstanceLock.TryAcquire(ExternalCommandAddress.ForSettingsFile(temp.PathOf("other.json")), out var otherLock);
         using var heldOne = oneLock;
         using var heldOther = otherLock;
 
@@ -35,7 +35,7 @@ public sealed class SingleInstanceLockTests
     public void Once_the_first_run_ends_the_next_one_gets_the_lock()
     {
         using var temp = new TempDir();
-        var address = CommandLineAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
         Assert.True(SingleInstanceLock.TryAcquire(address, out var first));
         first.Dispose();
 
@@ -49,7 +49,7 @@ public sealed class SingleInstanceLockTests
     public void A_run_that_did_not_get_the_lock_does_not_keep_it_from_the_next_one()
     {
         using var temp = new TempDir();
-        var address = CommandLineAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
         Assert.True(SingleInstanceLock.TryAcquire(address, out var first));
         Assert.False(SingleInstanceLock.TryAcquire(address, out _));
         first.Dispose();

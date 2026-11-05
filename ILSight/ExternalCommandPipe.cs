@@ -5,19 +5,19 @@ using ZGF.Desktop;
 
 namespace ILSight;
 
-/// <summary>Takes the command lines that reach this app from later runs, from any thread; false when it
+/// <summary>Takes the commands that reach this app from later runs, from any thread; false when it
 /// takes no more.</summary>
-public interface ICommandLineHandler
+public interface IExternalCommandHandler
 {
-    bool TryHandle(CommandLine commandLine);
+    bool TryHandle(ExternalCommand command);
 }
 
 /// <summary>
-/// How a later run of the app reaches the first. The first run listens for the command lines later
+/// How a later run of the app reaches the first. The first run listens for the commands later
 /// runs hand it; a later run hands its own over and lends the first run the right to come to the
 /// front, so that one window serves them all. Only the user who started the first run can reach it.
 /// </summary>
-public sealed class CommandLinePipe : IDisposable
+public sealed class ExternalCommandPipe : IDisposable
 {
     private const int IntBytes = 4;
     private const int MaxArguments = 4096;
@@ -30,28 +30,28 @@ public sealed class CommandLinePipe : IDisposable
     private readonly CancellationTokenSource _stop = new();
     private Task? _serving;
 
-    public CommandLinePipe(CommandLineAddress address)
+    public ExternalCommandPipe(ExternalCommandAddress address)
     {
         _name = address.Name;
     }
 
-    /// <summary>Starts taking, in the background, the command lines later runs hand over, giving them to
+    /// <summary>Starts taking, in the background, the commands later runs hand over, giving them to
     /// <paramref name="handler"/>. Once it returns false, later runs are refused and open windows of
     /// their own.</summary>
-    public void ForwardTo(ICommandLineHandler handler)
+    public void ForwardTo(IExternalCommandHandler handler)
     {
         _serving = Task.Run(() => ServeAsync(handler));
     }
 
-    /// <summary>Hands <paramref name="commandLine"/> to the app that is open and lends it the right to
+    /// <summary>Hands <paramref name="command"/> to the app that is open and lends it the right to
     /// come to the front; false when it cannot be reached in time, and this run opens a window of its
     /// own. Waits on the thread pool, so a caller whose own thread runs the continuations is never
     /// blocked by them.</summary>
-    public bool TryHandOverToRunningApp(CommandLine commandLine)
+    public bool TryHandOverToRunningApp(ExternalCommand command)
     {
         try
         {
-            return Task.Run(() => HandOverAsync(commandLine)).GetAwaiter().GetResult();
+            return Task.Run(() => HandOverAsync(command)).GetAwaiter().GetResult();
         }
         catch (Exception e) when (IsBrokenHandOver(e))
         {
@@ -59,7 +59,7 @@ public sealed class CommandLinePipe : IDisposable
         }
     }
 
-    private async Task<bool> HandOverAsync(CommandLine commandLine)
+    private async Task<bool> HandOverAsync(ExternalCommand command)
     {
         using var timeout = new CancellationTokenSource(HandOverTimeout);
         var token = timeout.Token;
@@ -67,7 +67,7 @@ public sealed class CommandLinePipe : IDisposable
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
         ForegroundRights.LendTo(processId);
-        await WriteArgumentsAsync(pipe, commandLine.ListHandedArguments(), token);
+        await WriteArgumentsAsync(pipe, command.ListHandedArguments(), token);
         var answer = await ReadByteAsync(pipe, token);
         return answer == Received;
     }
@@ -77,7 +77,7 @@ public sealed class CommandLinePipe : IDisposable
         return e is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException or InvalidDataException;
     }
 
-    private async Task ServeAsync(ICommandLineHandler handler)
+    private async Task ServeAsync(IExternalCommandHandler handler)
     {
         var token = _stop.Token;
         while (!token.IsCancellationRequested)
@@ -101,9 +101,9 @@ public sealed class CommandLinePipe : IDisposable
         }
     }
 
-    /// <summary>Takes the command line of the next run that connects, then tells it so. Hanging up
+    /// <summary>Takes the command of the next run that connects, then tells it so. Hanging up
     /// without an answer tells a run that came too late to open a window of its own.</summary>
-    private async Task ServeOneAsync(ICommandLineHandler handler, CancellationToken stop)
+    private async Task ServeOneAsync(IExternalCommandHandler handler, CancellationToken stop)
     {
         await using var pipe = new NamedPipeServerStream(_name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
             PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
@@ -113,7 +113,7 @@ public sealed class CommandLinePipe : IDisposable
         var token = timeout.Token;
         await WriteIntAsync(pipe, Environment.ProcessId, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        if (!handler.TryHandle(CommandLine.Parse(args)))
+        if (!handler.TryHandle(ExternalCommand.Parse(args)))
             return;
         await pipe.WriteAsync(new[] { Received }, token);
         await pipe.FlushAsync(token);
@@ -162,9 +162,9 @@ public sealed class CommandLinePipe : IDisposable
     {
         var count = await ReadIntAsync(pipe, token);
         if (count < 0)
-            throw new InvalidDataException("A handed command line is malformed.");
+            throw new InvalidDataException("A handed command is malformed.");
         if (count > max)
-            throw new InvalidDataException("A handed command line is too long.");
+            throw new InvalidDataException("A handed command is too long.");
         return count;
     }
 

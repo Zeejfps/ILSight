@@ -1,26 +1,26 @@
 using System.Threading.Channels;
 using ILSight.Core;
 using ZGF.Desktop;
-using static ILSight.CommandLines;
+using static ILSight.ExternalCommands;
 using static ILSight.Settings;
 
 namespace ILSight;
 
-/// <summary>The app, from before there is anything to show until its window closes: it takes the command
-/// lines of later runs from the first, and opens the window that follows them once it is ready.</summary>
-public sealed class ILSightApp : ICommandLineHandler
+/// <summary>The app, from before there is anything to show until its window closes: it takes the commands
+/// of later runs from the first, and opens the window that follows them once it is ready.</summary>
+public sealed class ILSightApp : IExternalCommandHandler
 {
-    private readonly CommandLine _startupCommand;
-    private readonly Channel<CommandLine> _pendingCommands = Channel.CreateUnbounded<CommandLine>();
+    private readonly ExternalCommand _startupCommand;
+    private readonly Channel<ExternalCommand> _pendingCommands = Channel.CreateUnbounded<ExternalCommand>();
 
-    public ILSightApp(CommandLine startupCommand)
+    public ILSightApp(ExternalCommand startupCommand)
     {
         _startupCommand = startupCommand;
     }
 
     /// <summary>Queues <paramref name="command"/> for the window, from any thread; false once the window
     /// has closed.</summary>
-    public bool TryHandle(CommandLine command)
+    public bool TryHandle(ExternalCommand command)
     {
         return _pendingCommands.Writer.TryWrite(command);
     }
@@ -36,19 +36,19 @@ public sealed class ILSightApp : ICommandLineHandler
     }
 
     /// <summary>The app state to start from: what <paramref name="loadSettingsResult"/> describes, told of what was
-    /// wrong with the settings, with <paramref name="commandLine"/> followed. The screen is built over
-    /// this; the files the command line names open once the app runs.</summary>
-    internal static AppState LoadAppState(SettingsLoadResult loadSettingsResult, CommandLine commandLine)
+    /// wrong with the settings, with <paramref name="command"/> followed. The screen is built over
+    /// this; the files the command names open once the app runs.</summary>
+    internal static AppState LoadAppState(SettingsLoadResult loadSettingsResult, ExternalCommand command)
     {
-        return LoadAppState(loadSettingsResult, commandLine, new BrowseSession());
+        return LoadAppState(loadSettingsResult, command, new BrowseSession());
     }
 
     /// <summary>The app state to start from over <paramref name="session"/>, which the tests share.</summary>
-    internal static AppState LoadAppState(SettingsLoadResult loadSettingsResult, CommandLine commandLine, BrowseSession session)
+    internal static AppState LoadAppState(SettingsLoadResult loadSettingsResult, ExternalCommand command, BrowseSession session)
     {
         var appState = AppState.Load(loadSettingsResult.Settings, session);
         ReportSettingsProblem(appState, loadSettingsResult.Problem);
-        ApplyStartupOptions(appState, commandLine);
+        ApplyStartupOptions(appState, command);
         return appState;
     }
 

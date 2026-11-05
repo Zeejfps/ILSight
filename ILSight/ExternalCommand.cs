@@ -3,7 +3,9 @@ using ILSight.Core;
 
 namespace ILSight;
 
-public sealed class CommandLine
+/// <summary>What the app is asked to do from outside it: parsed from the arguments of this run, or of a later
+/// run that hands it to the app already open.</summary>
+public sealed class ExternalCommand
 {
     private const string SettingsOption = "--settings=";
     private const string OpenGlFlag = "--gl";
@@ -33,7 +35,7 @@ public sealed class CommandLine
     /// there are none; null to show the last file opened.</summary>
     public string? NavigateTo { get; private set; }
 
-    /// <summary>Whether to open a window of its own rather than hand this command line to the one
+    /// <summary>Whether to open a window of its own rather than hand this command to the one
     /// already open with the same settings.</summary>
     public bool NewInstance { get; private set; }
 
@@ -44,12 +46,12 @@ public sealed class CommandLine
     /// <summary>The files to open and what to show in them.</summary>
     public FilesToOpen Files => new(AssemblyPaths, NavigateTo);
 
-    public static CommandLine Parse(string[] args)
+    public static ExternalCommand Parse(string[] args)
     {
-        var commandLine = new CommandLine();
+        var command = new ExternalCommand();
         foreach (var arg in args)
-            commandLine.Read(arg);
-        return commandLine;
+            command.Read(arg);
+        return command;
     }
 
     private void Read(string arg)
@@ -154,7 +156,7 @@ public sealed class CommandLine
         return trimmed;
     }
 
-    /// <summary>The arguments that ask a window already open for what this command line asks: the
+    /// <summary>The arguments that ask a window already open for what this command asks: the
     /// language, the list, what to show and the files, made absolute from this process's folder; and the
     /// arguments ignored, for that window to tell of.</summary>
     public List<string> ListHandedArguments()

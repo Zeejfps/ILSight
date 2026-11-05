@@ -4,12 +4,12 @@ using System.Text;
 namespace ILSight;
 
 /// <summary>Where the runs of the app with the same settings meet.</summary>
-public sealed class CommandLineAddress
+public sealed class ExternalCommandAddress
 {
     private const string NamePrefix = "ILSight-";
     private const int HashBytes = 8;
 
-    private CommandLineAddress(string name)
+    private ExternalCommandAddress(string name)
     {
         Name = name;
     }
@@ -19,12 +19,12 @@ public sealed class CommandLineAddress
 
     /// <summary>Where the runs with the settings at <paramref name="settingsPath"/> meet: the same for
     /// every spelling of the path the file system takes as one.</summary>
-    public static CommandLineAddress ForSettingsFile(string settingsPath)
+    public static ExternalCommandAddress ForSettingsFile(string settingsPath)
     {
         var path = Path.GetFullPath(settingsPath);
         if (OperatingSystem.IsWindows())
             path = path.ToUpperInvariant();
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(path));
-        return new CommandLineAddress(NamePrefix + Convert.ToHexString(hash, 0, HashBytes));
+        return new ExternalCommandAddress(NamePrefix + Convert.ToHexString(hash, 0, HashBytes));
     }
 }

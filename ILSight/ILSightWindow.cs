@@ -8,7 +8,7 @@ using static ILSight.Appearance;
 using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.CodeDisplay;
-using static ILSight.CommandLines;
+using static ILSight.ExternalCommands;
 using static ILSight.IconTheming;
 using static ILSight.Settings;
 using static ILSight.ScreenSettings;
@@ -27,14 +27,14 @@ public sealed partial class ILSightWindow : ImmediateGuiApp<UiState>
 
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
-    private readonly Channel<CommandLine> _pendingCommands;
+    private readonly Channel<ExternalCommand> _pendingCommands;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
     internal ILSightWindow(
         AppState appState,
         UiState uiState,
         FilesToOpen startupFiles,
-        Channel<CommandLine> pendingCommands) : base(uiState)
+        Channel<ExternalCommand> pendingCommands) : base(uiState)
     {
         _appState = appState;
         _startupFiles = startupFiles;
@@ -53,7 +53,7 @@ public sealed partial class ILSightWindow : ImmediateGuiApp<UiState>
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
         CheckOnStartup(_appState);
-        Background.Start(ApplyCommandLinesFromLaterRuns(), _appState.ReportError);
+        Background.Start(ApplyPendingCommands(), _appState.ReportError);
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -65,7 +65,7 @@ public sealed partial class ILSightWindow : ImmediateGuiApp<UiState>
 
     protected override void OnShutdown(ImmediateGuiAppHost<UiState> host)
     {
-        StopTakingCommandLines();
+        StopTakingCommands();
         StopRedrawingOnAssemblyChanges(host);
         StopWatchingUserThemes(_appState);
         StopWatchingUserIconThemes(_appState);
@@ -238,27 +238,27 @@ public sealed partial class ILSightWindow : ImmediateGuiApp<UiState>
     internal static void OpenStartupAssemblies(AppState appState, FilesToOpen files)
     {
         RestoreActiveAssemblyList(appState);
-        OpenCommandLineFiles(appState, files);
+        OpenCommandFiles(appState, files);
     }
 
-    /// <summary>Leaves the command lines of later runs to windows of their own once this one closes.</summary>
-    private void StopTakingCommandLines()
+    /// <summary>Leaves the commands of later runs to windows of their own once this one closes.</summary>
+    private void StopTakingCommands()
     {
         _pendingCommands.Writer.TryComplete();
     }
 
-    /// <summary>Does what the command lines of later runs ask as they arrive, until this window closes,
+    /// <summary>Does what the commands of later runs ask as they arrive, until this window closes,
     /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
     /// each one arriving wakes the app.</summary>
-    internal async Task ApplyCommandLinesFromLaterRuns()
+    internal async Task ApplyPendingCommands()
     {
-        await foreach (var commandLine in _pendingCommands.Reader.ReadAllAsync())
+        await foreach (var command in _pendingCommands.Reader.ReadAllAsync())
         {
             try
             {
-                ApplyCommandLineFromLaterRun(_appState, commandLine);
+                ApplyExternalCommand(_appState, command);
             }
-            // Catches everything so that one command line that fails is reported rather than ending
+            // Catches everything so that one command that fails is reported rather than ending
             // this loop, which would leave the pipe answering later runs with no one to follow them.
             catch (Exception e)
             {
