@@ -1,8 +1,7 @@
 using System.Buffers.Binary;
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipes;
 using System.Text;
+using System.Threading.Channels;
 using ZGF.Desktop;
 
 namespace ILSight;
@@ -22,22 +21,23 @@ public sealed class CommandLinePipe : IDisposable
     private static readonly TimeSpan BusyPipeWait = TimeSpan.FromMilliseconds(100);
 
     private readonly string _name;
-    private readonly ConcurrentQueue<CommandLine> _handed = new();
+    private readonly ChannelWriter<CommandLine> _laterRuns;
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _serving;
-    private Action? _wake;
 
-    private CommandLinePipe(string name)
+    private CommandLinePipe(string name, ChannelWriter<CommandLine> laterRuns)
     {
         _name = name;
+        _laterRuns = laterRuns;
         _serving = Task.Run(ServeAsync);
     }
 
     /// <summary>Starts taking, in the background, the command lines later runs hand over to the pipe
-    /// <paramref name="name"/>.</summary>
-    public static CommandLinePipe Listen(string name)
+    /// <paramref name="name"/>, writing them to <paramref name="laterRuns"/>. Once that is completed,
+    /// later runs are refused and open windows of their own.</summary>
+    public static CommandLinePipe Listen(string name, ChannelWriter<CommandLine> laterRuns)
     {
-        return new CommandLinePipe(name);
+        return new CommandLinePipe(name, laterRuns);
     }
 
     /// <summary>Hands <paramref name="commandLine"/> to the run listening on the pipe <paramref name="name"/>
@@ -74,27 +74,6 @@ public sealed class CommandLinePipe : IDisposable
         return e is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException or InvalidDataException;
     }
 
-    /// <summary>Has <paramref name="wake"/> run, from any thread, whenever a command line is handed over,
-    /// and at once when some already wait.</summary>
-    public void WakeWith(Action wake)
-    {
-        Volatile.Write(ref _wake, wake);
-        if (!_handed.IsEmpty)
-            wake();
-    }
-
-    /// <summary>Takes the oldest command line handed over and not taken yet.</summary>
-    public bool TryTakeHanded([NotNullWhen(true)] out CommandLine? commandLine)
-    {
-        return _handed.TryDequeue(out commandLine);
-    }
-
-    /// <summary>Stops taking command lines; later runs then open windows of their own.</summary>
-    public void StopListening()
-    {
-        _stop.Cancel();
-    }
-
     private async Task ServeAsync()
     {
         var token = _stop.Token;
@@ -119,7 +98,8 @@ public sealed class CommandLinePipe : IDisposable
         }
     }
 
-    /// <summary>Takes the command line of the next run that connects, then tells it so.</summary>
+    /// <summary>Takes the command line of the next run that connects, then tells it so. Hanging up
+    /// without an answer tells a run that came too late to open a window of its own.</summary>
     private async Task ServeOneAsync(CancellationToken stop)
     {
         await using var pipe = new NamedPipeServerStream(_name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
@@ -130,8 +110,8 @@ public sealed class CommandLinePipe : IDisposable
         var token = timeout.Token;
         await WriteIntAsync(pipe, Environment.ProcessId, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        _handed.Enqueue(CommandLine.Parse(args));
-        Volatile.Read(ref _wake)?.Invoke();
+        if (!_laterRuns.TryWrite(CommandLine.Parse(args)))
+            return;
         await pipe.WriteAsync(new[] { Received }, token);
         await pipe.FlushAsync(token);
     }
@@ -209,7 +189,7 @@ public sealed class CommandLinePipe : IDisposable
 
     public void Dispose()
     {
-        StopListening();
+        _stop.Cancel();
         _serving.Wait(HandOverTimeout);
         _stop.Dispose();
     }

@@ -114,6 +114,9 @@ public sealed class UiState : IUiState
     /// <summary>Whether the app is to close once the frame is drawn.</summary>
     public bool QuitAsked;
 
+    /// <summary>Whether the window is to come to the front once the frame is drawn.</summary>
+    public bool FrontAsked;
+
     /// <summary>The files the features asked to open, which the app hands to the OS once the frame is
     /// drawn.</summary>
     public Queue<string> FilesToOpen { get; } = new();

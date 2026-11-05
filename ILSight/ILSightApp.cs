@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Threading.Channels;
 using ZGF.AppUtils;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
@@ -26,18 +27,18 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
-    private readonly CommandLinePipe? _pipe;
+    private readonly Channel<CommandLine> _laterRuns;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
     internal ILSightApp(
         AppState appState,
         UiState uiState,
         FilesToOpen startupFiles,
-        CommandLinePipe? pipe) : base(uiState)
+        Channel<CommandLine> laterRuns) : base(uiState)
     {
         _appState = appState;
         _startupFiles = startupFiles;
-        _pipe = pipe;
+        _laterRuns = laterRuns;
     }
 
     protected override void OnStartup(ImmediateGuiAppHost<UiState> host)
@@ -47,17 +48,16 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         RegisterChosenCodeFont(host);
         RegisterChosenIconFonts(host);
         OpenStartupAssemblies(_appState, _startupFiles);
-        WakeOnHandedCommandLines(host);
         StartRedrawingOnAssemblyChanges(host);
         RestoreAnalyses(_appState);
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
         CheckOnStartup(_appState);
+        Background.Start(ApplyCommandLinesFromLaterRuns(), _appState.ReportError);
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
     {
-        ApplyCommandLineFromLaterRuns(ui);
         StartFrame(ui.State, _appState);
         MainView.Render(ui, _appState);
         FinishFrame(ui, _appState, _codeFonts);
@@ -88,7 +88,16 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         OpenAskedWebPages(ui);
         OpenAskedFiles(ui);
         OpenAskedFolders(ui);
+        BringToFrontIfAsked(ui);
         QuitIfAsked(ui);
+    }
+
+    private static void BringToFrontIfAsked(Ui<UiState> ui)
+    {
+        if (!ui.State.FrontAsked)
+            return;
+        ui.State.FrontAsked = false;
+        ui.BringWindowToFront();
     }
 
     private static void QuitIfAsked(Ui<UiState> ui)
@@ -235,29 +244,18 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// <summary>Leaves the command lines of later runs to windows of their own once this one closes.</summary>
     private void StopTakingCommandLines()
     {
-        if (_pipe == null)
-            return;
-        _pipe.StopListening();
+        _laterRuns.Writer.TryComplete();
     }
 
-    /// <summary>Draws a frame whenever a later run hands this window a command line.</summary>
-    private void WakeOnHandedCommandLines(ImmediateGuiAppHost<UiState> host)
+    /// <summary>Does what the command lines of later runs ask as they arrive, until this window closes,
+    /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
+    /// each one arriving wakes the app.</summary>
+    private async Task ApplyCommandLinesFromLaterRuns()
     {
-        if (_pipe == null)
-            return;
-        _pipe.WakeWith(host.Invalidate);
-    }
-
-    /// <summary>Does what the command lines later runs handed over ask, bringing the window to the
-    /// front for each.</summary>
-    private void ApplyCommandLineFromLaterRuns(Ui<UiState> ui)
-    {
-        if (_pipe == null)
-            return;
-        while (_pipe.TryTakeHanded(out var commandLine))
+        await foreach (var commandLine in _laterRuns.Reader.ReadAllAsync())
         {
             ApplyCommandLineFromLaterRun(_appState, commandLine);
-            ui.BringWindowToFront();
+            UiState.FrontAsked = true;
         }
     }
 

@@ -1,4 +1,5 @@
-﻿using ILSight.Core;
+﻿using System.Threading.Channels;
+using ILSight.Core;
 using ZGF.Desktop;
 using static ILSight.CommandLines;
 using static ILSight.Settings;
@@ -12,31 +13,32 @@ public static class ILSightAppLauncher
     public static void LaunchApp(CommandLine commandLine)
     {
         using var instanceLock = SingleInstanceLock.Request(commandLine.SettingsPath);
+        var laterRuns = Channel.CreateUnbounded<CommandLine>();
         if (instanceLock.IsGranted)
         {
-            using var pipe = CommandLinePipe.Listen(instanceLock.Name);
-            RunNewAppInstance(commandLine, pipe);
+            using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer);
+            RunNewAppInstance(commandLine, laterRuns);
         }
         else if (commandLine.NewInstance)
         {
-            RunNewAppInstance(commandLine);
+            RunNewAppInstance(commandLine, laterRuns);
         }
         else
         {
             var handedOver = CommandLinePipe.TryHandOver(instanceLock.Name, commandLine);
             if (!handedOver)
             {
-                RunNewAppInstance(commandLine);
+                RunNewAppInstance(commandLine, laterRuns);
             }
         }
     }
 
-    private static void RunNewAppInstance(CommandLine commandLine, CommandLinePipe? pipe = null)
+    private static void RunNewAppInstance(CommandLine commandLine, Channel<CommandLine> laterRuns)
     {
         var loadResult = LoadSettings(commandLine);
         var appState = LoadAppState(loadResult, commandLine);
         var guiState = CreateUiState(appState);
-        var app = CreateApp(appState, guiState, commandLine, pipe);
+        var app = CreateApp(appState, guiState, commandLine, laterRuns);
         OpenWindow(app, appState, commandLine);
     }
 
@@ -62,9 +64,9 @@ public static class ILSightAppLauncher
         return ILSightApp.CreateUiState(appState);
     }
 
-    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, CommandLinePipe? pipe)
+    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, Channel<CommandLine> laterRuns)
     {
-        return new ILSightApp(appState, uiState, commandLine.Files, pipe);
+        return new ILSightApp(appState, uiState, commandLine.Files, laterRuns);
     }
 
     private static void OpenWindow(ILSightApp app, AppState appState, CommandLine commandLine)
