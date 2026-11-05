@@ -668,6 +668,8 @@ public sealed class AppTests
         Assert.True(app.Ui.IsAboutOpen);
         Assert.True(app.Frames.Drew(AppVersions.Decompiler));
         Assert.True(app.Frames.Drew(AppVersions.Runtime));
+        Assert.DoesNotContain('+', AppVersions.App);
+        Assert.DoesNotContain('+', AppVersions.Decompiler);
         app.Click("Check for updates").Frame(2);
         Assert.True(app.Ui.IsAboutOpen);
 

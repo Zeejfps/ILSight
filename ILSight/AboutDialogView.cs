@@ -44,8 +44,7 @@ internal static class AboutDialogView
         ui.AppIcon(theme.IconSize * IconScale);
         using var text = ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.Gap });
         NameAndVersion(ui);
-        UpdateButton(ui, updates);
-        UpdateResult(ui, updates.Status);
+        UpdateRow(ui, updates);
         CheckAutomatically(ui, updates);
     }
 
@@ -57,6 +56,14 @@ internal static class AboutDialogView
         using var lines = ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.GapTight });
         ui.Text(AppName, size: theme.FontSizeTitle * NameScale, bold: true);
         ui.Text(version, color: theme.TextMuted, wrap: true);
+    }
+
+    /// <summary>The update button with what came of a check beside it, so that the result moves nothing.</summary>
+    private static void UpdateRow(Ui<UiState> ui, AppUpdates updates)
+    {
+        using var row = ui.Row(new Box { Width = Sizing.Grow(), Gap = ui.Theme.Gap, AlignY = Align.Center });
+        UpdateButton(ui, updates);
+        UpdateResult(ui, updates.Status);
     }
 
     /// <summary>Restarts into a downloaded update; else looks for one, in a copy that can update

@@ -560,7 +560,7 @@
   "about.restart_to_update": "重启以更新到 {version}",
   "about.restarting": "正在重启…",
   "about.up_to_date": "ILSight 已是最新版本。",
-  "about.update_failed": "更新失败。请稍后重试。",
+  "about.update_failed": "更新失败。",
   "about.close": "关闭",
   "picker.title": "从框架打开",
   "picker.filter": "按名称筛选",

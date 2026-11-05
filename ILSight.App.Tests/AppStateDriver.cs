@@ -276,11 +276,11 @@ internal sealed class AppStateDriver
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
-    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, AppInstance? instance = null)
+    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, AppInstance? instance = null, ITextMeasurer? measurer = null)
     {
         Driver = new AppStateDriver(settings);
         App = new ILSightApp(AppState, Ui, CommandLine.Parse([]), instance);
-        Frames = UiFrames.Running(App, width: width, height: height);
+        Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;
         Frames.BeforeFrame = PumpAtFrameTime;
     }
@@ -292,9 +292,9 @@ internal sealed class AppDriver
     }
 
     /// <summary>An app that has opened the fixture assembly, before its first frame.</summary>
-    public static AppDriver Opened(float width = 1000f, float height = 700f)
+    public static AppDriver Opened(float width = 1000f, float height = 700f, ITextMeasurer? measurer = null)
     {
-        var app = new AppDriver(width, height);
+        var app = new AppDriver(width, height, measurer: measurer);
         app.Driver.OpenFixtures();
         return app;
     }

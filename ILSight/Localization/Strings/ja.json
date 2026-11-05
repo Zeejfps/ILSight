@@ -560,7 +560,7 @@
   "about.restart_to_update": "再起動して {version} に更新",
   "about.restarting": "再起動しています…",
   "about.up_to_date": "ILSight は最新の状態です。",
-  "about.update_failed": "更新に失敗しました。後でもう一度お試しください。",
+  "about.update_failed": "更新に失敗しました。",
   "about.close": "閉じる",
   "picker.title": "フレームワークから開く",
   "picker.filter": "名前でフィルター",

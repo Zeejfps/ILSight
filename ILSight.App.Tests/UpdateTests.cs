@@ -1,11 +1,17 @@
 using Velopack;
+using ZGF.Desktop;
+using ZGF.Gui;
+using ZGF.Gui.Testing;
 using ILSight.Localization;
+using static ILSight.Preferences;
 using static ILSight.Updates;
 
 namespace ILSight.App.Tests;
 
 public sealed class UpdateTests : IDisposable
 {
+    private const int SettleFrames = 60;
+
     private readonly TempDir _temp = new();
 
     public void Dispose() => _temp.Dispose();
@@ -46,9 +52,24 @@ public sealed class UpdateTests : IDisposable
         }
     }
 
-    private static AppDriver Opened(FakeFeed feed, bool checkAutomatically = true)
+    /// <summary>As wide as the app's font draws Latin text, which the default 8px a character overstates:
+    /// the test of what fits has to go by what the window would show.</summary>
+    private sealed class AppFontWidths : ITextMeasurer
     {
-        var app = AppDriver.Opened(width: 1600f);
+        private const float CharacterWidth = 6.5f;
+        private const float LineHeight = 16f;
+
+        public float MeasureTextWidth(ReadOnlySpan<char> text, TextStyle style) => text.Length * CharacterWidth;
+
+        public float MeasureTextPrefix(ReadOnlySpan<char> text, int prefixLength, TextStyle style) =>
+            Math.Clamp(prefixLength, 0, text.Length) * CharacterWidth;
+
+        public float MeasureTextLineHeight(TextStyle style) => LineHeight;
+    }
+
+    private static AppDriver Opened(FakeFeed feed, bool checkAutomatically = true, ITextMeasurer? measurer = null)
+    {
+        var app = AppDriver.Opened(width: 1600f, measurer: measurer);
         app.AppState.Updates = new AppUpdates(feed, checkAutomatically);
         app.Run();
         return app;
@@ -150,6 +171,51 @@ public sealed class UpdateTests : IDisposable
 
         Assert.True(app.Frames.Drew(Strings.En.AboutUpdateFailed));
         Assert.True(app.AppState.Updates.CanCheck);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllLocales))]
+    public void What_came_of_asking_leaves_the_about_dialog_as_tall_as_it_was(Locale locale)
+    {
+        var uneventful = Opened(new FakeFeed(null), measurer: new AppFontWidths());
+        var failing = Opened(new FakeFeed("9.0.0") { FailsToFind = true }, measurer: new AppFontWidths());
+
+        var closeBefore = OpenAboutIn(uneventful, locale);
+        OpenAboutIn(failing, locale);
+        Ask<UpdateStatus.UpToDate>(uneventful);
+        Ask<UpdateStatus.Failed>(failing);
+
+        var t = Strings.For(locale);
+        Assert.True(uneventful.Frames.Drew(t.AboutUpToDate));
+        Assert.True(failing.Frames.Drew(t.AboutUpdateFailed));
+        Assert.Equal(closeBefore, uneventful.TextRect(t.AboutClose).Y);
+        Assert.Equal(closeBefore, failing.TextRect(t.AboutClose).Y);
+    }
+
+    public static TheoryData<Locale> AllLocales()
+    {
+        var locales = new TheoryData<Locale>();
+        foreach (var (locale, _) in Locales.All)
+            locales.Add(locale);
+        return locales;
+    }
+
+    /// <summary>Opens the dialog in <paramref name="locale"/> and lets it settle; where Close is then.</summary>
+    private static float OpenAboutIn(AppDriver app, Locale locale)
+    {
+        app.Frames.WindowIcon = new WindowIcon([new WindowIconImage(16, 16, new byte[16 * 16 * 4])]);
+        SetLocale(app.AppState, locale);
+        app.Run(2);
+        OpenAbout(app);
+        app.Run(SettleFrames);
+        return app.TextRect(app.Ui.Strings.AboutClose).Y;
+    }
+
+    private static void Ask<T>(AppDriver app) where T : UpdateStatus
+    {
+        app.Click(app.Ui.Strings.AboutCheckForUpdates).Frame(2);
+        AwaitStatus<T>(app);
+        app.Run(2);
     }
 
     [Fact]

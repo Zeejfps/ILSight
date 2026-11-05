@@ -560,7 +560,7 @@
   "about.restart_to_update": "Reiniciar para actualizar a {version}",
   "about.restarting": "Reiniciando…",
   "about.up_to_date": "ILSight está actualizado.",
-  "about.update_failed": "La actualización ha fallado. Inténtalo de nuevo más tarde.",
+  "about.update_failed": "Error al actualizar.",
   "about.close": "Cerrar",
   "picker.title": "Abrir desde el framework",
   "picker.filter": "Filtrar por nombre",

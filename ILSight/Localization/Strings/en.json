@@ -573,7 +573,7 @@
   "about.restart_to_update": "Restart to update to {version}",
   "about.restarting": "Restarting…",
   "about.up_to_date": "ILSight is up to date.",
-  "about.update_failed": "The update failed. Try again later.",
+  "about.update_failed": "Update failed.",
   "about.close": "Close",
 
   "picker.title": "Open from framework",
