@@ -41,7 +41,7 @@ const FILE_MENU = {x: 31, y: 19};
 export const SCENES: Scene[] = [
   {
     caption: 'See inside any .NET assembly',
-    clickVolume: 0.14,
+    clickVolume: 0.4,
     corner: 'bottom-left',
     shots: [
       click('goto/00000', 42, 338, 64),
@@ -60,7 +60,7 @@ export const SCENES: Scene[] = [
   },
   {
     caption: 'Open any package',
-    clickVolume: 0.42,
+    clickVolume: 0.7,
     corner: 'bottom-left',
     shots: [
       click('nuget/00000', 28, FILE_MENU.x, FILE_MENU.y),

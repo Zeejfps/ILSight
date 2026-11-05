@@ -34,7 +34,7 @@ const RIPPLE_FRAMES = 16;
 const RIPPLE_SIZE = 110;
 /** Where the first beat of the track falls, so that the first frame lands on it. */
 const MUSIC_FIRST_BEAT = 14;
-const CLICK_VOLUME = 0.75;
+const CLICK_VOLUME = 0.9;
 const CLICK_FRAMES = 15;
 const MUSIC_VOLUME = 0.8;
 const MUSIC_FADE_FRAMES = 12;
@@ -188,7 +188,7 @@ const Clicks = ({scene}: {scene: Scene}) => (
   <>
     {(cursorPathOf(scene)?.presses ?? []).map((press) => (
       <Sequence key={press} from={press} durationInFrames={CLICK_FRAMES} layout="none">
-        <Audio src={staticFile('audio/click-tight.wav')} volume={scene.clickVolume ?? CLICK_VOLUME} />
+        <Audio src={staticFile('audio/mouse-click.wav')} volume={scene.clickVolume ?? CLICK_VOLUME} />
       </Sequence>
     ))}
   </>
