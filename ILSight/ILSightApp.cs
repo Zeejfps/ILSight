@@ -26,6 +26,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     private readonly AppState _appState;
     private readonly CommandLine _startup;
+    private TrailerDirector? _trailer;
     private readonly AppInstance? _instance;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
@@ -53,6 +54,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
         CheckOnStartup(_appState);
+        _trailer = TrailerDirector.FromEnvironment(_appState, host);
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -60,6 +62,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         FollowHandedCommandLines(ui);
         StartFrame(ui.State, _appState);
         MainView.Render(ui, _appState);
+        _trailer?.Step(ui);
         FinishFrame(ui, _appState, _codeFonts);
     }
 

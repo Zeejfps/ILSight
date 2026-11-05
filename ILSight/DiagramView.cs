@@ -62,7 +62,7 @@ internal static class DiagramView
             ui.Text(t.ResourceZoomPercent(camera.Percent), color: ui.Theme.TextMuted);
             if (ui.IconButton("zoom-in", icons.ResourceZoomIn, t.ResourceZoomIn, camera.CanZoomIn))
                 camera.ZoomIn(area);
-            if (ui.Button(t.DiagramFit, id: "fit"))
+            if (ui.Button(t.DiagramFit, id: "fit") || TrailerDirector.FitDiagram)
                 FitToView(view, area);
             ui.Separator(ui.Theme.IconSize);
             ShowHiddenMembersCheckbox(ui, view);
