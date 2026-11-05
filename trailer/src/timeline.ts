@@ -143,15 +143,15 @@ export const SCENES: Scene[] = [
   },
   {
     caption: 'Make it yours',
-    corner: 'bottom-right',
+    corner: 'bottom-left',
     shots: [
-      shot('themes/00000', 20),
-      shot('themes/00002', 20),
-      shot('themes/00004', 20),
-      shot('themes/00007', 20),
+      click('themes/00001', 40, 1716, 206),
+      click('themes/00003', 40, 1716, 206),
+      click('themes/00005', 40, 1716, 206),
+      shot('themes/00007', 45),
     ],
-    from: {scale: 1.1, x: 0.6, y: 0.45},
-    to: {scale: 1.1, x: 0.6, y: 0.45},
+    from: WHOLE,
+    to: WHOLE,
   },
 ];
 

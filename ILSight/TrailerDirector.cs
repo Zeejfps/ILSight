@@ -22,6 +22,7 @@ namespace ILSight;
 internal sealed class TrailerDirector
 {
     private const float AnalyzerRatio = 0.52f;
+    private const float DisplayOptionsRatio = 0.5f;
     // On screen in the export scene, so it names nobody; deleted after the capture.
     private const string ExportFolder = @"G:\Exports\System.Private.CoreLib";
     private const uint CharacterMessage = 0x0102;
@@ -183,9 +184,11 @@ internal sealed class TrailerDirector
         yield return Hold(1);
         foreach (var wait in Show(Find("Newtonsoft.Json", "JsonConvert", "ToString(bool")))
             yield return wait;
-        yield return Hold(0.5);
+        OpenDisplayOptions(_screen!);
+        GiveRoom(_screen!.MainLayout.Dock.Root, DockPanels.DisplayOptions, DisplayOptionsRatio);
+        yield return Hold(1);
         Record();
-        yield return Hold(0.5);
+        yield return Frames(2);
         foreach (var theme in new[] { "catppuccin-mocha", "dracula", "github-light" })
         {
             SetTheme(_app, ThemeId<ThemeFile>.Of(theme));
@@ -206,7 +209,7 @@ internal sealed class TrailerDirector
         foreach (var wait in ShowMenu(() => TreeMenuNode = member))
             yield return wait;
         AnalyzerPanelView.Analyze(_screen!, _app, member);
-        GiveTheAnalyzerRoom(_screen!.MainLayout.Dock.Root);
+        GiveRoom(_screen!.MainLayout.Dock.Root, DockPanels.Analyzer, AnalyzerRatio);
         yield return () => _app.Analyzer.Roots.OfType<AnalyzerSymbolNode>().Any();
         var root = _app.Analyzer.Roots.OfType<AnalyzerSymbolNode>().First();
         var rows = _screen!.Analyzer;
@@ -288,17 +291,17 @@ internal sealed class TrailerDirector
         ToggleBookmark(_app, tab, line, _ => name);
     }
 
-    /// <summary>Gives the group holding the analyzer the share of the height its results need.</summary>
-    private static bool GiveTheAnalyzerRoom(DockNode node)
+    /// <summary>Gives the group holding <paramref name="panel"/> what is left of its split.</summary>
+    private static bool GiveRoom(DockNode node, string panel, float ratio)
     {
         if (node is not DockSplit split)
             return false;
-        if (split.Second is DockGroup group && group.Panels.Contains(DockPanels.Analyzer))
+        if (split.Second is DockGroup group && group.Panels.Contains(panel))
         {
-            split.Ratio = AnalyzerRatio;
+            split.Ratio = ratio;
             return true;
         }
-        return GiveTheAnalyzerRoom(split.First) || GiveTheAnalyzerRoom(split.Second);
+        return GiveRoom(split.First, panel, ratio) || GiveRoom(split.Second, panel, ratio);
     }
 
     /// <summary>Waits until <paramref name="count"/> more frames are saved, so that each state is on film.</summary>
