@@ -2,6 +2,8 @@
 
 A .NET assembly explorer.
 
+[![Watch the ILSight trailer](docs/images/trailer-thumbnail.png)](https://youtu.be/1UVzKJpdNn0)
+
 ![An assembly decompiled to C# in ILSight](docs/images/decompiled-csharp.png)
 
 Follow a method through the code that calls it with the Analyzer:
