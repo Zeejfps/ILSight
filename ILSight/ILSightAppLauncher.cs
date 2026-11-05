@@ -12,32 +12,31 @@ public static class ILSightAppLauncher
     public static void LaunchApp(CommandLine commandLine)
     {
         using var instanceLock = SingleInstanceLock.Request(commandLine.SettingsPath);
-        if (TryHandOverToOpenWindow(instanceLock, commandLine))
-            return;
-        instanceLock.Listen();
-        RunApp(commandLine, instanceLock);
-    }
-
-    private static bool TryHandOverToOpenWindow(SingleInstanceLock instanceLock, CommandLine commandLine)
-    {
-        if (!ShouldHandOver(instanceLock, commandLine))
-            return false;
-        return instanceLock.TryHandOver(commandLine);
-    }
-
-    private static bool ShouldHandOver(SingleInstanceLock instanceLock, CommandLine commandLine)
-    {
         if (instanceLock.IsGranted)
-            return false;
-        return !commandLine.NewInstance;
+        {
+            using var pipe = CommandLinePipe.Listen(instanceLock.Name);
+            RunApp(commandLine, pipe);
+        }
+        else if (commandLine.NewInstance)
+        {
+            RunApp(commandLine, null);
+        }
+        else
+        {
+            var handedOver = CommandLinePipe.TryHandOver(instanceLock.Name, commandLine);
+            if (!handedOver)
+            {
+                RunApp(commandLine, null);
+            }
+        }
     }
 
-    private static void RunApp(CommandLine commandLine, SingleInstanceLock instanceLock)
+    private static void RunApp(CommandLine commandLine, CommandLinePipe? pipe)
     {
         var loadResult = LoadSettings(commandLine);
         var appState = LoadAppState(loadResult, commandLine);
         var guiState = CreateUiState(appState);
-        var app = CreateApp(appState, guiState, commandLine, instanceLock);
+        var app = CreateApp(appState, guiState, commandLine, pipe);
         OpenWindow(app, appState, commandLine);
     }
 
@@ -63,9 +62,9 @@ public static class ILSightAppLauncher
         return ILSightApp.CreateUiState(appState);
     }
 
-    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, SingleInstanceLock instanceLock)
+    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, CommandLinePipe? pipe)
     {
-        return new ILSightApp(appState, uiState, commandLine.Files, instanceLock);
+        return new ILSightApp(appState, uiState, commandLine.Files, pipe);
     }
 
     private static void OpenWindow(ILSightApp app, AppState appState, CommandLine commandLine)

@@ -26,18 +26,18 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
-    private readonly SingleInstanceLock? _instance;
+    private readonly CommandLinePipe? _pipe;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
     internal ILSightApp(
         AppState appState,
         UiState uiState,
         FilesToOpen startupFiles,
-        SingleInstanceLock? instance) : base(uiState)
+        CommandLinePipe? pipe) : base(uiState)
     {
         _appState = appState;
         _startupFiles = startupFiles;
-        _instance = instance;
+        _pipe = pipe;
     }
 
     protected override void OnStartup(ImmediateGuiAppHost<UiState> host)
@@ -235,26 +235,26 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// <summary>Leaves the command lines of later runs to windows of their own once this one closes.</summary>
     private void StopTakingCommandLines()
     {
-        if (_instance == null)
+        if (_pipe == null)
             return;
-        _instance.StopListening();
+        _pipe.StopListening();
     }
 
     /// <summary>Draws a frame whenever a later run hands this window a command line.</summary>
     private void WakeOnHandedCommandLines(ImmediateGuiAppHost<UiState> host)
     {
-        if (_instance == null)
+        if (_pipe == null)
             return;
-        _instance.WakeWith(host.Invalidate);
+        _pipe.WakeWith(host.Invalidate);
     }
 
     /// <summary>Does what the command lines later runs handed over ask, bringing the window to the
     /// front for each.</summary>
     private void ApplyCommandLineFromLaterRuns(Ui<UiState> ui)
     {
-        if (_instance == null)
+        if (_pipe == null)
             return;
-        while (_instance.TryTakeHanded(out var commandLine))
+        while (_pipe.TryTakeHanded(out var commandLine))
         {
             ApplyCommandLineFromLaterRun(_appState, commandLine);
             ui.BringWindowToFront();
