@@ -283,10 +283,10 @@ internal sealed class AppStateDriver
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
-    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, Channel<CommandLine>? laterRuns = null, ITextMeasurer? measurer = null)
+    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, Channel<CommandLine>? pendingCommands = null, ITextMeasurer? measurer = null)
     {
         Driver = new AppStateDriver(settings);
-        App = new ILSightWindow(AppState, Ui, CommandLine.Parse([]).Files, laterRuns ?? Channel.CreateUnbounded<CommandLine>());
+        App = new ILSightWindow(AppState, Ui, CommandLine.Parse([]).Files, pendingCommands ?? Channel.CreateUnbounded<CommandLine>());
         Background.Start(App.ApplyCommandLinesFromLaterRuns(), AppState.ReportError);
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;

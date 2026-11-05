@@ -5,6 +5,13 @@ using ZGF.Desktop;
 
 namespace ILSight;
 
+/// <summary>Takes the command lines that reach this app from later runs, from any thread; false when it
+/// takes no more.</summary>
+public interface ICommandLineHandler
+{
+    bool TryHandle(CommandLine commandLine);
+}
+
 /// <summary>
 /// How a later run of the app reaches the first. The first run listens for the command lines later
 /// runs hand it; a later run hands its own over and lends the first run the right to come to the
@@ -20,34 +27,31 @@ public sealed class CommandLinePipe : IDisposable
     private static readonly TimeSpan BusyPipeWait = TimeSpan.FromMilliseconds(100);
 
     private readonly string _name;
-    private readonly Func<CommandLine, bool> _tryHandle;
     private readonly CancellationTokenSource _stop = new();
-    private readonly Task _serving;
+    private Task? _serving;
 
-    private CommandLinePipe(string name, Func<CommandLine, bool> tryHandle)
+    public CommandLinePipe(CommandLineAddress address)
     {
-        _name = name;
-        _tryHandle = tryHandle;
-        _serving = Task.Run(ServeAsync);
+        _name = address.Name;
     }
 
-    /// <summary>Starts taking, in the background, the command lines later runs hand over to the pipe
-    /// <paramref name="name"/>, giving them to <paramref name="tryHandle"/>. Once that returns false,
-    /// later runs are refused and open windows of their own.</summary>
-    public static CommandLinePipe Listen(string name, Func<CommandLine, bool> tryHandle)
+    /// <summary>Starts taking, in the background, the command lines later runs hand over, giving them to
+    /// <paramref name="handler"/>. Once it returns false, later runs are refused and open windows of
+    /// their own.</summary>
+    public void ForwardTo(ICommandLineHandler handler)
     {
-        return new CommandLinePipe(name, tryHandle);
+        _serving = Task.Run(() => ServeAsync(handler));
     }
 
-    /// <summary>Hands <paramref name="commandLine"/> to the run listening on the pipe <paramref name="name"/>
-    /// and lends it the right to come to the front; false when it cannot be reached in time, and this
-    /// run opens a window of its own. Waits on the thread pool, so a caller whose own thread runs the
-    /// continuations is never blocked by them.</summary>
-    public static bool TryHandOver(string name, CommandLine commandLine)
+    /// <summary>Hands <paramref name="commandLine"/> to the app that is open and lends it the right to
+    /// come to the front; false when it cannot be reached in time, and this run opens a window of its
+    /// own. Waits on the thread pool, so a caller whose own thread runs the continuations is never
+    /// blocked by them.</summary>
+    public bool TryHandOverToRunningApp(CommandLine commandLine)
     {
         try
         {
-            return Task.Run(() => HandOverAsync(name, commandLine)).GetAwaiter().GetResult();
+            return Task.Run(() => HandOverAsync(commandLine)).GetAwaiter().GetResult();
         }
         catch (Exception e) when (IsBrokenHandOver(e))
         {
@@ -55,11 +59,11 @@ public sealed class CommandLinePipe : IDisposable
         }
     }
 
-    private static async Task<bool> HandOverAsync(string name, CommandLine commandLine)
+    private async Task<bool> HandOverAsync(CommandLine commandLine)
     {
         using var timeout = new CancellationTokenSource(HandOverTimeout);
         var token = timeout.Token;
-        await using var pipe = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        await using var pipe = new NamedPipeClientStream(".", _name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
         ForegroundRights.LendTo(processId);
@@ -73,14 +77,14 @@ public sealed class CommandLinePipe : IDisposable
         return e is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException or InvalidDataException;
     }
 
-    private async Task ServeAsync()
+    private async Task ServeAsync(ICommandLineHandler handler)
     {
         var token = _stop.Token;
         while (!token.IsCancellationRequested)
         {
             try
             {
-                await ServeOneAsync(token);
+                await ServeOneAsync(handler, token);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
@@ -99,7 +103,7 @@ public sealed class CommandLinePipe : IDisposable
 
     /// <summary>Takes the command line of the next run that connects, then tells it so. Hanging up
     /// without an answer tells a run that came too late to open a window of its own.</summary>
-    private async Task ServeOneAsync(CancellationToken stop)
+    private async Task ServeOneAsync(ICommandLineHandler handler, CancellationToken stop)
     {
         await using var pipe = new NamedPipeServerStream(_name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
             PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
@@ -109,7 +113,7 @@ public sealed class CommandLinePipe : IDisposable
         var token = timeout.Token;
         await WriteIntAsync(pipe, Environment.ProcessId, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        if (!_tryHandle(CommandLine.Parse(args)))
+        if (!handler.TryHandle(CommandLine.Parse(args)))
             return;
         await pipe.WriteAsync(new[] { Received }, token);
         await pipe.FlushAsync(token);
@@ -189,7 +193,14 @@ public sealed class CommandLinePipe : IDisposable
     public void Dispose()
     {
         _stop.Cancel();
-        _serving.Wait(HandOverTimeout);
+        WaitForServing();
         _stop.Dispose();
+    }
+
+    private void WaitForServing()
+    {
+        if (_serving == null)
+            return;
+        _serving.Wait(HandOverTimeout);
     }
 }

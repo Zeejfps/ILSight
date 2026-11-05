@@ -6,12 +6,16 @@ public static class ILSightAppLauncher
     /// and leaves, unless it asks for a new window or none is open; else opens the app.</summary>
     public static void LaunchApp(CommandLine commandLine)
     {
-        using var instanceLock = SingleInstanceLock.Request(commandLine.SettingsPath);
-        if (instanceLock.IsGranted)
+        var address = CommandLineAddress.ForSettingsFile(commandLine.SettingsPath);
+        using var pipe = new CommandLinePipe(address);
+        if (SingleInstanceLock.TryAcquire(address, out var instanceLock))
         {
-            var app = new ILSightApp(commandLine);
-            using var pipe = CommandLinePipe.Listen(instanceLock.Name, app.TryHandle);
-            app.Run();
+            using (instanceLock)
+            {
+                var app = new ILSightApp(commandLine);
+                pipe.ForwardTo(app);
+                app.Run();
+            }
         }
         else if (commandLine.NewInstance)
         {
@@ -20,7 +24,7 @@ public static class ILSightAppLauncher
         }
         else
         {
-            var handedOver = CommandLinePipe.TryHandOver(instanceLock.Name, commandLine);
+            var handedOver = pipe.TryHandOverToRunningApp(commandLine);
             if (!handedOver)
             {
                 var app = new ILSightApp(commandLine);

@@ -1,46 +1,31 @@
-using System.Security.Cryptography;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ILSight;
 
-/// <summary>Tells the runs of the app with the same settings apart: the first is granted the lock, and
-/// holds it until it exits. A run that is not granted it is free to go on regardless; the lock only
-/// says which run is the first.</summary>
+/// <summary>The right to be the run that later runs with the same settings hand their command lines to.
+/// Only the first run gets it, and holds it until it exits; a run that does not get it keeps nothing.</summary>
 public sealed class SingleInstanceLock : IDisposable
 {
-    private const string NamePrefix = "ILSight-";
-    private const int HashBytes = 8;
-
     private readonly Mutex _mutex;
 
-    private SingleInstanceLock(string name)
+    private SingleInstanceLock(Mutex mutex)
     {
-        _mutex = new Mutex(false, name, out var createdNew);
-        IsGranted = createdNew;
-        Name = name;
+        _mutex = mutex;
     }
 
-    /// <summary>The name the runs with these settings meet under.</summary>
-    public string Name { get; }
-
-    /// <summary>Whether no other run with these settings is open.</summary>
-    public bool IsGranted { get; }
-
-    /// <summary>Requests the lock of the runs with the settings at <paramref name="settingsPath"/>.</summary>
-    public static SingleInstanceLock Request(string settingsPath)
+    /// <summary>Takes the lock at <paramref name="address"/>; false, with no lock, when another run has it.
+    /// Finding out and taking it are one step, so two runs starting together cannot both get it.</summary>
+    public static bool TryAcquire(CommandLineAddress address, [NotNullWhen(true)] out SingleInstanceLock? instanceLock)
     {
-        return new SingleInstanceLock(NameFor(settingsPath));
-    }
-
-    /// <summary>The name the runs with the settings at <paramref name="settingsPath"/> meet under: the
-    /// same for every spelling of the path the file system takes as one.</summary>
-    private static string NameFor(string settingsPath)
-    {
-        var path = Path.GetFullPath(settingsPath);
-        if (OperatingSystem.IsWindows())
-            path = path.ToUpperInvariant();
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(path));
-        return NamePrefix + Convert.ToHexString(hash, 0, HashBytes);
+        var mutex = new Mutex(false, address.Name, out var createdNew);
+        if (!createdNew)
+        {
+            mutex.Dispose();
+            instanceLock = null;
+            return false;
+        }
+        instanceLock = new SingleInstanceLock(mutex);
+        return true;
     }
 
     public void Dispose()

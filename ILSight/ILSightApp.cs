@@ -8,7 +8,7 @@ namespace ILSight;
 
 /// <summary>The app, from before there is anything to show until its window closes: it takes the command
 /// lines of later runs from the first, and opens the window that follows them once it is ready.</summary>
-public sealed class ILSightApp
+public sealed class ILSightApp : ICommandLineHandler
 {
     private readonly CommandLine _startupCommand;
     private readonly Channel<CommandLine> _pendingCommands = Channel.CreateUnbounded<CommandLine>();

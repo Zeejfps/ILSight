@@ -7,32 +7,58 @@ public sealed class CommandLinePipeTests
 {
     private const string GreetId = "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)";
 
+    private sealed class ChannelHandler : ICommandLineHandler
+    {
+        public Channel<CommandLine> Commands { get; } = Channel.CreateUnbounded<CommandLine>();
+
+        public bool TryHandle(CommandLine commandLine)
+        {
+            return Commands.Writer.TryWrite(commandLine);
+        }
+    }
+
     [Fact]
-    public void The_run_listening_takes_the_command_line_a_later_run_hands_over()
+    public void The_run_forwarding_takes_the_command_line_a_later_run_hands_over()
     {
         using var temp = new TempDir();
-        using var instanceLock = SingleInstanceLock.Request(temp.PathOf("settings.json"));
-        var laterRuns = Channel.CreateUnbounded<CommandLine>();
-        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer.TryWrite);
+        var address = CommandLineAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        var handler = new ChannelHandler();
+        using var first = new CommandLinePipe(address);
+        first.ForwardTo(handler);
+        using var later = new CommandLinePipe(address);
 
-        var handedOver = CommandLinePipe.TryHandOver(instanceLock.Name, CommandLine.Parse(["--navigateto=T:Some.Type", "relative.dll"]));
+        var handedOver = later.TryHandOverToRunningApp(CommandLine.Parse(["--navigateto=T:Some.Type", "relative.dll"]));
 
         Assert.True(handedOver);
-        Assert.True(laterRuns.Reader.TryRead(out var handed));
+        Assert.True(handler.Commands.Reader.TryRead(out var handed));
         Assert.Equal("T:Some.Type", handed.NavigateTo);
         Assert.Equal([Path.GetFullPath("relative.dll")], handed.AssemblyPaths.Select(static p => p.Text));
     }
 
     [Fact]
-    public void A_later_run_is_refused_once_the_window_takes_no_more_command_lines()
+    public void A_later_run_is_refused_once_the_app_takes_no_more_command_lines()
     {
         using var temp = new TempDir();
-        using var instanceLock = SingleInstanceLock.Request(temp.PathOf("settings.json"));
-        var laterRuns = Channel.CreateUnbounded<CommandLine>();
-        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer.TryWrite);
-        laterRuns.Writer.TryComplete();
+        var address = CommandLineAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        var handler = new ChannelHandler();
+        using var first = new CommandLinePipe(address);
+        first.ForwardTo(handler);
+        handler.Commands.Writer.TryComplete();
+        using var later = new CommandLinePipe(address);
 
-        var handedOver = CommandLinePipe.TryHandOver(instanceLock.Name, CommandLine.Parse(["a.dll"]));
+        var handedOver = later.TryHandOverToRunningApp(CommandLine.Parse(["a.dll"]));
+
+        Assert.False(handedOver);
+    }
+
+    [Fact]
+    public void A_run_with_no_one_listening_cannot_hand_over()
+    {
+        using var temp = new TempDir();
+        var address = CommandLineAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        using var pipe = new CommandLinePipe(address);
+
+        var handedOver = pipe.TryHandOverToRunningApp(CommandLine.Parse(["a.dll"]));
 
         Assert.False(handedOver);
     }
@@ -41,13 +67,15 @@ public sealed class CommandLinePipeTests
     public void A_command_line_handed_to_the_open_window_opens_its_files_shows_its_member_and_brings_the_window_to_the_front()
     {
         using var temp = new TempDir();
-        using var instanceLock = SingleInstanceLock.Request(temp.PathOf("settings.json"));
-        var laterRuns = Channel.CreateUnbounded<CommandLine>();
-        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer.TryWrite);
-        var app = new AppDriver(laterRuns: laterRuns);
+        var address = CommandLineAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        var handler = new ChannelHandler();
+        using var first = new CommandLinePipe(address);
+        first.ForwardTo(handler);
+        var app = new AppDriver(pendingCommands: handler.Commands);
         app.Run();
+        using var later = new CommandLinePipe(address);
 
-        Assert.True(CommandLinePipe.TryHandOver(instanceLock.Name, CommandLine.Parse(["--navigateto=" + GreetId, AppStateDriver.FixturePath])));
+        Assert.True(later.TryHandOverToRunningApp(CommandLine.Parse(["--navigateto=" + GreetId, AppStateDriver.FixturePath])));
         app.RunUntil(() => app.Frames.FrontRequested);
         app.RunUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Method);
         app.Settle(1);
@@ -59,9 +87,9 @@ public sealed class CommandLinePipeTests
     [Fact]
     public void A_command_line_handed_over_while_the_app_starts_is_followed_once_it_runs()
     {
-        var laterRuns = Channel.CreateUnbounded<CommandLine>();
-        laterRuns.Writer.TryWrite(CommandLine.Parse(["--language=IL"]));
-        var app = new AppDriver(laterRuns: laterRuns);
+        var handler = new ChannelHandler();
+        Assert.True(handler.TryHandle(CommandLine.Parse(["--language=IL"])));
+        var app = new AppDriver(pendingCommands: handler.Commands);
 
         app.RunUntil(() => app.AppState.Language == DecompilationLanguage.IL);
 
