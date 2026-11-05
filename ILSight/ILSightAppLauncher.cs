@@ -55,7 +55,7 @@ public static class ILSightAppLauncher
         var session = new BrowseSession();
         var appState = AppState.Load(loadSettingsResult.Settings, session);
         ReportSettingsProblem(appState, loadSettingsResult.Problem);
-        FollowStartupCommandLine(appState, commandLine);
+        ApplyStartupOptions(appState, commandLine);
         return appState;
     }
 

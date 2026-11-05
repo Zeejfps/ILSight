@@ -57,7 +57,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     protected override void OnUpdate(Ui<UiState> ui)
     {
-        FollowHandedCommandLines(ui);
+        ApplyCommandLineFromLaterRuns(ui);
         StartFrame(ui.State, _appState);
         MainView.Render(ui, _appState);
         FinishFrame(ui, _appState, _codeFonts);
@@ -250,13 +250,13 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     /// <summary>Does what the command lines later runs handed over ask, bringing the window to the
     /// front for each.</summary>
-    private void FollowHandedCommandLines(Ui<UiState> ui)
+    private void ApplyCommandLineFromLaterRuns(Ui<UiState> ui)
     {
         if (_instance == null)
             return;
         while (_instance.TryTakeHanded(out var commandLine))
         {
-            FollowHandedCommandLine(_appState, commandLine);
+            ApplyCommandLineFromLaterRun(_appState, commandLine);
             ui.BringWindowToFront();
         }
     }
