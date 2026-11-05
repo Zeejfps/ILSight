@@ -60,7 +60,7 @@ public sealed class AssemblyMenuTests
         var row = app.TextRect("Hidden");
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
 
-        Assert.Equal([MicrosoftDocs.FindPage(greeter)], app.Frames.OpenedUrls);
+        Assert.Equal([MicrosoftDocs.FindPage(greeter)!], app.Frames.OpenedUrls);
         Assert.EndsWith("/ilsight.app.tests.fixtures.greeter", app.Frames.OpenedUrls[0]);
         Assert.True(app.Frames.Drew("Copy full name"));
         Assert.False(app.Frames.Drew("Show in .NET API reference"));

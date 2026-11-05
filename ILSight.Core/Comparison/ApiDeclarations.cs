@@ -109,7 +109,7 @@ internal static class ApiDeclarations
     private static List<string> ListUnderlyingType(ITypeDefinition type)
     {
         var underlying = type.EnumUnderlyingType;
-        if (underlying.IsKnownType(KnownTypeCode.Int32))
+        if (underlying == null || underlying.IsKnownType(KnownTypeCode.Int32))
             return [];
         return [EntityText.TypeName(underlying)];
     }

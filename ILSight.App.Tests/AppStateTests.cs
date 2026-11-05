@@ -137,7 +137,7 @@ public sealed class AppStateTests
 
         var outlinePanel = d.Ui.Documents.PanelOf(d.AppState.Tabs.Active!);
         Assert.Same(documents.GroupOf(d.Ui.Documents.PanelOf(greeter)), documents.GroupOf(outlinePanel));
-        Assert.Equal("Outline", d.AppState.Tabs.Active.Node!.Text);
+        Assert.Equal("Outline", d.AppState.Tabs.Active!.Node!.Text);
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using ICSharpCode.Decompiler;
@@ -119,7 +120,7 @@ internal sealed class GridSchema<TRow> : GridSchema
     public override IReadOnlyList<object> LoadRows() => _rows().Select(static r => (object)r!).ToArray();
 
     /// <summary>A column of what <paramref name="get"/> reads, in <paramref name="format"/>.</summary>
-    public GridSchema<TRow> Value<T>(string name, Func<TRow, T> get, string? format = null, Func<TRow, object?>? tooltip = null) =>
+    public GridSchema<TRow> Value<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(string name, Func<TRow, T> get, string? format = null, Func<TRow, object?>? tooltip = null) =>
         Add(name, format, (r, _) => get(r), tooltip == null ? null : (r, _) => tooltip(r));
 
     /// <summary>Where each row starts in the file.</summary>
@@ -196,11 +197,11 @@ internal sealed class GridSchema<TRow> : GridSchema
         return this;
     }
 
-    private GridSchema<TRow> Add<T>(string name, string? format, Func<TRow, int, T> value, Func<TRow, int, object?>? tooltip, bool isToken = false)
+    private GridSchema<TRow> Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(string name, string? format, Func<TRow, int, T> value, Func<TRow, int, object?>? tooltip, bool isToken = false)
     {
         var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
         var numeric = type.IsEnum || Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
-        var flags = FlagsSchemaInferer.IsFlags(type) ? FlagsSchemaInferer.For(type) : null;
+        var flags = FlagsSchemaInferer.IsFlags(typeof(T)) ? FlagsSchemaInferer.For(typeof(T)) : null;
         Add(new GridColumn(new MetadataColumn(name, isToken, numeric, flags), format,
             (r, rid) => value((TRow)r, rid),
             tooltip == null ? null : (r, rid) => tooltip((TRow)r, rid)));

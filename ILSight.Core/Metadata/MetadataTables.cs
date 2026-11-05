@@ -379,7 +379,7 @@ internal static class MetadataTables
 
     private static string WriteLocals(MetadataFile file, StandaloneSignature signature)
     {
-        ITextOutput output = new PlainTextOutput();
+        var output = new PlainTextOutput();
         var context = new MetadataGenericContext(default(TypeDefinitionHandle), file.Metadata);
         var provider = new DisassemblerSignatureTypeProvider(file, output);
         var locals = signature.DecodeLocalSignature(provider, context);
@@ -409,7 +409,7 @@ internal static class MetadataTables
 
     private static string WritePropertySignature(MetadataFile file, PropertyDefinition property)
     {
-        ITextOutput output = new PlainTextOutput();
+        var output = new PlainTextOutput();
         var metadata = file.Metadata;
         var context = new MetadataGenericContext(FindDeclaringType(metadata, property), metadata);
         var signature = property.DecodeSignature(new DisassemblerSignatureTypeProvider(file, output), context);

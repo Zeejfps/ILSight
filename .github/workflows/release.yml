@@ -80,7 +80,7 @@ jobs:
 
       - name: Remove debug files
         run: |
-          find "$PUBLISH_DIR" -type f \( -name '*.pdb' -o -name '*.xml' \) -delete
+          find "$PUBLISH_DIR" -type f \( -name '*.pdb' -o -name '*.dbg' -o -name '*.xml' \) -delete
           rm -rf "$PUBLISH_DIR"/*.dSYM
 
       # A tar keeps the executable bit, which a zipped artifact loses.

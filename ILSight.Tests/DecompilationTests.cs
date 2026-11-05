@@ -387,8 +387,6 @@ public sealed class DecompilationTests
         Assert.Empty(failed);
     }
 
-    /// <summary>The nodes under <paramref name="roots"/> that show no type's or member's code, not
-    /// following members, base and derived types, or references into what they name.</summary>
     private static bool IsModule(BrowseNode node) => node.Subject is NodeSubject.Module;
 
     private static bool IsLeafToSummarize(BrowseNode node)
@@ -396,6 +394,8 @@ public sealed class DecompilationTests
         return node.Subject is NodeSubject.MemberDefinition or NodeSubject.BaseType or NodeSubject.DerivedType or NodeSubject.AssemblyReference;
     }
 
+    /// <summary>The nodes under <paramref name="roots"/> that show no type's or member's code, not
+    /// following members, base and derived types, or references into what they name.</summary>
     private static List<BrowseNode> ListSummarized(IEnumerable<BrowseNode> roots)
     {
         var nodes = new List<BrowseNode>();

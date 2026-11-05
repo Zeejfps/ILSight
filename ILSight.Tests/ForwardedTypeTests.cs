@@ -49,7 +49,8 @@ public sealed class ForwardedTypeTests
         var definition = list.FindNode(forwarded.Destination);
 
         Assert.Equal("System.Collections", Assert.IsType<NodeSubject.ForwardedType>(forwarded.Subject).Value.Destination);
-        Assert.Equal(TypeShape.Class, definition!.TypeShape);
+        Assert.NotNull(definition);
+        Assert.Equal(TypeShape.Class, definition.TypeShape);
         Assert.Equal("List<T>", definition.Text);
         Assert.Equal("System.Private.CoreLib", definition.Assembly.Name);
         Assert.Contains(definition.Assembly, list.Assemblies);

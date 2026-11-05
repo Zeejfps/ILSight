@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
@@ -37,19 +38,21 @@ namespace ILSight.Core.Metadata
 		/// <summary>Whether <paramref name="type"/> is an enum of bits: one marked
 		/// <see cref="FlagsAttribute"/>, or one whose <c>*Mask</c> fields carve its bits up, as
 		/// <see cref="MethodImplAttributes"/> does.</summary>
-		public static bool IsFlags(Type type) =>
+		public static bool IsFlags([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type type) =>
 			type.IsEnum && (type.IsDefined(typeof(FlagsAttribute), false)
 				|| type.GetFields(BindingFlags.Public | BindingFlags.Static).Any(static f => IsMask(f.Name)));
 
-		public static FlagsSchema For(Type enumType)
+		public static FlagsSchema For([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type enumType)
 		{
 			ArgumentNullException.ThrowIfNull(enumType);
 			if (!enumType.IsEnum)
 				throw new ArgumentException($"Type '{enumType}' is not an enum.", nameof(enumType));
-			return cache.GetOrAdd(enumType, Build);
+			if (cache.TryGetValue(enumType, out var schema))
+				return schema;
+			return cache.GetOrAdd(enumType, Build(enumType));
 		}
 
-		static FlagsSchema Build(Type enumType)
+		static FlagsSchema Build([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type enumType)
 		{
 			var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
 			var maskFields = new List<(string Name, uint Mask)>();

@@ -78,7 +78,7 @@ public sealed class DockingTests
         Assert.Equal([DockPanels.Assemblies], left);
         var split = Assert.IsType<DockSplit>(layout.Root);
         Assert.Same(layout.GroupOf(d.Ui.Documents.PanelOf(d.AppState.Tabs.Active!)), split.Second);
-        Assert.Equal("Greeter", d.AppState.Tabs.Active.Node!.Text);
+        Assert.Equal("Greeter", d.AppState.Tabs.Active!.Node!.Text);
     }
 
     [Fact]

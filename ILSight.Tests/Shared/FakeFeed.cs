@@ -33,7 +33,7 @@ internal sealed class FakeFeed : HttpMessageHandler
     public List<string> Requested { get; } = new();
 
     /// <summary>Whether requests wait, unanswered, until they are cancelled.</summary>
-    public bool Holds;
+    public bool Holds { get; set; }
 
     /// <summary>How many held requests were cancelled.</summary>
     public int Cancelled => Volatile.Read(ref _cancelled);

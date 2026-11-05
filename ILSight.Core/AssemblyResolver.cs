@@ -77,14 +77,17 @@ internal sealed class AssemblyResolver : IAssemblyResolver
         try
         {
             var fallback = _fallback.Value.FindAssemblyFile(reference);
-            if (fallback == null)
-                return null;
-            return AssemblyPath.Parse(fallback);
+            var found = fallback == null ? null : AssemblyPath.Parse(fallback);
+            if (found != null)
+                return found;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or BadImageFormatException or InvalidOperationException)
         {
             return null;
         }
+        // The fallback's last resort is the directory of the runtime it runs on, which a native build
+        // does not have: it answers null, or "<Unknown>" for that path. The installed runtime stands in.
+        return FindInRuntime(reference.Name);
     }
 
     /// <summary>The running runtime's file of <paramref name="name"/>; null when it has none, or its
