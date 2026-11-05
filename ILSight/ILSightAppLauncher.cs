@@ -15,23 +15,23 @@ public static class ILSightAppLauncher
         if (instanceLock.IsGranted)
         {
             using var pipe = CommandLinePipe.Listen(instanceLock.Name);
-            RunApp(commandLine, pipe);
+            RunNewAppInstance(commandLine, pipe);
         }
         else if (commandLine.NewInstance)
         {
-            RunApp(commandLine, null);
+            RunNewAppInstance(commandLine);
         }
         else
         {
             var handedOver = CommandLinePipe.TryHandOver(instanceLock.Name, commandLine);
             if (!handedOver)
             {
-                RunApp(commandLine, null);
+                RunNewAppInstance(commandLine);
             }
         }
     }
 
-    private static void RunApp(CommandLine commandLine, CommandLinePipe? pipe)
+    private static void RunNewAppInstance(CommandLine commandLine, CommandLinePipe? pipe = null)
     {
         var loadResult = LoadSettings(commandLine);
         var appState = LoadAppState(loadResult, commandLine);
