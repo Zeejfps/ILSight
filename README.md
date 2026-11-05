@@ -4,15 +4,7 @@ A .NET assembly explorer.
 
 [![Watch the ILSight trailer](docs/images/trailer-thumbnail.png)](https://youtu.be/1UVzKJpdNn0)
 
-![An assembly decompiled to C# in ILSight](docs/images/decompiled-csharp.png)
-
-Follow a method through the code that calls it with the Analyzer:
-
-![The Analyzer listing what uses Enumerable.ToList](docs/images/analyzer.png)
-
-Keep your place with named bookmarks:
-
-![Bookmarks on four methods of Enumerable](docs/images/bookmarks.png)
+Watch the trailer: https://youtu.be/1UVzKJpdNn0
 
 ```
 git clone --recurse-submodules https://github.com/Zeejfps/ILSight.git
