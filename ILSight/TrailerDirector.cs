@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using ILSight.Core;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
@@ -23,6 +24,7 @@ internal sealed class TrailerDirector
     private const float AnalyzerRatio = 0.52f;
     // On screen in the export scene, so it names nobody; deleted after the capture.
     private const string ExportFolder = @"G:\Exports\System.Private.CoreLib";
+    private const uint CharacterMessage = 0x0102;
     private const string GoFile = "go";
     private const string TimesFile = "times.txt";
 
@@ -307,9 +309,9 @@ internal sealed class TrailerDirector
         var omnibar = _screen!.Omnibar;
         SearchInOmnibar(_screen);
         yield return Frames(1);
-        foreach (var typed in new[] { "Js", "Json", "JsonCo", "JsonConv", "JsonConvert" })
+        foreach (var keys in new[] { "Js", "on", "Co", "nv", "ert" })
         {
-            omnibar.Search.Query = typed;
+            Type(keys);
             yield return Frames(1);
         }
         yield return () => omnibar.Search.ShowsQuery && !omnibar.Search.IsBusy;
@@ -332,7 +334,11 @@ internal sealed class TrailerDirector
         yield return Frames(1);
         picker.Open();
         yield return Frames(1);
-        picker.Query = "Newtonsoft.Json";
+        foreach (var keys in new[] { "Newt", "onso", "ft.J", "son" })
+        {
+            Type(keys);
+            yield return Frames(1);
+        }
         picker.SearchNow();
         yield return () => !picker.IsSearching && picker.Results.Count > 0;
         yield return Frames(1);
@@ -389,4 +395,16 @@ internal sealed class TrailerDirector
             field.SetValue(host, true);
         }
     }
+
+    /// <summary>Types <paramref name="keys"/> as a person does, by way of the window, so that the
+    /// focused field moves its caret and reacts as it would to the keyboard.</summary>
+    private static void Type(string keys)
+    {
+        var window = Process.GetCurrentProcess().MainWindowHandle;
+        foreach (var key in keys)
+            PostMessage(window, CharacterMessage, key, 0);
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool PostMessage(nint window, uint message, nint wParam, nint lParam);
 }
