@@ -41,6 +41,9 @@ public sealed class CommandLine
     /// not have, a language it does not have, an option with no value, or a file that is no path.</summary>
     public List<string> Ignored { get; } = new();
 
+    /// <summary>The files to open and what to show in them.</summary>
+    public FilesToOpen Files => new(AssemblyPaths, NavigateTo);
+
     public static CommandLine Parse(string[] args)
     {
         var commandLine = new CommandLine();

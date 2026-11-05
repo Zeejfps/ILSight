@@ -25,18 +25,18 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     private const string AppIconFile = "app_icon.rgba";
 
     private readonly AppState _appState;
-    private readonly CommandLine _startup;
+    private readonly FilesToOpen _startupFiles;
     private readonly AppInstance? _instance;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
     internal ILSightApp(
         AppState appState,
         UiState uiState,
-        CommandLine startup,
+        FilesToOpen startupFiles,
         AppInstance? instance) : base(uiState)
     {
         _appState = appState;
-        _startup = startup;
+        _startupFiles = startupFiles;
         _instance = instance;
     }
 
@@ -46,7 +46,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         LoadAndRegisterFonts(host);
         RegisterChosenCodeFont(host);
         RegisterChosenIconFonts(host);
-        OpenStartupAssemblies();
+        OpenStartupAssemblies(_appState, _startupFiles);
         WakeOnHandedCommandLines(host);
         StartRedrawingOnAssemblyChanges(host);
         RestoreAnalyses(_appState);
@@ -225,10 +225,11 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         _appState.Assemblies.Changed += host.Invalidate;
     }
 
-    private void OpenStartupAssemblies()
+    /// <summary>Opens the active list, then <paramref name="files"/>, once the app is running.</summary>
+    internal static void OpenStartupAssemblies(AppState appState, FilesToOpen files)
     {
-        RestoreActiveAssemblyList(_appState);
-        OpenCommandLineFiles(_appState, _startup);
+        RestoreActiveAssemblyList(appState);
+        OpenCommandLineFiles(appState, files);
     }
 
     /// <summary>Leaves the command lines of later runs to windows of their own once this one closes.</summary>

@@ -1,6 +1,8 @@
-﻿using ZGF.Gui.Immediate;
+﻿using ZGF.Desktop;
+using ZGF.Gui.Immediate;
 using ILSight.Core;
 using static ILSight.CommandLines;
+using static ILSight.Settings;
 
 namespace ILSight;
 
@@ -26,13 +28,48 @@ public static class ILSightAppLauncher
 
     private static void RunApp(CommandLine commandLine, AppInstance instance)
     {
-        var (settings, problem) = AppSettings.Load(commandLine.SettingsPath);
-        var appState = AppState.Load(settings, new BrowseSession());
-        Settings.ReportSettingsProblem(appState, problem);
+        var load = ReadSettings(commandLine);
+        var appState = LoadAppState(load, commandLine, new BrowseSession());
+        var uiState = BuildScreen(appState);
+        var app = CreateApp(appState, uiState, commandLine, instance);
+        OpenWindow(app, appState, commandLine);
+    }
+
+    private static SettingsLoad ReadSettings(CommandLine commandLine) =>
+        AppSettings.Load(commandLine.SettingsPath);
+
+    /// <summary>The app state to start from: what <paramref name="load"/> describes, told of what was
+    /// wrong with the settings, with <paramref name="commandLine"/> followed. The screen is built over
+    /// this; the files the command line names open once the app runs.</summary>
+    internal static AppState LoadAppState(SettingsLoad load, CommandLine commandLine, BrowseSession session)
+    {
+        var appState = AppState.Load(load.Settings, session);
+        ReportSettingsProblem(appState, load.Problem);
         FollowStartupCommandLine(appState, commandLine);
-        var screen = ILSightApp.CreateUiState(appState);
-        var app = new ILSightApp(appState, screen, commandLine, instance);
-        var windowConfig = settings.CreateWindowConfig();
-        app.Run(windowConfig, commandLine.RenderBackend);
+        return appState;
+    }
+
+    private static UiState BuildScreen(AppState appState) =>
+        ILSightApp.CreateUiState(appState);
+
+    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, AppInstance instance) =>
+        new(appState, uiState, commandLine.Files, instance);
+
+    private static void OpenWindow(ILSightApp app, AppState appState, CommandLine commandLine) =>
+        app.Run(CreateWindowConfig(appState.Window), commandLine.RenderBackend);
+
+    /// <summary>The main window's config: <paramref name="window"/> as it was left, or the default size,
+    /// centered, when there is none.</summary>
+    private static StartupConfig CreateWindowConfig(WindowBounds? window)
+    {
+        var config = new StartupConfig
+        {
+            WindowWidth = 1400,
+            WindowHeight = 900,
+            WindowTitle = "ILSight",
+        };
+        if (window == null)
+            return config;
+        return window.Value.ApplyTo(config);
     }
 }

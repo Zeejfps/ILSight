@@ -139,19 +139,25 @@ internal sealed class AppStateDriver
     private readonly PostedActions _posted = PostedActions.OfThisTest();
     private readonly UiState? _ui;
 
-    public AppStateDriver(AppSettings? settings = null) : this(settings, withScreen: true)
+    public AppStateDriver(AppSettings? settings = null) : this(NoProblem(settings), CommandLine.Parse([]), withScreen: true)
     {
     }
 
-    private AppStateDriver(AppSettings? settings, bool withScreen)
+    private AppStateDriver(SettingsLoad load, CommandLine commandLine, bool withScreen)
     {
-        settings ??= new AppSettings();
-        settings.Locale ??= Locale.En;
-        AppState = AppState.Load(settings, TestSession.Shared);
+        load.Settings.Locale ??= Locale.En;
+        AppState = ILSightAppLauncher.LoadAppState(load, commandLine, TestSession.Shared);
         if (withScreen)
             _ui = ILSightApp.CreateUiState(AppState);
         RestoreAnalyses(AppState);
     }
+
+    private static SettingsLoad NoProblem(AppSettings? settings) =>
+        new(settings ?? new AppSettings(), new SettingsProblem.None());
+
+    /// <summary>A driver over the app state and screen the app starts with, from <paramref name="load"/>
+    /// and <paramref name="commandLine"/>, before the app opens any assemblies.</summary>
+    public static AppStateDriver Started(SettingsLoad load, CommandLine commandLine) => new(load, commandLine, withScreen: true);
 
     /// <summary>A driver that has opened the fixture assembly.</summary>
     public static AppStateDriver Opened(AppSettings? settings = null)
@@ -162,7 +168,7 @@ internal sealed class AppStateDriver
     }
 
     /// <summary>A driver with an app state and no screen, which shows that the features need none.</summary>
-    public static AppStateDriver WithoutScreen(AppSettings? settings = null) => new(settings, withScreen: false);
+    public static AppStateDriver WithoutScreen(AppSettings? settings = null) => new(NoProblem(settings), CommandLine.Parse([]), withScreen: false);
 
     /// <summary>A driver with no screen that has opened the fixture assembly.</summary>
     public static AppStateDriver OpenedWithoutScreen()
@@ -279,7 +285,7 @@ internal sealed class AppDriver
     public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, AppInstance? instance = null, ITextMeasurer? measurer = null)
     {
         Driver = new AppStateDriver(settings);
-        App = new ILSightApp(AppState, Ui, CommandLine.Parse([]), instance);
+        App = new ILSightApp(AppState, Ui, CommandLine.Parse([]).Files, instance);
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;
         Frames.BeforeFrame = PumpAtFrameTime;

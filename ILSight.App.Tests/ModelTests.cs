@@ -315,9 +315,9 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void An_unreadable_file_falls_back_to_defaults_and_is_reported()
     {
-        var (loaded, problem) = AppSettings.Load(Written("""{ "Assemblies": [ "a.dll", """));
-        var appState = AppState.Load(loaded, TestSession.Shared);
-        ReportSettingsProblem(appState, problem);
+        var load = AppSettings.Load(Written("""{ "Assemblies": [ "a.dll", """));
+        var (loaded, problem) = load;
+        var appState = ILSightAppLauncher.LoadAppState(load, CommandLine.Parse([]), TestSession.Shared);
 
         Assert.Empty(loaded.AssemblyLists);
         Assert.IsType<SettingsProblem.NotJson>(problem);
@@ -329,9 +329,9 @@ public sealed class AppSettingsTests : IDisposable
     public void An_unreadable_file_is_copied_beside_it_before_the_settings_are_saved_over_it()
     {
         const string broken = """{ "Assemblies": [ "a.dll", """;
-        var (loaded, problem) = AppSettings.Load(Written(broken));
-        var appState = AppState.Load(loaded, TestSession.Shared);
-        ReportSettingsProblem(appState, problem);
+        var load = AppSettings.Load(Written(broken));
+        var (loaded, problem) = load;
+        var appState = ILSightAppLauncher.LoadAppState(load, CommandLine.Parse([]), TestSession.Shared);
 
         Assert.IsType<SettingsWrite.Written>(loaded.Save());
 
@@ -373,9 +373,9 @@ public sealed class AppSettingsTests : IDisposable
             { "Theme": "light", "Language": "Klingon", "Window": "wide",
               "AssemblyLists": [ { "Name": "Work", "Assemblies": [ "{{AInJson}}" ] } ] }
             """;
-        var (loaded, problem) = AppSettings.Load(Written(json));
-        var appState = AppState.Load(loaded, TestSession.Shared);
-        ReportSettingsProblem(appState, problem);
+        var load = AppSettings.Load(Written(json));
+        var (loaded, problem) = load;
+        var appState = ILSightAppLauncher.LoadAppState(load, CommandLine.Parse([]), TestSession.Shared);
 
         var leftOut = Assert.IsType<SettingsProblem.ValuesLeftOut>(problem);
         Assert.Equal(["Language", "Window"], leftOut.Fields);
@@ -525,9 +525,9 @@ public sealed class AppSettingsTests : IDisposable
     [InlineData("""{ "Layout": { "Windows": [ { "Root": null } ] } }""")]
     public void A_layout_missing_parts_is_left_out_for_the_panels_to_start_where_they_do(string json)
     {
-        var (loaded, problem) = AppSettings.Load(Written($$"""{ "Theme": "light", {{json[1..]}}"""));
-        var d = new AppStateDriver(loaded);
-        ReportSettingsProblem(d.AppState, problem);
+        var load = AppSettings.Load(Written($$"""{ "Theme": "light", {{json[1..]}}"""));
+        var (loaded, problem) = load;
+        var d = AppStateDriver.Started(load, CommandLine.Parse([]));
 
         Assert.IsType<SettingsProblem.LayoutPartsMissing>(problem);
         Assert.Equal("light", loaded.Theme.Text);

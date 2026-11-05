@@ -34,7 +34,7 @@ public static class CommandLines
             OpenAssemblyListNamed(appState, commandLine.AssemblyList);
         if (commandLine.ClearList)
             CloseAllAssemblies(appState);
-        OpenCommandLineFiles(appState, commandLine);
+        OpenCommandLineFiles(appState, commandLine.Files);
     }
 
     private static void ReportIgnored(AppState appState, CommandLine commandLine)
@@ -43,15 +43,15 @@ public static class CommandLines
             appState.ReportError(new AppProblem.ArgumentsIgnored(commandLine.Ignored.ToList()));
     }
 
-    /// <summary>Opens the files the command line names, then shows the namespace, type or member it
+    /// <summary>Opens the files a command line names, then shows the namespace, type or member it
     /// asks to navigate to, or else the last file opened.</summary>
-    public static void OpenCommandLineFiles(AppState appState, CommandLine commandLine)
+    public static void OpenCommandLineFiles(AppState appState, FilesToOpen files)
     {
-        if (commandLine.NavigateTo == null)
+        if (files.NavigateTo == null)
         {
-            OpenAssemblies(appState, commandLine.AssemblyPaths);
+            OpenAssemblies(appState, files.Paths);
             return;
         }
-        OpenAndShowId(appState, commandLine.AssemblyPaths, commandLine.NavigateTo);
+        OpenAndShowId(appState, files.Paths, files.NavigateTo);
     }
 }

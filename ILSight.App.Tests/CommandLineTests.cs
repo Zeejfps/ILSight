@@ -1,7 +1,5 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using static ILSight.Assemblies;
-using static ILSight.AssemblyLists;
 using static ILSight.CommandLines;
 using static ILSight.Settings;
 using static ILSight.App.Tests.TestPaths;
@@ -54,7 +52,7 @@ public sealed class CommandLineTests
     {
         var d = new AppStateDriver();
 
-        OpenCommandLineFiles(d.AppState, CommandLine.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]));
+        OpenCommandLineFiles(d.AppState, CommandLine.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Files);
         d.RunUntil(() => d.AppState.Tabs.Active?.Node != null);
         d.Settle();
 
@@ -67,7 +65,7 @@ public sealed class CommandLineTests
     {
         var d = new AppStateDriver();
 
-        OpenCommandLineFiles(d.AppState, CommandLine.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]));
+        OpenCommandLineFiles(d.AppState, CommandLine.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Files);
         d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
 
         Assert.Contains("T:Nowhere.Missing", Assert.Single(d.AppState.Errors.Entries).Words().Title);
@@ -109,9 +107,7 @@ public sealed class CommandLineTests
     [Fact]
     public void Starting_with_arguments_the_app_ignores_tells_of_them()
     {
-        var d = new AppStateDriver();
-
-        FollowStartupCommandLine(d.AppState, CommandLine.Parse(["--language=il-csharp", "--opengl", "--language=IL"]));
+        var d = Start(new AppSettings(), "--language=il-csharp", "--opengl", "--language=IL");
 
         var error = Assert.Single(d.AppState.Errors.Entries).Words();
         Assert.Contains("2", error.Title);
@@ -122,9 +118,7 @@ public sealed class CommandLineTests
     [Fact]
     public void Starting_with_arguments_the_app_understands_tells_of_nothing()
     {
-        var d = new AppStateDriver();
-
-        FollowStartupCommandLine(d.AppState, CommandLine.Parse(["--language=IL", "--gl", "--newinstance"]));
+        var d = Start(new AppSettings(), "--language=IL", "--gl", "--newinstance");
 
         Assert.Empty(d.AppState.Errors.Entries);
     }
@@ -132,23 +126,18 @@ public sealed class CommandLineTests
     [Fact]
     public void The_language_named_is_the_one_decompiled_to()
     {
-        var d = new AppStateDriver();
+        var csharp = Start(new AppSettings { Language = DecompilationLanguage.IL }, "--language=C#");
+        var il = Start(new AppSettings { Language = DecompilationLanguage.CSharp }, "--language=IL");
 
-        Start(d, "--language=C#");
-        var csharp = d.AppState.Language;
-        Start(d, "--language=IL");
-
-        Assert.Equal(DecompilationLanguage.CSharp, csharp);
-        Assert.Equal(DecompilationLanguage.IL, d.AppState.Language);
+        Assert.Equal(DecompilationLanguage.CSharp, csharp.AppState.Language);
+        Assert.Equal(DecompilationLanguage.IL, il.AppState.Language);
     }
 
     [Fact]
     public void A_list_named_that_there_is_none_of_is_added_and_opened_empty()
     {
         using var temp = new TempDir();
-        var d = new AppStateDriver(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])));
-
-        Start(d, $"--list={Other}");
+        var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), $"--list={Other}");
 
         Assert.Equal(Other, d.AppState.Lists.Active);
         Assert.Empty(d.AppState.Assemblies.FilePaths);
@@ -162,9 +151,8 @@ public sealed class CommandLineTests
         var settings = SettingsWith(temp,
             new AssemblyListRecord(SavedAssemblyLists.DefaultName, []),
             new AssemblyListRecord(Other, [PathOf(AppStateDriver.FixturePath)]));
-        var d = new AppStateDriver(settings);
 
-        Start(d, "--list=other", OtherAssembly);
+        var d = Start(settings, "--list=other", OtherAssembly);
         SaveSettings(d.AppState);
 
         AssemblyPath[] opened = [PathOf(AppStateDriver.FixturePath), PathOf(OtherAssembly)];
@@ -177,9 +165,7 @@ public sealed class CommandLineTests
     public void Clearing_the_list_opens_only_the_files_named_and_saves_the_list_with_them()
     {
         using var temp = new TempDir();
-        var d = new AppStateDriver(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])));
-
-        Start(d, "--clear-list", OtherAssembly);
+        var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), "--clear-list", OtherAssembly);
         SaveSettings(d.AppState);
 
         Assert.Equal([OtherAssembly], d.AppState.Assemblies.FilePaths.Select(static p => p.Text));
@@ -193,16 +179,16 @@ public sealed class CommandLineTests
         return settings;
     }
 
-    /// <summary>Follows the command line of <paramref name="args"/>, then opens the list and the files
-    /// it names, as the app does when it starts.</summary>
-    private static void Start(AppStateDriver d, params string[] args)
+    /// <summary>Starts over <paramref name="settings"/> with the command line of <paramref name="args"/>
+    /// the way the app does, and opens the list and the files it names.</summary>
+    private static AppStateDriver Start(AppSettings settings, params string[] args)
     {
         var commandLine = CommandLine.Parse(args);
-        FollowStartupCommandLine(d.AppState, commandLine);
-        RestoreActiveAssemblyList(d.AppState);
-        OpenAssemblies(d.AppState, commandLine.AssemblyPaths);
+        var d = AppStateDriver.Started(new SettingsLoad(settings, new SettingsProblem.None()), commandLine);
+        ILSightApp.OpenStartupAssemblies(d.AppState, commandLine.Files);
         d.RunUntil(() => AreListed(d.AppState, commandLine.AssemblyPaths));
         d.Settle();
+        return d;
     }
 
     private static bool AreListed(AppState appState, List<AssemblyPath> paths) => paths.All(appState.Assemblies.IsListed);

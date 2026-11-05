@@ -107,19 +107,6 @@ public sealed class AppSettings
         };
     }
 
-    public StartupConfig CreateWindowConfig()
-    {
-        var config = new StartupConfig
-        {
-            WindowWidth = 1400,
-            WindowHeight = 900,
-            WindowTitle = "ILSight",
-        };
-        if (Window == null)
-            return config;
-        return Window.Value.ApplyTo(config);
-    }
-
     /// <summary>The settings in the file at <paramref name="path"/>, each value read on its own, so a
     /// value the file holds wrong leaves out only that one, for its default to stand in.</summary>
     public static SettingsLoad Load(string path)
