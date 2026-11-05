@@ -250,7 +250,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// <summary>Does what the command lines of later runs ask as they arrive, until this window closes,
     /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
     /// each one arriving wakes the app.</summary>
-    private async Task ApplyCommandLinesFromLaterRuns()
+    internal async Task ApplyCommandLinesFromLaterRuns()
     {
         await foreach (var commandLine in _laterRuns.Reader.ReadAllAsync())
         {

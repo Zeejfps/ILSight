@@ -52,7 +52,12 @@ public static class ILSightAppLauncher
     /// this; the files the command line names open once the app runs.</summary>
     internal static AppState LoadAppState(SettingsLoadResult loadSettingsResult, CommandLine commandLine)
     {
-        var session = new BrowseSession();
+        return LoadAppState(loadSettingsResult, commandLine, new BrowseSession());
+    }
+
+    /// <summary>The app state to start from over <paramref name="session"/>, which the tests share.</summary>
+    internal static AppState LoadAppState(SettingsLoadResult loadSettingsResult, CommandLine commandLine, BrowseSession session)
+    {
         var appState = AppState.Load(loadSettingsResult.Settings, session);
         ReportSettingsProblem(appState, loadSettingsResult.Problem);
         ApplyStartupOptions(appState, commandLine);

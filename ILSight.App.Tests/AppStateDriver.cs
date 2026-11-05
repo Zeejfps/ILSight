@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Testing;
 using ZGF.Gui.Testing;
@@ -282,10 +283,11 @@ internal sealed class AppStateDriver
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
-    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, SingleInstanceLock? instance = null, ITextMeasurer? measurer = null)
+    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, Channel<CommandLine>? laterRuns = null, ITextMeasurer? measurer = null)
     {
         Driver = new AppStateDriver(settings);
-        App = new ILSightApp(AppState, Ui, CommandLine.Parse([]).Files, instance);
+        App = new ILSightApp(AppState, Ui, CommandLine.Parse([]).Files, laterRuns ?? Channel.CreateUnbounded<CommandLine>());
+        Background.Start(App.ApplyCommandLinesFromLaterRuns(), AppState.ReportError);
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;
         Frames.BeforeFrame = PumpAtFrameTime;
