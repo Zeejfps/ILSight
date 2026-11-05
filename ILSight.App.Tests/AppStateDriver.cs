@@ -143,21 +143,21 @@ internal sealed class AppStateDriver
     {
     }
 
-    private AppStateDriver(SettingsLoad load, CommandLine commandLine, bool withScreen)
+    private AppStateDriver(SettingsLoadResult loadResult, CommandLine commandLine, bool withScreen)
     {
-        load.Settings.Locale ??= Locale.En;
-        AppState = ILSightAppLauncher.LoadAppState(load, commandLine, TestSession.Shared);
+        loadResult.Settings.Locale ??= Locale.En;
+        AppState = ILSightAppLauncher.LoadAppState(loadResult, commandLine, TestSession.Shared);
         if (withScreen)
             _ui = ILSightApp.CreateUiState(AppState);
         RestoreAnalyses(AppState);
     }
 
-    private static SettingsLoad NoProblem(AppSettings? settings) =>
+    private static SettingsLoadResult NoProblem(AppSettings? settings) =>
         new(settings ?? new AppSettings(), new SettingsProblem.None());
 
-    /// <summary>A driver over the app state and screen the app starts with, from <paramref name="load"/>
+    /// <summary>A driver over the app state and screen the app starts with, from <paramref name="loadResult"/>
     /// and <paramref name="commandLine"/>, before the app opens any assemblies.</summary>
-    public static AppStateDriver Started(SettingsLoad load, CommandLine commandLine) => new(load, commandLine, withScreen: true);
+    public static AppStateDriver Started(SettingsLoadResult loadResult, CommandLine commandLine) => new(loadResult, commandLine, withScreen: true);
 
     /// <summary>A driver that has opened the fixture assembly.</summary>
     public static AppStateDriver Opened(AppSettings? settings = null)

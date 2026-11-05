@@ -157,7 +157,7 @@ public sealed class AppSettingsTests : IDisposable
         settings.Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp7_3 }.With(DecompilerToggle.Find("AlwaysUseBraces")!, false);
         settings.FoldedOptionGroups = ["Other"];
 
-        Assert.IsType<SettingsWrite.Written>(settings.Save());
+        Assert.IsType<SettingsWriteResult.Written>(settings.Save());
 
         var (loaded, problem) = AppSettings.Load(SettingsFile);
         Assert.IsType<SettingsProblem.None>(problem);
@@ -208,7 +208,7 @@ public sealed class AppSettingsTests : IDisposable
     {
         var settings = AppSettings.Load(SettingsFile).Settings;
         settings.Window = new WindowBounds(-1200, 80, 1600, 1000, Maximized: true);
-        Assert.IsType<SettingsWrite.Written>(settings.Save());
+        Assert.IsType<SettingsWriteResult.Written>(settings.Save());
 
         var loaded = AppSettings.Load(SettingsFile).Settings;
         var config = loaded.Window!.Value.ApplyTo(new StartupConfig { WindowWidth = 1400, WindowHeight = 900, WindowTitle = "ILSight" });
@@ -280,7 +280,7 @@ public sealed class AppSettingsTests : IDisposable
         var list = Assert.Single(loaded.AssemblyLists);
         Assert.Equal(SavedAssemblyLists.DefaultName, list.Name);
         Assert.Equal([A, B], list.Assemblies.Select(static p => p.Text));
-        Assert.IsType<SettingsWrite.Written>(loaded.Save());
+        Assert.IsType<SettingsWriteResult.Written>(loaded.Save());
         Assert.False(JsonDocument.Parse(File.ReadAllText(SettingsFile)).RootElement.TryGetProperty("Assemblies", out _));
     }
 
@@ -296,7 +296,7 @@ public sealed class AppSettingsTests : IDisposable
         Assert.Empty(loaded.AssemblyLists[0].Analyzed!);
         var analyzed = Assert.Single(loaded.AssemblyLists[1].Analyzed!);
         Assert.Equal(new CodeAnchor(CodeAnchorKind.Definition, PathOf(A), 33554434), analyzed);
-        Assert.IsType<SettingsWrite.Written>(loaded.Save());
+        Assert.IsType<SettingsWriteResult.Written>(loaded.Save());
         Assert.False(JsonDocument.Parse(File.ReadAllText(SettingsFile)).RootElement.TryGetProperty("Analyzed", out _));
     }
 
@@ -308,16 +308,16 @@ public sealed class AppSettingsTests : IDisposable
         var loaded = AppSettings.Load(Written($$"""{ "ShowNonPublic": {{(showNonPublic ? "true" : "false")}} }""")).Settings;
 
         Assert.Equal(expected, loaded.ApiVisibility);
-        Assert.IsType<SettingsWrite.Written>(loaded.Save());
+        Assert.IsType<SettingsWriteResult.Written>(loaded.Save());
         Assert.False(JsonDocument.Parse(File.ReadAllText(SettingsFile)).RootElement.TryGetProperty("ShowNonPublic", out _));
     }
 
     [Fact]
     public void An_unreadable_file_falls_back_to_defaults_and_is_reported()
     {
-        var load = AppSettings.Load(Written("""{ "Assemblies": [ "a.dll", """));
-        var (loaded, problem) = load;
-        var appState = ILSightAppLauncher.LoadAppState(load, CommandLine.Parse([]), TestSession.Shared);
+        var loadResult = AppSettings.Load(Written("""{ "Assemblies": [ "a.dll", """));
+        var (loaded, problem) = loadResult;
+        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]), TestSession.Shared);
 
         Assert.Empty(loaded.AssemblyLists);
         Assert.IsType<SettingsProblem.NotJson>(problem);
@@ -329,11 +329,11 @@ public sealed class AppSettingsTests : IDisposable
     public void An_unreadable_file_is_copied_beside_it_before_the_settings_are_saved_over_it()
     {
         const string broken = """{ "Assemblies": [ "a.dll", """;
-        var load = AppSettings.Load(Written(broken));
-        var (loaded, problem) = load;
-        var appState = ILSightAppLauncher.LoadAppState(load, CommandLine.Parse([]), TestSession.Shared);
+        var loadResult = AppSettings.Load(Written(broken));
+        var (loaded, problem) = loadResult;
+        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]), TestSession.Shared);
 
-        Assert.IsType<SettingsWrite.Written>(loaded.Save());
+        Assert.IsType<SettingsWriteResult.Written>(loaded.Save());
 
         var copy = _temp.PathOf("settings.unreadable.json");
         Assert.Equal(new SettingsKept.CopiedTo(copy), Assert.IsType<SettingsProblem.NotJson>(problem).Kept);
@@ -347,13 +347,13 @@ public sealed class AppSettingsTests : IDisposable
     {
         const string held = """{ "Theme": "light" }""";
         var path = Written(held);
-        SettingsLoad load;
+        SettingsLoadResult loadResult;
         using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
-            load = AppSettings.Load(path);
+            loadResult = AppSettings.Load(path);
 
-        Assert.IsType<SettingsWrite.Written>(load.Settings.Save());
+        Assert.IsType<SettingsWriteResult.Written>(loadResult.Settings.Save());
 
-        Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotRead>(load.Problem).Kept);
+        Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotRead>(loadResult.Problem).Kept);
         Assert.Equal(held, File.ReadAllText(path));
     }
 
@@ -373,9 +373,9 @@ public sealed class AppSettingsTests : IDisposable
             { "Theme": "light", "Language": "Klingon", "Window": "wide",
               "AssemblyLists": [ { "Name": "Work", "Assemblies": [ "{{AInJson}}" ] } ] }
             """;
-        var load = AppSettings.Load(Written(json));
-        var (loaded, problem) = load;
-        var appState = ILSightAppLauncher.LoadAppState(load, CommandLine.Parse([]), TestSession.Shared);
+        var loadResult = AppSettings.Load(Written(json));
+        var (loaded, problem) = loadResult;
+        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]), TestSession.Shared);
 
         var leftOut = Assert.IsType<SettingsProblem.ValuesLeftOut>(problem);
         Assert.Equal(["Language", "Window"], leftOut.Fields);
@@ -414,7 +414,7 @@ public sealed class AppSettingsTests : IDisposable
         var settings = AppSettings.Load(SettingsFile).Settings;
         settings.Display = new DisplayOptions(14f, false, true, false, false, 1.25f, new CodeFont("Mono", "/mono.ttf", 1),
             TokenFormat.Hex, true, true, true, false);
-        Assert.IsType<SettingsWrite.Written>(settings.Save());
+        Assert.IsType<SettingsWriteResult.Written>(settings.Save());
 
         Assert.Equal(settings.Display, AppSettings.Load(SettingsFile).Settings.Display);
         var (loaded, problem) = AppSettings.Load(Written("""{ "Display": { "ShowLineNumbers": false, "Font": { "Family": "Mono", "Path": null } } }"""));
@@ -525,9 +525,9 @@ public sealed class AppSettingsTests : IDisposable
     [InlineData("""{ "Layout": { "Windows": [ { "Root": null } ] } }""")]
     public void A_layout_missing_parts_is_left_out_for_the_panels_to_start_where_they_do(string json)
     {
-        var load = AppSettings.Load(Written($$"""{ "Theme": "light", {{json[1..]}}"""));
-        var (loaded, problem) = load;
-        var d = AppStateDriver.Started(load, CommandLine.Parse([]));
+        var loadResult = AppSettings.Load(Written($$"""{ "Theme": "light", {{json[1..]}}"""));
+        var (loaded, problem) = loadResult;
+        var d = AppStateDriver.Started(loadResult, CommandLine.Parse([]));
 
         Assert.IsType<SettingsProblem.LayoutPartsMissing>(problem);
         Assert.Equal("light", loaded.Theme.Text);

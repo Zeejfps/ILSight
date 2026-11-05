@@ -2,16 +2,16 @@ namespace ILSight;
 
 /// <summary>What writing the settings file did. A <c>Reason</c> names the file and says why, as the
 /// system said it.</summary>
-public abstract record SettingsWrite
+public abstract record SettingsWriteResult
 {
-    private SettingsWrite()
+    private SettingsWriteResult()
     {
     }
 
     /// <summary>The file was written, or the settings are kept in memory only and there is none.</summary>
-    public sealed record Written : SettingsWrite;
+    public sealed record Written : SettingsWriteResult;
 
-    public sealed record Failed(string Reason) : SettingsWrite;
+    public sealed record Failed(string Reason) : SettingsWriteResult;
 }
 
 /// <summary>What saving the settings when they changed did.</summary>

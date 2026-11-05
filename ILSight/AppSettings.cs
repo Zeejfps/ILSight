@@ -109,11 +109,11 @@ public sealed class AppSettings
 
     /// <summary>The settings in the file at <paramref name="path"/>, each value read on its own, so a
     /// value the file holds wrong leaves out only that one, for its default to stand in.</summary>
-    public static SettingsLoad Load(string path)
+    public static SettingsLoadResult Load(string path)
     {
         var (settings, problem) = Read(path);
         settings.FilePath = MaySaveOver(problem) ? path : null;
-        return new SettingsLoad(settings, problem);
+        return new SettingsLoadResult(settings, problem);
     }
 
     private static bool MaySaveOver(SettingsProblem problem) => problem switch
@@ -124,10 +124,10 @@ public sealed class AppSettings
         _ => true,
     };
 
-    private static SettingsLoad Read(string path)
+    private static SettingsLoadResult Read(string path)
     {
         if (!File.Exists(path))
-            return new SettingsLoad(new AppSettings(), new SettingsProblem.None());
+            return new SettingsLoadResult(new AppSettings(), new SettingsProblem.None());
         Dictionary<string, JsonElement>? fields;
         try
         {
@@ -135,21 +135,21 @@ public sealed class AppSettings
         }
         catch (Exception e) when (e is JsonException or NotSupportedException)
         {
-            return new SettingsLoad(new AppSettings(), new SettingsProblem.NotJson(e.Message, Keep(path)));
+            return new SettingsLoadResult(new AppSettings(), new SettingsProblem.NotJson(e.Message, Keep(path)));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return new SettingsLoad(new AppSettings(), new SettingsProblem.NotRead(e.Message, Keep(path)));
+            return new SettingsLoadResult(new AppSettings(), new SettingsProblem.NotRead(e.Message, Keep(path)));
         }
         if (fields == null)
-            return new SettingsLoad(new AppSettings(), new SettingsProblem.Empty());
+            return new SettingsLoadResult(new AppSettings(), new SettingsProblem.Empty());
         var file = new SettingsReader(fields);
         var settings = Parse(file, out var layoutProblem);
         if (file.LeftOut.Count == 0)
-            return new SettingsLoad(settings, layoutProblem);
+            return new SettingsLoadResult(settings, layoutProblem);
         if (layoutProblem is not SettingsProblem.None)
             file.LeaveOut(nameof(SettingsFile.Layout));
-        return new SettingsLoad(settings, new SettingsProblem.ValuesLeftOut(file.LeftOut, Keep(path)));
+        return new SettingsLoadResult(settings, new SettingsProblem.ValuesLeftOut(file.LeftOut, Keep(path)));
     }
 
     /// <summary>Copies the settings file at <paramref name="path"/>, which could not be read whole,
@@ -352,20 +352,20 @@ public sealed class AppSettings
 
     /// <summary>Writes the settings to <see cref="FilePath"/>, replacing the file whole so a failed
     /// write never leaves it truncated.</summary>
-    public SettingsWrite Save()
+    public SettingsWriteResult Save()
     {
-        if (FilePath == null) return new SettingsWrite.Written();
+        if (FilePath == null) return new SettingsWriteResult.Written();
         var temporary = FilePath + ".tmp";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
             File.WriteAllText(temporary, JsonSerializer.Serialize(SettingsFile.From(this), AppSettingsJson.Default.SettingsFile));
             File.Move(temporary, FilePath, overwrite: true);
-            return new SettingsWrite.Written();
+            return new SettingsWriteResult.Written();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return new SettingsWrite.Failed($"{FilePath}{Environment.NewLine}{e.Message}");
+            return new SettingsWriteResult.Failed($"{FilePath}{Environment.NewLine}{e.Message}");
         }
     }
 }

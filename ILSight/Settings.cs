@@ -25,8 +25,8 @@ public static class Settings
             return new Saving.Waiting(wait);
         return SaveSettings(appState) switch
         {
-            SettingsWrite.Written => new Saving.Saved(),
-            SettingsWrite.Failed failed => new Saving.Failed(failed.Reason, appState.SaveRetry.Remaining(now)),
+            SettingsWriteResult.Written => new Saving.Saved(),
+            SettingsWriteResult.Failed failed => new Saving.Failed(failed.Reason, appState.SaveRetry.Remaining(now)),
             _ => throw new UnreachableException(),
         };
     }
@@ -41,7 +41,7 @@ public static class Settings
 
     /// <summary>Writes the settings, counting what they were copied from as saved only once the write
     /// succeeds. A failed write is reported, unless writes were failing already.</summary>
-    public static SettingsWrite SaveSettings(AppState appState)
+    public static SettingsWriteResult SaveSettings(AppState appState)
     {
         RememberActiveAssemblyList(appState);
         var sources = CaptureSavedSources(appState);
@@ -101,15 +101,15 @@ public static class Settings
         };
     }
 
-    private static void TakeWrite(AppState appState, SavedSources sources, SettingsWrite write)
+    private static void TakeWrite(AppState appState, SavedSources sources, SettingsWriteResult write)
     {
         switch (write)
         {
-            case SettingsWrite.Written:
+            case SettingsWriteResult.Written:
                 appState.LastSave.Record(sources);
                 appState.SaveRetry.Succeed();
                 break;
-            case SettingsWrite.Failed failed:
+            case SettingsWriteResult.Failed failed:
                 ReportWriteFailure(appState, failed.Reason);
                 break;
             default:

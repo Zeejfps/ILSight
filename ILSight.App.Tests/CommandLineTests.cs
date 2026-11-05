@@ -184,7 +184,7 @@ public sealed class CommandLineTests
     private static AppStateDriver Start(AppSettings settings, params string[] args)
     {
         var commandLine = CommandLine.Parse(args);
-        var d = AppStateDriver.Started(new SettingsLoad(settings, new SettingsProblem.None()), commandLine);
+        var d = AppStateDriver.Started(new SettingsLoadResult(settings, new SettingsProblem.None()), commandLine);
         ILSightApp.OpenStartupAssemblies(d.AppState, commandLine.Files);
         d.RunUntil(() => AreListed(d.AppState, commandLine.AssemblyPaths));
         d.Settle();

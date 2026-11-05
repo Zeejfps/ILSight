@@ -2,7 +2,7 @@ namespace ILSight;
 
 /// <summary>What reading the settings file gave: the settings, with defaults for what the file could not
 /// give, and what was wrong with it.</summary>
-public sealed record SettingsLoad(AppSettings Settings, SettingsProblem Problem);
+public sealed record SettingsLoadResult(AppSettings Settings, SettingsProblem Problem);
 
 /// <summary>What was wrong with the settings file, for the screen to tell in the chosen language. A
 /// <c>Detail</c> is as the system or the JSON reader said it.</summary>

@@ -28,23 +28,23 @@ public static class ILSightAppLauncher
 
     private static void RunApp(CommandLine commandLine, AppInstance instance)
     {
-        var load = ReadSettings(commandLine);
-        var appState = LoadAppState(load, commandLine, new BrowseSession());
+        var loadResult = LoadSettings(commandLine);
+        var appState = LoadAppState(loadResult, commandLine, new BrowseSession());
         var uiState = BuildScreen(appState);
         var app = CreateApp(appState, uiState, commandLine, instance);
         OpenWindow(app, appState, commandLine);
     }
 
-    private static SettingsLoad ReadSettings(CommandLine commandLine) =>
+    private static SettingsLoadResult LoadSettings(CommandLine commandLine) =>
         AppSettings.Load(commandLine.SettingsPath);
 
-    /// <summary>The app state to start from: what <paramref name="load"/> describes, told of what was
+    /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, told of what was
     /// wrong with the settings, with <paramref name="commandLine"/> followed. The screen is built over
     /// this; the files the command line names open once the app runs.</summary>
-    internal static AppState LoadAppState(SettingsLoad load, CommandLine commandLine, BrowseSession session)
+    internal static AppState LoadAppState(SettingsLoadResult loadResult, CommandLine commandLine, BrowseSession session)
     {
-        var appState = AppState.Load(load.Settings, session);
-        ReportSettingsProblem(appState, load.Problem);
+        var appState = AppState.Load(loadResult.Settings, session);
+        ReportSettingsProblem(appState, loadResult.Problem);
         FollowStartupCommandLine(appState, commandLine);
         return appState;
     }
