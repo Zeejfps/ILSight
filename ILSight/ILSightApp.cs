@@ -254,7 +254,16 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     {
         await foreach (var commandLine in _laterRuns.Reader.ReadAllAsync())
         {
-            ApplyCommandLineFromLaterRun(_appState, commandLine);
+            try
+            {
+                ApplyCommandLineFromLaterRun(_appState, commandLine);
+            }
+            // Catches everything so that one command line that fails is reported rather than ending
+            // this loop, which would leave the pipe answering later runs with no one to follow them.
+            catch (Exception e)
+            {
+                _appState.ReportError(new AppProblem.Unexpected(e));
+            }
             UiState.FrontAsked = true;
         }
     }
