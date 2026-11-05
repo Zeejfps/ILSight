@@ -1,15 +1,19 @@
 import {Composition} from 'remotion';
 import {FPS, HEIGHT, TOTAL_FRAMES, WIDTH} from './timeline';
+import {Thumbnail} from './Thumbnail';
 import {Trailer} from './Trailer';
 
 export const Root = () => (
-  <Composition
-    id="Trailer"
-    component={Trailer}
-    durationInFrames={TOTAL_FRAMES}
-    fps={FPS}
-    width={WIDTH}
-    height={HEIGHT}
-    defaultProps={{music: 'option-c'}}
-  />
+  <>
+    <Composition
+      id="Trailer"
+      component={Trailer}
+      durationInFrames={TOTAL_FRAMES}
+      fps={FPS}
+      width={WIDTH}
+      height={HEIGHT}
+      defaultProps={{music: 'option-c'}}
+    />
+    <Composition id="Thumbnail" component={Thumbnail} durationInFrames={1} fps={FPS} width={1280} height={720} />
+  </>
 );
