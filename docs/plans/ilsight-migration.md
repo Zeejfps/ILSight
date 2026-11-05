@@ -76,26 +76,53 @@ Only once ILSight builds green on its own.
 
 ## Phase 4 — Velopack
 
+Each stage keeps the pipeline green, so a failure belongs to the stage that introduced it. Publishing comes first: it is the riskier part, and `vpk pack` only wraps a publish folder.
+
+### Stage 1 — Build artifacts
+
+`.github/workflows/release.yml` publishes the NativeAOT app for each RID and uploads it as a build artifact. Nothing is released. Run it by hand, then run each artifact on its OS.
+
+- **Runners:**
+
+  | RID | Runner | Why |
+  |---|---|---|
+  | `win-x64` | `windows-latest` | |
+  | `osx-arm64` | `macos-latest` | |
+  | `osx-x64` | `macos-latest` | NativeAOT can't cross-compile between OSes, but it can between macOS architectures |
+  | `linux-x64` | `ubuntu-22.04` | The binary needs the glibc it was linked against or newer. Move to the next LTS when this runner is retired |
+
+- **Checkout:** `submodules: recursive`, `lfs: true` and `fetch-depth: 0`. MinVer needs the history, and the LFS objects inside `ZGF/` are pulled in a separate step. Watch the LFS bandwidth quota.
+- **Version:** MinVer reads `v*` tags through `MinVerTagPrefix`. The build fails on a `0.0.0` version.
+- **Build:** `dotnet publish -c Release -r <rid>`, then check for the exe and GLFW, that no `ILSight.dll` was published, and that GLFW is not an LFS pointer.
+- **Artifact:** debug files removed, as `ILSight-<version>-<rid>.tar.gz`, because a zipped artifact loses the executable bit.
+
+### Stage 2 — Packaging
+
 1. Add the `Velopack` package. It is AOT-compatible on net8+.
 2. The first step in `Program.cs` is `VelopackApp.Build().Run();`. It handles install/update hooks and may exit.
-3. Add an `Updates` feature file:
+3. Add a pack step to `release.yml`, and check that each installer installs and launches:
+   - all OSes: `vpk pack --packId ILSight --packTitle ILSight --packVersion <MinVer> --mainExe <exe> --icon <icon>`;
+   - macOS also: `--bundleId com.builtbyzee.ilsight` plus signing and notarization;
+   - Linux: produces an AppImage, which needs FUSE on the user's machine.
+4. Keep the `vpk` tool and the `Velopack` package on the same version.
+5. Icons: `.ico`, `.icns`, `.png`, designed in [ilsight-icon.md](ilsight-icon.md).
+
+### Stage 3 — Publishing
+
+Decide code signing first (decision 4); macOS can follow Windows and Linux if it is still open.
+
+1. Trigger `release.yml` on a `v*` tag.
+2. Add `vpk upload github --publish`, which needs `contents: write`.
+
+### Stage 4 — Updates
+
+1. Feed: `GithubSource` pointed at `Zeejfps/ILSight`.
+2. Add an `Updates` feature file:
    - check on startup when the app is installed, and skip when run from the IDE;
    - download in the background;
    - queue a `ViewCommand` that offers "Restart to update", then apply and restart;
    - add a settings toggle for automatic checks.
-4. Feed: `GithubSource` pointed at `Zeejfps/ILSight`.
-5. CI (`.github/workflows/release.yml`), triggered by a `v*` tag:
-   - **Runners:** a matrix of `windows-latest`, `macos-latest` and `ubuntu-latest`. NativeAOT can't cross-compile between OSes.
-   - **Checkout:** `submodules: recursive` and `lfs: true`; the GLFW natives inside `ZGF/` are LFS objects. Watch the LFS bandwidth quota.
-   - **Build:** `dotnet publish -c Release -r <rid>`.
-   - **Pack:**
-     - all OSes: `vpk pack --packId ILSight --packTitle ILSight --packVersion <MinVer> --mainExe <exe> --icon <icon>`;
-     - macOS also: `--bundleId com.builtbyzee.ilsight` plus signing and notarization;
-     - Linux: produces an AppImage, which needs FUSE on the user's machine. The existing `build_linux-x64.dockerfile` can pin an older glibc.
-   - **Upload:** `vpk upload github --publish`.
-   - **Versions:** keep the `vpk` tool and the `Velopack` package on the same version.
-6. RIDs: `win-x64`, `osx-arm64` (add `osx-x64` if needed), `linux-x64`.
-7. Icons: `.ico`, `.icns`, `.png`, designed in [ilsight-icon.md](ilsight-icon.md).
+3. Tag two versions and check that the first updates to the second, on each RID.
 
 ## Phase 5 — About page
 

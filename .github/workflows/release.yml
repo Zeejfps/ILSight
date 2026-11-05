@@ -1,0 +1,97 @@
+# Builds the NativeAOT app for every platform and uploads each one as a build artifact. Nothing is
+# released yet: Velopack's pack and upload steps come next, see docs/plans/ilsight-migration.md.
+#
+# Run by hand from the Actions tab. It also runs on a pull request that changes this file, so a change
+# can be tried before it lands; `workflow_dispatch` only exists once the file is on the default branch.
+name: release
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build (${{ matrix.rid }})
+    # NativeAOT can't cross-compile between OSes, but it can between macOS architectures, so both Macs
+    # build on the arm64 runner.
+    # Linux builds on the oldest supported Ubuntu because the binary needs the glibc it was linked
+    # against or newer: ubuntu-latest would drop every distro older than itself.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64, os: windows-latest, exe: ILSight.exe, glfw: glfw3.dll }
+          - { rid: osx-arm64, os: macos-latest, exe: ILSight, glfw: glfw3 }
+          - { rid: osx-x64, os: macos-latest, exe: ILSight, glfw: glfw3 }
+          - { rid: linux-x64, os: ubuntu-22.04, exe: ILSight, glfw: libglfw.so.3 }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      PUBLISH_DIR: publish/${{ matrix.rid }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          lfs: true
+          # MinVer reads the version from the tags and the commit count since, so it needs the history.
+          fetch-depth: 0
+
+      # The fonts and GLFW natives are LFS objects inside the submodules, which the option above may
+      # leave as pointer files. A pointer still builds, so the app would only fail once it runs.
+      - name: Pull LFS objects in submodules
+        run: git submodule foreach --recursive git lfs pull
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Install the NativeAOT toolchain
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Read the version
+        run: |
+          version=$(dotnet msbuild ILSight/ILSight.csproj -restore -t:MinVer -getProperty:MinVerVersion | tail -n 1 | tr -d '\r')
+          echo "Version: $version"
+          case "$version" in
+            ""|0.0.0*) echo "::error::MinVer found no version tag: '$version'"; exit 1 ;;
+          esac
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Publish
+        run: dotnet publish ILSight/ILSight.csproj -c Release -r ${{ matrix.rid }} -o "$PUBLISH_DIR"
+
+      # What only fails at launch, so the build can't catch it.
+      - name: Check the output
+        run: |
+          fail() { echo "::error::$1"; exit 1; }
+          [ -f "$PUBLISH_DIR/${{ matrix.exe }}" ] || fail "${{ matrix.exe }} is missing"
+          [ ! -f "$PUBLISH_DIR/ILSight.dll" ] || fail "ILSight.dll was published: this is not a NativeAOT build"
+          glfw="$PUBLISH_DIR/${{ matrix.glfw }}"
+          [ -f "$glfw" ] || fail "${{ matrix.glfw }} is missing"
+          if head -c 40 "$glfw" | grep -aq "git-lfs"; then fail "${{ matrix.glfw }} is an LFS pointer"; fi
+
+      - name: Remove debug files
+        run: |
+          find "$PUBLISH_DIR" -type f \( -name '*.pdb' -o -name '*.xml' \) -delete
+          rm -rf "$PUBLISH_DIR"/*.dSYM
+
+      # A tar keeps the executable bit, which a zipped artifact loses.
+      - name: Archive
+        run: |
+          archive="ILSight-$VERSION-${{ matrix.rid }}.tar.gz"
+          tar -czf "$archive" -C "$PUBLISH_DIR" .
+          echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ env.ARCHIVE }}
+          archive: false
+          if-no-files-found: error
