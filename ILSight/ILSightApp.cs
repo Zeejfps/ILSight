@@ -10,13 +10,7 @@ namespace ILSight;
 /// of later runs from the first, and opens the window that follows them once it is ready.</summary>
 public sealed class ILSightApp : IExternalCommandHandler
 {
-    private readonly ExternalCommand _startupCommand;
     private readonly Channel<ExternalCommand> _pendingCommands = Channel.CreateUnbounded<ExternalCommand>();
-
-    public ILSightApp(ExternalCommand startupCommand)
-    {
-        _startupCommand = startupCommand;
-    }
 
     /// <summary>Queues <paramref name="command"/> for the window, from any thread; false once the window
     /// has closed.</summary>
@@ -25,14 +19,15 @@ public sealed class ILSightApp : IExternalCommandHandler
         return _pendingCommands.Writer.TryWrite(command);
     }
 
-    /// <summary>Opens the window and runs until it closes.</summary>
-    public void Run()
+    /// <summary>Opens the window as <paramref name="options"/> say, follows <paramref name="command"/>,
+    /// and runs until the window closes.</summary>
+    public void Run(LaunchOptions options, ExternalCommand command)
     {
-        var loadResult = AppSettings.Load(_startupCommand.SettingsPath);
-        var appState = LoadAppState(loadResult, _startupCommand);
+        var loadResult = AppSettings.Load(options.SettingsPath);
+        var appState = LoadAppState(loadResult, command);
         var uiState = ILSightWindow.CreateUiState(appState);
-        var window = new ILSightWindow(appState, uiState, _startupCommand.Files, _pendingCommands);
-        window.Run(CreateWindowConfig(appState.Window), _startupCommand.RenderBackend);
+        var window = new ILSightWindow(appState, uiState, command.Files, _pendingCommands);
+        window.Run(CreateWindowConfig(appState.Window), options.RenderBackend);
     }
 
     /// <summary>The app state to start from: what <paramref name="loadSettingsResult"/> describes, told of what was

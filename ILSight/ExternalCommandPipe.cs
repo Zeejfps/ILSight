@@ -67,7 +67,7 @@ public sealed class ExternalCommandPipe : IDisposable
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
         ForegroundRights.LendTo(processId);
-        await WriteArgumentsAsync(pipe, command.ListHandedArguments(), token);
+        await WriteArgumentsAsync(pipe, command.ListArguments(), token);
         var answer = await ReadByteAsync(pipe, token);
         return answer == Received;
     }

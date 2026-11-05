@@ -1,23 +1,18 @@
-using ZGF.Gui.Immediate;
 using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>What the app is asked to do from outside it: parsed from the arguments of this run, or of a later
-/// run that hands it to the app already open.</summary>
+/// <summary>What the app is asked to do from outside it, by the arguments of this run or of a later run
+/// that hands it to the app already open. It is all that passes between runs; how a run starts is in
+/// <see cref="LaunchOptions"/>.</summary>
 public sealed class ExternalCommand
 {
-    private const string SettingsOption = "--settings=";
-    private const string OpenGlFlag = "--gl";
     private const string LanguageOption = "--language=";
     private const string ListOption = "--list=";
     private const string ClearListFlag = "--clear-list";
     private const string NavigateToOption = "--navigateto=";
-    private const string NewInstanceFlag = "--newinstance";
     private const string FlagPrefix = "--";
 
-    public string SettingsPath { get; private set; } = AppSettings.DefaultPath;
-    public RenderBackendKind RenderBackend { get; private set; } = RenderBackendKind.Auto;
     public List<AssemblyPath> AssemblyPaths { get; } = new();
 
     /// <summary>The language to decompile to, or null to keep the one the settings have.</summary>
@@ -34,10 +29,6 @@ public sealed class ExternalCommand
     /// <c>T:System.String</c>, looked for in <see cref="AssemblyPaths"/>, or in every open assembly when
     /// there are none; null to show the last file opened.</summary>
     public string? NavigateTo { get; private set; }
-
-    /// <summary>Whether to open a window of its own rather than hand this command to the one
-    /// already open with the same settings.</summary>
-    public bool NewInstance { get; private set; }
 
     /// <summary>The arguments that ask for nothing the app can do, as they were given: an option it does
     /// not have, a language it does not have, an option with no value, or a file that is no path.</summary>
@@ -56,11 +47,7 @@ public sealed class ExternalCommand
 
     private void Read(string arg)
     {
-        if (arg.StartsWith(SettingsOption, StringComparison.Ordinal))
-            ReadSettingsPath(arg);
-        else if (arg == OpenGlFlag)
-            RenderBackend = RenderBackendKind.OpenGl;
-        else if (arg.StartsWith(LanguageOption, StringComparison.Ordinal))
+        if (arg.StartsWith(LanguageOption, StringComparison.Ordinal))
             ReadLanguage(arg);
         else if (arg.StartsWith(ListOption, StringComparison.Ordinal))
             ReadAssemblyList(arg);
@@ -68,23 +55,10 @@ public sealed class ExternalCommand
             ClearList = true;
         else if (arg.StartsWith(NavigateToOption, StringComparison.Ordinal))
             ReadNavigateTo(arg);
-        else if (arg == NewInstanceFlag)
-            NewInstance = true;
         else if (arg.StartsWith(FlagPrefix, StringComparison.Ordinal))
             Ignored.Add(arg);
         else
             AddAssemblyPath(arg);
-    }
-
-    private void ReadSettingsPath(string arg)
-    {
-        var path = ReadName(arg.Substring(SettingsOption.Length));
-        if (path == null)
-        {
-            Ignored.Add(arg);
-            return;
-        }
-        SettingsPath = path;
     }
 
     private void ReadLanguage(string arg)
@@ -156,10 +130,9 @@ public sealed class ExternalCommand
         return trimmed;
     }
 
-    /// <summary>The arguments that ask a window already open for what this command asks: the
-    /// language, the list, what to show and the files, made absolute from this process's folder; and the
-    /// arguments ignored, for that window to tell of.</summary>
-    public List<string> ListHandedArguments()
+    /// <summary>The arguments that ask for this command again: the language, the list, what to show and
+    /// the files, made absolute from this process's folder; and the arguments ignored, to tell of.</summary>
+    public List<string> ListArguments()
     {
         var args = new List<string>();
         if (Language != null)
