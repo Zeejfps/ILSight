@@ -10,5 +10,6 @@ export const Root = () => (
     fps={FPS}
     width={WIDTH}
     height={HEIGHT}
+    defaultProps={{music: 'option-c'}}
   />
 );

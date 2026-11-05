@@ -2,6 +2,7 @@ import {loadFont} from '@remotion/google-fonts/Inter';
 import type {CSSProperties} from 'react';
 import {
   AbsoluteFill,
+  Audio,
   Easing,
   Img,
   Sequence,
@@ -16,6 +17,7 @@ import {
   type CursorPath,
   SCENES,
   type Scene,
+  TOTAL_FRAMES,
   type View,
   WIDTH,
   cursorPathOf,
@@ -30,6 +32,12 @@ const CAPTION_IN_FRAMES = 8;
 const PRESS_FRAMES = 5;
 const RIPPLE_FRAMES = 16;
 const RIPPLE_SIZE = 110;
+/** Where the first beat of the track falls, so that the first frame lands on it. */
+const MUSIC_FIRST_BEAT = 14;
+const CLICK_VOLUME = 0.75;
+const CLICK_FRAMES = 15;
+const MUSIC_VOLUME = 0.8;
+const MUSIC_FADE_FRAMES = 12;
 const ACCENT = '#5b9dff';
 
 /** The transform that centres the view's point, kept from showing past the frame's edges. */
@@ -175,6 +183,17 @@ const Caption = ({text, corner}: {text: string; corner: Corner}) => {
   );
 };
 
+/** A click sound on each press of the cursor in the scene. */
+const Clicks = ({scene}: {scene: Scene}) => (
+  <>
+    {(cursorPathOf(scene)?.presses ?? []).map((press) => (
+      <Sequence key={press} from={press} durationInFrames={CLICK_FRAMES} layout="none">
+        <Audio src={staticFile('audio/click-tight.wav')} volume={scene.clickVolume ?? CLICK_VOLUME} />
+      </Sequence>
+    ))}
+  </>
+);
+
 const SceneView = ({scene}: {scene: Scene}) => {
   const frame = useCurrentFrame();
   const opacity = interpolate(frame, [0, FADE_FRAMES], [0, 1], {extrapolateRight: 'clamp'});
@@ -213,10 +232,20 @@ const EndCard = () => {
   );
 };
 
-export const Trailer = () => {
+const musicVolume = (frame: number): number =>
+  MUSIC_VOLUME *
+  interpolate(frame, [0, MUSIC_FADE_FRAMES, TOTAL_FRAMES - MUSIC_FADE_FRAMES, TOTAL_FRAMES], [0, 1, 1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+
+export type TrailerProps = {music: string};
+
+export const Trailer = ({music}: TrailerProps) => {
   let start = 0;
   return (
     <AbsoluteFill style={{background: BACKGROUND}}>
+      <Audio src={staticFile(`audio/${music}.mp3`)} volume={musicVolume} trimBefore={MUSIC_FIRST_BEAT} />
       {SCENES.map((scene) => {
         const from = start;
         const frames = sceneFrames(scene);
@@ -224,6 +253,7 @@ export const Trailer = () => {
         return (
           <Sequence key={scene.caption} from={from} durationInFrames={frames}>
             <SceneView scene={scene} />
+            <Clicks scene={scene} />
           </Sequence>
         );
       })}
