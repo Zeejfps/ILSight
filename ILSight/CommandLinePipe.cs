@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Pipes;
 using System.Text;
-using System.Threading.Channels;
 using ZGF.Desktop;
 
 namespace ILSight;
@@ -21,23 +20,23 @@ public sealed class CommandLinePipe : IDisposable
     private static readonly TimeSpan BusyPipeWait = TimeSpan.FromMilliseconds(100);
 
     private readonly string _name;
-    private readonly ChannelWriter<CommandLine> _laterRuns;
+    private readonly Func<CommandLine, bool> _tryHandle;
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _serving;
 
-    private CommandLinePipe(string name, ChannelWriter<CommandLine> laterRuns)
+    private CommandLinePipe(string name, Func<CommandLine, bool> tryHandle)
     {
         _name = name;
-        _laterRuns = laterRuns;
+        _tryHandle = tryHandle;
         _serving = Task.Run(ServeAsync);
     }
 
     /// <summary>Starts taking, in the background, the command lines later runs hand over to the pipe
-    /// <paramref name="name"/>, writing them to <paramref name="laterRuns"/>. Once that is completed,
+    /// <paramref name="name"/>, giving them to <paramref name="tryHandle"/>. Once that returns false,
     /// later runs are refused and open windows of their own.</summary>
-    public static CommandLinePipe Listen(string name, ChannelWriter<CommandLine> laterRuns)
+    public static CommandLinePipe Listen(string name, Func<CommandLine, bool> tryHandle)
     {
-        return new CommandLinePipe(name, laterRuns);
+        return new CommandLinePipe(name, tryHandle);
     }
 
     /// <summary>Hands <paramref name="commandLine"/> to the run listening on the pipe <paramref name="name"/>
@@ -110,7 +109,7 @@ public sealed class CommandLinePipe : IDisposable
         var token = timeout.Token;
         await WriteIntAsync(pipe, Environment.ProcessId, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        if (!_laterRuns.TryWrite(CommandLine.Parse(args)))
+        if (!_tryHandle(CommandLine.Parse(args)))
             return;
         await pipe.WriteAsync(new[] { Received }, token);
         await pipe.FlushAsync(token);

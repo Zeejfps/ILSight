@@ -13,7 +13,7 @@ public sealed class CommandLinePipeTests
         using var temp = new TempDir();
         using var instanceLock = SingleInstanceLock.Request(temp.PathOf("settings.json"));
         var laterRuns = Channel.CreateUnbounded<CommandLine>();
-        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer);
+        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer.TryWrite);
 
         var handedOver = CommandLinePipe.TryHandOver(instanceLock.Name, CommandLine.Parse(["--navigateto=T:Some.Type", "relative.dll"]));
 
@@ -29,7 +29,7 @@ public sealed class CommandLinePipeTests
         using var temp = new TempDir();
         using var instanceLock = SingleInstanceLock.Request(temp.PathOf("settings.json"));
         var laterRuns = Channel.CreateUnbounded<CommandLine>();
-        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer);
+        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer.TryWrite);
         laterRuns.Writer.TryComplete();
 
         var handedOver = CommandLinePipe.TryHandOver(instanceLock.Name, CommandLine.Parse(["a.dll"]));
@@ -43,7 +43,7 @@ public sealed class CommandLinePipeTests
         using var temp = new TempDir();
         using var instanceLock = SingleInstanceLock.Request(temp.PathOf("settings.json"));
         var laterRuns = Channel.CreateUnbounded<CommandLine>();
-        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer);
+        using var pipe = CommandLinePipe.Listen(instanceLock.Name, laterRuns.Writer.TryWrite);
         var app = new AppDriver(laterRuns: laterRuns);
         app.Run();
 

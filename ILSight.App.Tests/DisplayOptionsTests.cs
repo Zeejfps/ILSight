@@ -415,7 +415,7 @@ public sealed class DisplayOptionsTests
     public void The_code_font_picker_never_grows_past_its_cap_for_a_long_font_name()
     {
         using var temp = new TempDir();
-        var file = temp.Write("long.ttf", EmbeddedAssets.LoadBytes(typeof(ILSightApp).Assembly, "JetBrainsMono-Regular.ttf"));
+        var file = temp.Write("long.ttf", EmbeddedAssets.LoadBytes(typeof(ILSightWindow).Assembly, "JetBrainsMono-Regular.ttf"));
         var app = AppDriver.Opened(width: 3000f);
         OpenDisplayOptions(app.Ui);
         CodeDisplay.SetCodeFont(app.Ui, new CodeFont("A monospaced font with a name far too long to show whole", file, 0));

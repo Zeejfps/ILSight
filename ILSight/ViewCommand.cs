@@ -4,7 +4,7 @@ using ILSight.Core;
 namespace ILSight;
 
 /// <summary>What a feature running with no view on the stack commands the view to do, which
-/// <see cref="ILSightApp"/> runs on the screen, in the order queued, before it draws the next frame.</summary>
+/// <see cref="ILSightWindow"/> runs on the screen, in the order queued, before it draws the next frame.</summary>
 public abstract record ViewCommand
 {
     private ViewCommand()
