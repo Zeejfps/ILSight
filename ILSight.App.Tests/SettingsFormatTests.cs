@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
@@ -15,9 +16,10 @@ public sealed class SettingsFormatTests : IDisposable
 {
     private const string SettingsFixture = "settings.json";
     private const string BookmarksFixture = "ILSpy.Bookmarks.json";
+    private const string FixtureFolderInFile = @"C:\\Fixture\\";
 
-    private static readonly AssemblyPath A = PathOf(@"C:\Fixture\A.dll");
-    private static readonly AssemblyPath B = PathOf(@"C:\Fixture\B.dll");
+    private static readonly AssemblyPath A = PathOf(Rooted("Fixture/A.dll"));
+    private static readonly AssemblyPath B = PathOf(Rooted("Fixture/B.dll"));
     private static readonly TypeAnchor Calculator = new(A, "Ns.Calculator");
 
     private readonly TempDir _temp = new();
@@ -72,8 +74,11 @@ public sealed class SettingsFormatTests : IDisposable
         AssertSameJson(Fixture(BookmarksFixture), File.ReadAllText(path));
     }
 
+    /// <summary>The fixture file <paramref name="name"/>, its paths as this OS writes them: the files hold
+    /// them as Windows does, and on any other OS those are no absolute paths.</summary>
     private static string Fixture(string name) =>
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Settings", name));
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Settings", name))
+            .Replace(FixtureFolderInFile, JsonEncodedText.Encode(Rooted("Fixture/")).Value);
 
     private static void AssertSameJson(string expected, string actual)
     {
@@ -86,7 +91,7 @@ public sealed class SettingsFormatTests : IDisposable
         [
             new AssemblyListRecord("Work", [A, B],
                 [new CodeAnchor(CodeAnchorKind.Statement, A, 0x06000001, 7)],
-                new Dictionary<AssemblyPath, string> { [A] = @"C:\Fixture\A.pdb" },
+                new Dictionary<AssemblyPath, string> { [A] = Rooted("Fixture/A.pdb") },
                 new Dictionary<AssemblyPath, string> { [B] = ".NETCoreApp,Version=v8.0" },
                 ExpectedDocuments()),
             new AssemblyListRecord("Play", [B], []),

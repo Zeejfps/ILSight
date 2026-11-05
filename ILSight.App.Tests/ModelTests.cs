@@ -134,6 +134,11 @@ public sealed class BrowseTreeTests
 
 public sealed class AppSettingsTests : IDisposable
 {
+    private static readonly string A = Rooted("a.dll");
+    private static readonly string B = Rooted("b.dll");
+    private static readonly string AInJson = JsonEncodedText.Encode(A).Value;
+    private static readonly string BInJson = JsonEncodedText.Encode(B).Value;
+
     private readonly TempDir _temp = new();
 
     private string SettingsFile => _temp.PathOf("settings.json");
@@ -259,22 +264,22 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Lists_missing_their_name_or_assemblies_load_without_them()
     {
-        var (loaded, problem) = AppSettings.Load(Written("""{ "AssemblyLists": [ null, { "Name": null }, { "Name": "Work", "Assemblies": null }, { "Name": "Play", "Assemblies": [ " ", "a.dll", "C:\\a.dll" ] } ] }"""));
+        var (loaded, problem) = AppSettings.Load(Written($$"""{ "AssemblyLists": [ null, { "Name": null }, { "Name": "Work", "Assemblies": null }, { "Name": "Play", "Assemblies": [ " ", "a.dll", "{{AInJson}}" ] } ] }"""));
 
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Equal(["Work", "Play"], loaded.AssemblyLists.Select(static l => l.Name));
         Assert.Empty(loaded.AssemblyLists[0].Assemblies);
-        Assert.Equal([@"C:\a.dll"], loaded.AssemblyLists[1].Assemblies.Select(static p => p.Text));
+        Assert.Equal([A], loaded.AssemblyLists[1].Assemblies.Select(static p => p.Text));
     }
 
     [Fact]
     public void The_one_list_of_an_older_settings_file_becomes_the_default_list_and_is_saved_only_there()
     {
-        var loaded = AppSettings.Load(Written("""{ "Assemblies": [ "C:\\a.dll", "", "C:\\b.dll" ] }""")).Settings;
+        var loaded = AppSettings.Load(Written($$"""{ "Assemblies": [ "{{AInJson}}", "", "{{BInJson}}" ] }""")).Settings;
 
         var list = Assert.Single(loaded.AssemblyLists);
         Assert.Equal(SavedAssemblyLists.DefaultName, list.Name);
-        Assert.Equal([@"C:\a.dll", @"C:\b.dll"], list.Assemblies.Select(static p => p.Text));
+        Assert.Equal([A, B], list.Assemblies.Select(static p => p.Text));
         Assert.IsType<SettingsWrite.Written>(loaded.Save());
         Assert.False(JsonDocument.Parse(File.ReadAllText(SettingsFile)).RootElement.TryGetProperty("Assemblies", out _));
     }
@@ -282,15 +287,15 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void The_analyses_of_an_older_settings_file_go_to_the_open_list_and_are_saved_only_there()
     {
-        var loaded = AppSettings.Load(Written("""
+        var loaded = AppSettings.Load(Written($$"""
             { "AssemblyLists": [ { "Name": "Work", "Assemblies": [] }, { "Name": "Play", "Assemblies": [] } ],
               "ActiveAssemblyList": "Play",
-              "Analyzed": [ { "Kind": "Definition", "FilePath": "C:\\a.dll", "Token": 33554434 } ] }
+              "Analyzed": [ { "Kind": "Definition", "FilePath": "{{AInJson}}", "Token": 33554434 } ] }
             """)).Settings;
 
         Assert.Empty(loaded.AssemblyLists[0].Analyzed!);
         var analyzed = Assert.Single(loaded.AssemblyLists[1].Analyzed!);
-        Assert.Equal(new CodeAnchor(CodeAnchorKind.Definition, PathOf(@"C:\a.dll"), 33554434), analyzed);
+        Assert.Equal(new CodeAnchor(CodeAnchorKind.Definition, PathOf(A), 33554434), analyzed);
         Assert.IsType<SettingsWrite.Written>(loaded.Save());
         Assert.False(JsonDocument.Parse(File.ReadAllText(SettingsFile)).RootElement.TryGetProperty("Analyzed", out _));
     }
@@ -364,9 +369,9 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_value_the_file_holds_wrong_leaves_out_that_value_alone_and_the_file_is_kept()
     {
-        const string json = """
+        var json = $$"""
             { "Theme": "light", "Language": "Klingon", "Window": "wide",
-              "AssemblyLists": [ { "Name": "Work", "Assemblies": [ "C:\\a.dll" ] } ] }
+              "AssemblyLists": [ { "Name": "Work", "Assemblies": [ "{{AInJson}}" ] } ] }
             """;
         var (loaded, problem) = AppSettings.Load(Written(json));
         var appState = AppState.Load(loaded, TestSession.Shared);
@@ -377,7 +382,7 @@ public sealed class AppSettingsTests : IDisposable
         Assert.Equal("light", loaded.Theme.Text);
         Assert.Equal(DecompilationLanguage.CSharp, loaded.Language);
         Assert.Null(loaded.Window);
-        Assert.Equal([@"C:\a.dll"], Assert.Single(loaded.AssemblyLists).Assemblies.Select(static p => p.Text));
+        Assert.Equal([A], Assert.Single(loaded.AssemblyLists).Assemblies.Select(static p => p.Text));
         var copy = _temp.PathOf("settings.unreadable.json");
         Assert.Equal(new SettingsKept.CopiedTo(copy), leftOut.Kept);
         Assert.Equal(json, File.ReadAllText(copy));
@@ -389,12 +394,12 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_list_or_tab_the_file_holds_wrong_leaves_out_that_one_alone()
     {
-        var (loaded, problem) = AppSettings.Load(Written("""
+        var (loaded, problem) = AppSettings.Load(Written($$"""
             { "AssemblyLists": [
                 { "Name": "Broken", "Assemblies": 5 },
-                { "Name": "Work", "Assemblies": [ "C:\\a.dll" ], "Documents": { "Tabs": [
+                { "Name": "Work", "Assemblies": [ "{{AInJson}}" ], "Documents": { "Tabs": [
                     { "kind": "nothing", "Panel": "document-1" },
-                    { "kind": "comparison", "Panel": "document-2", "LeftPath": "C:\\a.dll", "RightPath": "C:\\b.dll" } ] } } ] }
+                    { "kind": "comparison", "Panel": "document-2", "LeftPath": "{{AInJson}}", "RightPath": "{{BInJson}}" } ] } } ] }
             """));
 
         Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
@@ -432,9 +437,9 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_list_whose_documents_layout_is_missing_a_part_keeps_its_tabs_without_it_and_is_reported()
     {
-        var (loaded, problem) = AppSettings.Load(Written("""
+        var (loaded, problem) = AppSettings.Load(Written($$"""
             { "AssemblyLists": [ { "Name": "Work", "Assemblies": [], "Documents": {
-                "Tabs": [ { "kind": "comparison", "Panel": "document-1", "LeftPath": "C:\\a.dll", "RightPath": "C:\\b.dll" } ],
+                "Tabs": [ { "kind": "comparison", "Panel": "document-1", "LeftPath": "{{AInJson}}", "RightPath": "{{BInJson}}" } ],
                 "Layout": { "Root": { "kind": "group", "Panels": [ null ] } } } } ] }
             """));
 
@@ -447,10 +452,10 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Filters_and_bookmark_views_load_without_the_parts_they_hold_as_null()
     {
-        var (loaded, problem) = AppSettings.Load(Written("""
+        var (loaded, problem) = AppSettings.Load(Written($$"""
             { "FlagsFilters": { "TypeDef/Attributes": { "Groups": { "Visibility": null, "Layout": [ 8 ] }, "Mode": "Any" }, "Gone": null },
-              "Bookmarks": [ { "Name": "B", "FileName": "C:\\a.dll",
-                "ViewState": { "ExpandedFoldings": [ null, { "Start": 1, "End": 2 } ], "SelectedTreeNodePath": [ "C:\\a.dll", null ] } } ] }
+              "Bookmarks": [ { "Name": "B", "FileName": "{{AInJson}}",
+                "ViewState": { "ExpandedFoldings": [ null, { "Start": 1, "End": 2 } ], "SelectedTreeNodePath": [ "{{AInJson}}", null ] } } ] }
             """));
 
         Assert.IsType<SettingsProblem.None>(problem);
@@ -464,21 +469,21 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Saved_values_missing_what_they_name_load_without_them()
     {
-        var (loaded, problem) = AppSettings.Load(Written("""
-            { "AssemblyLists": [ { "Name": "Work", "Assemblies": [ null, "C:\\a.dll" ],
+        var (loaded, problem) = AppSettings.Load(Written($$"""
+            { "AssemblyLists": [ { "Name": "Work", "Assemblies": [ null, "{{AInJson}}" ],
                 "Analyzed": [ { "Kind": "Definition", "FilePath": null, "Token": 1 } ],
                 "Documents": { "Tabs": [
                     { "kind": "node", "Panel": "document-1", "FilePath": null, "Path": { "Version": 1, "Steps": [] } },
-                    { "kind": "node", "Panel": "document-2", "FilePath": "C:\\a.dll", "Path": null },
-                    { "kind": "diagram", "Panel": "document-3", "Types": [ { "AssemblyPath": "C:\\a.dll", "FullName": null } ] } ] } } ],
-              "Bookmarks": [ { "Name": null, "FileName": "C:\\a.dll" }, { "Name": "Gone", "FileName": null } ],
+                    { "kind": "node", "Panel": "document-2", "FilePath": "{{AInJson}}", "Path": null },
+                    { "kind": "diagram", "Panel": "document-3", "Types": [ { "AssemblyPath": "{{AInJson}}", "FullName": null } ] } ] } } ],
+              "Bookmarks": [ { "Name": null, "FileName": "{{AInJson}}" }, { "Name": "Gone", "FileName": null } ],
               "NuGet": { "FeedUrl": null },
               "FoldedOptionGroups": [ null, "Other" ] }
             """));
 
         Assert.IsType<SettingsProblem.None>(problem);
         var list = Assert.Single(loaded.AssemblyLists);
-        Assert.Equal([@"C:\a.dll"], list.Assemblies.Select(static p => p.Text));
+        Assert.Equal([A], list.Assemblies.Select(static p => p.Text));
         Assert.Empty(list.Analyzed!);
         var diagram = Assert.IsType<DiagramDocumentRecord>(Assert.Single(list.Documents!.Tabs));
         Assert.Empty(diagram.Types);

@@ -36,7 +36,7 @@ public sealed class AnchorTests
         Assert.Equal(il.FindDefinitionLine(Trees.TestAssembly.Calculator().Child("Add(T) : void")), il.FindLine(anchor));
     }
 
-    [Theory]
+    [CaseInsensitivePathsTheory]
     [InlineData("Changed?.Invoke(this, EventArgs.Empty);")]
     [InlineData("public void Add(T item)")]
     public void An_anchor_finds_its_line_whatever_the_case_of_its_path(string text)
@@ -52,13 +52,20 @@ public sealed class AnchorTests
         Assert.Equal(line, type.FindLine(upper));
     }
 
-    [Fact]
-    public void A_type_anchor_is_the_same_whatever_the_case_of_its_path_but_not_of_its_name()
+    [CaseInsensitivePathsFact]
+    public void A_type_anchor_is_the_same_whatever_the_case_of_its_path()
     {
-        var anchor = new TypeAnchor(AssemblyPath.Of(@"C:\Lib\A.dll"), "N.Outer+Inner`1");
+        var anchor = new TypeAnchor(AssemblyPath.Of(Path.GetFullPath("/Lib/A.dll")), "N.Outer+Inner`1");
 
-        Assert.Equal(anchor, anchor with { AssemblyPath = AssemblyPath.Of(@"c:\lib\a.DLL") });
-        Assert.Equal(anchor.GetHashCode(), (anchor with { AssemblyPath = AssemblyPath.Of(@"c:\lib\a.DLL") }).GetHashCode());
+        Assert.Equal(anchor, anchor with { AssemblyPath = AssemblyPath.Of(Path.GetFullPath("/lib/a.DLL")) });
+        Assert.Equal(anchor.GetHashCode(), (anchor with { AssemblyPath = AssemblyPath.Of(Path.GetFullPath("/lib/a.DLL")) }).GetHashCode());
+    }
+
+    [Fact]
+    public void A_type_anchor_differs_from_one_whose_name_differs_only_in_case()
+    {
+        var anchor = new TypeAnchor(AssemblyPath.Of(Path.GetFullPath("/Lib/A.dll")), "N.Outer+Inner`1");
+
         Assert.NotEqual(anchor, anchor with { FullName = "n.outer+inner`1" });
     }
 
