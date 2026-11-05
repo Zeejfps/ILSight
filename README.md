@@ -25,5 +25,7 @@ dotnet build ILSight.sln
 dotnet test ILSight.sln
 ```
 
+ILSight is free and open source under the [MIT license](LICENSE).
+
 Not affiliated with the ILSpy project. ILSight decompiles with ICSharpCode.Decompiler and contains code
 derived from ILSpy; see `ILSight.Core/LICENSE-ILSpy.txt`.

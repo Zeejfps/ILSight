@@ -58,6 +58,10 @@
       <EmbeddedResource Include="Assets\IconThemes\README.md">
         <LogicalName>icon-themes-readme.md</LogicalName>
       </EmbeddedResource>
+      <Content Include="..\LICENSE">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <TargetPath>licenses\LICENSE-ILSight.txt</TargetPath>
+      </Content>
       <Content Include="Assets\Fonts\**\LICENSE-*.txt">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <TargetPath>licenses\%(Filename)%(Extension)</TargetPath>
