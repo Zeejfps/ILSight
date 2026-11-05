@@ -315,7 +315,10 @@ internal sealed class TrailerDirector
         yield return () => omnibar.Search.ShowsQuery && !omnibar.Search.IsBusy;
         yield return Frames(2);
         omnibar.StopSearch();
-        foreach (var wait in Show(Find("Newtonsoft.Json", "JsonConvert", "ToString(bool")))
+        var session = _app.Session;
+        var module = _app.Assemblies.Assemblies.OfType<LoadedModule>().First();
+        var space = session.ChildrenOf(session.RootOf(module)).First(n => n.Text == "Newtonsoft.Json");
+        foreach (var wait in Show(session.ChildrenOf(space).First(n => n.Text == "JsonConvert")))
             yield return wait;
         yield return Frames(2);
     }

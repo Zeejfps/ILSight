@@ -13,10 +13,12 @@ import {
   END_CARD_FRAMES,
   HEIGHT,
   type Corner,
+  type CursorPath,
   SCENES,
   type Scene,
   type View,
   WIDTH,
+  cursorPathOf,
   sceneFrames,
 } from './timeline';
 
@@ -25,6 +27,10 @@ const {fontFamily} = loadFont('normal', {weights: ['500', '800'], subsets: ['lat
 const BACKGROUND = '#1b1f26';
 const FADE_FRAMES = 5;
 const CAPTION_IN_FRAMES = 8;
+const PRESS_FRAMES = 5;
+const RIPPLE_FRAMES = 16;
+const RIPPLE_SIZE = 110;
+const ACCENT = '#5b9dff';
 
 /** The transform that centres the view's point, kept from showing past the frame's edges. */
 const transformOf = ({scale, x, y}: View): string => {
@@ -38,10 +44,73 @@ const transformOf = ({scale, x, y}: View): string => {
 const between = (from: number, to: number, progress: number): number =>
   from + (to - from) * progress;
 
+/** A pointer that keeps its size on screen however far the camera has zoomed in, and pulses
+ * where it presses. */
+const Cursor = ({path, zoom}: {path: CursorPath; zoom: number}) => {
+  const frame = useCurrentFrame();
+  const along = (values: number[]) =>
+    interpolate(frame, path.frames, values, {
+      easing: Easing.inOut(Easing.cubic),
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    });
+  const press = path.presses.find((at) => frame >= at && frame < at + RIPPLE_FRAMES);
+  const pressed = press !== undefined && frame < press + PRESS_FRAMES;
+  const ripple = press === undefined ? 0 : (frame - press) / RIPPLE_FRAMES;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: along(path.xs),
+        top: along(path.ys),
+        transform: `scale(${1 / zoom})`,
+      }}
+    >
+      {press === undefined ? null : (
+        <div
+          style={{
+            position: 'absolute',
+            left: -RIPPLE_SIZE / 2,
+            top: -RIPPLE_SIZE / 2,
+            width: RIPPLE_SIZE,
+            height: RIPPLE_SIZE,
+            borderRadius: '50%',
+            border: `5px solid ${ACCENT}`,
+            background: 'rgba(91, 157, 255, 0.25)',
+            opacity: 1 - ripple,
+            transform: `scale(${0.2 + ripple * 0.8})`,
+          }}
+        />
+      )}
+      <svg
+        width={44}
+        height={44}
+        viewBox="0 0 24 24"
+        style={{
+          position: 'absolute',
+          left: -6,
+          top: -3,
+          transform: `scale(${pressed ? 0.82 : 1})`,
+          transformOrigin: '6px 3px',
+          filter: 'drop-shadow(0 3px 5px rgba(0, 0, 0, 0.6))',
+        }}
+      >
+        <path
+          d="M3.5 1.5 L3.5 19 L8.2 14.7 L11.3 21.8 L14.3 20.5 L11.2 13.5 L17.6 13.5 Z"
+          fill="white"
+          stroke="black"
+          strokeWidth={1.2}
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+};
+
 const Shots = ({scene}: {scene: Scene}) => {
   const frame = useCurrentFrame();
   const duration = sceneFrames(scene);
-  const progress = interpolate(frame, [0, duration - 1], [0, 1], {
+  const progress = interpolate(frame, [scene.cameraFrom ?? 0, duration - 1], [0, 1], {
     easing: Easing.bezier(0.45, 0, 0.2, 1),
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
@@ -51,6 +120,7 @@ const Shots = ({scene}: {scene: Scene}) => {
     x: between(scene.from.x, scene.to.x, progress),
     y: between(scene.from.y, scene.to.y, progress),
   };
+  const path = cursorPathOf(scene);
   let start = 0;
   return (
     <AbsoluteFill style={{overflow: 'hidden', transform: transformOf(view)}}>
@@ -66,6 +136,7 @@ const Shots = ({scene}: {scene: Scene}) => {
           </Sequence>
         );
       })}
+      {path === null ? null : <Cursor path={path} zoom={view.scale} />}
     </AbsoluteFill>
   );
 };
