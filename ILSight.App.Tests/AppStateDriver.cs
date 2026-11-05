@@ -282,7 +282,7 @@ internal sealed class AppStateDriver
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
-    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, AppInstance? instance = null, ITextMeasurer? measurer = null)
+    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, SingleInstanceLock? instance = null, ITextMeasurer? measurer = null)
     {
         Driver = new AppStateDriver(settings);
         App = new ILSightApp(AppState, Ui, CommandLine.Parse([]).Files, instance);

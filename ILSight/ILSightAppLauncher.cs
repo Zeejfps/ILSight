@@ -1,6 +1,5 @@
-﻿using ZGF.Desktop;
-using ZGF.Gui.Immediate;
-using ILSight.Core;
+﻿using ILSight.Core;
+using ZGF.Desktop;
 using static ILSight.CommandLines;
 using static ILSight.Settings;
 
@@ -12,33 +11,33 @@ public static class ILSightAppLauncher
     /// and leaves, unless it asks for a new window or none is open; else opens the app.</summary>
     public static void LaunchApp(CommandLine commandLine)
     {
-        using var instance = AppInstance.Claim(commandLine.SettingsPath);
-        if (TryHandOverToOpenWindow(instance, commandLine))
+        using var instanceLock = SingleInstanceLock.Request(commandLine.SettingsPath);
+        if (TryHandOverToOpenWindow(instanceLock, commandLine))
             return;
-        instance.Listen();
-        RunApp(commandLine, instance);
+        instanceLock.Listen();
+        RunApp(commandLine, instanceLock);
     }
 
-    private static bool TryHandOverToOpenWindow(AppInstance instance, CommandLine commandLine)
+    private static bool TryHandOverToOpenWindow(SingleInstanceLock instanceLock, CommandLine commandLine)
     {
-        if (!ShouldHandOver(instance, commandLine))
+        if (!ShouldHandOver(instanceLock, commandLine))
             return false;
-        return instance.TryHandOver(commandLine);
+        return instanceLock.TryHandOver(commandLine);
     }
 
-    private static bool ShouldHandOver(AppInstance instance, CommandLine commandLine)
+    private static bool ShouldHandOver(SingleInstanceLock instanceLock, CommandLine commandLine)
     {
-        if (instance.IsFirst)
+        if (instanceLock.IsGranted)
             return false;
         return !commandLine.NewInstance;
     }
 
-    private static void RunApp(CommandLine commandLine, AppInstance instance)
+    private static void RunApp(CommandLine commandLine, SingleInstanceLock instanceLock)
     {
         var loadResult = LoadSettings(commandLine);
         var appState = LoadAppState(loadResult, commandLine);
         var guiState = CreateUiState(appState);
-        var app = CreateApp(appState, guiState, commandLine, instance);
+        var app = CreateApp(appState, guiState, commandLine, instanceLock);
         OpenWindow(app, appState, commandLine);
     }
 
@@ -64,9 +63,9 @@ public static class ILSightAppLauncher
         return ILSightApp.CreateUiState(appState);
     }
 
-    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, AppInstance instance)
+    private static ILSightApp CreateApp(AppState appState, UiState uiState, CommandLine commandLine, SingleInstanceLock instanceLock)
     {
-        return new ILSightApp(appState, uiState, commandLine.Files, instance);
+        return new ILSightApp(appState, uiState, commandLine.Files, instanceLock);
     }
 
     private static void OpenWindow(ILSightApp app, AppState appState, CommandLine commandLine)

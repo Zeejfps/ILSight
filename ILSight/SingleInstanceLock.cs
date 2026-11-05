@@ -14,7 +14,7 @@ namespace ILSight;
 /// to the front, and leaves, so that one window serves them all. Only the user who started the first
 /// run can reach it.
 /// </summary>
-public sealed class AppInstance : IDisposable
+public sealed class SingleInstanceLock : IDisposable
 {
     private const string NamePrefix = "ILSight-";
     private const int HashBytes = 8;
@@ -32,21 +32,20 @@ public sealed class AppInstance : IDisposable
     private Action? _wake;
     private Task? _serving;
 
-    private AppInstance(string name)
+    private SingleInstanceLock(string name)
     {
         _claim = new Mutex(false, name, out var createdNew);
-        IsFirst = createdNew;
+        IsGranted = createdNew;
         _pipeName = name;
     }
 
     /// <summary>Whether no other run with these settings is open, so that this one serves those that come later.</summary>
-    public bool IsFirst { get; }
+    public bool IsGranted { get; }
 
     /// <summary>Claims this run among those with the settings at <paramref name="settingsPath"/>.</summary>
-    public static AppInstance Claim(string settingsPath) => new(NameFor(settingsPath));
+    public static SingleInstanceLock Request(string settingsPath) => new(NameFor(settingsPath));
 
-    /// <summary>The name the runs with the settings at <paramref name="settingsPath"/> meet under: the
-    /// same for every spelling of the path the file system takes as one.</summary>
+
     private static string NameFor(string settingsPath)
     {
         var path = Path.GetFullPath(settingsPath);
@@ -90,7 +89,7 @@ public sealed class AppInstance : IDisposable
     /// <summary>Starts taking, in the background, the command lines later runs hand over, when this is the first run.</summary>
     public void Listen()
     {
-        if (!IsFirst)
+        if (!IsGranted)
             return;
         _serving = Task.Run(ServeAsync);
     }

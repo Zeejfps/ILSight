@@ -26,14 +26,14 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
-    private readonly AppInstance? _instance;
+    private readonly SingleInstanceLock? _instance;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
     internal ILSightApp(
         AppState appState,
         UiState uiState,
         FilesToOpen startupFiles,
-        AppInstance? instance) : base(uiState)
+        SingleInstanceLock? instance) : base(uiState)
     {
         _appState = appState;
         _startupFiles = startupFiles;

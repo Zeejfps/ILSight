@@ -3,7 +3,7 @@ using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
-public sealed class AppInstanceTests
+public sealed class SingleInstanceLockTests
 {
     private const string GreetId = "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)";
 
@@ -12,16 +12,16 @@ public sealed class AppInstanceTests
     {
         using var temp = new TempDir();
         var settings = temp.PathOf("settings.json");
-        using var first = AppInstance.Claim(settings);
+        using var first = SingleInstanceLock.Request(settings);
         first.Listen();
-        using var later = AppInstance.Claim(settings);
+        using var later = SingleInstanceLock.Request(settings);
         var woken = 0;
         first.WakeWith(() => Interlocked.Increment(ref woken));
 
         var handedOver = later.TryHandOver(CommandLine.Parse(["--navigateto=T:Some.Type", "relative.dll"]));
 
-        Assert.True(first.IsFirst);
-        Assert.False(later.IsFirst);
+        Assert.True(first.IsGranted);
+        Assert.False(later.IsGranted);
         Assert.True(handedOver);
         Assert.True(first.TryTakeHanded(out var handed));
         Assert.Equal("T:Some.Type", handed.NavigateTo);
@@ -33,11 +33,11 @@ public sealed class AppInstanceTests
     public void Runs_with_other_settings_are_each_the_first()
     {
         using var temp = new TempDir();
-        using var one = AppInstance.Claim(temp.PathOf("one.json"));
-        using var other = AppInstance.Claim(temp.PathOf("other.json"));
+        using var one = SingleInstanceLock.Request(temp.PathOf("one.json"));
+        using var other = SingleInstanceLock.Request(temp.PathOf("other.json"));
 
-        Assert.True(one.IsFirst);
-        Assert.True(other.IsFirst);
+        Assert.True(one.IsGranted);
+        Assert.True(other.IsGranted);
     }
 
     [Fact]
@@ -45,13 +45,13 @@ public sealed class AppInstanceTests
     {
         using var temp = new TempDir();
         var settings = temp.PathOf("settings.json");
-        var first = AppInstance.Claim(settings);
+        var first = SingleInstanceLock.Request(settings);
         first.Listen();
         first.Dispose();
 
-        using var next = AppInstance.Claim(settings);
+        using var next = SingleInstanceLock.Request(settings);
 
-        Assert.True(next.IsFirst);
+        Assert.True(next.IsGranted);
     }
 
     [Fact]
@@ -59,11 +59,11 @@ public sealed class AppInstanceTests
     {
         using var temp = new TempDir();
         var settings = temp.PathOf("settings.json");
-        using var first = AppInstance.Claim(settings);
+        using var first = SingleInstanceLock.Request(settings);
         first.Listen();
         var app = new AppDriver(instance: first);
         app.Run();
-        using var later = AppInstance.Claim(settings);
+        using var later = SingleInstanceLock.Request(settings);
 
         Assert.True(later.TryHandOver(CommandLine.Parse(["--navigateto=" + GreetId, AppStateDriver.FixturePath])));
         app.Run();
