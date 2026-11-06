@@ -61,7 +61,7 @@ internal sealed record SettingsFile(
         settings.ApiVisibility,
         settings.CheckForUpdates,
         settings.SearchKinds,
-        settings.Layout == null ? null : DockLayoutJson.From(settings.Layout),
+        settings.Layout == null ? null : DockJson.Write(settings.Layout),
         settings.Bookmarks.ConvertAll(BookmarkJson.From),
         settings.BookmarkColumns,
         settings.SearchColumns,
@@ -158,7 +158,7 @@ internal sealed record DocumentsJson(List<JsonElement>? Tabs, string? Active, st
     {
         var json = AppSettingsJson.Default.DocumentJson;
         var tabs = documents.Tabs.ConvertAll(t => JsonSerializer.SerializeToElement(DocumentJson.From(t), json));
-        var layout = documents.Layout == null ? null : DockLayoutJson.From(documents.Layout);
+        var layout = documents.Layout == null ? null : DockJson.Write(documents.Layout);
         return new DocumentsJson(tabs, documents.Active, documents.Preview, layout);
     }
 
@@ -182,7 +182,7 @@ internal sealed record DocumentsJson(List<JsonElement>? Tabs, string? Active, st
     {
         if (Layout == null)
             return null;
-        var layout = Layout.Parse();
+        var layout = DockJson.Parse(Layout);
         if (layout != null && !layout.RepeatsAnId())
             return layout;
         file.LeaveOut(field);

@@ -240,7 +240,7 @@ public sealed class AppSettings
         var saved = file.Read(nameof(SettingsFile.Layout), AppSettingsJson.Default.DockLayoutJson);
         if (saved == null)
             return null;
-        var layout = saved.Parse();
+        var layout = DockJson.Parse(saved);
         if (layout == null)
         {
             problem = new SettingsProblem.LayoutPartsMissing();
