@@ -55,7 +55,7 @@ public sealed class SavedPathTests : IDisposable
         "Package" or "PackageFolder" => FirstOf(Open(PackageTests.WritePackage(_temp)), kind),
         "Bundle" => Open(BundleTests.WriteBundle(_temp)).Root,
         "FailedAssembly" => Open(_temp.Write("broken.dll", "no assembly")).Root,
-        "ForwardedType" => FirstOf(Open(Path.Combine(RuntimeAssemblies.Directories[0], "System.Runtime.dll")), kind),
+        "ForwardedType" => FirstOf(Open(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll")), kind),
         _ => FirstOf(Open(Trees.TestAssemblyPath), kind),
     };
 

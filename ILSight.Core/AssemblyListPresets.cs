@@ -8,7 +8,7 @@ public sealed record AssemblyListPreset(string Name, IReadOnlyList<AssemblyPath>
 
 /// <summary>The ready-made assembly lists this machine offers: one per installed shared framework and
 /// feature version, of its newest patch (<c>Microsoft.NETCore.App 9.0.3</c>), newest first, then on
-/// Windows the .NET Framework lists found in the GAC. Found once, on first use.</summary>
+/// Windows the .NET Framework lists found in the GAC.</summary>
 public static class AssemblyListPresets
 {
     private const string SharedDirectoryName = "shared";
@@ -18,11 +18,12 @@ public static class AssemblyListPresets
 
     private static readonly HashSet<string> LowerCaseAssemblies = new(StringComparer.OrdinalIgnoreCase) { "mscorlib.dll", "netstandard.dll" };
 
-    private static readonly Lazy<ImmutableArray<AssemblyListPreset>> LazyInstalled = new(FindInstalled);
+    public static IReadOnlyList<AssemblyListPreset> ListInstalled(InstalledRuntime runtime)
+    {
+        return runtime.Presets.Value;
+    }
 
-    public static IReadOnlyList<AssemblyListPreset> Installed => LazyInstalled.Value;
-
-    private static ImmutableArray<AssemblyListPreset> FindInstalled()
+    internal static ImmutableArray<AssemblyListPreset> FindInstalled()
     {
         var presets = new List<AssemblyListPreset>();
         var root = FindDotNetRoot();

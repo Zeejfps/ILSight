@@ -321,28 +321,22 @@ internal static class ShapeExceptions
         "ILSight.WindowBoundsJson.Parse",
     ];
 
-    /// <summary>Static caches and other state that can change, still to move into state that is passed
-    /// in.</summary>
-    public static readonly string[] MutableStatics =
-    [
-        "ILSight.BookmarksPanelView.HeaderTexts",
-        "ILSight.Core.AssemblyListPresets.LazyInstalled",
-        "ILSight.Core.Metadata.FlagsSchemaInferer.cache",
-        "ILSight.Core.Metadata.MetadataGrid.Patterns",
-        "ILSight.Core.NuGetFeed.Shared",
-        "ILSight.Core.RuntimeAssemblies.LazyAll",
-        "ILSight.Core.RuntimeAssemblies.LazyDirectories",
-        "ILSight.Core.RuntimeAssemblies.LazyDirectoryPaths",
-        "ILSight.Core.RuntimeAssemblies.LazyFilesByName",
-        "ILSight.DisplayOptionsPanelView.TokenFormatLabels",
-        "ILSight.DisplayOptionsPanelView.UiScaleLabels",
-        "ILSight.NodeText.AssemblyLabels",
-        "ILSight.NodeText.DecimalTokens",
-        "ILSight.NodeText.HexTokens",
-        "ILSight.NodeText.Secondaries",
-        "ILSight.NodeText.Tooltips",
-        "ILSight.SearchPanelView.Headers",
-        "ILSight.SearchPanelView.Summaries",
-        "ILSight.ToolbarView.LanguageSegments",
-    ];
+    /// <summary>Static caches that are purely a speed-up, by why they may stay, and the one seam. These stay.</summary>
+    public static readonly Dictionary<string, string> AllowedStatics = new()
+    {
+        ["ILSight.BookmarksPanelView.HeaderTexts"] = "text per language",
+        ["ILSight.DisplayOptionsPanelView.TokenFormatLabels"] = "text per language",
+        ["ILSight.DisplayOptionsPanelView.UiScaleLabels"] = "text per language",
+        ["ILSight.SearchPanelView.Headers"] = "text per language",
+        ["ILSight.SearchPanelView.Summaries"] = "text per language",
+        ["ILSight.ToolbarView.LanguageSegments"] = "text per language",
+        ["ILSight.NodeText.AssemblyLabels"] = "text per assembly, gone with it",
+        ["ILSight.NodeText.DecimalTokens"] = "text per node, gone with it",
+        ["ILSight.NodeText.HexTokens"] = "text per node, gone with it",
+        ["ILSight.NodeText.Secondaries"] = "text per node, gone with it",
+        ["ILSight.NodeText.Tooltips"] = "text per node, gone with it",
+        ["ILSight.Core.Metadata.FlagsSchemaInferer.cache"] = "worked out per enum type, of which there are few",
+        ["ILSight.Core.Metadata.MetadataGrid.Patterns"] = "worked out per pattern, up to MaxPatterns",
+        ["ILSight.Core.NuGetFeed.Shared"] = "a seam: one HttpClient is how it is meant to be used",
+    };
 }

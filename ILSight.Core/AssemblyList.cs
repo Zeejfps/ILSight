@@ -67,6 +67,9 @@ public sealed class AssemblyList
     /// that follows.</summary>
     public int Generation => Volatile.Read(ref _generation);
 
+    /// <summary>What this machine has installed, which references that nothing else answers fall back on.</summary>
+    public InstalledRuntime Runtime { get; } = new();
+
     /// <summary>The portable PDBs picked for assemblies, which they read in place of the ones they find
     /// themselves.</summary>
     public AssemblyPicks<string> Pdbs { get; } = new();

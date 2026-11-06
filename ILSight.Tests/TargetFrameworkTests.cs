@@ -64,7 +64,7 @@ public sealed class TargetFrameworkTests
         var onFramework = picked.Resolver.FindFile(reference);
 
         var framework = new UniversalAssemblyResolver(Trees.TestAssemblyPath, false, Frameworks.Net48.Text, null, PEStreamOptions.PrefetchEntireImage, MetadataReaderOptions.Default);
-        Assert.Equal(RuntimeAssemblies.Directories[0], Path.GetDirectoryName(onCore!.Text), ignoreCase: true);
+        Assert.Equal(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], Path.GetDirectoryName(onCore!.Text), ignoreCase: true);
         Assert.Equal(framework.FindAssemblyFile(reference), onFramework?.Text);
     }
 

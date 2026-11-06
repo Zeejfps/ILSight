@@ -175,8 +175,14 @@ These are the places this shape could be taken to overrule them. It doesn't.
 - **Static functions are not static state.** A `static class` holds functions, constants, and tables
   that are built once and only read. Mutable state lives in a type that is passed in, never in a
   static field, and a static `Lazy` or cache counts as one. `static` here says "takes everything as a
-  parameter", and a static field would break exactly that promise. A memo held in a type that is passed in is fine:
-  that is state, passed in like any other.
+  parameter", and a static field would break exactly that promise. A memo held in a type that is passed
+  in is fine: that is state, passed in like any other.
+
+  The one exception is a static cache that is purely a speed-up, which nothing can tell is there. It holds
+  the answers of a function that gives the same output for the same input, it's safe across threads, and
+  its size has a limit, unless what it's keyed by goes away by itself. What reads the machine doesn't
+  qualify, even once: a disk or an environment can answer differently, so it's passed in, and a signature
+  shows the dependency. `ArchitectureTests` lists each static cache with the reason it may stay.
 - **Public fields don't mean anything goes.** Rule 1 still wants illegal states to be unrepresentable,
   so a type with an invariant still enforces it, as a constructor that validates and fields that are
   get-only. `with` skips the constructor and copies past any validation, so a property with an

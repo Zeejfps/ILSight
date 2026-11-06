@@ -92,11 +92,11 @@ internal sealed class AssemblyResolver : IAssemblyResolver
 
     /// <summary>The running runtime's file of <paramref name="name"/>; null when it has none, or its
     /// directories cannot be listed for now.</summary>
-    private static AssemblyPath? FindInRuntime(string name)
+    private AssemblyPath? FindInRuntime(string name)
     {
         try
         {
-            var found = RuntimeAssemblies.Find(name);
+            var found = RuntimeAssemblies.Find(_list.Runtime, name);
             if (found == null)
                 return null;
             return AssemblyPath.Parse(found);

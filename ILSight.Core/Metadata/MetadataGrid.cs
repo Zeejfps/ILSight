@@ -59,7 +59,12 @@ public readonly record struct MetadataAddress(TableIndex Table, int Row);
 /// </summary>
 public sealed class MetadataGrid
 {
+    /// <summary>How many patterns are kept, which the user types, so nothing else bounds them.</summary>
+    internal const int MaxPatterns = 256;
+
     private static readonly ConcurrentDictionary<string, Regex?> Patterns = new();
+
+    internal static int CachedPatterns => Patterns.Count;
 
     private readonly LoadedModule _module;
     private readonly MetadataFile _file;
@@ -260,7 +265,7 @@ public sealed class MetadataGrid
             return false;
         var text = filter.Text;
         if (text.Length == 0) return true;
-        var pattern = Pattern(text);
+        var pattern = FindPattern(text);
         if (pattern != null)
             return pattern.IsMatch(value.ToString() ?? "");
         if (_columns[column].Column.IsNumeric)
@@ -280,9 +285,13 @@ public sealed class MetadataGrid
         return flags.Explain(Bits(cell));
     }
 
-    private static Regex? Pattern(string text)
+    internal static Regex? FindPattern(string text)
     {
         if (text.Length < 2 || text[0] != '/' || text[^1] != '/') return null;
+        if (Patterns.TryGetValue(text, out var kept))
+            return kept;
+        if (Patterns.Count >= MaxPatterns)
+            Patterns.Clear();
         return Patterns.GetOrAdd(text, static t =>
         {
             try

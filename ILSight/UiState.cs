@@ -19,7 +19,7 @@ public sealed class UiState : IUiState
     /// <param name="saved">What the settings kept of the screen when they were last saved.</param>
     /// <param name="reportError">Tells the user that something done in the background failed.</param>
     /// <param name="session">The browse tree the tree and searches show nodes of.</param>
-    public UiState(ViewSettings saved, Action<AppProblem> reportError, BrowseSession session)
+    public UiState(ViewSettings saved, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime)
     {
         Tree = new BrowseTree(session, reportError);
         FoldedOptionGroups = new FoldedGroups(new HashSet<string>(saved.FoldedOptionGroups ?? []));
@@ -30,7 +30,8 @@ public sealed class UiState : IUiState
         Search.Kinds = saved.SearchKinds;
         Omnibar = new Omnibar(ReadStrings, reportError, session);
         MetadataFilters = new MetadataFilters(saved.FlagsFilters);
-        Picker = new FrameworkPicker(ReadStrings, reportError);
+        Runtime = runtime;
+        Picker = new FrameworkPicker(ReadStrings, reportError, () => RuntimeAssemblies.ListAssemblies(runtime));
         NuGetPicker = new NuGetPicker(ReadStrings, reportError);
         NuGetPicker.Restore(saved.NuGet);
         DialogWindows.Restore(NuGetPicker.Window, saved.NuGetWindow);
@@ -190,6 +191,9 @@ public sealed class UiState : IUiState
 
     /// <summary>The "open from framework" dialog.</summary>
     public FrameworkPicker Picker { get; }
+
+    /// <summary>What this machine has installed.</summary>
+    public InstalledRuntime Runtime { get; }
 
     /// <summary>The dialog that picks the assembly to compare another with.</summary>
     public ComparisonPicker ComparisonPicker { get; } = new();

@@ -251,6 +251,16 @@ public sealed class MetadataTests
 
     private static string[] NamesOf(MetadataGrid grid, int[] rows) => rows.Select(r => grid.Text(r, grid.Column("Name"))).ToArray();
 
+    [Fact]
+    public void The_patterns_typed_into_a_filter_are_kept_only_up_to_a_limit()
+    {
+        for (var pattern = 0; pattern < MetadataGrid.MaxPatterns * 3; pattern++)
+            Assert.NotNull(MetadataGrid.FindPattern($"/limit{pattern}/"));
+
+        Assert.InRange(MetadataGrid.CachedPatterns, 1, MetadataGrid.MaxPatterns);
+        Assert.Matches(MetadataGrid.FindPattern("/^limit0$/")!, "LIMIT0");
+    }
+
     private static MetadataColumnFilter?[] Filters(MetadataGrid grid, string column, MetadataColumnFilter filter)
     {
         var filters = new MetadataColumnFilter?[grid.Columns.Count];

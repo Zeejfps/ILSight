@@ -4,7 +4,7 @@ namespace ILSight.Tests;
 
 public sealed class ForwardedTypeTests
 {
-    private static string RuntimeFile(string name) => Path.Combine(RuntimeAssemblies.Directories[0], name);
+    private static string RuntimeFile(string name) => Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], name);
 
     [Fact]
     public void A_facade_lists_the_types_it_forwards_in_their_namespaces()

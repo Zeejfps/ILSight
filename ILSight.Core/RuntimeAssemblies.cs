@@ -8,28 +8,55 @@ namespace ILSight.Core;
 /// <summary>An assembly of the running .NET runtime, offered to open from a picker.</summary>
 public sealed record RuntimeAssembly(string Name, string Framework, AssemblyPath FilePath);
 
-/// <summary>The running .NET runtime's shared framework directories and the assemblies in them; for a
-/// native build, which runs on no shared framework, those of the newest installed runtime. Each is
-/// found once and kept; one that cannot be found for now is looked for again the next time.</summary>
+/// <summary>What this machine has installed: the running .NET runtime's shared framework directories and
+/// the assemblies in them, and the ready-made assembly lists it offers. For a native build, which runs on
+/// no shared framework, those of the newest installed runtime. Each is found on first use and kept; one
+/// that cannot be found for now is looked for again the next time.</summary>
+public sealed class InstalledRuntime
+{
+    public InstalledRuntime()
+    {
+        Directories = new(RuntimeAssemblies.FindDirectories, LazyThreadSafetyMode.PublicationOnly);
+        DirectoryPaths = new(() => Directories.Value.Select(static d => d.Path).ToImmutableArray(), LazyThreadSafetyMode.PublicationOnly);
+        FilesByName = new(() => RuntimeAssemblies.IndexFiles(this), LazyThreadSafetyMode.PublicationOnly);
+        Assemblies = new(() => RuntimeAssemblies.ScanAssemblies(this), LazyThreadSafetyMode.PublicationOnly);
+        Presets = new(AssemblyListPresets.FindInstalled);
+    }
+
+    internal Lazy<ImmutableArray<(string Framework, string Path)>> Directories { get; }
+
+    internal Lazy<ImmutableArray<string>> DirectoryPaths { get; }
+
+    internal Lazy<IReadOnlyDictionary<string, string>> FilesByName { get; }
+
+    internal Lazy<ImmutableArray<RuntimeAssembly>> Assemblies { get; }
+
+    internal Lazy<ImmutableArray<AssemblyListPreset>> Presets { get; }
+}
+
+/// <summary>Finding what <see cref="InstalledRuntime"/> holds, and reading it.</summary>
 public static class RuntimeAssemblies
 {
-    private static readonly Lazy<ImmutableArray<(string Framework, string Path)>> LazyDirectories = new(FindDirectories, LazyThreadSafetyMode.PublicationOnly);
-    private static readonly Lazy<ImmutableArray<string>> LazyDirectoryPaths =
-        new(() => LazyDirectories.Value.Select(d => d.Path).ToImmutableArray(), LazyThreadSafetyMode.PublicationOnly);
-    private static readonly Lazy<IReadOnlyDictionary<string, string>> LazyFilesByName = new(IndexFiles, LazyThreadSafetyMode.PublicationOnly);
-    private static readonly Lazy<ImmutableArray<RuntimeAssembly>> LazyAll = new(ScanAssemblies, LazyThreadSafetyMode.PublicationOnly);
-
     /// <summary>The runtime's own directory first, then the sibling shared frameworks of the same
     /// version (ASP.NET Core, Windows Desktop) that are installed.</summary>
-    public static IReadOnlyList<string> Directories => LazyDirectoryPaths.Value;
+    public static IReadOnlyList<string> ListDirectories(InstalledRuntime runtime)
+    {
+        return runtime.DirectoryPaths.Value;
+    }
 
-    /// <summary>Every managed assembly in <see cref="Directories"/>, sorted by name. Scanned once, on
+    /// <summary>Every managed assembly in <see cref="ListDirectories"/>, sorted by name. Scanned once, on
     /// first use.</summary>
-    public static IReadOnlyList<RuntimeAssembly> All => LazyAll.Value;
+    public static IReadOnlyList<RuntimeAssembly> ListAssemblies(InstalledRuntime runtime)
+    {
+        return runtime.Assemblies.Value;
+    }
 
     /// <summary>The runtime's file of the assembly named <paramref name="simpleName"/>, or null.</summary>
     /// <exception cref="IOException">The runtime's directories cannot be listed for now.</exception>
-    internal static string? Find(string simpleName) => LazyFilesByName.Value.GetValueOrDefault(simpleName);
+    internal static string? Find(InstalledRuntime runtime, string simpleName)
+    {
+        return runtime.FilesByName.Value.GetValueOrDefault(simpleName);
+    }
 
     /// <summary>The newest <c>Microsoft.NETCore.App</c> directory under the first of
     /// <paramref name="dotnetRoots"/> that has one, preferring version <paramref name="major"/>.</summary>
@@ -81,7 +108,7 @@ public static class RuntimeAssemblies
         }
     }
 
-    private static ImmutableArray<(string Framework, string Path)> FindDirectories()
+    internal static ImmutableArray<(string Framework, string Path)> FindDirectories()
     {
         var runtime = RuntimeDirectory();
         var frameworkDir = Path.GetDirectoryName(runtime);
@@ -110,20 +137,20 @@ public static class RuntimeAssemblies
         return Version.TryParse(dash < 0 ? name : name[..dash], out var version) ? version : null;
     }
 
-    private static IReadOnlyDictionary<string, string> IndexFiles()
+    internal static IReadOnlyDictionary<string, string> IndexFiles(InstalledRuntime runtime)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (_, dir) in LazyDirectories.Value)
+        foreach (var (_, dir) in runtime.Directories.Value)
         foreach (var file in Directory.EnumerateFiles(dir, "*.dll"))
             result.TryAdd(Path.GetFileNameWithoutExtension(file), file);
         return result;
     }
 
-    private static ImmutableArray<RuntimeAssembly> ScanAssemblies()
+    internal static ImmutableArray<RuntimeAssembly> ScanAssemblies(InstalledRuntime runtime)
     {
         var result = new List<RuntimeAssembly>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (framework, dir) in LazyDirectories.Value)
+        foreach (var (framework, dir) in runtime.Directories.Value)
         foreach (var file in Directory.EnumerateFiles(dir, "*.dll"))
         {
             var name = Path.GetFileNameWithoutExtension(file);

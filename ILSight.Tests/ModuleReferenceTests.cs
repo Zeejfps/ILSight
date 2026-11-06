@@ -7,7 +7,7 @@ public sealed class ModuleReferenceTests
     /// <summary>The References folder of the runtime's assembly <paramref name="name"/>.</summary>
     private static BrowseNode ReferencesOf(string name)
     {
-        var path = RuntimeAssemblies.Find(name)!;
+        var path = RuntimeAssemblies.Find(TestRuntime.Installed, name)!;
         var assembly = new AssemblyList().Open(path);
         return assembly.Root.Child("References");
     }
@@ -87,7 +87,7 @@ public sealed class ModuleReferenceTests
     {
         var qcall = CoreLibReferences().Child("QCall");
         var list = new AssemblyList();
-        var coreLib = list.Open(RuntimeAssemblies.Find("System.Private.CoreLib")!);
+        var coreLib = list.Open(RuntimeAssemblies.Find(TestRuntime.Installed, "System.Private.CoreLib")!);
         var imports = coreLib.Root.Child("References", "QCall").Children;
 
         // GC._Collect is a generated stub on every system; most QCalls are not, or not everywhere.

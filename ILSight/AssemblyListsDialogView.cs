@@ -285,7 +285,7 @@ internal static class AssemblyListsDialogView
         using var menu = ui.SelectButton(PresetMenuId, t.ListsAddPreset);
         if (!menu.IsOpen)
             return;
-        var presets = AssemblyListPresets.Installed;
+        var presets = AssemblyListPresets.ListInstalled(ui.State.Runtime);
         if (presets.Count == 0)
             ui.MenuItem(t.ListsNoPresets, enabled: false);
         foreach (var preset in presets)

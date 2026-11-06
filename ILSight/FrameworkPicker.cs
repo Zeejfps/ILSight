@@ -20,15 +20,13 @@ public sealed class FrameworkPicker
 
     /// <param name="strings">The interface's strings in the current language.</param>
     /// <param name="reportError">Tells the user the runtime could not be scanned.</param>
-    /// <param name="scan">Lists the assemblies to offer; the running runtime's by default.</param>
-    public FrameworkPicker(Func<Strings> strings, Action<AppProblem> reportError, Func<IReadOnlyList<RuntimeAssembly>>? scan = null)
+    /// <param name="scan">Lists the assemblies to offer.</param>
+    public FrameworkPicker(Func<Strings> strings, Action<AppProblem> reportError, Func<IReadOnlyList<RuntimeAssembly>> scan)
     {
         _strings = strings;
         _reportError = reportError;
-        _scan = scan ?? ScanRuntime;
+        _scan = scan;
     }
-
-    private static IReadOnlyList<RuntimeAssembly> ScanRuntime() => RuntimeAssemblies.All;
 
     public bool IsOpen;
     public string Filter = "";

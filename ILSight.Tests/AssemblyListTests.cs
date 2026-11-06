@@ -189,9 +189,9 @@ public sealed class AssemblyListTests
     [Fact]
     public void Runtime_assemblies_list_the_managed_framework_assemblies()
     {
-        var all = RuntimeAssemblies.All;
+        var all = RuntimeAssemblies.ListAssemblies(TestRuntime.Installed);
 
-        Assert.Equal(Path.GetDirectoryName(Trees.CoreLibPath), RuntimeAssemblies.Directories[0]);
+        Assert.Equal(Path.GetDirectoryName(Trees.CoreLibPath), RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0]);
         Assert.Contains(all, a => a.Name == "System.Private.CoreLib" && a.Framework == "Microsoft.NETCore.App");
         Assert.Contains(all, a => a.Name == "System.Runtime");
         Assert.DoesNotContain(all, a => a.Name.Equals("coreclr", StringComparison.OrdinalIgnoreCase));
@@ -247,7 +247,7 @@ public sealed class AssemblyListTests
         var running = Environment.Version;
         var name = $"Microsoft.NETCore.App {running.Major}.{running.Minor}.";
 
-        var preset = AssemblyListPresets.Installed.FirstOrDefault(p => p.Name.StartsWith(name, StringComparison.Ordinal));
+        var preset = AssemblyListPresets.ListInstalled(TestRuntime.Installed).FirstOrDefault(p => p.Name.StartsWith(name, StringComparison.Ordinal));
 
         Assert.NotNull(preset);
         Assert.Contains(preset.Paths, p => p.FileName == "System.Runtime.dll");
@@ -262,7 +262,7 @@ public sealed class AssemblyListTests
         var runtime = list.FindNode(references.Child("System.Runtime").Destination);
         var sibling = list.FindNode(references.Child("ILSight.Core").Destination);
 
-        Assert.Equal(Path.Combine(RuntimeAssemblies.Directories[0], "System.Runtime.dll"), runtime!.Assembly.FilePath.Text, ignoreCase: true);
+        Assert.Equal(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll"), runtime!.Assembly.FilePath.Text, ignoreCase: true);
         Assert.Equal(typeof(AssemblyList).Assembly.Location, sibling!.Assembly.FilePath.Text, ignoreCase: true);
         Assert.Same(runtime.Assembly.Root, runtime);
         Assert.Contains(runtime.Assembly, list.Assemblies);

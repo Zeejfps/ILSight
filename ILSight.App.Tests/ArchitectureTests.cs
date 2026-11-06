@@ -48,7 +48,7 @@ public sealed class ArchitectureTests
     {
         var found = ListDeclaredTypes().SelectMany(ListMutableStaticFields).ToHashSet();
 
-        AssertMatches(ShapeExceptions.MutableStatics, found);
+        AssertMatches(ShapeExceptions.AllowedStatics.Keys, found);
     }
 
     private static void AssertMatches(IEnumerable<string> listed, HashSet<string> found)

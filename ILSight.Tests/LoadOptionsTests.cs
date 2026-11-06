@@ -80,7 +80,7 @@ public sealed class LoadOptionsTests
     public void Without_loading_references_a_reference_resolves_to_the_listed_assembly()
     {
         var (list, assembly) = OpenWith(Off(DecompilerToggle.AutoLoadAssemblyReferences));
-        var runtimePath = RuntimeAssemblies.Find("System.Runtime")!;
+        var runtimePath = RuntimeAssemblies.Find(TestRuntime.Installed, "System.Runtime")!;
         list.Open(runtimePath);
 
         var children = RuntimeReference(assembly).Children;

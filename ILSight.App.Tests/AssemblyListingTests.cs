@@ -562,7 +562,7 @@ public sealed class AssemblyListingTests
     public void A_preconfigured_list_holds_an_installed_frameworks_assemblies_and_is_named_in_place_without_switching_to_it()
     {
         var app = OpenedDialog();
-        var preset = AssemblyListPresets.Installed[0];
+        var preset = AssemblyListPresets.ListInstalled(new InstalledRuntime())[0];
 
         app.Click("Add preconfigured").Frame(2);
         app.ClickMenuItem(preset.Name).Frame(2);
