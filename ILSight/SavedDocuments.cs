@@ -288,7 +288,7 @@ public static class SavedDocuments
     }
 
     private static ViewPosition? FindSavedPosition(AppState appState, NodeDocumentRecord saved) =>
-        ViewPosition.KeptIn(saved.View, saved.Language, appState.Language);
+        Navigation.KeepPosition(saved.View, saved.Language, appState.Language);
 
     private static void RevealIfActive(AppState appState, DocumentTab tab, BrowseNode node)
     {

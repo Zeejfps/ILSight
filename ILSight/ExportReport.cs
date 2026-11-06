@@ -52,23 +52,4 @@ public sealed record ExportReport(
     public string Folder => Job.Folder;
 
     public bool HasProblems => Outcome == ExportOutcome.Failed || Problems.Count > 0;
-
-    /// <summary>The report of the export <paramref name="run"/> of <paramref name="job"/> that finished,
-    /// with nothing written yet.</summary>
-    public static ExportReport Finished(ExportRun run, ExportJob job, TimeSpan elapsed)
-    {
-        return new ExportReport(run, job, ExportOutcome.Finished, [], [], elapsed, Directory.Exists(job.Folder));
-    }
-
-    /// <summary>The report of the export <paramref name="run"/> of <paramref name="job"/> that ended
-    /// with <paramref name="error"/>: cancelled when it was cancelled, else failed, exporting
-    /// <paramref name="subject"/>.</summary>
-    public static ExportReport Ended(ExportRun run, ExportJob job, Exception error, string subject, TimeSpan elapsed)
-    {
-        var folderExists = Directory.Exists(job.Folder);
-        if (error is OperationCanceledException)
-            return new ExportReport(run, job, ExportOutcome.Cancelled, [], [], elapsed, folderExists);
-        var problem = new ExportProblem.Failed(subject, error);
-        return new ExportReport(run, job, ExportOutcome.Failed, [], [problem], elapsed, folderExists);
-    }
 }

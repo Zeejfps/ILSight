@@ -10,6 +10,18 @@ public static class Settings
 {
     private static readonly Saving.Unchanged Unchanged = new();
 
+    /// <summary>The folder <paramref name="name"/> beside <paramref name="settingsFile"/>; null while the
+    /// settings are kept in memory only.</summary>
+    public static string? FindFolderBeside(string? settingsFile, string name)
+    {
+        if (settingsFile == null)
+            return null;
+        var folder = Path.GetDirectoryName(settingsFile);
+        if (folder == null)
+            return null;
+        return Path.Combine(folder, name);
+    }
+
     /// <summary>Saves the settings when what they are saved from changed since the last save written,
     /// unless the assemblies are reloading or a failed write is still waiting to be tried again at
     /// <paramref name="now"/>.</summary>

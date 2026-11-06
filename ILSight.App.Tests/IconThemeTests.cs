@@ -33,7 +33,7 @@ internal sealed class MemoryIconAssets
     {
         if (_files.TryGetValue(path, out var bytes))
             return new IconAsset(bytes);
-        return IconAsset.Failed(ThemeProblem.AssetUnreadable, path);
+        return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
     }
 
     public string GetFamily(string fontId, string path) => "memory:" + path;

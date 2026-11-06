@@ -32,7 +32,7 @@ public sealed class CodeFontChoices
     {
         var installed = families
             .Where(IsOffered)
-            .Select(CodeFont.Of);
+            .Select(CodeDisplay.CreateFont);
         Fonts = new CodeFont?[] { null }
             .Concat(installed)
             .ToArray();

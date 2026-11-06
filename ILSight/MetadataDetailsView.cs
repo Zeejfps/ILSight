@@ -32,6 +32,14 @@ internal static class MetadataDetailsView
         }
     }
 
+    /// <summary>How many lines <paramref name="text"/> has, and how many characters its longest one.</summary>
+    public static TextSize MeasureText(string text)
+    {
+        var lines = text.Split('\n');
+        var longest = lines.Max(static l => l.TrimEnd('\r').Length);
+        return new TextSize(lines.Length, longest);
+    }
+
     /// <summary>How tall a text is in a code view <paramref name="width"/> wide: a code line per
     /// line, up to <see cref="MaxTextLines"/> before it scrolls, plus the horizontal scrollbar's room
     /// when its longest line is wider.</summary>

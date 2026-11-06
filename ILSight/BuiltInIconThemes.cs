@@ -71,7 +71,7 @@ internal static class EmbeddedIconAssets
     {
         var names = resources.GetManifestResourceNames();
         if (!names.Contains(path))
-            return IconAsset.Failed(ThemeProblem.AssetUnreadable, path);
+            return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
         return new IconAsset(EmbeddedAssets.LoadBytes(resources, path));
     }
 }

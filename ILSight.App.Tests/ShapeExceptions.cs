@@ -193,18 +193,13 @@ internal static class ShapeExceptions
     /// <summary>Methods on records, still to move to static functions.</summary>
     public static readonly string[] RecordsWithMethods =
     [
-        "ILSight.AppTheme.FromColors",
-        "ILSight.AppTheme.Shell",
-        "ILSight.Bookmarks+FoundBookmark.ToBookmark",
         "ILSight.CardFace.RowAt",
         "ILSight.CardFold.Inherited",
         "ILSight.CardFold.Own",
-        "ILSight.CodeFont.Of",
         "ILSight.CodeRow.At",
         "ILSight.CodeRow.Top",
         "ILSight.Core.Activation.Of",
         "ILSight.Core.Activation.TargetOf",
-        "ILSight.Core.AssemblyList+LoadOptions.IsSame",
         "ILSight.Core.CodeTooltip.ConstraintLines",
         "ILSight.Core.CodeTooltip.ContainerOf",
         "ILSight.Core.CodeTooltip.Create",
@@ -224,21 +219,12 @@ internal static class ShapeExceptions
         "ILSight.Core.Diagrams.RoutePiece.Lerp",
         "ILSight.Core.Diagrams.RoutePiece.Line",
         "ILSight.Core.Diagrams.RoutePiece.Split",
-        "ILSight.Core.Metadata.FlagsSchema.Explain",
-        "ILSight.Core.Metadata.MutexGroup.Label",
         "ILSight.Core.NodePathSegment.Of",
         "ILSight.Core.NodePathSegment.UsedMemberId",
         "ILSight.Core.NodeVisibility.Of",
         "ILSight.Core.NodeVisibility.OfDefinition",
         "ILSight.Core.NodeVisibility.OfReferenced",
         "ILSight.Core.NodeVisibility.OfResource",
-        "ILSight.ExportReport.Ended",
-        "ILSight.ExportReport.Finished",
-        "ILSight.IconAsset.Failed",
-        "ILSight.ProblemText.Summarize",
-        "ILSight.SettingsPlace.FindFolderBeside",
-        "ILSight.TextSize.Of",
-        "ILSight.ViewPosition.KeptIn",
     ];
 
     /// <summary>Static caches that are purely a speed-up, by why they may stay, and the one seam. These stay.</summary>

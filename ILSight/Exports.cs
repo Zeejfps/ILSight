@@ -124,11 +124,30 @@ public static class Exports
         appState.Export.Leave(start);
         var report = outcome switch
         {
-            Outcome<T>.Ok ok => complete(ExportReport.Finished(start.Run, job, clock.Elapsed), ok.Value),
-            Outcome<T>.Failed failed => ExportReport.Ended(start.Run, job, failed.Error, subject, clock.Elapsed),
+            Outcome<T>.Ok ok => complete(ReportFinished(start.Run, job, clock.Elapsed), ok.Value),
+            Outcome<T>.Failed failed => ReportEnded(start.Run, job, failed.Error, subject, clock.Elapsed),
             _ => throw new UnreachableException(),
         };
         appState.FinishedExports.Add(report);
+    }
+
+    /// <summary>The report of the export <paramref name="run"/> of <paramref name="job"/> that finished,
+    /// with nothing written yet.</summary>
+    private static ExportReport ReportFinished(ExportRun run, ExportJob job, TimeSpan elapsed)
+    {
+        return new ExportReport(run, job, ExportOutcome.Finished, [], [], elapsed, Directory.Exists(job.Folder));
+    }
+
+    /// <summary>The report of the export <paramref name="run"/> of <paramref name="job"/> that ended
+    /// with <paramref name="error"/>: cancelled when it was cancelled, else failed, exporting
+    /// <paramref name="subject"/>.</summary>
+    private static ExportReport ReportEnded(ExportRun run, ExportJob job, Exception error, string subject, TimeSpan elapsed)
+    {
+        var folderExists = Directory.Exists(job.Folder);
+        if (error is OperationCanceledException)
+            return new ExportReport(run, job, ExportOutcome.Cancelled, [], [], elapsed, folderExists);
+        var problem = new ExportProblem.Failed(subject, error);
+        return new ExportReport(run, job, ExportOutcome.Failed, [], [problem], elapsed, folderExists);
     }
 
     /// <summary><paramref name="report"/> listing <paramref name="written"/>.</summary>

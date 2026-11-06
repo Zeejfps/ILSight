@@ -179,7 +179,7 @@ public static class Bookmarks
     {
         ReportLostBookmarks(appState, places, file);
         var bookmarks = places
-            .Select(static f => f.ToBookmark())
+            .Select(CreateBookmark)
             .OfType<Bookmark>()
             .ToList();
         if (bookmarks.Count == 0)
@@ -238,13 +238,13 @@ public static class Bookmarks
     }
 
     /// <summary>A bookmark read, and where it was found.</summary>
-    private sealed record FoundBookmark(BookmarkRecord Record, NodePath? Place)
+    private sealed record FoundBookmark(BookmarkRecord Record, NodePath? Place);
+
+    /// <summary>The bookmark of <paramref name="found"/>, or null when its place wasn't found.</summary>
+    private static Bookmark? CreateBookmark(FoundBookmark found)
     {
-        public Bookmark? ToBookmark()
-        {
-            if (Place == null)
-                return null;
-            return Bookmark.FromRecord(Record, Place);
-        }
+        if (found.Place == null)
+            return null;
+        return Bookmark.FromRecord(found.Record, found.Place);
     }
 }

@@ -30,7 +30,7 @@ namespace ILSight.Core.Metadata
 				.Value("Member", e => e.Member)
 				.Value("Offset", e => e.Offset)
 				.Value("Size", e => e.Size)
-				.Value("Value", e => e.Value, tooltip: e => e.Flags?.Explain(Convert.ToUInt32(e.Value)))
+				.Value("Value", e => e.Value, tooltip: e => e.Flags == null ? null : FilterStatePresenter.Explain(e.Flags, Convert.ToUInt32(e.Value)))
 				.Value("Meaning", e => e.Meaning);
 
 		static readonly FlagsSchema CharacteristicsBits = Bits(typeof(Characteristics), [

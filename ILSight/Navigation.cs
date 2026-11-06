@@ -10,6 +10,20 @@ namespace ILSight;
 /// forward through the history.</summary>
 public static class Navigation
 {
+    /// <summary><paramref name="position"/>, taken while the node was shown in <paramref name="shownIn"/>, when it
+    /// still holds once the node is shown in <paramref name="language"/>: a grid's in any language, a code view's
+    /// only in the same; else null.</summary>
+    public static ViewPosition? KeepPosition(ViewPosition? position, DecompilationLanguage shownIn, DecompilationLanguage language)
+    {
+        if (position == null)
+            return null;
+        if (position.Value.Grid != null)
+            return position;
+        if (shownIn != language)
+            return null;
+        return position;
+    }
+
     /// <summary>Shows <paramref name="node"/> in the preview tab, or the active tab while tabs do not
     /// preview, or else a new tab kept open, reveals it in the tree and records it in the history.</summary>
     public static void ShowNode(AppState appState, BrowseNode node, bool inNewTab = false)
@@ -307,7 +321,7 @@ public static class Navigation
         var ticket = appState.Intent.Begin();
         var destination = ChooseDestination(appState, inNewTab: false);
         var place = entry.Place;
-        var position = ViewPosition.KeptIn(entry.Position, entry.Language, appState.Language);
+        var position = KeepPosition(entry.Position, entry.Language, appState.Language);
         var shown = FindShownNode(appState, FindTab(appState, destination), place);
         if (shown != null)
         {

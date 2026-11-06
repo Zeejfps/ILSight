@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using static ILSight.Preferences;
 
 namespace ILSight;
@@ -20,6 +21,22 @@ public static class Theming
     private const string GuideFileName = "README.md";
     private const string CustomSuffix = "-custom";
     private const int FirstCustomNumber = 2;
+
+    /// <summary>A theme of these colors, with the UI theme in the app's compact metrics.</summary>
+    public static AppTheme CreateTheme(UiTheme ui, CodeViewPalette code, NodeIconPalette icons)
+    {
+        return new AppTheme(MakeCompact(ui), code, icons);
+    }
+
+    private static UiTheme MakeCompact(UiTheme theme)
+    {
+        return theme.WithDensity(UiDensity.Compact) with
+        {
+            ScreenPadding = 0f,
+            TabMinWidth = 120f,
+            TabMaxWidth = 240f,
+        };
+    }
 
     /// <summary>Reads the user's themes into the catalog and reports what is wrong in any theme.</summary>
     public static void LoadThemes(AppState appState)

@@ -1,10 +1,7 @@
 namespace ILSight;
 
 /// <summary>A font or picture file an icon theme names: its bytes, or why it cannot be read.</summary>
-public readonly record struct IconAsset(byte[]? Bytes, ThemeProblem Problem = ThemeProblem.AssetUnreadable, string Detail = "")
-{
-    public static IconAsset Failed(ThemeProblem problem, string detail) => new(null, problem, detail);
-}
+public readonly record struct IconAsset(byte[]? Bytes, ThemeProblem Problem = ThemeProblem.AssetUnreadable, string Detail = "");
 
 /// <summary>The family the font <paramref name="fontId"/>, read from <paramref name="path"/>, is drawn as,
 /// which no other font may be drawn as.</summary>
@@ -46,7 +43,7 @@ public static class IconAssetFolders
         }
         catch (Exception e) when (IsReadFailure(e))
         {
-            return IconAsset.Failed(ThemeProblem.AssetUnreadable, $"{path}: {e.Message}");
+            return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, $"{path}: {e.Message}");
         }
     }
 
@@ -54,7 +51,7 @@ public static class IconAssetFolders
     {
         var full = Resolve(root, path);
         if (full == null)
-            return IconAsset.Failed(ThemeProblem.AssetOutsideFolder, path);
+            return IconTheming.CreateFailedAsset(ThemeProblem.AssetOutsideFolder, path);
         return new IconAsset(File.ReadAllBytes(full));
     }
 

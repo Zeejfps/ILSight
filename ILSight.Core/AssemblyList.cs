@@ -197,11 +197,11 @@ public sealed class AssemblyList
     {
         var loadsReferences = options.IsOn(DecompilerToggle.AutoLoadAssemblyReferences);
         var readerOptions = ChooseReaderOptions(options);
-        if (_options.IsSame(loadsReferences, readerOptions))
+        if (IsSame(_options, loadsReferences, readerOptions))
             return false;
         lock (_gate)
         {
-            if (_options.IsSame(loadsReferences, readerOptions))
+            if (IsSame(_options, loadsReferences, readerOptions))
                 return false;
             _options = new LoadOptions(loadsReferences, readerOptions);
             _generation++;
@@ -802,12 +802,14 @@ public sealed class AssemblyList
         }
     }
 
+    private static bool IsSame(LoadOptions options, bool loadsReferences, MetadataReaderOptions readerOptions)
+    {
+        return options.LoadsReferences == loadsReferences && options.ReaderOptions == readerOptions;
+    }
+
     /// <summary>The options that apply as assemblies are read, changed together.</summary>
     private sealed record LoadOptions(bool LoadsReferences, MetadataReaderOptions ReaderOptions)
     {
         public static LoadOptions Default { get; } = new(true, MetadataReaderOptions.ApplyWindowsRuntimeProjections);
-
-        public bool IsSame(bool loadsReferences, MetadataReaderOptions readerOptions) =>
-            LoadsReferences == loadsReferences && ReaderOptions == readerOptions;
     }
 }

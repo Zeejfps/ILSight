@@ -124,5 +124,5 @@ public static class Decompilation
     }
 
     private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab) =>
-        ViewPosition.KeptIn(tab.Position, tab.Language, appState.Language);
+        Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
 }

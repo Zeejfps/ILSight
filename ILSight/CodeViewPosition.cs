@@ -1,5 +1,3 @@
-using ILSight.Core;
-
 namespace ILSight;
 
 /// <summary>Where a code view stood: the line at its top, its sideways scroll and its selection —
@@ -40,18 +38,4 @@ public readonly record struct ViewPosition
 
     /// <summary>The grid's position, or null when this is a code view's.</summary>
     public GridPosition? Grid => _kind == Kind.Grid ? _grid : null;
-
-    /// <summary><paramref name="position"/>, taken while the node was shown in <paramref name="shownIn"/>, when it
-    /// still holds once the node is shown in <paramref name="language"/>: a grid's in any language, a code view's
-    /// only in the same; else null.</summary>
-    public static ViewPosition? KeptIn(ViewPosition? position, DecompilationLanguage shownIn, DecompilationLanguage language)
-    {
-        if (position == null)
-            return null;
-        if (position.Value._kind == Kind.Grid)
-            return position;
-        if (shownIn != language)
-            return null;
-        return position;
-    }
 }

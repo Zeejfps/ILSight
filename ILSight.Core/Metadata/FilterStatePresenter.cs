@@ -13,6 +13,24 @@ namespace ILSight.Core.Metadata
 	/// </summary>
 	public static class FilterStatePresenter
 	{
+		/// <summary>What <paramref name="value"/> holds: the value of each mutex group, then which
+		/// of the independent flags are set.</summary>
+		internal static MetadataTooltip Explain(FlagsSchema schema, uint value)
+		{
+			var groups = schema.MutexGroups
+				.Select(g => new MetadataFlagGroup(g.Name, true, [new MetadataFlag(GetLabel(g, value & g.Mask), true)]))
+				.ToList();
+			if (schema.IndependentFlags.Count > 0)
+				groups.Add(new MetadataFlagGroup(groups.Count > 0 ? "Flags" : null, false,
+					schema.IndependentFlags.Select(f => new MetadataFlag($"{f.Name} ({f.Bit:X4})", (value & f.Bit) != 0)).ToArray()));
+			return new MetadataTooltip(null, groups);
+		}
+
+		private static string GetLabel(MutexGroup group, uint value)
+		{
+			return group.Values.FirstOrDefault(v => v.Value == value)?.Label ?? $"Unknown ({value:X4})";
+		}
+
 		public static string Describe(FilterState state)
 		{
 			if (state.IsEmpty)

@@ -15,6 +15,12 @@ public static class IconTheming
     /// and the pictures.</summary>
     public static readonly IReadOnlyList<string> IconThemeFiles = [IconThemeFilePattern, "*.ttf", "*.otf", "*.svg"];
 
+    /// <summary>The asset that couldn't be read, with why.</summary>
+    public static IconAsset CreateFailedAsset(ThemeProblem problem, string detail)
+    {
+        return new IconAsset(null, problem, detail);
+    }
+
     /// <summary>Reads the user's icon themes into the catalog and reports what is wrong in any icon theme.</summary>
     public static void LoadIconThemes(AppState appState)
     {

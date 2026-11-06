@@ -8,18 +8,8 @@ public sealed record SettingsPlace(string? FilePath)
     private const string IconThemesFolderName = "icon-themes";
 
     /// <summary>Where the user's themes are; null while the settings are kept in memory only.</summary>
-    public string? ThemesFolder { get; } = FindFolderBeside(FilePath, ThemesFolderName);
+    public string? ThemesFolder { get; } = Settings.FindFolderBeside(FilePath, ThemesFolderName);
 
     /// <summary>Where the user's icon themes are; null while the settings are kept in memory only.</summary>
-    public string? IconThemesFolder { get; } = FindFolderBeside(FilePath, IconThemesFolderName);
-
-    private static string? FindFolderBeside(string? settingsFile, string name)
-    {
-        if (settingsFile == null)
-            return null;
-        var folder = Path.GetDirectoryName(settingsFile);
-        if (folder == null)
-            return null;
-        return Path.Combine(folder, name);
-    }
+    public string? IconThemesFolder { get; } = Settings.FindFolderBeside(FilePath, IconThemesFolderName);
 }

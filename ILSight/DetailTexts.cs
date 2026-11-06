@@ -6,15 +6,7 @@ namespace ILSight;
 internal sealed record DetailText(DecompiledDocument Document, CodeViewState View);
 
 /// <summary>How many lines a text has, and how many characters its longest one.</summary>
-internal readonly record struct TextSize(int Lines, int Longest)
-{
-    public static TextSize Of(string text)
-    {
-        var lines = text.Split('\n');
-        var longest = lines.Max(static l => l.TrimEnd('\r').Length);
-        return new TextSize(lines.Length, longest);
-    }
-}
+internal readonly record struct TextSize(int Lines, int Longest);
 
 /// <summary>The decoded texts under the rows of the metadata grid shown, each measured and turned into
 /// a document once.</summary>
@@ -37,7 +29,7 @@ internal sealed class DetailTexts
     {
         if (_sizes.TryGetValue(row, out var size))
             return size;
-        size = TextSize.Of(text);
+        size = MetadataDetailsView.MeasureText(text);
         _sizes[row] = size;
         return size;
     }

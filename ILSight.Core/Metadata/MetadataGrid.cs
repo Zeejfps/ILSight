@@ -282,7 +282,7 @@ public sealed class MetadataGrid
     {
         if (cell == null)
             return null;
-        return flags.Explain(Bits(cell));
+        return FilterStatePresenter.Explain(flags, Bits(cell));
     }
 
     internal static Regex? FindPattern(string text)

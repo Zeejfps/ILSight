@@ -9,6 +9,15 @@ public static class CodeDisplay
 {
     private const float FontSizeStep = 1f;
 
+    /// <summary>The font of <paramref name="family"/>'s regular face, or null when it has none.</summary>
+    public static CodeFont? CreateFont(SystemFontFamily family)
+    {
+        var regular = family.FindRegular();
+        if (regular == null)
+            return null;
+        return new CodeFont(family.Name, regular.File.Path, regular.File.FaceIndex);
+    }
+
     /// <summary>The size code is drawn at in <paramref name="theme"/>.</summary>
     public static float GetFontSize(DisplayOptions display, UiTheme theme)
     {

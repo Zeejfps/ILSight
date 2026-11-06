@@ -8,26 +8,27 @@ namespace ILSight;
 /// exception with its stack trace.</summary>
 public sealed record ProblemText(string Title, string Details)
 {
-    private const int SummaryLength = 160;
-
     /// <summary>The title and details as one text, for copying.</summary>
     public string FullText { get; } = Details.Length == 0 ? Title : $"{Title}{Environment.NewLine}{Environment.NewLine}{Details}";
 
     /// <summary>The title and the first line of the details on one line, for a tooltip.</summary>
-    public string Summary { get; } = Summarize(Title, Details);
+    public string Summary { get; } = ProblemTexts.Summarize(Title, Details);
+}
 
-    private static string Summarize(string title, string details)
+/// <summary>What went wrong in the words of the interface language.</summary>
+public static class ProblemTexts
+{
+    private const int SummaryLength = 160;
+
+    /// <summary>The title and the first line of the details on one line.</summary>
+    public static string Summarize(string title, string details)
     {
         var end = details.AsSpan().IndexOfAny('\r', '\n');
         var first = (end < 0 ? details : details[..end]).Trim();
         var summary = first.Length == 0 ? title : $"{title} — {first}";
         return summary.Length > SummaryLength ? summary[..SummaryLength] + "…" : summary;
     }
-}
 
-/// <summary>What went wrong in the words of the interface language.</summary>
-public static class ProblemTexts
-{
     public static ProblemText Describe(Strings t, AppProblem problem)
     {
         var (title, details) = Words(t, problem);

@@ -66,7 +66,7 @@ internal sealed class MergedTheme
             errors.Add(new ThemeError(file, 0, ThemeProblem.MissingColors, Detail: string.Join(KeySeparator, missing)));
             return null;
         }
-        return AppTheme.FromColors(UiTheme.FromColors(ui), CodeViewPalette.FromColors(code), NodeIconPalette.FromColors(icons));
+        return Theming.CreateTheme(UiTheme.FromColors(ui), CodeViewPalette.FromColors(code), NodeIconPalette.FromColors(icons));
     }
 
     private Dictionary<string, uint> LookUpColors(string section, Dictionary<string, List<ThemeValue>> merged, ICollection<ThemeError> errors)

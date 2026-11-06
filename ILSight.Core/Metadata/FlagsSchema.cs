@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace ILSight.Core.Metadata
 {
@@ -15,21 +14,7 @@ namespace ILSight.Core.Metadata
 	public sealed record FlagsSchema(
 		Type EnumType,
 		IReadOnlyList<MutexGroup> MutexGroups,
-		IReadOnlyList<IndependentFlag> IndependentFlags)
-	{
-		/// <summary>What <paramref name="value"/> holds: the value of each mutex group, then which
-		/// of the independent flags are set.</summary>
-		internal MetadataTooltip Explain(uint value)
-		{
-			var groups = MutexGroups
-				.Select(g => new MetadataFlagGroup(g.Name, true, [new MetadataFlag(g.Label(value & g.Mask), true)]))
-				.ToList();
-			if (IndependentFlags.Count > 0)
-				groups.Add(new MetadataFlagGroup(groups.Count > 0 ? "Flags" : null, false,
-					IndependentFlags.Select(f => new MetadataFlag($"{f.Name} ({f.Bit:X4})", (value & f.Bit) != 0)).ToArray()));
-			return new MetadataTooltip(null, groups);
-		}
-	}
+		IReadOnlyList<IndependentFlag> IndependentFlags);
 
 	/// <summary>
 	/// One sub-range of an enum carved out by a <c>*Mask</c> field. A row's value carries
@@ -38,10 +23,7 @@ namespace ILSight.Core.Metadata
 	public sealed record MutexGroup(
 		string Name,
 		uint Mask,
-		IReadOnlyList<MutexValue> Values)
-	{
-		internal string Label(uint value) => Values.FirstOrDefault(v => v.Value == value)?.Label ?? $"Unknown ({value:X4})";
-	}
+		IReadOnlyList<MutexValue> Values);
 
 	public sealed record MutexValue(string Label, uint Value);
 

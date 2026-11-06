@@ -328,7 +328,7 @@ public static class Assemblies
     }
 
     private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab) =>
-        ViewPosition.KeptIn(tab.Position, tab.Language, appState.Language);
+        Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
 
     private static Reloaded ReopenFiles(AssemblyList assemblies, BrowseSession session, IReadOnlyList<AssemblyPath> paths, List<NodePath> expanded,
         List<NodePath> places, CancellationToken cancellationToken)
