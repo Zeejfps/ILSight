@@ -286,10 +286,10 @@ public sealed class MetadataGridTests
 
         using var temp = new TempDir();
         var settings = temp.Settings();
-        settings.FlagsFilters = app.Ui.MetadataFilters.Save();
+        settings.FlagsFilters = MetadataGridWidget.ListSaved(app.Ui.MetadataFilters);
         settings.Save();
         var saved = temp.Settings().FlagsFilters;
-        var restored = new MetadataFilters(saved).For(grid, attributes);
+        var restored = MetadataGridWidget.FindFilter(new MetadataFilters(saved), grid, attributes);
         Assert.Equal("Visibility = Public", FilterStatePresenter.Describe(restored));
     }
 
@@ -381,5 +381,69 @@ public sealed class MetadataGridTests
 
         Assert.Equal(options, GridOf(app, tab).Selected);
         Assert.True(app.TextRect("language").Y > TextBeside(app, grid.Text(options, kind), grid.Text(options, kind)).Y);
+    }
+
+    /// <summary>Where each of <paramref name="rows"/> stands, by its token cell.</summary>
+    private static float[] FindTops(AppDriver app, MetadataGrid grid, params int[] rows)
+    {
+        var token = grid.Column("Token");
+        return rows.Select(row => app.TextRect(grid.Text(row, token)).Y).ToArray();
+    }
+
+    [Fact]
+    public void An_open_cell_makes_its_row_as_tall_as_its_longest_and_leaves_the_others_alone()
+    {
+        var (app, tab, grid) = ShowTable("TypeDef");
+        var state = GridOf(app, tab);
+        var line = state.RowHeight;
+
+        state.Open[(3, grid.Column("Name"))] = 2;
+        state.Open[(1, grid.Column("Name"))] = 3;
+        state.Open[(1, grid.Column("Namespace"))] = 5;
+        app.Run(3);
+
+        var tops = FindTops(app, grid, 0, 1, 2, 3, 4);
+        Assert.Equal(line, tops[1] - tops[0], 0.01f);
+        Assert.Equal(5 * line, tops[2] - tops[1], 0.01f);
+        Assert.Equal(line, tops[3] - tops[2], 0.01f);
+        Assert.Equal(2 * line, tops[4] - tops[3], 0.01f);
+    }
+
+    [Fact]
+    public void An_open_cell_in_a_row_the_filter_hides_makes_no_row_taller()
+    {
+        var (app, tab, grid) = ShowTable("TypeDef");
+        var state = GridOf(app, tab);
+        var name = grid.Column("Name");
+        var line = state.RowHeight;
+
+        state.Filters[name] = new MetadataColumnFilter { Text = $"/^({grid.Text(1, name)}|{grid.Text(3, name)})$/" };
+        state.Open[(2, name)] = 4;
+        app.Run(3);
+
+        var tops = FindTops(app, grid, 1, 3);
+        Assert.Equal(line, tops[1] - tops[0], 0.01f);
+    }
+
+    [Fact]
+    public void The_selected_rows_details_go_under_its_tallest_cell()
+    {
+        var app = AppDriver.Opened(width: 1800f, height: 900f);
+        app.Show(app.Node("Debug Metadata (From portable PDB)", "Tables").Table("CustomDebugInformation"));
+        var tab = app.AppState.Tabs.Active!;
+        var grid = tab.Grid!;
+        var state = GridOf(app, tab);
+        var kind = grid.Column("KindString");
+        var selected = Enumerable.Range(0, grid.RowCount - 1).First(r => grid.Text(r, kind).StartsWith("Compilation Options"));
+        state.Reveal(selected);
+        app.Run(4);
+        var closed = FindTops(app, grid, selected, selected + 1);
+
+        state.Open[(selected, kind)] = 3;
+        app.Run(3);
+
+        var open = FindTops(app, grid, selected, selected + 1);
+        Assert.True(closed[1] - closed[0] > state.RowHeight);
+        Assert.Equal(2 * state.RowHeight, open[1] - open[0] - (closed[1] - closed[0]), 0.01f);
     }
 }

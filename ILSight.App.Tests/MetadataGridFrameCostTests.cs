@@ -34,6 +34,27 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
         Assert.Equal(0, allocated);
     }
 
+    /// <summary>Measuring alone, as drawing the rows it finds allocates for reasons of its own: ZGF walks the
+    /// tall rows through an interface, which boxes an enumerator, and an open cell's text isn't kept.</summary>
+    [Fact]
+    public void Measuring_the_tall_rows_of_a_metadata_grid_allocates_nothing()
+    {
+        var grid = OpenTable("TypeRef");
+        var state = new MetadataGridState(grid);
+        state.UpdateView(new MetadataFilters(null));
+        state.Open[(2, 1)] = 3;
+        state.Open[(1, 1)] = 2;
+        state.Open[(1, 2)] = 4;
+
+        for (var i = 0; i < WarmUpFrames; i++)
+            MetadataGridWidget.MeasureTallRows(state, 20f, 0f);
+        var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => MetadataGridWidget.MeasureTallRows(state, 20f, 0f));
+
+        output.WriteLine($"{allocated:N0} B/frame allocated");
+        Assert.Equal(2, state.TallRows.Count);
+        Assert.Equal(0, allocated);
+    }
+
     private static MetadataGrid OpenTable(string name)
     {
         var app = AppDriver.Opened(width: 1800f);

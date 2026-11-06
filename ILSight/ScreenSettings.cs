@@ -44,7 +44,7 @@ public static class ScreenSettings
             uiState.ExportColumns.Weights.ToList(),
             OptionFolds.ListInOrder(uiState.FoldedOptionGroups),
             uiState.Search.Kinds,
-            uiState.MetadataFilters.Save(),
+            MetadataGridWidget.ListSaved(uiState.MetadataFilters),
             uiState.ExportSetup.Window.Bounds,
             uiState.Layout.CopyArrangement(),
             uiState.Display,

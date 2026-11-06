@@ -1,5 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.Core;
 using ILSight.Core.Metadata;
 
 namespace ILSight;
@@ -23,7 +24,7 @@ internal static class MetadataDetailsView
         switch (grid.Details(row))
         {
             case MetadataTextDetails text:
-                var size = texts.SizeOf(row, text.Text);
+                var size = MeasureText(texts, row, text.Text);
                 return TextHeight(ui, size, width - Left(theme) - theme.ShellPaddingX) + padding;
             case MetadataTableDetails table:
                 return MathF.Min(MaxTableHeight, (table.Rows.Count + 1) * theme.RowHeight + padding);
@@ -32,8 +33,18 @@ internal static class MetadataDetailsView
         }
     }
 
+    /// <summary>How big <paramref name="row"/>'s <paramref name="text"/> is, measured once.</summary>
+    private static TextSize MeasureText(DetailTexts texts, int row, string text)
+    {
+        if (texts.Sizes.TryGetValue(row, out var size))
+            return size;
+        size = MeasureText(text);
+        texts.Sizes[row] = size;
+        return size;
+    }
+
     /// <summary>How many lines <paramref name="text"/> has, and how many characters its longest one.</summary>
-    public static TextSize MeasureText(string text)
+    private static TextSize MeasureText(string text)
     {
         var lines = text.Split('\n');
         var longest = lines.Max(static l => l.TrimEnd('\r').Length);
@@ -78,9 +89,20 @@ internal static class MetadataDetailsView
         }
     }
 
+    /// <summary><paramref name="row"/>'s <paramref name="text"/> as a document, made once.</summary>
+    private static DetailText FindText(DetailTexts texts, int row, string title, string text)
+    {
+        if (texts.Texts.TryGetValue(row, out var shown))
+            return shown;
+        var document = DecompiledDocument.FromText(title, text);
+        shown = new DetailText(document, new CodeViewState());
+        texts.Texts[row] = shown;
+        return shown;
+    }
+
     private static void Text(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, MetadataTextDetails text)
     {
-        var shown = texts.Get(row, grid.Title, text.Text);
+        var shown = FindText(texts, row, grid.Title, text.Text);
         ui.CodeView("details", shown.Document, shown.View, gutter: false);
     }
 

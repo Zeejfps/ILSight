@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 
@@ -15,6 +16,10 @@ internal abstract record PendingGridScroll
 
     public sealed record Restore(GridPosition Position) : PendingGridScroll;
 }
+
+/// <summary>How tall a row of a metadata grid is: its <paramref name="Cells"/>, and the
+/// <paramref name="Details"/> shown under it.</summary>
+internal readonly record struct RowHeights(float Cells, float Details);
 
 /// <summary>Everything a <see cref="MetadataGridWidget.MetadataGridView"/> keeps between frames of one
 /// grid: the columns' widths, the sort and text filters, the selected cell and the text selected in it,
@@ -45,7 +50,17 @@ public sealed class MetadataGridState
     internal bool FlagsOpen;
     internal readonly Dictionary<(int Row, int Column), int> Open = new();
     internal readonly DetailTexts Details = new();
-    internal readonly TallRowLayout TallRows = new();
+
+    /// <summary>The cells' height of each row taller than one line, while they are measured; see
+    /// <see cref="MetadataGridWidget.MeasureTallRows"/>, which reuses these buffers between frames.</summary>
+    internal readonly Dictionary<int, float> TallCellsByRow = new();
+
+    /// <summary>How tall the row at each view index is, as of the last measuring; a row not here is no
+    /// taller than one line.</summary>
+    internal readonly Dictionary<int, RowHeights> TallRowsByIndex = new();
+
+    /// <summary>The tall rows in view order, as a virtual scroll lays them out.</summary>
+    internal readonly List<TallRow> TallRows = new();
 
     public MetadataGridState(MetadataGrid grid)
     {
@@ -110,7 +125,7 @@ public sealed class MetadataGridState
     {
         if (!IsFlagsColumn(column))
             return new MetadataColumnFilter();
-        return new MetadataColumnFilter { Flags = flags.For(Grid, column) };
+        return new MetadataColumnFilter { Flags = MetadataGridWidget.FindFilter(flags, Grid, column) };
     }
 
     private bool IsFlagsColumn(int column) => Grid.Columns[column].Flags != null;

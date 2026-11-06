@@ -17,10 +17,186 @@ public readonly record struct MetadataGridResult(MetadataAddress? Target, CodeRe
 
 public static class MetadataGridWidget
 {
+    private const int FunnelSalt = 0x4D444746;
+    private const int FilterTextSalt = 0x4D444754;
+
     public static MetadataGridResult MetadataGridView(this Ui<UiState> ui, string id, MetadataGridState state, MetadataFilters flags)
     {
         var frame = new MetadataGridFrame(ui, id, state, flags);
         return frame.Render();
+    }
+
+    /// <summary>The filter of <paramref name="column"/>, a column of flags, as last left.</summary>
+    public static FilterState FindFilter(MetadataFilters filters, MetadataGrid grid, int column)
+    {
+        var key = GetKey(grid, column);
+        if (filters.States.TryGetValue(key, out var state)) return state;
+        var schema = grid.Columns[column].Flags;
+        if (schema == null)
+            throw new ArgumentException($"{key} is not a flags column.", nameof(column));
+        state = new FilterState(schema);
+        if (filters.Saved.TryGetValue(key, out var saved))
+            state.Restore(saved);
+        filters.States.Add(key, state);
+        return state;
+    }
+
+    private static string GetKey(MetadataGrid grid, int column)
+    {
+        return $"{grid.Key}/{grid.Columns[column].Name}";
+    }
+
+    /// <summary>Every filter that filters something, to save.</summary>
+    public static Dictionary<string, SavedFilterState> ListSaved(MetadataFilters filters)
+    {
+        foreach (var (key, state) in filters.States)
+        {
+            var saved = state.Save();
+            if (saved != null)
+                filters.Saved[key] = saved;
+            else
+                filters.Saved.Remove(key);
+        }
+        return new Dictionary<string, SavedFilterState>(filters.Saved);
+    }
+
+    /// <summary>Works out which rows of <paramref name="state"/> are taller than one line: those with cells
+    /// open in place, as tall as their longest, and the selected row with the <paramref name="details"/>
+    /// under it.</summary>
+    internal static void MeasureTallRows(MetadataGridState state, float rowHeight, float details)
+    {
+        state.TallCellsByRow.Clear();
+        state.TallRowsByIndex.Clear();
+        state.TallRows.Clear();
+        MeasureOpenCells(state, rowHeight);
+        if (details > 0f)
+            state.TallCellsByRow.TryAdd(state.Selected, rowHeight);
+        foreach (var (row, cells) in state.TallCellsByRow)
+            AddTallRow(state, row, cells, details);
+        state.TallRows.Sort(static (a, b) => a.Index.CompareTo(b.Index));
+    }
+
+    private static void MeasureOpenCells(MetadataGridState state, float rowHeight)
+    {
+        foreach (var (cell, lines) in state.Open)
+        {
+            var tallest = state.TallCellsByRow.GetValueOrDefault(cell.Row, rowHeight);
+            state.TallCellsByRow[cell.Row] = MathF.Max(tallest, lines * rowHeight);
+        }
+    }
+
+    private static void AddTallRow(MetadataGridState state, int row, float cells, float details)
+    {
+        var index = state.IndexOf(row);
+        if (index < 0) return;
+        var below = row == state.Selected ? details : 0f;
+        state.TallRowsByIndex[index] = new RowHeights(cells, below);
+        state.TallRows.Add(new TallRow(index, cells + below));
+    }
+
+    internal static int GetFunnelId(int listId, int column)
+    {
+        return HashCode.Combine(listId, FunnelSalt, column);
+    }
+
+    /// <summary>Draws the heading of <paramref name="column"/>, as a table asks of its headings.</summary>
+    internal static void RenderHeading(Ui ui, int column, bool hovered, in MetadataGridHeading heading)
+    {
+        var filter = heading.State.FilterOf(column, heading.Flags);
+        var textId = HashCode.Combine(heading.ListId, FilterTextSalt, column);
+        if (heading.State.EditingColumn == column)
+            EditFilterText(ui, heading.State, filter, textId);
+        else if (filter.Text.Length > 0)
+            DrawFilterText(ui, heading.State, filter, textId, column);
+        else
+            DrawColumnName(ui, heading.Grid.Columns[column].Name, hovered);
+        DrawFunnel(ui, in heading, filter, column);
+    }
+
+    private static void EditFilterText(Ui ui, MetadataGridState state, MetadataColumnFilter filter, int textId)
+    {
+        var text = filter.Text;
+        using (ui.Id(textId))
+        {
+            var edit = ui.InlineEdit("filter", ref text, state.BeginEdit, Sizing.Grow());
+            state.BeginEdit = false;
+            filter.Text = edit == InlineEditResult.Cancelled ? "" : text;
+            if (edit != InlineEditResult.Editing)
+                state.StopEditingFilter();
+        }
+    }
+
+    private static void DrawFilterText(Ui ui, MetadataGridState state, MetadataColumnFilter filter, int textId, int column)
+    {
+        var theme = ui.Theme;
+        var shown = ui.Interact(textId);
+        if (shown.Hovered)
+            ui.SetCursor(MouseCursor.Text);
+        if (shown.Clicked)
+            state.StartEditingFilter(column);
+        ui.Text(filter.Text, new Box { Width = Sizing.Grow() }, color: theme.AccentText, size: theme.FontSizeSmall, id: shown.Id,
+            overflow: TextOverflow.Ellipsis);
+    }
+
+    private static void DrawColumnName(Ui ui, string name, bool hovered)
+    {
+        var theme = ui.Theme;
+        var color = hovered ? theme.Text : theme.TextMuted;
+        ui.Text(name, new Box { Width = Sizing.Grow() }, color: color, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
+    }
+
+    private static void DrawFunnel(Ui ui, in MetadataGridHeading heading, MetadataColumnFilter filter, int column)
+    {
+        var theme = ui.Theme;
+        var funnel = ui.Clickable(GetFunnelId(heading.ListId, column));
+        if (funnel.Clicked)
+            ClickFunnel(heading.State, filter, column);
+        var glyph = GetFunnelGlyph(heading.Icons, filter);
+        var color = GetFunnelColor(theme, filter, funnel.Hovered);
+        using (ui.Box(funnel.Id, new Box { Width = theme.IconSize, Height = Sizing.Grow(), AlignX = Align.Center, AlignY = Align.Center }))
+            ui.Glyph(glyph, color, theme.FontSizeSmall);
+        if (!heading.State.IsFlagsFlyoutOpenFor(column))
+            ui.Tooltip(funnel.Id, GetFunnelTooltip(ui, heading.Strings, funnel.Id, heading.Grid.Columns[column].Name));
+    }
+
+    private static string GetFunnelTooltip(Ui ui, Strings t, int funnelId, string name)
+    {
+        using (ui.Id(funnelId))
+            return ui.Memo("tooltip", (name, t), static a => a.t.MetadataFilter(a.name));
+    }
+
+    private static void ClickFunnel(MetadataGridState state, MetadataColumnFilter filter, int column)
+    {
+        if (filter.Flags != null)
+        {
+            state.ToggleFlagsFlyout(column);
+            return;
+        }
+        if (filter.Text.Length > 0)
+        {
+            filter.Text = "";
+            state.StopEditingFilter();
+            return;
+        }
+        state.StartEditingFilter(column);
+    }
+
+    private static IconGlyph GetFunnelGlyph(AppIcons icons, MetadataColumnFilter filter)
+    {
+        if (filter.Flags != null)
+            return icons.MetadataFilter;
+        if (filter.Text.Length > 0)
+            return icons.MetadataClearFilter;
+        return icons.MetadataFilter;
+    }
+
+    private static uint GetFunnelColor(UiTheme theme, MetadataColumnFilter filter, bool hovered)
+    {
+        if (filter.IsActive)
+            return theme.AccentText;
+        if (hovered)
+            return theme.Text;
+        return theme.TextMuted;
     }
 }
 
@@ -117,7 +293,7 @@ internal ref struct MetadataGridFrame
         var sortGlyph = _state.Descending ? icons.SortDescending : icons.SortAscending;
         var sort = new TableSort(_state.SortColumn, new UiIcon(sortGlyph));
         var heading = new MetadataGridHeading(_grid, _state, _flags, _t, icons, _listId);
-        var clicked = table.Header(_state.Headers, sort, MetadataGridHeading.Render, heading);
+        var clicked = table.Header(_state.Headers, sort, MetadataGridWidget.RenderHeading, heading);
         if (clicked < 0) return;
         if (clicked == _state.EditingColumn) return;
         _state.SortBy(clicked);
@@ -127,9 +303,9 @@ internal ref struct MetadataGridFrame
     {
         if (_state.FlagsColumn < 0) return;
         var theme = _ui.Theme;
-        var filter = _flags.For(_grid, _state.FlagsColumn);
+        var filter = MetadataGridWidget.FindFilter(_flags, _grid, _state.FlagsColumn);
         var width = FlagsFilterView.ContentWidth + theme.TooltipPaddingX * 2 + theme.ScrollBarHitWidth;
-        var funnelId = MetadataGridHeading.FunnelId(_listId, _state.FlagsColumn);
+        var funnelId = MetadataGridWidget.GetFunnelId(_listId, _state.FlagsColumn);
         using var flyout = _ui.Flyout(HashCode.Combine(_listId, FlyoutSalt), ref _state.FlagsOpen, funnelId,
             new Box { Width = Sizing.Fit(FlyoutMinWidth, width), Gap = theme.Gap });
         if (!flyout.IsOpen) return;
@@ -176,14 +352,13 @@ internal ref struct MetadataGridFrame
         var rowHeight = _state.RowHeight;
         var width = columns.TotalWidth + _ui.Theme.ShellPaddingX * 2;
         var details = MetadataDetailsView.Height(_ui, _grid, _state.Details, _state.Selected, width);
-        var tall = _state.TallRows;
-        tall.Measure(_state, rowHeight, details);
-        using var body = table.Body(_state.View.Length, tall: tall.Rows);
+        MetadataGridWidget.MeasureTallRows(_state, rowHeight, details);
+        using var body = table.Body(_state.View.Length, tall: _state.TallRows);
         Arrive(body, rowHeight);
         for (var index = body.First; index < body.End; index++)
         {
             var row = _state.RowAt(index);
-            var height = tall.At(index);
+            var height = _state.TallRowsByIndex.GetValueOrDefault(index);
             if (height.Cells <= 0f)
             {
                 Row(body, index, row, rowHeight);

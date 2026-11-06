@@ -12,31 +12,6 @@ internal readonly record struct TextSize(int Lines, int Longest);
 /// a document once.</summary>
 internal sealed class DetailTexts
 {
-    private readonly Dictionary<int, DetailText> _texts = new();
-    private readonly Dictionary<int, TextSize> _sizes = new();
-
-    public DetailText Get(int row, string title, string text)
-    {
-        if (_texts.TryGetValue(row, out var shown))
-            return shown;
-        var document = DecompiledDocument.FromText(title, text);
-        shown = new DetailText(document, new CodeViewState());
-        _texts[row] = shown;
-        return shown;
-    }
-
-    public TextSize SizeOf(int row, string text)
-    {
-        if (_sizes.TryGetValue(row, out var size))
-            return size;
-        size = MetadataDetailsView.MeasureText(text);
-        _sizes[row] = size;
-        return size;
-    }
-
-    public void Clear()
-    {
-        _texts.Clear();
-        _sizes.Clear();
-    }
+    public readonly Dictionary<int, DetailText> Texts = new();
+    public readonly Dictionary<int, TextSize> Sizes = new();
 }
