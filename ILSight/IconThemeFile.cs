@@ -102,7 +102,7 @@ public sealed class IconThemeFile : IThemeFile<IconThemeFile, IconThemeContents>
     public static IconThemeFile ReadFile(ThemeId<IconThemeFile> id, string path)
     {
         var folder = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        var theme = new IconThemeFile(id, path, new IconAssetFolder(folder));
+        var theme = new IconThemeFile(id, path, IconAssetFolders.Of(folder));
         var json = theme._json.ReadBytes(path);
         if (json != null)
             theme._json.Read(json, theme.ReadTopLevel);

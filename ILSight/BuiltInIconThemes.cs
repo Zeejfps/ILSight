@@ -46,21 +46,32 @@ public static class BuiltInIconThemes
     {
         var id = ThemeId<IconThemeFile>.Of(Path.GetFileNameWithoutExtension(resource));
         var json = EmbeddedAssets.LoadBytes(Resources, resource);
-        return IconThemeFile.Read(id, resource, json, new EmbeddedIconAssets(Resources));
+        return IconThemeFile.Read(id, resource, json, EmbeddedIconAssets.Of(Resources));
     }
 }
 
 /// <summary>The fonts and pictures of a built-in icon theme: resources embedded in the app, named by
 /// their resource names. Each font is drawn as the family of its id.</summary>
-internal sealed class EmbeddedIconAssets(Assembly resources) : IconAssets
+internal static class EmbeddedIconAssets
 {
-    public override IconAsset Read(string path)
+    public static IconAssets Of(Assembly resources)
+    {
+        return new IconAssets(
+            path =>
+            {
+                return Read(resources, path);
+            },
+            (fontId, _) =>
+            {
+                return fontId;
+            });
+    }
+
+    private static IconAsset Read(Assembly resources, string path)
     {
         var names = resources.GetManifestResourceNames();
         if (!names.Contains(path))
             return IconAsset.Failed(ThemeProblem.AssetUnreadable, path);
         return new IconAsset(EmbeddedAssets.LoadBytes(resources, path));
     }
-
-    public override string FamilyOf(string fontId, string path) => fontId;
 }

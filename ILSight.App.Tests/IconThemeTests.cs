@@ -13,7 +13,7 @@ using static ILSight.Settings;
 namespace ILSight.App.Tests;
 
 /// <summary>Fonts and pictures held in memory by path, for icon theme files read from bytes.</summary>
-internal sealed class MemoryIconAssets : IconAssets
+internal sealed class MemoryIconAssets
 {
     public const string Picture = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="currentColor"/></svg>""";
 
@@ -27,14 +27,16 @@ internal sealed class MemoryIconAssets : IconAssets
 
     public MemoryIconAssets With(string path, string text) => With(path, Encoding.UTF8.GetBytes(text));
 
-    public override IconAsset Read(string path)
+    public static implicit operator IconAssets(MemoryIconAssets assets) => new(assets.Read, assets.FamilyOf);
+
+    public IconAsset Read(string path)
     {
         if (_files.TryGetValue(path, out var bytes))
             return new IconAsset(bytes);
         return IconAsset.Failed(ThemeProblem.AssetUnreadable, path);
     }
 
-    public override string FamilyOf(string fontId, string path) => "memory:" + path;
+    public string FamilyOf(string fontId, string path) => "memory:" + path;
 }
 
 public sealed class BuiltInIconThemeTests
@@ -384,7 +386,7 @@ public sealed class IconAssetFolderTests : IDisposable
     public void A_path_that_leaves_the_folder_is_refused(string path)
     {
         _temp.Write("outside.svg", MemoryIconAssets.Picture);
-        var folder = new IconAssetFolder(_temp.PathOf("icon-themes"));
+        var folder = IconAssetFolders.Of(_temp.PathOf("icon-themes"));
 
         var asset = folder.Read(path);
 
@@ -395,7 +397,7 @@ public sealed class IconAssetFolderTests : IDisposable
     [Fact]
     public void A_path_no_path_may_be_is_unreadable_rather_than_thrown()
     {
-        var folder = new IconAssetFolder(_temp.PathOf("icon-themes"));
+        var folder = IconAssetFolders.Of(_temp.PathOf("icon-themes"));
         var path = "a" + (char)0 + ".svg";
 
         var asset = folder.Read(path);
@@ -425,7 +427,7 @@ public sealed class IconAssetFolderTests : IDisposable
     public void A_path_inside_the_folder_is_read_and_a_font_is_drawn_as_a_family_of_its_own_file()
     {
         _temp.Write("icon-themes/svg/a.svg", MemoryIconAssets.Picture);
-        var folder = new IconAssetFolder(_temp.PathOf("icon-themes"));
+        var folder = IconAssetFolders.Of(_temp.PathOf("icon-themes"));
 
         var asset = folder.Read("svg/../svg/a.svg");
 
@@ -563,7 +565,7 @@ public sealed class UserIconThemeTests : IDisposable
         var catalog = appState.IconThemes;
         var shapes = catalog.Find(Id("shapes"));
         var lines = IconThemeDraft.Compose("Mine", Id("shapes"), shapes).Split('\n');
-        var assets = new IconAssetFolder(_temp.PathOf("icon-themes"));
+        var assets = IconAssetFolders.Of(_temp.PathOf("icon-themes"));
 
         for (var i = 0; i < lines.Length; i++)
         {

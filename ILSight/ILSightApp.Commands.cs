@@ -137,7 +137,7 @@ public sealed partial class ILSightApp
     {
         var commands = uiState.AppCommands;
         while (commands.TryDequeue(out var command))
-            command.Run(appState);
+            command(appState);
     }
 
     /// <summary>Opens an empty tab shown in <paramref name="panel"/>, unless the panel was closed meanwhile,
