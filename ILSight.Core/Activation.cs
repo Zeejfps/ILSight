@@ -19,13 +19,13 @@ public abstract record Activation
     /// <summary>What activating a node of <paramref name="subject"/> does.</summary>
     public static Activation Of(NodeSubject subject) => subject switch
     {
-        NodeSubject.AssemblyReference reference => new Navigate(CodeReference.ToAssembly(reference.Value.Reference.Name,
+        NodeSubject.AssemblyReference reference => new Navigate(CodeReferences.CreateAssembly(reference.Value.Reference.Name,
             reference.Value.Module.FilePath, reference.Value.Reference.Handle)),
-        NodeSubject.TypeReference type => new Navigate(CodeReference.ToEntity(EntityKind.Type, type.Value.Label, type.Value.Module.FilePath,
+        NodeSubject.TypeReference type => new Navigate(CodeReferences.CreateEntity(EntityKind.Type, type.Value.Label, type.Value.Module.FilePath,
             type.Value.Handle)),
-        NodeSubject.MemberReference member => new Navigate(CodeReference.ToEntity(CodeReference.KindOf(member.Value.Declared.SymbolKind),
+        NodeSubject.MemberReference member => new Navigate(CodeReferences.CreateEntity(CodeReferences.GetKind(member.Value.Declared.SymbolKind),
             member.Value.Declared.Name, member.Value.Module.FilePath, member.Value.Handle)),
-        NodeSubject.ForwardedType forwarded => new Navigate(CodeReference.ToEntity(EntityKind.Type, forwarded.Value.Label,
+        NodeSubject.ForwardedType forwarded => new Navigate(CodeReferences.CreateEntity(EntityKind.Type, forwarded.Value.Label,
             forwarded.Value.Module.FilePath, forwarded.Value.Handle)),
         NodeSubject.ImportedMethod import => new Navigate(import.Value.Shown.Reference),
         NodeSubject.DerivedType derived => new Navigate(derived.Value.Reference),

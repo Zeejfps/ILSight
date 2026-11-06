@@ -67,7 +67,7 @@ public static class TypeCards
     /// referenced by, as a type the decompiler made up has not.</summary>
     internal static TypeCard? Read(ITypeDefinition type)
     {
-        var reference = CodeReference.To(type);
+        var reference = CodeReferences.Find(type);
         if (reference == null)
             return null;
         return new TypeCard(
@@ -139,7 +139,7 @@ public static class TypeCards
     /// to be referenced by.</summary>
     private static CardMember? ToCardMember(IMember member)
     {
-        var reference = CodeReference.To(member);
+        var reference = CodeReferences.Find(member);
         if (reference == null)
             return null;
         return new CardMember(reference, EntityText.Label(member), EntityText.ShapeOf(member), EntityText.Map(member.Accessibility));
@@ -172,7 +172,7 @@ public static class TypeCards
             .Select(ToCardMember)
             .OfType<CardMember>()
             .ToList();
-        return new InheritedGroup(EntityText.ShortTypeName(ancestor), CodeReference.To(definition)?.FilePath, members);
+        return new InheritedGroup(EntityText.ShortTypeName(ancestor), CodeReferences.Find(definition)?.FilePath, members);
     }
 
     /// <summary>Whether a type deriving from the one declaring <paramref name="member"/> inherits it: an
@@ -208,7 +208,7 @@ public static class TypeCards
 
     private static TypeLink? LinkOf(CodeReference.Entity from, Relation relation)
     {
-        var to = CodeReference.To(relation.Target);
+        var to = CodeReferences.Find(relation.Target);
         if (to == null)
             return null;
         return new TypeLink(from, to, relation.Kind, relation.Label);

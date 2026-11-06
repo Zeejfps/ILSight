@@ -68,7 +68,7 @@ internal static class ApiEntries
     /// Leaves out an entity with no metadata file or token to be referenced by.</summary>
     private static void AddByKey(Dictionary<string, Compared> entities, IEntity entity)
     {
-        var reference = CodeReference.To(entity);
+        var reference = CodeReferences.Find(entity);
         if (reference == null)
             return;
         var compared = new Compared(entity, reference);

@@ -197,7 +197,7 @@ public sealed partial class BrowseNode
     /// no metadata token, which the tree does not list.</summary>
     internal static BrowseNode? ForType(LoadedModule module, BrowseNode parent, ITypeDefinition type)
     {
-        var definition = DefinedType.Of(module, type);
+        var definition = NodeDefinitions.FindType(module, type);
         if (definition == null)
             return null;
         return new BrowseNode(parent, new NodeSubject.TypeDefinition(definition));
@@ -207,7 +207,7 @@ public sealed partial class BrowseNode
     /// with no metadata token, which the tree does not list.</summary>
     internal static BrowseNode? ForMember(LoadedModule module, BrowseNode parent, IMember member)
     {
-        var definition = DefinedMember.Of(module, member);
+        var definition = NodeDefinitions.FindMember(module, member);
         if (definition == null)
             return null;
         return new BrowseNode(parent, new NodeSubject.MemberDefinition(definition));

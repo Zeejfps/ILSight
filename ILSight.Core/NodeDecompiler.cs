@@ -408,7 +408,7 @@ internal static class NodeDecompiler
         var method = assembly.MainModule.ResolveEntity(handle);
         if (method == null)
             return;
-        var reference = CodeReference.To(method);
+        var reference = CodeReferences.Find(method);
         if (reference == null)
             return;
         output.Write("// Entry point: ", SpanKind.Comment);

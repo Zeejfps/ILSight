@@ -57,20 +57,13 @@ public abstract class CodeReference : IEquatable<CodeReference>
     public sealed class Assembly : Navigable
     {
         internal Assembly(string name, AssemblyPath filePath, AssemblyReferenceHandle? referenced)
-            : base(name, filePath, HandleOf(referenced))
+            : base(name, filePath, CodeReferences.GetHandle(referenced))
         {
             Referenced = referenced;
         }
 
         /// <summary>The reference to the assembly from the file; null for the file's own assembly.</summary>
         internal AssemblyReferenceHandle? Referenced { get; }
-
-        private static EntityHandle HandleOf(AssemblyReferenceHandle? referenced)
-        {
-            if (referenced == null)
-                return EntityHandle.AssemblyDefinition;
-            return referenced.Value;
-        }
 
         public override string ToString() => $"Assembly {Name}";
     }
@@ -134,54 +127,6 @@ public abstract class CodeReference : IEquatable<CodeReference>
         public override string ToString() => $"Label {Name}";
     }
 
-    /// <summary>A reference to the definition <paramref name="entity"/>, named <paramref name="name"/>
-    /// or else by its own name; null when it has no metadata file or token.</summary>
-    internal static Entity? To(IEntity entity, string? name = null)
-    {
-        var file = entity.ParentModule?.MetadataFile;
-        if (file == null || entity.MetadataToken.IsNil)
-            return null;
-        return new Entity(KindOf(entity.SymbolKind), name ?? entity.Name, AssemblyPath.Of(file.FileName), entity.MetadataToken);
-    }
-
-    /// <summary>A reference to what <paramref name="handle"/> of <paramref name="metadata"/> names, read
-    /// from the file at <paramref name="filePath"/>, or null for a handle no reference is made to.</summary>
-    internal static Navigable? To(MetadataReader metadata, Handle handle, string name, AssemblyPath filePath) =>
-        handle.Kind switch
-        {
-            HandleKind.AssemblyDefinition => new Assembly(name, filePath, null),
-            HandleKind.AssemblyReference => new Assembly(name, filePath, (AssemblyReferenceHandle)handle),
-            HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification =>
-                new Entity(EntityKind.Type, name, filePath, (EntityHandle)handle),
-            HandleKind.MethodDefinition or HandleKind.MethodSpecification => new Entity(EntityKind.Method, name, filePath, (EntityHandle)handle),
-            HandleKind.FieldDefinition => new Entity(EntityKind.Field, name, filePath, (EntityHandle)handle),
-            HandleKind.PropertyDefinition => new Entity(EntityKind.Property, name, filePath, (EntityHandle)handle),
-            HandleKind.EventDefinition => new Entity(EntityKind.Event, name, filePath, (EntityHandle)handle),
-            HandleKind.MemberReference => new Entity(MemberKindOf(metadata, (MemberReferenceHandle)handle), name, filePath, (EntityHandle)handle),
-            _ => null,
-        };
-
-    private static EntityKind MemberKindOf(MetadataReader metadata, MemberReferenceHandle handle) =>
-        metadata.GetMemberReference(handle).GetKind() == MemberReferenceKind.Field ? EntityKind.Field : EntityKind.Method;
-
-    internal static EntityKind KindOf(SymbolKind kind) =>
-        kind switch
-        {
-            SymbolKind.TypeDefinition => EntityKind.Type,
-            SymbolKind.Field => EntityKind.Field,
-            SymbolKind.Property or SymbolKind.Indexer => EntityKind.Property,
-            SymbolKind.Event => EntityKind.Event,
-            _ => EntityKind.Method,
-        };
-
-    /// <summary>A reference to the assembly in the file at <paramref name="filePath"/> itself.</summary>
-    internal static Assembly ToAssembly(string name, AssemblyPath filePath) => new(name, filePath, null);
-
-    /// <summary>A reference to the assembly the file at <paramref name="filePath"/> references by <paramref name="handle"/>.</summary>
-    internal static Assembly ToAssembly(string name, AssemblyPath filePath, AssemblyReferenceHandle handle) => new(name, filePath, handle);
-
-    internal static Entity ToEntity(EntityKind kind, string name, AssemblyPath filePath, EntityHandle handle) => new(kind, name, filePath, handle);
-
     public abstract bool Equals(CodeReference? other);
 
     public sealed override bool Equals(object? obj) => obj is CodeReference other && Equals(other);
@@ -190,4 +135,80 @@ public abstract class CodeReference : IEquatable<CodeReference>
 
     public static bool operator ==(CodeReference? left, CodeReference? right) => Equals(left, right);
     public static bool operator !=(CodeReference? left, CodeReference? right) => !Equals(left, right);
+}
+
+/// <summary>Making <see cref="CodeReference"/>s of what the decompiler and metadata name.</summary>
+internal static class CodeReferences
+{
+    /// <summary>A reference to the definition <paramref name="entity"/>, named <paramref name="name"/>
+    /// or else by its own name; null when it has no metadata file or token.</summary>
+    public static CodeReference.Entity? Find(IEntity entity, string? name = null)
+    {
+        var file = entity.ParentModule?.MetadataFile;
+        if (file == null || entity.MetadataToken.IsNil)
+            return null;
+        return new CodeReference.Entity(GetKind(entity.SymbolKind), name ?? entity.Name, AssemblyPath.Of(file.FileName), entity.MetadataToken);
+    }
+
+    /// <summary>A reference to what <paramref name="handle"/> of <paramref name="metadata"/> names, read
+    /// from the file at <paramref name="filePath"/>, or null for a handle no reference is made to.</summary>
+    public static CodeReference.Navigable? Find(MetadataReader metadata, Handle handle, string name, AssemblyPath filePath)
+    {
+        return handle.Kind switch
+        {
+            HandleKind.AssemblyDefinition => new CodeReference.Assembly(name, filePath, null),
+            HandleKind.AssemblyReference => new CodeReference.Assembly(name, filePath, (AssemblyReferenceHandle)handle),
+            HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification =>
+                new CodeReference.Entity(EntityKind.Type, name, filePath, (EntityHandle)handle),
+            HandleKind.MethodDefinition or HandleKind.MethodSpecification => new CodeReference.Entity(EntityKind.Method, name, filePath, (EntityHandle)handle),
+            HandleKind.FieldDefinition => new CodeReference.Entity(EntityKind.Field, name, filePath, (EntityHandle)handle),
+            HandleKind.PropertyDefinition => new CodeReference.Entity(EntityKind.Property, name, filePath, (EntityHandle)handle),
+            HandleKind.EventDefinition => new CodeReference.Entity(EntityKind.Event, name, filePath, (EntityHandle)handle),
+            HandleKind.MemberReference => new CodeReference.Entity(GetMemberKind(metadata, (MemberReferenceHandle)handle), name, filePath, (EntityHandle)handle),
+            _ => null,
+        };
+    }
+
+    private static EntityKind GetMemberKind(MetadataReader metadata, MemberReferenceHandle handle)
+    {
+        return metadata.GetMemberReference(handle).GetKind() == MemberReferenceKind.Field ? EntityKind.Field : EntityKind.Method;
+    }
+
+    public static EntityKind GetKind(SymbolKind kind)
+    {
+        return kind switch
+        {
+            SymbolKind.TypeDefinition => EntityKind.Type,
+            SymbolKind.Field => EntityKind.Field,
+            SymbolKind.Property or SymbolKind.Indexer => EntityKind.Property,
+            SymbolKind.Event => EntityKind.Event,
+            _ => EntityKind.Method,
+        };
+    }
+
+    /// <summary>The handle an assembly's reference goes by: <paramref name="referenced"/>, or for the file's
+    /// own assembly the definition's.</summary>
+    public static EntityHandle GetHandle(AssemblyReferenceHandle? referenced)
+    {
+        if (referenced == null)
+            return EntityHandle.AssemblyDefinition;
+        return referenced.Value;
+    }
+
+    /// <summary>A reference to the assembly in the file at <paramref name="filePath"/> itself.</summary>
+    public static CodeReference.Assembly CreateAssembly(string name, AssemblyPath filePath)
+    {
+        return new CodeReference.Assembly(name, filePath, null);
+    }
+
+    /// <summary>A reference to the assembly the file at <paramref name="filePath"/> references by <paramref name="handle"/>.</summary>
+    public static CodeReference.Assembly CreateAssembly(string name, AssemblyPath filePath, AssemblyReferenceHandle handle)
+    {
+        return new CodeReference.Assembly(name, filePath, handle);
+    }
+
+    public static CodeReference.Entity CreateEntity(EntityKind kind, string name, AssemblyPath filePath, EntityHandle handle)
+    {
+        return new CodeReference.Entity(kind, name, filePath, handle);
+    }
 }

@@ -257,7 +257,7 @@ public sealed partial class BrowseNode
         var declaring = method.DeclaringTypeDefinition;
         if (declaring == null)
             return null;
-        var shown = DefinedMember.Of(module.Module, FindEnclosingMethod(method, declaring));
+        var shown = NodeDefinitions.FindMember(module.Module, FindEnclosingMethod(method, declaring));
         if (shown == null)
             return null;
         var entryPoint = ReadEntryPoint(module.Module.File.Metadata, method);

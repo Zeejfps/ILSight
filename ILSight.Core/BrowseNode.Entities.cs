@@ -58,7 +58,7 @@ public sealed partial class BrowseNode
 
     private BrowseNode[] ListBaseTypes(DefinedType type) =>
         type.Symbol.DirectBaseTypes
-            .Select(t => (BrowseNode)new BrowseNode(this, new NodeSubject.BaseType(BaseTypeInfo.Of(type.Module, t))))
+            .Select(t => (BrowseNode)new BrowseNode(this, new NodeSubject.BaseType(NodeDefinitions.CreateBaseType(type.Module, t))))
             .ToArray();
 
     /// <summary>The types in scope of <paramref name="type"/> that derive from it directly, as
@@ -68,7 +68,7 @@ public sealed partial class BrowseNode
         var result = new List<BrowseNode>();
         foreach (var derived in DerivedTypes.Find(module.List, type, CancellationToken.None))
         {
-            var info = DerivedTypeInfo.Of(module, derived);
+            var info = NodeDefinitions.FindDerivedType(module, derived);
             if (info != null)
                 result.Add(new BrowseNode(parent, new NodeSubject.DerivedType(info)));
         }

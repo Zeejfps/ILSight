@@ -362,7 +362,7 @@ public sealed class ForwardedTypeInfo
 /// <summary>A type a type derives from directly, as <see cref="Module"/> names it, and what it resolves to.</summary>
 public sealed class BaseTypeInfo
 {
-    private BaseTypeInfo(LoadedModule module, IType type, BaseTypeTarget target, NodeVisibility visibility)
+    internal BaseTypeInfo(LoadedModule module, IType type, BaseTypeTarget target, NodeVisibility visibility)
     {
         Module = module;
         Type = type;
@@ -379,19 +379,6 @@ public sealed class BaseTypeInfo
 
     /// <summary>How visible the type is, when it can be navigated to; else as visible as anything is.</summary>
     public NodeVisibility Visibility { get; }
-
-    /// <summary>The base type <paramref name="type"/> as <paramref name="module"/> names it, navigable when
-    /// its definition is found and can be referenced.</summary>
-    internal static BaseTypeInfo Of(LoadedModule module, IType type)
-    {
-        var definition = type.GetDefinition();
-        if (definition == null)
-            return new BaseTypeInfo(module, type, new BaseTypeTarget.Unresolved(), NodeVisibility.Open);
-        var reference = CodeReference.To(definition);
-        if (reference == null)
-            return new BaseTypeInfo(module, type, new BaseTypeTarget.Unaddressed(definition), NodeVisibility.Open);
-        return new BaseTypeInfo(module, type, new BaseTypeTarget.Navigable(definition, reference), NodeVisibility.OfReferenced(definition));
-    }
 }
 
 /// <summary>What a base type resolves to: a definition that can be navigated to, one that cannot, or none.</summary>
@@ -412,7 +399,7 @@ public abstract record BaseTypeTarget
 /// belongs to, and the reference it is navigated to by.</summary>
 public sealed class DerivedTypeInfo
 {
-    private DerivedTypeInfo(LoadedModule module, ITypeDefinition symbol, CodeReference.Entity reference)
+    internal DerivedTypeInfo(LoadedModule module, ITypeDefinition symbol, CodeReference.Entity reference)
     {
         Module = module;
         Symbol = symbol;
@@ -428,21 +415,12 @@ public sealed class DerivedTypeInfo
     public ITypeDefinition Symbol { get; }
 
     public CodeReference.Entity Reference { get; }
-
-    /// <summary>The derived type <paramref name="type"/>; null when it has no reference to be navigated to.</summary>
-    internal static DerivedTypeInfo? Of(LoadedModule module, ITypeDefinition type)
-    {
-        var reference = CodeReference.To(type);
-        if (reference == null)
-            return null;
-        return new DerivedTypeInfo(module, type, reference);
-    }
 }
 
 /// <summary>A type a module defines, with the handle its node is found by and the reference it is navigated to by.</summary>
 public sealed class DefinedType
 {
-    private DefinedType(LoadedModule module, ITypeDefinition symbol, TypeDefinitionHandle handle, CodeReference.Entity reference)
+    internal DefinedType(LoadedModule module, ITypeDefinition symbol, TypeDefinitionHandle handle, CodeReference.Entity reference)
     {
         Module = module;
         Symbol = symbol;
@@ -463,24 +441,12 @@ public sealed class DefinedType
 
     /// <summary>How visible the type is: compiler-generated when the compiler made it up, or a type it is nested in.</summary>
     public NodeVisibility Visibility { get; }
-
-    /// <summary>The definition of <paramref name="type"/> in <paramref name="module"/>; null when it has no
-    /// metadata file or token, as a type the decompiler made up has not.</summary>
-    internal static DefinedType? Of(LoadedModule module, ITypeDefinition type)
-    {
-        if (type.MetadataToken.Kind != HandleKind.TypeDefinition)
-            return null;
-        var reference = CodeReference.To(type);
-        if (reference == null)
-            return null;
-        return new DefinedType(module, type, (TypeDefinitionHandle)type.MetadataToken, reference);
-    }
 }
 
 /// <summary>A member a module defines, with the handle its node is found by and the reference it is navigated to by.</summary>
 public sealed class DefinedMember
 {
-    private DefinedMember(LoadedModule module, IMember symbol, CodeReference.Entity reference)
+    internal DefinedMember(LoadedModule module, IMember symbol, CodeReference.Entity reference)
     {
         Module = module;
         Symbol = symbol;
@@ -501,16 +467,6 @@ public sealed class DefinedMember
     /// <summary>How visible the member is: compiler-generated when the compiler made it up, or the property,
     /// event or type that holds it.</summary>
     public NodeVisibility Visibility { get; }
-
-    /// <summary>The definition of <paramref name="member"/> in <paramref name="module"/>; null when it has
-    /// no metadata file or token.</summary>
-    internal static DefinedMember? Of(LoadedModule module, IMember member)
-    {
-        var reference = CodeReference.To(member);
-        if (reference == null)
-            return null;
-        return new DefinedMember(module, member, reference);
-    }
 }
 
 /// <summary>A namespace of <see cref="Module"/>: the types it defines there and those it forwards from

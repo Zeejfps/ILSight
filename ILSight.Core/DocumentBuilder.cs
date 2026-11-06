@@ -185,15 +185,15 @@ internal sealed class DocumentBuilder : ITextOutput
     public void WriteReference(IType type, string text, bool isDefinition = false)
     {
         var definition = type.GetDefinition();
-        var reference = definition != null ? CodeReference.To(definition, text) : null;
+        var reference = definition != null ? CodeReferences.Find(definition, text) : null;
         WriteReferenceSpan(text, Kind ?? SpanKind.Type, reference, isDefinition);
     }
 
     public void WriteReference(IMember member, string text, bool isDefinition = false)
     {
         var definition = member.MemberDefinition ?? member;
-        var kind = Kind ?? SpanKindOf(CodeReference.KindOf(definition.SymbolKind));
-        WriteReferenceSpan(text, kind, CodeReference.To(definition, text), isDefinition);
+        var kind = Kind ?? SpanKindOf(CodeReferences.GetKind(definition.SymbolKind));
+        WriteReferenceSpan(text, kind, CodeReferences.Find(definition, text), isDefinition);
     }
 
     public void WriteLocalReference(string text, object reference, bool isDefinition = false, bool isHoverOnly = false)
@@ -219,7 +219,7 @@ internal sealed class DocumentBuilder : ITextOutput
     /// <paramref name="method"/> starts. A line keeps the first method marked on it and its lowest offset.</summary>
     public void MarkStatement(IMethod method, int ilOffset)
     {
-        var reference = CodeReference.To(method);
+        var reference = CodeReferences.Find(method);
         if (reference != null)
             MarkStatement(reference, ilOffset);
     }
@@ -397,9 +397,9 @@ internal sealed class DocumentBuilder : ITextOutput
         {
             var definition = ResolveDefinition(metadata, (EntityHandle)handle);
             if (definition != null)
-                return CodeReference.To(definition, text);
+                return CodeReferences.Find(definition, text);
         }
-        return CodeReference.To(metadata.Metadata, handle, text, AssemblyPath.Of(metadata.FileName));
+        return CodeReferences.Find(metadata.Metadata, handle, text, AssemblyPath.Of(metadata.FileName));
     }
 
     private IEntity? ResolveDefinition(MetadataFile metadata, EntityHandle handle)

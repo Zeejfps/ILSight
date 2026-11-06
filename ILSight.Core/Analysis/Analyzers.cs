@@ -220,10 +220,10 @@ public static class Analyzers
         {
             case IEntity entity:
                 return new AnalysisSymbol(entity, EntityText.SymbolShapeOf(entity), EntityText.Map(entity.Accessibility), EntityText.Label(entity),
-                    Where(entity), CodeReference.To(entity));
+                    Where(entity), CodeReferences.Find(entity));
             case IModule module:
                 return new AnalysisSymbol(module, new SymbolShape.Assembly(), NodeAccessibility.Public, module.AssemblyName, module.MetadataFile?.FileName ?? "",
-                    module.MetadataFile != null ? CodeReference.ToAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null);
+                    module.MetadataFile != null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null);
             default:
                 return null;
         }

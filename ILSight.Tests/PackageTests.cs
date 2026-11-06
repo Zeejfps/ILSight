@@ -78,14 +78,14 @@ public sealed class PackageTests
         using var temp = new TempDir();
         var list = new AssemblyList();
         var path = WritePackage(temp);
-        var type = CodeReference.ToEntity(EntityKind.Type, "Sample", AssemblyPath.Of(path), MetadataTokens.TypeDefinitionHandle(2));
+        var type = CodeReferences.CreateEntity(EntityKind.Type, "Sample", AssemblyPath.Of(path), MetadataTokens.TypeDefinitionHandle(2));
 
         Assert.Null(list.FindNode(type));
         Assert.Null(list.FindMetadataRow(type));
         Assert.Null(list.Describe(type));
         Assert.Null(list.FindApiReferencePage(type));
         Assert.Null(list.FindTypeDefinition(type));
-        Assert.Null(list.FindMetadataRow(CodeReference.ToAssembly("Sample", AssemblyPath.Of(path))));
+        Assert.Null(list.FindMetadataRow(CodeReferences.CreateAssembly("Sample", AssemblyPath.Of(path))));
     }
 
     [Fact]

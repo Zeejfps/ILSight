@@ -224,7 +224,7 @@ internal static class Documentation
         var name = shown;
         if (name.Length == 0)
             name = ShortName(entity, cref);
-        var reference = entity != null ? CodeReference.To(entity) : null;
+        var reference = entity != null ? CodeReferences.Find(entity) : null;
         return new DocRun(name, DocStyle.Reference, reference);
     }
 
