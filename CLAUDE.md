@@ -2,10 +2,10 @@
 
 Follow the coding rules in @docs/coding_rules.md
 
-Shape code the way @docs/data_and_functions.md says: records for data, static functions grouped by
-feature, unions for anything that is one of several things, interfaces only as projections of data,
-classes only for what is entirely self-contained, and a thin seam around anything external that doesn't
-fit.
+Shape code the way @docs/data_and_functions.md says: plain types that hold data, static functions grouped
+by feature, unions for anything that is one of several things, interfaces only as projections of data,
+behaviour on a type only where it is entirely self-contained, and a thin seam around anything external
+that doesn't fit. A record is for comparing by value; don't use one otherwise.
 
 ## C#
 

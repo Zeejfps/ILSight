@@ -17,9 +17,9 @@ public sealed class ArchitectureTests
     private static readonly Assembly[] Scope = [typeof(AppUpdates).Assembly, typeof(AssemblyList).Assembly];
 
     [Fact]
-    public void Every_type_is_a_record_unless_it_is_listed()
+    public void No_type_has_behaviour_unless_it_is_listed()
     {
-        var found = ListDeclaredTypes().Where(static type => IsNotData(type) || IsSelfContained(type)).Select(GetName).ToHashSet();
+        var found = ListDeclaredTypes().Where(static type => HasBehaviour(type) || IsSelfContained(type)).Select(GetName).ToHashSet();
 
         var expected = ShapeExceptions.Seams.Keys.Concat(ShapeExceptions.SelfContained).Concat(ShapeExceptions.NotYetData);
 
@@ -36,7 +36,7 @@ public sealed class ArchitectureTests
     }
 
     [Fact]
-    public void No_record_has_behaviour_unless_it_is_listed()
+    public void No_record_has_a_method_unless_it_is_listed()
     {
         var found = ListDeclaredTypes().Where(static type => IsRecord(type) && !IsSelfContained(type)).SelectMany(ListMethods).ToHashSet();
 
@@ -91,14 +91,17 @@ public sealed class ArchitectureTests
         return ShapeExceptions.SelfContained.Contains(GetName(type));
     }
 
-    private static bool IsNotData(Type type)
+    /// <summary>Whether a class, struct or interface does more than hold data. Records are listed method by
+    /// method instead, as most of them have few.</summary>
+    private static bool HasBehaviour(Type type)
     {
         if (type.IsEnum) return false;
         if (type.IsSubclassOf(typeof(Delegate))) return false;
         if (IsProjection(type)) return false;
         if (type.IsByRefLike) return false;
         if (IsStaticClass(type)) return false;
-        return !IsRecord(type);
+        if (IsRecord(type)) return false;
+        return type.IsInterface || ListMethods(type).Any();
     }
 
     /// <summary>An interface holding only properties, whose accessors are the only special methods one can have.</summary>
@@ -130,14 +133,14 @@ public sealed class ArchitectureTests
     {
         foreach (var method in type.GetMethods(Declared | BindingFlags.Instance | BindingFlags.Static))
         {
-            if (IsAllowedOnRecord(method)) continue;
+            if (IsAllowedOnData(method)) continue;
             yield return $"{GetName(type)}.{method.Name}";
         }
     }
 
-    /// <summary>Whether a record may have this: what the compiler writes is marked as generated, and
+    /// <summary>Whether a type holding data may have this: what the compiler writes is marked as generated, and
     /// what is left of the special methods are computed properties and operators.</summary>
-    private static bool IsAllowedOnRecord(MethodInfo method)
+    private static bool IsAllowedOnData(MethodInfo method)
     {
         if (method.IsDefined(typeof(CompilerGeneratedAttribute), false)) return true;
         if (method.IsSpecialName) return true;

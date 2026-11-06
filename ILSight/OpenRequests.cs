@@ -2,7 +2,7 @@ namespace ILSight;
 
 /// <summary>The files being opened in the background. Cancelling them all, as clearing the list does,
 /// keeps what they open out of the list that comes next.</summary>
-public sealed record OpenRequests
+public sealed class OpenRequests
 {
     public CancellationTokenSource Work { get; set; } = new();
 

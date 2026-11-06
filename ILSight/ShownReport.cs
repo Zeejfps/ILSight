@@ -5,7 +5,7 @@ namespace ILSight;
 
 /// <summary>The export report a tab's code view shows, in the interface's language, written again only
 /// when the report or the language changes.</summary>
-public sealed record ShownReport
+public sealed class ShownReport
 {
     public ExportReport? Report { get; set; }
 

@@ -1,8 +1,10 @@
 namespace ILSight;
 
 /// <summary>The groups folded in a panel, by key. Every change bumps <see cref="Revision"/>.</summary>
-public sealed record FoldedGroups(HashSet<string> Folded)
+public sealed class FoldedGroups(HashSet<string> folded)
 {
+    public HashSet<string> Folded { get; } = folded;
+
     public int Revision { get; set; }
 
     public int Count => Folded.Count;

@@ -4,7 +4,7 @@ namespace ILSight;
 
 /// <summary>How a tab shows its picture: how far it is zoomed, and whether its markup shows instead.
 /// Each new picture starts over at its own size, showing the picture.</summary>
-public sealed record PictureView
+public sealed class PictureView
 {
     /// <summary>The picture being followed.</summary>
     public ResourceImage? Shown { get; set; }

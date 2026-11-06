@@ -78,13 +78,15 @@ public static class GitHubUpdates
 
 /// <summary>What the app knows of its updates. Lives on the UI thread, as the app state does. An update
 /// nobody restarts for is applied by the next launch.</summary>
-/// <param name="Feed">Where newer versions come from.</param>
-/// <param name="CheckAutomatically">Whether the app looks for a newer version when it starts.</param>
-public sealed record AppUpdates(UpdateFeed Feed, bool CheckAutomatically)
+/// <param name="feed">Where newer versions come from.</param>
+/// <param name="checkAutomatically">Whether the app looks for a newer version when it starts.</param>
+public sealed class AppUpdates(UpdateFeed feed, bool checkAutomatically)
 {
+    public UpdateFeed Feed { get; } = feed;
+
     public UpdateStatus Status { get; set; } = new UpdateStatus.Idle();
 
-    public bool CheckAutomatically { get; set; } = CheckAutomatically;
+    public bool CheckAutomatically { get; set; } = checkAutomatically;
 }
 
 /// <summary>Looking for a newer version, downloading it and offering it, and what the user can do about

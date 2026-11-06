@@ -22,10 +22,13 @@ public sealed record PackageFile(string Name, string FullName, long Length)
 
 /// <summary>A folder in a <see cref="AssemblyPackage"/>, with the folders and files right inside
 /// it, each sorted by name.</summary>
-/// <param name="Name">Its own name.</param>
-/// <param name="FullName">The path from the package's root, with <c>/</c> between folders; empty for the root.</param>
-public sealed record PackageFolder(string Name, string FullName)
+public sealed class PackageFolder(string name, string fullName)
 {
+    public string Name { get; } = name;
+
+    /// <summary>The path from the package's root, with <c>/</c> between folders; empty for the root.</summary>
+    public string FullName { get; } = fullName;
+
     public List<PackageFolder> Folders { get; } = new();
 
     public List<PackageFile> Files { get; } = new();

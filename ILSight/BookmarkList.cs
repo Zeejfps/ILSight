@@ -123,7 +123,7 @@ public enum BookmarkImportMode
 /// to the list or a bookmark bumps <see cref="Revision"/>.</summary>
 public sealed class BookmarkList
 {
-    private sealed record Marks
+    private sealed class Marks
     {
         public int Revision = -1;
         public NodePath? Place;

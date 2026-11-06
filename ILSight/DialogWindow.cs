@@ -4,7 +4,7 @@ namespace ILSight;
 
 /// <summary>Where a dialog's window is on the screen, kept as it moves, and how often it came to rest
 /// somewhere new, for the settings to keep.</summary>
-public sealed record DialogWindow
+public sealed class DialogWindow
 {
     /// <summary>Where the window last came to rest.</summary>
     public WindowBounds? Resting;

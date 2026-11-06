@@ -24,7 +24,7 @@ public enum AnalysisName
 
 /// <summary>One way of relating a symbol to others, such as "Used By", as ILSpy's analyzer
 /// offers it: its name and its place among the others.</summary>
-public sealed record AnalysisKind
+public sealed class AnalysisKind
 {
     internal AnalysisKind(AnalysisName name, int order, Analyzer analyzer, bool sortsResults = false)
     {

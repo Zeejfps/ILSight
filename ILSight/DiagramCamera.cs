@@ -6,7 +6,7 @@ namespace ILSight;
 /// <summary>Where a diagram is looked at from and how near: the point of the diagram at the top-left of
 /// the view, and the zoom. <see cref="Changes"/> counts the moves: each step of the zoom, the wheel, a fit
 /// or a centering, and a move followed frame by frame, such as a drag, once when it ends.</summary>
-public sealed record DiagramCamera
+public sealed class DiagramCamera
 {
     /// <summary>The point of the diagram at the top-left of the view.</summary>
     public PointF Corner { get; set; }

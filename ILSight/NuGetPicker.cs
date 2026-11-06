@@ -784,8 +784,10 @@ public sealed class NuGetPicker
 }
 
 /// <summary>A package's icon: the image the screen draws it as, and what it shows once its pixels are in.</summary>
-public sealed record PackageIcon(string ImageId)
+public sealed class PackageIcon(string imageId)
 {
+    public string ImageId { get; } = imageId;
+
     /// <summary>The icon's pixels as drawn; null until they are in.</summary>
     public ShownIcon? Shown { get; set; }
 }
