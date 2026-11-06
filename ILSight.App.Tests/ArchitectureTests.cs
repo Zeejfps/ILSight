@@ -21,9 +21,18 @@ public sealed class ArchitectureTests
     {
         var found = ListDeclaredTypes().Where(IsNotData).Select(GetName).ToHashSet();
 
-        var expected = ShapeExceptions.Seams.Keys.Concat(ShapeExceptions.NotYetData);
+        var expected = ShapeExceptions.Seams.Keys.Concat(ShapeExceptions.SelfContained).Concat(ShapeExceptions.NotYetData);
 
         AssertMatches(expected, found);
+    }
+
+    [Fact]
+    public void A_class_listed_as_self_contained_names_nothing_but_the_BCL()
+    {
+        var entangled = ListDeclaredTypes().Where(static type => ShapeExceptions.SelfContained.Contains(GetName(type)))
+            .SelectMany(static type => ListForeignTypes(type).Select(foreign => $"{GetName(type)} names {foreign}"));
+
+        Assert.Empty(entangled);
     }
 
     [Fact]
@@ -114,15 +123,59 @@ public sealed class ArchitectureTests
         }
     }
 
-    /// <summary>Whether a record may have this: auto-property accessors and what the compiler writes
-    /// are marked as generated, which leaves a computed property's getter to count as a method.</summary>
+    /// <summary>Whether a record may have this: what the compiler writes is marked as generated, and
+    /// what is left of the special methods are computed properties and operators.</summary>
     private static bool IsAllowedOnRecord(MethodInfo method)
     {
         if (method.IsDefined(typeof(CompilerGeneratedAttribute), false)) return true;
-        if (method.IsSpecialName && !method.Name.StartsWith("get_", StringComparison.Ordinal)) return true;
+        if (method.IsSpecialName) return true;
         // What a record may write for itself: see rule 7.
         if (method.Name is "Equals" or "GetHashCode" or "PrintMembers") return true;
         return ShapeExceptions.RecordSeams.ContainsKey($"{GetName(method.DeclaringType!)}.{method.Name}");
+    }
+
+    /// <summary>What <paramref name="type"/> names in its members that is neither the BCL nor part of
+    /// itself. Reflection stops at signatures, so what a method body reaches for goes unseen.</summary>
+    private static IEnumerable<string> ListForeignTypes(Type type)
+    {
+        const BindingFlags all = Declared | BindingFlags.Instance | BindingFlags.Static;
+        var named = new List<Type?> { type.BaseType };
+        named.AddRange(type.GetInterfaces());
+        named.AddRange(type.GetFields(all).Select(static field => field.FieldType));
+        named.AddRange(type.GetProperties(all).Select(static property => property.PropertyType));
+        foreach (var method in type.GetMethods(all).Cast<MethodBase>().Concat(type.GetConstructors(all)))
+        {
+            named.AddRange(method.GetParameters().Select(static parameter => parameter.ParameterType));
+            if (method is MethodInfo info) named.Add(info.ReturnType);
+        }
+        return named.OfType<Type>().SelectMany(ListPartsOf).Where(part => !IsBcl(part) && !IsWithin(part, type)).Select(GetName).Distinct();
+    }
+
+    private static IEnumerable<Type> ListPartsOf(Type type)
+    {
+        if (type.IsGenericParameter) yield break;
+        if (type.HasElementType)
+        {
+            foreach (var part in ListPartsOf(type.GetElementType()!)) yield return part;
+            yield break;
+        }
+        yield return type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+        foreach (var part in type.GetGenericArguments().SelectMany(ListPartsOf)) yield return part;
+    }
+
+    private static bool IsBcl(Type type)
+    {
+        var assembly = type.Assembly.GetName().Name!;
+        return assembly == "System" || assembly.StartsWith("System.", StringComparison.Ordinal);
+    }
+
+    private static bool IsWithin(Type part, Type type)
+    {
+        for (var current = part; current != null; current = current.DeclaringType)
+        {
+            if (current == type) return true;
+        }
+        return false;
     }
 
     private static IEnumerable<string> ListMutableStaticFields(Type type)

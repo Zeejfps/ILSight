@@ -9,7 +9,9 @@ The hard part of a class or an interface is deciding where its boundary lives: w
 interface, which properties belong to this class. Those decisions are expensive, they are easy to get
 wrong, and they are worse for an AI working in the code, which has to guess them from names and then
 live with what it guessed. In exchange for that cost, encapsulation has shown no evidence of helping
-with anything.
+with application code. It earns its place only where there is no boundary to guess:
+[a class that is entirely self-contained](#9-a-class-is-only-for-what-is-entirely-self-contained), as a
+`List` is.
 
 So we stop making those decisions. A type says what the data is. A function says what is done to it.
 Neither has to know about the other beyond a parameter list.
@@ -19,15 +21,17 @@ Neither has to know about the other beyond a parameter list.
 ### 1. Types are data
 
 Every type is a `record class` or a `record struct`, whichever suits where it should live, unless the
-language won't have it: a `ref struct` can't be a record, and stays a plain one holding no logic.
+language won't have it: a `ref struct` can't be a record, and stays a plain one holding no logic. The
+one other exception is [a self-contained class](#9-a-class-is-only-for-what-is-entirely-self-contained).
 
 - `readonly record struct` for a small value with no identity: an id, a span, a coordinate, a result
   returned from a hot path.
 - `sealed record` (a `record class`) for anything larger, anything shared and changed by reference, and
   every union.
 
-A record holds fields, and nothing else. No methods, and no properties that compute. The only code a
-record may contain is:
+A record holds fields, and properties computed from them. A computed property reads the record and
+gives back what follows from it, such as `Title.Length == 0`; it changes nothing, and it's named for what
+it gives, as any property is. No methods. The only other code a record may contain is:
 
 - a constructor that validates, where the type has an invariant (see [rule 6](#6-the-coding-rules-still-hold));
 - the equality members rule 7 calls for, where it has identity;
@@ -248,6 +252,25 @@ Two things this doesn't change:
   if it has to write back or needs more than that, and the whole record only when that's really what it
   works on, so that a signature keeps saying what a function touches.
 
+### 9. A class is only for what is entirely self-contained
+
+Classes are useful under very strict circumstances. `List`, `Dictionary` and `Queue` are what they're
+for: each hides how it works behind a small surface, knows nothing of what it is used for, and can be used
+anywhere. There's no boundary to guess, since nothing in one is about the app.
+
+A class of our own is allowed when all of these hold:
+
+- **It depends on nothing else.** Only the BCL and its own type parameters: no type of the app, and no
+  framework or library.
+- **It changes nothing outside itself.** Calling it can't reach further than its own fields, so no
+  callbacks into app state, no statics, no files, no clock.
+- **It can be used more than once.** It's a general tool, with more than one use or at least nothing
+  tying it to its one use today. A class that happens to be small but exists for one feature isn't this.
+
+Something being able to go wrong in the app is no reason for one. If it knows what a tab or an assembly is,
+it's data and functions. "Self-contained" also doesn't mean "tidy": the test is what it touches, not how
+neatly it's written.
+
 ## External code
 
 Not everything outside this repository fits: ZGF, ICSharpCode.Decompiler, Velopack and the BCL have
@@ -256,7 +279,8 @@ own design, and we don't refactor it to fit this.
 
 Isolate each one behind a seam:
 
-- A class exists only because an external type demands it, such as a subclass of a ZGF view or a
+- Apart from [a self-contained class](#9-a-class-is-only-for-what-is-entirely-self-contained), a class
+  exists only because an external type demands it, such as a subclass of a ZGF view or a
   `JsonConverter`. A record can implement an external interface, so it takes a base class to force a
   class: an `IAstTransform` can be a record.
 - It holds no logic. It forwards to a static function, handing over its own state as a record.
@@ -267,9 +291,12 @@ Isolate each one behind a seam:
 
 `ArchitectureTests` in `ILSight.App.Tests` checks the shape: it fails on any behaviour interface or
 non-record type that isn't listed in `ShapeExceptions`, on methods on a record, and on static state.
-Everything left to migrate is listed there, along with every seam. An entry that no longer applies fails
-too, so the lists only ever shrink, and a new one has to be argued on. It can't tell whether a seam is
-really free of logic; that part is for review.
+Everything left to migrate is listed there, along with every seam and self-contained class. An entry that
+no longer applies fails too, so the lists only ever shrink, and a new one has to be argued on. A class
+listed as self-contained is checked to name nothing but the BCL in its members.
+
+The rest is for review: it can't see into a method body, so it can't tell whether a seam is really free of
+logic, or a self-contained class reaches for something it doesn't name.
 
 ## What it looks like
 
