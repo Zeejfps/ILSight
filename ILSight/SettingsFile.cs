@@ -62,7 +62,7 @@ internal sealed record SettingsFile(
         settings.CheckForUpdates,
         settings.SearchKinds,
         settings.Layout == null ? null : DockJson.Write(settings.Layout),
-        settings.Bookmarks.ConvertAll(BookmarkJson.From),
+        settings.Bookmarks.ConvertAll(SettingsJson.Write),
         settings.BookmarkColumns,
         settings.SearchColumns,
         settings.ExportColumns,
@@ -101,7 +101,7 @@ internal sealed record AssemblyListJson(
 {
     public static AssemblyListJson From(AssemblyListRecord list) => new(
         list.Name,
-        SettingsJson.PathsJsonOf(list.Assemblies),
+        SettingsJson.WritePaths(list.Assemblies),
         list.Analyzed?.Select(static CodeAnchorJson? (a) => CodeAnchorJson.From(a)).ToList(),
         PicksJsonOf(list.Pdbs),
         PicksJsonOf(list.Frameworks),
@@ -113,7 +113,7 @@ internal sealed record AssemblyListJson(
     {
         if (Name == null)
             return null;
-        return new AssemblyListRecord(Name, SettingsJson.PathsOf(Assemblies), SettingsJson.AnchorsOf(Analyzed),
+        return new AssemblyListRecord(Name, SettingsJson.ListPaths(Assemblies), SettingsJson.ListAnchors(Analyzed),
             PicksOf(Pdbs), PicksOf(Frameworks), Documents?.Parse(file, field));
     }
 
@@ -223,7 +223,7 @@ internal sealed record NodeDocumentJson(
         var code = node.View?.Code;
         var grid = node.View?.Grid;
         return new NodeDocumentJson(node.Panel, node.Title, node.Location.FilePath.Text,
-            SavedPathJson.From(node.Location), node.Language,
+            SettingsJson.Write(node.Location), node.Language,
             code == null ? null : CodeViewPositionJson.From(code.Value),
             grid == null ? null : GridPositionJson.From(grid.Value));
     }
@@ -235,7 +235,7 @@ internal sealed record NodeDocumentJson(
         var file = AssemblyPath.Parse(FilePath);
         if (file == null)
             return null;
-        var location = SettingsJson.LocationOf(file, Path, leaveOut);
+        var location = SettingsJson.GetLocation(file, Path, leaveOut);
         if (location == null)
             return null;
         return new NodeDocumentRecord(Panel, Title, location, Language, ViewOf(Position, GridPosition));
@@ -288,7 +288,7 @@ internal sealed record DiagramDocumentJson(
         diagram.Panel,
         diagram.Title,
         diagram.Types.Select(static TypeAnchorJson? (t) => TypeAnchorJson.From(t)).ToList(),
-        diagram.HomeAssemblies == null ? null : SettingsJson.PathsJsonOf(diagram.HomeAssemblies),
+        diagram.HomeAssemblies == null ? null : SettingsJson.WritePaths(diagram.HomeAssemblies),
         diagram.View == null ? null : DiagramViewJson.From(diagram.View));
 
     public override DocumentRecord? Parse(Action leaveOut)
@@ -296,7 +296,7 @@ internal sealed record DiagramDocumentJson(
         if (Panel == null || Types == null)
             return null;
         var types = Types.Select(static t => t?.Parse()).OfType<TypeAnchor>().ToList();
-        var homes = HomeAssemblies == null ? null : SettingsJson.PathsOf(HomeAssemblies);
+        var homes = HomeAssemblies == null ? null : SettingsJson.ListPaths(HomeAssemblies);
         return new DiagramDocumentRecord(Panel, Title, types, homes, View?.Parse());
     }
 }
@@ -341,45 +341,11 @@ internal sealed record ComparisonViewJson(bool OnlyDifferences)
 internal sealed record SavedPathJson(int Version, List<SavedPathStepJson?>? Steps)
 {
     public const int CurrentVersion = 1;
-
-    /// <summary><paramref name="place"/> as the files keep it.</summary>
-    public static SavedPathJson From(NodePath place) => new(CurrentVersion,
-        place.Steps.Select(static SavedPathStepJson? (s) => new SavedPathStepJson(SavedPlaces.Write(s.Segment), s.Label)).ToList());
-
-    /// <summary>The path down from the root of the file at <paramref name="filePath"/>; null when it
-    /// cannot be read.</summary>
-    public NodePath? Parse(AssemblyPath filePath)
-    {
-        if (Version != CurrentVersion || Steps == null)
-            return null;
-        var steps = new List<NodePathStep>(Steps.Count);
-        foreach (var json in Steps)
-        {
-            if (json == null)
-                return null;
-            var step = json.Parse();
-            if (step == null)
-                return null;
-            steps.Add(step.Value);
-        }
-        return NodePath.From(filePath, steps);
-    }
 }
 
 /// <summary>A step of a place as a settings or bookmarks file can hold it. Without a segment that reads,
 /// or a label, it is none.</summary>
-internal sealed record SavedPathStepJson(string? Step, string? Label)
-{
-    public NodePathStep? Parse()
-    {
-        if (Step == null || Label == null)
-            return null;
-        var segment = SavedPlaces.ParseSegment(Step);
-        if (segment == null)
-            return null;
-        return new NodePathStep(segment, Label);
-    }
-}
+internal sealed record SavedPathStepJson(string? Step, string? Label);
 
 /// <summary>A type as a settings file can hold it. Without its assembly or name it is none.</summary>
 internal sealed record TypeAnchorJson(string? AssemblyPath, string? FullName)
@@ -452,38 +418,7 @@ internal sealed record BookmarkJson(
     string? LocationNodeName,
     BookmarkViewStateJson? ViewState,
     DecompilationLanguage? Language,
-    SavedPathJson? Path)
-{
-    public static BookmarkJson From(BookmarkRecord bookmark) => new(
-        bookmark.Name,
-        bookmark.Enabled,
-        bookmark.FileName.Text,
-        bookmark.AssemblyFullName,
-        bookmark.ModuleName,
-        bookmark.Token,
-        bookmark.Kind,
-        bookmark.ILOffset,
-        bookmark.LineNumber,
-        bookmark.MemberName,
-        bookmark.LocationNodeName,
-        bookmark.ViewState == null ? null : BookmarkViewStateJson.From(bookmark.ViewState),
-        bookmark.Language,
-        bookmark.Location == null ? null : SavedPathJson.From(bookmark.Location));
-
-    /// <summary>The bookmark, with what the file lacks filled in; null without the absolute path of an
-    /// assembly file. A place that cannot be read is no place, and <paramref name="leaveOutPlace"/> is told.</summary>
-    public BookmarkRecord? Parse(Action leaveOutPlace)
-    {
-        if (FileName == null)
-            return null;
-        var path = AssemblyPath.Parse(FileName);
-        if (path == null)
-            return null;
-        var location = SettingsJson.LocationOf(path, Path, leaveOutPlace);
-        return new BookmarkRecord(Name ?? "", Enabled, path, AssemblyFullName ?? "", ModuleName ?? path.FileName,
-            Token, Kind, ILOffset, LineNumber, MemberName ?? "", LocationNodeName, ViewState?.Parse(), location, Language);
-    }
-}
+    SavedPathJson? Path);
 
 /// <summary>ILSpy's view of a bookmark's document, as a settings or bookmarks file can hold it.</summary>
 internal sealed record BookmarkViewStateJson(
@@ -494,44 +429,10 @@ internal sealed record BookmarkViewStateJson(
     int? FoldingChecksum,
     List<BookmarkFoldingRangeJson?>? ExpandedFoldings,
     BookmarkRenderedLayoutSettingsJson? RenderedLayoutSettings,
-    List<string?>? SelectedTreeNodePath)
-{
-    public static BookmarkViewStateJson From(BookmarkViewState view) => new(
-        view.Version,
-        view.CaretOffset,
-        view.VerticalOffset,
-        view.HorizontalOffset,
-        view.FoldingChecksum,
-        view.ExpandedFoldings?.Select(static BookmarkFoldingRangeJson? (f) => BookmarkFoldingRangeJson.From(f)).ToList(),
-        view.RenderedLayoutSettings == null ? null : BookmarkRenderedLayoutSettingsJson.From(view.RenderedLayoutSettings),
-        view.SelectedTreeNodePath == null ? null : new List<string?>(view.SelectedTreeNodePath));
-
-    /// <summary>The view state, without missing foldings; a tree path missing a step is no path.</summary>
-    public BookmarkViewState Parse()
-    {
-        var foldings = ExpandedFoldings?.Select(static f => f?.Parse()).OfType<BookmarkFoldingRange>().ToList();
-        return new BookmarkViewState(Version, CaretOffset, VerticalOffset, HorizontalOffset, FoldingChecksum, foldings,
-            RenderedLayoutSettings?.Parse(), TreePathOf(SelectedTreeNodePath));
-    }
-
-    private static List<string>? TreePathOf(List<string?>? path)
-    {
-        if (path == null)
-            return null;
-        var steps = path.OfType<string>().ToList();
-        if (steps.Count != path.Count)
-            return null;
-        return steps;
-    }
-}
+    List<string?>? SelectedTreeNodePath);
 
 /// <summary>A folded region left open, as a settings or bookmarks file can hold it.</summary>
-internal sealed record BookmarkFoldingRangeJson(int Start, int End)
-{
-    public static BookmarkFoldingRangeJson From(BookmarkFoldingRange range) => new(range.Start, range.End);
-
-    public BookmarkFoldingRange Parse() => new(Start, End);
-}
+internal sealed record BookmarkFoldingRangeJson(int Start, int End);
 
 /// <summary>ILSpy's display settings a bookmark was made in, as a settings or bookmarks file can hold them.</summary>
 internal sealed record BookmarkRenderedLayoutSettingsJson(
@@ -542,28 +443,7 @@ internal sealed record BookmarkRenderedLayoutSettingsJson(
     bool ShowDebugInfo,
     bool IndentationUseTabs,
     int IndentationSize,
-    int IndentationTabSize)
-{
-    public static BookmarkRenderedLayoutSettingsJson From(BookmarkRenderedLayoutSettings settings) => new(
-        settings.FoldBraces,
-        settings.ExpandXmlDocumentationComments,
-        settings.ExpandMemberDefinitions,
-        settings.ExpandUsingDeclarations,
-        settings.ShowDebugInfo,
-        settings.IndentationUseTabs,
-        settings.IndentationSize,
-        settings.IndentationTabSize);
-
-    public BookmarkRenderedLayoutSettings Parse() => new(
-        FoldBraces,
-        ExpandXmlDocumentationComments,
-        ExpandMemberDefinitions,
-        ExpandUsingDeclarations,
-        ShowDebugInfo,
-        IndentationUseTabs,
-        IndentationSize,
-        IndentationTabSize);
-}
+    int IndentationTabSize);
 
 /// <summary>How the app is drawn, as a settings file can hold it. What it lacks, or holds as null, is
 /// as <see cref="DisplayOptions.Default"/> has it; a font size out of range is brought within it and the
@@ -703,10 +583,13 @@ internal sealed record BookmarkFileJson(int Version, List<JsonElement>? Bookmark
 /// <summary>What the shapes share.</summary>
 internal static class SettingsJson
 {
-    public static List<string?> PathsJsonOf(List<AssemblyPath> paths) => paths.ConvertAll(static string? (p) => p.Text);
+    public static List<string?> WritePaths(List<AssemblyPath> paths)
+    {
+        return paths.ConvertAll(static string? (p) => p.Text);
+    }
 
     /// <summary>The absolute paths among <paramref name="paths"/>; none when there are none.</summary>
-    public static List<AssemblyPath> PathsOf(List<string?>? paths)
+    public static List<AssemblyPath> ListPaths(List<string?>? paths)
     {
         if (paths == null)
             return new List<AssemblyPath>();
@@ -718,7 +601,7 @@ internal static class SettingsJson
     }
 
     /// <summary>The symbols in <paramref name="anchors"/> that name a file; none when there are none.</summary>
-    public static List<CodeAnchor> AnchorsOf(List<CodeAnchorJson?>? anchors)
+    public static List<CodeAnchor> ListAnchors(List<CodeAnchorJson?>? anchors)
     {
         if (anchors == null)
             return new List<CodeAnchor>();
@@ -728,14 +611,151 @@ internal static class SettingsJson
     /// <summary>Where a tab or bookmark in the file at <paramref name="filePath"/> was, as
     /// <paramref name="path"/> says. Null when there is none, or when it cannot be read, which
     /// <paramref name="leaveOut"/> is told; never the root for a path that cannot be read.</summary>
-    public static NodePath? LocationOf(AssemblyPath filePath, SavedPathJson? path, Action leaveOut)
+    public static NodePath? GetLocation(AssemblyPath filePath, SavedPathJson? path, Action leaveOut)
     {
         if (path == null)
             return null;
-        var location = path.Parse(filePath);
+        var location = Parse(path, filePath);
         if (location == null)
             leaveOut();
         return location;
+    }
+
+    /// <summary><paramref name="place"/> as the files keep it.</summary>
+    public static SavedPathJson Write(NodePath place)
+    {
+        return new SavedPathJson(SavedPathJson.CurrentVersion,
+            place.Steps.Select(static SavedPathStepJson? (s) => new SavedPathStepJson(SavedPlaces.Write(s.Segment), s.Label)).ToList());
+    }
+
+    /// <summary>The path down from the root of the file at <paramref name="filePath"/>; null when it
+    /// cannot be read.</summary>
+    private static NodePath? Parse(SavedPathJson json, AssemblyPath filePath)
+    {
+        if (json.Version != SavedPathJson.CurrentVersion || json.Steps == null)
+            return null;
+        var steps = new List<NodePathStep>(json.Steps.Count);
+        foreach (var saved in json.Steps)
+        {
+            if (saved == null)
+                return null;
+            var step = Parse(saved);
+            if (step == null)
+                return null;
+            steps.Add(step.Value);
+        }
+        return NodePath.From(filePath, steps);
+    }
+
+    private static NodePathStep? Parse(SavedPathStepJson json)
+    {
+        if (json.Step == null || json.Label == null)
+            return null;
+        var segment = SavedPlaces.ParseSegment(json.Step);
+        if (segment == null)
+            return null;
+        return new NodePathStep(segment, json.Label);
+    }
+
+    public static BookmarkJson Write(BookmarkRecord bookmark)
+    {
+        return new BookmarkJson(
+            bookmark.Name,
+            bookmark.Enabled,
+            bookmark.FileName.Text,
+            bookmark.AssemblyFullName,
+            bookmark.ModuleName,
+            bookmark.Token,
+            bookmark.Kind,
+            bookmark.ILOffset,
+            bookmark.LineNumber,
+            bookmark.MemberName,
+            bookmark.LocationNodeName,
+            bookmark.ViewState == null ? null : Write(bookmark.ViewState),
+            bookmark.Language,
+            bookmark.Location == null ? null : Write(bookmark.Location));
+    }
+
+    /// <summary>The bookmark, with what the file lacks filled in; null without the absolute path of an
+    /// assembly file. A place that cannot be read is no place, and <paramref name="leaveOutPlace"/> is told.</summary>
+    public static BookmarkRecord? Parse(BookmarkJson json, Action leaveOutPlace)
+    {
+        if (json.FileName == null)
+            return null;
+        var path = AssemblyPath.Parse(json.FileName);
+        if (path == null)
+            return null;
+        var location = GetLocation(path, json.Path, leaveOutPlace);
+        return new BookmarkRecord(json.Name ?? "", json.Enabled, path, json.AssemblyFullName ?? "", json.ModuleName ?? path.FileName,
+            json.Token, json.Kind, json.ILOffset, json.LineNumber, json.MemberName ?? "", json.LocationNodeName,
+            json.ViewState == null ? null : Parse(json.ViewState), location, json.Language);
+    }
+
+    private static BookmarkViewStateJson Write(BookmarkViewState view)
+    {
+        return new BookmarkViewStateJson(
+            view.Version,
+            view.CaretOffset,
+            view.VerticalOffset,
+            view.HorizontalOffset,
+            view.FoldingChecksum,
+            view.ExpandedFoldings?.Select(static BookmarkFoldingRangeJson? (f) => Write(f)).ToList(),
+            view.RenderedLayoutSettings == null ? null : Write(view.RenderedLayoutSettings),
+            view.SelectedTreeNodePath == null ? null : new List<string?>(view.SelectedTreeNodePath));
+    }
+
+    /// <summary>The view state, without missing foldings; a tree path missing a step is no path.</summary>
+    private static BookmarkViewState Parse(BookmarkViewStateJson json)
+    {
+        var foldings = json.ExpandedFoldings?.OfType<BookmarkFoldingRangeJson>().Select(static f => Parse(f)).ToList();
+        return new BookmarkViewState(json.Version, json.CaretOffset, json.VerticalOffset, json.HorizontalOffset, json.FoldingChecksum, foldings,
+            json.RenderedLayoutSettings == null ? null : Parse(json.RenderedLayoutSettings), ParseTreePath(json.SelectedTreeNodePath));
+    }
+
+    private static List<string>? ParseTreePath(List<string?>? path)
+    {
+        if (path == null)
+            return null;
+        var steps = path.OfType<string>().ToList();
+        if (steps.Count != path.Count)
+            return null;
+        return steps;
+    }
+
+    private static BookmarkFoldingRangeJson Write(BookmarkFoldingRange range)
+    {
+        return new BookmarkFoldingRangeJson(range.Start, range.End);
+    }
+
+    private static BookmarkFoldingRange Parse(BookmarkFoldingRangeJson json)
+    {
+        return new BookmarkFoldingRange(json.Start, json.End);
+    }
+
+    private static BookmarkRenderedLayoutSettingsJson Write(BookmarkRenderedLayoutSettings settings)
+    {
+        return new BookmarkRenderedLayoutSettingsJson(
+            settings.FoldBraces,
+            settings.ExpandXmlDocumentationComments,
+            settings.ExpandMemberDefinitions,
+            settings.ExpandUsingDeclarations,
+            settings.ShowDebugInfo,
+            settings.IndentationUseTabs,
+            settings.IndentationSize,
+            settings.IndentationTabSize);
+    }
+
+    private static BookmarkRenderedLayoutSettings Parse(BookmarkRenderedLayoutSettingsJson json)
+    {
+        return new BookmarkRenderedLayoutSettings(
+            json.FoldBraces,
+            json.ExpandXmlDocumentationComments,
+            json.ExpandMemberDefinitions,
+            json.ExpandUsingDeclarations,
+            json.ShowDebugInfo,
+            json.IndentationUseTabs,
+            json.IndentationSize,
+            json.IndentationTabSize);
     }
 }
 

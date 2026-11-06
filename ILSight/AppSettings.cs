@@ -222,9 +222,17 @@ public sealed class AppSettings
     {
         const string field = nameof(SettingsFile.Bookmarks);
         return file.ReadEach(field)
-            .Select(b => file.Parse(b, AppSettingsJson.Default.BookmarkJson, field)?.Parse(() => file.LeaveOut(field)))
+            .Select(b => ParseBookmark(file, b, field))
             .OfType<BookmarkRecord>()
             .ToList();
+    }
+
+    private static BookmarkRecord? ParseBookmark(SettingsReader file, JsonElement bookmark, string field)
+    {
+        var saved = file.Parse(bookmark, AppSettingsJson.Default.BookmarkJson, field);
+        if (saved == null)
+            return null;
+        return SettingsJson.Parse(saved, () => file.LeaveOut(field));
     }
 
     private static List<string>? NamesOf(List<string?>? names)
@@ -277,7 +285,7 @@ public sealed class AppSettings
             return;
         if (lists.Count > 0)
             return;
-        lists.Add(new AssemblyListRecord(SavedAssemblyLists.DefaultName, SettingsJson.PathsOf(unnamed)));
+        lists.Add(new AssemblyListRecord(SavedAssemblyLists.DefaultName, SettingsJson.ListPaths(unnamed)));
     }
 
     /// <summary>Gives the analyses saved before each list kept its own to the open list, unless it has some.</summary>
@@ -292,7 +300,7 @@ public sealed class AppSettings
         var hasAnalyses = list.Analyzed != null && list.Analyzed.Count > 0;
         if (hasAnalyses)
             return;
-        lists[index] = list with { Analyzed = SettingsJson.AnchorsOf(analyzed) };
+        lists[index] = list with { Analyzed = SettingsJson.ListAnchors(analyzed) };
     }
 
     /// <summary>Where the list <paramref name="active"/> names is, else the first.</summary>

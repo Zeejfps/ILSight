@@ -89,7 +89,7 @@ public static class BookmarkFile
     private static BookmarkFileJson FileOf(List<BookmarkRecord> bookmarks)
     {
         var json = AppSettingsJson.Default.BookmarkJson;
-        var written = bookmarks.ConvertAll(b => JsonSerializer.SerializeToElement(BookmarkJson.From(b), json));
+        var written = bookmarks.ConvertAll(b => JsonSerializer.SerializeToElement(SettingsJson.Write(b), json));
         return new BookmarkFileJson(CurrentVersion, written);
     }
 
@@ -125,8 +125,10 @@ public static class BookmarkFile
             try
             {
                 var entry = $"#{i + 1}";
-                var bookmark = bookmarks[i].Deserialize(AppSettingsJson.Default.BookmarkJson)
-                    ?.Parse(() => unreadable.Add($"{entry}: the place it was made in cannot be read."));
+                var saved = bookmarks[i].Deserialize(AppSettingsJson.Default.BookmarkJson);
+                if (saved == null)
+                    continue;
+                var bookmark = SettingsJson.Parse(saved, () => unreadable.Add($"{entry}: the place it was made in cannot be read."));
                 if (bookmark != null)
                     read.Add(bookmark);
             }
