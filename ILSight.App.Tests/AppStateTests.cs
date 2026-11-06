@@ -324,6 +324,7 @@ public sealed class AppStateTests
         ShowNode(d.AppState, farewell);
         Navigate(d.AppState, reference, inNewTab: true);
         ActivateTab(d.Ui, d.AppState.Tabs[0]);
+        d.NextFrame();
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Tabs);

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
@@ -16,8 +17,7 @@ internal static class ToolbarView
     private const string ILWithCSharpLabel = "IL+C#";
 
 
-    private static Strings? _languagesFor;
-    private static Segment<DecompilationLanguage>[] _languages = [];
+    private static readonly ConditionalWeakTable<Strings, Segment<DecompilationLanguage>[]> LanguageSegments = new();
 
     public static void Render(Ui<UiState> ui, AppState appState)
     {
@@ -132,18 +132,12 @@ internal static class ToolbarView
         ui.State.Later(name, static (a, list) => SwitchAssemblyList(a, list));
     }
 
-    private static Segment<DecompilationLanguage>[] Languages(Strings t)
-    {
-        if (ReferenceEquals(t, _languagesFor)) return _languages;
-        _languagesFor = t;
-        _languages =
-        [
-            new(DecompilationLanguage.CSharp, "C#", t.ToolbarDecompileCsharp),
-            new(DecompilationLanguage.IL, "IL", t.ToolbarDisassembleIl),
-            new(DecompilationLanguage.ILWithCSharp, ILWithCSharpLabel, t.ToolbarDisassembleIlWithCsharp),
-        ];
-        return _languages;
-    }
+    private static Segment<DecompilationLanguage>[] Languages(Strings t) => LanguageSegments.GetValue(t, static t =>
+    [
+        new(DecompilationLanguage.CSharp, "C#", t.ToolbarDecompileCsharp),
+        new(DecompilationLanguage.IL, "IL", t.ToolbarDisassembleIl),
+        new(DecompilationLanguage.ILWithCSharp, ILWithCSharpLabel, t.ToolbarDisassembleIlWithCsharp),
+    ]);
 
     private static void LanguageVersion(Ui<UiState> ui, DecompilerOptions options)
     {
