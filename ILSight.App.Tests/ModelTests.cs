@@ -551,6 +551,139 @@ public sealed class AppSettingsTests : IDisposable
     }
 
     [Fact]
+    public void A_layout_leaving_out_its_root_has_an_empty_group_there()
+    {
+        var (loaded, problem) = AppSettings.Load(Written("""{ "Layout": { "NextId": 7 } }"""));
+
+        Assert.IsType<SettingsProblem.None>(problem);
+        AssertEmptyGroup(loaded.Layout!.Root);
+        Assert.Empty(loaded.Layout.Windows);
+        Assert.Equal(7, loaded.Layout.NextId);
+    }
+
+    [Fact]
+    public void A_layout_leaving_out_everything_is_an_empty_group_numbering_from_one()
+    {
+        var (loaded, problem) = AppSettings.Load(Written("""{ "Layout": { } }"""));
+
+        Assert.IsType<SettingsProblem.None>(problem);
+        AssertEmptyGroup(loaded.Layout!.Root);
+        Assert.Empty(loaded.Layout.Windows);
+        Assert.Equal(1, loaded.Layout.NextId);
+    }
+
+    [Fact]
+    public void A_floating_window_leaving_out_its_root_has_an_empty_group_there()
+    {
+        var (loaded, problem) = AppSettings.Load(Written("""{ "Layout": { "Windows": [ { "Id": 4, "X": 10, "Width": 300 } ] } }"""));
+
+        Assert.IsType<SettingsProblem.None>(problem);
+        var window = Assert.Single(loaded.Layout!.Windows);
+        Assert.Equal((4, 10f, 300f), (window.Id, window.X, window.Width));
+        AssertEmptyGroup(window.Root);
+    }
+
+    [Fact]
+    public void A_split_leaving_out_its_first_part_has_an_empty_group_there()
+    {
+        var (loaded, problem) = AppSettings.Load(Written("""
+            { "Layout": { "Root": { "kind": "split", "Id": 1, "Ratio": 0.25,
+                "Second": { "kind": "group", "Id": 2, "Panels": [ "search" ] } } } }
+            """));
+
+        Assert.IsType<SettingsProblem.None>(problem);
+        var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
+        AssertEmptyGroup(split.First);
+        Assert.Equal(["search"], Assert.IsType<DockGroup>(split.Second).Panels);
+        Assert.Equal(0.25f, split.Ratio);
+    }
+
+    [Fact]
+    public void A_split_leaving_out_its_second_part_has_an_empty_group_there()
+    {
+        var (loaded, problem) = AppSettings.Load(Written("""
+            { "Layout": { "Root": { "kind": "split", "Id": 1, "Ratio": 0.25,
+                "First": { "kind": "group", "Id": 2, "Panels": [ "search" ] } } } }
+            """));
+
+        Assert.IsType<SettingsProblem.None>(problem);
+        var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
+        Assert.Equal(["search"], Assert.IsType<DockGroup>(split.First).Panels);
+        AssertEmptyGroup(split.Second);
+    }
+
+    [Fact]
+    public void A_split_leaving_out_both_parts_has_two_empty_groups_which_do_not_count_as_one_id_twice()
+    {
+        var (loaded, problem) = AppSettings.Load(Written("""{ "Layout": { "Root": { "kind": "split", "Id": 1 } } }"""));
+
+        Assert.IsType<SettingsProblem.None>(problem);
+        var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
+        AssertEmptyGroup(split.First);
+        AssertEmptyGroup(split.Second);
+    }
+
+    [Fact]
+    public void A_split_leaving_out_its_ratio_divides_the_space_evenly()
+    {
+        var (loaded, problem) = AppSettings.Load(Written("""
+            { "Layout": { "Root": { "kind": "split", "Id": 1, "Direction": "Vertical",
+                "First": { "kind": "group", "Id": 2, "Panels": [ "tree" ] },
+                "Second": { "kind": "group", "Id": 3, "Panels": [ "search" ] } } } }
+            """));
+
+        Assert.IsType<SettingsProblem.None>(problem);
+        var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
+        Assert.Equal(0.5f, split.Ratio);
+        Assert.Equal(Direction.Vertical, split.Direction);
+    }
+
+    [Fact]
+    public void A_group_leaving_out_its_panels_is_empty_and_keeps_what_else_it_holds()
+    {
+        var (loaded, problem) = AppSettings.Load(Written("""{ "Layout": { "Root": { "kind": "group", "Id": 3, "Active": "search" } } }"""));
+
+        Assert.IsType<SettingsProblem.None>(problem);
+        var group = Assert.IsType<DockGroup>(loaded.Layout!.Root);
+        Assert.Empty(group.Panels);
+        Assert.Equal((3, "search"), (group.Id, group.Active));
+    }
+
+    [Theory]
+    [InlineData("""{ "Layout": { "Root": { "Id": 1 } } }""")]
+    [InlineData("""{ "Layout": { "Root": { "kind": "nothing", "Id": 1 } } }""")]
+    [InlineData("""{ "Layout": { "Root": { "kind": "split", "First": { "Id": 1 } } } }""")]
+    [InlineData("""{ "Layout": { "Windows": [ { "Root": { "kind": "nothing" } } ] } }""")]
+    public void A_layout_part_of_no_kind_there_is_leaves_out_the_layout(string json)
+    {
+        var (loaded, problem) = AppSettings.Load(Written(json));
+
+        Assert.Equal(["Layout"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Null(loaded.Layout);
+    }
+
+    [Fact]
+    public void A_tab_of_no_kind_at_all_leaves_out_that_one_alone()
+    {
+        var (loaded, problem) = AppSettings.Load(Written($$"""
+            { "AssemblyLists": [ { "Name": "Work", "Assemblies": [], "Documents": { "Tabs": [
+                { "Panel": "document-1" },
+                { "kind": "comparison", "Panel": "document-2", "LeftPath": "{{AInJson}}", "RightPath": "{{BInJson}}" } ] } } ] }
+            """));
+
+        Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal("document-2", Assert.Single(Assert.Single(loaded.AssemblyLists).Documents!.Tabs).Panel);
+    }
+
+    private static void AssertEmptyGroup(DockNode node)
+    {
+        var group = Assert.IsType<DockGroup>(node);
+        Assert.Equal(0, group.Id);
+        Assert.Empty(group.Panels);
+        Assert.Null(group.Active);
+    }
+
+    [Fact]
     public void Saving_replaces_the_whole_file()
     {
         var settings = AppSettings.Load(SettingsFile).Settings;
