@@ -60,6 +60,125 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         Assert.Equal(0, allocated);
     }
 
+    /// <summary>What the frames above never reach: the pointer, find and the caret each mark a row of the
+    /// paint, so that a closure or a boxed value on any of those branches shows.</summary>
+    [Theory]
+    [InlineData("reference")]
+    [InlineData("chevron")]
+    [InlineData("chip")]
+    [InlineData("mark")]
+    [InlineData("find")]
+    [InlineData("brackets")]
+    public void A_frame_with_what_the_pointer_find_or_the_caret_marks_allocates_nothing(string marked)
+    {
+        var view = Marking(marked);
+        Assert.True(IsMarked(view, marked));
+
+        view.Frames.Canvas.Recording = false;
+        for (var i = 0; i < WarmUpFrames; i++)
+            view.Run();
+        var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => view.Run());
+
+        output.WriteLine($"{marked}: {allocated:N0} B/frame allocated");
+        Assert.True(IsMarked(view, marked));
+        Assert.Equal(0, allocated);
+    }
+
+    private static CodeViewDriver Marking(string marked)
+    {
+        return marked switch
+        {
+            "reference" => HoverReference(),
+            "chevron" => HoverChevron(),
+            "chip" => HoverChip(),
+            "mark" => HoverMark(),
+            "find" => OpenFind(),
+            "brackets" => PutCaretOnBracket(),
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static bool IsMarked(CodeViewDriver view, string marked)
+    {
+        var frame = view.State.Frame;
+        return marked switch
+        {
+            "reference" => frame.Highlight != null,
+            "chevron" => frame.HoverFold != null,
+            "chip" => frame.HoverChip != null,
+            "mark" => frame.HoverMark != null,
+            "find" => frame.MatchLength > 0 && frame.CurrentMatch != null,
+            "brackets" => frame.Brackets != null,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static CodeViewDriver HoverReference()
+    {
+        var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), Height, frames: 2);
+        var (line, column) = FindReference(view.Document);
+        view.MoveTo(line, column + 1);
+        return view;
+    }
+
+    private static (int Line, int Column) FindReference(DecompiledDocument document)
+    {
+        for (var line = 0; line < document.Lines.Length; line++)
+        {
+            foreach (var span in document.Lines[line].Spans)
+            {
+                if (span.Reference != null)
+                    return (line, span.Start);
+            }
+        }
+        throw new UnreachableException();
+    }
+
+    private static CodeViewDriver HoverChevron()
+    {
+        var view = CodeViewDriver.Showing(Folded(100), Height, frames: 2);
+        var (x, y) = view.ChevronOf(new CodeRow(view.Document.Folds[0].StartLine));
+        view.Frames.MovePointer(x, y).Frame();
+        return view;
+    }
+
+    private static CodeViewDriver HoverChip()
+    {
+        var view = CodeViewDriver.Showing(Folded(100), Height, frames: 2);
+        var fold = view.Document.Folds[0];
+        view.State.SetCollapsed(0, true);
+        view.Run();
+        view.MoveTo(fold.StartLine, view.Document.Lines[fold.StartLine].Text.Length + 2);
+        return view;
+    }
+
+    private static CodeViewDriver HoverMark()
+    {
+        var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(100), Height, frames: 2);
+        view.Bookmarks = new Dictionary<int, bool> { [1] = true, [3] = false };
+        var (x, y) = view.MarkOf(new CodeRow(2));
+        view.Frames.MovePointer(x, y).Frame();
+        return view;
+    }
+
+    private static CodeViewDriver OpenFind()
+    {
+        var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(100), Height, frames: 2);
+        view.Click(0, 0);
+        view.Key(Shortcuts.Find);
+        view.Frames.Type("line").Frame(3);
+        return view;
+    }
+
+    private static CodeViewDriver PutCaretOnBracket()
+    {
+        var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), Height, frames: 2);
+        view.Display = new DisplayOptions();
+        var (line, column) = view.Document.Find("{");
+        view.Click(line, column);
+        return view;
+    }
+
     private static DecompiledDocument Folded(int lines)
     {
         var builder = new DocumentBuilder(DecompilationLanguage.CSharp);

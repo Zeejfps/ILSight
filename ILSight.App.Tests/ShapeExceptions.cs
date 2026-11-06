@@ -79,7 +79,6 @@ internal static class ShapeExceptions
         "ILSight.CodeFontChoices",
         "ILSight.CodeFontFaces",
         "ILSight.CodeTooltips",
-        "ILSight.CodeViewFrame",
         "ILSight.CodeViewState",
         "ILSight.ComparisonPicker",
         "ILSight.ComparisonRows",

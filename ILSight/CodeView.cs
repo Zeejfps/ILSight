@@ -1,4 +1,5 @@
 using ZGF.Desktop;
+using ZGF.Geometry;
 using ZGF.Gui;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
@@ -306,6 +307,8 @@ public readonly record struct CodeViewResult(CodeViewIntent? Intent, CodeZoom Zo
 
 public static class CodeViewWidget
 {
+    private const float ChevronStroke = 1.5f;
+
     /// <summary>The row <paramref name="offset"/> below the top of the first falls on, each <paramref name="height"/>
     /// tall; before the first or after the last when the offset is.</summary>
     internal static CodeRow GetRowAt(float offset, float height)
@@ -581,7 +584,7 @@ public static class CodeViewWidget
                     for (var row = list.First; row < list.End; row++)
                     {
                         using (ui.Box(new Box { Width = Sizing.Grow(min: contentWidth), Height = rowHeight }))
-                            ui.Paint((state.Frame, new CodeRow(row)), CodeViewFrame.PaintRow);
+                            ui.Paint((state.Frame, new CodeRow(row)), PaintRow);
                     }
                 }
                 if (focused && ui.FocusVisible)
@@ -1170,5 +1173,183 @@ public static class CodeViewWidget
                 picked = new CodeViewIntent.ShowInMetadata(shown);
         }
         return picked;
+    }
+
+    private static void PaintRow(UiPainter p, (CodeViewFrame Frame, CodeRow Row) shown)
+    {
+        var frame = shown.Frame;
+        var row = shown.Row;
+        var r = p.Rect;
+        var left = p.Clip.X;
+        var right = MathF.Min(r.Right, p.Clip.Right);
+        var index = frame.Folds.LineAt(row);
+        var line = frame.Document.Lines[index];
+        var text = line.Text;
+        var fold = frame.Document.FoldStartingAt(index);
+        var collapsedFold = fold != null && frame.Folds.IsCollapsed(fold.Value) ? fold : null;
+        var collapsed = collapsedFold != null;
+        var chipStart = text.Length + 1;
+        var chipText = collapsedFold != null ? frame.Document.Folds[collapsedFold.Value].CollapsedText : "";
+        var x0 = r.X + frame.TextLeft;
+        var textAreaLeft = left + frame.GutterWidth;
+        var firstVisible = Math.Max(0, (int)MathF.Floor((textAreaLeft - x0) / frame.Advance));
+        var endVisible = Math.Min(text.Length, (int)MathF.Ceiling((right - x0) / frame.Advance));
+        var cellTop = r.Y + MathF.Floor((frame.RowHeight - frame.CellHeight) / 2);
+
+        if (index == frame.CurrentLine)
+            p.FillRect(new UiRect(textAreaLeft, r.Y, right - textAreaLeft, r.Height), frame.Palette.CurrentLine);
+
+        if (index == frame.FlashLine)
+            p.FillRect(new UiRect(textAreaLeft, r.Y, right - textAreaLeft, r.Height), frame.Flash);
+
+        if (frame.Brackets != null)
+            FillBrackets(p, frame, x0, textAreaLeft, r, index, frame.Brackets.Value);
+
+        if (frame.Highlight != null)
+        {
+            foreach (var span in line.Spans)
+            {
+                if (span.Reference != null && span.Reference.Equals(frame.Highlight))
+                    FillCells(p, frame, x0, textAreaLeft, r, span.Start, span.End, frame.Palette.Occurrence);
+            }
+        }
+
+        if (frame.MatchLength > 0)
+        {
+            for (var m = FindFirstMatchOn(frame, index); m < frame.Matches.Count && frame.Matches[m].Line == index; m++)
+            {
+                if (m == frame.CurrentMatch)
+                    FillCells(p, frame, x0, textAreaLeft, r, frame.Matches[m].Column, frame.Matches[m].Column + frame.MatchLength, frame.Palette.CurrentFind, frame.Palette.CurrentFindOutline, frame.OutlineWidth);
+                else
+                    FillCells(p, frame, x0, textAreaLeft, r, frame.Matches[m].Column, frame.Matches[m].Column + frame.MatchLength, frame.Palette.FindMatch);
+            }
+        }
+
+        if (frame.SelectionStart < frame.SelectionEnd && index >= frame.SelectionStart.Line && index <= frame.SelectionEnd.Line)
+        {
+            var from = index == frame.SelectionStart.Line ? frame.SelectionStart.Column : 0;
+            var to = index == frame.SelectionEnd.Line ? frame.SelectionEnd.Column
+                : collapsedFold != null && frame.SelectionEnd.Line > frame.Document.Folds[collapsedFold.Value].EndLine ? chipStart + chipText.Length + 1
+                : text.Length + 1;
+            FillCells(p, frame, x0, textAreaLeft, r, from, to, frame.Selection);
+        }
+
+        if (collapsed)
+        {
+            var chipLeft = x0 + chipStart * frame.Advance;
+            p.FillRect(new UiRect(chipLeft - frame.Advance / 2, cellTop, (chipText.Length + 1) * frame.Advance, frame.CellHeight),
+                collapsedFold == frame.HoverChip ? frame.Palette.FoldChipHovered : frame.Palette.FoldChip, frame.ChipRadius);
+            p.GlyphRun(new PointF(chipLeft, cellTop), GetCells(frame, chipText, 0, chipText.Length), frame.Advance, collapsedFold == frame.HoverChip ? frame.GutterHover : frame.Palette.GutterText,
+                frame.FontSize, family: MonoFonts.Code);
+        }
+
+        if (endVisible > firstVisible)
+        {
+            var spans = line.Spans;
+            var error = frame.Document.Error != null;
+            var first = CodeText.SpanAt(spans, firstVisible) ?? 0;
+            var underlined = frame.Underline != null && frame.Underline.Value.Line == index ? frame.Underline.Value.Span : (int?)null;
+            for (var s = first; s < spans.Length && spans[s].Start < endVisible; s++)
+            {
+                var span = spans[s];
+                var start = Math.Max(span.Start, firstVisible);
+                var end = Math.Min(span.End, endVisible);
+                if (end <= start) continue;
+                var cells = GetCells(frame, text, start, end);
+                p.GlyphRun(new PointF(x0 + start * frame.Advance, cellTop), cells, frame.Advance, error ? frame.ErrorText : frame.Palette[span.Kind],
+                    frame.FontSize, family: MonoFonts.Code, underline: s == underlined);
+            }
+        }
+
+        if (frame.GutterWidth <= 0f) return;
+        p.FillRect(new UiRect(left, r.Y, frame.GutterWidth, r.Height), frame.Background);
+        p.FillRect(new UiRect(left + frame.GutterWidth - frame.SeparatorWidth, r.Y, frame.SeparatorWidth, r.Height), frame.Palette.GutterSeparator);
+        if (frame.Digits > 0)
+            PaintLineNumber(p, frame, left, cellTop, index);
+        if (frame.Bookmarks != null && (frame.Bookmarks.TryGetValue(index, out var enabled) || index == frame.HoverMark))
+        {
+            var color = !frame.Bookmarks.ContainsKey(index) ? frame.Palette.GutterText : enabled ? frame.Palette.Bookmark : frame.Palette.GutterText;
+            var size = MathF.Min(frame.IconSize, frame.RowHeight);
+            p.Glyph(new UiRect(left + (frame.MarkWidth - size) / 2, r.Y + (r.Height - size) / 2, size, size), frame.BookmarkGlyph, color, size);
+        }
+        if (fold != null && frame.FoldWidth > 0f)
+            PaintChevron(p, frame, left + frame.FoldLeft + frame.FoldWidth / 2, r.Y + r.Height / 2, collapsed, fold == frame.HoverFold ? frame.GutterHover : frame.Palette.GutterText);
+    }
+
+    /// <summary>The line's number, right-aligned, brighter on the highlighted current line.</summary>
+    private static void PaintLineNumber(UiPainter p, CodeViewFrame frame, float left, float cellTop, int index)
+    {
+        var number = GetNumberCells(frame, index + 1);
+        var color = index == frame.CurrentLine ? frame.GutterHover : frame.Palette.GutterText;
+        var x = left + frame.GutterPaddingLeft + (frame.Digits - number.Length) * frame.Advance;
+        p.GlyphRun(new PointF(x, cellTop), number, frame.Advance, color, frame.FontSize, family: MonoFonts.Code);
+    }
+
+    private static void FillBrackets(UiPainter p, CodeViewFrame frame, float x0, float left, UiRect row, int index, BracketPair brackets)
+    {
+        if (brackets.Open.Line == index)
+            FillCells(p, frame, x0, left, row, brackets.Open.Column, brackets.Open.Column + 1, frame.Palette.MatchingBracket);
+        if (brackets.Close.Line == index)
+            FillCells(p, frame, x0, left, row, brackets.Close.Column, brackets.Close.Column + 1, frame.Palette.MatchingBracket);
+    }
+
+    private static void PaintChevron(UiPainter p, CodeViewFrame frame, float cx, float cy, bool collapsed, uint color)
+    {
+        var half = MathF.Max(2f, MathF.Floor(frame.Advance * 0.4f));
+        p.DrawDisclosure(new PointF(cx, cy), half, !collapsed, color, ChevronStroke);
+    }
+
+    private static void FillCells(UiPainter p, CodeViewFrame frame, float x0, float left, UiRect row, int from, int to, uint color, uint outline = 0, float outlineWidth = 0f)
+    {
+        var x = MathF.Max(left, x0 + from * frame.Advance);
+        var right = x0 + to * frame.Advance;
+        if (right > x)
+            p.FillRect(new UiRect(x, row.Y, right - x, row.Height), color, 0f, outline, outlineWidth);
+    }
+
+    private static int FindFirstMatchOn(CodeViewFrame frame, int line)
+    {
+        int low = 0, high = frame.Matches.Count;
+        while (low < high)
+        {
+            var mid = (low + high) >> 1;
+            if (frame.Matches[mid].Line < line) low = mid + 1;
+            else high = mid;
+        }
+        return low;
+    }
+
+    private static ReadOnlySpan<int> GetCells(CodeViewFrame frame, string text, int start, int end)
+    {
+        var count = end - start;
+        if (frame.CodePoints.Length < count)
+            frame.CodePoints = new int[Math.Max(count, frame.CodePoints.Length * 2)];
+        for (var i = 0; i < count; i++)
+        {
+            var at = start + i;
+            var c = text[at];
+            if (char.IsHighSurrogate(c) && at + 1 < text.Length && char.IsLowSurrogate(text[at + 1]))
+            {
+                frame.CodePoints[i] = char.ConvertToUtf32(c, text[at + 1]);
+                if (i + 1 < count) frame.CodePoints[++i] = ' ';
+            }
+            else
+            {
+                frame.CodePoints[i] = char.IsSurrogate(c) ? ' ' : c;
+            }
+        }
+        return frame.CodePoints.AsSpan(0, count);
+    }
+
+    private static ReadOnlySpan<int> GetNumberCells(CodeViewFrame frame, int value)
+    {
+        var digits = CodeText.Digits(value);
+        var cells = frame.CodePoints.AsSpan(0, digits);
+        for (var i = digits - 1; i >= 0; i--)
+        {
+            cells[i] = '0' + value % 10;
+            value /= 10;
+        }
+        return cells;
     }
 }
