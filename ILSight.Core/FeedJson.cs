@@ -23,7 +23,9 @@ internal static class FeedJson
         if (page.Data == null)
             throw new InvalidDataException("A page of a search holds no list named data.");
         var packages = page.Data
-            .Select(static p => TryRead(p, FeedJsonContext.Default.PackageJson)?.Parse())
+            .Select(static p => TryRead(p, FeedJsonContext.Default.PackageJson))
+            .OfType<PackageJson>()
+            .Select(static p => Parse(p))
             .OfType<FeedPackage>()
             .ToList();
         var total = (int)Math.Min(page.TotalHits ?? 0, int.MaxValue);
@@ -40,8 +42,10 @@ internal static class FeedJson
     /// <summary>The details in a version's catalog entry, published when <paramref name="listedAt"/>
     /// says unless the entry itself says.</summary>
     /// <exception cref="InvalidDataException">It is no catalog entry.</exception>
-    public static PackageVersionDetails ReadDetails(JsonElement entry, DateTimeOffset? listedAt) =>
-        Read(entry, FeedJsonContext.Default.CatalogEntryJson, "a catalog entry").Parse(listedAt);
+    public static PackageVersionDetails ReadDetails(JsonElement entry, DateTimeOffset? listedAt)
+    {
+        return Parse(Read(entry, FeedJsonContext.Default.CatalogEntryJson, "a catalog entry"), listedAt);
+    }
 
     /// <summary>The resources the service index <paramref name="root"/> lists, without those that cannot be read.</summary>
     /// <exception cref="InvalidDataException">It is no service index.</exception>
@@ -51,8 +55,9 @@ internal static class FeedJson
         if (index.Resources == null)
             throw new InvalidDataException("A service index holds no list named resources.");
         return index.Resources
-            .Select(static r => TryRead(r, FeedJsonContext.Default.ResourceJson)?.Parse())
-            .OfType<FeedResource>()
+            .Select(static r => TryRead(r, FeedJsonContext.Default.ResourceJson))
+            .OfType<ResourceJson>()
+            .Select(static r => Parse(r))
             .ToList();
     }
 
@@ -89,6 +94,112 @@ internal static class FeedJson
             return null;
         }
     }
+
+    /// <summary>The package; null when its id or version is none NuGet allows.</summary>
+    private static FeedPackage? Parse(PackageJson json)
+    {
+        var id = PackageId.Parse(json.Id ?? "");
+        var version = PackageVersion.Parse(json.Version ?? "");
+        if (id == null || version == null)
+            return null;
+        return new FeedPackage(id, version, json.Description ?? "", JoinNames(json.Authors), WebUrl.Parse(json.IconUrl), ListVersions(json.Versions, version))
+        {
+            TotalDownloads = json.TotalDownloads ?? 0,
+            Verified = json.Verified ?? false,
+            Owners = JoinNames(json.Owners),
+            Tags = SplitWords(json.Tags),
+            ProjectUrl = WebUrl.Parse(json.ProjectUrl),
+            LicenseUrl = WebUrl.Parse(json.LicenseUrl),
+            Vulnerabilities = json.Vulnerabilities?.Count ?? 0,
+        };
+    }
+
+    /// <summary>The versions listed, newest first, without those NuGet allows no such version of; just
+    /// <paramref name="latest"/> when the feed lists none.</summary>
+    private static List<FeedVersion> ListVersions(List<VersionJson?>? listed, PackageVersion latest)
+    {
+        var versions = (listed ?? [])
+            .OfType<VersionJson>()
+            .Select(static v => Parse(v))
+            .OfType<FeedVersion>()
+            .Reverse()
+            .ToList();
+        if (versions.Count == 0)
+            versions.Add(new FeedVersion(latest, 0, null));
+        return versions;
+    }
+
+    /// <summary>Names a feed gives as one string or as a list of them, joined by commas.</summary>
+    private static string JoinNames(TextListJson? names)
+    {
+        return names == null ? "" : string.Join(", ", names.Items.Where(static n => n.Length > 0));
+    }
+
+    /// <summary>Words a feed gives as a list of them or as one string, split on spaces.</summary>
+    private static List<string> SplitWords(TextListJson? words)
+    {
+        return words == null ? [] : words.Items.SelectMany(static w => w.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToList();
+    }
+
+    private static FeedVersion? Parse(VersionJson json)
+    {
+        var version = PackageVersion.Parse(json.Version ?? "");
+        if (version == null)
+            return null;
+        return new FeedVersion(version, json.Downloads ?? 0, WebUrl.Parse(json.Id));
+    }
+
+    private static PackageVersionDetails Parse(CatalogEntryJson json, DateTimeOffset? listedAt)
+    {
+        return new PackageVersionDetails(
+            ReadDate(json.Published) ?? listedAt,
+            json.LicenseExpression ?? "",
+            WebUrl.Parse(json.LicenseUrl),
+            WebUrl.Parse(json.ProjectUrl),
+            json.PackageSize ?? 0,
+            (json.DependencyGroups ?? []).OfType<DependencyGroupJson>().Select(static g => Parse(g)).ToList(),
+            json.Deprecation == null ? null : Parse(json.Deprecation),
+            (json.Vulnerabilities ?? []).OfType<VulnerabilityJson>().Select(static v => Parse(v)).ToList());
+    }
+
+    private static DependencyGroup Parse(DependencyGroupJson json)
+    {
+        return new DependencyGroup(
+            json.TargetFramework ?? "",
+            (json.Dependencies ?? []).OfType<DependencyJson>().Select(static d => new PackageDependency(d.Id ?? "", d.Range ?? "")).ToList());
+    }
+
+    private static PackageDeprecation Parse(DeprecationJson json)
+    {
+        return new PackageDeprecation(
+            json.Reasons == null ? [] : json.Reasons.Items.Where(static r => r.Length > 0).ToList(),
+            json.Message ?? "",
+            json.AlternatePackage?.Id ?? "");
+    }
+
+    private static PackageVulnerability Parse(VulnerabilityJson json)
+    {
+        return new PackageVulnerability(ParseSeverity(json.Severity), WebUrl.Parse(json.AdvisoryUrl));
+    }
+
+    /// <summary>The severity; 0 for anything but a whole number that fits an int, or its digits.</summary>
+    private static int ParseSeverity(JsonElement? severity)
+    {
+        if (severity == null)
+            return 0;
+        var value = severity.Value;
+        if (value.ValueKind == JsonValueKind.Number)
+            return value.TryGetInt32(out var number) ? number : 0;
+        if (value.ValueKind != JsonValueKind.String)
+            return 0;
+        int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed);
+        return parsed;
+    }
+
+    private static FeedResource Parse(ResourceJson json)
+    {
+        return new FeedResource(json.Type == null ? [] : json.Type.Items, WebUrl.Parse(json.Id));
+    }
 }
 
 /// <summary>A version's registration: when it was listed, and its catalog entry, inline or as the URL of one.</summary>
@@ -112,60 +223,9 @@ internal sealed record PackageJson(
     string? ProjectUrl,
     string? LicenseUrl,
     List<JsonElement>? Vulnerabilities,
-    List<VersionJson?>? Versions)
-{
-    /// <summary>The package; null when its id or version is none NuGet allows.</summary>
-    public FeedPackage? Parse()
-    {
-        var id = PackageId.Parse(Id ?? "");
-        var version = PackageVersion.Parse(Version ?? "");
-        if (id == null || version == null)
-            return null;
-        return new FeedPackage(id, version, Description ?? "", Joined(Authors), WebUrl.Parse(IconUrl), VersionsOf(version))
-        {
-            TotalDownloads = TotalDownloads ?? 0,
-            Verified = Verified ?? false,
-            Owners = Joined(Owners),
-            Tags = Words(Tags),
-            ProjectUrl = WebUrl.Parse(ProjectUrl),
-            LicenseUrl = WebUrl.Parse(LicenseUrl),
-            Vulnerabilities = Vulnerabilities?.Count ?? 0,
-        };
-    }
+    List<VersionJson?>? Versions);
 
-    /// <summary>The versions listed, newest first, without those NuGet allows no such version of; just
-    /// <paramref name="latest"/> when the feed lists none.</summary>
-    private List<FeedVersion> VersionsOf(PackageVersion latest)
-    {
-        var versions = (Versions ?? [])
-            .Select(static v => v?.Parse())
-            .OfType<FeedVersion>()
-            .Reverse()
-            .ToList();
-        if (versions.Count == 0)
-            versions.Add(new FeedVersion(latest, 0, null));
-        return versions;
-    }
-
-    /// <summary>Names a feed gives as one string or as a list of them, joined by commas.</summary>
-    private static string Joined(TextListJson? names) =>
-        names == null ? "" : string.Join(", ", names.Items.Where(static n => n.Length > 0));
-
-    /// <summary>Words a feed gives as a list of them or as one string, split on spaces.</summary>
-    private static List<string> Words(TextListJson? words) =>
-        words == null ? [] : words.Items.SelectMany(static w => w.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToList();
-}
-
-internal sealed record VersionJson(string? Version, long? Downloads, [property: JsonPropertyName("@id")] string? Id)
-{
-    public FeedVersion? Parse()
-    {
-        var version = PackageVersion.Parse(Version ?? "");
-        if (version == null)
-            return null;
-        return new FeedVersion(version, Downloads ?? 0, WebUrl.Parse(Id));
-    }
-}
+internal sealed record VersionJson(string? Version, long? Downloads, [property: JsonPropertyName("@id")] string? Id);
 
 internal sealed record RegistrationJson(string? Published, JsonElement? CatalogEntry);
 
@@ -177,64 +237,22 @@ internal sealed record CatalogEntryJson(
     long? PackageSize,
     List<DependencyGroupJson?>? DependencyGroups,
     DeprecationJson? Deprecation,
-    List<VulnerabilityJson?>? Vulnerabilities)
-{
-    public PackageVersionDetails Parse(DateTimeOffset? listedAt) => new(
-        FeedJson.ReadDate(Published) ?? listedAt,
-        LicenseExpression ?? "",
-        WebUrl.Parse(LicenseUrl),
-        WebUrl.Parse(ProjectUrl),
-        PackageSize ?? 0,
-        (DependencyGroups ?? []).OfType<DependencyGroupJson>().Select(static g => g.Parse()).ToList(),
-        Deprecation?.Parse(),
-        (Vulnerabilities ?? []).OfType<VulnerabilityJson>().Select(static v => v.Parse()).ToList());
-}
+    List<VulnerabilityJson?>? Vulnerabilities);
 
-internal sealed record DependencyGroupJson(string? TargetFramework, List<DependencyJson?>? Dependencies)
-{
-    public DependencyGroup Parse() => new(
-        TargetFramework ?? "",
-        (Dependencies ?? []).OfType<DependencyJson>().Select(static d => new PackageDependency(d.Id ?? "", d.Range ?? "")).ToList());
-}
+internal sealed record DependencyGroupJson(string? TargetFramework, List<DependencyJson?>? Dependencies);
 
 internal sealed record DependencyJson(string? Id, string? Range);
 
-internal sealed record DeprecationJson(TextListJson? Reasons, string? Message, AlternatePackageJson? AlternatePackage)
-{
-    public PackageDeprecation Parse() => new(
-        Reasons == null ? [] : Reasons.Items.Where(static r => r.Length > 0).ToList(),
-        Message ?? "",
-        AlternatePackage?.Id ?? "");
-}
+internal sealed record DeprecationJson(TextListJson? Reasons, string? Message, AlternatePackageJson? AlternatePackage);
 
 internal sealed record AlternatePackageJson(string? Id);
 
 /// <summary>A vulnerability, whose severity a feed may give as a number or as its digits.</summary>
-internal sealed record VulnerabilityJson(string? AdvisoryUrl, JsonElement? Severity)
-{
-    public PackageVulnerability Parse() => new(SeverityOf(Severity), WebUrl.Parse(AdvisoryUrl));
-
-    /// <summary>The severity; 0 for anything but a whole number that fits an int, or its digits.</summary>
-    private static int SeverityOf(JsonElement? severity)
-    {
-        if (severity == null)
-            return 0;
-        var value = severity.Value;
-        if (value.ValueKind == JsonValueKind.Number)
-            return value.TryGetInt32(out var number) ? number : 0;
-        if (value.ValueKind != JsonValueKind.String)
-            return 0;
-        int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed);
-        return parsed;
-    }
-}
+internal sealed record VulnerabilityJson(string? AdvisoryUrl, JsonElement? Severity);
 
 internal sealed record ServiceIndexJson(List<JsonElement>? Resources);
 
-internal sealed record ResourceJson([property: JsonPropertyName("@id")] string? Id, [property: JsonPropertyName("@type")] TextListJson? Type)
-{
-    public FeedResource Parse() => new(Type == null ? [] : Type.Items, WebUrl.Parse(Id));
-}
+internal sealed record ResourceJson([property: JsonPropertyName("@id")] string? Id, [property: JsonPropertyName("@type")] TextListJson? Type);
 
 /// <summary>Text a feed may give as one string or as a list of strings; what else a list holds is left out.</summary>
 [JsonConverter(typeof(TextListConverter))]
