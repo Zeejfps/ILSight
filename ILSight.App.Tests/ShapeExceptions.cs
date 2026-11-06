@@ -156,7 +156,6 @@ internal static class ShapeExceptions
         "ILSight.NuGetPicker",
         "ILSight.RunArgumentsReceiver",
         "ILSight.SavedAssemblyLists",
-        "ILSight.Search",
         "ILSight.ThemeCatalog",
         "ILSight.ThemeCatalog`3",
         "ILSight.ThemeFile",

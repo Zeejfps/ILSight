@@ -33,7 +33,7 @@ internal static class OmnibarView
     public static void StartSearch(Omnibar omnibar, string panel)
     {
         omnibar.Searching = new Omnibar.OmnibarSearch(panel);
-        omnibar.Search.Clear();
+        Searches.Clear(omnibar.Search);
         omnibar.Menu = null;
     }
 
@@ -41,7 +41,7 @@ internal static class OmnibarView
     public static void StopSearch(Omnibar omnibar)
     {
         omnibar.Searching = null;
-        omnibar.Search.Clear();
+        Searches.Clear(omnibar.Search);
     }
 
     /// <summary>Whether the list of <paramref name="node"/>'s children is open in the bar of <paramref name="panel"/>.</summary>
@@ -88,11 +88,11 @@ internal static class OmnibarView
     {
         if (omnibar.SuggestionCount == 0)
             return;
-        omnibar.Search.Move(by);
+        Searches.Move(omnibar.Search, by);
         var index = omnibar.Search.Selection.IndexIn(omnibar.Search.Rows);
         if (index < omnibar.SuggestionCount)
             return;
-        omnibar.Search.Select(omnibar.Search.Rows[omnibar.SuggestionCount - 1]);
+        Searches.Select(omnibar.Search, omnibar.Search.Rows[omnibar.SuggestionCount - 1]);
     }
 
     /// <summary>True once after <see cref="OpenMenu"/>: the filter should take focus.</summary>

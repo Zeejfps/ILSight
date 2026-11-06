@@ -394,7 +394,7 @@ public sealed class AppTests
     {
         var app = Searching("Greet", moreRowsThan: 2);
         var search = app.Ui.Search;
-        search.Select(search.Rows[search.Rows.Count - 1]);
+        Searches.Select(search, search.Rows[search.Rows.Count - 1]);
         var selected = search.SelectedRow!.Node;
         var names = search.Rows.Select(r => r.Text).ToList();
         Assert.Equal(SearchSort.Relevance, search.Sort);

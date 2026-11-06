@@ -164,7 +164,7 @@ public static class DocumentPanels
     internal static void OnPanelClosed(UiState uiState, string panel)
     {
         if (panel == DockPanels.Search)
-            uiState.Search.Clear();
+            Searches.Clear(uiState.Search);
         CloseTabOf(uiState, panel);
     }
 

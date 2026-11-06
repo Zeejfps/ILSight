@@ -68,14 +68,14 @@ public static class ScreenLayout
     public static void OpenSearch(UiState uiState)
     {
         uiState.MainLayout.OpenSearch(FindActivePanel(uiState));
-        uiState.Search.AskForFocus();
+        uiState.Search.IsFocusPending = true;
     }
 
     /// <summary>Opens the search panel with its query kept to <paramref name="node"/>'s assembly, or to
     /// the namespace it is.</summary>
     public static void ScopeSearch(UiState uiState, BrowseNode node)
     {
-        uiState.Search.ScopeTo(node);
+        Searches.ScopeTo(uiState.Search, node);
         OpenSearch(uiState);
     }
 

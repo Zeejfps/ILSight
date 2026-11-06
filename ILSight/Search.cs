@@ -21,29 +21,26 @@ public delegate IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchStream(Assem
 /// hits in closed ones dropped, keeping the selection.</summary>
 public sealed class Search
 {
-    private const double DebounceSeconds = 0.15;
-    private const string NamespaceScope = "innamespace";
-    private const string AssemblyScope = "inassembly";
+    public readonly Action<AppProblem> ReportError;
+    public readonly SearchStream Stream;
 
-    private readonly Action<AppProblem> _reportError;
-    private readonly SearchStream _stream;
-    private readonly List<SearchResult> _rows = new();
-    private readonly HashSet<LoadedAssembly> _searchedAssemblies = new(ReferenceEqualityComparer.Instance);
-    private readonly List<CancellationTokenSource> _runs = new();
-    private readonly IComparer<SearchResult> _order;
-    private string _typed = "";
-    private double _typedAt;
-    private Searched? _searched;
-    private bool _isFocusPending;
+    /// <summary>The hits so far, in the order the sort says, of the assemblies in
+    /// <see cref="SearchedAssemblies"/> only; <see cref="Searches"/> keeps them so.</summary>
+    public readonly List<SearchResult> Rows = new();
+    public readonly HashSet<LoadedAssembly> SearchedAssemblies = new(ReferenceEqualityComparer.Instance);
+    public readonly List<CancellationTokenSource> Runs = new();
+    public string Typed = "";
+    public double TypedAt;
+    public Searched? LastSearched;
+    public bool IsFocusPending;
 
     /// <param name="reportError">Tells the user a search failed.</param>
     /// <param name="session">The browse tree the search finds nodes of.</param>
     /// <param name="stream">Streams a query's hits; a search of the assemblies' nodes by default.</param>
     public Search(Action<AppProblem> reportError, BrowseSession session, SearchStream? stream = null)
     {
-        _reportError = reportError;
-        _order = Comparer<SearchResult>.Create(Compare);
-        _stream = stream ?? ((_, query, within, cancellationToken) => AssemblySearch.SearchAsync(session, within, query, cancellationToken));
+        ReportError = reportError;
+        Stream = stream ?? ((_, query, within, cancellationToken) => AssemblySearch.SearchAsync(session, within, query, cancellationToken));
     }
 
     public string Query = "";
@@ -51,253 +48,286 @@ public sealed class Search
     /// <summary>What the query looks for, unless prefixes in it say otherwise.</summary>
     public SearchKinds Kinds = SearchKinds.TypesAndMembers;
 
-    public IReadOnlyList<SearchResult> Rows => _rows;
-    public bool IsBusy => _runs.Count > 0;
+    public bool IsBusy => Runs.Count > 0;
 
     /// <summary>Whether <see cref="Rows"/> are the hits of the query as typed, rather than of one typed
     /// before it settled; more may still arrive.</summary>
-    public bool ShowsQuery => _searched?.Query == Query;
+    public bool ShowsQuery => LastSearched?.Query == Query;
 
     public ItemSelection<SearchResult> Selection { get; } = new();
 
     public SearchResult? SelectedRow => Selection.Item;
 
-    public SearchSort Sort { get; private set; }
-    public bool Descending { get; private set; }
+    public SearchSort Sort { get; set; }
+    public bool Descending { get; set; }
+
+    /// <summary>The query last searched for, what it looked for, and the assembly list's version it searched.</summary>
+    public sealed record Searched(string Query, SearchKinds Kinds, int Version);
+}
+
+/// <summary>Running a <see cref="Search"/>: starting it once the query settled, taking in what it finds,
+/// and sorting and picking from what it found.</summary>
+public static class Searches
+{
+    private const double DebounceSeconds = 0.15;
+    private const string NamespaceScope = "innamespace";
+    private const string AssemblyScope = "inassembly";
 
     /// <summary>Starts a search when the query settled, or searches assemblies opened since. Does
     /// nothing unless the results are <paramref name="shown"/>. Returns the seconds left before a
-    /// typed query settles, or 0.</summary>
-    public double Update(AssemblyList assemblies, double now, bool shown)
+    /// typed query settles, or 0. Runs every frame, so no lambda belongs in it.</summary>
+    public static double Update(Search search, AssemblyList assemblies, double now, bool shown)
     {
-        NoteTyping(now);
+        NoteTyping(search, now);
         if (!shown)
             return 0;
-        var searched = _searched;
-        if (searched == null || IsQueryChanged(searched))
-            return RestartWhenSettled(assemblies, now, searched);
+        var searched = search.LastSearched;
+        if (searched == null || IsQueryChanged(search, searched))
+            return RestartWhenSettled(search, assemblies, now, searched);
         if (assemblies.Version != searched.Version)
-            Extend(assemblies, searched);
+            Extend(search, assemblies, searched);
         return 0;
     }
 
-    private void NoteTyping(double now)
+    private static void NoteTyping(Search search, double now)
     {
-        if (Query == _typed)
+        if (search.Query == search.Typed)
             return;
-        _typed = Query;
-        _typedAt = now;
+        search.Typed = search.Query;
+        search.TypedAt = now;
     }
 
-    private bool IsQueryChanged(Searched searched) => _typed != searched.Query || Kinds != searched.Kinds;
-
-    private double RestartWhenSettled(AssemblyList assemblies, double now, Searched? searched)
+    private static bool IsQueryChanged(Search search, Search.Searched searched)
     {
-        var remaining = DebounceSeconds - (now - _typedAt);
-        if (remaining > 0 && searched != null && Kinds == searched.Kinds)
+        return search.Typed != searched.Query || search.Kinds != searched.Kinds;
+    }
+
+    private static double RestartWhenSettled(Search search, AssemblyList assemblies, double now, Search.Searched? searched)
+    {
+        var remaining = DebounceSeconds - (now - search.TypedAt);
+        if (remaining > 0 && searched != null && search.Kinds == searched.Kinds)
             return remaining;
-        Restart(assemblies);
+        Restart(search, assemblies);
         return 0;
     }
 
-    private void Restart(AssemblyList assemblies)
+    private static void Restart(Search search, AssemblyList assemblies)
     {
-        CancelRuns();
-        var searched = new Searched(_typed, Kinds, assemblies.Version);
-        _searched = searched;
-        _rows.Clear();
-        Selection.Clear();
+        CancelRuns(search);
+        var searched = new Search.Searched(search.Typed, search.Kinds, assemblies.Version);
+        search.LastSearched = searched;
+        search.Rows.Clear();
+        search.Selection.Clear();
         var listed = assemblies.Assemblies;
-        _searchedAssemblies.Clear();
-        _searchedAssemblies.UnionWith(listed);
-        Start(assemblies, searched, listed);
+        search.SearchedAssemblies.Clear();
+        search.SearchedAssemblies.UnionWith(listed);
+        Start(search, assemblies, searched, listed);
     }
 
-    private void CancelRuns()
+    private static void CancelRuns(Search search)
     {
-        foreach (var run in _runs)
+        foreach (var run in search.Runs)
             run.Cancel();
-        _runs.Clear();
+        search.Runs.Clear();
     }
 
-    private void Extend(AssemblyList assemblies, Searched searched)
+    private static void Extend(Search search, AssemblyList assemblies, Search.Searched searched)
     {
         searched = searched with { Version = assemblies.Version };
-        _searched = searched;
+        search.LastSearched = searched;
         var listed = assemblies.Assemblies;
-        DropClosed(listed);
-        var added = MarkSearched(listed);
+        DropClosed(search, listed);
+        var added = MarkSearched(search, listed);
         if (added.Count > 0)
-            Start(assemblies, searched, added);
+            Start(search, assemblies, searched, added);
     }
 
-    private void DropClosed(IReadOnlyList<LoadedModule> listed)
+    private static void DropClosed(Search search, IReadOnlyList<LoadedModule> listed)
     {
-        var closed = _searchedAssemblies.RemoveWhere(a => !listed.Contains(a));
+        var closed = search.SearchedAssemblies.RemoveWhere(a => !listed.Contains(a));
         if (closed == 0)
             return;
-        _rows.RemoveAll(r => !_searchedAssemblies.Contains(r.Node.Assembly));
-        Selection.DropIfGone(_rows);
+        search.Rows.RemoveAll(r => !search.SearchedAssemblies.Contains(r.Node.Assembly));
+        search.Selection.DropIfGone(search.Rows);
     }
 
-    private List<LoadedModule> MarkSearched(IReadOnlyList<LoadedModule> listed)
+    private static List<LoadedModule> MarkSearched(Search search, IReadOnlyList<LoadedModule> listed)
     {
         var added = new List<LoadedModule>();
         foreach (var assembly in listed)
         {
-            if (_searchedAssemblies.Add(assembly))
+            if (search.SearchedAssemblies.Add(assembly))
                 added.Add(assembly);
         }
         return added;
     }
 
-    private void Start(AssemblyList assemblies, Searched searched, IEnumerable<LoadedModule> within)
+    private static void Start(Search search, AssemblyList assemblies, Search.Searched searched, IEnumerable<LoadedModule> within)
     {
         var query = SearchQuery.Parse(searched.Query, searched.Kinds);
         if (query.IsEmpty)
             return;
         var work = new CancellationTokenSource();
-        _runs.Add(work);
-        var search = _stream(assemblies, query, within, work.Token);
-        Run(search, work);
+        search.Runs.Add(work);
+        var batches = search.Stream(assemblies, query, within, work.Token);
+        Background.Start(RunAsync(search, batches, work), search.ReportError);
     }
 
-    private void Run(IAsyncEnumerable<IReadOnlyList<SearchResult>> search, CancellationTokenSource work) =>
-        Background.Start(RunAsync(search, work), _reportError);
-
-    private async Task RunAsync(IAsyncEnumerable<IReadOnlyList<SearchResult>> search, CancellationTokenSource work)
+    private static async Task RunAsync(Search search, IAsyncEnumerable<IReadOnlyList<SearchResult>> batches, CancellationTokenSource work)
     {
         try
         {
-            await foreach (var batch in search)
-                Deliver(batch, work);
+            await foreach (var batch in batches)
+                Deliver(search, batch, work);
         }
         catch (OperationCanceledException) when (work.IsCancellationRequested)
         {
         }
         catch (Exception e)
         {
-            ReportFailure(work, e);
+            ReportFailure(search, work, e);
         }
-        _runs.Remove(work);
+        search.Runs.Remove(work);
         work.Dispose();
     }
 
-    private bool IsCurrent(CancellationTokenSource work) => _runs.Contains(work);
+    private static bool IsCurrent(Search search, CancellationTokenSource work)
+    {
+        return search.Runs.Contains(work);
+    }
 
     /// <summary>Reports why the run <paramref name="work"/> failed, unless another search replaced it.</summary>
-    private void ReportFailure(CancellationTokenSource work, Exception error)
+    private static void ReportFailure(Search search, CancellationTokenSource work, Exception error)
     {
-        if (!IsCurrent(work))
+        if (!IsCurrent(search, work))
             return;
-        _reportError(new AppProblem.SearchFailed(error));
+        search.ReportError(new AppProblem.SearchFailed(error));
     }
 
-    private void Deliver(IReadOnlyList<SearchResult> batch, CancellationTokenSource work)
+    private static void Deliver(Search search, IReadOnlyList<SearchResult> batch, CancellationTokenSource work)
     {
-        if (!IsCurrent(work))
+        if (!IsCurrent(search, work))
             return;
-        var arrived = batch
-            .Where(IsSearched)
-            .Order(_order)
+        var arrived = SortArrived(search, batch);
+        MergeIntoRows(search, arrived);
+    }
+
+    /// <summary>The hits of <paramref name="batch"/> still wanted, in order. The order reads the sort of the
+    /// moment, so a comparer is made per batch.</summary>
+    private static List<SearchResult> SortArrived(Search search, IReadOnlyList<SearchResult> batch)
+    {
+        var order = Comparer<SearchResult>.Create((a, b) => Compare(search, a, b));
+        return batch
+            .Where(r => search.SearchedAssemblies.Contains(r.Node.Assembly))
+            .Order(order)
             .ToList();
-        MergeIntoRows(arrived);
     }
-
-    private bool IsSearched(SearchResult row) => _searchedAssemblies.Contains(row.Node.Assembly);
 
     /// <summary>Merges the sorted <paramref name="arrived"/> into the sorted rows, each after the
     /// rows it ties with, filling from the end so no row moves more than once.</summary>
-    private void MergeIntoRows(List<SearchResult> arrived)
+    private static void MergeIntoRows(Search search, List<SearchResult> arrived)
     {
-        var kept = _rows.Count - 1;
+        var rows = search.Rows;
+        var kept = rows.Count - 1;
         var next = arrived.Count - 1;
-        _rows.AddRange(arrived);
-        for (var at = _rows.Count - 1; next >= 0; at--)
+        rows.AddRange(arrived);
+        for (var at = rows.Count - 1; next >= 0; at--)
         {
-            var keptGoesLast = kept >= 0 && Compare(_rows[kept], arrived[next]) > 0;
+            var keptGoesLast = kept >= 0 && Compare(search, rows[kept], arrived[next]) > 0;
             if (keptGoesLast)
             {
-                _rows[at] = _rows[kept];
+                rows[at] = rows[kept];
                 kept--;
             }
             else
             {
-                _rows[at] = arrived[next];
+                rows[at] = arrived[next];
                 next--;
             }
         }
     }
 
-    public void Select(SearchResult row) => Selection.Select(row, _rows);
-
-    public void Move(int by) => Selection.Move(by, _rows);
-
-    /// <summary>Empties the query, and drops a focus asked for that the box has not taken yet.</summary>
-    public void Clear()
+    public static void Select(Search search, SearchResult row)
     {
-        Query = "";
-        _isFocusPending = false;
+        search.Selection.Select(row, search.Rows);
     }
 
-    /// <summary>Has the search box take focus the next time it is drawn.</summary>
-    public void AskForFocus() => _isFocusPending = true;
-
-    /// <summary>True once after <see cref="AskForFocus"/>, unless cleared since: the box should take focus.</summary>
-    public bool TakeFocus()
+    public static void Move(Search search, int by)
     {
-        var focus = _isFocusPending;
-        _isFocusPending = false;
+        search.Selection.Move(by, search.Rows);
+    }
+
+    /// <summary>Empties the query, and drops a focus asked for that the box has not taken yet.</summary>
+    public static void Clear(Search search)
+    {
+        search.Query = "";
+        search.IsFocusPending = false;
+    }
+
+    /// <summary>True once after a focus was asked for, unless cleared since: the box should take focus.</summary>
+    public static bool TakeFocus(Search search)
+    {
+        var focus = search.IsFocusPending;
+        search.IsFocusPending = false;
         return focus;
     }
 
     /// <summary>Keeps the query to <paramref name="node"/>'s assembly, or to the namespace it is.</summary>
-    public void ScopeTo(BrowseNode node)
+    public static void ScopeTo(Search search, BrowseNode node)
     {
-        Query = ScopedQuery(node);
+        search.Query = CreateScopedQuery(search, node);
     }
 
-    private string ScopedQuery(BrowseNode node)
+    private static string CreateScopedQuery(Search search, BrowseNode node)
     {
         if (node.Subject is NodeSubject.Namespace)
-            return SearchQuery.WithScope(Query, NamespaceScope, node.FullName);
-        return SearchQuery.WithScope(Query, AssemblyScope, node.Assembly.Name);
+            return SearchQuery.WithScope(search.Query, NamespaceScope, node.FullName);
+        return SearchQuery.WithScope(search.Query, AssemblyScope, node.Assembly.Name);
     }
 
     /// <summary>Sorts the results by <paramref name="sort"/>, ascending, then descending when they
     /// already are, then by relevance again, keeping the selection in view.</summary>
-    public void SortBy(SearchSort sort)
+    public static void SortBy(Search search, SearchSort sort)
     {
-        if (Sort == sort && Descending)
+        if (search.Sort == sort && search.Descending)
             sort = SearchSort.Relevance;
-        Descending = Sort == sort && sort != SearchSort.Relevance;
-        Sort = sort;
-        _rows.Sort(Compare);
-        Selection.Reveal(_rows);
+        search.Descending = search.Sort == sort && sort != SearchSort.Relevance;
+        search.Sort = sort;
+        search.Rows.Sort((a, b) => Compare(search, a, b));
+        search.Selection.Reveal(search.Rows);
     }
 
-    private int Compare(SearchResult a, SearchResult b)
+    private static int Compare(Search search, SearchResult a, SearchResult b)
     {
-        var order = CompareAscending(a, b);
-        return Descending ? -order : order;
+        var order = CompareAscending(search, a, b);
+        return search.Descending ? -order : order;
     }
 
-    private int CompareAscending(SearchResult a, SearchResult b) => Sort switch
+    private static int CompareAscending(Search search, SearchResult a, SearchResult b)
     {
-        SearchSort.Name => CompareByName(a, b),
-        SearchSort.Location => CompareByLocation(a, b),
-        SearchSort.Assembly => CompareByAssembly(a, b),
-        _ => CompareByRelevance(a, b),
-    };
+        return search.Sort switch
+        {
+            SearchSort.Name => CompareByName(a, b),
+            SearchSort.Location => CompareByLocation(a, b),
+            SearchSort.Assembly => CompareByAssembly(a, b),
+            _ => CompareByRelevance(a, b),
+        };
+    }
 
-    private static int CompareByName(SearchResult a, SearchResult b) =>
-        Compare(a.Text, b.Text, a.Location, b.Location, AssemblyOf(a), AssemblyOf(b));
+    private static int CompareByName(SearchResult a, SearchResult b)
+    {
+        return Compare(a.Text, b.Text, a.Location, b.Location, GetAssemblyLabel(a), GetAssemblyLabel(b));
+    }
 
-    private static int CompareByLocation(SearchResult a, SearchResult b) =>
-        Compare(a.Location, b.Location, a.Text, b.Text, AssemblyOf(a), AssemblyOf(b));
+    private static int CompareByLocation(SearchResult a, SearchResult b)
+    {
+        return Compare(a.Location, b.Location, a.Text, b.Text, GetAssemblyLabel(a), GetAssemblyLabel(b));
+    }
 
-    private static int CompareByAssembly(SearchResult a, SearchResult b) =>
-        Compare(AssemblyOf(a), AssemblyOf(b), a.Text, b.Text, a.Location, b.Location);
+    private static int CompareByAssembly(SearchResult a, SearchResult b)
+    {
+        return Compare(GetAssemblyLabel(a), GetAssemblyLabel(b), a.Text, b.Text, a.Location, b.Location);
+    }
 
     private static int CompareByRelevance(SearchResult a, SearchResult b)
     {
@@ -307,7 +337,10 @@ public sealed class Search
         return CompareByName(a, b);
     }
 
-    private static string AssemblyOf(SearchResult row) => NodeText.AssemblyLabel(row.Node.Assembly);
+    private static string GetAssemblyLabel(SearchResult row)
+    {
+        return NodeText.AssemblyLabel(row.Node.Assembly);
+    }
 
     private static int Compare(string a1, string b1, string a2, string b2, string a3, string b3)
     {
@@ -319,7 +352,4 @@ public sealed class Search
             return order;
         return StringComparer.OrdinalIgnoreCase.Compare(a3, b3);
     }
-
-    /// <summary>The query last searched for, what it looked for, and the assembly list's version it searched.</summary>
-    private sealed record Searched(string Query, SearchKinds Kinds, int Version);
 }

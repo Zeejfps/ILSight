@@ -136,7 +136,7 @@ internal static class SearchPanelView
         var t = ui.State.Strings;
         var search = ui.State.Search;
         var fieldId = ui.GetId("search");
-        if (search.TakeFocus())
+        if (Searches.TakeFocus(search))
             ui.Focus(fieldId);
         var width = Sizing.Grow(AppLayout.SearchMinWidth, AppLayout.SearchWidth);
         var submitted = ui.TextField("search", ref search.Query, t.SearchField, width, ui.State.Icons.SearchField);
@@ -157,7 +157,7 @@ internal static class SearchPanelView
     private static SearchResult? PickSelected(Search search)
     {
         if (search.SelectedRow == null)
-            search.Move(1);
+            Searches.Move(search, 1);
         return search.SelectedRow;
     }
 
@@ -186,7 +186,7 @@ internal static class SearchPanelView
         var table = ui.Table(ResultsId, ui.State.SearchColumns, search.Selection.Rows);
         var clicked = table.Header(headers, sort);
         if (clicked >= 0)
-            search.SortBy(SortOf(clicked));
+            Searches.SortBy(search, SortOf(clicked));
         ResultRows(ui, table);
     }
 
