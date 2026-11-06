@@ -181,7 +181,7 @@ internal static class MainMenuView
         if (ui.MenuItem(t.FileOpen, Shortcuts.Open, id: "open", icon: new UiIcon(icons.FileOpen)))
             OpenFile(ui);
         if (ui.MenuItem(t.FileOpenFromFramework, id: "open-from-framework", icon: new UiIcon(icons.FileOpenFromFramework)))
-            ui.State.Picker.Open();
+            FrameworkPickerView.Open(ui.State.Picker);
         if (ui.MenuItem(t.FileOpenFromNuget, id: "open-from-nuget", icon: new UiIcon(icons.FileOpenFromNuGet)))
             ui.State.NuGetPicker.Open();
         ui.MenuSeparator();

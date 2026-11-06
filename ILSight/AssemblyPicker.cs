@@ -7,67 +7,9 @@ namespace ILSight;
 /// </summary>
 public sealed class AssemblyPicker
 {
-    private readonly List<ExportChoice> _order = new();
+    /// <summary>The assemblies in the order of the page.</summary>
+    public readonly List<ExportChoice> Order = new();
 
     public string Filter = "";
     public bool SelectedOnly;
-
-    /// <summary>Lists <paramref name="choices"/> afresh, ticked first, with no filter.</summary>
-    public void Arrange(IReadOnlyList<ExportChoice> choices)
-    {
-        _order.Clear();
-        _order.AddRange(choices.Where(static c => c.Included));
-        _order.AddRange(choices.Where(static c => !c.Included));
-        ClearFilter();
-    }
-
-    /// <summary>Shows every assembly again.</summary>
-    public void ClearFilter()
-    {
-        Filter = "";
-        SelectedOnly = false;
-    }
-
-    /// <summary>The assemblies the page shows, in its order.</summary>
-    public List<ExportChoice> Shown()
-    {
-        return _order
-            .Where(Matches)
-            .ToList();
-    }
-
-    private bool Matches(ExportChoice choice)
-    {
-        if (SelectedOnly && !choice.Included)
-            return false;
-        var filter = Filter.Trim();
-        if (filter.Length == 0)
-            return true;
-        if (choice.Assembly.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
-            return true;
-        return choice.Assembly.FilePath.Text.Contains(filter, StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>Whether every shown assembly is ticked, none is, or some are (null).</summary>
-    public bool? AllShownIncluded
-    {
-        get
-        {
-            var shown = Shown();
-            var count = shown.Count(static c => c.Included);
-            if (count == 0)
-                return false;
-            if (count == shown.Count)
-                return true;
-            return null;
-        }
-    }
-
-    /// <summary>Ticks every shown assembly when <paramref name="all"/>, else unticks them; the hidden
-    /// ones stay as they are.</summary>
-    public void IncludeShown(bool all)
-    {
-        foreach (var choice in Shown())
-            choice.Included = all;
-    }
 }

@@ -114,7 +114,7 @@ public sealed class ExportSetup
     /// <summary>Shows the Choose page, its list arranged afresh.</summary>
     public void Choose()
     {
-        Picker.Arrange(Choices);
+        ExportDialogView.Arrange(Picker, Choices);
         Page = ExportPage.Choose;
     }
 

@@ -1,5 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
+using ZGF.KeyboardModule;
 using ILSight.Core.Comparison;
 using static ILSight.Assemblies;
 using static ILSight.Comparisons;
@@ -163,6 +164,37 @@ public sealed class ComparisonTests
         Assert.Equal(LeftPath, picker.Compared!.FilePath.Text);
         Assert.True(app.Frames.Drew("Compare " + LeftName + " with"));
         Assert.True(app.Frames.Drew(RightName));
+    }
+
+    [Fact]
+    public void Escape_dismisses_the_dialog_which_goes_out_still_showing_what_it_compared()
+    {
+        var app = OpenBothOnScreen();
+        PickCompareWith(app);
+        var title = "Compare " + LeftName + " with";
+
+        app.Frames.Key(KeyboardKey.Escape).Frame();
+        app.Run();
+
+        Assert.False(app.Ui.ComparisonPicker.IsOpen);
+        Assert.True(app.Frames.Drew(title));
+
+        app.Run(60);
+
+        Assert.False(app.Frames.Drew(title));
+    }
+
+    [Fact]
+    public void Cancel_closes_the_dialog_at_once()
+    {
+        var app = OpenBothOnScreen();
+        PickCompareWith(app);
+
+        app.ClickLast("Cancel").Frame(2);
+
+        Assert.False(app.Ui.ComparisonPicker.IsOpen);
+        Assert.Null(app.Ui.ComparisonPicker.Compared);
+        Assert.False(app.Frames.Drew("Compare " + LeftName + " with"));
     }
 
     [Fact]

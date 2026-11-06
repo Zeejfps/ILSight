@@ -194,11 +194,11 @@ public sealed class ExportDialogTests : IDisposable
         var setup = d.Ui.ExportSetup;
 
         setup.Choose();
-        var first = setup.Picker.Shown();
+        var first = ExportDialogView.ListShown(setup.Picker);
         first[1].Included = true;
 
         Assert.Equal(second, first[0].Assembly);
-        Assert.Equal(first, setup.Picker.Shown());
+        Assert.Equal(first, ExportDialogView.ListShown(setup.Picker));
     }
 
     [Fact]
@@ -210,12 +210,12 @@ public sealed class ExportDialogTests : IDisposable
         var second = d.AppState.Assemblies.Assemblies[1];
 
         picker.Filter = second.Name.ToUpperInvariant();
-        var shown = Assert.Single(picker.Shown());
-        picker.IncludeShown(true);
+        var shown = Assert.Single(ExportDialogView.ListShown(picker));
+        ExportDialogView.IncludeShown(picker, true);
 
         Assert.Equal(second, shown.Assembly);
         Assert.Equal([false, true], d.Ui.ExportSetup.Choices.Select(c => c.Included));
-        Assert.Equal(true, picker.AllShownIncluded);
+        Assert.Equal(true, ExportDialogView.GetAllShownIncluded(picker));
     }
 
     [Fact]
@@ -228,7 +228,7 @@ public sealed class ExportDialogTests : IDisposable
 
         setup.Picker.SelectedOnly = true;
 
-        Assert.Equal(Fixtures(d), Assert.Single(setup.Picker.Shown()).Assembly);
+        Assert.Equal(Fixtures(d), Assert.Single(ExportDialogView.ListShown(setup.Picker)).Assembly);
     }
 
     [Fact]
@@ -282,7 +282,7 @@ public sealed class ExportDialogTests : IDisposable
         app.Click("Clear filter").Frame(2);
 
         Assert.Equal("", setup.Picker.Filter);
-        Assert.Single(setup.Picker.Shown());
+        Assert.Single(ExportDialogView.ListShown(setup.Picker));
     }
 
     [Fact]

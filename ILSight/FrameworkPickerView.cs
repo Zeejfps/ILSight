@@ -10,12 +10,106 @@ namespace ILSight;
 
 internal static class FrameworkPickerView
 {
+    /// <summary>The picked-out assemblies, in the order they are shown.</summary>
+    public static List<RuntimeAssembly> ListSelected(FrameworkPicker picker)
+    {
+        return picker.Selection.InOrder(picker.Filtered);
+    }
+
+    /// <summary>Scans the runtime the first time it opens, and again after a scan failed.</summary>
+    public static void Open(FrameworkPicker picker)
+    {
+        Background.Start(OpenAsync(picker), picker.ReportError);
+    }
+
+    private static async Task OpenAsync(FrameworkPicker picker)
+    {
+        picker.IsOpen = true;
+        picker.FocusFilter = true;
+        picker.AppliedFilter = null;
+        if (picker.Scan is RuntimeScan.Scanned or RuntimeScan.Scanning)
+            return;
+        picker.Scan = new RuntimeScan.Scanning();
+        var scanned = await Background.Run(picker.ListAssemblies);
+        picker.AppliedFilter = null;
+        picker.Scan = ReportScan(picker, scanned);
+    }
+
+    private static RuntimeScan ReportScan(FrameworkPicker picker, Outcome<IReadOnlyList<RuntimeAssembly>> scanned)
+    {
+        switch (scanned)
+        {
+            case Outcome<IReadOnlyList<RuntimeAssembly>>.Ok ok:
+                return new RuntimeScan.Scanned(ok.Value);
+            case Outcome<IReadOnlyList<RuntimeAssembly>>.Failed failed:
+                picker.ReportError(new AppProblem.RuntimeNotScanned(failed.Error));
+                return new RuntimeScan.Failed(failed.Error.ToString());
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    /// <summary>True once after <see cref="Open"/>: the filter box should take focus.</summary>
+    private static bool TakeFilterFocus(FrameworkPicker picker)
+    {
+        var focus = picker.FocusFilter;
+        picker.FocusFilter = false;
+        return focus;
+    }
+
+    /// <summary>Re-filters when the assembly list or the filter text changed since the last frame.</summary>
+    public static void Update(FrameworkPicker picker, AssemblyList assemblies)
+    {
+        RefreshListed(picker, assemblies);
+        ApplyFilter(picker);
+    }
+
+    private static void RefreshListed(FrameworkPicker picker, AssemblyList assemblies)
+    {
+        if (assemblies.Version == picker.ListedVersion)
+            return;
+        picker.ListedVersion = assemblies.Version;
+        picker.Listed.Clear();
+        picker.Listed.UnionWith(assemblies.FilePaths);
+        picker.AppliedFilter = null;
+    }
+
+    private static void ApplyFilter(FrameworkPicker picker)
+    {
+        if (picker.Scan is not RuntimeScan.Scanned scanned)
+            return;
+        if (picker.Filter == picker.AppliedFilter)
+            return;
+        picker.AppliedFilter = picker.Filter;
+        picker.Filtered.Clear();
+        var filter = picker.Filter.Trim();
+        foreach (var assembly in scanned.Assemblies)
+        {
+            if (Offers(picker, assembly, filter))
+                picker.Filtered.Add(assembly);
+        }
+        picker.Selection.Reconcile(picker.Filtered);
+        if (!picker.HasSelection)
+            picker.Selection.MoveTo(0, extend: false, picker.Filtered);
+    }
+
+    /// <summary>Whether <paramref name="assembly"/> is not open yet and its name matches
+    /// <paramref name="filter"/>.</summary>
+    private static bool Offers(FrameworkPicker picker, RuntimeAssembly assembly, string filter)
+    {
+        if (picker.Listed.Contains(assembly.FilePath))
+            return false;
+        if (filter.Length == 0)
+            return true;
+        return assembly.Name.Contains(filter, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static void Render(Ui<UiState> ui, AssemblyList assemblies)
     {
         var t = ui.State.Strings;
         var picker = ui.State.Picker;
         if (picker.IsOpen)
-            picker.Update(assemblies);
+            Update(picker, assemblies);
 
         var theme = ui.Theme;
         var open = false;
@@ -29,7 +123,7 @@ internal static class FrameworkPickerView
             if (!ui.HasFocus(listId))
                 MoveSelectionFromFilter(ui, picker, listId);
 
-            if (picker.TakeFilterFocus())
+            if (TakeFilterFocus(picker))
                 ui.Focus(ui.GetId("picker-filter"));
             open |= ui.TextField("picker-filter", ref picker.Filter, t.PickerFilter);
 
@@ -66,11 +160,11 @@ internal static class FrameworkPickerView
 
         if (open && picker.HasSelection)
         {
-            ui.State.Later(picker.ListSelected(), static (a, selected) => OpenSelected(a, selected));
+            ui.State.Later(ListSelected(picker), static (a, selected) => OpenSelected(a, selected));
             close = true;
         }
         if (close)
-            picker.Close();
+            picker.IsOpen = false;
     }
 
     private static string Summary(Strings t, int shown, int selected) => $"{t.PickerCount(shown)} · {t.PickerSelected(selected)}";

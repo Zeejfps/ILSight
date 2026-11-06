@@ -293,7 +293,7 @@ internal static class TreePaneView
         if (ui.MenuItem(t.TreeCreateDiagram, id: "create-diagram"))
             SaveDialogs.PickDiagramFolder(ui, assembly);
         if (ui.MenuItem(t.TreeCompareWith, id: "compare-with"))
-            ui.State.ComparisonPicker.Open(assembly);
+            ComparisonPickerView.Open(ui.State.ComparisonPicker, assembly);
         TargetFrameworkMenu(ui, assembly);
         if (ui.MenuItem(t.TreeLoadDependencies, id: "load-dependencies"))
             ui.State.Later(assembly, static (a, m) => OpenDependencies(a, m));

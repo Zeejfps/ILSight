@@ -19,6 +19,67 @@ namespace ILSight;
 /// </summary>
 internal static class ExportDialogView
 {
+    /// <summary>Lists <paramref name="choices"/> afresh, ticked first, with no filter.</summary>
+    public static void Arrange(AssemblyPicker picker, IReadOnlyList<ExportChoice> choices)
+    {
+        picker.Order.Clear();
+        picker.Order.AddRange(choices.Where(static c => c.Included));
+        picker.Order.AddRange(choices.Where(static c => !c.Included));
+        ClearFilter(picker);
+    }
+
+    /// <summary>Shows every assembly again.</summary>
+    private static void ClearFilter(AssemblyPicker picker)
+    {
+        picker.Filter = "";
+        picker.SelectedOnly = false;
+    }
+
+    /// <summary>The assemblies the page shows, in its order. Runs each frame the page shows, so it is a loop:
+    /// a lambda here would capture the picker.</summary>
+    public static List<ExportChoice> ListShown(AssemblyPicker picker)
+    {
+        var shown = new List<ExportChoice>();
+        foreach (var choice in picker.Order)
+        {
+            if (IsShown(picker, choice))
+                shown.Add(choice);
+        }
+        return shown;
+    }
+
+    private static bool IsShown(AssemblyPicker picker, ExportChoice choice)
+    {
+        if (picker.SelectedOnly && !choice.Included)
+            return false;
+        var filter = picker.Filter.Trim();
+        if (filter.Length == 0)
+            return true;
+        if (choice.Assembly.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return choice.Assembly.FilePath.Text.Contains(filter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Whether every shown assembly is ticked, none is, or some are (null).</summary>
+    public static bool? GetAllShownIncluded(AssemblyPicker picker)
+    {
+        var shown = ListShown(picker);
+        var count = shown.Count(static c => c.Included);
+        if (count == 0)
+            return false;
+        if (count == shown.Count)
+            return true;
+        return null;
+    }
+
+    /// <summary>Ticks every shown assembly when <paramref name="all"/>, else unticks them; the hidden
+    /// ones stay as they are.</summary>
+    public static void IncludeShown(AssemblyPicker picker, bool all)
+    {
+        foreach (var choice in ListShown(picker))
+            choice.Included = all;
+    }
+
     private const float WindowWidth = 640f;
     private const float WindowHeight = 720f;
 
@@ -429,16 +490,16 @@ internal static class ExportDialogView
         var theme = ui.Theme;
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
         {
-            var all = picker.AllShownIncluded;
+            var all = GetAllShownIncluded(picker);
             if (ui.Checkbox(t.ExportSelectShown, ref all, id: "all", compact: true))
-                picker.IncludeShown(all == true);
+                IncludeShown(picker, all == true);
         }
     }
 
     private static void PickList(Ui<UiState> ui, AssemblyPicker picker)
     {
         var theme = ui.Theme;
-        var shown = picker.Shown();
+        var shown = ListShown(picker);
         using (ui.Column(ListFrame(theme) with { Height = Sizing.Grow() }))
         {
             if (shown.Count == 0)
@@ -463,7 +524,7 @@ internal static class ExportDialogView
         {
             ui.Text(t.ExportNoMatch, color: theme.TextMuted);
             if (ui.Button(t.ExportClearFilter, id: "clear-filter", variant: ButtonVariant.Ghost))
-                picker.ClearFilter();
+                ClearFilter(picker);
         }
     }
 

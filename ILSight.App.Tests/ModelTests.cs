@@ -815,7 +815,7 @@ public sealed class FrameworkPickerTests
         var reported = new List<string>();
         var picker = new FrameworkPicker(problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), static () => throw new InvalidDataException("no runtime"));
 
-        picker.Open();
+        FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
 
         Assert.Contains("no runtime", Assert.IsType<RuntimeScan.Failed>(picker.Scan).Error);
@@ -834,15 +834,15 @@ public sealed class FrameworkPickerTests
         };
         var picker = new FrameworkPicker(static _ => { }, () => assemblies);
         var list = new AssemblyList();
-        picker.Open();
+        FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
-        picker.Update(list);
+        FrameworkPickerView.Update(picker, list);
 
         picker.Selection.SelectAll(picker.Filtered);
         picker.Filter = "Net";
-        picker.Update(list);
+        FrameworkPickerView.Update(picker, list);
 
-        Assert.Equal([assemblies[0], assemblies[1]], picker.ListSelected());
+        Assert.Equal([assemblies[0], assemblies[1]], FrameworkPickerView.ListSelected(picker));
     }
 
     [Fact]
@@ -853,13 +853,13 @@ public sealed class FrameworkPickerTests
         var other = new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll"));
         var picker = new FrameworkPicker(static _ => { }, () => [open, other]);
         var list = new AssemblyList();
-        picker.Open();
+        FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
-        picker.Update(list);
+        FrameworkPickerView.Update(picker, list);
         Assert.Equal([open, other], picker.Filtered);
 
         list.Open(AppStateDriver.FixturePath);
-        picker.Update(list);
+        FrameworkPickerView.Update(picker, list);
 
         Assert.Equal([other], picker.Filtered);
     }
