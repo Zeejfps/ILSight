@@ -260,12 +260,18 @@ anywhere. There's no boundary to guess, since nothing in one is about the app.
 
 A class of our own is allowed when all of these hold:
 
-- **It depends on nothing else.** Only the BCL and its own type parameters: no type of the app, and no
-  framework or library.
+- **It depends on nothing else.** Only the BCL, its own type parameters, and other self-contained types:
+  no other type of the app, and no framework or library.
 - **It changes nothing outside itself.** Calling it can't reach further than its own fields, so no
-  callbacks into app state, no statics, no files, no clock.
+  callbacks into app state, no statics, no files, no clock. That includes what is handed to it: it may
+  read another self-contained type, or keep one of its own, but it doesn't modify one passed in.
 - **It can be used more than once.** It's a general tool, with more than one use or at least nothing
   tying it to its one use today. A class that happens to be small but exists for one feature isn't this.
+
+A record is a class, so this goes for a record too. A self-contained record keeps its own methods, which
+is how a type with an invariant protects it: `WebUrl` has a private constructor and a `Parse` beside it,
+so that holding a `WebUrl` means holding a valid one. Moving `Parse` out would mean opening the constructor,
+and giving up the guarantee to satisfy a rule about shape.
 
 Something being able to go wrong in the app is no reason for one. If it knows what a tab or an assembly is,
 it's data and functions. "Self-contained" also doesn't mean "tidy": the test is what it touches, not how

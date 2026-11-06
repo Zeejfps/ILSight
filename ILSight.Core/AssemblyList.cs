@@ -671,7 +671,7 @@ public sealed class AssemblyList
         var definition = Definitions.Resolve(owner.MainModule, handle);
         if (definition == null)
             return (null, default);
-        return (TryLoadAssembly(AssemblyPath.Of(definition.ParentModule!.MetadataFile!), generation), definition.MetadataToken);
+        return (TryLoadAssembly(AssemblyPath.Of(definition.ParentModule!.MetadataFile!.FileName), generation), definition.MetadataToken);
     }
 
     /// <summary>What <paramref name="path"/> holds: an assembly, a package, or an assembly in a

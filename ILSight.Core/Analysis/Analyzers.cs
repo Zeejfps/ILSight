@@ -85,7 +85,7 @@ public sealed class AnalysisSymbol
             var file = entity.ParentModule?.MetadataFile;
             if (file == null)
                 return null;
-            return new CodeAnchor(CodeAnchorKind.Definition, AssemblyPath.Of(file), MetadataTokens.GetToken(entity.MetadataToken));
+            return new CodeAnchor(CodeAnchorKind.Definition, AssemblyPath.Of(file.FileName), MetadataTokens.GetToken(entity.MetadataToken));
         }
     }
 
@@ -223,7 +223,7 @@ public static class Analyzers
                     Where(entity), CodeReference.To(entity));
             case IModule module:
                 return new AnalysisSymbol(module, new SymbolShape.Assembly(), NodeAccessibility.Public, module.AssemblyName, module.MetadataFile?.FileName ?? "",
-                    module.MetadataFile != null ? CodeReference.ToAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile)) : null);
+                    module.MetadataFile != null ? CodeReference.ToAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null);
             default:
                 return null;
         }

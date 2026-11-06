@@ -399,7 +399,7 @@ internal sealed class DocumentBuilder : ITextOutput
             if (definition != null)
                 return CodeReference.To(definition, text);
         }
-        return CodeReference.To(metadata.Metadata, handle, text, AssemblyPath.Of(metadata));
+        return CodeReference.To(metadata.Metadata, handle, text, AssemblyPath.Of(metadata.FileName));
     }
 
     private IEntity? ResolveDefinition(MetadataFile metadata, EntityHandle handle)

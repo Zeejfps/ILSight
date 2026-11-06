@@ -19,7 +19,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void Every_type_is_a_record_unless_it_is_listed()
     {
-        var found = ListDeclaredTypes().Where(IsNotData).Select(GetName).ToHashSet();
+        var found = ListDeclaredTypes().Where(static type => IsNotData(type) || IsSelfContained(type)).Select(GetName).ToHashSet();
 
         var expected = ShapeExceptions.Seams.Keys.Concat(ShapeExceptions.SelfContained).Concat(ShapeExceptions.NotYetData);
 
@@ -27,9 +27,9 @@ public sealed class ArchitectureTests
     }
 
     [Fact]
-    public void A_class_listed_as_self_contained_names_nothing_but_the_BCL()
+    public void A_type_listed_as_self_contained_names_only_the_BCL_and_other_such_types()
     {
-        var entangled = ListDeclaredTypes().Where(static type => ShapeExceptions.SelfContained.Contains(GetName(type)))
+        var entangled = ListDeclaredTypes().Where(IsSelfContained)
             .SelectMany(static type => ListForeignTypes(type).Select(foreign => $"{GetName(type)} names {foreign}"));
 
         Assert.Empty(entangled);
@@ -38,7 +38,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void No_record_has_behaviour_unless_it_is_listed()
     {
-        var found = ListDeclaredTypes().Where(IsRecord).SelectMany(ListMethods).ToHashSet();
+        var found = ListDeclaredTypes().Where(static type => IsRecord(type) && !IsSelfContained(type)).SelectMany(ListMethods).ToHashSet();
 
         AssertMatches(ShapeExceptions.RecordsWithMethods, found);
     }
@@ -77,6 +77,11 @@ public sealed class ArchitectureTests
             if (current.Name.StartsWith("<>", StringComparison.Ordinal)) return true;
         }
         return false;
+    }
+
+    private static bool IsSelfContained(Type type)
+    {
+        return ShapeExceptions.SelfContained.Contains(GetName(type));
     }
 
     private static bool IsNotData(Type type)
@@ -134,8 +139,9 @@ public sealed class ArchitectureTests
         return ShapeExceptions.RecordSeams.ContainsKey($"{GetName(method.DeclaringType!)}.{method.Name}");
     }
 
-    /// <summary>What <paramref name="type"/> names in its members that is neither the BCL nor part of
-    /// itself. Reflection stops at signatures, so what a method body reaches for goes unseen.</summary>
+    /// <summary>What <paramref name="type"/> names in its members that is neither the BCL, part of itself,
+    /// nor self-contained too. Reflection stops at signatures, so what a method body reaches for goes
+    /// unseen, as does a constraint on a type parameter.</summary>
     private static IEnumerable<string> ListForeignTypes(Type type)
     {
         const BindingFlags all = Declared | BindingFlags.Instance | BindingFlags.Static;
@@ -148,7 +154,7 @@ public sealed class ArchitectureTests
             named.AddRange(method.GetParameters().Select(static parameter => parameter.ParameterType));
             if (method is MethodInfo info) named.Add(info.ReturnType);
         }
-        return named.OfType<Type>().SelectMany(ListPartsOf).Where(part => !IsBcl(part) && !IsWithin(part, type)).Select(GetName).Distinct();
+        return named.OfType<Type>().SelectMany(ListPartsOf).Where(part => !IsBcl(part) && !IsWithin(part, type) && !IsSelfContained(part)).Select(GetName).Distinct();
     }
 
     private static IEnumerable<Type> ListPartsOf(Type type)

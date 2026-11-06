@@ -2,7 +2,7 @@ namespace ILSight;
 
 /// <summary>The id of a theme read as <typeparamref name="TFile"/>: the name of its file without the
 /// extension, compared ignoring case. A color theme's id is no icon theme's.</summary>
-public sealed record ThemeId<TFile> where TFile : IThemeFile<TFile>
+public sealed record ThemeId<TFile>
 {
     private static readonly char[] NotInFileName = [..Path.GetInvalidFileNameChars(), '/', '\\'];
 

@@ -47,10 +47,6 @@ public sealed record AssemblyPath
         return path;
     }
 
-    /// <summary>The path <paramref name="file"/> was read from: every file the list reads is named by the
-    /// path it was read from.</summary>
-    internal static AssemblyPath Of(ICSharpCode.Decompiler.Metadata.MetadataFile file) => Of(file.FileName);
-
     /// <summary>The path of <paramref name="relative"/> under this one, as when this is a package.</summary>
     public AssemblyPath Combine(string relative) => Of(Path.Combine(Text, relative));
 

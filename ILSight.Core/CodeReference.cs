@@ -141,7 +141,7 @@ public abstract class CodeReference : IEquatable<CodeReference>
         var file = entity.ParentModule?.MetadataFile;
         if (file == null || entity.MetadataToken.IsNil)
             return null;
-        return new Entity(KindOf(entity.SymbolKind), name ?? entity.Name, AssemblyPath.Of(file), entity.MetadataToken);
+        return new Entity(KindOf(entity.SymbolKind), name ?? entity.Name, AssemblyPath.Of(file.FileName), entity.MetadataToken);
     }
 
     /// <summary>A reference to what <paramref name="handle"/> of <paramref name="metadata"/> names, read

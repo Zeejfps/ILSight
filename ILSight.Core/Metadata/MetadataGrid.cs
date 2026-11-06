@@ -249,7 +249,7 @@ public sealed class MetadataGrid
         var name = handle.Kind == HandleKind.AssemblyDefinition ? _module.Name
             : _schema.NameColumn >= 0 ? Text(row, _schema.NameColumn)
             : token.ToString("X8");
-        return CodeReference.To(file.Metadata, handle, name, AssemblyPath.Of(file));
+        return CodeReference.To(file.Metadata, handle, name, AssemblyPath.Of(file.FileName));
     }
 
     private bool Matches(int row, int column, MetadataColumnFilter filter)
