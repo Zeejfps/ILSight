@@ -128,12 +128,12 @@ more fields than are worth listing.
 ### 4. Functions are static and grouped by feature
 
 Every function is a `static` function in a `static class` named for the feature it serves, not for the
-type it works on: `UpdateChecks`, not `UpdateStatusExtensions`. A function takes what it works on or
+type it works on: `Updates`, not `UpdateStatusExtensions`. A function takes what it works on or
 modifies as parameters, and depends on nothing else. Whatever it needs that isn't an argument is a bug
 in its signature.
 
 Extension-method syntax is not used to pretend a function is a method; call it by its feature:
-`UpdateChecks.Check(updates, asked)`.
+`Updates.Check(updates, asked)`.
 
 ### 5. Functions return a result, or nothing if they can't go wrong
 
@@ -286,7 +286,7 @@ public sealed record AppUpdates(UpdateFeed Feed)
 }
 
 // What is done to it.
-public static class UpdateChecks
+public static class Updates
 {
     public static bool CanCheck(AppUpdates updates)
     {

@@ -117,7 +117,7 @@ internal static class ToolbarView
     }
 
     /// <summary>The width the list picker was last measured at, for which lists and theme.</summary>
-    private sealed class MeasuredWidth
+    private sealed record MeasuredWidth
     {
         public int Revision = -1;
         public UiTheme? Theme;

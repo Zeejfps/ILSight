@@ -14,7 +14,7 @@ namespace ILSight;
 internal static class ResourceImageView
 {
     /// <summary>The picture last given to the canvas, and the zoom it was drawn at.</summary>
-    private sealed class Uploaded
+    private sealed record Uploaded
     {
         public ResourceImage? Image;
         public float Scale;

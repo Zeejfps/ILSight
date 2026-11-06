@@ -527,7 +527,7 @@ public sealed class BrowseSession
             && part.Value.ListedTable == table);
     }
 
-    private sealed class ChildSlot
+    private sealed record ChildSlot
     {
         public readonly Lock Gate = new();
         public ChildrenState State = NotLoaded;
