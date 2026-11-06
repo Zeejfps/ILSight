@@ -139,14 +139,14 @@ internal sealed class AppStateDriver
     private readonly PostedActions _posted = PostedActions.OfThisTest();
     private readonly UiState? _ui;
 
-    public AppStateDriver(AppSettings? settings = null) : this(NoProblem(settings), CommandLine.Parse([]).Command, withScreen: true)
+    public AppStateDriver(AppSettings? settings = null) : this(NoProblem(settings), CommandLine.Parse([]).Arguments, withScreen: true)
     {
     }
 
-    private AppStateDriver(SettingsLoadResult loadResult, ExternalCommand command, bool withScreen)
+    private AppStateDriver(SettingsLoadResult loadResult, RunArguments arguments, bool withScreen)
     {
         loadResult.Settings.Locale ??= Locale.En;
-        AppState = ILSightAppLauncher.LoadAppState(loadResult, command, TestSession.Shared);
+        AppState = ILSightAppLauncher.LoadAppState(loadResult, arguments, TestSession.Shared);
         if (withScreen)
             _ui = ILSightApp.CreateUiState(AppState);
         RestoreAnalyses(AppState);
@@ -156,8 +156,8 @@ internal sealed class AppStateDriver
         new(settings ?? new AppSettings(), new SettingsProblem.None());
 
     /// <summary>A driver over the app state and screen the app starts with, from <paramref name="loadResult"/>
-    /// and <paramref name="command"/>, before the app opens any assemblies.</summary>
-    public static AppStateDriver Started(SettingsLoadResult loadResult, ExternalCommand command) => new(loadResult, command, withScreen: true);
+    /// and <paramref name="arguments"/>, before the app opens any assemblies.</summary>
+    public static AppStateDriver Started(SettingsLoadResult loadResult, RunArguments arguments) => new(loadResult, arguments, withScreen: true);
 
     /// <summary>A driver that has opened the fixture assembly.</summary>
     public static AppStateDriver Opened(AppSettings? settings = null)
@@ -168,7 +168,7 @@ internal sealed class AppStateDriver
     }
 
     /// <summary>A driver with an app state and no screen, which shows that the features need none.</summary>
-    public static AppStateDriver WithoutScreen(AppSettings? settings = null) => new(NoProblem(settings), CommandLine.Parse([]).Command, withScreen: false);
+    public static AppStateDriver WithoutScreen(AppSettings? settings = null) => new(NoProblem(settings), CommandLine.Parse([]).Arguments, withScreen: false);
 
     /// <summary>A driver with no screen that has opened the fixture assembly.</summary>
     public static AppStateDriver OpenedWithoutScreen()
@@ -282,14 +282,14 @@ internal sealed class AppStateDriver
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
-    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, ExternalCommand? queuedCommand = null, ITextMeasurer? measurer = null, ExternalCommandInbox? inbox = null)
+    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, RunArgumentsInbox? inbox = null)
     {
         Driver = new AppStateDriver(settings);
-        inbox ??= new ExternalCommandInbox();
-        if (queuedCommand != null)
-            inbox.TryAdd(queuedCommand);
-        App = new ILSightApp(AppState, Ui, CommandLine.Parse([]).Command.Files, inbox);
-        Background.Start(App.ApplyPendingCommands(), AppState.ReportError);
+        inbox ??= new RunArgumentsInbox();
+        if (queuedArguments != null)
+            inbox.TryAdd(queuedArguments);
+        App = new ILSightApp(AppState, Ui, CommandLine.Parse([]).Arguments.Files, inbox);
+        Background.Start(App.ApplyPendingArguments(), AppState.ReportError);
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;
         Frames.BeforeFrame = PumpAtFrameTime;

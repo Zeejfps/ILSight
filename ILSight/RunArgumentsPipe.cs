@@ -6,11 +6,11 @@ using ZGF.Desktop;
 namespace ILSight;
 
 /// <summary>
-/// What a run and the receiver say to each other. A run sends its command and lends the receiver the
+/// What a run and the receiver say to each other. A run sends its arguments and lends the receiver the
 /// right to come to the front, so that one window serves them all. Only the user who started the
 /// receiver can reach it.
 /// </summary>
-public static class ExternalCommandPipe
+public static class RunArgumentsPipe
 {
     private const int IntBytes = 4;
     private const int MaxArguments = 4096;
@@ -20,14 +20,14 @@ public static class ExternalCommandPipe
     /// <summary>How long either side waits for the other.</summary>
     internal static readonly TimeSpan HandOverTimeout = TimeSpan.FromSeconds(5);
 
-    /// <summary>Hands <paramref name="command"/> to the receiver at <paramref name="address"/> and lends
+    /// <summary>Hands <paramref name="arguments"/> to the receiver at <paramref name="address"/> and lends
     /// it the right to come to the front; false when it cannot be reached in time or refuses. Waits on
     /// the thread pool, so a caller whose own thread runs the continuations is never blocked by them.</summary>
-    public static bool TrySend(ExternalCommandAddress address, ExternalCommand command)
+    public static bool TrySend(RunArgumentsAddress address, RunArguments arguments)
     {
         try
         {
-            return Task.Run(() => SendAsync(address, command)).GetAwaiter().GetResult();
+            return Task.Run(() => SendAsync(address, arguments)).GetAwaiter().GetResult();
         }
         catch (Exception e) when (IsBroken(e))
         {
@@ -35,7 +35,7 @@ public static class ExternalCommandPipe
         }
     }
 
-    private static async Task<bool> SendAsync(ExternalCommandAddress address, ExternalCommand command)
+    private static async Task<bool> SendAsync(RunArgumentsAddress address, RunArguments arguments)
     {
         using var timeout = new CancellationTokenSource(HandOverTimeout);
         var token = timeout.Token;
@@ -43,21 +43,21 @@ public static class ExternalCommandPipe
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
         ForegroundRights.LendTo(processId);
-        await WriteArgumentsAsync(pipe, CommandLine.ListArguments(command), token);
+        await WriteArgumentsAsync(pipe, CommandLine.ListArguments(arguments), token);
         var answer = await ReadByteAsync(pipe, token);
         return answer == Received;
     }
 
-    /// <summary>The command of the run connected to <paramref name="pipe"/>, once told where to lend the
+    /// <summary>The arguments of the run connected to <paramref name="pipe"/>, once told where to lend the
     /// right to come to the front.</summary>
-    internal static async Task<ExternalCommand> ReceiveAsync(Stream pipe, CancellationToken token)
+    internal static async Task<RunArguments> ReceiveAsync(Stream pipe, CancellationToken token)
     {
         await WriteIntAsync(pipe, Environment.ProcessId, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        return CommandLine.Parse(args).Command;
+        return CommandLine.Parse(args).Arguments;
     }
 
-    /// <summary>Tells the run connected to <paramref name="pipe"/> its command was taken. Hanging up
+    /// <summary>Tells the run connected to <paramref name="pipe"/> its arguments were taken. Hanging up
     /// without this tells it to open a window of its own.</summary>
     internal static async Task AcknowledgeAsync(Stream pipe, CancellationToken token)
     {
@@ -102,9 +102,9 @@ public static class ExternalCommandPipe
     {
         var count = await ReadIntAsync(pipe, token);
         if (count < 0)
-            throw new InvalidDataException("A handed command is malformed.");
+            throw new InvalidDataException("Handed arguments are malformed.");
         if (count > max)
-            throw new InvalidDataException("A handed command is too long.");
+            throw new InvalidDataException("Handed arguments are too long.");
         return count;
     }
 

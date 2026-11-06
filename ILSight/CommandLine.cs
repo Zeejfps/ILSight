@@ -5,7 +5,7 @@ namespace ILSight;
 
 /// <summary>The arguments a run was started with, read: how it starts, and what it asks of the app. All
 /// that is known of the options and arguments the app takes is here.</summary>
-public sealed record CommandLine(LaunchConfig Launch, ExternalCommand Command)
+public sealed record CommandLine(LaunchConfig Launch, RunArguments Arguments)
 {
     private const string SettingsOption = "--settings=";
     private const string OpenGlFlag = "--gl";
@@ -24,23 +24,23 @@ public sealed record CommandLine(LaunchConfig Launch, ExternalCommand Command)
         return reader.ToCommandLine();
     }
 
-    /// <summary>The arguments that ask for <paramref name="command"/> again: the language, the list, what
+    /// <summary>The command line that asks for <paramref name="arguments"/> again: the language, the list, what
     /// to show and the files, made absolute from this process's folder; and the arguments ignored, to
     /// tell of.</summary>
-    public static List<string> ListArguments(ExternalCommand command)
+    public static List<string> ListArguments(RunArguments arguments)
     {
         var args = new List<string>();
-        if (command.Language != null)
-            args.Add(LanguageOption + command.Language.Value);
-        if (command.AssemblyList != null)
-            args.Add(ListOption + command.AssemblyList);
-        if (command.ClearList)
+        if (arguments.Language != null)
+            args.Add(LanguageOption + arguments.Language.Value);
+        if (arguments.AssemblyList != null)
+            args.Add(ListOption + arguments.AssemblyList);
+        if (arguments.ClearList)
             args.Add(ClearListFlag);
-        if (command.NavigateTo != null)
-            args.Add(NavigateToOption + command.NavigateTo);
-        foreach (var path in command.AssemblyPaths)
+        if (arguments.Files.NavigateTo != null)
+            args.Add(NavigateToOption + arguments.Files.NavigateTo);
+        foreach (var path in arguments.Files.Paths)
             args.Add(path.Text);
-        args.AddRange(command.Ignored);
+        args.AddRange(arguments.Ignored);
         return args;
     }
 
@@ -60,8 +60,9 @@ public sealed record CommandLine(LaunchConfig Launch, ExternalCommand Command)
         public CommandLine ToCommandLine()
         {
             var launch = new LaunchConfig(_settingsPath, _renderBackend, _newInstance);
-            var command = new ExternalCommand(_language, _assemblyList, _clearList, _navigateTo, _assemblyPaths, _ignored);
-            return new CommandLine(launch, command);
+            var files = new FilesToOpen(_assemblyPaths, _navigateTo);
+            var arguments = new RunArguments(_language, _assemblyList, _clearList, files, _ignored);
+            return new CommandLine(launch, arguments);
         }
 
         public void Read(string arg)

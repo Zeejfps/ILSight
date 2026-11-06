@@ -317,7 +317,7 @@ public sealed class AppSettingsTests : IDisposable
     {
         var loadResult = AppSettings.Load(Written("""{ "Assemblies": [ "a.dll", """));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]).Command, TestSession.Shared);
+        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]).Arguments, TestSession.Shared);
 
         Assert.Empty(loaded.AssemblyLists);
         Assert.IsType<SettingsProblem.NotJson>(problem);
@@ -331,7 +331,7 @@ public sealed class AppSettingsTests : IDisposable
         const string broken = """{ "Assemblies": [ "a.dll", """;
         var loadResult = AppSettings.Load(Written(broken));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]).Command, TestSession.Shared);
+        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]).Arguments, TestSession.Shared);
 
         Assert.IsType<SettingsWriteResult.Written>(loaded.Save());
 
@@ -375,7 +375,7 @@ public sealed class AppSettingsTests : IDisposable
             """;
         var loadResult = AppSettings.Load(Written(json));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]).Command, TestSession.Shared);
+        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLine.Parse([]).Arguments, TestSession.Shared);
 
         var leftOut = Assert.IsType<SettingsProblem.ValuesLeftOut>(problem);
         Assert.Equal(["Language", "Window"], leftOut.Fields);
@@ -527,7 +527,7 @@ public sealed class AppSettingsTests : IDisposable
     {
         var loadResult = AppSettings.Load(Written($$"""{ "Theme": "light", {{json[1..]}}"""));
         var (loaded, problem) = loadResult;
-        var d = AppStateDriver.Started(loadResult, CommandLine.Parse([]).Command);
+        var d = AppStateDriver.Started(loadResult, CommandLine.Parse([]).Arguments);
 
         Assert.IsType<SettingsProblem.LayoutPartsMissing>(problem);
         Assert.Equal("light", loaded.Theme.Text);

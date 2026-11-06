@@ -5,4 +5,4 @@ using Velopack;
 VelopackApp.Build().Run();
 
 var commandLine = CommandLine.Parse(args);
-ILSightAppLauncher.LaunchApp(commandLine.Launch, commandLine.Command);
+ILSightAppLauncher.LaunchApp(commandLine.Launch, commandLine.Arguments);

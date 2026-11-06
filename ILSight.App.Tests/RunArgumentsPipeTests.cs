@@ -3,21 +3,21 @@ using ILSight.Core;
 
 namespace ILSight.App.Tests;
 
-public sealed class ExternalCommandPipeTests
+public sealed class RunArgumentsPipeTests
 {
     private const string GreetId = "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)";
 
-    private static ExternalCommand Command(params string[] args) => CommandLine.Parse(args).Command;
+    private static RunArguments Arguments(params string[] args) => CommandLine.Parse(args).Arguments;
 
-    private static List<ExternalCommand> TakeArrived(ExternalCommandInbox inbox, int count)
+    private static List<RunArguments> TakeArrived(RunArgumentsInbox inbox, int count)
     {
         inbox.Close();
-        var arrived = new List<ExternalCommand>();
+        var arrived = new List<RunArguments>();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var reading = Task.Run(async () =>
         {
-            await foreach (var command in inbox.ReadAllAsync().WithCancellation(timeout.Token))
-                arrived.Add(command);
+            await foreach (var arguments in inbox.ReadAllAsync().WithCancellation(timeout.Token))
+                arrived.Add(arguments);
         });
         reading.GetAwaiter().GetResult();
         Assert.Equal(count, arrived.Count);
@@ -25,31 +25,31 @@ public sealed class ExternalCommandPipeTests
     }
 
     [Fact]
-    public void The_receiver_takes_the_command_a_later_run_sends()
+    public void The_receiver_takes_the_arguments_a_later_run_sends()
     {
         using var temp = new TempDir();
-        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
-        using var receiver = ExternalCommandReceiver.TryClaim(address);
+        var address = RunArgumentsAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        using var receiver = RunArgumentsReceiver.TryClaim(address);
         Assert.NotNull(receiver);
 
-        var handedOver = ExternalCommandPipe.TrySend(address, Command("--navigateto=T:Some.Type", "relative.dll"));
+        var handedOver = RunArgumentsPipe.TrySend(address, Arguments("--navigateto=T:Some.Type", "relative.dll"));
 
         Assert.True(handedOver);
         var handed = Assert.Single(TakeArrived(receiver.Inbox, 1));
-        Assert.Equal("T:Some.Type", handed.NavigateTo);
-        Assert.Equal([Path.GetFullPath("relative.dll")], handed.AssemblyPaths.Select(static p => p.Text));
+        Assert.Equal("T:Some.Type", handed.Files.NavigateTo);
+        Assert.Equal([Path.GetFullPath("relative.dll")], handed.Files.Paths.Select(static p => p.Text));
     }
 
     [Fact]
     public void A_later_run_is_refused_once_the_inbox_closes()
     {
         using var temp = new TempDir();
-        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
-        using var receiver = ExternalCommandReceiver.TryClaim(address);
+        var address = RunArgumentsAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        using var receiver = RunArgumentsReceiver.TryClaim(address);
         Assert.NotNull(receiver);
         receiver.Inbox.Close();
 
-        var handedOver = ExternalCommandPipe.TrySend(address, Command("a.dll"));
+        var handedOver = RunArgumentsPipe.TrySend(address, Arguments("a.dll"));
 
         Assert.False(handedOver);
     }
@@ -58,9 +58,9 @@ public sealed class ExternalCommandPipeTests
     public void A_run_with_no_one_listening_cannot_hand_over()
     {
         using var temp = new TempDir();
-        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        var address = RunArgumentsAddress.ForSettingsFile(temp.PathOf("settings.json"));
 
-        var handedOver = ExternalCommandPipe.TrySend(address, Command("a.dll"));
+        var handedOver = RunArgumentsPipe.TrySend(address, Arguments("a.dll"));
 
         Assert.False(handedOver);
     }
@@ -69,11 +69,11 @@ public sealed class ExternalCommandPipeTests
     public void Many_runs_starting_together_all_reach_the_receiver()
     {
         using var temp = new TempDir();
-        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
-        using var receiver = ExternalCommandReceiver.TryClaim(address);
+        var address = RunArgumentsAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        using var receiver = RunArgumentsReceiver.TryClaim(address);
         Assert.NotNull(receiver);
 
-        var sends = Enumerable.Range(0, 16).Select(i => Task.Run(() => ExternalCommandPipe.TrySend(address, Command(i + ".dll")))).ToArray();
+        var sends = Enumerable.Range(0, 16).Select(i => Task.Run(() => RunArgumentsPipe.TrySend(address, Arguments(i + ".dll")))).ToArray();
         Task.WaitAll(sends);
 
         Assert.All(sends, static send => Assert.True(send.Result));
@@ -84,30 +84,30 @@ public sealed class ExternalCommandPipeTests
     public void A_run_that_goes_away_partway_does_not_stop_the_receiver()
     {
         using var temp = new TempDir();
-        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
-        using var receiver = ExternalCommandReceiver.TryClaim(address);
+        var address = RunArgumentsAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        using var receiver = RunArgumentsReceiver.TryClaim(address);
         Assert.NotNull(receiver);
         using (var gone = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly))
         {
             gone.Connect(5000);
         }
 
-        var handedOver = ExternalCommandPipe.TrySend(address, Command("a.dll"));
+        var handedOver = RunArgumentsPipe.TrySend(address, Arguments("a.dll"));
 
         Assert.True(handedOver);
     }
 
     [Fact]
-    public void A_command_handed_to_the_open_window_opens_its_files_shows_its_member_and_brings_the_window_to_the_front()
+    public void Arguments_handed_to_the_open_window_open_their_files_show_their_member_and_bring_the_window_to_the_front()
     {
         using var temp = new TempDir();
-        var address = ExternalCommandAddress.ForSettingsFile(temp.PathOf("settings.json"));
-        using var receiver = ExternalCommandReceiver.TryClaim(address);
+        var address = RunArgumentsAddress.ForSettingsFile(temp.PathOf("settings.json"));
+        using var receiver = RunArgumentsReceiver.TryClaim(address);
         Assert.NotNull(receiver);
         var app = new AppDriver(inbox: receiver.Inbox);
         app.Run();
 
-        Assert.True(ExternalCommandPipe.TrySend(address, Command("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
+        Assert.True(RunArgumentsPipe.TrySend(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
         app.RunUntil(() => app.Frames.FrontRequested);
         app.RunUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Method);
         app.Settle(1);
@@ -117,9 +117,9 @@ public sealed class ExternalCommandPipeTests
     }
 
     [Fact]
-    public void A_command_handed_over_while_the_app_starts_is_followed_once_it_runs()
+    public void Arguments_handed_over_while_the_app_starts_are_followed_once_it_runs()
     {
-        var app = new AppDriver(queuedCommand: Command("--language=IL"));
+        var app = new AppDriver(queuedArguments: Arguments("--language=IL"));
 
         app.RunUntil(() => app.AppState.Language == DecompilationLanguage.IL);
 

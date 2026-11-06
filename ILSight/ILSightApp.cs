@@ -7,7 +7,7 @@ using static ILSight.Appearance;
 using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.CodeDisplay;
-using static ILSight.ExternalCommands;
+using static ILSight.RunArgumentsActions;
 using static ILSight.IconTheming;
 using static ILSight.Settings;
 using static ILSight.ScreenSettings;
@@ -26,14 +26,14 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
-    private readonly ExternalCommandInbox _inbox;
+    private readonly RunArgumentsInbox _inbox;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
     internal ILSightApp(
         AppState appState,
         UiState uiState,
         FilesToOpen startupFiles,
-        ExternalCommandInbox inbox) : base(uiState)
+        RunArgumentsInbox inbox) : base(uiState)
     {
         _appState = appState;
         _startupFiles = startupFiles;
@@ -52,7 +52,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
         CheckOnStartup(_appState);
-        Background.Start(ApplyPendingCommands(), _appState.ReportError);
+        Background.Start(ApplyPendingArguments(), _appState.ReportError);
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -62,7 +62,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         FinishFrame(ui, _appState, _codeFonts);
     }
 
-    /// <summary>Refuses commands as the window closes, while a run sending one can still be told to
+    /// <summary>Refuses arguments as the window closes, while a run sending one can still be told to
     /// open its own: no frame runs after this to follow it.</summary>
     protected override bool OnCloseRequested(ImmediateGuiAppHost<UiState> host)
     {
@@ -245,22 +245,22 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     internal static void OpenStartupAssemblies(AppState appState, FilesToOpen files)
     {
         RestoreActiveAssemblyList(appState);
-        OpenCommandFiles(appState, files);
+        OpenRequestedFiles(appState, files);
     }
 
-    /// <summary>Leaves the commands of later runs to windows of their own once this one closes.</summary>
-    /// <summary>Does what the commands of later runs ask as they arrive, until this window closes,
+    /// <summary>Leaves the arguments of later runs to windows of their own once this one closes.</summary>
+    /// <summary>Does what the arguments of later runs ask as they arrive, until this window closes,
     /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
     /// each one arriving wakes the app.</summary>
-    internal async Task ApplyPendingCommands()
+    internal async Task ApplyPendingArguments()
     {
-        await foreach (var command in _inbox.ReadAllAsync())
+        await foreach (var arguments in _inbox.ReadAllAsync())
         {
             try
             {
-                ApplyExternalCommand(_appState, command);
+                ApplyArguments(_appState, arguments);
             }
-            // Catches everything so that one command that fails is reported rather than ending
+            // Catches everything so that arguments that fail are reported rather than ending
             // this loop, which would leave the pipe answering later runs with no one to follow them.
             catch (Exception e)
             {
