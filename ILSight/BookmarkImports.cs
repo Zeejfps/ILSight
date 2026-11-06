@@ -9,38 +9,22 @@ public sealed record PendingImport(IReadOnlyList<Bookmark> Bookmarks);
 /// own bookmarks, and the user is asked about one at a time.</summary>
 public sealed class BookmarkImports
 {
-    private readonly List<PendingImport> _waiting = new();
-    private int _finding;
+    public readonly List<PendingImport> Waiting = new();
+
+    /// <summary>How many imports' places are being found in the background.</summary>
+    public int Finding;
 
     /// <summary>True while any import's places are being found in the background.</summary>
-    public bool IsFinding => _finding > 0;
+    public bool IsFinding => Finding > 0;
 
     /// <summary>The import the user is asked about, or null.</summary>
     public PendingImport? Asking
     {
         get
         {
-            if (_waiting.Count == 0)
+            if (Waiting.Count == 0)
                 return null;
-            return _waiting[0];
+            return Waiting[0];
         }
     }
-
-    public void StartFinding()
-    {
-        _finding++;
-    }
-
-    public void StopFinding()
-    {
-        _finding--;
-    }
-
-    public void Wait(PendingImport import)
-    {
-        _waiting.Add(import);
-    }
-
-    /// <summary>Stops waiting on <paramref name="import"/>; false when it was not waiting.</summary>
-    public bool Finish(PendingImport import) => _waiting.Remove(import);
 }

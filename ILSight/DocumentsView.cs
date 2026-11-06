@@ -67,7 +67,7 @@ internal static class DocumentsView
     /// <summary>The tab's document in the code view, with its bookmarks, or the note saying why it has none.</summary>
     public static void RenderCode(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
-        var lines = !tab.IsBusy && tab.Node != null && tab.Document.Error == null ? bookmarks.LinesIn(tab.Document, tab.Node) : null;
+        var lines = !tab.IsBusy && tab.Node != null && tab.Document.Error == null ? ListMarkedLines(bookmarks, tab.Document, tab.Node) : null;
         var view = ui.State.Documents.ViewOf(tab);
         var document = FindDocumentToShow(ui.State, view, tab);
         var result = ui.CodeView("code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display);
@@ -143,7 +143,7 @@ internal static class DocumentsView
     private static void ToggleLineBookmark(UiState screen, AppState appState, DocumentTab tab, int line, Strings t)
     {
         var toggle = ToggleBookmark(appState, tab, line, number => t.BookmarksDefaultName(number));
-        screen.BookmarksPanel.Take(toggle, appState.Bookmarks.Items);
+        TakeToggle(screen.BookmarksPanel, toggle, appState.Bookmarks.Items);
     }
 
     public static DockTab Tab(UiState screen, DocumentTabs tabs, DocumentTab tab)

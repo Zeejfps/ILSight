@@ -26,7 +26,7 @@ internal static class BookmarksPanelView
     {
         var t = ui.State.Strings;
         var panel = ui.State.BookmarksPanel;
-        panel.Follow(bookmarks.Items);
+        FollowList(panel, bookmarks.Items);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, bookmarks);
         ui.Separator();
@@ -76,7 +76,7 @@ internal static class BookmarksPanelView
         if (body.Activated && panel.Renaming == null)
             ui.State.Later(selected, static (a, b) => GoToBookmark(a, b));
         if (body.EditRequested && panel.Cells.Column == NameColumn)
-            panel.StartRename(selected);
+            StartRename(panel, selected);
         if (body.CopyRequested && panel.Cells.HasCell)
             ui.ClipboardText = Copied(selected, panel.Cells);
         if (body.ContextMenuRequested)
@@ -251,7 +251,7 @@ internal static class BookmarksPanelView
         if (result == InlineEditResult.Committed)
             CommitRename(ui.State, panel);
         else
-            panel.CancelRename();
+            panel.Renaming = null;
         panel.Cells.StopEditing();
         if (stillHere || result == InlineEditResult.Cancelled)
             ui.Focus(ListId, takesText: false);
@@ -314,8 +314,8 @@ internal static class BookmarksPanelView
     /// <summary>Removes <paramref name="bookmark"/>, passing its selection to the bookmark now in its row.</summary>
     internal static void Remove(BookmarksPanel panel, BookmarkList bookmarks, Bookmark bookmark)
     {
-        var row = bookmarks.Remove(bookmark);
-        panel.TakeRemoved(bookmark, row, bookmarks.Items);
+        var row = Bookmarks.Remove(bookmarks, bookmark);
+        TakeRemoved(panel, bookmark, row, bookmarks.Items);
     }
 
     /// <summary>Goes to the next enabled bookmark after the selected one, or the previous when
@@ -332,18 +332,18 @@ internal static class BookmarksPanelView
     {
         panel.Cells.SelectColumn(NameColumn);
         panel.Cells.Edit();
-        panel.StartRename(bookmark);
+        StartRename(panel, bookmark);
     }
 
     /// <summary>Gives the bookmark being renamed the name typed, unless it is blank, and ends the rename.</summary>
     private static void CommitRename(UiState screen, BookmarksPanel panel)
     {
-        var bookmark = panel.EndRename();
+        var bookmark = EndRename(panel);
         if (bookmark == null)
             return;
-        screen.Later((bookmark, name: panel.RenameText), static (a, s) => a.Bookmarks.Rename(s.bookmark, s.name));
+        screen.Later((bookmark, name: panel.RenameText), static (a, s) => Rename(a.Bookmarks, s.bookmark, s.name));
     }
 
     private static void ToggleEnabled(AppState appState, Bookmark bookmark) =>
-        appState.Bookmarks.SetEnabled(bookmark, !bookmark.Enabled);
+        SetEnabled(appState.Bookmarks, bookmark, !bookmark.Enabled);
 }

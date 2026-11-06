@@ -7,6 +7,232 @@ namespace ILSight;
 /// <summary>Marking lines with bookmarks, going to them, and exporting and importing them.</summary>
 public static class Bookmarks
 {
+    /// <summary>Adds <paramref name="bookmark"/>, unless a bookmark marks its line already; returns
+    /// whether it was added.</summary>
+    public static bool Add(BookmarkList list, Bookmark bookmark)
+    {
+        if (IsMarked(list, bookmark))
+            return false;
+        list.Items.Add(bookmark);
+        list.Revision++;
+        return true;
+    }
+
+    private static bool IsMarked(BookmarkList list, Bookmark bookmark)
+    {
+        return list.Items.Exists(bookmark.MarksSameLine);
+    }
+
+    /// <summary>Removes <paramref name="bookmark"/>; returns the row it was in, or -1 when it was not listed.</summary>
+    public static int Remove(BookmarkList list, Bookmark bookmark)
+    {
+        var index = list.Items.IndexOf(bookmark);
+        if (index < 0)
+            return -1;
+        list.Items.RemoveAt(index);
+        list.Revision++;
+        return index;
+    }
+
+    public static void SetEnabled(BookmarkList list, Bookmark bookmark, bool enabled)
+    {
+        if (bookmark.Enabled == enabled) return;
+        bookmark.Enabled = enabled;
+        list.Revision++;
+    }
+
+    /// <summary>Gives <paramref name="bookmark"/> the name <paramref name="name"/>, trimmed, unless it is blank.</summary>
+    public static void Rename(BookmarkList list, Bookmark bookmark, string name)
+    {
+        var trimmed = name.Trim();
+        if (trimmed.Length == 0)
+            return;
+        if (trimmed == bookmark.Name)
+            return;
+        bookmark.Name = trimmed;
+        list.Revision++;
+    }
+
+    /// <summary>The next enabled bookmark after <paramref name="from"/>, or the previous when
+    /// <paramref name="direction"/> is negative, wrapping around; null when none is enabled.</summary>
+    public static Bookmark? FindNext(BookmarkList list, Bookmark? from, int direction)
+    {
+        var count = list.Items.Count;
+        var start = FindStepStart(list, from, direction);
+        for (var step = 1; step <= count; step++)
+        {
+            var index = ((start + Math.Sign(direction) * step) % count + count) % count;
+            if (!list.Items[index].Enabled) continue;
+            return list.Items[index];
+        }
+        return null;
+    }
+
+    /// <summary>The row stepping starts from: <paramref name="from"/>'s, or just before the first or
+    /// after the last.</summary>
+    private static int FindStepStart(BookmarkList list, Bookmark? from, int direction)
+    {
+        var index = FindRow(list, from);
+        if (index >= 0)
+            return index;
+        if (direction > 0)
+            return -1;
+        return list.Items.Count;
+    }
+
+    private static int FindRow(BookmarkList list, Bookmark? bookmark)
+    {
+        if (bookmark == null)
+            return -1;
+        return list.Items.IndexOf(bookmark);
+    }
+
+    /// <summary>The first bookmark marking <paramref name="line"/> of <paramref name="document"/>,
+    /// shown for <paramref name="node"/>.</summary>
+    public static Bookmark? FindAt(BookmarkList list, DecompiledDocument document, BrowseNode node, int line)
+    {
+        foreach (var bookmark in list.Items)
+        {
+            if (bookmark.FindLine(document, node) == line)
+                return bookmark;
+        }
+        return null;
+    }
+
+    /// <summary>The lines of <paramref name="document"/>, shown for <paramref name="node"/>, that
+    /// bookmarks mark, each with whether one marking it is enabled. Runs every frame a document shows.</summary>
+    public static IReadOnlyDictionary<int, bool> ListMarkedLines(BookmarkList list, DecompiledDocument document, BrowseNode node)
+    {
+        var marks = list.MarksByDocument.GetOrCreateValue(document);
+        if (marks.Revision == list.Revision && Equals(marks.Place, node.Path)) return marks.Lines;
+        marks.Revision = list.Revision;
+        marks.Place = node.Path;
+        marks.Lines.Clear();
+        foreach (var bookmark in list.Items)
+        {
+            var line = bookmark.FindLine(document, node);
+            if (line >= 0)
+                marks.Lines[line] = marks.Lines.GetValueOrDefault(line) || bookmark.Enabled;
+        }
+        return marks.Lines;
+    }
+
+    /// <summary>The first of <paramref name="format"/>(1), (2), … that no bookmark is called.</summary>
+    public static string CreateName(BookmarkList list, Func<int, string> format)
+    {
+        for (var n = 1; ; n++)
+        {
+            var name = format(n);
+            if (!list.Items.Exists(b => b.Name == name))
+                return name;
+        }
+    }
+
+    public static List<BookmarkRecord> ListRecords(BookmarkList list)
+    {
+        return list.Items.ConvertAll(static b => b.ToRecord());
+    }
+
+    /// <summary>Replaces the list with the bookmarks in <paramref name="saved"/> that know their place.
+    /// Returns how many were left out because one before them marks the same line.</summary>
+    public static int LoadBookmarks(BookmarkList list, IEnumerable<BookmarkRecord>? saved)
+    {
+        var bookmarks = (saved ?? []).Select(static r => r.Location != null ? Bookmark.FromRecord(r, r.Location) : null)
+            .OfType<Bookmark>();
+        return Import(list, bookmarks, BookmarkImportMode.Replace);
+    }
+
+    /// <summary>Takes <paramref name="node"/>, found where <paramref name="bookmark"/> was made, as its place,
+    /// so that it is saved with the labels the node shows now.</summary>
+    public static void Resolve(BookmarkList list, Bookmark bookmark, BrowseNode node)
+    {
+        bookmark.Place = node.Path;
+        list.Revision++;
+    }
+
+    /// <summary>Adds <paramref name="bookmarks"/>, after dropping every bookmark first when replacing,
+    /// leaving out the ones that mark a line already marked. Returns how many were left out.</summary>
+    public static int Import(BookmarkList list, IEnumerable<Bookmark> bookmarks, BookmarkImportMode mode)
+    {
+        if (mode == BookmarkImportMode.Replace)
+            list.Items.Clear();
+        var leftOut = 0;
+        foreach (var bookmark in bookmarks)
+        {
+            if (IsMarked(list, bookmark))
+            {
+                leftOut++;
+                continue;
+            }
+            list.Items.Add(bookmark);
+        }
+        list.Revision++;
+        return leftOut;
+    }
+
+    /// <summary>Selects the bookmark a toggle added, or passes the selection of the one it removed to
+    /// the bookmark now in its row.</summary>
+    public static void TakeToggle(BookmarksPanel panel, BookmarkToggle toggle, IReadOnlyList<Bookmark> bookmarks)
+    {
+        switch (toggle)
+        {
+            case BookmarkToggle.Added added:
+                panel.Selection.Select(added.Bookmark, bookmarks);
+                break;
+            case BookmarkToggle.Removed removed:
+                TakeRemoved(panel, removed.Bookmark, removed.Row, bookmarks);
+                break;
+        }
+    }
+
+    /// <summary>Passes the selection of <paramref name="bookmark"/>, removed from <paramref name="row"/>, to the
+    /// bookmark now in its row, and ends its rename.</summary>
+    public static void TakeRemoved(BookmarksPanel panel, Bookmark bookmark, int row, IReadOnlyList<Bookmark> bookmarks)
+    {
+        if (panel.Renaming == bookmark)
+            panel.Renaming = null;
+        if (panel.Selection.Item != bookmark)
+            return;
+        SelectInRow(panel, row, bookmarks);
+    }
+
+    /// <summary>Selects the bookmark in <paramref name="row"/>, or the last when there are fewer.</summary>
+    private static void SelectInRow(BookmarksPanel panel, int row, IReadOnlyList<Bookmark> bookmarks)
+    {
+        var kept = Math.Min(row, bookmarks.Count - 1);
+        if (kept < 0)
+        {
+            panel.Selection.Clear();
+            return;
+        }
+        panel.Selection.Select(bookmarks[kept], bookmarks, reveal: false);
+    }
+
+    /// <summary>Forgets the rename of a bookmark that is gone, as importing in its place drops it.</summary>
+    public static void FollowList(BookmarksPanel panel, IReadOnlyList<Bookmark> bookmarks)
+    {
+        if (panel.Renaming == null)
+            return;
+        if (bookmarks.Contains(panel.Renaming))
+            return;
+        panel.Renaming = null;
+    }
+
+    public static void StartRename(BookmarksPanel panel, Bookmark bookmark)
+    {
+        panel.Renaming = bookmark;
+        panel.RenameText = bookmark.Name;
+        panel.FocusRename = true;
+    }
+
+    /// <summary>Ends the rename, returning the bookmark that was being renamed, or null.</summary>
+    public static Bookmark? EndRename(BookmarksPanel panel)
+    {
+        var bookmark = panel.Renaming;
+        panel.Renaming = null;
+        return bookmark;
+    }
+
     /// <summary>Removes the bookmark marking <paramref name="line"/> of <paramref name="tab"/>'s
     /// document, or bookmarks the line, naming the bookmark by the statement or definition on it
     /// when it has one. Returns which it did. <paramref name="nameOf"/> names a new bookmark by a number,
@@ -18,7 +244,7 @@ public static class Bookmarks
             return new BookmarkToggle.Unchanged();
         if (!CanBookmarkLine(tab, line))
             return new BookmarkToggle.Unchanged();
-        var existing = appState.Bookmarks.At(tab.Document, node, line);
+        var existing = FindAt(appState.Bookmarks, tab.Document, node, line);
         if (existing != null)
             return RemoveBookmark(appState, existing);
         return AddBookmark(appState, tab, node, line, nameOf);
@@ -26,7 +252,7 @@ public static class Bookmarks
 
     private static BookmarkToggle RemoveBookmark(AppState appState, Bookmark bookmark)
     {
-        var row = appState.Bookmarks.Remove(bookmark);
+        var row = Remove(appState.Bookmarks, bookmark);
         return new BookmarkToggle.Removed(bookmark, row);
     }
 
@@ -44,10 +270,10 @@ public static class Bookmarks
     private static BookmarkToggle AddBookmark(AppState appState, DocumentTab tab, BrowseNode node, int line, Func<int, string> nameOf)
     {
         var anchor = tab.Document.AnchorAt(line);
-        var name = appState.Bookmarks.NextName(nameOf);
+        var name = CreateName(appState.Bookmarks, nameOf);
         var info = ILSpyTree.Describe(node, anchor);
         var bookmark = Bookmark.At(node, tab.Language, line, anchor, name, info);
-        appState.Bookmarks.Add(bookmark);
+        Add(appState.Bookmarks, bookmark);
         return new BookmarkToggle.Added(bookmark);
     }
 
@@ -76,7 +302,7 @@ public static class Bookmarks
         switch (found)
         {
             case Outcome<BrowseNode?>.Ok ok when ok.Value != null:
-                appState.Bookmarks.Resolve(bookmark, ok.Value);
+                Resolve(appState.Bookmarks, bookmark, ok.Value);
                 LeaveActiveTab(appState);
                 ShowNodeIn(appState, destination, ok.Value, target: bookmark);
                 appState.History.Push(ok.Value, appState.Language);
@@ -101,7 +327,7 @@ public static class Bookmarks
     /// <paramref name="direction"/> is negative. Returns the bookmark gone to, or null when none is enabled.</summary>
     public static Bookmark? StepBookmark(AppState appState, Bookmark? from, int direction)
     {
-        var bookmark = appState.Bookmarks.Step(from, direction);
+        var bookmark = FindNext(appState.Bookmarks, from, direction);
         if (bookmark == null)
             return null;
         GoToBookmark(appState, bookmark);
@@ -110,7 +336,7 @@ public static class Bookmarks
 
     public static void ExportBookmarks(AppState appState, string path)
     {
-        var records = appState.Bookmarks.Save();
+        var records = ListRecords(appState.Bookmarks);
         var error = BookmarkFile.Write(path, records);
         if (error == null)
             return;
@@ -136,11 +362,11 @@ public static class Bookmarks
         if (read.Unreadable.Count > 0)
             appState.ReportError(new AppProblem.ImportedBookmarksUnreadable(file, read.Unreadable));
         var records = read.Bookmarks;
-        appState.Imports.StartFinding();
+        appState.Imports.Finding++;
         var assemblies = appState.Assemblies;
         var session = appState.Session;
         var found = await Background.Run(() => FindPlaces(assemblies, session, records));
-        appState.Imports.StopFinding();
+        appState.Imports.Finding--;
         TakeImported(appState, found, file);
     }
 
@@ -189,7 +415,7 @@ public static class Bookmarks
             TakeBookmarks(appState, bookmarks, BookmarkImportMode.Replace);
             return;
         }
-        appState.Imports.Wait(new PendingImport(bookmarks));
+        appState.Imports.Waiting.Add(new PendingImport(bookmarks));
     }
 
     private static void ReportLostBookmarks(AppState appState, List<FoundBookmark> found, string file)
@@ -212,7 +438,7 @@ public static class Bookmarks
     /// or drops them when null.</summary>
     public static void FinishBookmarkImport(AppState appState, PendingImport import, BookmarkImportMode? mode)
     {
-        if (!appState.Imports.Finish(import))
+        if (!appState.Imports.Waiting.Remove(import))
             return;
         if (mode == null)
             return;
@@ -223,7 +449,7 @@ public static class Bookmarks
     /// line a bookmark marks already are left out: quietly when merging, and reported when replacing.</summary>
     private static void TakeBookmarks(AppState appState, IReadOnlyList<Bookmark> bookmarks, BookmarkImportMode mode)
     {
-        var leftOut = appState.Bookmarks.Import(bookmarks, mode);
+        var leftOut = Import(appState.Bookmarks, bookmarks, mode);
         if (mode == BookmarkImportMode.Merge)
             return;
         ReportLeftOutBookmarks(appState, leftOut);

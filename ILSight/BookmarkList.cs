@@ -119,175 +119,22 @@ public enum BookmarkImportMode
     Merge,
 }
 
-/// <summary>The user's bookmarks in the order they were made. No two mark the same line. Every change
-/// to the list or a bookmark bumps <see cref="Revision"/>.</summary>
+/// <summary>The user's bookmarks in the order they were made. No two mark the same line, and every change
+/// to the list or a bookmark bumps <see cref="Revision"/>: both are up to the functions on
+/// <see cref="Bookmarks"/>, which are the only things to change it.</summary>
 public sealed class BookmarkList
 {
-    private sealed class Marks
+    /// <summary>The lines of a document that bookmarks mark, as of <see cref="Revision"/>.</summary>
+    public sealed class Marks
     {
         public int Revision = -1;
         public NodePath? Place;
         public readonly Dictionary<int, bool> Lines = new();
     }
 
-    private readonly List<Bookmark> _items = new();
-    private readonly ConditionalWeakTable<DecompiledDocument, Marks> _marks = new();
+    public readonly List<Bookmark> Items = new();
 
-    public IReadOnlyList<Bookmark> Items => _items;
+    public readonly ConditionalWeakTable<DecompiledDocument, Marks> MarksByDocument = new();
 
-    public int Revision { get; private set; }
-
-    /// <summary>Adds <paramref name="bookmark"/>, unless a bookmark marks its line already; returns
-    /// whether it was added.</summary>
-    public bool Add(Bookmark bookmark)
-    {
-        if (IsMarked(bookmark))
-            return false;
-        _items.Add(bookmark);
-        Revision++;
-        return true;
-    }
-
-    private bool IsMarked(Bookmark bookmark) => _items.Exists(bookmark.MarksSameLine);
-
-    /// <summary>Removes <paramref name="bookmark"/>; returns the row it was in, or -1 when it was not listed.</summary>
-    public int Remove(Bookmark bookmark)
-    {
-        var index = _items.IndexOf(bookmark);
-        if (index < 0)
-            return -1;
-        _items.RemoveAt(index);
-        Revision++;
-        return index;
-    }
-
-    public void SetEnabled(Bookmark bookmark, bool enabled)
-    {
-        if (bookmark.Enabled == enabled) return;
-        bookmark.Enabled = enabled;
-        Revision++;
-    }
-
-    /// <summary>Gives <paramref name="bookmark"/> the name <paramref name="name"/>, trimmed, unless it is blank.</summary>
-    public void Rename(Bookmark bookmark, string name)
-    {
-        var trimmed = name.Trim();
-        if (trimmed.Length == 0)
-            return;
-        if (trimmed == bookmark.Name)
-            return;
-        bookmark.Name = trimmed;
-        Revision++;
-    }
-
-    /// <summary>The next enabled bookmark after <paramref name="from"/>, or the previous when
-    /// <paramref name="direction"/> is negative, wrapping around; null when none is enabled.</summary>
-    public Bookmark? Step(Bookmark? from, int direction)
-    {
-        var count = _items.Count;
-        var start = StepStart(from, direction);
-        for (var step = 1; step <= count; step++)
-        {
-            var index = ((start + Math.Sign(direction) * step) % count + count) % count;
-            if (!_items[index].Enabled) continue;
-            return _items[index];
-        }
-        return null;
-    }
-
-    /// <summary>The row stepping starts from: <paramref name="from"/>'s, or just before the first or
-    /// after the last.</summary>
-    private int StepStart(Bookmark? from, int direction)
-    {
-        var index = IndexOf(from);
-        if (index >= 0)
-            return index;
-        if (direction > 0)
-            return -1;
-        return _items.Count;
-    }
-
-    private int IndexOf(Bookmark? bookmark)
-    {
-        if (bookmark == null)
-            return -1;
-        return _items.IndexOf(bookmark);
-    }
-
-    /// <summary>The first bookmark marking <paramref name="line"/> of <paramref name="document"/>,
-    /// shown for <paramref name="node"/>.</summary>
-    public Bookmark? At(DecompiledDocument document, BrowseNode node, int line)
-    {
-        foreach (var bookmark in _items)
-        {
-            if (bookmark.FindLine(document, node) == line)
-                return bookmark;
-        }
-        return null;
-    }
-
-    /// <summary>The lines of <paramref name="document"/>, shown for <paramref name="node"/>, that
-    /// bookmarks mark, each with whether one marking it is enabled.</summary>
-    public IReadOnlyDictionary<int, bool> LinesIn(DecompiledDocument document, BrowseNode node)
-    {
-        var marks = _marks.GetOrCreateValue(document);
-        if (marks.Revision == Revision && Equals(marks.Place, node.Path)) return marks.Lines;
-        marks.Revision = Revision;
-        marks.Place = node.Path;
-        marks.Lines.Clear();
-        foreach (var bookmark in _items)
-        {
-            var line = bookmark.FindLine(document, node);
-            if (line >= 0)
-                marks.Lines[line] = marks.Lines.GetValueOrDefault(line) || bookmark.Enabled;
-        }
-        return marks.Lines;
-    }
-
-    /// <summary>The first of <paramref name="format"/>(1), (2), … that no bookmark is called.</summary>
-    public string NextName(Func<int, string> format)
-    {
-        for (var n = 1; ; n++)
-        {
-            var name = format(n);
-            if (!_items.Exists(b => b.Name == name))
-                return name;
-        }
-    }
-
-    public List<BookmarkRecord> Save() => _items.ConvertAll(static b => b.ToRecord());
-
-    /// <summary>Replaces the list with the bookmarks in <paramref name="saved"/> that know their place.
-    /// Returns how many were left out because one before them marks the same line.</summary>
-    public int Load(IEnumerable<BookmarkRecord>? saved) =>
-        Import((saved ?? []).Select(static r => r.Location != null ? Bookmark.FromRecord(r, r.Location) : null)
-            .OfType<Bookmark>(), BookmarkImportMode.Replace);
-
-    /// <summary>Takes <paramref name="node"/>, found where <paramref name="bookmark"/> was made, as its place,
-    /// so that it is saved with the labels the node shows now.</summary>
-    public void Resolve(Bookmark bookmark, BrowseNode node)
-    {
-        bookmark.Place = node.Path;
-        Revision++;
-    }
-
-    /// <summary>Adds <paramref name="bookmarks"/>, after dropping every bookmark first when replacing,
-    /// leaving out the ones that mark a line already marked. Returns how many were left out.</summary>
-    public int Import(IEnumerable<Bookmark> bookmarks, BookmarkImportMode mode)
-    {
-        if (mode == BookmarkImportMode.Replace)
-            _items.Clear();
-        var leftOut = 0;
-        foreach (var bookmark in bookmarks)
-        {
-            if (IsMarked(bookmark))
-            {
-                leftOut++;
-                continue;
-            }
-            _items.Add(bookmark);
-        }
-        Revision++;
-        return leftOut;
-    }
+    public int Revision;
 }

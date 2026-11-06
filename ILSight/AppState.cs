@@ -216,7 +216,7 @@ public sealed class AppState
         Tabs.MakeActive(first);
         Analyzer = new AnalyzerTree();
         Lists.Load(settings.AssemblyLists, settings.ActiveAssemblyList);
-        leftOutBookmarks = Bookmarks.Load(settings.Bookmarks);
+        leftOutBookmarks = LoadBookmarks(Bookmarks, settings.Bookmarks);
         Analyzer.AddPending(Lists.ActiveAnalyses);
     }
 

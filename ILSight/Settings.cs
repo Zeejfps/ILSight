@@ -115,7 +115,7 @@ public static class Settings
             ApiVisibility = appState.ApiVisibility,
             CheckForUpdates = appState.Updates.CheckAutomatically,
             Locale = appState.Locale,
-            Bookmarks = appState.Bookmarks.Save(),
+            Bookmarks = ILSight.Bookmarks.ListRecords(appState.Bookmarks),
             Window = appState.Window,
             BookmarkColumns = view.BookmarkColumns,
             SearchColumns = view.SearchColumns,
