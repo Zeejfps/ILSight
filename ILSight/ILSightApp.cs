@@ -138,10 +138,10 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// are drawn in, and lets go of the pictures of the icons they replace.</summary>
     private static void FollowIconTheme(Ui<UiState> ui)
     {
-        var shown = ui.State.ShownIcons;
-        if (!shown.TakeChange(ui.State.Icons, ui.State.IconFonts))
+        IReadOnlyList<FontFace> before = ui.State.ShownIcons?.Fonts ?? [];
+        if (!ShownChanges.TakeIcons(ui.State, ui.State.Icons, ui.State.IconFonts))
             return;
-        foreach (var family in shown.DroppedFamilies)
+        foreach (var family in ShownChanges.ListDroppedFamilies(before, ui.State.IconFonts))
             ui.UnregisterFont(family);
         foreach (var font in ui.State.IconFonts)
             ui.RegisterFont(font);
@@ -166,13 +166,13 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     private static FontFace? TakeCodeFontFace(UiState uiState, CodeFontFaces codeFonts)
     {
         var chosen = uiState.Display.Font;
-        if (!uiState.ShownCodeFont.TakeChange(chosen))
+        if (!ShownChanges.TakeCodeFont(uiState, chosen))
             return null;
         var face = codeFonts.FaceOf(chosen);
         if (face != null)
             return face;
         SetCodeFont(uiState, null);
-        uiState.ShownCodeFont.TakeChange(null);
+        ShownChanges.TakeCodeFont(uiState, null);
         return codeFonts.Bundled;
     }
 
@@ -219,7 +219,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     private void RegisterChosenIconFonts(ImmediateGuiAppHost<UiState> host)
     {
         ApplyIconTheme(UiState, ResolveIconTheme(_appState));
-        if (!UiState.ShownIcons.TakeChange(UiState.Icons, UiState.IconFonts))
+        if (!ShownChanges.TakeIcons(UiState, UiState.Icons, UiState.IconFonts))
             return;
         foreach (var font in UiState.IconFonts)
             host.RegisterFont(font);

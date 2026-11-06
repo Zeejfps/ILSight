@@ -21,7 +21,7 @@ public static class Trees
 
     private static void ForgetClearedList(UiState uiState, AssemblyList assemblies)
     {
-        if (!uiState.ShownList.TakeChange(assemblies.Generation))
+        if (!ShownChanges.TakeListGeneration(uiState, assemblies.Generation))
             return;
         uiState.Tree.Forget();
         uiState.MenuTarget = null;

@@ -39,7 +39,7 @@ public sealed class UiState : IUiState
         Analyzer = new AnalyzerRows(AppCommands);
         MainLayout = RestoreLayout(this, saved.Layout);
         Documents.SkipPanels(MainLayout.ListDocuments());
-        KeptView.Keep(CaptureViewSources(this));
+        KeptView = CaptureViewSources(this);
     }
 
     /// <summary>The strings of the language the screen speaks now, for what reports to the app state later.</summary>
@@ -56,7 +56,7 @@ public sealed class UiState : IUiState
     public IReadOnlyList<FontFace> IconFonts { get; set; } = BuiltInIconThemes.Reference.Fonts;
 
     /// <summary>The icons the screen was last drawn with.</summary>
-    public ShownIcons ShownIcons { get; } = new();
+    public (AppIcons Icons, IReadOnlyList<FontFace> Fonts)? ShownIcons;
     public Strings Strings { get; set; } = Strings.En;
 
     /// <summary>What the screen asked of the app state while it drew, for the app to run once the frame is drawn.</summary>
@@ -87,7 +87,7 @@ public sealed class UiState : IUiState
     public TabFocusTry LastTabFocusTry = new(-1, -1);
 
     /// <summary>The language and options the tabs in front were last brought up to date with.</summary>
-    public ShownDecompilation ShownDecompilation { get; } = new();
+    public (DecompilationLanguage Language, DecompilerOptions Options)? ShownDecompilation;
 
     /// <summary>Set while the user is asked whether to reset the layout.</summary>
     public bool ConfirmingLayoutReset;
@@ -99,7 +99,7 @@ public sealed class UiState : IUiState
     public BrowseTree Tree { get; }
 
     /// <summary>Which assembly list the tree last showed.</summary>
-    public ShownList ShownList { get; } = new();
+    public int ShownListGeneration;
 
     /// <summary>The node the tree's context menu was opened on.</summary>
     public BrowseNode? MenuTarget;
@@ -160,10 +160,11 @@ public sealed class UiState : IUiState
     public CodeFontChoices CodeFonts { get; } = new();
 
     /// <summary>The font code was last drawn in.</summary>
-    public ShownCodeFont ShownCodeFont { get; } = new();
+    public CodeFont? ShownCodeFont;
 
-    /// <summary>What the settings last kept of the screen.</summary>
-    public KeptView KeptView { get; } = new();
+    /// <summary>What the settings last kept of the screen, by what it was made from, so that it is handed
+    /// over again only once something in it changed.</summary>
+    public ViewSources KeptView;
 
     public BookmarksPanel BookmarksPanel { get; } = new();
 

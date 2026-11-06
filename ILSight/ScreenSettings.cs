@@ -7,7 +7,7 @@ public static class ScreenSettings
     public static ViewSettings? TakeChangedViewSettings(UiState uiState)
     {
         var sources = CaptureViewSources(uiState);
-        if (!uiState.KeptView.HasChanged(sources))
+        if (sources == uiState.KeptView)
             return null;
         return TakeViewSettings(uiState);
     }
@@ -15,7 +15,7 @@ public static class ScreenSettings
     /// <summary>What the settings keep of the screen as it is now, changed or not, as before the last save.</summary>
     public static ViewSettings TakeViewSettings(UiState uiState)
     {
-        uiState.KeptView.Keep(CaptureViewSources(uiState));
+        uiState.KeptView = CaptureViewSources(uiState);
         return CreateViewSettings(uiState);
     }
 

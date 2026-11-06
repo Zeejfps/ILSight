@@ -65,7 +65,7 @@ public sealed partial class ILSightApp
     private static void FollowDecompilation(UiState uiState, AppState appState)
     {
         var language = appState.Language;
-        if (!uiState.ShownDecompilation.TakeChange(language, appState.DecompilerOptions))
+        if (!ShownChanges.TakeDecompilation(uiState, language, appState.DecompilerOptions))
             return;
         foreach (var tab in ListFrontTabs(uiState))
             DecompileAgainIfOutdated(appState, tab);
