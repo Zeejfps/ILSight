@@ -209,7 +209,7 @@ public sealed class AppState
         Assemblies.UseLoadOptions(DecompilerOptions);
         Locale = ChooseLocale(settings);
         ApiVisibility = settings.ApiVisibility;
-        Updates = new AppUpdates(new GitHubUpdateFeed(), settings.CheckForUpdates);
+        Updates = new AppUpdates(GitHubUpdates.Feed(), settings.CheckForUpdates);
         var first = AddTab();
         Tabs.MakeActive(first);
         Analyzer = new AnalyzerTree();

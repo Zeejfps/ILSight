@@ -17,7 +17,7 @@ public sealed class UpdateTests : IDisposable
     public void Dispose() => _temp.Dispose();
 
     /// <summary>A feed that answers from memory, and can be made to fail at any step.</summary>
-    private sealed class FakeFeed(string? newest) : IUpdateFeed
+    private sealed class FakeFeed(string? newest)
     {
         public bool IsInstalled { get; init; } = true;
         public bool FailsToFind { get; init; }
@@ -70,7 +70,8 @@ public sealed class UpdateTests : IDisposable
     private static AppDriver Opened(FakeFeed feed, bool checkAutomatically = true, ITextMeasurer? measurer = null)
     {
         var app = AppDriver.Opened(width: 1600f, measurer: measurer);
-        app.AppState.Updates = new AppUpdates(feed, checkAutomatically);
+        app.AppState.Updates = new AppUpdates(
+            new UpdateFeed(() => feed.IsInstalled, feed.FindUpdate, feed.Download, feed.ApplyAfterExit), checkAutomatically);
         app.Run();
         return app;
     }
@@ -170,7 +171,7 @@ public sealed class UpdateTests : IDisposable
         app.Run(2);
 
         Assert.True(app.Frames.Drew(Strings.En.AboutUpdateFailed));
-        Assert.True(app.AppState.Updates.CanCheck);
+        Assert.True(CanCheck(app.AppState.Updates));
     }
 
     [Theory]
