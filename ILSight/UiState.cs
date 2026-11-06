@@ -33,8 +33,8 @@ public sealed class UiState : IUiState
         Picker = new FrameworkPicker(ReadStrings, reportError);
         NuGetPicker = new NuGetPicker(ReadStrings, reportError);
         NuGetPicker.Restore(saved.NuGet);
-        NuGetPicker.Window.Restore(saved.NuGetWindow);
-        ExportSetup.Window.Restore(saved.ExportWindow);
+        DialogWindows.Restore(NuGetPicker.Window, saved.NuGetWindow);
+        DialogWindows.Restore(ExportSetup.Window, saved.ExportWindow);
         Display = saved.Display ?? DisplayOptions.Default;
         Analyzer = new AnalyzerRows(AppCommands);
         MainLayout = RestoreLayout(this, saved.Layout);

@@ -13,7 +13,7 @@ public static class ILSightAppLauncher
     /// opens the app.</summary>
     public static void LaunchApp(LaunchConfig config, RunArguments arguments)
     {
-        var address = RunArgumentsAddress.ForSettingsFile(config.SettingsPath);
+        var address = RunArgumentsRouting.FindAddress(config.SettingsPath);
 
         using var receiver = RunArgumentsRouting.ForwardOrReceive(address, arguments, config.NewInstance);
         if (receiver == null)

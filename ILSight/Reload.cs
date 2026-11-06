@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace ILSight;
 
 /// <summary>The reload of the assemblies from disk that counts. Starting or stopping one cancels the
@@ -37,7 +39,7 @@ public sealed class Reload
 }
 
 /// <summary>Given for one reload by <see cref="Reload.Start"/>.</summary>
-public sealed class ReloadTicket
+public sealed record ReloadTicket
 {
     internal ReloadTicket(int id, CancellationTokenSource work)
     {
@@ -50,4 +52,10 @@ public sealed class ReloadTicket
     internal CancellationTokenSource Work { get; }
 
     public CancellationToken Token => Work.Token;
+
+    // Stops ToString at the record's name: Token throws once the work is disposed.
+    private bool PrintMembers(StringBuilder builder)
+    {
+        return false;
+    }
 }

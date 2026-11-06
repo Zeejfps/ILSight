@@ -574,6 +574,13 @@ public sealed class NuGetPicker
     private void FetchIcon(NuGetSetup setup, WebUrl url, PackageIcon icon) =>
         Background.Start(FetchIconAsync(setup, url, icon), _reportError);
 
+    private static void ShowIcon(PackageIcon icon, ResourceImage? pixels)
+    {
+        if (pixels == null)
+            return;
+        icon.Shown = new ShownIcon(icon.ImageId, pixels, pixels.IsDarkOnClear());
+    }
+
     private async Task FetchIconAsync(NuGetSetup setup, WebUrl url, PackageIcon icon)
     {
         var token = _fetches.Token;
@@ -581,7 +588,7 @@ public sealed class NuGetPicker
         if (token.IsCancellationRequested)
             return;
         if (fetched is Outcome<ResourceImage>.Ok ok)
-            icon.Show(ok.Value);
+            ShowIcon(icon, ok.Value);
     }
 
     /// <summary>What the feed says of <paramref name="version"/> of <paramref name="package"/>, read
@@ -777,19 +784,10 @@ public sealed class NuGetPicker
 }
 
 /// <summary>A package's icon: the image the screen draws it as, and what it shows once its pixels are in.</summary>
-public sealed class PackageIcon(string imageId)
+public sealed record PackageIcon(string ImageId)
 {
-    public string ImageId { get; } = imageId;
-
     /// <summary>The icon's pixels as drawn; null until they are in.</summary>
-    public ShownIcon? Shown { get; private set; }
-
-    public void Show(ResourceImage? pixels)
-    {
-        if (pixels == null)
-            return;
-        Shown = new ShownIcon(ImageId, pixels, pixels.IsDarkOnClear());
-    }
+    public ShownIcon? Shown { get; set; }
 }
 
 /// <summary>An icon's pixels, drawn as the image <paramref name="ImageId"/>, with whether they are dark

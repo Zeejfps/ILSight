@@ -234,7 +234,7 @@ public sealed class AppSettingsTests : IDisposable
     {
         var d = new AppStateDriver(AppSettings.Load(SettingsFile).Settings);
         d.Ui.ExportSetup.Window.Bounds = new WindowBounds(-900, 200, 700, 800, false);
-        d.Ui.ExportSetup.Window.Settle(held: false);
+        DialogWindows.Settle(d.Ui.ExportSetup.Window, held: false);
         d.NextFrame();
         SaveSettings(d.AppState);
 

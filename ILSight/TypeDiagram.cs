@@ -130,17 +130,17 @@ public sealed class TypeDiagram
     }
 
     /// <summary>Starts a layout, cancelling the one in flight.</summary>
-    public LayoutTicket StartLayout()
+    public LoadTicket StartLayout()
     {
         _layout?.Cancel();
         var work = CancellationTokenSource.CreateLinkedTokenSource(_open.Token);
         _layout = work;
-        return new LayoutTicket(work);
+        return new LoadTicket(work);
     }
 
     /// <summary>Ends the layout <paramref name="ticket"/> was given for. False when another started since,
     /// or the diagram was closed, and what it laid out should be dropped.</summary>
-    public bool FinishLayout(LayoutTicket ticket)
+    public bool FinishLayout(LoadTicket ticket)
     {
         ticket.Work.Dispose();
         if (_layout != ticket.Work)
@@ -161,17 +161,4 @@ public sealed class TypeDiagram
         _open.Cancel();
         _layout = null;
     }
-}
-
-/// <summary>Given for one layout of a diagram by <see cref="TypeDiagram.StartLayout"/>.</summary>
-public sealed class LayoutTicket
-{
-    internal LayoutTicket(CancellationTokenSource work)
-    {
-        Work = work;
-    }
-
-    internal CancellationTokenSource Work { get; }
-
-    public CancellationToken Token => Work.Token;
 }

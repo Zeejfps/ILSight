@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.Core.Resources;
@@ -327,8 +328,9 @@ public sealed class DocumentTab
     }
 }
 
-/// <summary>Given for one load of what a tab shows by <see cref="DocumentTab.StartLoading"/>.</summary>
-public sealed class LoadTicket
+/// <summary>Given for one load of something shown, whether what a tab shows, a comparison or the layout of a
+/// diagram, to cancel it and to tell whether it was overtaken.</summary>
+public sealed record LoadTicket
 {
     internal LoadTicket(CancellationTokenSource work)
     {
@@ -338,4 +340,10 @@ public sealed class LoadTicket
     internal CancellationTokenSource Work { get; }
 
     public CancellationToken Token => Work.Token;
+
+    // Stops ToString at the record's name: Token throws once the work is disposed.
+    private bool PrintMembers(StringBuilder builder)
+    {
+        return false;
+    }
 }

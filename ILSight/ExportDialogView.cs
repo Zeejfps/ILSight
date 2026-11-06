@@ -37,7 +37,7 @@ internal static class ExportDialogView
     public static void Render(Ui<UiState> ui, DecompilerOptions options)
     {
         Dialog(ui, options);
-        ui.State.ExportSetup.Window.Settle(ui.Input.IsDown(PointerButton.Left));
+        DialogWindows.Settle(ui.State.ExportSetup.Window, ui.Input.IsDown(PointerButton.Left));
     }
 
     private static void Dialog(Ui<UiState> ui, DecompilerOptions options)

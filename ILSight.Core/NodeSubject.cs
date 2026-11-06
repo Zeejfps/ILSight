@@ -195,7 +195,7 @@ public abstract class NodeSubject
 }
 
 /// <summary>An assembly <see cref="Module"/> references, as its metadata names it.</summary>
-public sealed class AssemblyReferenceInfo
+public sealed record AssemblyReferenceInfo
 {
     internal AssemblyReferenceInfo(LoadedModule module, ICSharpCode.Decompiler.Metadata.AssemblyReference reference)
     {
@@ -210,7 +210,7 @@ public sealed class AssemblyReferenceInfo
 
 /// <summary>A type <see cref="Module"/> uses from one of its references: labelled as <c>typeof</c> names
 /// an open generic type, and fully named after the type it is nested in, else after its namespace.</summary>
-public sealed class TypeReferenceInfo
+public sealed record TypeReferenceInfo
 {
     internal TypeReferenceInfo(LoadedModule module, TypeReferenceHandle handle, string ns, string label, string fullName, string reflectionName)
     {
@@ -239,7 +239,7 @@ public sealed class TypeReferenceInfo
 
 /// <summary>A member <see cref="Module"/> uses of a type from one of its references, as the type
 /// declares it: for an accessor, the property or event it belongs to.</summary>
-public sealed class MemberReferenceInfo
+public sealed record MemberReferenceInfo
 {
     internal MemberReferenceInfo(LoadedModule module, MemberReferenceHandle handle, IMember declared, string fullName)
     {
@@ -263,7 +263,7 @@ public sealed class MemberReferenceInfo
 
 /// <summary>A module <see cref="Module"/> references: a native library it calls into, or another module
 /// of the assembly, which holds metadata when the assembly's file table says so.</summary>
-public sealed class ModuleReferenceInfo
+public sealed record ModuleReferenceInfo
 {
     internal ModuleReferenceInfo(LoadedModule module, string name, bool containsMetadata, IReadOnlyList<MethodDefinitionHandle> imports)
     {
@@ -285,7 +285,7 @@ public sealed class ModuleReferenceInfo
 
 /// <summary>A method imported from a module: <see cref="Shown"/> is the method it is labelled and goes
 /// as, which for a stub the compiler generates as a local function is the method declaring it.</summary>
-public sealed class ImportedMethodInfo
+public sealed record ImportedMethodInfo
 {
     internal ImportedMethodInfo(DefinedMember shown, string id, string label, string declaringTypeName, string entryPoint, string moduleName)
     {
@@ -315,7 +315,7 @@ public sealed class ImportedMethodInfo
 }
 
 /// <summary>A type <see cref="Module"/> forwards to the assembly <see cref="Destination"/> names.</summary>
-public sealed class ForwardedTypeInfo
+public sealed record ForwardedTypeInfo
 {
     internal ForwardedTypeInfo(LoadedModule module, ForwardedType type)
     {

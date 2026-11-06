@@ -33,7 +33,7 @@ internal static class NuGetPickerView
         var wasOpen = picker.IsOpen;
         Dialog(ui, picker);
         CloseIfDismissed(ui, picker, wasOpen);
-        picker.Window.Settle(ui.Input.IsDown(PointerButton.Left));
+        DialogWindows.Settle(picker.Window, ui.Input.IsDown(PointerButton.Left));
     }
 
     private static void OpenDownloaded(Ui<UiState> ui, NuGetPicker picker)

@@ -4,33 +4,37 @@ namespace ILSight;
 
 /// <summary>Where a dialog's window is on the screen, kept as it moves, and how often it came to rest
 /// somewhere new, for the settings to keep.</summary>
-public sealed class DialogWindow
+public sealed record DialogWindow
 {
-    private WindowBounds? _resting;
+    /// <summary>Where the window last came to rest.</summary>
+    public WindowBounds? Resting;
 
-    /// <summary>Where the window is; null opens it centered.</summary>
+    /// <summary>Where the window is; null opens it centered. A field, for the dialog to take by <c>ref</c>.</summary>
     public WindowBounds? Bounds;
 
     /// <summary>Counts each time the window comes to rest somewhere new: once for each move or resize,
     /// when the button comes up, never on the frames in between.</summary>
-    public int Changes { get; private set; }
+    public int Changes { get; set; }
+}
 
-    /// <summary>Puts the window where it was left in the last run.</summary>
-    public void Restore(WindowBounds? bounds)
+public static class DialogWindows
+{
+    /// <summary>Puts <paramref name="window"/> where it was left in the last run.</summary>
+    public static void Restore(DialogWindow window, WindowBounds? bounds)
     {
-        Bounds = bounds;
-        _resting = bounds;
+        window.Bounds = bounds;
+        window.Resting = bounds;
     }
 
-    /// <summary>Counts the window as moved once it rests where it was not before, unless
+    /// <summary>Counts <paramref name="window"/> as moved once it rests where it was not before, unless
     /// <paramref name="held"/>, a button still being held, says it may move on.</summary>
-    public void Settle(bool held)
+    public static void Settle(DialogWindow window, bool held)
     {
         if (held)
             return;
-        if (Bounds == _resting)
+        if (window.Bounds == window.Resting)
             return;
-        _resting = Bounds;
-        Changes++;
+        window.Resting = window.Bounds;
+        window.Changes++;
     }
 }
