@@ -1,5 +1,3 @@
-using ILSight.Core.Metadata;
-
 namespace ILSight;
 
 /// <summary>How one open tab is shown: the panel it is docked as, the path its omnibar shows, its code view
@@ -25,7 +23,8 @@ public sealed class TabView
 
     public ShownReport Report { get; } = new();
 
-    private MetadataGridState? _grid;
+    /// <summary>The view of the grid last shown.</summary>
+    public MetadataGridState? Grid;
 
     public PictureView Picture { get; } = new();
 
@@ -35,31 +34,4 @@ public sealed class TabView
 
     /// <summary>The image the tab's picture is drawn as.</summary>
     public string ImageId { get; }
-
-    /// <summary>Starts the picture view over on a new picture.</summary>
-    public void Follow(DocumentTab tab)
-    {
-        PictureViews.Follow(Picture, tab.Image);
-    }
-
-    /// <summary>The view of <paramref name="grid"/>: the one kept for it, or a new one when the tab
-    /// showed another grid, or none, before.</summary>
-    public MetadataGridState GridOf(MetadataGrid grid)
-    {
-        var shown = _grid;
-        if (shown != null && ReferenceEquals(shown.Grid, grid))
-            return shown;
-        shown = new MetadataGridState(grid);
-        _grid = shown;
-        return shown;
-    }
-
-    /// <summary>Where the view of what <paramref name="tab"/> shows stands: its grid's or its code's.</summary>
-    public ViewPosition PositionOf(DocumentTab tab)
-    {
-        var grid = tab.Grid;
-        if (grid != null)
-            return ViewPosition.OfGrid(GridOf(grid).Position);
-        return ViewPosition.OfCode(Code.Position);
-    }
 }

@@ -24,6 +24,179 @@ internal static class OmnibarView
     private const int MenuRows = 12;
     private const float CrumbMinWidth = 24f;
 
+    public static bool IsSearchingIn(Omnibar omnibar, string panel)
+    {
+        return omnibar.SearchingPanel == panel;
+    }
+
+    /// <summary>Has the bar of <paramref name="panel"/> search, from an empty query, its box taking focus.</summary>
+    public static void StartSearch(Omnibar omnibar, string panel)
+    {
+        omnibar.Searching = new Omnibar.OmnibarSearch(panel);
+        omnibar.Search.Clear();
+        omnibar.Menu = null;
+    }
+
+    /// <summary>Has every bar show its path again.</summary>
+    public static void StopSearch(Omnibar omnibar)
+    {
+        omnibar.Searching = null;
+        omnibar.Search.Clear();
+    }
+
+    /// <summary>Whether the list of <paramref name="node"/>'s children is open in the bar of <paramref name="panel"/>.</summary>
+    public static bool IsMenuOpenAt(Omnibar omnibar, string panel, BrowseNode node)
+    {
+        var menu = omnibar.Menu;
+        if (menu == null)
+            return false;
+        if (menu.Panel != panel)
+            return false;
+        return ReferenceEquals(menu.Node, node);
+    }
+
+    /// <summary>Lists the children of <paramref name="node"/> in the bar of <paramref name="panel"/>, with
+    /// <paramref name="next"/>, the crumb after it, to be selected.</summary>
+    public static void OpenMenu(Omnibar omnibar, string panel, BrowseNode node, BrowseNode? next)
+    {
+        omnibar.Menu = new CrumbMenu(panel, node, next);
+    }
+
+    /// <summary>True once after <see cref="StartSearch"/>: the search box should take focus.</summary>
+    private static bool TakeFocus(Omnibar omnibar)
+    {
+        var searching = omnibar.Searching;
+        if (searching == null || !searching.IsFocusPending)
+            return false;
+        searching.IsFocusPending = false;
+        return true;
+    }
+
+    /// <summary>The suggestion to go to: the one selected, else the best match; null when none is suggested.</summary>
+    private static SearchResult? FindSuggestionToShow(Omnibar omnibar)
+    {
+        var selected = omnibar.SelectedSuggestion;
+        if (selected != null)
+            return selected;
+        if (omnibar.SuggestionCount == 0)
+            return null;
+        return omnibar.Search.Rows[0];
+    }
+
+    /// <summary>Selects the suggestion <paramref name="by"/> rows on from the selected one, kept within those suggested.</summary>
+    private static void MoveSuggestion(Omnibar omnibar, int by)
+    {
+        if (omnibar.SuggestionCount == 0)
+            return;
+        omnibar.Search.Move(by);
+        var index = omnibar.Search.Selection.IndexIn(omnibar.Search.Rows);
+        if (index < omnibar.SuggestionCount)
+            return;
+        omnibar.Search.Select(omnibar.Search.Rows[omnibar.SuggestionCount - 1]);
+    }
+
+    /// <summary>True once after <see cref="OpenMenu"/>: the filter should take focus.</summary>
+    private static bool TakeFocus(CrumbMenu menu)
+    {
+        var focus = menu.IsFocusPending;
+        menu.IsFocusPending = false;
+        return focus;
+    }
+
+    /// <summary>The <paramref name="children"/> whose name, as <paramref name="tree"/> labels their rows, holds
+    /// the filter; filtered again only when the children or the filter changed. Runs each frame the menu is
+    /// open, so what filters is a function of its own: a lambda here would allocate its closure at the
+    /// top of this function, on the way to returning what is already known.</summary>
+    private static IReadOnlyList<BrowseNode> ListShown(CrumbMenu menu, IReadOnlyList<BrowseNode> children, BrowseTree tree)
+    {
+        if (IsShowing(menu, children))
+            return menu.Shown;
+        FilterChildren(menu, children, tree);
+        return menu.Shown;
+    }
+
+    private static bool IsShowing(CrumbMenu menu, IReadOnlyList<BrowseNode> children)
+    {
+        if (!ReferenceEquals(children, menu.Children))
+            return false;
+        return menu.Filter == menu.ShownFilter;
+    }
+
+    private static void FilterChildren(CrumbMenu menu, IReadOnlyList<BrowseNode> children, BrowseTree tree)
+    {
+        menu.Children = children;
+        menu.ShownFilter = menu.Filter;
+        menu.Shown.Clear();
+        menu.Shown.AddRange(children.Where(c => HoldsFilter(menu, tree.RowLabel(c))));
+        SelectWaitingChild(menu);
+        menu.Selection.DropIfGone(menu.Shown);
+        SelectFirstMatch(menu);
+    }
+
+    private static bool HoldsFilter(CrumbMenu menu, string name)
+    {
+        return name.Contains(menu.Filter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Selects the crumb after this one once the children built hold it.</summary>
+    private static void SelectWaitingChild(CrumbMenu menu)
+    {
+        if (menu.ToSelect == null)
+            return;
+        if (!menu.Shown.Contains(menu.ToSelect))
+            return;
+        menu.Selection.Select(menu.ToSelect, menu.Shown);
+        menu.ToSelect = null;
+    }
+
+    /// <summary>Selects the first child listed while a filter leaves none selected, for Enter to go to.</summary>
+    private static void SelectFirstMatch(CrumbMenu menu)
+    {
+        if (menu.Filter.Length == 0)
+            return;
+        if (menu.Selection.Item != null)
+            return;
+        if (menu.Shown.Count == 0)
+            return;
+        menu.Selection.Select(menu.Shown[0], menu.Shown);
+    }
+
+    /// <summary>Follows <paramref name="node"/> as <paramref name="tree"/> shows it; none when it is null.
+    /// Runs each frame, so listing the crumbs is a function of its own, for the reason <see cref="ListShown"/> gives.</summary>
+    private static void FollowPath(Breadcrumb breadcrumb, BrowseNode? node, BrowseTree tree)
+    {
+        if (IsCurrent(breadcrumb, node, tree))
+            return;
+        breadcrumb.Node = node;
+        breadcrumb.TreeRevision = tree.Revision;
+        breadcrumb.Crumbs = ListCrumbs(node, tree);
+    }
+
+    private static bool IsCurrent(Breadcrumb breadcrumb, BrowseNode? node, BrowseTree tree)
+    {
+        if (!ReferenceEquals(node, breadcrumb.Node))
+            return false;
+        return tree.Revision == breadcrumb.TreeRevision;
+    }
+
+    private static Crumb[] ListCrumbs(BrowseNode? node, BrowseTree tree)
+    {
+        if (node == null)
+            return [];
+        return tree.ListPathTo(node)
+            .Select(n => new Crumb(n, GetCrumbLabel(n, tree)))
+            .ToArray();
+    }
+
+    /// <summary>An assembly's name as its tab titles it, with the version that tells apart those of one
+    /// name; any other node's as its row labels it.</summary>
+    private static string GetCrumbLabel(BrowseNode node, BrowseTree tree)
+    {
+        if (node.Subject is NodeSubject.Module)
+            return tree.Label(node);
+        return tree.RowLabel(node);
+    }
+
     public static void Render(Ui<UiState> ui, DocumentTab tab)
     {
         if (!ui.State.Display.ShowOmnibar)
@@ -41,24 +214,24 @@ internal static class OmnibarView
     private static bool ContinueSearch(Ui<UiState> ui, string panel)
     {
         var omnibar = ui.State.Omnibar;
-        if (!omnibar.IsSearchingIn(panel))
+        if (!IsSearchingIn(omnibar, panel))
             return false;
         var fieldId = ui.GetId(SearchFieldId);
-        if (omnibar.TakeFocus())
+        if (TakeFocus(omnibar))
         {
             ui.Focus(fieldId);
             return true;
         }
         if (ui.HasFocus(fieldId))
             return true;
-        omnibar.StopSearch();
+        StopSearch(omnibar);
         return false;
     }
 
     private static void PathBar(Ui<UiState> ui, DocumentTab tab, string panel)
     {
         var view = ui.State.Documents.ViewOf(tab);
-        view.Breadcrumb.Follow(tab.Node, ui.State.Tree);
+        FollowPath(view.Breadcrumb, tab.Node, ui.State.Tree);
         var crumbs = view.Breadcrumb.Crumbs;
         var menuOwner = 0;
         using (ui.PaneToolbar(new Box { Gap = 0f }))
@@ -156,7 +329,7 @@ internal static class OmnibarView
         var i = ui.Interact("children");
         if (i.Clicked)
             ToggleChildren(omnibar, panel, crumbs, index);
-        var open = omnibar.IsMenuOpenAt(panel, node);
+        var open = IsMenuOpenAt(omnibar, panel, node);
         using (ui.Box(i.Id, new Box
         {
             Width = theme.IconSize,
@@ -177,12 +350,12 @@ internal static class OmnibarView
     private static void ToggleChildren(Omnibar omnibar, string panel, IReadOnlyList<Crumb> crumbs, int index)
     {
         var node = crumbs[index].Node;
-        if (omnibar.IsMenuOpenAt(panel, node))
+        if (IsMenuOpenAt(omnibar, panel, node))
         {
-            omnibar.CloseMenu();
+            omnibar.Menu = null;
             return;
         }
-        omnibar.OpenMenu(panel, node, FindNextNode(crumbs, index));
+        OpenMenu(omnibar, panel, node, FindNextNode(crumbs, index));
     }
 
     private static BrowseNode? FindNextNode(IReadOnlyList<Crumb> crumbs, int index)
@@ -203,7 +376,7 @@ internal static class OmnibarView
             ui.SetCursor(MouseCursor.Text);
         ui.Leaf(i.Id, new Box { Width = Sizing.Grow(), Height = Sizing.Grow() });
         if (i.Clicked)
-            ui.State.Omnibar.StartSearch(panel);
+            StartSearch(ui.State.Omnibar, panel);
     }
 
     private static void SearchButton(Ui<UiState> ui, string panel)
@@ -211,7 +384,7 @@ internal static class OmnibarView
         var t = ui.State.Strings;
         var tooltip = ui.Memo("omnibar-search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.OmnibarSearch));
         if (ui.IconButton("search", ui.State.Icons.SearchField, tooltip))
-            ui.State.Omnibar.StartSearch(panel);
+            StartSearch(ui.State.Omnibar, panel);
     }
 
     /// <summary>The list of the open crumb's children under its arrow <paramref name="owner"/>, with a
@@ -232,7 +405,7 @@ internal static class OmnibarView
         var isOpen = true;
         using var flyout = ui.Flyout(HashCode.Combine(owner, MenuSalt), ref isOpen, owner, new Box { Width = MenuWidth, Gap = theme.GapTight });
         if (!isOpen)
-            omnibar.CloseMenu();
+            omnibar.Menu = null;
         if (!flyout.IsOpen)
             return;
         var children = ui.State.Tree.GetChildren(menu.Node);
@@ -241,7 +414,7 @@ internal static class OmnibarView
             ui.Text(placeholder.Label, color: theme.TextMuted);
             return;
         }
-        var shown = menu.ListShown(children.Nodes, ui.State.Tree);
+        var shown = ListShown(menu, children.Nodes, ui.State.Tree);
         var listId = HashCode.Combine(owner, ListSalt);
         var submitted = Filter(ui, menu, shown);
         var picked = ChildRows(ui, menu, shown, listId);
@@ -250,14 +423,14 @@ internal static class OmnibarView
         var node = picked.Node;
         if (node == null)
             return;
-        omnibar.CloseMenu();
+        omnibar.Menu = null;
         ui.State.Later((node, inNewTab: picked.InNewTab), static (a, s) => PickNode(a, s.node, s.inNewTab));
     }
 
     private static void CloseIfIn(Omnibar omnibar, CrumbMenu menu, string panel)
     {
         if (menu.Panel == panel)
-            omnibar.CloseMenu();
+            omnibar.Menu = null;
     }
 
     /// <summary>The filter, which takes focus as the list opens and walks the list with Up and Down.
@@ -265,7 +438,7 @@ internal static class OmnibarView
     private static bool Filter(Ui<UiState> ui, CrumbMenu menu, IReadOnlyList<BrowseNode> shown)
     {
         var fieldId = ui.GetId(FilterFieldId);
-        if (menu.TakeFocus())
+        if (TakeFocus(menu))
             ui.Focus(fieldId);
         var submitted = ui.TextField(FilterFieldId, ref menu.Filter, ui.State.Strings.OmnibarFilter, Sizing.Grow());
         if (!ui.HasFocus(fieldId))
@@ -339,11 +512,11 @@ internal static class OmnibarView
         WalkSuggestions(ui, omnibar, fieldId);
         var clicked = Suggestions(ui, omnibar, fieldId);
         if (submitted)
-            clicked = new PickedMatch(omnibar.FindSuggestionToShow(), IsCommandHeld(ui));
+            clicked = new PickedMatch(FindSuggestionToShow(omnibar), IsCommandHeld(ui));
         var match = clicked.Match;
         if (match == null)
             return;
-        omnibar.StopSearch();
+        StopSearch(omnibar);
         ui.State.Later((node: match.Node, inNewTab: clicked.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
     }
 
@@ -367,9 +540,9 @@ internal static class OmnibarView
     private static void MoveSuggestion(Omnibar omnibar, KeyboardKey key)
     {
         if (key == KeyboardKey.DownArrow)
-            omnibar.MoveSuggestion(1);
+            MoveSuggestion(omnibar, 1);
         if (key == KeyboardKey.UpArrow)
-            omnibar.MoveSuggestion(-1);
+            MoveSuggestion(omnibar, -1);
     }
 
     /// <summary>A match picked from the suggestions, and whether it is to open in a new tab.</summary>

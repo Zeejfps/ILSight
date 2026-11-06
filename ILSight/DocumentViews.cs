@@ -121,7 +121,7 @@ public sealed class DocumentViews
         if (Contains(tab))
             return;
         var view = new TabView(panel);
-        view.Follow(tab);
+        PictureViews.Follow(view.Picture, tab.Image);
         _views.Add(tab, view);
         _changes++;
     }
@@ -152,7 +152,7 @@ public sealed class DocumentViews
     public void FollowContent()
     {
         foreach (var (tab, view) in _views)
-            view.Follow(tab);
+            PictureViews.Follow(view.Picture, tab.Image);
     }
 
     /// <summary>Where the view of <paramref name="tab"/> stands, or null when it has none.</summary>
@@ -160,7 +160,7 @@ public sealed class DocumentViews
     {
         if (!_views.TryGetValue(tab, out var view))
             return null;
-        return view.PositionOf(tab);
+        return DocumentPanels.GetPosition(view, tab);
     }
 
     /// <summary>The images of the views dropped since the last call, for the canvas to free.</summary>
@@ -190,7 +190,7 @@ public sealed class DocumentViews
         }
         var grid = position.Grid;
         if (grid != null)
-            view.GridOf(shown).Restore(grid.Value);
+            DocumentPanels.GetGridState(view, shown).Restore(grid.Value);
     }
 
     /// <summary>Returns the view of the diagram <paramref name="tab"/>, an open tab, shows to how
@@ -233,7 +233,7 @@ public sealed class DocumentViews
         var grid = tab.Grid;
         if (grid == null || row >= grid.RowCount)
             return;
-        view.GridOf(grid).Reveal(row);
+        DocumentPanels.GetGridState(view, grid).Reveal(row);
     }
 
     /// <summary>Selects the card of <paramref name="type"/> on the diagram <paramref name="tab"/>, an open tab,

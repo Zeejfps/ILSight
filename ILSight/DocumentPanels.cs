@@ -1,4 +1,5 @@
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.Core.Metadata;
 
 namespace ILSight;
 
@@ -7,6 +8,27 @@ namespace ILSight;
 /// app state through <see cref="UiState.AppCommands"/>.</summary>
 public static class DocumentPanels
 {
+    /// <summary>The view of <paramref name="grid"/>: the one kept for it, or a new one when the tab
+    /// showed another grid, or none, before.</summary>
+    public static MetadataGridState GetGridState(TabView view, MetadataGrid grid)
+    {
+        var shown = view.Grid;
+        if (shown != null && ReferenceEquals(shown.Grid, grid))
+            return shown;
+        shown = new MetadataGridState(grid);
+        view.Grid = shown;
+        return shown;
+    }
+
+    /// <summary>Where the view of what <paramref name="tab"/> shows stands: its grid's or its code's.</summary>
+    public static ViewPosition GetPosition(TabView view, DocumentTab tab)
+    {
+        var grid = tab.Grid;
+        if (grid != null)
+            return ViewPosition.OfGrid(GetGridState(view, grid).Position);
+        return ViewPosition.OfCode(view.Code.Position);
+    }
+
     /// <summary>Shows the reopened <paramref name="tabs"/> in the panels they were docked as: in place where
     /// the layout still has one no tab is shown in, else, renamed when another tab is shown in one by that
     /// name, arranged as <paramref name="layout"/>, the documents' saved arrangement, has them, beside the

@@ -197,7 +197,7 @@ public sealed class OmnibarTests
 
         app.Frames.Click(BarRow(app)).Frame(2);
 
-        Assert.True(app.Ui.Omnibar.IsSearchingIn(app.Ui.Documents.PanelOf(app.AppState.Tabs.Active!)));
+        Assert.True(OmnibarView.IsSearchingIn(app.Ui.Omnibar, app.Ui.Documents.PanelOf(app.AppState.Tabs.Active!)));
         Assert.True(app.Frames.WantsTextInput);
     }
 

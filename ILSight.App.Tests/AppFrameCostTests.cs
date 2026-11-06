@@ -48,6 +48,26 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         Assert.Equal(0, allocated);
     }
 
+    [Fact]
+    public void A_frame_of_the_app_with_a_crumbs_children_listed_allocates_nothing()
+    {
+        var app = AppDriver.Opened();
+        app.Settle(2);
+        app.Show(app.Fixture("Greeter"), 2);
+        app.Settle(5);
+        var panel = app.Ui.Documents.PanelOf(app.AppState.Tabs.Active!);
+        OmnibarView.OpenMenu(app.Ui.Omnibar, panel, app.Node(AppStateDriver.FixturesNamespace), app.Fixture("Greeter"));
+        app.Settle(5);
+
+        app.Frames.Canvas.Recording = false;
+        app.Run(WarmUpFrames);
+        var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => app.Run());
+
+        output.WriteLine($"crumb menu open: {allocated:N0} B/frame allocated");
+        Assert.NotEmpty(app.Ui.Omnibar.Menu!.Shown);
+        Assert.Equal(0, allocated);
+    }
+
     private static void OpenErrors(AppDriver app)
     {
         app.AppState.ReportError(new AppProblem.ResourceNotSaved("something.dll", "details"));
