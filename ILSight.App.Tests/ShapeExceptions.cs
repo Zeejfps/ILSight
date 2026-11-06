@@ -1,6 +1,6 @@
 namespace ILSight.App.Tests;
 
-/// <summary>Everything that doesn't fit docs/data_and_functions.md, which <see cref="ArchitectureTests"/>
+/// <summary>Everything that doesn't fit docs/coding_rules.md, which <see cref="ArchitectureTests"/>
 /// holds to exactly.</summary>
 internal static class ShapeExceptions
 {

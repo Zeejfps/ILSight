@@ -1,99 +1,215 @@
-# Coding Rules
+# Coding rules
 
-*Language-agnostic. Three rules, a review order, and a translation table.*
+Deciding where a boundary lives, which methods go on an interface and which properties on a class, is
+expensive and easy to get wrong, and worse for an AI that has to guess it. So we stop deciding. A type says
+what the data is, and a function says what is done to it.
 
-> **"The checker"** below means whatever the strongest automatic verifier in your language is: a static type system, a borrow checker, a linter, a runtime contract, or — at the weak end — only your test suite.
->
-> The rules get *more* valuable as the checker gets weaker, not less. What a checker won't catch, a construction-time invariant or a test has to, and the cheapest place to put either one is exactly where these rules point.
+### 1. Types are data
 
----
+A type holds fields and properties computed from them, which change nothing. It has no methods. Use the
+plainest keyword that does the job:
 
-## Rule 1 — Make illegal states unrepresentable, and never lie to the checker
+- `sealed class`: state that changes or has an identity.
+- `struct`: a small value.
+- `record`: when you want comparison by value, `with`, or a one-line declaration (rule 7).
 
-Given a choice, pick the type or API that makes a whole category of error impossible to write. Prefer a design the caller cannot misuse over one that is correct only while the caller remembers a rule.
+The only other code a type may hold:
 
-- **Parse at every boundary; never assert across one.**
+- a constructor that validates (rule 6);
+- `const`s;
+- equality members, where comparing by value needs them;
+- a method an external interface demands, forwarding to a static function;
+- the methods of a self-contained type (rule 9);
+- the per-case functions of a struct union (rule 2).
 
-  A boundary is anywhere data enters the program without the checker having seen it produced: network responses, env vars, CLI args, config and data files, DB rows, queue messages, IPC, FFI, deserialization, user input.
+### 2. Prefer unions
 
-  Convert once at the edge with a function that *accepts the untrusted shape* and validates it, and **derive** the internal representation from the validation rather than declaring it twice. Never declare a type and then tell the checker an unvalidated payload already is one.
+When something is one of several things, a result, a state, a kind of node, make it a union, so that what it
+can't be is impossible to write. Don't use optional fields and bools: N of them make 2^N states, when you meant
+about three.
 
-  In a language with no static types the rule is unchanged: build a domain object at the edge instead of threading a raw dict/hash/map through the program. One place fails loudly; everything downstream is trusted for a reason rather than by habit.
+```csharp
+public abstract record Payment
+{
+    private Payment()
+    {
+    }
 
-- **Model with sum types, not optional-field bags.**
+    public sealed record Pending : Payment;
+    public sealed record Paid(DateTime At) : Payment;
+    public sealed record Failed(string Reason) : Payment;
+}
+```
 
-  ```
-  YES:  Loading | Ok(T) | Error(E)
-  NO:   { loading: bool, data?: T, err?: E }   // 8 states, 5 are nonsense
-  ```
+- The private constructor closes it. Use `private protected` where nesting the cases would rename too much,
+  or a case needs cases under it.
+- **The compiler can't see it's closed, so a new case doesn't break the build.** A `switch` over a union names
+  every case, its fallback arm throws, and each case has a test.
+- **A union rebuilt on a hot path, such as every frame, is a `readonly struct`**, because nothing built that
+  often may allocate: a private tag, a slot for what each case holds, a private constructor, one static
+  function per case, and a property per case that checks the tag and gives null otherwise. Only for what
+  really is rebuilt that often.
 
-  A record with N optional fields has 2^N states and you meant about three of them. Every extra representable state is a branch someone must handle — or silently won't.
+### 3. Interfaces only project data
 
-  Then make the checker enforce coverage: an exhaustive `match`/`when`/`switch`, so a later variant breaks the build at every call site. If your language has no exhaustiveness check, the fallback is a default branch that *throws* — loudly, in production, not a log line — plus one test per variant.
+No interfaces for behaviour. Where something must be swappable, take a function, or a record of functions
+when several go together, and only once a second case exists. Most things have one implementation and need
+neither.
 
-  If your language has no sum types at all, encode one: a tag field, one constructor per case, and a single interpreter function that switches on the tag. Keep those constructors the only way to build the thing.
+An interface is allowed as a **projection**: a function that needs a subset of a big type declares it, and
+is generic over anything that has it.
 
-- **Give every domain identifier and unit its own type.**
+```csharp
+public interface IHasTitle
+{
+    string Title { get; set; }
+}
 
-  `UserId` and `OrgId` as bare strings are freely interchangeable, and swapping them is a genuinely common production bug that reads fine at the call site. Same for `Money` vs float, `Millis` vs `Seconds`, `Email` vs string.
+public static void Rename<T>(T item, string title) where T : IHasTitle
+```
 
-  In a nominally typed language this is nearly free — a newtype, a value class, a record wrapper. In a structurally typed one you need an explicit brand or phantom tag to defeat the structural comparison. In a dynamic one it's a tiny class whose constructor validates. All three cost ~nothing at runtime and are the highest-yield type you will introduce.
+- It holds only properties, and a field can't satisfy one.
+- It sits beside the function, and is shared only once two functions want the same subset.
+- The function is generic rather than taking the interface, so a struct isn't boxed.
 
-- **Don't reach for the escape hatches — they are the bug class itself.**
+Passing the values is simpler. Use a projection when a function writes back or needs too many to list.
 
-  Unchecked casts, force-unwraps, `any`-typed holes, checker suppressions, reflection by string name, and catch-all exception swallowing are the exact points where this whole rule is switched off. Reach for the checked alternative first: a type guard or narrowing construct, a total match on an optional, a constraint that checks a literal without widening or asserting, or a parse at the boundary.
+### 4. Functions are static and grouped by feature
 
-  If you genuinely need one, isolate it in the smallest possible function, make that function total, and flag it in your reply (see Rule 3). The [appendix](#appendix--the-mechanism-in-each-language) lists what these are called in your language.
+- A function is `static`, in a `static class` named for the feature, not the type: `Orders`, not
+  `OrderExtensions`.
+- It takes everything it works on as parameters. Anything else it needs is a bug in its signature.
+- Call it by its feature, `Orders.Ship(order, address)`, without extension syntax.
 
----
+**Names are verbs:** `GetTotal`, not `Total` or `TotalOf`; `CreateOrder`, not `Order`.
 
-## Rule 2 — Structure abstractions by coupling, not by shape
+- A question uses `Is`, `Has` or `Can`.
+- A function in a field counts too: `Read`, not `Reader`.
+- Don't repeat the feature: `Orders.Ship`, not `Orders.ShipOrder`.
+- A delegate type stays a noun, and a struct union's case function is named for the case.
 
-Where a unit sits in the dependency graph matters more than anything about its internals. Class-or-function, module-or-package, file layout — all syntactic choices, none of them the lever.
+### 5. Functions return a result, or nothing if they can't go wrong
 
-- **Minimize fan-out, not file count.**
+A function that can fail in a way the caller should handle returns a union. Exceptions remain only for bugs,
+for what the program can't go on from, and at a seam, which catches what an external library throws and
+turns it into a result.
 
-  What counts is how many distinct modules a unit depends on and how many depend on it. Before adding an import, check the edge is actually needed; before splitting a file, note that *more files at the same edge count is neutral, more edges is not*. Read the graph with a real tool and find the cycles.
+### 6. Make illegal states unrepresentable, and never lie to the compiler
 
-  Best form of this rule: encode the intended boundaries as machine-checked rules run in CI, so a violation fails the build instead of waiting on review. Every ecosystem has a tool for this (appendix).
+Given a choice, pick the type or API that makes a kind of error impossible to write, over one that is correct
+only while the caller remembers a rule.
 
-- **Never add global mutable state or ambient control flow.**
+- **Parse at every boundary; never assert across one.** A boundary is anywhere data enters without the compiler
+  having seen it made: network, env vars, arguments, files, databases, messages, interop, user input. Convert
+  once at the edge, with a function that takes the untrusted shape and validates it. Everything past it is
+  trusted for a reason.
+- **Give every identifier and unit its own type.** `UserId` and `OrgId` as bare strings swap silently, and so do
+  `Millis` and `Seconds`. A one-field `readonly record struct` costs nothing at runtime.
+- **Invariants are enforced.** A type with one validates in its constructor and keeps those fields get-only,
+  with no `init`, because `with` skips the constructor. A value that must change and stay valid gets a type of
+  its own (rule 9).
+- **Avoid the escape hatches, which are where checking stops:** unchecked casts, `!`, `dynamic`, suppressed
+  warnings, reflection by string name, and catch-all `catch`. If you must use one, isolate it in the smallest
+  function you can, make that function total, justify it in a comment, and flag it when handing back the code.
 
-  Implicit control flow and shared mutable global state are the two structures that go wrong most often, and they defeat the checker and the reader at the same time. The forms this takes:
+### 7. A record compares by value, so only use one for that
 
-  - module-level mutable singletons, class statics, thread-locals and async-context globals
-  - service locators and string-keyed DI containers
-  - ambient pub/sub where the handler set isn't statically knowable
-  - monkey-patching, import-time side effects, implicit registries
+A record suits an id, a position or a result. For anything with an identity or that changes, use a plain
+class, because a record brings two hazards the compiler won't show:
 
-  Pass the dependency in. If that makes a signature ugly, the ugliness was already there — it was just invisible.
+- **Equality:** as a key, or in `Remove`, `IndexOf` or `==`, it matches anything with the same contents, and a
+  mutable one changes its hash inside a set. This only goes one level down: a `List` or delegate field still
+  compares by reference.
+- **Cycles:** generated `Equals`, `GetHashCode` and `ToString` walk every field, so a record that can reach
+  itself overflows the stack, even just from the debugger showing it.
 
-- **Don't add structure you haven't been forced into.**
+### 8. Keep data together until it splits itself
 
-  Guessing the wrong axis of variation is a net cost — worse than none.
+You can't see where data's seams belong until a lot is built on it, so don't guess. Data starts in one big
+type, and being large is no defect. New data is a field there, not a new type, and a class with one instance
+and one owner can fold into it.
 
-  - **No inheritance depth.** Composition instead. Where your language needs an interface for substitutability, define it at the *consumer*, keep it one level, and don't grow a hierarchy behind it.
-  - **No cohesion refactors.** "This module does two things" is an aesthetic complaint, not a defect prediction. Don't volunteer that split.
-  - **No abstraction before the variation is in the code.** Write the second and third case, then factor. A record plus a function you can inline later is cheaper to be wrong about than a hierarchy.
+Split only when forced:
 
-  God Class is a fan-out problem, not a size problem.
+- **There's more than one**, such as one per open document.
+- **It lives for a different time.**
+- **It crosses a thread:** a background job gets its own copy.
+- **It crosses a project:** a lower project can't see the big type, so it has its own or a projection.
+- **The seam has become obvious:** the same few fields change together, and the same functions take only those.
 
----
+"It would be tidier" isn't on that list. A split that turns out wrong gets folded back.
 
-## Rule 3 — Review the checker's blind spots first
+Unions still apply inside a big type, and functions still take only what they touch: two fields if they need
+two, a projection if they write back, and the whole type only when they work on the whole of it.
 
-Before handing back code you wrote or changed, re-read it in this order. The checker has already reviewed most of it; your attention belongs where it stopped.
+### 9. Behaviour is only for what is entirely self-contained
 
-1. **Every place you silenced or bypassed the checker** — each cast, suppression, force-unwrap, unsafe block, raw string query, swallowed exception. These are the *only* places checking stopped. Code with none has already been mostly reviewed for you; code with ten is where all the effort goes. Justify each in a comment or remove it.
-2. **Changed public signatures and exported types** — non-local blast radius that isn't visible in the code in front of you. Check the call sites.
-3. **New boundary crossings** — a new request, env read, deserialization, DB query, file read, or message payload. Each needs a parse, not an assertion.
-4. **New shared mutable state, concurrency, or ordering assumptions** — anything two things can touch at once, and anything that must happen in an order the code doesn't force. Most type systems check none of this for you, which is exactly why it belongs this high.
+Encapsulation earns its place where there's no boundary to guess, as with `List` or `Dictionary`. A type of
+our own may carry behaviour if all of these hold:
+
+- **It depends on nothing else:** only the BCL, its type parameters, and other self-contained types.
+- **It changes nothing outside itself:** no app callbacks, statics, files or clock. It may read a
+  self-contained type or own one, but doesn't modify one passed in.
+- **It can be used more than once:** a general tool, not something small that exists for one feature.
+
+This covers records and structs too, so a `Url` type keeps `Parse` behind its private constructor, and holding
+one means holding a valid one.
+
+**A tiny value type** that only keeps one value valid, like a `Percentage`, may serve a single feature. It's a
+`readonly record struct` with a private constructor, so it allocates nothing and `item.Opacity = 999` doesn't
+compile. `default` skips the constructor, so it must read as valid, and clamping lets `NaN` through, so keep
+that out too.
+
+If it knows about the app's domain, it's data and functions.
+
+### 10. Structure by coupling, not by shape
+
+Where a unit sits in the dependency graph matters more than its internals.
+
+- **Minimize fan-out, not file count.** What counts is how many modules a unit depends on and how many depend on
+  it. More files at the same edge count is neutral, and more edges isn't. A god class is a fan-out problem, not a
+  size problem.
+- **No global mutable state or ambient control flow:** statics, thread-locals, `AsyncLocal`, service locators,
+  string-keyed containers, events whose handlers can't be known statically, and implicit registries. Pass the
+  dependency in. If that makes a signature ugly, the ugliness was already there.
+- **A `static class` holds functions, constants and read-only tables.** Mutable state, including a static `Lazy`,
+  lives in a type that is passed in. A memo in such a type is fine.
+- **A static cache is the one exception**, if it's purely a speed-up: same input, same output, thread-safe, and
+  size-limited unless its keys go away by themselves. What reads the machine never qualifies: pass it in, so a
+  signature shows the dependency.
+- **Don't add structure you haven't been forced into.** A wrong guess at what varies costs more than none. No
+  inheritance depth, no splitting a module just because it does two things, and no abstraction until the second
+  or third case is in the code. A record of functions with one implementation is an interface in disguise.
+- **No re-export hubs.** They hide the dependency graph. Use the direct path.
+
+### 11. Review what the compiler can't check
+
+Before handing back code, re-read it in this order, and report anything you hit in the first four:
+
+1. Every place checking was bypassed: casts, `!`, suppressions, unsafe code, raw queries, swallowed exceptions.
+2. Changed public signatures and types. Check the call sites.
+3. New boundary crossings: a request, env read, deserialization, query or file read. Each needs a parse.
+4. New shared mutable state, concurrency, or ordering assumptions: anything two things can touch at once, or
+   that must happen in an order the code doesn't force.
 5. Everything else.
 
-- **Report anything you hit at levels 1–4**, rather than leaving the user to find it.
+## External code
 
-- **Don't add re-export hubs**, or route new imports through an existing one when the direct module path works.
+Frameworks, libraries, submodules and the BCL don't fit this, and we don't refactor them to. Isolate each
+behind a seam:
 
-  Barrel files, `__init__.py` re-exports, wildcard imports, prelude modules, facade packages. They create implicit fan-out: the dependency graph goes opaque, so level 2 above can't be checked by reading. Where the re-export is erased at build time the cost is review opacity only, not shipped code — which is still a cost.
+- A class has behaviour only because an external type demands it, and says so in its first line.
+- It holds no logic, and forwards to a static function.
+- External types stay in the seam where they reasonably can. Where one is the real domain object, pass it
+  through.
 
----
+## Checked by
+
+Encode boundaries as tests, so that a violation fails the build rather than waiting on review. An architecture
+test fails on any behaviour interface, any type with methods that isn't on its list of
+exceptions, and static state, and each exception says why it's there. A stale entry fails too, so the list only
+shrinks, and a new one has to be argued on. A self-contained type is checked to name only the BCL and other
+such types.
+
+A test can't see inside a method body, so whether a seam is free of logic, or a self-contained type really
+stays in itself, is for review.

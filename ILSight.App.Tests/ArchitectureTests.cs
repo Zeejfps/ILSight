@@ -7,7 +7,7 @@ using ILSight.Core;
 
 namespace ILSight.App.Tests;
 
-/// <summary>Holds the app to docs/data_and_functions.md. What doesn't fit yet is listed in
+/// <summary>Holds the app to docs/coding_rules.md. What doesn't fit yet is listed in
 /// <see cref="ShapeExceptions"/>, and an entry that no longer applies fails too, so that the lists can
 /// only shrink. These rules are all ones the compiler can't check.</summary>
 public sealed class ArchitectureTests
@@ -144,7 +144,7 @@ public sealed class ArchitectureTests
     {
         if (method.IsDefined(typeof(CompilerGeneratedAttribute), false)) return true;
         if (method.IsSpecialName) return true;
-        // What a record may write for itself: see rule 7.
+        // What a record may write for itself: see rule 1.
         if (method.Name is "Equals" or "GetHashCode" or "PrintMembers") return true;
         if (IsCaseOfStructUnion(method)) return true;
         return ShapeExceptions.RecordSeams.ContainsKey($"{GetName(method.DeclaringType!)}.{method.Name}");
