@@ -7,7 +7,7 @@ namespace ILSight.Core.Analysis;
 /// <summary>Finds all extension methods defined for a type.</summary>
 internal static class TypeExtensionMethodsAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type || type.IsStatic)
             return null;

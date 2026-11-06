@@ -16,17 +16,17 @@ internal sealed record ResourceData(string Description, string FileName, Func<by
 
 internal static class ResourceNodes
 {
-    public static ResourceData DataOf(ResourceEntryInfo entry)
+    public static ResourceData CreateData(ResourceEntryInfo entry)
     {
         return new ResourceData(entry.Description, entry.FileName, entry.ReadData);
     }
 
-    public static ResourceData DataOf(ResourceContainerInfo container)
+    public static ResourceData CreateData(ResourceContainerInfo container)
     {
         return new ResourceData(container.Description, container.FileName, container.ReadData);
     }
 
-    public static ResourceData DataOf(PackageFileInfo file)
+    public static ResourceData CreateData(PackageFileInfo file)
     {
         return new ResourceData(file.Description, file.FileName, file.ReadData);
     }

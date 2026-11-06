@@ -102,7 +102,7 @@ public sealed class IconThemeFile : IThemeFile<IconThemeFile, IconThemeContents>
     public static IconThemeFile ReadFile(ThemeId<IconThemeFile> id, string path)
     {
         var folder = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        var theme = new IconThemeFile(id, path, IconAssetFolders.Of(folder));
+        var theme = new IconThemeFile(id, path, IconAssetFolders.Open(folder));
         var json = theme._json.ReadBytes(path);
         if (json != null)
             theme._json.Read(json, theme.ReadTopLevel);
@@ -194,7 +194,7 @@ public sealed class IconThemeFile : IThemeFile<IconThemeFile, IconThemeContents>
         var bytes = ReadAsset(key, path, line);
         if (bytes == null)
             return new IconFont.Broken(path);
-        var face = new FontFace(_assets.FamilyOf(id, path), bytes);
+        var face = new FontFace(_assets.GetFamily(id, path), bytes);
         var characters = face.ReadCharacters();
         if (characters == null)
         {

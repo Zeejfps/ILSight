@@ -10,7 +10,7 @@ public static class Commands
 {
     /// <summary>A command doing <paramref name="run"/> to <paramref name="subject"/>. It is made here, so
     /// that a caller that only sometimes asks doesn't allocate a closure on the way in every time.</summary>
-    public static AppCommand On<T>(T subject, Action<AppState, T> run)
+    public static AppCommand Create<T>(T subject, Action<AppState, T> run)
     {
         return appState =>
         {

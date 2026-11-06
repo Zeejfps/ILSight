@@ -5,7 +5,7 @@ namespace ILSight.Core.Analysis;
 /// <summary>Shows the members whose code uses any accessor of a property or event, each once.</summary>
 internal static class MemberUsedByAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not IMember member || member is not (IProperty or IEvent))
             return null;

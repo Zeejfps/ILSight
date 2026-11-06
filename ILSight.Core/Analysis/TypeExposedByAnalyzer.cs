@@ -7,7 +7,7 @@ namespace ILSight.Core.Analysis;
 /// <summary>Finds the visible members whose signature exposes a type.</summary>
 internal static class TypeExposedByAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type)
             return null;

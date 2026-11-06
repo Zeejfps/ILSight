@@ -135,6 +135,13 @@ in its signature.
 Extension-method syntax is not used to pretend a function is a method; call it by its feature:
 `Updates.Check(updates, asked)`.
 
+A function is named with a verb, never a noun: it says what it does. `GetHeader`, not `Header`;
+`CreateFeed`, not `Feed`; `FindUpdate`, not `Update`. Prepositions don't count either, so not `HeaderOf`
+or `For`. A question is named as one, with `Is`, `Has` or `Can`. This goes for a function held in a field
+too, since it is called the same way: `Read`, not `Reader`. A delegate type is a type, so it stays a noun,
+as `AppCommand` does. The name of the feature is on the class, so it needn't be repeated:
+`Updates.Check`, not `Updates.CheckForUpdate`.
+
 ### 5. Functions return a result, or nothing if they can't go wrong
 
 A function that can fail in a way the caller should handle returns a union saying so, and the caller

@@ -8,7 +8,7 @@ namespace ILSight.Core.Analysis;
 /// or with <paramref name="overrides"/> those that override a class member.</summary>
 internal static class InheritorsAnalyzer<T> where T : class, IMember
 {
-    public static AnalysisRun? For(bool overrides, ISymbol? symbol)
+    public static AnalysisRun? Prepare(bool overrides, ISymbol? symbol)
     {
         if (symbol is not T member || !Applies(overrides, member))
             return null;
@@ -39,7 +39,7 @@ internal static class InheritorsAnalyzer<T> where T : class, IMember
 /// <summary>Shows the interface members a class or struct member implements.</summary>
 internal static class MemberImplementsInterfaceAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not IMember { SymbolKind: SymbolKind.Event or SymbolKind.Indexer or SymbolKind.Method or SymbolKind.Property, IsStatic: false } member
             || member.DeclaringTypeDefinition?.Kind is not (TypeKind.Class or TypeKind.Struct))
@@ -55,7 +55,7 @@ internal static class MemberImplementsInterfaceAnalyzer
 /// <summary>Shows the base members a member overrides, up its override chain.</summary>
 internal static class MemberOverridesAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not IMember { SymbolKind: SymbolKind.Event or SymbolKind.Indexer or SymbolKind.Method or SymbolKind.Property, IsOverride: true } member)
             return null;

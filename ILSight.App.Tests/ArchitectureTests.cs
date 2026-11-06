@@ -19,7 +19,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void Every_type_is_a_record_unless_it_is_listed()
     {
-        var found = DeclaredTypes().Where(IsNotData).Select(Name).ToHashSet();
+        var found = ListDeclaredTypes().Where(IsNotData).Select(GetName).ToHashSet();
 
         var expected = ShapeExceptions.Seams.Keys.Concat(ShapeExceptions.NotYetData);
 
@@ -29,7 +29,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void No_record_has_behaviour_unless_it_is_listed()
     {
-        var found = DeclaredTypes().Where(IsRecord).SelectMany(MethodsOf).ToHashSet();
+        var found = ListDeclaredTypes().Where(IsRecord).SelectMany(ListMethods).ToHashSet();
 
         AssertMatches(ShapeExceptions.RecordsWithMethods, found);
     }
@@ -37,7 +37,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void No_static_field_can_change_unless_it_is_listed()
     {
-        var found = DeclaredTypes().SelectMany(MutableStaticFieldsOf).ToHashSet();
+        var found = ListDeclaredTypes().SelectMany(ListMutableStaticFields).ToHashSet();
 
         AssertMatches(ShapeExceptions.MutableStatics, found);
     }
@@ -53,7 +53,7 @@ public sealed class ArchitectureTests
             + $"Gone, so take them off the list:\n  {string.Join("\n  ", stale)}");
     }
 
-    private static IEnumerable<Type> DeclaredTypes()
+    private static IEnumerable<Type> ListDeclaredTypes()
     {
         return Scope.SelectMany(static assembly => assembly.GetTypes()).Where(static type => !IsGenerated(type));
     }
@@ -105,12 +105,12 @@ public sealed class ArchitectureTests
         return type.GetMethod("<Clone>$", instance) != null;
     }
 
-    private static IEnumerable<string> MethodsOf(Type type)
+    private static IEnumerable<string> ListMethods(Type type)
     {
         foreach (var method in type.GetMethods(Declared | BindingFlags.Instance | BindingFlags.Static))
         {
             if (IsAllowedOnRecord(method)) continue;
-            yield return $"{Name(type)}.{method.Name}";
+            yield return $"{GetName(type)}.{method.Name}";
         }
     }
 
@@ -122,17 +122,17 @@ public sealed class ArchitectureTests
         if (method.IsSpecialName && !method.Name.StartsWith("get_", StringComparison.Ordinal)) return true;
         // What a record may write for itself: see rule 7.
         if (method.Name is "Equals" or "GetHashCode" or "PrintMembers") return true;
-        return ShapeExceptions.RecordSeams.ContainsKey($"{Name(method.DeclaringType!)}.{method.Name}");
+        return ShapeExceptions.RecordSeams.ContainsKey($"{GetName(method.DeclaringType!)}.{method.Name}");
     }
 
-    private static IEnumerable<string> MutableStaticFieldsOf(Type type)
+    private static IEnumerable<string> ListMutableStaticFields(Type type)
     {
         foreach (var field in type.GetFields(Declared | BindingFlags.Static))
         {
             if (field.IsLiteral) continue;
             if (field.IsDefined(typeof(CompilerGeneratedAttribute), false)) continue;
             if (field.IsInitOnly && !IsCache(field.FieldType)) continue;
-            yield return $"{Name(type)}.{field.Name}";
+            yield return $"{GetName(type)}.{field.Name}";
         }
     }
 
@@ -148,7 +148,7 @@ public sealed class ArchitectureTests
             || definition == typeof(Lazy<>);
     }
 
-    private static string Name(Type type)
+    private static string GetName(Type type)
     {
         return type.FullName ?? type.Name;
     }

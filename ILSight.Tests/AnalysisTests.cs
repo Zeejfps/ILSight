@@ -12,7 +12,7 @@ public sealed class AnalysisTests
     }
 
     private static List<AnalysisSymbol> Run(AssemblyList list, BrowseNode node, string header) =>
-        Analyzers.RunAsync(list, Analyzers.Of(node)!, Analyzers.KindsFor(Analyzers.Of(node)!).Single(k => Analyzers.Header(k) == header))
+        Analyzers.RunAsync(list, Analyzers.Of(node)!, Analyzers.KindsFor(Analyzers.Of(node)!).Single(k => Analyzers.GetHeader(k) == header))
             .ToBlockingEnumerable().SelectMany(static b => b).ToList();
 
     [Fact]
@@ -20,7 +20,7 @@ public sealed class AnalysisTests
     {
         var (_, add) = Member("Add(T) : void");
 
-        var kinds = Analyzers.KindsFor(Analyzers.Of(add)!).Select(Analyzers.Header);
+        var kinds = Analyzers.KindsFor(Analyzers.Of(add)!).Select(Analyzers.GetHeader);
 
         Assert.Equal(["Uses", "Used By", "Implements"], kinds);
     }

@@ -11,9 +11,9 @@ internal static class AppVersions
     private const string DecompilerName = "ICSharpCode.Decompiler";
     private const char BuildSeparator = '+';
 
-    public static string App { get; } = VersionOf(typeof(AppVersions).Assembly);
+    public static string App { get; } = GetVersion(typeof(AppVersions).Assembly);
 
-    public static string Decompiler { get; } = $"{DecompilerName} {VersionOf(typeof(CSharpDecompiler).Assembly)}";
+    public static string Decompiler { get; } = $"{DecompilerName} {GetVersion(typeof(CSharpDecompiler).Assembly)}";
 
     public static string Runtime { get; } = RuntimeInformation.FrameworkDescription;
 
@@ -21,7 +21,7 @@ internal static class AppVersions
 
     /// <summary>The version <paramref name="assembly"/> was released as, without its commit, else
     /// its assembly version.</summary>
-    private static string VersionOf(Assembly assembly)
+    private static string GetVersion(Assembly assembly)
     {
         var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
         if (informational != null)

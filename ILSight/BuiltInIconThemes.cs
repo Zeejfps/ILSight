@@ -46,7 +46,7 @@ public static class BuiltInIconThemes
     {
         var id = ThemeId<IconThemeFile>.Of(Path.GetFileNameWithoutExtension(resource));
         var json = EmbeddedAssets.LoadBytes(Resources, resource);
-        return IconThemeFile.Read(id, resource, json, EmbeddedIconAssets.Of(Resources));
+        return IconThemeFile.Read(id, resource, json, EmbeddedIconAssets.Open(Resources));
     }
 }
 
@@ -54,7 +54,7 @@ public static class BuiltInIconThemes
 /// their resource names. Each font is drawn as the family of its id.</summary>
 internal static class EmbeddedIconAssets
 {
-    public static IconAssets Of(Assembly resources)
+    public static IconAssets Open(Assembly resources)
     {
         return new IconAssets(
             path =>

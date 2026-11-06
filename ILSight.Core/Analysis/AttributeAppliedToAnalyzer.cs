@@ -9,7 +9,7 @@ namespace ILSight.Core.Analysis;
 /// <summary>Shows the symbols an attribute is applied to.</summary>
 internal static class AttributeAppliedToAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type || !type.GetNonInterfaceBaseTypes().Any(t => t.IsKnownType(KnownTypeCode.Attribute)))
             return null;

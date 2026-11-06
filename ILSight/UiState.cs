@@ -69,7 +69,7 @@ public sealed class UiState : IUiState
     /// <summary>Asks for <paramref name="run"/> to be done to the app state and <paramref name="subject"/>
     /// once the frame is drawn. Pass a <c>static</c> lambda, handing it what it acts on as
     /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
-    public void Later<T>(T subject, Action<AppState, T> run) => AppCommands.Enqueue(Commands.On(subject, run));
+    public void Later<T>(T subject, Action<AppState, T> run) => AppCommands.Enqueue(Commands.Create(subject, run));
 
     /// <summary>Where the views and the open documents are docked, all as tabs: side by side,
     /// stacked or in floating windows.</summary>

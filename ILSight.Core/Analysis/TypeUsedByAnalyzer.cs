@@ -11,7 +11,7 @@ namespace ILSight.Core.Analysis;
 /// <summary>Shows the symbols outside a type whose metadata or code uses it.</summary>
 internal static class TypeUsedByAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type)
             return null;

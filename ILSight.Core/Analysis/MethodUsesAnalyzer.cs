@@ -9,7 +9,7 @@ namespace ILSight.Core.Analysis;
 /// <summary>Shows the members and types a method's code, compiler-generated parts included, uses.</summary>
 internal static class MethodUsesAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not IMethod method || !method.HasBody)
             return null;

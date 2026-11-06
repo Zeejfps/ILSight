@@ -30,7 +30,7 @@ public sealed record AnalysisKind
     {
         Name = name;
         Order = order;
-        Analyzer = analyzer;
+        Prepare = analyzer;
         SortsResults = sortsResults;
     }
 
@@ -38,7 +38,7 @@ public sealed record AnalysisKind
 
     public int Order { get; }
 
-    internal Analyzer Analyzer { get; }
+    internal Analyzer Prepare { get; }
 
     /// <summary>Whether its results read best sorted by label, so come only once all are found.</summary>
     internal bool SortsResults { get; }
@@ -100,29 +100,29 @@ public static class Analyzers
 {
     private static readonly AnalysisKind[] Kinds =
     [
-        new(AnalysisName.AppliedTo, 10, AttributeAppliedToAnalyzer.For),
-        new(AnalysisName.ImplementedBy, 10, static s => InheritorsAnalyzer<IEvent>.For(overrides: false, s)),
-        new(AnalysisName.OverriddenBy, 20, static s => InheritorsAnalyzer<IEvent>.For(overrides: true, s)),
-        new(AnalysisName.ReadBy, 10, static s => FieldAccessAnalyzer.For(FieldAccessKind.Read, s)),
-        new(AnalysisName.AssignedBy, 20, static s => FieldAccessAnalyzer.For(FieldAccessKind.Write, s)),
-        new(AnalysisName.AddressTakenBy, 30, static s => FieldAccessAnalyzer.For(FieldAccessKind.AddressOf, s)),
-        new(AnalysisName.Implements, 40, MemberImplementsInterfaceAnalyzer.For),
-        new(AnalysisName.Overrides, 35, MemberOverridesAnalyzer.For),
-        new(AnalysisName.ImplementedBy, 40, static s => InheritorsAnalyzer<IMethod>.For(overrides: false, s)),
-        new(AnalysisName.OverriddenBy, 30, static s => InheritorsAnalyzer<IMethod>.For(overrides: true, s)),
-        new(AnalysisName.UsedBy, 20, MethodUsedByAnalyzer.For),
-        new(AnalysisName.Uses, 10, MethodUsesAnalyzer.For),
-        new(AnalysisName.UsedBy, 5, MemberUsedByAnalyzer.For),
-        new(AnalysisName.ImplementedBy, 10, static s => InheritorsAnalyzer<IProperty>.For(overrides: false, s)),
-        new(AnalysisName.OverriddenBy, 20, static s => InheritorsAnalyzer<IProperty>.For(overrides: true, s)),
-        new(AnalysisName.ExposedBy, 40, TypeExposedByAnalyzer.For),
-        new(AnalysisName.ExtensionMethods, 50, TypeExtensionMethodsAnalyzer.For),
-        new(AnalysisName.InstantiatedBy, 20, TypeInstantiatedByAnalyzer.For),
-        new(AnalysisName.UsedBy, 30, TypeUsedByAnalyzer.For, sortsResults: true),
+        new(AnalysisName.AppliedTo, 10, AttributeAppliedToAnalyzer.Prepare),
+        new(AnalysisName.ImplementedBy, 10, static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: false, s)),
+        new(AnalysisName.OverriddenBy, 20, static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: true, s)),
+        new(AnalysisName.ReadBy, 10, static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Read, s)),
+        new(AnalysisName.AssignedBy, 20, static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Write, s)),
+        new(AnalysisName.AddressTakenBy, 30, static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.AddressOf, s)),
+        new(AnalysisName.Implements, 40, MemberImplementsInterfaceAnalyzer.Prepare),
+        new(AnalysisName.Overrides, 35, MemberOverridesAnalyzer.Prepare),
+        new(AnalysisName.ImplementedBy, 40, static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: false, s)),
+        new(AnalysisName.OverriddenBy, 30, static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: true, s)),
+        new(AnalysisName.UsedBy, 20, MethodUsedByAnalyzer.Prepare),
+        new(AnalysisName.Uses, 10, MethodUsesAnalyzer.Prepare),
+        new(AnalysisName.UsedBy, 5, MemberUsedByAnalyzer.Prepare),
+        new(AnalysisName.ImplementedBy, 10, static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: false, s)),
+        new(AnalysisName.OverriddenBy, 20, static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: true, s)),
+        new(AnalysisName.ExposedBy, 40, TypeExposedByAnalyzer.Prepare),
+        new(AnalysisName.ExtensionMethods, 50, TypeExtensionMethodsAnalyzer.Prepare),
+        new(AnalysisName.InstantiatedBy, 20, TypeInstantiatedByAnalyzer.Prepare),
+        new(AnalysisName.UsedBy, 30, TypeUsedByAnalyzer.Prepare, sortsResults: true),
     ];
 
     /// <summary>ILSpy's English name for <paramref name="kind"/>.</summary>
-    public static string Header(AnalysisKind kind)
+    public static string GetHeader(AnalysisKind kind)
     {
         return kind.Name switch
         {
@@ -187,7 +187,7 @@ public static class Analyzers
 
     /// <summary>The analyses that apply to <paramref name="symbol"/>, in ILSpy's order.</summary>
     public static IReadOnlyList<AnalysisKind> KindsFor(AnalysisSymbol symbol) =>
-        Kinds.Where(k => k.Analyzer(symbol.Symbol) != null).OrderBy(static k => k.Order).ToArray();
+        Kinds.Where(k => k.Prepare(symbol.Symbol) != null).OrderBy(static k => k.Order).ToArray();
 
     /// <summary>The accessors of a property or event, which ILSpy analyzes on their own.</summary>
     public static IReadOnlyList<AnalysisSymbol> AccessorsOf(AnalysisSymbol symbol) =>
@@ -200,7 +200,7 @@ public static class Analyzers
         CancellationToken cancellationToken = default) =>
         Batches.Stream<AnalysisSymbol>((emit, token) =>
         {
-            var run = kind.Analyzer(symbol.Symbol);
+            var run = kind.Prepare(symbol.Symbol);
             if (run == null)
                 throw new ArgumentException($"The analysis {kind.Name} does not apply to {symbol.Label}.", nameof(kind));
             var found = run(new AnalyzerContext { AssemblyList = list, CancellationToken = token })

@@ -18,7 +18,7 @@ internal enum FieldAccessKind
 /// one particular way.</summary>
 internal static class FieldAccessAnalyzer
 {
-    public static AnalysisRun? For(FieldAccessKind kind, ISymbol? symbol)
+    public static AnalysisRun? Prepare(FieldAccessKind kind, ISymbol? symbol)
     {
         if (symbol is not IField field || (kind != FieldAccessKind.Read && field.IsConst))
             return null;

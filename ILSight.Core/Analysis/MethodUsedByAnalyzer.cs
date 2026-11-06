@@ -9,7 +9,7 @@ namespace ILSight.Core.Analysis;
 /// the method it came from. A virtual call to the member a non-virtual method overrides counts.</summary>
 internal static class MethodUsedByAnalyzer
 {
-    public static AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not IMethod method || (!method.IsVirtual && method.ParentModule == null))
             return null;

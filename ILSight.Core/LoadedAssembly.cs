@@ -88,7 +88,7 @@ public sealed class LoadedModule : LoadedAssembly
     private readonly ConcurrentDictionary<TypeSystemOptions, Lazy<DecompilerTypeSystem>> _typeSystems = new();
 
     internal LoadedModule(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place = null)
-        : base(list, path, NameOf(path, file), FullNameOf(file), VersionOf(file))
+        : base(list, path, NameOf(path, file), FullNameOf(file), GetVersion(file))
     {
         File = file;
         Place = place;
@@ -117,7 +117,7 @@ public sealed class LoadedModule : LoadedAssembly
         return file.FullName;
     }
 
-    private static Version? VersionOf(MetadataFile file)
+    private static Version? GetVersion(MetadataFile file)
     {
         if (!file.Metadata.IsAssembly)
             return null;

@@ -20,20 +20,20 @@ public static class Settings
         var sources = CaptureSavedSources(appState);
         if (sources == appState.LastSaved)
             return Unchanged;
-        var wait = RetryWait(appState, now);
+        var wait = AdvanceRetry(appState, now);
         if (wait > 0)
             return new Saving.Waiting(wait);
         return SaveSettings(appState) switch
         {
             SettingsWriteResult.Written => new Saving.Saved(),
-            SettingsWriteResult.Failed failed => new Saving.Failed(failed.Reason, RetryWait(appState, now)),
+            SettingsWriteResult.Failed failed => new Saving.Failed(failed.Reason, AdvanceRetry(appState, now)),
             _ => throw new UnreachableException(),
         };
     }
 
-    /// <summary>The seconds left at <paramref name="now"/> before a failed write is tried again, which
-    /// start counting from the first time this is asked after the failure.</summary>
-    private static double RetryWait(AppState appState, double now)
+    /// <summary>Moves the wait on, starting it if this is the first time it is asked for after a failure,
+    /// and returns the seconds left at <paramref name="now"/> before a failed write is tried again.</summary>
+    private static double AdvanceRetry(AppState appState, double now)
     {
         switch (appState.SaveRetry)
         {

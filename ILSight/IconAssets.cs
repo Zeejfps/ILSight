@@ -13,8 +13,8 @@ public delegate string IconFontFamily(string fontId, string path);
 /// <summary>Where an icon theme file's fonts and pictures are read from, by the paths the file names
 /// them by, and the font family each font is drawn as.</summary>
 /// <param name="Read">The file at a path, as the theme file writes it.</param>
-/// <param name="FamilyOf">The family each font is drawn as.</param>
-public sealed record IconAssets(Func<string, IconAsset> Read, IconFontFamily FamilyOf);
+/// <param name="GetFamily">The family each font is drawn as.</param>
+public sealed record IconAssets(Func<string, IconAsset> Read, IconFontFamily GetFamily);
 
 /// <summary>The fonts and pictures of a user's icon theme: files inside the folder the theme file is in,
 /// named by paths relative to it. A path that is absolute or leaves the folder is refused, and one that
@@ -24,7 +24,7 @@ public static class IconAssetFolders
     private const string FamilyPrefix = "icon-font:";
     private const string ParentFolder = "..";
 
-    public static IconAssets Of(string folder)
+    public static IconAssets Open(string folder)
     {
         var root = Path.GetFullPath(folder);
         return new IconAssets(

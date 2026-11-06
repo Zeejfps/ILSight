@@ -146,7 +146,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             return;
         if (!_asked.Add(kind))
             return;
-        _appCommands.Enqueue(Commands.On(kind, static (a, k) => Analysis.RunAnalysis(a, k)));
+        _appCommands.Enqueue(Commands.Create(kind, static (a, k) => Analysis.RunAnalysis(a, k)));
     }
 
     private IReadOnlyList<AnalyzerNode> ListResults(AnalyzerKindNode kind)

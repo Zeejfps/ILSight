@@ -51,7 +51,7 @@ public static class GitHubUpdates
     // leaving a redirect behind.
     private const string Repository = "https://github.com/Zeejfps/ILSight";
 
-    public static UpdateFeed Feed()
+    public static UpdateFeed CreateFeed()
     {
         // The manager can only be made once VelopackApp has run, which Program.cs does first; a process
         // that started some other way has nothing to update.
@@ -91,7 +91,7 @@ public sealed record AppUpdates(UpdateFeed Feed, bool CheckAutomatically)
 /// that.</summary>
 public static class Updates
 {
-    public static string VersionOf(UpdateInfo update)
+    public static string GetVersion(UpdateInfo update)
     {
         return update.TargetFullRelease.Version.ToString();
     }
@@ -124,7 +124,7 @@ public static class Updates
 
     private static async Task Download(AppUpdates updates, UpdateInfo update, bool asked)
     {
-        updates.Status = new UpdateStatus.Downloading(VersionOf(update));
+        updates.Status = new UpdateStatus.Downloading(GetVersion(update));
         var downloaded = await Background.Run(() =>
         {
             updates.Feed.Download(update);
