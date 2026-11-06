@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
@@ -13,7 +14,7 @@ using ILSight.Localization;
 namespace ILSight;
 
 /// <summary>The settings file as it is written: what <see cref="AppSettings"/> keeps, under the names
-/// the file has it by. It is only ever written; <see cref="SettingsReader"/> reads a file one field at
+/// the file has it by. It is only ever written; <see cref="SettingsJson"/> reads a file one field at
 /// a time, through the shapes below, which take what a hand-edited or older file can hold.</summary>
 internal sealed record SettingsFile(
     List<AssemblyListJson> AssemblyLists,
@@ -47,47 +48,6 @@ internal sealed record SettingsFile(
 
     /// <summary>The one switch settings files kept before <see cref="ApiVisibility"/> had three choices.</summary>
     public const string OldShowNonPublic = "ShowNonPublic";
-
-    public static SettingsFile From(AppSettings settings) => new(
-        settings.AssemblyLists.ConvertAll(AssemblyListJson.From),
-        settings.ActiveAssemblyList,
-        settings.Theme.Text,
-        settings.IconTheme.Text,
-        settings.Language,
-        SettingsJson.Write(settings.Decompiler),
-        settings.FoldedOptionGroups,
-        settings.Display == null ? null : SettingsJson.Write(settings.Display),
-        settings.Locale,
-        settings.ApiVisibility,
-        settings.CheckForUpdates,
-        settings.SearchKinds,
-        settings.Layout == null ? null : DockJson.Write(settings.Layout),
-        settings.Bookmarks.ConvertAll(SettingsJson.Write),
-        settings.BookmarkColumns,
-        settings.SearchColumns,
-        settings.ExportColumns,
-        FiltersOf(settings.FlagsFilters),
-        WindowOf(settings.Window),
-        WindowOf(settings.ExportWindow),
-        settings.NuGet == null ? null : SettingsJson.Write(settings.NuGet),
-        WindowOf(settings.NuGetWindow));
-
-    private static Dictionary<string, SavedFilterStateJson?>? FiltersOf(Dictionary<string, SavedFilterState>? filters)
-    {
-        if (filters == null)
-            return null;
-        var written = new Dictionary<string, SavedFilterStateJson?>();
-        foreach (var (key, filter) in filters)
-            written.Add(key, SettingsJson.Write(filter));
-        return written;
-    }
-
-    private static WindowBoundsJson? WindowOf(WindowBounds? bounds)
-    {
-        if (bounds == null)
-            return null;
-        return SettingsJson.Write(bounds.Value);
-    }
 }
 
 /// <summary>An assembly list as a settings file can hold it. Without a name it is no list.</summary>
@@ -97,104 +57,20 @@ internal sealed record AssemblyListJson(
     List<CodeAnchorJson?>? Analyzed,
     Dictionary<string, string?>? Pdbs,
     Dictionary<string, string?>? Frameworks,
-    DocumentsJson? Documents)
-{
-    public static AssemblyListJson From(AssemblyListRecord list) => new(
-        list.Name,
-        SettingsJson.WritePaths(list.Assemblies),
-        list.Analyzed?.Select(static CodeAnchorJson? (a) => SettingsJson.Write(a)).ToList(),
-        PicksJsonOf(list.Pdbs),
-        PicksJsonOf(list.Frameworks),
-        list.Documents == null ? null : DocumentsJson.From(list.Documents));
-
-    /// <summary>The list, without blank paths and picks or documents missing what they show; null
-    /// without a name. A document that is not one at all leaves out <paramref name="field"/>.</summary>
-    public AssemblyListRecord? Parse(SettingsReader file, string field)
-    {
-        if (Name == null)
-            return null;
-        return new AssemblyListRecord(Name, SettingsJson.ListPaths(Assemblies), SettingsJson.ListAnchors(Analyzed),
-            PicksOf(Pdbs), PicksOf(Frameworks), Documents?.Parse(file, field));
-    }
-
-    private static Dictionary<string, string?>? PicksJsonOf(Dictionary<AssemblyPath, string>? picks) =>
-        picks?.ToDictionary(static p => p.Key.Text, static string? (p) => p.Value);
-
-    private static Dictionary<AssemblyPath, string>? PicksOf(Dictionary<string, string?>? picks)
-    {
-        if (picks == null)
-            return null;
-        var kept = new Dictionary<AssemblyPath, string>();
-        foreach (var (text, pick) in picks)
-        {
-            var path = AssemblyPath.Parse(text);
-            if (path != null && !string.IsNullOrWhiteSpace(pick))
-                kept.TryAdd(path, pick);
-        }
-        return kept;
-    }
-}
+    DocumentsJson? Documents);
 
 /// <summary>A symbol analyzed, as a settings file can hold it. Without a file it is none.</summary>
 internal sealed record CodeAnchorJson(CodeAnchorKind Kind, string? FilePath, int Token, int ILOffset);
 
 /// <summary>A list's open documents as a settings file can hold them, each tab read on its own.</summary>
-internal sealed record DocumentsJson(List<JsonElement>? Tabs, string? Active, string? Preview, DockLayoutJson? Layout)
-{
-    public static DocumentsJson From(DocumentsRecord documents)
-    {
-        var json = AppSettingsJson.Default.DocumentJson;
-        var tabs = documents.Tabs.ConvertAll(t => JsonSerializer.SerializeToElement(DocumentJson.From(t), json));
-        var layout = documents.Layout == null ? null : DockJson.Write(documents.Layout);
-        return new DocumentsJson(tabs, documents.Active, documents.Preview, layout);
-    }
-
-    /// <summary>The documents, without tabs missing what they show, docked as a view, or docked as
-    /// a panel another tab was; null without tabs. A tab that is not one at all, or a layout missing
-    /// a part or giving two parts one id, leaves out <paramref name="field"/>.</summary>
-    public DocumentsRecord? Parse(SettingsReader file, string field)
-    {
-        if (Tabs == null)
-            return null;
-        var tabs = Tabs
-            .Select(t => file.Parse(t, AppSettingsJson.Default.DocumentJson, field)?.Parse(() => file.LeaveOut(field)))
-            .OfType<DocumentRecord>()
-            .Where(static t => !DockPanels.IsView(t.Panel))
-            .DistinctBy(static t => t.Panel)
-            .ToList();
-        return new DocumentsRecord(tabs, Active, Preview, ParseLayout(file, field));
-    }
-
-    private DockLayout? ParseLayout(SettingsReader file, string field)
-    {
-        if (Layout == null)
-            return null;
-        var layout = DockJson.Parse(Layout);
-        if (layout != null && !layout.RepeatsAnId())
-            return layout;
-        file.LeaveOut(field);
-        return null;
-    }
-}
+internal sealed record DocumentsJson(List<JsonElement>? Tabs, string? Active, string? Preview, DockLayoutJson? Layout);
 
 /// <summary>An open tab as a settings file can hold it. Without a panel or what it shows it is none.</summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(NodeDocumentJson), "node")]
 [JsonDerivedType(typeof(DiagramDocumentJson), "diagram")]
 [JsonDerivedType(typeof(ComparisonDocumentJson), "comparison")]
-internal abstract record DocumentJson(string? Panel, string? Title)
-{
-    public static DocumentJson From(DocumentRecord document) => document switch
-    {
-        NodeDocumentRecord node => NodeDocumentJson.From(node),
-        DiagramDocumentRecord diagram => DiagramDocumentJson.From(diagram),
-        ComparisonDocumentRecord comparison => ComparisonDocumentJson.From(comparison),
-        _ => throw new UnreachableException(),
-    };
-
-    /// <summary>The tab; <paramref name="leaveOut"/> is told when what it shows cannot be read.</summary>
-    public abstract DocumentRecord? Parse(Action leaveOut);
-}
+internal abstract record DocumentJson(string? Panel, string? Title);
 
 internal sealed record NodeDocumentJson(
     string? Panel,
@@ -203,41 +79,7 @@ internal sealed record NodeDocumentJson(
     SavedPathJson? Path,
     DecompilationLanguage Language,
     CodeViewPositionJson? Position,
-    GridPositionJson? GridPosition) : DocumentJson(Panel, Title)
-{
-    public static NodeDocumentJson From(NodeDocumentRecord node)
-    {
-        var code = node.View?.Code;
-        var grid = node.View?.Grid;
-        return new NodeDocumentJson(node.Panel, node.Title, node.Location.FilePath.Text,
-            SettingsJson.Write(node.Location), node.Language,
-            code == null ? null : SettingsJson.Write(code.Value),
-            grid == null ? null : SettingsJson.Write(grid.Value));
-    }
-
-    public override DocumentRecord? Parse(Action leaveOut)
-    {
-        if (Panel == null || FilePath == null)
-            return null;
-        var file = AssemblyPath.Parse(FilePath);
-        if (file == null)
-            return null;
-        var location = SettingsJson.GetLocation(file, Path, leaveOut);
-        if (location == null)
-            return null;
-        return new NodeDocumentRecord(Panel, Title, location, Language, ViewOf(Position, GridPosition));
-    }
-
-    /// <summary>The view's place as the file keeps it: a code view's, else a grid's, else none.</summary>
-    private static ViewPosition? ViewOf(CodeViewPositionJson? code, GridPositionJson? grid)
-    {
-        if (code != null)
-            return ViewPosition.OfCode(SettingsJson.Parse(code.Value));
-        if (grid != null)
-            return ViewPosition.OfGrid(SettingsJson.Parse(grid.Value));
-        return null;
-    }
-}
+    GridPositionJson? GridPosition) : DocumentJson(Panel, Title);
 
 /// <summary>Where a code view stood, as a settings file can hold it.</summary>
 internal readonly record struct CodeViewPositionJson(int TopLine, float ScrollX, TextPositionJson Anchor, TextPositionJson Caret);
@@ -253,24 +95,7 @@ internal sealed record DiagramDocumentJson(
     string? Title,
     List<TypeAnchorJson?>? Types,
     List<string?>? HomeAssemblies,
-    DiagramViewJson? View) : DocumentJson(Panel, Title)
-{
-    public static DiagramDocumentJson From(DiagramDocumentRecord diagram) => new(
-        diagram.Panel,
-        diagram.Title,
-        diagram.Types.Select(static TypeAnchorJson? (t) => SettingsJson.Write(t)).ToList(),
-        diagram.HomeAssemblies == null ? null : SettingsJson.WritePaths(diagram.HomeAssemblies),
-        diagram.View == null ? null : SettingsJson.Write(diagram.View));
-
-    public override DocumentRecord? Parse(Action leaveOut)
-    {
-        if (Panel == null || Types == null)
-            return null;
-        var types = Types.OfType<TypeAnchorJson>().Select(static t => SettingsJson.Parse(t)).OfType<TypeAnchor>().ToList();
-        var homes = HomeAssemblies == null ? null : SettingsJson.ListPaths(HomeAssemblies);
-        return new DiagramDocumentRecord(Panel, Title, types, homes, View == null ? null : SettingsJson.Parse(View));
-    }
-}
+    DiagramViewJson? View) : DocumentJson(Panel, Title);
 
 internal sealed record ComparisonDocumentJson(
     string? Panel,
@@ -278,27 +103,7 @@ internal sealed record ComparisonDocumentJson(
     string? LeftPath,
     string? RightPath,
     ApiScope Scope,
-    ComparisonViewJson? View) : DocumentJson(Panel, Title)
-{
-    public static ComparisonDocumentJson From(ComparisonDocumentRecord comparison) => new(
-        comparison.Panel,
-        comparison.Title,
-        comparison.LeftPath.Text,
-        comparison.RightPath.Text,
-        comparison.Scope,
-        comparison.View == null ? null : new ComparisonViewJson(comparison.View.OnlyDifferences));
-
-    public override DocumentRecord? Parse(Action leaveOut)
-    {
-        if (Panel == null || LeftPath == null || RightPath == null)
-            return null;
-        var left = AssemblyPath.Parse(LeftPath);
-        var right = AssemblyPath.Parse(RightPath);
-        if (left == null || right == null)
-            return null;
-        return new ComparisonDocumentRecord(Panel, Title, left, right, Scope, View == null ? null : SettingsJson.Parse(View));
-    }
-}
+    ComparisonViewJson? View) : DocumentJson(Panel, Title);
 
 /// <summary>How a comparison was viewed, as a settings file can hold it.</summary>
 internal sealed record ComparisonViewJson(bool OnlyDifferences);
@@ -403,10 +208,273 @@ internal sealed record SavedFilterStateJson(Dictionary<string, uint[]?>? Groups,
 /// <summary>The real ILSpy's bookmarks file as it can hold them, each bookmark read on its own.</summary>
 internal sealed record BookmarkFileJson(int Version, List<JsonElement>? Bookmarks);
 
-/// <summary>What the shapes share.</summary>
+/// <summary>Turns what the app keeps into the shapes above, and back. A file is read one field at a time, so
+/// that a value which is not what its field holds leaves out that field alone, for its default to stand in,
+/// and is named in <see cref="SettingsReader.LeftOut"/>.</summary>
 internal static class SettingsJson
 {
-    public static List<string?> WritePaths(List<AssemblyPath> paths)
+    /// <summary>What <paramref name="field"/> holds, or the default when the file lacks it, holds
+    /// null, or holds something else.</summary>
+    public static T? Read<T>(SettingsReader file, string field, JsonTypeInfo<T> type)
+    {
+        if (!file.Fields.TryGetValue(field, out var value))
+            return default;
+        return Parse(file, value, type, field);
+    }
+
+    /// <summary>The elements of the array <paramref name="field"/> holds, for each to be read on its
+    /// own; none when the file lacks it, holds null, or holds something else.</summary>
+    public static List<JsonElement> ReadEach(SettingsReader file, string field)
+    {
+        return Read(file, field, AppSettingsJson.Default.ListJsonElement) ?? new List<JsonElement>();
+    }
+
+    /// <summary><paramref name="value"/>, a part of <paramref name="field"/>, as <paramref name="type"/>;
+    /// the default, with the field left out, when it is something else.</summary>
+    public static T? Parse<T>(SettingsReader file, JsonElement value, JsonTypeInfo<T> type, string field)
+    {
+        try
+        {
+            return value.Deserialize(type);
+        }
+        catch (Exception e) when (e is JsonException or NotSupportedException)
+        {
+            LeaveOut(file, field);
+            return default;
+        }
+    }
+
+    public static void LeaveOut(SettingsReader file, string field)
+    {
+        if (!file.LeftOut.Contains(field))
+            file.LeftOut.Add(field);
+    }
+
+    public static SettingsFile Write(AppSettings settings)
+    {
+        return new SettingsFile(
+            settings.AssemblyLists.ConvertAll(Write),
+            settings.ActiveAssemblyList,
+            settings.Theme.Text,
+            settings.IconTheme.Text,
+            settings.Language,
+            Write(settings.Decompiler),
+            settings.FoldedOptionGroups,
+            settings.Display == null ? null : Write(settings.Display),
+            settings.Locale,
+            settings.ApiVisibility,
+            settings.CheckForUpdates,
+            settings.SearchKinds,
+            settings.Layout == null ? null : DockJson.Write(settings.Layout),
+            settings.Bookmarks.ConvertAll(Write),
+            settings.BookmarkColumns,
+            settings.SearchColumns,
+            settings.ExportColumns,
+            WriteFilters(settings.FlagsFilters),
+            WriteWindow(settings.Window),
+            WriteWindow(settings.ExportWindow),
+            settings.NuGet == null ? null : Write(settings.NuGet),
+            WriteWindow(settings.NuGetWindow));
+    }
+
+    private static Dictionary<string, SavedFilterStateJson?>? WriteFilters(Dictionary<string, SavedFilterState>? filters)
+    {
+        if (filters == null)
+            return null;
+        var written = new Dictionary<string, SavedFilterStateJson?>();
+        foreach (var (key, filter) in filters)
+            written.Add(key, Write(filter));
+        return written;
+    }
+
+    private static WindowBoundsJson? WriteWindow(WindowBounds? bounds)
+    {
+        if (bounds == null)
+            return null;
+        return Write(bounds.Value);
+    }
+
+    private static AssemblyListJson Write(AssemblyListRecord list)
+    {
+        return new AssemblyListJson(
+            list.Name,
+            WritePaths(list.Assemblies),
+            list.Analyzed?.Select(static CodeAnchorJson? (a) => Write(a)).ToList(),
+            WritePicks(list.Pdbs),
+            WritePicks(list.Frameworks),
+            list.Documents == null ? null : Write(list.Documents));
+    }
+
+    /// <summary>The list, without blank paths and picks or documents missing what they show; null
+    /// without a name. A document that is not one at all leaves out <paramref name="field"/>.</summary>
+    public static AssemblyListRecord? Parse(AssemblyListJson json, SettingsReader file, string field)
+    {
+        if (json.Name == null)
+            return null;
+        return new AssemblyListRecord(json.Name, ListPaths(json.Assemblies), ListAnchors(json.Analyzed),
+            ParsePicks(json.Pdbs), ParsePicks(json.Frameworks), json.Documents == null ? null : Parse(json.Documents, file, field));
+    }
+
+    private static Dictionary<string, string?>? WritePicks(Dictionary<AssemblyPath, string>? picks)
+    {
+        return picks?.ToDictionary(static p => p.Key.Text, static string? (p) => p.Value);
+    }
+
+    private static Dictionary<AssemblyPath, string>? ParsePicks(Dictionary<string, string?>? picks)
+    {
+        if (picks == null)
+            return null;
+        var kept = new Dictionary<AssemblyPath, string>();
+        foreach (var (text, pick) in picks)
+        {
+            var path = AssemblyPath.Parse(text);
+            if (path != null && !string.IsNullOrWhiteSpace(pick))
+                kept.TryAdd(path, pick);
+        }
+        return kept;
+    }
+
+    private static DocumentsJson Write(DocumentsRecord documents)
+    {
+        var json = AppSettingsJson.Default.DocumentJson;
+        var tabs = documents.Tabs.ConvertAll(t => JsonSerializer.SerializeToElement(Write(t), json));
+        var layout = documents.Layout == null ? null : DockJson.Write(documents.Layout);
+        return new DocumentsJson(tabs, documents.Active, documents.Preview, layout);
+    }
+
+    /// <summary>The documents, without tabs missing what they show, docked as a view, or docked as
+    /// a panel another tab was; null without tabs. A tab that is not one at all, or a layout missing
+    /// a part or giving two parts one id, leaves out <paramref name="field"/>.</summary>
+    private static DocumentsRecord? Parse(DocumentsJson json, SettingsReader file, string field)
+    {
+        if (json.Tabs == null)
+            return null;
+        var tabs = json.Tabs
+            .Select(t => ParseTab(t, file, field))
+            .OfType<DocumentRecord>()
+            .Where(static t => !DockPanels.IsView(t.Panel))
+            .DistinctBy(static t => t.Panel)
+            .ToList();
+        return new DocumentsRecord(tabs, json.Active, json.Preview, ParseLayout(json.Layout, file, field));
+    }
+
+    private static DocumentRecord? ParseTab(JsonElement tab, SettingsReader file, string field)
+    {
+        var json = Parse(file, tab, AppSettingsJson.Default.DocumentJson, field);
+        if (json == null)
+            return null;
+        return Parse(json, () => LeaveOut(file, field));
+    }
+
+    private static DockLayout? ParseLayout(DockLayoutJson? json, SettingsReader file, string field)
+    {
+        if (json == null)
+            return null;
+        var layout = DockJson.Parse(json);
+        if (layout != null && !layout.RepeatsAnId())
+            return layout;
+        LeaveOut(file, field);
+        return null;
+    }
+
+    private static DocumentJson Write(DocumentRecord document)
+    {
+        return document switch
+        {
+            NodeDocumentRecord node => Write(node),
+            DiagramDocumentRecord diagram => Write(diagram),
+            ComparisonDocumentRecord comparison => Write(comparison),
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    /// <summary>The tab; <paramref name="leaveOut"/> is told when what it shows cannot be read.</summary>
+    private static DocumentRecord? Parse(DocumentJson json, Action leaveOut)
+    {
+        return json switch
+        {
+            NodeDocumentJson node => Parse(node, leaveOut),
+            DiagramDocumentJson diagram => Parse(diagram),
+            ComparisonDocumentJson comparison => Parse(comparison),
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static NodeDocumentJson Write(NodeDocumentRecord node)
+    {
+        var code = node.View?.Code;
+        var grid = node.View?.Grid;
+        return new NodeDocumentJson(node.Panel, node.Title, node.Location.FilePath.Text,
+            Write(node.Location), node.Language,
+            code == null ? null : Write(code.Value),
+            grid == null ? null : Write(grid.Value));
+    }
+
+    private static DocumentRecord? Parse(NodeDocumentJson json, Action leaveOut)
+    {
+        if (json.Panel == null || json.FilePath == null)
+            return null;
+        var file = AssemblyPath.Parse(json.FilePath);
+        if (file == null)
+            return null;
+        var location = GetLocation(file, json.Path, leaveOut);
+        if (location == null)
+            return null;
+        return new NodeDocumentRecord(json.Panel, json.Title, location, json.Language, ParseView(json.Position, json.GridPosition));
+    }
+
+    /// <summary>The view's place as the file keeps it: a code view's, else a grid's, else none.</summary>
+    private static ViewPosition? ParseView(CodeViewPositionJson? code, GridPositionJson? grid)
+    {
+        if (code != null)
+            return ViewPosition.OfCode(Parse(code.Value));
+        if (grid != null)
+            return ViewPosition.OfGrid(Parse(grid.Value));
+        return null;
+    }
+
+    private static DiagramDocumentJson Write(DiagramDocumentRecord diagram)
+    {
+        return new DiagramDocumentJson(
+            diagram.Panel,
+            diagram.Title,
+            diagram.Types.Select(static TypeAnchorJson? (t) => Write(t)).ToList(),
+            diagram.HomeAssemblies == null ? null : WritePaths(diagram.HomeAssemblies),
+            diagram.View == null ? null : Write(diagram.View));
+    }
+
+    private static DocumentRecord? Parse(DiagramDocumentJson json)
+    {
+        if (json.Panel == null || json.Types == null)
+            return null;
+        var types = json.Types.OfType<TypeAnchorJson>().Select(static t => Parse(t)).OfType<TypeAnchor>().ToList();
+        var homes = json.HomeAssemblies == null ? null : ListPaths(json.HomeAssemblies);
+        return new DiagramDocumentRecord(json.Panel, json.Title, types, homes, json.View == null ? null : Parse(json.View));
+    }
+
+    private static ComparisonDocumentJson Write(ComparisonDocumentRecord comparison)
+    {
+        return new ComparisonDocumentJson(
+            comparison.Panel,
+            comparison.Title,
+            comparison.LeftPath.Text,
+            comparison.RightPath.Text,
+            comparison.Scope,
+            comparison.View == null ? null : new ComparisonViewJson(comparison.View.OnlyDifferences));
+    }
+
+    private static DocumentRecord? Parse(ComparisonDocumentJson json)
+    {
+        if (json.Panel == null || json.LeftPath == null || json.RightPath == null)
+            return null;
+        var left = AssemblyPath.Parse(json.LeftPath);
+        var right = AssemblyPath.Parse(json.RightPath);
+        if (left == null || right == null)
+            return null;
+        return new ComparisonDocumentRecord(json.Panel, json.Title, left, right, json.Scope, json.View == null ? null : Parse(json.View));
+    }
+
+    private static List<string?> WritePaths(List<AssemblyPath> paths)
     {
         return paths.ConvertAll(static string? (p) => p.Text);
     }
@@ -434,7 +502,7 @@ internal static class SettingsJson
     /// <summary>Where a tab or bookmark in the file at <paramref name="filePath"/> was, as
     /// <paramref name="path"/> says. Null when there is none, or when it cannot be read, which
     /// <paramref name="leaveOut"/> is told; never the root for a path that cannot be read.</summary>
-    public static NodePath? GetLocation(AssemblyPath filePath, SavedPathJson? path, Action leaveOut)
+    private static NodePath? GetLocation(AssemblyPath filePath, SavedPathJson? path, Action leaveOut)
     {
         if (path == null)
             return null;
@@ -445,7 +513,7 @@ internal static class SettingsJson
     }
 
     /// <summary><paramref name="place"/> as the files keep it.</summary>
-    public static SavedPathJson Write(NodePath place)
+    private static SavedPathJson Write(NodePath place)
     {
         return new SavedPathJson(SavedPathJson.CurrentVersion,
             place.Steps.Select(static SavedPathStepJson? (s) => new SavedPathStepJson(SavedPlaces.Write(s.Segment), s.Label)).ToList());
@@ -581,7 +649,7 @@ internal static class SettingsJson
             json.IndentationTabSize);
     }
 
-    public static CodeAnchorJson Write(CodeAnchor anchor)
+    private static CodeAnchorJson Write(CodeAnchor anchor)
     {
         return new CodeAnchorJson(anchor.Kind, anchor.FilePath.Text, anchor.Token, anchor.ILOffset);
     }
@@ -596,12 +664,12 @@ internal static class SettingsJson
         return new CodeAnchor(json.Kind, path, json.Token, json.ILOffset);
     }
 
-    public static CodeViewPositionJson Write(CodeViewPosition position)
+    private static CodeViewPositionJson Write(CodeViewPosition position)
     {
         return new CodeViewPositionJson(position.TopLine, position.ScrollX, Write(position.Anchor), Write(position.Caret));
     }
 
-    public static CodeViewPosition Parse(CodeViewPositionJson json)
+    private static CodeViewPosition Parse(CodeViewPositionJson json)
     {
         return new CodeViewPosition(json.TopLine, json.ScrollX, Parse(json.Anchor), Parse(json.Caret));
     }
@@ -616,27 +684,27 @@ internal static class SettingsJson
         return new TextPosition(json.Line, json.Column);
     }
 
-    public static GridPositionJson Write(GridPosition position)
+    private static GridPositionJson Write(GridPosition position)
     {
         return new GridPositionJson(position.TopRow, position.ScrollX, position.Row, position.Column);
     }
 
-    public static GridPosition Parse(GridPositionJson json)
+    private static GridPosition Parse(GridPositionJson json)
     {
         return new GridPosition(json.TopRow, json.ScrollX, json.Row, json.Column);
     }
 
-    public static ComparisonViewRecord Parse(ComparisonViewJson json)
+    private static ComparisonViewRecord Parse(ComparisonViewJson json)
     {
         return new ComparisonViewRecord(json.OnlyDifferences);
     }
 
-    public static TypeAnchorJson Write(TypeAnchor anchor)
+    private static TypeAnchorJson Write(TypeAnchor anchor)
     {
         return new TypeAnchorJson(anchor.AssemblyPath.Text, anchor.FullName);
     }
 
-    public static TypeAnchor? Parse(TypeAnchorJson json)
+    private static TypeAnchor? Parse(TypeAnchorJson json)
     {
         if (json.AssemblyPath == null || json.FullName == null)
             return null;
@@ -646,13 +714,13 @@ internal static class SettingsJson
         return new TypeAnchor(path, json.FullName);
     }
 
-    public static DiagramViewJson Write(DiagramViewRecord view)
+    private static DiagramViewJson Write(DiagramViewRecord view)
     {
         return new DiagramViewJson(view.X, view.Y, view.Zoom,
             view.Folds?.Select(static CardFoldJson? (f) => Write(f)).ToList(), view.ShowsHiddenMembers);
     }
 
-    public static DiagramViewRecord Parse(DiagramViewJson json)
+    private static DiagramViewRecord Parse(DiagramViewJson json)
     {
         var folds = json.Folds?.OfType<CardFoldJson>().Select(static f => Parse(f)).OfType<CardFold>().ToList();
         return new DiagramViewRecord(json.X, json.Y, json.Zoom, folds, json.ShowsHiddenMembers);
@@ -673,7 +741,7 @@ internal static class SettingsJson
         return new CardFold(card.Value, json.Section, json.InheritedFrom);
     }
 
-    public static NuGetSearchJson Write(SavedNuGetSearch search)
+    private static NuGetSearchJson Write(SavedNuGetSearch search)
     {
         return new NuGetSearchJson(search.FeedUrl, search.IncludePrerelease);
     }
@@ -685,7 +753,7 @@ internal static class SettingsJson
         return new SavedNuGetSearch(json.FeedUrl, json.IncludePrerelease);
     }
 
-    public static DisplayOptionsJson Write(DisplayOptions options)
+    private static DisplayOptionsJson Write(DisplayOptions options)
     {
         return new DisplayOptionsJson(
             options.FontSize?.Points,
@@ -736,7 +804,7 @@ internal static class SettingsJson
         return new CodeFont(json.Family, json.Path, json.FaceIndex);
     }
 
-    public static DecompilerOptionsJson Write(DecompilerOptions options)
+    private static DecompilerOptionsJson Write(DecompilerOptions options)
     {
         return new DecompilerOptionsJson(options.LanguageVersion, options.Changes.ToDictionary(static c => c.Key.Name, static c => c.Value));
     }
@@ -761,7 +829,7 @@ internal static class SettingsJson
         return options;
     }
 
-    public static WindowBoundsJson Write(WindowBounds bounds)
+    private static WindowBoundsJson Write(WindowBounds bounds)
     {
         return new WindowBoundsJson(bounds.X, bounds.Y, bounds.Width, bounds.Height, bounds.Maximized);
     }
@@ -771,7 +839,7 @@ internal static class SettingsJson
         return new WindowBounds(json.X, json.Y, json.Width, json.Height, json.Maximized);
     }
 
-    public static SavedFilterStateJson Write(SavedFilterState filter)
+    private static SavedFilterStateJson Write(SavedFilterState filter)
     {
         var groups = filter.Groups?.ToDictionary(static g => g.Key, static uint[]? (g) => g.Value);
         return new SavedFilterStateJson(groups, filter.Flags, filter.Mode);

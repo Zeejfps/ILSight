@@ -148,7 +148,7 @@ public sealed class AppSettings
         if (file.LeftOut.Count == 0)
             return new SettingsLoadResult(settings, layoutProblem);
         if (layoutProblem is not SettingsProblem.None)
-            file.LeaveOut(nameof(SettingsFile.Layout));
+            SettingsJson.LeaveOut(file, nameof(SettingsFile.Layout));
         return new SettingsLoadResult(settings, new SettingsProblem.ValuesLeftOut(file.LeftOut, Keep(path)));
     }
 
@@ -174,30 +174,30 @@ public sealed class AppSettings
     {
         var json = AppSettingsJson.Default;
         var lists = ReadAssemblyLists(file);
-        var active = file.Read(nameof(SettingsFile.ActiveAssemblyList), json.String);
-        MoveUnnamedListIntoDefault(lists, file.Read(SettingsFile.OldAssemblies, json.ListString));
-        MoveAnalysesIntoActiveList(lists, active, file.Read(SettingsFile.OldAnalyzed, json.ListCodeAnchorJson));
+        var active = SettingsJson.Read(file, nameof(SettingsFile.ActiveAssemblyList), json.String);
+        MoveUnnamedListIntoDefault(lists, SettingsJson.Read(file, SettingsFile.OldAssemblies, json.ListString));
+        MoveAnalysesIntoActiveList(lists, active, SettingsJson.Read(file, SettingsFile.OldAnalyzed, json.ListCodeAnchorJson));
         return new AppSettings
         {
             AssemblyLists = lists,
             ActiveAssemblyList = active,
-            Theme = ThemeIdOf(file.Read(nameof(SettingsFile.Theme), json.String)),
-            IconTheme = IconThemeIdOf(file.Read(nameof(SettingsFile.IconTheme), json.String)),
-            Language = file.Read(nameof(SettingsFile.Language), json.NullableDecompilationLanguage) ?? DecompilationLanguage.CSharp,
+            Theme = ThemeIdOf(SettingsJson.Read(file, nameof(SettingsFile.Theme), json.String)),
+            IconTheme = IconThemeIdOf(SettingsJson.Read(file, nameof(SettingsFile.IconTheme), json.String)),
+            Language = SettingsJson.Read(file, nameof(SettingsFile.Language), json.NullableDecompilationLanguage) ?? DecompilationLanguage.CSharp,
             Decompiler = ReadDecompiler(file),
-            FoldedOptionGroups = NamesOf(file.Read(nameof(SettingsFile.FoldedOptionGroups), json.ListString)),
+            FoldedOptionGroups = NamesOf(SettingsJson.Read(file, nameof(SettingsFile.FoldedOptionGroups), json.ListString)),
             Display = ReadDisplay(file),
-            Locale = file.Read(nameof(SettingsFile.Locale), json.NullableLocale),
+            Locale = SettingsJson.Read(file, nameof(SettingsFile.Locale), json.NullableLocale),
             ApiVisibility = ApiVisibilityOf(
-                file.Read(nameof(SettingsFile.ApiVisibility), json.NullableApiVisibility),
-                file.Read(SettingsFile.OldShowNonPublic, json.NullableBoolean)),
-            CheckForUpdates = file.Read(nameof(SettingsFile.CheckForUpdates), json.NullableBoolean) ?? true,
-            SearchKinds = file.Read(nameof(SettingsFile.SearchKinds), json.NullableSearchKinds) ?? SearchKinds.TypesAndMembers,
+                SettingsJson.Read(file, nameof(SettingsFile.ApiVisibility), json.NullableApiVisibility),
+                SettingsJson.Read(file, SettingsFile.OldShowNonPublic, json.NullableBoolean)),
+            CheckForUpdates = SettingsJson.Read(file, nameof(SettingsFile.CheckForUpdates), json.NullableBoolean) ?? true,
+            SearchKinds = SettingsJson.Read(file, nameof(SettingsFile.SearchKinds), json.NullableSearchKinds) ?? SearchKinds.TypesAndMembers,
             Layout = ReadLayout(file, out layoutProblem),
             Bookmarks = ReadBookmarks(file),
-            BookmarkColumns = file.Read(nameof(SettingsFile.BookmarkColumns), json.ListSingle),
-            SearchColumns = file.Read(nameof(SettingsFile.SearchColumns), json.ListSingle),
-            ExportColumns = file.Read(nameof(SettingsFile.ExportColumns), json.ListSingle),
+            BookmarkColumns = SettingsJson.Read(file, nameof(SettingsFile.BookmarkColumns), json.ListSingle),
+            SearchColumns = SettingsJson.Read(file, nameof(SettingsFile.SearchColumns), json.ListSingle),
+            ExportColumns = SettingsJson.Read(file, nameof(SettingsFile.ExportColumns), json.ListSingle),
             FlagsFilters = ReadFlagsFilters(file),
             Window = Sanitize(ReadWindow(file, nameof(SettingsFile.Window))),
             ExportWindow = SanitizeDialog(ReadWindow(file, nameof(SettingsFile.ExportWindow))),
@@ -209,15 +209,15 @@ public sealed class AppSettings
     private static DecompilerOptions ReadDecompiler(SettingsReader file)
     {
         const string field = nameof(SettingsFile.Decompiler);
-        var saved = file.Read(field, AppSettingsJson.Default.DecompilerOptionsJson);
+        var saved = SettingsJson.Read(file, field, AppSettingsJson.Default.DecompilerOptionsJson);
         if (saved == null)
             return DecompilerOptions.Default;
-        return SettingsJson.Parse(saved, () => file.LeaveOut(field));
+        return SettingsJson.Parse(saved, () => SettingsJson.LeaveOut(file, field));
     }
 
     private static DisplayOptions? ReadDisplay(SettingsReader file)
     {
-        var saved = file.Read(nameof(SettingsFile.Display), AppSettingsJson.Default.DisplayOptionsJson);
+        var saved = SettingsJson.Read(file, nameof(SettingsFile.Display), AppSettingsJson.Default.DisplayOptionsJson);
         if (saved == null)
             return null;
         return SettingsJson.Parse(saved);
@@ -225,7 +225,7 @@ public sealed class AppSettings
 
     private static WindowBounds? ReadWindow(SettingsReader file, string field)
     {
-        var saved = file.Read(field, AppSettingsJson.Default.WindowBoundsJson);
+        var saved = SettingsJson.Read(file, field, AppSettingsJson.Default.WindowBoundsJson);
         if (saved == null)
             return null;
         return SettingsJson.Parse(saved);
@@ -233,7 +233,7 @@ public sealed class AppSettings
 
     private static SavedNuGetSearch? ReadNuGet(SettingsReader file)
     {
-        var saved = file.Read(nameof(SettingsFile.NuGet), AppSettingsJson.Default.NuGetSearchJson);
+        var saved = SettingsJson.Read(file, nameof(SettingsFile.NuGet), AppSettingsJson.Default.NuGetSearchJson);
         if (saved == null)
             return null;
         return SettingsJson.Parse(saved);
@@ -243,17 +243,25 @@ public sealed class AppSettings
     private static List<AssemblyListRecord> ReadAssemblyLists(SettingsReader file)
     {
         const string field = nameof(SettingsFile.AssemblyLists);
-        return file.ReadEach(field)
-            .Select(l => file.Parse(l, AppSettingsJson.Default.AssemblyListJson, field)?.Parse(file, field))
+        return SettingsJson.ReadEach(file, field)
+            .Select(l => ParseAssemblyList(file, l, field))
             .OfType<AssemblyListRecord>()
             .ToList();
+    }
+
+    private static AssemblyListRecord? ParseAssemblyList(SettingsReader file, JsonElement list, string field)
+    {
+        var saved = SettingsJson.Parse(file, list, AppSettingsJson.Default.AssemblyListJson, field);
+        if (saved == null)
+            return null;
+        return SettingsJson.Parse(saved, file, field);
     }
 
     /// <summary>The bookmarks the file holds, each read on its own, without ones naming no assembly file.</summary>
     private static List<BookmarkRecord> ReadBookmarks(SettingsReader file)
     {
         const string field = nameof(SettingsFile.Bookmarks);
-        return file.ReadEach(field)
+        return SettingsJson.ReadEach(file, field)
             .Select(b => ParseBookmark(file, b, field))
             .OfType<BookmarkRecord>()
             .ToList();
@@ -261,10 +269,10 @@ public sealed class AppSettings
 
     private static BookmarkRecord? ParseBookmark(SettingsReader file, JsonElement bookmark, string field)
     {
-        var saved = file.Parse(bookmark, AppSettingsJson.Default.BookmarkJson, field);
+        var saved = SettingsJson.Parse(file, bookmark, AppSettingsJson.Default.BookmarkJson, field);
         if (saved == null)
             return null;
-        return SettingsJson.Parse(saved, () => file.LeaveOut(field));
+        return SettingsJson.Parse(saved, () => SettingsJson.LeaveOut(file, field));
     }
 
     private static List<string>? NamesOf(List<string?>? names)
@@ -277,7 +285,7 @@ public sealed class AppSettings
     private static DockLayout? ReadLayout(SettingsReader file, out SettingsProblem problem)
     {
         problem = new SettingsProblem.None();
-        var saved = file.Read(nameof(SettingsFile.Layout), AppSettingsJson.Default.DockLayoutJson);
+        var saved = SettingsJson.Read(file, nameof(SettingsFile.Layout), AppSettingsJson.Default.DockLayoutJson);
         if (saved == null)
             return null;
         var layout = DockJson.Parse(saved);
@@ -297,7 +305,7 @@ public sealed class AppSettings
     /// <summary>The flags filters the file holds, without missing ones.</summary>
     private static Dictionary<string, SavedFilterState>? ReadFlagsFilters(SettingsReader file)
     {
-        var saved = file.Read(nameof(SettingsFile.FlagsFilters), AppSettingsJson.Default.DictionaryStringSavedFilterStateJson);
+        var saved = SettingsJson.Read(file, nameof(SettingsFile.FlagsFilters), AppSettingsJson.Default.DictionaryStringSavedFilterStateJson);
         if (saved == null)
             return null;
         var filters = new Dictionary<string, SavedFilterState>();
@@ -399,7 +407,7 @@ public sealed class AppSettings
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(temporary, JsonSerializer.Serialize(SettingsFile.From(this), AppSettingsJson.Default.SettingsFile));
+            File.WriteAllText(temporary, JsonSerializer.Serialize(SettingsJson.Write(this), AppSettingsJson.Default.SettingsFile));
             File.Move(temporary, FilePath, overwrite: true);
             return new SettingsWriteResult.Written();
         }
