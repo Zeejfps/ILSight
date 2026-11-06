@@ -24,10 +24,10 @@ public sealed class NuGetSetup
     public PackageIcons Icons { get; }
 
     /// <summary>The setup the user's NuGet.Config describes, downloading into the app's own folder.</summary>
-    public static NuGetSetup ReadUser() => FromConfig(NuGetConfig.ReadUser());
+    public static NuGetSetup ReadUser() => FromConfig(NuGetConfigs.ReadUser());
 
     /// <summary>The setup when the user's config cannot be read at all: nuget.org and the default folders.</summary>
-    public static NuGetSetup CreateDefault() => FromConfig(NuGetConfig.CreateDefault());
+    public static NuGetSetup CreateDefault() => FromConfig(NuGetConfigs.CreateDefault());
 
     private static NuGetSetup FromConfig(NuGetConfig config)
     {

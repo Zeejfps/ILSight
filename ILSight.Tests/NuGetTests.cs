@@ -522,7 +522,7 @@ public sealed class NuGetConfigTests
             </configuration>
             """);
 
-        var config = NuGetConfig.Read(path, null);
+        var config = NuGetConfigs.Read(path, null);
 
         Assert.Equal(["nuget.org", "company"], config.Sources.Select(s => s.Name));
         Assert.Equal("https://company.test/nuget/v3/index.json", config.Sources[1].Url.Text);
@@ -533,7 +533,7 @@ public sealed class NuGetConfigTests
     {
         using var temp = new TempDir();
 
-        var config = NuGetConfig.Read(temp.PathOf("NuGet.Config"), null);
+        var config = NuGetConfigs.Read(temp.PathOf("NuGet.Config"), null);
 
         Assert.Equal([NuGetSource.NuGetOrg], config.Sources);
     }
@@ -544,7 +544,7 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = temp.Write("NuGet.Config", "not xml");
 
-        var config = NuGetConfig.Read(path, null);
+        var config = NuGetConfigs.Read(path, null);
 
         Assert.Equal([NuGetSource.NuGetOrg], config.Sources);
     }
@@ -555,7 +555,7 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = WriteConfigNamingRestored(temp);
 
-        var config = NuGetConfig.Read(path, null);
+        var config = NuGetConfigs.Read(path, null);
 
         Assert.Equal(temp.PathOf("restored"), config.GlobalPackagesFolder);
     }
@@ -567,7 +567,7 @@ public sealed class NuGetConfigTests
         var path = WriteConfigNamingRestored(temp);
         var fromEnvironment = Path.Combine(temp.Path, "env", "..", "elsewhere");
 
-        var config = NuGetConfig.Read(path, fromEnvironment);
+        var config = NuGetConfigs.Read(path, fromEnvironment);
 
         Assert.Equal(temp.PathOf("elsewhere"), config.GlobalPackagesFolder);
     }
@@ -581,7 +581,7 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = WriteConfigNamingRestored(temp);
 
-        var config = NuGetConfig.Read(path, fromEnvironment);
+        var config = NuGetConfigs.Read(path, fromEnvironment);
 
         Assert.Equal(temp.PathOf("restored"), config.GlobalPackagesFolder);
     }

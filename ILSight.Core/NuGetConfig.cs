@@ -50,27 +50,41 @@ public sealed record NuGetSource
 /// the v3 protocol over HTTP, and the global packages folder that restores fill. A config that is
 /// missing or cannot be read is as one that says nothing: nuget.org and the default folder.
 /// </summary>
-public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string GlobalPackagesFolder)
+public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string GlobalPackagesFolder);
+
+/// <summary>Reading what a NuGet.Config says.</summary>
+public static class NuGetConfigs
 {
     private const string PackagesFolderVariable = "NUGET_PACKAGES";
 
     /// <summary>The config of the user running the app.</summary>
-    public static NuGetConfig ReadUser() => Read(UserConfigPath(), PackagesFolderFromEnvironment());
+    public static NuGetConfig ReadUser()
+    {
+        return Read(GetUserConfigPath(), ReadPackagesFolderVariable());
+    }
 
     /// <summary>What a config that says nothing means: nuget.org, and the default packages folder.</summary>
-    public static NuGetConfig CreateDefault() =>
-        new([NuGetSource.NuGetOrg], FindGlobalPackagesFolder(null, "", PackagesFolderFromEnvironment()));
+    public static NuGetConfig CreateDefault()
+    {
+        return new([NuGetSource.NuGetOrg], FindGlobalPackagesFolder(null, "", ReadPackagesFolderVariable()));
+    }
 
-    private static string? PackagesFolderFromEnvironment() => Environment.GetEnvironmentVariable(PackagesFolderVariable);
+    private static string? ReadPackagesFolderVariable()
+    {
+        return Environment.GetEnvironmentVariable(PackagesFolderVariable);
+    }
 
-    private static string UserConfigPath()
+    private static string GetUserConfigPath()
     {
         if (OperatingSystem.IsWindows())
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NuGet", "NuGet.Config");
-        return Path.Combine(HomeFolder(), ".nuget", "NuGet", "NuGet.Config");
+        return Path.Combine(GetHomeFolder(), ".nuget", "NuGet", "NuGet.Config");
     }
 
-    private static string HomeFolder() => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    private static string GetHomeFolder()
+    {
+        return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    }
 
     /// <summary>The config at <paramref name="path"/>, with <paramref name="packagesFolder"/> the value of
     /// <c>NUGET_PACKAGES</c>, or null where it is not set.</summary>
@@ -104,7 +118,7 @@ public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string Glob
             return sources;
         }
         var disabled = ListDisabled(document);
-        foreach (var entry in Section(document, "packageSources"))
+        foreach (var entry in ListSection(document, "packageSources"))
             ApplySourceEntry(entry, disabled, sources);
         if (sources.Count == 0)
             sources.Add(NuGetSource.NuGetOrg);
@@ -114,10 +128,10 @@ public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string Glob
     private static HashSet<string> ListDisabled(XDocument document)
     {
         var disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var entry in Section(document, "disabledPackageSources"))
+        foreach (var entry in ListSection(document, "disabledPackageSources"))
         {
             if (IsTrue(entry))
-                disabled.Add(KeyOf(entry));
+                disabled.Add(GetKey(entry));
         }
         return disabled;
     }
@@ -139,7 +153,7 @@ public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string Glob
         }
         if (entry.Name.LocalName != "add")
             return;
-        var name = KeyOf(entry);
+        var name = GetKey(entry);
         if (disabled.Contains(name))
             return;
         var source = NuGetSource.FromConfig(name, (string?)entry.Attribute("value") ?? "");
@@ -160,7 +174,7 @@ public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string Glob
         var fromConfig = FindConfigValue(document, "globalPackagesFolder");
         if (!string.IsNullOrEmpty(fromConfig))
             return ResolveFrom(configPath, fromConfig);
-        return Path.Combine(HomeFolder(), ".nuget", "packages");
+        return Path.Combine(GetHomeFolder(), ".nuget", "packages");
     }
 
     private static string ResolveFrom(string configPath, string folder)
@@ -174,12 +188,12 @@ public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string Glob
     {
         if (document == null)
             return null;
-        var entry = Section(document, "config")
-            .FirstOrDefault(e => KeyOf(e) == key);
+        var entry = ListSection(document, "config")
+            .FirstOrDefault(e => GetKey(e) == key);
         return (string?)entry?.Attribute("value");
     }
 
-    private static IEnumerable<XElement> Section(XDocument document, string name)
+    private static IEnumerable<XElement> ListSection(XDocument document, string name)
     {
         var section = document.Root?.Element(name);
         if (section == null)
@@ -187,5 +201,8 @@ public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string Glob
         return section.Elements();
     }
 
-    private static string KeyOf(XElement entry) => (string?)entry.Attribute("key") ?? "";
+    private static string GetKey(XElement entry)
+    {
+        return (string?)entry.Attribute("key") ?? "";
+    }
 }
