@@ -217,7 +217,7 @@ internal sealed class DiagramFrame
         if (size < MinIconSize)
             return;
         var box = new UiRect(left, row.Y + (row.Height - size) / 2, size, size);
-        p.Glyph(box, NodeIcons.Glyph(kind, Icons), Palette.For(kind), size);
+        p.Glyph(box, NodeIcons.Glyph(kind, Icons), NodeIcons.GetColor(Palette, kind), size);
         var overlay = NodeIcons.Overlay(accessibility, Icons);
         if (overlay == null)
             return;

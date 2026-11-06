@@ -34,6 +34,20 @@ public sealed class AssemblyPicks<T> where T : class
             Volatile.Write(ref _picks, _picks.Remove(assemblyPath));
     }
 
+    /// <summary>Has the assembly at <paramref name="assemblyPath"/> find for itself again what it was
+    /// given, from the next time it is opened; with <paramref name="andUnder"/>, as for a package, every
+    /// assembly under it as well. All at once, under the one lock.</summary>
+    public void Forget(AssemblyPath assemblyPath, bool andUnder)
+    {
+        lock (_gate)
+        {
+            var picks = _picks.Remove(assemblyPath);
+            if (andUnder)
+                picks = picks.RemoveRange(picks.Keys.Where(path => path.IsUnder(assemblyPath)));
+            Volatile.Write(ref _picks, picks);
+        }
+    }
+
     /// <summary>Takes <paramref name="picks"/> in place of those before, as when another list opens.</summary>
     public void Use(IReadOnlyDictionary<AssemblyPath, T> picks)
     {
@@ -53,18 +67,5 @@ public sealed class AssemblyPicks<T> where T : class
     public T? Find(AssemblyPath assemblyPath)
     {
         return All.GetValueOrDefault(assemblyPath);
-    }
-
-    /// <summary>Forgets what was picked for <paramref name="item"/> and, for a package, every assembly
-    /// in it.</summary>
-    internal void ForgetFor(LoadedAssembly item)
-    {
-        lock (_gate)
-        {
-            var picks = _picks.Remove(item.FilePath);
-            if (item is LoadedPackage)
-                picks = picks.RemoveRange(picks.Keys.Where(path => path.IsUnder(item.FilePath)));
-            Volatile.Write(ref _picks, picks);
-        }
     }
 }

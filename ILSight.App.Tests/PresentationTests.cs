@@ -16,8 +16,8 @@ public sealed class PresentationTests
             var glyph = Text(NodeIcons.Glyph(kind, Icons));
             Assert.Equal(1, glyph.Length);
             Assert.InRange((int)glyph[0], 0xE000, 0xF8FF);
-            Assert.NotEqual(0u, BuiltInThemes.Dark.Icons.For(kind));
-            Assert.NotEqual(0u, BuiltInThemes.Light.Icons.For(kind));
+            Assert.NotEqual(0u, NodeIcons.GetColor(BuiltInThemes.Dark.Icons, kind));
+            Assert.NotEqual(0u, NodeIcons.GetColor(BuiltInThemes.Light.Icons, kind));
         }
         Assert.Equal(kinds.Length, kinds.Select(k => NodeIcons.Glyph(k, Icons)).Distinct().Count());
     }

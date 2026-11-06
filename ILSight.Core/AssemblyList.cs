@@ -126,8 +126,9 @@ public sealed class AssemblyList
         lock (_gate)
         {
             if (item is not FailedAssembly && !ForgetKnown(item)) return;
-            Pdbs.ForgetFor(item);
-            TargetFrameworks.ForgetFor(item);
+            var isPackage = item is LoadedPackage;
+            Pdbs.Forget(item.FilePath, andUnder: isPackage);
+            TargetFrameworks.Forget(item.FilePath, andUnder: isPackage);
             ForgetReadOutOf(item);
             if (!item.IsListed) return;
             item.IsListed = false;

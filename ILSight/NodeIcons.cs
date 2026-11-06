@@ -278,7 +278,13 @@ public static class NodeIcons
     /// <paramref name="icons"/> draw it, colored from <paramref name="palette"/>, with the overlay of its
     /// <paramref name="accessibility"/>.</summary>
     public static UiIcon Icon(NodeIcon kind, NodeAccessibility accessibility, NodeIconPalette palette, AppIcons icons) =>
-        new(Glyph(kind, icons), palette.For(kind), Overlay: Overlay(accessibility, icons), OverlayColor: palette.Restricted);
+        new(Glyph(kind, icons), GetColor(palette, kind), Overlay: Overlay(accessibility, icons), OverlayColor: palette.Restricted);
+
+    /// <summary>The color <paramref name="palette"/> draws a node of <paramref name="kind"/> in.</summary>
+    public static uint GetColor(NodeIconPalette palette, NodeIcon kind)
+    {
+        return palette[Role(kind)];
+    }
 
     /// <summary>The icon of the row shown while a node's children are being read.</summary>
     public static UiIcon Loading(NodeIconPalette palette, AppIcons icons) => new(icons.NodeLoading, palette.Neutral);
@@ -315,6 +321,4 @@ public sealed partial class NodeIconPalette
         NodeIconRole.Error => Error,
         _ => Neutral,
     };
-
-    public uint For(NodeIcon kind) => this[NodeIcons.Role(kind)];
 }
