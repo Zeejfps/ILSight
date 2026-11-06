@@ -10,6 +10,60 @@ namespace ILSight;
 /// background too, and dropped when their diagram is closed meanwhile.</summary>
 public static class Diagrams
 {
+    /// <summary>Whether <paramref name="fold"/> shows what it holds in <paramref name="view"/>.</summary>
+    public static bool IsFoldOpen(DiagramViewState view, CardFold fold)
+    {
+        var flipped = view.FlippedFolds.Contains(fold);
+        return fold switch
+        {
+            CardFold.Own => !flipped,
+            CardFold.Inherited => flipped,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    /// <summary>Opens <paramref name="fold"/> when it is folded, and folds it when it is open.</summary>
+    public static void ToggleFold(DiagramViewState view, CardFold fold)
+    {
+        if (!view.FlippedFolds.Remove(fold))
+            view.FlippedFolds.Add(fold);
+        view.FoldsVersion++;
+    }
+
+    /// <summary>Folds and opens the parts as <paramref name="flipped"/>, as the view saved them, says.</summary>
+    public static void RestoreFolds(DiagramViewState view, IEnumerable<CardFold> flipped)
+    {
+        view.FlippedFolds.Clear();
+        view.FlippedFolds.UnionWith(flipped);
+        view.FoldsVersion++;
+    }
+
+    /// <summary>Keeps <paramref name="faces"/>, measured for <paramref name="key"/>, in place of those before.</summary>
+    public static void KeepFaces(DiagramViewState view, FaceKey key, IReadOnlyList<CardFace> faces)
+    {
+        view.Faces.Clear();
+        foreach (var face in faces)
+            view.Faces[face.Card.Type] = face;
+        view.MeasuredFor = key;
+    }
+
+    /// <summary>The face of the card of <paramref name="type"/>, or null when none was measured.</summary>
+    public static CardFace? FindFace(DiagramViewState view, CodeReference.Entity type)
+    {
+        return view.Faces.GetValueOrDefault(type);
+    }
+
+    /// <summary>The index of the row <paramref name="y"/> below the top of <paramref name="face"/> falls in, or -1.</summary>
+    public static int FindRowAt(CardFace face, float y)
+    {
+        for (var i = 0; i < face.Rows.Count; i++)
+        {
+            if (y >= face.Rows[i].Top && y < face.Rows[i].Bottom)
+                return i;
+        }
+        return -1;
+    }
+
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is
     /// directly related to, on the diagram the user last worked in, brought to the front; on a new one
     /// when none is open, titled <paramref name="newTitle"/>.</summary>

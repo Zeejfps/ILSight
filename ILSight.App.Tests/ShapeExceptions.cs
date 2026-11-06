@@ -75,8 +75,6 @@ internal static class ShapeExceptions
         "ILSight.BookmarksPanel",
         "ILSight.Breadcrumb",
         "ILSight.BrowseTree",
-        "ILSight.CardFaces",
-        "ILSight.CardFolds",
         "ILSight.CodeFolds",
         "ILSight.CodeFontChoices",
         "ILSight.CodeFontFaces",
@@ -187,9 +185,6 @@ internal static class ShapeExceptions
     /// <summary>Methods on records, still to move to static functions.</summary>
     public static readonly string[] RecordsWithMethods =
     [
-        "ILSight.CardFace.RowAt",
-        "ILSight.CardFold.Inherited",
-        "ILSight.CardFold.Own",
         "ILSight.Core.Activation.Of",
         "ILSight.Core.Activation.TargetOf",
         "ILSight.Core.CodeTooltip.ConstraintLines",

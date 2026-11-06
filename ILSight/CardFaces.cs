@@ -44,42 +44,8 @@ public readonly record struct CardRow(
 
 /// <summary>How a card is drawn at the diagram's own size: its rows from the top, how wide and tall it is,
 /// and how far down its header reaches.</summary>
-public sealed record CardFace(TypeCard Card, IReadOnlyList<CardRow> Rows, float Width, float Height, float HeaderHeight)
-{
-    /// <summary>The index of the row <paramref name="y"/> below the card's top falls in, or -1.</summary>
-    public int RowAt(float y)
-    {
-        for (var i = 0; i < Rows.Count; i++)
-        {
-            if (y >= Rows[i].Top && y < Rows[i].Bottom)
-                return i;
-        }
-        return -1;
-    }
-}
+public sealed record CardFace(TypeCard Card, IReadOnlyList<CardRow> Rows, float Width, float Height, float HeaderHeight);
 
 /// <summary>What a diagram's card faces are measured for: the cards, which parts of them are open, whether
 /// members hidden from other assemblies show, the font and the language.</summary>
 public readonly record struct FaceKey(int DiagramVersion, int FoldsVersion, bool ShowsHiddenMembers, float FontSize, string? FontFamily, Strings Strings);
-
-/// <summary>The faces of a diagram's cards as last measured, and what they were measured for, to measure
-/// them again only when that changes.</summary>
-public sealed class CardFaces
-{
-    private readonly Dictionary<CodeReference.Entity, CardFace> _faces = new();
-    private FaceKey? _measuredFor;
-
-    public bool IsMeasuredFor(FaceKey key) => _measuredFor == key;
-
-    /// <summary>Keeps <paramref name="faces"/>, measured for <paramref name="key"/>, in place of those before.</summary>
-    public void Keep(FaceKey key, IReadOnlyList<CardFace> faces)
-    {
-        _faces.Clear();
-        foreach (var face in faces)
-            _faces[face.Card.Type] = face;
-        _measuredFor = key;
-    }
-
-    /// <summary>The face of the card of <paramref name="type"/>, or null when none was measured.</summary>
-    public CardFace? Find(CodeReference.Entity type) => _faces.GetValueOrDefault(type);
-}

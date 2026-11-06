@@ -3,6 +3,7 @@ using ZGF.Gui.Testing;
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
+using ILSight.Core.Diagrams;
 using static ILSight.Docking;
 using static ILSight.Navigation;
 using static ILSight.App.Tests.BuiltInGlyphs;
@@ -58,6 +59,25 @@ public sealed class DiagramViewTests
     }
 
     private static DiagramViewState ViewOf(AppDriver app, DocumentTab tab) => app.Ui.Documents.ViewOf(tab).Diagram;
+
+    [Fact]
+    public void A_cards_own_members_start_open_and_what_it_inherits_starts_folded_and_a_click_flips_either_by_value()
+    {
+        var view = new DiagramViewState();
+        var card = new TypeAnchor(AssemblyPath.Of(AppStateDriver.FixturePath), "Ns.Calculator");
+        CardFold[] own = [new CardFold.Own(card, MemberSection.Methods), new CardFold.Own(card, MemberSection.Methods)];
+        CardFold[] inherited = [new CardFold.Inherited(card, "Base"), new CardFold.Inherited(card, "Base")];
+
+        Assert.True(Diagrams.IsFoldOpen(view, own[0]));
+        Assert.False(Diagrams.IsFoldOpen(view, inherited[0]));
+
+        Diagrams.ToggleFold(view, own[0]);
+        Diagrams.ToggleFold(view, inherited[0]);
+
+        Assert.False(Diagrams.IsFoldOpen(view, own[1]));
+        Assert.True(Diagrams.IsFoldOpen(view, inherited[1]));
+        Assert.Equal(2, view.FoldsVersion);
+    }
 
     private static List<DocumentTab> ListDiagramTabs(AppDriver app)
     {
@@ -314,12 +334,12 @@ public sealed class DiagramViewTests
         var view = ViewOf(app, tab);
         var exception = tab.Diagram!.Cards[1];
         Assert.Equal("Exception", exception.Name);
-        Assert.DoesNotContain(view.Faces.Find(exception.Type)!.Rows, IsHiddenMember);
+        Assert.DoesNotContain(Diagrams.FindFace(view, exception.Type)!.Rows, IsHiddenMember);
 
         app.Click("Show private and internal members");
         SettleDiagram(app);
 
-        Assert.Contains(view.Faces.Find(exception.Type)!.Rows, IsHiddenMember);
+        Assert.Contains(Diagrams.FindFace(view, exception.Type)!.Rows, IsHiddenMember);
     }
 
     private static bool IsHiddenMember(CardRow row)

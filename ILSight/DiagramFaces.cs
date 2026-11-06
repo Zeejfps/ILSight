@@ -34,10 +34,10 @@ internal static class DiagramFaces
     public static void MeasureIfChanged(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
         var key = KeyOf(ui, view, diagram);
-        if (view.Faces.IsMeasuredFor(key))
+        if (view.MeasuredFor == key)
             return;
         var faces = Measure(ui, view, diagram);
-        view.Faces.Keep(key, faces);
+        Diagrams.KeepFaces(view, key, faces);
         view.MeasuredVersion = diagram.Version;
         ui.State.Later((diagram, measures: MeasuresOf(ui, diagram, faces)), static (a, s) => Diagrams.LayOutDiagram(a, s.diagram, s.measures));
     }
@@ -45,7 +45,7 @@ internal static class DiagramFaces
     private static FaceKey KeyOf(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
         var theme = ui.Theme;
-        return new FaceKey(diagram.Version, view.Folds.Version, view.ShowsHiddenMembers, theme.FontSize, theme.FontFamily, ui.State.Strings);
+        return new FaceKey(diagram.Version, view.FoldsVersion, view.ShowsHiddenMembers, theme.FontSize, theme.FontFamily, ui.State.Strings);
     }
 
     private static List<CardFace> Measure(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
@@ -91,7 +91,7 @@ internal static class DiagramFaces
     {
         var members = ListShown(view, diagram, card.AssemblyPath, section.Members);
         var title = TitleOf(stack.Strings, section.Kind);
-        AddFold(stack, view, CardFold.Own(card.Anchor, section.Kind), title, members);
+        AddFold(stack, view, new CardFold.Own(card.Anchor, section.Kind), title, members);
     }
 
     private static string TitleOf(Strings t, MemberSection section) => section switch
@@ -107,7 +107,7 @@ internal static class DiagramFaces
     {
         var members = ListShown(view, diagram, group.AssemblyPath, group.Members);
         var title = stack.Strings.DiagramInheritedFrom(group.From);
-        AddFold(stack, view, CardFold.Inherited(card.Anchor, group.From), title, members);
+        AddFold(stack, view, new CardFold.Inherited(card.Anchor, group.From), title, members);
     }
 
     /// <summary>The members of <paramref name="members"/>, of the assembly at <paramref name="assemblyPath"/>,
@@ -130,7 +130,7 @@ internal static class DiagramFaces
     {
         if (members.Count == 0)
             return;
-        var isOpen = view.Folds.IsOpen(fold);
+        var isOpen = Diagrams.IsFoldOpen(view, fold);
         var text = $"{title} ({members.Count})";
         stack.Add(new CardRow(CardRowKind.Fold, stack.RowHeight, Padding, text, Fold: fold, IsOpen: isOpen));
         if (!isOpen)

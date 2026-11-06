@@ -33,11 +33,21 @@ public sealed class DiagramViewState
 {
     public DiagramCamera Camera { get; } = new();
 
-    public CardFolds Folds { get; } = new();
+    /// <summary>The parts of the cards folded or opened against how they start: a card's own members show
+    /// until folded, what it inherits stays folded until opened. Changed through <see cref="Diagrams"/>, which
+    /// counts each change in <see cref="FoldsVersion"/>.</summary>
+    public HashSet<CardFold> FlippedFolds { get; } = new();
+
+    /// <summary>Counts the changes to <see cref="FlippedFolds"/>.</summary>
+    public int FoldsVersion;
 
     public LayoutTransition Transition { get; } = new();
 
-    public CardFaces Faces { get; } = new();
+    /// <summary>The faces of the diagram's cards as last measured.</summary>
+    public Dictionary<CodeReference.Entity, CardFace> Faces { get; } = new();
+
+    /// <summary>What <see cref="Faces"/> were measured for, to measure them again only when that changes.</summary>
+    public FaceKey? MeasuredFor;
 
     /// <summary>What the diagram was last painted from.</summary>
     internal DiagramFrame Frame { get; } = new();
@@ -53,7 +63,7 @@ public sealed class DiagramViewState
 
     /// <summary>Counts the changes to what the settings keep of the view: where it looks and how near,
     /// the folds, and the filter.</summary>
-    public int Changes => Camera.Changes + Folds.Version + _filterChanges;
+    public int Changes => Camera.Changes + FoldsVersion + _filterChanges;
 
     /// <summary>Shows members hidden from other assemblies on every card when <paramref name="shows"/>.</summary>
     public void ShowHiddenMembers(bool shows)
@@ -98,7 +108,7 @@ public sealed class DiagramViewState
     public DiagramViewRecord Save()
     {
         var corner = Camera.Corner;
-        return new DiagramViewRecord(corner.X, corner.Y, Camera.Zoom, Folds.Save(), ShowsHiddenMembers);
+        return new DiagramViewRecord(corner.X, corner.Y, Camera.Zoom, FlippedFolds.ToList(), ShowsHiddenMembers);
     }
 
     /// <summary>Returns the view to how <paramref name="saved"/> says it was, which the first layout then
@@ -106,15 +116,9 @@ public sealed class DiagramViewState
     public void Restore(DiagramViewRecord saved)
     {
         DiagramCameras.Restore(Camera, new PointF(saved.X, saved.Y), saved.Zoom);
-        RestoreFolds(saved.Folds);
+        if (saved.Folds != null)
+            Diagrams.RestoreFolds(this, saved.Folds);
         ShowsHiddenMembers = saved.ShowsHiddenMembers;
         IsFitPending = false;
-    }
-
-    private void RestoreFolds(List<CardFold>? folds)
-    {
-        if (folds == null)
-            return;
-        Folds.Restore(folds);
     }
 }

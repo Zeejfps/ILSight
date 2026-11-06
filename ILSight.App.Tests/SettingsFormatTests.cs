@@ -21,6 +21,7 @@ public sealed class SettingsFormatTests : IDisposable
     private static readonly AssemblyPath A = PathOf(Rooted("Fixture/A.dll"));
     private static readonly AssemblyPath B = PathOf(Rooted("Fixture/B.dll"));
     private static readonly TypeAnchor Calculator = new(A, "Ns.Calculator");
+    private static readonly TypeAnchorJson CalculatorJson = new(A.Text, "Ns.Calculator");
 
     private readonly TempDir _temp = new();
 
@@ -36,6 +37,34 @@ public sealed class SettingsFormatTests : IDisposable
         Assert.IsType<SettingsWriteResult.Written>(settings.Save());
 
         AssertSameJson(Fixture(SettingsFixture), File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void A_saved_fold_of_a_section_is_a_cards_own()
+    {
+        var fold = SettingsJson.Parse(new CardFoldJson(CalculatorJson, MemberSection.Methods, null));
+
+        Assert.Equal(new CardFold.Own(Calculator, MemberSection.Methods), fold);
+    }
+
+    [Fact]
+    public void A_saved_fold_of_a_base_type_is_what_a_card_inherits()
+    {
+        var fold = SettingsJson.Parse(new CardFoldJson(CalculatorJson, null, "Base"));
+
+        Assert.Equal(new CardFold.Inherited(Calculator, "Base"), fold);
+    }
+
+    [Fact]
+    public void A_saved_fold_naming_both_a_section_and_a_base_type_is_none()
+    {
+        Assert.Null(SettingsJson.Parse(new CardFoldJson(CalculatorJson, MemberSection.Methods, "Base")));
+    }
+
+    [Fact]
+    public void A_saved_fold_naming_neither_a_section_nor_a_base_type_is_none()
+    {
+        Assert.Null(SettingsJson.Parse(new CardFoldJson(CalculatorJson, null, null)));
     }
 
     [Fact]
@@ -137,7 +166,7 @@ public sealed class SettingsFormatTests : IDisposable
     {
         var code = ViewPosition.OfCode(new CodeViewPosition(12, 3.5f, new TextPosition(13, 2), new TextPosition(14, 5)));
         var grid = ViewPosition.OfGrid(new GridPosition(4, 1.5f, 6, 2));
-        var view = new DiagramViewRecord(10.5f, -20.25f, 1.5f, [CardFold.Own(Calculator, MemberSection.Methods), CardFold.Inherited(Calculator, "Base")], true);
+        var view = new DiagramViewRecord(10.5f, -20.25f, 1.5f, [new CardFold.Own(Calculator, MemberSection.Methods), new CardFold.Inherited(Calculator, "Base")], true);
         DocumentRecord[] tabs =
         [
             new NodeDocumentRecord("document-1", "Calculator", CalculatorPlace(), DecompilationLanguage.IL, code),

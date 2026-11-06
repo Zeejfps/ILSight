@@ -186,7 +186,7 @@ internal static class DiagramView
         view.PendingFocus = null;
         if (!layout.Places.TryGetValue(type, out var place))
             return;
-        var face = view.Faces.Find(type);
+        var face = FindFace(view, type);
         if (face == null)
             return;
         if (DiagramCameras.Shows(view.Camera, place, face.Width, face.Height, rect))
@@ -219,7 +219,7 @@ internal static class DiagramView
 
     private static DiagramHit HitCard(DiagramViewState view, TypeCard card, PointF point)
     {
-        var face = view.Faces.Find(card.Type);
+        var face = FindFace(view, card.Type);
         if (face == null)
             return new DiagramHit.Nothing();
         var place = view.Transition.PlaceOf(card.Type);
@@ -227,7 +227,7 @@ internal static class DiagramView
             return new DiagramHit.Nothing();
         if (!Covers(place.Value, face, point))
             return new DiagramHit.Nothing();
-        var row = face.RowAt(point.Y - place.Value.Y);
+        var row = FindRowAt(face, point.Y - place.Value.Y);
         if (row < 0)
             return new DiagramHit.Card(face);
         return new DiagramHit.Row(face, row);
@@ -384,7 +384,7 @@ internal static class DiagramView
         var fold = row.Value.Fold;
         if (fold == null)
             return;
-        view.Folds.Toggle(fold.Value);
+        ToggleFold(view, fold);
     }
 
     /// <summary>A hand over a row a click acts on: one that opens code or folds a part; none while panning.</summary>
@@ -457,7 +457,7 @@ internal static class DiagramView
         frame.Cards.Clear();
         foreach (var card in diagram.Cards)
         {
-            var face = view.Faces.Find(card.Type);
+            var face = FindFace(view, card.Type);
             if (face == null)
                 continue;
             var place = view.Transition.PlaceOf(card.Type);

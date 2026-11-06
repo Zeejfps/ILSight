@@ -194,8 +194,8 @@ public sealed class SavedDocumentsTests : IDisposable
         SettleDiagram(app, diagram);
         var view = DiagramOf(app, diagram);
         DiagramCameras.Restore(view.Camera, new PointF(-30f, 12f), 1.5f);
-        var fields = CardFold.Own(diagram.Diagram!.Cards[0].Anchor, MemberSection.Fields);
-        view.Folds.Toggle(fields);
+        var fields = new CardFold.Own(diagram.Diagram!.Cards[0].Anchor, MemberSection.Fields);
+        Diagrams.ToggleFold(view, fields);
         view.ShowHiddenMembers(true);
         ActivateTab(app.Ui, greeter);
         app.Run(3);
@@ -216,7 +216,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal(ListTypes(diagram), ListTypes(restored));
         Assert.Equal(new PointF(-30f, 12f), restoredView.Camera.Corner);
         Assert.Equal(1.5f, restoredView.Camera.Zoom);
-        Assert.False(restoredView.Folds.IsOpen(fields));
+        Assert.False(Diagrams.IsFoldOpen(restoredView, fields));
         Assert.True(restoredView.ShowsHiddenMembers);
     }
 

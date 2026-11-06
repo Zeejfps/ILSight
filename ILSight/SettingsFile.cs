@@ -126,7 +126,8 @@ internal sealed record TypeAnchorJson(string? AssemblyPath, string? FullName);
 /// <summary>How a diagram was viewed, as a settings file can hold it.</summary>
 internal sealed record DiagramViewJson(float X, float Y, float Zoom, List<CardFoldJson?>? Folds, bool ShowsHiddenMembers);
 
-/// <summary>A card's part folded or opened, as a settings file can hold it. Without its card it is none.</summary>
+/// <summary>A card's part folded or opened, as a settings file can hold it: a section of its own or what it
+/// inherits, so that with both or neither, or without its card, it is none.</summary>
 internal sealed record CardFoldJson(TypeAnchorJson? Card, MemberSection? Section, string? InheritedFrom);
 
 /// <summary>The feed last searched, as a settings file can hold it. Without a feed it is none.</summary>
@@ -728,17 +729,26 @@ internal static class SettingsJson
 
     private static CardFoldJson Write(CardFold fold)
     {
-        return new CardFoldJson(Write(fold.Card), fold.Section, fold.InheritedFrom);
+        return fold switch
+        {
+            CardFold.Own own => new CardFoldJson(Write(own.Card), own.Section, null),
+            CardFold.Inherited inherited => new CardFoldJson(Write(inherited.Card), null, inherited.From),
+            _ => throw new UnreachableException(),
+        };
     }
 
-    private static CardFold? Parse(CardFoldJson json)
+    internal static CardFold? Parse(CardFoldJson json)
     {
         if (json.Card == null)
             return null;
         var card = Parse(json.Card);
         if (card == null)
             return null;
-        return new CardFold(card.Value, json.Section, json.InheritedFrom);
+        if (json.Section != null && json.InheritedFrom == null)
+            return new CardFold.Own(card.Value, json.Section.Value);
+        if (json.Section == null && json.InheritedFrom != null)
+            return new CardFold.Inherited(card.Value, json.InheritedFrom);
+        return null;
     }
 
     private static NuGetSearchJson Write(SavedNuGetSearch search)
