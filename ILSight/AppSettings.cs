@@ -184,10 +184,9 @@ public sealed class AppSettings
             Theme = ThemeIdOf(file.Read(nameof(SettingsFile.Theme), json.String)),
             IconTheme = IconThemeIdOf(file.Read(nameof(SettingsFile.IconTheme), json.String)),
             Language = file.Read(nameof(SettingsFile.Language), json.NullableDecompilationLanguage) ?? DecompilationLanguage.CSharp,
-            Decompiler = file.Read(nameof(SettingsFile.Decompiler), json.DecompilerOptionsJson)?.Parse(() => file.LeaveOut(nameof(SettingsFile.Decompiler)))
-                ?? DecompilerOptions.Default,
+            Decompiler = ReadDecompiler(file),
             FoldedOptionGroups = NamesOf(file.Read(nameof(SettingsFile.FoldedOptionGroups), json.ListString)),
-            Display = file.Read(nameof(SettingsFile.Display), json.DisplayOptionsJson)?.Parse(),
+            Display = ReadDisplay(file),
             Locale = file.Read(nameof(SettingsFile.Locale), json.NullableLocale),
             ApiVisibility = ApiVisibilityOf(
                 file.Read(nameof(SettingsFile.ApiVisibility), json.NullableApiVisibility),
@@ -200,11 +199,44 @@ public sealed class AppSettings
             SearchColumns = file.Read(nameof(SettingsFile.SearchColumns), json.ListSingle),
             ExportColumns = file.Read(nameof(SettingsFile.ExportColumns), json.ListSingle),
             FlagsFilters = ReadFlagsFilters(file),
-            Window = Sanitize(file.Read(nameof(SettingsFile.Window), json.WindowBoundsJson)?.Parse()),
-            ExportWindow = SanitizeDialog(file.Read(nameof(SettingsFile.ExportWindow), json.WindowBoundsJson)?.Parse()),
-            NuGet = file.Read(nameof(SettingsFile.NuGet), json.NuGetSearchJson)?.Parse(),
-            NuGetWindow = SanitizeDialog(file.Read(nameof(SettingsFile.NuGetWindow), json.WindowBoundsJson)?.Parse()),
+            Window = Sanitize(ReadWindow(file, nameof(SettingsFile.Window))),
+            ExportWindow = SanitizeDialog(ReadWindow(file, nameof(SettingsFile.ExportWindow))),
+            NuGet = ReadNuGet(file),
+            NuGetWindow = SanitizeDialog(ReadWindow(file, nameof(SettingsFile.NuGetWindow))),
         };
+    }
+
+    private static DecompilerOptions ReadDecompiler(SettingsReader file)
+    {
+        const string field = nameof(SettingsFile.Decompiler);
+        var saved = file.Read(field, AppSettingsJson.Default.DecompilerOptionsJson);
+        if (saved == null)
+            return DecompilerOptions.Default;
+        return SettingsJson.Parse(saved, () => file.LeaveOut(field));
+    }
+
+    private static DisplayOptions? ReadDisplay(SettingsReader file)
+    {
+        var saved = file.Read(nameof(SettingsFile.Display), AppSettingsJson.Default.DisplayOptionsJson);
+        if (saved == null)
+            return null;
+        return SettingsJson.Parse(saved);
+    }
+
+    private static WindowBounds? ReadWindow(SettingsReader file, string field)
+    {
+        var saved = file.Read(field, AppSettingsJson.Default.WindowBoundsJson);
+        if (saved == null)
+            return null;
+        return SettingsJson.Parse(saved);
+    }
+
+    private static SavedNuGetSearch? ReadNuGet(SettingsReader file)
+    {
+        var saved = file.Read(nameof(SettingsFile.NuGet), AppSettingsJson.Default.NuGetSearchJson);
+        if (saved == null)
+            return null;
+        return SettingsJson.Parse(saved);
     }
 
     /// <summary>The lists the file holds, each read on its own, without nameless ones.</summary>
@@ -272,7 +304,7 @@ public sealed class AppSettings
         foreach (var (key, filter) in saved)
         {
             if (filter != null)
-                filters.Add(key, filter.Parse());
+                filters.Add(key, SettingsJson.Parse(filter));
         }
         return filters;
     }

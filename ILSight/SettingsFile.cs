@@ -54,9 +54,9 @@ internal sealed record SettingsFile(
         settings.Theme.Text,
         settings.IconTheme.Text,
         settings.Language,
-        DecompilerOptionsJson.From(settings.Decompiler),
+        SettingsJson.Write(settings.Decompiler),
         settings.FoldedOptionGroups,
-        settings.Display == null ? null : DisplayOptionsJson.From(settings.Display),
+        settings.Display == null ? null : SettingsJson.Write(settings.Display),
         settings.Locale,
         settings.ApiVisibility,
         settings.CheckForUpdates,
@@ -69,7 +69,7 @@ internal sealed record SettingsFile(
         FiltersOf(settings.FlagsFilters),
         WindowOf(settings.Window),
         WindowOf(settings.ExportWindow),
-        settings.NuGet == null ? null : NuGetSearchJson.From(settings.NuGet),
+        settings.NuGet == null ? null : SettingsJson.Write(settings.NuGet),
         WindowOf(settings.NuGetWindow));
 
     private static Dictionary<string, SavedFilterStateJson?>? FiltersOf(Dictionary<string, SavedFilterState>? filters)
@@ -78,7 +78,7 @@ internal sealed record SettingsFile(
             return null;
         var written = new Dictionary<string, SavedFilterStateJson?>();
         foreach (var (key, filter) in filters)
-            written.Add(key, SavedFilterStateJson.From(filter));
+            written.Add(key, SettingsJson.Write(filter));
         return written;
     }
 
@@ -86,7 +86,7 @@ internal sealed record SettingsFile(
     {
         if (bounds == null)
             return null;
-        return WindowBoundsJson.From(bounds.Value);
+        return SettingsJson.Write(bounds.Value);
     }
 }
 
@@ -102,7 +102,7 @@ internal sealed record AssemblyListJson(
     public static AssemblyListJson From(AssemblyListRecord list) => new(
         list.Name,
         SettingsJson.WritePaths(list.Assemblies),
-        list.Analyzed?.Select(static CodeAnchorJson? (a) => CodeAnchorJson.From(a)).ToList(),
+        list.Analyzed?.Select(static CodeAnchorJson? (a) => SettingsJson.Write(a)).ToList(),
         PicksJsonOf(list.Pdbs),
         PicksJsonOf(list.Frameworks),
         list.Documents == null ? null : DocumentsJson.From(list.Documents));
@@ -136,20 +136,7 @@ internal sealed record AssemblyListJson(
 }
 
 /// <summary>A symbol analyzed, as a settings file can hold it. Without a file it is none.</summary>
-internal sealed record CodeAnchorJson(CodeAnchorKind Kind, string? FilePath, int Token, int ILOffset)
-{
-    public static CodeAnchorJson From(CodeAnchor anchor) => new(anchor.Kind, anchor.FilePath.Text, anchor.Token, anchor.ILOffset);
-
-    public CodeAnchor? Parse()
-    {
-        if (FilePath == null)
-            return null;
-        var path = AssemblyPath.Parse(FilePath);
-        if (path == null)
-            return null;
-        return new CodeAnchor(Kind, path, Token, ILOffset);
-    }
-}
+internal sealed record CodeAnchorJson(CodeAnchorKind Kind, string? FilePath, int Token, int ILOffset);
 
 /// <summary>A list's open documents as a settings file can hold them, each tab read on its own.</summary>
 internal sealed record DocumentsJson(List<JsonElement>? Tabs, string? Active, string? Preview, DockLayoutJson? Layout)
@@ -224,8 +211,8 @@ internal sealed record NodeDocumentJson(
         var grid = node.View?.Grid;
         return new NodeDocumentJson(node.Panel, node.Title, node.Location.FilePath.Text,
             SettingsJson.Write(node.Location), node.Language,
-            code == null ? null : CodeViewPositionJson.From(code.Value),
-            grid == null ? null : GridPositionJson.From(grid.Value));
+            code == null ? null : SettingsJson.Write(code.Value),
+            grid == null ? null : SettingsJson.Write(grid.Value));
     }
 
     public override DocumentRecord? Parse(Action leaveOut)
@@ -245,37 +232,21 @@ internal sealed record NodeDocumentJson(
     private static ViewPosition? ViewOf(CodeViewPositionJson? code, GridPositionJson? grid)
     {
         if (code != null)
-            return ViewPosition.OfCode(code.Value.Parse());
+            return ViewPosition.OfCode(SettingsJson.Parse(code.Value));
         if (grid != null)
-            return ViewPosition.OfGrid(grid.Value.Parse());
+            return ViewPosition.OfGrid(SettingsJson.Parse(grid.Value));
         return null;
     }
 }
 
 /// <summary>Where a code view stood, as a settings file can hold it.</summary>
-internal readonly record struct CodeViewPositionJson(int TopLine, float ScrollX, TextPositionJson Anchor, TextPositionJson Caret)
-{
-    public static CodeViewPositionJson From(CodeViewPosition position) =>
-        new(position.TopLine, position.ScrollX, TextPositionJson.From(position.Anchor), TextPositionJson.From(position.Caret));
-
-    public CodeViewPosition Parse() => new(TopLine, ScrollX, Anchor.Parse(), Caret.Parse());
-}
+internal readonly record struct CodeViewPositionJson(int TopLine, float ScrollX, TextPositionJson Anchor, TextPositionJson Caret);
 
 /// <summary>A place in a code view's text, as a settings file can hold it.</summary>
-internal readonly record struct TextPositionJson(int Line, int Column)
-{
-    public static TextPositionJson From(TextPosition position) => new(position.Line, position.Column);
-
-    public TextPosition Parse() => new(Line, Column);
-}
+internal readonly record struct TextPositionJson(int Line, int Column);
 
 /// <summary>Where a metadata grid stood, as a settings file can hold it.</summary>
-internal readonly record struct GridPositionJson(int TopRow, float ScrollX, int? Row, int? Column)
-{
-    public static GridPositionJson From(GridPosition position) => new(position.TopRow, position.ScrollX, position.Row, position.Column);
-
-    public GridPosition Parse() => new(TopRow, ScrollX, Row, Column);
-}
+internal readonly record struct GridPositionJson(int TopRow, float ScrollX, int? Row, int? Column);
 
 internal sealed record DiagramDocumentJson(
     string? Panel,
@@ -287,17 +258,17 @@ internal sealed record DiagramDocumentJson(
     public static DiagramDocumentJson From(DiagramDocumentRecord diagram) => new(
         diagram.Panel,
         diagram.Title,
-        diagram.Types.Select(static TypeAnchorJson? (t) => TypeAnchorJson.From(t)).ToList(),
+        diagram.Types.Select(static TypeAnchorJson? (t) => SettingsJson.Write(t)).ToList(),
         diagram.HomeAssemblies == null ? null : SettingsJson.WritePaths(diagram.HomeAssemblies),
-        diagram.View == null ? null : DiagramViewJson.From(diagram.View));
+        diagram.View == null ? null : SettingsJson.Write(diagram.View));
 
     public override DocumentRecord? Parse(Action leaveOut)
     {
         if (Panel == null || Types == null)
             return null;
-        var types = Types.Select(static t => t?.Parse()).OfType<TypeAnchor>().ToList();
+        var types = Types.OfType<TypeAnchorJson>().Select(static t => SettingsJson.Parse(t)).OfType<TypeAnchor>().ToList();
         var homes = HomeAssemblies == null ? null : SettingsJson.ListPaths(HomeAssemblies);
-        return new DiagramDocumentRecord(Panel, Title, types, homes, View?.Parse());
+        return new DiagramDocumentRecord(Panel, Title, types, homes, View == null ? null : SettingsJson.Parse(View));
     }
 }
 
@@ -325,15 +296,12 @@ internal sealed record ComparisonDocumentJson(
         var right = AssemblyPath.Parse(RightPath);
         if (left == null || right == null)
             return null;
-        return new ComparisonDocumentRecord(Panel, Title, left, right, Scope, View?.Parse());
+        return new ComparisonDocumentRecord(Panel, Title, left, right, Scope, View == null ? null : SettingsJson.Parse(View));
     }
 }
 
 /// <summary>How a comparison was viewed, as a settings file can hold it.</summary>
-internal sealed record ComparisonViewJson(bool OnlyDifferences)
-{
-    public ComparisonViewRecord Parse() => new(OnlyDifferences);
-}
+internal sealed record ComparisonViewJson(bool OnlyDifferences);
 
 /// <summary>A place as a settings or bookmarks file can hold it, in the format of <see cref="Version"/>: a
 /// step per node down from the root of the listed file. Of another version, or with a step that cannot be
@@ -348,60 +316,16 @@ internal sealed record SavedPathJson(int Version, List<SavedPathStepJson?>? Step
 internal sealed record SavedPathStepJson(string? Step, string? Label);
 
 /// <summary>A type as a settings file can hold it. Without its assembly or name it is none.</summary>
-internal sealed record TypeAnchorJson(string? AssemblyPath, string? FullName)
-{
-    public static TypeAnchorJson From(TypeAnchor anchor) => new(anchor.AssemblyPath.Text, anchor.FullName);
-
-    public TypeAnchor? Parse()
-    {
-        if (AssemblyPath == null || FullName == null)
-            return null;
-        var path = Core.AssemblyPath.Parse(AssemblyPath);
-        if (path == null)
-            return null;
-        return new TypeAnchor(path, FullName);
-    }
-}
+internal sealed record TypeAnchorJson(string? AssemblyPath, string? FullName);
 
 /// <summary>How a diagram was viewed, as a settings file can hold it.</summary>
-internal sealed record DiagramViewJson(float X, float Y, float Zoom, List<CardFoldJson?>? Folds, bool ShowsHiddenMembers)
-{
-    public static DiagramViewJson From(DiagramViewRecord view) => new(view.X, view.Y, view.Zoom,
-        view.Folds?.Select(static CardFoldJson? (f) => CardFoldJson.From(f)).ToList(), view.ShowsHiddenMembers);
-
-    public DiagramViewRecord Parse()
-    {
-        var folds = Folds?.Select(static f => f?.Parse()).OfType<CardFold>().ToList();
-        return new DiagramViewRecord(X, Y, Zoom, folds, ShowsHiddenMembers);
-    }
-}
+internal sealed record DiagramViewJson(float X, float Y, float Zoom, List<CardFoldJson?>? Folds, bool ShowsHiddenMembers);
 
 /// <summary>A card's part folded or opened, as a settings file can hold it. Without its card it is none.</summary>
-internal sealed record CardFoldJson(TypeAnchorJson? Card, MemberSection? Section, string? InheritedFrom)
-{
-    public static CardFoldJson From(CardFold fold) => new(TypeAnchorJson.From(fold.Card), fold.Section, fold.InheritedFrom);
-
-    public CardFold? Parse()
-    {
-        var card = Card?.Parse();
-        if (card == null)
-            return null;
-        return new CardFold(card.Value, Section, InheritedFrom);
-    }
-}
+internal sealed record CardFoldJson(TypeAnchorJson? Card, MemberSection? Section, string? InheritedFrom);
 
 /// <summary>The feed last searched, as a settings file can hold it. Without a feed it is none.</summary>
-internal sealed record NuGetSearchJson(string? FeedUrl, bool IncludePrerelease)
-{
-    public static NuGetSearchJson From(SavedNuGetSearch search) => new(search.FeedUrl, search.IncludePrerelease);
-
-    public SavedNuGetSearch? Parse()
-    {
-        if (FeedUrl == null)
-            return null;
-        return new SavedNuGetSearch(FeedUrl, IncludePrerelease);
-    }
-}
+internal sealed record NuGetSearchJson(string? FeedUrl, bool IncludePrerelease);
 
 /// <summary>A bookmark as this app's settings or the real ILSpy's bookmarks file can hold it.</summary>
 internal sealed record BookmarkJson(
@@ -460,122 +384,21 @@ internal sealed record DisplayOptionsJson(
     bool? ShowEmptyMetadataTables,
     bool? NestedNamespaces,
     bool? SystemTitleBar,
-    bool? PreviewTabs)
-{
-    public static DisplayOptionsJson From(DisplayOptions options) => new(
-        options.FontSize?.Points,
-        options.ShowLineNumbers,
-        options.HighlightCurrentLine,
-        options.HighlightMatchingBrackets,
-        options.ShowOmnibar,
-        options.UiScale,
-        options.Font == null ? null : CodeFontJson.From(options.Font),
-        options.TreeTokens,
-        options.ShowEmptyMetadataTables,
-        options.NestedNamespaces,
-        options.SystemTitleBar,
-        options.PreviewTabs);
-
-    public DisplayOptions Parse()
-    {
-        var d = DisplayOptions.Default;
-        var options = new DisplayOptions(
-            null,
-            ShowLineNumbers ?? d.ShowLineNumbers,
-            HighlightCurrentLine ?? d.HighlightCurrentLine,
-            HighlightMatchingBrackets ?? d.HighlightMatchingBrackets,
-            ShowOmnibar ?? d.ShowOmnibar,
-            UiScale ?? d.UiScale,
-            Font?.Parse(),
-            TreeTokens ?? d.TreeTokens,
-            ShowEmptyMetadataTables ?? d.ShowEmptyMetadataTables,
-            NestedNamespaces ?? d.NestedNamespaces,
-            SystemTitleBar ?? d.SystemTitleBar,
-            PreviewTabs ?? d.PreviewTabs);
-        var scaled = CodeDisplay.SnapUiScale(options, options.UiScale);
-        if (FontSize == null)
-            return scaled;
-        return CodeDisplay.SetFontSize(scaled, FontSize.Value);
-    }
-}
+    bool? PreviewTabs);
 
 /// <summary>A font to draw code in, as a settings file can hold it. Without its family or file it is
 /// none, and the bundled font stands in.</summary>
-internal sealed record CodeFontJson(string? Family, string? Path, int FaceIndex)
-{
-    public static CodeFontJson From(CodeFont font) => new(font.Family, font.Path, font.FaceIndex);
-
-    public CodeFont? Parse()
-    {
-        if (Family == null || Path == null)
-            return null;
-        return new CodeFont(Family, Path, FaceIndex);
-    }
-}
+internal sealed record CodeFontJson(string? Family, string? Path, int FaceIndex);
 
 /// <summary>The choices that change how C# is decompiled, as a settings file can hold them. What it
 /// lacks, or holds as null, is as <see cref="DecompilerOptions.Default"/> has it.</summary>
-internal sealed record DecompilerOptionsJson(CSharpVersion? LanguageVersion, Dictionary<string, bool>? Toggles)
-{
-    public static DecompilerOptionsJson From(DecompilerOptions options) =>
-        new(options.LanguageVersion, options.Changes.ToDictionary(static c => c.Key.Name, static c => c.Value));
-
-    /// <summary>The options, a toggle at its default taken as not set; a toggle the decompiler does not
-    /// have is left out, and <paramref name="leaveOut"/> is told.</summary>
-    public DecompilerOptions Parse(Action leaveOut)
-    {
-        var options = DecompilerOptions.Default with { LanguageVersion = LanguageVersion ?? DecompilerOptions.Default.LanguageVersion };
-        if (Toggles == null)
-            return options;
-        foreach (var (name, value) in Toggles)
-        {
-            var toggle = DecompilerToggle.Find(name);
-            if (toggle == null)
-            {
-                leaveOut();
-                continue;
-            }
-            options = options.With(toggle, value);
-        }
-        return options;
-    }
-}
+internal sealed record DecompilerOptionsJson(CSharpVersion? LanguageVersion, Dictionary<string, bool>? Toggles);
 
 /// <summary>Where a window sat and how big it was, as a settings file can hold it.</summary>
-internal sealed record WindowBoundsJson(int X, int Y, int Width, int Height, bool Maximized)
-{
-    public static WindowBoundsJson From(WindowBounds bounds) => new(bounds.X, bounds.Y, bounds.Width, bounds.Height, bounds.Maximized);
-
-    public WindowBounds Parse() => new(X, Y, Width, Height, Maximized);
-}
+internal sealed record WindowBoundsJson(int X, int Y, int Width, int Height, bool Maximized);
 
 /// <summary>A flags filter, as a settings file can hold it. A group without values is left as it starts.</summary>
-internal sealed record SavedFilterStateJson(Dictionary<string, uint[]?>? Groups, Dictionary<string, TriState>? Flags, MatchMode Mode)
-{
-    public static SavedFilterStateJson From(SavedFilterState filter)
-    {
-        var groups = filter.Groups?.ToDictionary(static g => g.Key, static uint[]? (g) => g.Value);
-        return new SavedFilterStateJson(groups, filter.Flags, filter.Mode);
-    }
-
-    public SavedFilterState Parse()
-    {
-        return new SavedFilterState(GroupsOf(Groups), Flags, Mode);
-    }
-
-    private static Dictionary<string, uint[]>? GroupsOf(Dictionary<string, uint[]?>? groups)
-    {
-        if (groups == null)
-            return null;
-        var kept = new Dictionary<string, uint[]>();
-        foreach (var (group, values) in groups)
-        {
-            if (values != null)
-                kept.Add(group, values);
-        }
-        return kept;
-    }
-}
+internal sealed record SavedFilterStateJson(Dictionary<string, uint[]?>? Groups, Dictionary<string, TriState>? Flags, MatchMode Mode);
 
 /// <summary>The real ILSpy's bookmarks file as it can hold them, each bookmark read on its own.</summary>
 internal sealed record BookmarkFileJson(int Version, List<JsonElement>? Bookmarks);
@@ -605,7 +428,7 @@ internal static class SettingsJson
     {
         if (anchors == null)
             return new List<CodeAnchor>();
-        return anchors.Select(static a => a?.Parse()).OfType<CodeAnchor>().ToList();
+        return anchors.OfType<CodeAnchorJson>().Select(static a => Parse(a)).OfType<CodeAnchor>().ToList();
     }
 
     /// <summary>Where a tab or bookmark in the file at <paramref name="filePath"/> was, as
@@ -756,6 +579,220 @@ internal static class SettingsJson
             json.IndentationUseTabs,
             json.IndentationSize,
             json.IndentationTabSize);
+    }
+
+    public static CodeAnchorJson Write(CodeAnchor anchor)
+    {
+        return new CodeAnchorJson(anchor.Kind, anchor.FilePath.Text, anchor.Token, anchor.ILOffset);
+    }
+
+    private static CodeAnchor? Parse(CodeAnchorJson json)
+    {
+        if (json.FilePath == null)
+            return null;
+        var path = AssemblyPath.Parse(json.FilePath);
+        if (path == null)
+            return null;
+        return new CodeAnchor(json.Kind, path, json.Token, json.ILOffset);
+    }
+
+    public static CodeViewPositionJson Write(CodeViewPosition position)
+    {
+        return new CodeViewPositionJson(position.TopLine, position.ScrollX, Write(position.Anchor), Write(position.Caret));
+    }
+
+    public static CodeViewPosition Parse(CodeViewPositionJson json)
+    {
+        return new CodeViewPosition(json.TopLine, json.ScrollX, Parse(json.Anchor), Parse(json.Caret));
+    }
+
+    private static TextPositionJson Write(TextPosition position)
+    {
+        return new TextPositionJson(position.Line, position.Column);
+    }
+
+    private static TextPosition Parse(TextPositionJson json)
+    {
+        return new TextPosition(json.Line, json.Column);
+    }
+
+    public static GridPositionJson Write(GridPosition position)
+    {
+        return new GridPositionJson(position.TopRow, position.ScrollX, position.Row, position.Column);
+    }
+
+    public static GridPosition Parse(GridPositionJson json)
+    {
+        return new GridPosition(json.TopRow, json.ScrollX, json.Row, json.Column);
+    }
+
+    public static ComparisonViewRecord Parse(ComparisonViewJson json)
+    {
+        return new ComparisonViewRecord(json.OnlyDifferences);
+    }
+
+    public static TypeAnchorJson Write(TypeAnchor anchor)
+    {
+        return new TypeAnchorJson(anchor.AssemblyPath.Text, anchor.FullName);
+    }
+
+    public static TypeAnchor? Parse(TypeAnchorJson json)
+    {
+        if (json.AssemblyPath == null || json.FullName == null)
+            return null;
+        var path = AssemblyPath.Parse(json.AssemblyPath);
+        if (path == null)
+            return null;
+        return new TypeAnchor(path, json.FullName);
+    }
+
+    public static DiagramViewJson Write(DiagramViewRecord view)
+    {
+        return new DiagramViewJson(view.X, view.Y, view.Zoom,
+            view.Folds?.Select(static CardFoldJson? (f) => Write(f)).ToList(), view.ShowsHiddenMembers);
+    }
+
+    public static DiagramViewRecord Parse(DiagramViewJson json)
+    {
+        var folds = json.Folds?.OfType<CardFoldJson>().Select(static f => Parse(f)).OfType<CardFold>().ToList();
+        return new DiagramViewRecord(json.X, json.Y, json.Zoom, folds, json.ShowsHiddenMembers);
+    }
+
+    private static CardFoldJson Write(CardFold fold)
+    {
+        return new CardFoldJson(Write(fold.Card), fold.Section, fold.InheritedFrom);
+    }
+
+    private static CardFold? Parse(CardFoldJson json)
+    {
+        if (json.Card == null)
+            return null;
+        var card = Parse(json.Card);
+        if (card == null)
+            return null;
+        return new CardFold(card.Value, json.Section, json.InheritedFrom);
+    }
+
+    public static NuGetSearchJson Write(SavedNuGetSearch search)
+    {
+        return new NuGetSearchJson(search.FeedUrl, search.IncludePrerelease);
+    }
+
+    public static SavedNuGetSearch? Parse(NuGetSearchJson json)
+    {
+        if (json.FeedUrl == null)
+            return null;
+        return new SavedNuGetSearch(json.FeedUrl, json.IncludePrerelease);
+    }
+
+    public static DisplayOptionsJson Write(DisplayOptions options)
+    {
+        return new DisplayOptionsJson(
+            options.FontSize?.Points,
+            options.ShowLineNumbers,
+            options.HighlightCurrentLine,
+            options.HighlightMatchingBrackets,
+            options.ShowOmnibar,
+            options.UiScale,
+            options.Font == null ? null : Write(options.Font),
+            options.TreeTokens,
+            options.ShowEmptyMetadataTables,
+            options.NestedNamespaces,
+            options.SystemTitleBar,
+            options.PreviewTabs);
+    }
+
+    public static DisplayOptions Parse(DisplayOptionsJson json)
+    {
+        var d = DisplayOptions.Default;
+        var options = new DisplayOptions(
+            null,
+            json.ShowLineNumbers ?? d.ShowLineNumbers,
+            json.HighlightCurrentLine ?? d.HighlightCurrentLine,
+            json.HighlightMatchingBrackets ?? d.HighlightMatchingBrackets,
+            json.ShowOmnibar ?? d.ShowOmnibar,
+            json.UiScale ?? d.UiScale,
+            json.Font == null ? null : Parse(json.Font),
+            json.TreeTokens ?? d.TreeTokens,
+            json.ShowEmptyMetadataTables ?? d.ShowEmptyMetadataTables,
+            json.NestedNamespaces ?? d.NestedNamespaces,
+            json.SystemTitleBar ?? d.SystemTitleBar,
+            json.PreviewTabs ?? d.PreviewTabs);
+        var scaled = CodeDisplay.SnapUiScale(options, options.UiScale);
+        if (json.FontSize == null)
+            return scaled;
+        return CodeDisplay.SetFontSize(scaled, json.FontSize.Value);
+    }
+
+    private static CodeFontJson Write(CodeFont font)
+    {
+        return new CodeFontJson(font.Family, font.Path, font.FaceIndex);
+    }
+
+    private static CodeFont? Parse(CodeFontJson json)
+    {
+        if (json.Family == null || json.Path == null)
+            return null;
+        return new CodeFont(json.Family, json.Path, json.FaceIndex);
+    }
+
+    public static DecompilerOptionsJson Write(DecompilerOptions options)
+    {
+        return new DecompilerOptionsJson(options.LanguageVersion, options.Changes.ToDictionary(static c => c.Key.Name, static c => c.Value));
+    }
+
+    /// <summary>The options, a toggle at its default taken as not set; a toggle the decompiler does not
+    /// have is left out, and <paramref name="leaveOut"/> is told.</summary>
+    public static DecompilerOptions Parse(DecompilerOptionsJson json, Action leaveOut)
+    {
+        var options = DecompilerOptions.Default with { LanguageVersion = json.LanguageVersion ?? DecompilerOptions.Default.LanguageVersion };
+        if (json.Toggles == null)
+            return options;
+        foreach (var (name, value) in json.Toggles)
+        {
+            var toggle = DecompilerToggle.Find(name);
+            if (toggle == null)
+            {
+                leaveOut();
+                continue;
+            }
+            options = options.With(toggle, value);
+        }
+        return options;
+    }
+
+    public static WindowBoundsJson Write(WindowBounds bounds)
+    {
+        return new WindowBoundsJson(bounds.X, bounds.Y, bounds.Width, bounds.Height, bounds.Maximized);
+    }
+
+    public static WindowBounds Parse(WindowBoundsJson json)
+    {
+        return new WindowBounds(json.X, json.Y, json.Width, json.Height, json.Maximized);
+    }
+
+    public static SavedFilterStateJson Write(SavedFilterState filter)
+    {
+        var groups = filter.Groups?.ToDictionary(static g => g.Key, static uint[]? (g) => g.Value);
+        return new SavedFilterStateJson(groups, filter.Flags, filter.Mode);
+    }
+
+    public static SavedFilterState Parse(SavedFilterStateJson json)
+    {
+        return new SavedFilterState(ParseGroups(json.Groups), json.Flags, json.Mode);
+    }
+
+    private static Dictionary<string, uint[]>? ParseGroups(Dictionary<string, uint[]?>? groups)
+    {
+        if (groups == null)
+            return null;
+        var kept = new Dictionary<string, uint[]>();
+        foreach (var (group, values) in groups)
+        {
+            if (values != null)
+                kept.Add(group, values);
+        }
+        return kept;
     }
 }
 
