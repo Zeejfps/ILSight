@@ -84,7 +84,7 @@ public static class AssemblyLists
     {
         CloseAllAssemblies(appState);
         ReopenDocuments(appState);
-        appState.History.Clear();
+        Navigation.ClearHistory(appState.History);
         RestoreActiveAssemblyList(appState);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         RestoreAnalyses(appState);

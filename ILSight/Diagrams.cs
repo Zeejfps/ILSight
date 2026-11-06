@@ -90,7 +90,7 @@ public static class Diagrams
     /// <summary>Records the diagram <paramref name="tab"/> shows as worked in now, so going back returns to it.</summary>
     private static void RecordInHistory(AppState appState, DocumentTab tab)
     {
-        appState.History.PushDiagram(tab.Diagram!, tab.Title!);
+        RecordDiagram(appState.History, tab.Diagram!, tab.Title!);
     }
 
     /// <summary>Opens the code of <paramref name="target"/>, picked on <paramref name="diagram"/>, beside it,

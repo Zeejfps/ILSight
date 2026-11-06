@@ -149,7 +149,6 @@ internal static class ShapeExceptions
         "ILSight.MergedIconTheme",
         "ILSight.MergedTheme",
         "ILSight.MetadataGridState",
-        "ILSight.NavigationHistory",
         "ILSight.NuGetPicker",
         "ILSight.RunArgumentsReceiver",
         "ILSight.SavedAssemblyLists",
