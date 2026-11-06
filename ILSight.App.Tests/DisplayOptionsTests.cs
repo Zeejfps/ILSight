@@ -47,7 +47,7 @@ public sealed class DisplayOptionsTests
     [Fact]
     public void Code_is_drawn_at_the_chosen_font_size_in_taller_rows()
     {
-        var view = Showing(CodeViewDriver.Numbered(5), new DisplayOptions(FontSize: 24f));
+        var view = Showing(CodeViewDriver.Numbered(5), new DisplayOptions(FontSize: CodeFontSize.Clamp(24f)));
 
         var run = view.Frames.Canvas.GlyphRuns.First(r => r.Text == "line 0");
         Assert.Equal(24f, run.Style.FontSize.Value);
@@ -127,9 +127,9 @@ public sealed class DisplayOptionsTests
         var size = ui.Theme.MonoFontSize;
 
         ZoomCode(ui, 2);
-        Assert.Equal(size + 2f, ui.Display.FontSize);
+        Assert.Equal(size + 2f, ui.Display.FontSize?.Points);
         ZoomCode(ui, -100);
-        Assert.Equal(DisplayOptions.MinFontSize, ui.Display.FontSize);
+        Assert.Equal(CodeFontSize.Min, ui.Display.FontSize?.Points);
         ResetCodeZoom(ui);
         Assert.Null(ui.Display.FontSize);
     }
@@ -169,7 +169,7 @@ public sealed class DisplayOptionsTests
         using var temp = new TempDir();
         var app = new AppDriver(settings: temp.Settings());
         var font = new CodeFont("Test Mono", temp.Write("mono.ttf", FontBytes), 0);
-        var options = new DisplayOptions(FontSize: 20f, ShowLineNumbers: false, HighlightCurrentLine: true, Font: font, TreeTokens: TokenFormat.Decimal);
+        var options = new DisplayOptions(FontSize: CodeFontSize.Clamp(20f), ShowLineNumbers: false, HighlightCurrentLine: true, Font: font, TreeTokens: TokenFormat.Decimal);
 
         SetDisplayOptions(app.Ui, options);
         app.Run();
@@ -204,7 +204,7 @@ public sealed class DisplayOptionsTests
         app.Click("Line numbers").Frame();
         app.Click("Highlight current line").Frame();
 
-        var changed = new DisplayOptions(FontSize: size + 1f, ShowLineNumbers: false, HighlightCurrentLine: true);
+        var changed = new DisplayOptions(FontSize: CodeFontSize.Clamp(size + 1f), ShowLineNumbers: false, HighlightCurrentLine: true);
         Assert.Equal(changed, app.Ui.Display);
         Assert.True(IsBold(app, "Line numbers"));
         Assert.False(IsBold(app, "UI scale"));
@@ -548,7 +548,7 @@ public sealed class DisplayOptionsTests
         app.Frames.Click(code.Origin.X + 2f, app.Frames.Height - code.Origin.Y + 2f).Frame();
         app.Frames.Key(Shortcuts.ZoomIn).Frame();
 
-        Assert.Equal(size + 1f, app.Ui.Display.FontSize);
+        Assert.Equal(size + 1f, app.Ui.Display.FontSize?.Points);
     }
 
     private static readonly byte[] FontBytes = [1, 2, 3, 4];

@@ -4,120 +4,131 @@ using ZGF.Gui.Immediate;
 namespace ILSight;
 
 /// <summary>Where a diagram is looked at from and how near: the point of the diagram at the top-left of
-/// the view, and the zoom, kept between a tenth of the diagram's own size and four times it.
-/// <see cref="Changes"/> counts the moves: each step of the zoom, the wheel, a fit or a centering, and a
-/// move followed frame by frame, such as a drag, once when it ends.</summary>
-public sealed class DiagramCamera
+/// the view, and the zoom. <see cref="Changes"/> counts the moves: each step of the zoom, the wheel, a fit
+/// or a centering, and a move followed frame by frame, such as a drag, once when it ends.</summary>
+public sealed record DiagramCamera
 {
-    private const float MinZoom = 0.1f;
-    private const float MaxZoom = 4f;
+    /// <summary>The point of the diagram at the top-left of the view.</summary>
+    public PointF Corner { get; set; }
+
+    public CameraZoom Level { get; set; }
+
+    /// <summary>Whether a move is being followed frame by frame.</summary>
+    public bool IsMoving { get; set; }
+
+    public int Changes { get; set; }
+
+    public float Zoom => Level.Value;
+
+    public int Percent => (int)MathF.Round(Zoom * 100f);
+
+    public bool CanZoomIn => Zoom < CameraZoom.Max;
+
+    public bool CanZoomOut => Zoom > CameraZoom.Min;
+}
+
+public static class DiagramCameras
+{
     private const float ZoomStep = 1.25f;
     private const float FitMargin = 24f;
 
-    private float _zoom = 1f;
-    private bool _isMoving;
-
-    /// <summary>The point of the diagram at the top-left of the view.</summary>
-    public PointF Corner { get; private set; }
-
-    public float Zoom => _zoom;
-
-    public int Percent => (int)MathF.Round(_zoom * 100f);
-
-    public bool CanZoomIn => _zoom < MaxZoom;
-
-    public bool CanZoomOut => _zoom > MinZoom;
-
-    public int Changes { get; private set; }
-
     /// <summary>Where <paramref name="point"/> of the diagram is drawn in <paramref name="view"/>.</summary>
-    public PointF ToScreen(PointF point, UiRect view)
+    public static PointF ToScreen(DiagramCamera camera, PointF point, UiRect view)
     {
-        return new PointF(view.X + (point.X - Corner.X) * _zoom, view.Y + (point.Y - Corner.Y) * _zoom);
+        return new PointF(view.X + (point.X - camera.Corner.X) * camera.Zoom, view.Y + (point.Y - camera.Corner.Y) * camera.Zoom);
     }
 
     /// <summary>The point of the diagram drawn at <paramref name="point"/> of <paramref name="view"/>.</summary>
-    public PointF ToDiagram(PointF point, UiRect view)
+    public static PointF ToDiagram(DiagramCamera camera, PointF point, UiRect view)
     {
-        return new PointF(Corner.X + (point.X - view.X) / _zoom, Corner.Y + (point.Y - view.Y) / _zoom);
+        return new PointF(camera.Corner.X + (point.X - view.X) / camera.Zoom, camera.Corner.Y + (point.Y - view.Y) / camera.Zoom);
     }
 
     /// <summary>Looks at the diagram with <paramref name="corner"/> at the view's top-left, as one frame of
     /// a move that <see cref="FinishMoving"/> counts once it ends.</summary>
-    public void LookFrom(PointF corner)
+    public static void LookFrom(DiagramCamera camera, PointF corner)
     {
-        if (corner == Corner)
+        if (corner == camera.Corner)
             return;
-        Corner = corner;
-        _isMoving = true;
+        camera.Corner = corner;
+        camera.IsMoving = true;
     }
 
     /// <summary>Counts the move <see cref="LookFrom"/> followed as one change, once it ended.</summary>
-    public void FinishMoving()
+    public static void FinishMoving(DiagramCamera camera)
     {
-        if (!_isMoving)
+        if (!camera.IsMoving)
             return;
-        _isMoving = false;
-        Changes++;
+        camera.IsMoving = false;
+        camera.Changes++;
     }
 
     /// <summary>Looks at the diagram from <paramref name="corner"/> at <paramref name="zoom"/>, as the
     /// settings kept it.</summary>
-    public void Restore(PointF corner, float zoom)
+    public static void Restore(DiagramCamera camera, PointF corner, float zoom)
     {
-        Corner = corner;
-        _zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
+        camera.Corner = corner;
+        camera.Level = CameraZoom.Clamp(zoom);
     }
 
     /// <summary>Moves the diagram by <paramref name="dx"/> and <paramref name="dy"/> on the screen.</summary>
-    public void Pan(float dx, float dy)
+    public static void Pan(DiagramCamera camera, float dx, float dy)
     {
-        Corner = new PointF(Corner.X - dx / _zoom, Corner.Y - dy / _zoom);
-        Changes++;
+        camera.Corner = new PointF(camera.Corner.X - dx / camera.Zoom, camera.Corner.Y - dy / camera.Zoom);
+        camera.Changes++;
     }
 
     /// <summary>Zooms by <paramref name="factor"/>, keeping the point of the diagram under
     /// <paramref name="anchor"/> of <paramref name="view"/> where it is.</summary>
-    public void ZoomAt(PointF anchor, UiRect view, float factor)
+    public static void ZoomAt(DiagramCamera camera, PointF anchor, UiRect view, float factor)
     {
-        var held = ToDiagram(anchor, view);
-        _zoom = Math.Clamp(_zoom * factor, MinZoom, MaxZoom);
-        Corner = new PointF(held.X - (anchor.X - view.X) / _zoom, held.Y - (anchor.Y - view.Y) / _zoom);
-        Changes++;
+        var held = ToDiagram(camera, anchor, view);
+        camera.Level = CameraZoom.Clamp(camera.Zoom * factor);
+        camera.Corner = new PointF(held.X - (anchor.X - view.X) / camera.Zoom, held.Y - (anchor.Y - view.Y) / camera.Zoom);
+        camera.Changes++;
     }
 
-    public void ZoomIn(UiRect view) => ZoomAt(CenterOf(view), view, ZoomStep);
+    public static void ZoomIn(DiagramCamera camera, UiRect view)
+    {
+        ZoomAt(camera, FindCenter(view), view, ZoomStep);
+    }
 
-    public void ZoomOut(UiRect view) => ZoomAt(CenterOf(view), view, 1f / ZoomStep);
+    public static void ZoomOut(DiagramCamera camera, UiRect view)
+    {
+        ZoomAt(camera, FindCenter(view), view, 1f / ZoomStep);
+    }
 
     /// <summary>Zooms out until a diagram <paramref name="width"/> by <paramref name="height"/> fits
     /// <paramref name="view"/> with a margin, but never in past its own size, and centers it.</summary>
-    public void Fit(float width, float height, UiRect view)
+    public static void Fit(DiagramCamera camera, float width, float height, UiRect view)
     {
         var across = (view.Width - FitMargin * 2) / MathF.Max(width, 1f);
         var down = (view.Height - FitMargin * 2) / MathF.Max(height, 1f);
         var fitting = MathF.Min(MathF.Min(across, down), 1f);
-        _zoom = Math.Clamp(fitting, MinZoom, MaxZoom);
-        CenterOn(new PointF(width / 2, height / 2), view);
+        camera.Level = CameraZoom.Clamp(fitting);
+        CenterOn(camera, new PointF(width / 2, height / 2), view);
     }
 
     /// <summary>Moves the diagram so that <paramref name="point"/> of it is drawn at the middle of <paramref name="view"/>.</summary>
-    public void CenterOn(PointF point, UiRect view)
+    public static void CenterOn(DiagramCamera camera, PointF point, UiRect view)
     {
-        Corner = new PointF(point.X - view.Width / 2 / _zoom, point.Y - view.Height / 2 / _zoom);
-        Changes++;
+        camera.Corner = new PointF(point.X - view.Width / 2 / camera.Zoom, point.Y - view.Height / 2 / camera.Zoom);
+        camera.Changes++;
     }
 
     /// <summary>Whether the part of the diagram <paramref name="width"/> by <paramref name="height"/> from
     /// <paramref name="topLeft"/> is drawn wholly inside <paramref name="view"/>.</summary>
-    public bool Shows(PointF topLeft, float width, float height, UiRect view)
+    public static bool Shows(DiagramCamera camera, PointF topLeft, float width, float height, UiRect view)
     {
-        var start = ToScreen(topLeft, view);
-        var end = ToScreen(new PointF(topLeft.X + width, topLeft.Y + height), view);
+        var start = ToScreen(camera, topLeft, view);
+        var end = ToScreen(camera, new PointF(topLeft.X + width, topLeft.Y + height), view);
         var across = start.X >= view.X && end.X <= view.Right;
         var down = start.Y >= view.Y && end.Y <= view.Bottom;
         return across && down;
     }
 
-    private static PointF CenterOf(UiRect view) => new(view.X + view.Width / 2, view.Y + view.Height / 2);
+    private static PointF FindCenter(UiRect view)
+    {
+        return new PointF(view.X + view.Width / 2, view.Y + view.Height / 2);
+    }
 }

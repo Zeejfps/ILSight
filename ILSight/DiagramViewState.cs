@@ -105,7 +105,7 @@ public sealed class DiagramViewState
     /// keeps rather than fitting itself to the view.</summary>
     public void Restore(DiagramViewRecord saved)
     {
-        Camera.Restore(new PointF(saved.X, saved.Y), saved.Zoom);
+        DiagramCameras.Restore(Camera, new PointF(saved.X, saved.Y), saved.Zoom);
         RestoreFolds(saved.Folds);
         ShowsHiddenMembers = saved.ShowsHiddenMembers;
         IsFitPending = false;

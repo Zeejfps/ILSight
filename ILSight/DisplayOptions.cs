@@ -10,7 +10,7 @@ namespace ILSight;
 /// tokens, whether it lists metadata tables with no rows and whether it nests each namespace in the
 /// one its name extends; and whether what is picked shows in a preview tab.</summary>
 public sealed record DisplayOptions(
-    float? FontSize = null,
+    CodeFontSize? FontSize = null,
     bool ShowLineNumbers = true,
     bool HighlightCurrentLine = false,
     bool HighlightMatchingBrackets = true,
@@ -23,8 +23,6 @@ public sealed record DisplayOptions(
     bool SystemTitleBar = false,
     bool PreviewTabs = true)
 {
-    public const float MinFontSize = 8f;
-    public const float MaxFontSize = 32f;
 
     private static readonly float[] Scales = [0.75f, 0.8f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 1.75f, 2f];
 

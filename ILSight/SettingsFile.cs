@@ -583,7 +583,7 @@ internal sealed record DisplayOptionsJson(
     bool? PreviewTabs)
 {
     public static DisplayOptionsJson From(DisplayOptions options) => new(
-        options.FontSize,
+        options.FontSize?.Points,
         options.ShowLineNumbers,
         options.HighlightCurrentLine,
         options.HighlightMatchingBrackets,

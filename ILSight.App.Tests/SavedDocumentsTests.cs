@@ -193,7 +193,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var diagram = app.AppState.Tabs.Active!;
         SettleDiagram(app, diagram);
         var view = DiagramOf(app, diagram);
-        view.Camera.Restore(new PointF(-30f, 12f), 1.5f);
+        DiagramCameras.Restore(view.Camera, new PointF(-30f, 12f), 1.5f);
         var fields = CardFold.Own(diagram.Diagram!.Cards[0].Anchor, MemberSection.Fields);
         view.Folds.Toggle(fields);
         view.ShowHiddenMembers(true);

@@ -172,7 +172,9 @@ These are the places this shape could be taken to overrule them. It doesn't.
 - **Public fields don't mean anything goes.** Rule 1 still wants illegal states to be unrepresentable,
   so a type with an invariant still enforces it, as a constructor that validates and fields that are
   get-only. `with` skips the constructor and copies past any validation, so a property with an
-  invariant must not have an `init`. A union still replaces a bag of optional fields.
+  invariant must not have an `init`. A value that has to change and still has to stay valid gets a
+  [type of its own](#9-a-class-is-only-for-what-is-entirely-self-contained). A union still replaces a bag
+  of optional fields.
 - **Identifiers and units still get their own types**, which are one-field `readonly record struct`s.
 - **Parse at the boundary** is unchanged. A parser is a static function returning a result.
 - **Don't add structure you haven't been forced into.** A record of functions with one implementation
@@ -269,6 +271,13 @@ A class of our own is allowed when all of these hold:
   read another self-contained type, or keep one of its own, but it doesn't modify one passed in.
 - **It can be used more than once.** It's a general tool, with more than one use or at least nothing
   tying it to its one use today. A class that happens to be small but exists for one feature isn't this.
+
+One kind of type doesn't need the third: a tiny value type whose only job is to keep one value valid, such
+as `CameraZoom`, may serve a single feature. The field holding it can change, but only to a valid value, and
+`view.Zoom = 99` doesn't compile. It's a `readonly record struct` with a private constructor, so it allocates
+nothing and takes no more room than the value. `default` skips that constructor, so the type has to read as
+valid when nothing was ever set: `CameraZoom` takes `0`, which is no zoom, as its own size. A `NaN` is kept
+out as well, since clamping lets one through.
 
 A record is a class, so this goes for a record too. A self-contained record keeps its own methods, which
 is how a type with an invariant protects it: `WebUrl` has a private constructor and a `Parse` beside it,

@@ -34,6 +34,8 @@ internal static class ShapeExceptions
     /// change nothing outside themselves, and could be used anywhere. These stay, with their methods.</summary>
     public static readonly string[] SelfContained =
     [
+        "ILSight.CameraZoom",
+        "ILSight.CodeFontSize",
         "ILSight.Core.AssemblyPath",
         "ILSight.Core.NaturalStringComparer",
         "ILSight.Core.NuGetSource",
@@ -41,6 +43,7 @@ internal static class ShapeExceptions
         "ILSight.Core.PackageVersion",
         "ILSight.Core.TargetFrameworkId",
         "ILSight.Core.WebUrl",
+        "ILSight.PictureZoom",
         "ILSight.ThemeId`1",
         "ILSight.UserIntent",
     ];
@@ -176,7 +179,6 @@ internal static class ShapeExceptions
         "ILSight.Core.SearchQuery",
         "ILSight.CrumbMenu",
         "ILSight.DetailTexts",
-        "ILSight.DiagramCamera",
         "ILSight.DiagramFaces+RowStack",
         "ILSight.DiagramFrame",
         "ILSight.DiagramViewState",

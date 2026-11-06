@@ -412,7 +412,7 @@ public sealed class AppSettingsTests : IDisposable
     public void Display_options_round_trip_and_a_font_missing_its_file_is_left_out_alone()
     {
         var settings = AppSettings.Load(SettingsFile).Settings;
-        settings.Display = new DisplayOptions(14f, false, true, false, false, 1.25f, new CodeFont("Mono", "/mono.ttf", 1),
+        settings.Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, false, 1.25f, new CodeFont("Mono", "/mono.ttf", 1),
             TokenFormat.Hex, true, true, true, false);
         Assert.IsType<SettingsWriteResult.Written>(settings.Save());
 
@@ -423,14 +423,14 @@ public sealed class AppSettingsTests : IDisposable
     }
 
     [Theory]
-    [InlineData("""{ "Display": { "FontSize": 900, "UiScale": 1.3 } }""", DisplayOptions.MaxFontSize, 1.25f)]
-    [InlineData("""{ "Display": { "FontSize": 1, "UiScale": 0.01 } }""", DisplayOptions.MinFontSize, 0.75f)]
+    [InlineData("""{ "Display": { "FontSize": 900, "UiScale": 1.3 } }""", CodeFontSize.Max, 1.25f)]
+    [InlineData("""{ "Display": { "FontSize": 1, "UiScale": 0.01 } }""", CodeFontSize.Min, 0.75f)]
     public void A_saved_font_size_out_of_range_and_a_ui_scale_not_offered_load_within_what_is(string json, float fontSize, float uiScale)
     {
         var (loaded, problem) = AppSettings.Load(Written(json));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        Assert.Equal(fontSize, loaded.Display!.FontSize);
+        Assert.Equal(fontSize, loaded.Display!.FontSize?.Points);
         Assert.Equal(uiScale, loaded.Display.UiScale);
     }
 

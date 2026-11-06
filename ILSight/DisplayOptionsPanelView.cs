@@ -418,7 +418,7 @@ internal static class DisplayOptionsPanelView
     /// <summary>As wide as the largest size, so the buttons beside it stay put as it changes.</summary>
     private static float MeasureFontSizeSlot(Ui<UiState> ui)
     {
-        var widest = FormatFontSize(DisplayOptions.MaxFontSize);
+        var widest = FormatFontSize(CodeFontSize.Max);
         var width = ui.MeasureText(widest);
         return MathF.Ceiling(width) + ui.Theme.Gap * 2;
     }

@@ -14,14 +14,13 @@ public static class CodeDisplay
     {
         if (display.FontSize == null)
             return theme.MonoFontSize;
-        return display.FontSize.Value;
+        return display.FontSize.Value.Points;
     }
 
     /// <summary><paramref name="display"/> with code drawn at <paramref name="size"/>, kept in range.</summary>
     public static DisplayOptions SetFontSize(DisplayOptions display, float size)
     {
-        var clamped = Math.Clamp(size, DisplayOptions.MinFontSize, DisplayOptions.MaxFontSize);
-        return display with { FontSize = clamped };
+        return display with { FontSize = CodeFontSize.Clamp(size) };
     }
 
     /// <summary>The font size <paramref name="steps"/> steps larger, or smaller when negative, than
@@ -29,20 +28,20 @@ public static class CodeDisplay
     public static DisplayOptions Zoom(DisplayOptions display, UiTheme theme, int steps)
     {
         var size = GetFontSize(display, theme) + steps * FontSizeStep;
-        var zoomed = SetFontSize(display, size);
-        if (zoomed.FontSize == theme.MonoFontSize)
-            return zoomed with { FontSize = null };
-        return zoomed;
+        var zoomed = CodeFontSize.Clamp(size);
+        if (zoomed.Points == theme.MonoFontSize)
+            return display with { FontSize = null };
+        return display with { FontSize = zoomed };
     }
 
     public static bool CanZoomIn(DisplayOptions display, UiTheme theme)
     {
-        return GetFontSize(display, theme) < DisplayOptions.MaxFontSize;
+        return GetFontSize(display, theme) < CodeFontSize.Max;
     }
 
     public static bool CanZoomOut(DisplayOptions display, UiTheme theme)
     {
-        return GetFontSize(display, theme) > DisplayOptions.MinFontSize;
+        return GetFontSize(display, theme) > CodeFontSize.Min;
     }
 
     /// <summary><paramref name="display"/> with the offered interface scale nearest <paramref name="scale"/>.</summary>

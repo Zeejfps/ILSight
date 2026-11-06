@@ -58,10 +58,10 @@ internal static class DiagramView
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
         {
             if (ui.IconButton("zoom-out", icons.ResourceZoomOut, t.ResourceZoomOut, camera.CanZoomOut))
-                camera.ZoomOut(area);
+                DiagramCameras.ZoomOut(camera, area);
             ui.Text(t.ResourceZoomPercent(camera.Percent), color: ui.Theme.TextMuted);
             if (ui.IconButton("zoom-in", icons.ResourceZoomIn, t.ResourceZoomIn, camera.CanZoomIn))
-                camera.ZoomIn(area);
+                DiagramCameras.ZoomIn(camera, area);
             if (ui.Button(t.DiagramFit, id: "fit"))
                 FitToView(view, area);
             ui.Separator(ui.Theme.IconSize);
@@ -88,7 +88,7 @@ internal static class DiagramView
         var layout = view.Transition.Layout;
         if (layout == null)
             return;
-        view.Camera.Fit(layout.Width, layout.Height, area);
+        DiagramCameras.Fit(view.Camera, layout.Width, layout.Height, area);
     }
 
     private static void EmptyHint(Ui<UiState> ui, TypeDiagram diagram)
@@ -152,7 +152,7 @@ internal static class DiagramView
         if (after == null)
             return;
         var corner = view.Camera.Corner;
-        view.Camera.LookFrom(new PointF(corner.X + after.Value.X - before.Value.X, corner.Y + after.Value.Y - before.Value.Y));
+        DiagramCameras.LookFrom(view.Camera, new PointF(corner.X + after.Value.X - before.Value.X, corner.Y + after.Value.Y - before.Value.Y));
     }
 
     /// <summary>Fits the first layout that places cards to <paramref name="rect"/>, then brings the card
@@ -174,7 +174,7 @@ internal static class DiagramView
             return;
         if (layout.Places.Count == 0)
             return;
-        view.Camera.Fit(layout.Width, layout.Height, rect);
+        DiagramCameras.Fit(view.Camera, layout.Width, layout.Height, rect);
         view.IsFitPending = false;
     }
 
@@ -189,9 +189,9 @@ internal static class DiagramView
         var face = view.Faces.Find(type);
         if (face == null)
             return;
-        if (view.Camera.Shows(place, face.Width, face.Height, rect))
+        if (DiagramCameras.Shows(view.Camera, place, face.Width, face.Height, rect))
             return;
-        view.Camera.CenterOn(new PointF(place.X + face.Width / 2, place.Y + face.Height / 2), rect);
+        DiagramCameras.CenterOn(view.Camera, new PointF(place.X + face.Width / 2, place.Y + face.Height / 2), rect);
     }
 
     /// <summary>The card and row under the pointer, while it is over the cards or holds a press on them.</summary>
@@ -201,7 +201,7 @@ internal static class DiagramView
             return new DiagramHit.Nothing();
         if (!i.Hovered && !i.Held)
             return new DiagramHit.Nothing();
-        var point = view.Camera.ToDiagram(ui.Input.Pointer, rect);
+        var point = DiagramCameras.ToDiagram(view.Camera, ui.Input.Pointer, rect);
         return HitAt(view, diagram, point);
     }
 
@@ -266,11 +266,11 @@ internal static class DiagramView
             return;
         if (IsCommandHeld(input.Modifiers))
         {
-            view.Camera.ZoomAt(input.Pointer, rect, MathF.Pow(WheelZoomStep, input.ScrollY));
+            DiagramCameras.ZoomAt(view.Camera, input.Pointer, rect, MathF.Pow(WheelZoomStep, input.ScrollY));
             return;
         }
         var step = ui.Theme.ScrollWheelStep;
-        view.Camera.Pan(input.ScrollX * step, input.ScrollY * step);
+        DiagramCameras.Pan(view.Camera, input.ScrollX * step, input.ScrollY * step);
     }
 
     private static bool HasScrolled(UiInput input)
@@ -314,7 +314,7 @@ internal static class DiagramView
         if (!view.PressMoved)
             return;
         var zoom = view.Camera.Zoom;
-        view.Camera.LookFrom(new PointF(start.X - dx / zoom, start.Y - dy / zoom));
+        DiagramCameras.LookFrom(view.Camera, new PointF(start.X - dx / zoom, start.Y - dy / zoom));
     }
 
     /// <summary>Counts the camera's move as done once no press drags it and the cards stopped moving it along.</summary>
@@ -324,7 +324,7 @@ internal static class DiagramView
             return;
         if (view.Transition.IsMoving)
             return;
-        view.Camera.FinishMoving();
+        DiagramCameras.FinishMoving(view.Camera);
     }
 
     private static bool IsPanning(DiagramViewState view, Interaction i)

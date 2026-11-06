@@ -102,7 +102,7 @@ public sealed class SettingsFormatTests : IDisposable
         Language = DecompilationLanguage.IL,
         Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }.With(DecompilerToggle.Find("AlwaysUseBraces")!, false),
         FoldedOptionGroups = ["Other"],
-        Display = new DisplayOptions(14f, false, true, false, false, 1.25f, new CodeFont("Mono", @"C:\Fonts\Mono.ttf", 1),
+        Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, false, 1.25f, new CodeFont("Mono", @"C:\Fonts\Mono.ttf", 1),
             TokenFormat.Hex, true, true, true, false),
         Locale = Locale.De,
         ApiVisibility = ApiVisibility.All,

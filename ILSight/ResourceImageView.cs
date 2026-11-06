@@ -55,17 +55,18 @@ internal static class ResourceImageView
         }
     }
 
-    private static void ZoomButtons(Ui<UiState> ui, PictureView zoom)
+    private static void ZoomButtons(Ui<UiState> ui, PictureView picture)
     {
+        var zoom = picture.Zoom;
         var t = ui.State.Strings;
         var theme = ui.Theme;
         if (ui.IconButton("zoom-out", ui.State.Icons.ResourceZoomOut, t.ResourceZoomOut, zoom.CanZoomOut))
-            PictureViews.ZoomOut(zoom);
+            picture.Zoom = zoom.StepOut();
         ui.Text(t.ResourceZoomPercent(zoom.Percent), color: theme.TextMuted);
         if (ui.IconButton("zoom-in", ui.State.Icons.ResourceZoomIn, t.ResourceZoomIn, zoom.CanZoomIn))
-            PictureViews.ZoomIn(zoom);
+            picture.Zoom = zoom.StepIn();
         if (ui.IconButton("zoom-reset", ui.State.Icons.ResourceZoomReset, t.ResourceZoomReset, !zoom.IsOwnSize))
-            PictureViews.ResetZoom(zoom);
+            picture.Zoom = default;
         ui.Separator(theme.IconSize);
     }
 
@@ -83,7 +84,7 @@ internal static class ResourceImageView
     private static void Picture(Ui<UiState> ui, TabView view, ResourceImage image)
     {
         var theme = ui.Theme;
-        var scale = view.Picture.Scale;
+        var scale = view.Picture.Zoom.Scale;
         Upload(ui, view.ImageId, image, scale);
         using (ui.Scroll("image", ScrollAxes.Both, new Box { Height = Sizing.Grow(), Padding = theme.ShellPaddingX }))
         {
