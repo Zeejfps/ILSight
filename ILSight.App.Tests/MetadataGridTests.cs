@@ -410,6 +410,37 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
+    public void Tall_rows_are_listed_in_view_order_as_a_virtual_scroll_needs_them()
+    {
+        var (app, tab, grid) = ShowTable("TypeDef");
+        var state = GridOf(app, tab);
+        var name = grid.Column("Name");
+        state.Open[(3, name)] = 2;
+        state.Open[(1, name)] = 3;
+
+        MetadataGridWidget.MeasureTallRows(state, 10f, 0f);
+
+        Assert.Equal([new TallRow(1, 30f), new TallRow(3, 20f)], state.TallRows);
+        Assert.Equal(new RowHeights(30f, 0f), state.TallRowsByIndex[1]);
+    }
+
+    [Fact]
+    public void A_row_the_filter_hides_is_no_tall_row()
+    {
+        var (app, tab, grid) = ShowTable("TypeDef");
+        var state = GridOf(app, tab);
+        var name = grid.Column("Name");
+        state.Filters[name] = new MetadataColumnFilter { Text = grid.Text(1, name) };
+        state.UpdateView(app.Ui.MetadataFilters);
+        state.Open[(2, name)] = 4;
+
+        MetadataGridWidget.MeasureTallRows(state, 10f, 0f);
+
+        Assert.Empty(state.TallRows);
+        Assert.Empty(state.TallRowsByIndex);
+    }
+
+    [Fact]
     public void An_open_cell_in_a_row_the_filter_hides_makes_no_row_taller()
     {
         var (app, tab, grid) = ShowTable("TypeDef");
