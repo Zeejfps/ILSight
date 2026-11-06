@@ -39,7 +39,7 @@ public sealed class TabView
     /// <summary>Starts the picture view over on a new picture.</summary>
     public void Follow(DocumentTab tab)
     {
-        Picture.Follow(tab.Image);
+        PictureViews.Follow(Picture, tab.Image);
     }
 
     /// <summary>The view of <paramref name="grid"/>: the one kept for it, or a new one when the tab

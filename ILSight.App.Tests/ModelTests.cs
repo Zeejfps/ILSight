@@ -61,7 +61,7 @@ public sealed class BrowseTreeTests
         tree.ShowReopening(reopens.Files);
         var idle = tree.Row(assembly.Root).Spinning;
 
-        reopens.Start(assembly.FilePath);
+        Reloads.StartReopen(reopens, assembly.FilePath);
 
         Assert.False(idle);
         Assert.True(tree.Row(assembly.Root).Spinning);

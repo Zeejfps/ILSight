@@ -550,7 +550,7 @@ public sealed class AppStateTests
         Assert.Null(tab.Node);
         Assert.Equal("Greeter", tab.Title);
         Assert.Equal(new TabContent.Gone(tab.Location!), tab.Content);
-        Assert.Contains("gone", TabPlaceholder.Write(d.Ui.Strings, tab.Content));
+        Assert.Contains("gone", TabPlaceholders.Write(d.Ui.Strings, tab.Content));
         Assert.IsType<FailedAssembly>(Assert.Single(d.AppState.Assemblies.Listed));
         Assert.Contains(d.AppState.Errors.Entries, e => e.Words().Title.Contains("Greeter"));
     }

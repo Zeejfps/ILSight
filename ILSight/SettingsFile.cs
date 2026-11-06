@@ -612,10 +612,10 @@ internal sealed record DisplayOptionsJson(
             NestedNamespaces ?? d.NestedNamespaces,
             SystemTitleBar ?? d.SystemTitleBar,
             PreviewTabs ?? d.PreviewTabs);
-        var scaled = options.WithUiScale(options.UiScale);
+        var scaled = CodeDisplay.SnapUiScale(options, options.UiScale);
         if (FontSize == null)
             return scaled;
-        return scaled.WithFontSize(FontSize.Value);
+        return CodeDisplay.SetFontSize(scaled, FontSize.Value);
     }
 }
 

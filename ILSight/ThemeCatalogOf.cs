@@ -253,7 +253,7 @@ public abstract class ThemeCatalog<TFile, TContents, TTheme>
     }
 
     /// <summary>The name of the theme <paramref name="id"/> in <paramref name="culture"/>'s language.</summary>
-    public string NameOf(ThemeId<TFile> id, CultureInfo culture) => _files[id].Name.In(culture);
+    public string NameOf(ThemeId<TFile> id, CultureInfo culture) => ThemeNames.GetName(_files[id].Name, culture);
 
     /// <summary>Where <paramref name="id"/> is in <see cref="Ids"/>, or -1. Allocates nothing.</summary>
     public int IndexOf(ThemeId<TFile> id)
@@ -273,7 +273,7 @@ public abstract class ThemeCatalog<TFile, TContents, TTheme>
         if (culture.Equals(_namesCulture))
             return _names;
         _names = _ids
-            .Select(id => _files[id].Name.In(culture))
+            .Select(id => ThemeNames.GetName(_files[id].Name, culture))
             .ToArray();
         _namesCulture = culture;
         return _names;

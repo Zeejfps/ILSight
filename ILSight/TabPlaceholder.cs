@@ -6,37 +6,45 @@ namespace ILSight;
 
 /// <summary>The note a tab's code view shows while the tab has no code of its own, in the interface's
 /// language, written again only when what it says changes.</summary>
-public sealed class TabPlaceholder
+public sealed record TabPlaceholder
 {
-    private TabContent? _content;
-    private Strings? _strings;
-    private DecompiledDocument _document = DecompiledDocument.Empty;
+    public TabContent? Content { get; set; }
 
+    public Strings? Strings { get; set; }
+
+    public DecompiledDocument Document { get; set; } = DecompiledDocument.Empty;
+}
+
+public static class TabPlaceholders
+{
     /// <summary>The note for <paramref name="content"/>, written with <paramref name="t"/>.</summary>
-    public DecompiledDocument For(TabContent content, Strings t)
+    public static DecompiledDocument GetDocument(TabPlaceholder placeholder, TabContent content, Strings t)
     {
-        if (IsWritten(content, t))
-            return _document;
-        _content = content;
-        _strings = t;
-        _document = DecompiledDocument.FromText("", $"// {Write(t, content)}");
-        return _document;
+        if (IsWritten(placeholder, content, t))
+            return placeholder.Document;
+        placeholder.Content = content;
+        placeholder.Strings = t;
+        placeholder.Document = DecompiledDocument.FromText("", $"// {Write(t, content)}");
+        return placeholder.Document;
     }
 
-    private bool IsWritten(TabContent content, Strings t)
+    private static bool IsWritten(TabPlaceholder placeholder, TabContent content, Strings t)
     {
-        if (_strings != t)
+        if (placeholder.Strings != t)
             return false;
-        return Equals(_content, content);
+        return Equals(placeholder.Content, content);
     }
 
     /// <summary>What the note for <paramref name="content"/> says.</summary>
-    internal static string Write(Strings t, TabContent content) => content switch
+    internal static string Write(Strings t, TabContent content)
     {
-        TabContent.Loading => t.DocumentDecompiling,
-        TabContent.Failed failed => t.DocumentDecompilationFailed(failed.Message),
-        TabContent.Reloading or TabContent.Reopening => t.DocumentReloading,
-        TabContent.Gone gone => t.DocumentGone(gone.Location.Label),
-        _ => throw new UnreachableException(),
-    };
+        return content switch
+        {
+            TabContent.Loading => t.DocumentDecompiling,
+            TabContent.Failed failed => t.DocumentDecompilationFailed(failed.Message),
+            TabContent.Reloading or TabContent.Reopening => t.DocumentReloading,
+            TabContent.Gone gone => t.DocumentGone(gone.Location.Label),
+            _ => throw new UnreachableException(),
+        };
+    }
 }

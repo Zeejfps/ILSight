@@ -26,9 +26,9 @@ internal static class DecompilerOptionsPanelView
         using (ui.PaneToolbar())
         {
             if (ui.IconButton("collapse", ui.State.Icons.OptionsCollapseAll, t.CodeCollapseAll, !AllFolded(folded)))
-                folded.Fold(Sections.Select(static s => s.Key));
+                OptionFolds.Fold(folded, Sections.Select(static s => s.Key));
             if (ui.IconButton("expand", ui.State.Icons.OptionsExpandAll, t.CodeExpandAll, folded.Count > 0))
-                folded.UnfoldAll();
+                OptionFolds.UnfoldAll(folded);
             ui.Separator(theme.IconSize);
             if (ui.IconButton("reset", ui.State.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
                 ui.State.Later(static a => ResetDecompilerToggles(a));
@@ -64,7 +64,7 @@ internal static class DecompilerOptionsPanelView
             }
         }
         if (flipped != null)
-            folded.Flip(flipped);
+            OptionFolds.Flip(folded, flipped);
     }
 
     /// <summary>Draws a section's header: a chevron and a checkbox that sets every toggle in it,
@@ -75,7 +75,7 @@ internal static class DecompilerOptionsPanelView
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
-        var isFolded = folded.Contains(section.Key);
+        var isFolded = OptionFolds.IsFolded(folded, section.Key);
         var allowed = IsAllowed(section, options);
         var item = ui.Interact(section.Key);
         using (ui.Row(item.Id, new Box
@@ -161,7 +161,7 @@ internal static class DecompilerOptionsPanelView
     {
         foreach (var section in Sections)
         {
-            if (!folded.Contains(section.Key)) return false;
+            if (!OptionFolds.IsFolded(folded, section.Key)) return false;
         }
         return true;
     }
@@ -170,7 +170,7 @@ internal static class DecompilerOptionsPanelView
     {
         var count = 0;
         foreach (var section in Sections)
-            count += 1 + (folded.Contains(section.Key) ? 0 : section.Toggles.Length);
+            count += 1 + (OptionFolds.IsFolded(folded, section.Key) ? 0 : section.Toggles.Length);
         return count;
     }
 
@@ -180,7 +180,7 @@ internal static class DecompilerOptionsPanelView
         foreach (var section in Sections)
         {
             if (row == 0) return (section, null);
-            var shown = folded.Contains(section.Key) ? 0 : section.Toggles.Length;
+            var shown = OptionFolds.IsFolded(folded, section.Key) ? 0 : section.Toggles.Length;
             if (row <= shown) return (section, section.Toggles[row - 1]);
             row -= 1 + shown;
         }

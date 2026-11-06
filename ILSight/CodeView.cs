@@ -227,7 +227,7 @@ public sealed class CodeViewState
         ScrollX = ScrollY = LaidOutScrollX = LaidOutScrollY = 0f;
         Marked = null;
         Menu = CodeMenuTarget.None;
-        Tooltip.Forget();
+        KeptTooltips.Forget(Tooltip);
         if (Pending is PendingScroll.ShowMatch)
             Pending = null;
         Flash = null;
@@ -331,7 +331,7 @@ public static class CodeViewWidget
         var theme = ui.Theme;
         var palette = ui.State.CodeViewPalette;
         var shown = display ?? Plain;
-        var fontSize = shown.FontSizeIn(theme);
+        var fontSize = CodeDisplay.GetFontSize(shown, theme);
         var cell = ui.MeasureCell(fontSize, family: MonoFonts.Code);
         var advance = cell.Advance;
         var rowHeight = RowHeightFor(theme, fontSize, cell);
@@ -634,10 +634,10 @@ public static class CodeViewWidget
             part = HashCode.Combine(span.Value.Line, span.Value.Span) | 1;
         var anchor = TooltipAnchor(state, document, hovered, advance, rowHeight);
         using var popup = ui.TooltipContent(codeId, part, anchor, out var shownPart, CodeTooltipView.Look);
-        state.Tooltip.Keep(tooltip, part, shownPart);
+        KeptTooltips.Keep(state.Tooltip, tooltip, part, shownPart);
         if (!popup.IsOpen)
             return null;
-        var shown = state.Tooltip.For(shownPart);
+        var shown = KeptTooltips.Find(state.Tooltip, shownPart);
         if (shown == null)
             return null;
         var click = CodeTooltipView.Render(ui, shown);

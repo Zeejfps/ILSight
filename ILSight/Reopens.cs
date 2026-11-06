@@ -4,33 +4,15 @@ namespace ILSight;
 
 /// <summary>The reopen of each listed file that counts: starting another for the file makes the one
 /// before it stale, and its result is then ignored.</summary>
-public sealed class Reopens
+public sealed record Reopens
 {
-    private readonly Dictionary<AssemblyPath, int> _current = new();
-    private int _last;
+    /// <summary>The ticket of the reopen that counts, by the file it is of.</summary>
+    public Dictionary<AssemblyPath, int> Current { get; } = new();
 
-    public bool IsRunning => _current.Count > 0;
+    public int Last { get; set; }
+
+    public bool IsRunning => Current.Count > 0;
 
     /// <summary>The paths of the files being reopened.</summary>
-    public IReadOnlyCollection<AssemblyPath> Files => _current.Keys;
-
-    /// <summary>Starts a reopen of the file at <paramref name="path"/> and returns its ticket.</summary>
-    public int Start(AssemblyPath path)
-    {
-        _last++;
-        _current[path] = _last;
-        return _last;
-    }
-
-    /// <summary>Ends the reopen of the file at <paramref name="path"/> given <paramref name="ticket"/>.
-    /// False when another reopen of it started since, and its result should be ignored.</summary>
-    public bool Finish(AssemblyPath path, int ticket)
-    {
-        if (!_current.TryGetValue(path, out var current))
-            return false;
-        if (current != ticket)
-            return false;
-        _current.Remove(path);
-        return true;
-    }
+    public IReadOnlyCollection<AssemblyPath> Files => Current.Keys;
 }

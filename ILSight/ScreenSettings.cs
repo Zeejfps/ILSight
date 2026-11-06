@@ -42,7 +42,7 @@ public static class ScreenSettings
             uiState.BookmarkColumns.Weights.ToList(),
             uiState.SearchColumns.Weights.ToList(),
             uiState.ExportColumns.Weights.ToList(),
-            uiState.FoldedOptionGroups.Save(),
+            OptionFolds.ListInOrder(uiState.FoldedOptionGroups),
             uiState.Search.Kinds,
             uiState.MetadataFilters.Save(),
             uiState.ExportSetup.Window.Bounds,

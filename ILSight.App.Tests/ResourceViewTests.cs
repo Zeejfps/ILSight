@@ -85,12 +85,12 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = ShowResource("shape.svg");
         app.ClickLast(Icons.ResourceZoomIn).Frame();
-        var zoomedBefore = !app.Ui.Documents.ViewOf(tab).Picture.Zoom.IsOwnSize;
+        var zoomedBefore = !app.Ui.Documents.ViewOf(tab).Picture.IsOwnSize;
 
         app.Show(app.Node(["Resources", "logo.png"]), 3);
 
         Assert.True(zoomedBefore);
-        Assert.True(app.Ui.Documents.ViewOf(tab).Picture.Zoom.IsOwnSize);
+        Assert.True(app.Ui.Documents.ViewOf(tab).Picture.IsOwnSize);
         Assert.Equal((2f, 2f), DrawnSize(app, tab));
     }
 

@@ -46,7 +46,7 @@ internal static class ResourceImageView
             ui.Text(t.ResourceImageInfo(image.Format, image.Width, image.Height), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
                 overflow: TextOverflow.Ellipsis);
             if (!picture.ShowsSource)
-                ZoomButtons(ui, picture.Zoom);
+                ZoomButtons(ui, picture);
             if (hasSource)
                 SourceButton(ui, picture);
             var node = tab.Node;
@@ -55,17 +55,17 @@ internal static class ResourceImageView
         }
     }
 
-    private static void ZoomButtons(Ui<UiState> ui, ImageZoom zoom)
+    private static void ZoomButtons(Ui<UiState> ui, PictureView zoom)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
         if (ui.IconButton("zoom-out", ui.State.Icons.ResourceZoomOut, t.ResourceZoomOut, zoom.CanZoomOut))
-            zoom.ZoomOut();
+            PictureViews.ZoomOut(zoom);
         ui.Text(t.ResourceZoomPercent(zoom.Percent), color: theme.TextMuted);
         if (ui.IconButton("zoom-in", ui.State.Icons.ResourceZoomIn, t.ResourceZoomIn, zoom.CanZoomIn))
-            zoom.ZoomIn();
+            PictureViews.ZoomIn(zoom);
         if (ui.IconButton("zoom-reset", ui.State.Icons.ResourceZoomReset, t.ResourceZoomReset, !zoom.IsOwnSize))
-            zoom.Reset();
+            PictureViews.ResetZoom(zoom);
         ui.Separator(theme.IconSize);
     }
 
@@ -77,13 +77,13 @@ internal static class ResourceImageView
         var icons = ui.State.Icons;
         var glyph = picture.ShowsSource ? icons.ResourceShowPicture : icons.ResourceShowSource;
         if (ui.Button(label, id: "source", icon: new UiIcon(glyph)))
-            picture.ToggleSource();
+            PictureViews.ToggleSource(picture);
     }
 
     private static void Picture(Ui<UiState> ui, TabView view, ResourceImage image)
     {
         var theme = ui.Theme;
-        var scale = view.Picture.Zoom.Scale;
+        var scale = view.Picture.Scale;
         Upload(ui, view.ImageId, image, scale);
         using (ui.Scroll("image", ScrollAxes.Both, new Box { Height = Sizing.Grow(), Padding = theme.ShellPaddingX }))
         {

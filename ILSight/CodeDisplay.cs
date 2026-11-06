@@ -1,4 +1,5 @@
 using ZGF.Fonts;
+using ZGF.Gui.Immediate;
 
 namespace ILSight;
 
@@ -6,6 +7,57 @@ namespace ILSight;
 /// code and the aids drawn around it. The settings keep it with the rest of the screen.</summary>
 public static class CodeDisplay
 {
+    private const float FontSizeStep = 1f;
+
+    /// <summary>The size code is drawn at in <paramref name="theme"/>.</summary>
+    public static float GetFontSize(DisplayOptions display, UiTheme theme)
+    {
+        if (display.FontSize == null)
+            return theme.MonoFontSize;
+        return display.FontSize.Value;
+    }
+
+    /// <summary><paramref name="display"/> with code drawn at <paramref name="size"/>, kept in range.</summary>
+    public static DisplayOptions SetFontSize(DisplayOptions display, float size)
+    {
+        var clamped = Math.Clamp(size, DisplayOptions.MinFontSize, DisplayOptions.MaxFontSize);
+        return display with { FontSize = clamped };
+    }
+
+    /// <summary>The font size <paramref name="steps"/> steps larger, or smaller when negative, than
+    /// it is in <paramref name="theme"/>; the theme's own again once it gets back to that size.</summary>
+    public static DisplayOptions Zoom(DisplayOptions display, UiTheme theme, int steps)
+    {
+        var size = GetFontSize(display, theme) + steps * FontSizeStep;
+        var zoomed = SetFontSize(display, size);
+        if (zoomed.FontSize == theme.MonoFontSize)
+            return zoomed with { FontSize = null };
+        return zoomed;
+    }
+
+    public static bool CanZoomIn(DisplayOptions display, UiTheme theme)
+    {
+        return GetFontSize(display, theme) < DisplayOptions.MaxFontSize;
+    }
+
+    public static bool CanZoomOut(DisplayOptions display, UiTheme theme)
+    {
+        return GetFontSize(display, theme) > DisplayOptions.MinFontSize;
+    }
+
+    /// <summary><paramref name="display"/> with the offered interface scale nearest <paramref name="scale"/>.</summary>
+    public static DisplayOptions SnapUiScale(DisplayOptions display, float scale)
+    {
+        var nearest = FindNearestUiScale(scale);
+        return display with { UiScale = nearest };
+    }
+
+    private static float FindNearestUiScale(float scale)
+    {
+        return DisplayOptions.UiScales
+            .MinBy(s => MathF.Abs(s - scale));
+    }
+
     public static void SetDisplayOptions(UiState uiState, DisplayOptions options)
     {
         uiState.Display = options;
@@ -34,14 +86,14 @@ public static class CodeDisplay
     /// <summary>Draws the whole interface at <paramref name="scale"/>, or the offered scale nearest it.</summary>
     public static void SetUiScale(UiState uiState, float scale)
     {
-        var scaled = uiState.Display.WithUiScale(scale);
+        var scaled = SnapUiScale(uiState.Display, scale);
         SetDisplayOptions(uiState, scaled);
     }
 
     /// <summary>Makes code <paramref name="steps"/> font sizes larger, or smaller when negative.</summary>
     public static void ZoomCode(UiState uiState, int steps)
     {
-        var zoomed = uiState.Display.Zoomed(uiState.Theme, steps);
+        var zoomed = Zoom(uiState.Display, uiState.Theme, steps);
         SetDisplayOptions(uiState, zoomed);
     }
 

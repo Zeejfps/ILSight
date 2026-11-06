@@ -81,7 +81,7 @@ public sealed class IconThemeFile : IThemeFile<IconThemeFile, IconThemeContents>
         Id = id;
         _json = new ThemeJson(file);
         _assets = assets;
-        Name = ThemeName.Plain(id.Text);
+        Name = new ThemeName.Plain(id.Text);
     }
 
     public ThemeId<IconThemeFile> Id { get; }

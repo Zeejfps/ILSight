@@ -1,65 +1,56 @@
-using System.Collections;
-
 namespace ILSight;
 
 /// <summary>The groups folded in a panel, by key. Every change bumps <see cref="Revision"/>.</summary>
-public sealed class FoldedGroups : IReadOnlyCollection<string>
+public sealed record FoldedGroups(HashSet<string> Folded)
 {
-    private readonly HashSet<string> _folded;
+    public int Revision { get; set; }
 
-    public FoldedGroups(IEnumerable<string>? folded)
+    public int Count => Folded.Count;
+}
+
+public static class OptionFolds
+{
+    public static bool IsFolded(FoldedGroups groups, string group)
     {
-        _folded = new HashSet<string>(folded ?? []);
+        return groups.Folded.Contains(group);
     }
 
-    public int Revision { get; private set; }
-
-    public int Count => _folded.Count;
-
-    public bool Contains(string group) => _folded.Contains(group);
-
-    public void Fold(IEnumerable<string> groups)
+    public static void Fold(FoldedGroups groups, IEnumerable<string> names)
     {
-        foreach (var group in groups)
+        foreach (var name in names)
         {
-            if (_folded.Add(group))
-                Revision++;
+            if (groups.Folded.Add(name))
+                groups.Revision++;
         }
     }
 
-    public void Unfold(string group)
+    public static void Unfold(FoldedGroups groups, string group)
     {
-        if (_folded.Remove(group))
-            Revision++;
+        if (groups.Folded.Remove(group))
+            groups.Revision++;
     }
 
     /// <summary>Unfolds <paramref name="group"/> when it is folded, and folds it otherwise.</summary>
-    public void Flip(string group)
+    public static void Flip(FoldedGroups groups, string group)
     {
-        if (!_folded.Remove(group))
-            _folded.Add(group);
-        Revision++;
+        if (!groups.Folded.Remove(group))
+            groups.Folded.Add(group);
+        groups.Revision++;
     }
 
-    public void UnfoldAll()
+    public static void UnfoldAll(FoldedGroups groups)
     {
-        if (_folded.Count == 0)
+        if (groups.Folded.Count == 0)
             return;
-        _folded.Clear();
-        Revision++;
+        groups.Folded.Clear();
+        groups.Revision++;
     }
 
     /// <summary>The folded groups in order, to save.</summary>
-    public List<string> Save()
+    public static List<string> ListInOrder(FoldedGroups groups)
     {
-        return _folded
+        return groups.Folded
             .Order()
             .ToList();
     }
-
-    public HashSet<string>.Enumerator GetEnumerator() => _folded.GetEnumerator();
-
-    IEnumerator<string> IEnumerable<string>.GetEnumerator() => GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

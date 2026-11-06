@@ -141,9 +141,9 @@ public sealed class DisplayOptionsTests
 
         Assert.Equal(1f, display.UiScale);
         Assert.Equal([0.75f, 0.8f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 1.75f, 2f], DisplayOptions.UiScales);
-        Assert.Equal(1.25f, display.WithUiScale(1.2f).UiScale);
-        Assert.Equal(2f, display.WithUiScale(5f).UiScale);
-        Assert.Equal(0.75f, display.WithUiScale(0.1f).UiScale);
+        Assert.Equal(1.25f, CodeDisplay.SnapUiScale(display, 1.2f).UiScale);
+        Assert.Equal(2f, CodeDisplay.SnapUiScale(display, 5f).UiScale);
+        Assert.Equal(0.75f, CodeDisplay.SnapUiScale(display, 0.1f).UiScale);
     }
 
     [Fact]

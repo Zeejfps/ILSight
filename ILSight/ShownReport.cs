@@ -5,20 +5,25 @@ namespace ILSight;
 
 /// <summary>The export report a tab's code view shows, in the interface's language, written again only
 /// when the report or the language changes.</summary>
-public sealed class ShownReport
+public sealed record ShownReport
 {
-    private ExportReport? _report;
-    private Strings? _strings;
-    private DecompiledDocument _document = DecompiledDocument.Empty;
+    public ExportReport? Report { get; set; }
 
+    public Strings? Strings { get; set; }
+
+    public DecompiledDocument Document { get; set; } = DecompiledDocument.Empty;
+}
+
+public static class ShownReports
+{
     /// <summary><paramref name="report"/> written out with <paramref name="t"/>.</summary>
-    public DecompiledDocument For(ExportReport report, Strings t)
+    public static DecompiledDocument GetDocument(ShownReport shown, ExportReport report, Strings t)
     {
-        if (ReferenceEquals(report, _report) && t == _strings)
-            return _document;
-        _report = report;
-        _strings = t;
-        _document = ExportReportText.Write(t, [report]);
-        return _document;
+        if (ReferenceEquals(report, shown.Report) && t == shown.Strings)
+            return shown.Document;
+        shown.Report = report;
+        shown.Strings = t;
+        shown.Document = ExportReportText.Write(t, [report]);
+        return shown.Document;
     }
 }

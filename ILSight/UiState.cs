@@ -22,7 +22,7 @@ public sealed class UiState : IUiState
     public UiState(ViewSettings saved, Action<AppProblem> reportError, BrowseSession session)
     {
         Tree = new BrowseTree(session, reportError);
-        FoldedOptionGroups = new FoldedGroups(saved.FoldedOptionGroups);
+        FoldedOptionGroups = new FoldedGroups(new HashSet<string>(saved.FoldedOptionGroups ?? []));
         BookmarkColumns.Restore(saved.BookmarkColumns);
         SearchColumns.Restore(saved.SearchColumns);
         ExportColumns.Restore(saved.ExportColumns);

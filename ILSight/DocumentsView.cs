@@ -128,10 +128,10 @@ internal static class DocumentsView
     {
         var content = tab.Content;
         if (content is TabContent.Report report)
-            return view.Report.For(report.Export, screen.Strings);
+            return ShownReports.GetDocument(view.Report, report.Export, screen.Strings);
         if (!IsNote(content))
             return tab.Document;
-        return view.Placeholder.For(content, screen.Strings);
+        return TabPlaceholders.GetDocument(view.Placeholder, content, screen.Strings);
     }
 
     /// <summary>Whether <paramref name="content"/> is shown as a note saying why there is no code.</summary>

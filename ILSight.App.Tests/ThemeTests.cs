@@ -369,7 +369,7 @@ public sealed class ThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal((ThemeProblem.DuplicateLanguage, 3, "name.EN"), (error.Problem, error.Line, error.Subject));
-        Assert.Equal("Night", file.Name.In(CultureInfo.GetCultureInfo("en")));
+        Assert.Equal("Night", ThemeNames.GetName(file.Name, CultureInfo.GetCultureInfo("en")));
     }
 
     [Fact]

@@ -379,13 +379,13 @@ internal static class DisplayOptionsPanelView
         var theme = ui.Theme;
         var display = ui.State.Display;
         var smaller = ui.Memo("smaller", t, static s => s.DisplayOptionsSmaller(Shortcuts.ZoomOut.Label));
-        if (ui.IconButton("smaller", ui.State.Icons.OptionsFontSmaller, smaller, display.CanZoomOut(theme), ButtonVariant.Neutral))
+        if (ui.IconButton("smaller", ui.State.Icons.OptionsFontSmaller, smaller, CodeDisplay.CanZoomOut(display, theme), ButtonVariant.Neutral))
             ZoomCode(ui.State, -1);
-        var size = display.FontSizeIn(theme);
+        var size = CodeDisplay.GetFontSize(display, theme);
         var text = ui.Memo("size", size, static s => FormatFontSize(s));
         ui.Text(text, new Box { Width = Sizing.Fixed(MeasureFontSizeSlot(ui)) }, align: Align.Center);
         var larger = ui.Memo("larger", t, static s => s.DisplayOptionsLarger(Shortcuts.ZoomIn.Label));
-        if (ui.IconButton("larger", ui.State.Icons.OptionsFontLarger, larger, display.CanZoomIn(theme), ButtonVariant.Neutral))
+        if (ui.IconButton("larger", ui.State.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
             ZoomCode(ui.State, 1);
     }
 
@@ -394,7 +394,7 @@ internal static class DisplayOptionsPanelView
     private static void FontPreview(Ui<UiState> ui)
     {
         var theme = ui.Theme;
-        var size = ui.State.Display.FontSizeIn(theme);
+        var size = CodeDisplay.GetFontSize(ui.State.Display, theme);
         using var row = ui.Column(new Box
         {
             Width = Sizing.Grow(),

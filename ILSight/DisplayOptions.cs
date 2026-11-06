@@ -25,54 +25,11 @@ public sealed record DisplayOptions(
 {
     public const float MinFontSize = 8f;
     public const float MaxFontSize = 32f;
-    private const float FontSizeStep = 1f;
 
     private static readonly float[] Scales = [0.75f, 0.8f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 1.75f, 2f];
 
     public static DisplayOptions Default { get; } = new();
 
-    private static float NearestUiScale(float scale)
-    {
-        return Scales
-            .MinBy(s => MathF.Abs(s - scale));
-    }
-
-    /// <summary>The size code is drawn at in <paramref name="theme"/>.</summary>
-    public float FontSizeIn(UiTheme theme)
-    {
-        if (FontSize == null)
-            return theme.MonoFontSize;
-        return FontSize.Value;
-    }
-
-    public DisplayOptions WithFontSize(float size)
-    {
-        var clamped = Math.Clamp(size, MinFontSize, MaxFontSize);
-        return this with { FontSize = clamped };
-    }
-
-    /// <summary>The font size <paramref name="steps"/> steps larger, or smaller when negative, than
-    /// it is in <paramref name="theme"/>; the theme's own again once it gets back to that size.</summary>
-    public DisplayOptions Zoomed(UiTheme theme, int steps)
-    {
-        var size = FontSizeIn(theme) + steps * FontSizeStep;
-        var zoomed = WithFontSize(size);
-        if (zoomed.FontSize == theme.MonoFontSize)
-            return zoomed with { FontSize = null };
-        return zoomed;
-    }
-
-    public bool CanZoomIn(UiTheme theme) => FontSizeIn(theme) < MaxFontSize;
-
-    public bool CanZoomOut(UiTheme theme) => FontSizeIn(theme) > MinFontSize;
-
     /// <summary>The interface scales offered, smallest first.</summary>
     public static IReadOnlyList<float> UiScales => Scales;
-
-    /// <summary>The options with the offered interface scale nearest <paramref name="scale"/>.</summary>
-    public DisplayOptions WithUiScale(float scale)
-    {
-        var nearest = NearestUiScale(scale);
-        return this with { UiScale = nearest };
-    }
 }

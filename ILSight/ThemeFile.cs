@@ -60,7 +60,7 @@ public sealed class ThemeFile : IThemeFile<ThemeFile, ThemeContents>
     {
         Id = id;
         _json = new ThemeJson(file);
-        Name = ThemeName.Plain(id.Text);
+        Name = new ThemeName.Plain(id.Text);
     }
 
     /// <summary>The file's name without its extension, which settings and <see cref="Extends"/> know it by.</summary>

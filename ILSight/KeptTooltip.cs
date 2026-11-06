@@ -4,33 +4,37 @@ namespace ILSight;
 
 /// <summary>The tooltip a view keeps between frames: the one last looked up, with the part of the view it is
 /// for, kept while the pointer crosses over to another part until that part's tooltip shows.</summary>
-internal sealed class KeptTooltip
+internal sealed record KeptTooltip
 {
-    private readonly record struct Kept(CodeTooltip Tooltip, int Part);
+    public (CodeTooltip Tooltip, int Part)? Kept { get; set; }
+}
 
-    private Kept? _kept;
-
+internal static class KeptTooltips
+{
     /// <summary>Keeps <paramref name="tooltip"/> for <paramref name="part"/>, unless there is none or the tooltip
     /// of another part, <paramref name="shownPart"/>, is still shown.</summary>
-    public void Keep(CodeTooltip? tooltip, int part, int shownPart)
+    public static void Keep(KeptTooltip kept, CodeTooltip? tooltip, int part, int shownPart)
     {
         if (tooltip == null)
             return;
         if (shownPart != 0 && shownPart != part)
             return;
-        _kept = new Kept(tooltip, part);
+        kept.Kept = (tooltip, part);
     }
 
     /// <summary>The tooltip kept for <paramref name="shownPart"/>, or null.</summary>
-    public CodeTooltip? For(int shownPart)
+    public static CodeTooltip? Find(KeptTooltip kept, int shownPart)
     {
-        if (_kept == null)
+        if (kept.Kept == null)
             return null;
-        var kept = _kept.Value;
-        if (kept.Part != shownPart)
+        var (tooltip, part) = kept.Kept.Value;
+        if (part != shownPart)
             return null;
-        return kept.Tooltip;
+        return tooltip;
     }
 
-    public void Forget() => _kept = null;
+    public static void Forget(KeptTooltip kept)
+    {
+        kept.Kept = null;
+    }
 }

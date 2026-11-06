@@ -122,7 +122,7 @@ internal sealed class ThemeJson(string file)
     public ThemeName? ReadName(ref Utf8JsonReader reader, int line, string fallback)
     {
         if (reader.TokenType == JsonTokenType.String)
-            return ThemeName.Plain(reader.GetString()!);
+            return new ThemeName.Plain(reader.GetString()!);
         if (reader.TokenType != JsonTokenType.StartObject)
         {
             AddError(line, ThemeProblem.InvalidName);
@@ -130,7 +130,7 @@ internal sealed class ThemeJson(string file)
             return null;
         }
         var byTag = ReadNamesByTag(ref reader);
-        return ThemeName.PerLanguage(byTag, fallback);
+        return new ThemeName.PerLanguage(byTag, fallback);
     }
 
     /// <summary>The names by language tag, tags compared ignoring case; a tag given again is reported
