@@ -26,13 +26,13 @@ public sealed class UiState : IUiState
         BookmarkColumns.Restore(saved.BookmarkColumns);
         SearchColumns.Restore(saved.SearchColumns);
         ExportColumns.Restore(saved.ExportColumns);
-        Search = new Search(ReadStrings, reportError, session);
+        Search = new Search(reportError, session);
         Search.Kinds = saved.SearchKinds;
-        Omnibar = new Omnibar(ReadStrings, reportError, session);
+        Omnibar = new Omnibar(reportError, session);
         MetadataFilters = new MetadataFilters(saved.FlagsFilters);
         Runtime = runtime;
-        Picker = new FrameworkPicker(ReadStrings, reportError, () => RuntimeAssemblies.ListAssemblies(runtime));
-        NuGetPicker = new NuGetPicker(ReadStrings, reportError);
+        Picker = new FrameworkPicker(reportError, () => RuntimeAssemblies.ListAssemblies(runtime));
+        NuGetPicker = new NuGetPicker(reportError);
         NuGetPicker.Restore(saved.NuGet);
         DialogWindows.Restore(NuGetPicker.Window, saved.NuGetWindow);
         DialogWindows.Restore(ExportSetup.Window, saved.ExportWindow);
@@ -42,9 +42,6 @@ public sealed class UiState : IUiState
         Documents.SkipPanels(MainLayout.ListDocuments());
         KeptView = CaptureViewSources(this);
     }
-
-    /// <summary>The strings of the language the screen speaks now, for what reports to the app state later.</summary>
-    private Strings ReadStrings() => Strings;
 
     public UiTheme Theme { get; set; } = UiTheme.Dark;
     public CodeViewPalette CodeViewPalette { get; set; } = BuiltInThemes.Dark.Code;

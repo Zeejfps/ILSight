@@ -1,5 +1,4 @@
 using ILSight.Core;
-using ILSight.Localization;
 
 namespace ILSight;
 
@@ -13,12 +12,11 @@ public sealed class Omnibar
     /// <summary>The search a bar runs, or null while every bar shows its path.</summary>
     public OmnibarSearch? Searching;
 
-    /// <param name="strings">The interface's strings in the current language.</param>
     /// <param name="reportError">Tells the user a search failed.</param>
     /// <param name="session">The browse tree the search finds nodes of.</param>
-    public Omnibar(Func<Strings> strings, Action<AppProblem> reportError, BrowseSession session)
+    public Omnibar(Action<AppProblem> reportError, BrowseSession session)
     {
-        Search = new Search(strings, reportError, session);
+        Search = new Search(reportError, session);
     }
 
     /// <summary>The query typed into the bar and its matches, the closest first.</summary>

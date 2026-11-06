@@ -1,5 +1,4 @@
 using ILSight.Core;
-using ILSight.Localization;
 
 namespace ILSight;
 
@@ -26,7 +25,6 @@ public sealed class Search
     private const string NamespaceScope = "innamespace";
     private const string AssemblyScope = "inassembly";
 
-    private readonly Func<Strings> _strings;
     private readonly Action<AppProblem> _reportError;
     private readonly SearchStream _stream;
     private readonly List<SearchResult> _rows = new();
@@ -38,13 +36,11 @@ public sealed class Search
     private Searched? _searched;
     private bool _isFocusPending;
 
-    /// <param name="strings">The interface's strings in the current language.</param>
     /// <param name="reportError">Tells the user a search failed.</param>
     /// <param name="session">The browse tree the search finds nodes of.</param>
     /// <param name="stream">Streams a query's hits; a search of the assemblies' nodes by default.</param>
-    public Search(Func<Strings> strings, Action<AppProblem> reportError, BrowseSession session, SearchStream? stream = null)
+    public Search(Action<AppProblem> reportError, BrowseSession session, SearchStream? stream = null)
     {
-        _strings = strings;
         _reportError = reportError;
         _order = Comparer<SearchResult>.Create(Compare);
         _stream = stream ?? ((_, query, within, cancellationToken) => AssemblySearch.SearchAsync(session, within, query, cancellationToken));

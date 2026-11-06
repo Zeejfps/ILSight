@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Resources;
-using ILSight.Localization;
 
 namespace ILSight;
 
@@ -20,7 +19,6 @@ public sealed class NuGetPicker
     /// of twice the usual density.</summary>
     public const int IconPixels = 64;
 
-    private readonly Func<Strings> _strings;
     private readonly Action<AppProblem> _reportError;
     private readonly Dictionary<WebUrl, PackageIcon> _icons = new();
     private readonly Dictionary<DetailsKey, VersionDetails> _details = new();
@@ -39,11 +37,9 @@ public sealed class NuGetPicker
     private FeedPackage? _versionsOf;
     private bool _focusQuery;
 
-    /// <param name="strings">The interface's strings in the current language.</param>
     /// <param name="reportError">Tells the user a search or a download failed.</param>
-    public NuGetPicker(Func<Strings> strings, Action<AppProblem> reportError)
+    public NuGetPicker(Action<AppProblem> reportError)
     {
-        _strings = strings;
         _reportError = reportError;
     }
 

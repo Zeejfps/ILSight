@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Localization;
 
 namespace ILSight;
 
@@ -9,7 +8,6 @@ namespace ILSight;
 /// in the background, filtered by name.</summary>
 public sealed class FrameworkPicker
 {
-    private readonly Func<Strings> _strings;
     private readonly Action<AppProblem> _reportError;
     private readonly Func<IReadOnlyList<RuntimeAssembly>> _scan;
     private readonly List<RuntimeAssembly> _filtered = new();
@@ -18,12 +16,10 @@ public sealed class FrameworkPicker
     private string? _appliedFilter;
     private bool _focusFilter;
 
-    /// <param name="strings">The interface's strings in the current language.</param>
     /// <param name="reportError">Tells the user the runtime could not be scanned.</param>
     /// <param name="scan">Lists the assemblies to offer.</param>
-    public FrameworkPicker(Func<Strings> strings, Action<AppProblem> reportError, Func<IReadOnlyList<RuntimeAssembly>> scan)
+    public FrameworkPicker(Action<AppProblem> reportError, Func<IReadOnlyList<RuntimeAssembly>> scan)
     {
-        _strings = strings;
         _reportError = reportError;
         _scan = scan;
     }
