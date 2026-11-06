@@ -207,8 +207,10 @@ public static class DocumentPanels
     {
         if (tabs.Active != null)
             return;
-        if (!uiState.NextTabFocus.TakeTry(uiState.Layout.Changes, tabs.Count))
+        var attempt = new TabFocusTry(uiState.Layout.Changes, tabs.Count);
+        if (attempt == uiState.LastTabFocusTry)
             return;
+        uiState.LastTabFocusTry = attempt;
         FocusNextTab(uiState);
     }
 

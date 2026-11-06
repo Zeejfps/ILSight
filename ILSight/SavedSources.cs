@@ -19,16 +19,3 @@ public readonly record struct SavedSources(
     ApiVisibility ApiVisibility,
     Locale Locale,
     bool CheckForUpdates);
-
-/// <summary>What the settings were saved from the last time, to save again only when it changed.</summary>
-public sealed class LastSave
-{
-    private SavedSources _saved;
-
-    public bool IsBehind(SavedSources sources) => sources != _saved;
-
-    public void Record(SavedSources sources)
-    {
-        _saved = sources;
-    }
-}

@@ -18,17 +18,35 @@ public static class Settings
         if (appState.IsReloading)
             return Unchanged;
         var sources = CaptureSavedSources(appState);
-        if (!appState.LastSave.IsBehind(sources))
+        if (sources == appState.LastSaved)
             return Unchanged;
-        var wait = appState.SaveRetry.Remaining(now);
+        var wait = RetryWait(appState, now);
         if (wait > 0)
             return new Saving.Waiting(wait);
         return SaveSettings(appState) switch
         {
             SettingsWriteResult.Written => new Saving.Saved(),
-            SettingsWriteResult.Failed failed => new Saving.Failed(failed.Reason, appState.SaveRetry.Remaining(now)),
+            SettingsWriteResult.Failed failed => new Saving.Failed(failed.Reason, RetryWait(appState, now)),
             _ => throw new UnreachableException(),
         };
+    }
+
+    /// <summary>The seconds left at <paramref name="now"/> before a failed write is tried again, which
+    /// start counting from the first time this is asked after the failure.</summary>
+    private static double RetryWait(AppState appState, double now)
+    {
+        switch (appState.SaveRetry)
+        {
+            case SaveRetry.Clear:
+                return 0;
+            case SaveRetry.Failed:
+                appState.SaveRetry = new SaveRetry.Waiting(now);
+                return SaveRetry.DelaySeconds;
+            case SaveRetry.Waiting waiting:
+                return Math.Max(0, SaveRetry.DelaySeconds - (now - waiting.Since));
+            default:
+                throw new UnreachableException();
+        }
     }
 
     /// <summary>Tells the user what was wrong with the settings file, if anything.</summary>
@@ -106,8 +124,8 @@ public static class Settings
         switch (write)
         {
             case SettingsWriteResult.Written:
-                appState.LastSave.Record(sources);
-                appState.SaveRetry.Succeed();
+                appState.LastSaved = sources;
+                appState.SaveRetry = new SaveRetry.Clear();
                 break;
             case SettingsWriteResult.Failed failed:
                 ReportWriteFailure(appState, failed.Reason);
@@ -120,7 +138,9 @@ public static class Settings
     /// <summary>Reports a failed write, unless writes were failing already.</summary>
     private static void ReportWriteFailure(AppState appState, string error)
     {
-        if (!appState.SaveRetry.Fail())
+        var wasFailing = appState.SaveRetry is not SaveRetry.Clear;
+        appState.SaveRetry = new SaveRetry.Failed();
+        if (wasFailing)
             return;
         appState.ReportError(new AppProblem.SettingsNotSaved(error));
     }

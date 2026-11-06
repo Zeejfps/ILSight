@@ -84,7 +84,7 @@ public sealed class UiState : IUiState
     public DocumentTab? ActiveTab;
 
     /// <summary>When to try focusing another tab while none is active.</summary>
-    public FocusRetry NextTabFocus { get; } = new();
+    public TabFocusTry LastTabFocusTry = new(-1, -1);
 
     /// <summary>The language and options the tabs in front were last brought up to date with.</summary>
     public ShownDecompilation ShownDecompilation { get; } = new();

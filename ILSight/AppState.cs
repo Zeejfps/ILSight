@@ -47,10 +47,12 @@ public sealed class AppState
     /// PDB is picked for an assembly.</summary>
     public Reopens Reopens { get; } = new();
     public OpenRequests Opens { get; } = new();
-    public LastSave LastSave { get; } = new();
+
+    /// <summary>What the settings were saved from the last time, to save again only when it changed.</summary>
+    public SavedSources LastSaved { get; set; }
 
     /// <summary>Whether writing the settings is failing, and when to try again.</summary>
-    public SaveRetry SaveRetry { get; } = new();
+    public SaveRetry SaveRetry { get; set; } = new SaveRetry.Clear();
     public BookmarkList Bookmarks { get; } = new();
 
     /// <summary>The symbols being analyzed and what the analyses found.</summary>
@@ -186,7 +188,7 @@ public sealed class AppState
     {
         var appState = new AppState(settings, session, out var leftOutBookmarks);
         ReopenDocuments(appState);
-        appState.LastSave.Record(CaptureSavedSources(appState));
+        appState.LastSaved = CaptureSavedSources(appState);
         ReportLeftOutBookmarks(appState, leftOutBookmarks);
         LoadThemes(appState);
         LoadIconThemes(appState);
