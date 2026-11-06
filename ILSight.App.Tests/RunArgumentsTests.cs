@@ -14,7 +14,7 @@ public sealed class RunArgumentsTests
     [Fact]
     public void Options_are_read_apart_from_the_files_to_open()
     {
-        var arguments = CommandLine.Parse(["--language=il", "--list= Work ", "--clear-list", "a.dll"]).Arguments;
+        var arguments = CommandLines.Parse(["--language=il", "--list= Work ", "--clear-list", "a.dll"]).Arguments;
 
         Assert.Equal(DecompilationLanguage.IL, arguments.Language);
         Assert.Equal("Work", arguments.AssemblyList);
@@ -25,7 +25,7 @@ public sealed class RunArgumentsTests
     [Fact]
     public void What_to_navigate_to_and_a_new_window_are_read_from_their_options()
     {
-        var commandLine = CommandLine.Parse(["--navigateto= T:Some.Type ", "--newinstance"]);
+        var commandLine = CommandLines.Parse(["--navigateto= T:Some.Type ", "--newinstance"]);
 
         Assert.Equal("T:Some.Type", commandLine.Arguments.Files.NavigateTo);
         Assert.True(commandLine.Launch.NewInstance);
@@ -35,9 +35,9 @@ public sealed class RunArgumentsTests
     [Fact]
     public void A_command_line_is_handed_over_with_its_files_made_absolute_and_reads_back_the_same()
     {
-        var arguments = CommandLine.Parse(["--language=IL", "--list=Work", "--clear-list", "--navigateto=T:Some.Type", "--gl", "--newinstance", "a.dll"]).Arguments;
+        var arguments = CommandLines.Parse(["--language=IL", "--list=Work", "--clear-list", "--navigateto=T:Some.Type", "--gl", "--newinstance", "a.dll"]).Arguments;
 
-        var handed = CommandLine.Parse(CommandLine.ListArguments(arguments).ToArray()).Arguments;
+        var handed = CommandLines.Parse(CommandLines.ListArguments(arguments).ToArray()).Arguments;
 
         Assert.Equal(DecompilationLanguage.IL, handed.Language);
         Assert.Equal("Work", handed.AssemblyList);
@@ -52,7 +52,7 @@ public sealed class RunArgumentsTests
     {
         var d = new AppStateDriver();
 
-        OpenRequestedFiles(d.AppState, CommandLine.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Arguments.Files);
+        OpenRequestedFiles(d.AppState, CommandLines.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Arguments.Files);
         d.RunUntil(() => d.AppState.Tabs.Active?.Node != null);
         d.Settle();
 
@@ -65,7 +65,7 @@ public sealed class RunArgumentsTests
     {
         var d = new AppStateDriver();
 
-        OpenRequestedFiles(d.AppState, CommandLine.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Arguments.Files);
+        OpenRequestedFiles(d.AppState, CommandLines.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Arguments.Files);
         d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
 
         Assert.Contains("T:Nowhere.Missing", Assert.Single(d.AppState.Errors.Entries).Words().Title);
@@ -74,7 +74,7 @@ public sealed class RunArgumentsTests
     [Fact]
     public void A_language_the_app_does_not_have_and_blank_values_are_ignored_as_given()
     {
-        var commandLine = CommandLine.Parse(["--language=VB", "--list=  ", "--navigateto=", "--settings= "]);
+        var commandLine = CommandLines.Parse(["--language=VB", "--list=  ", "--navigateto=", "--settings= "]);
 
         Assert.Null(commandLine.Arguments.Language);
         Assert.Null(commandLine.Arguments.AssemblyList);
@@ -86,7 +86,7 @@ public sealed class RunArgumentsTests
     [Fact]
     public void An_option_the_app_does_not_have_and_a_file_that_is_no_path_are_ignored_as_given()
     {
-        var commandLine = CommandLine.Parse(["--opengl", "--GL", "a\0.dll", "a.dll"]);
+        var commandLine = CommandLines.Parse(["--opengl", "--GL", "a\0.dll", "a.dll"]);
 
         Assert.Equal(RenderBackendKind.Auto, commandLine.Launch.RenderBackend);
         Assert.Equal([Path.GetFullPath("a.dll")], commandLine.Arguments.Files.Paths.Select(static p => p.Text));
@@ -96,7 +96,7 @@ public sealed class RunArgumentsTests
     [Fact]
     public void How_a_run_starts_is_read_apart_from_its_arguments()
     {
-        var commandLine = CommandLine.Parse(["--settings= other.json ", "--gl", "--newinstance", "--language=IL"]);
+        var commandLine = CommandLines.Parse(["--settings= other.json ", "--gl", "--newinstance", "--language=IL"]);
 
         Assert.Equal(new LaunchConfig("other.json", RenderBackendKind.OpenGl, NewInstance: true), commandLine.Launch);
         Assert.Equal(DecompilationLanguage.IL, commandLine.Arguments.Language);
@@ -106,9 +106,9 @@ public sealed class RunArgumentsTests
     [Fact]
     public void The_arguments_ignored_are_handed_over_for_the_open_window_to_tell_of()
     {
-        var arguments = CommandLine.Parse(["--language=VB", "--opengl", "a.dll"]).Arguments;
+        var arguments = CommandLines.Parse(["--language=VB", "--opengl", "a.dll"]).Arguments;
 
-        var handed = CommandLine.Parse(CommandLine.ListArguments(arguments).ToArray()).Arguments;
+        var handed = CommandLines.Parse(CommandLines.ListArguments(arguments).ToArray()).Arguments;
 
         Assert.Equal(["--language=VB", "--opengl"], handed.Ignored);
         Assert.Equal([Path.GetFullPath("a.dll")], handed.Files.Paths.Select(static p => p.Text));
@@ -193,7 +193,7 @@ public sealed class RunArgumentsTests
     /// the way the app does, and opens the list and the files it names.</summary>
     private static AppStateDriver Start(AppSettings settings, params string[] args)
     {
-        var arguments = CommandLine.Parse(args).Arguments;
+        var arguments = CommandLines.Parse(args).Arguments;
         var d = AppStateDriver.Started(new SettingsLoadResult(settings, new SettingsProblem.None()), arguments);
         ILSightApp.OpenStartupAssemblies(d.AppState, arguments.Files);
         d.RunUntil(() => AreListed(d.AppState, arguments.Files.Paths));

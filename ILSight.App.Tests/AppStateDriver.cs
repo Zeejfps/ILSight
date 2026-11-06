@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Testing;
 using ZGF.Gui.Testing;
@@ -139,7 +140,7 @@ internal sealed class AppStateDriver
     private readonly PostedActions _posted = PostedActions.OfThisTest();
     private readonly UiState? _ui;
 
-    public AppStateDriver(AppSettings? settings = null) : this(NoProblem(settings), CommandLine.Parse([]).Arguments, withScreen: true)
+    public AppStateDriver(AppSettings? settings = null) : this(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: true)
     {
     }
 
@@ -168,7 +169,7 @@ internal sealed class AppStateDriver
     }
 
     /// <summary>A driver with an app state and no screen, which shows that the features need none.</summary>
-    public static AppStateDriver WithoutScreen(AppSettings? settings = null) => new(NoProblem(settings), CommandLine.Parse([]).Arguments, withScreen: false);
+    public static AppStateDriver WithoutScreen(AppSettings? settings = null) => new(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: false);
 
     /// <summary>A driver with no screen that has opened the fixture assembly.</summary>
     public static AppStateDriver OpenedWithoutScreen()
@@ -282,13 +283,13 @@ internal sealed class AppStateDriver
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
-    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, RunArgumentsInbox? inbox = null)
+    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null)
     {
         Driver = new AppStateDriver(settings);
-        inbox ??= new RunArgumentsInbox();
+        inbox ??= Channel.CreateUnbounded<RunArguments>();
         if (queuedArguments != null)
-            inbox.TryAdd(queuedArguments);
-        App = new ILSightApp(AppState, Ui, CommandLine.Parse([]).Arguments.Files, inbox);
+            inbox.Writer.TryWrite(queuedArguments);
+        App = new ILSightApp(AppState, Ui, CommandLines.Parse([]).Arguments.Files, inbox);
         Background.Start(App.ApplyPendingArguments(), AppState.ReportError);
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;

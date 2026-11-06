@@ -2,7 +2,7 @@ namespace ILSight.App.Tests;
 
 public sealed class RunArgumentsReceiverTests
 {
-    private static RunArguments Arguments(params string[] args) => CommandLine.Parse(args).Arguments;
+    private static RunArguments Arguments(params string[] args) => CommandLines.Parse(args).Arguments;
 
     [Fact]
     public void The_first_run_with_some_settings_gets_the_role_and_later_ones_do_not()
@@ -110,8 +110,8 @@ public sealed class RunArgumentsReceiverTests
         using var later = RunArgumentsRouting.ForwardOrReceive(address, Arguments("b.dll"), newInstance: true);
 
         Assert.NotNull(later);
-        first.Inbox.Close();
-        Assert.Empty(first.Inbox.ReadAllAsync().ToBlockingEnumerable());
+        first.Inbox.Writer.TryComplete();
+        Assert.Empty(first.Inbox.Reader.ReadAllAsync().ToBlockingEnumerable());
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public sealed class RunArgumentsReceiverTests
         var address = RunArgumentsRouting.FindAddress(temp.PathOf("settings.json"));
         var first = RunArgumentsRouting.ForwardOrReceive(address, Arguments("a.dll"), newInstance: false);
         Assert.NotNull(first);
-        first.Inbox.Close();
+        first.Inbox.Writer.TryComplete();
 
         using var later = RunArgumentsRouting.ForwardOrReceive(address, Arguments("b.dll"), newInstance: false);
         Assert.NotNull(later);

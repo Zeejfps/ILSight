@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Threading.Channels;
 using ZGF.AppUtils;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
@@ -26,14 +27,14 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
-    private readonly RunArgumentsInbox _inbox;
+    private readonly Channel<RunArguments> _inbox;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
     internal ILSightApp(
         AppState appState,
         UiState uiState,
         FilesToOpen startupFiles,
-        RunArgumentsInbox inbox) : base(uiState)
+        Channel<RunArguments> inbox) : base(uiState)
     {
         _appState = appState;
         _startupFiles = startupFiles;
@@ -66,13 +67,13 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// open its own: no frame runs after this to follow it.</summary>
     protected override bool OnCloseRequested(ImmediateGuiAppHost<UiState> host)
     {
-        _inbox.Close();
+        _inbox.Writer.TryComplete();
         return true;
     }
 
     protected override void OnShutdown(ImmediateGuiAppHost<UiState> host)
     {
-        _inbox.Close();
+        _inbox.Writer.TryComplete();
         StopRedrawingOnAssemblyChanges(host);
         StopWatchingUserThemes(_appState);
         StopWatchingUserIconThemes(_appState);
@@ -254,7 +255,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// each one arriving wakes the app.</summary>
     internal async Task ApplyPendingArguments()
     {
-        await foreach (var arguments in _inbox.ReadAllAsync())
+        await foreach (var arguments in _inbox.Reader.ReadAllAsync())
         {
             try
             {

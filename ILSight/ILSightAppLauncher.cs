@@ -1,4 +1,5 @@
-﻿using ILSight.Core;
+﻿using System.Threading.Channels;
+using ILSight.Core;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using static ILSight.RunArgumentsActions;
@@ -24,7 +25,7 @@ public static class ILSightAppLauncher
         OpenWindow(app, loadResult, config);
     }
 
-    private static ILSightApp CreateApp(SettingsLoadResult loadResult, RunArguments arguments, RunArgumentsInbox inbox)
+    private static ILSightApp CreateApp(SettingsLoadResult loadResult, RunArguments arguments, Channel<RunArguments> inbox)
     {
         var appState = LoadAppState(loadResult, arguments);
         var uiState = ILSightApp.CreateUiState(appState);

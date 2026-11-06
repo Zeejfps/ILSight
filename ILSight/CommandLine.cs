@@ -3,9 +3,12 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>The arguments a run was started with, read: how it starts, and what it asks of the app. All
-/// that is known of the options and arguments the app takes is here.</summary>
-public sealed record CommandLine(LaunchConfig Launch, RunArguments Arguments)
+/// <summary>The arguments a run was started with, read: how it starts, and what it asks of the app.</summary>
+public sealed record CommandLine(LaunchConfig Launch, RunArguments Arguments);
+
+/// <summary>Reads and writes command lines. All that is known of the options and arguments the app takes
+/// is here.</summary>
+public static class CommandLines
 {
     private const string SettingsOption = "--settings=";
     private const string OpenGlFlag = "--gl";
@@ -20,8 +23,8 @@ public sealed record CommandLine(LaunchConfig Launch, RunArguments Arguments)
     {
         var reader = new Reader();
         foreach (var arg in args)
-            reader.Read(arg);
-        return reader.ToCommandLine();
+            Read(reader, arg);
+        return Finish(reader);
     }
 
     /// <summary>The command line that asks for <paramref name="arguments"/> again: the language, the list, what
@@ -44,127 +47,127 @@ public sealed record CommandLine(LaunchConfig Launch, RunArguments Arguments)
         return args;
     }
 
+    private static CommandLine Finish(Reader reader)
+    {
+        var launch = new LaunchConfig(reader.SettingsPath, reader.RenderBackend, reader.NewInstance);
+        var files = new FilesToOpen(reader.AssemblyPaths, reader.NavigateTo);
+        var arguments = new RunArguments(reader.Language, reader.AssemblyList, reader.ClearList, files, reader.Ignored);
+        return new CommandLine(launch, arguments);
+    }
+
+    private static void Read(Reader reader, string arg)
+    {
+        if (arg.StartsWith(SettingsOption, StringComparison.Ordinal))
+            ReadSettingsPath(reader, arg);
+        else if (arg == OpenGlFlag)
+            reader.RenderBackend = RenderBackendKind.OpenGl;
+        else if (arg == NewInstanceFlag)
+            reader.NewInstance = true;
+        else if (arg.StartsWith(LanguageOption, StringComparison.Ordinal))
+            ReadLanguage(reader, arg);
+        else if (arg.StartsWith(ListOption, StringComparison.Ordinal))
+            ReadAssemblyList(reader, arg);
+        else if (arg == ClearListFlag)
+            reader.ClearList = true;
+        else if (arg.StartsWith(NavigateToOption, StringComparison.Ordinal))
+            ReadNavigateTo(reader, arg);
+        else if (arg.StartsWith(FlagPrefix, StringComparison.Ordinal))
+            reader.Ignored.Add(arg);
+        else
+            AddAssemblyPath(reader, arg);
+    }
+
+    private static void ReadSettingsPath(Reader reader, string arg)
+    {
+        var path = ReadName(arg.Substring(SettingsOption.Length));
+        if (path == null)
+        {
+            reader.Ignored.Add(arg);
+            return;
+        }
+        reader.SettingsPath = path;
+    }
+
+    private static void ReadLanguage(Reader reader, string arg)
+    {
+        var language = ParseLanguage(arg.Substring(LanguageOption.Length));
+        if (language == null)
+        {
+            reader.Ignored.Add(arg);
+            return;
+        }
+        reader.Language = language;
+    }
+
+    private static void ReadAssemblyList(Reader reader, string arg)
+    {
+        var name = ReadName(arg.Substring(ListOption.Length));
+        if (name == null)
+        {
+            reader.Ignored.Add(arg);
+            return;
+        }
+        reader.AssemblyList = name;
+    }
+
+    private static void ReadNavigateTo(Reader reader, string arg)
+    {
+        var id = ReadName(arg.Substring(NavigateToOption.Length));
+        if (id == null)
+        {
+            reader.Ignored.Add(arg);
+            return;
+        }
+        reader.NavigateTo = id;
+    }
+
+    /// <summary>Takes <paramref name="arg"/> as a file, made absolute from this process's folder.</summary>
+    private static void AddAssemblyPath(Reader reader, string arg)
+    {
+        var path = AssemblyPath.Parse(Path.Combine(Environment.CurrentDirectory, arg));
+        if (path == null)
+        {
+            reader.Ignored.Add(arg);
+            return;
+        }
+        reader.AssemblyPaths.Add(path);
+    }
+
+    /// <summary>The language named <paramref name="name"/>, in any case; null for one the app does not have.</summary>
+    private static DecompilationLanguage? ParseLanguage(string name)
+    {
+        var upper = name.ToUpperInvariant();
+        return upper switch
+        {
+            "C#" => DecompilationLanguage.CSharp,
+            "CSHARP" => DecompilationLanguage.CSharp,
+            "IL" => DecompilationLanguage.IL,
+            "IL WITH C#" => DecompilationLanguage.ILWithCSharp,
+            "ILWITHCSHARP" => DecompilationLanguage.ILWithCSharp,
+            _ => null,
+        };
+    }
+
+    /// <summary>The name without the spaces around it; null for a blank one.</summary>
+    private static string? ReadName(string name)
+    {
+        var trimmed = name.Trim();
+        if (trimmed.Length == 0)
+            return null;
+        return trimmed;
+    }
+
     /// <summary>What has been read of the arguments so far.</summary>
     private sealed class Reader
     {
-        private readonly List<AssemblyPath> _assemblyPaths = new();
-        private readonly List<string> _ignored = new();
-        private string _settingsPath = AppSettings.DefaultPath;
-        private RenderBackendKind _renderBackend = RenderBackendKind.Auto;
-        private bool _newInstance;
-        private DecompilationLanguage? _language;
-        private string? _assemblyList;
-        private bool _clearList;
-        private string? _navigateTo;
-
-        public CommandLine ToCommandLine()
-        {
-            var launch = new LaunchConfig(_settingsPath, _renderBackend, _newInstance);
-            var files = new FilesToOpen(_assemblyPaths, _navigateTo);
-            var arguments = new RunArguments(_language, _assemblyList, _clearList, files, _ignored);
-            return new CommandLine(launch, arguments);
-        }
-
-        public void Read(string arg)
-        {
-            if (arg.StartsWith(SettingsOption, StringComparison.Ordinal))
-                ReadSettingsPath(arg);
-            else if (arg == OpenGlFlag)
-                _renderBackend = RenderBackendKind.OpenGl;
-            else if (arg == NewInstanceFlag)
-                _newInstance = true;
-            else if (arg.StartsWith(LanguageOption, StringComparison.Ordinal))
-                ReadLanguage(arg);
-            else if (arg.StartsWith(ListOption, StringComparison.Ordinal))
-                ReadAssemblyList(arg);
-            else if (arg == ClearListFlag)
-                _clearList = true;
-            else if (arg.StartsWith(NavigateToOption, StringComparison.Ordinal))
-                ReadNavigateTo(arg);
-            else if (arg.StartsWith(FlagPrefix, StringComparison.Ordinal))
-                _ignored.Add(arg);
-            else
-                AddAssemblyPath(arg);
-        }
-
-        private void ReadSettingsPath(string arg)
-        {
-            var path = ReadName(arg.Substring(SettingsOption.Length));
-            if (path == null)
-            {
-                _ignored.Add(arg);
-                return;
-            }
-            _settingsPath = path;
-        }
-
-        private void ReadLanguage(string arg)
-        {
-            var language = ParseLanguage(arg.Substring(LanguageOption.Length));
-            if (language == null)
-            {
-                _ignored.Add(arg);
-                return;
-            }
-            _language = language;
-        }
-
-        private void ReadAssemblyList(string arg)
-        {
-            var name = ReadName(arg.Substring(ListOption.Length));
-            if (name == null)
-            {
-                _ignored.Add(arg);
-                return;
-            }
-            _assemblyList = name;
-        }
-
-        private void ReadNavigateTo(string arg)
-        {
-            var id = ReadName(arg.Substring(NavigateToOption.Length));
-            if (id == null)
-            {
-                _ignored.Add(arg);
-                return;
-            }
-            _navigateTo = id;
-        }
-
-        /// <summary>Takes <paramref name="arg"/> as a file, made absolute from this process's folder.</summary>
-        private void AddAssemblyPath(string arg)
-        {
-            var path = AssemblyPath.Parse(Path.Combine(Environment.CurrentDirectory, arg));
-            if (path == null)
-            {
-                _ignored.Add(arg);
-                return;
-            }
-            _assemblyPaths.Add(path);
-        }
-
-        /// <summary>The language named <paramref name="name"/>, in any case; null for one the app does not have.</summary>
-        private static DecompilationLanguage? ParseLanguage(string name)
-        {
-            var upper = name.ToUpperInvariant();
-            return upper switch
-            {
-                "C#" => DecompilationLanguage.CSharp,
-                "CSHARP" => DecompilationLanguage.CSharp,
-                "IL" => DecompilationLanguage.IL,
-                "IL WITH C#" => DecompilationLanguage.ILWithCSharp,
-                "ILWITHCSHARP" => DecompilationLanguage.ILWithCSharp,
-                _ => null,
-            };
-        }
-
-        /// <summary>The name without the spaces around it; null for a blank one.</summary>
-        private static string? ReadName(string name)
-        {
-            var trimmed = name.Trim();
-            if (trimmed.Length == 0)
-                return null;
-            return trimmed;
-        }
+        public readonly List<AssemblyPath> AssemblyPaths = new();
+        public readonly List<string> Ignored = new();
+        public string SettingsPath = AppSettings.DefaultPath;
+        public RenderBackendKind RenderBackend = RenderBackendKind.Auto;
+        public bool NewInstance;
+        public DecompilationLanguage? Language;
+        public string? AssemblyList;
+        public bool ClearList;
+        public string? NavigateTo;
     }
 }

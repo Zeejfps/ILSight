@@ -43,7 +43,7 @@ public static class RunArgumentsPipe
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
         ForegroundRights.LendTo(processId);
-        await WriteArgumentsAsync(pipe, CommandLine.ListArguments(arguments), token);
+        await WriteArgumentsAsync(pipe, CommandLines.ListArguments(arguments), token);
         var answer = await ReadByteAsync(pipe, token);
         return answer == Received;
     }
@@ -54,7 +54,7 @@ public static class RunArgumentsPipe
     {
         await WriteIntAsync(pipe, Environment.ProcessId, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        return CommandLine.Parse(args).Arguments;
+        return CommandLines.Parse(args).Arguments;
     }
 
     /// <summary>Tells the run connected to <paramref name="pipe"/> its arguments were taken. Hanging up

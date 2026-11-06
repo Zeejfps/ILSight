@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Threading.Channels;
 
 namespace ILSight;
 
@@ -30,8 +31,10 @@ public sealed class RunArgumentsReceiver : IDisposable
         _thread.Start();
     }
 
-    /// <summary>Where the arguments taken go.</summary>
-    public RunArgumentsInbox Inbox { get; } = new();
+    /// <summary>The arguments of later runs waiting for the app. It exists before the app does, so those that
+    /// arrive while the app starts wait here; the app reads them on the UI thread once it runs, and completing
+    /// it refuses arguments from then on, so that the runs sending them open windows of their own.</summary>
+    public Channel<RunArguments> Inbox { get; } = Channel.CreateUnbounded<RunArguments>();
 
     /// <summary>A receiver already listening when the role at <paramref name="address"/> is free; null
     /// when another run holds it. Never waits for the role.</summary>
@@ -144,7 +147,7 @@ public sealed class RunArgumentsReceiver : IDisposable
         try
         {
             var arguments = await RunArgumentsPipe.ReceiveAsync(pipe, timeout.Token);
-            if (Inbox.TryAdd(arguments))
+            if (Inbox.Writer.TryWrite(arguments))
                 await RunArgumentsPipe.AcknowledgeAsync(pipe, timeout.Token);
         }
         catch (Exception e) when (RunArgumentsPipe.IsBroken(e) && !stop.IsCancellationRequested)
