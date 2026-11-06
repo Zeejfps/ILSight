@@ -227,7 +227,10 @@ public sealed class AppState
         return Locales.For(CultureInfo.CurrentUICulture);
     }
 
-    public void ReportError(AppProblem problem) => Errors.Add(problem);
+    public void ReportError(AppProblem problem)
+    {
+        ErrorDialogView.AddError(Errors, problem, DateTime.Now);
+    }
 
     /// <summary>Queues <paramref name="command"/> for the view to run before it draws next.</summary>
     public void EnqueueCommand(ViewCommand command) => ViewCommands.Enqueue(command);

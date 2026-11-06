@@ -27,7 +27,7 @@ public static class Comparisons
     /// and compares its assemblies again, now that the open list's assemblies are listed.</summary>
     internal static void ReopenComparison(AppState appState, ReopenedTab reopened, ComparisonDocumentRecord saved)
     {
-        if (!appState.Reopened.Finish(reopened))
+        if (!SavedDocuments.FinishWaiting(appState.Reopened, reopened))
             return;
         var comparison = new AssemblyComparison(saved.LeftPath, saved.RightPath);
         comparison.TakeIn(saved.Scope);

@@ -13,13 +13,50 @@ namespace ILSight;
 /// are listed.</summary>
 public static class SavedDocuments
 {
+    /// <summary>Has <paramref name="tab"/>, as it is now, wait for what <paramref name="record"/> says it showed.</summary>
+    public static ReopenedTab WaitFor(ReopenedTabs tabs, DocumentTab tab, DocumentRecord record)
+    {
+        tabs.Tabs.RemoveAll(r => r.Tab == tab);
+        var reopened = new ReopenedTab(tab, record, tab.Version);
+        tabs.Tabs.Add(reopened);
+        return reopened;
+    }
+
+    /// <summary>What the settings kept of <paramref name="tab"/> while it still waits for it; else null.</summary>
+    public static DocumentRecord? FindWaiting(ReopenedTabs tabs, DocumentTab tab)
+    {
+        foreach (var reopened in tabs.Tabs)
+        {
+            if (reopened.Tab == tab && reopened.IsWaiting)
+                return reopened.Record;
+        }
+        return null;
+    }
+
+    /// <summary>The tabs still waiting, in the order reopened.</summary>
+    public static List<ReopenedTab> ListWaiting(ReopenedTabs tabs)
+    {
+        return tabs.Tabs
+            .Where(static r => r.IsWaiting)
+            .ToList();
+    }
+
+    /// <summary>Stops <paramref name="reopened"/> waiting. False when it waited no more, as when its tab
+    /// was pointed elsewhere or another reopening took its place, and what it found should be dropped.</summary>
+    public static bool FinishWaiting(ReopenedTabs tabs, ReopenedTab reopened)
+    {
+        if (!tabs.Tabs.Remove(reopened))
+            return false;
+        return reopened.IsWaiting;
+    }
+
     /// <summary>Opens the documents the open list kept, in place of the open tabs, each waiting for what it
     /// showed until the list's assemblies are listed; makes the one that was active and the one that was
     /// the preview tab so again; and commands the view to dock them where they were. With none kept, closes
     /// every tab but the active one, which then shows nothing.</summary>
     public static void ReopenDocuments(AppState appState)
     {
-        appState.Reopened.Clear();
+        appState.Reopened.Tabs.Clear();
         var saved = appState.Lists.ActiveDocuments;
         if (saved == null)
         {
@@ -47,7 +84,7 @@ public static class SavedDocuments
     {
         var tab = appState.AddTab();
         WaitForSaved(tab, record);
-        return appState.Reopened.Wait(tab, record);
+        return WaitFor(appState.Reopened, tab, record);
     }
 
     private static void WaitForSaved(DocumentTab tab, DocumentRecord record)
@@ -111,7 +148,7 @@ public static class SavedDocuments
     private static SavedTab? SaveTab(AppState appState, DocumentTab tab)
     {
         var panel = FindTabPanel(appState, tab);
-        var waiting = appState.Reopened.Find(tab);
+        var waiting = FindWaiting(appState.Reopened, tab);
         if (waiting != null)
             return new SavedTab(tab, KeepWaiting(waiting, panel));
         if (panel == null)
@@ -200,7 +237,7 @@ public static class SavedDocuments
     internal static void ShowReopenedDocuments(AppState appState)
     {
         var nodes = new List<WaitingNode>();
-        foreach (var reopened in appState.Reopened.ListWaiting())
+        foreach (var reopened in ListWaiting(appState.Reopened))
             ShowReopened(appState, reopened, nodes);
         FindReopenedNodes(appState, nodes);
     }
@@ -240,11 +277,11 @@ public static class SavedDocuments
         if (nodes.Count == 0)
             return;
         var places = nodes.ConvertAll(static n => n.Place);
-        appState.Reopened.StartFinding();
+        appState.Reopened.Finding++;
         var assemblies = appState.Assemblies;
         var session = appState.Session;
         var found = await Background.Run(() => FindNodes(assemblies, session, places));
-        appState.Reopened.StopFinding();
+        appState.Reopened.Finding--;
         var shown = found switch
         {
             Outcome<List<BrowseNode?>>.Ok ok => ok.Value,
@@ -272,7 +309,7 @@ public static class SavedDocuments
     /// was pointed elsewhere or closed meanwhile.</summary>
     private static void ShowReopenedNode(AppState appState, WaitingNode waiting, BrowseNode? node)
     {
-        if (!appState.Reopened.Finish(waiting.Reopened))
+        if (!FinishWaiting(appState.Reopened, waiting.Reopened))
             return;
         var tab = waiting.Reopened.Tab;
         if (!appState.Tabs.Contains(tab))

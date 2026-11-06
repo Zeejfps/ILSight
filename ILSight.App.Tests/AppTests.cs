@@ -36,6 +36,21 @@ public sealed class AppTests
     }
 
     [Fact]
+    public void An_error_is_logged_at_the_time_given_and_the_oldest_goes_past_the_log_capacity()
+    {
+        var errors = new ErrorLog();
+        var first = new DateTime(2026, 1, 2, 3, 4, 5);
+
+        for (var i = 0; i < 51; i++)
+            ErrorDialogView.AddError(errors, new AppProblem.ResourceNotSaved($"{i}.dll", "details"), first.AddSeconds(i));
+
+        Assert.Equal(50, errors.Entries.Count);
+        Assert.Equal(51, errors.Revision);
+        Assert.Equal(first.AddSeconds(1), errors.Entries[0].Time);
+        Assert.Equal(first.AddSeconds(50), errors.Entries[^1].Time);
+    }
+
+    [Fact]
     public void Double_clicking_a_type_in_the_tree_shows_it_in_one_tab()
     {
         var app = ExpandedTree(until: "Greeter");

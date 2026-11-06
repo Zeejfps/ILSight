@@ -289,13 +289,13 @@ public static class Diagrams
             return;
         var tab = reopened.Tab;
         var diagram = ShowSavedDiagram(appState, tab, saved);
-        var reading = appState.Reopened.Wait(tab, saved);
+        var reading = SavedDocuments.WaitFor(appState.Reopened, tab, saved);
         diagram.StartReading();
         var assemblies = appState.Assemblies;
         var types = saved.Types;
         var read = await Background.Run(() => ReadCards(assemblies, types));
         diagram.FinishReading();
-        if (!appState.Reopened.Finish(reading))
+        if (!SavedDocuments.FinishWaiting(appState.Reopened, reading))
             return;
         if (diagram.IsClosed)
             return;

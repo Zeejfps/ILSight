@@ -101,7 +101,7 @@ internal static class StatusBarView
         var theme = ui.Theme;
         var i = ui.Clickable("errors");
         if (i.Clicked)
-            ui.State.ErrorDialog.Open(errors.Entries);
+            ErrorDialogView.Open(ui.State.ErrorDialog, errors.Entries);
 
         using (ui.Row(i.Id, new Box
         {
@@ -117,6 +117,6 @@ internal static class StatusBarView
             ui.Text(ui.Memo("status-errors", (errors.Entries.Count, t), static a => a.t.StatusErrors(a.Count)), color: theme.Danger,
                 size: theme.FontSizeSmall);
         }
-        ui.Tooltip(i.Id, ui.State.ErrorDialog.TextOf(errors.Entries[^1], t).Summary);
+        ui.Tooltip(i.Id, ErrorDialogView.GetText(ui.State.ErrorDialog, errors.Entries[^1], t).Summary);
     }
 }

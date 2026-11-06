@@ -1,5 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.Core;
 using ILSight.Localization;
 
 namespace ILSight;
@@ -8,6 +9,75 @@ namespace ILSight;
 /// title over its details in a selectable monospace view, and Copy, Clear and Close.</summary>
 internal static class ErrorDialogView
 {
+    private const int Capacity = 50;
+
+    /// <summary>Logs <paramref name="problem"/> as having happened at <paramref name="time"/>.</summary>
+    public static void AddError(ErrorLog errors, AppProblem problem, DateTime time)
+    {
+        errors.Revision++;
+        errors.Entries.Add(new AppError(problem, time));
+        if (errors.Entries.Count > Capacity)
+            errors.Entries.RemoveAt(0);
+    }
+
+    /// <summary>Opens the dialog on the newest of <paramref name="errors"/>, unless there are none.</summary>
+    public static void Open(ErrorDialog dialog, IReadOnlyList<AppError> errors)
+    {
+        if (errors.Count == 0)
+            return;
+        dialog.Selection.Select(errors[^1], errors);
+        dialog.IsOpen = true;
+    }
+
+    /// <summary>Opens the dialog on the newest of <paramref name="errors"/> when an error was added since
+    /// it last saw the log, at <paramref name="revision"/>.</summary>
+    public static void ShowNewErrors(ErrorDialog dialog, int revision, IReadOnlyList<AppError> errors)
+    {
+        if (revision == dialog.ShownRevision)
+            return;
+        dialog.ShownRevision = revision;
+        Open(dialog, errors);
+    }
+
+    /// <summary><paramref name="error"/> in the words of <paramref name="t"/>, put into them once per language.</summary>
+    public static ProblemText GetText(ErrorDialog dialog, AppError error, Strings t)
+    {
+        if (!ReferenceEquals(t, dialog.TextsIn))
+        {
+            dialog.Texts.Clear();
+            dialog.TextsIn = t;
+            dialog.DocumentFor = null;
+        }
+        if (!dialog.Texts.TryGetValue(error, out var text))
+        {
+            text = ProblemTexts.Describe(t, error.Problem);
+            dialog.Texts[error] = text;
+        }
+        return text;
+    }
+
+    /// <summary>The selected error's details, or its title when it has none, in the words of
+    /// <paramref name="t"/>, as a document for the dialog's code view.</summary>
+    private static DecompiledDocument GetSelectedDocument(ErrorDialog dialog, Strings t)
+    {
+        var error = dialog.SelectedError;
+        if (error == null)
+            return DecompiledDocument.Empty;
+        var text = GetText(dialog, error, t);
+        if (!ReferenceEquals(error, dialog.DocumentFor))
+            dialog.Document = CreateDocument(text);
+        dialog.DocumentFor = error;
+        return dialog.Document;
+    }
+
+    private static DecompiledDocument CreateDocument(ProblemText text)
+    {
+        var body = text.Details;
+        if (body.Length == 0)
+            body = text.Title;
+        return DecompiledDocument.FromText(text.Title, body);
+    }
+
     public static void Render(Ui<UiState> ui, ErrorLog errors)
     {
         var t = ui.State.Strings;
@@ -33,31 +103,31 @@ internal static class ErrorDialogView
             using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
             {
                 ui.Glyph(ui.State.Icons.StatusError, theme.Danger, theme.IconSize);
-                ui.Text(shown.TextOf(selected, t).Title, new Box { Width = Sizing.Grow() }, bold: true, overflow: TextOverflow.Ellipsis);
+                ui.Text(GetText(shown, selected, t).Title, new Box { Width = Sizing.Grow() }, bold: true, overflow: TextOverflow.Ellipsis);
             }
         }
 
         using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.EditorBackground, Clip = true }))
-            ui.CodeView("error-text", shown.SelectedDocument(t), shown.View);
+            ui.CodeView("error-text", GetSelectedDocument(shown, t), shown.View);
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
         {
             if (ui.Button(t.ErrorsCopy, id: "error-copy") && selected != null)
-                ui.ClipboardText = shown.TextOf(selected, t).FullText;
+                ui.ClipboardText = GetText(shown, selected, t).FullText;
             ui.Tooltip(ui.GetId("error-copy"), t.ErrorsCopyTooltip);
             if (ui.Button(t.ErrorsClear, id: "error-clear", variant: ButtonVariant.Ghost))
                 ui.State.Later(shown, static (a, s) => ClearErrors(a.Errors, s));
             ui.Spacer();
             if (ui.Button(t.ErrorsClose, id: "error-close", variant: ButtonVariant.Primary))
-                shown.Close();
+                shown.IsOpen = false;
         }
     }
 
     /// <summary>Forgets every error and closes the dialog.</summary>
     private static void ClearErrors(ErrorLog errors, ErrorDialog shown)
     {
-        errors.Clear();
-        shown.Close();
+        errors.Entries.Clear();
+        shown.IsOpen = false;
     }
 
     private static void List(Ui<UiState> ui, ErrorLog errors, ErrorDialog shown)
@@ -78,7 +148,7 @@ internal static class ErrorDialogView
             {
                 var titleColor = row.Selected ? theme.SelectionText : theme.Text;
                 ui.Text(ui.Memo("time", (entry.Time, t), static a => a.Time.ToString("T", a.t.Culture)), color: theme.TextMuted);
-                ui.Text(shown.TextOf(entry, t).Title, new Box { Width = Sizing.Grow() }, color: titleColor, overflow: TextOverflow.Ellipsis);
+                ui.Text(GetText(shown, entry, t).Title, new Box { Width = Sizing.Grow() }, color: titleColor, overflow: TextOverflow.Ellipsis);
             }
         }
         shown.Selection.TakeFrom(entries);
