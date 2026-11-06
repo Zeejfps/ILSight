@@ -31,33 +31,18 @@ public sealed class CodeSelection : TextSelection<DecompiledDocument, TextPositi
 
 /// <summary>The press held on a code view, or last held: on a bookmark mark, a fold's chevron or a collapsed
 /// fold, which a drag or click leaves alone; or on the text.</summary>
-internal abstract class CodePress
+internal abstract record CodePress
 {
     private CodePress()
     {
     }
 
-    public sealed class OnControl : CodePress
-    {
-    }
+    public sealed record OnControl : CodePress;
 
     /// <summary>A press on the text at <see cref="At"/>, with Ctrl held when <see cref="ForNewTab"/>, on the
     /// span <see cref="Span"/> of a line or none.</summary>
-    public sealed class OnText : CodePress
+    public sealed record OnText(TextPosition At, bool ForNewTab, CodeSpanAt? Span) : CodePress
     {
-        public OnText(TextPosition at, bool forNewTab, CodeSpanAt? span)
-        {
-            At = at;
-            ForNewTab = forNewTab;
-            Span = span;
-        }
-
-        public TextPosition At { get; }
-
-        public bool ForNewTab { get; }
-
-        public CodeSpanAt? Span { get; }
-
         /// <summary>Whether the press has moved off where it started, dragging a selection.</summary>
         public bool Moved;
     }

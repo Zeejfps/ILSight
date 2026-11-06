@@ -7,7 +7,7 @@ namespace ILSight.Core.Diagrams;
 /// <summary>The types of an assembly as the HTML diagrammer reads them: those it lets you pick, by
 /// namespace and then by id, and the display names of the types they refer to but that it leaves out,
 /// by id.</summary>
-internal sealed class DiagramModel
+internal sealed record DiagramModel
 {
     public required Dictionary<string, string> OutsideReferences { get; init; }
     public required Dictionary<string, Dictionary<string, DiagramType>> TypesByNamespace { get; init; }
@@ -17,7 +17,7 @@ internal sealed class DiagramModel
 /// (https://mermaid.js.org/syntax/classDiagram.html), what it derives from and implements, the
 /// members it inherits by the id of the type declaring them, and its XML documentation, the type's
 /// own under an empty key. Each dictionary of types is keyed by type id.</summary>
-internal sealed class DiagramType
+internal sealed record DiagramType
 {
     /// <summary>The label of the type, when it differs from its id.</summary>
     public string? Name { get; init; }
@@ -40,7 +40,7 @@ internal sealed class DiagramType
 
 /// <summary>The members a type inherits from one of its base types: its plain ones as mermaid
 /// members and its relations, as <see cref="DiagramType"/> has them.</summary>
-internal sealed class InheritedMembers
+internal sealed record InheritedMembers
 {
     public string? FlatMembers { get; init; }
     public Dictionary<string, string>? HasOne { get; init; }
