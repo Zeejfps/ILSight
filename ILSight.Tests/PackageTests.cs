@@ -214,7 +214,7 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var add = TestAssemblyRoot(package.Root.Child(LibFolder)).Assembly.Calculator().Child("Add(T) : void");
         var symbol = Analyzers.Of(add)!;
-        var usedBy = Analyzers.KindsFor(symbol).Single(k => k.Header == "Used By");
+        var usedBy = Analyzers.KindsFor(symbol).Single(k => Analyzers.Header(k) == "Used By");
 
         var callers = Analyzers.RunAsync(list, symbol, usedBy)
             .ToBlockingEnumerable()

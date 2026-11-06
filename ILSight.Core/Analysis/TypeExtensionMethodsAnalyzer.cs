@@ -5,9 +5,9 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Analysis;
 
 /// <summary>Finds all extension methods defined for a type.</summary>
-internal sealed class TypeExtensionMethodsAnalyzer : IAnalyzer
+internal static class TypeExtensionMethodsAnalyzer
 {
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type || type.IsStatic)
             return null;

@@ -57,7 +57,7 @@ public sealed partial class BrowseNode
 
     /// <summary>Whether this node stands for a resource's bytes, which <see cref="ReadResource"/>
     /// reads, to save them.</summary>
-    public bool HasResource => ResourceData != null;
+    public bool HasResource => Subject is NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.PackageFile;
 
     /// <summary>The bytes of the resource this node stands for, as a saved copy holds them: for
     /// BAML, the XAML it was compiled from.</summary>
@@ -66,7 +66,7 @@ public sealed partial class BrowseNode
     /// <summary>The name a saved copy of the resource this node stands for is offered under.</summary>
     public string ResourceFileName => AsResource().FileName;
 
-    private IResourceData AsResource() =>
+    private ResourceData AsResource() =>
         ResourceData ?? throw new InvalidOperationException($"{Text} is no resource.");
 
     public override string ToString() => Text;

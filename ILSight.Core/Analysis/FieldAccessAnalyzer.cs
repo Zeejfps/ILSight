@@ -16,31 +16,31 @@ internal enum FieldAccessKind
 
 /// <summary>Finds the members whose code, compiler-generated parts included, accesses a field in
 /// one particular way.</summary>
-internal sealed class FieldAccessAnalyzer(FieldAccessKind kind) : IAnalyzer
+internal static class FieldAccessAnalyzer
 {
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(FieldAccessKind kind, ISymbol? symbol)
     {
         if (symbol is not IField field || (kind != FieldAccessKind.Read && field.IsConst))
             return null;
-        return context => Analyze(field, context);
+        return context => Analyze(kind, field, context);
     }
 
-    private IEnumerable<ISymbol> Analyze(IField field, AnalyzerContext context)
+    private static IEnumerable<ISymbol> Analyze(FieldAccessKind kind, IField field, AnalyzerContext context)
     {
-        return context.GetScopeOf(field).MembersWhoseCode(method => Accesses(method, field, context), context.CancellationToken);
+        return context.GetScopeOf(field).MembersWhoseCode(method => Accesses(kind, method, field, context), context.CancellationToken);
     }
 
-    private bool Accesses(IMethod method, IField field, AnalyzerContext context)
+    private static bool Accesses(FieldAccessKind kind, IMethod method, IField field, AnalyzerContext context)
     {
         if (method.MetadataToken.IsNil || method.ParentModule is not MetadataModule module || module.MetadataFile == null)
             return false;
         var file = module.MetadataFile;
         return context.MappingOf(method.DeclaringTypeDefinition!).GetMethodParts((MethodDefinitionHandle)method.MetadataToken)
             .Any(part => file.ReadBody(part).AnyToken((opCode, token) =>
-                Is(opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && found.IsSame(field)));
+                Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && found.IsSame(field)));
     }
 
-    private bool Is(ILOpCode opCode) =>
+    private static bool Is(FieldAccessKind kind, ILOpCode opCode) =>
         opCode switch
         {
             ILOpCode.Ldfld or ILOpCode.Ldsfld => kind == FieldAccessKind.Read,

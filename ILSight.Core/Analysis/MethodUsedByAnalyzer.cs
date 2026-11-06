@@ -7,16 +7,16 @@ namespace ILSight.Core.Analysis;
 
 /// <summary>Shows the members whose code uses a method, each compiler-generated method standing for
 /// the method it came from. A virtual call to the member a non-virtual method overrides counts.</summary>
-internal sealed class MethodUsedByAnalyzer : IAnalyzer
+internal static class MethodUsedByAnalyzer
 {
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(ISymbol? symbol)
     {
         if (symbol is not IMethod method || (!method.IsVirtual && method.ParentModule == null))
             return null;
         return context => Analyze(method, context);
     }
 
-    internal IEnumerable<ISymbol> Analyze(IMethod analyzed, AnalyzerContext context)
+    internal static IEnumerable<ISymbol> Analyze(IMethod analyzed, AnalyzerContext context)
     {
         if (analyzed.ParentModule?.MetadataFile == null || analyzed.DeclaringTypeDefinition?.MetadataToken.IsNil != false)
             yield break;

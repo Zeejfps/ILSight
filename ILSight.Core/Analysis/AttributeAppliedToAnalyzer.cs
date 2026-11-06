@@ -7,16 +7,16 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Analysis;
 
 /// <summary>Shows the symbols an attribute is applied to.</summary>
-internal sealed class AttributeAppliedToAnalyzer : IAnalyzer
+internal static class AttributeAppliedToAnalyzer
 {
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type || !type.GetNonInterfaceBaseTypes().Any(t => t.IsKnownType(KnownTypeCode.Attribute)))
             return null;
         return context => Analyze(type, context);
     }
 
-    private IEnumerable<ISymbol> Analyze(ITypeDefinition attributeType, AnalyzerContext context)
+    private static IEnumerable<ISymbol> Analyze(ITypeDefinition attributeType, AnalyzerContext context)
     {
         var scope = context.GetScopeOf(attributeType);
         var known = attributeType.IsBuiltinAttribute();

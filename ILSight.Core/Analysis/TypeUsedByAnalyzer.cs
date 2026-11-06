@@ -9,16 +9,16 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Analysis;
 
 /// <summary>Shows the symbols outside a type whose metadata or code uses it.</summary>
-internal sealed class TypeUsedByAnalyzer : IAnalyzer
+internal static class TypeUsedByAnalyzer
 {
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type)
             return null;
         return context => Analyze(type, context);
     }
 
-    private IEnumerable<ISymbol> Analyze(ITypeDefinition analyzedType, AnalyzerContext context)
+    private static IEnumerable<ISymbol> Analyze(ITypeDefinition analyzedType, AnalyzerContext context)
     {
         var scope = context.GetScopeOf(analyzedType);
         return scope.GetModulesInScope(context.CancellationToken)

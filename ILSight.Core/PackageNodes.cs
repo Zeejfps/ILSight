@@ -65,7 +65,7 @@ internal static class PackageFolders
 
 /// <summary>A file of a package that is no assembly: shown as text, a picture or its bytes, read out of
 /// the package when needed.</summary>
-public sealed class PackageFileInfo : IResourceData
+public sealed class PackageFileInfo
 {
     internal PackageFileInfo(LoadedPackage package, PackageFile file)
     {

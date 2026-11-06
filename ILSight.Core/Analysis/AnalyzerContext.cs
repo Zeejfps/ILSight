@@ -7,13 +7,9 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Analysis;
 
-/// <summary>Finds the symbols related to an analyzed one in a particular way: its users, its
-/// overrides, and so on.</summary>
-internal interface IAnalyzer
-{
-    /// <summary>The analysis of <paramref name="symbol"/>; null when it does not apply to it, or for null.</summary>
-    AnalysisRun? For(ISymbol? symbol);
-}
+/// <summary>Finds the symbols related to an analyzed one in a particular way, its users, its overrides
+/// and so on: the analysis of <paramref name="symbol"/>; null when it does not apply to it, or for null.</summary>
+internal delegate AnalysisRun? Analyzer(ISymbol? symbol);
 
 /// <summary>An analysis of one symbol, run against the open assemblies.</summary>
 internal delegate IEnumerable<ISymbol> AnalysisRun(AnalyzerContext context);

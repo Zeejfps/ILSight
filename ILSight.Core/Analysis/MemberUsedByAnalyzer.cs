@@ -3,11 +3,9 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Analysis;
 
 /// <summary>Shows the members whose code uses any accessor of a property or event, each once.</summary>
-internal sealed class MemberUsedByAnalyzer : IAnalyzer
+internal static class MemberUsedByAnalyzer
 {
-    private readonly MethodUsedByAnalyzer _accessorUsedBy = new();
-
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(ISymbol? symbol)
     {
         if (symbol is not IMember member || member is not (IProperty or IEvent))
             return null;
@@ -16,11 +14,11 @@ internal sealed class MemberUsedByAnalyzer : IAnalyzer
         return context => Analyze(member, context);
     }
 
-    private IEnumerable<ISymbol> Analyze(IMember member, AnalyzerContext context)
+    private static IEnumerable<ISymbol> Analyze(IMember member, AnalyzerContext context)
     {
         var accessors = Members.Accessors(member);
         return accessors
-            .SelectMany(a => _accessorUsedBy.Analyze(a, context))
+            .SelectMany(a => MethodUsedByAnalyzer.Analyze(a, context))
             .Distinct();
     }
 }

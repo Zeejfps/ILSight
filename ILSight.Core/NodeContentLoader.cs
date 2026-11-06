@@ -129,13 +129,13 @@ public static class NodeContentLoader
         NodeSubject.ResourceContainer container => container.Value.Contents switch
         {
             ContainerContents.AvaloniaAssets => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
-            ContainerContents.ResourcesFile => ResourceRequest(node, container.Value),
+            ContainerContents.ResourcesFile => ResourceRequest(node, ResourceNodes.DataOf(container.Value)),
             _ => throw new UnreachableException(),
         },
         NodeSubject.ResourceEntry entry => entry.Value.Source switch
         {
             ResourceSource.Baml baml => new DocumentRequest.Baml(entry.Value.Module, baml.Data, node.Text, node.FullName),
-            ResourceSource.Manifest or ResourceSource.Entry => ResourceRequest(node, entry.Value),
+            ResourceSource.Manifest or ResourceSource.Entry => ResourceRequest(node, ResourceNodes.DataOf(entry.Value)),
             _ => throw new UnreachableException(),
         },
         NodeSubject.Metadata metadata => new DocumentRequest.Summary(new SummaryInfo.Comments(metadata.Value.Lines()), node.SourceModule, node.Text, node.FullName),
@@ -144,7 +144,7 @@ public static class NodeContentLoader
         NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(table.Value.Lines()), node.SourceModule, node.Text, node.FullName),
         NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(session.ChildrenOf(node).Select(DescribePackageChild).ToList()), null,
             node.Text, node.FullName),
-        NodeSubject.PackageFile file => ResourceRequest(node, file.Value),
+        NodeSubject.PackageFile file => ResourceRequest(node, ResourceNodes.DataOf(file.Value)),
         NodeSubject.Module module => new DocumentRequest.ModulePreview(module.Value, node.Text, node.FullName),
         NodeSubject.FailedAssembly failed => new DocumentRequest.Failure(failed.Value, node.Text, node.FullName),
         NodeSubject.Namespace => new DocumentRequest.Summary(new SummaryInfo.Namespace(node.Text, ListNamespaceEntries(session, node)), node.SourceModule,
@@ -152,12 +152,12 @@ public static class NodeContentLoader
         _ => throw new UnreachableException(),
     };
 
-    private static DocumentRequest.Resource ResourceRequest(BrowseNode node, IResourceData resource) =>
+    private static DocumentRequest.Resource ResourceRequest(BrowseNode node, ResourceData resource) =>
         new(node.SourceModule, resource.Description, resource.ReadData, node.Text, node.FullName);
 
     /// <summary>A comment a resource, describing each that <paramref name="node"/> lists.</summary>
     private static SummaryInfo.Comments DescribeResources(BrowseSession session, BrowseNode node) =>
-        new(session.ChildrenOf(node).Select(static c => c.ResourceData).OfType<IResourceData>().Select(static r => r.Description).ToList());
+        new(session.ChildrenOf(node).Select(static c => c.ResourceData).OfType<ResourceData>().Select(static r => r.Description).ToList());
 
     /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists.</summary>
     private static SummaryInfo SummaryOf(BrowseSession session, BrowseNode node) => node.Subject switch

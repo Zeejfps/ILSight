@@ -52,11 +52,11 @@ public sealed partial class BrowseNode
     };
 
     /// <summary>The bytes of the resource the node stands for; null for a node of anything else.</summary>
-    internal IResourceData? ResourceData => Subject switch
+    internal ResourceData? ResourceData => Subject switch
     {
-        NodeSubject.ResourceContainer container => container.Value,
-        NodeSubject.ResourceEntry entry => entry.Value,
-        NodeSubject.PackageFile file => file.Value,
+        NodeSubject.ResourceContainer container => ResourceNodes.DataOf(container.Value),
+        NodeSubject.ResourceEntry entry => ResourceNodes.DataOf(entry.Value),
+        NodeSubject.PackageFile file => ResourceNodes.DataOf(file.Value),
         NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.References or NodeSubject.AssemblyReference
             or NodeSubject.ReferencedTypes or NodeSubject.TypeReference or NodeSubject.MemberReference or NodeSubject.ModuleReference
             or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseTypes or NodeSubject.BaseType

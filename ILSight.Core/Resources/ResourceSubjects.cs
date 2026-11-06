@@ -20,7 +20,7 @@ internal abstract record ResourceSource
 
 /// <summary>A resource shown as its bytes: text, a picture, a hex dump, or for BAML the XAML it was
 /// compiled from; saved as its bytes, or as that XAML.</summary>
-public sealed class ResourceEntryInfo : IResourceData
+public sealed class ResourceEntryInfo
 {
     internal ResourceEntryInfo(LoadedModule module, string name, ResourceSource source)
     {
@@ -78,7 +78,7 @@ internal abstract record ContainerContents
 
 /// <summary>A manifest resource that holds entries of its own: a <c>.resources</c> file, or the container
 /// Avalonia embeds an app's assets in. It is its bytes, which it is saved as, and lists its entries.</summary>
-public sealed class ResourceContainerInfo : IResourceData
+public sealed class ResourceContainerInfo
 {
     private ResourceContainerInfo(LoadedModule module, MetadataResource resource, ContainerContents contents)
     {

@@ -17,7 +17,7 @@ public sealed class AnalyzerTests
     private static AnalyzerKindNode Expand(AppStateDriver d, AnalyzerSymbolNode symbol, string header)
     {
         var rows = d.Ui.Analyzer;
-        var kind = rows.GetChildren(symbol).OfType<AnalyzerKindNode>().Single(k => k.Kind.Header == header);
+        var kind = rows.GetChildren(symbol).OfType<AnalyzerKindNode>().Single(k => Core.Analysis.Analyzers.Header(k.Kind) == header);
         rows.View.SetExpanded(kind, true);
         rows.GetChildren(kind);
         d.RunUntil(() => kind.IsDone);
@@ -45,7 +45,7 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.Opened();
         var elsewhere = new AssemblyList().Open(AppStateDriver.FixturePath).Root.Child(AppStateDriver.FixturesNamespace, "Outline");
         var symbol = Core.Analysis.Analyzers.Of(elsewhere)!;
-        var kind = new AnalyzerKindNode(symbol, Core.Analysis.Analyzers.KindsFor(symbol).Single(k => k.Header == "Used By"));
+        var kind = new AnalyzerKindNode(symbol, Core.Analysis.Analyzers.KindsFor(symbol).Single(k => Core.Analysis.Analyzers.Header(k) == "Used By"));
 
         RunAnalysis(d.AppState, kind);
         d.RunUntil(() => kind.IsDone);

@@ -7,16 +7,16 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Analysis;
 
 /// <summary>Shows the members and types a method's code, compiler-generated parts included, uses.</summary>
-internal sealed class MethodUsesAnalyzer : IAnalyzer
+internal static class MethodUsesAnalyzer
 {
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(ISymbol? symbol)
     {
         if (symbol is not IMethod method || !method.HasBody)
             return null;
         return context => Analyze(method, context);
     }
 
-    private IEnumerable<ISymbol> Analyze(IMethod method, AnalyzerContext context)
+    private static IEnumerable<ISymbol> Analyze(IMethod method, AnalyzerContext context)
     {
         if (method.ParentModule?.MetadataFile == null)
             throw new InvalidOperationException("Should never happen.");

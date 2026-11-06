@@ -8,21 +8,29 @@ using MetadataResource = ICSharpCode.Decompiler.Metadata.Resource;
 
 namespace ILSight.Core.Resources;
 
-/// <summary>A node standing for a resource's bytes, which can be read to save them.</summary>
-internal interface IResourceData
-{
-    /// <summary>What the resource is, as a resources folder lists it.</summary>
-    string Description { get; }
-
-    /// <summary>The name a saved copy is offered under.</summary>
-    string FileName { get; }
-
-    /// <summary>What a saved copy holds.</summary>
-    byte[] ReadData();
-}
+/// <summary>A resource's bytes, which can be read to save them.</summary>
+/// <param name="Description">What the resource is, as a resources folder lists it.</param>
+/// <param name="FileName">The name a saved copy is offered under.</param>
+/// <param name="ReadData">What a saved copy holds, read only when asked for.</param>
+internal sealed record ResourceData(string Description, string FileName, Func<byte[]> ReadData);
 
 internal static class ResourceNodes
 {
+    public static ResourceData DataOf(ResourceEntryInfo entry)
+    {
+        return new ResourceData(entry.Description, entry.FileName, entry.ReadData);
+    }
+
+    public static ResourceData DataOf(ResourceContainerInfo container)
+    {
+        return new ResourceData(container.Description, container.FileName, container.ReadData);
+    }
+
+    public static ResourceData DataOf(PackageFileInfo file)
+    {
+        return new ResourceData(file.Description, file.FileName, file.ReadData);
+    }
+
     public static string Describe(MetadataResource resource)
     {
         var length = resource.TryGetLength();

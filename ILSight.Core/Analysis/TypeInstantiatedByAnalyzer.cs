@@ -6,9 +6,9 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Analysis;
 
 /// <summary>Shows the members whose code instantiates a type.</summary>
-internal sealed class TypeInstantiatedByAnalyzer : IAnalyzer
+internal static class TypeInstantiatedByAnalyzer
 {
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type || type.IsAbstract || type.IsStatic)
             return null;

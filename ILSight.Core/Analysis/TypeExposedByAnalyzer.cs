@@ -5,9 +5,9 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Analysis;
 
 /// <summary>Finds the visible members whose signature exposes a type.</summary>
-internal sealed class TypeExposedByAnalyzer : IAnalyzer
+internal static class TypeExposedByAnalyzer
 {
-    public AnalysisRun? For(ISymbol? symbol)
+    public static AnalysisRun? For(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type)
             return null;
