@@ -57,7 +57,7 @@ public sealed class SearchTests
     [Fact]
     public async Task CoreLib_searches_well_under_a_second()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLib = list.Open(Trees.CoreLibPath);
         _ = coreLib.Root.Children;
 
