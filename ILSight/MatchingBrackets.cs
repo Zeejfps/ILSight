@@ -9,31 +9,27 @@ public readonly record struct BracketPair(TextPosition Open, TextPosition Close)
 /// <summary>The bracket at a code view's caret, or just before it, and the one that matches it,
 /// looked up again only when the caret or the document changes. Brackets in strings and comments
 /// do not count, and the match is looked for only so many lines away.</summary>
-public sealed class MatchingBrackets
+public static class MatchingBrackets
 {
     private const string Opens = "([{";
     private const string Closes = ")]}";
     private const int MaxLinesScanned = 2000;
 
-    private DecompiledDocument? _document;
-    private TextPosition _caret;
-    private BracketPair? _found;
-
-    public BracketPair? Find(DecompiledDocument document, TextPosition caret)
+    public static BracketPair? Find(CodeViewState state, DecompiledDocument document, TextPosition caret)
     {
-        if (IsLookedUp(document, caret))
-            return _found;
-        _document = document;
-        _caret = caret;
-        _found = Match(document, caret);
-        return _found;
+        if (IsLookedUp(state, document, caret))
+            return state.Brackets;
+        state.BracketsDocument = document;
+        state.BracketsCaret = caret;
+        state.Brackets = Match(document, caret);
+        return state.Brackets;
     }
 
-    private bool IsLookedUp(DecompiledDocument document, TextPosition caret)
+    private static bool IsLookedUp(CodeViewState state, DecompiledDocument document, TextPosition caret)
     {
-        if (!ReferenceEquals(document, _document))
+        if (!ReferenceEquals(document, state.BracketsDocument))
             return false;
-        return caret == _caret;
+        return caret == state.BracketsCaret;
     }
 
     private static BracketPair? Match(DecompiledDocument document, TextPosition caret)

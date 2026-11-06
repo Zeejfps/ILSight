@@ -130,7 +130,12 @@ public sealed class CodeViewState
     internal readonly CodeViewFrame Frame = new();
     internal readonly CodeFindIndex Find = new();
     internal readonly CodeFolds Folds = new();
-    internal readonly MatchingBrackets Brackets = new();
+
+    /// <summary>The bracket at the caret or just before it and the one matching it, as of
+    /// <see cref="BracketsDocument"/> and <see cref="BracketsCaret"/>; see <see cref="MatchingBrackets"/>.</summary>
+    internal BracketPair? Brackets;
+    internal DecompiledDocument? BracketsDocument;
+    internal TextPosition BracketsCaret;
 
     internal DecompiledDocument? Document;
     internal int MaxColumns;
@@ -168,7 +173,7 @@ public sealed class CodeViewState
         {
             if (Pending is PendingScroll.Restore restoring)
                 return restoring.Position;
-            var top = RowHeight > 0f && Folds.RowCount > 0 ? Folds.LineAt(Folds.Clamp(CodeRow.At(ScrollY, RowHeight))) : 0;
+            var top = RowHeight > 0f && Folds.RowCount > 0 ? Folds.LineAt(Folds.Clamp(CodeViewWidget.GetRowAt(ScrollY, RowHeight))) : 0;
             return new CodeViewPosition(top, ScrollX, Selection.Anchor, Selection.Caret);
         }
     }
@@ -252,14 +257,14 @@ public sealed class CodeViewState
     private (int Line, float Within) TopAnchor()
     {
         if (RowHeight <= 0f || Folds.RowCount == 0) return (0, 0f);
-        var row = Folds.Clamp(CodeRow.At(ScrollY, RowHeight));
-        return (Folds.LineAt(row), ScrollY - row.Top(RowHeight));
+        var row = Folds.Clamp(CodeViewWidget.GetRowAt(ScrollY, RowHeight));
+        return (Folds.LineAt(row), ScrollY - CodeViewWidget.GetRowTop(row, RowHeight));
     }
 
     private void KeepTop((int Line, float Within) top)
     {
         if (RowHeight > 0f)
-            ScrollY = Folds.RowOf(top.Line).Top(RowHeight) + top.Within;
+            ScrollY = CodeViewWidget.GetRowTop(Folds.RowOf(top.Line), RowHeight) + top.Within;
     }
 }
 
@@ -301,6 +306,64 @@ public readonly record struct CodeViewResult(CodeViewIntent? Intent, CodeZoom Zo
 
 public static class CodeViewWidget
 {
+    /// <summary>The row <paramref name="offset"/> below the top of the first falls on, each <paramref name="height"/>
+    /// tall; before the first or after the last when the offset is.</summary>
+    internal static CodeRow GetRowAt(float offset, float height)
+    {
+        return new CodeRow((int)MathF.Floor(offset / height));
+    }
+
+    /// <summary>How far below the top of the first row <paramref name="row"/> starts, each <paramref name="height"/> tall.</summary>
+    internal static float GetRowTop(CodeRow row, float height)
+    {
+        return row.Index * height;
+    }
+
+    /// <summary>Scans <paramref name="find"/> again when the document or query changed; returns whether it did.</summary>
+    private static bool FindMatches(CodeFindIndex find, DecompiledDocument document, string query)
+    {
+        if (ReferenceEquals(document, find.Document) && string.Equals(query, find.Query, StringComparison.Ordinal))
+            return false;
+        find.Document = document;
+        find.Query = query;
+        find.Matches.Clear();
+        if (query.Length == 0) return true;
+
+        var lines = document.Lines;
+        for (var line = 0; line < lines.Length; line++)
+        {
+            var text = lines[line].Text;
+            var at = text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
+            while (at >= 0)
+            {
+                find.Matches.Add(new TextPosition(line, at));
+                at = text.IndexOf(query, at + query.Length, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        return true;
+    }
+
+    /// <summary>The first match at or after <paramref name="at"/>, wrapping to the first; null when there are none.</summary>
+    private static int? FindFirstMatch(CodeFindIndex find, TextPosition at)
+    {
+        if (find.Matches.Count == 0) return null;
+        var index = FindMatchOnOrAfter(find, at);
+        return index < find.Matches.Count ? index : 0;
+    }
+
+    /// <summary>The index of the first match at or after <paramref name="at"/>, or the count.</summary>
+    private static int FindMatchOnOrAfter(CodeFindIndex find, TextPosition at)
+    {
+        int low = 0, high = find.Matches.Count;
+        while (low < high)
+        {
+            var mid = (low + high) >> 1;
+            if (find.Matches[mid] < at) low = mid + 1;
+            else high = mid;
+        }
+        return low;
+    }
+
     private static readonly DisplayOptions Plain = new(HighlightMatchingBrackets: false);
 
     private const float FlashSeconds = 1.2f;
@@ -381,7 +444,7 @@ public static class CodeViewWidget
 
             TextPosition PositionAt(float x, float y)
             {
-                var row = CodeRow.At(y - rect.Y + state.LaidOutScrollY, rowHeight);
+                var row = GetRowAt(y - rect.Y + state.LaidOutScrollY, rowHeight);
                 var column = (int)MathF.Round((x - rect.X - textLeft + state.LaidOutScrollX) / advance);
                 if (row.Index < 0) return CodeText.Clamp(document, new TextPosition(0, 0));
                 if (row.Index >= folds.RowCount) return CodeText.End(document);
@@ -399,7 +462,7 @@ public static class CodeViewWidget
             var hover = CodeHover.Nothing;
             if (hasRect && folds.RowCount > 0 && (i.Hovered || i.Held) && pointer.X < content.Right && pointer.Y < content.Bottom)
             {
-                var row = CodeRow.At(pointer.Y - rect.Y + state.LaidOutScrollY, rowHeight);
+                var row = GetRowAt(pointer.Y - rect.Y + state.LaidOutScrollY, rowHeight);
                 if (folds.Contains(row))
                 {
                     var line = folds.LineAt(row);
@@ -616,7 +679,7 @@ public static class CodeViewWidget
     {
         if (!display.HighlightMatchingBrackets)
             return null;
-        return state.Brackets.Find(document, caret);
+        return MatchingBrackets.Find(state, document, caret);
     }
 
     /// <summary>The span under the pointer and where the view's text starts on screen.</summary>
@@ -686,7 +749,7 @@ public static class CodeViewWidget
             return default;
         var span = document.Lines[at.Value.Line].Spans[at.Value.Span];
         var x = hovered.TextX - state.LaidOutScrollX + span.Start * advance;
-        var y = hovered.TextY + state.Folds.RowOf(at.Value.Line).Top(rowHeight) - state.LaidOutScrollY;
+        var y = hovered.TextY + GetRowTop(state.Folds.RowOf(at.Value.Line), rowHeight) - state.LaidOutScrollY;
         return new UiRect(x, y, span.Length * advance, rowHeight);
     }
 
@@ -770,7 +833,7 @@ public static class CodeViewWidget
                 state.Pending = null;
                 var top = Math.Clamp(restore.TopLine, 0, Math.Max(0, document.Lines.Length - 1));
                 state.RevealFolds(top);
-                state.ScrollY = folds.RowOf(top).Top(rowHeight);
+                state.ScrollY = GetRowTop(folds.RowOf(top), rowHeight);
                 state.ScrollX = restore.ScrollX;
                 state.Selection.Select(CodeText.Clamp(document, restore.Anchor), CodeText.Clamp(document, restore.Caret));
             }
@@ -795,7 +858,7 @@ public static class CodeViewWidget
             }
             var line = Math.Clamp(reveal.Line, 0, Math.Max(0, document.Lines.Length - 1));
             state.RevealFolds(line);
-            state.ScrollY = MathF.Max(0f, folds.RowOf(line).Top(rowHeight) - viewport / 3f);
+            state.ScrollY = MathF.Max(0f, GetRowTop(folds.RowOf(line), rowHeight) - viewport / 3f);
             state.Flash = new CodeFlash(line, ui.RealTime);
             state.Pending = null;
             ui.RequestUpdate();
@@ -808,7 +871,7 @@ public static class CodeViewWidget
                 return;
             }
             state.RevealFolds(match.Line);
-            var top = folds.RowOf(match.Line).Top(rowHeight);
+            var top = GetRowTop(folds.RowOf(match.Line), rowHeight);
             if (top < state.ScrollY || top + rowHeight > state.ScrollY + viewport)
                 state.ScrollY = MathF.Max(0f, top - viewport / 3f);
             var visible = content.Width - textLeft - advance;
@@ -976,9 +1039,9 @@ public static class CodeViewWidget
 
             var submitted = ui.TextField("find", ref state.Query, t.FindPlaceholder, Sizing.Grow(AppLayout.FindMinWidth, AppLayout.FindWidth));
             var queryChanged = !string.Equals(state.Query, state.Find.Query, StringComparison.Ordinal);
-            if (state.Find.Update(document, state.Query))
+            if (FindMatches(state.Find, document, state.Query))
             {
-                state.CurrentMatch = queryChanged ? state.Find.FirstFrom(state.Selection.Start) : null;
+                state.CurrentMatch = queryChanged ? FindFirstMatch(state.Find, state.Selection.Start) : null;
                 ShowMatch(state);
             }
             if (submitted)
@@ -1004,7 +1067,7 @@ public static class CodeViewWidget
 
     private static void Step(CodeViewState state, DecompiledDocument document, int direction)
     {
-        state.Find.Update(document, state.Query);
+        FindMatches(state.Find, document, state.Query);
         var count = state.Find.Matches.Count;
         if (count == 0)
         {
@@ -1015,9 +1078,9 @@ public static class CodeViewWidget
         if (current != null)
             state.CurrentMatch = (current.Value + direction + count) % count;
         else if (direction > 0)
-            state.CurrentMatch = state.Find.FirstFrom(state.Selection.Caret);
+            state.CurrentMatch = FindFirstMatch(state.Find, state.Selection.Caret);
         else
-            state.CurrentMatch = (state.Find.FirstOnOrAfter(state.Selection.Caret) - 1 + count) % count;
+            state.CurrentMatch = (FindMatchOnOrAfter(state.Find, state.Selection.Caret) - 1 + count) % count;
         ShowMatch(state);
     }
 

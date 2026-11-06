@@ -633,7 +633,7 @@ public sealed class DisplayOptionsTests
 public sealed class MatchingBracketsTests
 {
     private static BracketPair? Find(DecompiledDocument document, int line, int column) =>
-        new MatchingBrackets().Find(document, new TextPosition(line, column));
+        MatchingBrackets.Find(new CodeViewState(), document, new TextPosition(line, column));
 
     private static BracketPair Pair(int openLine, int openColumn, int closeLine, int closeColumn) =>
         new(new TextPosition(openLine, openColumn), new TextPosition(closeLine, closeColumn));

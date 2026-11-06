@@ -4,15 +4,7 @@ namespace ILSight;
 
 /// <summary>A row of a code view, counted from the top of the document as its folds leave it: with a fold
 /// collapsed above it, not the number of the line it shows.</summary>
-internal readonly record struct CodeRow(int Index)
-{
-    /// <summary>The row <paramref name="offset"/> below the top of the first falls on, each <paramref name="height"/>
-    /// tall; before the first or after the last when the offset is.</summary>
-    public static CodeRow At(float offset, float height) => new((int)MathF.Floor(offset / height));
-
-    /// <summary>How far below the top of the first row this one starts, each <paramref name="height"/> tall.</summary>
-    public float Top(float height) => Index * height;
-}
+internal readonly record struct CodeRow(int Index);
 
 /// <summary>Which of a document's <see cref="DecompiledDocument.Folds"/> are collapsed, and the rows
 /// that leaves: row r shows line <see cref="LineAt"/>(r). The row map is rebuilt when either changes,

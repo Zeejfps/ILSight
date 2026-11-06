@@ -72,7 +72,7 @@ internal sealed class CodeViewDriver
     /// <summary>Where the fold chevron of <paramref name="row"/> is, the view scrolled to the top.</summary>
     public (float X, float Y) ChevronOf(CodeRow row) => (FoldLeft + FoldColumn / 2, MiddleOf(row));
 
-    private static float MiddleOf(CodeRow row) => Origin + row.Top(Row) + Row / 2;
+    private static float MiddleOf(CodeRow row) => Origin + CodeViewWidget.GetRowTop(row, Row) + Row / 2;
 
     public CodeViewResult Run(int frames = 1)
     {
