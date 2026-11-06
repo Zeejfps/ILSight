@@ -35,7 +35,9 @@ it gives, as any property is. No methods. The only other code a record may conta
 
 - a constructor that validates, where the type has an invariant (see [rule 6](#6-the-coding-rules-still-hold));
 - the equality members rule 7 calls for, where it has identity;
-- a method an external interface demands of it, which forwards to a static function.
+- a method an external interface demands of it, which forwards to a static function;
+- the methods of [a self-contained record](#9-a-class-is-only-for-what-is-entirely-self-contained), such
+  as a parser behind a private constructor.
 
 Constants belong with the data they describe, so a record may hold a `const`.
 
