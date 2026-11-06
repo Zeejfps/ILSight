@@ -2,6 +2,10 @@
 
 Follow the coding rules in @docs/coding_rules.md
 
+Shape code the way @docs/data_and_functions.md says: records for data, static functions grouped by
+feature, unions for anything that is one of several things, interfaces only as projections of data, and
+a thin seam around anything external that doesn't fit.
+
 ## C#
 
 - Check for null with a null check, and for a type with a type check:
