@@ -71,7 +71,7 @@ internal abstract record PendingScroll
 /// <summary>What the pointer is over in a code view this frame: nothing; the text of a line, on one of its spans
 /// or none and on a collapsed fold's chip or none; a fold's chevron; or the bookmark margin of a line. A struct
 /// with a case for each, as it is made every frame.</summary>
-internal readonly struct CodeHover
+internal readonly record struct CodeHover
 {
     private enum Place : byte
     {

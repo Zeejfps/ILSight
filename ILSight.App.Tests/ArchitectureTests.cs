@@ -79,6 +79,13 @@ public sealed class ArchitectureTests
         return false;
     }
 
+    /// <summary>What builds a case of a struct union: a static function giving back the union.</summary>
+    private static bool IsCaseOfStructUnion(MethodInfo method)
+    {
+        var union = method.DeclaringType!;
+        return method.IsStatic && method.ReturnType == union && ShapeExceptions.StructUnions.Contains(GetName(union));
+    }
+
     private static bool IsSelfContained(Type type)
     {
         return ShapeExceptions.SelfContained.Contains(GetName(type));
@@ -136,6 +143,7 @@ public sealed class ArchitectureTests
         if (method.IsSpecialName) return true;
         // What a record may write for itself: see rule 7.
         if (method.Name is "Equals" or "GetHashCode" or "PrintMembers") return true;
+        if (IsCaseOfStructUnion(method)) return true;
         return ShapeExceptions.RecordSeams.ContainsKey($"{GetName(method.DeclaringType!)}.{method.Name}");
     }
 

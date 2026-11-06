@@ -48,6 +48,13 @@ internal static class ShapeExceptions
         "ILSight.UserIntent",
     ];
 
+    /// <summary>Unions rebuilt every frame, so structs rather than objects. These stay.</summary>
+    public static readonly string[] StructUnions =
+    [
+        "ILSight.CodeHover",
+        "ILSight.ViewPosition",
+    ];
+
     /// <summary>Classes and interfaces still to become records and functions.</summary>
     public static readonly string[] NotYetData =
     [
@@ -76,7 +83,6 @@ internal static class ShapeExceptions
         "ILSight.CodeFolds",
         "ILSight.CodeFontChoices",
         "ILSight.CodeFontFaces",
-        "ILSight.CodeHover",
         "ILSight.CodeTooltipView+TooltipLayout",
         "ILSight.CodeTooltipView+TooltipStyles",
         "ILSight.CodeTooltips",
@@ -353,8 +359,6 @@ internal static class ShapeExceptions
         "ILSight.TypeAnchorJson.From",
         "ILSight.TypeAnchorJson.Parse",
         "ILSight.ViewPosition.KeptIn",
-        "ILSight.ViewPosition.OfCode",
-        "ILSight.ViewPosition.OfGrid",
         "ILSight.WindowBoundsJson.From",
         "ILSight.WindowBoundsJson.Parse",
     ];

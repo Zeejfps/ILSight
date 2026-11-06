@@ -27,7 +27,7 @@ one other exception is [a self-contained class](#9-a-class-is-only-for-what-is-e
 - `readonly record struct` for a small value with no identity: an id, a span, a coordinate, a result
   returned from a hot path.
 - `sealed record` (a `record class`) for anything larger, anything shared and changed by reference, and
-  every union.
+  every union that isn't [rebuilt every frame](#2-prefer-unions).
 
 A record holds fields, and properties computed from them. A computed property reads the record and
 gives back what follows from it, such as `Title.Length == 0`; it changes nothing, and it's named for what
@@ -37,7 +37,8 @@ it gives, as any property is. No methods. The only other code a record may conta
 - the equality members rule 7 calls for, where it has identity;
 - a method an external interface demands of it, which forwards to a static function;
 - the methods of [a self-contained record](#9-a-class-is-only-for-what-is-entirely-self-contained), such
-  as a parser behind a private constructor.
+  as a parser behind a private constructor;
+- the static function per case of [a struct union](#2-prefer-unions).
 
 Constants belong with the data they describe, so a record may hold a `const`.
 
@@ -70,6 +71,13 @@ C# has no union type yet, so this is how one is written: an `abstract record` wi
 and `sealed` nested cases. The private constructor closes it, and that one level of inheritance is the
 encoding, not a hierarchy. Where nesting the cases would rename too much, or a case needs a group of
 cases under it, a `private protected` constructor closes it to the assembly instead.
+
+A union rebuilt every frame or token can't be objects, since nothing built that often may allocate. It's
+a `readonly record struct` instead: a private tag saying which case it is, a slot for what each case
+holds, a private constructor, and one static function per case, as `CodeHover` and `ViewPosition` are.
+Each case is read through a property that checks the tag and gives null for any other case, so asking the
+wrong question is a null rather than a compile error. That's the price, so this is only for what really
+is rebuilt that often; being faster elsewhere is no reason for one.
 
 The compiler can't see that such a union is closed, so **a new case does not break the build**. An
 `abstract` member would have forced every case to answer, and a switch doesn't. What stands in for that:
@@ -141,7 +149,8 @@ in its signature.
 Extension-method syntax is not used to pretend a function is a method; call it by its feature:
 `Updates.Check(updates, asked)`.
 
-A function is named with a verb, never a noun: it says what it does. `GetHeader`, not `Header`;
+A function is named with a verb, never a noun: it says what it does. The exception is what stands for a
+case of [a struct union](#2-prefer-unions), which is named for the case, as `new` would be: `CodeHover.OnMark`. `GetHeader`, not `Header`;
 `CreateFeed`, not `Feed`; `FindUpdate`, not `Update`. Prepositions don't count either, so not `HeaderOf`
 or `For`. A question is named as one, with `Is`, `Has` or `Can`. This goes for a function held in a field
 too, since it is called the same way: `Read`, not `Reader`. A delegate type is a type, so it stays a noun,
