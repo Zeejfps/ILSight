@@ -70,12 +70,12 @@ internal static class DiagramFaces
 
     private static void AddHeader(RowStack stack, TypeCard card)
     {
-        stack.Add(new CardRow(CardRowKind.Name, stack.RowHeight + NameRowExtra, Padding, card.Name, NodeIcons.Of(card.Shape), card.Accessibility, card.Type));
+        AddRow(stack, new CardRow(CardRowKind.Name, stack.RowHeight + NameRowExtra, Padding, card.Name, NodeIcons.Of(card.Shape), card.Accessibility, card.Type));
         var stereotype = StereotypeOf(card.Stereotype);
         if (stereotype == null)
             return;
         var indent = Padding + stack.IconSize + IconGap;
-        stack.Add(new CardRow(CardRowKind.Stereotype, stack.RowHeight, indent, stereotype));
+        AddRow(stack, new CardRow(CardRowKind.Stereotype, stack.RowHeight, indent, stereotype));
     }
 
     private static string? StereotypeOf(TypeStereotype stereotype) => stereotype switch
@@ -132,11 +132,11 @@ internal static class DiagramFaces
             return;
         var isOpen = Diagrams.IsFoldOpen(view, fold);
         var text = $"{title} ({members.Count})";
-        stack.Add(new CardRow(CardRowKind.Fold, stack.RowHeight, Padding, text, Fold: fold, IsOpen: isOpen));
+        AddRow(stack, new CardRow(CardRowKind.Fold, stack.RowHeight, Padding, text, Fold: fold, IsOpen: isOpen));
         if (!isOpen)
             return;
         foreach (var member in members)
-            stack.Add(MemberRow(stack, member));
+            AddRow(stack, MemberRow(stack, member));
     }
 
     private static CardRow MemberRow(RowStack stack, CardMember member)
@@ -183,43 +183,51 @@ internal static class DiagramFaces
         return link.Label + ManyMark;
     }
 
-    /// <summary>The rows of a card stacked from its top, and how wide the widest of them is, measured in
-    /// the screen's fonts.</summary>
-    private sealed class RowStack(Ui<UiState> ui)
+    private static void AddRow(RowStack stack, CardRow row)
     {
-        public List<CardRow> Rows { get; } = new();
+        var textWidth = MeasureRowText(stack.Ui, row);
+        stack.Rows.Add(row with { Top = stack.Top, TextWidth = textWidth });
+        stack.Top += row.Height;
+        stack.Width = MathF.Max(stack.Width, row.Indent + GetLead(stack, row) + textWidth);
+    }
 
-        public float Top { get; private set; }
-
-        public float Width { get; private set; }
-
-        public float RowHeight { get; } = MathF.Ceiling(ui.LineHeight()) + RowPadding;
-
-        public float IconSize => ui.Theme.IconSize;
-
-        public Strings Strings => ui.State.Strings;
-
-        public void Add(CardRow row)
-        {
-            var textWidth = TextWidthOf(row);
-            Rows.Add(row with { Top = Top, TextWidth = textWidth });
-            Top += row.Height;
-            Width = MathF.Max(Width, row.Indent + LeadOf(row) + textWidth);
-        }
-
-        private float TextWidthOf(CardRow row) => row.Kind switch
+    private static float MeasureRowText(Ui<UiState> ui, CardRow row)
+    {
+        return row.Kind switch
         {
             CardRowKind.Name => ui.MeasureText(row.Text, bold: true),
             CardRowKind.Stereotype => ui.MeasureText(row.Text, family: TextFonts.Italic),
             _ => ui.MeasureText(row.Text),
         };
+    }
 
-        // What a row draws before its text: a chevron, an icon, or nothing.
-        private float LeadOf(CardRow row) => row.Kind switch
+    // What a row draws before its text: a chevron, an icon, or nothing.
+    private static float GetLead(RowStack stack, CardRow row)
+    {
+        return row.Kind switch
         {
             CardRowKind.Stereotype => 0f,
             CardRowKind.Fold => ChevronWidth,
-            _ => IconSize + IconGap,
+            _ => stack.IconSize + IconGap,
         };
+    }
+
+    /// <summary>The rows of a card stacked from its top, and how wide the widest of them is, measured in
+    /// the screen's fonts.</summary>
+    private sealed class RowStack(Ui<UiState> ui)
+    {
+        public Ui<UiState> Ui { get; } = ui;
+
+        public List<CardRow> Rows { get; } = new();
+
+        public float Top;
+
+        public float Width;
+
+        public float RowHeight { get; } = MathF.Ceiling(ui.LineHeight()) + RowPadding;
+
+        public float IconSize => Ui.Theme.IconSize;
+
+        public Strings Strings => Ui.State.Strings;
     }
 }

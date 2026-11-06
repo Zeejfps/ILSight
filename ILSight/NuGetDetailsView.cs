@@ -325,7 +325,7 @@ internal static class NuGetDetailsView
     {
         var kept = ui.GetState<LinkRuns>(ui.GetId(id + "-runs"));
         if (kept.Runs.Count == 0 || kept.Text != text || kept.Url != url || kept.Style != style)
-            kept.Keep(text, url, style);
+            KeepRuns(kept, text, url, style);
         return kept.Runs;
     }
 
@@ -335,14 +335,14 @@ internal static class NuGetDetailsView
         public string Url = "";
         public TextStyle? Style;
         public IReadOnlyList<RichTextRun> Runs = [];
+    }
 
-        public void Keep(string text, string url, TextStyle style)
-        {
-            Text = text;
-            Url = url;
-            Style = style;
-            Runs = [new RichTextRun(text, style, Link: url)];
-        }
+    private static void KeepRuns(LinkRuns kept, string text, string url, TextStyle style)
+    {
+        kept.Text = text;
+        kept.Url = url;
+        kept.Style = style;
+        kept.Runs = [new RichTextRun(text, style, Link: url)];
     }
 
     /// <summary>What the version picked depends on, for each framework it names, once its details are read.</summary>

@@ -18,6 +18,24 @@ namespace ILSight;
 /// documentation. A card's menu grows the diagram along its relations or takes it off.</summary>
 internal static class DiagramView
 {
+    private const float IsALineWidth = 1.5f;
+    private const float HasALineWidth = 1.25f;
+    private const float DashLength = 6f;
+    private const float GapLength = 4f;
+    private const float HollowArrowWidth = 14f;
+    private const float OpenArrowWidth = 11f;
+    private const float DiamondWidth = 9f;
+    private const float LabelBorderWidth = 1f;
+    private const float SelectedBorderWidth = 2f;
+    private const float ChevronHalf = 3.5f;
+    private const float OverlayInset = 0.75f;
+    private const float MinTextSize = 3f;
+    private const float MinIconSize = 4f;
+    private const float TextRightPadding = 8f;
+
+    /// <summary>How far below the middle of its row a link's underline runs, in font sizes.</summary>
+    private const float UnderlineDrop = 0.5f;
+
     private const string CanvasId = "diagram";
     private const string MenuId = "diagram-menu";
     private const float PanThreshold = 4f;
@@ -117,7 +135,7 @@ internal static class DiagramView
         ShowHandOverClickable(ui, view, i, hit);
         FillFrame(ui, view, diagram, hit);
         using (ui.Box(id, new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Background = ui.Theme.EditorBackground, Clip = true }))
-            ui.Paint(view.Frame, DiagramFrame.Paint);
+            ui.Paint(view.Frame, Paint);
         if (hasRect)
             MemberTooltip(ui, tooltips, view, diagram, id, IsPanning(view, i), hit);
     }
@@ -591,5 +609,206 @@ internal static class DiagramView
         view.MenuCard = null;
         if (view.Selected == card.Type)
             view.Selected = null;
+    }
+
+    private static void Paint(UiPainter p, DiagramFrame frame)
+    {
+        foreach (var link in frame.Links)
+            PaintLink(p, frame, link);
+        foreach (var card in frame.Cards)
+            PaintCard(p, frame, card);
+    }
+
+    private static PointF ToScreen(UiPainter p, DiagramFrame frame, PointF point)
+    {
+        return new PointF(p.Rect.X + (point.X - frame.Corner.X) * frame.Zoom, p.Rect.Y + (point.Y - frame.Corner.Y) * frame.Zoom);
+    }
+
+    /// <summary>Links that say what a type is, derived from or implemented, in the color of types; links
+    /// that say what it has, the types its properties hold, in the color of data.</summary>
+    private static void PaintLink(UiPainter p, DiagramFrame frame, DrawnLink link)
+    {
+        var isHeld = IsHeld(link.Kind);
+        var color = isHeld ? frame.Palette.Data : frame.Palette.Type;
+        var width = isHeld ? HasALineWidth : IsALineWidth;
+        var stroke = MathF.Max(1f, width * frame.Zoom);
+        var isDashed = link.Kind == TypeLinkKind.Implements;
+        var dash = isDashed ? DashLength * frame.Zoom : 0f;
+        var gap = isDashed ? GapLength * frame.Zoom : 0f;
+        foreach (var piece in link.Route.Pieces)
+            PaintPiece(p, frame, piece, color, stroke, dash, gap);
+        PaintArrowhead(p, frame, link, color, stroke);
+        PaintDiamond(p, frame, link.Route, color, stroke);
+        PaintLabel(p, frame, link, color);
+    }
+
+    private static void PaintPiece(UiPainter p, DiagramFrame frame, RoutePiece piece, uint color, float stroke, float dash, float gap)
+    {
+        var start = ToScreen(p, frame, piece.Start);
+        var control1 = ToScreen(p, frame, piece.Control1);
+        var control2 = ToScreen(p, frame, piece.Control2);
+        var end = ToScreen(p, frame, piece.End);
+        p.CubicBezier(start, control1, control2, end, stroke, color, dash, gap);
+    }
+
+    /// <summary>A hollow triangle at the end of a link to a type derived from or implemented, an open
+    /// arrowhead at the end of one to a type held.</summary>
+    private static void PaintArrowhead(UiPainter p, DiagramFrame frame, DrawnLink link, uint color, float stroke)
+    {
+        var tip = ToScreen(p, frame, link.Route.Tip);
+        var tail = ToScreen(p, frame, GetArrowTail(link.Route));
+        var length = MathF.Sqrt(tip.DistanceSqTo(tail));
+        if (IsHeld(link.Kind))
+        {
+            p.OpenArrowhead(tip, tail, length, OpenArrowWidth * frame.Zoom, stroke, color);
+            return;
+        }
+        p.HollowArrowhead(tip, tail, length, HollowArrowWidth * frame.Zoom, stroke, color);
+    }
+
+    /// <summary>A hollow diamond on the card of a type holding the other, where the route leaves room for one.</summary>
+    private static void PaintDiamond(UiPainter p, DiagramFrame frame, LinkRoute route, uint color, float stroke)
+    {
+        if (route.SourceTip == null)
+            return;
+        if (route.Pieces.Count == 0)
+            return;
+        var tip = ToScreen(p, frame, route.SourceTip.Value);
+        var back = ToScreen(p, frame, route.Pieces[0].Start);
+        var length = MathF.Sqrt(tip.DistanceSqTo(back));
+        p.HollowDiamond(tip, back, length, DiamondWidth * frame.Zoom, stroke, color);
+    }
+
+    /// <summary>Where the route's arrowhead starts: where its pieces end, or at its tip when it has none.</summary>
+    private static PointF GetArrowTail(LinkRoute route)
+    {
+        if (route.Pieces.Count == 0)
+            return route.Tip;
+        return route.Pieces[^1].End;
+    }
+
+    private static bool IsHeld(TypeLinkKind kind)
+    {
+        return kind is TypeLinkKind.HoldsOne or TypeLinkKind.HoldsMany;
+    }
+
+    /// <summary>The label of a link as a tag bordered in its color.</summary>
+    private static void PaintLabel(UiPainter p, DiagramFrame frame, DrawnLink link, uint color)
+    {
+        if (link.Label == null)
+            return;
+        var center = link.Route.LabelCenter;
+        if (center == null)
+            return;
+        var size = frame.Theme.FontSizeSmall * frame.Zoom;
+        if (size < MinTextSize)
+            return;
+        var middle = ToScreen(p, frame, center.Value);
+        var width = link.LabelWidth * frame.Zoom;
+        var height = link.LabelHeight * frame.Zoom;
+        var rect = new UiRect(middle.X - width / 2, middle.Y - height / 2, width, height);
+        p.FillRect(rect, frame.Theme.SurfaceRaised, frame.Theme.RadiusSmall * frame.Zoom, color, MathF.Max(1f, LabelBorderWidth * frame.Zoom));
+        p.Text(rect, link.Label, frame.Theme.Text, size, align: Align.Center);
+    }
+
+    private static void PaintCard(UiPainter p, DiagramFrame frame, DrawnCard card)
+    {
+        var face = card.Face;
+        var topLeft = ToScreen(p, frame, card.Place);
+        var rect = new UiRect(topLeft.X, topLeft.Y, face.Width * frame.Zoom, face.Height * frame.Zoom);
+        if (!rect.Intersects(p.Clip))
+            return;
+        var radius = frame.Theme.CornerRadius * frame.Zoom;
+        p.FillRect(rect, frame.Theme.SurfaceRaised, radius);
+        p.FillRect(rect with { Height = face.HeaderHeight * frame.Zoom }, frame.Theme.Control, new Corners(radius, radius, 0f, 0f));
+        for (var i = 0; i < face.Rows.Count; i++)
+            PaintRow(p, frame, rect, face.Rows[i], i == card.HoveredRow);
+        PaintBorder(p, frame, rect, card.IsSelected, radius);
+    }
+
+    private static void PaintBorder(UiPainter p, DiagramFrame frame, UiRect rect, bool isSelected, float radius)
+    {
+        if (isSelected)
+        {
+            p.FillRect(rect, 0, radius, frame.Theme.Accent, SelectedBorderWidth);
+            return;
+        }
+        p.FillRect(rect, 0, radius, frame.Theme.BorderStrong, frame.Theme.BorderWidth);
+    }
+
+    private static void PaintRow(UiPainter p, DiagramFrame frame, UiRect card, CardRow row, bool isHovered)
+    {
+        var rect = new UiRect(card.X, card.Y + row.Top * frame.Zoom, card.Width, row.Height * frame.Zoom);
+        if (!rect.Intersects(p.Clip))
+            return;
+        if (isHovered)
+            p.FillRect(rect, frame.Theme.RowHover);
+        var left = card.X + row.Indent * frame.Zoom;
+        var underlined = isHovered && row.IsLink;
+        switch (row.Kind)
+        {
+            case CardRowKind.Name:
+                PaintIconAndText(p, frame, rect, left, row, frame.Theme.Text, bold: true, underlined);
+                break;
+            case CardRowKind.Stereotype:
+                PaintText(p, frame, rect, left, row.Text, frame.Theme.TextMuted, family: TextFonts.Italic);
+                break;
+            case CardRowKind.Fold:
+                PaintFold(p, frame, rect, left, row);
+                break;
+            default:
+                PaintIconAndText(p, frame, rect, left, row, frame.Theme.Text, bold: false, underlined);
+                break;
+        }
+    }
+
+    private static void PaintIconAndText(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, uint color, bool bold, bool underlined)
+    {
+        PaintIcon(p, frame, rect, left, row.Icon!.Value, row.Accessibility);
+        var textLeft = left + (frame.Theme.IconSize + DiagramFaces.IconGap) * frame.Zoom;
+        PaintText(p, frame, rect, textLeft, row.Text, color, bold: bold);
+        if (underlined)
+            PaintUnderline(p, frame, rect, textLeft, row.TextWidth * frame.Zoom, color);
+    }
+
+    private static void PaintUnderline(UiPainter p, DiagramFrame frame, UiRect rect, float left, float width, uint color)
+    {
+        var y = MathF.Round(rect.Y + rect.Height / 2 + frame.Theme.FontSize * frame.Zoom * UnderlineDrop);
+        var thickness = MathF.Max(1f, frame.Zoom);
+        p.Line(new PointF(left, y), new PointF(left + width, y), thickness, color);
+    }
+
+    /// <summary>The icon of a node of <paramref name="kind"/> as the tree draws it, with the overlay of its
+    /// <paramref name="accessibility"/>.</summary>
+    private static void PaintIcon(UiPainter p, DiagramFrame frame, UiRect row, float left, NodeIcon kind, NodeAccessibility accessibility)
+    {
+        var size = MathF.Round(frame.Theme.IconSize * frame.Zoom);
+        if (size < MinIconSize)
+            return;
+        var box = new UiRect(left, row.Y + (row.Height - size) / 2, size, size);
+        p.Glyph(box, NodeIcons.Glyph(kind, frame.Icons), NodeIcons.GetColor(frame.Palette, kind), size);
+        var overlay = NodeIcons.Overlay(accessibility, frame.Icons);
+        if (overlay == null)
+            return;
+        var overlaySize = MathF.Round(frame.Theme.IconOverlaySize * frame.Zoom);
+        var corner = new UiRect(box.Right - overlaySize * OverlayInset, box.Bottom - overlaySize * OverlayInset, overlaySize, overlaySize);
+        p.Glyph(corner, overlay.Value, frame.Palette.Restricted, overlaySize);
+    }
+
+    private static void PaintFold(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row)
+    {
+        var chevronWidth = DiagramFaces.ChevronWidth * frame.Zoom;
+        var center = new PointF(left + chevronWidth / 2, rect.Y + rect.Height / 2);
+        p.DrawDisclosure(center, ChevronHalf * frame.Zoom, row.IsOpen, frame.Theme.TextMuted, frame.Theme.IconStrokeWidth * frame.Zoom);
+        PaintText(p, frame, rect, left + chevronWidth, row.Text, frame.Theme.TextMuted);
+    }
+
+    private static void PaintText(UiPainter p, DiagramFrame frame, UiRect rect, float left, string text, uint color, bool bold = false, string? family = null)
+    {
+        var size = frame.Theme.FontSize * frame.Zoom;
+        if (size < MinTextSize)
+            return;
+        var width = rect.Right - TextRightPadding * frame.Zoom - left;
+        p.Text(new UiRect(left, rect.Y, width, rect.Height), text, color, size, bold, family: family);
     }
 }

@@ -322,12 +322,12 @@ internal static class CodeTooltipView
         public IReadOnlyList<RichTextRun> Container = [];
         public readonly List<IReadOnlyList<RichTextRun>> Constraints = new();
         public readonly List<TooltipGroup> Groups = new();
+    }
 
-        public bool IsBuiltFor(CodeTooltip tooltip, CodeViewPalette palette, UiTheme theme, Strings strings)
-        {
-            var sameLook = ReferenceEquals(Palette, palette) && ReferenceEquals(Theme, theme);
-            return ReferenceEquals(Tooltip, tooltip) && sameLook && ReferenceEquals(Strings, strings);
-        }
+    private static bool IsBuiltFor(TooltipLayout layout, CodeTooltip tooltip, CodeViewPalette palette, UiTheme theme, Strings strings)
+    {
+        var sameLook = ReferenceEquals(layout.Palette, palette) && ReferenceEquals(layout.Theme, theme);
+        return ReferenceEquals(layout.Tooltip, tooltip) && sameLook && ReferenceEquals(layout.Strings, strings);
     }
 
     private static TooltipLayout LayoutOf(Ui<UiState> ui, CodeTooltip tooltip)
@@ -335,7 +335,7 @@ internal static class CodeTooltipView
         var t = ui.State.Strings;
         var layout = ui.GetState<TooltipLayout>(ui.GetId("code-tooltip"));
         var palette = ui.State.CodeViewPalette;
-        if (layout.IsBuiltFor(tooltip, palette, ui.Theme, t))
+        if (IsBuiltFor(layout, tooltip, palette, ui.Theme, t))
             return layout;
         layout.Tooltip = tooltip;
         layout.Palette = palette;
@@ -409,7 +409,7 @@ internal static class CodeTooltipView
             if (stop <= start)
                 continue;
             var text = line.Text.Substring(start, stop - start);
-            runs.Add(new RichTextRun(text, styles.Code(span.Kind), Link: LinkOf(span.Reference)));
+            runs.Add(new RichTextRun(text, GetCodeStyle(styles, span.Kind), Link: LinkOf(span.Reference)));
         }
         return runs;
     }
@@ -438,9 +438,9 @@ internal static class CodeTooltipView
                 continue;
             AddContainerText(runs, styles, pattern.Substring(start, i - start));
             if (pattern[i] == KindMark)
-                runs.Add(new RichTextRun(container.Keyword, styles.Code(SpanKind.Keyword)));
+                runs.Add(new RichTextRun(container.Keyword, GetCodeStyle(styles, SpanKind.Keyword)));
             else
-                runs.Add(new RichTextRun(container.Name, styles.Code(nameKind)));
+                runs.Add(new RichTextRun(container.Name, GetCodeStyle(styles, nameKind)));
             start = i + 1;
         }
         AddContainerText(runs, styles, pattern.Substring(start));
@@ -512,8 +512,8 @@ internal static class CodeTooltipView
         var label = section.Label.Value;
         return section.Kind switch
         {
-            DocSectionKind.TypeParameter => [new RichTextRun(label.Text, styles.Code(SpanKind.Type))],
-            DocSectionKind.Parameter => [new RichTextRun(label.Text, styles.Code(SpanKind.Parameter))],
+            DocSectionKind.TypeParameter => [new RichTextRun(label.Text, GetCodeStyle(styles, SpanKind.Type))],
+            DocSectionKind.Parameter => [new RichTextRun(label.Text, GetCodeStyle(styles, SpanKind.Parameter))],
             _ => [Run(styles, label)],
         };
     }
@@ -589,7 +589,7 @@ internal static class CodeTooltipView
             DocStyle.Bold => new RichTextRun(run.Text, styles.Bold),
             DocStyle.Italic => new RichTextRun(run.Text, styles.Italic),
             DocStyle.Code => new RichTextRun(run.Text, styles.CodeBlock, IsCode: true),
-            DocStyle.Reference => new RichTextRun(run.Text, styles.Reference(run.Reference), Link: LinkOf(run.Reference)),
+            DocStyle.Reference => new RichTextRun(run.Text, GetReferenceStyle(styles, run.Reference), Link: LinkOf(run.Reference)),
             _ => new RichTextRun(run.Text, styles.Plain),
         };
 
@@ -597,39 +597,47 @@ internal static class CodeTooltipView
     /// theme's text size, headings smaller and muted.</summary>
     private sealed class TooltipStyles(Ui<UiState> ui, CodeViewPalette palette)
     {
-        private readonly float _size = ui.Theme.FontSize;
+        public Ui<UiState> Ui { get; } = ui;
+        public CodeViewPalette Palette { get; } = palette;
+        public float Size { get; } = ui.Theme.FontSize;
 
         public TextStyle Plain { get; } = ui.StyleText(ui.Theme.Text, ui.Theme.FontSize);
         public TextStyle Bold { get; } = ui.StyleText(ui.Theme.Text, ui.Theme.FontSize, bold: true);
         public TextStyle Italic { get; } = ui.StyleText(ui.Theme.Text, ui.Theme.FontSize, family: TextFonts.Italic);
-        public TextStyle Heading { get; } = ui.StyleText(HeadingColor(ui.Theme), ui.Theme.FontSizeSmall, bold: true);
+        public TextStyle Heading { get; } = ui.StyleText(GetHeadingColor(ui.Theme), ui.Theme.FontSizeSmall, bold: true);
         public TextStyle Container { get; } = ui.StyleText(ui.Theme.TextMuted, ui.Theme.FontSize, family: MonoFonts.Code);
         public TextStyle CodeBlock { get; } = ui.StyleText(ui.Theme.Text, ui.Theme.FontSize, family: MonoFonts.Code);
+    }
 
-        public TextStyle Code(SpanKind kind) => ui.StyleText(palette[kind], _size, family: MonoFonts.Code);
+    private static TextStyle GetCodeStyle(TooltipStyles styles, SpanKind kind)
+    {
+        return styles.Ui.StyleText(styles.Palette[kind], styles.Size, family: MonoFonts.Code);
+    }
 
-        /// <summary>A type or member named in the text, colored as code colors what it points at.</summary>
-        public TextStyle Reference(CodeReference? reference)
+    /// <summary>A type or member named in the text, colored as code colors what it points at.</summary>
+    private static TextStyle GetReferenceStyle(TooltipStyles styles, CodeReference? reference)
+    {
+        var kind = GetSpanKind(reference);
+        return styles.Ui.StyleText(styles.Palette[kind], styles.Size);
+    }
+
+    private static uint GetHeadingColor(UiTheme theme)
+    {
+        return UiColor.Mix(theme.TextMuted, theme.Text, HeadingMix);
+    }
+
+    private static SpanKind GetSpanKind(CodeReference? reference)
+    {
+        if (reference is not CodeReference.Entity entity)
+            return SpanKind.Type;
+        return entity.Kind switch
         {
-            var kind = SpanKindOf(reference);
-            return ui.StyleText(palette[kind], _size);
-        }
-
-        private static uint HeadingColor(UiTheme theme) => UiColor.Mix(theme.TextMuted, theme.Text, HeadingMix);
-
-        private static SpanKind SpanKindOf(CodeReference? reference)
-        {
-            if (reference is not CodeReference.Entity entity)
-                return SpanKind.Type;
-            return entity.Kind switch
-            {
-                EntityKind.Type => SpanKind.Type,
-                EntityKind.Method => SpanKind.Method,
-                EntityKind.Field => SpanKind.Field,
-                EntityKind.Property => SpanKind.Property,
-                EntityKind.Event => SpanKind.Event,
-                _ => throw new UnreachableException(),
-            };
-        }
+            EntityKind.Type => SpanKind.Type,
+            EntityKind.Method => SpanKind.Method,
+            EntityKind.Field => SpanKind.Field,
+            EntityKind.Property => SpanKind.Property,
+            EntityKind.Event => SpanKind.Event,
+            _ => throw new UnreachableException(),
+        };
     }
 }
