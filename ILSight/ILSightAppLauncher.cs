@@ -9,48 +9,26 @@ namespace ILSight;
 public static class ILSightAppLauncher
 {
     /// <summary>Hands <paramref name="command"/> to the window already open with the same settings
-    /// and leaves, unless <paramref name="config"/> asks for a new window or none is open; else opens
-    /// the app.</summary>
+    /// and leaves, unless <paramref name="config"/> asks for a new window or none can take it; else
+    /// opens the app.</summary>
     public static void LaunchApp(LaunchConfig config, ExternalCommand command)
     {
         var address = ExternalCommandAddress.ForSettingsFile(config.SettingsPath);
-        using var pipe = new ExternalCommandPipe(address);
-        if (SingleInstanceLock.TryAcquire(address, out var instanceLock))
-        {
-            using (instanceLock)
-            {
-                var loadResult = AppSettings.Load(config.SettingsPath);
-                var app = CreateApp(loadResult, command);
-                pipe.ForwardTo(app);
-                OpenWindow(app, loadResult, config);
-            }
-        }
-        else if (config.NewInstance)
-        {
-            RunNewAppInstance(config, command);
-        }
-        else
-        {
-            var handedOver = pipe.TryHandOverToRunningApp(command);
-            if (!handedOver)
-            {
-                RunNewAppInstance(config, command);
-            }
-        }
-    }
 
-    private static void RunNewAppInstance(LaunchConfig config, ExternalCommand command)
-    {
+        using var receiver = ExternalCommandRouting.ForwardOrReceive(address, command, config.NewInstance);
+        if (receiver == null)
+            return;
+
         var loadResult = AppSettings.Load(config.SettingsPath);
-        var app = CreateApp(loadResult, command);
+        var app = CreateApp(loadResult, command, receiver.Inbox);
         OpenWindow(app, loadResult, config);
     }
 
-    private static ILSightApp CreateApp(SettingsLoadResult loadResult, ExternalCommand command)
+    private static ILSightApp CreateApp(SettingsLoadResult loadResult, ExternalCommand command, ExternalCommandInbox inbox)
     {
         var appState = LoadAppState(loadResult, command);
         var uiState = ILSightApp.CreateUiState(appState);
-        return new ILSightApp(appState, uiState, command.Files);
+        return new ILSightApp(appState, uiState, command.Files, inbox);
     }
 
     private static void OpenWindow(ILSightApp app, SettingsLoadResult loadResult, LaunchConfig config)

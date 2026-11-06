@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Threading.Channels;
 using ZGF.AppUtils;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
@@ -19,7 +18,7 @@ namespace ILSight;
 
 /// <summary>The app: keeps the app state and the screen in step around each frame, and carries the
 /// commands each queues for the other. Neither state sees the other; only the app and the views see both.</summary>
-public sealed partial class ILSightApp : ImmediateGuiApp<UiState>, IExternalCommandHandler
+public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 {
     private const string MonoFontFile = "JetBrainsMono-Regular.ttf";
     private const string ItalicFontFile = "Inter-Italic.ttf";
@@ -27,23 +26,18 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>, IExternalComm
 
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
-    private readonly Channel<ExternalCommand> _pendingCommands = Channel.CreateUnbounded<ExternalCommand>();
+    private readonly ExternalCommandInbox _inbox;
     private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
 
     internal ILSightApp(
         AppState appState,
         UiState uiState,
-        FilesToOpen startupFiles) : base(uiState)
+        FilesToOpen startupFiles,
+        ExternalCommandInbox inbox) : base(uiState)
     {
         _appState = appState;
         _startupFiles = startupFiles;
-    }
-
-    /// <summary>Queues <paramref name="command"/> to follow it on the UI thread, from any thread; false
-    /// once the window has closed.</summary>
-    public bool TryHandle(ExternalCommand command)
-    {
-        return _pendingCommands.Writer.TryWrite(command);
+        _inbox = inbox;
     }
 
     protected override void OnStartup(ImmediateGuiAppHost<UiState> host)
@@ -68,9 +62,17 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>, IExternalComm
         FinishFrame(ui, _appState, _codeFonts);
     }
 
+    /// <summary>Refuses commands as the window closes, while a run sending one can still be told to
+    /// open its own: no frame runs after this to follow it.</summary>
+    protected override bool OnCloseRequested(ImmediateGuiAppHost<UiState> host)
+    {
+        _inbox.Close();
+        return true;
+    }
+
     protected override void OnShutdown(ImmediateGuiAppHost<UiState> host)
     {
-        StopTakingCommands();
+        _inbox.Close();
         StopRedrawingOnAssemblyChanges(host);
         StopWatchingUserThemes(_appState);
         StopWatchingUserIconThemes(_appState);
@@ -247,17 +249,12 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>, IExternalComm
     }
 
     /// <summary>Leaves the commands of later runs to windows of their own once this one closes.</summary>
-    private void StopTakingCommands()
-    {
-        _pendingCommands.Writer.TryComplete();
-    }
-
     /// <summary>Does what the commands of later runs ask as they arrive, until this window closes,
     /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
     /// each one arriving wakes the app.</summary>
     internal async Task ApplyPendingCommands()
     {
-        await foreach (var command in _pendingCommands.Reader.ReadAllAsync())
+        await foreach (var command in _inbox.ReadAllAsync())
         {
             try
             {

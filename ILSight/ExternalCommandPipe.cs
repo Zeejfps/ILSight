@@ -5,65 +5,41 @@ using ZGF.Desktop;
 
 namespace ILSight;
 
-/// <summary>Takes the commands that reach this app from later runs, from any thread; false when it
-/// takes no more.</summary>
-public interface IExternalCommandHandler
-{
-    bool TryHandle(ExternalCommand command);
-}
-
 /// <summary>
-/// How a later run of the app reaches the first. The first run listens for the commands later
-/// runs hand it; a later run hands its own over and lends the first run the right to come to the
-/// front, so that one window serves them all. Only the user who started the first run can reach it.
+/// What a run and the receiver say to each other. A run sends its command and lends the receiver the
+/// right to come to the front, so that one window serves them all. Only the user who started the
+/// receiver can reach it.
 /// </summary>
-public sealed class ExternalCommandPipe : IDisposable
+public static class ExternalCommandPipe
 {
     private const int IntBytes = 4;
     private const int MaxArguments = 4096;
     private const int MaxArgumentBytes = 1 << 20;
     private const byte Received = 1;
-    private static readonly TimeSpan HandOverTimeout = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan BusyPipeWait = TimeSpan.FromMilliseconds(100);
 
-    private readonly string _name;
-    private readonly CancellationTokenSource _stop = new();
-    private Task? _serving;
+    /// <summary>How long either side waits for the other.</summary>
+    internal static readonly TimeSpan HandOverTimeout = TimeSpan.FromSeconds(5);
 
-    public ExternalCommandPipe(ExternalCommandAddress address)
-    {
-        _name = address.Name;
-    }
-
-    /// <summary>Starts taking, in the background, the commands later runs hand over, giving them to
-    /// <paramref name="handler"/>. Once it returns false, later runs are refused and open windows of
-    /// their own.</summary>
-    public void ForwardTo(IExternalCommandHandler handler)
-    {
-        _serving = Task.Run(() => ServeAsync(handler));
-    }
-
-    /// <summary>Hands <paramref name="command"/> to the app that is open and lends it the right to
-    /// come to the front; false when it cannot be reached in time, and this run opens a window of its
-    /// own. Waits on the thread pool, so a caller whose own thread runs the continuations is never
-    /// blocked by them.</summary>
-    public bool TryHandOverToRunningApp(ExternalCommand command)
+    /// <summary>Hands <paramref name="command"/> to the receiver at <paramref name="address"/> and lends
+    /// it the right to come to the front; false when it cannot be reached in time or refuses. Waits on
+    /// the thread pool, so a caller whose own thread runs the continuations is never blocked by them.</summary>
+    public static bool TrySend(ExternalCommandAddress address, ExternalCommand command)
     {
         try
         {
-            return Task.Run(() => HandOverAsync(command)).GetAwaiter().GetResult();
+            return Task.Run(() => SendAsync(address, command)).GetAwaiter().GetResult();
         }
-        catch (Exception e) when (IsBrokenHandOver(e))
+        catch (Exception e) when (IsBroken(e))
         {
             return false;
         }
     }
 
-    private async Task<bool> HandOverAsync(ExternalCommand command)
+    private static async Task<bool> SendAsync(ExternalCommandAddress address, ExternalCommand command)
     {
         using var timeout = new CancellationTokenSource(HandOverTimeout);
         var token = timeout.Token;
-        await using var pipe = new NamedPipeClientStream(".", _name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        await using var pipe = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
         ForegroundRights.LendTo(processId);
@@ -72,63 +48,27 @@ public sealed class ExternalCommandPipe : IDisposable
         return answer == Received;
     }
 
-    private static bool IsBrokenHandOver(Exception e)
+    /// <summary>The command of the run connected to <paramref name="pipe"/>, once told where to lend the
+    /// right to come to the front.</summary>
+    internal static async Task<ExternalCommand> ReceiveAsync(Stream pipe, CancellationToken token)
     {
-        return e is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException or InvalidDataException;
-    }
-
-    private async Task ServeAsync(IExternalCommandHandler handler)
-    {
-        var token = _stop.Token;
-        while (!token.IsCancellationRequested)
-        {
-            try
-            {
-                await ServeOneAsync(handler, token);
-            }
-            catch (OperationCanceledException) when (token.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return;
-            }
-            catch (Exception e) when (IsBrokenHandOver(e))
-            {
-                await WaitForBusyPipe(token);
-            }
-        }
-    }
-
-    /// <summary>Takes the command of the next run that connects, then tells it so. Hanging up
-    /// without an answer tells a run that came too late to open a window of its own.</summary>
-    private async Task ServeOneAsync(IExternalCommandHandler handler, CancellationToken stop)
-    {
-        await using var pipe = new NamedPipeServerStream(_name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
-            PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-        await pipe.WaitForConnectionAsync(stop);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop);
-        timeout.CancelAfter(HandOverTimeout);
-        var token = timeout.Token;
         await WriteIntAsync(pipe, Environment.ProcessId, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        if (!handler.TryHandle(CommandLine.Parse(args).Command))
-            return;
+        return CommandLine.Parse(args).Command;
+    }
+
+    /// <summary>Tells the run connected to <paramref name="pipe"/> its command was taken. Hanging up
+    /// without this tells it to open a window of its own.</summary>
+    internal static async Task AcknowledgeAsync(Stream pipe, CancellationToken token)
+    {
         await pipe.WriteAsync(new[] { Received }, token);
         await pipe.FlushAsync(token);
     }
 
-    /// <summary>Waits a moment after a connection broke, so that a pipe that stays busy is not tried in a tight loop.</summary>
-    private static async Task WaitForBusyPipe(CancellationToken token)
+    /// <summary>Whether <paramref name="e"/> only means the other side went away or sent nonsense.</summary>
+    internal static bool IsBroken(Exception e)
     {
-        try
-        {
-            await Task.Delay(BusyPipeWait, token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
+        return e is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException or InvalidDataException;
     }
 
     private static async Task WriteArgumentsAsync(Stream pipe, List<string> args, CancellationToken token)
@@ -188,19 +128,5 @@ public sealed class ExternalCommandPipe : IDisposable
         var bytes = new byte[1];
         await pipe.ReadExactlyAsync(bytes, token);
         return bytes[0];
-    }
-
-    public void Dispose()
-    {
-        _stop.Cancel();
-        WaitForServing();
-        _stop.Dispose();
-    }
-
-    private void WaitForServing()
-    {
-        if (_serving == null)
-            return;
-        _serving.Wait(HandOverTimeout);
     }
 }
