@@ -53,7 +53,7 @@ public sealed partial class BrowseNode
     public NodePath Path => _path ??= NodePath.Of(this);
 
     /// <summary>What the node is among its siblings, as a path names it; null for the root of a tree.</summary>
-    internal NodePathSegment? Segment => _segment ??= NodePathSegment.Of(Subject);
+    internal NodePathSegment? Segment => _segment ??= NodeDefinitions.GetPathSegment(Subject);
 
     /// <summary>Whether this node stands for a resource's bytes, which <see cref="ReadResource"/>
     /// reads, to save them.</summary>

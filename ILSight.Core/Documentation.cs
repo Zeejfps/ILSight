@@ -1,6 +1,8 @@
 using System.Xml;
 using System.Xml.Linq;
+using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
+using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.Documentation;
 using ICSharpCode.Decompiler.Output;
 using ICSharpCode.Decompiler.TypeSystem;
@@ -9,9 +11,15 @@ namespace ILSight.Core;
 
 /// <summary>An entity's XML documentation read into sections of styled runs: the summary, each
 /// type parameter, parameter and exception, what it returns, and its remarks and example.
-/// <c>inheritdoc</c> is followed to the documentation it names or inherits.</summary>
+/// <c>inheritdoc</c> is followed to the documentation it names or inherits. And the <see cref="CodeTooltip"/>
+/// that shows it, with the declaration of the entity.</summary>
 internal static class Documentation
 {
+    private const ConversionFlags SignatureFlags =
+        ConversionFlags.All & ~(ConversionFlags.ShowBody | ConversionFlags.PlaceReturnTypeAfterParameterList |
+                                ConversionFlags.UseFullyQualifiedEntityNames | ConversionFlags.UseFullyQualifiedTypeNames);
+
+    private const string NamespaceKeyword = "namespace";
 
     private static readonly CSharpAmbience TypeNames = new() { ConversionFlags = ConversionFlags.ShowTypeParameterList };
     private static readonly CSharpAmbience MemberNames = new() { ConversionFlags = ConversionFlags.ShowTypeParameterList | ConversionFlags.ShowDeclaringType };
@@ -304,5 +312,100 @@ internal static class Documentation
                 AddInline(description, part);
         }
         return new DocListItem(term.FinishInline(), description.FinishInline());
+    }
+
+    public static CodeTooltip CreateTooltip(IEntity entity, LoadedModule assembly)
+    {
+        var signature = WriteSignature(entity, assembly);
+        var sections = Read(entity);
+        return new CodeTooltip(signature, GetContainer(entity), sections);
+    }
+
+    private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly)
+    {
+        var settings = Settings.Create();
+        var output = new DocumentBuilder(DecompilationLanguage.CSharp, assembly);
+        TokenWriter writer = new TextTokenWriter(output, settings);
+        writer = TokenWriter.InsertRequiredSpaces(writer);
+        writer = new HighlightingTokenWriter(writer, output);
+        var parameters = new ParameterStarts(writer, output);
+        var ambience = new CSharpAmbience { ConversionFlags = SignatureFlags };
+        ambience.ConvertSymbol(entity, parameters, settings.CSharpFormattingOptions);
+        var line = output.Build(entity.Name).Lines[0];
+        var constraints = WriteConstraints(entity, assembly, settings);
+        return new CodeSignature(line, parameters.Starts, constraints);
+    }
+
+    /// <summary>The <c>where</c> clauses of the entity's own type parameters, highlighted as code,
+    /// one a line; none when it has no constraints.</summary>
+    private static IReadOnlyList<DocumentLine> WriteConstraints(IEntity entity, LoadedModule assembly, DecompilerSettings settings)
+    {
+        var builder = new TypeSystemAstBuilder
+        {
+            ShowTypeParameterConstraints = true,
+            AlwaysUseShortTypeNames = true,
+            AddResolveResultAnnotations = true,
+        };
+        var declaration = builder.ConvertEntity(entity);
+        var constraints = declaration.Children.OfType<Constraint>().ToList();
+        if (constraints.Count == 0)
+            return [];
+        var output = new DocumentBuilder(DecompilationLanguage.CSharp, assembly);
+        TokenWriter writer = new TextTokenWriter(output, settings);
+        writer = TokenWriter.InsertRequiredSpaces(writer);
+        writer = new HighlightingTokenWriter(writer, output);
+        foreach (var constraint in constraints)
+        {
+            constraint.AcceptVisitor(new CSharpOutputVisitor(writer, settings.CSharpFormattingOptions));
+            output.WriteLine();
+        }
+        return ListConstraintLines(output.Build(entity.Name).Lines);
+    }
+
+    /// <summary>The written clauses without the blank lines between them.</summary>
+    private static List<DocumentLine> ListConstraintLines(IReadOnlyList<DocumentLine> lines)
+    {
+        return lines
+            .Where(static l => !string.IsNullOrWhiteSpace(l.Text))
+            .ToList();
+    }
+
+    private static CodeContainer? GetContainer(IEntity entity)
+    {
+        var declaring = entity.DeclaringTypeDefinition;
+        if (declaring != null)
+            return new CodeContainer(GetKeyword(declaring), EntityText.FullName(declaring), false);
+        if (entity.Namespace.Length == 0)
+            return null;
+        return new CodeContainer(NamespaceKeyword, entity.Namespace, true);
+    }
+
+    private static string GetKeyword(ITypeDefinition type)
+    {
+        return type.Kind switch
+        {
+            TypeKind.Interface => "interface",
+            TypeKind.Enum => "enum",
+            TypeKind.Delegate => "delegate",
+            TypeKind.Struct => type.IsRecord ? "record struct" : "struct",
+            _ => type.IsRecord ? "record" : "class",
+        };
+    }
+
+    /// <summary>Notes the column each parameter of the declaration starts at; parameters of types
+    /// inside it, such as a delegate's, are not the declaration's own.</summary>
+    private sealed class ParameterStarts(TokenWriter decorated, DocumentBuilder output) : DecoratingTokenWriter(decorated)
+    {
+        public List<int> Starts { get; } = new();
+
+        public override void StartNode(AstNode node)
+        {
+            if (IsDeclaredParameter(node))
+                Starts.Add(output.Column);
+            base.StartNode(node);
+        }
+
+        private static bool IsDeclaredParameter(AstNode node) =>
+            node is ParameterDeclaration && node.Parent is EntityDeclaration;
     }
 }

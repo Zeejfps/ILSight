@@ -72,7 +72,7 @@ public sealed class LayoutTransition
         var from = FindOldPlace(type);
         if (from == null)
             return to;
-        return RoutePiece.Lerp(from.Value, to, Progress);
+        return DiagramLayouts.Lerp(from.Value, to, Progress);
     }
 
     private PointF? FindOldPlace(CodeReference.Entity type)
@@ -112,8 +112,8 @@ public sealed class LayoutTransition
         var toPieces = Subdivide(to.Pieces, from.Pieces.Count);
         var pieces = new List<RoutePiece>(toPieces.Count);
         for (var i = 0; i < toPieces.Count; i++)
-            pieces.Add(fromPieces[i].Blend(toPieces[i], t));
-        var tip = RoutePiece.Lerp(from.Tip, to.Tip, t);
+            pieces.Add(DiagramLayouts.Blend(fromPieces[i], toPieces[i], t));
+        var tip = DiagramLayouts.Lerp(from.Tip, to.Tip, t);
         var labelCenter = BlendPoint(from.LabelCenter, to.LabelCenter, t);
         var sourceTip = BlendPoint(from.SourceTip, to.SourceTip, t);
         return to with { Pieces = pieces, Tip = tip, LabelCenter = labelCenter, SourceTip = sourceTip };
@@ -127,7 +127,7 @@ public sealed class LayoutTransition
         var next = 0;
         while (split.Count < count)
         {
-            var (first, second) = split[next].Split();
+            var (first, second) = DiagramLayouts.Split(split[next]);
             split[next] = first;
             split.Insert(next + 1, second);
             next = (next + 2) % split.Count;
@@ -143,6 +143,6 @@ public sealed class LayoutTransition
             return to;
         if (to == null)
             return null;
-        return RoutePiece.Lerp(from.Value, to.Value, t);
+        return DiagramLayouts.Lerp(from.Value, to.Value, t);
     }
 }

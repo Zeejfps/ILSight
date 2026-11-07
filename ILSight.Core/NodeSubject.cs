@@ -404,7 +404,7 @@ public sealed class DerivedTypeInfo
         Module = module;
         Symbol = symbol;
         Reference = reference;
-        Visibility = NodeVisibility.OfReferenced(symbol);
+        Visibility = NodeDefinitions.GetReferencedVisibility(symbol);
     }
 
     public NodeVisibility Visibility { get; }
@@ -426,7 +426,7 @@ public sealed class DefinedType
         Symbol = symbol;
         Handle = handle;
         Reference = reference;
-        Visibility = NodeVisibility.OfDefinition(symbol);
+        Visibility = NodeDefinitions.GetDefinitionVisibility(symbol);
     }
 
     public LoadedModule Module { get; }
@@ -451,7 +451,7 @@ public sealed class DefinedMember
         Module = module;
         Symbol = symbol;
         Reference = reference;
-        Visibility = NodeVisibility.OfDefinition(symbol);
+        Visibility = NodeDefinitions.GetDefinitionVisibility(symbol);
     }
 
     public LoadedModule Module { get; }

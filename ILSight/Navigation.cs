@@ -18,7 +18,7 @@ public static class Navigation
         var place = node.Path;
         if (IsCurrentPlace(history, place))
             return;
-        AddEntry(history, new HistoryEntry.Node(place, NodeIcons.Of(node.Subject), NodeVisibility.Of(node.Subject).Accessibility, language, null));
+        AddEntry(history, new HistoryEntry.Node(place, NodeIcons.Of(node.Subject), NodeDefinitions.GetVisibility(node.Subject).Accessibility, language, null));
     }
 
     /// <summary>Whether the place being shown is <paramref name="place"/>.</summary>

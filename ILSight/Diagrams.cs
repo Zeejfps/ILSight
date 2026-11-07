@@ -367,7 +367,7 @@ public static class Diagrams
         if (diagram.IsClosed)
             return;
         var ticket = diagram.StartLayout();
-        var laidOut = await Background.Run(() => TypeLayout.Arrange(measures, ticket.Token));
+        var laidOut = await Background.Run(() => DiagramLayouts.Arrange(measures, ticket.Token));
         if (!diagram.FinishLayout(ticket))
             return;
         switch (laidOut)

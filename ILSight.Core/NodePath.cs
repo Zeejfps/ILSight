@@ -1,7 +1,4 @@
 using System.Diagnostics;
-using System.Text;
-using ICSharpCode.Decompiler.Documentation;
-using ICSharpCode.Decompiler.TypeSystem;
 using ILSight.Core.Metadata;
 
 namespace ILSight.Core;
@@ -81,61 +78,6 @@ public abstract record NodePathSegment
 
     /// <summary>Whether this names an entry of a package by its full path, from the package's root.</summary>
     internal bool IsPackageEntry => this is PackageFolder or PackageFile or EmbeddedModule;
-
-    /// <summary>The segment naming a node of <paramref name="subject"/>; null for the root of a tree.</summary>
-    internal static NodePathSegment? Of(NodeSubject subject) => subject switch
-    {
-        NodeSubject.TypeDefinition type => new Definition(IdStringProvider.GetIdString(type.Definition.Symbol)),
-        NodeSubject.MemberDefinition member => new Definition(IdStringProvider.GetIdString(member.Definition.Symbol)),
-        NodeSubject.References => new Folder(NodeFolder.References),
-        NodeSubject.AssemblyReference reference => new AssemblyReference(reference.Value.Reference.Name),
-        NodeSubject.ReferencedTypes => new Folder(NodeFolder.ReferencedTypes),
-        NodeSubject.TypeReference type => new UsedType(type.Value.ReflectionName),
-        NodeSubject.MemberReference member => new UsedMember(UsedMemberId(member.Value.Declared)),
-        NodeSubject.ModuleReference module => new ModuleReference(module.Value.Name),
-        NodeSubject.ImportedMethod import => new ImportedMethod(import.Value.Id),
-        NodeSubject.ForwardedType forwarded => new ForwardedType(forwarded.Value.ReflectionName),
-        NodeSubject.BaseTypes => new Folder(NodeFolder.BaseTypes),
-        NodeSubject.BaseType baseType => new BaseType(baseType.Value.Type.ReflectionName),
-        NodeSubject.DerivedTypes => new Folder(NodeFolder.DerivedTypes),
-        NodeSubject.DerivedType derived => new DerivedType(IdStringProvider.GetIdString(derived.Value.Symbol)),
-        NodeSubject.Resources => new Folder(NodeFolder.Resources),
-        NodeSubject.ResourceContainer container => new Resource(container.Value.Resource.Name),
-        NodeSubject.ResourceEntry entry => new Resource(entry.Value.Name),
-        NodeSubject.Metadata metadata => new Metadata(ReferenceEquals(metadata.Value.File, metadata.Value.Module.File) ? MetadataSource.Own : MetadataSource.Debug),
-        NodeSubject.MetadataTables => new Folder(NodeFolder.MetadataTables),
-        NodeSubject.MetadataTable table => new MetadataPart(table.Value.Key),
-        NodeSubject.Package package => package.Value.IsRoot ? null : new PackageFolder(package.Value.Folder.FullName),
-        NodeSubject.PackageFile file => new PackageFile(file.Value.File.FullName),
-        NodeSubject.Module module => module.Value.Place == null ? null : new EmbeddedModule(module.Value.Place.File.FullName),
-        NodeSubject.Namespace ns => new Namespace(ns.Value.Name),
-        NodeSubject.FailedAssembly => null,
-        _ => throw new UnreachableException(),
-    };
-
-    /// <summary>The documentation id of <paramref name="member"/>, written from its signature as the type
-    /// system reads it, as <see cref="IdStringProvider"/> writes one for a member backed by metadata, so that
-    /// a member of an assembly that does not resolve has one too.</summary>
-    private static string UsedMemberId(IMember member)
-    {
-        var id = new StringBuilder();
-        id.Append(member.SymbolKind switch
-        {
-            SymbolKind.Field => "F:",
-            SymbolKind.Property or SymbolKind.Indexer => "P:",
-            SymbolKind.Event => "E:",
-            _ => "M:",
-        });
-        id.Append(IdStringProvider.GetTypeName(member.DeclaringType)).Append('.');
-        id.Append(member.Name.Replace('.', '#').Replace('<', '{').Replace('>', '}'));
-        if (member is IMethod method && method.TypeParameters.Count > 0)
-            id.Append("``").Append(method.TypeParameters.Count);
-        if (member is IParameterizedMember parameterized && parameterized.Parameters.Count > 0)
-            id.Append('(').AppendJoin(',', parameterized.Parameters.Select(static p => IdStringProvider.GetTypeName(p.Type))).Append(')');
-        if (member.SymbolKind == SymbolKind.Operator && member.Name is "op_Implicit" or "op_Explicit")
-            id.Append('~').Append(IdStringProvider.GetTypeName(member.ReturnType));
-        return id.ToString();
-    }
 }
 
 /// <summary>One step of a <see cref="NodePath"/>: what the node is, and the label it showed when

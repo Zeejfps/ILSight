@@ -155,7 +155,7 @@ public static class NodeIcons
 
     /// <summary>The icon of <paramref name="node"/> as the tree shows it, with the overlay of its accessibility.</summary>
     public static UiIcon Icon(BrowseNode node, NodeIconPalette palette, AppIcons icons) =>
-        Icon(Of(node.Subject), NodeVisibility.Of(node.Subject).Accessibility, palette, icons);
+        Icon(Of(node.Subject), NodeDefinitions.GetVisibility(node.Subject).Accessibility, palette, icons);
 
     /// <summary>Records <paramref name="node"/>'s <see cref="Icon(BrowseNode, NodeIconPalette, AppIcons)"/>, in the
     /// screen's icons and icon colors.</summary>

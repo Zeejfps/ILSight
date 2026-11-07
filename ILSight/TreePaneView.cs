@@ -161,7 +161,7 @@ internal static class TreePaneView
     /// <summary>Goes where <paramref name="node"/> points when it stands for a reference, else opens it in a tab kept open.</summary>
     private static void Open(AppState appState, BrowseNode node)
     {
-        if (Activation.Of(node.Subject) is Activation.Navigate jump)
+        if (NodeDefinitions.GetActivation(node.Subject) is Activation.Navigate jump)
         {
             GoTo(appState, jump.Target);
             return;
@@ -189,7 +189,7 @@ internal static class TreePaneView
     private static void NodeMenu(Ui<UiState> ui, AssemblyList assemblies, DecompilationLanguage language, BrowseNode node)
     {
         var t = ui.State.Strings;
-        var jump = Activation.Of(node.Subject) as Activation.Navigate;
+        var jump = NodeDefinitions.GetActivation(node.Subject) as Activation.Navigate;
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
             ui.State.Later(node, static (a, n) => OpenNode(a, n));

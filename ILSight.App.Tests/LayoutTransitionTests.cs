@@ -22,7 +22,7 @@ public sealed class LayoutTransitionTests
         var cards = new List<MeasuredCard> { new(Vehicle, 120f, vehicleHeight) };
         if (withCar)
             cards.Add(new MeasuredCard(Car, 100f, 60f));
-        return TypeLayout.Arrange(new DiagramMeasures(cards, [new MeasuredLink(CarIsVehicle, 0f, 0f)]));
+        return DiagramLayouts.Arrange(new DiagramMeasures(cards, [new MeasuredLink(CarIsVehicle, 0f, 0f)]));
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class LayoutTransitionTests
         transition.Advance(HalfWay);
 
         Assert.True(transition.IsMoving);
-        var expected = RoutePiece.Lerp(before.Places[Car], after.Places[Car], Ease.OutCubic(0.5f));
+        var expected = DiagramLayouts.Lerp(before.Places[Car], after.Places[Car], Ease.OutCubic(0.5f));
         var drawn = transition.PlaceOf(Car)!.Value;
         Assert.Equal(expected.X, drawn.X, 0.01f);
         Assert.Equal(expected.Y, drawn.Y, 0.01f);

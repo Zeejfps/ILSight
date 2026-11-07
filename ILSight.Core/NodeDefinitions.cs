@@ -1,13 +1,19 @@
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
+using ICSharpCode.Decompiler.Documentation;
 using ICSharpCode.Decompiler.TypeSystem;
+using ILSight.Core.Resources;
 
 namespace ILSight.Core;
 
-/// <summary>The definition a node of a type or member stands for, as documents and metadata name it.</summary>
+/// <summary>What a node stands for and what that makes it: the definition of a type or member, as documents
+/// and metadata name it, how visible it is, what activating it does, and how a path names it.</summary>
 public static class NodeDefinitions
 {
+    private static readonly Activation.OpenSelf Open = new();
+
     /// <summary>The base type <paramref name="type"/> as <paramref name="module"/> names it, navigable when
     /// its definition is found and can be referenced.</summary>
     internal static BaseTypeInfo CreateBaseType(LoadedModule module, IType type)
@@ -18,7 +24,7 @@ public static class NodeDefinitions
         var reference = CodeReferences.Find(definition);
         if (reference == null)
             return new BaseTypeInfo(module, type, new BaseTypeTarget.Unaddressed(definition), NodeVisibility.Open);
-        return new BaseTypeInfo(module, type, new BaseTypeTarget.Navigable(definition, reference), NodeVisibility.OfReferenced(definition));
+        return new BaseTypeInfo(module, type, new BaseTypeTarget.Navigable(definition, reference), GetReferencedVisibility(definition));
     }
 
     /// <summary>The derived type <paramref name="type"/>; null when it has no reference to be navigated to.</summary>
@@ -75,5 +81,147 @@ public static class NodeDefinitions
         if (reference == null)
             return null;
         return MetadataTokens.GetToken(reference.Handle);
+    }
+
+    /// <summary>How visible a definition is, compiler-generated when the compiler made it up or what holds it.</summary>
+    internal static NodeVisibility GetDefinitionVisibility(IEntity entity)
+    {
+        return new NodeVisibility(EntityText.Map(entity.Accessibility), EntityText.IsPublicApi(entity), Members.IsOrSitsInCompilerGenerated(entity));
+    }
+
+    /// <summary>How visible a type another node points at is: as declared, and never compiler-generated.</summary>
+    internal static NodeVisibility GetReferencedVisibility(IEntity entity)
+    {
+        return new NodeVisibility(EntityText.Map(entity.Accessibility), EntityText.IsPublicApi(entity), false);
+    }
+
+    /// <summary>How visible what a node of <paramref name="subject"/> stands for is.</summary>
+    public static NodeVisibility GetVisibility(NodeSubject subject)
+    {
+        return subject switch
+        {
+            NodeSubject.TypeDefinition type => type.Definition.Visibility,
+            NodeSubject.MemberDefinition member => member.Definition.Visibility,
+            NodeSubject.ImportedMethod import => import.Value.Shown.Visibility with { IsCompilerGenerated = false },
+            NodeSubject.DerivedType derived => derived.Value.Visibility,
+            NodeSubject.BaseType baseType => baseType.Value.Visibility,
+            NodeSubject.Namespace ns => new NodeVisibility(NodeAccessibility.None, ns.Value.IsPublicApi, ns.Value.IsCompilerGenerated),
+            NodeSubject.ResourceContainer container => GetResourceVisibility(container.Value.Resource),
+            NodeSubject.ResourceEntry entry => entry.Value.Source switch
+            {
+                ResourceSource.Manifest manifest => GetResourceVisibility(manifest.Resource),
+                ResourceSource.Entry or ResourceSource.Baml => NodeVisibility.Open,
+                _ => throw new UnreachableException(),
+            },
+            NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
+                or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ForwardedType or NodeSubject.BaseTypes
+                or NodeSubject.DerivedTypes or NodeSubject.Resources or NodeSubject.Metadata or NodeSubject.MetadataTables
+                or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module
+                or NodeSubject.FailedAssembly => NodeVisibility.Open,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static NodeVisibility GetResourceVisibility(ICSharpCode.Decompiler.Metadata.Resource resource)
+    {
+        var (isPublic, accessibility) = ResourceNodes.Visibility(resource);
+        return new NodeVisibility(accessibility, isPublic, false);
+    }
+
+    /// <summary>What activating a node of <paramref name="subject"/> does.</summary>
+    public static Activation GetActivation(NodeSubject subject)
+    {
+        return subject switch
+        {
+            NodeSubject.AssemblyReference reference => new Activation.Navigate(CodeReferences.CreateAssembly(reference.Value.Reference.Name,
+                reference.Value.Module.FilePath, reference.Value.Reference.Handle)),
+            NodeSubject.TypeReference type => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, type.Value.Label, type.Value.Module.FilePath,
+                type.Value.Handle)),
+            NodeSubject.MemberReference member => new Activation.Navigate(CodeReferences.CreateEntity(CodeReferences.GetKind(member.Value.Declared.SymbolKind),
+                member.Value.Declared.Name, member.Value.Module.FilePath, member.Value.Handle)),
+            NodeSubject.ForwardedType forwarded => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, forwarded.Value.Label,
+                forwarded.Value.Module.FilePath, forwarded.Value.Handle)),
+            NodeSubject.ImportedMethod import => new Activation.Navigate(import.Value.Shown.Reference),
+            NodeSubject.DerivedType derived => new Activation.Navigate(derived.Value.Reference),
+            NodeSubject.BaseType baseType => baseType.Value.Target switch
+            {
+                BaseTypeTarget.Navigable navigable => new Activation.Navigate(navigable.Reference),
+                BaseTypeTarget.Unaddressed or BaseTypeTarget.Unresolved => Open,
+                _ => throw new UnreachableException(),
+            },
+            NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.References or NodeSubject.ReferencedTypes
+                or NodeSubject.ModuleReference or NodeSubject.BaseTypes or NodeSubject.DerivedTypes or NodeSubject.Resources
+                or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables
+                or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace
+                or NodeSubject.FailedAssembly => Open,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    /// <summary>The reference a node of <paramref name="subject"/> points at, as documents link to it;
+    /// null for one that opens itself.</summary>
+    internal static CodeReference.Navigable? FindTarget(NodeSubject subject)
+    {
+        if (GetActivation(subject) is not Activation.Navigate navigate)
+            return null;
+        return navigate.Target;
+    }
+
+    /// <summary>The segment naming a node of <paramref name="subject"/>; null for the root of a tree.</summary>
+    internal static NodePathSegment? GetPathSegment(NodeSubject subject)
+    {
+        return subject switch
+        {
+            NodeSubject.TypeDefinition type => new NodePathSegment.Definition(IdStringProvider.GetIdString(type.Definition.Symbol)),
+            NodeSubject.MemberDefinition member => new NodePathSegment.Definition(IdStringProvider.GetIdString(member.Definition.Symbol)),
+            NodeSubject.References => new NodePathSegment.Folder(NodeFolder.References),
+            NodeSubject.AssemblyReference reference => new NodePathSegment.AssemblyReference(reference.Value.Reference.Name),
+            NodeSubject.ReferencedTypes => new NodePathSegment.Folder(NodeFolder.ReferencedTypes),
+            NodeSubject.TypeReference type => new NodePathSegment.UsedType(type.Value.ReflectionName),
+            NodeSubject.MemberReference member => new NodePathSegment.UsedMember(GetUsedMemberId(member.Value.Declared)),
+            NodeSubject.ModuleReference module => new NodePathSegment.ModuleReference(module.Value.Name),
+            NodeSubject.ImportedMethod import => new NodePathSegment.ImportedMethod(import.Value.Id),
+            NodeSubject.ForwardedType forwarded => new NodePathSegment.ForwardedType(forwarded.Value.ReflectionName),
+            NodeSubject.BaseTypes => new NodePathSegment.Folder(NodeFolder.BaseTypes),
+            NodeSubject.BaseType baseType => new NodePathSegment.BaseType(baseType.Value.Type.ReflectionName),
+            NodeSubject.DerivedTypes => new NodePathSegment.Folder(NodeFolder.DerivedTypes),
+            NodeSubject.DerivedType derived => new NodePathSegment.DerivedType(IdStringProvider.GetIdString(derived.Value.Symbol)),
+            NodeSubject.Resources => new NodePathSegment.Folder(NodeFolder.Resources),
+            NodeSubject.ResourceContainer container => new NodePathSegment.Resource(container.Value.Resource.Name),
+            NodeSubject.ResourceEntry entry => new NodePathSegment.Resource(entry.Value.Name),
+            NodeSubject.Metadata metadata => new NodePathSegment.Metadata(ReferenceEquals(metadata.Value.File, metadata.Value.Module.File) ? MetadataSource.Own : MetadataSource.Debug),
+            NodeSubject.MetadataTables => new NodePathSegment.Folder(NodeFolder.MetadataTables),
+            NodeSubject.MetadataTable table => new NodePathSegment.MetadataPart(table.Value.Key),
+            NodeSubject.Package package => package.Value.IsRoot ? null : new NodePathSegment.PackageFolder(package.Value.Folder.FullName),
+            NodeSubject.PackageFile file => new NodePathSegment.PackageFile(file.Value.File.FullName),
+            NodeSubject.Module module => module.Value.Place == null ? null : new NodePathSegment.EmbeddedModule(module.Value.Place.File.FullName),
+            NodeSubject.Namespace ns => new NodePathSegment.Namespace(ns.Value.Name),
+            NodeSubject.FailedAssembly => null,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    /// <summary>The documentation id of <paramref name="member"/>, written from its signature as the type
+    /// system reads it, as <see cref="IdStringProvider"/> writes one for a member backed by metadata, so that
+    /// a member of an assembly that does not resolve has one too.</summary>
+    private static string GetUsedMemberId(IMember member)
+    {
+        var id = new StringBuilder();
+        id.Append(member.SymbolKind switch
+        {
+            SymbolKind.Field => "F:",
+            SymbolKind.Property or SymbolKind.Indexer => "P:",
+            SymbolKind.Event => "E:",
+            _ => "M:",
+        });
+        id.Append(IdStringProvider.GetTypeName(member.DeclaringType)).Append('.');
+        id.Append(member.Name.Replace('.', '#').Replace('<', '{').Replace('>', '}'));
+        if (member is IMethod method && method.TypeParameters.Count > 0)
+            id.Append("``").Append(method.TypeParameters.Count);
+        if (member is IParameterizedMember parameterized && parameterized.Parameters.Count > 0)
+            id.Append('(').AppendJoin(',', parameterized.Parameters.Select(static p => IdStringProvider.GetTypeName(p.Type))).Append(')');
+        if (member.SymbolKind == SymbolKind.Operator && member.Name is "op_Implicit" or "op_Explicit")
+            id.Append('~').Append(IdStringProvider.GetTypeName(member.ReturnType));
+        return id.ToString();
     }
 }

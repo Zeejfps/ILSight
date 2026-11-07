@@ -163,19 +163,19 @@ public static class NodeContentLoader
     private static SummaryInfo SummaryOf(BrowseSession session, BrowseNode node) => node.Subject switch
     {
         NodeSubject.References => new SummaryInfo.References(
-            ChildrenAbout<NodeSubject.AssemblyReference>(session, node).Select(static r => new SummaryLink(r.FullName, Activation.TargetOf(r.Subject))).ToList(),
+            ChildrenAbout<NodeSubject.AssemblyReference>(session, node).Select(static r => new SummaryLink(r.FullName, NodeDefinitions.FindTarget(r.Subject))).ToList(),
             ChildrenAbout<NodeSubject.ModuleReference>(session, node).Select(static m => m.Text).ToList()),
         NodeSubject.AssemblyReference reference => new SummaryInfo.AssemblyReference(reference.Value.Module, reference.Value.Reference),
         NodeSubject.ReferencedTypes => new SummaryInfo.Used(ListUsed(session, node)),
         NodeSubject.TypeReference or NodeSubject.MemberReference => new SummaryInfo.Used([UsedOf(session, node)]),
         NodeSubject.ModuleReference module => new SummaryInfo.ModuleReference(module.Value.Name, module.Value.ContainsMetadata,
-            ChildrenAbout<NodeSubject.ImportedMethod>(session, node).Select(static i => new SummaryLink(i.FullName, Activation.TargetOf(i.Subject))).ToList()),
-        NodeSubject.ImportedMethod import => new SummaryInfo.ImportedMethod(new SummaryLink(node.FullName, Activation.TargetOf(node.Subject)), import.Value.EntryPoint,
+            ChildrenAbout<NodeSubject.ImportedMethod>(session, node).Select(static i => new SummaryLink(i.FullName, NodeDefinitions.FindTarget(i.Subject))).ToList()),
+        NodeSubject.ImportedMethod import => new SummaryInfo.ImportedMethod(new SummaryLink(node.FullName, NodeDefinitions.FindTarget(node.Subject)), import.Value.EntryPoint,
             import.Value.ModuleName),
-        NodeSubject.ForwardedType forwarded => new SummaryInfo.ForwardedType(forwarded.Value.FullName, Activation.TargetOf(node.Subject), forwarded.Value.Destination),
+        NodeSubject.ForwardedType forwarded => new SummaryInfo.ForwardedType(forwarded.Value.FullName, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination),
         NodeSubject.BaseTypes or NodeSubject.DerivedTypes =>
-            new SummaryInfo.Types(session.ChildrenOf(node).Select(static c => new SummaryLink(c.Text, Activation.TargetOf(c.Subject))).ToList()),
-        NodeSubject.BaseType or NodeSubject.DerivedType => new SummaryInfo.Types([new SummaryLink(node.Text, Activation.TargetOf(node.Subject))]),
+            new SummaryInfo.Types(session.ChildrenOf(node).Select(static c => new SummaryLink(c.Text, NodeDefinitions.FindTarget(c.Subject))).ToList()),
+        NodeSubject.BaseType or NodeSubject.DerivedType => new SummaryInfo.Types([new SummaryLink(node.Text, NodeDefinitions.FindTarget(node.Subject))]),
         NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.Resources or NodeSubject.ResourceContainer
             or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
             or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly => throw new UnreachableException(),
@@ -202,7 +202,7 @@ public static class NodeContentLoader
         var entries = new List<NamespaceEntry>();
         foreach (var child in session.ChildrenOf(ns))
         {
-            if (NodeVisibility.Of(child.Subject).IsCompilerGenerated) continue;
+            if (NodeDefinitions.GetVisibility(child.Subject).IsCompilerGenerated) continue;
             if (child.Subject is NodeSubject.TypeDefinition type)
                 entries.Add(new NamespaceEntry.Declared(type.Definition.Symbol, child.Text, type.Definition.Reference));
             if (child.Subject is NodeSubject.ForwardedType forwarded)
@@ -224,14 +224,14 @@ public static class NodeContentLoader
         return node.Subject switch
         {
             NodeSubject.ForwardedType forwarded => new UsedEntry.Forwarded(ForwardedLineOf(node, forwarded)),
-            NodeSubject.TypeReference type => new UsedEntry.Type(type.Value.FullName, Activation.TargetOf(node.Subject), ListUsed(session, node)),
-            NodeSubject.MemberReference member => new UsedEntry.Member(node.Text, UsedMemberSpan(member.Value.Declared), Activation.TargetOf(node.Subject)),
+            NodeSubject.TypeReference type => new UsedEntry.Type(type.Value.FullName, NodeDefinitions.FindTarget(node.Subject), ListUsed(session, node)),
+            NodeSubject.MemberReference member => new UsedEntry.Member(node.Text, UsedMemberSpan(member.Value.Declared), NodeDefinitions.FindTarget(node.Subject)),
             _ => throw new UnreachableException(),
         };
     }
 
     private static ForwardedLine ForwardedLineOf(BrowseNode node, NodeSubject.ForwardedType forwarded) =>
-        new(forwarded.Value.Label, Activation.TargetOf(node.Subject), forwarded.Value.Destination);
+        new(forwarded.Value.Label, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination);
 
     private static SpanKind UsedMemberSpan(IMember member) => member switch
     {

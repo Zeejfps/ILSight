@@ -46,7 +46,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var resolved = BaseTypes(beside).Child(nameof(NodeContent));
 
         Assert.IsType<NodeSubject.BaseType>(unresolved.Subject);
-        Assert.IsType<Activation.OpenSelf>(Activation.Of(unresolved.Subject));
+        Assert.IsType<Activation.OpenSelf>(NodeDefinitions.GetActivation(unresolved.Subject));
         Assert.Equal(NodeAccessibility.None, unresolved.Accessibility);
         Assert.True(unresolved.IsPublicApi);
         Assert.Contains(nameof(NodeContent), unresolved.Decompile(DecompilationLanguage.CSharp).GetText());

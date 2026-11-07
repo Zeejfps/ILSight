@@ -268,7 +268,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
     private bool IsApiHidden(BrowseNode node)
     {
         if (_visibility == ApiVisibility.All) return false;
-        var visibility = NodeVisibility.Of(node.Subject);
+        var visibility = NodeDefinitions.GetVisibility(node.Subject);
         if (visibility.IsCompilerGenerated) return true;
         return _visibility == ApiVisibility.PublicOnly && !visibility.IsPublicApi;
     }
@@ -392,7 +392,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
     public TreeRow Row(BrowseNode node) => new(
         RowLabel(node),
         NodeIcons.Icon(node, _iconColors, _icons),
-        NodeVisibility.Of(node.Subject).IsPublicApi ? 0u : _theme.TextMuted,
+        NodeDefinitions.GetVisibility(node.Subject).IsPublicApi ? 0u : _theme.TextMuted,
         Tooltip: NodeText.Tooltip(node),
         Secondary: SecondaryOf(node),
         SecondaryBold: NodeText.PickedFramework(node),

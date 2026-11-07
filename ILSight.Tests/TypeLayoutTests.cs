@@ -57,7 +57,7 @@ public sealed class TypeLayoutTests
     {
         var measures = Zoo4();
 
-        var layout = TypeLayout.Arrange(measures);
+        var layout = DiagramLayouts.Arrange(measures);
 
         Assert.Equal(4, layout.Places.Count);
         var animal = Placed(layout, measures, Animal);
@@ -70,7 +70,7 @@ public sealed class TypeLayoutTests
     {
         var measures = Zoo4();
 
-        var layout = TypeLayout.Arrange(measures);
+        var layout = DiagramLayouts.Arrange(measures);
 
         var boxes = measures.Cards
             .Select(c => new RectF(layout.Places[c.Type].X, layout.Places[c.Type].Y, c.Width, c.Height))
@@ -91,7 +91,7 @@ public sealed class TypeLayoutTests
     {
         var measures = Zoo4();
 
-        var layout = TypeLayout.Arrange(measures);
+        var layout = DiagramLayouts.Arrange(measures);
 
         var route = layout.Routes.Single(r => r.Link == LionIsAnimal);
         var lion = Placed(layout, measures, Lion);
@@ -108,7 +108,7 @@ public sealed class TypeLayoutTests
     {
         var measures = Zoo4();
 
-        var layout = TypeLayout.Arrange(measures);
+        var layout = DiagramLayouts.Arrange(measures);
 
         var held = layout.Routes.Single(r => r.Link == KeeperHoldsAnimals);
         var keeper = Placed(layout, measures, Keeper);
@@ -122,7 +122,7 @@ public sealed class TypeLayoutTests
     [Fact]
     public void A_labelled_link_has_its_label_placed_and_others_have_none()
     {
-        var layout = TypeLayout.Arrange(Zoo4());
+        var layout = DiagramLayouts.Arrange(Zoo4());
 
         Assert.NotNull(layout.Routes.Single(r => r.Link == KeeperHoldsAnimals).LabelCenter);
         Assert.Null(layout.Routes.Single(r => r.Link == ParrotIsAnimal).LabelCenter);
@@ -133,7 +133,7 @@ public sealed class TypeLayoutTests
     {
         var measures = new DiagramMeasures([new MeasuredCard(Lion, 100f, 50f)], [new MeasuredLink(LionIsAnimal, 0f, 0f)]);
 
-        var layout = TypeLayout.Arrange(measures);
+        var layout = DiagramLayouts.Arrange(measures);
 
         Assert.Equal(new PointF(0f, 0f), layout.Places[Lion]);
         Assert.Empty(layout.Routes);
@@ -145,7 +145,7 @@ public sealed class TypeLayoutTests
         var self = new TypeLink(Keeper, Keeper, TypeLinkKind.HoldsOne, "Next");
         var measures = new DiagramMeasures([new MeasuredCard(Keeper, 100f, 50f)], [new MeasuredLink(self, 30f, 14f)]);
 
-        var layout = TypeLayout.Arrange(measures);
+        var layout = DiagramLayouts.Arrange(measures);
 
         Assert.NotEmpty(Assert.Single(layout.Routes).Pieces);
     }
@@ -153,7 +153,7 @@ public sealed class TypeLayoutTests
     [Fact]
     public void Nothing_to_lay_out_is_an_empty_layout()
     {
-        var layout = TypeLayout.Arrange(new DiagramMeasures([], []));
+        var layout = DiagramLayouts.Arrange(new DiagramMeasures([], []));
 
         Assert.Empty(layout.Places);
         Assert.Equal(0f, layout.Width);
@@ -165,6 +165,6 @@ public sealed class TypeLayoutTests
         using var cancel = new CancellationTokenSource();
         cancel.Cancel();
 
-        Assert.ThrowsAny<OperationCanceledException>(() => TypeLayout.Arrange(Zoo4(), cancel.Token));
+        Assert.ThrowsAny<OperationCanceledException>(() => DiagramLayouts.Arrange(Zoo4(), cancel.Token));
     }
 }

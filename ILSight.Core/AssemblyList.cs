@@ -357,7 +357,7 @@ public sealed class AssemblyList
             var (entity, assembly) = ResolveEntity(reference);
             if (entity is null || assembly is null)
                 return null;
-            return CodeTooltip.Create(entity, assembly);
+            return Documentation.CreateTooltip(entity, assembly);
         }
         catch (Exception e) when (IsUnreadable(e))
         {

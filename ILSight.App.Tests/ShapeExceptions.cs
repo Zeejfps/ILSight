@@ -13,7 +13,7 @@ internal static class ShapeExceptions
         ["ILSight.Core.Analysis.MethodUsesAnalyzer+TypeDefinitionCollector"] = "Decompiler TypeVisitor, a base class",
         ["ILSight.Core.Analysis.TypeExposedByAnalyzer+TypeDefinitionUsedVisitor"] = "Decompiler TypeVisitor, a base class",
         ["ILSight.Core.BamlProjectDecompiler"] = "Decompiler WholeProjectDecompiler, a base class",
-        ["ILSight.Core.CodeTooltip+ParameterStarts"] = "Decompiler DecoratingTokenWriter, a base class",
+        ["ILSight.Core.Documentation+ParameterStarts"] = "Decompiler DecoratingTokenWriter, a base class",
         ["ILSight.Core.HighlightingTokenWriter"] = "Decompiler DecoratingTokenWriter, a base class",
         ["ILSight.Core.MethodBodyWithCSharp"] = "Decompiler MethodBodyDisassembler, a base class",
         ["ILSight.Core.TextListConverter"] = "System.Text.Json JsonConverter, a base class",
@@ -98,7 +98,6 @@ internal static class ShapeExceptions
         "ILSight.Core.Diagrams.DiagramNames",
         "ILSight.Core.Diagrams.DiagramTypes",
         "ILSight.Core.Diagrams.MermaidMembers",
-        "ILSight.Core.Diagrams.TypeLayout",
         "ILSight.Core.DocText",
         "ILSight.Core.DocumentBuilder",
         "ILSight.Core.LoadedAssembly",
@@ -286,14 +285,6 @@ internal static class ShapeExceptions
     /// <summary>Methods on records, still to move to static functions.</summary>
     public static readonly string[] RecordsWithMethods =
     [
-        "ILSight.Core.Activation.Of",
-        "ILSight.Core.Activation.TargetOf",
-        "ILSight.Core.CodeTooltip.ConstraintLines",
-        "ILSight.Core.CodeTooltip.ContainerOf",
-        "ILSight.Core.CodeTooltip.Create",
-        "ILSight.Core.CodeTooltip.KeywordOf",
-        "ILSight.Core.CodeTooltip.WriteConstraints",
-        "ILSight.Core.CodeTooltip.WriteSignature",
         "ILSight.Core.DecompilerOptions.Allows",
         "ILSight.Core.DecompilerOptions.Apply",
         "ILSight.Core.DecompilerOptions.HasSameToggles",
@@ -303,16 +294,6 @@ internal static class ShapeExceptions
         "ILSight.Core.DecompilerOptions.With",
         "ILSight.Core.DecompilerOptions.WithCodeTogglesReset",
         "ILSight.Core.DecompilerOptions.WithoutProjectExport",
-        "ILSight.Core.Diagrams.RoutePiece.Blend",
-        "ILSight.Core.Diagrams.RoutePiece.Lerp",
-        "ILSight.Core.Diagrams.RoutePiece.Line",
-        "ILSight.Core.Diagrams.RoutePiece.Split",
-        "ILSight.Core.NodePathSegment.Of",
-        "ILSight.Core.NodePathSegment.UsedMemberId",
-        "ILSight.Core.NodeVisibility.Of",
-        "ILSight.Core.NodeVisibility.OfDefinition",
-        "ILSight.Core.NodeVisibility.OfReferenced",
-        "ILSight.Core.NodeVisibility.OfResource",
     ];
 
     /// <summary>Static caches that are purely a speed-up, by why they may stay, and the one seam. These stay.</summary>
