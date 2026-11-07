@@ -8,7 +8,8 @@ namespace ILSight;
 /// before, whose result is then dropped; once closed, what is in flight is cancelled and its result
 /// dropped. Mutated on the UI thread only.</summary>
 public sealed class AssemblyComparison
-{    public readonly CancellationTokenSource Open = new();
+{
+    public readonly CancellationTokenSource Open = new();
     public CancellationTokenSource? Work;
 
     public required AssemblyPath LeftPath { get; set; }

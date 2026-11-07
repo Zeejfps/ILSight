@@ -90,7 +90,7 @@ public static class DocumentPanels
         if (undocked.Count == 0)
             return;
         var arrangement = ArrangeUndocked(undocked, panels, layout);
-        uiState.MainLayout.DockArranged(undocked, arrangement);
+        Docking.DockArranged(uiState.MainLayout, undocked, arrangement);
     }
 
     /// <summary>A copy of <paramref name="layout"/> renamed as <paramref name="panels"/> says and holding
@@ -140,7 +140,7 @@ public static class DocumentPanels
         uiState.Documents.Add(tab, panel);
         if (DockPanels.PlaceDocument(uiState.Layout, panel, p => IsTabPanel(uiState, p)))
             return;
-        uiState.MainLayout.DockDocument(panel, panel);
+        Docking.DockDocument(uiState.MainLayout, panel, panel);
     }
 
     /// <summary>Whether <paramref name="panel"/> is a view, or a tab is shown in it.</summary>
@@ -244,7 +244,7 @@ public static class DocumentPanels
         documents.Add(tab);
         var panel = documents.PanelOf(tab);
         if (!uiState.Layout.Contains(panel))
-            uiState.MainLayout.DockDocument(panel, documents.FindPanel(beside));
+            Docking.DockDocument(uiState.MainLayout, panel, documents.FindPanel(beside));
         uiState.Layout.Activate(panel);
     }
 

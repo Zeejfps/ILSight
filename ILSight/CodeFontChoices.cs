@@ -5,7 +5,8 @@ namespace ILSight;
 /// <summary>The fonts the display options offer to draw code in: the bundled one, then the installed
 /// monospaced families once they are listed, which they are only once.</summary>
 public sealed class CodeFontChoices
-{    public const string BundledName = "JetBrains Mono";
+{
+    public const string BundledName = "JetBrains Mono";
 
     public bool ListingAsked;
 

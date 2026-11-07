@@ -25,11 +25,11 @@ public sealed class ThemeCatalog : ThemeCatalog<ThemeFile, ThemeContents, AppThe
         if (implicitBase == null)
             return null;
         var merged = new MergedTheme();
-        merged.AddCodeAndIcons(implicitBase);
+        Theming.AddCodeAndIcons(merged, implicitBase);
         foreach (var link in chain)
-            merged.Add(link.Contents);
+            Theming.AddContents(merged, link.Contents);
         var errors = new List<ThemeError>();
-        var theme = merged.Build(file.File, errors);
+        var theme = Theming.BuildTheme(merged, file.File, errors);
         AddErrors(errors);
         return theme;
     }

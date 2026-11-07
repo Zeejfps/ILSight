@@ -41,7 +41,7 @@ internal static class AssemblyListsDialogView
             Footer(ui);
         }
         if (!open)
-            dialog.Close();
+            AssemblyLists.CloseListsDialog(dialog);
     }
 
     /// <summary>New list on the left; what can be done to the picked list on the right.</summary>
@@ -50,7 +50,7 @@ internal static class AssemblyListsDialogView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
-        var picked = dialog.Picked(lists);
+        var picked = AssemblyLists.FindPickedList(dialog, lists);
         var any = picked != null;
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
@@ -60,9 +60,9 @@ internal static class AssemblyListsDialogView
             if (ui.IconButton("duplicate", ui.State.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked != null)
                 ui.State.Later((dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
             if (ui.IconButton("rename", ui.State.Icons.ListsRename, t.ListsRename, any) && picked != null)
-                dialog.StartRenaming(picked);
+                AssemblyLists.StartRenaming(dialog, picked);
             if (ui.IconButton("delete", ui.State.Icons.ListsDelete, t.ListsDelete, any) && picked != null)
-                dialog.StartConfirmingDelete(picked);
+                AssemblyLists.StartConfirmingDelete(dialog, picked);
         }
     }
 
@@ -120,7 +120,7 @@ internal static class AssemblyListsDialogView
                 NameBox(ui, renaming, listId);
             else
                 NameText(ui, name, row.Selected);
-            var count = lists.PathsOf(name).Count;
+            var count = AssemblyLists.GetPaths(lists, name).Count;
             ui.Text(t.ListsCount(count), color: theme.TextMuted, size: theme.FontSizeSmall);
             if (ui.Button(t.ListsActivate, enabled: !active, id: "activate", variant: ButtonVariant.Ghost))
                 ui.State.Later(name, static (a, n) => SwitchAssemblyList(a, n));
@@ -175,7 +175,7 @@ internal static class AssemblyListsDialogView
             FinishRenaming(ui.State);
             return;
         }
-        ui.State.ListsDialog.StopAsking();
+        AssemblyLists.StopAsking(ui.State.ListsDialog);
     }
 
     private static void HandleKeys(Ui<UiState> ui, SavedAssemblyLists lists)
@@ -183,13 +183,13 @@ internal static class AssemblyListsDialogView
         var dialog = ui.State.ListsDialog;
         if (dialog.IsAsking)
             return;
-        var picked = dialog.Picked(lists);
+        var picked = AssemblyLists.FindPickedList(dialog, lists);
         if (picked == null)
             return;
         if (ui.Input.TakeKey(KeyboardKey.F2))
-            dialog.StartRenaming(picked);
+            AssemblyLists.StartRenaming(dialog, picked);
         if (ui.IsPressed(Shortcuts.Delete))
-            dialog.StartConfirmingDelete(picked);
+            AssemblyLists.StartConfirmingDelete(dialog, picked);
     }
 
     /// <summary>A double-click renames the row; Enter activates it.</summary>
@@ -197,7 +197,7 @@ internal static class AssemblyListsDialogView
     {
         if (doubleClicked)
         {
-            ui.State.ListsDialog.StartRenaming(name);
+            AssemblyLists.StartRenaming(ui.State.ListsDialog, name);
             return;
         }
         ui.State.Later(name, static (a, n) => SwitchAssemblyList(a, n));
@@ -212,7 +212,7 @@ internal static class AssemblyListsDialogView
             FinishRenaming(ui.State);
             return;
         }
-        dialog.StopAsking();
+        AssemblyLists.StopAsking(dialog);
     }
 
     /// <summary>Under the list, why the name typed for the list being renamed cannot be kept.</summary>
@@ -224,7 +224,7 @@ internal static class AssemblyListsDialogView
         if (dialog.Mode is not ListsDialogMode.Renaming renaming)
             return;
         var newName = renaming.NewName;
-        if (lists.CanRename(renaming.List, newName))
+        if (AssemblyLists.CanRenameList(lists, renaming.List, newName))
             return;
         ui.Text(DescribeRenameProblem(t, newName), color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
     }
@@ -241,7 +241,7 @@ internal static class AssemblyListsDialogView
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
             return;
-        var picked = ui.State.ListsDialog.Picked(lists);
+        var picked = AssemblyLists.FindPickedList(ui.State.ListsDialog, lists);
         if (picked == null)
             return;
         MenuItems(ui, lists, picked);
@@ -255,12 +255,12 @@ internal static class AssemblyListsDialogView
         if (ui.MenuItem(t.ListsActivate, enabled: !active, id: "activate"))
             ui.State.Later(picked, static (a, n) => SwitchAssemblyList(a, n));
         if (ui.MenuItem(t.ListsRename, Shortcuts.Rename, id: "rename"))
-            dialog.StartRenaming(picked);
+            AssemblyLists.StartRenaming(dialog, picked);
         if (ui.MenuItem(t.ListsDuplicate, id: "duplicate"))
             ui.State.Later((dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
         ui.MenuSeparator();
         if (ui.MenuItem(t.ListsDelete, Shortcuts.Delete, id: "delete"))
-            dialog.StartConfirmingDelete(picked);
+            AssemblyLists.StartConfirmingDelete(dialog, picked);
     }
 
     /// <summary>Add preconfigured on the left, Close on the right.</summary>
@@ -273,7 +273,7 @@ internal static class AssemblyListsDialogView
             PresetMenu(ui);
             ui.Spacer();
             if (ui.Button(t.ListsClose, id: "close"))
-                dialog.Close();
+                AssemblyLists.CloseListsDialog(dialog);
         }
     }
 
@@ -301,21 +301,21 @@ internal static class AssemblyListsDialogView
     private static void AddPreset(AssemblyListsDialog dialog, AppState appState, AssemblyListPreset preset)
     {
         var name = AddAssemblyListPreset(appState, preset);
-        dialog.PickToRename(appState.Lists, name);
+        AssemblyLists.PickToRename(dialog, appState.Lists, name);
     }
 
     /// <summary>Opens the dialog with the open list picked, its assemblies counted as they are now.</summary>
     internal static void Open(AssemblyListsDialog dialog, AppState appState)
     {
         RememberOpenAssemblies(appState);
-        dialog.Open(appState.Lists);
+        AssemblyLists.OpenListsDialog(dialog, appState.Lists);
     }
 
     /// <summary>Adds an empty list, picked to be named, leaving the open one open.</summary>
     private static void Create(AssemblyListsDialog dialog, AppState appState, string newName)
     {
         var name = CreateAssemblyList(appState, newName);
-        dialog.PickToRename(appState.Lists, name);
+        AssemblyLists.PickToRename(dialog, appState.Lists, name);
     }
 
     /// <summary>Adds a copy of the list named <paramref name="name"/>, picked to be named, leaving the
@@ -323,7 +323,7 @@ internal static class AssemblyListsDialogView
     private static void Duplicate(AssemblyListsDialog dialog, AppState appState, string name, string copyName)
     {
         var copy = DuplicateAssemblyList(appState, name, copyName);
-        dialog.PickToRename(appState.Lists, copy);
+        AssemblyLists.PickToRename(dialog, appState.Lists, copy);
     }
 
     /// <summary>Gives the list being renamed the name typed, when it may have it, and stops renaming either way.</summary>
@@ -332,7 +332,7 @@ internal static class AssemblyListsDialogView
         var dialog = screen.ListsDialog;
         if (dialog.Mode is not ListsDialogMode.Renaming renaming)
             return;
-        dialog.StopAsking();
-        screen.Later((list: renaming.List, newName: renaming.NewName), static (a, s) => a.Lists.Rename(s.list, s.newName));
+        AssemblyLists.StopAsking(dialog);
+        screen.Later((list: renaming.List, newName: renaming.NewName), static (a, s) => AssemblyLists.RenameList(a.Lists, s.list, s.newName));
     }
 }

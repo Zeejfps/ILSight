@@ -8,7 +8,8 @@ namespace ILSight;
 /// while the open assemblies stay the same. A lookup that finishes after they changed is dropped.
 /// </summary>
 public sealed class CodeTooltips
-{    public required AssemblyList Assemblies { get; init; }
+{
+    public required AssemblyList Assemblies { get; init; }
     public required Action<AppProblem> ReportError { get; init; }
     public readonly Dictionary<CodeReference.Entity, CodeTooltip?> Found = new();
     public readonly HashSet<CodeReference.Entity> Pending = new();

@@ -263,7 +263,7 @@ public sealed class BookmarkTests : IDisposable
     {
         var (app, d, _, _) = ShowBookmark();
         var bookmark = d.AppState.Bookmarks.Items[0];
-        d.AppState.Lists.Create("Other");
+        AssemblyLists.AddList(d.AppState.Lists, "Other");
         SwitchAssemblyList(d.AppState, "Other");
         d.Settle();
         app.Run(2);

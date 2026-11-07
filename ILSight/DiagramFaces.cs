@@ -117,7 +117,7 @@ internal static class DiagramFaces
     {
         if (view.ShowsHiddenMembers)
             return members.ToList();
-        if (diagram.IsHome(assemblyPath))
+        if (Diagrams.IsHome(diagram, assemblyPath))
             return members.ToList();
         return members
             .Where(static m => m.IsVisibleOutside)

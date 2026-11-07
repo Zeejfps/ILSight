@@ -114,7 +114,7 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         var diagram = ShowInNew(d, "Car");
         Assert.Equal(["Car", "IDriven", "Vehicle"], CardNames(diagram));
-        var vehicle = diagram.Find(TypeOf(d, "Vehicle"))!;
+        var vehicle = Diagrams.FindCard(diagram, TypeOf(d, "Vehicle"))!;
 
         ExpandHeld(d.AppState, diagram, vehicle);
         d.Settle();
@@ -141,8 +141,8 @@ public sealed class DiagramTests
         Assert.Equal(["Breakdown", "Exception"], CardNames(diagram));
         Assert.False(HasMissingBases(diagram, breakdown));
         Assert.Contains(diagram.Links, static l => l.Kind == TypeLinkKind.Inherits);
-        Assert.False(diagram.IsHome(diagram.Cards[1].AssemblyPath));
-        Assert.True(diagram.IsHome(breakdown.AssemblyPath));
+        Assert.False(Diagrams.IsHome(diagram, diagram.Cards[1].AssemblyPath));
+        Assert.True(Diagrams.IsHome(diagram, breakdown.AssemblyPath));
     }
 
     [Fact]

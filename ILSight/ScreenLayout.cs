@@ -14,23 +14,23 @@ public static class ScreenLayout
     internal static MainLayout RestoreLayout(UiState uiState, DockLayout? saved)
     {
         var dock = DockPanels.Restore(saved);
-        var layout = new MainLayout(dock);
+        var layout = new MainLayout { Dock = dock };
         dock.NewPanel = () => OpenTabForPanel(uiState);
         dock.PanelClosed += panel => OnPanelClosed(uiState, panel);
         return layout;
     }
 
-    public static void OpenAnalyzer(UiState uiState) => uiState.MainLayout.OpenAnalyzer(FindActivePanel(uiState));
+    public static void OpenAnalyzer(UiState uiState) => Docking.OpenAnalyzer(uiState.MainLayout, FindActivePanel(uiState));
 
-    public static void OpenDecompilerOptions(UiState uiState) => uiState.MainLayout.OpenDecompilerOptions(FindActivePanel(uiState));
+    public static void OpenDecompilerOptions(UiState uiState) => Docking.OpenDecompilerOptions(uiState.MainLayout, FindActivePanel(uiState));
 
-    public static void OpenDisplayOptions(UiState uiState) => uiState.MainLayout.OpenDisplayOptions(FindActivePanel(uiState));
+    public static void OpenDisplayOptions(UiState uiState) => Docking.OpenDisplayOptions(uiState.MainLayout, FindActivePanel(uiState));
 
-    public static void OpenBookmarks(UiState uiState) =>uiState.MainLayout.OpenBookmarks(FindActivePanel(uiState));
+    public static void OpenBookmarks(UiState uiState) =>Docking.OpenBookmarks(uiState.MainLayout, FindActivePanel(uiState));
 
-    public static void OpenExports(UiState uiState) => uiState.MainLayout.OpenExports(FindActivePanel(uiState));
+    public static void OpenExports(UiState uiState) => Docking.OpenExports(uiState.MainLayout, FindActivePanel(uiState));
 
-    public static void OpenAssembliesPanel(UiState uiState) => uiState.MainLayout.OpenAssemblies();
+    public static void OpenAssembliesPanel(UiState uiState) => Docking.OpenAssemblies(uiState.MainLayout);
 
     /// <summary>Docks <paramref name="view"/> if it is not, and brings it to the front.</summary>
     public static void OpenPanel(UiState uiState, DockView view)
@@ -67,7 +67,7 @@ public static class ScreenLayout
     /// and puts the caret in its search box.</summary>
     public static void OpenSearch(UiState uiState)
     {
-        uiState.MainLayout.OpenSearch(FindActivePanel(uiState));
+        Docking.OpenSearch(uiState.MainLayout, FindActivePanel(uiState));
         uiState.Search.IsFocusPending = true;
     }
 
@@ -115,10 +115,10 @@ public static class ScreenLayout
     /// tabbed together in one group. Floating windows and the other views close; the documents stay open.</summary>
     public static void ResetLayout(UiState uiState)
     {
-        var documents = uiState.MainLayout.ListDocuments();
+        var documents = Docking.ListDocumentPanels(uiState.MainLayout);
         if (documents.Count == 0)
             documents.Add(OpenActiveTabPanel(uiState));
-        uiState.MainLayout.Reset(documents);
+        Docking.ResetLayout(uiState.MainLayout, documents);
         ActivateActivePanel(uiState);
     }
 

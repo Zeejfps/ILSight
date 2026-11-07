@@ -22,12 +22,12 @@ public sealed class IconThemeCatalog : ThemeCatalog<IconThemeFile, IconThemeCont
         var merged = new MergedIconTheme();
         var isReference = IsReference(file);
         if (!isReference)
-            merged.AddFonts(BuiltInContentsOf(ReferenceId));
+            Theming.AddFonts(merged, BuiltInContentsOf(ReferenceId));
         foreach (var link in chain)
-            merged.Add(link.Contents);
+            Theming.AddContents(merged, link.Contents);
         var fallback = isReference ? null : Resolve(ReferenceId);
         var errors = new List<ThemeError>();
-        var theme = merged.Build(fallback, errors);
+        var theme = Theming.BuildTheme(merged, fallback, errors);
         AddErrors(errors);
         return theme;
     }

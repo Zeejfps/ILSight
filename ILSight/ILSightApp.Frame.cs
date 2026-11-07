@@ -19,7 +19,7 @@ public sealed partial class ILSightApp
     internal static UiState CreateUiState(AppState appState)
     {
         var uiState = new UiState(appState.View, appState.ReportError, appState.Session, appState.Assemblies.Runtime);
-        uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
+        uiState.Documents.SkipPanels(AssemblyLists.ListDocumentPanels(appState.Lists));
         FollowActiveTab(uiState, appState.Tabs.Active);
         RunViewCommands(uiState, appState);
         ShowInRestoredDocuments(uiState, appState.Tabs);

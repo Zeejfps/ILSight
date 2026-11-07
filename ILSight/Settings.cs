@@ -106,7 +106,7 @@ public static class Settings
         return new AppSettings
         {
             FilePath = appState.SettingsPlace.FilePath,
-            AssemblyLists = appState.Lists.Save(),
+            AssemblyLists = AssemblyLists.SaveLists(appState.Lists),
             ActiveAssemblyList = appState.Lists.Active,
             Theme = appState.Theme,
             IconTheme = appState.IconTheme,

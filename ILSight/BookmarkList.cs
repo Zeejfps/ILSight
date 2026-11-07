@@ -9,7 +9,8 @@ namespace ILSight;
 /// <see cref="ViewState"/> are what the real ILSpy keeps besides, so it can be written to its
 /// bookmarks file and read back from one.</summary>
 public sealed class Bookmark
-{    /// <summary>Where the document it was made in is: as it was read until the bookmark is gone to, then
+{
+    /// <summary>Where the document it was made in is: as it was read until the bookmark is gone to, then
     /// where its node was found.</summary>
     public required NodePath Place { get; set; }
 

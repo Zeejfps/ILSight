@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using ZGF.Gui.Immediate;
 using static ILSight.Preferences;
 
@@ -294,5 +296,218 @@ public static class Theming
     public static void StopWatchingUserThemes(AppState appState)
     {
         appState.ThemesWatch.Stop();
+    }
+
+    private const string UiSection = "ui";
+    private const string CodeSection = "code";
+    private const string IconsSection = "icons";
+    private const string KeySeparator = ", ";
+
+    /// <summary>Takes the code and icon colors of <paramref name="contents"/>, under all that is added later.</summary>
+    internal static void AddCodeAndIcons(MergedTheme merged, ThemeContents contents)
+    {
+        StackValues(merged.Code, contents.Code);
+        StackValues(merged.Icons, contents.Icons);
+    }
+
+    /// <summary>Takes everything <paramref name="contents"/> sets, over what was added before.</summary>
+    internal static void AddContents(MergedTheme merged, ThemeContents contents)
+    {
+        foreach (var (name, value) in contents.Palette)
+            merged.Palette[name] = value;
+        StackValues(merged.Ui, contents.Ui);
+        StackValues(merged.Code, contents.Code);
+        StackValues(merged.Icons, contents.Icons);
+    }
+
+    private static void StackValues(Dictionary<string, List<ThemeValue>> merged, IReadOnlyDictionary<string, ThemeValue> added)
+    {
+        foreach (var (key, value) in added)
+            EnsureLayers(merged, key).Add(value);
+    }
+
+    private static List<ThemeValue> EnsureLayers(Dictionary<string, List<ThemeValue>> merged, string key)
+    {
+        if (merged.TryGetValue(key, out var layers))
+            return layers;
+        layers = new List<ThemeValue>();
+        merged[key] = layers;
+        return layers;
+    }
+
+    /// <summary>The theme the merged colors make, or null when a required color is missing; adds what
+    /// is wrong to <paramref name="errors"/>, a missing color as an error of <paramref name="file"/>.</summary>
+    internal static AppTheme? BuildTheme(MergedTheme merged, string file, ICollection<ThemeError> errors)
+    {
+        var ui = LookUpColors(merged, UiSection, merged.Ui, errors);
+        var code = LookUpColors(merged, CodeSection, merged.Code, errors);
+        var icons = LookUpColors(merged, IconsSection, merged.Icons, errors);
+        var missing = new List<string>();
+        AddMissing(missing, UiSection, UiTheme.ColorKeys, ui);
+        AddMissing(missing, CodeSection, CodeViewPalette.ColorKeys, code);
+        AddMissing(missing, IconsSection, NodeIconPalette.ColorKeys, icons);
+        if (missing.Count > 0)
+        {
+            errors.Add(new ThemeError(file, 0, ThemeProblem.MissingColors, Detail: string.Join(KeySeparator, missing)));
+            return null;
+        }
+        return Theming.CreateTheme(UiTheme.FromColors(ui), CodeViewPalette.FromColors(code), NodeIconPalette.FromColors(icons));
+    }
+
+    private static Dictionary<string, uint> LookUpColors(MergedTheme merged, string section, Dictionary<string, List<ThemeValue>> values, ICollection<ThemeError> errors)
+    {
+        var colors = new Dictionary<string, uint>();
+        foreach (var (key, layers) in values)
+            LookUpTopColor(merged, section, key, layers, colors, errors);
+        return colors;
+    }
+
+    /// <summary>Takes the color of the topmost of <paramref name="layers"/> that has one, reporting each
+    /// palette name above it that the palette does not have.</summary>
+    private static void LookUpTopColor(MergedTheme merged, string section, string key, List<ThemeValue> layers, Dictionary<string, uint> colors, ICollection<ThemeError> errors)
+    {
+        for (var i = layers.Count - 1; i >= 0; i--)
+        {
+            var value = layers[i];
+            if (TryLookUp(merged, value, out var color))
+            {
+                colors[key] = color;
+                return;
+            }
+            errors.Add(new ThemeError(value.File, value.Line, ThemeProblem.UnknownPaletteName, section + "." + key, value.Text));
+        }
+    }
+
+    private static bool TryLookUp(MergedTheme merged, ThemeValue value, out uint color)
+    {
+        if (!value.IsPaletteName)
+            return UiColor.TryParse(value.Text, out color);
+        if (merged.Palette.TryGetValue(value.Text, out var named))
+            return UiColor.TryParse(named.Text, out color);
+        color = 0;
+        return false;
+    }
+
+    private static void AddMissing(List<string> missing, string section, IReadOnlyList<ThemeColorKey> keys, Dictionary<string, uint> colors)
+    {
+        var absent = keys
+            .Where(static k => k.IsRequired)
+            .Where(k => !colors.ContainsKey(k.Key))
+            .Select(k => section + "." + k.Key);
+        missing.AddRange(absent);
+    }
+
+    private const string IconsPrefix = "icons.";
+    private const string CodepointFormat = "X4";
+
+    /// <summary>Takes the fonts of <paramref name="contents"/>, under all that is added later.</summary>
+    internal static void AddFonts(MergedIconTheme merged, IconThemeContents contents)
+    {
+        foreach (var (id, font) in contents.Fonts)
+            merged.Fonts[id] = font;
+    }
+
+    /// <summary>Takes everything <paramref name="contents"/> sets, over what was added before.</summary>
+    internal static void AddContents(MergedIconTheme merged, IconThemeContents contents)
+    {
+        AddFonts(merged, contents);
+        foreach (var (key, value) in contents.Icons)
+            EnsureLayers(merged, key).Add(value);
+    }
+
+    private static List<IconValue> EnsureLayers(MergedIconTheme merged, string key)
+    {
+        if (merged.Icons.TryGetValue(key, out var layers))
+            return layers;
+        layers = new List<IconValue>();
+        merged.Icons[key] = layers;
+        return layers;
+    }
+
+    /// <summary>The theme the merged icons make, a key none of them draws taken from
+    /// <paramref name="fallback"/>; adds what is wrong to <paramref name="errors"/>.</summary>
+    internal static IconTheme BuildTheme(MergedIconTheme merged, IconTheme? fallback, ICollection<ThemeError> errors)
+    {
+        var glyphs = new Dictionary<string, IconGlyph>();
+        var values = new Dictionary<string, IconValue>();
+        foreach (var (key, layers) in merged.Icons)
+            TakeTopIcon(merged, key, layers, glyphs, values, errors);
+        if (fallback == null)
+            return CreateIconTheme(new IconSet(glyphs), ListFaces(merged, null), values);
+        foreach (var (key, value) in fallback.Values)
+            values.TryAdd(key, value);
+        return CreateIconTheme(new IconSet(glyphs, fallback.Set), ListFaces(merged, fallback), values);
+    }
+
+    private static IconTheme CreateIconTheme(IconSet set, IReadOnlyList<FontFace> fonts, Dictionary<string, IconValue> values)
+    {
+        return new IconTheme { Icons = new AppIcons(set), Set = set, Fonts = fonts, Values = values };
+    }
+
+    /// <summary>Takes the topmost of <paramref name="layers"/> that can be drawn, reporting each one above
+    /// it whose font no theme declares.</summary>
+    private static void TakeTopIcon(MergedIconTheme merged, string key, List<IconValue> layers, Dictionary<string, IconGlyph> glyphs, Dictionary<string, IconValue> values,
+        ICollection<ThemeError> errors)
+    {
+        for (var i = layers.Count - 1; i >= 0; i--)
+        {
+            var value = layers[i];
+            var glyph = MakeGlyph(merged, key, value, errors);
+            if (glyph == null)
+                continue;
+            glyphs[key] = glyph.Value;
+            values[key] = value;
+            return;
+        }
+    }
+
+    /// <summary>What <paramref name="value"/> draws; null when its font is broken, or after reporting that
+    /// no theme declares its font or that the font has no glyph for it.</summary>
+    private static IconGlyph? MakeGlyph(MergedIconTheme merged, string key, IconValue value, ICollection<ThemeError> errors)
+    {
+        return value switch
+    {
+        IconValue.Picture picture => IconGlyph.FromSvg(picture.Svg),
+        IconValue.Glyph glyph => MakeFontGlyph(merged, key, glyph, errors),
+        _ => throw new UnreachableException(),
+    };
+    }
+
+    private static IconGlyph? MakeFontGlyph(MergedIconTheme merged, string key, IconValue.Glyph glyph, ICollection<ThemeError> errors)
+    {
+        if (!merged.Fonts.TryGetValue(glyph.Font, out var font))
+        {
+            errors.Add(new ThemeError(glyph.File, glyph.Line, ThemeProblem.UnknownFont, IconsPrefix + key, glyph.Font));
+            return null;
+        }
+        if (font is not IconFont.Loaded loaded)
+            return null;
+        if (!loaded.Characters.Contains(glyph.Codepoint))
+        {
+            var codepoint = glyph.Codepoint.ToString(CodepointFormat, CultureInfo.InvariantCulture);
+            errors.Add(new ThemeError(glyph.File, glyph.Line, ThemeProblem.MissingGlyph, IconsPrefix + key, codepoint));
+            return null;
+        }
+        var text = char.ConvertFromUtf32(glyph.Codepoint);
+        return IconGlyph.FromFont(text, loaded.Face.Family);
+    }
+
+    /// <summary>The faces of the merged fonts that could be read, then those of <paramref name="fallback"/>
+    /// in families not drawn by them.</summary>
+    private static List<FontFace> ListFaces(MergedIconTheme merged, IconTheme? fallback)
+    {
+        var faces = merged.Fonts.Values
+            .OfType<IconFont.Loaded>()
+            .Select(static f => f.Face)
+            .ToList();
+        if (fallback == null)
+            return faces;
+        var families = faces
+            .Select(static f => f.Family)
+            .ToHashSet();
+        var inherited = fallback.Fonts
+            .Where(f => !families.Contains(f.Family));
+        faces.AddRange(inherited);
+        return faces;
     }
 }

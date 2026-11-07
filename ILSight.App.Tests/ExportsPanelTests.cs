@@ -102,7 +102,7 @@ public sealed class ExportsPanelTests : IDisposable
         SaveCode(d.AppState, d.Fixture("Farewell"), farewell);
         var waiting = Assert.Single(d.AppState.Export.Waiting);
 
-        d.AppState.Export.Withdraw(waiting.Run);
+        Exports.WithdrawExport(d.AppState.Export, waiting.Run);
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
@@ -116,15 +116,15 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle();
-        var running = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Running")).Result);
-        app.AppState.Export.Enter(TestJobs.Named("Later"));
+        var running = Assert.IsType<ExportStart>(Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Running")).Result);
+        Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Later"));
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Running"));
         Assert.True(app.Frames.Drew("Later"));
         Assert.True(app.Frames.Drew("C# project · Up next"));
         Assert.True(app.Frames.Drew("Greeter"));
-        app.AppState.Export.Leave(running);
+        Exports.LeaveQueue(app.AppState.Export, running);
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         OpenExports(app.Ui);
-        var start = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Fixtures")).Result);
+        var start = Assert.IsType<ExportStart>(Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Fixtures")).Result);
         app.Run(2);
 
         app.Click("Cancel").Frame(2);
@@ -141,7 +141,7 @@ public sealed class ExportsPanelTests : IDisposable
         Assert.True(app.AppState.Export.Running!.IsCancelling);
         Assert.True(app.Frames.Drew("C# project · Cancelling…"));
         app.StatusText("Cancelling…");
-        app.AppState.Export.Leave(start);
+        Exports.LeaveQueue(app.AppState.Export, start);
         Assert.Null(app.AppState.Export.Running);
     }
 
@@ -175,16 +175,16 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle();
-        var running = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Running")).Result);
-        app.AppState.Export.Enter(TestJobs.Named("Second"));
-        app.AppState.Export.Enter(TestJobs.Named("Third"));
+        var running = Assert.IsType<ExportStart>(Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Running")).Result);
+        Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Second"));
+        Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Third"));
         app.Run(2);
 
         Assert.True(app.Frames.Drew("1 running · 2 queued · 1 finished"));
         Assert.True(app.Frames.Drew("Queued · 2"));
         Assert.True(app.Frames.Drew("Finished · 1"));
         Assert.True(app.Frames.Drew("C# project · 1 ahead"));
-        app.AppState.Export.Leave(running);
+        Exports.LeaveQueue(app.AppState.Export, running);
     }
 
     [Fact]
@@ -192,13 +192,13 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         OpenExports(app.Ui);
-        var start = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Both")).Result);
+        var start = Assert.IsType<ExportStart>(Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Both")).Result);
         start.Progress.Report(new ExportProgress("Fixtures", 2, 4, 0.5f));
         app.Run(2);
 
         Assert.True(app.Frames.Drew("C# project · Assembly 2 of 4 · Fixtures"));
         Assert.True(app.Frames.Drew("50%"));
-        app.AppState.Export.Leave(start);
+        Exports.LeaveQueue(app.AppState.Export, start);
     }
 
     [Theory]
@@ -228,14 +228,14 @@ public sealed class ExportsPanelTests : IDisposable
     public void The_status_bar_shows_only_the_running_export_and_opens_the_panel()
     {
         var app = AppDriver.Opened();
-        var start = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Fixtures")).Result);
+        var start = Assert.IsType<ExportStart>(Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Fixtures")).Result);
         app.Run(2);
         Assert.False(app.Ui.Layout.Contains(DockPanels.Exports));
 
         app.Frames.Click(app.StatusText("Exporting Fixtures…")).Frame(2);
 
         Assert.True(app.Ui.Layout.Contains(DockPanels.Exports));
-        app.AppState.Export.Leave(start);
+        Exports.LeaveQueue(app.AppState.Export, start);
     }
 
     [Fact]

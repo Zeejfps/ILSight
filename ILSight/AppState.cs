@@ -37,7 +37,7 @@ public sealed class AppState
     public BrowseSession Session { get; }
 
     /// <summary>The named assembly lists, one of which <see cref="Assemblies"/> holds open.</summary>
-    public SavedAssemblyLists Lists { get; } = new();
+    public SavedAssemblyLists Lists { get; } = AssemblyLists.CreateLists();
 
     public NavigationHistory History { get; } = new();
     public UserIntent Intent { get; } = new();
@@ -215,7 +215,7 @@ public sealed class AppState
         var first = AddTab();
         Tabs.MakeActive(first);
         Analyzer = new AnalyzerTree();
-        Lists.Load(settings.AssemblyLists, settings.ActiveAssemblyList);
+        AssemblyLists.LoadLists(Lists, settings.AssemblyLists, settings.ActiveAssemblyList);
         leftOutBookmarks = LoadBookmarks(Bookmarks, settings.Bookmarks);
         Analyzer.AddPending(Lists.ActiveAnalyses);
     }

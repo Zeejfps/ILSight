@@ -23,7 +23,7 @@ public sealed class SplitDocumentTests
     [Fact]
     public void Documents_arranged_in_nested_splits_dock_as_the_arrangement_splits_them()
     {
-        var layout = new MainLayout(new DockLayout { Root = DockLayout.Group(DockPanels.Assemblies) });
+        var layout = new MainLayout { Dock = new DockLayout { Root = DockLayout.Group(DockPanels.Assemblies) } };
         var arrangement = new DockLayout
         {
             Root = DockLayout.Split(Direction.Horizontal, 0.6f,
@@ -31,7 +31,7 @@ public sealed class SplitDocumentTests
                 DockLayout.Group("document-3")),
         };
 
-        layout.DockArranged(["document-1", "document-2", "document-3"], arrangement);
+        Docking.DockArranged(layout, ["document-1", "document-2", "document-3"], arrangement);
 
         var beside = FindSplitHolding(layout.Dock.Root, "document-3");
         Assert.NotNull(beside);

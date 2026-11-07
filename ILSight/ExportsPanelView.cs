@@ -257,11 +257,11 @@ internal static class ExportsPanelView
         if (rows.Narrow)
         {
             if (ui.IconButton("cancel", ui.State.Icons.ExportCancel, t.ExportsCancelTooltip, enabled))
-                ui.State.Later(static a => a.Export.Cancel());
+                ui.State.Later(static a => Exports.CancelRunning(a.Export));
             return;
         }
         if (ui.Button(t.ExportsCancel, enabled: enabled, id: "cancel", variant: ButtonVariant.Ghost))
-            ui.State.Later(static a => a.Export.Cancel());
+            ui.State.Later(static a => Exports.CancelRunning(a.Export));
         ui.Tooltip(ui.GetId("cancel"), t.ExportsCancelTooltip);
     }
 
@@ -323,7 +323,7 @@ internal static class ExportsPanelView
             ahead++;
         }
         if (withdrawn != null)
-            ui.State.Later(withdrawn, static (a, run) => a.Export.Withdraw(run));
+            ui.State.Later(withdrawn, static (a, run) => Exports.WithdrawExport(a.Export, run));
     }
 
     /// <summary>Draws a waiting export; returns whether the user took it out of the queue, which
@@ -545,11 +545,11 @@ internal static class ExportsPanelView
         if (running != null && running.Export.Run == run)
         {
             if (ui.MenuItem(t.ExportsCancel, enabled: !running.IsCancelling, id: "cancel"))
-                ui.State.Later(static a => a.Export.Cancel());
+                ui.State.Later(static a => Exports.CancelRunning(a.Export));
             return;
         }
         if (ui.MenuItem(t.ExportsWithdraw, Shortcuts.Delete, id: "withdraw"))
-            ui.State.Later(run, static (a, r) => a.Export.Withdraw(r));
+            ui.State.Later(run, static (a, r) => Exports.WithdrawExport(a.Export, r));
     }
 
 

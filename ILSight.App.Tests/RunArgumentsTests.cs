@@ -151,7 +151,7 @@ public sealed class RunArgumentsTests
 
         Assert.Equal(Other, d.AppState.Lists.Active);
         Assert.Empty(d.AppState.Assemblies.FilePaths);
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Lists.PathsOf(SavedAssemblyLists.DefaultName).Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], AssemblyLists.GetPaths(d.AppState.Lists, SavedAssemblyLists.DefaultName).Select(static p => p.Text));
     }
 
     [Fact]

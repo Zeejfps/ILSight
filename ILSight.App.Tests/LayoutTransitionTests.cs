@@ -31,11 +31,11 @@ public sealed class LayoutTransitionTests
         var layout = Arrange(80f);
         var transition = new LayoutTransition();
 
-        Assert.True(transition.Follow(layout));
+        Assert.True(Diagrams.FollowLayout(transition, layout));
 
         Assert.False(transition.IsMoving);
-        Assert.Equal(layout.Places[Car], transition.PlaceOf(Car));
-        Assert.False(transition.Follow(layout));
+        Assert.Equal(layout.Places[Car], Diagrams.GetCardPlace(transition, Car));
+        Assert.False(Diagrams.FollowLayout(transition, layout));
     }
 
     [Fact]
@@ -44,32 +44,32 @@ public sealed class LayoutTransitionTests
         var before = Arrange(80f);
         var after = Arrange(300f);
         var transition = new LayoutTransition();
-        transition.Follow(before);
+        Diagrams.FollowLayout(transition, before);
 
-        transition.Follow(after);
-        transition.Advance(HalfWay);
+        Diagrams.FollowLayout(transition, after);
+        Diagrams.AdvanceTransition(transition, HalfWay);
 
         Assert.True(transition.IsMoving);
         var expected = DiagramLayouts.Lerp(before.Places[Car], after.Places[Car], Ease.OutCubic(0.5f));
-        var drawn = transition.PlaceOf(Car)!.Value;
+        var drawn = Diagrams.GetCardPlace(transition, Car)!.Value;
         Assert.Equal(expected.X, drawn.X, 0.01f);
         Assert.Equal(expected.Y, drawn.Y, 0.01f);
-        transition.Advance(Past);
+        Diagrams.AdvanceTransition(transition, Past);
         Assert.False(transition.IsMoving);
-        Assert.Equal(after.Places[Car], transition.PlaceOf(Car));
+        Assert.Equal(after.Places[Car], Diagrams.GetCardPlace(transition, Car));
     }
 
     [Fact]
     public void A_card_the_old_layout_lacked_appears_in_its_new_place()
     {
         var transition = new LayoutTransition();
-        transition.Follow(Arrange(80f, withCar: false));
+        Diagrams.FollowLayout(transition, Arrange(80f, withCar: false));
         var after = Arrange(80f);
 
-        transition.Follow(after);
-        transition.Advance(HalfWay);
+        Diagrams.FollowLayout(transition, after);
+        Diagrams.AdvanceTransition(transition, HalfWay);
 
-        Assert.Equal(after.Places[Car], transition.PlaceOf(Car));
+        Assert.Equal(after.Places[Car], Diagrams.GetCardPlace(transition, Car));
     }
 
     [Fact]
@@ -78,17 +78,17 @@ public sealed class LayoutTransitionTests
         var before = Arrange(80f);
         var after = Arrange(300f);
         var transition = new LayoutTransition();
-        transition.Follow(before);
-        transition.Follow(after);
+        Diagrams.FollowLayout(transition, before);
+        Diagrams.FollowLayout(transition, after);
         var route = after.Routes.Single();
         var old = before.Routes.Single();
 
-        var starting = transition.Shape(route);
+        var starting = Diagrams.ShapeRoute(transition, route);
 
         Assert.Equal(Math.Max(route.Pieces.Count, old.Pieces.Count), starting.Pieces.Count);
         Assert.Equal(old.Pieces[0].Start, starting.Pieces[0].Start);
         Assert.Equal(old.Tip, starting.Tip);
-        transition.Advance(Past);
-        Assert.Same(route, transition.Shape(route));
+        Diagrams.AdvanceTransition(transition, Past);
+        Assert.Same(route, Diagrams.ShapeRoute(transition, route));
     }
 }

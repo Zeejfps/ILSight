@@ -146,16 +146,16 @@ internal static class DiagramView
         var selected = view.Selected;
         if (selected == null)
             return null;
-        return view.Transition.PlaceOf(selected);
+        return Diagrams.GetCardPlace(view.Transition, selected);
     }
 
     /// <summary>Moves toward the diagram's newest layout, drawing again until the move ends; a new layout
     /// is of the diagram as it was last measured.</summary>
     private static void FollowLayout(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
-        if (view.Transition.Follow(diagram.Layout))
+        if (Diagrams.FollowLayout(view.Transition, diagram.Layout))
             view.LaidOutVersion = view.MeasuredVersion;
-        view.Transition.Advance(ui.DeltaTime);
+        Diagrams.AdvanceTransition(view.Transition, ui.DeltaTime);
         if (view.Transition.IsMoving)
             ui.RequestUpdate();
     }
@@ -240,7 +240,7 @@ internal static class DiagramView
         var face = FindFace(view, card.Type);
         if (face == null)
             return new DiagramHit.Nothing();
-        var place = view.Transition.PlaceOf(card.Type);
+        var place = Diagrams.GetCardPlace(view.Transition, card.Type);
         if (place == null)
             return new DiagramHit.Nothing();
         if (!Covers(place.Value, face, point))
@@ -454,14 +454,14 @@ internal static class DiagramView
 
     private static bool ConnectsShownCards(TypeDiagram diagram, TypeLink link)
     {
-        if (!diagram.Contains(link.From))
+        if (!Diagrams.HasCard(diagram, link.From))
             return false;
-        return diagram.Contains(link.To);
+        return Diagrams.HasCard(diagram, link.To);
     }
 
     private static DrawnLink DrawnLinkOf(Ui<UiState> ui, DiagramViewState view, LinkRoute route)
     {
-        var shape = view.Transition.Shape(route);
+        var shape = Diagrams.ShapeRoute(view.Transition, route);
         var label = DiagramFaces.LabelOf(route.Link);
         if (label == null)
             return new DrawnLink(route.Link.Kind, shape, null, 0f, 0f);
@@ -478,7 +478,7 @@ internal static class DiagramView
             var face = FindFace(view, card.Type);
             if (face == null)
                 continue;
-            var place = view.Transition.PlaceOf(card.Type);
+            var place = Diagrams.GetCardPlace(view.Transition, card.Type);
             if (place == null)
                 continue;
             var isSelected = card.Type == view.Selected;
@@ -558,7 +558,7 @@ internal static class DiagramView
         var card = view.MenuCard;
         if (card == null)
             return;
-        if (!diagram.Contains(card.Type))
+        if (!Diagrams.HasCard(diagram, card.Type))
             return;
         CardMenuItems(ui, view, diagram, card);
     }

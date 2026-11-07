@@ -324,7 +324,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var tab = Assert.Single(d.AppState.Tabs);
         Assert.Equal("Vehicle diagram", tab.Title);
         Assert.Equal([vehicle], ListTypes(tab));
-        Assert.True(tab.Diagram!.IsHome(PathOf(AppStateDriver.FixturePath)));
+        Assert.True(Diagrams.IsHome(tab.Diagram!, PathOf(AppStateDriver.FixturePath)));
         Assert.Same(tab, d.AppState.Tabs.Diagram);
     }
 
@@ -333,7 +333,7 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
-        d.AppState.Lists.Create(Other);
+        AssemblyLists.AddList(d.AppState.Lists, Other);
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
         OpenAssembly(d.AppState, AppStateDriver.FixturePath);
@@ -345,7 +345,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.Settle();
         var first = Assert.Single(d.AppState.Tabs);
         var firstPanel = d.Ui.Documents.PanelOf(first);
-        var firstDocuments = d.Ui.MainLayout.ListDocuments();
+        var firstDocuments = Docking.ListDocumentPanels(d.Ui.MainLayout);
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
         var other = Assert.Single(d.AppState.Tabs);
@@ -353,7 +353,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal("Greeter", first.Node!.Text);
         Assert.Equal([firstPanel], firstDocuments);
         Assert.Equal("Farewell", other.Node!.Text);
-        Assert.Equal([d.Ui.Documents.PanelOf(other)], d.Ui.MainLayout.ListDocuments());
+        Assert.Equal([d.Ui.Documents.PanelOf(other)], Docking.ListDocumentPanels(d.Ui.MainLayout));
     }
 
     [Fact]
@@ -367,7 +367,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var layout = d.Ui.Layout;
         layout.Dock(d.Ui.Documents.PanelOf(d.AppState.Tabs.Active!), layout.GroupOf(greeterPanel)!, DockEdge.Right);
         d.Settle();
-        d.AppState.Lists.Create(Other);
+        AssemblyLists.AddList(d.AppState.Lists, Other);
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
 

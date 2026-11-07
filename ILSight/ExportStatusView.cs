@@ -28,7 +28,7 @@ internal static class ExportStatusView
         if (Glance(ui, running, waiting))
             OpenExports(ui.State);
         if (!running.IsCancelling && IconButton(ui, "cancel-export", ui.State.Icons.ExportCancel, t.StatusCancelExport))
-            ui.State.Later(static a => a.Export.Cancel());
+            ui.State.Later(static a => Exports.CancelRunning(a.Export));
     }
 
     /// <summary>What the export writes, its bar and how many wait, as one button; returns whether it

@@ -1,3 +1,5 @@
+using ZGF.Geometry;
+using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
@@ -127,10 +129,10 @@ public static class Diagrams
     {
         var diagram = tab.Diagram!;
         var token = diagram.Token;
-        diagram.StartReading();
+        Diagrams.StartReading(diagram);
         var assemblies = appState.Assemblies;
         var read = await Background.Run(() => TypeCards.ReadWithNeighbours(assemblies, type, token));
-        diagram.FinishReading();
+        Diagrams.FinishReading(diagram);
         if (diagram.IsClosed)
             return;
         switch (read)
@@ -153,8 +155,8 @@ public static class Diagrams
             ReportUnreadable(appState, type, null);
             return;
         }
-        diagram.TakeHome(cards[0]);
-        diagram.Add(cards);
+        Diagrams.TakeHome(diagram, cards[0]);
+        Diagrams.AddCards(diagram, cards);
         appState.EnqueueCommand(new ViewCommand.FocusCard(tab, cards[0].Type));
     }
 
@@ -208,7 +210,7 @@ public static class Diagrams
         return card.Links
             .Where(isKind)
             .Select(static l => l.To)
-            .Where(t => !diagram.Contains(t))
+            .Where(t => !Diagrams.HasCard(diagram, t))
             .Distinct()
             .ToList();
     }
@@ -222,7 +224,7 @@ public static class Diagrams
     {
         if (types.Count == 0)
             return;
-        diagram.StartReading();
+        Diagrams.StartReading(diagram);
         var assemblies = appState.Assemblies;
         var read = await Background.Run(() => ReadCards(assemblies, types));
         FinishAdding(appState, diagram, card, read);
@@ -244,7 +246,7 @@ public static class Diagrams
     private static async Task ExpandDerivedAsync(AppState appState, TypeDiagram diagram, TypeCard card)
     {
         var token = diagram.Token;
-        diagram.StartReading();
+        Diagrams.StartReading(diagram);
         var assemblies = appState.Assemblies;
         var type = card.Type;
         var read = await Background.Run(() => TypeCards.ReadDerived(assemblies, type, token));
@@ -255,13 +257,13 @@ public static class Diagrams
     /// <paramref name="diagram"/>, unless it was closed meanwhile; reports a read that failed.</summary>
     private static void FinishAdding(AppState appState, TypeDiagram diagram, TypeCard card, Outcome<List<TypeCard>> read)
     {
-        diagram.FinishReading();
+        Diagrams.FinishReading(diagram);
         if (diagram.IsClosed)
             return;
         switch (read)
         {
             case Outcome<List<TypeCard>>.Ok ok:
-                diagram.Add(ok.Value);
+                Diagrams.AddCards(diagram, ok.Value);
                 break;
             case Outcome<List<TypeCard>>.Failed failed:
                 ReportUnreadable(appState, card.Type, failed.Error);
@@ -274,7 +276,7 @@ public static class Diagrams
     /// <summary>Takes the card of <paramref name="type"/> off <paramref name="diagram"/>.</summary>
     public static void RemoveFromDiagram(AppState appState, TypeDiagram diagram, CodeReference.Entity type)
     {
-        diagram.Remove(type);
+        RemoveCard(diagram, type);
     }
 
     /// <summary>Shows the diagram <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in,
@@ -290,11 +292,11 @@ public static class Diagrams
         var tab = reopened.Tab;
         var diagram = ShowSavedDiagram(appState, tab, saved);
         var reading = SavedDocuments.WaitFor(appState.Reopened, tab, saved);
-        diagram.StartReading();
+        Diagrams.StartReading(diagram);
         var assemblies = appState.Assemblies;
         var types = saved.Types;
         var read = await Background.Run(() => ReadCards(assemblies, types));
-        diagram.FinishReading();
+        Diagrams.FinishReading(diagram);
         if (!SavedDocuments.FinishWaiting(appState.Reopened, reading))
             return;
         if (diagram.IsClosed)
@@ -317,7 +319,7 @@ public static class Diagrams
         if (assemblies == null)
             return;
         foreach (var assembly in assemblies)
-            diagram.TakeHome(assembly);
+            Diagrams.TakeHome(diagram, assembly);
     }
 
     /// <summary>Has the diagram <paramref name="tab"/> shows taken as the one the user works in, when the tab is the active one.</summary>
@@ -341,7 +343,7 @@ public static class Diagrams
         switch (read)
         {
             case Outcome<List<TypeCard>>.Ok ok:
-                diagram.Add(ok.Value);
+                Diagrams.AddCards(diagram, ok.Value);
                 break;
             case Outcome<List<TypeCard>>.Failed failed:
                 ReportUnreadableDiagram(appState, saved, failed.Error);
@@ -366,14 +368,14 @@ public static class Diagrams
     {
         if (diagram.IsClosed)
             return;
-        var ticket = diagram.StartLayout();
+        var ticket = Diagrams.StartLayout(diagram);
         var laidOut = await Background.Run(() => DiagramLayouts.Arrange(measures, ticket.Token));
-        if (!diagram.FinishLayout(ticket))
+        if (!Diagrams.FinishLayout(diagram, ticket))
             return;
         switch (laidOut)
         {
             case Outcome<TypeLayout>.Ok ok:
-                diagram.ShowLayout(ok.Value);
+                Diagrams.ShowLayout(diagram, ok.Value);
                 break;
             case Outcome<TypeLayout>.Failed failed:
                 ReportLayoutFailure(appState, failed.Error);
@@ -386,5 +388,252 @@ public static class Diagrams
     private static void ReportLayoutFailure(AppState appState, Exception error)
     {
         appState.ReportError(new AppProblem.DiagramNotLaidOut(error));
+    }
+
+    public static bool HasCard(TypeDiagram diagram, CodeReference.Entity type)
+    {
+        return diagram.Types.Contains(type);
+    }
+
+    /// <summary>The card of <paramref name="type"/>, or null when the diagram does not show it.</summary>
+    public static TypeCard? FindCard(TypeDiagram diagram, CodeReference.Entity type)
+    {
+        foreach (var card in diagram.Cards)
+        {
+            if (card.Type == type)
+                return card;
+        }
+        return null;
+    }
+
+    /// <summary>Adds the cards of <paramref name="cards"/> the diagram does not show yet, after the others.</summary>
+    public static void AddCards(TypeDiagram diagram, IReadOnlyList<TypeCard> cards)
+    {
+        var shown = diagram.Cards.Count;
+        foreach (var card in cards)
+            AddCardIfNew(diagram, card);
+        if (diagram.Cards.Count == shown)
+            return;
+        ChangeCards(diagram);
+    }
+
+    private static void AddCardIfNew(TypeDiagram diagram, TypeCard card)
+    {
+        if (!diagram.Types.Add(card.Type))
+            return;
+        diagram.Cards.Add(card);
+    }
+
+    public static void RemoveCard(TypeDiagram diagram, CodeReference.Entity type)
+    {
+        if (!diagram.Types.Remove(type))
+            return;
+        diagram.Cards.RemoveAll(c => c.Type == type);
+        ChangeCards(diagram);
+    }
+
+    private static void ChangeCards(TypeDiagram diagram)
+    {
+        diagram.Version++;
+        diagram.Links.Clear();
+        foreach (var card in diagram.Cards)
+            AddLinksAmongCards(diagram, card);
+    }
+
+    private static void AddLinksAmongCards(TypeDiagram diagram, TypeCard card)
+    {
+        foreach (var link in card.Links)
+        {
+            if (diagram.Types.Contains(link.To))
+                diagram.Links.Add(link);
+        }
+    }
+
+    /// <summary>Takes the assembly of <paramref name="card"/>, which the user put on the diagram, as one of
+    /// its own, whose members show even when hidden from other assemblies.</summary>
+    public static void TakeHome(TypeDiagram diagram, TypeCard card)
+    {
+        TakeHome(diagram, card.AssemblyPath);
+    }
+
+    /// <summary>Takes the assembly at <paramref name="assemblyPath"/> as one of the diagram's own.</summary>
+    public static void TakeHome(TypeDiagram diagram, AssemblyPath assemblyPath)
+    {
+        diagram.HomeAssemblies.Add(assemblyPath);
+    }
+
+    /// <summary>Whether the assembly at <paramref name="assemblyPath"/> is one of the diagram's own; false
+    /// for none.</summary>
+    public static bool IsHome(TypeDiagram diagram, AssemblyPath? assemblyPath)
+    {
+        if (assemblyPath == null)
+            return false;
+        return diagram.HomeAssemblies.Contains(assemblyPath);
+    }
+
+    /// <summary>Counts a read of cards for the diagram as started, until <see cref="FinishReading"/>.</summary>
+    public static void StartReading(TypeDiagram diagram)
+    {
+        diagram.Reading++;
+    }
+
+    public static void FinishReading(TypeDiagram diagram)
+    {
+        diagram.Reading--;
+    }
+
+    /// <summary>Starts a layout, cancelling the one in flight.</summary>
+    public static LoadTicket StartLayout(TypeDiagram diagram)
+    {
+        diagram.LayoutWork?.Cancel();
+        var work = CancellationTokenSource.CreateLinkedTokenSource(diagram.Open.Token);
+        diagram.LayoutWork = work;
+        return new LoadTicket { Work = work };
+    }
+
+    /// <summary>Ends the layout <paramref name="ticket"/> was given for. False when another started since,
+    /// or the diagram was closed, and what it laid out should be dropped.</summary>
+    public static bool FinishLayout(TypeDiagram diagram, LoadTicket ticket)
+    {
+        ticket.Work.Dispose();
+        if (diagram.LayoutWork != ticket.Work)
+            return false;
+        diagram.LayoutWork = null;
+        return !diagram.IsClosed;
+    }
+
+    /// <summary>Holds <paramref name="layout"/>, which the newest layout finished with.</summary>
+    public static void ShowLayout(TypeDiagram diagram, TypeLayout layout)
+    {
+        diagram.Layout = layout;
+    }
+
+    /// <summary>Cancels what is in flight for the diagram, for good.</summary>
+    public static void CloseDiagram(TypeDiagram diagram)
+    {
+        diagram.Open.Cancel();
+        diagram.LayoutWork = null;
+    }
+
+    /// <summary>Starts moving to <paramref name="layout"/> when it is another than <see cref="Layout"/>;
+    /// the first layout is drawn at once. True when it was another.</summary>
+    public static bool FollowLayout(LayoutTransition transition, TypeLayout? layout)
+    {
+        if (ReferenceEquals(layout, transition.To))
+            return false;
+        transition.From = transition.To;
+        transition.To = layout;
+        transition.FromRoutes = ListRoutesByLink(transition.From);
+        transition.Elapsed = GetTransitionStart(transition.From);
+        return true;
+    }
+
+    private static Dictionary<TypeLink, LinkRoute> ListRoutesByLink(TypeLayout? layout)
+    {
+        var routes = new Dictionary<TypeLink, LinkRoute>();
+        if (layout == null)
+            return routes;
+        foreach (var route in layout.Routes)
+            routes.TryAdd(route.Link, route);
+        return routes;
+    }
+
+    /// <summary>How far into the move a move from <paramref name="from"/> starts: at its end when there is
+    /// nothing to move from.</summary>
+    private static float GetTransitionStart(TypeLayout? from)
+    {
+        if (from == null)
+            return LayoutTransition.Seconds;
+        return 0f;
+    }
+
+    public static void AdvanceTransition(LayoutTransition transition, float seconds)
+    {
+        transition.Elapsed = MathF.Min(LayoutTransition.Seconds, transition.Elapsed + seconds);
+    }
+
+    /// <summary>Where the top-left of the card of <paramref name="type"/> is drawn now; null when the
+    /// layout does not place it.</summary>
+    public static PointF? GetCardPlace(LayoutTransition transition, CodeReference.Entity type)
+    {
+        if (transition.To == null)
+            return null;
+        if (!transition.To.Places.TryGetValue(type, out var to))
+            return null;
+        var from = FindOldCardPlace(transition, type);
+        if (from == null)
+            return to;
+        return DiagramLayouts.Lerp(from.Value, to, transition.Progress);
+    }
+
+    private static PointF? FindOldCardPlace(LayoutTransition transition, CodeReference.Entity type)
+    {
+        if (!transition.IsMoving)
+            return null;
+        if (transition.From == null)
+            return null;
+        if (!transition.From.Places.TryGetValue(type, out var from))
+            return null;
+        return from;
+    }
+
+    /// <summary>How <paramref name="route"/>, one of the layout's, is drawn now: bent from the route its
+    /// link had before while moving, else as it is.</summary>
+    public static LinkRoute ShapeRoute(LayoutTransition transition, LinkRoute route)
+    {
+        if (!transition.IsMoving)
+            return route;
+        if (!transition.FromRoutes.TryGetValue(route.Link, out var from))
+            return route;
+        if (!CanBlendRoutes(from, route))
+            return route;
+        return BlendRoutes(from, route, transition.Progress);
+    }
+
+    private static bool CanBlendRoutes(LinkRoute from, LinkRoute to)
+    {
+        if (from.Pieces.Count == 0)
+            return false;
+        return to.Pieces.Count > 0;
+    }
+
+    private static LinkRoute BlendRoutes(LinkRoute from, LinkRoute to, float t)
+    {
+        var fromPieces = SubdivideRoute(from.Pieces, to.Pieces.Count);
+        var toPieces = SubdivideRoute(to.Pieces, from.Pieces.Count);
+        var pieces = new List<RoutePiece>(toPieces.Count);
+        for (var i = 0; i < toPieces.Count; i++)
+            pieces.Add(DiagramLayouts.Blend(fromPieces[i], toPieces[i], t));
+        var tip = DiagramLayouts.Lerp(from.Tip, to.Tip, t);
+        var labelCenter = BlendPoints(from.LabelCenter, to.LabelCenter, t);
+        var sourceTip = BlendPoints(from.SourceTip, to.SourceTip, t);
+        return to with { Pieces = pieces, Tip = tip, LabelCenter = labelCenter, SourceTip = sourceTip };
+    }
+
+    /// <summary><paramref name="pieces"/>, halved one after another, until there are at least
+    /// <paramref name="count"/> of them.</summary>
+    private static List<RoutePiece> SubdivideRoute(IReadOnlyList<RoutePiece> pieces, int count)
+    {
+        var split = pieces.ToList();
+        var next = 0;
+        while (split.Count < count)
+        {
+            var (first, second) = DiagramLayouts.Split(split[next]);
+            split[next] = first;
+            split.Insert(next + 1, second);
+            next = (next + 2) % split.Count;
+        }
+        return split;
+    }
+
+    /// <summary>The point <paramref name="t"/> of the way between two a route may have: the one it moves
+    /// to when it had none, and none when it moves to none.</summary>
+    private static PointF? BlendPoints(PointF? from, PointF? to, float t)
+    {
+        if (from == null)
+            return to;
+        if (to == null)
+            return null;
+        return DiagramLayouts.Lerp(from.Value, to.Value, t);
     }
 }
