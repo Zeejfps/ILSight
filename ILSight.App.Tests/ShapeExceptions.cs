@@ -51,6 +51,7 @@ internal static class ShapeExceptions
         "ILSight.Core.AssemblyPicks`1",
         "ILSight.Core.AsyncGuarded`1",
         "ILSight.Core.AsyncGuarded`1+Held",
+        "ILSight.Core.BoundedList`1",
         "ILSight.Core.ByReference`1",
         "ILSight.Core.Guarded`1",
         "ILSight.Core.Guarded`1+Scope",

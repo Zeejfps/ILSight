@@ -9,15 +9,10 @@ namespace ILSight;
 /// title over its details in a selectable monospace view, and Copy, Clear and Close.</summary>
 internal static class ErrorDialogView
 {
-    private const int Capacity = 50;
-
     /// <summary>Logs <paramref name="problem"/> as having happened at <paramref name="time"/>.</summary>
     public static void AddError(ErrorLog errors, AppProblem problem, DateTime time)
     {
-        errors.Revision++;
         errors.Entries.Add(new AppError(problem, time));
-        if (errors.Entries.Count > Capacity)
-            errors.Entries.RemoveAt(0);
     }
 
     /// <summary>Opens the dialog on the newest of <paramref name="errors"/>, unless there are none.</summary>
