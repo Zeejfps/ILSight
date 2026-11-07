@@ -130,7 +130,7 @@ internal static class Screens
     /// <summary>A screen over an app state with nothing open, for drawing a widget alone.</summary>
     public static UiState Blank()
     {
-        return ILSightApp.CreateUiState(LoadAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared));
+        return AppFrames.CreateUiState(LoadAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared));
     }
 }
 
@@ -155,7 +155,7 @@ internal sealed class AppStateDriver
         loadResult.Settings.Locale ??= Locale.En;
         AppState = ILSightAppLauncher.LoadAppState(loadResult, arguments, TestSession.Shared);
         if (withScreen)
-            _ui = ILSightApp.CreateUiState(AppState);
+            _ui = AppFrames.CreateUiState(AppState);
         RestoreAnalyses(AppState);
     }
 
@@ -210,9 +210,9 @@ internal sealed class AppStateDriver
     /// hands over what the settings keep of it, and the app runs what the screen asked of the app state.</summary>
     public void NextFrame()
     {
-        ILSightApp.StartFrame(Ui, AppState);
-        ILSightApp.KeepScreenChanges(Ui, AppState);
-        ILSightApp.RunAppCommands(Ui, AppState);
+        AppFrames.StartFrame(Ui, AppState);
+        AppFrames.KeepScreenChanges(Ui, AppState);
+        AppFrames.RunAppCommands(Ui, AppState);
     }
 
     /// <summary>Pumps until <paramref name="done"/>.</summary>

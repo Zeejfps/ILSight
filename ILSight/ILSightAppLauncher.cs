@@ -28,7 +28,7 @@ public static class ILSightAppLauncher
     private static ILSightApp CreateApp(SettingsLoadResult loadResult, RunArguments arguments, Channel<RunArguments> inbox)
     {
         var appState = LoadAppState(loadResult, arguments);
-        var uiState = ILSightApp.CreateUiState(appState);
+        var uiState = AppFrames.CreateUiState(appState);
         return new ILSightApp(appState, uiState, arguments.Files, inbox);
     }
 

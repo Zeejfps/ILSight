@@ -195,7 +195,7 @@ public sealed class RunArgumentsTests
     {
         var arguments = CommandLines.Parse(args).Arguments;
         var d = AppStateDriver.Started(new SettingsLoadResult(settings, new SettingsProblem.None()), arguments);
-        ILSightApp.OpenStartupAssemblies(d.AppState, arguments.Files);
+        AppFrames.OpenStartupAssemblies(d.AppState, arguments.Files);
         d.RunUntil(() => AreListed(d.AppState, arguments.Files.Paths));
         d.Settle();
         return d;
