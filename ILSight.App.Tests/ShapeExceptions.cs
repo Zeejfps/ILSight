@@ -72,7 +72,6 @@ internal static class ShapeExceptions
     [
         "ILSight.ComparisonRows",
         "ILSight.Core.BrowseSession",
-        "ILSight.UiState",
     ];
 
     /// <summary>Constructors that take arguments, still to become object initializers or functions.</summary>
@@ -81,7 +80,6 @@ internal static class ShapeExceptions
         "ILSight.AppIcons",
         "ILSight.Core.AssemblyLoadException",
         "ILSight.Core.LocatingTokenWriter",
-        "ILSight.UiState",
     ];
 
     /// <summary>Extension functions, still to become plain ones.</summary>

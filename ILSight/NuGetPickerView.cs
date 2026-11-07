@@ -41,7 +41,7 @@ internal static class NuGetPickerView
         var path = NuGetPicking.TakeDownloaded(picker);
         if (path == null)
             return;
-        ui.State.Later(path, static (a, p) => OpenAssembly(a, p));
+        Commands.Later(ui.State, path, static (a, p) => OpenAssembly(a, p));
         Close(ui, picker);
     }
 

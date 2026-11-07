@@ -19,7 +19,7 @@ public sealed partial class ILSightApp
     /// and any other tab in the place of the documents. It takes the theme and strings with its first frame.</summary>
     internal static UiState CreateUiState(AppState appState)
     {
-        var uiState = new UiState(appState.View, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime);
+        var uiState = CreateScreen(appState.View, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime);
         DocumentPanels.SkipPanels(uiState.Documents, AssemblyLists.ListDocumentPanels(appState.Lists));
         FollowActiveTab(uiState, appState.Tabs.Active);
         RunViewCommands(uiState, appState);

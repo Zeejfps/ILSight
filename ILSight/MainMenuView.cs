@@ -171,7 +171,7 @@ internal static class MainMenuView
             new(t.FileFilterAssembliesAndPackages, ["*.dll", "*.exe", "*.winmd", "*.wasm", "*.nupkg", "*.zip"]),
             new(t.FileFilterAll, ["*.*"]),
         ];
-        ui.PickFile(t.FileOpenTitle, null, filters, path => screen.Later(path, static (a, p) => OpenAssembly(a, p)));
+        ui.PickFile(t.FileOpenTitle, null, filters, path => Commands.Later(screen, path, static (a, p) => OpenAssembly(a, p)));
     }
 
     private static void FileMenu(Ui<UiState> ui, AppState appState)
@@ -191,15 +191,15 @@ internal static class MainMenuView
         var selected = tree.View.TryGetSelected(out var picked) ? picked.Assembly : null;
         var anyOpen = tree.Roots.Length > 0;
         if (ui.MenuItem(t.FileClose, enabled: selected != null, id: "close", icon: new UiIcon(icons.FileClose)) && selected != null)
-            ui.State.Later(selected, static (a, assembly) => CloseAssembly(a, assembly));
+            Commands.Later(ui.State, selected, static (a, assembly) => CloseAssembly(a, assembly));
         if (ui.MenuItem(t.FileCloseFailed, enabled: AnyFailedToLoad(appState.Assemblies), id: "close-failed", icon: new UiIcon(icons.FileCloseFailed)))
-            ui.State.Later(static a => CloseFailedAssemblies(a));
+            Commands.Later(ui.State, static a => CloseFailedAssemblies(a));
         if (ui.MenuItem(t.FileClearList, enabled: anyOpen, id: "clear-list", icon: new UiIcon(icons.FileClearList)))
-            ui.State.Later(static a => CloseAllAssemblies(a));
+            Commands.Later(ui.State, static a => CloseAllAssemblies(a));
         if (ui.MenuItem(t.FileSortList, enabled: anyOpen, id: "sort-list", icon: new UiIcon(icons.FileSortList)))
-            ui.State.Later(static a => SortAssemblies(a));
+            Commands.Later(ui.State, static a => SortAssemblies(a));
         if (ui.MenuItem(t.FileReloadAll, Shortcuts.ReloadAll, enabled: anyOpen, id: "reload-all", icon: new UiIcon(icons.FileReloadAll)))
-            ui.State.Later(Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
+            Commands.Later(ui.State, Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
     }
 
     private static void ExportItems(Ui<UiState> ui, AppState appState)
@@ -219,9 +219,9 @@ internal static class MainMenuView
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.History.CanGoBack, id: "back"))
-            ui.State.Later(static a => GoBack(a));
+            Commands.Later(ui.State, static a => GoBack(a));
         if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.History.CanGoForward, id: "forward"))
-            ui.State.Later(static a => GoForward(a));
+            Commands.Later(ui.State, static a => GoForward(a));
         ui.MenuSeparator();
         DecompilerMenu(ui, appState.Language);
         ui.MenuSeparator();
@@ -248,7 +248,7 @@ internal static class MainMenuView
         {
             var id = catalog.Ids[i];
             if (ui.MenuRadioItem(names[i], current == id, id: id.Text))
-                ui.State.Later(id, static (a, theme) => SetTheme(a, theme));
+                Commands.Later(ui.State, id, static (a, theme) => SetTheme(a, theme));
         }
     }
 
@@ -267,7 +267,7 @@ internal static class MainMenuView
     {
         var selected = current == visibility;
         if (ui.MenuRadioItem(label, selected))
-            ui.State.Later(visibility, static (a, v) => SetApiVisibility(a, v));
+            Commands.Later(ui.State, visibility, static (a, v) => SetApiVisibility(a, v));
     }
 
     /// <summary>The submenu of the views, each checked while open, that opens the one picked.</summary>
@@ -310,7 +310,7 @@ internal static class MainMenuView
         foreach (var language in DecompilationLanguages.All)
         {
             if (ui.MenuRadioItem(DecompilationLanguages.Label(language), current == language))
-                ui.State.Later(language, static (a, l) => SetLanguage(a, l));
+                Commands.Later(ui.State, language, static (a, l) => SetLanguage(a, l));
         }
     }
 
@@ -329,7 +329,7 @@ internal static class MainMenuView
         foreach (var (locale, endonym) in Locales.All)
         {
             if (ui.MenuRadioItem(endonym, current == locale))
-                ui.State.Later(locale, static (a, l) => SetLocale(a, l));
+                Commands.Later(ui.State, locale, static (a, l) => SetLocale(a, l));
         }
     }
 }

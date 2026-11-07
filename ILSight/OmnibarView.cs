@@ -291,9 +291,9 @@ internal static class OmnibarView
         }
         ui.Tooltip(i.Id, NodeText.Tooltip(node));
         if (i.Clicked)
-            ui.State.Later((node, inNewTab: IsCommandHeld(ui)), static (a, s) => PickNode(a, s.node, s.inNewTab));
+            Commands.Later(ui.State, (node, inNewTab: IsCommandHeld(ui)), static (a, s) => PickNode(a, s.node, s.inNewTab));
         if (i.ClickedWith(PointerButton.Middle))
-            ui.State.Later(node, static (a, n) => ShowNode(a, n, inNewTab: true));
+            Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
     }
 
     /// <summary>Public API in the text color, the rest muted, as the tree shows them.</summary>
@@ -424,7 +424,7 @@ internal static class OmnibarView
         if (node == null)
             return;
         omnibar.Menu = null;
-        ui.State.Later((node, inNewTab: picked.InNewTab), static (a, s) => PickNode(a, s.node, s.inNewTab));
+        Commands.Later(ui.State, (node, inNewTab: picked.InNewTab), static (a, s) => PickNode(a, s.node, s.inNewTab));
     }
 
     private static void CloseIfIn(Omnibar omnibar, CrumbMenu menu, string panel)
@@ -517,7 +517,7 @@ internal static class OmnibarView
         if (match == null)
             return;
         StopSearch(omnibar);
-        ui.State.Later((node: match.Node, inNewTab: clicked.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
+        Commands.Later(ui.State, (node: match.Node, inNewTab: clicked.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
     }
 
     /// <summary>The query syntax, over the box while it is empty, so it never covers the suggestions.</summary>

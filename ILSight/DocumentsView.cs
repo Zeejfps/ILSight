@@ -59,9 +59,9 @@ internal static class DocumentsView
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters);
         if (picked.Target != null && tab.Node != null)
-            ui.State.Later((node: tab.Node, target: picked.Target.Value, picked.InNewTab), static (a, s) => ShowMetadataLink(a, s.node, s.target, s.InNewTab));
+            Commands.Later(ui.State, (node: tab.Node, target: picked.Target.Value, picked.InNewTab), static (a, s) => ShowMetadataLink(a, s.node, s.target, s.InNewTab));
         if (picked.Definition != null)
-            ui.State.Later((definition: picked.Definition, picked.InNewTab), static (a, s) => Navigate(a, s.definition, s.InNewTab));
+            Commands.Later(ui.State, (definition: picked.Definition, picked.InNewTab), static (a, s) => Navigate(a, s.definition, s.InNewTab));
     }
 
     /// <summary>The tab's document in the code view, with its bookmarks, or the note saying why it has none.</summary>
@@ -83,25 +83,25 @@ internal static class DocumentsView
         switch (intent)
         {
             case CodeViewIntent.Navigate navigate:
-                ui.State.Later(navigate, static (a, n) => Navigate(a, n.Target, n.InNewTab));
+                Commands.Later(ui.State, navigate, static (a, n) => Navigate(a, n.Target, n.InNewTab));
                 break;
             case CodeViewIntent.ToggleBookmark toggle:
-                ui.State.Later((screen: ui.State, tab, line: toggle.Line, t), static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t));
+                Commands.Later(ui.State, (screen: ui.State, tab, line: toggle.Line, t), static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t));
                 break;
             case CodeViewIntent.Analyze analyze:
-                ui.State.Later((screen: ui.State, entity: analyze.Entity), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.entity));
+                Commands.Later(ui.State, (screen: ui.State, entity: analyze.Entity), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.entity));
                 break;
             case CodeViewIntent.ShowInMetadata metadata:
-                ui.State.Later(metadata.Target, static (a, target) => ShowInMetadata(a, target, inNewTab: false));
+                Commands.Later(ui.State, metadata.Target, static (a, target) => ShowInMetadata(a, target, inNewTab: false));
                 break;
             case CodeViewIntent.ShowInApiReference reference:
-                ui.State.Later(reference.Entity, static (a, entity) => ShowInApiReference(a, entity));
+                Commands.Later(ui.State, reference.Entity, static (a, entity) => ShowInApiReference(a, entity));
                 break;
             case CodeViewIntent.ShowInDiagram diagram:
-                ui.State.Later((type: diagram.Type, title: t.DiagramTitle(diagram.Type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));
+                Commands.Later(ui.State, (type: diagram.Type, title: t.DiagramTitle(diagram.Type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));
                 break;
             case CodeViewIntent.ShowInNewDiagram diagram:
-                ui.State.Later((type: diagram.Type, title: t.DiagramTitle(diagram.Type.Name)), static (a, s) => ShowInNewDiagram(a, s.type, s.title));
+                Commands.Later(ui.State, (type: diagram.Type, title: t.DiagramTitle(diagram.Type.Name)), static (a, s) => ShowInNewDiagram(a, s.type, s.title));
                 break;
             default:
                 throw new UnreachableException();

@@ -60,7 +60,7 @@ internal static class ComparisonView
                 Comparisons.ExpandAllRows(rows);
             ui.Separator(ui.Theme.IconSize);
             if (ui.IconButton("swap", icons.ComparisonSwap, t.ComparisonSwap))
-                ui.State.Later(comparison, static (a, c) => SwapComparedAssemblies(a, c));
+                Commands.Later(ui.State, comparison, static (a, c) => SwapComparedAssemblies(a, c));
             ui.Separator(ui.Theme.IconSize);
             OnlyDifferencesCheckbox(ui, rows);
             HiddenMembersCheckbox(ui, comparison);
@@ -78,7 +78,7 @@ internal static class ComparisonView
     {
         var all = comparison.Scope == ApiScope.AllDeclared;
         if (ui.Checkbox(ui.State.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members"))
-            ui.State.Later((comparison, scope: ScopeOf(all)), static (a, s) => ChangeComparedScope(a, s.comparison, s.scope));
+            Commands.Later(ui.State, (comparison, scope: ScopeOf(all)), static (a, s) => ChangeComparedScope(a, s.comparison, s.scope));
     }
 
     private static ApiScope ScopeOf(bool all)
@@ -137,7 +137,7 @@ internal static class ComparisonView
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box);
         if (result.Activated)
-            ui.State.Later(result.Node, static (a, n) => Open(a, n, inNewTab: false));
+            Commands.Later(ui.State, result.Node, static (a, n) => Open(a, n, inNewTab: false));
         if (result.ContextMenuRequested && result.Node != null)
             ui.OpenContextMenu(MenuId, result.ContextMenuAt);
     }
@@ -193,8 +193,8 @@ internal static class ComparisonView
         var left = LeftOf(entry);
         var right = RightOf(entry);
         if (ui.MenuItem(t.ComparisonOpenLeft, enabled: left != null, id: "open-left") && left != null)
-            ui.State.Later(left.Reference, static (a, r) => Navigate(a, r, inNewTab: false));
+            Commands.Later(ui.State, left.Reference, static (a, r) => Navigate(a, r, inNewTab: false));
         if (ui.MenuItem(t.ComparisonOpenRight, enabled: right != null, id: "open-right") && right != null)
-            ui.State.Later(right.Reference, static (a, r) => Navigate(a, r, inNewTab: false));
+            Commands.Later(ui.State, right.Reference, static (a, r) => Navigate(a, r, inNewTab: false));
     }
 }

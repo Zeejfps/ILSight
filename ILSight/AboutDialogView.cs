@@ -75,12 +75,12 @@ internal static class AboutDialogView
         {
             var label = ui.Memo("about-restart", (t, Version: GetVersion(ready.Update)), static a => a.t.AboutRestartToUpdate(a.Version));
             if (ui.Button(label, id: "about-updates"))
-                ui.State.Later(static a => RestartToUpdate(a));
+                Commands.Later(ui.State, static a => RestartToUpdate(a));
             return;
         }
         var text = ButtonText(ui, updates.Status);
         if (ui.Button(text, enabled: CanCheck(updates), id: "about-updates", variant: ButtonVariant.Neutral))
-            ui.State.Later(static a => CheckForUpdates(a));
+            Commands.Later(ui.State, static a => CheckForUpdates(a));
     }
 
     private static string ButtonText(Ui<UiState> ui, UpdateStatus status)
@@ -114,7 +114,7 @@ internal static class AboutDialogView
         var t = ui.State.Strings;
         var check = updates.CheckAutomatically;
         if (ui.Checkbox(t.AboutCheckAutomatically, ref check, id: "about-check-automatically", compact: true))
-            ui.State.Later(check, static (a, on) => SetCheckAutomatically(a, on));
+            Commands.Later(ui.State, check, static (a, on) => SetCheckAutomatically(a, on));
     }
 
     /// <summary>A small row for each version, its name in a column as wide as the widest name.</summary>

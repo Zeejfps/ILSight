@@ -83,12 +83,12 @@ internal static class Shortcuts
     [
         new(Search, static (ui, _) => OpenSearch(ui.State), WhileTyping: true),
         new(OmnibarSearch, static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping: true),
-        new(Back, static (ui, _) => ui.State.Later(static a => GoBack(a)), WhileTyping: true),
-        new(Forward, static (ui, _) => ui.State.Later(static a => GoForward(a)), WhileTyping: true),
+        new(Back, static (ui, _) => Commands.Later(ui.State, static a => GoBack(a)), WhileTyping: true),
+        new(Forward, static (ui, _) => Commands.Later(ui.State, static a => GoForward(a)), WhileTyping: true),
         new(Open, static (ui, _) => MainMenuView.OpenFile(ui)),
         new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language)),
         new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs))),
-        new(ReloadAll, static (ui, _) => ui.State.Later(Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded) => RefreshAssemblies(a, expanded))),
+        new(ReloadAll, static (ui, _) => Commands.Later(ui.State, Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded) => RefreshAssemblies(a, expanded))),
         new(CloseTab, static (ui, _) => CloseActiveTab(ui.State)),
         new(NextTab, static (ui, _) => CycleTab(ui.State, 1)),
         new(PreviousTab, static (ui, _) => CycleTab(ui.State, -1)),
@@ -100,9 +100,9 @@ internal static class Shortcuts
     {
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
-            ui.State.Later(static a => GoBack(a));
+            Commands.Later(ui.State, static a => GoBack(a));
         if (input.WasPressed(PointerButton.Forward))
-            ui.State.Later(static a => GoForward(a));
+            Commands.Later(ui.State, static a => GoForward(a));
 
         foreach (var binding in Bindings)
         {

@@ -128,7 +128,7 @@ internal static class ResourceImageView
         var fileName = BrowseNodes.GetResourceFileName(node);
         var screen = ui.State;
         ui.PickSaveFile(t.ResourceExportTitle, null, fileName, ExportFilters(t, fileName),
-            path => screen.Later((node, path), static (a, s) => SaveResource(a, s.node, s.path)));
+            path => Commands.Later(screen, (node, path), static (a, s) => SaveResource(a, s.node, s.path)));
     }
 
     private const string XamlExtension = ".xaml";

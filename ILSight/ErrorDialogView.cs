@@ -116,7 +116,7 @@ internal static class ErrorDialogView
                 ui.ClipboardText = GetText(shown, selected, t).FullText;
             ui.Tooltip(ui.GetId("error-copy"), t.ErrorsCopyTooltip);
             if (ui.Button(t.ErrorsClear, id: "error-clear", variant: ButtonVariant.Ghost))
-                ui.State.Later(shown, static (a, s) => ClearErrors(a.Errors, s));
+                Commands.Later(ui.State, shown, static (a, s) => ClearErrors(a.Errors, s));
             ui.Spacer();
             if (ui.Button(t.ErrorsClose, id: "error-close", variant: ButtonVariant.Primary))
                 shown.IsOpen = false;

@@ -55,7 +55,7 @@ internal static class TreePaneView
             ui.Separator(theme.IconSize);
             var picked = FindPickedAssembly(tree);
             if (ui.IconButton("close-assembly", ui.State.Icons.AssembliesCloseAssembly, t.TreeCloseAssembly, picked != null) && picked != null)
-                ui.State.Later(picked.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
+                Commands.Later(ui.State, picked.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
         }
     }
 
@@ -114,7 +114,7 @@ internal static class TreePaneView
         var picked = ui.State.Tree.View.Selected;
         if (picked == null)
             return;
-        ui.State.Later((screen: ui.State, picked), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.picked));
+        Commands.Later(ui.State, (screen: ui.State, picked), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.picked));
     }
 
     private static void CloseOnDelete(Ui<UiState> ui)
@@ -126,7 +126,7 @@ internal static class TreePaneView
             return;
         if (!ui.IsPressed(Shortcuts.Delete))
             return;
-        ui.State.Later(picked.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
+        Commands.Later(ui.State, picked.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
     }
 
     private static void Respond(Ui<UiState> ui, TreeViewResult<BrowseNode> result)
@@ -135,9 +135,9 @@ internal static class TreePaneView
         if (node == null)
             return;
         if (IsPicked(result))
-            ui.State.Later(node, static (a, n) => Preview(a, n));
+            Commands.Later(ui.State, node, static (a, n) => Preview(a, n));
         if (result.Activated)
-            ui.State.Later(node, static (a, n) => Open(a, n));
+            Commands.Later(ui.State, node, static (a, n) => Open(a, n));
         if (result.ContextMenuRequested)
             OpenContextMenu(ui, node, result.ContextMenuAt);
     }
@@ -192,19 +192,19 @@ internal static class TreePaneView
         var jump = NodeDefinitions.GetActivation(node.Subject) as Activation.Navigate;
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
-            ui.State.Later(node, static (a, n) => OpenNode(a, n));
+            Commands.Later(ui.State, node, static (a, n) => OpenNode(a, n));
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
-            ui.State.Later(node, static (a, n) => ShowNode(a, n, inNewTab: true));
+            Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))
-            ui.State.Later(jump.Target, static (a, target) => GoTo(a, target));
+            Commands.Later(ui.State, jump.Target, static (a, target) => GoTo(a, target));
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))
             ui.ClipboardText = BrowseNodes.GetFullName(node);
         DocsItem(ui, node);
         if (Analyzers.Of(node) != null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
-            ui.State.Later((screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));
+            Commands.Later(ui.State, (screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));
         var definition = NodeDefinitions.ReferenceOf(node.Subject);
         if (definition != null && ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
-            ui.State.Later(definition, static (a, d) => ShowInMetadata(a, d, inNewTab: false));
+            Commands.Later(ui.State, definition, static (a, d) => ShowInMetadata(a, d, inNewTab: false));
         if (node.Subject is NodeSubject.TypeDefinition type)
             DiagramItems(ui, type.Definition.Reference);
         if (node.HasResource && ui.MenuItem(t.ResourceExport, id: "export-resource", icon: new UiIcon(ui.State.Icons.ResourceExport)))
@@ -224,7 +224,7 @@ internal static class TreePaneView
         {
             ui.MenuSeparator();
             if (ui.MenuItem(t.TreeCloseAssembly, id: "close-assembly"))
-                ui.State.Later(node.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
+                Commands.Later(ui.State, node.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
         }
     }
 
@@ -234,9 +234,9 @@ internal static class TreePaneView
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeShowInDiagram, id: "show-in-diagram"))
-            ui.State.Later((type, title: t.DiagramTitle(type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));
+            Commands.Later(ui.State, (type, title: t.DiagramTitle(type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));
         if (ui.MenuItem(t.TreeShowInNewDiagram, id: "show-in-new-diagram"))
-            ui.State.Later((type, title: t.DiagramTitle(type.Name)), static (a, s) => ShowInNewDiagram(a, s.type, s.title));
+            Commands.Later(ui.State, (type, title: t.DiagramTitle(type.Name)), static (a, s) => ShowInNewDiagram(a, s.type, s.title));
     }
 
     /// <summary>The item that opens the .NET API reference page of a namespace, or of a public type or
@@ -296,7 +296,7 @@ internal static class TreePaneView
             ComparisonPickerView.Open(ui.State.ComparisonPicker, assembly);
         TargetFrameworkMenu(ui, assembly);
         if (ui.MenuItem(t.TreeLoadDependencies, id: "load-dependencies"))
-            ui.State.Later(assembly, static (a, m) => OpenDependencies(a, m));
+            Commands.Later(ui.State, assembly, static (a, m) => OpenDependencies(a, m));
     }
 
     /// <summary>Generating a portable PDB for the assembly, and picking the PDB it reads.</summary>
@@ -318,12 +318,12 @@ internal static class TreePaneView
         if (!menu.IsOpen)
             return;
         if (ui.MenuRadioItem(DetectedFrameworkLabel(t, assembly), !assembly.IsTargetFrameworkPicked, id: "detected"))
-            ui.State.Later(assembly, static (a, m) => SetTargetFramework(a, m, null));
+            Commands.Later(ui.State, assembly, static (a, m) => SetTargetFramework(a, m, null));
         ui.MenuSeparator();
         foreach (var framework in FrameworkIds.Common)
         {
             if (ui.MenuRadioItem(framework.Moniker, IsPicked(assembly, framework), id: framework.Text))
-                ui.State.Later((assembly, framework), static (a, s) => SetTargetFramework(a, s.assembly, s.framework));
+                Commands.Later(ui.State, (assembly, framework), static (a, s) => SetTargetFramework(a, s.assembly, s.framework));
         }
     }
 
@@ -348,7 +348,7 @@ internal static class TreePaneView
         var screen = ui.State;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"]), new FileFilter(t.FileFilterAll, ["*.*"])];
         var title = t.TreeSelectPdbTitle(assembly.Name);
-        ui.PickFile(title, FindFolderOf(assembly), filters, path => screen.Later((assembly, path), static (a, s) => UsePdb(a, s.assembly, s.path)));
+        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.Later(screen, (assembly, path), static (a, s) => UsePdb(a, s.assembly, s.path)));
     }
 
     /// <summary>The folder the assembly's file is in; null for one read out of a package, whose path runs through it.</summary>

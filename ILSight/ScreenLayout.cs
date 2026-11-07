@@ -9,15 +9,14 @@ namespace ILSight;
 /// putting it back as it starts out.</summary>
 public static class ScreenLayout
 {
-    /// <summary>The saved layout, its documents' panels left for the tabs to be shown in them, a panel the
-    /// layout makes for itself opened as a new tab, and a closed panel's tab closed with it.</summary>
-    internal static MainLayout RestoreLayout(UiState uiState, DockLayout? saved)
+    /// <summary>Has a panel the layout of <paramref name="uiState"/> makes for itself open as a new tab, and
+    /// a closed panel's tab close with it. The layout's callbacks need the screen the layout is part of, so
+    /// these are assigned after the screen is made.</summary>
+    internal static void ConnectLayout(UiState uiState)
     {
-        var dock = DockPanels.Restore(saved);
-        var layout = new MainLayout { Dock = dock };
+        var dock = uiState.MainLayout.Dock;
         dock.NewPanel = () => OpenTabForPanel(uiState);
         dock.PanelClosed += panel => OnPanelClosed(uiState, panel);
-        return layout;
     }
 
     public static void OpenAnalyzer(UiState uiState)
@@ -144,7 +143,7 @@ public static class ScreenLayout
     private static string OpenActiveTabPanel(UiState uiState)
     {
         var panel = DocumentPanels.CreatePanel(uiState.Documents);
-        uiState.Later((uiState, panel), static (a, s) => ILSightApp.OpenTabIn(s.uiState, a, s.panel, focus: true));
+        Commands.Later(uiState, (uiState, panel), static (a, s) => ILSightApp.OpenTabIn(s.uiState, a, s.panel, focus: true));
         return panel;
     }
 }

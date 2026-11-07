@@ -55,10 +55,10 @@ internal static class AssemblyListsDialogView
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
             if (ui.Button(t.ListsNew, id: "new", icon: new UiIcon(ui.State.Icons.ListsNew)))
-                ui.State.Later((dialog, name: t.ListsNewName), static (a, s) => Create(s.dialog, a, s.name));
+                Commands.Later(ui.State, (dialog, name: t.ListsNewName), static (a, s) => Create(s.dialog, a, s.name));
             ui.Spacer();
             if (ui.IconButton("duplicate", ui.State.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked != null)
-                ui.State.Later((dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
+                Commands.Later(ui.State, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
             if (ui.IconButton("rename", ui.State.Icons.ListsRename, t.ListsRename, any) && picked != null)
                 AssemblyLists.StartRenaming(dialog, picked);
             if (ui.IconButton("delete", ui.State.Icons.ListsDelete, t.ListsDelete, any) && picked != null)
@@ -123,7 +123,7 @@ internal static class AssemblyListsDialogView
             var count = AssemblyLists.GetPaths(lists, name).Count;
             ui.Text(t.ListsCount(count), color: theme.TextMuted, size: theme.FontSizeSmall);
             if (ui.Button(t.ListsActivate, enabled: !active, id: "activate", variant: ButtonVariant.Ghost))
-                ui.State.Later(name, static (a, n) => SwitchAssemblyList(a, n));
+                Commands.Later(ui.State, name, static (a, n) => SwitchAssemblyList(a, n));
             return row.Interaction.DoubleClicked;
         }
     }
@@ -200,7 +200,7 @@ internal static class AssemblyListsDialogView
             AssemblyLists.StartRenaming(ui.State.ListsDialog, name);
             return;
         }
-        ui.State.Later(name, static (a, n) => SwitchAssemblyList(a, n));
+        Commands.Later(ui.State, name, static (a, n) => SwitchAssemblyList(a, n));
     }
 
     /// <summary>Keeps the name being typed when another row is picked, and drops a deletion being asked about.</summary>
@@ -253,11 +253,11 @@ internal static class AssemblyListsDialogView
         var dialog = ui.State.ListsDialog;
         var active = picked == lists.Active;
         if (ui.MenuItem(t.ListsActivate, enabled: !active, id: "activate"))
-            ui.State.Later(picked, static (a, n) => SwitchAssemblyList(a, n));
+            Commands.Later(ui.State, picked, static (a, n) => SwitchAssemblyList(a, n));
         if (ui.MenuItem(t.ListsRename, Shortcuts.Rename, id: "rename"))
             AssemblyLists.StartRenaming(dialog, picked);
         if (ui.MenuItem(t.ListsDuplicate, id: "duplicate"))
-            ui.State.Later((dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
+            Commands.Later(ui.State, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
         ui.MenuSeparator();
         if (ui.MenuItem(t.ListsDelete, Shortcuts.Delete, id: "delete"))
             AssemblyLists.StartConfirmingDelete(dialog, picked);
@@ -292,7 +292,7 @@ internal static class AssemblyListsDialogView
         {
             var count = t.ListsCount(preset.Paths.Count);
             if (ui.MenuItem(preset.Name, detail: count))
-                ui.State.Later((dialog: ui.State.ListsDialog, preset), static (a, s) => AddPreset(s.dialog, a, s.preset));
+                Commands.Later(ui.State, (dialog: ui.State.ListsDialog, preset), static (a, s) => AddPreset(s.dialog, a, s.preset));
         }
     }
 
@@ -333,6 +333,6 @@ internal static class AssemblyListsDialogView
         if (dialog.Mode is not ListsDialogMode.Renaming renaming)
             return;
         AssemblyLists.StopAsking(dialog);
-        screen.Later((list: renaming.List, newName: renaming.NewName), static (a, s) => AssemblyLists.RenameList(a.Lists, s.list, s.newName));
+        Commands.Later(screen, (list: renaming.List, newName: renaming.NewName), static (a, s) => AssemblyLists.RenameList(a.Lists, s.list, s.newName));
     }
 }

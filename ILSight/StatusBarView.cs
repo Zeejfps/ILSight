@@ -80,7 +80,7 @@ internal static class StatusBarView
         var theme = ui.Theme;
         var i = ui.Clickable("restart-to-update");
         if (i.Clicked)
-            ui.State.Later(static a => Updates.RestartToUpdate(a));
+            Commands.Later(ui.State, static a => Updates.RestartToUpdate(a));
 
         using (ui.Row(i.Id, new Box
         {

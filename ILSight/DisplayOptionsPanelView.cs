@@ -120,7 +120,7 @@ internal static class DisplayOptionsPanelView
         var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
-            ui.State.Later(themes.Ids[picked], static (a, theme) => SetTheme(a, theme));
+            Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => SetTheme(a, theme));
     }
 
     /// <summary>Starts a theme of the user's own from the one shown, switches to it and opens its file.</summary>
@@ -129,7 +129,7 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Strings;
         if (!ui.IconButton("customize-theme", ui.State.Icons.OptionsCustomizeTheme, t.DisplayOptionsCustomizeTheme, variant: ButtonVariant.Neutral))
             return;
-        ui.State.Later((screen: ui.State, t), static (a, s) => CustomizeTheme(s.screen, a, s.t));
+        Commands.Later(ui.State, (screen: ui.State, t), static (a, s) => CustomizeTheme(s.screen, a, s.t));
     }
 
     private static void CustomizeTheme(UiState screen, AppState appState, Strings t)
@@ -144,14 +144,14 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Strings;
         if (!ui.IconButton("themes-folder", ui.State.Icons.OptionsOpenThemesFolder, t.DisplayOptionsOpenThemesFolder, variant: ButtonVariant.Neutral))
             return;
-        ui.State.Later(ui.State, static (a, screen) => OpenFolder(screen, PrepareThemesFolder(a)));
+        Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, PrepareThemesFolder(a)));
     }
 
     private static void ReloadThemesButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
         if (ui.IconButton("reload-themes", ui.State.Icons.OptionsReloadThemes, t.DisplayOptionsReloadThemes, variant: ButtonVariant.Neutral))
-            ui.State.Later(static a => ReloadUserThemes(a));
+            Commands.Later(ui.State, static a => ReloadUserThemes(a));
     }
 
     /// <summary>The icon themes of the catalog, built-in ones first, then the buttons that start a custom
@@ -174,7 +174,7 @@ internal static class DisplayOptionsPanelView
         var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
-            ui.State.Later(themes.Ids[picked], static (a, theme) => SetIconTheme(a, theme));
+            Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => SetIconTheme(a, theme));
     }
 
     /// <summary>Starts an icon theme of the user's own from the one shown, switches to it and opens its file.</summary>
@@ -183,7 +183,7 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Strings;
         if (!ui.IconButton("customize-icon-theme", ui.State.Icons.OptionsCustomizeIconTheme, t.DisplayOptionsCustomizeIconTheme, variant: ButtonVariant.Neutral))
             return;
-        ui.State.Later((screen: ui.State, t), static (a, s) => CustomizeIconTheme(s.screen, a, s.t));
+        Commands.Later(ui.State, (screen: ui.State, t), static (a, s) => CustomizeIconTheme(s.screen, a, s.t));
     }
 
     private static void CustomizeIconTheme(UiState screen, AppState appState, Strings t)
@@ -198,7 +198,7 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Strings;
         if (!ui.IconButton("icon-themes-folder", ui.State.Icons.OptionsOpenIconThemesFolder, t.DisplayOptionsOpenIconThemesFolder, variant: ButtonVariant.Neutral))
             return;
-        ui.State.Later(ui.State, static (a, screen) => OpenFolder(screen, PrepareIconThemesFolder(a)));
+        Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, PrepareIconThemesFolder(a)));
     }
 
     private static void OpenFolder(UiState screen, string? folder)
@@ -211,7 +211,7 @@ internal static class DisplayOptionsPanelView
     {
         var t = ui.State.Strings;
         if (ui.IconButton("reload-icon-themes", ui.State.Icons.OptionsReloadIconThemes, t.DisplayOptionsReloadIconThemes, variant: ButtonVariant.Neutral))
-            ui.State.Later(static a => ReloadUserIconThemes(a));
+            Commands.Later(ui.State, static a => ReloadUserIconThemes(a));
     }
 
     private static void UiScalePicker(Ui<UiState> ui)
@@ -258,7 +258,7 @@ internal static class DisplayOptionsPanelView
         }
         var picked = PickFrom(ui, "language", LocaleLabels, current);
         if (picked != NothingPicked)
-            ui.State.Later(locales[picked].Locale, static (a, locale) => SetLocale(a, locale));
+            Commands.Later(ui.State, locales[picked].Locale, static (a, locale) => SetLocale(a, locale));
     }
 
     private static string[] ListLocaleLabels()

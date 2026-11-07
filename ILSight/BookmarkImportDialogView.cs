@@ -29,15 +29,15 @@ internal static class BookmarkImportDialogView
                 using (ui.DialogActions())
                 {
                     if (ui.Button(t.BookmarksImportCancel, id: "import-cancel", variant: ButtonVariant.Ghost))
-                        ui.State.Later(import, static (a, i) => FinishBookmarkImport(a, i, null));
+                        Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, null));
                     if (ui.Button(t.BookmarksImportReplace, id: "import-replace"))
-                        ui.State.Later(import, static (a, i) => FinishBookmarkImport(a, i, BookmarkImportMode.Replace));
+                        Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, BookmarkImportMode.Replace));
                     if (ui.Button(t.BookmarksImportMerge, id: "import-merge", variant: ButtonVariant.Primary))
-                        ui.State.Later(import, static (a, i) => FinishBookmarkImport(a, i, BookmarkImportMode.Merge));
+                        Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, BookmarkImportMode.Merge));
                 }
             }
         }
         if (!open)
-            ui.State.Later(import, static (a, i) => FinishBookmarkImport(a, i, null));
+            Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, null));
     }
 }

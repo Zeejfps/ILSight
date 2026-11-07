@@ -316,7 +316,7 @@ internal static class DiagramView
         var target = row.Value.Target;
         if (target == null)
             return;
-        screen.Later((diagram, target, inNewTab), static (a, s) => OpenFromDiagram(a, s.diagram, s.target, s.inNewTab));
+        Commands.Later(screen, (diagram, target, inNewTab), static (a, s) => OpenFromDiagram(a, s.diagram, s.target, s.inNewTab));
     }
 
     /// <summary>A press dragged further than a click pans the diagram along with the pointer.</summary>
@@ -547,7 +547,7 @@ internal static class DiagramView
             return;
         ui.HideTooltip();
         var inNewTab = click.Button == PointerButton.Middle || IsCommandHeld(ui.Input.Modifiers);
-        ui.State.Later((diagram, reference, inNewTab), static (a, s) => OpenFromDiagram(a, s.diagram, s.reference, s.inNewTab));
+        Commands.Later(ui.State, (diagram, reference, inNewTab), static (a, s) => OpenFromDiagram(a, s.diagram, s.reference, s.inNewTab));
     }
 
     private static void CardMenu(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
@@ -567,14 +567,14 @@ internal static class DiagramView
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
-            ui.State.Later((diagram, card), static (a, s) => OpenFromDiagram(a, s.diagram, s.card.Type, inNewTab: false));
+            Commands.Later(ui.State, (diagram, card), static (a, s) => OpenFromDiagram(a, s.diagram, s.card.Type, inNewTab: false));
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
-            ui.State.Later((diagram, card), static (a, s) => OpenFromDiagram(a, s.diagram, s.card.Type, inNewTab: true));
+            Commands.Later(ui.State, (diagram, card), static (a, s) => OpenFromDiagram(a, s.diagram, s.card.Type, inNewTab: true));
         ui.MenuSeparator();
         GrowItems(ui, diagram, card);
         ui.MenuSeparator();
         if (ui.MenuItem(t.DiagramRemove, id: "remove"))
-            ui.State.Later((view, diagram, card), static (a, s) => Remove(a, s.view, s.diagram, s.card));
+            Commands.Later(ui.State, (view, diagram, card), static (a, s) => Remove(a, s.view, s.diagram, s.card));
     }
 
     /// <summary>The items that add the types <paramref name="card"/> is related to, each offered when it has
@@ -583,13 +583,13 @@ internal static class DiagramView
     {
         var t = ui.State.Strings;
         if (HasLinks(card, IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: HasMissingBases(diagram, card), id: "add-bases"))
-            ui.State.Later((diagram, card), static (a, s) => ExpandBases(a, s.diagram, s.card));
+            Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandBases(a, s.diagram, s.card));
         if (HasLinks(card, IsInterfaceLink) && ui.MenuItem(t.DiagramAddInterfaces, enabled: HasMissingInterfaces(diagram, card), id: "add-interfaces"))
-            ui.State.Later((diagram, card), static (a, s) => ExpandInterfaces(a, s.diagram, s.card));
+            Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandInterfaces(a, s.diagram, s.card));
         if (card.CanHaveDerived && ui.MenuItem(DerivedItemOf(ui, card), id: "add-derived"))
-            ui.State.Later((diagram, card), static (a, s) => ExpandDerived(a, s.diagram, s.card));
+            Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandDerived(a, s.diagram, s.card));
         if (HasLinks(card, IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: HasMissingHeld(diagram, card), id: "add-held"))
-            ui.State.Later((diagram, card), static (a, s) => ExpandHeld(a, s.diagram, s.card));
+            Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandHeld(a, s.diagram, s.card));
     }
 
     private static bool HasLinks(TypeCard card, Func<TypeLink, bool> isKind) => card.Links.Any(isKind);

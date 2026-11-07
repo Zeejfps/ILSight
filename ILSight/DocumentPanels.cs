@@ -389,7 +389,7 @@ public static class DocumentPanels
     internal static string OpenTabForPanel(UiState uiState)
     {
         var panel = DocumentPanels.CreatePanel(uiState.Documents);
-        uiState.Later((uiState, panel), static (a, s) => ILSightApp.OpenTabIn(s.uiState, a, s.panel, focus: false));
+        Commands.Later(uiState, (uiState, panel), static (a, s) => ILSightApp.OpenTabIn(s.uiState, a, s.panel, focus: false));
         return panel;
     }
 
@@ -408,7 +408,7 @@ public static class DocumentPanels
         if (tab == null)
             return;
         RemoveView(uiState.Documents, tab);
-        uiState.Later((uiState, tab), static (a, s) => ILSightApp.CloseTabAndFocusNext(s.uiState, a, s.tab));
+        Commands.Later(uiState, (uiState, tab), static (a, s) => ILSightApp.CloseTabAndFocusNext(s.uiState, a, s.tab));
     }
 
     /// <summary>Focuses the tab of the panel the layout focuses now, else the first group's front tab.</summary>
@@ -454,7 +454,7 @@ public static class DocumentPanels
     /// <summary>Asks for <paramref name="tab"/> to become the active tab.</summary>
     private static void AskToFocusTab(UiState uiState, DocumentTab tab)
     {
-        uiState.Later(tab, static (a, t) => Docking.FocusTab(a, t));
+        Commands.Later(uiState, tab, static (a, t) => Docking.FocusTab(a, t));
     }
 
     /// <summary>Focuses another tab when the active one was closed by a feature, trying again only once

@@ -31,7 +31,7 @@ internal static class DecompilerOptionsPanelView
                 OptionFolds.UnfoldAll(folded);
             ui.Separator(theme.IconSize);
             if (ui.IconButton("reset", ui.State.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
-                ui.State.Later(static a => ResetDecompilerToggles(a));
+                Commands.Later(ui.State, static a => ResetDecompilerToggles(a));
         }
         ui.Separator();
         var tooNew = options.LanguageVersion < Newest ? ui.Memo("too-new", (t, options.LanguageVersion), static a => TooNew(a.t, a.LanguageVersion)) : null;
@@ -93,7 +93,7 @@ internal static class DecompilerOptionsPanelView
             ui.Icon(new UiIcon(mark, theme.TextMuted));
             var all = State(section, options);
             if (ui.Checkbox(Title(t, section), ref all, id: "all", enabled: allowed, width: Sizing.Grow(), bold: Changed(section, options)))
-                ui.State.Later((toggles: section.Toggles, on: all == true), static (a, s) => SetDecompilerToggles(a, s.toggles, s.on));
+                Commands.Later(ui.State, (toggles: section.Toggles, on: all == true), static (a, s) => SetDecompilerToggles(a, s.toggles, s.on));
         }
         if (!allowed && tooNew != null)
             ui.Tooltip(item.Id, tooNew);
@@ -144,7 +144,7 @@ internal static class DecompilerOptionsPanelView
             var on = options.IsOn(toggle);
             if (ui.Checkbox(DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name, ref on, id: toggle.Name, enabled: options.Allows(toggle),
                     width: Sizing.Grow(), bold: options.IsChanged(toggle)))
-                ui.State.Later((toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
+                Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
         }
     }
 

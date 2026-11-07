@@ -31,7 +31,7 @@ internal static class TabMenuView
         var tab = DocumentPanels.FindTab(ui.State.Documents, panel);
         if (tab == null)
             return;
-        ui.State.Later(tab, static (a, kept) => KeepTabOpen(a, kept));
+        Commands.Later(ui.State, tab, static (a, kept) => KeepTabOpen(a, kept));
     }
 
     public static void Render(Ui<UiState> ui, DocumentTabs tabs)
@@ -73,7 +73,7 @@ internal static class TabMenuView
         if (tab != tabs.Preview)
             return;
         if (ui.MenuItem(ui.State.Strings.TabKeepOpen, id: "keep-open"))
-            ui.State.Later(tab, static (a, kept) => KeepTabOpen(a, kept));
+            Commands.Later(ui.State, tab, static (a, kept) => KeepTabOpen(a, kept));
         ui.MenuSeparator();
     }
 }

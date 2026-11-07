@@ -160,7 +160,7 @@ internal static class FrameworkPickerView
 
         if (open && picker.HasSelection)
         {
-            ui.State.Later(ListSelected(picker), static (a, selected) => OpenSelected(a, selected));
+            Commands.Later(ui.State, ListSelected(picker), static (a, selected) => OpenSelected(a, selected));
             close = true;
         }
         if (close)

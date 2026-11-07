@@ -376,7 +376,7 @@ internal static class ExportDialogView
         var label = DecompilerOptionLabels.Label(t, name) ?? name;
         var on = options.IsOn(toggle);
         if (ui.Checkbox(label, ref on, id: name, compact: true))
-            ui.State.Later((toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
+            Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
     }
 
     /// <summary>What is written besides the code: the strong-name key to sign with, and PDBs.</summary>
@@ -433,7 +433,7 @@ internal static class ExportDialogView
             if (ui.Button(t.ExportCancel, id: "export-cancel", variant: ButtonVariant.Ghost))
                 Exports.CloseExportSetup(setup);
             if (ui.Button(t.ExportConfirm, enabled: Exports.CanExport(setup), id: "export-start", variant: ButtonVariant.Primary))
-                ui.State.Later(setup, static (a, s) => Start(s, a));
+                Commands.Later(ui.State, setup, static (a, s) => Start(s, a));
         }
     }
 

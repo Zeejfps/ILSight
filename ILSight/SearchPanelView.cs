@@ -147,7 +147,7 @@ internal static class SearchPanelView
         {
             var row = PickSelected(search);
             if (row != null)
-                ui.State.Later(row.Node, static (a, node) => ShowNode(a, node));
+                Commands.Later(ui.State, row.Node, static (a, node) => ShowNode(a, node));
             return;
         }
         if (ui.Input.IsKeyPressed(KeyboardKey.DownArrow) && search.Rows.Count > 0)
@@ -225,7 +225,7 @@ internal static class SearchPanelView
         ItemSelections.TakeFrom(search.Selection, search.Rows);
         var selected = search.SelectedRow;
         if (body.Activated && selected != null)
-            ui.State.Later((node: selected.Node, inNewTab: body.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
+            Commands.Later(ui.State, (node: selected.Node, inNewTab: body.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
     }
 
     private static void ResultRow(Ui<UiState> ui, TableBody body, int index)
@@ -237,7 +237,7 @@ internal static class SearchPanelView
         using (row)
         {
             if (row.Interaction.Clicked)
-                ui.State.Later(node, static (a, n) => ShowNode(a, n));
+                Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n));
             NameCell(ui, row, result);
             row.TextCell(1, result.Location, theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
             row.TextCell(2, NodeText.AssemblyLabel(node.Assembly), theme.TextMuted);

@@ -2,8 +2,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.ScreenLayout;
-using static ILSight.ScreenSettings;
 
 namespace ILSight;
 
@@ -16,33 +14,6 @@ namespace ILSight;
 /// through <see cref="AppCommands"/>.</summary>
 public sealed class UiState : IUiState
 {
-    /// <param name="saved">What the settings kept of the screen when they were last saved.</param>
-    /// <param name="reportError">Tells the user that something done in the background failed.</param>
-    /// <param name="session">The browse tree the tree and searches show nodes of.</param>
-    public UiState(ViewSettings saved, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime)
-    {
-        Tree = new BrowseTree { Session = session, ReportError = reportError };
-        FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) };
-        BookmarkColumns.Restore(saved.BookmarkColumns);
-        SearchColumns.Restore(saved.SearchColumns);
-        ExportColumns.Restore(saved.ExportColumns);
-        Search = Searches.CreateSearch(reportError, session);
-        Search.Kinds = saved.SearchKinds;
-        Omnibar = new Omnibar { Search = Searches.CreateSearch(reportError, session) };
-        MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters);
-        Runtime = runtime;
-        Picker = new FrameworkPicker { ReportError = reportError, ListAssemblies = () => RuntimeAssemblies.ListAssemblies(runtime) };
-        NuGetPicker = new NuGetPicker { ReportError = reportError };
-        NuGetPicking.RestoreSearch(NuGetPicker, saved.NuGet);
-        DialogWindows.Restore(NuGetPicker.Window, saved.NuGetWindow);
-        DialogWindows.Restore(ExportSetup.Window, saved.ExportWindow);
-        Display = saved.Display ?? DisplayOptions.Default;
-        Analyzer = new AnalyzerRows { AppCommands = AppCommands };
-        MainLayout = RestoreLayout(this, saved.Layout);
-        DocumentPanels.SkipPanels(Documents, Docking.ListDocumentPanels(MainLayout));
-        KeptView = CaptureViewSources(this);
-    }
-
     public UiTheme Theme { get; set; } = UiTheme.Dark;
     public CodeViewPalette CodeViewPalette { get; set; } = BuiltInThemes.Dark.Code;
     public NodeIconPalette NodeIconPalette { get; set; } = BuiltInThemes.Dark.Icons;
@@ -58,20 +29,11 @@ public sealed class UiState : IUiState
     public Strings Strings { get; set; } = Strings.En;
 
     /// <summary>What the screen asked of the app state while it drew, for the app to run once the frame is drawn.</summary>
-    public Queue<AppCommand> AppCommands { get; } = new();
-
-    /// <summary>Asks for <paramref name="run"/> to be done to the app state once the frame is drawn.
-    /// Pass a <c>static</c> lambda.</summary>
-    public void Later(AppCommand run) => AppCommands.Enqueue(run);
-
-    /// <summary>Asks for <paramref name="run"/> to be done to the app state and <paramref name="subject"/>
-    /// once the frame is drawn. Pass a <c>static</c> lambda, handing it what it acts on as
-    /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
-    public void Later<T>(T subject, Action<AppState, T> run) => AppCommands.Enqueue(Commands.Create(subject, run));
+    public required Queue<AppCommand> AppCommands { get; init; }
 
     /// <summary>Where the views and the open documents are docked, all as tabs: side by side,
     /// stacked or in floating windows.</summary>
-    public MainLayout MainLayout { get; }
+    public required MainLayout MainLayout { get; init; }
 
     public DockLayout Layout => MainLayout.Dock;
 
@@ -94,7 +56,7 @@ public sealed class UiState : IUiState
     public bool IsAboutOpen;
 
     /// <summary>The browse tree over the open assemblies, with the view's expansion and selection.</summary>
-    public BrowseTree Tree { get; }
+    public required BrowseTree Tree { get; init; }
 
     /// <summary>Which assembly list the tree last showed.</summary>
     public int ShownListGeneration;
@@ -124,7 +86,7 @@ public sealed class UiState : IUiState
     public Queue<string> FoldersToOpen { get; } = new();
 
     /// <summary>The analyzer's tree as its view shows it.</summary>
-    public AnalyzerRows Analyzer { get; }
+    public required AnalyzerRows Analyzer { get; init; }
 
     /// <summary>The columns of the bookmarks panel: mark, name, location and module.</summary>
     public TableColumns BookmarkColumns { get; } = new(
@@ -146,10 +108,10 @@ public sealed class UiState : IUiState
         new TableColumn(2f, 60f));
 
     /// <summary>The decompiler options panel's folded groups.</summary>
-    public FoldedGroups FoldedOptionGroups { get; }
+    public required FoldedGroups FoldedOptionGroups { get; init; }
 
     /// <summary>How the documents draw code: its size and the aids drawn around it.</summary>
-    public DisplayOptions Display;
+    public required DisplayOptions Display;
 
     /// <summary>Set while the user is asked whether to put every display option back to its default.</summary>
     public bool ConfirmingDisplayReset;
@@ -167,13 +129,13 @@ public sealed class UiState : IUiState
     public BookmarksPanel BookmarksPanel { get; } = new();
 
     /// <summary>The search panel's query, results and selection.</summary>
-    public Search Search { get; }
+    public required Search Search { get; init; }
 
     /// <summary>The bar over each document: its path, or its search.</summary>
-    public Omnibar Omnibar { get; }
+    public required Omnibar Omnibar { get; init; }
 
     /// <summary>The metadata grids' flags filters.</summary>
-    public MetadataFilters MetadataFilters { get; }
+    public required MetadataFilters MetadataFilters { get; init; }
 
     /// <summary>The export selected in the exports panel, or null; one that is gone is as none.</summary>
     public ExportRun? SelectedExport;
@@ -187,16 +149,16 @@ public sealed class UiState : IUiState
     public AssemblyListsDialog ListsDialog { get; } = new();
 
     /// <summary>The "open from framework" dialog.</summary>
-    public FrameworkPicker Picker { get; }
+    public required FrameworkPicker Picker { get; init; }
 
     /// <summary>What this machine has installed.</summary>
-    public InstalledRuntime Runtime { get; }
+    public required InstalledRuntime Runtime { get; init; }
 
     /// <summary>The dialog that picks the assembly to compare another with.</summary>
     public ComparisonPicker ComparisonPicker { get; } = new();
 
     /// <summary>The "open from NuGet" dialog.</summary>
-    public NuGetPicker NuGetPicker { get; }
+    public required NuGetPicker NuGetPicker { get; init; }
 
     /// <summary>What the export dialog asks for, and whether it is open.</summary>
     public ExportSetup ExportSetup { get; } = new();

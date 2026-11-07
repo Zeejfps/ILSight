@@ -46,7 +46,7 @@ public static class MainView
         var dropped = ui.Input.TakeDroppedFiles();
         if (dropped.Count == 0)
             return;
-        ui.State.Later(dropped, static (a, paths) => OpenDroppedFiles(a, paths));
+        Commands.Later(ui.State, dropped, static (a, paths) => OpenDroppedFiles(a, paths));
     }
 
     private static void Panels(Ui<UiState> ui, AppState appState)

@@ -222,7 +222,7 @@ internal static class ComparisonPickerView
         var other = picker.Selected;
         if (other == null)
             return false;
-        screen.Later((compared, other, title: t.ComparisonTitle(compared.Name)), static (a, s) => CompareAssemblies(a, s.compared, s.other, s.title));
+        Commands.Later(screen, (compared, other, title: t.ComparisonTitle(compared.Name)), static (a, s) => CompareAssemblies(a, s.compared, s.other, s.title));
         return true;
     }
 }
