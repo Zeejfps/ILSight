@@ -116,8 +116,8 @@ internal static class DisplayOptionsPanelView
 
     private static void PickTheme(Ui<UiState> ui, ThemeCatalog themes, ThemeId<ThemeFile> chosen)
     {
-        var labels = themes.ListNames(ui.State.Strings.Culture);
-        var current = themes.IndexOf(chosen);
+        var labels = ThemeCatalogs.ListNames(themes, ui.State.Strings.Culture);
+        var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
             ui.State.Later(themes.Ids[picked], static (a, theme) => SetTheme(a, theme));
@@ -134,7 +134,7 @@ internal static class DisplayOptionsPanelView
 
     private static void CustomizeTheme(UiState screen, AppState appState, Strings t)
     {
-        var file = CreateCustomTheme(appState, parent => t.ThemeCustomName(appState.Themes.NameOf(parent, t.Culture)));
+        var file = CreateCustomTheme(appState, parent => t.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.Themes, parent, t.Culture)));
         if (file != null)
             screen.FilesToOpen.Enqueue(file);
     }
@@ -170,8 +170,8 @@ internal static class DisplayOptionsPanelView
 
     private static void PickIconTheme(Ui<UiState> ui, IconThemeCatalog themes, ThemeId<IconThemeFile> chosen)
     {
-        var labels = themes.ListNames(ui.State.Strings.Culture);
-        var current = themes.IndexOf(chosen);
+        var labels = ThemeCatalogs.ListNames(themes, ui.State.Strings.Culture);
+        var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
             ui.State.Later(themes.Ids[picked], static (a, theme) => SetIconTheme(a, theme));
@@ -188,7 +188,7 @@ internal static class DisplayOptionsPanelView
 
     private static void CustomizeIconTheme(UiState screen, AppState appState, Strings t)
     {
-        var file = CreateCustomIconTheme(appState, parent => t.ThemeCustomName(appState.IconThemes.NameOf(parent, t.Culture)));
+        var file = CreateCustomIconTheme(appState, parent => t.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.IconThemes, parent, t.Culture)));
         if (file != null)
             screen.FilesToOpen.Enqueue(file);
     }

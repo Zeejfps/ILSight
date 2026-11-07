@@ -26,7 +26,7 @@ public sealed class BuiltInThemeTests
     [Fact]
     public void The_built_in_themes_load_without_errors_the_default_ones_first()
     {
-        var catalog = new ThemeCatalog(BuiltInThemes.Files);
+        var catalog = Theming.CreateCatalog(BuiltInThemes.Files);
 
         Assert.Empty(BuiltInThemes.Errors);
         Assert.Empty(catalog.Errors);
@@ -81,10 +81,10 @@ public sealed class BuiltInThemeTests
     [Fact]
     public void The_default_themes_are_named_in_the_interface_language_and_the_others_by_their_proper_names()
     {
-        var catalog = new ThemeCatalog(BuiltInThemes.Files);
+        var catalog = Theming.CreateCatalog(BuiltInThemes.Files);
 
-        var german = catalog.ListNames(Strings.For(Locale.De).Culture);
-        var japanese = catalog.ListNames(Strings.For(Locale.Ja).Culture);
+        var german = ThemeCatalogs.ListNames(catalog, Strings.For(Locale.De).Culture);
+        var japanese = ThemeCatalogs.ListNames(catalog, Strings.For(Locale.Ja).Culture);
 
         Assert.Equal(["Dunkel", "Hell"], german.Take(2));
         Assert.Equal(["ダーク", "ライト"], japanese.Take(2));
@@ -92,7 +92,7 @@ public sealed class BuiltInThemeTests
         Assert.Contains("GitHub Dark", japanese);
     }
 
-    private static AppTheme Resolve(string id) => new ThemeCatalog(BuiltInThemes.Files).Find(ThemeId<ThemeFile>.Of(id));
+    private static AppTheme Resolve(string id) => ThemeCatalogs.FindTheme(Theming.CreateCatalog(BuiltInThemes.Files), ThemeId<ThemeFile>.Of(id));
 
     private static ThemeType? TypeOf(string id) => BuiltInThemes.Files.Single(f => f.Id.Text == id).Type;
 
@@ -112,12 +112,12 @@ public sealed class ThemeLoadingTests
 
     private static ThemeId<ThemeFile> Id(string text) => ThemeId<ThemeFile>.Of(text);
 
-    private static ThemeFile User(string id, string json) => ThemeFile.Read(Id(id), id + ".json", Encoding.UTF8.GetBytes(json));
+    private static ThemeFile User(string id, string json) => Theming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json));
 
     private static ThemeCatalog Load(params ThemeFile[] users)
     {
-        var catalog = new ThemeCatalog(BuiltInThemes.Files);
-        catalog.LoadUserThemes(users);
+        var catalog = Theming.CreateCatalog(BuiltInThemes.Files);
+        ThemeCatalogs.LoadUserThemes(catalog, users);
         return catalog;
     }
 
@@ -127,9 +127,9 @@ public sealed class ThemeLoadingTests
         var catalog = Load(User("my-dracula", """
             { "extends": "dracula", "ui": { "accent": "#FF0000" }, "code": { "keyword": "#00FF00" } }
             """));
-        var dracula = catalog.Find(Id("dracula"));
+        var dracula = ThemeCatalogs.FindTheme(catalog, Id("dracula"));
 
-        var mine = catalog.Find(Id("my-dracula"));
+        var mine = ThemeCatalogs.FindTheme(catalog, Id("my-dracula"));
 
         Assert.Empty(catalog.Errors);
         Assert.Equal(0xFFFF0000u, mine.Ui.Accent);
@@ -145,7 +145,7 @@ public sealed class ThemeLoadingTests
     {
         var catalog = Load(User("dim", """{ "extends": "github-dark", "ui": { "control": "#505050" } }"""));
 
-        var dim = catalog.Find(Id("dim")).Ui;
+        var dim = ThemeCatalogs.FindTheme(catalog, Id("dim")).Ui;
 
         Assert.Equal(UiColor.Mix(0xFF505050, dim.Text, 0.06f), dim.ControlHovered);
         Assert.Equal(UiColor.Mix(0xFF505050, dim.Text, 0.12f), dim.ControlPressed);
@@ -159,17 +159,17 @@ public sealed class ThemeLoadingTests
             User("child", """{ "extends": "base", "palette": { "bg": "#222222" } }"""));
 
         Assert.Empty(catalog.Errors);
-        Assert.Equal(0xFF111111u, catalog.Find(Id("base")).Ui.EditorBackground);
-        Assert.Equal(0xFF222222u, catalog.Find(Id("child")).Ui.EditorBackground);
+        Assert.Equal(0xFF111111u, ThemeCatalogs.FindTheme(catalog, Id("base")).Ui.EditorBackground);
+        Assert.Equal(0xFF222222u, ThemeCatalogs.FindTheme(catalog, Id("child")).Ui.EditorBackground);
     }
 
     [Fact]
     public void A_theme_that_extends_none_takes_its_code_and_icon_colors_from_the_built_in_one_of_its_type()
     {
         var catalog = Load(User("paper", $$"""{ "type": "light", "ui": { {{BaseRoles}} } }"""));
-        var light = catalog.Find(Id("light"));
+        var light = ThemeCatalogs.FindTheme(catalog, Id("light"));
 
-        var paper = catalog.Find(Id("paper"));
+        var paper = ThemeCatalogs.FindTheme(catalog, Id("paper"));
 
         Assert.Empty(catalog.Errors);
         Assert.Equal(0xFF101010u, paper.Ui.Background);
@@ -187,7 +187,7 @@ public sealed class ThemeLoadingTests
 
         Assert.Equal(ThemeProblem.MissingColors, error.Problem);
         Assert.Equal("ui.surface, ui.control, ui.field, ui.border, ui.text, ui.textMuted, ui.accent, ui.onAccent", error.Detail);
-        Assert.Same(catalog.Find(Id("light")), catalog.Find(Id("sparse")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("light")), ThemeCatalogs.FindTheme(catalog, Id("sparse")));
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public sealed class ThemeLoadingTests
 
         Assert.Equal(ThemeProblem.InvalidJson, error.Problem);
         Assert.Equal(2, error.Line);
-        Assert.Same(catalog.Find(Id("monokai")), catalog.Find(Id("broken")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("monokai")), ThemeCatalogs.FindTheme(catalog, Id("broken")));
     }
 
     public static TheoryData<string, ThemeProblem, string> BadInput => new()
@@ -268,7 +268,7 @@ public sealed class ThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal((ThemeProblem.UnknownPaletteName, 2, "ui.accent", "purple"), (error.Problem, error.Line, error.Subject, error.Detail));
-        Assert.Equal(catalog.Find(Id("dark")).Ui.Accent, catalog.Find(Id("named")).Ui.Accent);
+        Assert.Equal(ThemeCatalogs.FindTheme(catalog, Id("dark")).Ui.Accent, ThemeCatalogs.FindTheme(catalog, Id("named")).Ui.Accent);
     }
 
     [Theory]
@@ -282,7 +282,7 @@ public sealed class ThemeLoadingTests
 
         Assert.Equal((ThemeProblem.IdTaken, id), (error.Problem, error.Subject));
         Assert.Equal(BuiltInThemes.Files.Count, catalog.Ids.Count);
-        Assert.True(catalog.Find(Id("dark")).Ui.IsDark);
+        Assert.True(ThemeCatalogs.FindTheme(catalog, Id("dark")).Ui.IsDark);
     }
 
     [Fact]
@@ -297,8 +297,8 @@ public sealed class ThemeLoadingTests
             .Select(e => e.Detail);
 
         Assert.Equal(["a → b → a", "b → a → b"], cycles);
-        Assert.Same(catalog.Find(Id("light")), catalog.Find(Id("a")));
-        Assert.Same(catalog.Find(Id("light")), catalog.Find(Id("b")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("light")), ThemeCatalogs.FindTheme(catalog, Id("a")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("light")), ThemeCatalogs.FindTheme(catalog, Id("b")));
     }
 
     [Fact]
@@ -312,7 +312,7 @@ public sealed class ThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal((ThemeProblem.UnknownParent, 2, "nope"), (error.Problem, error.Line, error.Subject));
-        Assert.Same(catalog.Find(Id("light")), catalog.Find(Id("orphan")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("light")), ThemeCatalogs.FindTheme(catalog, Id("orphan")));
     }
 
     [Fact]
@@ -324,7 +324,7 @@ public sealed class ThemeLoadingTests
             """));
 
         Assert.Contains(catalog.Errors, e => (e.Problem, e.Line, e.Subject) == (ThemeProblem.UnknownParent, 2, "../light"));
-        Assert.Same(catalog.Find(Id("light")), catalog.Find(Id("escape")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("light")), ThemeCatalogs.FindTheme(catalog, Id("escape")));
     }
 
     [Fact]
@@ -332,8 +332,8 @@ public sealed class ThemeLoadingTests
     {
         var catalog = Load();
 
-        Assert.Same(catalog.Find(Id("dracula")), catalog.Find(Id("Dracula")));
-        Assert.Equal(catalog.IndexOf(Id("dracula")), catalog.IndexOf(Id("DRACULA")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("dracula")), ThemeCatalogs.FindTheme(catalog, Id("Dracula")));
+        Assert.Equal(ThemeCatalogs.FindThemeIndex(catalog, Id("dracula")), ThemeCatalogs.FindThemeIndex(catalog, Id("DRACULA")));
     }
 
     [Fact]
@@ -344,7 +344,7 @@ public sealed class ThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal(ThemeProblem.NoType, error.Problem);
-        Assert.Same(catalog.Find(Id("dark")), catalog.Find(Id("typeless")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("dark")), ThemeCatalogs.FindTheme(catalog, Id("typeless")));
     }
 
     [Fact]
@@ -352,8 +352,8 @@ public sealed class ThemeLoadingTests
     {
         var catalog = Load();
 
-        Assert.Same(catalog.Find(Id("dark")), catalog.Find(Id("gone")));
-        Assert.Equal(-1, catalog.IndexOf(Id("gone")));
+        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("dark")), ThemeCatalogs.FindTheme(catalog, Id("gone")));
+        Assert.Equal(-1, ThemeCatalogs.FindThemeIndex(catalog, Id("gone")));
     }
 
     [Fact]
@@ -377,8 +377,8 @@ public sealed class ThemeLoadingTests
     {
         var catalog = Load(User("named", """{ "extends": "dark", "name": { "en": "Night", "de": "Nacht" } }"""));
 
-        Assert.Equal("Nacht", catalog.ListNames(CultureInfo.GetCultureInfo("de")).Last());
-        Assert.Equal("Night", catalog.ListNames(CultureInfo.GetCultureInfo("fr")).Last());
+        Assert.Equal("Nacht", ThemeCatalogs.ListNames(catalog, CultureInfo.GetCultureInfo("de")).Last());
+        Assert.Equal("Night", ThemeCatalogs.ListNames(catalog, CultureInfo.GetCultureInfo("fr")).Last());
     }
 }
 
@@ -438,7 +438,7 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppState.Load(Settings(), TestSession.Shared);
 
         Assert.Equal("my-dracula", appState.Themes.Ids.Last().Text);
-        Assert.Equal("My Dracula", appState.Themes.ListNames(CultureInfo.InvariantCulture).Last());
+        Assert.Equal("My Dracula", ThemeCatalogs.ListNames(appState.Themes, CultureInfo.InvariantCulture).Last());
         Assert.Empty(appState.Errors.Entries);
     }
 
@@ -449,7 +449,7 @@ public sealed class UserThemeTests : IDisposable
         settings.Theme = Id("gone");
         var appState = AppState.Load(settings, TestSession.Shared);
 
-        Assert.Same(appState.Themes.Find(Id("dark")), ResolveTheme(appState));
+        Assert.Same(ThemeCatalogs.FindTheme(appState.Themes, Id("dark")), ResolveTheme(appState));
         SaveSettings(appState);
         Assert.Equal("gone", _temp.Settings().Theme.Text);
     }
@@ -493,15 +493,15 @@ public sealed class UserThemeTests : IDisposable
         var settings = Settings();
         settings.Theme = Id("dracula");
         var appState = AppState.Load(settings, TestSession.Shared);
-        var dracula = appState.Themes.Find(Id("dracula"));
+        var dracula = ThemeCatalogs.FindTheme(appState.Themes, Id("dracula"));
 
-        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.NameOf(parent, Strings.En.Culture)));
+        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.Themes, parent, Strings.En.Culture)));
 
         var text = File.ReadAllText(path!);
         Assert.Equal(_temp.PathOf(Path.Combine("themes", "dracula-custom.json")), path);
         Assert.Equal("dracula-custom", appState.Theme.Text);
         Assert.Empty(appState.Errors.Entries);
-        Assert.Equal("Dracula (custom)", appState.Themes.NameOf(Id("dracula-custom"), CultureInfo.GetCultureInfo("en")));
+        Assert.Equal("Dracula (custom)", ThemeCatalogs.GetThemeName(appState.Themes, Id("dracula-custom"), CultureInfo.GetCultureInfo("en")));
         Assert.Equal(dracula.Ui, ResolveTheme(appState).Ui);
         Assert.Equal(dracula.Code.Keyword, ResolveTheme(appState).Code.Keyword);
         Assert.Contains("\"extends\": \"dracula\",", text);
@@ -523,8 +523,8 @@ public sealed class UserThemeTests : IDisposable
     [InlineData("solarized-light")]
     public void Each_color_of_a_custom_theme_can_be_uncommented_alone(string parent)
     {
-        var catalog = new ThemeCatalog(BuiltInThemes.Files);
-        var lines = ThemeDraft.Compose("Mine", Id(parent), catalog.Find(Id(parent))).Split('\n');
+        var catalog = Theming.CreateCatalog(BuiltInThemes.Files);
+        var lines = ThemeDraft.Compose("Mine", Id(parent), ThemeCatalogs.FindTheme(catalog, Id(parent))).Split('\n');
 
         for (var i = 0; i < lines.Length; i++)
         {
@@ -532,10 +532,10 @@ public sealed class UserThemeTests : IDisposable
                 continue;
             var edited = lines.ToArray();
             edited[i] = lines[i].Replace("// ", "");
-            var file = ThemeFile.Read(Id("mine"), "mine.json", Encoding.UTF8.GetBytes(string.Join('\n', edited)));
-            catalog.LoadUserThemes([file]);
+            var file = Theming.ReadTheme(Id("mine"), "mine.json", Encoding.UTF8.GetBytes(string.Join('\n', edited)));
+            ThemeCatalogs.LoadUserThemes(catalog, [file]);
             Assert.True(catalog.Errors.Count == 0, edited[i] + ": " + string.Join("; ", catalog.Errors));
-            Assert.Equal(catalog.Find(Id(parent)).Ui.ToColors(), catalog.Find(Id("mine")).Ui.ToColors());
+            Assert.Equal(ThemeCatalogs.FindTheme(catalog, Id(parent)).Ui.ToColors(), ThemeCatalogs.FindTheme(catalog, Id("mine")).Ui.ToColors());
         }
     }
 
@@ -546,7 +546,7 @@ public sealed class UserThemeTests : IDisposable
         WriteTheme("dark-custom-2", "{}");
         var appState = AppState.Load(Settings(), TestSession.Shared);
 
-        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.NameOf(parent, Strings.En.Culture)));
+        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.Themes, parent, Strings.En.Culture)));
 
         Assert.Equal("dark-custom-3.json", Path.GetFileName(path));
         Assert.Equal("dark-custom-3", appState.Theme.Text);
@@ -560,7 +560,7 @@ public sealed class UserThemeTests : IDisposable
         settings.Theme = Id("broken");
         var appState = AppState.Load(settings, TestSession.Shared);
 
-        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.NameOf(parent, Strings.En.Culture)));
+        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.Themes, parent, Strings.En.Culture)));
 
         Assert.Equal("light-custom.json", Path.GetFileName(path));
         Assert.Contains("\"extends\": \"light\",", File.ReadAllText(path!));
@@ -572,7 +572,7 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppState.Load(Settings(), TestSession.Shared);
         Directory.CreateDirectory(_temp.PathOf(Path.Combine("themes", "dark-custom.json")));
 
-        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.NameOf(parent, Strings.En.Culture)));
+        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.Themes, parent, Strings.En.Culture)));
 
         Assert.Null(path);
         Assert.Equal("dark", appState.Theme.Text);
@@ -584,7 +584,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var appState = AppState.Load(new AppSettings { Locale = Locale.En }, TestSession.Shared);
 
-        Assert.Null(CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.NameOf(parent, Strings.En.Culture))));
+        Assert.Null(CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.Themes, parent, Strings.En.Culture))));
         Assert.Equal("dark", appState.Theme.Text);
     }
 
@@ -598,7 +598,7 @@ public sealed class UserThemeTests : IDisposable
 
         var error = Assert.Single(d.AppState.Errors.Entries);
         Assert.Equal("Cannot make the themes folder", error.Words().Title);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await d.AppState.ThemesWatch.NextChange()).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await Theming.FindNextChange(d.AppState.ThemesWatch)).Kind);
     }
 
     [Fact]
@@ -626,7 +626,7 @@ public sealed class UserThemeTests : IDisposable
         settings.Theme = Id("live");
         var d = new AppStateDriver(settings);
         WatchUserThemes(d.AppState);
-        Assert.Same(d.AppState.Themes.Find(Id("dark")), ResolveTheme(d.AppState));
+        Assert.Same(ThemeCatalogs.FindTheme(d.AppState.Themes, Id("dark")), ResolveTheme(d.AppState));
 
         WriteTheme("live", """{ "extends": "dark", "ui": { "accent": "#FF00FF" } }""");
         d.RunUntil(() => ResolveTheme(d.AppState).Ui.Accent == 0xFFFF00FF);
@@ -642,11 +642,11 @@ public sealed class ThemeFolderWatchTests : IDisposable
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
     private readonly TempDir _temp = new();
-    private readonly ThemeFolderWatch _watch = new();
+    private readonly ThemeFolderWatch _watch = Theming.CreateThemeWatch();
 
     public void Dispose()
     {
-        _watch.Stop();
+        Theming.StopWatch(_watch);
         _temp.Dispose();
     }
 
@@ -655,14 +655,14 @@ public sealed class ThemeFolderWatchTests : IDisposable
     [Fact]
     public async Task A_change_that_settles_while_no_one_waits_is_kept_for_the_next_wait()
     {
-        Assert.Null(_watch.Start(Folder));
-        var first = _watch.NextChange();
+        Assert.Null(Theming.StartWatch(_watch, Folder));
+        var first = Theming.FindNextChange(_watch);
         _temp.Write("themes/a.json", "{}");
         Assert.Equal(ThemeFolderEventKind.Changed, (await first.WaitAsync(Patience)).Kind);
 
         _temp.Write("themes/b.json", "{}");
         await Task.Delay(Settled);
-        var second = _watch.NextChange();
+        var second = Theming.FindNextChange(_watch);
 
         Assert.Equal(ThemeFolderEventKind.Changed, (await second.WaitAsync(Patience)).Kind);
     }
@@ -670,12 +670,12 @@ public sealed class ThemeFolderWatchTests : IDisposable
     [Fact]
     public async Task A_change_is_taken_once()
     {
-        Assert.Null(_watch.Start(Folder));
+        Assert.Null(Theming.StartWatch(_watch, Folder));
         _temp.Write("themes/a.json", "{}");
         await Task.Delay(Settled);
-        Assert.Equal(ThemeFolderEventKind.Changed, (await _watch.NextChange().WaitAsync(Patience)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Changed, (await Theming.FindNextChange(_watch).WaitAsync(Patience)).Kind);
 
-        var next = _watch.NextChange();
+        var next = Theming.FindNextChange(_watch);
         var first = await Task.WhenAny(next, Task.Delay(Settled));
 
         Assert.NotSame(next, first);
@@ -684,13 +684,13 @@ public sealed class ThemeFolderWatchTests : IDisposable
     [Fact]
     public async Task Stopping_ends_the_wait_and_drops_a_pending_change()
     {
-        Assert.Null(_watch.Start(Folder));
-        var waiting = _watch.NextChange();
+        Assert.Null(Theming.StartWatch(_watch, Folder));
+        var waiting = Theming.FindNextChange(_watch);
 
-        _watch.Stop();
+        Theming.StopWatch(_watch);
 
         Assert.Equal(ThemeFolderEventKind.Stopped, (await waiting.WaitAsync(Patience)).Kind);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await _watch.NextChange()).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await Theming.FindNextChange(_watch)).Kind);
     }
 
     [Fact]
@@ -698,26 +698,26 @@ public sealed class ThemeFolderWatchTests : IDisposable
     {
         var missing = _temp.PathOf("missing");
 
-        var error = _watch.Start(missing);
+        var error = Theming.StartWatch(_watch, missing);
 
         Assert.NotNull(error);
         Assert.StartsWith(missing, error);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await _watch.NextChange()).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await Theming.FindNextChange(_watch)).Kind);
     }
 
     [Fact]
     public async Task Removing_the_watched_folder_loses_the_watch_and_says_so()
     {
         var folder = Folder;
-        Assert.Null(_watch.Start(folder));
-        var waiting = _watch.NextChange();
+        Assert.Null(Theming.StartWatch(_watch, folder));
+        var waiting = Theming.FindNextChange(_watch);
 
         Directory.Delete(folder, recursive: true);
         var news = await waiting.WaitAsync(Patience);
 
         Assert.Equal(ThemeFolderEventKind.Lost, news.Kind);
         Assert.StartsWith(folder, news.Reason);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await _watch.NextChange()).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await Theming.FindNextChange(_watch)).Kind);
     }
 }
 

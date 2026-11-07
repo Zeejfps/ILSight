@@ -7,32 +7,4 @@ namespace ILSight;
 public sealed class IconThemeCatalog : ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme>
 {
     public static readonly ThemeId<IconThemeFile> ReferenceId = ThemeId<IconThemeFile>.Of("lucide");
-
-    /// <param name="builtIns">The built-in icon themes in the order a menu lists them, which must include
-    /// <see cref="ReferenceId"/>, mapping every key.</param>
-    public IconThemeCatalog(IReadOnlyList<IconThemeFile> builtIns) : base(builtIns)
-    {
-        LoadUserThemes([]);
-    }
-
-    protected override ThemeId<IconThemeFile> DefaultId => ReferenceId;
-
-    protected override IconTheme Build(IconThemeFile file, IReadOnlyList<(IconThemeFile File, IconThemeContents Contents)> chain)
-    {
-        var merged = new MergedIconTheme();
-        var isReference = IsReference(file);
-        if (!isReference)
-            Theming.AddFonts(merged, BuiltInContentsOf(ReferenceId));
-        foreach (var link in chain)
-            Theming.AddContents(merged, link.Contents);
-        var fallback = isReference ? null : Resolve(ReferenceId);
-        var errors = new List<ThemeError>();
-        var theme = Theming.BuildTheme(merged, fallback, errors);
-        AddErrors(errors);
-        return theme;
-    }
-
-    private static bool IsReference(IconThemeFile file) => file.Id.Equals(ReferenceId);
-
-    protected override ThemeId<IconThemeFile> FallbackIdOf(IconThemeFile file) => ReferenceId;
 }

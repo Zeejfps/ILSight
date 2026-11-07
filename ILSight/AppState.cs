@@ -71,16 +71,16 @@ public sealed class AppState
     public CodeTooltips Tooltips { get; }
 
     /// <summary>The themes the app can be drawn in, built-in and the user's.</summary>
-    public ThemeCatalog Themes { get; } = new(BuiltInThemes.Files);
+    public ThemeCatalog Themes { get; } = Theming.CreateCatalog(BuiltInThemes.Files);
 
     /// <summary>Watches the user's themes folder while the app runs.</summary>
-    public ThemeFolderWatch ThemesWatch { get; } = new();
+    public ThemeFolderWatch ThemesWatch { get; } = Theming.CreateThemeWatch();
 
     /// <summary>The icon themes the app can be drawn with, built-in and the user's.</summary>
-    public IconThemeCatalog IconThemes { get; } = new(BuiltInIconThemes.Files);
+    public IconThemeCatalog IconThemes { get; } = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
 
     /// <summary>Watches the user's icon themes folder, and the fonts and pictures in it, while the app runs.</summary>
-    public ThemeFolderWatch IconThemesWatch { get; } = new(IconThemeFiles, includesSubfolders: true);
+    public ThemeFolderWatch IconThemesWatch { get; } = new ThemeFolderWatch { Filters = IconThemeFiles, IncludesSubfolders = true };
 
     /// <summary>The id of the chosen theme, kept even while no theme has it.</summary>
     public ThemeId<ThemeFile> Theme;

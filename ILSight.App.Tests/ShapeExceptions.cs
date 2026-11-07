@@ -93,16 +93,9 @@ internal static class ShapeExceptions
         "ILSight.DocumentTabs",
         "ILSight.DocumentViews",
         "ILSight.ExportSetup",
-        "ILSight.IconThemeCatalog",
-        "ILSight.IconThemeFile",
         "ILSight.MetadataGridState",
         "ILSight.NuGetPicker",
         "ILSight.RunArgumentsReceiver",
-        "ILSight.ThemeCatalog",
-        "ILSight.ThemeCatalog`3",
-        "ILSight.ThemeFile",
-        "ILSight.ThemeFolderWatch",
-        "ILSight.ThemeJson",
         "ILSight.UiState",
     ];
 
@@ -133,13 +126,8 @@ internal static class ShapeExceptions
         "ILSight.Core.Metadata.GridSchema`1",
         "ILSight.Core.Metadata.MetadataGrid",
         "ILSight.Core.Resources.ResourceImage",
-        "ILSight.IconThemeCatalog",
         "ILSight.MetadataGridState",
         "ILSight.NuGetPicker",
-        "ILSight.ThemeCatalog",
-        "ILSight.ThemeCatalog`3",
-        "ILSight.ThemeFolderWatch",
-        "ILSight.ThemeJson",
         "ILSight.UiState",
     ];
 

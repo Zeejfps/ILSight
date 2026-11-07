@@ -243,7 +243,7 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         using var themes = ui.SubMenu(t.ViewTheme, id: "theme");
         if (!themes.IsOpen) return;
-        var names = catalog.ListNames(t.Culture);
+        var names = ThemeCatalogs.ListNames(catalog, t.Culture);
         for (var i = 0; i < catalog.Ids.Count; i++)
         {
             var id = catalog.Ids[i];

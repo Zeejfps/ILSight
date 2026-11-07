@@ -300,7 +300,7 @@ public sealed class DisplayOptionsTests
         app.Click("Dracula").Frame();
 
         Assert.Equal("dracula", app.AppState.Theme.Text);
-        Assert.Equal(app.AppState.Themes.Find(ThemeId<ThemeFile>.Of("dracula")).Ui.Background, app.Frames.WindowBackground);
+        Assert.Equal(ThemeCatalogs.FindTheme(app.AppState.Themes, ThemeId<ThemeFile>.Of("dracula")).Ui.Background, app.Frames.WindowBackground);
     }
 
     [Fact]

@@ -15,11 +15,11 @@ public static class BuiltInIconThemes
 
     public static IReadOnlyList<IconThemeFile> Files { get; } = ReadFiles();
 
-    private static readonly IconThemeCatalog Catalog = new(Files);
+    private static readonly IconThemeCatalog Catalog = IconTheming.CreateCatalog(Files);
 
     /// <summary>The reference theme, which draws every key and which the screen starts with until the app
     /// hands it the chosen icon theme.</summary>
-    public static IconTheme Reference { get; } = Catalog.Find(IconThemeCatalog.ReferenceId);
+    public static IconTheme Reference { get; } = ThemeCatalogs.FindTheme(Catalog, IconThemeCatalog.ReferenceId);
 
     /// <summary>What was wrong in the built-in icon theme files; nothing, unless one was broken by an edit.</summary>
     public static IReadOnlyList<ThemeError> Errors => Catalog.Errors;
@@ -46,7 +46,7 @@ public static class BuiltInIconThemes
     {
         var id = ThemeId<IconThemeFile>.Of(Path.GetFileNameWithoutExtension(resource));
         var json = EmbeddedAssets.LoadBytes(Resources, resource);
-        return IconThemeFile.Read(id, resource, json, EmbeddedIconAssets.Open(Resources));
+        return IconTheming.ReadTheme(id, resource, json, EmbeddedIconAssets.Open(Resources));
     }
 }
 
