@@ -17,19 +17,11 @@ public static class MatchingBrackets
 
     public static BracketPair? Find(CodeViewState state, DecompiledDocument document, TextPosition caret)
     {
-        if (IsLookedUp(state, document, caret))
-            return state.Brackets;
-        state.BracketsDocument = document;
-        state.BracketsCaret = caret;
-        state.Brackets = Match(document, caret);
-        return state.Brackets;
-    }
-
-    private static bool IsLookedUp(CodeViewState state, DecompiledDocument document, TextPosition caret)
-    {
-        if (!ReferenceEquals(document, state.BracketsDocument))
-            return false;
-        return caret == state.BracketsCaret;
+        if (state.Brackets.TryGet((new(document), caret), out var brackets))
+            return brackets;
+        brackets = Match(document, caret);
+        state.Brackets = new((new(document), caret), brackets);
+        return brackets;
     }
 
     private static BracketPair? Match(DecompiledDocument document, TextPosition caret)

@@ -9,9 +9,8 @@ public readonly record struct Crumb(BrowseNode Node, string Label);
 /// only when the node or the tree's shape changes.</summary>
 public sealed class Breadcrumb
 {
-    /// <summary>The node and the tree's revision <see cref="Crumbs"/> were built for.</summary>
-    public BrowseNode? Node;
-    public int TreeRevision = -1;
+    /// <summary>The crumbs, by the node and the tree's revision they were built for.</summary>
+    public Memo<(ByReference<BrowseNode>, int), IReadOnlyList<Crumb>> Path;
 
-    public IReadOnlyList<Crumb> Crumbs = [];
+    public IReadOnlyList<Crumb> Crumbs => Path.Last ?? [];
 }

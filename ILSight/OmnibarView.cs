@@ -165,18 +165,9 @@ internal static class OmnibarView
     /// Runs each frame, so listing the crumbs is a function of its own, for the reason <see cref="ListShown"/> gives.</summary>
     private static void FollowPath(Breadcrumb breadcrumb, BrowseNode? node, BrowseTree tree)
     {
-        if (IsCurrent(breadcrumb, node, tree))
+        if (breadcrumb.Path.TryGet((new(node), tree.Revision), out _))
             return;
-        breadcrumb.Node = node;
-        breadcrumb.TreeRevision = tree.Revision;
-        breadcrumb.Crumbs = ListCrumbs(node, tree);
-    }
-
-    private static bool IsCurrent(Breadcrumb breadcrumb, BrowseNode? node, BrowseTree tree)
-    {
-        if (!ReferenceEquals(node, breadcrumb.Node))
-            return false;
-        return tree.Revision == breadcrumb.TreeRevision;
+        breadcrumb.Path = new((new(node), tree.Revision), ListCrumbs(node, tree));
     }
 
     private static Crumb[] ListCrumbs(BrowseNode? node, BrowseTree tree)

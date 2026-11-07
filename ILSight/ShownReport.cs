@@ -7,11 +7,9 @@ namespace ILSight;
 /// when the report or the language changes.</summary>
 public sealed class ShownReport
 {
-    public ExportReport? Report { get; set; }
-
-    public Strings? Strings { get; set; }
-
-    public DecompiledDocument Document { get; set; } = DecompiledDocument.Empty;
+    /// <summary>The report written out, by the report and language. Reports are records, and two equal ones
+    /// are still written again.</summary>
+    public Memo<(ByReference<ExportReport>, ByReference<Strings>), DecompiledDocument> Written;
 }
 
 public static class ShownReports
@@ -19,11 +17,10 @@ public static class ShownReports
     /// <summary><paramref name="report"/> written out with <paramref name="t"/>.</summary>
     public static DecompiledDocument GetDocument(ShownReport shown, ExportReport report, Strings t)
     {
-        if (ReferenceEquals(report, shown.Report) && t == shown.Strings)
-            return shown.Document;
-        shown.Report = report;
-        shown.Strings = t;
-        shown.Document = ExportReportText.Write(t, [report]);
-        return shown.Document;
+        if (shown.Written.TryGet((new(report), new(t)), out var document))
+            return document;
+        document = ExportReportText.Write(t, [report]);
+        shown.Written = new((new(report), new(t)), document);
+        return document;
     }
 }

@@ -8,11 +8,8 @@ namespace ILSight;
 /// language, written again only when what it says changes.</summary>
 public sealed class TabPlaceholder
 {
-    public TabContent? Content { get; set; }
-
-    public Strings? Strings { get; set; }
-
-    public DecompiledDocument Document { get; set; } = DecompiledDocument.Empty;
+    /// <summary>The note written, by what it says and the language.</summary>
+    public Memo<(TabContent, ByReference<Strings>), DecompiledDocument> Written;
 }
 
 public static class TabPlaceholders
@@ -20,19 +17,11 @@ public static class TabPlaceholders
     /// <summary>The note for <paramref name="content"/>, written with <paramref name="t"/>.</summary>
     public static DecompiledDocument GetDocument(TabPlaceholder placeholder, TabContent content, Strings t)
     {
-        if (IsWritten(placeholder, content, t))
-            return placeholder.Document;
-        placeholder.Content = content;
-        placeholder.Strings = t;
-        placeholder.Document = Documents.CreateFromText("", $"// {Write(t, content)}");
-        return placeholder.Document;
-    }
-
-    private static bool IsWritten(TabPlaceholder placeholder, TabContent content, Strings t)
-    {
-        if (placeholder.Strings != t)
-            return false;
-        return Equals(placeholder.Content, content);
+        if (placeholder.Written.TryGet((content, new(t)), out var document))
+            return document;
+        document = Documents.CreateFromText("", $"// {Write(t, content)}");
+        placeholder.Written = new((content, new(t)), document);
+        return document;
     }
 
     /// <summary>What the note for <paramref name="content"/> says.</summary>

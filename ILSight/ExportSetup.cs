@@ -50,10 +50,11 @@ public enum ExportPage
 /// </summary>
 public sealed class ExportSetup
 {
-    public string? CheckedFolder;
-    public bool LastFolderHeldFiles;
-    public string? CheckedKeyFile;
-    public bool LastKeyFileMissing;
+    /// <summary>Whether the folder held files, by the folder last looked at.</summary>
+    public Memo<string, bool> FolderCheck;
+
+    /// <summary>Whether the key file was missing, by the name last looked at.</summary>
+    public Memo<string, bool> KeyFileCheck;
 
     public bool IsOpen;
     public string Folder = "";

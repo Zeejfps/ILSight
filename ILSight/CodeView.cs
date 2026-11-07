@@ -131,11 +131,9 @@ public sealed class CodeViewState
     internal readonly CodeViewFrame Frame = new();
     internal readonly CodeFindIndex Find = new();
 
-    /// <summary>The bracket at the caret or just before it and the one matching it, as of
-    /// <see cref="BracketsDocument"/> and <see cref="BracketsCaret"/>; see <see cref="MatchingBrackets"/>.</summary>
-    internal BracketPair? Brackets;
-    internal DecompiledDocument? BracketsDocument;
-    internal TextPosition BracketsCaret;
+    /// <summary>The bracket at the caret or just before it and the one matching it, by the document and the
+    /// caret they were looked up for; see <see cref="MatchingBrackets"/>.</summary>
+    internal Memo<(ByReference<DecompiledDocument>, TextPosition), BracketPair?> Brackets;
 
     internal DecompiledDocument? Document;
     internal int MaxColumns;

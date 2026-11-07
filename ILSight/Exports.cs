@@ -593,11 +593,11 @@ public static class Exports
     /// again only when the folder changes.</summary>
     public static bool CheckFolderHoldsFiles(ExportSetup setup)
     {
-        if (setup.CheckedFolder == setup.Folder)
-            return setup.LastFolderHeldFiles;
-        setup.CheckedFolder = setup.Folder;
-        setup.LastFolderHeldFiles = HoldsFiles(setup.Folder.Trim());
-        return setup.LastFolderHeldFiles;
+        if (setup.FolderCheck.TryGet(setup.Folder, out var holdsFiles))
+            return holdsFiles;
+        holdsFiles = HoldsFiles(setup.Folder.Trim());
+        setup.FolderCheck = new(setup.Folder, holdsFiles);
+        return holdsFiles;
     }
 
     private static bool HoldsFiles(string folder)
@@ -612,11 +612,11 @@ public static class Exports
     /// <summary>Whether a key file is named that is not there. Looked up again only when the name changes.</summary>
     public static bool CheckKeyFileMissing(ExportSetup setup)
     {
-        if (setup.CheckedKeyFile == setup.StrongNameKeyFile)
-            return setup.LastKeyFileMissing;
-        setup.CheckedKeyFile = setup.StrongNameKeyFile;
-        setup.LastKeyFileMissing = IsFileMissing(setup.StrongNameKeyFile.Trim());
-        return setup.LastKeyFileMissing;
+        if (setup.KeyFileCheck.TryGet(setup.StrongNameKeyFile, out var isMissing))
+            return isMissing;
+        isMissing = IsFileMissing(setup.StrongNameKeyFile.Trim());
+        setup.KeyFileCheck = new(setup.StrongNameKeyFile, isMissing);
+        return isMissing;
     }
 
     private static bool IsFileMissing(string file)
