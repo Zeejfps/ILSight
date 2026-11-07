@@ -57,71 +57,32 @@ public abstract record ApiSides
 /// and what it holds, merged from both sides and sorted as the tree sorts them.</summary>
 public abstract class ApiEntry
 {
-    private ApiEntry(string text, ApiChange change, IReadOnlyList<ApiEntry> children)
+    private ApiEntry()
     {
-        Text = text;
-        Change = change;
-        Children = children;
-        HasChanges = change != ApiChange.Unchanged || children.Any(static c => c.HasChanges);
     }
 
     /// <summary>What the entry is: a namespace, or a type or member of some shape.</summary>
-    public abstract SymbolShape Shape { get; }
+    public required SymbolShape Shape { get; init; }
 
-    public string Text { get; }
+    public required string Text { get; init; }
 
-    public abstract NodeAccessibility Accessibility { get; }
+    public required NodeAccessibility Accessibility { get; init; }
 
-    public ApiChange Change { get; }
+    public required ApiChange Change { get; init; }
 
     /// <summary>Whether it, or anything it holds, differs.</summary>
-    public bool HasChanges { get; }
+    public required bool HasChanges { get; init; }
 
-    public IReadOnlyList<ApiEntry> Children { get; }
+    public required IReadOnlyList<ApiEntry> Children { get; init; }
 
-    public sealed class Namespace(string text, ApiPresence presence, IReadOnlyList<ApiEntry> children)
-        : ApiEntry(text, ChangeOf(presence), children)
+    public sealed class Namespace : ApiEntry
     {
-        public override SymbolShape Shape => new SymbolShape.Namespace();
-
-        public override NodeAccessibility Accessibility => NodeAccessibility.None;
-
-        public ApiPresence Presence => presence;
-
-        private static ApiChange ChangeOf(ApiPresence presence) =>
-            presence switch
-            {
-                ApiPresence.LeftOnly => ApiChange.Removed,
-                ApiPresence.RightOnly => ApiChange.Added,
-                ApiPresence.Both => ApiChange.Unchanged,
-                _ => throw new UnreachableException(),
-            };
+        public required ApiPresence Presence { get; init; }
     }
 
-    public sealed class Entity(SymbolShape shape, string text, NodeAccessibility accessibility, ApiSides sides, IReadOnlyList<ApiEntry> children)
-        : ApiEntry(text, ChangeOf(sides), children)
+    public sealed class Entity : ApiEntry
     {
-        public override SymbolShape Shape => shape;
-
-        public override NodeAccessibility Accessibility => accessibility;
-
-        public ApiSides Sides => sides;
-
-        private static ApiChange ChangeOf(ApiSides sides) =>
-            sides switch
-            {
-                ApiSides.LeftOnly => ApiChange.Removed,
-                ApiSides.RightOnly => ApiChange.Added,
-                ApiSides.Both both => ChangeOf(both),
-                _ => throw new UnreachableException(),
-            };
-
-        private static ApiChange ChangeOf(ApiSides.Both sides)
-        {
-            if (sides.Left.Declaration != sides.Right.Declaration)
-                return ApiChange.Changed;
-            return ApiChange.Unchanged;
-        }
+        public required ApiSides Sides { get; init; }
     }
 }
 
@@ -130,38 +91,19 @@ public abstract class ApiEntry
 /// counted once with what it holds.</summary>
 public sealed class ApiDiff
 {
-    private ApiDiff(string leftName, string rightName, ApiScope scope, IReadOnlyList<ApiEntry> namespaces)
-    {
-        LeftName = leftName;
-        RightName = rightName;
-        Scope = scope;
-        Namespaces = namespaces;
-        Added = ApiEntries.Count(namespaces, ApiChange.Added);
-        Removed = ApiEntries.Count(namespaces, ApiChange.Removed);
-        Changed = ApiEntries.Count(namespaces, ApiChange.Changed);
-    }
-
     /// <summary>The left assembly's name and version.</summary>
-    public string LeftName { get; }
+    public required string LeftName { get; init; }
 
     /// <summary>The right assembly's name and version.</summary>
-    public string RightName { get; }
+    public required string RightName { get; init; }
 
-    public ApiScope Scope { get; }
+    public required ApiScope Scope { get; init; }
 
-    public IReadOnlyList<ApiEntry> Namespaces { get; }
+    public required IReadOnlyList<ApiEntry> Namespaces { get; init; }
 
-    public int Added { get; }
+    public required int Added { get; init; }
 
-    public int Removed { get; }
+    public required int Removed { get; init; }
 
-    public int Changed { get; }
-
-    /// <summary>Compares the API of <paramref name="left"/> with that of <paramref name="right"/>, taking in
-    /// what <paramref name="scope"/> says. Reads both assemblies' types: call it off the UI thread.</summary>
-    public static ApiDiff Compare(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken cancellationToken)
-    {
-        var namespaces = ApiEntries.CompareNamespaces(left.MainModule, right.MainModule, scope, cancellationToken);
-        return new ApiDiff(left.NameAndVersion, right.NameAndVersion, scope, namespaces);
-    }
+    public required int Changed { get; init; }
 }

@@ -5,7 +5,7 @@ namespace ILSight.Core.Comparison;
 
 /// <summary>The entries of a comparison, built by matching each side's namespaces, types and members by
 /// <see cref="ApiKeys"/> and telling them apart by <see cref="ApiDeclarations"/>.</summary>
-internal static class ApiEntries
+public static class ApiEntries
 {
     private const string GlobalNamespaceText = "-";
     private const string ModuleTypeName = "<Module>";
@@ -26,7 +26,7 @@ internal static class ApiEntries
             var leftOnes = leftTypes.GetValueOrDefault(name) ?? None;
             var rightOnes = rightTypes.GetValueOrDefault(name) ?? None;
             var children = CompareAll(leftOnes, rightOnes, scope, cancellationToken);
-            entries.Add(new ApiEntry.Namespace(NamespaceText(name), presence, children));
+            entries.Add(CreateNamespace(NamespaceText(name), presence, children));
         }
         return entries;
     }
@@ -168,7 +168,83 @@ internal static class ApiEntries
         var shown = compared.Entity;
         var shape = EntityText.SymbolShapeOf(shown);
         var accessibility = EntityText.Map(shown.Accessibility);
-        return new ApiEntry.Entity(shape, EntityText.Label(shown), accessibility, sides, children);
+        var change = GetChange(sides);
+        return new ApiEntry.Entity
+        {
+            Shape = shape,
+            Text = EntityText.Label(shown),
+            Accessibility = accessibility,
+            Change = change,
+            HasChanges = HasChanges(change, children),
+            Children = children,
+            Sides = sides,
+        };
+    }
+
+    private static ApiEntry.Namespace CreateNamespace(string text, ApiPresence presence, IReadOnlyList<ApiEntry> children)
+    {
+        var change = GetChange(presence);
+        return new ApiEntry.Namespace
+        {
+            Shape = new SymbolShape.Namespace(),
+            Text = text,
+            Accessibility = NodeAccessibility.None,
+            Change = change,
+            HasChanges = HasChanges(change, children),
+            Children = children,
+            Presence = presence,
+        };
+    }
+
+    private static bool HasChanges(ApiChange change, IReadOnlyList<ApiEntry> children)
+    {
+        return change != ApiChange.Unchanged || children.Any(static c => c.HasChanges);
+    }
+
+    private static ApiChange GetChange(ApiPresence presence)
+    {
+        return presence switch
+        {
+            ApiPresence.LeftOnly => ApiChange.Removed,
+            ApiPresence.RightOnly => ApiChange.Added,
+            ApiPresence.Both => ApiChange.Unchanged,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static ApiChange GetChange(ApiSides sides)
+    {
+        return sides switch
+        {
+            ApiSides.LeftOnly => ApiChange.Removed,
+            ApiSides.RightOnly => ApiChange.Added,
+            ApiSides.Both both => GetChange(both),
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static ApiChange GetChange(ApiSides.Both sides)
+    {
+        if (sides.Left.Declaration != sides.Right.Declaration)
+            return ApiChange.Changed;
+        return ApiChange.Unchanged;
+    }
+
+    /// <summary>Compares the API of <paramref name="left"/> with that of <paramref name="right"/>, taking in
+    /// what <paramref name="scope"/> says. Reads both assemblies' types: call it off the UI thread.</summary>
+    public static ApiDiff Compare(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken cancellationToken)
+    {
+        var namespaces = CompareNamespaces(left.MainModule, right.MainModule, scope, cancellationToken);
+        return new ApiDiff
+        {
+            LeftName = left.NameAndVersion,
+            RightName = right.NameAndVersion,
+            Scope = scope,
+            Namespaces = namespaces,
+            Added = Count(namespaces, ApiChange.Added),
+            Removed = Count(namespaces, ApiChange.Removed),
+            Changed = Count(namespaces, ApiChange.Changed),
+        };
     }
 
     private static ApiSide SideOf(Compared compared) => new(compared.Reference, ApiDeclarations.Of(compared.Entity));

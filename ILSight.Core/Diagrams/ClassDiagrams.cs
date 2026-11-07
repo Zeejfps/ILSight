@@ -1,3 +1,8 @@
+using ICSharpCode.Decompiler.CSharp;
+using System.Text.RegularExpressions;
+using System.Xml;
+using ICSharpCode.Decompiler.Documentation;
+using ICSharpCode.Decompiler.Metadata;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
 using System.Net;
@@ -11,7 +16,7 @@ namespace ILSight.Core.Diagrams;
 /// (https://mermaid.js.org/syntax/classDiagram.html) of the types picked in it, from the assembly's
 /// types, their members, relations, inheritance and XML documentation baked into it as JSON. The
 /// page loads mermaid from a CDN, so it draws only online.</summary>
-public static class ClassDiagrams
+public static partial class ClassDiagrams
 {
     /// <summary>The file of the page, which opens the diagrammer.</summary>
     public const string PageFileName = "index.html";
@@ -42,12 +47,12 @@ public static class ClassDiagrams
         var picked = assembly.MainModule.TypeDefinitions
             .Where(static t => !t.IsCompilerGeneratedOrIsInCompilerGeneratedClass())
             .ToArray();
-        var names = new DiagramNames(picked);
-        var types = new DiagramTypes(names, DiagramDocs.Of(assembly.File));
+        var names = CreateNames(picked);
+        var types = new DiagramTypes { Names = names, Docs = ReadDocs(assembly.File), Members = new MermaidMembers { Names = names } };
         var namespaces = picked
             .GroupBy(static t => t.Namespace)
             .OrderBy(static g => g.Key, StringComparer.InvariantCulture);
-        var built = new BuiltTypes(assembly.Name, picked.Length, progress);
+        var built = new BuiltTypes { AssemblyName = assembly.Name, Total = picked.Length, Progress = progress };
         var byNamespace = new Dictionary<string, Dictionary<string, DiagramType>>();
         foreach (var group in namespaces)
             byNamespace[group.Key] = BuildNamespace(group, names, types, built, cancellationToken);
@@ -62,8 +67,8 @@ public static class ClassDiagrams
         foreach (var type in ordered)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            byId[names.IdOf(type)] = types.Build(type);
-            built.Count();
+            byId[ClassDiagrams.GetId(names, type)] = ClassDiagrams.BuildType(types, type);
+            CountBuilt(built);
         }
         return byId;
     }
@@ -103,14 +108,641 @@ public static class ClassDiagrams
     }
 
     /// <summary>How many of an assembly's types are built, reported as the share of them done.</summary>
-    private sealed class BuiltTypes(string assemblyName, int total, IProgress<ExportProgress>? progress)
+    private sealed class BuiltTypes
     {
-        private int _done;
+        public required string AssemblyName { get; init; }
 
-        public void Count()
+        public required int Total { get; init; }
+
+        public required IProgress<ExportProgress>? Progress { get; init; }
+
+        public int Done;
+    }
+
+    private static void CountBuilt(BuiltTypes built)
+    {
+        built.Done++;
+        built.Progress?.Report(new ExportProgress(built.AssemblyName, 0, 1, (float)built.Done / built.Total));
+    }
+
+    /// <summary>The names and ids of <paramref name="picked"/>, the types of a diagram.</summary>
+    internal static DiagramNames CreateNames(IReadOnlyCollection<ITypeDefinition> picked)
+    {
+        return new DiagramNames { Picked = new HashSet<IType>(picked), Ids = CreateIds(picked) };
+    }
+
+    internal static bool IsPicked(DiagramNames naming, IType type)
+    {
+        return naming.Picked.Contains(type);
+    }
+
+    private static Dictionary<IType, string> CreateIds(IEnumerable<ITypeDefinition> types)
+    {
+        var ids = new Dictionary<IType, string>();
+        var groups = types.GroupBy(static t => t.Name);
+        foreach (var group in groups)
+            AddIds(ids, group);
+        return ids;
+    }
+
+    // A name only one type has is its id; types sharing a name are numbered.
+    private static void AddIds(Dictionary<IType, string> ids, IGrouping<string, ITypeDefinition> group)
+    {
+        var types = group.ToList();
+        if (types.Count == 1)
         {
-            _done++;
-            progress?.Report(new ExportProgress(assemblyName, 0, 1, (float)_done / total));
+            ids[types[0]] = Sanitize(group.Key);
+            return;
+        }
+        for (var i = 0; i < types.Count; i++)
+            ids[types[i]] = types[i].Name + (i + 1);
+    }
+
+    // A type in the main module of an executable is named <Module>.
+    private static string Sanitize(string typeName)
+    {
+        return typeName.Replace('<', '_').Replace('>', '_');
+    }
+
+    internal static string GetId(DiagramNames naming, IType type)
+    {
+        return IdentifyType(naming, type).Id;
+    }
+
+    /// <summary>The id of <paramref name="type"/>, which for a closed generic type is the id of its
+    /// open one, returned beside it.</summary>
+    private static (string Id, IType? OpenGeneric) IdentifyType(DiagramNames naming, IType type)
+    {
+        var openGeneric = GetOpenGeneric(type);
+        var identified = openGeneric ?? type;
+        if (naming.Ids.TryGetValue(identified, out var id))
+            return (id, openGeneric);
+        var created = CreateOutsideId(naming, identified);
+        naming.Ids[identified] = created;
+        return (created, openGeneric);
+    }
+
+    private static IType? GetOpenGeneric(IType type)
+    {
+        if (type is not ParameterizedType generic)
+            return null;
+        if (generic.TypeArguments.Any(static a => a is ITypeParameter))
+            return null;
+        return generic.GenericType;
+    }
+
+    // A type outside the diagram is told apart by its full name, and generic overloads by their
+    // type parameters.
+    private static string CreateOutsideId(DiagramNames naming, IType type)
+    {
+        var id = Sanitize(type.FullName.Replace('.', '_'));
+        if (type.TypeParameterCount == 0)
+            return id;
+        var parameters = type.TypeParameters.Select(p => GetId(naming, p));
+        return id + "_" + string.Join("_", parameters);
+    }
+
+    /// <summary>How <paramref name="type"/> reads in the diagram: C# keywords for built-in types, a
+    /// nested type after the type declaring it, generic arguments in ❰ ❱ as mermaid can't take
+    /// angle brackets.</summary>
+    internal static string GetTypeName(DiagramNames naming, IType type)
+    {
+        if (naming.NamesByType.TryGetValue(type, out var name))
+            return name;
+        var created = CreateName(naming, type);
+        naming.NamesByType[type] = created;
+        return created;
+    }
+
+    private static string CreateName(DiagramNames naming, IType type)
+    {
+        if (type.TypeParameterCount < 1)
+            return CreatePlainName(naming, type);
+        if (TypeFacts.TryGetNullable(type, out var underlying))
+            return GetTypeName(naming, underlying) + "?";
+        var arguments = type.TypeArguments.Select(a => GetTypeName(naming, a));
+        return type.Name + "❰" + string.Join(", ", arguments) + "❱";
+    }
+
+    private static string CreatePlainName(DiagramNames naming, IType type)
+    {
+        if (type is ArrayType array)
+            return GetTypeName(naming, array.ElementType) + "[]";
+        if (type is ByReferenceType reference)
+            return "&" + GetTypeName(naming, reference.ElementType);
+
+        var definition = type.GetDefinition();
+        if (definition == null)
+            return type.Name;
+        if (definition.KnownTypeCode != KnownTypeCode.None)
+            return GetKeyword(definition.KnownTypeCode, type);
+        if (type.DeclaringType != null)
+            return type.DeclaringType.Name + '+' + type.Name;
+        return type.Name.Replace('<', '❰').Replace('>', '❱');
+    }
+
+    private static string GetKeyword(KnownTypeCode code, IType type)
+    {
+        var keyword = KnownTypeReference.GetCSharpNameByTypeCode(code);
+        if (keyword == null)
+            return type.Name;
+        return keyword;
+    }
+
+    /// <summary>A reference to <paramref name="type"/>, labelled with <paramref name="propertyName"/>
+    /// for a property's relation, else with the closed generic type for a base type. Records the type
+    /// as an outside reference when the diagram leaves it out.</summary>
+    internal static DiagramReference ReferTo(DiagramNames naming, IType type, string? propertyName = null)
+    {
+        var (id, openGeneric) = IdentifyType(naming, type);
+        var referred = openGeneric ?? type;
+        RecordOutside(naming, id, referred);
+        if (propertyName != null)
+            return new DiagramReference(id, propertyName);
+        if (openGeneric == null)
+            return new DiagramReference(id, null);
+        return new DiagramReference(id, GetTypeName(naming, type));
+    }
+
+    private static void RecordOutside(DiagramNames naming, string id, IType type)
+    {
+        if (IsPicked(naming, type))
+            return;
+        naming.OutsideReferences.TryAdd(id, type.Namespace + '.' + GetTypeName(naming, type));
+    }
+
+    internal static string FormatMethod(MermaidMembers mermaid, IMethod method)
+    {
+        var parameters = string.Join(", ", method.Parameters.Select(p => FormatParameter(mermaid, p)));
+        var typeArguments = ListTypeArguments(mermaid, method);
+        var returnType = ClassDiagrams.GetTypeName(mermaid.Names, method.ReturnType);
+        return $"{GetVisibility(method.Accessibility)}{GetMethodName(mermaid, method)}{typeArguments}({parameters}){GetModifier(method)} {returnType}";
+    }
+
+    private static string FormatParameter(MermaidMembers mermaid, IParameter parameter)
+    {
+        return ClassDiagrams.GetTypeName(mermaid.Names, parameter.Type) + " " + parameter.Name;
+    }
+
+    private static string ListTypeArguments(MermaidMembers mermaid, IMethod method)
+    {
+        if (method.TypeArguments.Count == 0)
+            return "";
+        var arguments = method.TypeArguments.Select(a => GetTypeName(mermaid.Names, a));
+        return "❰" + string.Join(", ", arguments) + "❱";
+    }
+
+    // An explicit interface implementation is named after the interface member it implements.
+    private static string GetMethodName(MermaidMembers mermaid, IMethod method)
+    {
+        if (!method.IsExplicitInterfaceImplementation)
+            return method.Name;
+        var implemented = method.ExplicitlyImplementedInterfaceMembers.FirstOrDefault();
+        if (implemented == null)
+            return method.Name;
+        return ClassDiagrams.GetTypeName(mermaid.Names, implemented.DeclaringType) + '.' + implemented.Name;
+    }
+
+    internal static string FormatProperty(MermaidMembers mermaid, IProperty property)
+    {
+        var type = ClassDiagrams.GetTypeName(mermaid.Names, property.ReturnType);
+        return $"{GetVisibility(property.Accessibility)}{type} {property.Name}{GetModifier(property)}";
+    }
+
+    internal static string FormatField(MermaidMembers mermaid, IField field)
+    {
+        var type = ClassDiagrams.GetTypeName(mermaid.Names, field.ReturnType);
+        return $"{GetVisibility(field.Accessibility)}{type} {field.Name}{GetModifier(field)}";
+    }
+
+    private static string GetModifier(IMember member)
+    {
+        if (member.IsAbstract)
+            return "*";
+        if (member.IsStatic)
+            return "$";
+        return "";
+    }
+
+    private static string GetVisibility(Accessibility accessibility)
+    {
+        return accessibility switch
+        {
+            Accessibility.Private => "-",
+            Accessibility.ProtectedAndInternal => "~",
+            Accessibility.Internal => "~",
+            Accessibility.Protected => "#",
+            Accessibility.ProtectedOrInternal => "#",
+            Accessibility.Public => "+",
+            _ => "",
+        };
+    }
+
+    private const string NewLine = "\n";
+    private const string MemberSeparator = NewLine + "    ";
+
+    internal static DiagramType BuildType(DiagramTypes diagram, ITypeDefinition type)
+    {
+        if (type.Kind == TypeKind.Enum)
+            return BuildEnum(diagram, type);
+        return BuildClass(diagram, type);
+    }
+
+    private static DiagramType BuildEnum(DiagramTypes diagram, ITypeDefinition type)
+    {
+        var fields = type
+            .GetFields(IsEnumValue)
+            .ToArray();
+        var values = fields
+            .Select(static f => f.Name)
+            .Prepend("<<Enumeration>>");
+        var id = ClassDiagrams.GetId(diagram.Names, type);
+        return new DiagramType
+        {
+            Name = GetNameUnlessId(diagram, type, id),
+            Body = WriteDefinition(id, PadMembers(values).TrimEnd(' ')),
+            XmlDocs = ClassDiagrams.CollectDocs(diagram.Docs, type, fields),
+        };
+    }
+
+    private static bool IsEnumValue(IField field)
+    {
+        if (!field.IsConst)
+            return false;
+        if (!field.IsStatic)
+            return false;
+        return field.Accessibility == Accessibility.Public;
+    }
+
+    private static DiagramType BuildClass(DiagramTypes diagram, ITypeDefinition type)
+    {
+        var id = ClassDiagrams.GetId(diagram.Names, type);
+        var properties = type
+            .GetProperties()
+            .ToArray();
+        var methods = ListMethods(type);
+        var fields = ListFields(diagram, type, properties);
+        var members = SplitByDeclaringType(diagram, properties, methods, fields);
+        var documented = fields
+            .Concat<IMember>(properties)
+            .Concat(methods);
+        return new DiagramType
+        {
+            Name = GetNameUnlessId(diagram, type, id),
+            Body = WriteDefinition(id, WriteBody(diagram, type, members)),
+            HasOne = MapHasOne(diagram, members, type),
+            HasMany = MapHasMany(diagram, members, type),
+            BaseType = MapBaseType(diagram, type),
+            Interfaces = MapInterfaces(diagram, type),
+            Inherited = ListInherited(diagram, type, id, members),
+            XmlDocs = ClassDiagrams.CollectDocs(diagram.Docs, type, documented),
+        };
+    }
+
+    private static string? GetNameUnlessId(DiagramTypes diagram, IType type, string id)
+    {
+        var name = ClassDiagrams.GetTypeName(diagram.Names, type);
+        if (name == id)
+            return null;
+        return name;
+    }
+
+    private static string WriteDefinition(string id, string body)
+    {
+        return $"class {id} {{{body}}}";
+    }
+
+    private static string PadMembers(IEnumerable<string> lines)
+    {
+        return MemberSeparator + string.Join(MemberSeparator, lines) + MemberSeparator;
+    }
+
+    /// <summary>The methods <paramref name="type"/> shows: its own and those it inherits, but no
+    /// operators, nothing compiler-generated, and nothing object declares or a base type overrides
+    /// from it.</summary>
+    private static IMethod[] ListMethods(ITypeDefinition type)
+    {
+        return type
+            .GetMethods(m => IsShownMethod(type, m))
+            .ToArray();
+    }
+
+    private static bool IsShownMethod(ITypeDefinition type, IMethod method)
+    {
+        if (method.IsOperator)
+            return false;
+        if (method.IsCompilerGenerated())
+            return false;
+        if (method.DeclaringTypeDefinition == type)
+            return true;
+        if (TypeFacts.IsObject(method.DeclaringType))
+            return false;
+        return !TypeFacts.OverridesObject(method);
+    }
+
+    /// <summary>The fields <paramref name="type"/> shows: none compiler-generated, and none that
+    /// looks like the backing field of one of <paramref name="properties"/>.</summary>
+    private static IField[] ListFields(DiagramTypes diagram, ITypeDefinition type, IProperty[] properties)
+    {
+        return type
+            .GetFields(f => IsShownField(diagram, f, properties))
+            .ToArray();
+    }
+
+    private static bool IsShownField(DiagramTypes diagram, IField field, IProperty[] properties)
+    {
+        if (IsHiddenEntity(diagram, field))
+            return false;
+        return !properties.Any(p => IsBackingField(field, p));
+    }
+
+    private static bool IsHiddenEntity(DiagramTypes diagram, IEntity entity)
+    {
+        return CSharpDecompiler.MemberIsHidden(entity.ParentModule!.MetadataFile, entity.MetadataToken, diagram.Settings);
+    }
+
+    // A field of a property's type whose name holds the property's, as _name does for Name.
+    private static bool IsBackingField(IField field, IProperty property)
+    {
+        if (!field.ReturnType.Equals(property.ReturnType))
+            return false;
+        return field.Name.Contains(property.Name, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static DiagramTypes.DeclaredMembers SplitByDeclaringType(DiagramTypes diagram, IProperty[] properties, IMethod[] methods, IField[] fields)
+    {
+        var hasOne = properties
+            .Where(p => HoldsOne(diagram, p))
+            .ToArray();
+        var hasMany = properties
+            .Select(p => FindManyRelation(diagram, p))
+            .OfType<DiagramTypes.ManyRelation>()
+            .ToArray();
+        var related = hasMany
+            .Select(static r => r.Property)
+            .Concat(hasOne)
+            .ToHashSet();
+        var flat = properties
+            .Where(p => !related.Contains(p))
+            .ToArray();
+        return new DiagramTypes.DeclaredMembers(
+            GroupByDeclaringType(flat, static p => p),
+            GroupByDeclaringType(hasOne, static p => p),
+            GroupByDeclaringType(hasMany, static r => r.Property),
+            GroupByDeclaringType(methods, static m => m),
+            GroupByDeclaringType(fields, static f => f));
+    }
+
+    private static Dictionary<IType, T[]> GroupByDeclaringType<T>(IEnumerable<T> items, Func<T, IMember> memberOf)
+    {
+        return items
+            .GroupBy(i => memberOf(i).DeclaringType)
+            .ToDictionary(static g => g.Key, static g => g.ToArray());
+    }
+
+    // A property whose type, or the type it makes nullable, is drawn in the diagram.
+    private static bool HoldsOne(DiagramTypes diagram, IProperty property)
+    {
+        var type = property.ReturnType;
+        if (TypeFacts.TryGetNullable(type, out var underlying))
+            type = underlying;
+        return ClassDiagrams.IsPicked(diagram.Names, type);
+    }
+
+    // A property of a generic enumerable of a type drawn in the diagram.
+    private static DiagramTypes.ManyRelation? FindManyRelation(DiagramTypes diagram, IProperty property)
+    {
+        if (!TypeFacts.TryGetElementType(property, out var elementType))
+            return null;
+        if (!ClassDiagrams.IsPicked(diagram.Names, elementType))
+            return null;
+        return new DiagramTypes.ManyRelation(property, elementType);
+    }
+
+    private static string WriteBody(DiagramTypes diagram, ITypeDefinition type, DiagramTypes.DeclaredMembers members)
+    {
+        var own = PadMembers(ListFlatMembers(diagram, members, type, ""));
+        var annotation = GetAnnotation(type);
+        if (annotation == null)
+            return own.TrimEnd(' ');
+        return own + $"<<{annotation}>>" + NewLine;
+    }
+
+    // See https://mermaid.js.org/syntax/classDiagram.html#annotations-on-classes; a static class is
+    // abstract and sealed.
+    private static string? GetAnnotation(ITypeDefinition type)
+    {
+        if (TypeFacts.IsInterface(type))
+            return "Interface";
+        if (!type.IsAbstract)
+            return null;
+        if (type.IsSealed)
+            return "Service";
+        return "Abstract";
+    }
+
+    private static IEnumerable<string> ListFlatMembers(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType declaring, string prefix)
+    {
+        var properties = GetDeclared(members.FlatProperties, declaring).Select(p => prefix + ClassDiagrams.FormatProperty(diagram.Members, p));
+        var methods = GetDeclared(members.Methods, declaring).Select(m => prefix + ClassDiagrams.FormatMethod(diagram.Members, m));
+        var fields = GetDeclared(members.Fields, declaring).Select(f => prefix + ClassDiagrams.FormatField(diagram.Members, f));
+        return properties
+            .Concat(methods)
+            .Concat(fields);
+    }
+
+    private static T[] GetDeclared<T>(Dictionary<IType, T[]> byType, IType declaring)
+    {
+        if (byType.TryGetValue(declaring, out var declared))
+            return declared;
+        return [];
+    }
+
+    /// <summary>The members <paramref name="type"/> inherits, by the id of each base type declaring
+    /// them, written as members of <paramref name="id"/> for the diagrammer to add.</summary>
+    private static Dictionary<string, InheritedMembers> ListInherited(DiagramTypes diagram, ITypeDefinition type, string id, DiagramTypes.DeclaredMembers members)
+    {
+        var prefix = id + " : ";
+        var inherited = new Dictionary<string, InheritedMembers>();
+        var ancestors = type
+            .GetNonInterfaceBaseTypes()
+            .Where(t => TypeFacts.IsAncestor(type, t));
+        foreach (var ancestor in ancestors)
+            inherited[ClassDiagrams.GetId(diagram.Names, ancestor)] = GetInheritedFrom(diagram, members, ancestor, prefix);
+        return inherited;
+    }
+
+    private static InheritedMembers GetInheritedFrom(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType ancestor, string prefix)
+    {
+        var flat = ListFlatMembers(diagram, members, ancestor, prefix).ToList();
+        string? flatMembers = null;
+        if (flat.Count > 0)
+            flatMembers = string.Join(NewLine, flat);
+        return new InheritedMembers
+        {
+            FlatMembers = flatMembers,
+            HasOne = MapHasOne(diagram, members, ancestor),
+            HasMany = MapHasMany(diagram, members, ancestor),
+        };
+    }
+
+    private static Dictionary<string, string>? MapHasOne(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType declaring)
+    {
+        if (!members.HasOne.TryGetValue(declaring, out var properties))
+            return null;
+        var relations = new Dictionary<string, string>();
+        foreach (var property in properties)
+            Relate(relations, ReferToOne(diagram, property));
+        return relations;
+    }
+
+    private static DiagramReference ReferToOne(DiagramTypes diagram, IProperty property)
+    {
+        var type = property.ReturnType;
+        var label = property.Name;
+        if (property.IsIndexer)
+            label += WriteIndexerParameters(property);
+        if (TypeFacts.TryGetNullable(type, out var underlying))
+        {
+            type = underlying;
+            label += " ?";
+        }
+        return ClassDiagrams.ReferTo(diagram.Names, type, label);
+    }
+
+    private static string WriteIndexerParameters(IProperty indexer)
+    {
+        var parameters = indexer.Parameters.Select(static p => p.Type.Name + " " + p.Name);
+        return "[" + string.Join(", ", parameters) + "]";
+    }
+
+    private static Dictionary<string, string>? MapHasMany(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType declaring)
+    {
+        if (!members.HasMany.TryGetValue(declaring, out var many))
+            return null;
+        var relations = new Dictionary<string, string>();
+        foreach (var relation in many)
+            Relate(relations, ClassDiagrams.ReferTo(diagram.Names, relation.ElementType, relation.Property.Name));
+        return relations;
+    }
+
+    // Relations are keyed by label; a label two properties share keeps the last.
+    private static void Relate(Dictionary<string, string> relations, DiagramReference reference)
+    {
+        relations[reference.Label!] = reference.To;
+    }
+
+    /// <summary>The class <paramref name="type"/> derives from, unless that is object.</summary>
+    private static Dictionary<string, string?>? MapBaseType(DiagramTypes diagram, ITypeDefinition type)
+    {
+        var baseType = type.DirectBaseTypes.FirstOrDefault(IsBaseClass);
+        if (baseType == null)
+            return null;
+        var reference = ClassDiagrams.ReferTo(diagram.Names, baseType);
+        return new Dictionary<string, string?> { [reference.To] = reference.Label };
+    }
+
+    private static bool IsBaseClass(IType type)
+    {
+        if (TypeFacts.IsInterface(type))
+            return false;
+        return !TypeFacts.IsObject(type);
+    }
+
+    /// <summary>The interfaces <paramref name="type"/> implements directly, each with the labels of
+    /// the closed generic forms it implements.</summary>
+    private static Dictionary<string, string?[]>? MapInterfaces(DiagramTypes diagram, ITypeDefinition type)
+    {
+        var references = type.DirectBaseTypes
+            .Where(TypeFacts.IsInterface)
+            .Select(i => ClassDiagrams.ReferTo(diagram.Names, i))
+            .ToList();
+        if (references.Count == 0)
+            return null;
+        return references
+            .GroupBy(static r => r.To)
+            .ToDictionary(static g => g.Key, ListLabels);
+    }
+
+    private static string?[] ListLabels(IEnumerable<DiagramReference> references)
+    {
+        return references
+            .Select(static r => r.Label)
+            .ToArray();
+    }
+
+    /// <summary>The documentation <paramref name="file"/> has, wherever it is found; none when it
+    /// has none or it cannot be read.</summary>
+    internal static DiagramDocs ReadDocs(MetadataFile file)
+    {
+        try
+        {
+            return new DiagramDocs { Provider = XmlDocLoader.LoadDocumentation(file) };
+        }
+        catch (Exception e) when (e is XmlException or IOException or UnauthorizedAccessException)
+        {
+            return new DiagramDocs { Provider = null };
         }
     }
+
+    /// <summary>The documentation of <paramref name="type"/>, under an empty key, and of each of
+    /// <paramref name="members"/>, under its name; null when none has any.</summary>
+    internal static Dictionary<string, string>? CollectDocs(DiagramDocs docs, ITypeDefinition type, IEnumerable<IMember> members)
+    {
+        if (docs.Provider == null)
+            return null;
+        var found = new Dictionary<string, string>();
+        AddDoc(docs, found, string.Empty, type);
+        foreach (var member in members)
+            AddDoc(docs, found, member.Name, member);
+        if (found.Count == 0)
+            return null;
+        return found;
+    }
+
+    private static void AddDoc(DiagramDocs docs, Dictionary<string, string> found, string key, IEntity entity)
+    {
+        var text = GetDocText(docs, entity);
+        if (string.IsNullOrEmpty(text))
+            return;
+        found[key] = text;
+    }
+
+    private static string? GetDocText(DiagramDocs docs, IEntity entity)
+    {
+        var xml = ReadDocXml(docs, entity);
+        if (xml == null)
+            return null;
+        var text = xml
+            .Replace("<summary>", null)
+            .Replace("</summary>", null)
+            .Replace("<para>", "\n")
+            .Replace("</para>", "\n")
+            .Trim()
+            .Replace('<', '[')
+            .Replace('>', ']');
+        var plain = Noise().Replace(text, string.Empty);
+        return HorizontalSpace().Replace(plain, " ");
+    }
+
+    private static string? ReadDocXml(DiagramDocs docs, IEntity entity)
+    {
+        try
+        {
+            return docs.Provider!.GetDocumentation(entity);
+        }
+        catch (Exception e) when (e is XmlException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    // Spaces at either end of a line, and what references leave behind once their brackets are
+    // squared: the start of a see cref (with its symbol kind) or paramref up to the name, and the
+    // quote and slash after it.
+    [GeneratedRegex("""^[ \t]+|[ \t]+$|(see\s.ref="(.:)?)|(paramref\sname=")|("\s/)""", RegexOptions.Multiline)]
+    private static partial Regex Noise();
+
+    [GeneratedRegex(@"[ \t]+")]
+    private static partial Regex HorizontalSpace();
 }

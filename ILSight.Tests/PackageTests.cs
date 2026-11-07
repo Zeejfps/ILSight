@@ -41,11 +41,11 @@ public sealed class PackageTests
             WriteText(archive, "./readme.txt", "Read me");
         }
 
-        var package = AssemblyPackage.TryRead(AssemblyPath.Of(path))!;
+        var package = AssemblyPackages.TryRead(AssemblyPath.Of(path))!;
 
-        var guide = package.FindFile("docs/guide.txt")!;
-        Assert.Equal("Guide", Encoding.UTF8.GetString(package.ReadFile(guide)));
-        Assert.Equal("Read me", Encoding.UTF8.GetString(package.ReadFile(package.FindFile("readme.txt")!)));
+        var guide = AssemblyPackages.FindFile(package, "docs/guide.txt")!;
+        Assert.Equal("Guide", Encoding.UTF8.GetString(AssemblyPackages.ReadFile(package, guide)));
+        Assert.Equal("Read me", Encoding.UTF8.GetString(AssemblyPackages.ReadFile(package, AssemblyPackages.FindFile(package, "readme.txt")!)));
     }
 
     [Theory]
@@ -66,9 +66,9 @@ public sealed class PackageTests
             WriteText(archive, "readme.txt", "Read me");
         }
 
-        var package = AssemblyPackage.TryRead(AssemblyPath.Of(path))!;
+        var package = AssemblyPackages.TryRead(AssemblyPath.Of(path))!;
 
-        Assert.Equal(["readme.txt"], package.ListFiles().Select(static f => f.FullName));
+        Assert.Equal(["readme.txt"], AssemblyPackages.ListFiles(package).Select(static f => f.FullName));
         Assert.Empty(package.Root.Folders);
     }
 
@@ -325,7 +325,7 @@ public sealed class PackageTests
         var package = Assert.IsType<LoadedPackage>(new AssemblyList().Open(WritePackage(temp)));
         var target = temp.PathOf("out");
 
-        var extracted = package.Package.ExtractFolder(FolderOf(package.Root.Child(LibFolder)), target);
+        var extracted = AssemblyPackages.ExtractFolder(package.Package, FolderOf(package.Root.Child(LibFolder)), target);
 
         var dll = Path.Combine(target, "ILSight.Tests.dll");
         Assert.Empty(extracted.Failures);
@@ -341,7 +341,7 @@ public sealed class PackageTests
         var package = Assert.IsType<LoadedPackage>(new AssemblyList().Open(WritePackage(temp)));
         var target = temp.PathOf("out");
 
-        package.Package.ExtractFolder(FolderOf(package.Root), target);
+        AssemblyPackages.ExtractFolder(package.Package, FolderOf(package.Root), target);
 
         Assert.Equal("Read me", File.ReadAllText(Path.Combine(target, "readme.txt")));
         Assert.True(File.Exists(Path.Combine(target, "runtimes", "win-x64", "native", "native.dll")));
@@ -361,7 +361,7 @@ public sealed class PackageTests
         var package = Assert.IsType<LoadedPackage>(new AssemblyList().Open(path));
         var target = temp.PathOf("out");
 
-        var extracted = package.Package.ExtractFolder(FolderOf(package.Root), target);
+        var extracted = AssemblyPackages.ExtractFolder(package.Package, FolderOf(package.Root), target);
 
         Assert.Empty(extracted.Failures);
         Assert.False(File.Exists(temp.PathOf("escaped.txt")));

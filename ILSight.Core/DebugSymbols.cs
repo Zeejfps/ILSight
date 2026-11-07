@@ -202,10 +202,10 @@ internal sealed class DebugSymbols : IDebugInfoProvider
         var inPackage = AssemblyPath.Parse(path);
         if (inPackage == null)
             return null;
-        var file = package.FindFileAt(inPackage);
+        var file = AssemblyPackages.FindFileAt(package, inPackage);
         if (file == null)
             return null;
-        return package.ReadFile(file);
+        return AssemblyPackages.ReadFile(package, file);
     }
 
     private static byte[]? TryReadFromDisk(string path)

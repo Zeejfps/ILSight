@@ -72,7 +72,7 @@ public static class Comparisons
         }
         var scope = comparison.Scope;
         var ticket = Comparisons.StartComparing(comparison);
-        var compared = await Background.Run(() => ApiDiff.Compare(left, right, scope, ticket.Token));
+        var compared = await Background.Run(() => ApiEntries.Compare(left, right, scope, ticket.Token));
         if (!Comparisons.FinishComparing(comparison, ticket))
             return;
         switch (compared)

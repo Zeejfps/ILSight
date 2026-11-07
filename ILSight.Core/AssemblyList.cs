@@ -578,7 +578,7 @@ public sealed class AssemblyList
     /// before, else one read now, kept while the list holds the package. Null when it does not load.</summary>
     internal LoadedModule? TryLoadOutOf(LoadedPackage package, PackageFile file)
     {
-        var path = package.Package.PathOf(file);
+        var path = AssemblyPackages.GetFilePath(package.Package, file);
         lock (_gate)
         {
             var known = FindReadOutOf(package, path);
@@ -685,7 +685,7 @@ public sealed class AssemblyList
     {
         if (File.Exists(path.Text))
             return ReadAssemblyOrPackage(path);
-        var inPackage = AssemblyPackage.SplitPath(path);
+        var inPackage = AssemblyPackages.SplitPath(path);
         if (inPackage == null)
             return new LoadedModule(this, path, ReadFile(path));
         var container = Load(inPackage.Value.Package, generation);
@@ -740,7 +740,7 @@ public sealed class AssemblyList
     {
         try
         {
-            return AssemblyPackage.TryRead(path);
+            return AssemblyPackages.TryRead(path);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -751,7 +751,7 @@ public sealed class AssemblyList
     private LoadedModule ReadOutOfPackage(LoadedPackage container, AssemblyPath path, string fullName)
     {
         var package = container.Package;
-        var file = package.FindFile(fullName);
+        var file = AssemblyPackages.FindFile(package, fullName);
         if (file == null)
             throw new AssemblyLoadException(path, $"'{container.FilePath}' holds no '{fullName}'.");
         var image = ReadPackageFile(package, file);
@@ -760,10 +760,10 @@ public sealed class AssemblyList
 
     private PEFile ReadPackageFile(AssemblyPackage package, PackageFile file)
     {
-        var path = package.PathOf(file);
+        var path = AssemblyPackages.GetFilePath(package, file);
         try
         {
-            var bytes = package.ReadFile(file);
+            var bytes = AssemblyPackages.ReadFile(package, file);
             using var stream = new MemoryStream(bytes);
             return ReadImage(path, stream);
         }

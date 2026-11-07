@@ -338,7 +338,7 @@ public sealed class LoadedPackage : LoadedAssembly
     private IReadOnlyList<LoadedModule> LoadAssemblies()
     {
         var assemblies = new List<LoadedModule>();
-        foreach (var file in Package.ListFiles())
+        foreach (var file in AssemblyPackages.ListFiles(Package))
         {
             if (!PackageContents.IsAssemblyName(file.Name))
                 continue;
@@ -353,7 +353,7 @@ public sealed class LoadedPackage : LoadedAssembly
     /// that file did not load as one.</summary>
     internal LoadedModule? FindAssembly(PackageFile file)
     {
-        var path = Package.PathOf(file);
+        var path = AssemblyPackages.GetFilePath(Package, file);
         foreach (var assembly in Assemblies)
         {
             if (assembly.FilePath.Equals(path))

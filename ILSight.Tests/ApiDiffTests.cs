@@ -22,7 +22,7 @@ public sealed class ApiDiffTests
     private static ApiDiff Compare(ApiScope scope)
     {
         var opened = s_opened.Value;
-        return ApiDiff.Compare(opened.Left, opened.Right, scope, CancellationToken.None);
+        return ApiEntries.Compare(opened.Left, opened.Right, scope, CancellationToken.None);
     }
 
     private static ApiEntry Entry(ApiDiff diff, params ReadOnlySpan<string> path)
@@ -222,6 +222,6 @@ public sealed class ApiDiffTests
         using var cancelled = new CancellationTokenSource();
         cancelled.Cancel();
 
-        Assert.Throws<OperationCanceledException>(() => ApiDiff.Compare(opened.Left, opened.Right, ApiScope.PublicApi, cancelled.Token));
+        Assert.Throws<OperationCanceledException>(() => ApiEntries.Compare(opened.Left, opened.Right, ApiScope.PublicApi, cancelled.Token));
     }
 }

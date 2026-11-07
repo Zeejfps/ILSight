@@ -70,7 +70,7 @@ public static class Exports
     {
         try
         {
-            var bytes = place.Container.Package.ReadFile(place.File);
+            var bytes = AssemblyPackages.ReadFile(place.Container.Package, place.File);
             File.WriteAllBytes(path, bytes);
         }
         catch (Exception e) when (IsFileError(e))
@@ -304,7 +304,7 @@ public static class Exports
     public static void ExtractPackageFolder(AppState appState, string name, PackageFolderPlace place, string folder)
     {
         var job = new ExportJob(name, ExportKind.Files, folder);
-        RunExport(appState, job, name, s => place.Container.Package.ExtractFolder(place.Folder, folder, s.Progress, s.Token),
+        RunExport(appState, job, name, s => AssemblyPackages.ExtractFolder(place.Container.Package, place.Folder, folder, s.Progress, s.Token),
             (r, extracted) => ReportExtracted(r, extracted));
     }
 

@@ -89,6 +89,6 @@ internal static class PackageContents
 
     public static byte[] ReadFileData(PackageFileInfo info)
     {
-        return info.Package.Package.ReadFile(info.File);
+        return AssemblyPackages.ReadFile(info.Package.Package, info.File);
     }
 }

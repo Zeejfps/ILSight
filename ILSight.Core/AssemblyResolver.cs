@@ -142,7 +142,7 @@ internal sealed class AssemblyResolver : IAssemblyResolver
             return true;
         if (_package == null)
             return false;
-        return _package.FindFileAt(path) != null;
+        return AssemblyPackages.FindFileAt(_package, path) != null;
     }
 
     public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
