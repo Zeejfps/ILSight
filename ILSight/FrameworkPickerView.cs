@@ -70,7 +70,7 @@ internal static class FrameworkPickerView
             return;
         picker.ListedVersion = assemblies.Version;
         picker.Listed.Clear();
-        picker.Listed.UnionWith(assemblies.FilePaths);
+        picker.Listed.UnionWith(AssemblyListing.ListFilePaths(assemblies));
         picker.AppliedFilter = null;
     }
 

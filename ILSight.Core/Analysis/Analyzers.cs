@@ -156,9 +156,9 @@ public static class Analyzers
     {
         try
         {
-            var assembly = list.TryLoadAssembly(definition.FilePath);
+            var assembly = AssemblyListing.TryLoadAssembly(list, definition.FilePath);
             if (assembly == null) return null;
-            var entity = assembly.MainModule.ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
+            var entity = LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
             return entity != null ? Describe(entity) : null;
         }
         catch (Exception e) when (e is ArgumentException or BadImageFormatException or InvalidOperationException or IOException)

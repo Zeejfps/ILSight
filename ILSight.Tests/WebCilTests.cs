@@ -38,7 +38,7 @@ public sealed class WebCilTests
     {
         var assembly = new AssemblyList().OpenModule(Trees.WebCilSamplePath);
 
-        Assert.False(assembly.CanGeneratePdb);
+        Assert.False(LoadedAssemblies.EnsureCanGeneratePdb(assembly));
     }
 
     [Fact]

@@ -21,7 +21,7 @@ internal static class MethodUsesAnalyzer
         if (method.ParentModule?.MetadataFile == null)
             throw new InvalidOperationException("Should never happen.");
         var file = method.ParentModule.MetadataFile;
-        var module = context.AssemblyList.TypeSystemOf(file).MainModule;
+        var module = AssemblyListing.EnsureTypeSystemOf(context.AssemblyList, file).MainModule;
         return AnalyzerHelpers.EnsureMapping(context, method).GetMethodParts((MethodDefinitionHandle)method.MetadataToken)
             .SelectMany(part => ScanMethod(module, part)).Distinct();
     }

@@ -44,7 +44,7 @@ public sealed partial class BrowseNode
 
     private BrowseNode FileNode(LoadedPackage package, PackageFile file)
     {
-        var assembly = PackageContents.IsAssemblyName(file.Name) ? package.FindAssembly(file) : null;
+        var assembly = PackageContents.IsAssemblyName(file.Name) ? LoadedAssemblies.FindAssembly(package.Package, LoadedAssemblies.EnsureAssemblies(package), file) : null;
         if (assembly == null)
             return new BrowseNode(this, new NodeSubject.PackageFile { Value = new PackageFileInfo { Package = package, File = file } });
         return ModuleRoot(assembly, this);

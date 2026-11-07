@@ -46,7 +46,7 @@ public static class AssemblyLists
     {
         if (appState.IsReloading)
             return;
-        AssemblyLists.RememberActive(appState.Lists, appState.Assemblies.FilePaths);
+        AssemblyLists.RememberActive(appState.Lists, AssemblyListing.ListFilePaths(appState.Assemblies));
         AssemblyLists.RememberActivePdbs(appState.Lists, appState.Assemblies.Pdbs.All);
         AssemblyLists.RememberActiveFrameworks(appState.Lists, appState.Assemblies.TargetFrameworks.All);
     }

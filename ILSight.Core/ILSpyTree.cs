@@ -155,7 +155,7 @@ public static class ILSpyTree
     {
         try
         {
-            return assembly.MainModule.ResolveEntity(MetadataTokens.EntityHandle(token));
+            return LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(MetadataTokens.EntityHandle(token));
         }
         catch (Exception e) when (e is ArgumentException or BadImageFormatException or InvalidOperationException)
         {
@@ -167,7 +167,7 @@ public static class ILSpyTree
     {
         try
         {
-            return list.TryLoadAssembly(filePath);
+            return AssemblyListing.TryLoadAssembly(list, filePath);
         }
         catch (Exception e) when (e is IOException or BadImageFormatException or InvalidOperationException or UnauthorizedAccessException)
         {

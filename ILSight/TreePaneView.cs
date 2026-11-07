@@ -72,7 +72,7 @@ internal static class TreePaneView
     /// scrolls to it and focuses the tree.</summary>
     private static void SelectOpenedNode(Ui<UiState> ui, AssemblyList assemblies, BrowseNode node)
     {
-        if (!assemblies.IsListed(node.Root.Assembly))
+        if (!AssemblyListing.IsListed(assemblies, node.Root.Assembly))
             return;
         ui.State.Tree.Reveal(node);
         ui.Focus(ui.GetId(TreeId), takesText: false);
@@ -303,7 +303,7 @@ internal static class TreePaneView
     private static void PdbItems(Ui<UiState> ui, LoadedModule assembly)
     {
         var t = ui.State.Strings;
-        if (ui.MenuItem(t.TreeGeneratePdb, enabled: assembly.CanGeneratePdb, id: "generate-pdb", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
+        if (ui.MenuItem(t.TreeGeneratePdb, enabled: LoadedAssemblies.EnsureCanGeneratePdb(assembly), id: "generate-pdb", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
             SaveDialogs.PickPdbFile(ui, assembly);
         if (assembly.CanPickPdb && ui.MenuItem(t.TreeSelectPdb, id: "select-pdb"))
             PickPdbToRead(ui, assembly);

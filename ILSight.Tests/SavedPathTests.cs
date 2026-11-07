@@ -32,7 +32,7 @@ public sealed class SavedPathTests : IDisposable
     {
         var node = Sample(kind);
         var reopened = new AssemblyList();
-        reopened.Open(node.Path.FilePath);
+        AssemblyListing.Open(reopened, node.Path.FilePath);
 
         var found = reopened.FindNode(node.Path);
 

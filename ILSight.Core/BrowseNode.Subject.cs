@@ -151,7 +151,7 @@ public sealed partial class BrowseNode
         NodeSubject.MemberDefinition member => member.Definition.Symbol is IProperty or IEvent,
         NodeSubject.References references => HasReferences(references.Owner),
         NodeSubject.AssemblyReference => true,
-        NodeSubject.ReferencedTypes types => ForwardedTypes.UsesReference(types.Reference.Module.ReferenceUsage, types.Reference.Reference.Handle),
+        NodeSubject.ReferencedTypes types => ForwardedTypes.UsesReference(LoadedAssemblies.EnsureReferenceUsage(types.Reference.Module), types.Reference.Reference.Handle),
         NodeSubject.TypeReference type => UsesAnythingOf(type.Value),
         NodeSubject.ModuleReference module => module.Value.Imports.Count > 0,
         NodeSubject.BaseTypes or NodeSubject.DerivedTypes or NodeSubject.Resources or NodeSubject.ResourceContainer

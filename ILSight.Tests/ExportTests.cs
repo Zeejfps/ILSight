@@ -123,7 +123,7 @@ public sealed class ExportTests : IDisposable
         Assert.Equal("Calculator.cs", NodeContentLoader.SuggestCodeFileName(calculator, DecompilationLanguage.CSharp));
         Assert.Equal("Calculator.il", NodeContentLoader.SuggestCodeFileName(calculator, DecompilationLanguage.IL));
         Assert.Equal("ILSight.Tests.cs", NodeContentLoader.SuggestCodeFileName(Trees.TestAssembly.Root, DecompilationLanguage.CSharp));
-        Assert.Equal("ILSight.Tests.pdb", Trees.TestAssembly.PdbFileName);
+        Assert.Equal("ILSight.Tests.pdb", LoadedAssemblies.GetPdbFileName(Trees.TestAssembly));
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public sealed class ExportTests : IDisposable
         var assembly = Trees.TestAssembly;
         var path = _temp.PathOf("Tests.pdb");
 
-        Assert.True(assembly.CanGeneratePdb);
+        Assert.True(LoadedAssemblies.EnsureCanGeneratePdb(assembly));
         AssemblyExport.GeneratePdb(assembly, DecompilerOptions.Default, path);
 
         using var stream = File.OpenRead(path);

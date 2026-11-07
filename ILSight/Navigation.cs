@@ -222,7 +222,7 @@ public static class Navigation
     {
         var opened = new List<LoadedAssembly>();
         foreach (var path in paths)
-            opened.Add(assemblies.Open(path, token));
+            opened.Add(AssemblyListing.Open(assemblies, path, token));
         var scope = ListIdScope(assemblies, opened);
         return NodeLookup.FindById(session, idString, scope);
     }
@@ -359,7 +359,7 @@ public static class Navigation
     private static async Task ShowInApiReferenceAsync(AppState appState, CodeReference.Entity reference)
     {
         var assemblies = appState.Assemblies;
-        var found = await Background.Run(() => assemblies.FindApiReferencePage(reference));
+        var found = await Background.Run(() => AssemblyListing.FindApiReferencePage(assemblies, reference));
         if (found is Outcome<string>.Ok ok && ok.Value != null)
             appState.ViewCommands.Enqueue(new ViewCommand.OpenWebPage(ok.Value));
         else
@@ -442,7 +442,7 @@ public static class Navigation
             return null;
         if (!place.Equals(tab.Location))
             return null;
-        if (!appState.Assemblies.IsListed(node.Root.Assembly))
+        if (!AssemblyListing.IsListed(appState.Assemblies, node.Root.Assembly))
             return null;
         return node;
     }

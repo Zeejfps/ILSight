@@ -70,12 +70,8 @@ internal static class ShapeExceptions
         "ILSight.AnalyzerRows",
         "ILSight.BrowseTree",
         "ILSight.ComparisonRows",
-        "ILSight.Core.AssemblyList",
         "ILSight.Core.BrowseNode",
         "ILSight.Core.BrowseSession",
-        "ILSight.Core.LoadedAssembly",
-        "ILSight.Core.LoadedModule",
-        "ILSight.Core.LoadedPackage",
         "ILSight.UiState",
     ];
 
@@ -86,10 +82,6 @@ internal static class ShapeExceptions
         "ILSight.AppIcons",
         "ILSight.BrowseTree",
         "ILSight.Core.AssemblyLoadException",
-        "ILSight.Core.FailedAssembly",
-        "ILSight.Core.LoadedAssembly",
-        "ILSight.Core.LoadedModule",
-        "ILSight.Core.LoadedPackage",
         "ILSight.Core.LocatingTokenWriter",
         "ILSight.UiState",
     ];

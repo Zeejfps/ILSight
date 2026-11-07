@@ -72,7 +72,7 @@ public sealed class TargetFrameworkTests
     {
         var app = AppDriver.Opened(width: 1600f);
         OpenAssembly(app.AppState, SampleAppPath);
-        app.RunUntil(() => app.AppState.Assemblies.IsListed(PathOf(SampleAppPath)));
+        app.RunUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)));
         var fixtures = FixturesOf(app.AppState);
         var sample = SampleOf(app.AppState);
         var tree = app.Ui.Tree;

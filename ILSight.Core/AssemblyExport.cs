@@ -130,7 +130,7 @@ public static class AssemblyExport
         var failure = TryGeneratePdb(project.Assembly, options, folder, embedSources, progress, cancellationToken);
         if (failure != null)
             return project with { Pdb = new ProjectPdb.Failed(failure) };
-        var path = Path.Combine(folder, project.Assembly.PdbFileName);
+        var path = Path.Combine(folder, LoadedAssemblies.GetPdbFileName(project.Assembly));
         return project with { Pdb = new ProjectPdb.Written(path) };
     }
 
@@ -276,9 +276,9 @@ public static class AssemblyExport
     private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerOptions options, string folder, bool embedSources,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
-        if (!assembly.CanGeneratePdb)
+        if (!LoadedAssemblies.EnsureCanGeneratePdb(assembly))
             return new PdbFailure.NoDebugEntry(assembly);
-        var path = Path.Combine(folder, assembly.PdbFileName);
+        var path = Path.Combine(folder, LoadedAssemblies.GetPdbFileName(assembly));
         try
         {
             GeneratePdb(assembly, options, path, embedSources, progress, cancellationToken);

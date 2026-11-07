@@ -83,7 +83,7 @@ public sealed partial class ILSightApp
 
     private static void RevealIfListed(UiState uiState, AppState appState, BrowseNode node)
     {
-        if (!appState.Assemblies.IsListed(node.Root.Assembly))
+        if (!AssemblyListing.IsListed(appState.Assemblies, node.Root.Assembly))
             return;
         uiState.Tree.Reveal(node);
     }
@@ -91,7 +91,7 @@ public sealed partial class ILSightApp
     private static void ExpandListed(UiState uiState, AppState appState, IReadOnlyList<BrowseNode> nodes)
     {
         var listed = nodes
-            .Where(n => appState.Assemblies.IsListed(n.Root.Assembly))
+            .Where(n => AssemblyListing.IsListed(appState.Assemblies, n.Root.Assembly))
             .ToList();
         uiState.Tree.Expand(listed);
     }

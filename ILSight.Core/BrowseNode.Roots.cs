@@ -24,7 +24,7 @@ public sealed partial class BrowseNode
     {
         var file = module.File;
         var result = new List<BrowseNode> { MetadataFolder(module, this, file, "Metadata") };
-        var symbols = module.DebugSymbols;
+        var symbols = LoadedAssemblies.EnsureDebugSymbols(module);
         if (symbols != null)
             result.Add(MetadataFolder(module, this, symbols.File, symbols.Title));
         result.Add(new BrowseNode(this, new NodeSubject.References { Owner = module }));
@@ -32,7 +32,7 @@ public sealed partial class BrowseNode
             result.Add(new BrowseNode(this, new NodeSubject.Resources { Owner = module }));
 
         var byNamespace = new Dictionary<string, List<ITypeDefinition>>(StringComparer.Ordinal);
-        foreach (var type in module.MainModule.TopLevelTypeDefinitions)
+        foreach (var type in LoadedAssemblies.EnsureMainModule(module).TopLevelTypeDefinitions)
         {
             if (Members.IsMissing(type)) continue;
             if (!byNamespace.TryGetValue(type.Namespace, out var types))

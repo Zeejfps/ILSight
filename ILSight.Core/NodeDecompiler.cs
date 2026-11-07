@@ -302,7 +302,7 @@ internal static class NodeDecompiler
     /// the assembly's full name, and the type.</summary>
     private static void WriteHeader(LoadedModule assembly, DocumentBuilder output, IType type, ConversionFlags flags)
     {
-        if (assembly.MainModule.GetAssemblyAttributes().Any(static a => a.AttributeType.FullName == ReferenceAssemblyAttribute))
+        if (LoadedAssemblies.EnsureMainModule(assembly).GetAssemblyAttributes().Any(static a => a.AttributeType.FullName == ReferenceAssemblyAttribute))
             WriteComment(output, ReferenceAssemblyWarning);
         WriteComment(output, assembly.FullName);
         var ambience = new CSharpAmbience { ConversionFlags = ConversionFlags.ShowTypeParameterList | ConversionFlags.PlaceReturnTypeAfterParameterList | flags };
@@ -365,7 +365,7 @@ internal static class NodeDecompiler
 
     internal static CSharpDecompiler CreateCSharpDecompiler(LoadedModule assembly, DecompilerSettings settings, CancellationToken cancellationToken)
     {
-        var typeSystem = assembly.TypeSystemFor(settings);
+        var typeSystem = LoadedAssemblies.EnsureTypeSystemFor(assembly, settings);
         return new CSharpDecompiler(typeSystem, settings)
         {
             CancellationToken = cancellationToken,
@@ -377,7 +377,7 @@ internal static class NodeDecompiler
     {
         if (!settings.UseDebugSymbols)
             return null;
-        return assembly.DebugSymbols;
+        return LoadedAssemblies.EnsureDebugSymbols(assembly);
     }
 
     private static void WriteAssemblySummary(LoadedModule assembly, DocumentBuilder output)
@@ -405,7 +405,7 @@ internal static class NodeDecompiler
     {
         if (handle.Kind != HandleKind.MethodDefinition)
             return;
-        var method = assembly.MainModule.ResolveEntity(handle);
+        var method = LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(handle);
         if (method == null)
             return;
         var reference = CodeReferences.Find(method);

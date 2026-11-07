@@ -236,7 +236,7 @@ internal static class AnalyzerHelpers
 
     internal static DecompilerTypeSystem GetTypeSystem(AnalyzerScope scope, MetadataFile module)
     {
-        return scope.List.TypeSystemOf(module);
+        return AssemblyListing.EnsureTypeSystemOf(scope.List, module);
     }
 
     internal static IEnumerable<ITypeDefinition> GetTypesInScope(AnalyzerScope scope, CancellationToken ct)
@@ -319,7 +319,7 @@ internal static class AnalyzerHelpers
                 var found = false;
                 foreach (var reference in module.AssemblyReferences)
                 {
-                    if (scope.List.FindKnown(reference, exactOrNewer: true)?.File == current)
+                    if (AssemblyListing.FindKnown(scope.List, reference, exactOrNewer: true)?.File == current)
                     {
                         found = true;
                         break;

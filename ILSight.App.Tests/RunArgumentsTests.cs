@@ -150,7 +150,7 @@ public sealed class RunArgumentsTests
         var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), $"--list={Other}");
 
         Assert.Equal(Other, d.AppState.Lists.Active);
-        Assert.Empty(d.AppState.Assemblies.FilePaths);
+        Assert.Empty(AssemblyListing.ListFilePaths(d.AppState.Assemblies));
         Assert.Equal([AppStateDriver.FixturePath], AssemblyLists.GetPaths(d.AppState.Lists, SavedAssemblyLists.DefaultName).Select(static p => p.Text));
     }
 
@@ -167,7 +167,7 @@ public sealed class RunArgumentsTests
 
         AssemblyPath[] opened = [PathOf(AppStateDriver.FixturePath), PathOf(OtherAssembly)];
         Assert.Equal(Other, d.AppState.Lists.Active);
-        Assert.Equal(opened.OrderBy(static p => p.Text), d.AppState.Assemblies.FilePaths.OrderBy(static p => p.Text));
+        Assert.Equal(opened.OrderBy(static p => p.Text), AssemblyListing.ListFilePaths(d.AppState.Assemblies).OrderBy(static p => p.Text));
         Assert.Equal(Other, temp.Settings().ActiveAssemblyList);
     }
 
@@ -178,7 +178,7 @@ public sealed class RunArgumentsTests
         var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), "--clear-list", OtherAssembly);
         SaveSettings(d.AppState);
 
-        Assert.Equal([OtherAssembly], d.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([OtherAssembly], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
         Assert.Equal([OtherAssembly], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
     }
 
@@ -201,5 +201,8 @@ public sealed class RunArgumentsTests
         return d;
     }
 
-    private static bool AreListed(AppState appState, List<AssemblyPath> paths) => paths.All(appState.Assemblies.IsListed);
+    private static bool AreListed(AppState appState, List<AssemblyPath> paths)
+    {
+        return paths.All(path => AssemblyListing.IsListed(appState.Assemblies, path));
+    }
 }

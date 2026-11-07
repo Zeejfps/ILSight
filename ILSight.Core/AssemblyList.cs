@@ -17,55 +17,41 @@ public sealed class AssemblyLoadException(AssemblyPath filePath, string message,
 
 /// <summary>
 /// The assemblies open in the browser, plus those loaded behind the scenes to resolve references.
-/// All members are thread-safe: decompilation and search read it from background threads while the
+/// All of <see cref="AssemblyListing"/> is thread-safe: decompilation and search read it from background threads while the
 /// UI thread reads <see cref="Assemblies"/>, which is an immutable snapshot.
 /// </summary>
 public sealed class AssemblyList
 {
-    private readonly object _gate = new();
+    /// <summary>Guards what is changed here: <see cref="Known"/>, what <see cref="LoadedAssembly.IsListed"/> says of
+    /// each item, and changing <see cref="ListedNow"/>, <see cref="LoadedNow"/>, <see cref="VersionCount"/>,
+    /// <see cref="GenerationCount"/> and <see cref="ReadOptions"/>, which may be read without it. Hold it only
+    /// through <see cref="AssemblyListing"/>, and never while reading files.</summary>
+    public readonly object Gate = new();
+
     /// <summary>What was read, by path: assemblies, packages and the assemblies read out of packages.</summary>
-    private readonly Dictionary<AssemblyPath, LoadedAssembly> _known = new();
-    private ImmutableArray<LoadedAssembly> _listed = ImmutableArray<LoadedAssembly>.Empty;
-    private ImmutableArray<LoadedModule> _loaded = ImmutableArray<LoadedModule>.Empty;
-    private int _version;
-    private int _generation;
-    private volatile LoadOptions _options = LoadOptions.Default;
+    public readonly Dictionary<AssemblyPath, LoadedAssembly> Known = new();
+
+    public ImmutableArray<LoadedAssembly> ListedNow = ImmutableArray<LoadedAssembly>.Empty;
+    public ImmutableArray<LoadedModule> LoadedNow = ImmutableArray<LoadedModule>.Empty;
+    public int VersionCount;
+    public int GenerationCount;
+    public volatile LoadOptions ReadOptions = LoadOptions.Default;
 
     /// <summary>The open assemblies that loaded, in the order they were opened, with an open package's
     /// assemblies where the package is. A snapshot: it never changes after it is read.</summary>
-    public IReadOnlyList<LoadedModule> Assemblies => _loaded;
+    public IReadOnlyList<LoadedModule> Assemblies => LoadedNow;
 
     /// <summary>The open files in the order they were opened, packages and those that failed to load
     /// (<see cref="FailedAssembly"/>) among them. A snapshot, like <see cref="Assemblies"/>.</summary>
-    public IReadOnlyList<LoadedAssembly> Listed => _listed;
-
-    /// <summary>Whether the list holds <paramref name="assembly"/>, or the package it was read out of.</summary>
-    public bool IsListed(LoadedAssembly assembly) => _listed.Contains(assembly.ListedItem);
-
-    /// <summary>True when the assembly or package at <paramref name="filePath"/> is listed and loaded.</summary>
-    public bool IsListed(AssemblyPath filePath)
-    {
-        var listed = _listed;
-        for (var i = 0; i < listed.Length; i++)
-        {
-            if (listed[i] is FailedAssembly)
-                continue;
-            if (listed[i].FilePath.Equals(filePath))
-                return true;
-        }
-        return false;
-    }
-
-    /// <summary>The open files' paths, in order, failed ones included, for persisting the list.</summary>
-    public IReadOnlyList<AssemblyPath> FilePaths => _listed.Select(a => a.FilePath).ToArray();
+    public IReadOnlyList<LoadedAssembly> Listed => ListedNow;
 
     /// <summary>Increments whenever <see cref="Assemblies"/> changes.</summary>
-    public int Version => Volatile.Read(ref _version);
+    public int Version => Volatile.Read(ref VersionCount);
 
     /// <summary>Increments whenever the list is cleared. Work started before a clear neither lists nor
     /// keeps the assemblies it loads after it, so that what it finds late never lands in the list
     /// that follows.</summary>
-    public int Generation => Volatile.Read(ref _generation);
+    public int Generation => Volatile.Read(ref GenerationCount);
 
     /// <summary>What this machine has installed, which references that nothing else answers fall back on.</summary>
     public InstalledRuntime Runtime { get; init; } = new();
@@ -82,6 +68,51 @@ public sealed class AssemblyList
     /// background threads when navigation opens a referenced assembly.</summary>
     public event Action? Changed;
 
+    /// <summary>Who <see cref="Changed"/> calls, for <see cref="AssemblyListing"/> to call them, as only this
+    /// type can raise it.</summary>
+    public Action? ChangedHandlers => Changed;
+
+    /// <summary>Whether resolving a reference reads its assembly from a file, rather than only finding one listed.</summary>
+    internal bool LoadsReferences => ReadOptions.LoadsReferences;
+
+    /// <summary>The options that apply as assemblies are read, changed together.</summary>
+    public sealed record LoadOptions(bool LoadsReferences, MetadataReaderOptions ReaderOptions)
+    {
+        public static LoadOptions Default { get; } = new(true, MetadataReaderOptions.ApplyWindowsRuntimeProjections);
+    }
+}
+
+/// <summary>Opening, reading, listing and closing what an <see cref="AssemblyList"/> holds, and finding what its
+/// assemblies refer to. All of this is thread-safe, and it is what keeps the list so: what it changes it changes
+/// under the list's gate, and it reads no file while holding that.</summary>
+public static class AssemblyListing
+{
+    /// <summary>Whether the list holds <paramref name="assembly"/>, or the package it was read out of.</summary>
+    public static bool IsListed(AssemblyList list, LoadedAssembly assembly)
+    {
+        return list.ListedNow.Contains(assembly.ListedItem);
+    }
+
+    /// <summary>True when the assembly or package at <paramref name="filePath"/> is listed and loaded.</summary>
+    public static bool IsListed(AssemblyList list, AssemblyPath filePath)
+    {
+        var listed = list.ListedNow;
+        for (var i = 0; i < listed.Length; i++)
+        {
+            if (listed[i] is FailedAssembly)
+                continue;
+            if (listed[i].FilePath.Equals(filePath))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>The open files' paths, in order, failed ones included, for persisting the list.</summary>
+    public static IReadOnlyList<AssemblyPath> ListFilePaths(AssemblyList list)
+    {
+        return list.ListedNow.Select(a => a.FilePath).ToArray();
+    }
+
     /// <summary>Opens the assembly at <paramref name="path"/>, or returns it if already open. Its type
     /// system starts loading in the background. A file that is missing or not a .NET assembly is listed
     /// all the same, as a <see cref="FailedAssembly"/>, and the assembly takes its place
@@ -90,78 +121,78 @@ public sealed class AssemblyList
     /// several files out of the list that follows.</summary>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled,
     /// or the list was cleared while the file was read.</exception>
-    public LoadedAssembly Open(AssemblyPath path, CancellationToken cancellationToken = default)
+    public static LoadedAssembly Open(AssemblyList list, AssemblyPath path, CancellationToken cancellationToken = default)
     {
-        var generation = Generation;
+        var generation = list.Generation;
         while (true)
         {
-            var assembly = LoadOrFail(path, generation);
-            if (TryList(assembly, generation, cancellationToken)) return assembly;
+            var assembly = LoadOrFail(list, path, generation);
+            if (TryList(list, assembly, generation, cancellationToken)) return assembly;
             cancellationToken.ThrowIfCancellationRequested();
-            if (generation != Generation)
+            if (generation != list.Generation)
                 throw new OperationCanceledException($"The list was cleared while '{path}' was opened.");
         }
     }
 
     /// <summary>The assembly read from <paramref name="path"/>, or when it cannot be read, the failure
     /// listed for it, else a new one.</summary>
-    private LoadedAssembly LoadOrFail(AssemblyPath path, int generation)
+    private static LoadedAssembly LoadOrFail(AssemblyList list, AssemblyPath path, int generation)
     {
         try
         {
-            return Load(path, generation);
+            return Load(list, path, generation);
         }
         catch (AssemblyLoadException e)
         {
-            return FindListedFailure(path) ?? new FailedAssembly(this, e);
+            return FindListedFailure(list, path) ?? LoadedAssemblies.CreateFailed(list, e);
         }
     }
 
     /// <summary>Removes the item of the list holding <paramref name="assembly"/>: the assembly, or the
     /// package it was read out of, whose assemblies are forgotten with it. Documents and nodes already
     /// handed out stay valid.</summary>
-    public void Close(LoadedAssembly assembly)
+    public static void CloseAssembly(AssemblyList list, LoadedAssembly assembly)
     {
         var item = assembly.ListedItem;
-        lock (_gate)
+        lock (list.Gate)
         {
-            if (item is not FailedAssembly && !ForgetKnown(item)) return;
+            if (item is not FailedAssembly && !ForgetKnown(list, item)) return;
             var isPackage = item is LoadedPackage;
-            Pdbs.Forget(item.FilePath, andUnder: isPackage);
-            TargetFrameworks.Forget(item.FilePath, andUnder: isPackage);
-            ForgetReadOutOf(item);
+            list.Pdbs.Forget(item.FilePath, andUnder: isPackage);
+            list.TargetFrameworks.Forget(item.FilePath, andUnder: isPackage);
+            ForgetReadOutOf(list, item);
             if (!item.IsListed) return;
             item.IsListed = false;
-            ChangeListed(_listed.Remove(item));
+            ChangeListed(list, list.ListedNow.Remove(item));
         }
-        Changed?.Invoke();
+        list.ChangedHandlers?.Invoke();
     }
 
-    private bool ForgetKnown(LoadedAssembly assembly)
+    private static bool ForgetKnown(AssemblyList list, LoadedAssembly assembly)
     {
-        if (!_known.TryGetValue(assembly.FilePath, out var known))
+        if (!list.Known.TryGetValue(assembly.FilePath, out var known))
             return false;
         if (known != assembly)
             return false;
-        _known.Remove(assembly.FilePath);
+        list.Known.Remove(assembly.FilePath);
         return true;
     }
 
-    private void ForgetReadOutOf(LoadedAssembly package)
+    private static void ForgetReadOutOf(AssemblyList list, LoadedAssembly package)
     {
-        var read = _known
+        var read = list.Known
             .Where(k => k.Value is LoadedModule module && module.Place != null && module.Place.Container == package)
             .Select(k => k.Key)
             .ToList();
         foreach (var path in read)
-            _known.Remove(path);
+            list.Known.Remove(path);
     }
 
-    private void ChangeListed(ImmutableArray<LoadedAssembly> listed)
+    private static void ChangeListed(AssemblyList list, ImmutableArray<LoadedAssembly> listed)
     {
-        _listed = listed;
-        _loaded = ListLoaded(listed);
-        _version++;
+        list.ListedNow = listed;
+        list.LoadedNow = ListLoaded(listed);
+        list.VersionCount++;
     }
 
     private static ImmutableArray<LoadedModule> ListLoaded(ImmutableArray<LoadedAssembly> listed)
@@ -174,7 +205,7 @@ public sealed class AssemblyList
                 case FailedAssembly:
                     break;
                 case LoadedPackage package:
-                    loaded.AddRange(package.Assemblies);
+                    loaded.AddRange(LoadedAssemblies.EnsureAssemblies(package));
                     break;
                 case LoadedModule module:
                     loaded.Add(module);
@@ -186,25 +217,22 @@ public sealed class AssemblyList
         return loaded.ToImmutable();
     }
 
-    /// <summary>Whether resolving a reference reads its assembly from a file, rather than only finding one listed.</summary>
-    internal bool LoadsReferences => _options.LoadsReferences;
-
     /// <summary>Takes from <paramref name="options"/> the toggles that apply as assemblies are read: whether
     /// references load their assemblies, and whether Windows Runtime metadata is projected. Returns true
     /// when they changed, so that the open assemblies must be read again to follow them. A change ends the
     /// <see cref="Generation"/>, as a clear does, so that no assembly read with the options before is kept.</summary>
-    public bool UseLoadOptions(DecompilerOptions options)
+    public static bool UseLoadOptions(AssemblyList list, DecompilerOptions options)
     {
         var loadsReferences = options.IsOn(DecompilerToggle.AutoLoadAssemblyReferences);
         var readerOptions = ChooseReaderOptions(options);
-        if (IsSame(_options, loadsReferences, readerOptions))
+        if (IsSame(list.ReadOptions, loadsReferences, readerOptions))
             return false;
-        lock (_gate)
+        lock (list.Gate)
         {
-            if (IsSame(_options, loadsReferences, readerOptions))
+            if (IsSame(list.ReadOptions, loadsReferences, readerOptions))
                 return false;
-            _options = new LoadOptions(loadsReferences, readerOptions);
-            _generation++;
+            list.ReadOptions = new AssemblyList.LoadOptions(loadsReferences, readerOptions);
+            list.GenerationCount++;
         }
         return true;
     }
@@ -217,18 +245,18 @@ public sealed class AssemblyList
     }
 
     /// <summary>Closes every assembly.</summary>
-    public void Clear()
+    public static void CloseAll(AssemblyList list)
     {
-        lock (_gate)
+        lock (list.Gate)
         {
-            _generation++;
-            if (_listed.IsEmpty && _known.Count == 0) return;
-            foreach (var assembly in _listed)
+            list.GenerationCount++;
+            if (list.ListedNow.IsEmpty && list.Known.Count == 0) return;
+            foreach (var assembly in list.ListedNow)
                 assembly.IsListed = false;
-            _known.Clear();
-            ChangeListed(ImmutableArray<LoadedAssembly>.Empty);
+            list.Known.Clear();
+            ChangeListed(list, ImmutableArray<LoadedAssembly>.Empty);
         }
-        Changed?.Invoke();
+        list.ChangedHandlers?.Invoke();
     }
 
     /// <summary>Reads the item of the list holding <paramref name="assembly"/> again from its file: the
@@ -236,11 +264,11 @@ public sealed class AssemblyList
     /// for it now. It is not listed until <see cref="Replace"/> puts it in the item's place. Reads the
     /// file: call it off the UI thread.</summary>
     /// <exception cref="AssemblyLoadException">The file can no longer be read.</exception>
-    public LoadedAssembly ReadAgain(LoadedAssembly assembly)
+    public static LoadedAssembly ReadAgain(AssemblyList list, LoadedAssembly assembly)
     {
-        var fresh = ReadAssemblyOrPackage(assembly.ListedItem.FilePath);
+        var fresh = ReadAssemblyOrPackage(list, assembly.ListedItem.FilePath);
         if (fresh is LoadedPackage package)
-            package.ReadAssemblies();
+            LoadedAssemblies.EnsureAssemblies(package);
         return fresh;
     }
 
@@ -248,55 +276,55 @@ public sealed class AssemblyList
     /// <paramref name="item"/>, where the item is, and forgets the item and the assemblies read out of
     /// it. Nodes already handed out stay valid. False, leaving the list as it is, when the item is no
     /// longer listed.</summary>
-    public bool Replace(LoadedAssembly item, LoadedAssembly fresh)
+    public static bool Replace(AssemblyList list, LoadedAssembly item, LoadedAssembly fresh)
     {
-        lock (_gate)
+        lock (list.Gate)
         {
             if (!item.IsListed) return false;
-            if (!ForgetKnown(item)) return false;
-            ForgetReadOutOf(item);
-            Know(fresh);
+            if (!ForgetKnown(list, item)) return false;
+            ForgetReadOutOf(list, item);
+            Know(list, fresh);
             item.IsListed = false;
             fresh.IsListed = true;
-            ChangeListed(_listed.Replace(item, fresh));
+            ChangeListed(list, list.ListedNow.Replace(item, fresh));
         }
         WarmUpLater(fresh);
-        Changed?.Invoke();
+        list.ChangedHandlers?.Invoke();
         return true;
     }
 
-    private void Know(LoadedAssembly item)
+    private static void Know(AssemblyList list, LoadedAssembly item)
     {
-        _known[item.FilePath] = item;
+        list.Known[item.FilePath] = item;
         if (item is not LoadedPackage package)
             return;
-        foreach (var assembly in package.Assemblies)
-            _known[assembly.FilePath] = assembly;
+        foreach (var assembly in LoadedAssemblies.EnsureAssemblies(package))
+            list.Known[assembly.FilePath] = assembly;
     }
 
     /// <summary>Orders the open files by name, and those of one name by version.</summary>
-    public void Sort()
+    public static void SortListed(AssemblyList list)
     {
-        lock (_gate)
+        lock (list.Gate)
         {
-            var sorted = _listed
+            var sorted = list.ListedNow
                 .OrderBy(a => a.Name, NaturalStringComparer.Instance)
                 .ThenBy(a => a.Version)
                 .ToImmutableArray();
-            if (sorted.SequenceEqual(_listed))
+            if (sorted.SequenceEqual(list.ListedNow))
                 return;
-            ChangeListed(sorted);
+            ChangeListed(list, sorted);
         }
-        Changed?.Invoke();
+        list.ChangedHandlers?.Invoke();
     }
 
     /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found, as
     /// following a reference to them does, and returns them. Those that cannot be found are left out.
     /// May load files: call it off the UI thread.</summary>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
-    public List<LoadedModule> ListReferences(LoadedModule assembly, CancellationToken cancellationToken = default)
+    public static List<LoadedModule> ListReferences(AssemblyList list, LoadedModule assembly, CancellationToken cancellationToken = default)
     {
-        var generation = Generation;
+        var generation = list.Generation;
         var listed = new List<LoadedModule>();
         foreach (var reference in assembly.File.AssemblyReferences)
         {
@@ -304,7 +332,7 @@ public sealed class AssemblyList
             var found = AssemblyResolving.LoadAssembly(assembly.Resolver, reference);
             if (found == null)
                 continue;
-            if (TryList(found, generation, cancellationToken))
+            if (TryList(list, found, generation, cancellationToken))
                 listed.Add(found);
         }
         return listed;
@@ -313,26 +341,26 @@ public sealed class AssemblyList
     /// <summary>The listed assembly that defines what <paramref name="reference"/> points at, and the
     /// handle of its definition there: the assembly's own handle for an assembly. A null assembly
     /// when it cannot be resolved or listed.</summary>
-    internal (LoadedModule? Assembly, EntityHandle Handle) ResolveListed(CodeReference.Navigable reference)
+    internal static (LoadedModule? Assembly, EntityHandle Handle) ResolveListed(AssemblyList list, CodeReference.Navigable reference)
     {
-        var generation = Generation;
-        var owner = TryLoadAssembly(reference.FilePath, generation);
+        var generation = list.Generation;
+        var owner = TryLoadAssembly(list, reference.FilePath, generation);
         if (owner is null)
             return default;
-        var (assembly, handle) = ResolveTarget(owner, reference, generation);
+        var (assembly, handle) = ResolveTarget(list, owner, reference, generation);
         if (assembly is null)
             return default;
-        if (!TryList(assembly, generation))
+        if (!TryList(list, assembly, generation))
             return default;
         return (assembly, handle);
     }
 
-    private (LoadedModule? Assembly, EntityHandle Handle) ResolveTarget(LoadedModule owner, CodeReference.Navigable reference, int generation)
+    private static (LoadedModule? Assembly, EntityHandle Handle) ResolveTarget(AssemblyList list, LoadedModule owner, CodeReference.Navigable reference, int generation)
     {
         switch (reference)
         {
             case CodeReference.Entity entity:
-                return ResolveDefinition(owner, entity.Handle, generation);
+                return ResolveDefinition(list, owner, entity.Handle, generation);
             case CodeReference.Assembly assembly:
                 if (assembly.Referenced == null)
                     return (owner, EntityHandle.AssemblyDefinition);
@@ -343,18 +371,21 @@ public sealed class AssemblyList
         }
     }
 
-    internal static bool IsUnreadable(Exception e) => e is BadImageFormatException or IOException;
+    internal static bool IsUnreadable(Exception e)
+    {
+        return e is BadImageFormatException or IOException;
+    }
 
     /// <summary>
     /// What hovering <paramref name="reference"/> explains: the declaration and XML documentation of
     /// the type or member it points at. Null when it cannot be resolved. Loads the files it needs without listing them, and reads documentation files:
     /// call it off the UI thread.
     /// </summary>
-    public CodeTooltip? Describe(CodeReference.Entity reference)
+    public static CodeTooltip? DescribeReference(AssemblyList list, CodeReference.Entity reference)
     {
         try
         {
-            var (entity, assembly) = ResolveEntity(reference);
+            var (entity, assembly) = ResolveEntity(list, reference);
             if (entity is null || assembly is null)
                 return null;
             return Documentation.CreateTooltip(entity, assembly);
@@ -370,11 +401,11 @@ public sealed class AssemblyList
     /// points at, as <see cref="MicrosoftDocs.FindPage(BrowseNode)"/> names it. Null for what is not
     /// visible outside its assembly, or when it cannot be resolved. Loads the files it needs without listing them: call it off the UI thread.
     /// </summary>
-    public string? FindApiReferencePage(CodeReference.Entity reference)
+    public static string? FindApiReferencePage(AssemblyList list, CodeReference.Entity reference)
     {
         try
         {
-            var (entity, _) = ResolveEntity(reference);
+            var (entity, _) = ResolveEntity(list, reference);
             if (entity is null)
                 return null;
             return MicrosoftDocs.FindPage(entity);
@@ -388,13 +419,13 @@ public sealed class AssemblyList
     /// <summary>The definition of the type <paramref name="reference"/> points at, loading the assembly
     /// that defines it without listing it; null when it points at no type, or cannot be resolved.
     /// Call it off the UI thread.</summary>
-    internal ITypeDefinition? FindTypeDefinition(CodeReference.Entity reference)
+    internal static ITypeDefinition? FindTypeDefinition(AssemblyList list, CodeReference.Entity reference)
     {
         if (reference.Kind != EntityKind.Type)
             return null;
         try
         {
-            var (entity, _) = ResolveEntity(reference);
+            var (entity, _) = ResolveEntity(list, reference);
             return entity as ITypeDefinition;
         }
         catch (Exception e) when (IsUnreadable(e))
@@ -406,14 +437,14 @@ public sealed class AssemblyList
     /// <summary>The definition of the type <paramref name="anchor"/> names, loading the assembly that
     /// defines it without listing it; null when its file cannot be read or no longer defines it. Call it
     /// off the UI thread.</summary>
-    internal ITypeDefinition? FindTypeDefinition(TypeAnchor anchor)
+    internal static ITypeDefinition? FindTypeDefinition(AssemblyList list, TypeAnchor anchor)
     {
         try
         {
-            var assembly = TryLoadAssembly(anchor.AssemblyPath);
+            var assembly = TryLoadAssembly(list, anchor.AssemblyPath);
             if (assembly is null)
                 return null;
-            return assembly.MainModule.GetTypeDefinition(new FullTypeName(anchor.FullName));
+            return LoadedAssemblies.EnsureMainModule(assembly).GetTypeDefinition(new FullTypeName(anchor.FullName));
         }
         catch (Exception e) when (IsUnreadable(e))
         {
@@ -423,35 +454,35 @@ public sealed class AssemblyList
 
     /// <summary>The type or member <paramref name="reference"/> points at and the assembly that defines
     /// it, loading that assembly without listing it; nulls when it cannot be resolved.</summary>
-    private (IEntity? Entity, LoadedModule? Assembly) ResolveEntity(CodeReference.Entity entity)
+    private static (IEntity? Entity, LoadedModule? Assembly) ResolveEntity(AssemblyList list, CodeReference.Entity entity)
     {
-        var generation = Generation;
-        var owner = TryLoadAssembly(entity.FilePath, generation);
+        var generation = list.Generation;
+        var owner = TryLoadAssembly(list, entity.FilePath, generation);
         if (owner is null)
             return default;
-        var (assembly, handle) = ResolveDefinition(owner, entity.Handle, generation);
+        var (assembly, handle) = ResolveDefinition(list, owner, entity.Handle, generation);
         if (assembly is null)
             return default;
-        return (assembly.MainModule.ResolveEntity(handle), assembly);
+        return (LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(handle), assembly);
     }
 
     /// <summary>The listed item <paramref name="path"/> names: its assembly, opened and listed if it is not
     /// and its file still exists, or the file listed as failed there. Null if the file cannot be opened,
     /// or the list was cleared meanwhile. May load files: call it off the UI thread.</summary>
-    internal LoadedAssembly? OpenListed(AssemblyPath path)
+    internal static LoadedAssembly? OpenListed(AssemblyList list, AssemblyPath path)
     {
-        var generation = Generation;
-        var assembly = TryLoad(path, generation) ?? FindListedFailure(path);
-        if (assembly is null || !TryList(assembly, generation))
+        var generation = list.Generation;
+        var assembly = TryLoad(list, path, generation) ?? FindListedFailure(list, path);
+        if (assembly is null || !TryList(list, assembly, generation))
             return null;
         return assembly;
     }
 
     /// <summary>The item the list holds now that was read from <paramref name="path"/>; null when it
     /// holds none there, or only a file that failed.</summary>
-    internal LoadedAssembly? FindListedLoaded(AssemblyPath path)
+    internal static LoadedAssembly? FindListedLoaded(AssemblyList list, AssemblyPath path)
     {
-        var listed = _listed;
+        var listed = list.ListedNow;
         foreach (var assembly in listed)
         {
             if (assembly is FailedAssembly)
@@ -462,20 +493,28 @@ public sealed class AssemblyList
         return null;
     }
 
-    internal LoadedAssembly? TryLoad(AssemblyPath path) => TryLoad(path, Generation);
+    internal static LoadedAssembly? TryLoad(AssemblyList list, AssemblyPath path)
+    {
+        return TryLoad(list, path, list.Generation);
+    }
 
     /// <summary>The assembly at <paramref name="path"/>, as <see cref="TryLoad(AssemblyPath, int)"/> loads it;
     /// null for a package, which has no metadata of its own, or a file that failed to load.</summary>
-    internal LoadedModule? TryLoadAssembly(AssemblyPath path) => TryLoadAssembly(path, Generation);
+    internal static LoadedModule? TryLoadAssembly(AssemblyList list, AssemblyPath path)
+    {
+        return TryLoadAssembly(list, path, list.Generation);
+    }
 
-    private LoadedModule? TryLoadAssembly(AssemblyPath path, int generation) =>
-        TryLoad(path, generation) is LoadedModule module ? module : null;
+    private static LoadedModule? TryLoadAssembly(AssemblyList list, AssemblyPath path, int generation)
+    {
+        return TryLoad(list, path, generation) is LoadedModule module ? module : null;
+    }
 
-    internal LoadedAssembly? TryLoad(AssemblyPath path, int generation)
+    internal static LoadedAssembly? TryLoad(AssemblyList list, AssemblyPath path, int generation)
     {
         try
         {
-            return Load(path, generation);
+            return Load(list, path, generation);
         }
         catch (AssemblyLoadException)
         {
@@ -484,30 +523,33 @@ public sealed class AssemblyList
     }
 
     /// <summary>The type system of the assembly loaded from <paramref name="module"/>.</summary>
-    internal DecompilerTypeSystem TypeSystemOf(MetadataFile module) => LoadedFrom(module).TypeSystem;
-
-    private LoadedModule LoadedFrom(MetadataFile module)
+    internal static DecompilerTypeSystem EnsureTypeSystemOf(AssemblyList list, MetadataFile module)
     {
-        lock (_gate)
+        return LoadedAssemblies.EnsureTypeSystem(FindLoadedFrom(list, module));
+    }
+
+    private static LoadedModule FindLoadedFrom(AssemblyList list, MetadataFile module)
+    {
+        lock (list.Gate)
         {
-            foreach (var assembly in _known.Values)
+            foreach (var assembly in list.Known.Values)
             {
                 if (assembly is LoadedModule loaded && loaded.File == module)
                     return loaded;
             }
         }
-        throw new InvalidOperationException($"{module.FileName} was not loaded by this list.");
+        throw new InvalidOperationException($"{module.FileName} was not loaded by list list.");
     }
 
     /// <summary>The newest assembly read of <paramref name="reference"/>'s name, only one as new as it asks
     /// for when <paramref name="exactOrNewer"/>, and only one listed, or read out of a listed package, when
     /// <paramref name="listedOnly"/>; null when there is none.</summary>
-    internal LoadedModule? FindKnown(IAssemblyReference reference, bool exactOrNewer, bool listedOnly = false)
+    internal static LoadedModule? FindKnown(AssemblyList list, IAssemblyReference reference, bool exactOrNewer, bool listedOnly = false)
     {
-        lock (_gate)
+        lock (list.Gate)
         {
             LoadedModule? best = null;
-            foreach (var known in _known.Values)
+            foreach (var known in list.Known.Values)
             {
                 if (known is not LoadedModule assembly) continue;
                 if (listedOnly && !assembly.ListedItem.IsListed) continue;
@@ -522,46 +564,49 @@ public sealed class AssemblyList
 
     /// <summary>The assembly at <paramref name="path"/>, read from the file unless it is loaded. One read
     /// for a <paramref name="generation"/> that a clear has ended is not kept.</summary>
-    private LoadedAssembly Load(AssemblyPath path, int generation)
+    private static LoadedAssembly Load(AssemblyList list, AssemblyPath path, int generation)
     {
-        lock (_gate)
+        lock (list.Gate)
         {
-            if (_known.TryGetValue(path, out var existing)) return existing;
+            if (list.Known.TryGetValue(path, out var existing)) return existing;
         }
 
-        var assembly = Read(path, generation);
-        lock (_gate)
+        var assembly = Read(list, path, generation);
+        lock (list.Gate)
         {
-            if (generation != _generation) return assembly;
-            if (_known.TryGetValue(path, out var existing)) return existing;
-            _known.Add(path, assembly);
+            if (generation != list.GenerationCount) return assembly;
+            if (list.Known.TryGetValue(path, out var existing)) return existing;
+            list.Known.Add(path, assembly);
         }
         return assembly;
     }
 
-    internal bool TryList(LoadedAssembly assembly) => TryList(assembly, Generation);
+    internal static bool TryList(AssemblyList list, LoadedAssembly assembly)
+    {
+        return TryList(list, assembly, list.Generation);
+    }
 
     /// <summary>Lists <paramref name="assembly"/>, or for one read out of a package the package, unless
     /// the list was cleared since <paramref name="generation"/>, <paramref name="cancellationToken"/>
     /// was cancelled, or another assembly took its path. A package's assemblies are read before it is
     /// listed, so that listing never reads files while holding the lock.</summary>
-    internal bool TryList(LoadedAssembly assembly, int generation, CancellationToken cancellationToken = default)
+    internal static bool TryList(AssemblyList list, LoadedAssembly assembly, int generation, CancellationToken cancellationToken = default)
     {
         if (assembly is LoadedModule module && module.Place != null)
-            return TryList(module.Place.Container, generation, cancellationToken);
+            return TryList(list, module.Place.Container, generation, cancellationToken);
         if (assembly is LoadedPackage package)
-            package.ReadAssemblies();
-        lock (_gate)
+            LoadedAssemblies.EnsureAssemblies(package);
+        lock (list.Gate)
         {
-            if (generation != _generation) return false;
+            if (generation != list.GenerationCount) return false;
             if (cancellationToken.IsCancellationRequested) return false;
-            if (!HoldsPathFor(assembly)) return false;
+            if (!HoldsPathFor(list, assembly)) return false;
             if (assembly.IsListed) return true;
             assembly.IsListed = true;
-            ChangeListed(ListInPlaceOfFailure(assembly));
+            ChangeListed(list, ListInPlaceOfFailure(list, assembly));
         }
         WarmUpLater(assembly);
-        Changed?.Invoke();
+        list.ChangedHandlers?.Invoke();
         return true;
     }
 
@@ -571,35 +616,35 @@ public sealed class AssemblyList
     {
         if (assembly is not LoadedModule module)
             return;
-        ThreadPool.QueueUserWorkItem(static m => m.WarmUp(), module, preferLocal: false);
+        ThreadPool.QueueUserWorkItem(static m => LoadedAssemblies.WarmUp(m), module, preferLocal: false);
     }
 
     /// <summary>The assembly <paramref name="package"/> holds as <paramref name="file"/>: the one read
     /// before, else one read now, kept while the list holds the package. Null when it does not load.</summary>
-    internal LoadedModule? TryLoadOutOf(LoadedPackage package, PackageFile file)
+    internal static LoadedModule? TryLoadOutOf(AssemblyList list, LoadedPackage package, PackageFile file)
     {
         var path = AssemblyPackages.GetFilePath(package.Package, file);
-        lock (_gate)
+        lock (list.Gate)
         {
-            var known = FindReadOutOf(package, path);
+            var known = FindReadOutOf(list, package, path);
             if (known != null) return known;
         }
-        var read = TryReadOutOfPackage(package, path, file.FullName);
+        var read = TryReadOutOfPackage(list, package, path, file.FullName);
         if (read == null)
             return null;
-        lock (_gate)
+        lock (list.Gate)
         {
-            if (!IsKnown(package)) return read;
-            var known = FindReadOutOf(package, path);
+            if (!IsKnown(list, package)) return read;
+            var known = FindReadOutOf(list, package, path);
             if (known != null) return known;
-            _known[path] = read;
+            list.Known[path] = read;
         }
         return read;
     }
 
-    private LoadedModule? FindReadOutOf(LoadedPackage package, AssemblyPath path)
+    private static LoadedModule? FindReadOutOf(AssemblyList list, LoadedPackage package, AssemblyPath path)
     {
-        if (!_known.TryGetValue(path, out var known))
+        if (!list.Known.TryGetValue(path, out var known))
             return null;
         if (known is not LoadedModule module || module.Place == null)
             return null;
@@ -608,11 +653,11 @@ public sealed class AssemblyList
         return module;
     }
 
-    private LoadedModule? TryReadOutOfPackage(LoadedPackage package, AssemblyPath path, string fullName)
+    private static LoadedModule? TryReadOutOfPackage(AssemblyList list, LoadedPackage package, AssemblyPath path, string fullName)
     {
         try
         {
-            return ReadOutOfPackage(package, path, fullName);
+            return ReadOutOfPackage(list, package, path, fullName);
         }
         catch (AssemblyLoadException)
         {
@@ -620,39 +665,39 @@ public sealed class AssemblyList
         }
     }
 
-    private bool IsKnown(LoadedAssembly assembly)
+    private static bool IsKnown(AssemblyList list, LoadedAssembly assembly)
     {
-        if (!_known.TryGetValue(assembly.FilePath, out var known))
+        if (!list.Known.TryGetValue(assembly.FilePath, out var known))
             return false;
         return known == assembly;
     }
 
     /// <summary>Whether <paramref name="assembly"/> is what the list holds for its path: the assembly
     /// read from it, or for a failure, the one listed for it while nothing was read from it.</summary>
-    private bool HoldsPathFor(LoadedAssembly assembly)
+    private static bool HoldsPathFor(AssemblyList list, LoadedAssembly assembly)
     {
         if (assembly is not FailedAssembly)
-            return _known.TryGetValue(assembly.FilePath, out var known) && known == assembly;
-        if (_known.ContainsKey(assembly.FilePath))
+            return list.Known.TryGetValue(assembly.FilePath, out var known) && known == assembly;
+        if (list.Known.ContainsKey(assembly.FilePath))
             return false;
-        var listed = FindListedFailure(assembly.FilePath);
+        var listed = FindListedFailure(list, assembly.FilePath);
         return listed == null || listed == assembly;
     }
 
     /// <summary>The list with <paramref name="assembly"/> where the failure listed for its path was,
     /// or last when there is none.</summary>
-    private ImmutableArray<LoadedAssembly> ListInPlaceOfFailure(LoadedAssembly assembly)
+    private static ImmutableArray<LoadedAssembly> ListInPlaceOfFailure(AssemblyList list, LoadedAssembly assembly)
     {
-        var failure = FindListedFailure(assembly.FilePath);
+        var failure = FindListedFailure(list, assembly.FilePath);
         if (failure == null)
-            return _listed.Add(assembly);
+            return list.ListedNow.Add(assembly);
         failure.IsListed = false;
-        return _listed.Replace(failure, assembly);
+        return list.ListedNow.Replace(failure, assembly);
     }
 
-    private FailedAssembly? FindListedFailure(AssemblyPath path)
+    private static FailedAssembly? FindListedFailure(AssemblyList list, AssemblyPath path)
     {
-        var listed = _listed;
+        var listed = list.ListedNow;
         foreach (var assembly in listed)
         {
             if (assembly is not FailedAssembly failed)
@@ -663,7 +708,7 @@ public sealed class AssemblyList
         return null;
     }
 
-    private (LoadedModule? Assembly, EntityHandle Handle) ResolveDefinition(LoadedModule owner, EntityHandle handle, int generation)
+    private static (LoadedModule? Assembly, EntityHandle Handle) ResolveDefinition(AssemblyList list, LoadedModule owner, EntityHandle handle, int generation)
     {
         switch (handle.Kind)
         {
@@ -672,63 +717,63 @@ public sealed class AssemblyList
                 return (owner, handle);
         }
 
-        var definition = Definitions.Resolve(owner.MainModule, handle);
+        var definition = Definitions.Resolve(LoadedAssemblies.EnsureMainModule(owner), handle);
         if (definition == null)
             return (null, default);
-        return (TryLoadAssembly(AssemblyPath.Of(definition.ParentModule!.MetadataFile!.FileName), generation), definition.MetadataToken);
+        return (TryLoadAssembly(list, AssemblyPath.Of(definition.ParentModule!.MetadataFile!.FileName), generation), definition.MetadataToken);
     }
 
     /// <summary>What <paramref name="path"/> holds: an assembly, a package, or an assembly in a
     /// package, read from a path <see cref="AssemblyPackage.PathOf"/> made.</summary>
     /// <exception cref="AssemblyLoadException">There is no such file, or it is none of those.</exception>
-    private LoadedAssembly Read(AssemblyPath path, int generation)
+    private static LoadedAssembly Read(AssemblyList list, AssemblyPath path, int generation)
     {
         if (File.Exists(path.Text))
-            return ReadAssemblyOrPackage(path);
+            return ReadAssemblyOrPackage(list, path);
         var inPackage = AssemblyPackages.SplitPath(path);
         if (inPackage == null)
-            return new LoadedModule(this, path, ReadFile(path));
-        var container = Load(inPackage.Value.Package, generation);
+            return LoadedAssemblies.CreateModule(list, path, ReadFile(list, path));
+        var container = Load(list, inPackage.Value.Package, generation);
         if (container is not LoadedPackage package)
             throw new AssemblyLoadException(path, $"'{container.FilePath}' is not a package.");
-        return ReadOutOfPackage(package, path, inPackage.Value.FullName);
+        return ReadOutOfPackage(list, package, path, inPackage.Value.FullName);
     }
 
     /// <summary>The assembly at <paramref name="path"/>, else the WebCIL module, else the package, else
     /// why it is none of those.</summary>
-    private LoadedAssembly ReadAssemblyOrPackage(AssemblyPath path)
+    private static LoadedAssembly ReadAssemblyOrPackage(AssemblyList list, AssemblyPath path)
     {
         try
         {
-            return new LoadedModule(this, path, ReadFile(path));
+            return LoadedAssemblies.CreateModule(list, path, ReadFile(list, path));
         }
         catch (AssemblyLoadException)
         {
-            var read = ReadWebCilOrPackage(path);
+            var read = ReadWebCilOrPackage(list, path);
             if (read == null)
                 throw;
             return read;
         }
     }
 
-    private LoadedAssembly? ReadWebCilOrPackage(AssemblyPath path)
+    private static LoadedAssembly? ReadWebCilOrPackage(AssemblyList list, AssemblyPath path)
     {
-        var module = ReadWebCil(path);
+        var module = ReadWebCil(list, path);
         if (module != null)
-            return new LoadedModule(this, path, module);
+            return LoadedAssemblies.CreateModule(list, path, module);
         var package = ReadPackage(path);
         if (package == null)
             return null;
-        return new LoadedPackage(this, package);
+        return LoadedAssemblies.CreatePackage(list, package);
     }
 
     /// <summary>The assembly <paramref name="path"/> holds as WebCIL, wrapped in WebAssembly the way
     /// Blazor ships it; null when the file is no WebCIL.</summary>
-    private WebCilFile? ReadWebCil(AssemblyPath path)
+    private static WebCilFile? ReadWebCil(AssemblyList list, AssemblyPath path)
     {
         try
         {
-            return WebCilFile.FromFile(path.Text, _options.ReaderOptions);
+            return WebCilFile.FromFile(path.Text, list.ReadOptions.ReaderOptions);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or BadImageFormatException or InvalidOperationException)
         {
@@ -748,24 +793,24 @@ public sealed class AssemblyList
         }
     }
 
-    private LoadedModule ReadOutOfPackage(LoadedPackage container, AssemblyPath path, string fullName)
+    private static LoadedModule ReadOutOfPackage(AssemblyList list, LoadedPackage container, AssemblyPath path, string fullName)
     {
         var package = container.Package;
         var file = AssemblyPackages.FindFile(package, fullName);
         if (file == null)
             throw new AssemblyLoadException(path, $"'{container.FilePath}' holds no '{fullName}'.");
-        var image = ReadPackageFile(package, file);
-        return new LoadedModule(this, path, image, new PackagePlace(container, file));
+        var image = ReadPackageFile(list, package, file);
+        return LoadedAssemblies.CreateModule(list, path, image, new PackagePlace(container, file));
     }
 
-    private PEFile ReadPackageFile(AssemblyPackage package, PackageFile file)
+    private static PEFile ReadPackageFile(AssemblyList list, AssemblyPackage package, PackageFile file)
     {
         var path = AssemblyPackages.GetFilePath(package, file);
         try
         {
             var bytes = AssemblyPackages.ReadFile(package, file);
             using var stream = new MemoryStream(bytes);
-            return ReadImage(path, stream);
+            return ReadImage(list, path, stream);
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -773,12 +818,12 @@ public sealed class AssemblyList
         }
     }
 
-    private PEFile ReadFile(AssemblyPath path)
+    private static PEFile ReadFile(AssemblyList list, AssemblyPath path)
     {
         try
         {
             using var stream = new FileStream(path.Text, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            return ReadImage(path, stream);
+            return ReadImage(list, path, stream);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -787,11 +832,11 @@ public sealed class AssemblyList
     }
 
     /// <summary>The assembly or module <paramref name="stream"/> holds, known by <paramref name="path"/>.</summary>
-    private PEFile ReadImage(AssemblyPath path, Stream stream)
+    private static PEFile ReadImage(AssemblyList list, AssemblyPath path, Stream stream)
     {
         try
         {
-            var file = new PEFile(path.Text, stream, PEStreamOptions.PrefetchEntireImage, _options.ReaderOptions);
+            var file = new PEFile(path.Text, stream, PEStreamOptions.PrefetchEntireImage, list.ReadOptions.ReaderOptions);
             if (!file.Reader.HasMetadata)
                 throw new AssemblyLoadException(path, $"'{path}' is not a .NET assembly.");
             return file;
@@ -802,14 +847,8 @@ public sealed class AssemblyList
         }
     }
 
-    private static bool IsSame(LoadOptions options, bool loadsReferences, MetadataReaderOptions readerOptions)
+    private static bool IsSame(AssemblyList.LoadOptions options, bool loadsReferences, MetadataReaderOptions readerOptions)
     {
         return options.LoadsReferences == loadsReferences && options.ReaderOptions == readerOptions;
-    }
-
-    /// <summary>The options that apply as assemblies are read, changed together.</summary>
-    private sealed record LoadOptions(bool LoadsReferences, MetadataReaderOptions ReaderOptions)
-    {
-        public static LoadOptions Default { get; } = new(true, MetadataReaderOptions.ApplyWindowsRuntimeProjections);
     }
 }

@@ -26,9 +26,9 @@ public sealed class AssemblyListTests
         var second = list.Open(typeof(AssemblyList).Assembly.Location);
         list.TargetFrameworks.Pick(first.FilePath, Frameworks.Net48);
 
-        var fresh = list.ReadAgain(first);
+        var fresh = AssemblyListing.ReadAgain(list, first);
         var listedWhileRead = list.Listed.ToList();
-        var replaced = list.Replace(first, fresh);
+        var replaced = AssemblyListing.Replace(list, first, fresh);
 
         Assert.Equal([first, second], listedWhileRead);
         Assert.True(replaced);
@@ -42,10 +42,10 @@ public sealed class AssemblyListTests
     {
         var list = new AssemblyList();
         var assembly = list.Open(Trees.TestAssemblyPath);
-        var fresh = list.ReadAgain(assembly);
-        list.Close(assembly);
+        var fresh = AssemblyListing.ReadAgain(list, assembly);
+        AssemblyListing.CloseAssembly(list, assembly);
 
-        Assert.False(list.Replace(assembly, fresh));
+        Assert.False(AssemblyListing.Replace(list, assembly, fresh));
         Assert.Empty(list.Listed);
     }
 
@@ -67,11 +67,11 @@ public sealed class AssemblyListTests
     {
         var list = new AssemblyList();
         var before = list.Generation;
-        list.Clear();
+        AssemblyListing.CloseAll(list);
 
         var late = list.TryLoad(Trees.TestAssemblyPath, before)!;
 
-        Assert.False(list.TryList(late, before));
+        Assert.False(AssemblyListing.TryList(list, late, before));
         Assert.Empty(list.Assemblies);
         Assert.NotSame(late, list.Open(Trees.TestAssemblyPath));
     }
@@ -88,10 +88,10 @@ public sealed class AssemblyListTests
         var core = list.Open(typeof(AssemblyList).Assembly.Location);
 
         Assert.Single(snapshot);
-        Assert.Equal([Trees.TestAssemblyPath, typeof(AssemblyList).Assembly.Location], list.FilePaths.Select(static p => p.Text));
+        Assert.Equal([Trees.TestAssemblyPath, typeof(AssemblyList).Assembly.Location], AssemblyListing.ListFilePaths(list).Select(static p => p.Text));
         Assert.Equal(2, list.Version);
 
-        list.Close(tests);
+        AssemblyListing.CloseAssembly(list, tests);
 
         Assert.Equal([core], list.Assemblies);
         Assert.Equal(3, changes);
@@ -104,7 +104,7 @@ public sealed class AssemblyListTests
         var list = new AssemblyList();
         var first = list.Open(Trees.TestAssemblyPath);
 
-        list.Close(first);
+        AssemblyListing.CloseAssembly(list, first);
         var second = list.Open(Trees.TestAssemblyPath);
 
         Assert.NotSame(first, second);
@@ -124,7 +124,7 @@ public sealed class AssemblyListTests
         Assert.IsType<FailedAssembly>(notPe);
         Assert.IsType<FailedAssembly>(missing);
         Assert.Equal([notPe, missing], list.Listed);
-        Assert.Equal([text, text + ".missing"], list.FilePaths.Select(static p => p.Text));
+        Assert.Equal([text, text + ".missing"], AssemblyListing.ListFilePaths(list).Select(static p => p.Text));
         Assert.Empty(list.Assemblies);
         Assert.Same(notPe, list.Open(text));
     }
@@ -171,7 +171,7 @@ public sealed class AssemblyListTests
         using var temp = new TempDir();
         var failed = list.Open(temp.PathOf("missing.dll"));
 
-        list.Close(failed);
+        AssemblyListing.CloseAssembly(list, failed);
 
         Assert.Empty(list.Listed);
     }
@@ -275,7 +275,7 @@ public sealed class AssemblyListTests
         var changes = 0;
         list.Changed += () => changes++;
 
-        var listed = list.ListReferences(assembly);
+        var listed = AssemblyListing.ListReferences(list, assembly);
 
         var names = listed.Select(a => a.Name).ToList();
         Assert.Contains("System.Runtime", names);
@@ -295,13 +295,13 @@ public sealed class AssemblyListTests
         var tests = list.Open(Trees.TestAssemblyPath);
         var version = list.Version;
 
-        list.Sort();
+        AssemblyListing.SortListed(list);
 
         Assert.Equal([tests, missing, coreLib], list.Listed);
         Assert.Equal([tests, coreLib], list.Assemblies);
         Assert.NotEqual(version, list.Version);
         version = list.Version;
-        list.Sort();
+        AssemblyListing.SortListed(list);
         Assert.Equal(version, list.Version);
     }
 

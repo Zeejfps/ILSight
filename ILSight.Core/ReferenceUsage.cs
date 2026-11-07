@@ -6,7 +6,7 @@ namespace ILSight.Core;
 /// reference and those nested in them, the members of each type it uses, also through the type's
 /// generic instances (<c>List&lt;string&gt;.Add</c> counts for <c>List&lt;T&gt;</c>), and the types it
 /// forwards to each reference.</summary>
-internal sealed class ReferenceUsage
+public sealed class ReferenceUsage
 {
     public readonly Dictionary<EntityHandle, List<TypeReferenceHandle>> Types = new();
     public readonly Dictionary<EntityHandle, List<MemberReferenceHandle>> UsedMembers = new();

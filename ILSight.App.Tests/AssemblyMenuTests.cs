@@ -23,7 +23,7 @@ public sealed class AssemblyMenuTests
         app.Click("File").Frame(2);
         app.ClickMenuItem("Sort list by name").Frame(2);
 
-        var sorted = app.AppState.Assemblies.FilePaths;
+        var sorted = AssemblyListing.ListFilePaths(app.AppState.Assemblies);
         Assert.Equal([AppStateDriver.FixturePath, missing, CoreLibPath], sorted.Select(static p => p.Text));
 
         app.Click("File").Frame(2);

@@ -347,11 +347,11 @@ public sealed class BrowseSession
     private BrowseNode? FindParent(LoadedModule module, EntityHandle handle)
     {
         if (handle.Kind != HandleKind.TypeDefinition)
-            return Find(module, module.OwnerOf(handle));
+            return Find(module, LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle));
         var metadata = module.File.Metadata;
         var type = metadata.GetTypeDefinition((TypeDefinitionHandle)handle);
         if (!type.GetDeclaringType().IsNil)
-            return Find(module, module.OwnerOf(handle));
+            return Find(module, LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle));
         return FindNamespace(module, metadata.GetString(type.Namespace));
     }
 
@@ -359,7 +359,7 @@ public sealed class BrowseSession
     /// as a compiler-generated member is held by the type it is generated in.</summary>
     internal BrowseNode? FindOrAncestor(LoadedModule module, EntityHandle handle)
     {
-        for (; !handle.IsNil; handle = module.OwnerOf(handle))
+        for (; !handle.IsNil; handle = LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle))
         {
             var node = Find(module, handle);
             if (node != null)
@@ -451,7 +451,7 @@ public sealed class BrowseSession
     {
         if (idString.StartsWith(NamespaceIdPrefix, StringComparison.Ordinal))
             return FindNamespace(module, idString.Substring(NamespaceIdPrefix.Length));
-        var entity = module.FindDefinedEntity(idString);
+        var entity = LoadedAssemblies.FindDefinedEntity(LoadedAssemblies.EnsureMainModule(module), idString);
         if (entity == null)
             return null;
         return FindOrAncestor(module, entity.MetadataToken);

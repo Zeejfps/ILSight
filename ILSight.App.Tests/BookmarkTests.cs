@@ -275,7 +275,7 @@ public sealed class BookmarkTests : IDisposable
         GoToBookmark(d.AppState, bookmark);
         app.Settle(4);
 
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
         Assert.Equal("Outline", d.AppState.Tabs.Active!.Node!.Text);
     }
 

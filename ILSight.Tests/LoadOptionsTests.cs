@@ -11,7 +11,7 @@ public sealed class LoadOptionsTests
     private static (AssemblyList List, LoadedModule Assembly) OpenWith(DecompilerOptions options)
     {
         var list = new AssemblyList();
-        list.UseLoadOptions(options);
+        AssemblyListing.UseLoadOptions(list, options);
         return (list, list.OpenModule(Trees.TestAssemblyPath));
     }
 
@@ -32,9 +32,9 @@ public sealed class LoadOptionsTests
         var list = new AssemblyList();
         var off = Off(DecompilerToggle.AutoLoadAssemblyReferences);
 
-        var unchanged = list.UseLoadOptions(DecompilerOptions.Default);
-        var changed = list.UseLoadOptions(off);
-        var again = list.UseLoadOptions(off);
+        var unchanged = AssemblyListing.UseLoadOptions(list, DecompilerOptions.Default);
+        var changed = AssemblyListing.UseLoadOptions(list, off);
+        var again = AssemblyListing.UseLoadOptions(list, off);
 
         Assert.False(unchanged);
         Assert.True(changed);
@@ -46,9 +46,9 @@ public sealed class LoadOptionsTests
     {
         var list = new AssemblyList();
         var generation = list.Generation;
-        list.UseLoadOptions(Off(DecompilerToggle.ApplyWindowsRuntimeProjections));
+        AssemblyListing.UseLoadOptions(list, Off(DecompilerToggle.ApplyWindowsRuntimeProjections));
 
-        var readBefore = list.TryLoad(AssemblyPath.Of(Trees.TestAssemblyPath), generation);
+        var readBefore = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath), generation);
         var opened = list.OpenModule(Trees.TestAssemblyPath);
 
         Assert.NotSame(readBefore, opened);
@@ -61,7 +61,7 @@ public sealed class LoadOptionsTests
         var list = new AssemblyList();
         var generation = list.Generation;
 
-        list.UseLoadOptions(DecompilerOptions.Default);
+        AssemblyListing.UseLoadOptions(list, DecompilerOptions.Default);
 
         Assert.Equal(generation, list.Generation);
     }
@@ -93,7 +93,7 @@ public sealed class LoadOptionsTests
     {
         var (list, assembly) = OpenWith(Off(DecompilerToggle.AutoLoadAssemblyReferences));
 
-        var listed = list.ListReferences(assembly);
+        var listed = AssemblyListing.ListReferences(list, assembly);
 
         Assert.Contains(listed, a => a.Name == "System.Runtime");
     }

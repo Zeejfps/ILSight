@@ -495,7 +495,7 @@ internal static class DocumentWriting
         if (builder.Assembly is null || !ReferenceEquals(metadata, builder.Assembly.File)) return null;
         try
         {
-            return Definitions.Resolve(builder.Assembly.MainModule, handle);
+            return Definitions.Resolve(LoadedAssemblies.EnsureMainModule(builder.Assembly), handle);
         }
         catch (Exception e) when (e is BadImageFormatException or InvalidOperationException or NotSupportedException)
         {

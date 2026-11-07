@@ -106,7 +106,7 @@ public sealed partial class BrowseNode
     /// <summary>The embedded PDB the module already loaded, or null when it could not be read.</summary>
     private static DebugSymbols? EmbeddedSymbols(LoadedModule module)
     {
-        var symbols = module.DebugSymbols;
+        var symbols = LoadedAssemblies.EnsureDebugSymbols(module);
         if (symbols == null)
             return null;
         if (!symbols.File.IsEmbedded)

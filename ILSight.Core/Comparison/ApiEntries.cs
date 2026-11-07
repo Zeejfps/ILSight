@@ -234,7 +234,7 @@ public static class ApiEntries
     /// what <paramref name="scope"/> says. Reads both assemblies' types: call it off the UI thread.</summary>
     public static ApiDiff Compare(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken cancellationToken)
     {
-        var namespaces = CompareNamespaces(left.MainModule, right.MainModule, scope, cancellationToken);
+        var namespaces = CompareNamespaces(LoadedAssemblies.EnsureMainModule(left), LoadedAssemblies.EnsureMainModule(right), scope, cancellationToken);
         return new ApiDiff
         {
             LeftName = left.NameAndVersion,

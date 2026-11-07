@@ -19,26 +19,18 @@ public sealed record PackageFolderPlace(LoadedPackage Container, PackageFolder F
 /// A file known to an <see cref="AssemblyList"/>: one the user opened, or one loaded to resolve a
 /// reference. It is a <see cref="LoadedModule"/> that was read, a <see cref="FailedAssembly"/> that
 /// could not be, or a <see cref="LoadedPackage"/> whose files are browsed; no other kind can be made.
+/// Made by <see cref="LoadedAssemblies"/>, whose functions work out what these hold from the file.
 /// A <see cref="BrowseSession"/> keeps the nodes of its tree for as long as this object lives.
 /// </summary>
 public abstract class LoadedAssembly
 {
-    private protected LoadedAssembly(AssemblyList list, AssemblyPath filePath, string name, string fullName, Version? version)
+    private protected LoadedAssembly()
     {
-        List = list;
-        FilePath = filePath;
-        Name = name;
-        FullName = fullName;
-        Version = version;
-        NameAndVersion = JoinNameAndVersion(name, version);
     }
-
-    /// <summary>The name of a file that holds no assembly's name: the file's, without its extension.</summary>
-    private protected static string NameOf(AssemblyPath filePath) => Path.GetFileNameWithoutExtension(filePath.Text);
 
     /// <summary>The absolute path of the file this was loaded from; for an assembly read out of a
     /// package, the path through the package, as <see cref="AssemblyPackage.PathOf"/> gives it.</summary>
-    public AssemblyPath FilePath { get; }
+    public required AssemblyPath FilePath { get; init; }
 
     /// <summary>The item of the list that holds this assembly: itself, or the package it was read out of.</summary>
     public LoadedAssembly ListedItem
@@ -52,98 +44,66 @@ public abstract class LoadedAssembly
     }
 
     /// <summary>The simple name, e.g. <c>System.Private.CoreLib</c>.</summary>
-    public string Name { get; }
+    public required string Name { get; init; }
 
     /// <summary>The full display name, with version, culture and public key token.</summary>
-    public string FullName { get; }
+    public required string FullName { get; init; }
 
-    public Version? Version { get; }
+    public required Version? Version { get; init; }
 
     /// <summary>The simple name with the version, e.g. <c>System.Runtime (10.0.0.0)</c>.</summary>
-    public string NameAndVersion { get; }
+    public required string NameAndVersion { get; init; }
 
-    private static string JoinNameAndVersion(string name, Version? version)
-    {
-        if (version == null)
-            return name;
-        return $"{name} ({version})";
-    }
+    public required AssemblyList List { get; init; }
 
-    internal AssemblyList List { get; }
-    internal bool IsListed { get; set; }
+    /// <summary>Whether the list holds this as an item, which its gate guards.</summary>
+    public bool IsListed;
 
     public override string ToString() => FullName;
 }
 
 /// <summary>An assembly or WebCIL module that was read: a file on disk, or, when <see cref="Place"/>
-/// says so, one read out of a package, known by the path <see cref="AssemblyPackage.PathOf"/> gives it.</summary>
+/// says so, one read out of a package, known by the path <see cref="AssemblyPackage.PathOf"/> gives it.
+/// What takes reading is held as a <see cref="Lazy{T}"/>, read once whichever thread asks first, and asked
+/// for with the <c>Ensure</c> functions of <see cref="LoadedAssemblies"/>.</summary>
 public sealed class LoadedModule : LoadedAssembly
 {
-    private static readonly TypeSystemOptions DefaultTypeSystemOptions = DecompilerTypeSystem.GetOptions(Settings.Create());
+    public required Lazy<DecompilerTypeSystem> TypeSystem { get; init; }
 
-    private readonly Lazy<DecompilerTypeSystem> _typeSystem;
-    private readonly Lazy<DebugSymbols?> _debugSymbols;
-    private readonly Lazy<bool> _canGeneratePdb;
-    private readonly Lazy<ReferenceUsage> _referenceUsage;
-    private readonly ConcurrentDictionary<TypeSystemOptions, Lazy<DecompilerTypeSystem>> _typeSystems = new();
+    /// <summary>The assembly's portable PDB; null when it has none.</summary>
+    public required Lazy<DebugSymbols?> DebugSymbols { get; init; }
 
-    internal LoadedModule(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place = null)
-        : base(list, path, NameOf(path, file), FullNameOf(file), GetVersion(file))
-    {
-        File = file;
-        Place = place;
-        DetectedTargetFramework = TryDetectTargetFramework(file);
-        TargetFramework = PickTargetFramework();
-        Resolver = AssemblyResolving.CreateResolver(list, FilePath, TargetFramework, place?.Container.Package);
-        _typeSystem = new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(File, Resolver, Settings.Create()));
-        _debugSymbols = new Lazy<DebugSymbols?>(LoadDebugSymbols);
-        _canGeneratePdb = new Lazy<bool>(() => PEFile != null && DebugSymbolFiles.CanGenerateFor(PEFile));
-        _referenceUsage = new Lazy<ReferenceUsage>(() => ForwardedTypes.ReadUsage(File.Metadata));
-    }
+    /// <summary>Whether a PDB can be generated for this assembly: only one whose debug directory
+    /// names a PDB, which the generated one must match.</summary>
+    public required Lazy<bool> CanGeneratePdb { get; init; }
 
-    /// <summary>The assembly's name, or for a module that is no assembly, its file's.</summary>
-    private static string NameOf(AssemblyPath path, MetadataFile file)
-    {
-        if (!file.Metadata.IsAssembly)
-            return NameOf(path);
-        var metadata = file.Metadata;
-        return metadata.GetString(metadata.GetAssemblyDefinition().Name);
-    }
+    /// <summary>What the assembly uses of the assemblies it references.</summary>
+    public required Lazy<ReferenceUsage> ReferenceUsage { get; init; }
 
-    private static string FullNameOf(MetadataFile file)
-    {
-        if (!file.Metadata.IsAssembly)
-            return file.Name;
-        return file.FullName;
-    }
-
-    private static Version? GetVersion(MetadataFile file)
-    {
-        if (!file.Metadata.IsAssembly)
-            return null;
-        return file.Metadata.GetAssemblyDefinition().Version;
-    }
+    /// <summary>The type systems of the settings that turn language features on or off that
+    /// <see cref="TypeSystem"/> models.</summary>
+    public readonly ConcurrentDictionary<TypeSystemOptions, Lazy<DecompilerTypeSystem>> TypeSystems = new();
 
     /// <summary>The package this was read out of, and its file there; null for a file on disk.</summary>
-    public PackagePlace? Place { get; }
+    public required PackagePlace? Place { get; init; }
 
-    internal MetadataFile File { get; }
+    public required MetadataFile File { get; init; }
 
     /// <summary><see cref="File"/> as a portable executable; null for a WebCIL module, which has no PE headers.</summary>
     internal PEFile? PEFile => File as PEFile;
 
-    internal AssemblyResolver Resolver { get; }
+    public required AssemblyResolver Resolver { get; init; }
 
     /// <summary>The target framework the assembly was built for, e.g. <c>.NETCoreApp,Version=v10.0</c>,
     /// or null if it does not say.</summary>
-    public TargetFrameworkId? DetectedTargetFramework { get; }
+    public required TargetFrameworkId? DetectedTargetFramework { get; init; }
 
     /// <summary>The framework the assembly's references are resolved against: the one the list picked
     /// for it, else <see cref="DetectedTargetFramework"/>.</summary>
-    public TargetFrameworkId? TargetFramework { get; }
+    public required TargetFrameworkId? TargetFramework { get; init; }
 
     /// <summary>Whether the list picked <see cref="TargetFramework"/> for this assembly.</summary>
-    public bool IsTargetFrameworkPicked { get; private set; }
+    public required bool IsTargetFrameworkPicked { get; init; }
 
     /// <summary><see cref="TargetFramework"/> as ILSpy shows it, e.g. <c>.NETCoreApp, v10.0</c>.</summary>
     public string? FrameworkName
@@ -168,14 +128,141 @@ public sealed class LoadedModule : LoadedAssembly
         }
     }
 
-    /// <summary>The framework the list picked for this assembly, else the one it was built for.</summary>
-    private TargetFrameworkId? PickTargetFramework()
+    /// <summary>Whether a PDB can be picked for this assembly: one that loaded with PE headers, which
+    /// a WebCIL module lacks.</summary>
+    public bool CanPickPdb => PEFile != null;
+}
+
+/// <summary>A file of the list that could not be read as a .NET assembly, kept listed to show why. It
+/// has no metadata: only its <see cref="LoadedAssembly.FilePath"/>, <see cref="LoadedAssembly.Name"/>
+/// and <see cref="Error"/> tell anything about it.</summary>
+public sealed class FailedAssembly : LoadedAssembly
+{
+    /// <summary>Why the file could not be read.</summary>
+    public required AssemblyLoadException Error { get; init; }
+}
+
+/// <summary>A package of the list, whose files are browsed as folders.</summary>
+public sealed class LoadedPackage : LoadedAssembly
+{
+    /// <summary>The package's files.</summary>
+    public required AssemblyPackage Package { get; init; }
+
+    /// <summary>The assemblies read out of the package: every assembly file it holds that loads, in
+    /// the order its tree shows them. Its reading needs the package it reads for, so
+    /// <see cref="LoadedAssemblies.CreatePackage"/> assigns this just after making the package, and nothing
+    /// sees the package before that; reading the value this starts with throws.</summary>
+    public Lazy<IReadOnlyList<LoadedModule>> Assemblies { get; set; } = new(static () => throw new InvalidOperationException("A package is made by LoadedAssemblies.CreatePackage."));
+}
+
+/// <summary>Making what an <see cref="AssemblyList"/> holds, and asking it for what takes reading.</summary>
+public static class LoadedAssemblies
+{
+    private static readonly TypeSystemOptions DefaultTypeSystemOptions = DecompilerTypeSystem.GetOptions(Settings.Create());
+
+    /// <summary>The module <paramref name="file"/> holds, known by <paramref name="path"/>, with nothing
+    /// but its headers read yet.</summary>
+    internal static LoadedModule CreateModule(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place = null)
     {
-        var picked = List.TargetFrameworks.Find(FilePath);
-        if (picked == null)
-            return DetectedTargetFramework;
-        IsTargetFrameworkPicked = true;
-        return picked;
+        var name = GetModuleName(path, file);
+        var version = GetVersion(file);
+        var detected = TryDetectTargetFramework(file);
+        var picked = list.TargetFrameworks.Find(path);
+        var targetFramework = picked ?? detected;
+        var resolver = AssemblyResolving.CreateResolver(list, path, targetFramework, place?.Container.Package);
+        return new LoadedModule
+        {
+            List = list,
+            FilePath = path,
+            Name = name,
+            FullName = GetFullName(file),
+            Version = version,
+            NameAndVersion = JoinNameAndVersion(name, version),
+            File = file,
+            Place = place,
+            DetectedTargetFramework = detected,
+            TargetFramework = targetFramework,
+            IsTargetFrameworkPicked = picked != null,
+            Resolver = resolver,
+            TypeSystem = new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(file, resolver, Settings.Create())),
+            DebugSymbols = new Lazy<DebugSymbols?>(() => LoadDebugSymbols(list, path, file, place)),
+            CanGeneratePdb = new Lazy<bool>(() => file is PEFile pe && DebugSymbolFiles.CanGenerateFor(pe)),
+            ReferenceUsage = new Lazy<ReferenceUsage>(() => ForwardedTypes.ReadUsage(file.Metadata)),
+        };
+    }
+
+    /// <summary>The failure listed for the file <paramref name="error"/> tells of.</summary>
+    internal static FailedAssembly CreateFailed(AssemblyList list, AssemblyLoadException error)
+    {
+        var path = error.FilePath;
+        var name = GetFileName(path);
+        return new FailedAssembly
+        {
+            List = list,
+            FilePath = path,
+            Name = name,
+            FullName = path.Text,
+            Version = null,
+            NameAndVersion = JoinNameAndVersion(name, null),
+            Error = error,
+        };
+    }
+
+    /// <summary>The item of <paramref name="list"/> browsing <paramref name="package"/>, with none of its
+    /// assemblies read yet. Reading them needs the item itself, which is what they say they came out of,
+    /// so that is assigned after it is made.</summary>
+    internal static LoadedPackage CreatePackage(AssemblyList list, AssemblyPackage package)
+    {
+        var path = package.FilePath;
+        var name = GetFileName(path);
+        var created = new LoadedPackage
+        {
+            List = list,
+            FilePath = path,
+            Name = name,
+            FullName = path.Text,
+            Version = null,
+            NameAndVersion = JoinNameAndVersion(name, null),
+            Package = package,
+        };
+        created.Assemblies = new Lazy<IReadOnlyList<LoadedModule>>(() => LoadAssemblies(created));
+        return created;
+    }
+
+    private static string JoinNameAndVersion(string name, Version? version)
+    {
+        if (version == null)
+            return name;
+        return $"{name} ({version})";
+    }
+
+    /// <summary>The name of a file that holds no assembly's name: the file's, without its extension.</summary>
+    private static string GetFileName(AssemblyPath filePath)
+    {
+        return Path.GetFileNameWithoutExtension(filePath.Text);
+    }
+
+    /// <summary>The assembly's name, or for a module that is no assembly, its file's.</summary>
+    private static string GetModuleName(AssemblyPath path, MetadataFile file)
+    {
+        if (!file.Metadata.IsAssembly)
+            return GetFileName(path);
+        var metadata = file.Metadata;
+        return metadata.GetString(metadata.GetAssemblyDefinition().Name);
+    }
+
+    private static string GetFullName(MetadataFile file)
+    {
+        if (!file.Metadata.IsAssembly)
+            return file.Name;
+        return file.FullName;
+    }
+
+    private static Version? GetVersion(MetadataFile file)
+    {
+        if (!file.Metadata.IsAssembly)
+            return null;
+        return file.Metadata.GetAssemblyDefinition().Version;
     }
 
     private static TargetFrameworkId? TryDetectTargetFramework(MetadataFile file)
@@ -190,93 +277,107 @@ public sealed class LoadedModule : LoadedAssembly
         }
     }
 
-    /// <summary>Whether a PDB can be picked for this assembly: one that loaded with PE headers, which
-    /// a WebCIL module lacks.</summary>
-    public bool CanPickPdb => PEFile != null;
-
     /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for this assembly. Reads the file.</summary>
-    public PdbCheck CheckPdb(string pdbPath)
+    public static PdbCheck CheckPdb(LoadedModule module, string pdbPath)
     {
-        if (PEFile == null)
+        if (module.PEFile == null)
             return PdbCheck.Unreadable;
-        return DebugSymbolFiles.CheckPdb(PEFile, pdbPath);
+        return DebugSymbolFiles.CheckPdb(module.PEFile, pdbPath);
     }
 
     /// <summary>The name a portable PDB of this assembly is written under.</summary>
-    public string PdbFileName => WholeProjectDecompiler.CleanUpFileName(Name, DebugSymbols.PdbExtension);
-
-    /// <summary>Whether a PDB can be generated for this assembly: only one whose debug directory
-    /// names a PDB, which the generated one must match.</summary>
-    public bool CanGeneratePdb => _canGeneratePdb.Value;
+    public static string GetPdbFileName(LoadedAssembly assembly)
+    {
+        return WholeProjectDecompiler.CleanUpFileName(assembly.Name, DebugSymbols.PdbExtension);
+    }
 
     /// <summary>The symbols of the PDB the list picked for this assembly, else those it finds itself.</summary>
-    private DebugSymbols? LoadDebugSymbols()
+    private static DebugSymbols? LoadDebugSymbols(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place)
     {
-        if (PEFile == null)
+        if (file is not PEFile pe)
             return null;
-        var picked = List.Pdbs.Find(FilePath);
+        var picked = list.Pdbs.Find(path);
         if (picked == null)
-            return DebugSymbolFiles.LoadSymbols(PEFile, Place?.Container.Package);
+            return DebugSymbolFiles.LoadSymbols(pe, place?.Container.Package);
         return DebugSymbolFiles.LoadPicked(picked);
     }
 
-    /// <summary>The assembly's portable PDB, read once; null when it has none.</summary>
-    internal DebugSymbols? DebugSymbols => _debugSymbols.Value;
+    /// <summary>Whether a PDB can be generated for <paramref name="module"/>, worked out the first time.</summary>
+    public static bool EnsureCanGeneratePdb(LoadedModule module)
+    {
+        return module.CanGeneratePdb.Value;
+    }
 
-    internal DecompilerTypeSystem TypeSystem => _typeSystem.Value;
+    /// <summary>The assembly's portable PDB, read the first time; null when it has none.</summary>
+    public static DebugSymbols? EnsureDebugSymbols(LoadedModule module)
+    {
+        return module.DebugSymbols.Value;
+    }
 
-    /// <summary>The module of <see cref="TypeSystem"/> this assembly's metadata is read into.</summary>
-    internal MetadataModule MainModule => TypeSystem.MainModule;
+    /// <summary>The assembly's type system, read the first time.</summary>
+    public static DecompilerTypeSystem EnsureTypeSystem(LoadedModule module)
+    {
+        return module.TypeSystem.Value;
+    }
 
-    /// <summary>The type system decompiling with <paramref name="settings"/> reads: <see cref="TypeSystem"/>
+    /// <summary>The module of the type system this assembly's metadata is read into, read the first time.</summary>
+    public static MetadataModule EnsureMainModule(LoadedModule module)
+    {
+        return EnsureTypeSystem(module).MainModule;
+    }
+
+    /// <summary>The type system decompiling with <paramref name="settings"/> reads: the assembly's own
     /// unless they turn language features on or off that it models.</summary>
-    internal DecompilerTypeSystem TypeSystemFor(DecompilerSettings settings)
+    internal static DecompilerTypeSystem EnsureTypeSystemFor(LoadedModule module, DecompilerSettings settings)
     {
         var options = DecompilerTypeSystem.GetOptions(settings);
-        if (options == DefaultTypeSystemOptions) return TypeSystem;
-        return _typeSystems.GetOrAdd(options, o => new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(File, Resolver, o))).Value;
+        if (options == DefaultTypeSystemOptions) return EnsureTypeSystem(module);
+        return module.TypeSystems.GetOrAdd(options, static (o, m) => new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(m.File, m.Resolver, o)), module).Value;
     }
 
     /// <summary>What the assembly uses of the assemblies it references. Read the first time, then kept.</summary>
-    internal ReferenceUsage ReferenceUsage => _referenceUsage.Value;
-
-    /// <summary>Reads <see cref="ReferenceUsage"/> now, unless it is read already.</summary>
-    internal void ReadReferenceUsage()
+    public static ReferenceUsage EnsureReferenceUsage(LoadedModule module)
     {
-        _ = _referenceUsage.Value;
+        return module.ReferenceUsage.Value;
     }
 
-    /// <summary>Reads <see cref="TypeSystem"/> ahead of its first use, on a thread-pool thread. Whatever
+    /// <summary>The assemblies read out of the package. Read the first time, then kept.</summary>
+    public static IReadOnlyList<LoadedModule> EnsureAssemblies(LoadedPackage package)
+    {
+        return package.Assemblies.Value;
+    }
+
+    /// <summary>Reads the type system ahead of its first use, on a thread-pool thread. Whatever
     /// reading it throws is left for that first use, which reads it again and reports it; it is caught
     /// whole here because an exception leaving a thread-pool work item ends the process.</summary>
-    internal void WarmUp()
+    internal static void WarmUp(LoadedModule module)
     {
         try
         {
-            _ = TypeSystem;
+            _ = EnsureTypeSystem(module);
         }
         catch (Exception)
         {
         }
     }
 
-    /// <summary>The type or member this assembly defines that <paramref name="idString"/> names, written
-    /// as XML documentation ids are; null when it defines none such, or the id cannot be read.</summary>
-    internal IEntity? FindDefinedEntity(string idString)
+    /// <summary>The type or member <paramref name="main"/> defines that <paramref name="idString"/> names,
+    /// written as XML documentation ids are; null when it defines none such, or the id cannot be read.</summary>
+    internal static IEntity? FindDefinedEntity(MetadataModule main, string idString)
     {
-        var entity = FindEntity(idString);
+        var entity = FindEntity(main, idString);
         if (entity == null)
             return null;
-        if (!ReferenceEquals(entity.ParentModule, MainModule))
+        if (!ReferenceEquals(entity.ParentModule, main))
             return null;
         return entity;
     }
 
-    private IEntity? FindEntity(string idString)
+    private static IEntity? FindEntity(MetadataModule main, string idString)
     {
         try
         {
-            return IdStringProvider.FindEntity(idString, new SimpleTypeResolveContext(MainModule));
+            return IdStringProvider.FindEntity(idString, new SimpleTypeResolveContext(main));
         }
         catch (Exception e) when (e is ArgumentException or ReflectionNameParseException)
         {
@@ -286,75 +387,36 @@ public sealed class LoadedModule : LoadedAssembly
 
     /// <summary>The entity whose node holds the node of <paramref name="handle"/>'s: a property or
     /// event for its accessor, else the declaring type; nil for a top-level type.</summary>
-    internal EntityHandle OwnerOf(EntityHandle handle) =>
-        MainModule.ResolveEntity(handle) switch
+    internal static EntityHandle FindOwner(MetadataModule main, EntityHandle handle)
+    {
+        return main.ResolveEntity(handle) switch
         {
             IMethod { IsAccessor: true } method when method.AccessorOwner != null => method.AccessorOwner.MetadataToken,
             IEntity entity when entity.DeclaringTypeDefinition != null => entity.DeclaringTypeDefinition.MetadataToken,
             _ => default,
         };
-}
-
-/// <summary>A file of the list that could not be read as a .NET assembly, kept listed to show why. It
-/// has no metadata: only its <see cref="LoadedAssembly.FilePath"/>, <see cref="LoadedAssembly.Name"/>
-/// and <see cref="Error"/> tell anything about it.</summary>
-public sealed class FailedAssembly : LoadedAssembly
-{
-    internal FailedAssembly(AssemblyList list, AssemblyLoadException error)
-        : base(list, error.FilePath, NameOf(error.FilePath), error.FilePath.Text, null)
-    {
-        Error = error;
     }
 
-    /// <summary>Why the file could not be read.</summary>
-    public AssemblyLoadException Error { get; }
-}
-
-/// <summary>A package of the list, whose files are browsed as folders.</summary>
-public sealed class LoadedPackage : LoadedAssembly
-{
-    private readonly Lazy<IReadOnlyList<LoadedModule>> _assemblies;
-
-    internal LoadedPackage(AssemblyList list, AssemblyPackage package)
-        : base(list, package.FilePath, NameOf(package.FilePath), package.FilePath.Text, null)
-    {
-        Package = package;
-        _assemblies = new Lazy<IReadOnlyList<LoadedModule>>(LoadAssemblies);
-    }
-
-    /// <summary>The package's files.</summary>
-    public AssemblyPackage Package { get; }
-
-    /// <summary>The assemblies read out of the package: every assembly file it holds that loads, in
-    /// the order its tree shows them. Read the first time, then kept.</summary>
-    internal IReadOnlyList<LoadedModule> Assemblies => _assemblies.Value;
-
-    /// <summary>Reads <see cref="Assemblies"/> now, unless they are read already.</summary>
-    internal void ReadAssemblies()
-    {
-        _ = _assemblies.Value;
-    }
-
-    private IReadOnlyList<LoadedModule> LoadAssemblies()
+    private static IReadOnlyList<LoadedModule> LoadAssemblies(LoadedPackage package)
     {
         var assemblies = new List<LoadedModule>();
-        foreach (var file in AssemblyPackages.ListFiles(Package))
+        foreach (var file in AssemblyPackages.ListFiles(package.Package))
         {
             if (!PackageContents.IsAssemblyName(file.Name))
                 continue;
-            var assembly = List.TryLoadOutOf(this, file);
+            var assembly = AssemblyListing.TryLoadOutOf(package.List, package, file);
             if (assembly != null)
                 assemblies.Add(assembly);
         }
         return assemblies;
     }
 
-    /// <summary>The assembly of <see cref="Assemblies"/> read out of <paramref name="file"/>; null when
-    /// that file did not load as one.</summary>
-    internal LoadedModule? FindAssembly(PackageFile file)
+    /// <summary>The assembly of <paramref name="assemblies"/>, read out of <paramref name="package"/>, that
+    /// came out of <paramref name="file"/>; null when that file did not load as one.</summary>
+    internal static LoadedModule? FindAssembly(AssemblyPackage package, IReadOnlyList<LoadedModule> assemblies, PackageFile file)
     {
-        var path = AssemblyPackages.GetFilePath(Package, file);
-        foreach (var assembly in Assemblies)
+        var path = AssemblyPackages.GetFilePath(package, file);
+        foreach (var assembly in assemblies)
         {
             if (assembly.FilePath.Equals(path))
                 return assembly;

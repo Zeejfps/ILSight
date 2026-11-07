@@ -52,7 +52,7 @@ public static class TooltipLookups
         if (!tooltips.Pending.Add(reference))
             return;
         var version = tooltips.Version;
-        var outcome = await Background.Run(() => tooltips.Assemblies.Describe(reference));
+        var outcome = await Background.Run(() => AssemblyListing.DescribeReference(tooltips.Assemblies, reference));
         if (version != tooltips.Version)
             return;
         tooltips.Pending.Remove(reference);

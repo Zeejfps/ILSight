@@ -15,12 +15,12 @@ public static class NodeLookup
     {
         try
         {
-            var item = list.OpenListed(path.FilePath);
+            var item = AssemblyListing.OpenListed(list, path.FilePath);
             if (item == null)
                 return null;
             return session.Find(item, path);
         }
-        catch (Exception e) when (AssemblyList.IsUnreadable(e))
+        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
             return null;
         }
@@ -31,14 +31,14 @@ public static class NodeLookup
     /// that outlives a switch to another list leaves the new list as it is.</summary>
     public static BrowseNode? FindListed(AssemblyList list, BrowseSession session, NodePath path)
     {
-        var item = list.FindListedLoaded(path.FilePath);
+        var item = AssemblyListing.FindListedLoaded(list, path.FilePath);
         if (item == null)
             return null;
         try
         {
             return session.Find(item, path);
         }
-        catch (Exception e) when (AssemblyList.IsUnreadable(e))
+        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
             return null;
         }
@@ -52,14 +52,14 @@ public static class NodeLookup
     {
         try
         {
-            var (assembly, handle) = list.ResolveListed(reference);
+            var (assembly, handle) = AssemblyListing.ResolveListed(list, reference);
             if (assembly is null)
                 return null;
             if (handle.Kind == HandleKind.AssemblyDefinition)
                 return session.RootOf(assembly);
             return session.FindOrAncestor(assembly, handle);
         }
-        catch (Exception e) when (AssemblyList.IsUnreadable(e))
+        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
             return null;
         }
@@ -73,12 +73,12 @@ public static class NodeLookup
     {
         try
         {
-            var (assembly, handle) = list.ResolveListed(reference);
+            var (assembly, handle) = AssemblyListing.ResolveListed(list, reference);
             if (assembly is null)
                 return null;
             return session.FindMetadataRow(assembly, handle);
         }
-        catch (Exception e) when (AssemblyList.IsUnreadable(e))
+        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
             return null;
         }
@@ -104,7 +104,7 @@ public static class NodeLookup
         {
             return session.FindById(assembly, idString);
         }
-        catch (Exception e) when (AssemblyList.IsUnreadable(e))
+        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
             return null;
         }

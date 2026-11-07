@@ -21,7 +21,7 @@ public sealed partial class BrowseNode
     /// never reads it there.</summary>
     internal static BrowseNode[] ListAssemblyReferences(LoadedModule module, BrowseNode parent)
     {
-        module.ReadReferenceUsage();
+        LoadedAssemblies.EnsureReferenceUsage(module);
         return module.File.AssemblyReferences
             .OrderBy(r => r.Name, NaturalStringComparer.Instance)
             .Select(r => (BrowseNode)new BrowseNode(parent, new NodeSubject.AssemblyReference { Value = new AssemblyReferenceInfo { Module = module, Reference = r } }))
@@ -34,7 +34,7 @@ public sealed partial class BrowseNode
     private BrowseNode[] ListReferenceContents(AssemblyReferenceInfo reference)
     {
         var children = new List<BrowseNode>();
-        if (ForwardedTypes.UsesReference(reference.Module.ReferenceUsage, reference.Reference.Handle))
+        if (ForwardedTypes.UsesReference(LoadedAssemblies.EnsureReferenceUsage(reference.Module), reference.Reference.Handle))
             children.Add(new BrowseNode(this, new NodeSubject.ReferencedTypes { Reference = reference }));
         var referenced = ResolveReferenced(reference);
         if (referenced != null)
@@ -56,7 +56,7 @@ public sealed partial class BrowseNode
     private BrowseNode[] ListUsedTypes(AssemblyReferenceInfo reference)
     {
         var module = reference.Module;
-        var usage = module.ReferenceUsage;
+        var usage = LoadedAssemblies.EnsureReferenceUsage(module);
         var metadata = module.File.Metadata;
         var handle = reference.Reference.Handle;
         var used = ForwardedTypes.ListTypesIn(usage, handle)
@@ -122,7 +122,7 @@ public sealed partial class BrowseNode
 
     private static bool UsesAnythingOf(TypeReferenceInfo type)
     {
-        var usage = type.Module.ReferenceUsage;
+        var usage = LoadedAssemblies.EnsureReferenceUsage(type.Module);
         if (ForwardedTypes.ListTypesIn(usage, type.Handle).Count > 0)
             return true;
         return ForwardedTypes.ListMembersOf(usage, type.Handle).Count > 0;
@@ -132,8 +132,8 @@ public sealed partial class BrowseNode
     /// label; a member used under several type arguments once, and overloads whose labels match each.</summary>
     private BrowseNode[] ListUsedOf(TypeReferenceInfo type)
     {
-        var usage = type.Module.ReferenceUsage;
-        var module = type.Module.TypeSystem.MainModule;
+        var usage = LoadedAssemblies.EnsureReferenceUsage(type.Module);
+        var module = LoadedAssemblies.EnsureMainModule(type.Module);
         var nested = ForwardedTypes.ListTypesIn(usage, type.Handle)
             .Select(h => UsedType(type.Module, h))
             .OrderBy(n => n.Text, NaturalStringComparer.Instance)
@@ -237,7 +237,7 @@ public sealed partial class BrowseNode
     /// <summary>The methods imported from the module, sorted by label, then by the type declaring each.</summary>
     private BrowseNode[] ListImports(ModuleReferenceInfo module)
     {
-        var typeSystem = module.Module.TypeSystem.MainModule;
+        var typeSystem = LoadedAssemblies.EnsureMainModule(module.Module);
         var imports = new List<ImportedMethodInfo>();
         foreach (var handle in module.Imports)
         {

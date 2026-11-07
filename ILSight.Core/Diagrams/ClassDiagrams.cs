@@ -44,7 +44,7 @@ public static partial class ClassDiagrams
     /// those nested in them, by namespace and then by full name.</summary>
     internal static DiagramModel BuildModel(LoadedModule assembly, IProgress<ExportProgress>? progress, CancellationToken cancellationToken)
     {
-        var picked = assembly.MainModule.TypeDefinitions
+        var picked = LoadedAssemblies.EnsureMainModule(assembly).TypeDefinitions
             .Where(static t => !t.IsCompilerGeneratedOrIsInCompilerGeneratedClass())
             .ToArray();
         var names = CreateNames(picked);
@@ -76,7 +76,7 @@ public static partial class ClassDiagrams
     private static string WritePage(LoadedModule assembly, DiagramModel model)
     {
         var json = JsonSerializer.Serialize(model, DiagramJson.Default.DiagramModel);
-        var module = assembly.MainModule;
+        var module = LoadedAssemblies.EnsureMainModule(assembly);
         return ReadAsset(TemplateName)
             .Replace("{{SourceAssemblyName}}", WebUtility.HtmlEncode(module.AssemblyName))
             .Replace("{{SourceAssemblyVersion}}", WebUtility.HtmlEncode(module.AssemblyVersion.ToString()))

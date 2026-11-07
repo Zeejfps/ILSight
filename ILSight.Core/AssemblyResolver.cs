@@ -6,7 +6,7 @@ namespace ILSight.Core;
 
 /// <summary>What the decompiler asks to find what an assembly references; its IAssemblyResolver demands the methods
 /// that stay here, which forward.</summary>
-internal sealed class AssemblyResolver : IAssemblyResolver
+public sealed class AssemblyResolver : IAssemblyResolver
 {
     public required AssemblyList List { get; init; }
     public required string MainPath { get; init; }
@@ -77,22 +77,22 @@ internal static class AssemblyResolving
     /// <summary>The listed assembly <paramref name="reference"/> names, one as new as it asks for first.</summary>
     private static LoadedModule? FindListed(AssemblyResolver resolver, IAssemblyReference reference)
     {
-        var exact = resolver.List.FindKnown(reference, exactOrNewer: true, listedOnly: true);
+        var exact = AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: true, listedOnly: true);
         if (exact != null)
             return exact;
-        return resolver.List.FindKnown(reference, exactOrNewer: false, listedOnly: true);
+        return AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: false, listedOnly: true);
     }
 
     /// <summary>The assembly <paramref name="reference"/> names, one read already as new as it asks for,
     /// else read from its file, else any read of its name; for loading it whatever the list's options.</summary>
     public static LoadedModule? LoadAssembly(AssemblyResolver resolver, IAssemblyReference reference)
     {
-        var known = resolver.List.FindKnown(reference, exactOrNewer: true);
+        var known = AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: true);
         if (known != null) return known;
         var path = FindAssemblyFile(resolver, reference);
-        var loaded = path != null ? resolver.List.TryLoadAssembly(path) : null;
+        var loaded = path != null ? AssemblyListing.TryLoadAssembly(resolver.List, path) : null;
         if (loaded != null) return loaded;
-        return resolver.List.FindKnown(reference, exactOrNewer: false);
+        return AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: false);
     }
 
     public static AssemblyPath? FindAssemblyFile(AssemblyResolver resolver, IAssemblyReference reference)
@@ -186,7 +186,7 @@ internal static class AssemblyResolving
         if (directory is null) return null;
         var path = AssemblyPath.Parse(Path.Combine(directory, moduleName));
         if (path == null) return null;
-        return FileExists(resolver, path) ? resolver.List.TryLoadAssembly(path)?.File : null;
+        return FileExists(resolver, path) ? AssemblyListing.TryLoadAssembly(resolver.List, path)?.File : null;
     }
 
     public static Task<MetadataFile?> ResolveAsync(AssemblyResolver resolver, IAssemblyReference reference)

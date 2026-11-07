@@ -11,7 +11,7 @@ public static class TypeCards
     /// or that cannot be resolved.</summary>
     public static TypeCard? Read(AssemblyList list, CodeReference.Entity type)
     {
-        var definition = list.FindTypeDefinition(type);
+        var definition = AssemblyListing.FindTypeDefinition(list, type);
         if (definition == null)
             return null;
         return Read(definition);
@@ -22,7 +22,7 @@ public static class TypeCards
     /// deriving from it or implementing it. None when it points at no type.</summary>
     public static List<TypeCard> ReadWithNeighbours(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
-        var definition = list.FindTypeDefinition(type);
+        var definition = AssemblyListing.FindTypeDefinition(list, type);
         if (definition == null)
             return [];
         var card = Read(definition);
@@ -43,7 +43,7 @@ public static class TypeCards
     /// read or no longer defines it.</summary>
     public static TypeCard? Read(AssemblyList list, TypeAnchor anchor)
     {
-        var definition = list.FindTypeDefinition(anchor);
+        var definition = AssemblyListing.FindTypeDefinition(list, anchor);
         if (definition == null)
             return null;
         return Read(definition);
@@ -53,7 +53,7 @@ public static class TypeCards
     /// <paramref name="type"/> points at, among the assemblies <paramref name="list"/> holds now.</summary>
     public static List<TypeCard> ReadDerived(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
-        var definition = list.FindTypeDefinition(type);
+        var definition = AssemblyListing.FindTypeDefinition(list, type);
         if (definition == null)
             return [];
         return DerivedTypes.Find(list, definition, cancellationToken)

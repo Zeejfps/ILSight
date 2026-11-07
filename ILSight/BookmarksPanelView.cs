@@ -142,7 +142,7 @@ internal static class BookmarksPanelView
     private static void Row(Ui<UiState> ui, AssemblyList assemblies, TableBody body, Bookmark bookmark, int index, CodeViewPalette palette)
     {
         var panel = ui.State.BookmarksPanel;
-        var listed = assemblies.IsListed(bookmark.Place.FilePath);
+        var listed = AssemblyListing.IsListed(assemblies, bookmark.Place.FilePath);
         var row = body.Row(index, RuntimeHelpers.GetHashCode(bookmark));
         int locationId;
         int moduleId;

@@ -286,7 +286,7 @@ public static class Exports
             .ToHashSet();
         var written = assemblies
             .Where(a => !failed.Contains(a))
-            .Select(a => Path.Combine(folder, a.PdbFileName))
+            .Select(a => Path.Combine(folder, LoadedAssemblies.GetPdbFileName(a)))
             .ToList();
         var problems = failures.ConvertAll(ProblemOf);
         return report with { Written = written, Problems = problems };

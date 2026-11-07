@@ -33,7 +33,7 @@ public enum PdbCheck
 /// metadata beside the assembly's.
 /// </summary>
 /// <remarks>The decompiler's IDebugInfoProvider demands the methods here, which forward to <see cref="DebugSymbolFiles"/>.</remarks>
-internal sealed class DebugSymbols : IDebugInfoProvider
+public sealed class DebugSymbols : IDebugInfoProvider
 {
     internal const string PdbExtension = ".pdb";
 

@@ -58,7 +58,7 @@ public static class Settings
             ApiVisibility = settings.ApiVisibility,
             Updates = new AppUpdates { Feed = GitHubUpdates.CreateFeed(), CheckAutomatically = settings.CheckForUpdates },
         };
-        assemblies.UseLoadOptions(settings.Decompiler);
+        AssemblyListing.UseLoadOptions(assemblies, settings.Decompiler);
         return appState;
     }
 

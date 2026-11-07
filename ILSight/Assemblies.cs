@@ -93,7 +93,7 @@ public static class Assemblies
     {
         var token = appState.Opens.Token;
         var assemblies = appState.Assemblies;
-        var opened = await Background.Run(() => assemblies.ListReferences(assembly, token));
+        var opened = await Background.Run(() => AssemblyListing.ListReferences(assemblies, assembly, token));
         if (opened is Outcome<List<LoadedModule>>.Failed failed)
             ReportOpenFailure(appState, failed.Error);
     }
@@ -108,7 +108,7 @@ public static class Assemblies
 
     private static async Task UsePdbAsync(AppState appState, LoadedModule assembly, string pdbPath)
     {
-        var checking = await Background.Run(() => assembly.CheckPdb(pdbPath));
+        var checking = await Background.Run(() => LoadedAssemblies.CheckPdb(assembly, pdbPath));
         var check = checking switch
         {
             Outcome<PdbCheck>.Ok ok => ok.Value,
@@ -120,7 +120,7 @@ public static class Assemblies
             ReportUnreadablePdb(appState, assembly, pdbPath, check);
             return;
         }
-        if (!appState.Assemblies.IsListed(assembly))
+        if (!AssemblyListing.IsListed(appState.Assemblies, assembly))
             return;
         appState.Assemblies.Pdbs.Pick(assembly.FilePath, pdbPath);
         ReopenAssembly(appState, assembly);
@@ -137,7 +137,7 @@ public static class Assemblies
     /// to show it. Does nothing when that is the framework already in use.</summary>
     public static void SetTargetFramework(AppState appState, LoadedModule assembly, TargetFrameworkId? framework)
     {
-        if (!appState.Assemblies.IsListed(assembly))
+        if (!AssemblyListing.IsListed(appState.Assemblies, assembly))
             return;
         if (IsInUse(assembly, framework))
             return;
@@ -207,7 +207,7 @@ public static class Assemblies
 
     private static Reopened ReadAgain(AssemblyList assemblies, BrowseSession session, LoadedAssembly item, List<NodePath> places)
     {
-        var fresh = assemblies.ReadAgain(item);
+        var fresh = AssemblyListing.ReadAgain(assemblies, item);
         LoadAsLoaded(session, session.RootOf(item), session.RootOf(fresh));
         var placeNodes = places
             .Select(p => session.Find(fresh, p))
@@ -251,13 +251,16 @@ public static class Assemblies
 
     private static void ShowReopened(AppState appState, LoadedAssembly item, Reopened reopened, List<ReloadingTab> tabs)
     {
-        if (!appState.Assemblies.Replace(item, reopened.Item))
+        if (!AssemblyListing.Replace(appState.Assemblies, item, reopened.Item))
             return;
         for (var i = 0; i < tabs.Count; i++)
             ShowAgain(appState, tabs[i], reopened.Places[i]);
     }
 
-    public static void CloseAssembly(AppState appState, LoadedAssembly assembly) => appState.Assemblies.Close(assembly);
+    public static void CloseAssembly(AppState appState, LoadedAssembly assembly)
+    {
+        AssemblyListing.CloseAssembly(appState.Assemblies, assembly);
+    }
 
     /// <summary>Takes the files that failed to load off the list.</summary>
     public static void CloseFailedAssemblies(AppState appState)
@@ -266,7 +269,7 @@ public static class Assemblies
             .OfType<FailedAssembly>()
             .ToList();
         foreach (var assembly in failed)
-            appState.Assemblies.Close(assembly);
+            AssemblyListing.CloseAssembly(appState.Assemblies, assembly);
     }
 
     /// <summary>Whether any file on the list failed to load.</summary>
@@ -276,7 +279,10 @@ public static class Assemblies
     }
 
     /// <summary>Orders the list by name, and assemblies of one name by version.</summary>
-    public static void SortAssemblies(AppState appState) => appState.Assemblies.Sort();
+    public static void SortAssemblies(AppState appState)
+    {
+        AssemblyListing.SortListed(appState.Assemblies);
+    }
 
     /// <summary>Closes every assembly of the open list, stopping its reload; tabs still waiting for it to
     /// reopen their places show what is left of them.</summary>
@@ -293,7 +299,7 @@ public static class Assemblies
 
     private static void ClearAssemblies(AppState appState)
     {
-        appState.Assemblies.Clear();
+        AssemblyListing.CloseAll(appState.Assemblies);
         Analysis.ClearRoots(appState.Analyzer);
     }
 
@@ -475,7 +481,7 @@ public static class Assemblies
         foreach (var path in paths)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            last = assemblies.Open(path, cancellationToken);
+            last = AssemblyListing.Open(assemblies, path, cancellationToken);
         }
         return last;
     }

@@ -30,7 +30,7 @@ public sealed class ExportTests : IDisposable
     {
         var d = new AppStateDriver();
         OpenAssembly(d.AppState, SampleAppPath);
-        d.RunUntil(() => d.AppState.Assemblies.IsListed(PathOf(SampleAppPath)));
+        d.RunUntil(() => AssemblyListing.IsListed(d.AppState.Assemblies, PathOf(SampleAppPath)));
         d.Settle();
         return d;
     }
@@ -88,7 +88,7 @@ public sealed class ExportTests : IDisposable
         GeneratePdbs(d.AppState, _temp.Path);
         d.Settle();
 
-        Assert.True(File.Exists(_temp.PathOf(assembly.PdbFileName)));
+        Assert.True(File.Exists(_temp.PathOf(LoadedAssemblies.GetPdbFileName(assembly))));
         Assert.Empty(d.AppState.Errors.Entries);
     }
 
@@ -97,7 +97,7 @@ public sealed class ExportTests : IDisposable
     {
         var app = new AppDriver();
         OpenAssembly(app.AppState, SampleAppPath);
-        app.RunUntil(() => app.AppState.Assemblies.IsListed(PathOf(SampleAppPath)));
+        app.RunUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)));
         app.Settle(2);
         app.Frames.FilePicker.Answer = _temp.Path;
 

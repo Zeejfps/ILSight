@@ -148,7 +148,7 @@ public sealed class AssemblyListingTests
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
         d.Settle();
-        Assert.Equal([AppStateDriver.FixturePath, other], d.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath, other], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
     }
 
     [Fact]
@@ -240,7 +240,7 @@ public sealed class AssemblyListingTests
         SwitchAssemblyList(d.AppState, SavedAssemblyLists.DefaultName);
         d.Settle();
 
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
     }
 
     [Fact]
@@ -270,11 +270,11 @@ public sealed class AssemblyListingTests
         SwitchAssemblyList(d.AppState, "New list");
         d.Settle();
         OpenAssembly(d.AppState, other);
-        d.RunUntil(() => d.AppState.Assemblies.FilePaths.Contains(PathOf(other)));
+        d.RunUntil(() => AssemblyListing.ListFilePaths(d.AppState.Assemblies).Contains(PathOf(other)));
         SwitchAssemblyList(d.AppState, SavedAssemblyLists.DefaultName);
         d.Settle();
 
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
         Assert.Equal([other], AssemblyLists.GetPaths(d.AppState.Lists, "New list").Select(static p => p.Text));
     }
 
@@ -317,7 +317,7 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         Assert.Equal(SavedAssemblyLists.DefaultName, d.AppState.Lists.Active);
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
     }
 
     [Fact]
@@ -332,7 +332,7 @@ public sealed class AssemblyListingTests
         RefreshAssemblies(d.AppState, d.Ui.Tree.ExpandedPaths());
         d.Settle();
 
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
     }
 
     [Fact]
@@ -484,9 +484,9 @@ public sealed class AssemblyListingTests
         var folder = Path.GetDirectoryName(other)!;
 
         app.Frames.DropFiles(folder, other).Frame();
-        app.RunUntil(() => app.AppState.Assemblies.FilePaths.Contains(PathOf(other)));
+        app.RunUntil(() => AssemblyListing.ListFilePaths(app.AppState.Assemblies).Contains(PathOf(other)));
 
-        Assert.Equal([AppStateDriver.FixturePath, other], app.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath, other], AssemblyListing.ListFilePaths(app.AppState.Assemblies).Select(static p => p.Text));
     }
 
     [Fact]
@@ -500,7 +500,7 @@ public sealed class AssemblyListingTests
         app.Frames.DropFiles(typeof(AppState).Assembly.Location).Frame();
         app.Settle(2);
 
-        Assert.Equal([AppStateDriver.FixturePath], app.AppState.Assemblies.FilePaths.Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(app.AppState.Assemblies).Select(static p => p.Text));
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using ILSight.Core;
 using static ILSight.Assemblies;
 using static ILSight.Decompilation;
 using static ILSight.Settings;
@@ -51,7 +52,7 @@ public sealed partial class ILSightApp
     /// <summary>Reads the open assemblies again, as F5 does, when the options that apply as they are read changed.</summary>
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {
-        if (!appState.Assemblies.UseLoadOptions(appState.DecompilerOptions))
+        if (!AssemblyListing.UseLoadOptions(appState.Assemblies, appState.DecompilerOptions))
             return;
         RefreshAssemblies(appState, uiState.Tree.ExpandedPaths());
     }

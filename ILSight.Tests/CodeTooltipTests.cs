@@ -4,7 +4,10 @@ namespace ILSight.Tests;
 
 public sealed class CodeTooltipTests
 {
-    private static CodeTooltip TooltipOf(AssemblyList list, BrowseNode node) => list.Describe(node.Definition)!;
+    private static CodeTooltip TooltipOf(AssemblyList list, BrowseNode node)
+    {
+        return AssemblyListing.DescribeReference(list, node.Definition)!;
+    }
 
     private static DocSection Section(CodeTooltip tooltip, DocSectionKind kind) => tooltip.Sections.Single(s => s.Kind == kind);
 
@@ -227,7 +230,7 @@ public sealed class CodeTooltipTests
         var document = assembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item)")];
 
-        var tooltip = list.Describe(Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference))!;
+        var tooltip = AssemblyListing.DescribeReference(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference))!;
 
         Assert.StartsWith("public void List<T>.Add(T item)", tooltip.Signature.Line.Text);
         Assert.Equal(new CodeContainer("class", "System.Collections.Generic.List<T>", false), tooltip.Container);

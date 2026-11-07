@@ -82,9 +82,9 @@ public sealed class PackageTests
 
         Assert.Null(list.FindNode(type));
         Assert.Null(list.FindMetadataRow(type));
-        Assert.Null(list.Describe(type));
-        Assert.Null(list.FindApiReferencePage(type));
-        Assert.Null(list.FindTypeDefinition(type));
+        Assert.Null(AssemblyListing.DescribeReference(list, type));
+        Assert.Null(AssemblyListing.FindApiReferencePage(list, type));
+        Assert.Null(AssemblyListing.FindTypeDefinition(list, type));
         Assert.Null(list.FindMetadataRow(CodeReferences.CreateAssembly("Sample", AssemblyPath.Of(path))));
     }
 
@@ -96,10 +96,10 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var sibling = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Core.dll"));
         list.TargetFrameworks.Pick(sibling, Frameworks.Net48);
-        list.Clear();
-        var assembly = list.TryLoad(package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll")))!;
+        AssemblyListing.CloseAll(list);
+        var assembly = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll")))!;
 
-        list.Close(assembly);
+        AssemblyListing.CloseAssembly(list, assembly);
 
         Assert.Empty(list.TargetFrameworks.All);
     }
@@ -112,8 +112,8 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var old = list.Assemblies.ToList();
 
-        var fresh = list.ReadAgain(old[1]);
-        var replaced = list.Replace(package, fresh);
+        var fresh = AssemblyListing.ReadAgain(list, old[1]);
+        var replaced = AssemblyListing.Replace(list, package, fresh);
 
         Assert.True(replaced);
         Assert.Equal([fresh], list.Listed);
@@ -150,7 +150,7 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var path = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll"));
 
-        var assembly = list.TryLoad(path)!;
+        var assembly = AssemblyListing.TryLoad(list, path)!;
 
         Assert.Same(package.Root.Child(LibFolder), assembly.Root.Parent);
         Assert.Same(assembly.Root, TestAssemblyRoot(package.Root.Child(LibFolder)));
@@ -279,7 +279,7 @@ public sealed class PackageTests
         var list = new AssemblyList();
         var before = TestAssemblyRoot(list.Open(packagePath).Root.Child(LibFolder)).Assembly;
 
-        list.Close(list.Listed[0]);
+        AssemblyListing.CloseAssembly(list, list.Listed[0]);
         Assert.Empty(list.Assemblies);
         var after = TestAssemblyRoot(list.Open(packagePath).Root.Child(LibFolder)).Assembly;
 
@@ -312,10 +312,10 @@ public sealed class PackageTests
         var assembly = Assert.IsType<LoadedModule>(TestAssemblyRoot(folder).Assembly);
         var core = list.Assemblies.Single(a => a.Name == "ILSight.Core");
 
-        var symbols = assembly.DebugSymbols;
+        var symbols = LoadedAssemblies.EnsureDebugSymbols(assembly);
 
         Assert.Equal(Path.ChangeExtension(assembly.FilePath.Text, ".pdb"), symbols!.SourceFileName);
-        Assert.Null(core.DebugSymbols);
+        Assert.Null(LoadedAssemblies.EnsureDebugSymbols(core));
     }
 
     [Fact]
