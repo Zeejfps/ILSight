@@ -69,7 +69,7 @@ public readonly struct DocumentLine
     public required string Text { get; init; }
 
     /// <summary>The spans of the whole document, which the lines share.</summary>
-    public required DocumentSpan[] DocumentSpans { get; init; }
+    public required ImmutableArray<DocumentSpan> DocumentSpans { get; init; }
 
     /// <summary>Where this line's spans start in <see cref="DocumentSpans"/>.</summary>
     public required int FirstSpan { get; init; }
@@ -77,7 +77,7 @@ public readonly struct DocumentLine
     /// <summary>How many spans this line has.</summary>
     public required int SpanCount { get; init; }
 
-    public ReadOnlySpan<DocumentSpan> Spans => new(DocumentSpans, FirstSpan, SpanCount);
+    public ReadOnlySpan<DocumentSpan> Spans => DocumentSpans.AsSpan().Slice(FirstSpan, SpanCount);
 
     public override string ToString() => Text;
 }

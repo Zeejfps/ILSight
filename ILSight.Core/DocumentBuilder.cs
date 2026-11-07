@@ -149,7 +149,7 @@ internal static class DocumentWriting
     {
         if (builder.Line.Length > 0 || builder.LineFirstSpan < builder.Spans.Count || builder.Lines.Count == 0)
             WriteLine(builder);
-        var spans = builder.Spans.ToArray();
+        var spans = builder.Spans.ToImmutableArray();
         var lines = ImmutableArray.CreateBuilder<DocumentLine>(builder.Lines.Count);
         foreach (var (text, first, count) in builder.Lines)
             lines.Add(new DocumentLine { Text = text, DocumentSpans = spans, FirstSpan = first, SpanCount = count });

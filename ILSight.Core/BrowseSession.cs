@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -320,7 +321,7 @@ public static class BrowseSessions
 
     /// <summary>The node <paramref name="steps"/> lead to from <paramref name="root"/>; null when a step
     /// names no child, or more than one.</summary>
-    private static BrowseNode? FollowSteps(BrowseSession session, BrowseNode root, IReadOnlyList<NodePathStep> steps)
+    private static BrowseNode? FollowSteps(BrowseSession session, BrowseNode root, ImmutableArray<NodePathStep> steps)
     {
         var node = root;
         foreach (var step in steps)

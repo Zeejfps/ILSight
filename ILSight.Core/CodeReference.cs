@@ -37,7 +37,9 @@ public abstract class CodeReference : IEquatable<CodeReference>
         }
 
         public required AssemblyPath FilePath { get; init; }
-        public required EntityHandle Handle { get; init; }
+
+        /// <summary>What it is found by in the file.</summary>
+        public abstract EntityHandle Handle { get; }
 
         public override bool Equals(CodeReference? other)
         {
@@ -56,6 +58,18 @@ public abstract class CodeReference : IEquatable<CodeReference>
         /// <summary>The reference to the assembly from the file; null for the file's own assembly.</summary>
         public required AssemblyReferenceHandle? Referenced { get; init; }
 
+        /// <summary>The reference in the file, or the file's own assembly, which <see cref="Referenced"/>
+        /// says, so that the two can't disagree.</summary>
+        public override EntityHandle Handle
+        {
+            get
+            {
+                if (Referenced == null)
+                    return EntityHandle.AssemblyDefinition;
+                return Referenced.Value;
+            }
+        }
+
         public override string ToString() => $"Assembly {Name}";
     }
 
@@ -63,6 +77,11 @@ public abstract class CodeReference : IEquatable<CodeReference>
     public sealed class Entity : Navigable
     {
         public required EntityKind Kind { get; init; }
+
+        /// <summary>The type or member, as the file names it.</summary>
+        public required EntityHandle Target { get; init; }
+
+        public override EntityHandle Handle => Target;
 
         public override string ToString() => $"{Kind} {Name}";
     }
@@ -121,7 +140,7 @@ internal static class CodeReferences
         var file = entity.ParentModule?.MetadataFile;
         if (file == null || entity.MetadataToken.IsNil)
             return null;
-        return new CodeReference.Entity { Kind = GetKind(entity.SymbolKind), Name = name ?? entity.Name, FilePath = AssemblyPath.Of(file.FileName), Handle = entity.MetadataToken };
+        return new CodeReference.Entity { Kind = GetKind(entity.SymbolKind), Name = name ?? entity.Name, FilePath = AssemblyPath.Of(file.FileName), Target = entity.MetadataToken };
     }
 
     /// <summary>A reference to what <paramref name="handle"/> of <paramref name="metadata"/> names, read
@@ -133,12 +152,12 @@ internal static class CodeReferences
             HandleKind.AssemblyDefinition => CreateAssembly(name, filePath),
             HandleKind.AssemblyReference => CreateAssembly(name, filePath, (AssemblyReferenceHandle)handle),
             HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification =>
-                new CodeReference.Entity { Kind = EntityKind.Type, Name = name, FilePath = filePath, Handle = (EntityHandle)handle },
-            HandleKind.MethodDefinition or HandleKind.MethodSpecification => new CodeReference.Entity { Kind = EntityKind.Method, Name = name, FilePath = filePath, Handle = (EntityHandle)handle },
-            HandleKind.FieldDefinition => new CodeReference.Entity { Kind = EntityKind.Field, Name = name, FilePath = filePath, Handle = (EntityHandle)handle },
-            HandleKind.PropertyDefinition => new CodeReference.Entity { Kind = EntityKind.Property, Name = name, FilePath = filePath, Handle = (EntityHandle)handle },
-            HandleKind.EventDefinition => new CodeReference.Entity { Kind = EntityKind.Event, Name = name, FilePath = filePath, Handle = (EntityHandle)handle },
-            HandleKind.MemberReference => new CodeReference.Entity { Kind = GetMemberKind(metadata, (MemberReferenceHandle)handle), Name = name, FilePath = filePath, Handle = (EntityHandle)handle },
+                new CodeReference.Entity { Kind = EntityKind.Type, Name = name, FilePath = filePath, Target = (EntityHandle)handle },
+            HandleKind.MethodDefinition or HandleKind.MethodSpecification => new CodeReference.Entity { Kind = EntityKind.Method, Name = name, FilePath = filePath, Target = (EntityHandle)handle },
+            HandleKind.FieldDefinition => new CodeReference.Entity { Kind = EntityKind.Field, Name = name, FilePath = filePath, Target = (EntityHandle)handle },
+            HandleKind.PropertyDefinition => new CodeReference.Entity { Kind = EntityKind.Property, Name = name, FilePath = filePath, Target = (EntityHandle)handle },
+            HandleKind.EventDefinition => new CodeReference.Entity { Kind = EntityKind.Event, Name = name, FilePath = filePath, Target = (EntityHandle)handle },
+            HandleKind.MemberReference => new CodeReference.Entity { Kind = GetMemberKind(metadata, (MemberReferenceHandle)handle), Name = name, FilePath = filePath, Target = (EntityHandle)handle },
             _ => null,
         };
     }
@@ -160,15 +179,6 @@ internal static class CodeReferences
         };
     }
 
-    /// <summary>The handle an assembly's reference goes by: <paramref name="referenced"/>, or for the file's
-    /// own assembly the definition's.</summary>
-    private static EntityHandle GetHandle(AssemblyReferenceHandle? referenced)
-    {
-        if (referenced == null)
-            return EntityHandle.AssemblyDefinition;
-        return referenced.Value;
-    }
-
     /// <summary>A reference to the assembly in the file at <paramref name="filePath"/> itself.</summary>
     public static CodeReference.Assembly CreateAssembly(string name, AssemblyPath filePath)
     {
@@ -183,11 +193,11 @@ internal static class CodeReferences
 
     private static CodeReference.Assembly CreateAssembly(string name, AssemblyPath filePath, AssemblyReferenceHandle? referenced)
     {
-        return new CodeReference.Assembly { Name = name, FilePath = filePath, Handle = GetHandle(referenced), Referenced = referenced };
+        return new CodeReference.Assembly { Name = name, FilePath = filePath, Referenced = referenced };
     }
 
     public static CodeReference.Entity CreateEntity(EntityKind kind, string name, AssemblyPath filePath, EntityHandle handle)
     {
-        return new CodeReference.Entity { Kind = kind, Name = name, FilePath = filePath, Handle = handle };
+        return new CodeReference.Entity { Kind = kind, Name = name, FilePath = filePath, Target = handle };
     }
 }

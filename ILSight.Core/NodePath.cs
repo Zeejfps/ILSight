@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Diagnostics;
 using ILSight.Core.Metadata;
 
@@ -96,7 +97,7 @@ public sealed class NodePath : IEquatable<NodePath>
     public required AssemblyPath FilePath { get; init; }
 
     /// <summary>What each node down from the root is, and its label, the node itself last.</summary>
-    public required NodePathStep[] Steps { get; init; }
+    public required ImmutableArray<NodePathStep> Steps { get; init; }
 
     /// <summary>The label of the node this names, as it showed when the path was taken; the file's name
     /// for the root.</summary>
