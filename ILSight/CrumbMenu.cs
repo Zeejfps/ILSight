@@ -7,10 +7,11 @@ namespace ILSight;
 /// it lists them unfiltered and its filter takes focus.</summary>
 public sealed class CrumbMenu
 {
-    /// <summary>The children listed, as last filtered, and what they were filtered from and by.</summary>
-    public readonly List<BrowseNode> Shown = new();
-    public IReadOnlyList<BrowseNode>? Children;
-    public string ShownFilter = "";
+    /// <summary>The children listed, by what they were filtered from and by.</summary>
+    public Memo<(ByReference<IReadOnlyList<BrowseNode>>, string), IReadOnlyList<BrowseNode>> Listed;
+
+    /// <summary>The children listed, as last filtered.</summary>
+    public IReadOnlyList<BrowseNode> Shown => Listed.Last ?? [];
 
     /// <summary>The crumb to select once the children built hold it.</summary>
     public BrowseNode? ToSelect;

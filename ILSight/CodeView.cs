@@ -129,7 +129,7 @@ internal readonly record struct CodeFlash(int Line, double From);
 public sealed class CodeViewState
 {
     internal readonly CodeViewFrame Frame = new();
-    internal readonly CodeFindIndex Find = new();
+    internal CodeFindIndex Find = CodeFindIndex.None;
 
     /// <summary>The bracket at the caret or just before it and the one matching it, by the document and the
     /// caret they were looked up for; see <see cref="MatchingBrackets"/>.</summary>
@@ -342,15 +342,21 @@ public static class CodeViewWidget
         return row.Index * height;
     }
 
-    /// <summary>Scans <paramref name="find"/> again when the document or query changed; returns whether it did.</summary>
-    private static bool FindMatches(CodeFindIndex find, DecompiledDocument document, string query)
+    /// <summary>Scans again when the document or query changed since <paramref name="state"/> last did; returns
+    /// whether it did.</summary>
+    private static bool FindMatches(CodeViewState state, DecompiledDocument document, string query)
     {
+        var find = state.Find;
         if (ReferenceEquals(document, find.Document) && string.Equals(query, find.Query, StringComparison.Ordinal))
             return false;
-        find.Document = document;
-        find.Query = query;
-        find.Matches.Clear();
-        if (query.Length == 0) return true;
+        state.Find = new CodeFindIndex { Matches = ScanForMatches(document, query), Document = document, Query = query };
+        return true;
+    }
+
+    private static List<TextPosition> ScanForMatches(DecompiledDocument document, string query)
+    {
+        var matches = new List<TextPosition>();
+        if (query.Length == 0) return matches;
 
         var lines = document.Lines;
         for (var line = 0; line < lines.Length; line++)
@@ -359,11 +365,11 @@ public static class CodeViewWidget
             var at = text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
             while (at >= 0)
             {
-                find.Matches.Add(new TextPosition(line, at));
+                matches.Add(new TextPosition(line, at));
                 at = text.IndexOf(query, at + query.Length, StringComparison.OrdinalIgnoreCase);
             }
         }
-        return true;
+        return matches;
     }
 
     /// <summary>The first match at or after <paramref name="at"/>, wrapping to the first; null when there are none.</summary>
@@ -1062,7 +1068,7 @@ public static class CodeViewWidget
 
             var submitted = ui.TextField("find", ref state.Query, t.FindPlaceholder, Sizing.Grow(AppLayout.FindMinWidth, AppLayout.FindWidth));
             var queryChanged = !string.Equals(state.Query, state.Find.Query, StringComparison.Ordinal);
-            if (FindMatches(state.Find, document, state.Query))
+            if (FindMatches(state, document, state.Query))
             {
                 state.CurrentMatch = queryChanged ? FindFirstMatch(state.Find, state.Selection.Start) : null;
                 ShowMatch(state);
@@ -1090,7 +1096,7 @@ public static class CodeViewWidget
 
     private static void Step(CodeViewState state, DecompiledDocument document, int direction)
     {
-        FindMatches(state.Find, document, state.Query);
+        FindMatches(state, document, state.Query);
         var count = state.Find.Matches.Count;
         if (count == 0)
         {

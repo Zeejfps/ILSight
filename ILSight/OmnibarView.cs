@@ -109,25 +109,16 @@ internal static class OmnibarView
     /// top of this function, on the way to returning what is already known.</summary>
     private static IReadOnlyList<BrowseNode> ListShown(CrumbMenu menu, IReadOnlyList<BrowseNode> children, BrowseTree tree)
     {
-        if (IsShowing(menu, children))
-            return menu.Shown;
+        if (menu.Listed.TryGet((new(children), menu.Filter), out var shown))
+            return shown;
         FilterChildren(menu, children, tree);
         return menu.Shown;
     }
 
-    private static bool IsShowing(CrumbMenu menu, IReadOnlyList<BrowseNode> children)
-    {
-        if (!ReferenceEquals(children, menu.Children))
-            return false;
-        return menu.Filter == menu.ShownFilter;
-    }
-
     private static void FilterChildren(CrumbMenu menu, IReadOnlyList<BrowseNode> children, BrowseTree tree)
     {
-        menu.Children = children;
-        menu.ShownFilter = menu.Filter;
-        menu.Shown.Clear();
-        menu.Shown.AddRange(children.Where(c => HoldsFilter(menu, Trees.GetRowLabel(tree, c))));
+        var shown = children.Where(c => HoldsFilter(menu, Trees.GetRowLabel(tree, c))).ToList();
+        menu.Listed = new((new(children), menu.Filter), shown);
         SelectWaitingChild(menu);
         ItemSelections.DropIfGone(menu.Selection, menu.Shown);
         SelectFirstMatch(menu);

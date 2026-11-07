@@ -6,13 +6,11 @@ namespace ILSight;
 /// <summary>The error dialog: whether it shows, the error picked in it, and the view of that error's text.</summary>
 public sealed class ErrorDialog
 {
-    /// <summary>What each error says in <see cref="TextsIn"/>, put into those words once.</summary>
-    public readonly Dictionary<AppError, ProblemText> Texts = new(ReferenceEqualityComparer.Instance);
-    public Strings? TextsIn;
+    /// <summary>What each error says, put into those words once, by the language they are in.</summary>
+    public Memo<ByReference<Strings>, Dictionary<AppError, ProblemText>> Texts;
 
-    /// <summary>The error <see cref="Document"/> shows the text of.</summary>
-    public AppError? DocumentFor;
-    public DecompiledDocument Document = DecompiledDocument.Empty;
+    /// <summary>The document of an error's text, by the error, for as long as the language lasts.</summary>
+    public Memo<ByReference<AppError>, DecompiledDocument> Document;
 
     /// <summary>The error log's revision when the dialog last saw it.</summary>
     public int ShownRevision;
