@@ -51,9 +51,9 @@ public enum BookmarkImportMode
     Merge,
 }
 
-/// <summary>The user's bookmarks in the order they were made. No two mark the same line, and every change
-/// to the list or a bookmark bumps <see cref="Revision"/>: both are up to the functions on
-/// <see cref="Bookmarks"/>, which are the only things to change it.</summary>
+/// <summary>The user's bookmarks in the order they were made. <see cref="Items"/> counts what happens to the
+/// list by itself. That no two mark the same line, and that a change inside a bookmark is told to it, are up
+/// to the functions on <see cref="Bookmarks"/>, which are the only things to change it.</summary>
 public sealed class BookmarkList
 {
     /// <summary>The lines of a document that bookmarks mark, as of <see cref="Revision"/>.</summary>
@@ -64,9 +64,10 @@ public sealed class BookmarkList
         public readonly Dictionary<int, bool> Lines = new();
     }
 
-    public readonly List<Bookmark> Items = new();
+    public readonly TrackedList<Bookmark> Items = new();
 
     public readonly ConditionalWeakTable<DecompiledDocument, Marks> MarksByDocument = new();
 
-    public int Revision;
+    /// <summary>Changes whenever the list or a bookmark in it does.</summary>
+    public int Revision => Items.Revision;
 }

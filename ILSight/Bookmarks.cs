@@ -14,13 +14,12 @@ public static class Bookmarks
         if (IsMarked(list, bookmark))
             return false;
         list.Items.Add(bookmark);
-        list.Revision++;
         return true;
     }
 
     private static bool IsMarked(BookmarkList list, Bookmark bookmark)
     {
-        return list.Items.Exists(other => MarkSameLine(bookmark, other));
+        return list.Items.Any(other => MarkSameLine(bookmark, other));
     }
 
     /// <summary>Removes <paramref name="bookmark"/>; returns the row it was in, or -1 when it was not listed.</summary>
@@ -30,7 +29,6 @@ public static class Bookmarks
         if (index < 0)
             return -1;
         list.Items.RemoveAt(index);
-        list.Revision++;
         return index;
     }
 
@@ -38,7 +36,7 @@ public static class Bookmarks
     {
         if (bookmark.Enabled == enabled) return;
         bookmark.Enabled = enabled;
-        list.Revision++;
+        list.Items.NoteChange();
     }
 
     /// <summary>Gives <paramref name="bookmark"/> the name <paramref name="name"/>, trimmed, unless it is blank.</summary>
@@ -50,7 +48,7 @@ public static class Bookmarks
         if (trimmed == bookmark.Name)
             return;
         bookmark.Name = trimmed;
-        list.Revision++;
+        list.Items.NoteChange();
     }
 
     /// <summary>The next enabled bookmark after <paramref name="from"/>, or the previous when
@@ -85,6 +83,18 @@ public static class Bookmarks
         if (bookmark == null)
             return -1;
         return list.Items.IndexOf(bookmark);
+    }
+
+    /// <summary>Whether a bookmark is enabled. Runs every frame the panel shows, so it goes through the
+    /// bookmarks itself: LINQ over the list would allocate its enumerator.</summary>
+    public static bool HasEnabled(BookmarkList list)
+    {
+        foreach (var bookmark in list.Items)
+        {
+            if (bookmark.Enabled)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>The first bookmark marking <paramref name="line"/> of <paramref name="document"/>,
@@ -123,14 +133,14 @@ public static class Bookmarks
         for (var n = 1; ; n++)
         {
             var name = format(n);
-            if (!list.Items.Exists(b => b.Name == name))
+            if (!list.Items.Any(b => b.Name == name))
                 return name;
         }
     }
 
     public static List<BookmarkRecord> ListRecords(BookmarkList list)
     {
-        return list.Items.ConvertAll(static b => Bookmarks.CreateRecord(b));
+        return list.Items.Select(static b => Bookmarks.CreateRecord(b)).ToList();
     }
 
     /// <summary>Replaces the list with the bookmarks in <paramref name="saved"/> that know their place.
@@ -147,7 +157,7 @@ public static class Bookmarks
     public static void Resolve(BookmarkList list, Bookmark bookmark, BrowseNode node)
     {
         bookmark.Place = BrowseNodes.GetPath(node);
-        list.Revision++;
+        list.Items.NoteChange();
     }
 
     /// <summary>Adds <paramref name="bookmarks"/>, after dropping every bookmark first when replacing,
@@ -166,7 +176,6 @@ public static class Bookmarks
             }
             list.Items.Add(bookmark);
         }
-        list.Revision++;
         return leftOut;
     }
 

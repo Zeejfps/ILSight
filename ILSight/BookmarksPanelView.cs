@@ -96,7 +96,7 @@ internal static class BookmarksPanelView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var panel = ui.State.BookmarksPanel;
-        var any = bookmarks.Items.Any(static b => b.Enabled);
+        var any = HasEnabled(bookmarks);
         var selected = panel.Selected;
         using (ui.PaneToolbar())
         {

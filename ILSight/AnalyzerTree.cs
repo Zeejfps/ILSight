@@ -60,13 +60,13 @@ public sealed class AnalyzerPendingNode : AnalyzerNode
 /// </summary>
 public sealed class AnalyzerTree
 {
-    public readonly List<AnalyzerNode> Roots = new();
+    public readonly TrackedList<AnalyzerNode> Roots = new();
 
     /// <summary>Changes whenever what <see cref="Analysis.ListSavedAnalyses"/> lists changes.</summary>
     public int Revision;
 
     /// <summary>Changes whenever a root is added, replaced or removed.</summary>
-    public int Changes;
+    public int Changes => Roots.Revision;
 
     /// <summary>Changes whenever an analysis under a root finds more or ends.</summary>
     public int Findings;

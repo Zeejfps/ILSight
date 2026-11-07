@@ -26,7 +26,6 @@ public static class Analysis
         var root = new AnalyzerSymbolNode { Symbol = symbol };
         tree.Roots.Add(root);
         tree.Revision++;
-        tree.Changes++;
         return root;
     }
 
@@ -50,7 +49,6 @@ public static class Analysis
         tree.Roots.Add(root);
         if (savedAs != null)
             tree.Revision++;
-        tree.Changes++;
         return root;
     }
 
@@ -88,7 +86,6 @@ public static class Analysis
         tree.Roots[index] = root;
         if (symbol.Definition != pending.SavedAs)
             tree.Revision++;
-        tree.Changes++;
         return root;
     }
 
@@ -102,7 +99,6 @@ public static class Analysis
         if (!tree.Roots.Remove(root)) return;
         if (SavedAnalysisOf(root) != null)
             tree.Revision++;
-        tree.Changes++;
         CancelNode(root);
     }
 
@@ -125,7 +121,6 @@ public static class Analysis
             CancelNode(root);
         tree.Roots.Clear();
         tree.Revision++;
-        tree.Changes++;
     }
 
     /// <summary>The children of <paramref name="symbol"/>, listed the first time they are asked for.</summary>

@@ -65,6 +65,7 @@ internal static class ShapeExceptions
         "ILSight.Core.PackageId",
         "ILSight.Core.PackageVersion",
         "ILSight.Core.TargetFrameworkId",
+        "ILSight.Core.TrackedList`1",
         "ILSight.Core.WebUrl",
         "ILSight.PictureZoom",
         "ILSight.ThemeId`1",
