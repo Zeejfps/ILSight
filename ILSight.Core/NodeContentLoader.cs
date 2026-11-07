@@ -144,7 +144,7 @@ public static class NodeContentLoader
             NodeSubject.MetadataTables tables => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListTablesLines(tables.Folder)), node.SourceModule, node.Text,
                 BrowseNodes.GetFullName(node)),
             NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListPartLines(table.Value)), node.SourceModule, node.Text, BrowseNodes.GetFullName(node)),
-            NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(session.ChildrenOf(node).Select(DescribePackageChild).ToList()), null,
+            NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(BrowseSessions.ListChildren(session, node).Select(DescribePackageChild).ToList()), null,
                 node.Text, BrowseNodes.GetFullName(node)),
             NodeSubject.PackageFile file => ResourceRequest(node, ResourceNodes.CreateData(file.Value)),
             NodeSubject.Module module => new DocumentRequest.ModulePreview(module.Value, node.Text, BrowseNodes.GetFullName(node)),
@@ -163,7 +163,7 @@ public static class NodeContentLoader
     /// <summary>A comment a resource, describing each that <paramref name="node"/> lists.</summary>
     private static SummaryInfo.Comments DescribeResources(BrowseSession session, BrowseNode node)
     {
-        return new(session.ChildrenOf(node).Select(static c => BrowseNodes.GetResourceData(c)).OfType<ResourceData>().Select(static r => r.Description).ToList());
+        return new(BrowseSessions.ListChildren(session, node).Select(static c => BrowseNodes.GetResourceData(c)).OfType<ResourceData>().Select(static r => r.Description).ToList());
     }
 
     /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists.</summary>
@@ -183,7 +183,7 @@ public static class NodeContentLoader
                 import.Value.ModuleName),
             NodeSubject.ForwardedType forwarded => new SummaryInfo.ForwardedType(forwarded.Value.FullName, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination),
             NodeSubject.BaseTypes or NodeSubject.DerivedTypes =>
-                new SummaryInfo.Types(session.ChildrenOf(node).Select(static c => new SummaryLink(c.Text, NodeDefinitions.FindTarget(c.Subject))).ToList()),
+                new SummaryInfo.Types(BrowseSessions.ListChildren(session, node).Select(static c => new SummaryLink(c.Text, NodeDefinitions.FindTarget(c.Subject))).ToList()),
             NodeSubject.BaseType or NodeSubject.DerivedType => new SummaryInfo.Types([new SummaryLink(node.Text, NodeDefinitions.FindTarget(node.Subject))]),
             NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.Resources or NodeSubject.ResourceContainer
                 or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
@@ -193,8 +193,10 @@ public static class NodeContentLoader
     }
 
     /// <summary>The children of <paramref name="node"/> that stand for a <typeparamref name="TSubject"/>.</summary>
-    private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(BrowseSession session, BrowseNode node) where TSubject : NodeSubject =>
-        session.ChildrenOf(node).Where(static c => c.Subject is TSubject);
+    private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(BrowseSession session, BrowseNode node) where TSubject : NodeSubject
+    {
+        return BrowseSessions.ListChildren(session, node).Where(static c => c.Subject is TSubject);
+    }
 
     private static string DescribePackageChild(BrowseNode child)
     {
@@ -210,7 +212,7 @@ public static class NodeContentLoader
     private static List<NamespaceEntry> ListNamespaceEntries(BrowseSession session, BrowseNode ns)
     {
         var entries = new List<NamespaceEntry>();
-        foreach (var child in session.ChildrenOf(ns))
+        foreach (var child in BrowseSessions.ListChildren(session, ns))
         {
             if (NodeDefinitions.GetVisibility(child.Subject).IsCompilerGenerated) continue;
             if (child.Subject is NodeSubject.TypeDefinition type)
@@ -224,7 +226,7 @@ public static class NodeContentLoader
     /// <summary>The types and members <paramref name="node"/> lists as used from a reference.</summary>
     private static List<UsedEntry> ListUsed(BrowseSession session, BrowseNode node)
     {
-        return session.ChildrenOf(node)
+        return BrowseSessions.ListChildren(session, node)
             .Select(c => UsedOf(session, c))
             .ToList();
     }

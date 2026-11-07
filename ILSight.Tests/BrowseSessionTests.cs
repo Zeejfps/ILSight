@@ -12,13 +12,13 @@ public sealed class BrowseSessionTests : IDisposable
     public void Children_are_built_once_and_every_caller_gets_the_same_ones()
     {
         var session = new BrowseSession();
-        var root = session.RootOf(new AssemblyList().Open(Trees.TestAssemblyPath));
+        var root = BrowseSessions.EnsureRoot(session, new AssemblyList().Open(Trees.TestAssemblyPath));
 
-        var waits = Enumerable.Range(0, 8).Select(_ => session.LoadChildrenAsync(root)).ToArray();
-        var blocking = Enumerable.Range(0, 8).AsParallel().WithDegreeOfParallelism(8).Select(_ => session.LoadChildren(root)).ToArray();
+        var waits = Enumerable.Range(0, 8).Select(_ => BrowseSessions.LoadChildrenAsync(session, root)).ToArray();
+        var blocking = Enumerable.Range(0, 8).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.LoadChildren(session, root)).ToArray();
         var waited = Task.WhenAll(waits).GetAwaiter().GetResult();
 
-        var children = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(root)).Children;
+        var children = Assert.IsType<ChildrenState.Ready>(BrowseSessions.PeekChildren(session, root)).Children;
         Assert.All(waited.Concat(blocking), s => Assert.Same(children, Assert.IsType<ChildrenState.Ready>(s).Children));
     }
 
@@ -26,10 +26,10 @@ public sealed class BrowseSessionTests : IDisposable
     public async Task Cancelling_a_wait_leaves_the_build_running_for_the_others()
     {
         var session = new BrowseSession();
-        var root = session.RootOf(new AssemblyList().Open(Trees.TestAssemblyPath));
+        var root = BrowseSessions.EnsureRoot(session, new AssemblyList().Open(Trees.TestAssemblyPath));
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => session.LoadChildrenAsync(root, new CancellationToken(canceled: true)));
-        var state = await session.LoadChildrenAsync(root);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => BrowseSessions.LoadChildrenAsync(session, root, new CancellationToken(canceled: true)));
+        var state = await BrowseSessions.LoadChildrenAsync(session, root);
 
         Assert.NotEmpty(Assert.IsType<ChildrenState.Ready>(state).Children);
     }
@@ -39,15 +39,15 @@ public sealed class BrowseSessionTests : IDisposable
     {
         var session = new BrowseSession();
         var assembly = new AssemblyList().Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(_temp));
-        var resources = session.ChildrenOf(session.RootOf(assembly)).Single(c => c.Subject is NodeSubject.Resources);
-        var container = Assert.Single(session.ChildrenOf(resources));
+        var resources = BrowseSessions.ListChildren(session, BrowseSessions.EnsureRoot(session, assembly)).Single(c => c.Subject is NodeSubject.Resources);
+        var container = Assert.Single(BrowseSessions.ListChildren(session, resources));
 
-        var failed = Assert.IsType<ChildrenState.Failed>(session.LoadChildren(container));
+        var failed = Assert.IsType<ChildrenState.Failed>(BrowseSessions.LoadChildren(session, container));
 
         Assert.IsType<InvalidDataException>(failed.Error);
-        Assert.Same(failed, session.LoadChildren(container));
-        Assert.True(session.HasChildren(container));
-        Assert.Empty(session.ChildrenOf(container));
+        Assert.Same(failed, BrowseSessions.LoadChildren(session, container));
+        Assert.True(BrowseSessions.HasChildren(session, container));
+        Assert.Empty(BrowseSessions.ListChildren(session, container));
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public sealed class BrowseSessionTests : IDisposable
         var first = new BrowseSession();
         var second = new BrowseSession();
 
-        Assert.Same(first.RootOf(assembly), first.RootOf(assembly));
-        Assert.NotSame(first.RootOf(assembly), second.RootOf(assembly));
-        Assert.IsType<ChildrenState.Unloaded>(second.PeekChildren(first.RootOf(assembly)));
+        Assert.Same(BrowseSessions.EnsureRoot(first, assembly), BrowseSessions.EnsureRoot(first, assembly));
+        Assert.NotSame(BrowseSessions.EnsureRoot(first, assembly), BrowseSessions.EnsureRoot(second, assembly));
+        Assert.IsType<ChildrenState.Unloaded>(BrowseSessions.PeekChildren(second, BrowseSessions.EnsureRoot(first, assembly)));
     }
 }

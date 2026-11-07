@@ -297,7 +297,7 @@ public static class Navigation
     /// shows, leads to, as <see cref="ShowMetadataTarget"/> does; nothing when it leads nowhere.</summary>
     public static void ShowMetadataLink(AppState appState, BrowseNode grid, MetadataAddress address, bool inNewTab)
     {
-        var target = appState.Session.FindMetadataRow(grid, address);
+        var target = BrowseSessions.FindMetadataRow(appState.Session, grid, address);
         if (target == null)
             return;
         ShowMetadataTarget(appState, target.Value, inNewTab);

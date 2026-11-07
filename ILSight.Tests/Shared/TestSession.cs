@@ -17,23 +17,29 @@ internal static class SessionQueries
 {
     extension(LoadedAssembly assembly)
     {
-        public BrowseNode Root => TestSession.Shared.RootOf(assembly);
+        public BrowseNode Root => BrowseSessions.EnsureRoot(TestSession.Shared, assembly);
 
-        public BrowseNode? FindNode(NodePath path) => TestSession.Shared.Find(assembly, path);
+        public BrowseNode? FindNode(NodePath path)
+        {
+            return BrowseSessions.FindNode(TestSession.Shared, assembly, path);
+        }
     }
 
     extension(BrowseNode node)
     {
         /// <summary>The children, built on this thread when nobody built them yet; none when they failed.</summary>
-        public IReadOnlyList<BrowseNode> Children => TestSession.Shared.ChildrenOf(node);
+        public IReadOnlyList<BrowseNode> Children => BrowseSessions.ListChildren(TestSession.Shared, node);
 
-        public bool HasChildren => TestSession.Shared.HasChildren(node);
+        public bool HasChildren => BrowseSessions.HasChildren(TestSession.Shared, node);
 
-        public ChildrenState ChildrenState => TestSession.Shared.PeekChildren(node);
+        public ChildrenState ChildrenState => BrowseSessions.PeekChildren(TestSession.Shared, node);
 
-        public void LoadChildren() => TestSession.Shared.LoadChildren(node);
+        public void LoadChildren()
+        {
+            BrowseSessions.LoadChildren(TestSession.Shared, node);
+        }
 
-        public IReadOnlyList<BrowseNode> InnerNamespaces => TestSession.Shared.InnerNamespaces(node);
+        public IReadOnlyList<BrowseNode> InnerNamespaces => BrowseSessions.ListInnerNamespaces(TestSession.Shared, node);
 
         /// <summary>What sort of type the node defines; fails the test when it defines none.</summary>
         public TypeShape TypeShape => Assert.IsType<NodeSubject.TypeDefinition>(node.Subject).Definition.Shape;

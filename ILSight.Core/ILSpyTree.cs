@@ -92,11 +92,11 @@ public static class ILSpyTree
         if (filePath == null) return null;
         var assembly = Load(list, filePath);
         if (assembly == null) return null;
-        BrowseNode node = session.RootOf(assembly);
+        BrowseNode node = BrowseSessions.EnsureRoot(session, assembly);
         for (var i = 1; i < path.Count; i++)
         {
             BrowseNode? next = null;
-            foreach (var child in session.ChildrenOf(node))
+            foreach (var child in BrowseSessions.ListChildren(session, node))
             {
                 if (NameOf(child) != path[i]) continue;
                 next = child;
@@ -120,7 +120,7 @@ public static class ILSpyTree
         if (entity == null || entity.FullName != memberName) return null;
         try
         {
-            return session.FindOrAncestor(assembly, entity.MetadataToken);
+            return BrowseSessions.FindOrAncestor(session, assembly, entity.MetadataToken);
         }
         catch (Exception e) when (e is ArgumentException or BadImageFormatException)
         {

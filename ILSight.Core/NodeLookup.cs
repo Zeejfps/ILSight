@@ -18,7 +18,7 @@ public static class NodeLookup
             var item = AssemblyListing.OpenListed(list, path.FilePath);
             if (item == null)
                 return null;
-            return session.Find(item, path);
+            return BrowseSessions.FindNode(session, item, path);
         }
         catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
@@ -36,7 +36,7 @@ public static class NodeLookup
             return null;
         try
         {
-            return session.Find(item, path);
+            return BrowseSessions.FindNode(session, item, path);
         }
         catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
@@ -56,8 +56,8 @@ public static class NodeLookup
             if (assembly is null)
                 return null;
             if (handle.Kind == HandleKind.AssemblyDefinition)
-                return session.RootOf(assembly);
-            return session.FindOrAncestor(assembly, handle);
+                return BrowseSessions.EnsureRoot(session, assembly);
+            return BrowseSessions.FindOrAncestor(session, assembly, handle);
         }
         catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
@@ -76,7 +76,7 @@ public static class NodeLookup
             var (assembly, handle) = AssemblyListing.ResolveListed(list, reference);
             if (assembly is null)
                 return null;
-            return session.FindMetadataRow(assembly, handle);
+            return BrowseSessions.FindMetadataRow(session, assembly, handle);
         }
         catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {
@@ -102,7 +102,7 @@ public static class NodeLookup
     {
         try
         {
-            return session.FindById(assembly, idString);
+            return BrowseSessions.FindById(session, assembly, idString);
         }
         catch (Exception e) when (AssemblyListing.IsUnreadable(e))
         {

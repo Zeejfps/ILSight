@@ -107,7 +107,7 @@ public sealed class PathIdentityTests : IDisposable
         var ns = Root(path).Child(Namespace);
         ns.LoadChildren();
 
-        var counterpart = TestSession.Shared.FindLoadedChildLike(ns, shape);
+        var counterpart = BrowseSessions.FindLoadedChildLike(TestSession.Shared, ns, shape);
 
         Assert.NotNull(counterpart);
         Assert.Equal(TypeShape.Record, counterpart.TypeShape);

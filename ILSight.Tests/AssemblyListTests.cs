@@ -323,4 +323,47 @@ public sealed class AssemblyListTests
         foreach (var group in opened.GroupBy(a => a.FilePath))
             Assert.All(group, a => Assert.Same(group.First(), a));
     }
+
+    [Fact]
+    public void What_takes_reading_is_read_once_whichever_thread_asks_first()
+    {
+        var assembly = new AssemblyList().OpenModule(Trees.TestAssemblyPath);
+
+        var read = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8)
+            .Select(_ => (TypeSystem: LoadedAssemblies.EnsureTypeSystem(assembly), Usage: LoadedAssemblies.EnsureReferenceUsage(assembly), Symbols: LoadedAssemblies.EnsureDebugSymbols(assembly)))
+            .ToList();
+
+        Assert.Single(read.Select(r => r.TypeSystem).Distinct());
+        Assert.Single(read.Select(r => r.Usage).Distinct());
+        Assert.Single(read.Select(r => r.Symbols).Distinct());
+    }
+
+    [Fact]
+    public void A_module_s_main_module_is_that_of_the_type_system_it_read()
+    {
+        var assembly = new AssemblyList().OpenModule(Trees.TestAssemblyPath);
+
+        var main = LoadedAssemblies.EnsureMainModule(assembly);
+
+        Assert.True(assembly.TypeSystem.IsValueCreated);
+        Assert.Same(assembly.TypeSystem.Value.MainModule, main);
+    }
+
+    [Fact]
+    public void Asking_a_package_made_some_other_way_for_its_assemblies_fails_loudly()
+    {
+        var bundle = new AssemblyList().Open(Trees.TestAssemblyPath);
+        var package = new LoadedPackage
+        {
+            List = bundle.List,
+            FilePath = bundle.FilePath,
+            Name = bundle.Name,
+            FullName = bundle.FullName,
+            Version = null,
+            NameAndVersion = bundle.Name,
+            Package = new AssemblyPackage { Files = [], Read = static _ => [], FilePath = bundle.FilePath, IsBundle = false, Root = new PackageFolder { Name = "", FullName = "" } },
+        };
+
+        Assert.Throws<InvalidOperationException>(() => LoadedAssemblies.EnsureAssemblies(package));
+    }
 }

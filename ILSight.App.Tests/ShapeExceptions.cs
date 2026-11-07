@@ -71,7 +71,6 @@ internal static class ShapeExceptions
     public static readonly string[] NotYetData =
     [
         "ILSight.ComparisonRows",
-        "ILSight.Core.BrowseSession",
     ];
 
     /// <summary>Constructors that take arguments, still to become object initializers or functions.</summary>

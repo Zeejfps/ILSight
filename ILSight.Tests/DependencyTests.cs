@@ -19,6 +19,12 @@ namespace ILSight.Tests;
 /// BrowseSession → BrowseNode → NodeSubject, LoadedModule (reading only)
 /// NodeDecompiler, MetadataGrid → domain data (LoadedModule, type system)
 /// </code>
+/// A type there holds data, so the functions that do what it means, <see cref="BrowseSessions"/>,
+/// <see cref="BrowseNodes"/>, <see cref="LoadedAssemblies"/> and <see cref="AssemblyListing"/>, are held to
+/// where their types stand:
+/// <code>
+/// BrowseSessions → BrowseNodes → LoadedAssemblies, AssemblyListing
+/// </code>
 /// </summary>
 public sealed class DependencyTests
 {
@@ -49,6 +55,19 @@ public sealed class DependencyTests
         [typeof(AssemblyList), typeof(BrowseSession)],
         [typeof(LoadedAssembly), typeof(AssemblyExport)],
         [typeof(LoadedModule), typeof(AssemblyExport)],
+        [typeof(BrowseSessions), typeof(NodeContentLoader)],
+        [typeof(BrowseSessions), typeof(NodeDecompiler)],
+        [typeof(BrowseNodes), typeof(BrowseSession)],
+        [typeof(BrowseNodes), typeof(BrowseSessions)],
+        [typeof(BrowseNodes), typeof(NodeContentLoader)],
+        [typeof(BrowseNodes), typeof(NodeDecompiler)],
+        [typeof(LoadedAssemblies), typeof(BrowseNode)],
+        [typeof(LoadedAssemblies), typeof(BrowseNodes)],
+        [typeof(LoadedAssemblies), typeof(BrowseSession)],
+        [typeof(LoadedAssemblies), typeof(AssemblyExport)],
+        [typeof(AssemblyListing), typeof(BrowseNode)],
+        [typeof(AssemblyListing), typeof(BrowseNodes)],
+        [typeof(AssemblyListing), typeof(BrowseSession)],
     ];
 
     [Theory]

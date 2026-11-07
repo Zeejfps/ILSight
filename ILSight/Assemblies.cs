@@ -40,7 +40,7 @@ public static class Assemblies
         {
             case Outcome<LoadedAssembly?>.Ok ok when ok.Value != null:
                 if (!appState.Intent.IsStale(ticket))
-                    ShowNode(appState, appState.Session.RootOf(ok.Value));
+                    ShowNode(appState, BrowseSessions.EnsureRoot(appState.Session, ok.Value));
                 break;
             case Outcome<LoadedAssembly?>.Ok:
                 break;
@@ -208,9 +208,9 @@ public static class Assemblies
     private static Reopened ReadAgain(AssemblyList assemblies, BrowseSession session, LoadedAssembly item, List<NodePath> places)
     {
         var fresh = AssemblyListing.ReadAgain(assemblies, item);
-        LoadAsLoaded(session, session.RootOf(item), session.RootOf(fresh));
+        LoadAsLoaded(session, BrowseSessions.EnsureRoot(session, item), BrowseSessions.EnsureRoot(session, fresh));
         var placeNodes = places
-            .Select(p => session.Find(fresh, p))
+            .Select(p => BrowseSessions.FindNode(session, fresh, p))
             .ToArray();
         return new Reopened(fresh, placeNodes);
     }
@@ -220,12 +220,12 @@ public static class Assemblies
     /// the old ones.</summary>
     private static void LoadAsLoaded(BrowseSession session, BrowseNode old, BrowseNode fresh)
     {
-        if (session.PeekChildren(old) is not ChildrenState.Ready loaded)
+        if (BrowseSessions.PeekChildren(session, old) is not ChildrenState.Ready loaded)
             return;
-        session.LoadChildren(fresh);
+        BrowseSessions.LoadChildren(session, fresh);
         foreach (var child in loaded.Children)
         {
-            var counterpart = session.FindLoadedChildLike(fresh, child);
+            var counterpart = BrowseSessions.FindLoadedChildLike(session, fresh, child);
             if (counterpart != null)
                 LoadAsLoaded(session, child, counterpart);
         }
@@ -365,7 +365,7 @@ public static class Assemblies
             var node = NodeLookup.Find(assemblies, session, path);
             if (node == null)
                 continue;
-            session.LoadChildren(node);
+            BrowseSessions.LoadChildren(session, node);
             nodes.Add(node);
         }
         return nodes;

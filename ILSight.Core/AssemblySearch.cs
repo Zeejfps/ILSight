@@ -298,7 +298,7 @@ public static class AssemblySearch
 
         private static void ScanResources(Search search, LoadedModule assembly)
         {
-            foreach (var child in search.Session.ChildrenOf(search.Session.RootOf(assembly)))
+            foreach (var child in BrowseSessions.ListChildren(search.Session, BrowseSessions.EnsureRoot(search.Session, assembly)))
             {
                 if (child.Subject is NodeSubject.Resources)
                     ScanResources(search, child);
@@ -307,12 +307,12 @@ public static class AssemblySearch
 
         private static void ScanResources(Search search, BrowseNode parent)
         {
-            foreach (var node in search.Session.ChildrenOf(parent))
+            foreach (var node in BrowseSessions.ListChildren(search.Session, parent))
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
                 if (SearchQueries.IsMatch(search.Query, node.Text))
                     AddResult(search, node, parent.Subject is NodeSubject.ResourceContainer ? parent.Text : "");
-                if (search.Session.HasChildren(node))
+                if (BrowseSessions.HasChildren(search.Session, node))
                     ScanResources(search, node);
             }
         }
@@ -326,12 +326,12 @@ public static class AssemblySearch
                 _ => SearchQueries.IsMatch(search.Query, assembly.Name) || SearchQueries.IsMatch(search.Query, assembly.FilePath.FileName),
             };
             if (matches)
-                AddResult(search, search.Session.RootOf(assembly), assembly.FilePath.Text);
+                AddResult(search, BrowseSessions.EnsureRoot(search.Session, assembly), assembly.FilePath.Text);
         }
 
         private static void ScanNamespaces(Search search, LoadedModule assembly)
         {
-            foreach (var node in search.Session.ChildrenOf(search.Session.RootOf(assembly)))
+            foreach (var node in BrowseSessions.ListChildren(search.Session, BrowseSessions.EnsureRoot(search.Session, assembly)))
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
                 if (IsNamespaceFound(search, node))
@@ -366,7 +366,7 @@ public static class AssemblySearch
             BrowseNode? node;
             try
             {
-                node = search.Session.FindOrAncestor(assembly, handle);
+                node = BrowseSessions.FindOrAncestor(search.Session, assembly, handle);
             }
             catch (Exception e) when (e is BadImageFormatException or InvalidOperationException)
             {
@@ -392,7 +392,7 @@ public static class AssemblySearch
         {
             try
             {
-                return search.Session.Find(assembly, handle);
+                return BrowseSessions.FindNode(search.Session, assembly, handle);
             }
             catch (Exception e) when (e is BadImageFormatException or InvalidOperationException)
             {
