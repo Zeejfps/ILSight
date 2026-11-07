@@ -51,6 +51,22 @@ public sealed class ArchitectureTests
         AssertMatches(ShapeExceptions.AllowedStatics.Keys, found);
     }
 
+    [Fact]
+    public void No_constructor_takes_arguments_unless_it_is_listed()
+    {
+        var found = ListDeclaredTypes().Where(TakesConstructorArguments).Select(GetName).ToHashSet();
+
+        AssertMatches(ShapeExceptions.ConstructorsLeft, found);
+    }
+
+    [Fact]
+    public void No_function_is_an_extension_unless_it_is_listed()
+    {
+        var found = ListDeclaredTypes().SelectMany(ListExtensions).ToHashSet();
+
+        AssertMatches(ShapeExceptions.ExtensionsLeft, found);
+    }
+
     private static void AssertMatches(IEnumerable<string> listed, HashSet<string> found)
     {
         var expected = listed.ToHashSet();
@@ -84,6 +100,27 @@ public sealed class ArchitectureTests
     {
         var union = method.DeclaringType!;
         return method.IsStatic && method.ReturnType == union && ShapeExceptions.StructUnions.Contains(GetName(union));
+    }
+
+    /// <summary>Whether something outside a type can build it only by handing a constructor arguments. A
+    /// positional record's declaration is data and a seam's constructor is demanded of it, and a private one
+    /// is the lock on a validated type or a union.</summary>
+    private static bool TakesConstructorArguments(Type type)
+    {
+        if (IsRecord(type) || type.IsEnum || type.IsSubclassOf(typeof(Delegate))) return false;
+        if (ShapeExceptions.Seams.ContainsKey(GetName(type))) return false;
+        if (ShapeExceptions.SelfContained.Contains(GetName(type))) return false;
+        return type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            .Any(static constructor => !constructor.IsPrivate && constructor.GetParameters().Length > 0);
+    }
+
+    private static IEnumerable<string> ListExtensions(Type type)
+    {
+        foreach (var method in type.GetMethods(Declared | BindingFlags.Static))
+        {
+            if (method.IsDefined(typeof(ExtensionAttribute), false))
+                yield return $"{GetName(type)}.{method.Name}";
+        }
     }
 
     private static bool IsSelfContained(Type type)

@@ -6,8 +6,8 @@ what the data is, and a function says what is done to it.
 
 ### 1. Types are data
 
-A type holds fields and properties computed from them, which change nothing but may keep a memo of their own
-answer. It has no methods. Use the
+A type holds fields and properties computed from them, which do no real work and change nothing. It has no
+methods. Use the
 plainest keyword that does the job:
 
 - `sealed class`: state that changes or has an identity.
@@ -16,12 +16,22 @@ plainest keyword that does the job:
 
 The only other code a type may hold:
 
-- a constructor that validates (rule 6) or wires up the type's own parts;
-- `const`s, and `static readonly` instances of itself, such as `Empty` or `Default`;
-- overrides of `object`'s members: equality, where comparing by value needs it, and `ToString`;
+- a private constructor that only assigns, to stop a union or a validated type being built any other way;
+- `const`s, and `static readonly` instances of itself, such as `Empty` or `Default`, as long as they can't
+  change;
+- equality members, where comparing by value needs them;
+- a `ToString` that is a one-liner over its own fields;
 - a method an external interface demands, forwarding to a static function;
 - the methods of a self-contained type (rule 9);
 - the per-case functions of a struct union (rule 2).
+
+**Constructors hold no logic.** A type is built with an object initializer, or by a static `Create` or `Parse`
+function, and parts it must have are `required`. On a plain class, `init` can't change later, and `with` doesn't
+apply. A positional record's declaration counts as data.
+
+**A value that may not be loaded is typed `Lazy<T>`**, and a function named `Ensure...` hands back the loaded
+`T`. Functions that need it take `T`, so the type says whether it's loaded. A memo of a plain computation is a
+public field filled by a function.
 
 ### 2. Prefer unions
 
@@ -76,20 +86,21 @@ public static void Rename<T>(T item, string title) where T : IHasTitle
 Passing the values is simpler. Use a projection when a function writes back or needs too many to list.
 
 Where something takes a callback, hand it a lambda over the static function: `problem => Errors.Report(state,
-problem)`. On a hot path, build it once rather than per call.
+problem)`.
 
 ### 4. Functions are static and grouped by feature
 
 - A function is `static`, in a `static class` named for the feature, not the type: `Orders`, not
   `OrderExtensions`.
 - It takes everything it works on as parameters. Anything else it needs is a bug in its signature.
-- Call it by its feature, `Orders.Ship(order, address)`, without extension syntax.
+- Call it by its feature or with `using static`, never extension syntax.
 
 **Names are verbs:** `GetTotal`, not `Total` or `TotalOf`; `CreateOrder`, not `Order`.
 
+- `Get` is cheap, `Find` searches, and `Ensure` may do real work the first time.
 - A question uses `Is`, `Has` or `Can`.
 - A function in a field counts too: `Read`, not `Reader`.
-- Don't repeat the feature: `Orders.Ship`, not `Orders.ShipOrder`.
+- Name it to read clearly on its own: `RenderCodeView(ui, ...)`.
 - A delegate type stays a noun, and a struct union's case function is named for the case.
 
 ### 5. Functions return a result, or nothing if they can't go wrong
@@ -109,9 +120,9 @@ only while the caller remembers a rule.
   trusted for a reason.
 - **Give every identifier and unit its own type.** `UserId` and `OrgId` as bare strings swap silently, and so do
   `Millis` and `Seconds`. A one-field `readonly record struct` costs nothing at runtime.
-- **Invariants are enforced.** A type with one validates in its constructor and keeps those fields get-only,
-  with no `init`, because `with` skips the constructor. A value that must change and stay valid gets a type of
-  its own (rule 9).
+- **Invariants are enforced.** A type with one has a private constructor, a static function that validates, and
+  get-only fields with no `init`, because `with` skips the constructor. A value that must change and stay valid
+  gets a type of its own (rule 9).
 - **Avoid the escape hatches, which are where checking stops:** unchecked casts, `!`, `dynamic`, suppressed
   warnings, reflection by string name, and catch-all `catch`. If you must use one, isolate it in the smallest
   function you can, make that function total, justify it in a comment, and flag it when handing back the code.
@@ -203,15 +214,15 @@ Frameworks, libraries, submodules and the BCL don't fit this, and we don't refac
 behind a seam:
 
 - A class has behaviour only because an external type demands it, and says so in its first line.
-- It holds no logic, and forwards to a static function.
+- It holds no logic, and forwards to a static function. A constructor an external base class demands stays.
 - External types stay in the seam where they reasonably can. Where one is the real domain object, pass it
   through.
 
 ## Checked by
 
 Encode boundaries as tests, so that a violation fails the build rather than waiting on review. An architecture
-test fails on any behaviour interface, any type with methods that isn't on its list of
-exceptions, and static state, and each exception says why it's there. A stale entry fails too, so the list only
+test fails on any behaviour interface, any type with methods, constructor arguments or extension functions
+that isn't on its list of exceptions, and static state, and each exception says why it's there. A stale entry fails too, so the list only
 shrinks, and a new one has to be argued on. A self-contained type is checked to name only the BCL and other
 such types.
 
