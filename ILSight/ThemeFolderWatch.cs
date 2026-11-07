@@ -1,4 +1,4 @@
-using System.ComponentModel;
+using ILSight.Core;
 
 namespace ILSight;
 
@@ -29,9 +29,8 @@ public sealed class ThemeFolderWatch
 {
     public const string ThemeFilter = "*" + ThemeFile.Extension;
 
-    public readonly Lock Gate = new();
-    public FileSystemWatcher? Watcher;
-    public FileSystemWatcher? RemovalWatcher;
+    /// <summary>What the file system's threads and the UI thread share, reachable only holding its lock.</summary>
+    public Guarded<Shared> Held { get; } = new(new Shared());
 
     /// <summary>The files watched, such as <c>*.json</c>.</summary>
     public required IReadOnlyList<string> Filters { get; init; }
@@ -39,8 +38,14 @@ public sealed class ThemeFolderWatch
     /// <summary>Whether the folders inside the folder are watched too.</summary>
     public required bool IncludesSubfolders { get; init; }
 
-    public Timer? Quiet;
-    public TaskCompletionSource<ThemeFolderEvent>? Waiter;
-    public bool IsChangePending;
-    public string? PendingLoss;
+    /// <summary>What is watching, who waits to be told, and what happened while no one did.</summary>
+    public sealed class Shared
+    {
+        public FileSystemWatcher? Watcher;
+        public FileSystemWatcher? RemovalWatcher;
+        public Timer? Quiet;
+        public TaskCompletionSource<ThemeFolderEvent>? Waiter;
+        public bool IsChangePending;
+        public string? PendingLoss;
+    }
 }

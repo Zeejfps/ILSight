@@ -976,11 +976,12 @@ public static class Theming
         watcher.Renamed += (sender, e) => OnChanged(watch, sender, e);
         watcher.Error += (sender, e) => OnError(watch, sender, e);
         var removalWatcher = WatchRemoval(watch, watcher);
-        lock (watch.Gate)
+        using (var held = watch.Held.Enter())
         {
-            watch.Quiet = quiet;
-            watch.Watcher = watcher;
-            watch.RemovalWatcher = removalWatcher;
+            var shared = held.Value;
+            shared.Quiet = quiet;
+            shared.Watcher = watcher;
+            shared.RemovalWatcher = removalWatcher;
         }
         watcher.EnableRaisingEvents = true;
         if (removalWatcher != null)
@@ -1028,29 +1029,28 @@ public static class Theming
     /// pending, or as stopped when watching stops first or is not running.</summary>
     public static Task<ThemeFolderEvent> FindNextChange(ThemeFolderWatch watch)
     {
-        lock (watch.Gate)
-        {
-            var loss = watch.PendingLoss;
-            if (loss != null)
-                return TakePendingLoss(watch, loss);
-            if (watch.Watcher == null)
-                return Stopped;
-            if (watch.IsChangePending)
-                return TakePendingChange(watch);
-            watch.Waiter ??= new TaskCompletionSource<ThemeFolderEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
-            return watch.Waiter.Task;
-        }
+        using var held = watch.Held.Enter();
+        var shared = held.Value;
+        var loss = shared.PendingLoss;
+        if (loss != null)
+            return TakePendingLoss(shared, loss);
+        if (shared.Watcher == null)
+            return Stopped;
+        if (shared.IsChangePending)
+            return TakePendingChange(shared);
+        shared.Waiter ??= new TaskCompletionSource<ThemeFolderEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
+        return shared.Waiter.Task;
     }
 
-    private static Task<ThemeFolderEvent> TakePendingLoss(ThemeFolderWatch watch, string loss)
+    private static Task<ThemeFolderEvent> TakePendingLoss(ThemeFolderWatch.Shared shared, string loss)
     {
-        watch.PendingLoss = null;
+        shared.PendingLoss = null;
         return Task.FromResult(new ThemeFolderEvent(ThemeFolderEventKind.Lost, loss));
     }
 
-    private static Task<ThemeFolderEvent> TakePendingChange(ThemeFolderWatch watch)
+    private static Task<ThemeFolderEvent> TakePendingChange(ThemeFolderWatch.Shared shared)
     {
-        watch.IsChangePending = false;
+        shared.IsChangePending = false;
         return Changed;
     }
 
@@ -1070,20 +1070,21 @@ public static class Theming
         FileSystemWatcher? removalWatcher;
         Timer? quiet;
         TaskCompletionSource<ThemeFolderEvent>? waiter;
-        lock (watch.Gate)
+        using (var held = watch.Held.Enter())
         {
-            if (IsWatchReplaced(watch, lost))
+            var shared = held.Value;
+            if (IsWatchReplaced(shared, lost))
                 return null;
-            watcher = watch.Watcher;
-            removalWatcher = watch.RemovalWatcher;
-            quiet = watch.Quiet;
-            waiter = watch.Waiter;
-            watch.Watcher = null;
-            watch.RemovalWatcher = null;
-            watch.Quiet = null;
-            watch.Waiter = null;
-            watch.IsChangePending = false;
-            watch.PendingLoss = waiter == null ? loss : null;
+            watcher = shared.Watcher;
+            removalWatcher = shared.RemovalWatcher;
+            quiet = shared.Quiet;
+            waiter = shared.Waiter;
+            shared.Watcher = null;
+            shared.RemovalWatcher = null;
+            shared.Quiet = null;
+            shared.Waiter = null;
+            shared.IsChangePending = false;
+            shared.PendingLoss = waiter == null ? loss : null;
         }
         watcher?.Dispose();
         removalWatcher?.Dispose();
@@ -1124,31 +1125,32 @@ public static class Theming
         waiter?.TrySetResult(new ThemeFolderEvent(ThemeFolderEventKind.Lost, reason));
     }
 
-    private static bool IsWatchReplaced(ThemeFolderWatch watch, FileSystemWatcher? lost)
+    private static bool IsWatchReplaced(ThemeFolderWatch.Shared shared, FileSystemWatcher? lost)
     {
         if (lost == null)
             return false;
-        return !ReferenceEquals(lost, watch.Watcher);
+        return !ReferenceEquals(lost, shared.Watcher);
     }
 
     private static void WaitForQuiet(ThemeFolderWatch watch)
     {
-        lock (watch.Gate)
-            watch.Quiet?.Change(QuietMilliseconds, Timeout.Infinite);
+        using var held = watch.Held.Enter();
+        held.Value.Quiet?.Change(QuietMilliseconds, Timeout.Infinite);
     }
 
     /// <summary>Hands the settled change to whoever waits for it, else keeps it pending.</summary>
     private static void OnQuiet(ThemeFolderWatch watch, object? state)
     {
         TaskCompletionSource<ThemeFolderEvent>? waiter;
-        lock (watch.Gate)
+        using (var held = watch.Held.Enter())
         {
-            if (watch.Watcher == null)
+            var shared = held.Value;
+            if (shared.Watcher == null)
                 return;
-            waiter = watch.Waiter;
-            watch.Waiter = null;
+            waiter = shared.Waiter;
+            shared.Waiter = null;
             if (waiter == null)
-                watch.IsChangePending = true;
+                shared.IsChangePending = true;
         }
         waiter?.TrySetResult(new ThemeFolderEvent(ThemeFolderEventKind.Changed));
     }
