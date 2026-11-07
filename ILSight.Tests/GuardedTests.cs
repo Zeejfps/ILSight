@@ -112,6 +112,78 @@ public sealed class GuardedTests
         Assert.Equal(threads * rounds, total.Value);
     }
 
+    [Fact]
+    public void A_snapshot_can_be_read_while_another_thread_holds_the_lock()
+    {
+        var guarded = new Guarded<int, string>(0, "first");
+        using var entered = new ManualResetEventSlim();
+        using var done = new ManualResetEventSlim();
+        var thread = new Thread(() =>
+        {
+            using var held = guarded.Enter();
+            held.Snapshot = "second";
+            entered.Set();
+            done.Wait();
+        }) { IsBackground = true };
+        thread.Start();
+
+        Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
+        Assert.Equal("second", guarded.Snapshot);
+        done.Set();
+        thread.Join();
+    }
+
+    [Fact]
+    public void A_scope_of_a_snapshot_made_by_default_reaches_nothing()
+    {
+        Assert.Throws<InvalidOperationException>(static () =>
+        {
+            var held = default(Guarded<int, string>.Scope);
+            return held.Snapshot;
+        });
+        Assert.Throws<InvalidOperationException>(static () =>
+        {
+            var held = default(Guarded<int, string>.Scope);
+            return held.Value;
+        });
+
+        var nothing = default(Guarded<int, string>.Scope);
+        nothing.Dispose();
+    }
+
+    [Fact]
+    public void Threads_changing_the_value_and_snapshot_keep_them_in_step_for_readers()
+    {
+        const int threads = 4;
+        const int rounds = 20_000;
+        var guarded = new Guarded<int, Tuple<int, int>>(0, Tuple.Create(0, 0));
+        using var stop = new CancellationTokenSource();
+        var reader = Task.Run(() =>
+        {
+            while (!stop.IsCancellationRequested)
+            {
+                var seen = guarded.Snapshot;
+                Assert.Equal(seen.Item1, seen.Item2);
+            }
+        });
+
+        Parallel.For(0, threads, new ParallelOptions { MaxDegreeOfParallelism = threads }, _ =>
+        {
+            for (var round = 0; round < rounds; round++)
+            {
+                using var held = guarded.Enter();
+                held.Value++;
+                held.Snapshot = Tuple.Create(held.Value, held.Value);
+            }
+        });
+        stop.Cancel();
+        reader.GetAwaiter().GetResult();
+
+        Assert.Equal(threads * rounds, guarded.Snapshot.Item1);
+        using var total = guarded.Enter();
+        Assert.Equal(threads * rounds, total.Value);
+    }
+
     /// <summary>Whether a thread other than this one gets in within a moment.</summary>
     private static bool IsFreeFromAnotherThread(Guarded<int> guarded)
     {
