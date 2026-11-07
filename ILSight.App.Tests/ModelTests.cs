@@ -863,4 +863,46 @@ public sealed class FrameworkPickerTests
 
         Assert.Equal([other], picker.Filtered);
     }
+
+    [Fact]
+    public void Only_an_open_tab_can_be_active_or_the_preview()
+    {
+        var tabs = new DocumentTabs();
+        var closed = new DocumentTab();
+
+        Assert.Throws<InvalidOperationException>(() => Tabs.MakeActive(tabs, closed));
+        Assert.Throws<InvalidOperationException>(() => Tabs.MakePreview(tabs, closed));
+    }
+
+    [Fact]
+    public void Closing_a_tab_stops_it_being_active_or_the_preview_and_counts_on_upward()
+    {
+        var tabs = new DocumentTabs();
+        var tab = Tabs.AddNew(tabs);
+        Tabs.MakeActive(tabs, tab);
+        Tabs.MakePreview(tabs, tab);
+        var before = tabs.Changes;
+
+        Tabs.Remove(tabs, tab);
+
+        Assert.Null(tabs.Active);
+        Assert.Null(tabs.Preview);
+        Assert.True(tabs.Changes > before);
+    }
+
+    [Fact]
+    public void Showing_hidden_members_counts_as_a_change_only_when_it_is_one()
+    {
+        var view = new DiagramViewState();
+        var before = view.Changes;
+
+        Diagrams.ShowHiddenMembers(view, false);
+        var unchanged = view.Changes;
+        Diagrams.ShowHiddenMembers(view, true);
+        Diagrams.ShowHiddenMembers(view, true);
+
+        Assert.Equal(before, unchanged);
+        Assert.Equal(before + 1, view.Changes);
+        Assert.True(view.ShowsHiddenMembers);
+    }
 }

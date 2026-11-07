@@ -61,4 +61,18 @@ public sealed class BrowseSessionTests : IDisposable
         Assert.NotSame(BrowseSessions.EnsureRoot(first, assembly), BrowseSessions.EnsureRoot(second, assembly));
         Assert.IsType<ChildrenState.Unloaded>(BrowseSessions.PeekChildren(second, BrowseSessions.EnsureRoot(first, assembly)));
     }
+
+    [Fact]
+    public void A_node_keeps_the_path_and_segment_it_worked_out()
+    {
+        var node = Trees.TestAssembly.Calculator();
+
+        var path = BrowseNodes.GetPath(node);
+        var segment = BrowseNodes.GetSegment(node);
+
+        Assert.Same(path, node.PathMemo);
+        Assert.Same(segment, node.SegmentMemo);
+        Assert.Same(path, BrowseNodes.GetPath(node));
+        Assert.Same(segment, BrowseNodes.GetSegment(node));
+    }
 }

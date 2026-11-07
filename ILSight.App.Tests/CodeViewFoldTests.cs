@@ -220,4 +220,29 @@ public sealed class CodeViewFoldTests
         Assert.True(CodeViewWidget.IsCollapsed(view.State, view.Document.FoldIndexAt("using System.Collections.Generic;")));
         Assert.False(CodeViewWidget.IsCollapsed(view.State, view.Document.FoldIndexAt("public int First()")));
     }
+
+    [Fact]
+    public void The_rows_follow_what_is_collapsed_through_each_function_that_changes_it()
+    {
+        var document = CodeViewDriver.Outline();
+        var folds = new CodeFolds();
+        CodeFolding.Reset(folds, document);
+        var fold = document.Folds[0];
+
+        CodeFolding.SetAll(folds, false);
+        var allRows = folds.RowCount;
+        var anyAfterExpanding = folds.AnyCollapsed;
+        CodeFolding.SetCollapsed(folds, 0, true);
+        var collapsedRows = folds.RowCount;
+        var shownFor = CodeFolding.FindVisibleLine(folds, fold.EndLine);
+        var revealed = CodeFolding.Reveal(folds, fold.EndLine);
+
+        Assert.False(anyAfterExpanding);
+        Assert.Equal(document.Lines.Length, allRows);
+        Assert.Equal(document.Lines.Length - (fold.EndLine - fold.StartLine), collapsedRows);
+        Assert.Equal(fold.StartLine, shownFor);
+        Assert.True(revealed);
+        Assert.Equal(allRows, folds.RowCount);
+        Assert.False(folds.AnyCollapsed);
+    }
 }
