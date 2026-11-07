@@ -11,5 +11,5 @@ public sealed class PackageIcons
     public const int MaxFetches = 4;
 
     public required HttpClient Client { get; init; }
-    public readonly SemaphoreSlim Fetches = new(MaxFetches, MaxFetches);
+    internal readonly SemaphoreSlim Fetches = new(MaxFetches, MaxFetches);
 }

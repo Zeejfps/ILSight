@@ -26,7 +26,7 @@ public sealed class AssemblyList
     /// <summary>What was read, by path, reachable only holding the lock: assemblies, packages and the
     /// assemblies read out of packages. Beside it the <see cref="Listing"/>, read without the lock and
     /// replaced only holding it. Hold it only through <see cref="AssemblyListing"/>, and never while reading files.</summary>
-    public Guarded<Dictionary<AssemblyPath, LoadedAssembly>, Listing> State { get; } = new(new Dictionary<AssemblyPath, LoadedAssembly>(), Listing.Empty);
+    internal Guarded<Dictionary<AssemblyPath, LoadedAssembly>, Listing> State { get; } = new(new Dictionary<AssemblyPath, LoadedAssembly>(), Listing.Empty);
 
     /// <summary>The list as of now, all of one moment.</summary>
     internal Listing Now => State.Snapshot;
@@ -71,7 +71,7 @@ public sealed class AssemblyList
 
     /// <summary>What the list holds at a moment, replaced whole, so that no reader sees one part of a
     /// change without the rest.</summary>
-    public sealed record Listing(ImmutableArray<LoadedAssembly> Listed, ImmutableArray<LoadedModule> Loaded, int Version, int Generation, LoadOptions ReadOptions)
+    internal sealed record Listing(ImmutableArray<LoadedAssembly> Listed, ImmutableArray<LoadedModule> Loaded, int Version, int Generation, LoadOptions ReadOptions)
     {
         public static Listing Empty { get; } = new(ImmutableArray<LoadedAssembly>.Empty, ImmutableArray<LoadedModule>.Empty, 0, 0, LoadOptions.Default);
     }

@@ -44,7 +44,7 @@ public sealed class BrowseSession
     public readonly ConditionalWeakTable<LoadedModule, ConcurrentDictionary<EntityHandle, BrowseNode>> Index = new();
 
     /// <summary>Where each node's children stand, which can only be read or changed holding its lock.</summary>
-    public readonly ConditionalWeakTable<BrowseNode, Guarded<ChildrenState>> Children = new();
+    internal readonly ConditionalWeakTable<BrowseNode, Guarded<ChildrenState>> Children = new();
 }
 
 /// <summary>Building and finding the nodes of a <see cref="BrowseSession"/>. All of this is thread-safe, and it is

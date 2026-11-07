@@ -285,6 +285,38 @@ public sealed class NuGetFeedTests
     }
 
     [Fact]
+    public async Task A_service_index_that_failed_to_read_is_read_again_by_the_next_call()
+    {
+        var fake = new FakeFeed();
+        fake.AnswerSearches(TwoPackages);
+        fake.Answer(FakeFeed.IndexUrl, """{ "version": "3.0.0", "resources": [] }""");
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
+        await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.SearchAsync(feed, "a", includePrerelease: false));
+
+        fake.AnswerIndexAt(FakeFeed.IndexUrl);
+        await NuGetFeeds.SearchAsync(feed, "b", includePrerelease: false);
+
+        Assert.Equal(2, fake.Requested.Count(static url => url == FakeFeed.IndexUrl));
+    }
+
+    [Fact]
+    public async Task A_read_of_the_service_index_cancelled_midway_leaves_it_for_the_next_call()
+    {
+        var fake = new FakeFeed { Holds = true };
+        fake.AnswerSearches(TwoPackages);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
+        using var cancellation = new CancellationTokenSource();
+        var cancelled = NuGetFeeds.SearchAsync(feed, "a", includePrerelease: false, cancellationToken: cancellation.Token);
+        cancellation.CancelAfter(TimeSpan.FromMilliseconds(20));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelled);
+
+        fake.Holds = false;
+        await NuGetFeeds.SearchAsync(feed, "b", includePrerelease: false);
+
+        Assert.Equal(2, fake.Requested.Count(static url => url == FakeFeed.IndexUrl));
+    }
+
+    [Fact]
     public async Task A_feed_whose_index_names_no_search_cannot_be_searched()
     {
         var fake = new FakeFeed();

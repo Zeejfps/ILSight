@@ -306,6 +306,28 @@ public sealed class AssemblyListTests
     }
 
     [Fact]
+    public async Task A_reader_sees_what_is_listed_and_what_loaded_of_one_moment()
+    {
+        var list = new AssemblyList();
+        using var stop = new CancellationTokenSource();
+        var reader = Task.Run(() =>
+        {
+            while (!stop.IsCancellationRequested)
+            {
+                var now = list.Now;
+                Assert.Equal(now.Listed.Length, now.Loaded.Length);
+            }
+        });
+
+        for (var round = 0; round < 30; round++)
+            AssemblyListing.CloseAssembly(list, list.Open(Trees.TestAssemblyPath));
+        stop.Cancel();
+
+        await reader;
+        Assert.Empty(list.Listed);
+    }
+
+    [Fact]
     public async Task Concurrent_opens_and_reads_agree_on_one_assembly_per_file()
     {
         var list = new AssemblyList();

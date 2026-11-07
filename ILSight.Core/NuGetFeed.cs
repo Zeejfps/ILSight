@@ -24,7 +24,7 @@ public sealed class NuGetFeed
 
     /// <summary>The service index, once it is read, which one call at a time reads; a failed read leaves it
     /// unread for the next. <see cref="NuGetFeeds.EnsureIndexAsync"/> hands it back.</summary>
-    public AsyncGuarded<ServiceIndex?> Index { get; } = new(null);
+    internal AsyncGuarded<ServiceIndex?> Index { get; } = new(null);
 
     public required NuGetSource Source { get; init; }
 
