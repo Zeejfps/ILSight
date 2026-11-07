@@ -408,7 +408,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var path = _temp.Write("settings.json", $$"""{ "Theme": "{{saved}}" }""");
 
-        Assert.Equal(id, AppSettings.Load(path).Settings.Theme.Text);
+        Assert.Equal(id, SettingsJson.LoadSettings(path).Settings.Theme.Text);
     }
 
     [Theory]
@@ -420,7 +420,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var path = _temp.Write("settings.json", $$"""{ "Theme": "{{saved}}" }""");
 
-        Assert.Equal("dark", AppSettings.Load(path).Settings.Theme.Text);
+        Assert.Equal("dark", SettingsJson.LoadSettings(path).Settings.Theme.Text);
     }
 
     [Fact]
@@ -428,7 +428,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var path = _temp.Write("settings.json", """{ "Theme": null }""");
 
-        Assert.Equal("dark", AppSettings.Load(path).Settings.Theme.Text);
+        Assert.Equal("dark", SettingsJson.LoadSettings(path).Settings.Theme.Text);
     }
 
     [Fact]

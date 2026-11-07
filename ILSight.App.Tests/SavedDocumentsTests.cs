@@ -398,7 +398,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var settings = _temp.Settings();
         List<DocumentRecord> tabs = [HandTab("document-1", "First"), HandTab("document-1", "Twin"), HandTab(DockPanels.Assemblies, "Tree")];
         settings.AssemblyLists.Add(new AssemblyListRecord("Hand", [], Documents: new DocumentsRecord(tabs, null, null, null)));
-        settings.Save();
+        SettingsJson.SaveSettings(settings);
 
         var kept = _temp.Settings().AssemblyLists.Single(static l => l.Name == "Hand").Documents!.Tabs;
 

@@ -65,7 +65,7 @@ internal static class NuGetDetailsView
         var theme = ui.Theme;
         using (ui.Id(package.Id.Text))
         {
-            var details = picker.Version != null ? picker.DetailsOf(package, picker.Version) : null;
+            var details = picker.Version != null ? NuGetPicking.EnsureDetails(picker, package, picker.Version) : null;
             using (ui.Column(new Box { Width = Sizing.Grow(), Padding = theme.ShellPaddingX, Gap = theme.Gap }))
             {
                 Header(ui, picker, package);
@@ -157,7 +157,7 @@ internal static class NuGetDetailsView
                 break;
             case VersionDetails.Failed:
                 if (ui.Button(ui.State.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Version != null)
-                    picker.RetryDetails(package, picker.Version);
+                    NuGetPicking.RetryDetails(picker, package, picker.Version);
                 break;
             default:
                 throw new UnreachableException();

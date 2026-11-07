@@ -119,7 +119,7 @@ internal static class NodeIconQueries
 
 internal static class TempSettings
 {
-    public static AppSettings Settings(this TempDir temp) => AppSettings.Load(temp.PathOf("settings.json")).Settings;
+    public static AppSettings Settings(this TempDir temp) => SettingsJson.LoadSettings(temp.PathOf("settings.json")).Settings;
 }
 
 internal static class Screens
@@ -276,7 +276,7 @@ internal sealed class AppStateDriver
     public void Analyze(CodeReference.Navigable reference) => AnalyzerPanelView.Analyze(Ui, AppState, reference);
 
     /// <summary>Opens the export dialog on the open assemblies, with <paramref name="picked"/> ticked.</summary>
-    public void OpenExportSetup(LoadedModule? picked) => Ui.ExportSetup.Open(AppState.Assemblies.Assemblies, picked);
+    public void OpenExportSetup(LoadedModule? picked) => Exports.OpenExportSetup(Ui.ExportSetup, AppState.Assemblies.Assemblies, picked);
 }
 
 /// <summary>Renders the whole app window frame by frame over a <see cref="AppStateDriver"/>, which

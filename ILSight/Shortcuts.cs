@@ -87,7 +87,7 @@ internal static class Shortcuts
         new(Forward, static (ui, _) => ui.State.Later(static a => GoForward(a)), WhileTyping: true),
         new(Open, static (ui, _) => MainMenuView.OpenFile(ui)),
         new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language)),
-        new(Export, static (ui, appState) => ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs))),
+        new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs))),
         new(ReloadAll, static (ui, _) => ui.State.Later(ui.State.Tree.ExpandedPaths(), static (a, expanded) => RefreshAssemblies(a, expanded))),
         new(CloseTab, static (ui, _) => CloseActiveTab(ui.State)),
         new(NextTab, static (ui, _) => CycleTab(ui.State, 1)),

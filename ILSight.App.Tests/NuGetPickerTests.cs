@@ -60,13 +60,13 @@ public sealed class NuGetPickerTests : IDisposable
 
     private NuGetPicker OpenPicker(PostedActions posted, SavedNuGetSearch? saved = null)
     {
-        var picker = new NuGetPicker(problem => _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title));
-        picker.Restore(saved);
-        picker.UseSetup(Setup());
-        picker.Open();
-        picker.Update(now: 10);
+        var picker = new NuGetPicker { ReportError = problem => _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title) };
+        NuGetPicking.RestoreSearch(picker, saved);
+        NuGetPicking.UseSetup(picker, Setup());
+        NuGetPicking.OpenPicker(picker);
+        NuGetPicking.UpdatePicker(picker, now: 10);
         Poll.Until(() => !picker.IsSearching, posted.Run);
-        picker.FollowSelection();
+        NuGetPicking.FollowSelection(picker);
         return picker;
     }
 
@@ -93,9 +93,9 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.Query = "fix";
-        var wait = picker.Update(now: 20);
+        var wait = NuGetPicking.UpdatePicker(picker, now: 20);
         var searchedWhileTyping = SearchCount();
-        picker.Update(now: 21);
+        NuGetPicking.UpdatePicker(picker, now: 21);
         Poll.Until(() => !picker.IsSearching, posted.Run);
 
         Assert.True(wait > 0);
@@ -111,7 +111,7 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.IncludePrerelease = true;
-        var wait = picker.Update(now: 10);
+        var wait = NuGetPicking.UpdatePicker(picker, now: 10);
         Poll.Until(() => !picker.IsSearching, posted.Run);
 
         Assert.Equal(0, wait);
@@ -125,13 +125,13 @@ public sealed class NuGetPickerTests : IDisposable
         _fake.AnswerSearches(ThreePagesOfPackages);
         var picker = OpenPicker(posted);
 
-        picker.ShowNextPage();
-        var wait = picker.Update(now: 10);
+        NuGetPicking.ShowNextPage(picker);
+        var wait = NuGetPicking.UpdatePicker(picker, now: 10);
         Poll.Until(() => !picker.IsSearching, posted.Run);
         var nextPage = _fake.Requested.Last();
         picker.Query = "fix";
-        picker.Update(now: 20);
-        picker.Update(now: 21);
+        NuGetPicking.UpdatePicker(picker, now: 20);
+        NuGetPicking.UpdatePicker(picker, now: 21);
         Poll.Until(() => !picker.IsSearching, posted.Run);
 
         Assert.Equal(0, wait);
@@ -149,13 +149,13 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.FeedUrl = OtherIndexUrl;
-        var wait = picker.Update(now: 20);
-        picker.Update(now: 21);
+        var wait = NuGetPicking.UpdatePicker(picker, now: 20);
+        NuGetPicking.UpdatePicker(picker, now: 21);
         Poll.Until(() => !picker.IsSearching, posted.Run);
 
         Assert.True(wait > 0);
         Assert.Contains(OtherIndexUrl, _fake.Requested);
-        Assert.Equal(new SavedNuGetSearch(OtherIndexUrl, false), picker.Save());
+        Assert.Equal(new SavedNuGetSearch(OtherIndexUrl, false), NuGetPicking.GetKeptSearch(picker));
     }
 
     [Fact]
@@ -166,8 +166,8 @@ public sealed class NuGetPickerTests : IDisposable
         var requests = _fake.Requested.Count;
 
         picker.FeedUrl = "api.nuget";
-        picker.Update(now: 20);
-        picker.Update(now: 21);
+        NuGetPicking.UpdatePicker(picker, now: 20);
+        NuGetPicking.UpdatePicker(picker, now: 21);
 
         Assert.False(picker.HasFeedUrl);
         Assert.Empty(picker.Results);
@@ -195,9 +195,9 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.Query = "fix";
-        picker.Update(now: 20);
-        picker.Submit();
-        var wait = picker.Update(now: 20.01);
+        NuGetPicking.UpdatePicker(picker, now: 20);
+        NuGetPicking.SubmitSearch(picker);
+        var wait = NuGetPicking.UpdatePicker(picker, now: 20.01);
         Poll.Until(() => !picker.IsSearching, posted.Run);
 
         Assert.False(picker.IsDownloading);
@@ -213,11 +213,11 @@ public sealed class NuGetPickerTests : IDisposable
         _fake.Holds = true;
 
         picker.Query = "fix";
-        picker.Update(now: 20);
+        NuGetPicking.UpdatePicker(picker, now: 20);
         var whileSettling = picker.CanOpen;
-        picker.Update(now: 21);
+        NuGetPicking.UpdatePicker(picker, now: 21);
         var whileSearching = picker.CanOpen;
-        picker.Close();
+        NuGetPicking.ClosePicker(picker);
 
         Assert.False(whileSettling);
         Assert.False(whileSearching);
@@ -232,7 +232,7 @@ public sealed class NuGetPickerTests : IDisposable
 
         var failed = ReadDetails(picker, posted);
         _fake.Answer(DetailsUrl, """{ "catalogEntry": { "licenseExpression": "MIT" } }""");
-        picker.RetryDetails(picker.Selected!, PackageVersion.Parse("2.0.0")!);
+        NuGetPicking.RetryDetails(picker, picker.Selected!, PackageVersion.Parse("2.0.0")!);
         var retried = ReadDetails(picker, posted);
 
         Assert.IsType<VersionDetails.Failed>(failed);
@@ -242,7 +242,7 @@ public sealed class NuGetPickerTests : IDisposable
     /// <summary>The details of version 2.0.0 of the package selected, once they are no longer loading.</summary>
     private static VersionDetails ReadDetails(NuGetPicker picker, PostedActions posted)
     {
-        VersionDetails? DetailsNow() => picker.DetailsOf(picker.Selected!, PackageVersion.Parse("2.0.0")!);
+        VersionDetails? DetailsNow() => NuGetPicking.EnsureDetails(picker, picker.Selected!, PackageVersion.Parse("2.0.0")!);
         Poll.Until(() => DetailsNow() is not VersionDetails.Loading, posted.Run);
         return DetailsNow()!;
     }
@@ -255,13 +255,13 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         _fake.AnswerSearches("not json");
-        picker.ShowNextPage();
-        picker.Update(now: 20);
+        NuGetPicking.ShowNextPage(picker);
+        NuGetPicking.UpdatePicker(picker, now: 20);
         Poll.Until(() => !picker.IsSearching, posted.Run);
         var shownAfterFailure = (picker.Page, picker.Results.Count, picker.SearchError != null);
         _fake.AnswerSearches(ThreePagesOfPackages);
-        picker.Retry();
-        picker.Update(now: 21);
+        NuGetPicking.RetrySearch(picker);
+        NuGetPicking.UpdatePicker(picker, now: 21);
         Poll.Until(() => !picker.IsSearching, posted.Run);
 
         Assert.Equal((0, 1, true), shownAfterFailure);
@@ -277,8 +277,8 @@ public sealed class NuGetPickerTests : IDisposable
 
         _fake.AnswerSearches("not json");
         picker.Query = "other";
-        picker.Update(now: 20);
-        picker.Update(now: 21);
+        NuGetPicking.UpdatePicker(picker, now: 20);
+        NuGetPicking.UpdatePicker(picker, now: 21);
         Poll.Until(() => !picker.IsSearching, posted.Run);
 
         Assert.Empty(picker.Results);
@@ -294,7 +294,7 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         var details = ReadDetails(picker, posted);
-        var again = picker.DetailsOf(picker.Selected!, PackageVersion.Parse("2.0.0")!);
+        var again = NuGetPicking.EnsureDetails(picker, picker.Selected!, PackageVersion.Parse("2.0.0")!);
 
         Assert.Equal("MIT", Assert.IsType<VersionDetails.Read>(details).Details.License);
         Assert.Same(details, again);
@@ -334,12 +334,12 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.Version = PackageVersion.Parse("1.0.0");
-        picker.Download();
+        NuGetPicking.DownloadPicked(picker);
         Poll.Until(() => !picker.IsDownloading, posted.Run);
 
-        var downloaded = picker.TakeDownloaded();
+        var downloaded = NuGetPicking.TakeDownloaded(picker);
         Assert.Equal(_temp.PathOf(Path.Combine("downloads", "fixtures", "1.0.0", "fixtures.1.0.0.nupkg")), downloaded);
-        Assert.Null(picker.TakeDownloaded());
+        Assert.Null(NuGetPicking.TakeDownloaded(picker));
     }
 
     [Fact]
@@ -348,10 +348,10 @@ public sealed class NuGetPickerTests : IDisposable
         var posted = PostedActions.OfThisTest();
         var picker = OpenPicker(posted);
 
-        picker.Download();
+        NuGetPicking.DownloadPicked(picker);
         Poll.Until(() => !picker.IsDownloading, posted.Run);
 
-        Assert.Null(picker.TakeDownloaded());
+        Assert.Null(NuGetPicking.TakeDownloaded(picker));
         Assert.Equal(["Cannot download Fixtures 2.0.0"], _reported);
     }
 
@@ -363,12 +363,12 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
         _fake.Holds = true;
 
-        picker.Download();
-        picker.Close();
+        NuGetPicking.DownloadPicked(picker);
+        NuGetPicking.ClosePicker(picker);
         Poll.Until(() => _fake.Cancelled > 0, posted.Run);
 
         Assert.False(picker.IsDownloading);
-        Assert.Null(picker.TakeDownloaded());
+        Assert.Null(NuGetPicking.TakeDownloaded(picker));
         Assert.Empty(_reported);
     }
 
@@ -378,9 +378,9 @@ public sealed class NuGetPickerTests : IDisposable
         var app = new AppDriver();
         _fake.Answer(FakeFeed.PackagesUrl + "fixtures/2.0.0/fixtures.2.0.0.nupkg", File.ReadAllBytes(WritePackage()));
         var picker = app.Ui.NuGetPicker;
-        picker.UseSetup(Setup());
+        NuGetPicking.UseSetup(picker, Setup());
 
-        picker.Open();
+        NuGetPicking.OpenPicker(picker);
         app.RunUntil(() => picker.Results.Count > 0);
         app.Frames.Key(KeyboardKey.Enter);
         app.RunUntil(() => app.AppState.Assemblies.Listed.Count > 0);
@@ -397,9 +397,9 @@ public sealed class NuGetPickerTests : IDisposable
         var app = new AppDriver();
         _fake.Answer(FakeFeed.PackagesUrl + "fixtures/1.0.0/fixtures.1.0.0.nupkg", File.ReadAllBytes(WritePackage()));
         var picker = app.Ui.NuGetPicker;
-        picker.UseSetup(Setup());
+        NuGetPicking.UseSetup(picker, Setup());
 
-        picker.Open();
+        NuGetPicking.OpenPicker(picker);
         app.RunUntil(() => picker.Results.Count > 0);
         app.Run(2);
         app.ClickLast("2.0.0").Frame();
@@ -419,9 +419,9 @@ public sealed class NuGetPickerTests : IDisposable
     {
         var app = new AppDriver();
         var picker = app.Ui.NuGetPicker;
-        picker.UseSetup(Setup());
+        NuGetPicking.UseSetup(picker, Setup());
 
-        picker.Open();
+        NuGetPicking.OpenPicker(picker);
         app.RunUntil(() => picker.Results.Count > 0);
         app.Run(2);
 
@@ -437,9 +437,9 @@ public sealed class NuGetPickerTests : IDisposable
         var app = new AppDriver();
         _fake.AnswerSearches(ThreePagesOfPackages);
         var picker = app.Ui.NuGetPicker;
-        picker.UseSetup(Setup());
+        NuGetPicking.UseSetup(picker, Setup());
 
-        picker.Open();
+        NuGetPicking.OpenPicker(picker);
         app.RunUntil(() => picker.Results.Count > 0);
         app.Run(2);
         var first = app.Frames.Drew("Page 1 of 3");
@@ -459,11 +459,11 @@ public sealed class NuGetPickerTests : IDisposable
         _fake.AnswerSearches(PackageWithIcon);
         _fake.Answer(IconUrl, SquareSvg);
         var picker = app.Ui.NuGetPicker;
-        picker.UseSetup(Setup());
+        NuGetPicking.UseSetup(picker, Setup());
 
-        picker.Open();
+        NuGetPicking.OpenPicker(picker);
         app.RunUntil(() => picker.Results.Count > 0);
-        var icon = picker.IconOf(picker.Results[0])!;
+        var icon = NuGetPicking.EnsureIcon(picker, picker.Results[0])!;
         app.RunUntil(() => icon.Shown != null);
         app.Run(2);
         var drawn = app.Frames.Canvas.Images.Any(i => i.Inputs.ImageId == icon.ImageId);
@@ -480,13 +480,13 @@ public sealed class NuGetPickerTests : IDisposable
     {
         var app = new AppDriver();
         var picker = app.Ui.NuGetPicker;
-        picker.UseSetup(Setup());
+        NuGetPicking.UseSetup(picker, Setup());
 
-        picker.Open();
+        NuGetPicking.OpenPicker(picker);
         app.RunUntil(() => picker.Results.Count > 0);
         app.Run(2);
 
-        Assert.Null(picker.IconOf(picker.Results[0]));
+        Assert.Null(NuGetPicking.EnsureIcon(picker, picker.Results[0]));
         Assert.Empty(app.Frames.Canvas.Images);
     }
 
@@ -500,9 +500,9 @@ public sealed class NuGetPickerTests : IDisposable
                 "dependencyGroups": [ { "targetFramework": "net8.0", "dependencies": [ { "id": "Dep", "range": "[1.0.0, )" } ] } ] } }
             """);
         var picker = app.Ui.NuGetPicker;
-        picker.UseSetup(Setup());
+        NuGetPicking.UseSetup(picker, Setup());
 
-        picker.Open();
+        NuGetPicking.OpenPicker(picker);
         app.RunUntil(() => picker.Results.Count > 0);
         app.Run(2);
         app.RunUntil(() => app.Frames.Drew("Dep"));

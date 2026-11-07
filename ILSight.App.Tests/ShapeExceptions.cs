@@ -64,7 +64,6 @@ internal static class ShapeExceptions
         "ILSight.AnalyzerRows",
         "ILSight.AnalyzerSymbolNode",
         "ILSight.AnalyzerTree",
-        "ILSight.AppSettings",
         "ILSight.AppState",
         "ILSight.BrowseTree",
         "ILSight.CodeFolds",
@@ -92,9 +91,7 @@ internal static class ShapeExceptions
         "ILSight.DocumentTab",
         "ILSight.DocumentTabs",
         "ILSight.DocumentViews",
-        "ILSight.ExportSetup",
         "ILSight.MetadataGridState",
-        "ILSight.NuGetPicker",
         "ILSight.RunArgumentsReceiver",
         "ILSight.UiState",
     ];
@@ -127,7 +124,6 @@ internal static class ShapeExceptions
         "ILSight.Core.Metadata.MetadataGrid",
         "ILSight.Core.Resources.ResourceImage",
         "ILSight.MetadataGridState",
-        "ILSight.NuGetPicker",
         "ILSight.UiState",
     ];
 

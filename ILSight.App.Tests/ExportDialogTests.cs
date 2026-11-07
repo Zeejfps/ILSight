@@ -79,15 +79,15 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
-        setup.IncludeAll(true);
+        Exports.IncludeAll(setup, true);
 
         setup.Choices[1].Name = setup.Choices[0].Name.ToUpperInvariant();
 
         Assert.NotNull(setup.Clash);
-        Assert.False(setup.CanExport);
+        Assert.False(Exports.CanExport(setup));
         setup.Choices[1].Name = "Other";
         Assert.Null(setup.Clash);
-        Assert.True(setup.CanExport);
+        Assert.True(Exports.CanExport(setup));
     }
 
     [Fact]
@@ -98,11 +98,11 @@ public sealed class ExportDialogTests : IDisposable
         var setup = d.Ui.ExportSetup;
 
         setup.Folder = "relative";
-        Assert.False(setup.CanExport);
+        Assert.False(Exports.CanExport(setup));
         setup.Folder = _temp.Path;
-        Assert.True(setup.CanExport);
-        setup.IncludeAll(false);
-        Assert.False(setup.CanExport);
+        Assert.True(Exports.CanExport(setup));
+        Exports.IncludeAll(setup, false);
+        Assert.False(Exports.CanExport(setup));
     }
 
     [Fact]
@@ -113,15 +113,15 @@ public sealed class ExportDialogTests : IDisposable
         var setup = d.Ui.ExportSetup;
         var choice = Assert.Single(setup.Choices);
 
-        setup.IncludeAll(false);
-        Assert.IsType<ExportBlocker.NoAssembly>(setup.Blocker);
-        setup.IncludeAll(true);
-        Assert.IsType<ExportBlocker.NoFolder>(setup.Blocker);
+        Exports.IncludeAll(setup, false);
+        Assert.IsType<ExportBlocker.NoAssembly>(Exports.FindBlocker(setup));
+        Exports.IncludeAll(setup, true);
+        Assert.IsType<ExportBlocker.NoFolder>(Exports.FindBlocker(setup));
         setup.Folder = _temp.Path;
         choice.Name = " ";
-        Assert.IsType<ExportBlocker.NamelessProject>(setup.Blocker);
+        Assert.IsType<ExportBlocker.NamelessProject>(Exports.FindBlocker(setup));
         choice.Name = "Project";
-        Assert.Null(setup.Blocker);
+        Assert.Null(Exports.FindBlocker(setup));
     }
 
     [Fact]
@@ -131,12 +131,12 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
-        Assert.False(setup.FolderHoldsFiles);
+        Assert.False(Exports.CheckFolderHoldsFiles(setup));
 
         setup.Folder = _temp.PathOf("Full");
         _temp.Write(Path.Combine("Full", "notes.txt"), "keep");
 
-        Assert.True(setup.FolderHoldsFiles);
+        Assert.True(Exports.CheckFolderHoldsFiles(setup));
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
-        setup.IncludeAll(true);
+        Exports.IncludeAll(setup, true);
         setup.SolutionName = "Both";
 
         ExportDialogView.Start(d.Ui.ExportSetup, d.AppState);
@@ -193,7 +193,7 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(second);
         var setup = d.Ui.ExportSetup;
 
-        setup.Choose();
+        Exports.ChooseAssemblies(setup);
         var first = ExportDialogView.ListShown(setup.Picker);
         first[1].Included = true;
 
@@ -224,7 +224,7 @@ public sealed class ExportDialogTests : IDisposable
         var d = OpenedTwo();
         d.OpenExportSetup(Fixtures(d));
         var setup = d.Ui.ExportSetup;
-        setup.Choose();
+        Exports.ChooseAssemblies(setup);
 
         setup.Picker.SelectedOnly = true;
 
@@ -274,7 +274,7 @@ public sealed class ExportDialogTests : IDisposable
         var app = AppDriver.Opened(height: 1400f);
         app.OpenExportSetup(null);
         var setup = app.Ui.ExportSetup;
-        setup.Choose();
+        Exports.ChooseAssemblies(setup);
         setup.Picker.Filter = "nothing-is-called-this";
         app.Run(2);
 
@@ -290,7 +290,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = AppDriver.Opened(height: 1400f);
         app.OpenExportSetup(null);
-        app.Ui.ExportSetup.IncludeAll(false);
+        Exports.IncludeAll(app.Ui.ExportSetup, false);
         app.Run(2);
 
         app.Click(Icons.ExportAdd).Frame(2);
@@ -304,8 +304,8 @@ public sealed class ExportDialogTests : IDisposable
         OpenAssembly(app.AppState, SecondPath);
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.OpenExportSetup(null);
-        app.Ui.ExportSetup.IncludeAll(true);
-        app.Ui.ExportSetup.FinishChoosing();
+        Exports.IncludeAll(app.Ui.ExportSetup, true);
+        Exports.FinishChoosing(app.Ui.ExportSetup);
         app.Run(2);
         return app;
     }
@@ -336,7 +336,7 @@ public sealed class ExportDialogTests : IDisposable
 
         Assert.Equal([false, true], setup.Choices.Select(c => c.Included));
         Assert.True(setup.RowSelection.IsOnly(setup.Choices[1]));
-        Assert.Equal(second, setup.IncludedChoices()[0].Assembly);
+        Assert.Equal(second, Exports.ListIncludedChoices(setup)[0].Assembly);
     }
 
     [Fact]
@@ -428,12 +428,12 @@ public sealed class ExportDialogTests : IDisposable
         setup.Folder = _temp.Path;
 
         setup.StrongNameKeyFile = _temp.PathOf("missing.snk");
-        Assert.True(setup.KeyFileMissing);
-        Assert.False(setup.CanExport);
+        Assert.True(Exports.CheckKeyFileMissing(setup));
+        Assert.False(Exports.CanExport(setup));
 
         setup.StrongNameKeyFile = _temp.Write("signing.snk", [1, 2, 3]);
-        Assert.False(setup.KeyFileMissing);
-        Assert.True(setup.CanExport);
+        Assert.False(Exports.CheckKeyFileMissing(setup));
+        Assert.True(Exports.CanExport(setup));
     }
 
     [Fact]

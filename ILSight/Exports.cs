@@ -1,3 +1,5 @@
+using ZGF.Gui.Immediate.Widgets;
+using static ILSight.Exports;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
@@ -491,5 +493,182 @@ public static class Exports
         if (queue.ActiveExport.Shown.Export.Run != run)
             return null;
         return queue.ActiveExport;
+    }
+
+    private const string DefaultSolutionName = "Solution";
+
+    /// <summary>Opens the dialog on <paramref name="assemblies"/> with <paramref name="picked"/>
+    /// ticked, or the only one when there is just one, unless there are none. The folder stays as it
+    /// was last time.</summary>
+    public static void OpenExportSetup(ExportSetup setup, IReadOnlyList<LoadedModule> assemblies, LoadedModule? picked)
+    {
+        if (assemblies.Count == 0)
+            return;
+        setup.Choices.Clear();
+        foreach (var project in AssemblyExport.NameProjects(assemblies))
+            setup.Choices.Add(new ExportChoice { Assembly = project.Assembly, Name = project.Name });
+        TickFirstChoice(setup, picked);
+        setup.RowSelection.Clear();
+        setup.SolutionName = "";
+        setup.IsOpen = true;
+        setup.Page = ExportPage.Main;
+        if (setup.IncludedCount == 0)
+            ChooseAssemblies(setup);
+    }
+
+    private static void TickFirstChoice(ExportSetup setup, LoadedModule? picked)
+    {
+        foreach (var choice in setup.Choices)
+            choice.Included = choice.Assembly == picked;
+        if (setup.Choices.Count == 1)
+            setup.Choices[0].Included = true;
+    }
+
+    public static void CloseExportSetup(ExportSetup setup)
+    {
+        setup.IsOpen = false;
+    }
+
+    /// <summary>Shows the Choose page, its list arranged afresh.</summary>
+    public static void ChooseAssemblies(ExportSetup setup)
+    {
+        ExportDialogView.Arrange(setup.Picker, setup.Choices);
+        setup.Page = ExportPage.Choose;
+    }
+
+    /// <summary>Goes back from the Choose page to what is exported.</summary>
+    public static void FinishChoosing(ExportSetup setup)
+    {
+        setup.Page = ExportPage.Main;
+    }
+
+    /// <summary>Unticks the assemblies whose rows are picked out, and picks out the row now where the
+    /// first of them was.</summary>
+    public static void RemoveSelectedRows(ExportSetup setup)
+    {
+        var order = ListIncludedChoices(setup);
+        var removed = setup.RowSelection.InOrder(order);
+        if (removed.Count == 0)
+            return;
+        var at = order.IndexOf(removed[0]);
+        foreach (var choice in removed)
+            choice.Included = false;
+        setup.RowSelection.SelectAt(at, ListIncludedChoices(setup));
+    }
+
+    /// <summary>The ticked assemblies, in the order they were opened.</summary>
+    public static List<ExportChoice> ListIncludedChoices(ExportSetup setup)
+    {
+        return setup.Choices
+            .Where(static c => c.Included)
+            .ToList();
+    }
+
+    /// <summary>Ticks every assembly when <paramref name="all"/>, else none.</summary>
+    public static void IncludeAll(ExportSetup setup, bool all)
+    {
+        foreach (var choice in setup.Choices)
+            choice.Included = all;
+    }
+
+    public static string GetSolutionNameOrDefault(ExportSetup setup)
+    {
+        var typed = setup.SolutionName.Trim();
+        if (typed.Length > 0)
+            return typed;
+        return GetDefaultSolutionName(setup.Folder);
+    }
+
+    /// <summary>The name a solution in <paramref name="folder"/> gets when none is typed: the folder's.</summary>
+    public static string GetDefaultSolutionName(string folder)
+    {
+        var trimmed = folder.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var name = Path.GetFileName(trimmed);
+        if (string.IsNullOrEmpty(name))
+            return DefaultSolutionName;
+        return name;
+    }
+
+    /// <summary>Whether the folder already holds files, which the export may replace. Looked up
+    /// again only when the folder changes.</summary>
+    public static bool CheckFolderHoldsFiles(ExportSetup setup)
+    {
+        if (setup.CheckedFolder == setup.Folder)
+            return setup.LastFolderHeldFiles;
+        setup.CheckedFolder = setup.Folder;
+        setup.LastFolderHeldFiles = HoldsFiles(setup.Folder.Trim());
+        return setup.LastFolderHeldFiles;
+    }
+
+    private static bool HoldsFiles(string folder)
+    {
+        if (!Path.IsPathFullyQualified(folder))
+            return false;
+        if (!Directory.Exists(folder))
+            return false;
+        return Directory.EnumerateFileSystemEntries(folder).Any();
+    }
+
+    /// <summary>Whether a key file is named that is not there. Looked up again only when the name changes.</summary>
+    public static bool CheckKeyFileMissing(ExportSetup setup)
+    {
+        if (setup.CheckedKeyFile == setup.StrongNameKeyFile)
+            return setup.LastKeyFileMissing;
+        setup.CheckedKeyFile = setup.StrongNameKeyFile;
+        setup.LastKeyFileMissing = IsFileMissing(setup.StrongNameKeyFile.Trim());
+        return setup.LastKeyFileMissing;
+    }
+
+    private static bool IsFileMissing(string file)
+    {
+        if (file.Length == 0)
+            return false;
+        return !File.Exists(file);
+    }
+
+    /// <summary>The first thing that keeps the export from starting, or null: it needs at least one
+    /// assembly, a folder, a name for each project that no other takes, and no key file that is not there.</summary>
+    public static ExportBlocker? FindBlocker(ExportSetup setup)
+    {
+        if (setup.IncludedCount == 0)
+            return new ExportBlocker.NoAssembly();
+        if (!setup.HasFolder)
+            return new ExportBlocker.NoFolder();
+        if (setup.HasNamelessProject)
+            return new ExportBlocker.NamelessProject();
+        var clash = setup.Clash;
+        if (clash != null)
+            return new ExportBlocker.Clash(clash);
+        if (CheckKeyFileMissing(setup))
+            return new ExportBlocker.KeyFileMissing();
+        return null;
+    }
+
+    public static bool CanExport(ExportSetup setup)
+    {
+        return FindBlocker(setup) == null;
+    }
+
+    /// <summary>What each project is written with besides its code.</summary>
+    public static ProjectExtras GetExtras(ExportSetup setup)
+    {
+        var key = setup.StrongNameKeyFile.Trim();
+        var keyFile = key.Length == 0 ? null : key;
+        return new ProjectExtras(keyFile, setup.GeneratePdb, setup.EmbedSourcesInPdb);
+    }
+
+    /// <summary>The export the dialog asks for.</summary>
+    public static ExportRequest CreateRequest(ExportSetup setup)
+    {
+        return new ExportRequest(setup.Folder.Trim(), ListIncludedProjects(setup), GetExtras(setup), setup.SolutionFileName);
+    }
+
+    /// <summary>The ticked assemblies as the projects to export, in the dialog's order.</summary>
+    public static List<SolutionProject> ListIncludedProjects(ExportSetup setup)
+    {
+        return setup.Choices
+            .Where(static c => c.Included)
+            .Select(static c => new SolutionProject(c.Assembly, c.Name.Trim()))
+            .ToList();
     }
 }

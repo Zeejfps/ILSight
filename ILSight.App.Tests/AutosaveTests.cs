@@ -180,7 +180,7 @@ public sealed class AutosaveTests : IDisposable
         var list = settings.AssemblyLists.Single();
         var anchor = list.Analyzed!.Single();
         settings.AssemblyLists[0] = list with { Analyzed = [anchor with { Token = anchor.Token + 0xFFFF }] };
-        settings.Save();
+        SettingsJson.SaveSettings(settings);
 
         var next = new AppStateDriver(_temp.Settings());
         next.Settle();

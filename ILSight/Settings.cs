@@ -75,7 +75,7 @@ public static class Settings
     {
         RememberActiveAssemblyList(appState);
         var sources = CaptureSavedSources(appState);
-        var write = CreateSettings(appState).Save();
+        var write = SettingsJson.SaveSettings(CreateSettings(appState));
         TakeWrite(appState, sources, write);
         return write;
     }
@@ -167,7 +167,7 @@ public static class Settings
     /// <summary>The main window as it was left, to be written with the next save.</summary>
     public static void KeepWindow(AppState appState, WindowBounds window)
     {
-        appState.Window = AppSettings.Sanitize(window);
+        appState.Window = SettingsJson.SanitizeWindow(window);
     }
 
     /// <summary>What <paramref name="settings"/> kept of the screen.</summary>

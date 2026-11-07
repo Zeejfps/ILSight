@@ -1,3 +1,4 @@
+using static ILSight.NuGetPicker;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Resources;
@@ -12,36 +13,29 @@ namespace ILSight;
 /// </summary>
 public sealed class NuGetPicker
 {
-    private const double DebounceSeconds = 0.3;
-    private const string IconImagePrefix = "nuget-icon-";
-
     /// <summary>How many pixels across a package's icon is fetched at, enough for its row on a screen
     /// of twice the usual density.</summary>
     public const int IconPixels = 64;
 
-    private readonly Action<AppProblem> _reportError;
-    private readonly Dictionary<WebUrl, PackageIcon> _icons = new();
-    private readonly Dictionary<DetailsKey, VersionDetails> _details = new();
-    private CancellationTokenSource _fetches = new();
-    private int _iconCount;
-    private SetupState _setup = new SetupState.Unread();
-    private SearchRun _search = new SearchRun.None();
-    private ShownPage? _shown;
-    private DownloadState _download = new DownloadState.None();
-    private int _requestedPage;
-    private bool _isSettling;
-    private string _typedQuery = "";
-    private string _typedUrl = "";
-    private double _typedAt;
-    private SavedNuGetSearch? _kept;
-    private FeedPackage? _versionsOf;
-    private bool _focusQuery;
+    /// <summary>Tells the user a search or a download failed.</summary>
+    public required Action<AppProblem> ReportError { get; init; }
 
-    /// <param name="reportError">Tells the user a search or a download failed.</param>
-    public NuGetPicker(Action<AppProblem> reportError)
-    {
-        _reportError = reportError;
-    }
+    public readonly Dictionary<WebUrl, PackageIcon> Icons = new();
+    public readonly Dictionary<DetailsKey, VersionDetails> Details = new();
+    public CancellationTokenSource Fetches = new();
+    public int IconCount;
+    public SetupState Setup = new SetupState.Unread();
+    public SearchRun Run = new SearchRun.None();
+    public ShownPage? ShownResults;
+    public DownloadState DownloadRun = new DownloadState.None();
+    public int RequestedPage;
+    public bool IsSettling;
+    public string TypedQuery = "";
+    public string TypedUrl = "";
+    public double TypedAt;
+    public SavedNuGetSearch? Kept;
+    public FeedPackage? VersionsOf;
+    public bool FocusQuery;
 
     public bool IsOpen;
 
@@ -67,9 +61,9 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (_shown == null)
+            if (ShownResults == null)
                 return [];
-            return _shown.Found.Packages;
+            return ShownResults.Found.Packages;
         }
     }
 
@@ -78,17 +72,16 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (_shown == null)
+            if (ShownResults == null)
                 return 0;
-            return _shown.Search.Page;
+            return ShownResults.Search.Page;
         }
     }
 
     /// <summary>The page asked for, from 0: the one shown, or the one loading in its place.</summary>
-    public int RequestedPage => _requestedPage;
 
     /// <summary>Whether another page of the search shown is loading in its place.</summary>
-    public bool IsLoadingPage => IsSearching && _requestedPage != Page;
+    public bool IsLoadingPage => IsSearching && RequestedPage != Page;
 
     /// <summary>How many pages the search shown has, at least one.</summary>
     public int PageCount => NuGetFeeds.CountPages(TotalHits);
@@ -98,9 +91,9 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (_shown == null)
+            if (ShownResults == null)
                 return 0;
-            return _shown.Found.TotalHits;
+            return ShownResults.Found.TotalHits;
         }
     }
 
@@ -116,14 +109,14 @@ public sealed class NuGetPicker
     {
         get
         {
-            var setup = ReadySetup();
+            var setup = NuGetPicking.FindReadySetup(this);
             if (setup == null)
                 return [];
             return setup.Sources;
         }
     }
 
-    public bool IsReadingSetup => _setup is not SetupState.Ready;
+    public bool IsReadingSetup => Setup is not SetupState.Ready;
 
     /// <summary>Whether <see cref="FeedUrl"/> is a URL a feed could be at.</summary>
     public bool HasFeedUrl => NuGetSource.FromUrl(FeedUrl) != null;
@@ -133,39 +126,39 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (_shown == null)
+            if (ShownResults == null)
                 return "";
-            return _shown.Search.Query;
+            return ShownResults.Search.Query;
         }
     }
 
     /// <summary>The versions of the selected package, newest first.</summary>
-    public PackageVersion[] Versions { get; private set; } = [];
+    public PackageVersion[] Versions { get; set; } = [];
 
     /// <summary>How <see cref="Versions"/> are written, in their order.</summary>
-    public string[] VersionTexts { get; private set; } = [];
+    public string[] VersionTexts { get; set; } = [];
 
-    public bool IsSearching => _search is SearchRun.Running;
+    public bool IsSearching => Run is SearchRun.Running;
 
     /// <summary>Why the last search failed, or null.</summary>
     public string? SearchError
     {
         get
         {
-            if (_search is not SearchRun.Failed failed)
+            if (Run is not SearchRun.Failed failed)
                 return null;
             return failed.Error;
         }
     }
 
-    public bool IsDownloading => _download is DownloadState.Running;
+    public bool IsDownloading => DownloadRun is DownloadState.Running;
 
     /// <summary>The package and version being downloaded; empty while none is.</summary>
     public string DownloadingName
     {
         get
         {
-            if (_download is not DownloadState.Running running)
+            if (DownloadRun is not DownloadState.Running running)
                 return "";
             return running.Name;
         }
@@ -173,7 +166,7 @@ public sealed class NuGetPicker
 
     /// <summary>How many times the feed searched or whether prereleases count changed, for the
     /// settings to keep <see cref="Save"/> once it did.</summary>
-    public int SearchChanges { get; private set; }
+    public int SearchChanges { get; set; }
 
     /// <summary>Whether the packages shown are what the feed, query and prerelease choice now ask for:
     /// not while a changed query settles or another search runs. Another page loading over them, or
@@ -182,12 +175,12 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (_isSettling)
+            if (IsSettling)
                 return false;
-            var searched = LastSearched();
+            var searched = NuGetPicking.FindLastSearched(this);
             if (searched == null)
                 return true;
-            return IsSamePackages(searched, ShownSearch());
+            return NuGetPicking.IsSamePackages(searched, NuGetPicking.FindShownSearch(this));
         }
     }
 
@@ -207,464 +200,6 @@ public sealed class NuGetPicker
         }
     }
 
-    /// <summary>Searches the feed and counts prereleases as the settings kept them.</summary>
-    public void Restore(SavedNuGetSearch? saved)
-    {
-        if (saved == null)
-            return;
-        if (string.IsNullOrWhiteSpace(saved.FeedUrl))
-            return;
-        _kept = saved;
-        FeedUrl = saved.FeedUrl;
-        IncludePrerelease = saved.IncludePrerelease;
-    }
-
-    /// <summary>The feed last searched and whether prereleases counted, for the settings to keep.</summary>
-    public SavedNuGetSearch? Save() => _kept;
-
-    public void Open()
-    {
-        IsOpen = true;
-        _focusQuery = true;
-        if (_setup is SetupState.Unread)
-            ReadSetup();
-    }
-
-    /// <summary>Reads the user's NuGet.Config in the background; one that cannot be read at all is
-    /// reported, and nuget.org searched in its place.</summary>
-    private void ReadSetup() =>
-        Background.Start(ReadSetupAsync(), _reportError);
-
-    private async Task ReadSetupAsync()
-    {
-        _setup = new SetupState.Reading();
-        var read = await Background.Run(NuGetFeeds.ReadUserSetup);
-        switch (read)
-        {
-            case Outcome<NuGetSetup>.Ok ok:
-                UseSetup(ok.Value);
-                break;
-            case Outcome<NuGetSetup>.Failed failed:
-                _reportError(new AppProblem.NuGetConfigUnreadable(failed.Error));
-                UseSetup(NuGetFeeds.CreateDefaultSetup());
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    /// <summary>Searches and downloads with <paramref name="setup"/> from now on, in place of the one
-    /// read from the user's NuGet.Config; with no feed kept, its first feed is the one searched.</summary>
-    internal void UseSetup(NuGetSetup setup)
-    {
-        _setup = new SetupState.Ready(setup);
-        if (FeedUrl.Length > 0)
-            return;
-        if (setup.Sources.Count == 0)
-            return;
-        FeedUrl = setup.Sources[0].Url.Text;
-    }
-
-    /// <summary>Searches <paramref name="source"/> at once.</summary>
-    public void PickFeed(NuGetSource source)
-    {
-        FeedUrl = source.Url.Text;
-        _typedUrl = source.Url.Text;
-        _typedAt = double.NegativeInfinity;
-    }
-
-    /// <summary>Closes the dialog, stopping the search, the download and the fetches it started.
-    /// Returns the images of the icons shown, for the screen to free.</summary>
-    public List<string> Close()
-    {
-        IsOpen = false;
-        StopSearch();
-        StopDownload();
-        _fetches.Cancel();
-        _fetches = new CancellationTokenSource();
-        _details.Clear();
-        return DropIcons();
-    }
-
-    private NuGetSetup? ReadySetup()
-    {
-        if (_setup is not SetupState.Ready ready)
-            return null;
-        return ready.Setup;
-    }
-
-    private void StopSearch()
-    {
-        if (_search is not SearchRun.Running running)
-            return;
-        running.Cancel.Cancel();
-        _search = new SearchRun.None();
-    }
-
-    private void StopDownload()
-    {
-        if (_download is not DownloadState.Running running)
-            return;
-        running.Cancel.Cancel();
-        _download = new DownloadState.None();
-    }
-
-    private List<string> DropIcons()
-    {
-        var images = _icons.Values
-            .Select(i => i.ImageId)
-            .ToList();
-        _icons.Clear();
-        return images;
-    }
-
-    /// <summary>True once after <see cref="Open"/>: the query box should take focus.</summary>
-    public bool TakeQueryFocus()
-    {
-        var focus = _focusQuery;
-        _focusQuery = false;
-        return focus;
-    }
-
-    public void ShowPreviousPage()
-    {
-        if (!HasPreviousPage)
-            return;
-        _requestedPage = Page - 1;
-    }
-
-    public void ShowNextPage()
-    {
-        if (!HasNextPage)
-            return;
-        _requestedPage = Page + 1;
-    }
-
-    /// <summary>Searches again for what the last search asked, after it failed.</summary>
-    public void Retry()
-    {
-        StopSearch();
-        _search = new SearchRun.None();
-    }
-
-    public void ClearQuery()
-    {
-        Query = "";
-    }
-
-    /// <summary>Opens the selected package at <see cref="Version"/>, unless the query typed is still to
-    /// be searched: then it is searched at once instead, so Enter never opens what an older query found.</summary>
-    public void Submit()
-    {
-        if (_isSettling)
-        {
-            SearchNow();
-            return;
-        }
-        if (IsSearching)
-            return;
-        Download();
-    }
-
-    /// <summary>Searches what was typed with the next update, without waiting for it to settle.</summary>
-    public void SearchNow()
-    {
-        _typedAt = double.NegativeInfinity;
-    }
-
-    /// <summary>Searches again once the typed feed or query settled, or at once when another page is
-    /// asked for or whether prereleases count changed; a new search starts on its first page. Returns
-    /// the seconds left before what was typed settles, or 0.</summary>
-    public double Update(double now)
-    {
-        NoteTyping(now);
-        _isSettling = false;
-        var setup = ReadySetup();
-        if (setup == null)
-            return 0;
-        var source = NuGetSource.FromUrl(_typedUrl);
-        if (source == null)
-        {
-            DropResults();
-            return 0;
-        }
-        var wanted = new FeedSearch(NuGetFeeds.EnsureFeed(setup, source), _typedQuery, IncludePrerelease, _requestedPage);
-        if (IsNewSearch(wanted))
-        {
-            _requestedPage = 0;
-            wanted = wanted with { Page = 0 };
-        }
-        if (wanted == LastSearched())
-            return 0;
-        var remaining = DebounceSeconds - (now - _typedAt);
-        if (remaining > 0 && IsOnlyTypingChanged(wanted))
-        {
-            _isSettling = true;
-            return remaining;
-        }
-        StartSearch(wanted);
-        return 0;
-    }
-
-    private void NoteTyping(double now)
-    {
-        var typed = Query != _typedQuery || FeedUrl != _typedUrl;
-        if (!typed)
-            return;
-        _typedQuery = Query;
-        _typedUrl = FeedUrl;
-        _typedAt = now;
-    }
-
-    /// <summary>Clears what was found once the feed typed is no URL, so nothing shows from another feed.</summary>
-    private void DropResults()
-    {
-        StopSearch();
-        _search = new SearchRun.None();
-        ClearShown();
-        _requestedPage = 0;
-    }
-
-    private void ClearShown()
-    {
-        _shown = null;
-        ItemSelections.Clear(Selection);
-    }
-
-    /// <summary>The search running or last run; null before any, or once it was stopped or dropped.</summary>
-    private FeedSearch? LastSearched() =>
-        _search switch
-        {
-            SearchRun.None => null,
-            SearchRun.Running running => running.Search,
-            SearchRun.Found found => found.Search,
-            SearchRun.Failed failed => failed.Search,
-            _ => throw new UnreachableException(),
-        };
-
-    private FeedSearch? ShownSearch()
-    {
-        if (_shown == null)
-            return null;
-        return _shown.Search;
-    }
-
-    /// <summary>The search the next one is weighed against: the one running or last run, else the one shown.</summary>
-    private FeedSearch? LastAsked()
-    {
-        var searched = LastSearched();
-        if (searched != null)
-            return searched;
-        return ShownSearch();
-    }
-
-    /// <summary>Whether <paramref name="wanted"/> asks for other packages than the last search, not
-    /// just another page of them.</summary>
-    private bool IsNewSearch(FeedSearch wanted)
-    {
-        var last = LastAsked();
-        if (last == null)
-            return false;
-        return !IsSamePackages(wanted, last);
-    }
-
-    private static bool IsSamePackages(FeedSearch a, FeedSearch? b)
-    {
-        if (b == null)
-            return false;
-        if (a.Feed != b.Feed)
-            return false;
-        if (a.Query != b.Query)
-            return false;
-        return a.IncludePrerelease == b.IncludePrerelease;
-    }
-
-    private bool IsOnlyTypingChanged(FeedSearch wanted)
-    {
-        var last = LastAsked();
-        if (last == null)
-            return false;
-        if (wanted.IncludePrerelease != last.IncludePrerelease)
-            return false;
-        return wanted.Page == last.Page;
-    }
-
-    private void StartSearch(FeedSearch wanted) =>
-        Background.Start(StartSearchAsync(wanted), _reportError);
-
-    private async Task StartSearchAsync(FeedSearch wanted)
-    {
-        StopSearch();
-        KeepSearched(wanted);
-        var running = new SearchRun.Running(wanted, new CancellationTokenSource());
-        _search = running;
-        var found = await Background.Wait(NuGetFeeds.SearchAsync(wanted.Feed, wanted.Query, wanted.IncludePrerelease, wanted.Page, running.Cancel.Token));
-        if (!ReferenceEquals(_search, running))
-            return;
-        _search = ShowFound(wanted, found);
-    }
-
-    /// <summary>Has the settings keep the feed searched and whether prereleases count, once either changed.</summary>
-    private void KeepSearched(FeedSearch searched)
-    {
-        var kept = new SavedNuGetSearch(searched.Feed.Source.Url.Text, searched.IncludePrerelease);
-        if (kept == _kept)
-            return;
-        _kept = kept;
-        SearchChanges++;
-    }
-
-    /// <summary>Shows the page found in place of the one shown. A failed search says why, and keeps
-    /// the page shown when it only asked for another page of it.</summary>
-    private SearchRun ShowFound(FeedSearch searched, Outcome<FeedPage> found)
-    {
-        switch (found)
-        {
-            case Outcome<FeedPage>.Ok ok:
-                ShowFound(searched, ok.Value);
-                return new SearchRun.Found(searched);
-            case Outcome<FeedPage>.Failed failed:
-                ReportSearchFailure(searched, failed.Error);
-                return new SearchRun.Failed(searched, failed.Error.Message);
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    private void ShowFound(FeedSearch searched, FeedPage page)
-    {
-        _shown = new ShownPage(searched, page);
-        ItemSelections.Clear(Selection);
-        if (page.Packages.Count > 0)
-            ItemSelections.Select(Selection, page.Packages[0], page.Packages);
-    }
-
-    private void ReportSearchFailure(FeedSearch searched, Exception error)
-    {
-        if (!IsSamePackages(searched, ShownSearch()))
-            ClearShown();
-        _reportError(new AppProblem.NuGetSearchFailed(searched.Feed.Source.Name, error));
-    }
-
-    /// <summary>The icon of <paramref name="package"/>, fetched in the background the first time it is
-    /// asked for; null when the package gives none.</summary>
-    public PackageIcon? IconOf(FeedPackage package)
-    {
-        var url = package.IconUrl;
-        if (url == null)
-            return null;
-        var setup = ReadySetup();
-        if (setup == null)
-            return null;
-        if (_icons.TryGetValue(url, out var icon))
-            return icon;
-        _iconCount++;
-        icon = new PackageIcon { ImageId = IconImagePrefix + _iconCount };
-        _icons.Add(url, icon);
-        FetchIcon(setup, url, icon);
-        return icon;
-    }
-
-    /// <summary>Gives <paramref name="icon"/> its pixels once they are in; one that cannot be fetched
-    /// keeps none, so its row keeps the stand-in.</summary>
-    private void FetchIcon(NuGetSetup setup, WebUrl url, PackageIcon icon) =>
-        Background.Start(FetchIconAsync(setup, url, icon), _reportError);
-
-    private static void ShowIcon(PackageIcon icon, ResourceImage? pixels)
-    {
-        if (pixels == null)
-            return;
-        icon.Shown = new ShownIcon(icon.ImageId, pixels, pixels.IsDarkOnClear());
-    }
-
-    private async Task FetchIconAsync(NuGetSetup setup, WebUrl url, PackageIcon icon)
-    {
-        var token = _fetches.Token;
-        var fetched = await Background.Wait(NuGetFeeds.FetchIconAsync(setup.Icons, url, IconPixels, token));
-        if (token.IsCancellationRequested)
-            return;
-        if (fetched is Outcome<ResourceImage>.Ok ok)
-            ShowIcon(icon, ok.Value);
-    }
-
-    /// <summary>What the feed says of <paramref name="version"/> of <paramref name="package"/>, read
-    /// in the background the first time it is asked for; null while no page of packages is shown or
-    /// the package lists no such version.</summary>
-    public VersionDetails? DetailsOf(FeedPackage package, PackageVersion version)
-    {
-        if (_shown == null)
-            return null;
-        var listed = FindVersion(package, version);
-        if (listed == null)
-            return null;
-        var feed = _shown.Search.Feed;
-        var key = new DetailsKey(feed.Source.Url, package.Id, version);
-        if (_details.TryGetValue(key, out var details))
-            return details;
-        var loading = new VersionDetails.Loading();
-        _details.Add(key, loading);
-        ReadDetails(key, feed, listed, loading);
-        return loading;
-    }
-
-    /// <summary>Reads the details of <paramref name="version"/> of <paramref name="package"/> again, after they failed.</summary>
-    public void RetryDetails(FeedPackage package, PackageVersion version)
-    {
-        if (_shown == null)
-            return;
-        _details.Remove(new DetailsKey(_shown.Search.Feed.Source.Url, package.Id, version));
-    }
-
-    private static FeedVersion? FindVersion(FeedPackage package, PackageVersion version) =>
-        package.Versions.FirstOrDefault(v => v.Version == version);
-
-    /// <summary>Puts the details read in place of <paramref name="loading"/>, unless they were dropped
-    /// or asked for again meanwhile.</summary>
-    private void ReadDetails(DetailsKey key, NuGetFeed feed, FeedVersion version, VersionDetails.Loading loading) =>
-        Background.Start(ReadDetailsAsync(key, feed, version, loading), _reportError);
-
-    private async Task ReadDetailsAsync(DetailsKey key, NuGetFeed feed, FeedVersion version, VersionDetails.Loading loading)
-    {
-        var token = _fetches.Token;
-        var read = await Background.Wait(NuGetFeeds.ReadDetailsAsync(feed, key.Id, version, token));
-        if (token.IsCancellationRequested)
-            return;
-        if (!_details.TryGetValue(key, out var current) || !ReferenceEquals(current, loading))
-            return;
-        _details[key] = DetailsRead(read);
-    }
-
-    private static VersionDetails DetailsRead(Outcome<PackageVersionDetails> read) =>
-        read switch
-        {
-            Outcome<PackageVersionDetails>.Ok ok => new VersionDetails.Read(ok.Value),
-            Outcome<PackageVersionDetails>.Failed failed => new VersionDetails.Failed(failed.Error.Message),
-            _ => throw new UnreachableException(),
-        };
-
-    /// <summary>Offers the versions of the package selected, picking its latest, once another is selected.</summary>
-    public void FollowSelection()
-    {
-        var package = Selected;
-        if (package == _versionsOf)
-            return;
-        _versionsOf = package;
-        if (package == null)
-        {
-            Version = null;
-            Versions = [];
-            VersionTexts = [];
-            return;
-        }
-        Version = package.Version;
-        Versions = package.Versions
-            .Select(v => v.Version)
-            .ToArray();
-        VersionTexts = Versions
-            .Select(v => v.Text)
-            .ToArray();
-    }
-
     /// <summary>How many times <see cref="Version"/> of the selected package was downloaded; 0 when the feed does not say.</summary>
     public long VersionDownloads
     {
@@ -672,66 +207,21 @@ public sealed class NuGetPicker
         {
             if (Selected == null || Version == null)
                 return 0;
-            var listed = FindVersion(Selected, Version);
+            var listed = NuGetPicking.FindVersion(Selected, Version);
             if (listed == null)
                 return 0;
             return listed.Downloads;
         }
     }
 
-    /// <summary>Fetches <see cref="Version"/> of the selected package, from the feed it was found in,
-    /// into the cache, in the background, for <see cref="TakeDownloaded"/> to hand over.</summary>
-    public void Download() =>
-        Background.Start(DownloadAsync(), _reportError);
-
-    private async Task DownloadAsync()
-    {
-        var version = Version;
-        var package = Selected;
-        var setup = ReadySetup();
-        var shown = _shown;
-        if (!CanOpen || version == null || package == null || setup == null || shown == null)
-            return;
-        var name = $"{package.Id} {version}";
-        var running = new DownloadState.Running(name, new CancellationTokenSource());
-        _download = running;
-        var fetched = await Background.Wait(NuGetFeeds.FetchPackageAsync(setup.Cache, shown.Search.Feed, package.Id, version, running.Cancel.Token));
-        if (!ReferenceEquals(_download, running))
-            return;
-        _download = Downloaded(name, fetched);
-    }
-
-    private DownloadState Downloaded(string name, Outcome<string> fetched)
-    {
-        switch (fetched)
-        {
-            case Outcome<string>.Ok ok:
-                return new DownloadState.Done(ok.Value);
-            case Outcome<string>.Failed failed:
-                _reportError(new AppProblem.PackageNotDownloaded(name, failed.Error));
-                return new DownloadState.None();
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    /// <summary>The package file the last download fetched, once; null until it is in.</summary>
-    public string? TakeDownloaded()
-    {
-        if (_download is not DownloadState.Done done)
-            return null;
-        _download = new DownloadState.None();
-        return done.Path;
-    }
-
     /// <summary>What a search asked of which feed.</summary>
-    private sealed record FeedSearch(NuGetFeed Feed, string Query, bool IncludePrerelease, int Page);
+    public sealed record FeedSearch(NuGetFeed Feed, string Query, bool IncludePrerelease, int Page);
 
     /// <summary>The page of packages shown, and the search that found it.</summary>
-    private sealed record ShownPage(FeedSearch Search, FeedPage Found);
+    public sealed record ShownPage(FeedSearch Search, FeedPage Found);
 
     /// <summary>Whether the user's NuGet.Config is read yet.</summary>
-    private abstract record SetupState
+    public abstract record SetupState
     {
         private SetupState()
         {
@@ -746,7 +236,7 @@ public sealed class NuGetPicker
 
     /// <summary>The last search: none since the dialog was made or the search was dropped, one
     /// running, or one that found a page or failed to.</summary>
-    private abstract record SearchRun
+    public abstract record SearchRun
     {
         private SearchRun()
         {
@@ -762,7 +252,7 @@ public sealed class NuGetPicker
     }
 
     /// <summary>A download: none, one running, or the package file one fetched, until it is taken.</summary>
-    private abstract record DownloadState
+    public abstract record DownloadState
     {
         private DownloadState()
         {
@@ -776,7 +266,536 @@ public sealed class NuGetPicker
     }
 
     /// <summary>Which version of which package of which feed details are of.</summary>
-    private readonly record struct DetailsKey(WebUrl Feed, PackageId Id, PackageVersion Version);
+    public readonly record struct DetailsKey(WebUrl Feed, PackageId Id, PackageVersion Version);
+}
+
+/// <summary>What the "open from NuGet" dialog does: searching a feed as the user types, a page at a time, fetching icons and version details, and downloading the package picked.</summary>
+public static class NuGetPicking
+{
+    private const double DebounceSeconds = 0.3;
+    private const string IconImagePrefix = "nuget-icon-";
+
+    /// <summary>Searches the feed and counts prereleases as the settings kept them.</summary>
+    public static void RestoreSearch(NuGetPicker picker, SavedNuGetSearch? saved)
+    {
+        if (saved == null)
+            return;
+        if (string.IsNullOrWhiteSpace(saved.FeedUrl))
+            return;
+        picker.Kept = saved;
+        picker.FeedUrl = saved.FeedUrl;
+        picker.IncludePrerelease = saved.IncludePrerelease;
+    }
+
+    /// <summary>The feed last searched and whether prereleases counted, for the settings to keep.</summary>
+    public static SavedNuGetSearch? GetKeptSearch(NuGetPicker picker)
+    {
+        return picker.Kept;
+    }
+
+    public static void OpenPicker(NuGetPicker picker)
+    {
+        picker.IsOpen = true;
+        picker.FocusQuery = true;
+        if (picker.Setup is SetupState.Unread)
+            ReadSetup(picker);
+    }
+
+    /// <summary>Reads the user's NuGet.Config in the background; one that cannot be read at all is
+    /// reported, and nuget.org searched in its place.</summary>
+    private static void ReadSetup(NuGetPicker picker)
+    {
+        Background.Start(ReadSetupAsync(picker), picker.ReportError);
+    }
+
+    private static async Task ReadSetupAsync(NuGetPicker picker)
+    {
+        picker.Setup = new SetupState.Reading();
+        var read = await Background.Run(NuGetFeeds.ReadUserSetup);
+        switch (read)
+        {
+            case Outcome<NuGetSetup>.Ok ok:
+                UseSetup(picker, ok.Value);
+                break;
+            case Outcome<NuGetSetup>.Failed failed:
+                picker.ReportError(new AppProblem.NuGetConfigUnreadable(failed.Error));
+                UseSetup(picker, NuGetFeeds.CreateDefaultSetup());
+                break;
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    /// <summary>Searches and downloads with <paramref name="setup"/> from now on, in place of the one
+    /// read from the user's NuGet.Config; with no feed kept, its first feed is the one searched.</summary>
+    internal static void UseSetup(NuGetPicker picker, NuGetSetup setup)
+    {
+        picker.Setup = new SetupState.Ready(setup);
+        if (picker.FeedUrl.Length > 0)
+            return;
+        if (setup.Sources.Count == 0)
+            return;
+        picker.FeedUrl = setup.Sources[0].Url.Text;
+    }
+
+    /// <summary>Searches <paramref name="source"/> at once.</summary>
+    public static void PickFeed(NuGetPicker picker, NuGetSource source)
+    {
+        picker.FeedUrl = source.Url.Text;
+        picker.TypedUrl = source.Url.Text;
+        picker.TypedAt = double.NegativeInfinity;
+    }
+
+    /// <summary>Closes the dialog, stopping the search, the download and the fetches it started.
+    /// Returns the images of the icons shown, for the screen to free.</summary>
+    public static List<string> ClosePicker(NuGetPicker picker)
+    {
+        picker.IsOpen = false;
+        StopSearch(picker);
+        StopDownload(picker);
+        picker.Fetches.Cancel();
+        picker.Fetches = new CancellationTokenSource();
+        picker.Details.Clear();
+        return DropIcons(picker);
+    }
+
+    internal static NuGetSetup? FindReadySetup(NuGetPicker picker)
+    {
+        if (picker.Setup is not SetupState.Ready ready)
+            return null;
+        return ready.Setup;
+    }
+
+    private static void StopSearch(NuGetPicker picker)
+    {
+        if (picker.Run is not SearchRun.Running running)
+            return;
+        running.Cancel.Cancel();
+        picker.Run = new SearchRun.None();
+    }
+
+    private static void StopDownload(NuGetPicker picker)
+    {
+        if (picker.DownloadRun is not DownloadState.Running running)
+            return;
+        running.Cancel.Cancel();
+        picker.DownloadRun = new DownloadState.None();
+    }
+
+    private static List<string> DropIcons(NuGetPicker picker)
+    {
+        var images = picker.Icons.Values
+            .Select(i => i.ImageId)
+            .ToList();
+        picker.Icons.Clear();
+        return images;
+    }
+
+    /// <summary>True once after <see cref="Open"/>: the query box should take focus.</summary>
+    public static bool TakeQueryFocus(NuGetPicker picker)
+    {
+        var focus = picker.FocusQuery;
+        picker.FocusQuery = false;
+        return focus;
+    }
+
+    public static void ShowPreviousPage(NuGetPicker picker)
+    {
+        if (!picker.HasPreviousPage)
+            return;
+        picker.RequestedPage = picker.Page - 1;
+    }
+
+    public static void ShowNextPage(NuGetPicker picker)
+    {
+        if (!picker.HasNextPage)
+            return;
+        picker.RequestedPage = picker.Page + 1;
+    }
+
+    /// <summary>Searches again for what the last search asked, after it failed.</summary>
+    public static void RetrySearch(NuGetPicker picker)
+    {
+        StopSearch(picker);
+        picker.Run = new SearchRun.None();
+    }
+
+    public static void ClearQuery(NuGetPicker picker)
+    {
+        picker.Query = "";
+    }
+
+    /// <summary>Opens the selected package at <see cref="Version"/>, unless the query typed is still to
+    /// be searched: then it is searched at once instead, so Enter never opens what an older query found.</summary>
+    public static void SubmitSearch(NuGetPicker picker)
+    {
+        if (picker.IsSettling)
+        {
+            SearchNow(picker);
+            return;
+        }
+        if (picker.IsSearching)
+            return;
+        DownloadPicked(picker);
+    }
+
+    /// <summary>Searches what was typed with the next update, without waiting for it to settle.</summary>
+    public static void SearchNow(NuGetPicker picker)
+    {
+        picker.TypedAt = double.NegativeInfinity;
+    }
+
+    /// <summary>Searches again once the typed feed or query settled, or at once when another page is
+    /// asked for or whether prereleases count changed; a new search starts on its first page. Returns
+    /// the seconds left before what was typed settles, or 0.</summary>
+    public static double UpdatePicker(NuGetPicker picker, double now)
+    {
+        NoteTyping(picker, now);
+        picker.IsSettling = false;
+        var setup = FindReadySetup(picker);
+        if (setup == null)
+            return 0;
+        var source = NuGetSource.FromUrl(picker.TypedUrl);
+        if (source == null)
+        {
+            DropResults(picker);
+            return 0;
+        }
+        var wanted = new FeedSearch(NuGetFeeds.EnsureFeed(setup, source), picker.TypedQuery, picker.IncludePrerelease, picker.RequestedPage);
+        if (IsNewSearch(picker, wanted))
+        {
+            picker.RequestedPage = 0;
+            wanted = wanted with { Page = 0 };
+        }
+        if (wanted == FindLastSearched(picker))
+            return 0;
+        var remaining = DebounceSeconds - (now - picker.TypedAt);
+        if (remaining > 0 && IsOnlyTypingChanged(picker, wanted))
+        {
+            picker.IsSettling = true;
+            return remaining;
+        }
+        StartSearch(picker, wanted);
+        return 0;
+    }
+
+    private static void NoteTyping(NuGetPicker picker, double now)
+    {
+        var typed = picker.Query != picker.TypedQuery || picker.FeedUrl != picker.TypedUrl;
+        if (!typed)
+            return;
+        picker.TypedQuery = picker.Query;
+        picker.TypedUrl = picker.FeedUrl;
+        picker.TypedAt = now;
+    }
+
+    /// <summary>Clears what was found once the feed typed is no URL, so nothing shows from another feed.</summary>
+    private static void DropResults(NuGetPicker picker)
+    {
+        StopSearch(picker);
+        picker.Run = new SearchRun.None();
+        ClearShown(picker);
+        picker.RequestedPage = 0;
+    }
+
+    private static void ClearShown(NuGetPicker picker)
+    {
+        picker.ShownResults = null;
+        ItemSelections.Clear(picker.Selection);
+    }
+
+    /// <summary>The search running or last run; null before any, or once it was stopped or dropped.</summary>
+    internal static FeedSearch? FindLastSearched(NuGetPicker picker)
+    {
+        return picker.Run switch
+            {
+                SearchRun.None => null,
+                SearchRun.Running running => running.Search,
+                SearchRun.Found found => found.Search,
+                SearchRun.Failed failed => failed.Search,
+                _ => throw new UnreachableException(),
+            };
+    }
+
+    internal static FeedSearch? FindShownSearch(NuGetPicker picker)
+    {
+        if (picker.ShownResults == null)
+            return null;
+        return picker.ShownResults.Search;
+    }
+
+    /// <summary>The search the next one is weighed against: the one running or last run, else the one shown.</summary>
+    private static FeedSearch? FindLastAsked(NuGetPicker picker)
+    {
+        var searched = FindLastSearched(picker);
+        if (searched != null)
+            return searched;
+        return FindShownSearch(picker);
+    }
+
+    /// <summary>Whether <paramref name="wanted"/> asks for other packages than the last search, not
+    /// just another page of them.</summary>
+    private static bool IsNewSearch(NuGetPicker picker, FeedSearch wanted)
+    {
+        var last = FindLastAsked(picker);
+        if (last == null)
+            return false;
+        return !IsSamePackages(wanted, last);
+    }
+
+    internal static bool IsSamePackages(FeedSearch a, FeedSearch? b)
+    {
+        if (b == null)
+            return false;
+        if (a.Feed != b.Feed)
+            return false;
+        if (a.Query != b.Query)
+            return false;
+        return a.IncludePrerelease == b.IncludePrerelease;
+    }
+
+    private static bool IsOnlyTypingChanged(NuGetPicker picker, FeedSearch wanted)
+    {
+        var last = FindLastAsked(picker);
+        if (last == null)
+            return false;
+        if (wanted.IncludePrerelease != last.IncludePrerelease)
+            return false;
+        return wanted.Page == last.Page;
+    }
+
+    private static void StartSearch(NuGetPicker picker, FeedSearch wanted)
+    {
+        Background.Start(StartSearchAsync(picker, wanted), picker.ReportError);
+    }
+
+    private static async Task StartSearchAsync(NuGetPicker picker, FeedSearch wanted)
+    {
+        StopSearch(picker);
+        KeepSearched(picker, wanted);
+        var running = new SearchRun.Running(wanted, new CancellationTokenSource());
+        picker.Run = running;
+        var found = await Background.Wait(NuGetFeeds.SearchAsync(wanted.Feed, wanted.Query, wanted.IncludePrerelease, wanted.Page, running.Cancel.Token));
+        if (!ReferenceEquals(picker.Run, running))
+            return;
+        picker.Run = ShowFoundPage(picker, wanted, found);
+    }
+
+    /// <summary>Has the settings keep the feed searched and whether prereleases count, once either changed.</summary>
+    private static void KeepSearched(NuGetPicker picker, FeedSearch searched)
+    {
+        var kept = new SavedNuGetSearch(searched.Feed.Source.Url.Text, searched.IncludePrerelease);
+        if (kept == picker.Kept)
+            return;
+        picker.Kept = kept;
+        picker.SearchChanges++;
+    }
+
+    /// <summary>Shows the page found in place of the one shown. A failed search says why, and keeps
+    /// the page shown when it only asked for another page of it.</summary>
+    private static SearchRun ShowFoundPage(NuGetPicker picker, FeedSearch searched, Outcome<FeedPage> found)
+    {
+        switch (found)
+        {
+            case Outcome<FeedPage>.Ok ok:
+                ShowFoundPage(picker, searched, ok.Value);
+                return new SearchRun.Found(searched);
+            case Outcome<FeedPage>.Failed failed:
+                ReportSearchFailure(picker, searched, failed.Error);
+                return new SearchRun.Failed(searched, failed.Error.Message);
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    private static void ShowFoundPage(NuGetPicker picker, FeedSearch searched, FeedPage page)
+    {
+        picker.ShownResults = new ShownPage(searched, page);
+        ItemSelections.Clear(picker.Selection);
+        if (page.Packages.Count > 0)
+            ItemSelections.Select(picker.Selection, page.Packages[0], page.Packages);
+    }
+
+    private static void ReportSearchFailure(NuGetPicker picker, FeedSearch searched, Exception error)
+    {
+        if (!IsSamePackages(searched, FindShownSearch(picker)))
+            ClearShown(picker);
+        picker.ReportError(new AppProblem.NuGetSearchFailed(searched.Feed.Source.Name, error));
+    }
+
+    /// <summary>The icon of <paramref name="package"/>, fetched in the background the first time it is
+    /// asked for; null when the package gives none.</summary>
+    public static PackageIcon? EnsureIcon(NuGetPicker picker, FeedPackage package)
+    {
+        var url = package.IconUrl;
+        if (url == null)
+            return null;
+        var setup = FindReadySetup(picker);
+        if (setup == null)
+            return null;
+        if (picker.Icons.TryGetValue(url, out var icon))
+            return icon;
+        picker.IconCount++;
+        icon = new PackageIcon { ImageId = IconImagePrefix + picker.IconCount };
+        picker.Icons.Add(url, icon);
+        FetchIcon(picker, setup, url, icon);
+        return icon;
+    }
+
+    /// <summary>Gives <paramref name="icon"/> its pixels once they are in; one that cannot be fetched
+    /// keeps none, so its row keeps the stand-in.</summary>
+    private static void FetchIcon(NuGetPicker picker, NuGetSetup setup, WebUrl url, PackageIcon icon)
+    {
+        Background.Start(FetchIconAsync(picker, setup, url, icon), picker.ReportError);
+    }
+
+    private static void ShowIcon(PackageIcon icon, ResourceImage? pixels)
+    {
+        if (pixels == null)
+            return;
+        icon.Shown = new ShownIcon(icon.ImageId, pixels, pixels.IsDarkOnClear());
+    }
+
+    private static async Task FetchIconAsync(NuGetPicker picker, NuGetSetup setup, WebUrl url, PackageIcon icon)
+    {
+        var token = picker.Fetches.Token;
+        var fetched = await Background.Wait(NuGetFeeds.FetchIconAsync(setup.Icons, url, NuGetPicker.IconPixels, token));
+        if (token.IsCancellationRequested)
+            return;
+        if (fetched is Outcome<ResourceImage>.Ok ok)
+            ShowIcon(icon, ok.Value);
+    }
+
+    /// <summary>What the feed says of <paramref name="version"/> of <paramref name="package"/>, read
+    /// in the background the first time it is asked for; null while no page of packages is shown or
+    /// the package lists no such version.</summary>
+    public static VersionDetails? EnsureDetails(NuGetPicker picker, FeedPackage package, PackageVersion version)
+    {
+        if (picker.ShownResults == null)
+            return null;
+        var listed = FindVersion(package, version);
+        if (listed == null)
+            return null;
+        var feed = picker.ShownResults.Search.Feed;
+        var key = new DetailsKey(feed.Source.Url, package.Id, version);
+        if (picker.Details.TryGetValue(key, out var details))
+            return details;
+        var loading = new VersionDetails.Loading();
+        picker.Details.Add(key, loading);
+        ReadDetails(picker, key, feed, listed, loading);
+        return loading;
+    }
+
+    /// <summary>Reads the details of <paramref name="version"/> of <paramref name="package"/> again, after they failed.</summary>
+    public static void RetryDetails(NuGetPicker picker, FeedPackage package, PackageVersion version)
+    {
+        if (picker.ShownResults == null)
+            return;
+        picker.Details.Remove(new DetailsKey(picker.ShownResults.Search.Feed.Source.Url, package.Id, version));
+    }
+
+    internal static FeedVersion? FindVersion(FeedPackage package, PackageVersion version)
+    {
+        return package.Versions.FirstOrDefault(v => v.Version == version);
+    }
+
+    /// <summary>Puts the details read in place of <paramref name="loading"/>, unless they were dropped
+    /// or asked for again meanwhile.</summary>
+    private static void ReadDetails(NuGetPicker picker, DetailsKey key, NuGetFeed feed, FeedVersion version, VersionDetails.Loading loading)
+    {
+        Background.Start(ReadDetailsAsync(picker, key, feed, version, loading), picker.ReportError);
+    }
+
+    private static async Task ReadDetailsAsync(NuGetPicker picker, DetailsKey key, NuGetFeed feed, FeedVersion version, VersionDetails.Loading loading)
+    {
+        var token = picker.Fetches.Token;
+        var read = await Background.Wait(NuGetFeeds.ReadDetailsAsync(feed, key.Id, version, token));
+        if (token.IsCancellationRequested)
+            return;
+        if (!picker.Details.TryGetValue(key, out var current) || !ReferenceEquals(current, loading))
+            return;
+        picker.Details[key] = GetReadDetails(read);
+    }
+
+    private static VersionDetails GetReadDetails(Outcome<PackageVersionDetails> read)
+    {
+        return read switch
+            {
+                Outcome<PackageVersionDetails>.Ok ok => new VersionDetails.Read(ok.Value),
+                Outcome<PackageVersionDetails>.Failed failed => new VersionDetails.Failed(failed.Error.Message),
+                _ => throw new UnreachableException(),
+            };
+    }
+
+    /// <summary>Offers the versions of the package selected, picking its latest, once another is selected.</summary>
+    public static void FollowSelection(NuGetPicker picker)
+    {
+        var package = picker.Selected;
+        if (package == picker.VersionsOf)
+            return;
+        picker.VersionsOf = package;
+        if (package == null)
+        {
+            picker.Version = null;
+            picker.Versions = [];
+            picker.VersionTexts = [];
+            return;
+        }
+        picker.Version = package.Version;
+        picker.Versions = package.Versions
+            .Select(v => v.Version)
+            .ToArray();
+        picker.VersionTexts = picker.Versions
+            .Select(v => v.Text)
+            .ToArray();
+    }
+
+    /// <summary>Fetches <see cref="Version"/> of the selected package, from the feed it was found in,
+    /// into the cache, in the background, for <see cref="TakeDownloaded"/> to hand over.</summary>
+    public static void DownloadPicked(NuGetPicker picker)
+    {
+        Background.Start(DownloadAsync(picker), picker.ReportError);
+    }
+
+    private static async Task DownloadAsync(NuGetPicker picker)
+    {
+        var version = picker.Version;
+        var package = picker.Selected;
+        var setup = FindReadySetup(picker);
+        var shown = picker.ShownResults;
+        if (!picker.CanOpen || version == null || package == null || setup == null || shown == null)
+            return;
+        var name = $"{package.Id} {version}";
+        var running = new DownloadState.Running(name, new CancellationTokenSource());
+        picker.DownloadRun = running;
+        var fetched = await Background.Wait(NuGetFeeds.FetchPackageAsync(setup.Cache, shown.Search.Feed, package.Id, version, running.Cancel.Token));
+        if (!ReferenceEquals(picker.DownloadRun, running))
+            return;
+        picker.DownloadRun = GetDownloadState(picker, name, fetched);
+    }
+
+    private static DownloadState GetDownloadState(NuGetPicker picker, string name, Outcome<string> fetched)
+    {
+        switch (fetched)
+        {
+            case Outcome<string>.Ok ok:
+                return new DownloadState.Done(ok.Value);
+            case Outcome<string>.Failed failed:
+                picker.ReportError(new AppProblem.PackageNotDownloaded(name, failed.Error));
+                return new DownloadState.None();
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    /// <summary>The package file the last download fetched, once; null until it is in.</summary>
+    public static string? TakeDownloaded(NuGetPicker picker)
+    {
+        if (picker.DownloadRun is not DownloadState.Done done)
+            return null;
+        picker.DownloadRun = new DownloadState.None();
+        return done.Path;
+    }
 }
 
 /// <summary>A package's icon: the image the screen draws it as, and what it shows once its pixels are in.</summary>

@@ -32,8 +32,8 @@ public sealed class UiState : IUiState
         MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters);
         Runtime = runtime;
         Picker = new FrameworkPicker { ReportError = reportError, ListAssemblies = () => RuntimeAssemblies.ListAssemblies(runtime) };
-        NuGetPicker = new NuGetPicker(reportError);
-        NuGetPicker.Restore(saved.NuGet);
+        NuGetPicker = new NuGetPicker { ReportError = reportError };
+        NuGetPicking.RestoreSearch(NuGetPicker, saved.NuGet);
         DialogWindows.Restore(NuGetPicker.Window, saved.NuGetWindow);
         DialogWindows.Restore(ExportSetup.Window, saved.ExportWindow);
         Display = saved.Display ?? DisplayOptions.Default;

@@ -288,7 +288,7 @@ internal static class TreePaneView
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.FileExport, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
-            ui.State.ExportSetup.Open(assemblies.Assemblies, assembly);
+            Exports.OpenExportSetup(ui.State.ExportSetup, assemblies.Assemblies, assembly);
         PdbItems(ui, assembly);
         if (ui.MenuItem(t.TreeCreateDiagram, id: "create-diagram"))
             SaveDialogs.PickDiagramFolder(ui, assembly);

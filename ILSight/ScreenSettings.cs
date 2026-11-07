@@ -48,7 +48,7 @@ public static class ScreenSettings
             uiState.ExportSetup.Window.Bounds,
             uiState.Layout.CopyArrangement(),
             uiState.Display,
-            uiState.NuGetPicker.Save(),
+            NuGetPicking.GetKeptSearch(uiState.NuGetPicker),
             uiState.NuGetPicker.Window.Bounds,
             uiState.Documents.SavePanels());
     }

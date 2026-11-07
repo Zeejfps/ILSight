@@ -34,7 +34,7 @@ public sealed class SettingsFormatTests : IDisposable
         var settings = ExpectedSettings();
         settings.FilePath = path;
 
-        Assert.IsType<SettingsWriteResult.Written>(settings.Save());
+        Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(settings));
 
         AssertSameJson(Fixture(SettingsFixture), File.ReadAllText(path));
     }
@@ -72,9 +72,9 @@ public sealed class SettingsFormatTests : IDisposable
     {
         var path = _temp.Write(SettingsFixture, Fixture(SettingsFixture));
 
-        var (loaded, problem) = AppSettings.Load(path);
+        var (loaded, problem) = SettingsJson.LoadSettings(path);
         Assert.IsType<SettingsProblem.None>(problem);
-        Assert.IsType<SettingsWriteResult.Written>(loaded.Save());
+        Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(loaded));
 
         AssertSameJson(Fixture(SettingsFixture), File.ReadAllText(path));
     }

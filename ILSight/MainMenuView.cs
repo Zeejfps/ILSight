@@ -183,7 +183,7 @@ internal static class MainMenuView
         if (ui.MenuItem(t.FileOpenFromFramework, id: "open-from-framework", icon: new UiIcon(icons.FileOpenFromFramework)))
             FrameworkPickerView.Open(ui.State.Picker);
         if (ui.MenuItem(t.FileOpenFromNuget, id: "open-from-nuget", icon: new UiIcon(icons.FileOpenFromNuGet)))
-            ui.State.NuGetPicker.Open();
+            NuGetPicking.OpenPicker(ui.State.NuGetPicker);
         ui.MenuSeparator();
         ExportItems(ui, appState);
         ui.MenuSeparator();
@@ -210,7 +210,7 @@ internal static class MainMenuView
             SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language);
         var anyOpen = ui.State.Tree.Roots.Count > 0;
         if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
-            ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs));
+            Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs));
         if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
             SaveDialogs.PickPdbFolder(ui);
     }

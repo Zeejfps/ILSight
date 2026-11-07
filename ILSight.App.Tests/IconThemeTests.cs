@@ -475,7 +475,7 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var path = _temp.Write("settings.json", """{ "IconTheme": null }""");
 
-        Assert.Equal("lucide", AppSettings.Load(path).Settings.IconTheme.Text);
+        Assert.Equal("lucide", SettingsJson.LoadSettings(path).Settings.IconTheme.Text);
     }
 
     [Fact]

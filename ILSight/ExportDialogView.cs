@@ -179,7 +179,7 @@ internal static class ExportDialogView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var setup = ui.State.ExportSetup;
-        var chosen = setup.IncludedChoices();
+        var chosen = Exports.ListIncludedChoices(setup);
         using (Section(ui))
         {
             ui.Label(t.ExportAssemblies, bold: true);
@@ -220,7 +220,7 @@ internal static class ExportDialogView
                 ChosenRow(ui, rows, i, setup, chosen, clashing);
         }
         if (removeRequested)
-            setup.RemoveSelectedRows();
+            Exports.RemoveSelectedRows(setup);
     }
 
     /// <summary>An assembly being exported: its name, its version, then its project's name, edited
@@ -290,10 +290,10 @@ internal static class ExportDialogView
         using (ui.Row(new Box { Gap = theme.GapTight, Padding = new Spacing(theme.GapTight, theme.GapTight, theme.Gap, theme.GapTight) }))
         {
             if (ui.IconButton("add", ui.State.Icons.ExportAdd, t.ExportAdd))
-                setup.Choose();
+                Exports.ChooseAssemblies(setup);
             var anyPicked = setup.RowSelection.Count > 0;
             if (ui.IconButton("remove-selected", ui.State.Icons.ExportRemovePicked, t.ExportRemoveSelected, enabled: anyPicked))
-                setup.RemoveSelectedRows();
+                Exports.RemoveSelectedRows(setup);
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
             SelectedCount(ui, setup);
         }
@@ -320,7 +320,7 @@ internal static class ExportDialogView
                 if (ui.Button(t.ExportBrowse, id: "browse"))
                     ui.PickFolder(t.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
             }
-            if (setup.FolderHoldsFiles)
+            if (Exports.CheckFolderHoldsFiles(setup))
                 ui.Text(t.ExportFolderWarning, color: theme.Warning, size: theme.FontSizeSmall, wrap: true);
             SolutionName(ui, setup);
         }
@@ -331,7 +331,7 @@ internal static class ExportDialogView
         if (!setup.IsSolution)
             return;
         var t = ui.State.Strings;
-        var placeholder = ui.Memo("export-solution-default", setup.Folder, static f => ExportSetup.DefaultSolutionNameFor(f));
+        var placeholder = ui.Memo("export-solution-default", setup.Folder, static f => Exports.GetDefaultSolutionName(f));
         Caption(ui, t.ExportSolution);
         ui.TextField("solution", ref setup.SolutionName, placeholder, width: Sizing.Grow());
     }
@@ -402,7 +402,7 @@ internal static class ExportDialogView
             if (ui.Button(t.ExportBrowse, id: "browse-key"))
                 ui.PickFile(t.ExportChooseKeyTitle, null, [new FileFilter(t.FileFilterSnk, ["*.snk"])], path => setup.StrongNameKeyFile = path);
         }
-        if (setup.KeyFileMissing)
+        if (Exports.CheckKeyFileMissing(setup))
             ui.Text(t.ExportKeyFileMissing, color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
     }
 
@@ -427,12 +427,12 @@ internal static class ExportDialogView
         ui.Separator();
         using (ui.Row(new Box { Gap = theme.Gap }))
         {
-            var blocker = setup.Blocker;
+            var blocker = Exports.FindBlocker(setup);
             var color = IsMistake(blocker) ? theme.Danger : theme.TextMuted;
             ui.Text(BlockerText(t, blocker), color: color, size: theme.FontSizeSmall, wrap: true);
             if (ui.Button(t.ExportCancel, id: "export-cancel", variant: ButtonVariant.Ghost))
-                setup.Close();
-            if (ui.Button(t.ExportConfirm, enabled: setup.CanExport, id: "export-start", variant: ButtonVariant.Primary))
+                Exports.CloseExportSetup(setup);
+            if (ui.Button(t.ExportConfirm, enabled: Exports.CanExport(setup), id: "export-start", variant: ButtonVariant.Primary))
                 ui.State.Later(setup, static (a, s) => Start(s, a));
         }
     }
@@ -463,7 +463,7 @@ internal static class ExportDialogView
     {
         var theme = ui.Theme;
         if (ui.Input.TakeKey(KeyboardKey.Escape))
-            setup.FinishChoosing();
+            Exports.FinishChoosing(setup);
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = theme.Gap }))
         {
             FilterRow(ui, setup.Picker);
@@ -554,16 +554,16 @@ internal static class ExportDialogView
             SelectedCount(ui, setup);
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
             if (ui.Button(t.ExportDone, id: "done", variant: ButtonVariant.Primary))
-                setup.FinishChoosing();
+                Exports.FinishChoosing(setup);
         }
     }
 
     /// <summary>Closes the dialog and exports what it asks for, unless something stops the export.</summary>
     internal static void Start(ExportSetup setup, AppState appState)
     {
-        if (!setup.CanExport)
+        if (!Exports.CanExport(setup))
             return;
-        setup.Close();
-        StartExport(appState, setup.CreateRequest());
+        Exports.CloseExportSetup(setup);
+        StartExport(appState, Exports.CreateRequest(setup));
     }
 }

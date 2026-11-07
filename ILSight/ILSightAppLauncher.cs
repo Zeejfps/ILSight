@@ -20,7 +20,7 @@ public static class ILSightAppLauncher
         if (receiver == null)
             return;
 
-        var loadResult = AppSettings.Load(config.SettingsPath);
+        var loadResult = SettingsJson.LoadSettings(config.SettingsPath);
         var app = CreateApp(loadResult, arguments, receiver.Inbox);
         OpenWindow(app, loadResult, config);
     }

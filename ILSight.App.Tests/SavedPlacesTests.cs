@@ -30,7 +30,7 @@ public sealed class SavedPlacesTests : IDisposable
 
     private (AppStateDriver, SettingsProblem) RestoredWith(string json)
     {
-        var (settings, problem) = AppSettings.Load(_temp.Write("settings.json", json));
+        var (settings, problem) = SettingsJson.LoadSettings(_temp.Write("settings.json", json));
         var d = new AppStateDriver(settings);
         RestoreActiveAssemblyList(d.AppState);
         d.Settle();

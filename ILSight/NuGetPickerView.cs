@@ -38,7 +38,7 @@ internal static class NuGetPickerView
 
     private static void OpenDownloaded(Ui<UiState> ui, NuGetPicker picker)
     {
-        var path = picker.TakeDownloaded();
+        var path = NuGetPicking.TakeDownloaded(picker);
         if (path == null)
             return;
         ui.State.Later(path, static (a, p) => OpenAssembly(a, p));
@@ -48,13 +48,13 @@ internal static class NuGetPickerView
     /// <summary>Closes the dialog and frees the images of the icons it showed.</summary>
     private static void Close(Ui<UiState> ui, NuGetPicker picker)
     {
-        foreach (var image in picker.Close())
+        foreach (var image in NuGetPicking.ClosePicker(picker))
             ui.RemoveImage(image);
     }
 
     private static void UpdateSearch(Ui<UiState> ui, NuGetPicker picker)
     {
-        var wait = picker.Update(ui.RealTime);
+        var wait = NuGetPicking.UpdatePicker(picker, ui.RealTime);
         if (wait > 0)
             ui.RequestUpdateIn(wait);
     }
@@ -72,12 +72,12 @@ internal static class NuGetPickerView
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
         {
             open |= PackagesColumn(ui, picker);
-            picker.FollowSelection();
+            NuGetPicking.FollowSelection(picker);
             NuGetDetailsView.Render(ui, picker);
         }
         open |= Footer(ui, picker);
         if (open)
-            picker.Download();
+            NuGetPicking.DownloadPicked(picker);
     }
 
     /// <summary>Stops what the dialog started once its close button or Escape dismissed it, which
@@ -101,7 +101,7 @@ internal static class NuGetPickerView
         {
             if (ui.HasFocus(ui.GetId(QueryId)))
                 MoveSelectionFromQuery(ui, picker);
-            if (picker.TakeQueryFocus())
+            if (NuGetPicking.TakeQueryFocus(picker))
                 ui.Focus(ui.GetId(QueryId));
             if (ui.TextField(QueryId, ref picker.Query, t.NugetQuery, Sizing.Grow(), ui.State.Icons.SearchField))
                 Submit(ui, picker);
@@ -109,14 +109,14 @@ internal static class NuGetPickerView
             ui.Leaf(new Box { Width = theme.Gap });
             ui.Text(t.NugetSource, color: theme.TextMuted);
             if (ui.TextField("nuget-feed", ref picker.FeedUrl, t.NugetFeed, Sizing.Fixed(AppLayout.NuGetFeedWidth)))
-                picker.SearchNow();
+                NuGetPicking.SearchNow(picker);
             KnownFeeds(ui, picker);
         }
     }
 
     private static void Submit(Ui<UiState> ui, NuGetPicker picker)
     {
-        picker.Submit();
+        NuGetPicking.SubmitSearch(picker);
         ui.RequestUpdateIn(0);
     }
 
@@ -130,7 +130,7 @@ internal static class NuGetPickerView
         {
             var current = source.Url.Text == picker.FeedUrl;
             if (ui.MenuRadioItem(source.Name, current, id: source.Url.Text))
-                picker.PickFeed(source);
+                NuGetPicking.PickFeed(picker, source);
         }
     }
 
@@ -274,7 +274,7 @@ internal static class NuGetPickerView
 
     private static ShownIcon? ShownIconOf(NuGetPicker picker, FeedPackage package)
     {
-        var icon = picker.IconOf(package);
+        var icon = NuGetPicking.EnsureIcon(picker, package);
         if (icon == null)
             return null;
         return icon.Shown;
@@ -388,12 +388,12 @@ internal static class NuGetPickerView
         var icons = ui.State.Icons;
         var idle = !picker.IsSearching;
         if (ui.IconButton("nuget-previous", icons.NugetPreviousPage, t.NugetPreviousPage, picker.HasPreviousPage && idle, ButtonVariant.Neutral))
-            picker.ShowPreviousPage();
+            NuGetPicking.ShowPreviousPage(picker);
         var args = (picker.Page, picker.RequestedPage, picker.PageCount, picker.IsLoadingPage, t);
         var label = ui.Memo("nuget-page", args, static a => PageText(a.t, a.Page, a.RequestedPage, a.PageCount, a.IsLoadingPage));
         ui.Text(label, new Box { Width = PageLabelWidth(ui, picker.PageCount) }, color: theme.TextMuted, size: theme.FontSizeSmall, align: Align.Center);
         if (ui.IconButton("nuget-next", icons.NugetNextPage, t.NugetNextPage, picker.HasNextPage && idle, ButtonVariant.Neutral))
-            picker.ShowNextPage();
+            NuGetPicking.ShowNextPage(picker);
     }
 
     private static string PageText(Strings t, int page, int requested, int count, bool loading)
