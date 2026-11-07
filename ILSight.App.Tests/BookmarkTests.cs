@@ -188,9 +188,9 @@ public sealed class BookmarkTests : IDisposable
     public void Clicking_the_margin_asks_to_toggle_that_line_and_a_bookmarked_line_is_marked()
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Outline(), 1200f, frames: 2);
-        var line = view.State.Folds.LineAt(new CodeRow(3));
+        var line = CodeFolding.GetLineAt(view.State.Folds, new CodeRow(3));
 
-        view.Bookmarks = new Dictionary<int, bool> { [view.State.Folds.LineAt(new CodeRow(5))] = true };
+        view.Bookmarks = new Dictionary<int, bool> { [CodeFolding.GetLineAt(view.State.Folds, new CodeRow(5))] = true };
         var clicked = view.Click(view.MarkOf(new CodeRow(3)));
 
         Assert.Equal(line, Assert.IsType<CodeViewIntent.ToggleBookmark>(clicked.Intent).Line);

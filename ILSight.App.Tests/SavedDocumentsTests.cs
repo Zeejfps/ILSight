@@ -52,7 +52,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static CodeViewPosition ScrollTo(AppDriver app, DocumentTab tab, int topLine, TextPosition anchor, TextPosition caret)
     {
-        CodeOf(app, tab).Restore(new CodeViewPosition(topLine, 0f, anchor, caret));
+        CodeViewWidget.RestorePosition(CodeOf(app, tab), new CodeViewPosition(topLine, 0f, anchor, caret));
         app.Run(4);
         return CodeOf(app, tab).Position;
     }

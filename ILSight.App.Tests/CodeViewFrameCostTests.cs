@@ -23,7 +23,7 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         {
             view.Run();
             for (var f = 0; f < view.Document.Folds.Length; f += 2)
-                view.State.SetCollapsed(f, true);
+                CodeViewWidget.SetCollapsed(view.State, f, true);
         }
         view.Frames.MovePointer(200f, 200f);
         var visibleRows = (int)MathF.Ceiling((Height - 2 * CodeViewDriver.Origin) / CodeViewDriver.Row) + 1;
@@ -146,7 +146,7 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
     {
         var view = CodeViewDriver.Showing(Folded(100), Height, frames: 2);
         var fold = view.Document.Folds[0];
-        view.State.SetCollapsed(0, true);
+        CodeViewWidget.SetCollapsed(view.State, 0, true);
         view.Run();
         view.MoveTo(fold.StartLine, view.Document.Lines[fold.StartLine].Text.Length + 2);
         return view;

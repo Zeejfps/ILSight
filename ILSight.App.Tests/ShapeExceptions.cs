@@ -74,8 +74,6 @@ internal static class ShapeExceptions
         "ILSight.AnalyzerTree",
         "ILSight.AppState",
         "ILSight.BrowseTree",
-        "ILSight.CodeFolds",
-        "ILSight.CodeViewState",
         "ILSight.ComparisonRows",
         "ILSight.Core.AssemblyList",
         "ILSight.Core.BrowseNode",

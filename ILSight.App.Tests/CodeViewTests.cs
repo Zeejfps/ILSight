@@ -197,11 +197,11 @@ public sealed class CodeViewTests
         view.Click(0, 2);
         view.Frames.Wait(1);
         view.Click(1, 5, modifiers: KeyModifiers.Shift);
-        var extended = view.State.SelectedText;
+        var extended = CodeViewWidget.GetSelectedText(view.State);
         view.Key(Shortcuts.SelectAll);
 
         Assert.Equal("pha beta\ngamma", extended);
-        Assert.Equal("alpha beta\ngamma delta\nepsilon", view.State.SelectedText);
+        Assert.Equal("alpha beta\ngamma delta\nepsilon", CodeViewWidget.GetSelectedText(view.State));
     }
 
     [Fact]
@@ -211,9 +211,9 @@ public sealed class CodeViewTests
 
         view.Click(1, 8);
         view.Click(1, 8);
-        var word = view.State.SelectedText;
+        var word = CodeViewWidget.GetSelectedText(view.State);
         view.Click(1, 8);
-        var line = view.State.SelectedText;
+        var line = CodeViewWidget.GetSelectedText(view.State);
 
         Assert.Equal("delta", word);
         Assert.Equal("gamma delta\n", line);
@@ -279,7 +279,7 @@ public sealed class CodeViewTests
     public void RevealLine_on_the_first_frame_scrolls_the_line_a_third_down_and_flashes_it()
     {
         var view = new CodeViewDriver(CodeViewDriver.Numbered(1000));
-        view.State.RevealLine(500);
+        CodeViewWidget.RevealLine(view.State, 500);
 
         view.Run(4);
 

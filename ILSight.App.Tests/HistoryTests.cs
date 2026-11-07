@@ -18,7 +18,7 @@ public sealed class HistoryTests
 
     private static CodeViewPosition ScrollTo(AppDriver app, int topLine, TextPosition anchor, TextPosition caret)
     {
-        CodeOf(app, app.AppState.Tabs.Active!).Restore(new CodeViewPosition(topLine, 0f, anchor, caret));
+        CodeViewWidget.RestorePosition(CodeOf(app, app.AppState.Tabs.Active!), new CodeViewPosition(topLine, 0f, anchor, caret));
         app.Run(4);
         return CodeOf(app, app.AppState.Tabs.Active!).Position;
     }

@@ -39,7 +39,7 @@ public sealed class CodeViewFoldTests
         Assert.Equal(["1", "2", (usings.StartLine + 1).ToString(), (usings.EndLine + 2).ToString()], numbers.Take(4));
         Assert.Equal("using System.Collections.Generic;…", rows[usings.StartLine]);
         Assert.DoesNotContain(rows, r => r.Contains("using System.Text;"));
-        Assert.True(view.State.IsCollapsed(document.FoldIndexAt("using System.Collections.Generic;")));
+        Assert.True(CodeViewWidget.IsCollapsed(view.State, document.FoldIndexAt("using System.Collections.Generic;")));
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class CodeViewFoldTests
         var view = Outline();
         var document = view.Document;
         var first = document.Find("public int First()").Line;
-        var row = view.State.Folds.RowOf(first);
+        var row = CodeFolding.FindRowOf(view.State.Folds, first);
 
         var (x, y) = view.ChevronOf(row);
         view.Frames.MovePointer(x, y).Frame();
@@ -60,7 +60,7 @@ public sealed class CodeViewFoldTests
 
         Assert.Equal(MouseCursor.Hand, hand);
         Assert.Equal(2, lit);
-        Assert.True(view.State.IsCollapsed(document.FoldIndexAt("public int First()")));
+        Assert.True(CodeViewWidget.IsCollapsed(view.State, document.FoldIndexAt("public int First()")));
         Assert.Contains("    public int First(){ … }", folded);
         Assert.DoesNotContain(folded, r => r.Contains("int total = 0;"));
         Assert.Equal((first + 1).ToString(), numbers[row.Index]);
@@ -68,7 +68,7 @@ public sealed class CodeViewFoldTests
 
         view.Click(row, document.Lines[first].Text.Length + 2);
 
-        Assert.False(view.State.IsCollapsed(document.FoldIndexAt("public int First()")));
+        Assert.False(CodeViewWidget.IsCollapsed(view.State, document.FoldIndexAt("public int First()")));
         Assert.Contains(Rows(view), r => r.Contains("int total = 0;"));
     }
 
@@ -83,14 +83,14 @@ public sealed class CodeViewFoldTests
 
         view.Key(KeyboardKey.M, KeyModifiers.Control);
         view.Key(KeyboardKey.M, KeyModifiers.Control);
-        var toggled = view.State.IsCollapsed(second);
+        var toggled = CodeViewWidget.IsCollapsed(view.State, second);
         view.Key(KeyboardKey.M, KeyModifiers.Control);
         view.Key(KeyboardKey.M);
-        var back = view.State.IsCollapsed(second);
+        var back = CodeViewWidget.IsCollapsed(view.State, second);
         view.Key(Shortcuts.CollapseFold);
-        var collapsed = view.State.IsCollapsed(second);
+        var collapsed = CodeViewWidget.IsCollapsed(view.State, second);
         view.Key(Shortcuts.CollapseFold);
-        var outer = view.State.IsCollapsed(document.FoldIndexAt("public class Outline"));
+        var outer = CodeViewWidget.IsCollapsed(view.State, document.FoldIndexAt("public class Outline"));
         view.Key(Shortcuts.ExpandFold);
         view.Key(Shortcuts.ExpandFold);
 
@@ -98,8 +98,8 @@ public sealed class CodeViewFoldTests
         Assert.False(back);
         Assert.True(collapsed);
         Assert.True(outer);
-        Assert.False(view.State.IsCollapsed(second));
-        Assert.False(view.State.IsCollapsed(document.FoldIndexAt("public class Outline")));
+        Assert.False(CodeViewWidget.IsCollapsed(view.State, second));
+        Assert.False(CodeViewWidget.IsCollapsed(view.State, document.FoldIndexAt("public class Outline")));
     }
 
     [Fact]
@@ -117,10 +117,10 @@ public sealed class CodeViewFoldTests
         }
 
         Pick(0, "Collapse all");
-        var all = Enumerable.Range(0, document.Folds.Length).All(view.State.IsCollapsed);
+        var all = Enumerable.Range(0, document.Folds.Length).All(fold => CodeViewWidget.IsCollapsed(view.State, fold));
         var rowsCollapsed = Rows(view).Count;
         Pick(0, "Expand all");
-        var none = Enumerable.Range(0, document.Folds.Length).All(f => !view.State.IsCollapsed(f));
+        var none = Enumerable.Range(0, document.Folds.Length).All(f => !CodeViewWidget.IsCollapsed(view.State, f));
         var rowsExpanded = Rows(view).Count;
         var third = document.Find("public int Third()").Line;
         Pick(third, "Toggle fold");
@@ -129,7 +129,7 @@ public sealed class CodeViewFoldTests
         Assert.Equal(4, rowsCollapsed);
         Assert.True(none);
         Assert.Equal(document.Lines.Count(l => l.Text.Length > 0), rowsExpanded);
-        Assert.True(view.State.IsCollapsed(document.FoldIndexAt("public int Third()")));
+        Assert.True(CodeViewWidget.IsCollapsed(view.State, document.FoldIndexAt("public int Third()")));
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public sealed class CodeViewFoldTests
         var document = view.Document;
         var first = document.Find("public int First()").Line;
         var end = document.FoldAt("public int First()").EndLine + 2;
-        ClickChevron(view, view.State.Folds.RowOf(first));
+        ClickChevron(view, CodeFolding.FindRowOf(view.State.Folds, first));
 
         view.MoveTo(first - 1, 0);
         view.Frames.Press().Frame();
@@ -157,14 +157,14 @@ public sealed class CodeViewFoldTests
         var view = Outline();
         var document = view.Document;
         var second = document.FoldIndexAt("public string Second()");
-        view.State.SetCollapsed(second, true);
+        CodeViewWidget.SetCollapsed(view.State, second, true);
         view.Run();
         view.Click(0, 0);
 
         view.Key(Shortcuts.Find);
         view.Frames.Type("needle").Frame(2);
 
-        Assert.False(view.State.IsCollapsed(second));
+        Assert.False(CodeViewWidget.IsCollapsed(view.State, second));
         Assert.Contains(Rows(view), r => r.Contains("builder.Append(\"needle\")"));
         Assert.Equal(document.Find("\"needle\"").Line, view.State.Selection.Start.Line);
     }
@@ -176,17 +176,17 @@ public sealed class CodeViewFoldTests
         var document = view.Document;
         var inner = document.FoldIndexAt("public class Inner");
         var deep = document.FoldIndexAt("public int Deep()");
-        view.State.SetCollapsed(deep, true);
-        view.State.SetCollapsed(inner, true);
+        CodeViewWidget.SetCollapsed(view.State, deep, true);
+        CodeViewWidget.SetCollapsed(view.State, inner, true);
         view.Run();
 
-        view.State.RevealLine(document.Find("return 7;").Line);
+        CodeViewWidget.RevealLine(view.State, document.Find("return 7;").Line);
         view.Run(2);
 
-        Assert.False(view.State.IsCollapsed(inner));
-        Assert.False(view.State.IsCollapsed(deep));
+        Assert.False(CodeViewWidget.IsCollapsed(view.State, inner));
+        Assert.False(CodeViewWidget.IsCollapsed(view.State, deep));
         Assert.Contains(Rows(view), r => r.Contains("return 7;"));
-        Assert.True(view.State.IsCollapsed(document.FoldIndexAt("using System.Collections.Generic;")));
+        Assert.True(CodeViewWidget.IsCollapsed(view.State, document.FoldIndexAt("using System.Collections.Generic;")));
     }
 
     [Fact]
@@ -195,11 +195,11 @@ public sealed class CodeViewFoldTests
         var view = Outline(height: 200f);
         var document = view.Document;
         var target = document.Find("public string Second()").Line;
-        view.State.Restore(new CodeViewPosition(target, 0f, default, default));
+        CodeViewWidget.RestorePosition(view.State, new CodeViewPosition(target, 0f, default, default));
         view.Run(2);
         var before = view.State.Position.TopLine;
 
-        view.State.SetCollapsed(document.FoldIndexAt("public int First()"), true);
+        CodeViewWidget.SetCollapsed(view.State, document.FoldIndexAt("public int First()"), true);
         view.Run(2);
 
         Assert.Equal(target, before);
@@ -211,13 +211,13 @@ public sealed class CodeViewFoldTests
     public void A_new_document_starts_from_its_own_default_folds()
     {
         var view = Outline();
-        view.State.ExpandAll();
+        CodeViewWidget.ExpandAll(view.State);
         view.Run();
 
         view.Document = CodeViewDriver.Decompile(typeof(Fixtures.Outline));
         view.Run();
 
-        Assert.True(view.State.IsCollapsed(view.Document.FoldIndexAt("using System.Collections.Generic;")));
-        Assert.False(view.State.IsCollapsed(view.Document.FoldIndexAt("public int First()")));
+        Assert.True(CodeViewWidget.IsCollapsed(view.State, view.Document.FoldIndexAt("using System.Collections.Generic;")));
+        Assert.False(CodeViewWidget.IsCollapsed(view.State, view.Document.FoldIndexAt("public int First()")));
     }
 }

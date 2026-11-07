@@ -185,7 +185,7 @@ public sealed class DocumentViews
         {
             var code = position.Code;
             if (code != null)
-                view.Code.Restore(code.Value);
+                CodeViewWidget.RestorePosition(view.Code, code.Value);
             return;
         }
         var grid = position.Grid;
@@ -221,7 +221,7 @@ public sealed class DocumentViews
             return;
         if (line >= tab.Document.Lines.Length)
             return;
-        view.Code.RevealLine(line);
+        CodeViewWidget.RevealLine(view.Code, line);
     }
 
     /// <summary>Selects the grid row <paramref name="row"/> of <paramref name="tab"/>, an open tab, and scrolls to it.</summary>
