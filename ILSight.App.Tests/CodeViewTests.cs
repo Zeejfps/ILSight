@@ -42,7 +42,7 @@ public sealed class CodeViewTests
         {
             ui.State.Theme = UiTheme.Light;
             ui.State.CodeViewPalette = BuiltInThemes.Light.Code;
-            ui.CodeView("code", view.Document, view.State);
+            CodeViewWidget.RenderCodeView(ui, "code", view.Document, view.State);
             ui.State.Theme = UiTheme.Dark;
             ui.State.CodeViewPalette = BuiltInThemes.Dark.Code;
         });

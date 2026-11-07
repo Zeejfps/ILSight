@@ -19,7 +19,7 @@ internal static class TypeExposedByAnalyzer
         var visitor = new TypeDefinitionUsedVisitor(analyzed);
         foreach (var type in context.GetScopeOf(analyzed).GetTypesInScope(context.CancellationToken))
         {
-            if (analyzed.Kind == TypeKind.Enum && type.IsSame(analyzed) || Members.IsHidden(type))
+            if (analyzed.Kind == TypeKind.Enum && AnalyzerHelpers.IsSame(type, analyzed) || Members.IsHidden(type))
                 continue;
             foreach (var member in type.Fields.Concat<IMember>(type.Properties).Concat(type.Events).Concat(type.Methods))
             {
@@ -49,7 +49,7 @@ internal static class TypeExposedByAnalyzer
 
         public override IType VisitTypeDefinition(ITypeDefinition type)
         {
-            _found |= type.IsSame(definition);
+            _found |= AnalyzerHelpers.IsSame(type, definition);
             return base.VisitTypeDefinition(type);
         }
 

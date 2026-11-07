@@ -20,7 +20,7 @@ public static class MetadataGridWidget
     private const int FunnelSalt = 0x4D444746;
     private const int FilterTextSalt = 0x4D444754;
 
-    public static MetadataGridResult MetadataGridView(this Ui<UiState> ui, string id, MetadataGridState state, MetadataFilters flags)
+    public static MetadataGridResult RenderMetadataGrid(Ui<UiState> ui, string id, MetadataGridState state, MetadataFilters flags)
     {
         var frame = new MetadataGridFrame(ui, id, state, flags);
         return frame.Render();

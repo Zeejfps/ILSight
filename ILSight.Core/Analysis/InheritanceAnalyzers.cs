@@ -25,11 +25,11 @@ internal static class InheritorsAnalyzer<T> where T : class, IMember
             yield break;
         foreach (var type in context.GetScopeOf(analyzed).GetTypesInScope(context.CancellationToken))
         {
-            if (!type.GetAllBaseTypeDefinitions().Any(t => t.IsSame(declaring)))
+            if (!type.GetAllBaseTypeDefinitions().Any(t => AnalyzerHelpers.IsSame(t, declaring)))
                 continue;
             foreach (var member in type.Members.OfType<T>())
             {
-                if ((!overrides || member.IsOverride) && InheritanceHelper.GetBaseMembers(member, !overrides).Any(m => m.IsSame(analyzed)))
+                if ((!overrides || member.IsOverride) && InheritanceHelper.GetBaseMembers(member, !overrides).Any(m => AnalyzerHelpers.IsSame(m, analyzed)))
                     yield return member;
             }
         }

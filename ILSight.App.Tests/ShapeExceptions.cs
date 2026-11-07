@@ -280,18 +280,7 @@ internal static class ShapeExceptions
     /// <summary>Extension functions, still to become plain ones.</summary>
     public static readonly string[] ExtensionsLeft =
     [
-        "ILSight.CodeViewWidget.CodeView",
-        "ILSight.Core.Analysis.AnalyzerHelpers.AnyToken",
-        "ILSight.Core.Analysis.AnalyzerHelpers.IsSame",
-        "ILSight.Core.Analysis.AnalyzerHelpers.ReadBody",
-        "ILSight.Core.Analysis.AnalyzerHelpers.Tokens",
-        "ILSight.Core.Metadata.CustomDebugInformationTable.ReadUTF8StringNullTerminated",
-        "ILSight.Exports.Listing",
-        "ILSight.Exports.WithExtracted",
-        "ILSight.Exports.WithPdbs",
-        "ILSight.Exports.WithProjects",
         "ILSight.Localization.LocalizationWidgetExtensions.Localization",
-        "ILSight.MetadataGridWidget.MetadataGridView",
     ];
 
     /// <summary>Methods on records, still to move to static functions.</summary>

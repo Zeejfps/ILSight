@@ -11,11 +11,13 @@ namespace ILSight.Core.Analysis;
 internal static class AnalyzerHelpers
 {
     /// <summary>Whether both name the same definition: the same token in the same file.</summary>
-    public static bool IsSame(this IEntity entity, IEntity other) =>
-        entity.MetadataToken == other.MetadataToken && entity.ParentModule?.MetadataFile == other.ParentModule?.MetadataFile;
+    public static bool IsSame(IEntity entity, IEntity other)
+    {
+        return entity.MetadataToken == other.MetadataToken && entity.ParentModule?.MetadataFile == other.ParentModule?.MetadataFile;
+    }
 
     /// <summary>The body of method <paramref name="handle"/>; null when it has none or it cannot be read.</summary>
-    public static MethodBodyBlock? ReadBody(this MetadataFile module, MethodDefinitionHandle handle)
+    public static MethodBodyBlock? ReadBody(MetadataFile module, MethodDefinitionHandle handle)
     {
         var definition = module.Metadata.GetMethodDefinition(handle);
         if (!definition.HasBody())
@@ -32,7 +34,7 @@ internal static class AnalyzerHelpers
 
     /// <summary>The instructions of <paramref name="body"/> with a metadata token operand, up to the
     /// first that cannot be decoded.</summary>
-    public static IEnumerable<(ILOpCode OpCode, EntityHandle Token)> Tokens(this MethodBodyBlock body)
+    public static IEnumerable<(ILOpCode OpCode, EntityHandle Token)> ListTokens(MethodBodyBlock body)
     {
         var blob = body.GetILReader();
         while (blob.RemainingBytes > 0)
@@ -46,8 +48,10 @@ internal static class AnalyzerHelpers
 
     /// <summary>Whether <paramref name="match"/> accepts a token operand of <paramref name="body"/>;
     /// a token it cannot resolve is not a match.</summary>
-    public static bool AnyToken(this MethodBodyBlock? body, Func<ILOpCode, EntityHandle, bool> match) =>
-        body != null && body.Tokens().Any(t => Matches(match, t.OpCode, t.Token));
+    public static bool HasToken(MethodBodyBlock? body, Func<ILOpCode, EntityHandle, bool> match)
+    {
+        return body != null && ListTokens(body).Any(t => Matches(match, t.OpCode, t.Token));
+    }
 
     private static bool Matches(Func<ILOpCode, EntityHandle, bool> match, ILOpCode opCode, EntityHandle token)
     {

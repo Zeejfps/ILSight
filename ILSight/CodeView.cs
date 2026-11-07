@@ -389,7 +389,7 @@ public static class CodeViewWidget
     /// turns on, and Ctrl with the wheel, =, - or 0 asks to change the size; without, at the theme's
     /// size with line numbers only.
     /// </summary>
-    public static CodeViewResult CodeView(this Ui<UiState> ui, string id, DecompiledDocument document, CodeViewState state,
+    public static CodeViewResult RenderCodeView(Ui<UiState> ui, string id, DecompiledDocument document, CodeViewState state,
         IReadOnlyDictionary<int, bool>? bookmarks = null, bool gutter = true, CodeTooltips? tooltips = null, DisplayOptions? display = null)
     {
         using var scope = ui.Id(id);

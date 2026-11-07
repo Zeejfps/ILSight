@@ -103,7 +103,7 @@ internal static class MetadataDetailsView
     private static void Text(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, MetadataTextDetails text)
     {
         var shown = FindText(texts, row, grid.Title, text.Text);
-        ui.CodeView("details", shown.Document, shown.View, gutter: false);
+        CodeViewWidget.RenderCodeView(ui, "details", shown.Document, shown.View, gutter: false);
     }
 
     private static void Table(Ui<UiState> ui, MetadataTableDetails table)

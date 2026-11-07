@@ -41,7 +41,7 @@ internal sealed class CodeViewDriver
     private void Render(Ui<UiState> ui)
     {
         using var screen = ui.Screen();
-        Last = ui.CodeView("code", Document, State, Bookmarks, tooltips: Tooltips, display: Display);
+        Last = CodeViewWidget.RenderCodeView(ui, "code", Document, State, Bookmarks, tooltips: Tooltips, display: Display);
     }
 
     /// <summary>A driver that has run <paramref name="frames"/> frames of <paramref name="document"/>.</summary>

@@ -27,7 +27,7 @@ internal static class TypeExtensionMethodsAnalyzer
                 if (!method.IsExtensionMethod)
                     continue;
                 var extended = method.Parameters[0].Type.GetDefinition();
-                if (extended != null && extended.IsSame(analyzed))
+                if (extended != null && AnalyzerHelpers.IsSame(extended, analyzed))
                     yield return method;
             }
         }

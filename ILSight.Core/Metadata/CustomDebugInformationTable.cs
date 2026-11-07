@@ -127,7 +127,7 @@ internal static class CustomDebugInformationTable
         {
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
-                rows.Add([reader.ReadUTF8StringNullTerminated(), reader.ReadUTF8StringNullTerminated()]);
+                rows.Add([ReadNullTerminatedUtf8(ref reader), ReadNullTerminatedUtf8(ref reader)]);
             return new MetadataTableDetails(["Name", "Value"], rows);
         }
         if (kind == KnownGuids.CompilationMetadataReferences)
@@ -135,8 +135,8 @@ internal static class CustomDebugInformationTable
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
             {
-                var fileName = reader.ReadUTF8StringNullTerminated();
-                var aliases = reader.ReadUTF8StringNullTerminated();
+                var fileName = ReadNullTerminatedUtf8(ref reader);
+                var aliases = ReadNullTerminatedUtf8(ref reader);
                 var flags = reader.ReadByte();
                 var timestamp = reader.ReadUInt32();
                 var fileSize = reader.ReadUInt32();
@@ -149,7 +149,7 @@ internal static class CustomDebugInformationTable
         {
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
-                rows.Add([reader.ReadUTF8StringNullTerminated()]);
+                rows.Add([ReadNullTerminatedUtf8(ref reader)]);
             return new MetadataTableDetails(["Element Name"], rows);
         }
         return new MetadataTextDetails(reader.ToHexString(), null);
@@ -170,7 +170,7 @@ internal static class CustomDebugInformationTable
 
     /// <summary>Reads a null-terminated UTF-8 string and advances past the terminator; throws
     /// <see cref="BadImageFormatException"/> when no terminator remains.</summary>
-    private static string ReadUTF8StringNullTerminated(this ref BlobReader reader)
+    private static string ReadNullTerminatedUtf8(ref BlobReader reader)
     {
         var length = reader.IndexOf(0);
         if (length < 0)

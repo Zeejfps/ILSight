@@ -109,7 +109,7 @@ internal static class TypeUsedByAnalyzer
 
     private static bool ScanMethodBody(MetadataFile module, MethodDefinitionHandle handle, FindTypeDecoder decoder)
     {
-        var body = module.ReadBody(handle);
+        var body = AnalyzerHelpers.ReadBody(module, handle);
         if (body == null)
             return false;
         var metadata = module.Metadata;
@@ -124,7 +124,7 @@ internal static class TypeUsedByAnalyzer
             {
             }
         }
-        return body.AnyToken((_, token) => UsedByMember(token));
+        return AnalyzerHelpers.HasToken(body, (_, token) => UsedByMember(token));
 
         bool UsedByMember(EntityHandle member)
         {

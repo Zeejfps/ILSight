@@ -36,8 +36,8 @@ internal static class FieldAccessAnalyzer
             return false;
         var file = module.MetadataFile;
         return context.MappingOf(method.DeclaringTypeDefinition!).GetMethodParts((MethodDefinitionHandle)method.MetadataToken)
-            .Any(part => file.ReadBody(part).AnyToken((opCode, token) =>
-                Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && found.IsSame(field)));
+            .Any(part => AnalyzerHelpers.HasToken(AnalyzerHelpers.ReadBody(file, part), (opCode, token) =>
+                Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && AnalyzerHelpers.IsSame(found, field)));
     }
 
     private static bool Is(FieldAccessKind kind, ILOpCode opCode) =>

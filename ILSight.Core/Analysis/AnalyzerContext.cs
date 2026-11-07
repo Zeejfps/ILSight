@@ -30,7 +30,7 @@ internal sealed class AnalyzerContext
         var module = method.ParentModule?.MetadataFile;
         if (!method.HasBody || method.MetadataToken.IsNil || module == null)
             return null;
-        return module.ReadBody((MethodDefinitionHandle)method.MetadataToken);
+        return AnalyzerHelpers.ReadBody(module, (MethodDefinitionHandle)method.MetadataToken);
     }
 
     /// <summary>How C# maps the compiler-generated code around <paramref name="entity"/> to the

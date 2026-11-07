@@ -65,7 +65,7 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     private static void Render(Ui<UiState> ui, MetadataGrid grid, MetadataGridState state, MetadataFilters flags)
     {
         using var screen = ui.Screen();
-        ui.MetadataGridView("grid", state, flags);
+        MetadataGridWidget.RenderMetadataGrid(ui, "grid", state, flags);
     }
 
     /// <summary>Scrolls down and back up the table in sweeps, so the measured frames show rows the

@@ -19,7 +19,7 @@ internal static class TypeInstantiatedByAnalyzer
     {
         return context.GetScopeOf(type).MembersWhoseCode(
             method => method.ParentModule is MetadataModule module
-                && context.GetMethodBody(method).AnyToken((opCode, token) => Instantiates(module, opCode, token, type)),
+                && AnalyzerHelpers.HasToken(context.GetMethodBody(method), (opCode, token) => Instantiates(module, opCode, token, type)),
             context.CancellationToken);
     }
 
@@ -34,6 +34,6 @@ internal static class TypeInstantiatedByAnalyzer
             HandleKind.TypeDefinition or HandleKind.TypeReference => module.ResolveType(token, default)?.GetDefinition(),
             _ => null,
         };
-        return found?.ParentModule != null && found.IsSame(type);
+        return found?.ParentModule != null && AnalyzerHelpers.IsSame(found, type);
     }
 }

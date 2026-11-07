@@ -28,7 +28,7 @@ internal static class MethodUsedByAnalyzer
 
         var users = context.GetScopeOf(analyzed).MembersWhoseCode(
             method => method.ParentModule is MetadataModule module
-                && context.GetMethodBody(method).AnyToken((opCode, token) => References(module, opCode, token)),
+                && AnalyzerHelpers.HasToken(context.GetMethodBody(method), (opCode, token) => References(module, opCode, token)),
             context.CancellationToken);
         foreach (var user in users)
             yield return user is IMethod method ? ParentOf(method) : user;
@@ -46,7 +46,7 @@ internal static class MethodUsedByAnalyzer
                 && (baseMethod == null || !AnalyzerHelpers.IsPossibleReferenceTo(token, module.MetadataFile, baseMethod)))
                 return false;
             var member = (module.ResolveEntity(token) as IMember)?.MemberDefinition;
-            return member != null && (opCode == ILOpCode.Callvirt && baseMethod != null && member.IsSame(baseMethod) || member.IsSame(analyzed));
+            return member != null && (opCode == ILOpCode.Callvirt && baseMethod != null && AnalyzerHelpers.IsSame(member, baseMethod) || AnalyzerHelpers.IsSame(member, analyzed));
         }
     }
 }

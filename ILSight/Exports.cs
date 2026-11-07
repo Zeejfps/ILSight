@@ -85,7 +85,7 @@ public static class Exports
         var options = appState.DecompilerOptions;
         var session = appState.Session;
         var job = new ExportJob(node.Text, CodeKindOf(language), FolderOf(path));
-        RunExport(appState, job, node.Text, s => SaveCodeFile(session, node, language, options, path, s.Token), (r, _) => r.Listing(path));
+        RunExport(appState, job, node.Text, s => SaveCodeFile(session, node, language, options, path, s.Token), (r, _) => ReportWritten(r, path));
     }
 
     private static ExportKind CodeKindOf(DecompilationLanguage language)
@@ -151,7 +151,10 @@ public static class Exports
     }
 
     /// <summary><paramref name="report"/> listing <paramref name="written"/>.</summary>
-    private static ExportReport Listing(this ExportReport report, params string[] written) => report with { Written = written };
+    private static ExportReport ReportWritten(ExportReport report, params string[] written)
+    {
+        return report with { Written = written };
+    }
 
     /// <summary>Decompiles <paramref name="assembly"/> into a C# project whose file is
     /// <paramref name="projectPath"/>, with what <paramref name="extras"/> asks for besides. The export
@@ -162,13 +165,13 @@ public static class Exports
         var options = appState.DecompilerOptions;
         var job = new ExportJob(Path.GetFileNameWithoutExtension(projectPath), ExportKind.Project, FolderOf(projectPath));
         RunExport(appState, job, assembly.Name, s => AssemblyExport.ExportProject(assembly, options, projectPath, withExtras, s.Progress, s.Token),
-            (r, project) => r.WithProjects([project], projectPath));
+            (r, project) => ReportProjects(r, [project], projectPath));
     }
 
     /// <summary><paramref name="report"/> listing <paramref name="first"/>, each of
     /// <paramref name="projects"/> and the PDBs written beside them as written, with the parts the
     /// projects could not decompile and the PDBs that could not be written as its problems.</summary>
-    private static ExportReport WithProjects(this ExportReport report, IReadOnlyList<ExportedProject> projects, string first)
+    private static ExportReport ReportProjects(ExportReport report, IReadOnlyList<ExportedProject> projects, string first)
     {
         var pdbs = projects
             .Select(static p => p.Pdb)
@@ -199,7 +202,7 @@ public static class Exports
         var options = appState.DecompilerOptions;
         var job = new ExportJob(Path.GetFileNameWithoutExtension(solutionPath), ExportKind.Solution, FolderOf(solutionPath));
         RunExport(appState, job, "", s => AssemblyExport.ExportSolution(projects, options, solutionPath, extras, s.Progress, s.Token),
-            (r, exported) => r.WithProjects(exported, solutionPath));
+            (r, exported) => ReportProjects(r, exported, solutionPath));
     }
 
     /// <summary>The assembly of the node the active tab shows, or null when it shows none that was read.</summary>
@@ -233,7 +236,7 @@ public static class Exports
     {
         var options = appState.DecompilerOptions;
         var job = new ExportJob(assembly.Name, ExportKind.Pdb, FolderOf(path));
-        RunExport(appState, job, assembly.Name, s => GeneratePdbFile(assembly, options, path, s), (r, _) => r.Listing(path));
+        RunExport(appState, job, assembly.Name, s => GeneratePdbFile(assembly, options, path, s), (r, _) => ReportWritten(r, path));
     }
 
     private static bool GeneratePdbFile(LoadedModule assembly, DecompilerOptions options, string path, ExportStart start)
@@ -257,7 +260,7 @@ public static class Exports
     private static ExportReport OpenDiagram(AppState appState, ExportReport report, string page)
     {
         appState.EnqueueCommand(new ViewCommand.OpenFile(page));
-        return report.Listing(page);
+        return ReportWritten(report, page);
     }
 
     /// <summary>Writes a portable PDB of each open assembly into <paramref name="folder"/>, named
@@ -268,12 +271,12 @@ public static class Exports
         var assemblies = appState.Assemblies.Assemblies;
         var job = new ExportJob(Path.GetFileName(folder), ExportKind.Pdbs, folder);
         RunExport(appState, job, "", s => AssemblyExport.GeneratePdbs(assemblies, options, folder, s.Progress, s.Token),
-            (r, failures) => r.WithPdbs(assemblies, failures, folder));
+            (r, failures) => ReportPdbs(r, assemblies, failures, folder));
     }
 
     /// <summary><paramref name="report"/> listing the PDB of each of <paramref name="assemblies"/> that
     /// is not among <paramref name="failures"/> as written, and the failures as its problems.</summary>
-    private static ExportReport WithPdbs(this ExportReport report, IReadOnlyList<LoadedModule> assemblies, List<PdbFailure> failures,
+    private static ExportReport ReportPdbs(ExportReport report, IReadOnlyList<LoadedModule> assemblies, List<PdbFailure> failures,
         string folder)
     {
         var failed = failures
@@ -302,12 +305,12 @@ public static class Exports
     {
         var job = new ExportJob(name, ExportKind.Files, folder);
         RunExport(appState, job, name, s => place.Container.Package.ExtractFolder(place.Folder, folder, s.Progress, s.Token),
-            (r, extracted) => r.WithExtracted(extracted));
+            (r, extracted) => ReportExtracted(r, extracted));
     }
 
     /// <summary><paramref name="report"/> listing the files <paramref name="extracted"/> wrote, and those
     /// it could not as its problems.</summary>
-    private static ExportReport WithExtracted(this ExportReport report, ExtractedFiles extracted)
+    private static ExportReport ReportExtracted(ExportReport report, ExtractedFiles extracted)
     {
         var problems = extracted.Failures
             .Select(ProblemOf)

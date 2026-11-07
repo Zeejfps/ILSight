@@ -108,7 +108,7 @@ internal static class ErrorDialogView
         }
 
         using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.EditorBackground, Clip = true }))
-            ui.CodeView("error-text", GetSelectedDocument(shown, t), shown.View);
+            CodeViewWidget.RenderCodeView(ui, "error-text", GetSelectedDocument(shown, t), shown.View);
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
         {

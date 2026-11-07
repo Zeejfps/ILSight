@@ -28,11 +28,11 @@ internal static class MethodUsesAnalyzer
 
     private static IEnumerable<IEntity> ScanMethod(MetadataModule module, MethodDefinitionHandle handle)
     {
-        var body = module.MetadataFile.ReadBody(handle);
+        var body = AnalyzerHelpers.ReadBody(module.MetadataFile, handle);
         if (body == null)
             yield break;
         var types = new TypeDefinitionCollector();
-        foreach (var (opCode, token) in body.Tokens())
+        foreach (var (opCode, token) in AnalyzerHelpers.ListTokens(body))
         {
             if (opCode.GetOperandType() == OperandType.Type)
                 continue;
