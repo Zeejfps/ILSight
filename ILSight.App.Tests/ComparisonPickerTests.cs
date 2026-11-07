@@ -72,12 +72,25 @@ public sealed class ComparisonPickerTests
     {
         var d = OpenThree();
         var picker = OpenPicker(d, OlderPath);
-        picker.Selection.Select(1, picker.Filtered.Count);
+        ItemSelections.Select(picker.Selection, picker.Filtered[1], picker.Filtered);
 
         picker.Filter = "Tests";
         ComparisonPickerView.Update(picker, d.AppState.Assemblies);
 
         Assert.Equal(AppStateDriver.FixturePath, picker.Selected!.FilePath.Text);
+    }
+
+    [Fact]
+    public void The_selection_holds_the_assembly_whatever_happens_to_the_rows_around_it()
+    {
+        var d = OpenThree();
+        var picker = OpenPicker(d, OlderPath);
+        ItemSelections.Select(picker.Selection, picker.Filtered[1], picker.Filtered);
+        var selected = picker.Selected;
+
+        picker.Filtered.Clear();
+
+        Assert.Same(selected, picker.Selected);
     }
 
     [Fact]

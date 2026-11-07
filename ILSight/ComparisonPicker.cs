@@ -36,7 +36,9 @@ public sealed class ComparisonPicker
     public ComparisonDialog Dialog = new ComparisonDialog.Closed();
     public string Filter = "";
 
-    public ListSelection Selection { get; } = new();
+    /// <summary>The assembly selected to compare with, held by itself, so that it can't point past the
+    /// assemblies offered as they change.</summary>
+    public ItemSelection<LoadedModule> Selection { get; } = new();
 
     public bool IsOpen => Dialog is ComparisonDialog.Open;
 
@@ -56,13 +58,5 @@ public sealed class ComparisonPicker
     }
 
     /// <summary>The assembly selected to compare with, or null when none is.</summary>
-    public LoadedModule? Selected
-    {
-        get
-        {
-            if (!Selection.HasSelection)
-                return null;
-            return Filtered[Selection.Index];
-        }
-    }
+    public LoadedModule? Selected => Selection.Item;
 }

@@ -21,7 +21,7 @@ internal static class ComparisonPickerView
     {
         picker.Dialog = new ComparisonDialog.Open(compared);
         picker.Filter = "";
-        picker.Selection.Clear();
+        ItemSelections.Clear(picker.Selection);
         picker.FocusFilter = true;
         picker.ListedVersion = -1;
         picker.AppliedFilter = null;
@@ -112,10 +112,15 @@ internal static class ComparisonPickerView
 
     private static void SelectAgain(ComparisonPicker picker, LoadedModule? selected)
     {
+        if (picker.Filtered.Count == 0)
+        {
+            ItemSelections.Clear(picker.Selection);
+            return;
+        }
         var index = 0;
         if (selected != null)
             index = Math.Max(0, picker.Filtered.IndexOf(selected));
-        picker.Selection.Select(index, picker.Filtered.Count);
+        ItemSelections.Select(picker.Selection, picker.Filtered[index], picker.Filtered);
     }
 
     public static void Render(Ui<UiState> ui, AssemblyList assemblies)
@@ -169,9 +174,11 @@ internal static class ComparisonPickerView
             var movesCaret = stroke.Key is KeyboardKey.Home or KeyboardKey.End;
             if (movesCaret)
                 continue;
-            var index = picker.Selection.Index;
-            if (UiWidgets.ApplyListKey(stroke, ref index, count, page))
-                picker.Selection.Select(index, count);
+            var index = picker.Selection.Rows.Index;
+            if (!UiWidgets.ApplyListKey(stroke, ref index, count, page))
+                continue;
+            picker.Selection.Rows.Select(index, count);
+            ItemSelections.TakeFrom(picker.Selection, picker.Filtered);
         }
     }
 
@@ -187,10 +194,16 @@ internal static class ComparisonPickerView
 
     private static bool Rows(Ui<UiState> ui, ComparisonPicker picker, int listId)
     {
-        using var list = ui.SelectableList(listId, picker.Filtered.Count, picker.Selection);
-        for (var i = list.First; i < list.End; i++)
-            Row(ui, list, i, picker.Filtered[i]);
-        return list.Activated;
+        bool activated;
+        ItemSelections.ShowIn(picker.Selection, picker.Filtered);
+        using (var list = ui.SelectableList(listId, picker.Filtered.Count, picker.Selection.Rows))
+        {
+            for (var i = list.First; i < list.End; i++)
+                Row(ui, list, i, picker.Filtered[i]);
+            activated = list.Activated;
+        }
+        ItemSelections.TakeFrom(picker.Selection, picker.Filtered);
+        return activated;
     }
 
     /// <summary>The assembly's name and version, then its framework and, muted, its file, shortened in the middle so its folder and name stay.</summary>
