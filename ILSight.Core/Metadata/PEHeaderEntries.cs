@@ -1,6 +1,6 @@
-using static ILSight.Core.Metadata.GridSchemas;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
+using static ILSight.Core.Metadata.GridSchemas;
 using System;
 using System.Collections.Generic;
 using System.Reflection.PortableExecutable;

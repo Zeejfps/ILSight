@@ -1,7 +1,7 @@
-using ICSharpCode.Decompiler.CSharp;
-using ICSharpCode.Decompiler.Util;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
+using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler.Util;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.Disassembler;

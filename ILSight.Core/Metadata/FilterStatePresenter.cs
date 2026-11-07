@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using System.Collections.Immutable;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System;
 using System.Linq;
 

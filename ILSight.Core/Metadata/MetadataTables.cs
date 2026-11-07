@@ -1,8 +1,8 @@
+// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
+
 using static ILSight.Core.Metadata.GridSchemas;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
-// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
-
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Globalization;

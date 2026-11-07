@@ -1,10 +1,10 @@
+// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
+
 using ICSharpCode.Decompiler.CSharp;
 using System.Text.RegularExpressions;
 using System.Xml;
 using ICSharpCode.Decompiler.Documentation;
 using ICSharpCode.Decompiler.Metadata;
-// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
-
 using System.Net;
 using System.Text.Json;
 using ICSharpCode.Decompiler;
