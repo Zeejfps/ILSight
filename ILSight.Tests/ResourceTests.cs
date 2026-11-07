@@ -144,7 +144,7 @@ public sealed class ResourceTests
         Assert.False(NodeContentLoader.DependsOnLanguage(broken));
         Assert.Equal("// This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.", document.Lines[0].Text);
         Assert.Equal(SpanKind.Comment, document.Lines[0].Spans[0].Kind);
-        Assert.Contains("not a picture", document.GetText());
+        Assert.Contains("not a picture", Documents.GetText(document));
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class ResourceTests
         var document = Resources(assembly).Child("sample.xml").Decompile(DecompilationLanguage.CSharp);
         var spans = document.SpansOf().ToList();
 
-        Assert.StartsWith("<?xml version=\"1.0\"?>", document.GetText());
+        Assert.StartsWith("<?xml version=\"1.0\"?>", Documents.GetText(document));
         Assert.Contains(("<?xml version=\"1.0\"?>", SpanKind.Preprocessor), spans.Select(s => (s.Text, s.Span.Kind)));
         Assert.Contains(("<!-- a sample -->", SpanKind.Comment), spans.Select(s => (s.Text, s.Span.Kind)));
         Assert.Contains(("root", SpanKind.Keyword), spans.Select(s => (s.Text, s.Span.Kind)));
@@ -181,7 +181,7 @@ public sealed class ResourceTests
     {
         var assembly = Trees.TestAssembly;
 
-        var text = Resources(assembly).Child("blob.bin").Decompile(DecompilationLanguage.CSharp).GetText();
+        var text = Documents.GetText(Resources(assembly).Child("blob.bin").Decompile(DecompilationLanguage.CSharp));
 
         Assert.Contains("blob.bin (Embedded, 6 bytes)", text);
         Assert.Contains("00 01 02 03 FF FE", text);
@@ -237,7 +237,7 @@ public sealed class ResourceTests
 
         Assert.False(baml.IsImage);
         Assert.True(NodeContentLoader.DependsOnLanguage(baml));
-        Assert.Contains("x:Class=\"SampleApp.MainWindow\"", document.GetText());
+        Assert.Contains("x:Class=\"SampleApp.MainWindow\"", Documents.GetText(document));
     }
 
     private static BrowseNode MainWindowBaml()
@@ -250,7 +250,7 @@ public sealed class ResourceTests
     public void Baml_shows_as_the_xaml_it_was_compiled_from()
     {
         var document = MainWindowBaml().Decompile(DecompilationLanguage.CSharp);
-        var text = document.GetText();
+        var text = Documents.GetText(document);
 
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", text);
         Assert.Contains("Text=\"Hello from BAML\"", text);
@@ -290,9 +290,9 @@ public sealed class ResourceTests
             entries);
         Assert.Equal((64, 64, "SVG"), Picture(container.Child("/Assets/icon.svg")));
         Assert.Equal(Expected, Assert.IsType<ImageContent>(container.Child("/Assets/logo.png").Content()).Image.Rgba);
-        Assert.Contains("\"sample\"", container.Child("/Assets/notes.json").Decompile(DecompilationLanguage.CSharp).GetText());
+        Assert.Contains("\"sample\"", Documents.GetText(container.Child("/Assets/notes.json").Decompile(DecompilationLanguage.CSharp)));
         var xamlInfo = container.Child("/!AvaloniaResourceXamlInfo").Decompile(DecompilationLanguage.CSharp);
-        Assert.Contains("/MainWindow.axaml", xamlInfo.GetText());
+        Assert.Contains("/MainWindow.axaml", Documents.GetText(xamlInfo));
         Assert.True(xamlInfo.Lines.Length > 5);
     }
 
@@ -310,7 +310,7 @@ public sealed class ResourceTests
     {
         var container = Resources(Trees.TestAssembly).Child("!AvaloniaResources");
 
-        var text = container.Decompile(DecompilationLanguage.CSharp).GetText();
+        var text = Documents.GetText(container.Decompile(DecompilationLanguage.CSharp));
 
         Assert.Contains("// /Assets/logo.png (76 bytes)", text);
         Assert.Contains("// /Assets/notes.json (", text);
@@ -331,7 +331,7 @@ public sealed class ResourceTests
     {
         var assembly = Trees.TestAssembly;
 
-        var text = Resources(assembly).Decompile(DecompilationLanguage.CSharp).GetText();
+        var text = Documents.GetText(Resources(assembly).Decompile(DecompilationLanguage.CSharp));
 
         Assert.Contains("// logo.png (Embedded, 76 bytes)", text);
         Assert.Contains("// Mixed.resources (Embedded, ", text);

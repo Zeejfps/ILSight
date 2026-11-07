@@ -75,7 +75,7 @@ internal static class ErrorDialogView
         var body = text.Details;
         if (body.Length == 0)
             body = text.Title;
-        return DecompiledDocument.FromText(text.Title, body);
+        return Documents.CreateFromText(text.Title, body);
     }
 
     public static void Render(Ui<UiState> ui, ErrorLog errors)

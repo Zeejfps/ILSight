@@ -109,7 +109,7 @@ public sealed class DisplayOptionsTests
     [Fact]
     public void The_bracket_at_the_caret_and_its_match_are_highlighted()
     {
-        var view = Showing(DecompiledDocument.FromText("t", "f(a[0])"), DisplayOptions.Default);
+        var view = Showing(Documents.CreateFromText("t", "f(a[0])"), DisplayOptions.Default);
 
         view.Click(0, 1);
         view.Run();
@@ -646,7 +646,7 @@ public sealed class MatchingBracketsTests
     [InlineData(6, 1, 6)]
     public void The_bracket_at_or_just_before_the_caret_is_matched(int caret, int open, int close)
     {
-        var document = DecompiledDocument.FromText("t", "f(a[0])");
+        var document = Documents.CreateFromText("t", "f(a[0])");
 
         Assert.Equal(Pair(0, open, 0, close), Find(document, 0, caret));
     }
@@ -654,7 +654,7 @@ public sealed class MatchingBracketsTests
     [Fact]
     public void Brackets_match_across_lines_past_nested_ones()
     {
-        var document = DecompiledDocument.FromText("t", "{\n  { x; }\n}");
+        var document = Documents.CreateFromText("t", "{\n  { x; }\n}");
 
         Assert.Equal(Pair(0, 0, 2, 0), Find(document, 0, 0));
         Assert.Equal(Pair(0, 0, 2, 0), Find(document, 2, 1));
@@ -676,7 +676,7 @@ public sealed class MatchingBracketsTests
     [Fact]
     public void A_bracket_without_a_match_and_text_without_brackets_find_nothing()
     {
-        var document = DecompiledDocument.FromText("t", "f(a b");
+        var document = Documents.CreateFromText("t", "f(a b");
 
         Assert.Null(Find(document, 0, 1));
         Assert.Null(Find(document, 0, 4));

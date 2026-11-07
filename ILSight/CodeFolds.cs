@@ -67,7 +67,7 @@ internal sealed class CodeFolds
     public int? CollapsedAt(int line)
     {
         if (_identity) return null;
-        var fold = _document.FoldStartingAt(line);
+        var fold = Documents.FindFoldStartingAt(_document, line);
         if (fold == null) return null;
         return _collapsed[fold.Value] ? fold : null;
     }

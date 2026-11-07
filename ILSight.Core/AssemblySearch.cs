@@ -30,26 +30,35 @@ public static class AssemblySearch
         return Batches.Stream<SearchResult>((emit, token) =>
         {
             if (query.IsEmpty) return;
-            var search = new Search(session, query, emit, token);
+            var search = new Search { Session = session, Query = query, Emit = emit, CancellationToken = token };
             foreach (var assembly in searched)
-                search.Run(assembly);
+                AssemblySearch.SearchAssembly(search, assembly);
         }, cancellationToken);
     }
 
-    private sealed class Search(BrowseSession session, SearchQuery query, Action<SearchResult> emit, CancellationToken cancellationToken)
+    private sealed class Search
     {
-        private readonly HashSet<BrowseNode> _found = new(ReferenceEqualityComparer.Instance);
+        public required BrowseSession Session { get; init; }
 
-        public void Run(LoadedModule assembly)
+        public required SearchQuery Query { get; init; }
+
+        public required Action<SearchResult> Emit { get; init; }
+
+        public required CancellationToken CancellationToken { get; init; }
+
+        public readonly HashSet<BrowseNode> Found = new(ReferenceEqualityComparer.Instance);
+}
+
+        private static void SearchAssembly(Search search, LoadedModule assembly)
         {
-            if (query.InAssembly != null && !InAssembly(assembly, query.InAssembly)) return;
-            var kinds = query.Kinds;
-            Scan(kinds, SearchKinds.Assemblies, MatchAssembly, assembly);
-            Scan(kinds, SearchKinds.Namespaces, ScanNamespaces, assembly);
-            Scan(kinds, SearchKinds.TypesAndMembers, ScanEntities, assembly);
-            Scan(kinds, SearchKinds.Tokens, FindToken, assembly);
-            Scan(kinds, SearchKinds.Literals, ScanLiterals, assembly);
-            Scan(kinds, SearchKinds.Resources, ScanResources, assembly);
+            if (search.Query.InAssembly != null && !IsInAssembly(assembly, search.Query.InAssembly)) return;
+            var kinds = search.Query.Kinds;
+            Scan(kinds, SearchKinds.Assemblies, a => MatchAssembly(search, a), assembly);
+            Scan(kinds, SearchKinds.Namespaces, a => ScanNamespaces(search, a), assembly);
+            Scan(kinds, SearchKinds.TypesAndMembers, a => ScanEntities(search, a), assembly);
+            Scan(kinds, SearchKinds.Tokens, a => FindToken(search, a), assembly);
+            Scan(kinds, SearchKinds.Literals, a => ScanLiterals(search, a), assembly);
+            Scan(kinds, SearchKinds.Resources, a => ScanResources(search, a), assembly);
         }
 
         private static void Scan(SearchKinds kinds, SearchKinds wanted, Action<LoadedModule> scan, LoadedModule assembly)
@@ -64,17 +73,21 @@ public static class AssemblySearch
             }
         }
 
-        private static bool InAssembly(LoadedModule assembly, string scope) =>
-            assembly.FilePath.FileName.Contains(scope, StringComparison.OrdinalIgnoreCase) ||
-            assembly.FullName.Contains(scope, StringComparison.OrdinalIgnoreCase);
+        private static bool IsInAssembly(LoadedModule assembly, string scope)
+    {
+        return assembly.FilePath.FileName.Contains(scope, StringComparison.OrdinalIgnoreCase) ||
+                assembly.FullName.Contains(scope, StringComparison.OrdinalIgnoreCase);
+    }
 
-        private bool InNamespace(string ns) =>
-            query.InNamespace == null || (query.InNamespace.Length == 0 ? ns.Length == 0 : ns.Contains(query.InNamespace, StringComparison.OrdinalIgnoreCase));
+        private static bool IsInNamespace(Search search, string ns)
+    {
+        return search.Query.InNamespace == null || (search.Query.InNamespace.Length == 0 ? ns.Length == 0 : ns.Contains(search.Query.InNamespace, StringComparison.OrdinalIgnoreCase));
+    }
 
-        private void ScanEntities(LoadedModule assembly)
+        private static void ScanEntities(Search search, LoadedModule assembly)
         {
             var reader = assembly.File.Metadata;
-            var kinds = query.Kinds;
+            var kinds = search.Query.Kinds;
             var types = (kinds & SearchKinds.Types) != 0;
             var methods = (kinds & SearchKinds.Methods) != 0;
             var fields = (kinds & SearchKinds.Fields) != 0;
@@ -82,26 +95,26 @@ public static class AssemblySearch
             var events = (kinds & SearchKinds.Events) != 0;
             foreach (var typeHandle in reader.TypeDefinitions)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                search.CancellationToken.ThrowIfCancellationRequested();
                 var type = reader.GetTypeDefinition(typeHandle);
-                if (!InNamespace(NamespaceOf(reader, type))) continue;
-                var typeName = query.FullName ? TypeName(reader, typeHandle) : TypeLabel(reader, typeHandle);
-                if (types && query.IsMatch(typeName))
-                    Add(assembly, typeHandle);
+                if (!IsInNamespace(search, ReadNamespace(reader, type))) continue;
+                var typeName = search.Query.FullName ? ReadTypeName(search, reader, typeHandle) : ReadTypeLabel(search, reader, typeHandle);
+                if (types && SearchQueries.IsMatch(search.Query, typeName))
+                    AddResult(search, assembly, typeHandle);
                 if (fields)
                 {
                     foreach (var handle in type.GetFields())
-                        MatchMember(assembly, typeName, Name(reader, reader.GetFieldDefinition(handle).Name), handle);
+                        MatchMember(search, assembly, typeName, ReadName(search, reader, reader.GetFieldDefinition(handle).Name), handle);
                 }
                 if (properties)
                 {
                     foreach (var handle in type.GetProperties())
-                        MatchMember(assembly, typeName, Name(reader, reader.GetPropertyDefinition(handle).Name), handle);
+                        MatchMember(search, assembly, typeName, ReadName(search, reader, reader.GetPropertyDefinition(handle).Name), handle);
                 }
                 if (events)
                 {
                     foreach (var handle in type.GetEvents())
-                        MatchMember(assembly, typeName, Name(reader, reader.GetEventDefinition(handle).Name), handle);
+                        MatchMember(search, assembly, typeName, ReadName(search, reader, reader.GetEventDefinition(handle).Name), handle);
                 }
                 if (methods)
                 {
@@ -109,39 +122,39 @@ public static class AssemblySearch
                     {
                         var method = reader.GetMethodDefinition(handle);
                         if (!reader.StringComparer.StartsWith(method.Name, "."))
-                            MatchMember(assembly, typeName, WithTypeParameters(reader, Name(reader, method.Name), method.GetGenericParameters(), 0), handle);
+                            MatchMember(search, assembly, typeName, AddTypeParameters(search, reader, ReadName(search, reader, method.Name), method.GetGenericParameters(), 0), handle);
                     }
                 }
             }
         }
 
-        private void MatchMember(LoadedModule assembly, string typeName, string name, EntityHandle handle)
+        private static void MatchMember(Search search, LoadedModule assembly, string typeName, string name, EntityHandle handle)
         {
-            if (query.IsMatch(query.FullName ? typeName + "." + name : name))
-                Add(assembly, handle);
+            if (SearchQueries.IsMatch(search.Query, search.Query.FullName ? typeName + "." + name : name))
+                AddResult(search, assembly, handle);
         }
 
-        private string Name(MetadataReader reader, StringHandle handle)
+        private static string ReadName(Search search, MetadataReader reader, StringHandle handle)
         {
             var name = reader.GetString(handle);
-            if (query.KeepArity && !query.Generics) return name;
+            if (search.Query.KeepArity && !search.Query.Generics) return name;
             var tick = name.IndexOf('`');
             return tick < 0 ? name : name[..tick];
         }
 
-        private string TypeLabel(MetadataReader reader, TypeDefinitionHandle handle)
+        private static string ReadTypeLabel(Search search, MetadataReader reader, TypeDefinitionHandle handle)
         {
             var type = reader.GetTypeDefinition(handle);
-            var name = Name(reader, type.Name);
-            if (!query.Generics) return name;
+            var name = ReadName(search, reader, type.Name);
+            if (!search.Query.Generics) return name;
             var declaring = type.GetDeclaringType();
             var inherited = declaring.IsNil ? 0 : reader.GetTypeDefinition(declaring).GetGenericParameters().Count;
-            return WithTypeParameters(reader, name, type.GetGenericParameters(), inherited);
+            return AddTypeParameters(search, reader, name, type.GetGenericParameters(), inherited);
         }
 
-        private string WithTypeParameters(MetadataReader reader, string name, GenericParameterHandleCollection parameters, int inherited)
+        private static string AddTypeParameters(Search search, MetadataReader reader, string name, GenericParameterHandleCollection parameters, int inherited)
         {
-            if (!query.Generics || parameters.Count <= inherited) return name;
+            if (!search.Query.Generics || parameters.Count <= inherited) return name;
             var text = new StringBuilder(name).Append('<');
             for (var i = inherited; i < parameters.Count; i++)
             {
@@ -151,17 +164,17 @@ public static class AssemblySearch
             return text.Append('>').ToString();
         }
 
-        private string TypeName(MetadataReader reader, TypeDefinitionHandle handle)
+        private static string ReadTypeName(Search search, MetadataReader reader, TypeDefinitionHandle handle)
         {
             var type = reader.GetTypeDefinition(handle);
-            var name = TypeLabel(reader, handle);
+            var name = ReadTypeLabel(search, reader, handle);
             var declaring = type.GetDeclaringType();
-            if (!declaring.IsNil) return TypeName(reader, declaring) + "." + name;
+            if (!declaring.IsNil) return ReadTypeName(search, reader, declaring) + "." + name;
             var ns = reader.GetString(type.Namespace);
             return ns.Length == 0 ? name : ns + "." + name;
         }
 
-        private static string NamespaceOf(MetadataReader reader, TypeDefinition type)
+        private static string ReadNamespace(MetadataReader reader, TypeDefinition type)
         {
             while (true)
             {
@@ -171,16 +184,16 @@ public static class AssemblySearch
             }
         }
 
-        private void ScanLiterals(LoadedModule assembly)
+        private static void ScanLiterals(Search search, LoadedModule assembly)
         {
             var file = assembly.File;
             var reader = file.Metadata;
-            var literal = query.Literal();
+            var literal = SearchQueries.GetLiteral(search.Query);
             foreach (var handle in reader.MethodDefinitions)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                search.CancellationToken.ThrowIfCancellationRequested();
                 var method = reader.GetMethodDefinition(handle);
-                if (!method.HasBody() || !InNamespace(NamespaceOf(reader, reader.GetTypeDefinition(method.GetDeclaringType())))) continue;
+                if (!method.HasBody() || !IsInNamespace(search, ReadNamespace(reader, reader.GetTypeDefinition(method.GetDeclaringType())))) continue;
                 BlobReader body;
                 try
                 {
@@ -190,34 +203,37 @@ public static class AssemblySearch
                 {
                     continue;
                 }
-                if (BodyMatches(ref body, reader, literal))
-                    AddOrAncestor(assembly, handle);
+                if (HasMatchInBody(search, ref body, reader, literal))
+                    AddResultOrAncestor(search, assembly, handle);
             }
             foreach (var handle in reader.FieldDefinitions)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                search.CancellationToken.ThrowIfCancellationRequested();
                 var field = reader.GetFieldDefinition(handle);
                 if ((field.Attributes & FieldAttributes.Literal) == 0) continue;
                 var constantHandle = field.GetDefaultValue();
-                if (constantHandle.IsNil || !InNamespace(NamespaceOf(reader, reader.GetTypeDefinition(field.GetDeclaringType())))) continue;
+                if (constantHandle.IsNil || !IsInNamespace(search, ReadNamespace(reader, reader.GetTypeDefinition(field.GetDeclaringType())))) continue;
                 var constant = reader.GetConstant(constantHandle);
                 var blob = reader.GetBlobReader(constant.Value);
-                if (ConstantMatches(blob.ReadConstant(constant.TypeCode), literal))
-                    Add(assembly, handle);
+                if (IsConstantMatch(search, blob.ReadConstant(constant.TypeCode), literal))
+                    AddResult(search, assembly, handle);
             }
         }
 
-        private bool ConstantMatches(object? value, object? literal) => (value, literal) switch
-        {
-            (null, _) => false,
-            (string or char or bool, long or float or double) => false,
-            (_, long number) => value is not float and not double && Convert.ToInt64(value is ulong u ? (long)u : value) == number,
-            (_, float single) => value is float f && f == single,
-            (_, double real) => value is double d && d == real,
-            _ => query.IsMatch(value.ToString() ?? ""),
-        };
+        private static bool IsConstantMatch(Search search, object? value, object? literal)
+    {
+        return (value, literal) switch
+            {
+                (null, _) => false,
+                (string or char or bool, long or float or double) => false,
+                (_, long number) => value is not float and not double && Convert.ToInt64(value is ulong u ? (long)u : value) == number,
+                (_, float single) => value is float f && f == single,
+                (_, double real) => value is double d && d == real,
+                _ => SearchQueries.IsMatch(search.Query, value.ToString() ?? ""),
+            };
+    }
 
-        private bool BodyMatches(ref BlobReader body, MetadataReader reader, object? literal)
+        private static bool HasMatchInBody(Search search, ref BlobReader body, MetadataReader reader, object? literal)
         {
             while (body.RemainingBytes > 0)
             {
@@ -225,7 +241,7 @@ public static class AssemblySearch
                 switch (literal)
                 {
                     case long number when IsIntegerLoad(code):
-                        if (IntegerOperand(ref body, code) == number) return true;
+                        if (ReadIntegerOperand(ref body, code) == number) return true;
                         continue;
                     case float single when code == ILOpCode.Ldc_r4:
                         if (body.ReadSingle() == single) return true;
@@ -234,7 +250,7 @@ public static class AssemblySearch
                         if (body.ReadDouble() == real) return true;
                         continue;
                     case null when code == ILOpCode.Ldstr:
-                        if (query.IsMatch(body.DecodeUserString(reader))) return true;
+                        if (SearchQueries.IsMatch(search.Query, body.DecodeUserString(reader))) return true;
                         continue;
                 }
                 body.SkipOperand(code);
@@ -242,19 +258,25 @@ public static class AssemblySearch
             return false;
         }
 
-        private static bool IsIntegerLoad(ILOpCode code) => code is >= ILOpCode.Ldc_i4_m1 and <= ILOpCode.Ldc_i8;
+        private static bool IsIntegerLoad(ILOpCode code)
+    {
+        return code is >= ILOpCode.Ldc_i4_m1 and <= ILOpCode.Ldc_i8;
+    }
 
-        private static long IntegerOperand(ref BlobReader body, ILOpCode code) => code switch
-        {
-            ILOpCode.Ldc_i4_s => body.ReadSByte(),
-            ILOpCode.Ldc_i4 => body.ReadInt32(),
-            ILOpCode.Ldc_i8 => body.ReadInt64(),
-            _ => code - ILOpCode.Ldc_i4_0,
-        };
+        private static long ReadIntegerOperand(ref BlobReader body, ILOpCode code)
+    {
+        return code switch
+            {
+                ILOpCode.Ldc_i4_s => body.ReadSByte(),
+                ILOpCode.Ldc_i4 => body.ReadInt32(),
+                ILOpCode.Ldc_i8 => body.ReadInt64(),
+                _ => code - ILOpCode.Ldc_i4_0,
+            };
+    }
 
-        private void FindToken(LoadedModule assembly)
+        private static void FindToken(Search search, LoadedModule assembly)
         {
-            var term = query.Terms.Count == 1 ? query.Terms[0] : "";
+            var term = search.Query.Terms.Count == 1 ? search.Query.Terms[0] : "";
             if (term.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) term = term[2..];
             if (!int.TryParse(term, System.Globalization.NumberStyles.AllowHexSpecifier, null, out var token)) return;
             var handle = MetadataTokenHelpers.EntityHandleOrNil(token);
@@ -271,106 +293,106 @@ public static class AssemblySearch
             };
             var row = MetadataTokens.GetRowNumber(handle);
             if (row >= 1 && row <= rows)
-                AddOrAncestor(assembly, handle);
+                AddResultOrAncestor(search, assembly, handle);
         }
 
-        private void ScanResources(LoadedModule assembly)
+        private static void ScanResources(Search search, LoadedModule assembly)
         {
-            foreach (var child in session.ChildrenOf(session.RootOf(assembly)))
+            foreach (var child in search.Session.ChildrenOf(search.Session.RootOf(assembly)))
             {
                 if (child.Subject is NodeSubject.Resources)
-                    ScanResources(child);
+                    ScanResources(search, child);
             }
         }
 
-        private void ScanResources(BrowseNode parent)
+        private static void ScanResources(Search search, BrowseNode parent)
         {
-            foreach (var node in session.ChildrenOf(parent))
+            foreach (var node in search.Session.ChildrenOf(parent))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (query.IsMatch(node.Text))
-                    Add(node, parent.Subject is NodeSubject.ResourceContainer ? parent.Text : "");
-                if (session.HasChildren(node))
-                    ScanResources(node);
+                search.CancellationToken.ThrowIfCancellationRequested();
+                if (SearchQueries.IsMatch(search.Query, node.Text))
+                    AddResult(search, node, parent.Subject is NodeSubject.ResourceContainer ? parent.Text : "");
+                if (search.Session.HasChildren(node))
+                    ScanResources(search, node);
             }
         }
 
-        private void MatchAssembly(LoadedModule assembly)
+        private static void MatchAssembly(Search search, LoadedModule assembly)
         {
-            var matches = query.AssemblyName switch
+            var matches = search.Query.AssemblyName switch
             {
-                AssemblyNameKind.FilePath => query.IsMatch(assembly.FilePath.Text),
-                AssemblyNameKind.FullName => query.IsMatch(assembly.FullName),
-                _ => query.IsMatch(assembly.Name) || query.IsMatch(assembly.FilePath.FileName),
+                AssemblyNameKind.FilePath => SearchQueries.IsMatch(search.Query, assembly.FilePath.Text),
+                AssemblyNameKind.FullName => SearchQueries.IsMatch(search.Query, assembly.FullName),
+                _ => SearchQueries.IsMatch(search.Query, assembly.Name) || SearchQueries.IsMatch(search.Query, assembly.FilePath.FileName),
             };
             if (matches)
-                Add(session.RootOf(assembly), assembly.FilePath.Text);
+                AddResult(search, search.Session.RootOf(assembly), assembly.FilePath.Text);
         }
 
-        private void ScanNamespaces(LoadedModule assembly)
+        private static void ScanNamespaces(Search search, LoadedModule assembly)
         {
-            foreach (var node in session.ChildrenOf(session.RootOf(assembly)))
+            foreach (var node in search.Session.ChildrenOf(search.Session.RootOf(assembly)))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (IsNamespaceFound(node))
-                    Add(node, "");
+                search.CancellationToken.ThrowIfCancellationRequested();
+                if (IsNamespaceFound(search, node))
+                    AddResult(search, node, "");
             }
         }
 
         /// <summary>Whether <paramref name="node"/> is a namespace the assembly puts types in that the
-        /// query finds.</summary>
-        private bool IsNamespaceFound(BrowseNode node)
+        /// Query finds.</summary>
+        private static bool IsNamespaceFound(Search search, BrowseNode node)
         {
             if (node.Subject is not NodeSubject.Namespace ns)
                 return false;
             if (ns.Value.IsEnclosingOnly)
                 return false;
-            return InNamespace(ns.Value.Name) && query.IsMatch(node.Text);
+            return IsInNamespace(search, ns.Value.Name) && SearchQueries.IsMatch(search.Query, node.Text);
         }
 
-        private void Add(LoadedModule assembly, EntityHandle handle)
+        private static void AddResult(Search search, LoadedModule assembly, EntityHandle handle)
         {
-            var node = Find(assembly, handle);
+            var node = FindNode(search, assembly, handle);
             if (node == null)
                 return;
             if (NodeDefinitions.GetVisibility(node.Subject).IsCompilerGenerated)
                 return;
             if (!BrowseNode.IsMember(node.Parent))
-                Add(node);
+                AddResult(search, node);
         }
 
-        private void AddOrAncestor(LoadedModule assembly, EntityHandle handle)
+        private static void AddResultOrAncestor(Search search, LoadedModule assembly, EntityHandle handle)
         {
             BrowseNode? node;
             try
             {
-                node = session.FindOrAncestor(assembly, handle);
+                node = search.Session.FindOrAncestor(assembly, handle);
             }
             catch (Exception e) when (e is BadImageFormatException or InvalidOperationException)
             {
                 return;
             }
-            node = SourceDeclaredAncestor(node);
+            node = FindSourceDeclaredAncestor(node);
             if (node != null && BrowseNode.IsMember(node.Parent))
                 node = node.Parent;
             if (node is not null)
-                Add(node);
+                AddResult(search, node);
         }
 
         /// <summary><paramref name="node"/>, or the nearest of its ancestors the source declared
         /// when the compiler made it up, such as the type that holds a lambda's closure class.</summary>
-        private static BrowseNode? SourceDeclaredAncestor(BrowseNode? node)
+        private static BrowseNode? FindSourceDeclaredAncestor(BrowseNode? node)
         {
             while (node != null && NodeDefinitions.GetVisibility(node.Subject).IsCompilerGenerated)
                 node = node.Parent;
             return node;
         }
 
-        private BrowseNode? Find(LoadedModule assembly, EntityHandle handle)
+        private static BrowseNode? FindNode(Search search, LoadedModule assembly, EntityHandle handle)
         {
             try
             {
-                return session.Find(assembly, handle);
+                return search.Session.Find(assembly, handle);
             }
             catch (Exception e) when (e is BadImageFormatException or InvalidOperationException)
             {
@@ -378,7 +400,7 @@ public static class AssemblySearch
             }
         }
 
-        private void Add(BrowseNode node)
+        private static void AddResult(Search search, BrowseNode node)
         {
             var ns = node.Parent;
             while (ns != null && !IsNamespace(ns))
@@ -386,27 +408,30 @@ public static class AssemblySearch
             var name = ns?.Text ?? "";
             var type = node.Parent;
             if (type != null && type.Subject is NodeSubject.TypeDefinition)
-                Add(node, name.Length == 0 ? type.Text : $"{name}.{type.Text}");
+                AddResult(search, node, name.Length == 0 ? type.Text : $"{name}.{type.Text}");
             else
-                Add(node, name.Length == 0 ? "-" : name);
+                AddResult(search, node, name.Length == 0 ? "-" : name);
         }
 
-        private static bool IsNamespace(BrowseNode node) => node.Subject is NodeSubject.Namespace;
+        private static bool IsNamespace(BrowseNode node)
+    {
+        return node.Subject is NodeSubject.Namespace;
+    }
 
-        private void Add(BrowseNode node, string location)
+        private static void AddResult(Search search, BrowseNode node, string location)
         {
-            if (!_found.Add(node)) return;
-            emit(new SearchResult(node, node.Text, location, Fitness(node)));
+            if (!search.Found.Add(node)) return;
+            search.Emit(new SearchResult(node, node.Text, location, GetFitness(node)));
         }
 
-        private static float Fitness(BrowseNode node)
+        private static float GetFitness(BrowseNode node)
         {
-            var name = NameOf(node);
+            var name = GetNodeName(node);
             return name.Length == 0 || name[0] == '<' ? 0f : 1f / name.Length;
         }
 
         /// <summary>The name a node is matched by: a constructor's its type's, an entity's its own, else its label.</summary>
-        private static string NameOf(BrowseNode node)
+        private static string GetNodeName(BrowseNode node)
         {
             var entity = BrowseNode.EntityOf(node);
             if (entity == null)
@@ -415,5 +440,4 @@ public static class AssemblySearch
                 return method.DeclaringTypeDefinition.Name;
             return entity.Name;
         }
-    }
 }

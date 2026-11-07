@@ -251,7 +251,7 @@ public sealed class PackageTests
         Assert.Equal("Read me", Encoding.UTF8.GetString(readme.ReadResource()));
         Assert.IsType<NodeSubject.PackageFile>(native.Subject);
         Assert.False(native.IsImage);
-        Assert.Contains("Read me", readme.Decompile(DecompilationLanguage.CSharp).GetText());
+        Assert.Contains("Read me", Documents.GetText(readme.Decompile(DecompilationLanguage.CSharp)));
     }
 
     [Theory]
@@ -266,9 +266,9 @@ public sealed class PackageTests
         var folder = package.Root.Child(LibFolder).Decompile(language);
 
         Assert.Null(root.Error);
-        Assert.Contains($"{LibFolder}/", root.GetText());
-        Assert.Contains("readme.txt (7 bytes)", root.GetText());
-        Assert.Contains(TestAssemblyName, folder.GetText());
+        Assert.Contains($"{LibFolder}/", Documents.GetText(root));
+        Assert.Contains("readme.txt (7 bytes)", Documents.GetText(root));
+        Assert.Contains(TestAssemblyName, Documents.GetText(folder));
     }
 
     [Fact]

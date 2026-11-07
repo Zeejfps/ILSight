@@ -154,7 +154,7 @@ public sealed class AppSettingsTests : IDisposable
         settings.AssemblyLists = [new AssemblyListRecord("Work", [FakePath("a.dll"), FakePath("b.dll")]), new AssemblyListRecord("Play", [FakePath("c.dll")])];
         settings.ActiveAssemblyList = "Play";
         settings.Language = DecompilationLanguage.IL;
-        settings.Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp7_3 }.With(DecompilerToggle.Find("AlwaysUseBraces")!, false);
+        settings.Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp7_3 }.With(DecompilerToggles.FindToggle("AlwaysUseBraces")!, false);
         settings.FoldedOptionGroups = ["Other"];
 
         Assert.IsType<SettingsWriteResult.Written>(settings.Save());
@@ -189,13 +189,13 @@ public sealed class AppSettingsTests : IDisposable
         var (loaded, problem) = AppSettings.Load(Written("""{ "Decompiler": { "Toggles": { "NoSuchToggle": true, "AlwaysUseBraces": false } } }"""));
 
         Assert.Equal(["Decompiler"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
-        Assert.Equal(DecompilerOptions.Default.With(DecompilerToggle.Find("AlwaysUseBraces")!, false), loaded.Decompiler);
+        Assert.Equal(DecompilerOptions.Default.With(DecompilerToggles.FindToggle("AlwaysUseBraces")!, false), loaded.Decompiler);
     }
 
     [Fact]
     public void A_decompiler_toggle_saved_at_its_default_loads_as_not_set()
     {
-        var braces = DecompilerToggle.Find("AlwaysUseBraces")!;
+        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces")!;
         var (loaded, problem) = AppSettings.Load(Written($$"""{ "Decompiler": { "Toggles": { "AlwaysUseBraces": {{(braces.DefaultValue ? "true" : "false")}} } } }"""));
 
         Assert.IsType<SettingsProblem.None>(problem);

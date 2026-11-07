@@ -123,7 +123,7 @@ public sealed class BrowseTreeTests
 
         Assert.IsType<NodeSubject.DerivedType>(argument.Subject);
         Assert.Contains(argument.Children, c => c.Text.EndsWith("ArgumentNullException", StringComparison.Ordinal));
-        Assert.Contains(system.Text, exception.Child("Derived Types").Decompile(DecompilationLanguage.CSharp).GetText());
+        Assert.Contains(system.Text, Documents.GetText(exception.Child("Derived Types").Decompile(DecompilationLanguage.CSharp)));
     }
 
     [Fact]

@@ -106,7 +106,7 @@ public sealed class ResourceViewTests
 
         Assert.True(showsSource);
         Assert.False(drewPicture);
-        Assert.Contains("<svg", tab.Document.GetText());
+        Assert.Contains("<svg", Documents.GetText(tab.Document));
         Assert.False(app.Ui.Documents.ViewOf(tab).Picture.ShowsSource);
         Assert.Equal((4f, 2f), DrawnSize(app, tab));
     }
@@ -138,7 +138,7 @@ public sealed class ResourceViewTests
         var (_, tab) = ShowResource("broken.png");
 
         Assert.Null(tab.Image);
-        var text = tab.Document.GetText();
+        var text = Documents.GetText(tab.Document);
         Assert.StartsWith("// This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.", text);
         Assert.Contains("not a picture", text);
     }

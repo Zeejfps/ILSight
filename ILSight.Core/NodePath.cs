@@ -91,49 +91,16 @@ public readonly record struct NodePathStep(NodePathSegment Segment, string Label
 /// </summary>
 public sealed class NodePath : IEquatable<NodePath>
 {
-    private readonly NodePathStep[] _steps;
-
-    private NodePath(AssemblyPath filePath, NodePathStep[] steps)
-    {
-        FilePath = filePath;
-        _steps = steps;
-    }
-
     /// <summary>The absolute path of the listed file the path starts from: an assembly, or the package
     /// an assembly was read out of.</summary>
-    public AssemblyPath FilePath { get; }
+    public required AssemblyPath FilePath { get; init; }
 
     /// <summary>What each node down from the root is, and its label, the node itself last.</summary>
-    public IReadOnlyList<NodePathStep> Steps => _steps;
+    public required NodePathStep[] Steps { get; init; }
 
     /// <summary>The label of the node this names, as it showed when the path was taken; the file's name
     /// for the root.</summary>
-    public string Label => _steps.Length == 0 ? FilePath.FileName : _steps[^1].Label;
-
-    /// <summary>The path to <paramref name="node"/> from the root of its tree: for a node of an assembly
-    /// read out of a package, from the package's root, through one step naming the assembly's file.</summary>
-    public static NodePath Of(BrowseNode node)
-    {
-        var steps = new List<NodePathStep>();
-        var n = node;
-        while (n.Parent != null)
-        {
-            var segment = n.Segment ?? throw new UnreachableException();
-            steps.Add(new NodePathStep(segment, n.Text));
-            if (segment.IsPackageEntry)
-            {
-                n = n.Root;
-                break;
-            }
-            n = n.Parent;
-        }
-        steps.Reverse();
-        return new NodePath(n.Assembly.FilePath, steps.ToArray());
-    }
-
-    /// <summary>The path to the node reached from the root of the file at <paramref name="filePath"/>
-    /// through <paramref name="steps"/>, as <see cref="Steps"/> gives them.</summary>
-    public static NodePath From(AssemblyPath filePath, IEnumerable<NodePathStep> steps) => new(filePath, steps.ToArray());
+    public string Label => Steps.Length == 0 ? FilePath.FileName : Steps[^1].Label;
 
     /// <summary>Equal when it starts from the same file and names the same node at each step, whatever
     /// the labels.</summary>
@@ -141,11 +108,11 @@ public sealed class NodePath : IEquatable<NodePath>
     {
         if (ReferenceEquals(this, other)) return true;
         if (other == null) return false;
-        if (other._steps.Length != _steps.Length) return false;
+        if (other.Steps.Length != Steps.Length) return false;
         if (!FilePath.Equals(other.FilePath)) return false;
-        for (var i = _steps.Length - 1; i >= 0; i--)
+        for (var i = Steps.Length - 1; i >= 0; i--)
         {
-            if (_steps[i].Segment != other._steps[i].Segment) return false;
+            if (Steps[i].Segment != other.Steps[i].Segment) return false;
         }
         return true;
     }
@@ -156,10 +123,10 @@ public sealed class NodePath : IEquatable<NodePath>
     {
         var hash = new HashCode();
         hash.Add(FilePath);
-        foreach (var step in _steps)
+        foreach (var step in Steps)
             hash.Add(step.Segment);
         return hash.ToHashCode();
     }
 
-    public override string ToString() => _steps.Length == 0 ? FilePath.Text : $"{FilePath}: {string.Join(" › ", _steps.Select(static s => s.Label))}";
+    public override string ToString() => NodeDefinitions.DescribePath(this);
 }

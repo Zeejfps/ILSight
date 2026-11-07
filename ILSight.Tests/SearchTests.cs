@@ -234,17 +234,17 @@ public sealed class SearchTests
     [Fact]
     public void The_query_syntax_parses_prefixes_quotes_and_scopes()
     {
-        var query = SearchQuery.Parse("md:\"Get Value\" inassembly:Core innamespace:\"\" -Async");
+        var query = SearchQueries.ParseQuery("md:\"Get Value\" inassembly:Core innamespace:\"\" -Async");
 
         Assert.Equal(SearchKinds.Methods, query.Kinds);
         Assert.Equal(["Get Value", "-Async"], query.Terms);
         Assert.Equal("Core", query.InAssembly);
         Assert.Equal("", query.InNamespace);
-        Assert.Equal(["System.Foo:Bar"], SearchQuery.Parse("System.Foo:Bar").Terms);
-        Assert.True(SearchQuery.Parse("inassembly:Core").IsEmpty);
-        Assert.Equal(255L, SearchQuery.Parse("c:0xFF").Literal());
-        Assert.Equal(1.5f, SearchQuery.Parse("c:1.5f").Literal());
-        Assert.Null(SearchQuery.Parse("c:abc").Literal());
+        Assert.Equal(["System.Foo:Bar"], SearchQueries.ParseQuery("System.Foo:Bar").Terms);
+        Assert.True(SearchQueries.ParseQuery("inassembly:Core").IsEmpty);
+        Assert.Equal(255L, SearchQueries.GetLiteral(SearchQueries.ParseQuery("c:0xFF")));
+        Assert.Equal(1.5f, SearchQueries.GetLiteral(SearchQueries.ParseQuery("c:1.5f")));
+        Assert.Null(SearchQueries.GetLiteral(SearchQueries.ParseQuery("c:abc")));
     }
 
     [Fact]
@@ -253,19 +253,19 @@ public sealed class SearchTests
         var (list, assembly) = Trees.OpenTestAssembly();
 
         var picked = await Collect(list.SearchAsync("Answer", SearchKinds.Fields | SearchKinds.Literals));
-        var prefixed = SearchQuery.Parse("t:Size p:Size", SearchKinds.All);
+        var prefixed = SearchQueries.ParseQuery("t:Size p:Size", SearchKinds.All);
 
         Assert.Contains(picked, r => r.Node == assembly.Calculator().Child("Answer : int"));
         Assert.Equal(SearchKinds.Types | SearchKinds.Properties, prefixed.Kinds);
-        Assert.Equal(SearchKinds.Assemblies, SearchQuery.Parse("af:dll", SearchKinds.Types).Kinds);
-        Assert.Equal(SearchKinds.Tokens, SearchQuery.Parse("@06000001").Kinds);
+        Assert.Equal(SearchKinds.Assemblies, SearchQueries.ParseQuery("af:dll", SearchKinds.Types).Kinds);
+        Assert.Equal(SearchKinds.Tokens, SearchQueries.ParseQuery("@06000001").Kinds);
     }
 
     [Fact]
     public void Scoping_replaces_an_existing_scope_and_goes_first()
     {
-        Assert.Equal("inassembly:Other Foo ", SearchQuery.WithScope("inassembly:Core Foo", "inassembly", "Other"));
-        Assert.Equal("innamespace:\"\" ", SearchQuery.WithScope("", "innamespace", ""));
+        Assert.Equal("inassembly:Other Foo ", SearchQueries.AddScope("inassembly:Core Foo", "inassembly", "Other"));
+        Assert.Equal("innamespace:\"\" ", SearchQueries.AddScope("", "innamespace", ""));
     }
 
     private static async Task<List<SearchResult>> Collect(IAsyncEnumerable<IReadOnlyList<SearchResult>> search)

@@ -536,7 +536,7 @@ internal static class SettingsJson
                 return null;
             steps.Add(step.Value);
         }
-        return NodePath.From(filePath, steps);
+        return NodeDefinitions.CreatePath(filePath, steps);
     }
 
     private static NodePathStep? Parse(SavedPathStepJson json)
@@ -828,7 +828,7 @@ internal static class SettingsJson
             return options;
         foreach (var (name, value) in json.Toggles)
         {
-            var toggle = DecompilerToggle.Find(name);
+            var toggle = DecompilerToggles.FindToggle(name);
             if (toggle == null)
             {
                 leaveOut();

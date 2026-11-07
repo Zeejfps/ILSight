@@ -96,6 +96,6 @@ internal static class SessionQueries
 
         public IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(string text, SearchKinds kinds = SearchKinds.TypesAndMembers,
             CancellationToken cancellationToken = default) =>
-            AssemblySearch.SearchAsync(TestSession.Shared, list.Assemblies, SearchQuery.Parse(text, kinds), cancellationToken);
+            AssemblySearch.SearchAsync(TestSession.Shared, list.Assemblies, SearchQueries.ParseQuery(text, kinds), cancellationToken);
     }
 }

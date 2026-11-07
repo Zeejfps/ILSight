@@ -60,7 +60,7 @@ public sealed class ILSpyTreeTests
         var assembly = Trees.TestAssembly;
         var calculator = assembly.Calculator();
         var document = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
-        var anchor = document.AnchorAt(document.LineContaining("Changed?.Invoke(this, EventArgs.Empty);"));
+        var anchor = Documents.FindAnchorAt(document, document.LineContaining("Changed?.Invoke(this, EventArgs.Empty);"));
 
         var info = ILSpyTree.Describe(calculator, anchor);
 

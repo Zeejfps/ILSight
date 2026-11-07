@@ -43,7 +43,7 @@ public sealed class ExportTests : IDisposable
 
         NodeContentLoader.SaveCode(TestSession.Shared, calculator, DecompilationLanguage.CSharp, DecompilerOptions.Default, path);
 
-        var shown = Trees.CalculatorDocument(DecompilationLanguage.CSharp).GetText();
+        var shown = Documents.GetText(Trees.CalculatorDocument(DecompilationLanguage.CSharp));
         Assert.Equal(shown, File.ReadAllText(path));
     }
 
@@ -92,7 +92,7 @@ public sealed class ExportTests : IDisposable
 
         NodeContentLoader.SaveCode(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, path);
 
-        var shown = root.Decompile(DecompilationLanguage.CSharp).GetText();
+        var shown = Documents.GetText(root.Decompile(DecompilationLanguage.CSharp));
         var saved = File.ReadAllText(path);
         Assert.Contains("[assembly: AssemblyProduct(\"ILSight.Tests\")]", shown);
         Assert.DoesNotContain("class Calculator<T>", shown);
@@ -108,7 +108,7 @@ public sealed class ExportTests : IDisposable
 
         NodeContentLoader.SaveCode(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, path);
 
-        var shown = fixtures.Decompile(DecompilationLanguage.CSharp).GetText();
+        var shown = Documents.GetText(fixtures.Decompile(DecompilationLanguage.CSharp));
         var saved = File.ReadAllText(path);
         Assert.Contains("internal sealed class Circle", shown);
         Assert.DoesNotContain("double grown = Radius;", shown);
@@ -323,8 +323,8 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public void Resetting_the_code_toggles_leaves_how_projects_are_exported()
     {
-        var nested = DecompilerToggle.Find("UseNestedDirectoriesForNamespaces")!;
-        var deadCode = DecompilerToggle.Find("RemoveDeadCode")!;
+        var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces")!;
+        var deadCode = DecompilerToggles.FindToggle("RemoveDeadCode")!;
         var changed = DecompilerOptions.Default
             .With(nested, !nested.DefaultValue)
             .With(deadCode, !deadCode.DefaultValue);
@@ -348,7 +348,7 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public void The_project_export_toggles_leave_decompiled_code_as_it_was()
     {
-        var nested = DecompilerToggle.Find("UseNestedDirectoriesForNamespaces")!;
+        var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces")!;
         var changed = DecompilerOptions.Default.With(nested, !nested.DefaultValue);
 
         Assert.True(changed.ProducesSameCode(DecompilerOptions.Default, DecompilationLanguage.CSharp));

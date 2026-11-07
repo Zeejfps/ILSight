@@ -51,7 +51,7 @@ internal static class DocumentQueries
             if (at < 0) continue;
             if (skip-- == 0) return (i, at);
         }
-        throw new InvalidOperationException($"'{text}' is not in the document:\n{document.GetText()}");
+        throw new InvalidOperationException($"'{text}' is not in the document:\n{Documents.GetText(document)}");
     }
 
     public static int LineContaining(this DecompiledDocument document, string text) => document.Find(text).Line;
@@ -92,7 +92,7 @@ internal static class DocumentQueries
     public static int FoldIndexAt(this DecompiledDocument document, string text)
     {
         var line = document.LineContaining(text);
-        var index = document.FoldStartingAt(line);
+        var index = Documents.FindFoldStartingAt(document, line);
         if (index == null)
             throw new InvalidOperationException($"No fold starts at '{text}'");
         return index.Value;

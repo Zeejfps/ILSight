@@ -10,16 +10,16 @@ public sealed class AnchorTests
         var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var line = type.LineContaining("Changed?.Invoke(this, EventArgs.Empty);");
 
-        var anchor = type.AnchorAt(line)!.Value;
+        var anchor = Documents.FindAnchorAt(type, line)!.Value;
         var method = Trees.TestAssembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
-        var ilLine = il.FindLine(anchor);
+        var ilLine = Documents.FindLine(il, anchor);
 
         Assert.Equal(CodeAnchorKind.Statement, anchor.Kind);
-        Assert.Equal(line, type.FindLine(anchor));
-        Assert.Contains("Changed?.Invoke", method.Lines[method.FindLine(anchor)].Text);
+        Assert.Equal(line, Documents.FindLine(type, anchor));
+        Assert.Contains("Changed?.Invoke", method.Lines[Documents.FindLine(method, anchor)].Text);
         Assert.StartsWith($"IL_{anchor.ILOffset:x4}", il.Lines[ilLine].Text.TrimStart());
-        Assert.Equal(anchor, il.AnchorAt(ilLine));
+        Assert.Equal(anchor, Documents.FindAnchorAt(il, ilLine));
     }
 
     [Fact]
@@ -28,12 +28,12 @@ public sealed class AnchorTests
         var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var line = type.LineContaining("public void Add(T item)");
 
-        var anchor = type.AnchorAt(line)!.Value;
+        var anchor = Documents.FindAnchorAt(type, line)!.Value;
         var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
 
         Assert.Equal(CodeAnchorKind.Definition, anchor.Kind);
-        Assert.Equal(line, type.FindLine(anchor));
-        Assert.Equal(il.FindDefinitionLine(Trees.TestAssembly.Calculator().Child("Add(T) : void")), il.FindLine(anchor));
+        Assert.Equal(line, Documents.FindLine(type, anchor));
+        Assert.Equal(Documents.FindDefinitionLine(il, Trees.TestAssembly.Calculator().Child("Add(T) : void")), Documents.FindLine(il, anchor));
     }
 
     [CaseInsensitivePathsTheory]
@@ -43,13 +43,13 @@ public sealed class AnchorTests
     {
         var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var line = type.LineContaining(text);
-        var anchor = type.AnchorAt(line)!.Value;
+        var anchor = Documents.FindAnchorAt(type, line)!.Value;
 
         var upper = anchor with { FilePath = AssemblyPath.Of(anchor.FilePath.Text.ToUpperInvariant()) };
 
         Assert.Equal(anchor, upper);
         Assert.Equal(anchor.GetHashCode(), upper.GetHashCode());
-        Assert.Equal(line, type.FindLine(upper));
+        Assert.Equal(line, Documents.FindLine(type, upper));
     }
 
     [CaseInsensitivePathsFact]
@@ -74,13 +74,13 @@ public sealed class AnchorTests
     {
         var first = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var lines = new[] { first.LineContaining("Changed?.Invoke(this, EventArgs.Empty);"), first.LineContaining("public void Add(T item)") };
-        var anchors = lines.Select(l => first.AnchorAt(l)!.Value).ToArray();
+        var anchors = lines.Select(l => Documents.FindAnchorAt(first, l)!.Value).ToArray();
 
         for (var round = 0; round < 20; round++)
         {
             var fresh = Trees.TestAssembly.Calculator().Decompile(DecompilationLanguage.CSharp);
             var found = new int[64];
-            Parallel.For(0, found.Length, i => found[i] = fresh.FindLine(anchors[i % anchors.Length]));
+            Parallel.For(0, found.Length, i => found[i] = Documents.FindLine(fresh, anchors[i % anchors.Length]));
 
             Assert.All(Enumerable.Range(0, found.Length), i => Assert.Equal(lines[i % lines.Length], found[i]));
         }
@@ -93,7 +93,7 @@ public sealed class AnchorTests
         var brace = type.LineContaining("public void Add(T item)") + 1;
 
         Assert.Equal("{", type.Lines[brace].Text.Trim());
-        Assert.Null(type.AnchorAt(brace));
+        Assert.Null(Documents.FindAnchorAt(type, brace));
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public sealed class AnchorTests
         var (list, assembly) = Trees.OpenTestAssembly();
         var path = assembly.Calculator().Child("Add(T) : void").Path;
 
-        var rebuilt = NodePath.From(path.FilePath, path.Steps.ToList());
+        var rebuilt = NodeDefinitions.CreatePath(path.FilePath, path.Steps.ToList());
 
         Assert.Equal(path, rebuilt);
         Assert.Same(assembly.Calculator().Child("Add(T) : void"), list.FindNode(rebuilt));

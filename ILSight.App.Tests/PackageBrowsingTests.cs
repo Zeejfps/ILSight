@@ -23,7 +23,7 @@ public sealed class PackageBrowsingTests
 
         Assert.Equal(NodeIcon.Package, Assert.Single(app.Ui.Tree.Roots).Icon);
         Assert.True(app.Frames.Drew(PackageName));
-        Assert.Contains($"{LibFolder}/", app.AppState.Tabs.Active!.Document.GetText());
+        Assert.Contains($"{LibFolder}/", Documents.GetText(app.AppState.Tabs.Active!.Document));
     }
 
     [Fact]

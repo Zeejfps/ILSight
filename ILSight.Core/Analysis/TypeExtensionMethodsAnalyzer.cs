@@ -18,7 +18,7 @@ internal static class TypeExtensionMethodsAnalyzer
     {
         if (analyzed.ParentModule?.MetadataFile == null)
             yield break;
-        foreach (var type in context.GetScopeOf(analyzed).GetTypesInScope(context.CancellationToken))
+        foreach (var type in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, analyzed), context.CancellationToken))
         {
             if (!type.HasExtensions)
                 continue;

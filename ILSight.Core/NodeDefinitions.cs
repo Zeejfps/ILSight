@@ -197,6 +197,42 @@ public static class NodeDefinitions
         return navigate.Target;
     }
 
+    /// <summary>The path to <paramref name="node"/> from the root of its tree: for a node of an assembly
+    /// read out of a package, from the package's root, through one step naming the assembly's file.</summary>
+    public static NodePath GetPath(BrowseNode node)
+    {
+        var steps = new List<NodePathStep>();
+        var n = node;
+        while (n.Parent != null)
+        {
+            var segment = n.Segment ?? throw new UnreachableException();
+            steps.Add(new NodePathStep(segment, n.Text));
+            if (segment.IsPackageEntry)
+            {
+                n = n.Root;
+                break;
+            }
+            n = n.Parent;
+        }
+        steps.Reverse();
+        return new NodePath { FilePath = n.Assembly.FilePath, Steps = steps.ToArray() };
+    }
+
+    /// <summary>The path to the node reached from the root of the file at <paramref name="filePath"/>
+    /// through <paramref name="steps"/>, as <see cref="NodePath.Steps"/> gives them.</summary>
+    public static NodePath CreatePath(AssemblyPath filePath, IEnumerable<NodePathStep> steps)
+    {
+        return new NodePath { FilePath = filePath, Steps = steps.ToArray() };
+    }
+
+    /// <summary>The text of <paramref name="path"/>: its file, then the label of each step.</summary>
+    internal static string DescribePath(NodePath path)
+    {
+        if (path.Steps.Length == 0)
+            return path.FilePath.Text;
+        return $"{path.FilePath}: {string.Join(" › ", path.Steps.Select(static s => s.Label))}";
+    }
+
     /// <summary>The segment naming a node of <paramref name="subject"/>; null for the root of a tree.</summary>
     internal static NodePathSegment? GetPathSegment(NodeSubject subject)
     {

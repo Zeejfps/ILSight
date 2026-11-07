@@ -370,7 +370,7 @@ internal static class ExportDialogView
     private static void Toggle(Ui<UiState> ui, DecompilerOptions options, string name)
     {
         var t = ui.State.Strings;
-        var toggle = DecompilerToggle.Find(name);
+        var toggle = DecompilerToggles.FindToggle(name);
         if (toggle == null)
             return;
         var label = DecompilerOptionLabels.Label(t, name) ?? name;

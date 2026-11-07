@@ -196,7 +196,7 @@ public sealed class AppStateTests
         var tab = Assert.Single(d.AppState.Tabs);
         Assert.IsType<FailedAssembly>(failed);
         Assert.Same(failed.Root, tab.Node);
-        Assert.Contains(Path.GetFileName(missing), tab.Document.GetText());
+        Assert.Contains(Path.GetFileName(missing), Documents.GetText(tab.Document));
         Assert.Same(failed.Root, Assert.Single(d.Ui.Tree.Roots));
         Assert.Empty(d.AppState.Errors.Entries);
     }
@@ -364,7 +364,7 @@ public sealed class AppStateTests
 
         d.Show(d.Fixture("Greeter"));
         var reveal = Assert.IsType<PendingScroll.Reveal>(view.Pending);
-        Assert.Equal(tab.Document.FindDefinitionLine(tab.Node!), reveal.Line);
+        Assert.Equal(Documents.FindDefinitionLine(tab.Document, tab.Node!), reveal.Line);
     }
 
     [Fact]

@@ -67,7 +67,7 @@ public sealed class MetadataTests
         Assert.Equal(Enum.GetValues<TableIndex>().Length, tables.Count);
         Assert.True(Assert.IsType<NodeSubject.MetadataTable>(empty.Subject).Value.IsEmptyTable);
         Assert.Equal("03 FieldPtr (0)", empty.Text);
-        Assert.Contains("FieldPtr: 0 rows", empty.Decompile(DecompilationLanguage.CSharp).GetText());
+        Assert.Contains("FieldPtr: 0 rows", Documents.GetText(empty.Decompile(DecompilationLanguage.CSharp)));
         Assert.False(Assert.IsType<NodeSubject.MetadataTable>(Table(assembly, "TypeDef").Subject).Value.IsEmptyTable);
     }
 
@@ -219,7 +219,7 @@ public sealed class MetadataTests
         var assembly = Trees.TestAssembly;
         var directory = Metadata(assembly).Child("Debug Directory");
 
-        var codeView = directory.Child("CodeView").Decompile(DecompilationLanguage.CSharp).GetText();
+        var codeView = Documents.GetText(directory.Child("CodeView").Decompile(DecompilationLanguage.CSharp));
 
         Assert.Contains("// GUID: ", codeView);
         Assert.Contains("// Path: ", codeView);
@@ -243,7 +243,7 @@ public sealed class MetadataTests
     {
         var assembly = Trees.TestAssembly;
 
-        var text = Metadata(assembly).Child("Tables").Decompile(DecompilationLanguage.CSharp).GetText();
+        var text = Documents.GetText(Metadata(assembly).Child("Tables").Decompile(DecompilationLanguage.CSharp));
 
         Assert.StartsWith("// Tables", text);
         Assert.Contains("// 02 TypeDef: ", text);

@@ -17,7 +17,7 @@ internal static class TypeExposedByAnalyzer
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition analyzed, AnalyzerContext context)
     {
         var visitor = new TypeDefinitionUsedVisitor(analyzed);
-        foreach (var type in context.GetScopeOf(analyzed).GetTypesInScope(context.CancellationToken))
+        foreach (var type in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, analyzed), context.CancellationToken))
         {
             if (analyzed.Kind == TypeKind.Enum && AnalyzerHelpers.IsSame(type, analyzed) || Members.IsHidden(type))
                 continue;

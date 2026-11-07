@@ -117,7 +117,7 @@ public sealed class SavedDocumentsTests : IDisposable
     private static TypeAnchor FixtureType(string name) => new(PathOf(AppStateDriver.FixturePath), $"{AppStateDriver.FixturesNamespace}.{name}");
 
     /// <summary>Where the fixture type <paramref name="name"/> is, as this build saves it.</summary>
-    private static NodePath FixturePlace(string name) => NodePath.From(PathOf(AppStateDriver.FixturePath),
+    private static NodePath FixturePlace(string name) => NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath),
     [
         new NodePathStep(new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace), AppStateDriver.FixturesNamespace),
         new NodePathStep(new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.{name}"), name),
@@ -406,7 +406,7 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     private static NodeDocumentRecord HandTab(string panel, string title) =>
-        new(panel, title, NodePath.From(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
+        new(panel, title, NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
 
     [Fact]
     public void A_new_panel_skips_every_panel_saved_documents_were_docked_as_however_numbered()

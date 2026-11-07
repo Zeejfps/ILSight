@@ -19,7 +19,7 @@ internal static class CodeText
         var builder = new StringBuilder();
         builder.Append(first, start.Column, first.Length - start.Column).Append('\n');
         if (end.Line - start.Line > 1)
-            builder.Append(document.GetText(start.Line + 1, end.Line)).Append('\n');
+            builder.Append(Documents.GetText(document, start.Line + 1, end.Line)).Append('\n');
         builder.Append(lines[end.Line].Text, 0, end.Column);
         return builder.ToString();
     }

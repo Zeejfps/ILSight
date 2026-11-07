@@ -124,7 +124,7 @@ internal sealed class CodeViewDriver
     public float RowTop(float y) => Frames.Height - y - CellInset;
 
     public static DecompiledDocument Numbered(int count, string prefix = "line ") =>
-        DecompiledDocument.FromText("numbered", string.Join('\n', Enumerable.Range(0, count).Select(i => prefix + i)));
+        Documents.CreateFromText("numbered", string.Join('\n', Enumerable.Range(0, count).Select(i => prefix + i)));
 
     public static DecompiledDocument Greeter() => s_greeter.Value;
 

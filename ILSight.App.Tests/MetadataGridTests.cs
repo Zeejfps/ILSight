@@ -88,7 +88,7 @@ public sealed class MetadataGridTests
         d.Show(d.Node("Metadata", "Tables"));
 
         Assert.Null(d.AppState.Tabs.Active!.Grid);
-        Assert.StartsWith("// Tables", d.AppState.Tabs.Active.Document.GetText());
+        Assert.StartsWith("// Tables", Documents.GetText(d.AppState.Tabs.Active.Document));
     }
 
     [Fact]

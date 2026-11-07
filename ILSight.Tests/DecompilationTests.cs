@@ -81,8 +81,8 @@ public sealed class DecompilationTests
         var calculator = assembly.Calculator();
         var csharp5 = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp5 };
 
-        var latest = calculator.Child("Count : int").Decompile(DecompilationLanguage.CSharp).GetText();
-        var older = calculator.Child("Count : int").Decompile(DecompilationLanguage.CSharp, csharp5).GetText();
+        var latest = Documents.GetText(calculator.Child("Count : int").Decompile(DecompilationLanguage.CSharp));
+        var older = Documents.GetText(calculator.Child("Count : int").Decompile(DecompilationLanguage.CSharp, csharp5));
         var ctor = calculator.Child("Calculator()").Decompile(DecompilationLanguage.CSharp, csharp5);
 
         Assert.Contains("public int Count => _items.Count;", latest);
@@ -112,8 +112,8 @@ public sealed class DecompilationTests
         var grow = Trees.TestAssembly.Fixtures().Child("Circle", "Grow(double, int) : double");
         var off = DecompilerOptions.Default.With(DecompilerToggle.UseDebugSymbols, false);
 
-        var named = grow.Decompile(DecompilationLanguage.CSharp).GetText();
-        var guessed = grow.Decompile(DecompilationLanguage.CSharp, off).GetText();
+        var named = Documents.GetText(grow.Decompile(DecompilationLanguage.CSharp));
+        var guessed = Documents.GetText(grow.Decompile(DecompilationLanguage.CSharp, off));
 
         Assert.Contains("double grown = Radius;", named);
         Assert.Contains("for (int step = 0; step < times; step++)", named);
@@ -127,8 +127,8 @@ public sealed class DecompilationTests
         var grow = Trees.TestAssembly.Fixtures().Child("Circle", "Grow(double, int) : double");
         var off = DecompilerOptions.Default.With(DecompilerToggle.UseDebugSymbols, false);
 
-        var named = grow.Decompile(DecompilationLanguage.IL).GetText();
-        var unnamed = grow.Decompile(DecompilationLanguage.IL, off).GetText();
+        var named = Documents.GetText(grow.Decompile(DecompilationLanguage.IL));
+        var unnamed = Documents.GetText(grow.Decompile(DecompilationLanguage.IL, off));
 
         Assert.Contains("[0] float64 grown,", named);
         Assert.Contains("[1] int32 step,", named);
@@ -138,7 +138,7 @@ public sealed class DecompilationTests
     [Fact]
     public void IL_comes_out_the_same_under_any_toggle_but_debug_symbols()
     {
-        var braces = DecompilerToggle.Find("AlwaysUseBraces")!;
+        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces")!;
         var bracesOff = DecompilerOptions.Default.With(braces, false);
         var symbolsOff = DecompilerOptions.Default.With(DecompilerToggle.UseDebugSymbols, false);
 
@@ -223,11 +223,11 @@ public sealed class DecompilationTests
     public void Turning_xml_documentation_off_leaves_it_out()
     {
         var count = Trees.TestAssembly.Calculator().Child("Count : int");
-        var docs = DecompilerToggle.Find("ShowXmlDocumentation")!;
+        var docs = DecompilerToggles.FindToggle("ShowXmlDocumentation")!;
         var off = DecompilerOptions.Default.With(docs, false);
 
-        Assert.Contains("/// <summary>How many items were added.</summary>", count.Decompile(DecompilationLanguage.CSharp).GetText());
-        Assert.DoesNotContain("///", count.Decompile(DecompilationLanguage.CSharp, off).GetText());
+        Assert.Contains("/// <summary>How many items were added.</summary>", Documents.GetText(count.Decompile(DecompilationLanguage.CSharp)));
+        Assert.DoesNotContain("///", Documents.GetText(count.Decompile(DecompilationLanguage.CSharp, off)));
     }
 
     [Fact]
@@ -245,11 +245,11 @@ public sealed class DecompilationTests
     {
         var assembly = Trees.TestAssembly;
         var count = assembly.Calculator().Child("Count : int");
-        var bodies = DecompilerToggle.Find("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
+        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
         var off = DecompilerOptions.Default.With(bodies, false);
         var offOnCSharp5 = off with { LanguageVersion = CSharpVersion.CSharp5 };
 
-        Assert.Contains("return _items.Count;", count.Decompile(DecompilationLanguage.CSharp, off).GetText());
+        Assert.Contains("return _items.Count;", Documents.GetText(count.Decompile(DecompilationLanguage.CSharp, off)));
         Assert.False(offOnCSharp5.Allows(bodies));
         Assert.False(offOnCSharp5.IsOn(bodies));
         Assert.True(DecompilerOptions.Default.IsOn(bodies));
@@ -279,8 +279,8 @@ public sealed class DecompilationTests
     {
         var assembly = Trees.TestAssembly;
 
-        var csharp = assembly.Root.Decompile(DecompilationLanguage.CSharp).GetText();
-        var il = assembly.Root.Decompile(DecompilationLanguage.IL).GetText();
+        var csharp = Documents.GetText(assembly.Root.Decompile(DecompilationLanguage.CSharp));
+        var il = Documents.GetText(assembly.Root.Decompile(DecompilationLanguage.IL));
 
         Assert.Contains($"// {Trees.TestAssemblyPath}", csharp);
         Assert.Contains("[assembly: AssemblyProduct(\"ILSight.Tests\")]", csharp);
@@ -337,11 +337,11 @@ public sealed class DecompilationTests
         var types = coreLib.Root.Child("System.Collections.Generic").Children.Take(12).ToArray();
         var languages = new[] { DecompilationLanguage.CSharp, DecompilationLanguage.IL };
 
-        var sequential = types.SelectMany(t => languages.Select(l => t.Decompile(l).GetText())).ToArray();
+        var sequential = types.SelectMany(t => languages.Select(l => Documents.GetText(t.Decompile(l)))).ToArray();
         var concurrent = (await Task.WhenAll(types.SelectMany(t => languages.Select(l => NodeContentLoader.LoadAsync(TestSession.Shared, t, l, DecompilerOptions.Default)))))
             .Select(c => Assert.IsType<DocumentContent>(c).Document).ToArray();
 
-        Assert.Equal(sequential, concurrent.Select(d => d.GetText()));
+        Assert.Equal(sequential, concurrent.Select(d => Documents.GetText(d)));
         Assert.DoesNotContain(concurrent, d => d.Error != null);
     }
 
@@ -360,7 +360,7 @@ public sealed class DecompilationTests
         Assert.StartsWith("// Error decompiling", il.Lines[0].Text);
         Assert.Contains(il.SpansOf(), s => s.Text.Contains(nameof(BadImageFormatException)));
         Assert.Null(csharp.Error);
-        Assert.Contains("Could not decode attribute arguments", csharp.GetText());
+        Assert.Contains("Could not decode attribute arguments", Documents.GetText(csharp));
     }
 
     [Fact]

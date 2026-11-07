@@ -32,8 +32,8 @@ public sealed class ILSpyLayoutTests
         var assembly = Trees.TestAssembly;
         var calculator = assembly.Calculator();
 
-        var ctor = calculator.Children.Single(c => c.Text.StartsWith("Calculator()")).Decompile(DecompilationLanguage.CSharp).GetText();
-        var field = calculator.Child("_items : List<T>").Decompile(DecompilationLanguage.CSharp).GetText();
+        var ctor = Documents.GetText(calculator.Children.Single(c => c.Text.StartsWith("Calculator()")).Decompile(DecompilationLanguage.CSharp));
+        var field = Documents.GetText(calculator.Child("_items : List<T>").Decompile(DecompilationLanguage.CSharp));
 
         Assert.Contains("_items = new List<T>()", ctor);
         Assert.Contains("public Calculator()", ctor);

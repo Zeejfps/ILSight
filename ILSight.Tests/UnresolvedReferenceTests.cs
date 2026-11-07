@@ -33,7 +33,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
 
         Assert.IsType<NodeSubject.ReferencedTypes>(Assert.Single(core.Children).Subject);
         Assert.Null(list.FindNode(core.Destination));
-        Assert.Contains("// Not found", core.Decompile(DecompilationLanguage.CSharp).GetText());
+        Assert.Contains("// Not found", Documents.GetText(core.Decompile(DecompilationLanguage.CSharp)));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         Assert.IsType<Activation.OpenSelf>(NodeDefinitions.GetActivation(unresolved.Subject));
         Assert.Equal(NodeAccessibility.None, unresolved.Accessibility);
         Assert.True(unresolved.IsPublicApi);
-        Assert.Contains(nameof(NodeContent), unresolved.Decompile(DecompilationLanguage.CSharp).GetText());
+        Assert.Contains(nameof(NodeContent), Documents.GetText(unresolved.Decompile(DecompilationLanguage.CSharp)));
         Assert.Equal(NodeAccessibility.Public, resolved.Accessibility);
         Assert.Equal(nameof(NodeContent), Assert.IsAssignableFrom<BrowseNode>(list.FindNode(resolved.Destination)).Text);
     }

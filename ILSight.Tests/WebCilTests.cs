@@ -19,7 +19,7 @@ public sealed class WebCilTests
         Assert.IsNotType<LoadedPackage>(assembly);
         Assert.Equal("SampleApp", assembly.Name);
         Assert.Null(counter.Error);
-        Assert.Contains("public void Increment()", counter.GetText());
+        Assert.Contains("public void Increment()", Documents.GetText(counter));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class WebCilTests
     {
         var assembly = new AssemblyList().Open(Trees.WebCilSamplePath);
 
-        var summary = assembly.Root.Decompile(DecompilationLanguage.CSharp).GetText();
+        var summary = Documents.GetText(assembly.Root.Decompile(DecompilationLanguage.CSharp));
 
         Assert.Contains(Trees.WebCilSamplePath, summary);
         Assert.DoesNotContain("Architecture:", summary);

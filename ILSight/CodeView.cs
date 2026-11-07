@@ -485,7 +485,7 @@ public static class CodeViewWidget
                     }
                     else if (foldWidth > 0f && pointer.X >= rect.X + foldLeft)
                     {
-                        var fold = document.FoldStartingAt(line);
+                        var fold = Documents.FindFoldStartingAt(document, line);
                         if (fold != null)
                             hover = CodeHover.OnChevron(fold.Value);
                     }
@@ -1185,7 +1185,7 @@ public static class CodeViewWidget
         var index = frame.Folds.LineAt(row);
         var line = frame.Document.Lines[index];
         var text = line.Text;
-        var fold = frame.Document.FoldStartingAt(index);
+        var fold = Documents.FindFoldStartingAt(frame.Document, index);
         var collapsedFold = fold != null && frame.Folds.IsCollapsed(fold.Value) ? fold : null;
         var collapsed = collapsedFold != null;
         var chipStart = text.Length + 1;

@@ -27,7 +27,7 @@ internal static class FieldAccessAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(FieldAccessKind kind, IField field, AnalyzerContext context)
     {
-        return context.GetScopeOf(field).MembersWhoseCode(method => Accesses(kind, method, field, context), context.CancellationToken);
+        return AnalyzerHelpers.FindMembersWithCode(AnalyzerHelpers.GetScope(context, field), method => Accesses(kind, method, field, context), context.CancellationToken);
     }
 
     private static bool Accesses(FieldAccessKind kind, IMethod method, IField field, AnalyzerContext context)
@@ -35,7 +35,7 @@ internal static class FieldAccessAnalyzer
         if (method.MetadataToken.IsNil || method.ParentModule is not MetadataModule module || module.MetadataFile == null)
             return false;
         var file = module.MetadataFile;
-        return context.MappingOf(method.DeclaringTypeDefinition!).GetMethodParts((MethodDefinitionHandle)method.MetadataToken)
+        return AnalyzerHelpers.EnsureMapping(context, method.DeclaringTypeDefinition!).GetMethodParts((MethodDefinitionHandle)method.MetadataToken)
             .Any(part => AnalyzerHelpers.HasToken(AnalyzerHelpers.ReadBody(file, part), (opCode, token) =>
                 Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && AnalyzerHelpers.IsSame(found, field)));
     }

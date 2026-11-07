@@ -119,7 +119,7 @@ internal static class NodeDecompiler
                 break;
             case CodeExport.Document document:
                 var written = DecompileOrThrow(document.Request, language, options, cancellationToken);
-                File.WriteAllText(path, written.GetText());
+                File.WriteAllText(path, Documents.GetText(written));
                 break;
             default:
                 throw new UnreachableException();

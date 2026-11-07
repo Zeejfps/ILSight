@@ -50,7 +50,7 @@ public sealed partial class BrowseNode
     public LoadedAssembly Assembly { get; }
 
     /// <summary>Where this node sits, for finding it again after its assembly is reloaded.</summary>
-    public NodePath Path => _path ??= NodePath.Of(this);
+    public NodePath Path => _path ??= NodeDefinitions.GetPath(this);
 
     /// <summary>What the node is among its siblings, as a path names it; null for the root of a tree.</summary>
     internal NodePathSegment? Segment => _segment ??= NodeDefinitions.GetPathSegment(Subject);

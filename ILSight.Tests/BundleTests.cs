@@ -49,7 +49,7 @@ public sealed class BundleTests
         var core = list.FindNode(assembly.Root.Child("References", "ILSight.Core").Destination);
 
         Assert.Null(calculator.Error);
-        Assert.Contains("class Calculator<T>", calculator.GetText());
+        Assert.Contains("class Calculator<T>", Documents.GetText(calculator));
         Assert.Equal(bundle.FilePath.Combine("ILSight.Core.dll"), core!.Assembly.FilePath);
     }
 

@@ -43,31 +43,18 @@ public enum DecompilerToggleGroup
 /// holds every one there is.</summary>
 public sealed class DecompilerToggle
 {
-    private DecompilerToggle(string name, DecompilerToggleGroup group, CSharpVersion? introducedIn, bool defaultValue)
-    {
-        Name = name;
-        Group = group;
-        IntroducedIn = introducedIn;
-        DefaultValue = defaultValue;
-    }
+    public required string Name { get; init; }
 
-    public string Name { get; }
+    public required DecompilerToggleGroup Group { get; init; }
 
-    public DecompilerToggleGroup Group { get; }
+    public required CSharpVersion? IntroducedIn { get; init; }
 
-    public CSharpVersion? IntroducedIn { get; }
-
-    public bool DefaultValue { get; }
-
-    private static readonly Dictionary<string, PropertyInfo> Properties = typeof(DecompilerSettings).GetProperties()
-        .Where(static p => p.PropertyType == typeof(bool) && p.CanWrite).ToDictionary(static p => p.Name);
+    public required bool DefaultValue { get; init; }
 
     /// <summary>Every toggle that changes decompiled code, in the decompiler's order.</summary>
-    public static IReadOnlyList<DecompilerToggle> All { get; } = Discover();
+    public static IReadOnlyList<DecompilerToggle> All { get; } = DecompilerToggles.Discover();
 
-    private static readonly Dictionary<string, DecompilerToggle> ByName = All.ToDictionary(static t => t.Name);
-
-    public static DecompilerToggle? Find(string name) => ByName.GetValueOrDefault(name);
+    internal static readonly Dictionary<string, DecompilerToggle> ByName = All.ToDictionary(static t => t.Name);
 
     /// <summary>Whether locals take their names from the assembly's PDB; the one toggle IL reads.</summary>
     public static DecompilerToggle UseDebugSymbols => ByName[nameof(DecompilerSettings.UseDebugSymbols)];
@@ -79,10 +66,25 @@ public sealed class DecompilerToggle
     /// <summary>Whether Windows Runtime metadata reads as the .NET types it projects to; applies as
     /// assemblies are read.</summary>
     public static DecompilerToggle ApplyWindowsRuntimeProjections => ByName[nameof(DecompilerSettings.ApplyWindowsRuntimeProjections)];
+}
 
-    internal void Apply(DecompilerSettings settings, bool value) => Properties[Name].SetValue(settings, value);
+/// <summary>Finding the decompiler's on/off choices, by asking it which it has, and setting them.</summary>
+public static class DecompilerToggles
+{
+    private static readonly Dictionary<string, PropertyInfo> Properties = typeof(DecompilerSettings).GetProperties()
+        .Where(static p => p.PropertyType == typeof(bool) && p.CanWrite).ToDictionary(static p => p.Name);
 
-    private static List<DecompilerToggle> Discover()
+    public static DecompilerToggle? FindToggle(string name)
+    {
+        return DecompilerToggle.ByName.GetValueOrDefault(name);
+    }
+
+    internal static void ApplyToggle(DecompilerToggle toggle, DecompilerSettings settings, bool value)
+    {
+        Properties[toggle.Name].SetValue(settings, value);
+    }
+
+    internal static List<DecompilerToggle> Discover()
     {
         var defaults = new DecompilerSettings();
         var toggles = new List<DecompilerToggle>();
@@ -93,21 +95,21 @@ public sealed class DecompilerToggle
             var category = property.GetCustomAttribute<CategoryAttribute>()?.Category;
             if (category == null) continue;
             var value = (bool)property.GetValue(defaults)!;
-            var version = Introduced(category);
+            var version = FindIntroduced(category);
             if (version != null)
-                toggles.Add(new DecompilerToggle(property.Name, DecompilerToggleGroup.Language, version, value));
+                toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.Language, IntroducedIn = version, DefaultValue = value });
             else if (category == "DecompilerSettings.Other")
-                toggles.Add(new DecompilerToggle(property.Name, DecompilerToggleGroup.Other, null, value));
+                toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.Other, IntroducedIn = null, DefaultValue = value });
             else if (category == "DecompilerSettings.FSpecificOptions")
-                toggles.Add(new DecompilerToggle(property.Name, DecompilerToggleGroup.FSharp, null, value));
+                toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.FSharp, IntroducedIn = null, DefaultValue = value });
             else if (category == "DecompilerSettings.ProjectExport")
-                toggles.Add(new DecompilerToggle(property.Name, DecompilerToggleGroup.ProjectExport, null, value));
+                toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.ProjectExport, IntroducedIn = null, DefaultValue = value });
         }
         return toggles;
     }
 
     /// <summary>The version a category such as <c>C# 7.3 / VS 2017.7</c> names.</summary>
-    private static CSharpVersion? Introduced(string category)
+    private static CSharpVersion? FindIntroduced(string category)
     {
         if (!category.StartsWith("C# ", StringComparison.Ordinal)) return null;
         var end = category.IndexOf(' ', 3);
@@ -225,7 +227,7 @@ public sealed record DecompilerOptions
         foreach (var (toggle, value) in _changed)
         {
             if (Allows(toggle))
-                toggle.Apply(settings, value);
+                DecompilerToggles.ApplyToggle(toggle, settings, value);
         }
     }
 }

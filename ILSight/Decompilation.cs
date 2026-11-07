@@ -98,7 +98,7 @@ public static class Decompilation
         var marked = FindMarkedLine(tab, target, node);
         if (marked >= 0)
             return marked;
-        return tab.Document.FindDefinitionLine(node);
+        return Documents.FindDefinitionLine(tab.Document, node);
     }
 
     private static int FindMarkedLine(DocumentTab tab, Bookmark? target, BrowseNode node)

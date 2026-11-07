@@ -20,10 +20,10 @@ internal static class TypeUsedByAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition analyzedType, AnalyzerContext context)
     {
-        var scope = context.GetScopeOf(analyzedType);
-        return scope.GetModulesInScope(context.CancellationToken)
+        var scope = AnalyzerHelpers.GetScope(context, analyzedType);
+        return AnalyzerHelpers.GetModulesInScope(scope, context.CancellationToken)
             .AsParallel().AsOrdered()
-            .SelectMany(module => AnalyzeModule(analyzedType, scope.ConstructTypeSystem(module))
+            .SelectMany(module => AnalyzeModule(analyzedType, AnalyzerHelpers.GetTypeSystem(scope, module))
                 .Distinct()
                 .Where(s => !analyzedType.Equals((s as IEntity)?.DeclaringTypeDefinition)));
     }

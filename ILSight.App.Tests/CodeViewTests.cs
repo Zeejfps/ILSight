@@ -16,7 +16,7 @@ public sealed class CodeViewTests
         return (view, line, column);
     }
 
-    private static CodeViewDriver ThreeLines() => CodeViewDriver.Showing(DecompiledDocument.FromText("t", "alpha beta\ngamma delta\nepsilon"));
+    private static CodeViewDriver ThreeLines() => CodeViewDriver.Showing(Documents.CreateFromText("t", "alpha beta\ngamma delta\nepsilon"));
 
     [Fact]
     public void Only_the_lines_in_view_are_recorded_in_a_100k_line_document()
@@ -124,7 +124,7 @@ public sealed class CodeViewTests
 
         Assert.Null(result.Intent);
         var occurrence = BuiltInThemes.Dark.Code.Occurrence;
-        var expected = view.Document.GetText().Split('\n').Sum(l => CountWord(l, "text"));
+        var expected = Documents.GetText(view.Document).Split('\n').Sum(l => CountWord(l, "text"));
         Assert.True(expected >= 3);
         Assert.Equal(expected, view.Frames.Canvas.Rects.Count(r => r.Inputs.Style.BackgroundColor == occurrence));
     }
@@ -159,7 +159,7 @@ public sealed class CodeViewTests
         Assert.Contains($"font-family: '{CodeFontChoices.BundledName}', monospace", html);
         Assert.Contains($"<span style=\"color: {Hex(palette.Keyword)};\">public</span> <span style=\"color: {Hex(palette.Keyword)};\">class</span>", html);
         Assert.Equal(view.Document.Lines.Length, html.Split("<div>").Length - 1);
-        Assert.Equal(view.Document.GetText(), view.Frames.Clipboard.Text);
+        Assert.Equal(Documents.GetText(view.Document), view.Frames.Clipboard.Text);
     }
 
     [Fact]
@@ -234,7 +234,7 @@ public sealed class CodeViewTests
     [Fact]
     public void Find_counts_matches_and_steps_with_wrap_both_ways()
     {
-        var view = CodeViewDriver.Showing(DecompiledDocument.FromText("t", "foo\nbar foo\nbaz\nfoo foo"));
+        var view = CodeViewDriver.Showing(Documents.CreateFromText("t", "foo\nbar foo\nbaz\nfoo foo"));
         view.Click(2, 0);
 
         view.Key(Shortcuts.Find);
@@ -381,7 +381,7 @@ public sealed class CodeViewTests
         view.Run();
         Assert.Contains(view.Frames.Canvas.Texts, t => t.Inputs.Text == "Analyze");
 
-        view.Document = DecompiledDocument.FromText("t", "alpha beta");
+        view.Document = Documents.CreateFromText("t", "alpha beta");
         view.Run();
 
         Assert.Same(CodeMenuTarget.None, view.State.Menu);

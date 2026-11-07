@@ -258,7 +258,7 @@ public sealed class AppTests
         var app = AppDriver.Opened(width: 1600f);
         app.Show(app.Fixture("Greeter"), 1);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp1));
-        Assert.DoesNotContain("string.Concat", app.AppState.Tabs.Active!.Document.GetText());
+        Assert.DoesNotContain("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
 
         app.Click("View");
         app.Click("Panels");
@@ -266,14 +266,14 @@ public sealed class AppTests
         app.ClickStartingWith("String concatenation");
         app.Settle(1);
 
-        Assert.False(app.AppState.DecompilerOptions.IsOn(DecompilerToggle.Find("StringConcat")!));
-        Assert.Contains("string.Concat", app.AppState.Tabs.Active!.Document.GetText());
+        Assert.False(app.AppState.DecompilerOptions.IsOn(DecompilerToggles.FindToggle("StringConcat")!));
+        Assert.Contains("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
 
         app.Click(Icons.OptionsResetDecompiler);
         app.Settle(1);
 
         Assert.Equal(DecompilerOptions.Default, app.AppState.DecompilerOptions);
-        Assert.DoesNotContain("string.Concat", app.AppState.Tabs.Active!.Document.GetText());
+        Assert.DoesNotContain("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
     }
 
     [Fact]
@@ -282,13 +282,13 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         SetLanguage(app.AppState, DecompilationLanguage.IL);
         app.Show(app.Fixture("Outline"), 1);
-        var named = app.AppState.Tabs.Active!.Document.GetText();
+        var named = Documents.GetText(app.AppState.Tabs.Active!.Document);
 
         SetDecompilerToggle(app.AppState, DecompilerToggle.UseDebugSymbols, false);
         app.Settle(1);
 
         Assert.Contains("int32 total", named);
-        Assert.DoesNotContain("int32 total", app.AppState.Tabs.Active!.Document.GetText());
+        Assert.DoesNotContain("int32 total", Documents.GetText(app.AppState.Tabs.Active!.Document));
     }
 
     [Fact]

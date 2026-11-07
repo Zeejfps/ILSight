@@ -29,7 +29,7 @@ public sealed class FoldingTests
 
         var mode = document.FoldAt("public enum Mode");
         Assert.True(mode.StartLine > type.StartLine && mode.EndLine < type.EndLine);
-        Assert.Null(document.FoldStartingAt(document.LineContaining("public int Count =>")));
+        Assert.Null(Documents.FindFoldStartingAt(document, document.LineContaining("public int Count =>")));
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public sealed class FoldingTests
                 Assert.True(fold.EndLine <= open.Peek().EndLine);
             open.Push(fold);
             previous = fold.StartLine;
-            var index = document.FoldStartingAt(fold.StartLine);
+            var index = Documents.FindFoldStartingAt(document, fold.StartLine);
             Assert.NotNull(index);
             Assert.Equal(fold, document.Folds[index.Value]);
         }
@@ -86,6 +86,6 @@ public sealed class FoldingTests
 
         var body = Assert.Single(document.Folds);
         Assert.Equal(document.LineContaining("internal string Describe()"), body.StartLine);
-        Assert.Empty(DecompiledDocument.FromText("t", "a\n{\nb\n}").Folds);
+        Assert.Empty(Documents.CreateFromText("t", "a\n{\nb\n}").Folds);
     }
 }

@@ -11,7 +11,7 @@ public sealed class CodeViewScrollTests
     private const int FitColumns = 37;
 
     private static DecompiledDocument Document(int widest) =>
-        DecompiledDocument.FromText("t", string.Join('\n', Enumerable.Range(0, 1000).Select(i => i == 999 ? new string('w', widest) : $"line {i}")));
+        Documents.CreateFromText("t", string.Join('\n', Enumerable.Range(0, 1000).Select(i => i == 999 ? new string('w', widest) : $"line {i}")));
 
     private static List<(float Left, float Top, float Width, float Height)> Thumbs(CodeViewDriver view)
     {

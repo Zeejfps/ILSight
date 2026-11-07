@@ -18,11 +18,11 @@ internal static class AttributeAppliedToAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition attributeType, AnalyzerContext context)
     {
-        var scope = context.GetScopeOf(attributeType);
+        var scope = AnalyzerHelpers.GetScope(context, attributeType);
         var known = attributeType.IsBuiltinAttribute();
-        var found = scope.GetModulesInScope(context.CancellationToken).SelectMany(module =>
+        var found = AnalyzerHelpers.GetModulesInScope(scope, context.CancellationToken).SelectMany(module =>
         {
-            var ts = scope.ConstructTypeSystem(module);
+            var ts = AnalyzerHelpers.GetTypeSystem(scope, module);
             context.CancellationToken.ThrowIfCancellationRequested();
             return known.IsCustomAttribute() ? CustomAppliedTo(attributeType, ts) : BuiltinAppliedTo(known, ts);
         });

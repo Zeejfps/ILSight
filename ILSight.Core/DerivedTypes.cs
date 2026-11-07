@@ -16,7 +16,7 @@ internal static class DerivedTypes
     {
         var context = new AnalyzerContext { AssemblyList = list, CancellationToken = cancellationToken };
         var found = new List<ITypeDefinition>();
-        foreach (var candidate in context.GetScopeOf(type).GetTypesInScope(cancellationToken))
+        foreach (var candidate in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, type), cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (NamesAsBase(candidate, type))

@@ -269,7 +269,7 @@ public static class Bookmarks
 
     private static BookmarkToggle AddBookmark(AppState appState, DocumentTab tab, BrowseNode node, int line, Func<int, string> nameOf)
     {
-        var anchor = tab.Document.AnchorAt(line);
+        var anchor = Documents.FindAnchorAt(tab.Document, line);
         var name = CreateName(appState.Bookmarks, nameOf);
         var info = ILSpyTree.Describe(node, anchor);
         var bookmark = Bookmarks.CreateAt(node, tab.Language, line, anchor, name, info);
@@ -549,7 +549,7 @@ public static class Bookmarks
     /// <summary>The line it marks in <paramref name="document"/>, shown for <paramref name="node"/>, or -1.</summary>
     public static int FindLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
     {
-        return bookmark.Anchor != null ? document.FindLine(bookmark.Anchor.Value)
+        return bookmark.Anchor != null ? Documents.FindLine(document, bookmark.Anchor.Value)
         : bookmark.Language == document.Language && bookmark.Place.Equals(node.Path) && bookmark.Line < document.Lines.Length ? bookmark.Line
         : -1;
     }

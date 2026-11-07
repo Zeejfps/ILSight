@@ -75,7 +75,7 @@ internal sealed class DocumentBuilder : ITextOutput
         foreach (var (text, first, count) in _lines)
             lines.Add(new DocumentLine { Text = text, DocumentSpans = spans, FirstSpan = first, SpanCount = count });
         var built = lines.MoveToImmutable();
-        return new DecompiledDocument(title, _language, error, built, _definitions, Statements(), FoldRegions(built));
+        return new DecompiledDocument { Title = title, Language = _language, Error = error, Lines = built, Definitions = _definitions, Statements = Statements(), Folds = FoldRegions(built) };
     }
 
     public void Write(string text, SpanKind kind, CodeReference? reference = null, bool isDefinition = false)

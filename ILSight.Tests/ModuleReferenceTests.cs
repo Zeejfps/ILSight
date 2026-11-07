@@ -44,7 +44,7 @@ public sealed class ModuleReferenceTests
     {
         var qcall = CoreLibReferences().Child("QCall");
 
-        var text = Assert.IsType<DocumentContent>(qcall.Content()).Document.GetText();
+        var text = Documents.GetText(Assert.IsType<DocumentContent>(qcall.Content()).Document);
 
         Assert.Contains("// QCall", text);
         Assert.Contains("A native library", text);
@@ -53,7 +53,7 @@ public sealed class ModuleReferenceTests
     [Fact]
     public void The_references_folder_reads_as_its_assemblies_then_its_modules()
     {
-        var text = Assert.IsType<DocumentContent>(CoreLibReferences().Content()).Document.GetText();
+        var text = Documents.GetText(Assert.IsType<DocumentContent>(CoreLibReferences().Content()).Document);
 
         Assert.Contains("// QCall", text);
     }
@@ -75,7 +75,7 @@ public sealed class ModuleReferenceTests
         var (list, assembly) = Trees.OpenTestAssembly();
         var answer = assembly.Root.Child("References", "fixture-native", "Answer() : int");
 
-        var text = Assert.IsType<DocumentContent>(answer.Content()).Document.GetText();
+        var text = Documents.GetText(Assert.IsType<DocumentContent>(answer.Content()).Document);
         var definition = list.FindNode(answer.Destination);
 
         Assert.Contains("Calls fixture_answer in fixture-native", text);

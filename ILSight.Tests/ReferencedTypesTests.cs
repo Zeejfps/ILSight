@@ -72,7 +72,7 @@ public sealed class ReferencedTypesTests
         var (_, assembly) = Trees.OpenTestAssembly();
         var types = UsedList(assembly).Parent!;
 
-        var text = Assert.IsType<DocumentContent>(types.Content()).Document.GetText();
+        var text = Documents.GetText(Assert.IsType<DocumentContent>(types.Content()).Document);
 
         Assert.Contains("System.Collections.Generic.List<>", text);
         Assert.Contains("    Add(T) : void", text);

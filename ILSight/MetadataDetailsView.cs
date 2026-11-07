@@ -94,7 +94,7 @@ internal static class MetadataDetailsView
     {
         if (texts.Texts.TryGetValue(row, out var shown))
             return shown;
-        var document = DecompiledDocument.FromText(title, text);
+        var document = Documents.CreateFromText(title, text);
         shown = new DetailText(document, new CodeViewState());
         texts.Texts[row] = shown;
         return shown;

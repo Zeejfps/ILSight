@@ -26,53 +26,35 @@ public enum AnalysisName
 /// offers it: its name and its place among the others.</summary>
 public sealed class AnalysisKind
 {
-    internal AnalysisKind(AnalysisName name, int order, Analyzer analyzer, bool sortsResults = false)
-    {
-        Name = name;
-        Order = order;
-        Prepare = analyzer;
-        SortsResults = sortsResults;
-    }
+    public required AnalysisName Name { get; init; }
 
-    public AnalysisName Name { get; }
+    public required int Order { get; init; }
 
-    public int Order { get; }
-
-    internal Analyzer Prepare { get; }
+    public required Analyzer Prepare { get; init; }
 
     /// <summary>Whether its results read best sorted by label, so come only once all are found.</summary>
-    internal bool SortsResults { get; }
+    internal bool SortsResults { get; init; }
 }
 
 /// <summary>A type, member or assembly an analysis is about or found: what a row shows for it and
 /// how to go to it.</summary>
 public sealed class AnalysisSymbol
 {
-    internal AnalysisSymbol(ISymbol symbol, SymbolShape shape, NodeAccessibility accessibility, string label, string location, CodeReference.Navigable? reference)
-    {
-        Symbol = symbol;
-        Shape = shape;
-        Accessibility = accessibility;
-        Label = label;
-        Location = location;
-        Reference = reference;
-    }
-
-    internal ISymbol Symbol { get; }
+    public required ISymbol Symbol { get; init; }
 
     /// <summary>What it is: an assembly, or a type or member of some shape.</summary>
-    public SymbolShape Shape { get; }
+    public required SymbolShape Shape { get; init; }
 
-    public NodeAccessibility Accessibility { get; }
+    public required NodeAccessibility Accessibility { get; init; }
 
     /// <summary>Its name as the tree would show it.</summary>
-    public string Label { get; }
+    public required string Label { get; init; }
 
     /// <summary>Where it is: the declaring type, or for a type its namespace, and the assembly.</summary>
-    public string Location { get; }
+    public required string Location { get; init; }
 
     /// <summary>What to navigate to it by; null when it cannot be shown.</summary>
-    public CodeReference.Navigable? Reference { get; }
+    public required CodeReference.Navigable? Reference { get; init; }
 
     /// <summary>Its assembly file and metadata token, to find it again with
     /// <see cref="Analyzers.Find"/> in a later run; null for an assembly.</summary>
@@ -100,25 +82,25 @@ public static class Analyzers
 {
     private static readonly AnalysisKind[] Kinds =
     [
-        new(AnalysisName.AppliedTo, 10, AttributeAppliedToAnalyzer.Prepare),
-        new(AnalysisName.ImplementedBy, 10, static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: false, s)),
-        new(AnalysisName.OverriddenBy, 20, static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: true, s)),
-        new(AnalysisName.ReadBy, 10, static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Read, s)),
-        new(AnalysisName.AssignedBy, 20, static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Write, s)),
-        new(AnalysisName.AddressTakenBy, 30, static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.AddressOf, s)),
-        new(AnalysisName.Implements, 40, MemberImplementsInterfaceAnalyzer.Prepare),
-        new(AnalysisName.Overrides, 35, MemberOverridesAnalyzer.Prepare),
-        new(AnalysisName.ImplementedBy, 40, static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: false, s)),
-        new(AnalysisName.OverriddenBy, 30, static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: true, s)),
-        new(AnalysisName.UsedBy, 20, MethodUsedByAnalyzer.Prepare),
-        new(AnalysisName.Uses, 10, MethodUsesAnalyzer.Prepare),
-        new(AnalysisName.UsedBy, 5, MemberUsedByAnalyzer.Prepare),
-        new(AnalysisName.ImplementedBy, 10, static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: false, s)),
-        new(AnalysisName.OverriddenBy, 20, static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: true, s)),
-        new(AnalysisName.ExposedBy, 40, TypeExposedByAnalyzer.Prepare),
-        new(AnalysisName.ExtensionMethods, 50, TypeExtensionMethodsAnalyzer.Prepare),
-        new(AnalysisName.InstantiatedBy, 20, TypeInstantiatedByAnalyzer.Prepare),
-        new(AnalysisName.UsedBy, 30, TypeUsedByAnalyzer.Prepare, sortsResults: true),
+        new AnalysisKind { Name = AnalysisName.AppliedTo, Order = 10, Prepare = AttributeAppliedToAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.ImplementedBy, Order = 10, Prepare = static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: false, s) },
+        new AnalysisKind { Name = AnalysisName.OverriddenBy, Order = 20, Prepare = static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: true, s) },
+        new AnalysisKind { Name = AnalysisName.ReadBy, Order = 10, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Read, s) },
+        new AnalysisKind { Name = AnalysisName.AssignedBy, Order = 20, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Write, s) },
+        new AnalysisKind { Name = AnalysisName.AddressTakenBy, Order = 30, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.AddressOf, s) },
+        new AnalysisKind { Name = AnalysisName.Implements, Order = 40, Prepare = MemberImplementsInterfaceAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.Overrides, Order = 35, Prepare = MemberOverridesAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.ImplementedBy, Order = 40, Prepare = static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: false, s) },
+        new AnalysisKind { Name = AnalysisName.OverriddenBy, Order = 30, Prepare = static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: true, s) },
+        new AnalysisKind { Name = AnalysisName.UsedBy, Order = 20, Prepare = MethodUsedByAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.Uses, Order = 10, Prepare = MethodUsesAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.UsedBy, Order = 5, Prepare = MemberUsedByAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.ImplementedBy, Order = 10, Prepare = static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: false, s) },
+        new AnalysisKind { Name = AnalysisName.OverriddenBy, Order = 20, Prepare = static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: true, s) },
+        new AnalysisKind { Name = AnalysisName.ExposedBy, Order = 40, Prepare = TypeExposedByAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.ExtensionMethods, Order = 50, Prepare = TypeExtensionMethodsAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.InstantiatedBy, Order = 20, Prepare = TypeInstantiatedByAnalyzer.Prepare },
+        new AnalysisKind { Name = AnalysisName.UsedBy, Order = 30, Prepare = TypeUsedByAnalyzer.Prepare, SortsResults = true },
     ];
 
     /// <summary>ILSpy's English name for <paramref name="kind"/>.</summary>
@@ -219,11 +201,9 @@ public static class Analyzers
         switch (symbol)
         {
             case IEntity entity:
-                return new AnalysisSymbol(entity, EntityText.SymbolShapeOf(entity), EntityText.Map(entity.Accessibility), EntityText.Label(entity),
-                    Where(entity), CodeReferences.Find(entity));
+                return new AnalysisSymbol { Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity), Location = Where(entity), Reference = CodeReferences.Find(entity) };
             case IModule module:
-                return new AnalysisSymbol(module, new SymbolShape.Assembly(), NodeAccessibility.Public, module.AssemblyName, module.MetadataFile?.FileName ?? "",
-                    module.MetadataFile != null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null);
+                return new AnalysisSymbol { Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName, Location = module.MetadataFile?.FileName ?? "", Reference = module.MetadataFile != null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null };
             default:
                 return null;
         }

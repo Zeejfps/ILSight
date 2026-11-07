@@ -54,41 +54,40 @@ public enum AssemblyNameKind
 /// </summary>
 public sealed class SearchQuery
 {
-    private SearchQuery(SearchKinds kinds)
-    {
-        Kinds = kinds;
-    }
+    public required SearchKinds Kinds { get; set; }
 
-    public SearchKinds Kinds { get; private set; }
+    public AssemblyNameKind AssemblyName { get; set; }
 
-    public AssemblyNameKind AssemblyName { get; private set; }
+    public IReadOnlyList<string> Terms { get; set; } = [];
 
-    public IReadOnlyList<string> Terms { get; private set; } = [];
-
-    public Regex? Regex { get; private set; }
+    public Regex? Regex { get; set; }
 
     /// <summary>Whether names are matched qualified, namespace and declaring types included.</summary>
-    public bool FullName { get; private set; }
+    public bool FullName { get; set; }
 
     /// <summary>Whether a term names generic arity, so names keep their <c>`1</c> suffix.</summary>
-    public bool KeepArity { get; private set; }
+    public bool KeepArity { get; set; }
 
     /// <summary>Whether a term names type parameters, so generic names are written with them, e.g.
     /// <c>Dictionary&lt;TKey, TValue&gt;</c>.</summary>
-    public bool Generics { get; private set; }
+    public bool Generics { get; set; }
 
-    public string? InAssembly { get; private set; }
+    public string? InAssembly { get; set; }
 
-    public string? InNamespace { get; private set; }
+    public string? InNamespace { get; set; }
 
     /// <summary>True when there is nothing to match, so nothing is found.</summary>
     public bool IsEmpty => Terms.Count == 0 && Regex is null;
+}
 
+/// <summary>Reading a search box's text into a <see cref="SearchQuery"/>, and matching names against it.</summary>
+public static class SearchQueries
+{
     /// <summary>Parses <paramref name="text"/>, searching for <paramref name="kinds"/> unless a prefix
     /// says otherwise.</summary>
-    public static SearchQuery Parse(string text, SearchKinds kinds = SearchKinds.TypesAndMembers)
+    public static SearchQuery ParseQuery(string text, SearchKinds kinds = SearchKinds.TypesAndMembers)
     {
-        var query = new SearchQuery(kinds);
+        var query = new SearchQuery { Kinds = kinds };
         var prefixed = false;
         var terms = new List<string>();
         foreach (var part in Split(text))
@@ -106,7 +105,7 @@ public sealed class SearchQuery
                     query.InNamespace ??= term;
                     continue;
                 case not null:
-                    query.Kinds = (prefixed ? query.Kinds : SearchKinds.None) | KindsOf(prefix);
+                    query.Kinds = (prefixed ? query.Kinds : SearchKinds.None) | GetKinds(prefix);
                     prefixed = true;
                     query.AssemblyName = prefix switch
                     {
@@ -135,10 +134,10 @@ public sealed class SearchQuery
     }
 
     /// <summary>Whether <paramref name="name"/> matches every term, or the regular expression.</summary>
-    public bool IsMatch(string name)
+    public static bool IsMatch(SearchQuery query, string name)
     {
-        if (Regex is not null) return Regex.IsMatch(name);
-        foreach (var term in Terms)
+        if (query.Regex is not null) return query.Regex.IsMatch(name);
+        foreach (var term in query.Terms)
         {
             if (term.Length == 0) continue;
             var rest = term.AsSpan(1);
@@ -158,10 +157,10 @@ public sealed class SearchQuery
     /// <summary>The single term as a number or string literal, for <see cref="SearchKinds.Literals"/>:
     /// a <see cref="long"/> for integers (decimal or <c>0x</c> hex), a <see cref="float"/> with an
     /// <c>f</c> suffix, a <see cref="double"/> otherwise; null when the term is not a number.</summary>
-    public object? Literal()
+    public static object? GetLiteral(SearchQuery query)
     {
-        if (Regex is not null || Terms.Count != 1) return null;
-        var term = Terms[0];
+        if (query.Regex is not null || query.Terms.Count != 1) return null;
+        var term = query.Terms[0];
         if (term.StartsWith("0x", StringComparison.OrdinalIgnoreCase) || term.StartsWith("-0x", StringComparison.OrdinalIgnoreCase))
         {
             var negative = term[0] == '-';
@@ -182,29 +181,32 @@ public sealed class SearchQuery
 
     /// <summary><paramref name="text"/> with its <paramref name="prefix"/> term, if any, replaced by
     /// one for <paramref name="value"/>, placed first.</summary>
-    public static string WithScope(string text, string prefix, string value)
+    public static string AddScope(string text, string prefix, string value)
     {
         var parts = Split(text).Where(p => !p.StartsWith(prefix + ":", StringComparison.OrdinalIgnoreCase));
         var scoped = prefix + ":" + (value.Length == 0 || value.Contains(' ') ? $"\"{value}\"" : value);
         return string.Join(' ', parts.Prepend(scoped)) + " ";
     }
 
-    private static SearchKinds KindsOf(string prefix) => prefix switch
+    private static SearchKinds GetKinds(string prefix)
     {
-        "@" => SearchKinds.Tokens,
-        "tm" => SearchKinds.TypesAndMembers,
-        "t" => SearchKinds.Types,
-        "m" => SearchKinds.Members,
-        "md" => SearchKinds.Methods,
-        "f" => SearchKinds.Fields,
-        "p" => SearchKinds.Properties,
-        "e" => SearchKinds.Events,
-        "c" => SearchKinds.Literals,
-        "r" => SearchKinds.Resources,
-        "n" => SearchKinds.Namespaces,
-        "a" or "af" or "an" => SearchKinds.Assemblies,
-        _ => throw new ArgumentOutOfRangeException(nameof(prefix), prefix, null),
-    };
+        return prefix switch
+        {
+            "@" => SearchKinds.Tokens,
+            "tm" => SearchKinds.TypesAndMembers,
+            "t" => SearchKinds.Types,
+            "m" => SearchKinds.Members,
+            "md" => SearchKinds.Methods,
+            "f" => SearchKinds.Fields,
+            "p" => SearchKinds.Properties,
+            "e" => SearchKinds.Events,
+            "c" => SearchKinds.Literals,
+            "r" => SearchKinds.Resources,
+            "n" => SearchKinds.Namespaces,
+            "a" or "af" or "an" => SearchKinds.Assemblies,
+            _ => throw new ArgumentOutOfRangeException(nameof(prefix), prefix, null),
+        };
+    }
 
     private static readonly HashSet<string> Prefixes =
         ["tm", "t", "m", "md", "f", "p", "e", "c", "r", "n", "a", "af", "an", "inassembly", "innamespace"];

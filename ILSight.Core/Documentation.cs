@@ -1,3 +1,4 @@
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using ICSharpCode.Decompiler;
@@ -85,7 +86,7 @@ internal static class Documentation
                 AddInline(loose, child);
         }
         if (!loose.IsEmpty && !sections.Any(IsSummary))
-            sections.Add(new DocSection(DocSectionKind.Summary, null, loose.Finish()));
+            sections.Add(new DocSection(DocSectionKind.Summary, null, Documentation.FinishBlocks(loose)));
         return sections
             .Where(HasContent)
             .OrderBy(s => s.Kind)
@@ -113,7 +114,7 @@ internal static class Documentation
             return null;
         var text = new DocText();
         AddChildren(text, element);
-        return new DocSection(kind.Value, LabelOf(element, kind.Value), text.Finish());
+        return new DocSection(kind.Value, LabelOf(element, kind.Value), Documentation.FinishBlocks(text));
     }
 
     private static DocRun? LabelOf(XmlDocumentationElement element, DocSectionKind kind)
@@ -151,33 +152,33 @@ internal static class Documentation
     {
         if (element.IsTextNode)
         {
-            text.Add(element.TextContent, DocStyle.Plain);
+            Documentation.AddRun(text, element.TextContent, DocStyle.Plain);
             return;
         }
         switch (element.Name)
         {
             case "para":
-                text.Break();
+                Documentation.BreakParagraph(text);
                 AddChildren(text, element);
-                text.Break();
+                Documentation.BreakParagraph(text);
                 break;
             case "br":
-                text.Break();
+                Documentation.BreakParagraph(text);
                 break;
             case "c":
-                text.Add(element.TextContent, DocStyle.Code);
+                Documentation.AddRun(text, element.TextContent, DocStyle.Code);
                 break;
             case "code":
-                text.AddCode(element.TextContent);
+                Documentation.AddCode(text, element.TextContent);
                 break;
             case "b" or "strong":
-                text.Add(element.TextContent, DocStyle.Bold);
+                Documentation.AddRun(text, element.TextContent, DocStyle.Bold);
                 break;
             case "i" or "em":
-                text.Add(element.TextContent, DocStyle.Italic);
+                Documentation.AddRun(text, element.TextContent, DocStyle.Italic);
                 break;
             case "paramref" or "typeparamref":
-                text.Add(AttributeText(element, "name"), DocStyle.Code);
+                Documentation.AddRun(text, AttributeText(element, "name"), DocStyle.Code);
                 break;
             case "see" or "seealso":
                 AddSee(text, element);
@@ -197,19 +198,19 @@ internal static class Documentation
         var langword = element.GetAttribute("langword");
         if (langword != null)
         {
-            text.Add(langword, DocStyle.Code);
+            Documentation.AddRun(text, langword, DocStyle.Code);
             return;
         }
         var cref = CrefRun(element, element.TextContent);
         if (cref != null)
         {
-            text.Add(cref.Value.Text, cref.Value.Style, cref.Value.Reference);
+            Documentation.AddRun(text, cref.Value.Text, cref.Value.Style, cref.Value.Reference);
             return;
         }
         var shown = element.TextContent;
         if (shown.Length == 0)
             shown = AttributeText(element, "href");
-        text.Add(shown, DocStyle.Plain);
+        Documentation.AddRun(text, shown, DocStyle.Plain);
     }
 
     /// <summary>The value of <paramref name="element"/>'s attribute <paramref name="name"/>, empty without one.</summary>
@@ -286,7 +287,7 @@ internal static class Documentation
             else if (child.Name == "item")
                 items.Add(ReadListItem(child));
         }
-        text.AddList(new DocList(ListKindOf(list), header, items));
+        Documentation.AddList(text, new DocList(ListKindOf(list), header, items));
     }
 
     private static DocListKind ListKindOf(XmlDocumentationElement list) =>
@@ -311,7 +312,7 @@ internal static class Documentation
             else
                 AddInline(description, part);
         }
-        return new DocListItem(term.FinishInline(), description.FinishInline());
+        return new DocListItem(Documentation.FinishInline(term), Documentation.FinishInline(description));
     }
 
     public static CodeTooltip CreateTooltip(IEntity entity, LoadedModule assembly)
@@ -407,5 +408,141 @@ internal static class Documentation
 
         private static bool IsDeclaredParameter(AstNode node) =>
             node is ParameterDeclaration && node.Parent is EntityDeclaration;
+    }
+
+    public static void AddRun(DocText doc, string text, DocStyle style, CodeReference? reference = null)
+    {
+        var collapsed = CollapseWhitespace(text);
+        if (EndsWithSpace(doc) && collapsed.StartsWith(' '))
+            collapsed = collapsed.Substring(1);
+        if (collapsed.Length == 0)
+            return;
+        doc.Runs.Add(new DocRun(collapsed, style, reference));
+    }
+
+    /// <summary>Adds <paramref name="code"/> as a block of its own, lines kept and their common
+    /// indentation removed.</summary>
+    public static void AddCode(DocText doc, string code)
+    {
+        BreakParagraph(doc);
+        var lines = Dedent(code);
+        if (lines.Length == 0)
+            return;
+        doc.Blocks.Add(new DocCode(lines));
+    }
+
+    public static void AddList(DocText doc, DocList list)
+    {
+        BreakParagraph(doc);
+        if (list.Items.Count > 0 || list.Header != null)
+            doc.Blocks.Add(list);
+    }
+
+    /// <summary>Ends the open paragraph.</summary>
+    public static void BreakParagraph(DocText doc)
+    {
+        TrimParagraphEnds(doc);
+        if (doc.Runs.Count > 0)
+            doc.Blocks.Add(new DocParagraph(doc.Runs));
+        doc.Runs = new List<DocRun>();
+    }
+
+    public static IReadOnlyList<DocBlock> FinishBlocks(DocText doc)
+    {
+        BreakParagraph(doc);
+        return doc.Blocks;
+    }
+
+    /// <summary>The text read as one run of words, its paragraphs joined by spaces, as a list item
+    /// shows it; code blocks and lists inside it are left out.</summary>
+    public static IReadOnlyList<DocRun> FinishInline(DocText doc)
+    {
+        var joined = new List<DocRun>();
+        foreach (var block in FinishBlocks(doc))
+        {
+            if (block is not DocParagraph paragraph)
+                continue;
+            if (joined.Count > 0)
+                joined.Add(new DocRun(" ", DocStyle.Plain));
+            joined.AddRange(paragraph.Runs);
+        }
+        return joined;
+    }
+
+    private static bool EndsWithSpace(DocText doc)
+    {
+        if (doc.Runs.Count == 0)
+            return true;
+        return doc.Runs[^1].Text.EndsWith(' ');
+    }
+
+    private static void TrimParagraphEnds(DocText doc)
+    {
+        if (doc.Runs.Count == 0)
+            return;
+        var last = doc.Runs[^1];
+        doc.Runs[^1] = last with { Text = last.Text.TrimEnd() };
+        doc.Runs.RemoveAll(static r => r.Text.Length == 0);
+    }
+
+    private static string CollapseWhitespace(string text)
+    {
+        var collapsed = new StringBuilder(text.Length);
+        var inSpace = false;
+        foreach (var c in text)
+        {
+            if (char.IsWhiteSpace(c))
+            {
+                inSpace = true;
+                continue;
+            }
+            if (inSpace)
+                collapsed.Append(' ');
+            inSpace = false;
+            collapsed.Append(c);
+        }
+        if (inSpace)
+            collapsed.Append(' ');
+        return collapsed.ToString();
+    }
+
+    /// <summary>The code's lines without the blank ones around them or the indentation they
+    /// share. Its first line arrives with its indentation trimmed, so only the lines after it say
+    /// how deep the code sits.</summary>
+    private static string Dedent(string code)
+    {
+        var lines = code.Replace("\r\n", "\n").Split('\n').ToList();
+        while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[0]))
+            lines.RemoveAt(0);
+        while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+            lines.RemoveAt(lines.Count - 1);
+        var indent = CommonIndent(lines.Skip(1));
+        var dedented = lines
+            .Select(l => RemoveIndent(l, indent))
+            .Select(l => l.TrimEnd());
+        return string.Join('\n', dedented);
+    }
+
+    private static int CommonIndent(IEnumerable<string> lines)
+    {
+        var indent = int.MaxValue;
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+            var leading = line.Length - line.TrimStart().Length;
+            indent = Math.Min(indent, leading);
+        }
+        if (indent == int.MaxValue)
+            return 0;
+        return indent;
+    }
+
+    private static string RemoveIndent(string line, int indent)
+    {
+        var leading = line.Length - line.TrimStart().Length;
+        if (leading < indent)
+            return line.TrimStart();
+        return line.Substring(indent);
     }
 }

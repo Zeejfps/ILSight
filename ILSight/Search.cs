@@ -169,7 +169,7 @@ public static class Searches
 
     private static void Start(Search search, AssemblyList assemblies, Search.Searched searched, IEnumerable<LoadedModule> within)
     {
-        var query = SearchQuery.Parse(searched.Query, searched.Kinds);
+        var query = SearchQueries.ParseQuery(searched.Query, searched.Kinds);
         if (query.IsEmpty)
             return;
         var work = new CancellationTokenSource();
@@ -286,8 +286,8 @@ public static class Searches
     private static string CreateScopedQuery(Search search, BrowseNode node)
     {
         if (node.Subject is NodeSubject.Namespace)
-            return SearchQuery.WithScope(search.Query, NamespaceScope, node.FullName);
-        return SearchQuery.WithScope(search.Query, AssemblyScope, node.Assembly.Name);
+            return SearchQueries.AddScope(search.Query, NamespaceScope, node.FullName);
+        return SearchQueries.AddScope(search.Query, AssemblyScope, node.Assembly.Name);
     }
 
     /// <summary>Sorts the results by <paramref name="sort"/>, ascending, then descending when they

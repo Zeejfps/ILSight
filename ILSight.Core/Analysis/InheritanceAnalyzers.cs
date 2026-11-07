@@ -23,7 +23,7 @@ internal static class InheritorsAnalyzer<T> where T : class, IMember
     {
         if (analyzed.DeclaringTypeDefinition is not { ParentModule.MetadataFile: not null } declaring)
             yield break;
-        foreach (var type in context.GetScopeOf(analyzed).GetTypesInScope(context.CancellationToken))
+        foreach (var type in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, analyzed), context.CancellationToken))
         {
             if (!type.GetAllBaseTypeDefinitions().Any(t => AnalyzerHelpers.IsSame(t, declaring)))
                 continue;

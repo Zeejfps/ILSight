@@ -24,7 +24,7 @@ public static class TabPlaceholders
             return placeholder.Document;
         placeholder.Content = content;
         placeholder.Strings = t;
-        placeholder.Document = DecompiledDocument.FromText("", $"// {Write(t, content)}");
+        placeholder.Document = Documents.CreateFromText("", $"// {Write(t, content)}");
         return placeholder.Document;
     }
 

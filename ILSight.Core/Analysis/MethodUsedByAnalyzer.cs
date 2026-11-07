@@ -26,16 +26,16 @@ internal static class MethodUsedByAnalyzer
         if (parent.MetadataToken != analyzed.MetadataToken)
             yield return parent;
 
-        var users = context.GetScopeOf(analyzed).MembersWhoseCode(
+        var users = AnalyzerHelpers.FindMembersWithCode(AnalyzerHelpers.GetScope(context, analyzed), 
             method => method.ParentModule is MetadataModule module
-                && AnalyzerHelpers.HasToken(context.GetMethodBody(method), (opCode, token) => References(module, opCode, token)),
+                && AnalyzerHelpers.HasToken(AnalyzerHelpers.GetMethodBody(context, method), (opCode, token) => References(module, opCode, token)),
             context.CancellationToken);
         foreach (var user in users)
             yield return user is IMethod method ? ParentOf(method) : user;
 
         IMethod ParentOf(IMethod method) =>
             ((MetadataModule)method.ParentModule!).GetDefinition(
-                context.MappingOf(method.DeclaringTypeDefinition!).GetParentMethod((MethodDefinitionHandle)method.MetadataToken));
+                AnalyzerHelpers.EnsureMapping(context, method.DeclaringTypeDefinition!).GetParentMethod((MethodDefinitionHandle)method.MetadataToken));
 
         bool References(MetadataModule module, ILOpCode opCode, EntityHandle token)
         {

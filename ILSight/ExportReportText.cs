@@ -70,7 +70,7 @@ internal static class ExportReportText
         var text = new StringBuilder();
         foreach (var report in reports)
             WriteReport(text, t, report);
-        return DecompiledDocument.FromText(t.ExportReportTitle, text.ToString());
+        return Documents.CreateFromText(t.ExportReportTitle, text.ToString());
     }
 
     private static void WriteReport(StringBuilder text, Strings t, ExportReport report)

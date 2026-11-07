@@ -129,7 +129,7 @@ public sealed class SettingsFormatTests : IDisposable
         Theme = ThemeId<ThemeFile>.Of("monokai"),
         IconTheme = ThemeId<IconThemeFile>.Of("custom-icons"),
         Language = DecompilationLanguage.IL,
-        Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }.With(DecompilerToggle.Find("AlwaysUseBraces")!, false),
+        Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }.With(DecompilerToggles.FindToggle("AlwaysUseBraces")!, false),
         FoldedOptionGroups = ["Other"],
         Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, false, 1.25f, new CodeFont("Mono", @"C:\Fonts\Mono.ttf", 1),
             TokenFormat.Hex, true, true, true, false),
@@ -201,13 +201,13 @@ public sealed class SettingsFormatTests : IDisposable
         ];
     }
 
-    private static NodePath CalculatorPlace() => NodePath.From(A,
+    private static NodePath CalculatorPlace() => NodeDefinitions.CreatePath(A,
     [
         new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
         new NodePathStep(new NodePathSegment.Definition("T:Ns.Calculator"), "Calculator"),
     ]);
 
-    private static NodePath OtherPlace() => NodePath.From(B,
+    private static NodePath OtherPlace() => NodeDefinitions.CreatePath(B,
     [
         new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
         new NodePathStep(new NodePathSegment.Definition("T:Ns.Other"), "Other"),

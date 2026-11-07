@@ -143,7 +143,7 @@ public sealed class AssemblyListTests
         Assert.Equal("text.dll", root.Text);
         Assert.Empty(root.Children);
         Assert.NotNull(document.Error);
-        Assert.Contains($"Cannot open '{text}'", document.GetText());
+        Assert.Contains($"Cannot open '{text}'", Documents.GetText(document));
     }
 
     [Fact]
