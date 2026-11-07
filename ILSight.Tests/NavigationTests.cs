@@ -86,8 +86,8 @@ public sealed class NavigationTests
         var field = list.FindMetadataRow(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("_items").Reference))!.Value;
         var self = list.FindMetadataRow(CodeReferences.CreateAssembly(assembly.Name, assembly.FilePath))!.Value;
 
-        var methods = Assert.IsType<MetadataGrid>(TableOf(add.Node).Grid);
-        var fields = Assert.IsType<MetadataGrid>(TableOf(field.Node).Grid);
+        var methods = Assert.IsType<MetadataGrid>(MetadataTables.EnsureGrid(TableOf(add.Node)));
+        var fields = Assert.IsType<MetadataGrid>(MetadataTables.EnsureGrid(TableOf(field.Node)));
         Assert.Equal("System.Private.CoreLib", add.Node.Assembly.Name);
         Assert.Equal(TableIndex.MethodDef, TableOf(add.Node).ListedTable);
         Assert.Equal("Add", methods.Text(add.Row, methods.Column("Name")));

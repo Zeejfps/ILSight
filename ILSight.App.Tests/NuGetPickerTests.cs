@@ -54,8 +54,8 @@ public sealed class NuGetPickerTests : IDisposable
 
     private NuGetSetup Setup()
     {
-        var cache = new PackageCache(_temp.PathOf("global"), _temp.PathOf("downloads"));
-        return new NuGetSetup([_fake.Source], cache, _fake);
+        var cache = new PackageCache { GlobalPackagesFolder = _temp.PathOf("global"), DownloadFolder = _temp.PathOf("downloads") };
+        return NuGetFeeds.CreateSetup([_fake.Source], cache, _fake);
     }
 
     private NuGetPicker OpenPicker(PostedActions posted, SavedNuGetSearch? saved = null)

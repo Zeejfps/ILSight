@@ -10,54 +10,11 @@ namespace ILSight.Core.Metadata;
 /// a folder titled <see cref="Title"/>.</summary>
 public sealed class MetadataFolderInfo
 {
-    internal MetadataFolderInfo(LoadedModule module, MetadataFile file, string title)
-    {
-        Module = module;
-        File = file;
-        Title = title;
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
+    public required MetadataFile File { get; init; }
 
-    public MetadataFile File { get; }
-
-    public string Title { get; }
-
-    /// <summary>The folder as comment lines: its title, kind and version, a debug header's id and entry
-    /// point, and how many rows each table has.</summary>
-    internal IEnumerable<string> Lines()
-    {
-        var metadata = File.Metadata;
-        yield return Title;
-        yield return "MetadataKind: " + metadata.MetadataKind;
-        yield return "MetadataVersion: " + metadata.MetadataVersion;
-        var header = metadata.DebugMetadataHeader;
-        if (header != null)
-        {
-            yield return "";
-            yield return "Header:";
-            yield return "Id: " + Convert.ToHexStringLower(header.Id.AsSpan());
-            yield return "EntryPoint: " + MetadataTokens.GetToken(header.EntryPoint).ToString("X8");
-        }
-        yield return "";
-        yield return "Tables:";
-        foreach (var line in CountRows())
-            yield return line;
-    }
-
-    /// <summary>The Tables folder as comment lines: how many rows each table has.</summary>
-    internal IEnumerable<string> TablesLines() => CountRows().Prepend("Tables");
-
-    private IEnumerable<string> CountRows()
-    {
-        var metadata = File.Metadata;
-        foreach (var table in Enum.GetValues<TableIndex>())
-        {
-            var count = metadata.GetTableRowCount(table);
-            if (count > 0)
-                yield return $"{(byte)table:X2} {table}: {count} rows";
-        }
-    }
+    public required string Title { get; init; }
 }
 
 /// <summary>What a grid of metadata lists.</summary>
@@ -103,13 +60,13 @@ public abstract record MetadataPartKey
 /// <summary>A part of a metadata folder: a grid of a header, directory, table or heap; the debug
 /// directory, a grid that also lists its entries; a table shown only by how many rows it has; or a debug
 /// directory entry, decoded or as its raw bytes.</summary>
-internal abstract record MetadataPart
+public abstract record MetadataPart
 {
     private MetadataPart()
     {
     }
 
-    public sealed record Grid(MetadataGridRole Role, GridSchema Schema, Lazy<MetadataGrid> View) : MetadataPart;
+    internal sealed record Grid(MetadataGridRole Role, GridSchema Schema, Lazy<MetadataGrid> View) : MetadataPart;
 
     public sealed record DebugDirectory(PEFile File, Lazy<MetadataGrid> View) : MetadataPart;
 
@@ -125,25 +82,16 @@ internal abstract record MetadataPart
 /// an entry of the debug directory.</summary>
 public sealed class MetadataTableInfo
 {
-    private MetadataTableInfo(LoadedModule module, MetadataFile file, string title, MetadataPartKey key, MetadataPart part)
-    {
-        Module = module;
-        File = file;
-        Title = title;
-        Key = key;
-        Part = part;
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
+    public required MetadataFile File { get; init; }
 
-    public MetadataFile File { get; }
-
-    public string Title { get; }
+    public required string Title { get; init; }
 
     /// <summary>Which part this is, whatever its title says.</summary>
-    public MetadataPartKey Key { get; }
+    public required MetadataPartKey Key { get; init; }
 
-    internal MetadataPart Part { get; }
+    public required MetadataPart Part { get; init; }
 
     /// <summary>What the part lists as a grid would: the debug directory a directory, and a table shown
     /// by its row count or a debug entry a table.</summary>
@@ -152,15 +100,6 @@ public sealed class MetadataTableInfo
         MetadataPart.Grid grid => grid.Role,
         MetadataPart.DebugDirectory => MetadataGridRole.Directory,
         MetadataPart.RowCount or MetadataPart.DecodedDebugEntry or MetadataPart.RawDebugEntry => MetadataGridRole.Table,
-        _ => throw new UnreachableException(),
-    };
-
-    /// <summary>The grid shown, made the first time it is asked for; null for a part shown as text.</summary>
-    public MetadataGrid? Grid => Part switch
-    {
-        MetadataPart.Grid grid => grid.View.Value,
-        MetadataPart.DebugDirectory directory => directory.View.Value,
-        MetadataPart.RowCount or MetadataPart.DecodedDebugEntry or MetadataPart.RawDebugEntry => null,
         _ => throw new UnreachableException(),
     };
 
@@ -174,56 +113,6 @@ public sealed class MetadataTableInfo
 
     /// <summary>Whether this is a table with no rows, which the tree usually hides.</summary>
     public bool IsEmptyTable => Part is MetadataPart.RowCount count && count.Rows == 0;
-
-    internal static MetadataTableInfo GridOf(LoadedModule module, MetadataFile file, string title, MetadataPartKey key, MetadataGridRole role,
-        GridSchema schema) =>
-        new(module, file, title, key, new MetadataPart.Grid(role, schema, new Lazy<MetadataGrid>(() => new MetadataGrid(title, module, file, schema))));
-
-    internal static MetadataTableInfo DebugDirectoryOf(LoadedModule module, PEFile file)
-    {
-        const string title = "Debug Directory";
-        var schema = PEHeaderEntries.DebugDirectory(file);
-        return new(module, file, title, new MetadataPartKey.DebugDirectory(),
-            new MetadataPart.DebugDirectory(file, new Lazy<MetadataGrid>(() => new MetadataGrid(title, module, file, schema))));
-    }
-
-    internal static MetadataTableInfo RowCountOf(LoadedModule module, MetadataFile file, TableIndex table, int rows) =>
-        new(module, file, $"{(byte)table:X2} {table} ({rows})", new MetadataPartKey.Table(table), new MetadataPart.RowCount(table, rows));
-
-    internal static MetadataTableInfo DecodedEntryOf(LoadedModule module, PEFile file, int index, DebugDirectoryEntry entry, IReadOnlyList<string> lines) =>
-        new(module, file, entry.Type.ToString(), new MetadataPartKey.DebugEntry(index, entry.Type), new MetadataPart.DecodedDebugEntry(lines));
-
-    internal static MetadataTableInfo RawEntryOf(LoadedModule module, PEFile file, int index, DebugDirectoryEntry entry) =>
-        new(module, file, entry.Type.ToString(), new MetadataPartKey.DebugEntry(index, entry.Type), new MetadataPart.RawDebugEntry(file, entry));
-
-    /// <summary>A part shown as text, as comment lines: a table's row count, or a debug entry decoded or
-    /// as its raw bytes in hex; a grid's title alone.</summary>
-    internal IEnumerable<string> Lines() => Part switch
-    {
-        MetadataPart.Grid or MetadataPart.DebugDirectory => [Title],
-        MetadataPart.RowCount count => [$"{count.Table}: {count.Rows} rows"],
-        MetadataPart.DecodedDebugEntry decoded => decoded.Lines.Prepend(Title),
-        MetadataPart.RawDebugEntry raw => RawLines(raw),
-        _ => throw new UnreachableException(),
-    };
-
-    private IEnumerable<string> RawLines(MetadataPart.RawDebugEntry raw)
-    {
-        yield return Title;
-        var entry = raw.Entry;
-        if (entry.DataSize > 0)
-        {
-            yield return $"Raw Data ({entry.DataSize}):";
-            var reader = raw.File.Reader;
-            var offset = reader.IsLoadedImage ? entry.DataRelativeVirtualAddress : entry.DataPointer;
-            var data = reader.GetEntireImage().GetContent(offset, entry.DataSize);
-            yield return Convert.ToHexStringLower(data.AsSpan());
-        }
-        else
-        {
-            yield return "(no data)";
-        }
-    }
 }
 
 /// <summary>Where a token cell leads: a row of a table node.</summary>

@@ -7,40 +7,20 @@ namespace ILSight.Core;
 /// one, labelled with both names, <c>lib/net8.0</c>, and listing the deeper one's contents.</summary>
 public sealed class PackageFolderInfo
 {
-    internal PackageFolderInfo(LoadedPackage package, PackageFolder outermost, PackageFolder folder, string label)
-    {
-        Package = package;
-        Outermost = outermost;
-        Folder = folder;
-        Label = label;
-    }
-
-    public LoadedPackage Package { get; }
+    public required LoadedPackage Package { get; init; }
 
     /// <summary>The first of the folders merged into one, the folder itself when none are.</summary>
-    public PackageFolder Outermost { get; }
+    public required PackageFolder Outermost { get; init; }
 
     /// <summary>The folder whose contents it lists.</summary>
-    public PackageFolder Folder { get; }
+    public required PackageFolder Folder { get; init; }
 
-    public string Label { get; }
+    public required string Label { get; init; }
 
     /// <summary>Whether this is the package's root, standing for the package itself.</summary>
     public bool IsRoot => ReferenceEquals(Folder, Package.Package.Root);
 
     public string FullName => IsRoot ? Package.FilePath.Text : Folder.FullName;
-
-    /// <summary>Whether the folder at <paramref name="path"/>, from the package's root, is one of those
-    /// merged into this one.</summary>
-    internal bool Shows(string path)
-    {
-        if (!PackageFolders.IsWithin(Folder.FullName, path))
-            return false;
-        return PackageFolders.IsWithin(path, Outermost.FullName);
-    }
-
-    internal static PackageFolderInfo RootOf(LoadedPackage package) =>
-        new(package, package.Package.Root, package.Package.Root, package.FilePath.FileName);
 }
 
 internal static class PackageFolders
@@ -61,21 +41,29 @@ internal static class PackageFolders
             return "";
         return path.Substring(0, at);
     }
+
+    /// <summary>Whether the folder at <paramref name="path"/>, from the package's root, is one of those
+    /// merged into this one.</summary>
+    internal static bool ShowsFolder(PackageFolderInfo info, string path)
+    {
+        if (!PackageFolders.IsWithin(info.Folder.FullName, path))
+            return false;
+        return PackageFolders.IsWithin(path, info.Outermost.FullName);
+    }
+
+    internal static PackageFolderInfo CreateRootFolder(LoadedPackage package)
+    {
+        return new PackageFolderInfo { Package = package, Outermost = package.Package.Root, Folder = package.Package.Root, Label = package.FilePath.FileName };
+    }
 }
 
 /// <summary>A file of a package that is no assembly: shown as text, a picture or its bytes, read out of
 /// the package when needed.</summary>
 public sealed class PackageFileInfo
 {
-    internal PackageFileInfo(LoadedPackage package, PackageFile file)
-    {
-        Package = package;
-        File = file;
-    }
+    public required LoadedPackage Package { get; init; }
 
-    public LoadedPackage Package { get; }
-
-    public PackageFile File { get; }
+    public required PackageFile File { get; init; }
 
     /// <summary>Whether it is shown as a picture, being named as one is.</summary>
     public bool IsImage => ResourceImage.IsImageName(File.Name);
@@ -83,8 +71,6 @@ public sealed class PackageFileInfo
     public string Description => $"{File.FullName} ({File.Length} bytes)";
 
     public string FileName => File.Name;
-
-    public byte[] ReadData() => Package.Package.ReadFile(File);
 }
 
 internal static class PackageContents
@@ -99,5 +85,10 @@ internal static class PackageContents
                 return true;
         }
         return false;
+    }
+
+    public static byte[] ReadFileData(PackageFileInfo info)
+    {
+        return info.Package.Package.ReadFile(info.File);
     }
 }

@@ -10,7 +10,7 @@ public sealed partial class BrowseNode
 {
     /// <summary>The node of the metadata of <paramref name="file"/>, titled <paramref name="title"/>, under <paramref name="parent"/>.</summary>
     internal static BrowseNode MetadataFolder(LoadedModule module, BrowseNode parent, MetadataFile file, string title) =>
-        new(parent, new NodeSubject.Metadata { Value = new MetadataFolderInfo(module, file, title) });
+        new(parent, new NodeSubject.Metadata { Value = new MetadataFolderInfo { Module = module, File = file, Title = title } });
 
     private BrowseNode Part(MetadataTableInfo part) => new(this, new NodeSubject.MetadataTable { Value = part });
 
@@ -25,18 +25,18 @@ public sealed partial class BrowseNode
             AddHeader(result, folder, PEHeaderKind.Coff, PEHeaderEntries.Coff(pe));
             AddHeader(result, folder, PEHeaderKind.Optional, PEHeaderEntries.Optional(pe));
             var directories = PEHeaderEntries.DataDirectories(pe);
-            result.Add(Part(MetadataTableInfo.GridOf(folder.Module, file, directories.Key, new MetadataPartKey.DataDirectories(), MetadataGridRole.Directory,
+            result.Add(Part(MetadataTables.CreateGridPart(folder.Module, file, directories.Key, new MetadataPartKey.DataDirectories(), MetadataGridRole.Directory,
                 directories)));
-            result.Add(Part(MetadataTableInfo.DebugDirectoryOf(folder.Module, pe)));
+            result.Add(Part(MetadataTables.CreateDebugDirectoryPart(folder.Module, pe)));
         }
         result.Add(new BrowseNode(this, new NodeSubject.MetadataTables { Folder = folder }));
         foreach (var (title, heap) in MetadataHeaps.Create(file))
-            result.Add(Part(MetadataTableInfo.GridOf(folder.Module, file, title, new MetadataPartKey.Heap(heap.Key), MetadataGridRole.Heap, heap)));
+            result.Add(Part(MetadataTables.CreateGridPart(folder.Module, file, title, new MetadataPartKey.Heap(heap.Key), MetadataGridRole.Heap, heap)));
         return result.ToArray();
     }
 
     private void AddHeader(List<BrowseNode> result, MetadataFolderInfo folder, PEHeaderKind which, GridSchema header) =>
-        result.Add(Part(MetadataTableInfo.GridOf(folder.Module, folder.File, header.Key, new MetadataPartKey.Header(which), MetadataGridRole.Header, header)));
+        result.Add(Part(MetadataTables.CreateGridPart(folder.Module, folder.File, header.Key, new MetadataPartKey.Header(which), MetadataGridRole.Header, header)));
 
     /// <summary>A node per table: the grid of its rows. An empty table, whose grid cannot always be read,
     /// and a table ILSpy does not list show only how many rows there are.</summary>
@@ -49,9 +49,9 @@ public sealed partial class BrowseNode
             var rows = file.Metadata.GetTableRowCount(index);
             var schema = rows == 0 ? null : MetadataTables.Create(index, file);
             if (schema == null)
-                result.Add(Part(MetadataTableInfo.RowCountOf(folder.Module, file, index, rows)));
+                result.Add(Part(MetadataTables.CreateRowCountPart(folder.Module, file, index, rows)));
             else
-                result.Add(Part(MetadataTableInfo.GridOf(folder.Module, file, $"{(byte)index:X2} {index} ({rows})", new MetadataPartKey.Table(index),
+                result.Add(Part(MetadataTables.CreateGridPart(folder.Module, file, $"{(byte)index:X2} {index} ({rows})", new MetadataPartKey.Table(index),
                     MetadataGridRole.Table, schema)));
         }
         return result.ToArray();
@@ -73,12 +73,12 @@ public sealed partial class BrowseNode
                 {
                     case DebugDirectoryEntryType.CodeView:
                         var codeView = reader.ReadCodeViewDebugDirectoryData(entry);
-                        result.Add(Part(MetadataTableInfo.DecodedEntryOf(module, file, index, entry,
+                        result.Add(Part(MetadataTables.CreateDecodedEntryPart(module, file, index, entry,
                             [$"GUID: {codeView.Guid}", $"Age: {codeView.Age}", $"Path: {codeView.Path}"])));
                         continue;
                     case DebugDirectoryEntryType.PdbChecksum:
                         var checksum = reader.ReadPdbChecksumDebugDirectoryData(entry);
-                        result.Add(Part(MetadataTableInfo.DecodedEntryOf(module, file, index, entry,
+                        result.Add(Part(MetadataTables.CreateDecodedEntryPart(module, file, index, entry,
                             [$"AlgorithmName: {checksum.AlgorithmName}", $"Checksum: {Convert.ToHexStringLower(checksum.Checksum.AsSpan())}"])));
                         continue;
                     case DebugDirectoryEntryType.EmbeddedPortablePdb:
@@ -91,7 +91,7 @@ public sealed partial class BrowseNode
             catch (BadImageFormatException)
             {
             }
-            result.Add(Part(MetadataTableInfo.RawEntryOf(module, file, index, entry)));
+            result.Add(Part(MetadataTables.CreateRawEntryPart(module, file, index, entry)));
         }
         return result.ToArray();
     }

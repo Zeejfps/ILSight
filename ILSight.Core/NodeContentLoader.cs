@@ -50,9 +50,9 @@ public static class NodeContentLoader
     private static MetadataGrid? GridOf(BrowseNode node)
     {
         if (node.Subject is NodeSubject.MetadataTable table)
-            return table.Value.Grid;
+            return MetadataTables.EnsureGrid(table.Value);
         if (node.Subject is NodeSubject.ResourceContainer container)
-            return container.Value.Grid;
+            return ResourceNodes.EnsureGrid(container.Value);
         return null;
     }
 
@@ -138,10 +138,10 @@ public static class NodeContentLoader
             ResourceSource.Manifest or ResourceSource.Entry => ResourceRequest(node, ResourceNodes.CreateData(entry.Value)),
             _ => throw new UnreachableException(),
         },
-        NodeSubject.Metadata metadata => new DocumentRequest.Summary(new SummaryInfo.Comments(metadata.Value.Lines()), node.SourceModule, node.Text, node.FullName),
-        NodeSubject.MetadataTables tables => new DocumentRequest.Summary(new SummaryInfo.Comments(tables.Folder.TablesLines()), node.SourceModule, node.Text,
+        NodeSubject.Metadata metadata => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListFolderLines(metadata.Value)), node.SourceModule, node.Text, node.FullName),
+        NodeSubject.MetadataTables tables => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListTablesLines(tables.Folder)), node.SourceModule, node.Text,
             node.FullName),
-        NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(table.Value.Lines()), node.SourceModule, node.Text, node.FullName),
+        NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListPartLines(table.Value)), node.SourceModule, node.Text, node.FullName),
         NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(session.ChildrenOf(node).Select(DescribePackageChild).ToList()), null,
             node.Text, node.FullName),
         NodeSubject.PackageFile file => ResourceRequest(node, ResourceNodes.CreateData(file.Value)),

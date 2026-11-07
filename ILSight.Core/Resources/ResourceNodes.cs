@@ -18,17 +18,17 @@ internal static class ResourceNodes
 {
     public static ResourceData CreateData(ResourceEntryInfo entry)
     {
-        return new ResourceData(entry.Description, entry.FileName, entry.ReadData);
+        return new ResourceData(entry.Description, entry.FileName, () => ReadData(entry));
     }
 
     public static ResourceData CreateData(ResourceContainerInfo container)
     {
-        return new ResourceData(container.Description, container.FileName, container.ReadData);
+        return new ResourceData(container.Description, container.FileName, () => ReadData(container));
     }
 
     public static ResourceData CreateData(PackageFileInfo file)
     {
-        return new ResourceData(file.Description, file.FileName, file.ReadData);
+        return new ResourceData(file.Description, file.FileName, () => PackageContents.ReadFileData(file));
     }
 
     public static string Describe(MetadataResource resource)
@@ -80,4 +80,44 @@ internal static class ResourceNodes
             ResourceSerializedObject serialized => (name, "<serialized>", serialized.TypeName ?? ""),
             _ => (name, Convert.ToString(value, CultureInfo.InvariantCulture) ?? "", value.GetType().FullName ?? value.GetType().Name),
         };
+
+    internal static byte[] ReadData(ResourceEntryInfo entry)
+    {
+        return entry.Source switch
+        {
+            ResourceSource.Manifest manifest => ResourceNodes.Read(manifest.Resource),
+            ResourceSource.Entry bytes => bytes.Data,
+            ResourceSource.Baml baml => Encoding.UTF8.GetBytes(Resources.Baml.DecompileToText(entry.Module, baml.Data, CancellationToken.None)),
+            _ => throw new System.Diagnostics.UnreachableException(),
+        };
+    }
+
+    internal static byte[] ReadData(ResourceContainerInfo container)
+    {
+        return ResourceNodes.Read(container.Resource);
+    }
+
+    /// <summary>The grid of a <c>.resources</c> file's entries, made the first time it is asked for; null for an
+    /// asset container, which has none.</summary>
+    internal static Metadata.MetadataGrid? EnsureGrid(ResourceContainerInfo container)
+    {
+        return container.Contents switch
+        {
+            ContainerContents.ResourcesFile file => file.Grid.Value,
+            ContainerContents.AvaloniaAssets => null,
+            _ => throw new System.Diagnostics.UnreachableException(),
+        };
+    }
+
+    internal static ResourceContainerInfo CreateResourcesFile(LoadedModule module, MetadataResource resource)
+    {
+        var entries = new Lazy<List<KeyValuePair<string, object?>>>(() => ResourceNodes.ReadEntries(resource));
+        var grid = new Lazy<Metadata.MetadataGrid>(() => new Metadata.MetadataGrid(resource.Name, module, module.File, ResourceNodes.Schema(module, entries)));
+        return new ResourceContainerInfo { Module = module, Resource = resource, Contents = new ContainerContents.ResourcesFile(entries, grid) };
+    }
+
+    internal static ResourceContainerInfo CreateAvaloniaAssets(LoadedModule module, MetadataResource resource)
+    {
+        return new ResourceContainerInfo { Module = module, Resource = resource, Contents = new ContainerContents.AvaloniaAssets() };
+    }
 }

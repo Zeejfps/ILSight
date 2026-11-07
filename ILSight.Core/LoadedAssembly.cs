@@ -98,7 +98,7 @@ public sealed class LoadedModule : LoadedAssembly
         _typeSystem = new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(File, Resolver, Settings.Create()));
         _debugSymbols = new Lazy<DebugSymbols?>(LoadDebugSymbols);
         _canGeneratePdb = new Lazy<bool>(() => PEFile != null && DebugSymbols.CanGenerateFor(PEFile));
-        _referenceUsage = new Lazy<ReferenceUsage>(() => new ReferenceUsage(File.Metadata));
+        _referenceUsage = new Lazy<ReferenceUsage>(() => ForwardedTypes.ReadUsage(File.Metadata));
     }
 
     /// <summary>The assembly's name, or for a module that is no assembly, its file's.</summary>

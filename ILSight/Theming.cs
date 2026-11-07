@@ -466,11 +466,11 @@ public static class Theming
     private static IconGlyph? MakeGlyph(MergedIconTheme merged, string key, IconValue value, ICollection<ThemeError> errors)
     {
         return value switch
-    {
-        IconValue.Picture picture => IconGlyph.FromSvg(picture.Svg),
-        IconValue.Glyph glyph => MakeFontGlyph(merged, key, glyph, errors),
-        _ => throw new UnreachableException(),
-    };
+        {
+            IconValue.Picture picture => IconGlyph.FromSvg(picture.Svg),
+            IconValue.Glyph glyph => MakeFontGlyph(merged, key, glyph, errors),
+            _ => throw new UnreachableException(),
+        };
     }
 
     private static IconGlyph? MakeFontGlyph(MergedIconTheme merged, string key, IconValue.Glyph glyph, ICollection<ThemeError> errors)

@@ -94,7 +94,7 @@ public sealed class BrowseSession
             {
                 if (child.Subject is not NodeSubject.Package package)
                     continue;
-                if (package.Value.Shows(folder))
+                if (PackageFolders.ShowsFolder(package.Value, folder))
                     return child;
                 if (PackageFolders.IsWithin(folder, package.Value.Folder.FullName))
                 {

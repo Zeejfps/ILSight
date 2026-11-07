@@ -322,11 +322,11 @@ public static class Docking
     private static DockEdge GetEdgeAfter(Direction direction)
     {
         return direction switch
-    {
-        Direction.Horizontal => DockEdge.Right,
-        Direction.Vertical => DockEdge.Bottom,
-        _ => throw new UnreachableException(),
-    };
+        {
+            Direction.Horizontal => DockEdge.Right,
+            Direction.Vertical => DockEdge.Bottom,
+            _ => throw new UnreachableException(),
+        };
     }
 
     /// <summary>Floats the documents of <paramref name="window"/> in a window of their own where it was,

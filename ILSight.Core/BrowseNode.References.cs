@@ -34,7 +34,7 @@ public sealed partial class BrowseNode
     private BrowseNode[] ListReferenceContents(AssemblyReferenceInfo reference)
     {
         var children = new List<BrowseNode>();
-        if (reference.Module.ReferenceUsage.Uses(reference.Reference.Handle))
+        if (ForwardedTypes.UsesReference(reference.Module.ReferenceUsage, reference.Reference.Handle))
             children.Add(new BrowseNode(this, new NodeSubject.ReferencedTypes { Reference = reference }));
         var referenced = ResolveReferenced(reference);
         if (referenced != null)
@@ -59,12 +59,12 @@ public sealed partial class BrowseNode
         var usage = module.ReferenceUsage;
         var metadata = module.File.Metadata;
         var handle = reference.Reference.Handle;
-        var used = usage.TypesIn(handle)
+        var used = ForwardedTypes.ListTypesIn(usage, handle)
             .Select(h => UsedTypeInfo(module, h))
             .OrderBy(i => i.Namespace, NaturalStringComparer.Instance)
             .ThenBy(i => i.Label, NaturalStringComparer.Instance)
             .Select(i => new BrowseNode(this, new NodeSubject.TypeReference { Value = i }));
-        var forwarded = usage.ForwardedTo(handle)
+        var forwarded = ForwardedTypes.ListForwardedTo(usage, handle)
             .Select(h => ForwardedTypes.Read(metadata, h))
             .OrderBy(f => f.Namespace, NaturalStringComparer.Instance)
             .ThenBy(f => f.Label, NaturalStringComparer.Instance)
@@ -119,9 +119,9 @@ public sealed partial class BrowseNode
     private static bool UsesAnythingOf(TypeReferenceInfo type)
     {
         var usage = type.Module.ReferenceUsage;
-        if (usage.TypesIn(type.Handle).Count > 0)
+        if (ForwardedTypes.ListTypesIn(usage, type.Handle).Count > 0)
             return true;
-        return usage.MembersOf(type.Handle).Count > 0;
+        return ForwardedTypes.ListMembersOf(usage, type.Handle).Count > 0;
     }
 
     /// <summary>The types nested in the used type and the members of it the module uses, each sorted by
@@ -130,11 +130,11 @@ public sealed partial class BrowseNode
     {
         var usage = type.Module.ReferenceUsage;
         var module = type.Module.TypeSystem.MainModule;
-        var nested = usage.TypesIn(type.Handle)
+        var nested = ForwardedTypes.ListTypesIn(usage, type.Handle)
             .Select(h => UsedType(type.Module, h))
             .OrderBy(n => n.Text, NaturalStringComparer.Instance)
             .Cast<BrowseNode>();
-        var members = usage.MembersOf(type.Handle)
+        var members = ForwardedTypes.ListMembersOf(usage, type.Handle)
             .Select(h => UsedMember(type.Module, h, ResolveDeclared(module, h)))
             .DistinctBy(n => n.Segment)
             .OrderBy(n => n.Text, NaturalStringComparer.Instance);

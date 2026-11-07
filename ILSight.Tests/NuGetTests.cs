@@ -16,9 +16,9 @@ public sealed class NuGetFeedTests
     {
         var fake = new FakeFeed();
         fake.AnswerSearches(TwoPackages);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var found = await feed.SearchAsync("json", includePrerelease: false);
+        var found = await NuGetFeeds.SearchAsync(feed, "json", includePrerelease: false);
 
         var packages = found.Packages;
         Assert.Equal(["Newtonsoft.Json", "Tiny"], packages.Select(p => p.Id.Text));
@@ -41,9 +41,9 @@ public sealed class NuGetFeedTests
                 { "id": "Tiny", "version": "2.0.0",
                   "versions": [ { "version": "1.0.0" }, { "version": "../2.0.0" }, { "version": "2.0.0" } ] } ] }
             """);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var package = Assert.Single((await feed.SearchAsync("evil", includePrerelease: false)).Packages);
+        var package = Assert.Single((await NuGetFeeds.SearchAsync(feed, "evil", includePrerelease: false)).Packages);
 
         Assert.Equal("Tiny", package.Id.Text);
         Assert.Equal(["2.0.0", "1.0.0"], package.Versions.Select(v => v.Version.Text));
@@ -60,9 +60,9 @@ public sealed class NuGetFeedTests
                   "vulnerabilities": [ { "advisoryUrl": "https://advisory.test", "severity": "2" } ],
                   "versions": [ { "version": "4.4.0", "downloads": 5, "@id": "https://feed.test/reg/serilog/4.4.0.json" } ] } ] }
             """);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var package = (await feed.SearchAsync("serilog", includePrerelease: false)).Packages[0];
+        var package = (await NuGetFeeds.SearchAsync(feed, "serilog", includePrerelease: false)).Packages[0];
 
         Assert.Equal(3477571230, package.TotalDownloads);
         Assert.True(package.Verified);
@@ -83,9 +83,9 @@ public sealed class NuGetFeedTests
                   "projectUrl": "file:///C:/Windows/System32/cmd.exe", "licenseUrl": "C:\\Windows\\System32\\calc.exe",
                   "versions": [ { "version": "1.0.0", "@id": "ms-settings:" } ] } ] }
             """);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var package = (await feed.SearchAsync("tiny", includePrerelease: false)).Packages[0];
+        var package = (await NuGetFeeds.SearchAsync(feed, "tiny", includePrerelease: false)).Packages[0];
 
         Assert.Null(package.IconUrl);
         Assert.Null(package.ProjectUrl);
@@ -104,9 +104,9 @@ public sealed class NuGetFeedTests
         fake.Answer("https://feed.test/reg/tiny/1.0.0.json", $$"""
             { "catalogEntry": { "vulnerabilities": [ { "advisoryUrl": "https://advisory.test", "severity": {{severity}} } ] } }
             """);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await feed.ReadDetailsAsync(PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
 
         Assert.Equal(0, Assert.Single(details.Vulnerabilities).Severity);
     }
@@ -125,9 +125,9 @@ public sealed class NuGetFeedTests
               "deprecation": { "reasons": ["Legacy"], "message": "Old.", "alternatePackage": { "id": "Tiny2" } },
               "vulnerabilities": [ { "advisoryUrl": "https://advisory.test", "severity": "3" } ] }
             """);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await feed.ReadDetailsAsync(PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
 
         Assert.Equal(new DateTimeOffset(2024, 5, 1, 10, 0, 0, TimeSpan.Zero), details.Published);
         Assert.Equal("MIT", details.License);
@@ -148,9 +148,9 @@ public sealed class NuGetFeedTests
                 "not a package",
                 { "id": "Tiny", "version": "1.0.0", "totalDownloads": "42", "tags": "small tiny" } ] }
             """);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var package = Assert.Single((await feed.SearchAsync("tiny", includePrerelease: false)).Packages);
+        var package = Assert.Single((await NuGetFeeds.SearchAsync(feed, "tiny", includePrerelease: false)).Packages);
 
         Assert.Equal("Tiny", package.Id.Text);
         Assert.Equal(42, package.TotalDownloads);
@@ -167,10 +167,10 @@ public sealed class NuGetFeedTests
         var fake = new FakeFeed();
         fake.Answer("https://feed.test/reg/tiny/1.0.0.json", registration);
         fake.Answer("https://feed.test/catalog/array.json", "[]");
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
         await Assert.ThrowsAsync<InvalidDataException>(() =>
-            feed.ReadDetailsAsync(PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"))));
+            NuGetFeeds.ReadDetailsAsync(feed, PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"))));
     }
 
     [Fact]
@@ -185,9 +185,9 @@ public sealed class NuGetFeedTests
                 { "@id": "{{FakeFeed.PackagesUrl}}", "@type": "PackageBaseAddress/3.0.0" } ] }
             """);
         fake.AnswerSearches("""{ "data": [ { "id": "Tiny", "version": "1.0.0" } ] }""");
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var found = await feed.SearchAsync("tiny", includePrerelease: false);
+        var found = await NuGetFeeds.SearchAsync(feed, "tiny", includePrerelease: false);
 
         Assert.Equal("Tiny", Assert.Single(found.Packages).Id.Text);
     }
@@ -203,9 +203,9 @@ public sealed class NuGetFeedTests
                 { "@id": "https://feed.test/reg/", "@type": "RegistrationsBaseUrl/3.6.0" } ] }
             """);
         fake.Answer("https://feed.test/reg/tiny/1.0.0-beta.json", """{ "catalogEntry": { "licenseUrl": "https://license.test" } }""");
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await feed.ReadDetailsAsync(PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0-Beta")!, 0, null));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0-Beta")!, 0, null));
 
         Assert.Equal("https://license.test", details.LicenseUrl?.Text);
         Assert.Null(details.Published);
@@ -228,9 +228,9 @@ public sealed class NuGetFeedTests
     {
         var fake = new FakeFeed();
         fake.AnswerSearches(TwoPackages);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        await feed.SearchAsync("json", includePrerelease: false, page: 2);
+        await NuGetFeeds.SearchAsync(feed, "json", includePrerelease: false, page: 2);
 
         Assert.Contains($"skip={2 * NuGetFeed.PageSize}&take={NuGetFeed.PageSize}&", fake.Requested.Last());
     }
@@ -240,9 +240,9 @@ public sealed class NuGetFeedTests
     {
         var fake = new FakeFeed();
         fake.AnswerSearches("""{ "data": [ { "id": "Tiny", "version": "1.0.0" } ] }""");
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var found = await feed.SearchAsync("", includePrerelease: false);
+        var found = await NuGetFeeds.SearchAsync(feed, "", includePrerelease: false);
 
         Assert.Equal(1, found.TotalHits);
     }
@@ -254,7 +254,7 @@ public sealed class NuGetFeedTests
     [InlineData(400000, 121)]
     public void The_pages_are_counted_up_to_the_last_one_a_feed_lets_start(int totalHits, int pages)
     {
-        Assert.Equal(pages, NuGetFeed.CountPages(totalHits));
+        Assert.Equal(pages, NuGetFeeds.CountPages(totalHits));
     }
 
     [Fact]
@@ -262,9 +262,9 @@ public sealed class NuGetFeedTests
     {
         var fake = new FakeFeed();
         fake.AnswerSearches(TwoPackages);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        await feed.SearchAsync(" a&b ", includePrerelease: true);
+        await NuGetFeeds.SearchAsync(feed, " a&b ", includePrerelease: true);
 
         var search = fake.Requested.Last();
         Assert.StartsWith(FakeFeed.SearchUrl + "?q=a%26b&", search);
@@ -276,10 +276,10 @@ public sealed class NuGetFeedTests
     {
         var fake = new FakeFeed();
         fake.AnswerSearches(TwoPackages);
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        await feed.SearchAsync("a", includePrerelease: false);
-        await feed.SearchAsync("b", includePrerelease: false);
+        await NuGetFeeds.SearchAsync(feed, "a", includePrerelease: false);
+        await NuGetFeeds.SearchAsync(feed, "b", includePrerelease: false);
 
         Assert.Single(fake.Requested, FakeFeed.IndexUrl);
     }
@@ -289,9 +289,9 @@ public sealed class NuGetFeedTests
     {
         var fake = new FakeFeed();
         fake.Answer(FakeFeed.IndexUrl, """{ "version": "3.0.0", "resources": [] }""");
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var error = await Assert.ThrowsAsync<InvalidDataException>(() => feed.SearchAsync("a", includePrerelease: false));
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.SearchAsync(feed, "a", includePrerelease: false));
 
         Assert.Contains("SearchQueryService", error.Message);
     }
@@ -301,9 +301,9 @@ public sealed class NuGetFeedTests
     {
         var fake = new FakeFeed();
         fake.AnswerSearches("<html>maintenance</html>");
-        var feed = new NuGetFeed(fake.Source, fake);
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        await Assert.ThrowsAsync<InvalidDataException>(() => feed.SearchAsync("a", includePrerelease: false));
+        await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.SearchAsync(feed, "a", includePrerelease: false));
     }
 }
 
@@ -320,13 +320,13 @@ public sealed class PackageCacheTests
         using var temp = new TempDir();
         var fake = new FakeFeed();
         fake.Answer(FakeFeed.PackagesUrl + "tiny/1.0.0-beta/tiny.1.0.0-beta.nupkg", PackageBytes);
-        var cache = new PackageCache(temp.PathOf("global"), temp.PathOf("downloads"));
+        var cache = new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") };
 
-        var path = await cache.FetchAsync(new NuGetFeed(fake.Source, fake), Tiny, PackageVersion.Parse("1.0.0-Beta+build.5")!);
+        var path = await NuGetFeeds.FetchPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, PackageVersion.Parse("1.0.0-Beta+build.5")!);
 
         Assert.Equal(temp.PathOf(Path.Combine("downloads", "tiny", "1.0.0-beta", "tiny.1.0.0-beta.nupkg")), path);
         Assert.Equal(PackageBytes, File.ReadAllBytes(path));
-        Assert.Equal(path, cache.Find(Tiny, PackageVersion.Parse("1.0.0-beta")!));
+        Assert.Equal(path, NuGetFeeds.FindPackage(cache, Tiny, PackageVersion.Parse("1.0.0-beta")!));
     }
 
     [Fact]
@@ -335,9 +335,9 @@ public sealed class PackageCacheTests
         using var temp = new TempDir();
         var restored = temp.Write(Path.Combine("global", "tiny", "1.0.0", "tiny.1.0.0.nupkg"), PackageBytes);
         var fake = new FakeFeed();
-        var cache = new PackageCache(temp.PathOf("global"), temp.PathOf("downloads"));
+        var cache = new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") };
 
-        var path = await cache.FetchAsync(new NuGetFeed(fake.Source, fake), Tiny, OneZero);
+        var path = await NuGetFeeds.FetchPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, OneZero);
 
         Assert.Equal(restored, path);
         Assert.Empty(fake.Requested);
@@ -348,11 +348,11 @@ public sealed class PackageCacheTests
     {
         using var temp = new TempDir();
         var fake = new FakeFeed();
-        var cache = new PackageCache(temp.PathOf("global"), temp.PathOf("downloads"));
+        var cache = new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") };
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => cache.FetchAsync(new NuGetFeed(fake.Source, fake), Gone, OneZero));
+        await Assert.ThrowsAsync<HttpRequestException>(() => NuGetFeeds.FetchPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Gone, OneZero));
 
-        Assert.Null(cache.Find(Gone, OneZero));
+        Assert.Null(NuGetFeeds.FindPackage(cache, Gone, OneZero));
         Assert.False(File.Exists(temp.PathOf(Path.Combine("downloads", "gone", "1.0.0", "gone.1.0.0.nupkg.download"))));
     }
 }
@@ -429,9 +429,9 @@ public sealed class PackageIconsTests
     {
         var fake = new FakeFeed();
         fake.Answer(IconUrl, """<svg xmlns="http://www.w3.org/2000/svg" width="256" height="128"><rect width="256" height="128" fill="red"/></svg>""");
-        var icons = new PackageIcons(fake);
+        var icons = NuGetFeeds.CreateIcons(fake);
 
-        var icon = await icons.FetchAsync(Icon, 64);
+        var icon = await NuGetFeeds.FetchIconAsync(icons, Icon, 64);
 
         Assert.Equal(64, icon.Width);
         Assert.Equal(32, icon.Height);
@@ -442,9 +442,9 @@ public sealed class PackageIconsTests
     {
         var fake = new FakeFeed();
         fake.Answer(IconUrl, "<html>not found</html>");
-        var icons = new PackageIcons(fake);
+        var icons = NuGetFeeds.CreateIcons(fake);
 
-        await Assert.ThrowsAsync<InvalidDataException>(() => icons.FetchAsync(Icon, 64));
+        await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.FetchIconAsync(icons, Icon, 64));
     }
 
     [Fact]
@@ -490,11 +490,11 @@ public sealed class NuGetSetupTests
     {
         using var temp = new TempDir();
         var listed = NuGetSource.FromConfig("company", "https://pkgs.test/v3/index.json")!;
-        var setup = new NuGetSetup([listed], new PackageCache(temp.PathOf("global"), temp.PathOf("downloads")));
+        var setup = NuGetFeeds.CreateSetup([listed], new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") });
 
-        var feed = setup.FeedAt(NuGetSource.FromUrl("https://PKGS.test/v3/index.json")!);
+        var feed = NuGetFeeds.EnsureFeed(setup, NuGetSource.FromUrl("https://PKGS.test/v3/index.json")!);
 
-        Assert.Same(feed, setup.FeedAt(listed));
+        Assert.Same(feed, NuGetFeeds.EnsureFeed(setup, listed));
         Assert.Equal("company", feed.Source.Name);
     }
 }

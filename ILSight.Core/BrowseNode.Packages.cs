@@ -3,7 +3,7 @@ namespace ILSight.Core;
 public sealed partial class BrowseNode
 {
     /// <summary>The root of a listed package or bundle's tree.</summary>
-    internal static BrowseNode PackageRoot(LoadedPackage package) => new(null, new NodeSubject.Package { Value = PackageFolderInfo.RootOf(package) });
+    internal static BrowseNode PackageRoot(LoadedPackage package) => new(null, new NodeSubject.Package { Value = PackageFolders.CreateRootFolder(package) });
 
     /// <summary>The folder's folders, then its files. An assembly file is the root of that assembly's tree,
     /// read out of the package now, so that it shows as the assembly it is; any other file is shown as a
@@ -29,7 +29,7 @@ public sealed partial class BrowseNode
             shown = shown.Folders[0];
             label = $"{label}/{shown.Name}";
         }
-        return new PackageFolderInfo(package, folder, shown, label);
+        return new PackageFolderInfo { Package = package, Outermost = folder, Folder = shown, Label = label };
     }
 
     private static bool HoldsOnlyOneFolder(PackageFolder folder)
@@ -43,7 +43,7 @@ public sealed partial class BrowseNode
     {
         var assembly = PackageContents.IsAssemblyName(file.Name) ? package.FindAssembly(file) : null;
         if (assembly == null)
-            return new BrowseNode(this, new NodeSubject.PackageFile { Value = new PackageFileInfo(package, file) });
+            return new BrowseNode(this, new NodeSubject.PackageFile { Value = new PackageFileInfo { Package = package, File = file } });
         return ModuleRoot(assembly, this);
     }
 }

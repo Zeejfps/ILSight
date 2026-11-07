@@ -91,7 +91,7 @@ public sealed class NuGetPicker
     public bool IsLoadingPage => IsSearching && _requestedPage != Page;
 
     /// <summary>How many pages the search shown has, at least one.</summary>
-    public int PageCount => NuGetFeed.CountPages(TotalHits);
+    public int PageCount => NuGetFeeds.CountPages(TotalHits);
 
     /// <summary>How many packages the search shown matched in all.</summary>
     public int TotalHits
@@ -238,7 +238,7 @@ public sealed class NuGetPicker
     private async Task ReadSetupAsync()
     {
         _setup = new SetupState.Reading();
-        var read = await Background.Run(NuGetSetup.ReadUser);
+        var read = await Background.Run(NuGetFeeds.ReadUserSetup);
         switch (read)
         {
             case Outcome<NuGetSetup>.Ok ok:
@@ -246,7 +246,7 @@ public sealed class NuGetPicker
                 break;
             case Outcome<NuGetSetup>.Failed failed:
                 _reportError(new AppProblem.NuGetConfigUnreadable(failed.Error));
-                UseSetup(NuGetSetup.CreateDefault());
+                UseSetup(NuGetFeeds.CreateDefaultSetup());
                 break;
             default:
                 throw new UnreachableException();
@@ -388,7 +388,7 @@ public sealed class NuGetPicker
             DropResults();
             return 0;
         }
-        var wanted = new FeedSearch(setup.FeedAt(source), _typedQuery, IncludePrerelease, _requestedPage);
+        var wanted = new FeedSearch(NuGetFeeds.EnsureFeed(setup, source), _typedQuery, IncludePrerelease, _requestedPage);
         if (IsNewSearch(wanted))
         {
             _requestedPage = 0;
@@ -498,7 +498,7 @@ public sealed class NuGetPicker
         KeepSearched(wanted);
         var running = new SearchRun.Running(wanted, new CancellationTokenSource());
         _search = running;
-        var found = await Background.Wait(wanted.Feed.SearchAsync(wanted.Query, wanted.IncludePrerelease, wanted.Page, running.Cancel.Token));
+        var found = await Background.Wait(NuGetFeeds.SearchAsync(wanted.Feed, wanted.Query, wanted.IncludePrerelease, wanted.Page, running.Cancel.Token));
         if (!ReferenceEquals(_search, running))
             return;
         _search = ShowFound(wanted, found);
@@ -580,7 +580,7 @@ public sealed class NuGetPicker
     private async Task FetchIconAsync(NuGetSetup setup, WebUrl url, PackageIcon icon)
     {
         var token = _fetches.Token;
-        var fetched = await Background.Wait(setup.Icons.FetchAsync(url, IconPixels, token));
+        var fetched = await Background.Wait(NuGetFeeds.FetchIconAsync(setup.Icons, url, IconPixels, token));
         if (token.IsCancellationRequested)
             return;
         if (fetched is Outcome<ResourceImage>.Ok ok)
@@ -626,7 +626,7 @@ public sealed class NuGetPicker
     private async Task ReadDetailsAsync(DetailsKey key, NuGetFeed feed, FeedVersion version, VersionDetails.Loading loading)
     {
         var token = _fetches.Token;
-        var read = await Background.Wait(feed.ReadDetailsAsync(key.Id, version, token));
+        var read = await Background.Wait(NuGetFeeds.ReadDetailsAsync(feed, key.Id, version, token));
         if (token.IsCancellationRequested)
             return;
         if (!_details.TryGetValue(key, out var current) || !ReferenceEquals(current, loading))
@@ -695,7 +695,7 @@ public sealed class NuGetPicker
         var name = $"{package.Id} {version}";
         var running = new DownloadState.Running(name, new CancellationTokenSource());
         _download = running;
-        var fetched = await Background.Wait(setup.Cache.FetchAsync(shown.Search.Feed, package.Id, version, running.Cancel.Token));
+        var fetched = await Background.Wait(NuGetFeeds.FetchPackageAsync(setup.Cache, shown.Search.Feed, package.Id, version, running.Cancel.Token));
         if (!ReferenceEquals(_download, running))
             return;
         _download = Downloaded(name, fetched);

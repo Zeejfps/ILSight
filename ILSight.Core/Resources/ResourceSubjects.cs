@@ -5,7 +5,7 @@ namespace ILSight.Core.Resources;
 
 /// <summary>Where a resource's bytes come from: a manifest resource of the module, the bytes of an entry
 /// of a container, or the compiled XAML of a <c>.resources</c> file's BAML entry, saved as the XAML.</summary>
-internal abstract record ResourceSource
+public abstract record ResourceSource
 {
     private ResourceSource()
     {
@@ -22,19 +22,12 @@ internal abstract record ResourceSource
 /// compiled from; saved as its bytes, or as that XAML.</summary>
 public sealed class ResourceEntryInfo
 {
-    internal ResourceEntryInfo(LoadedModule module, string name, ResourceSource source)
-    {
-        Module = module;
-        Name = name;
-        Source = source;
-    }
-
-    public LoadedModule Module { get; }
+    public required LoadedModule Module { get; init; }
 
     /// <summary>The resource's name, or the entry's path in its container.</summary>
-    public string Name { get; }
+    public required string Name { get; init; }
 
-    internal ResourceSource Source { get; }
+    public required ResourceSource Source { get; init; }
 
     /// <summary>Whether it is shown as a picture: named as a picture is, and no BAML.</summary>
     public bool IsImage => Source is not ResourceSource.Baml && ResourceImage.IsImageName(Name);
@@ -53,19 +46,11 @@ public sealed class ResourceEntryInfo
         ResourceSource.Manifest or ResourceSource.Entry => Path.GetFileName(Name),
         _ => throw new System.Diagnostics.UnreachableException(),
     };
-
-    public byte[] ReadData() => Source switch
-    {
-        ResourceSource.Manifest manifest => ResourceNodes.Read(manifest.Resource),
-        ResourceSource.Entry entry => entry.Data,
-        ResourceSource.Baml baml => Encoding.UTF8.GetBytes(Resources.Baml.DecompileToText(Module, baml.Data, CancellationToken.None)),
-        _ => throw new System.Diagnostics.UnreachableException(),
-    };
 }
 
 /// <summary>What a resource container holds besides its bytes: a <c>.resources</c> file its entries, read
 /// once, and the grid of them; Avalonia's asset container, assets read when it is listed.</summary>
-internal abstract record ContainerContents
+public abstract record ContainerContents
 {
     private ContainerContents()
     {
@@ -80,40 +65,13 @@ internal abstract record ContainerContents
 /// Avalonia embeds an app's assets in. It is its bytes, which it is saved as, and lists its entries.</summary>
 public sealed class ResourceContainerInfo
 {
-    private ResourceContainerInfo(LoadedModule module, MetadataResource resource, ContainerContents contents)
-    {
-        Module = module;
-        Resource = resource;
-        Contents = contents;
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
+    public required MetadataResource Resource { get; init; }
 
-    public MetadataResource Resource { get; }
-
-    internal ContainerContents Contents { get; }
+    public required ContainerContents Contents { get; init; }
 
     public string Description => ResourceNodes.Describe(Resource);
 
     public string FileName => Path.GetFileName(Resource.Name);
-
-    public byte[] ReadData() => ResourceNodes.Read(Resource);
-
-    /// <summary>The grid of a <c>.resources</c> file's entries; null for an asset container, which has none.</summary>
-    public Metadata.MetadataGrid? Grid => Contents switch
-    {
-        ContainerContents.ResourcesFile file => file.Grid.Value,
-        ContainerContents.AvaloniaAssets => null,
-        _ => throw new System.Diagnostics.UnreachableException(),
-    };
-
-    internal static ResourceContainerInfo ResourcesFileOf(LoadedModule module, MetadataResource resource)
-    {
-        var entries = new Lazy<List<KeyValuePair<string, object?>>>(() => ResourceNodes.ReadEntries(resource));
-        var grid = new Lazy<Metadata.MetadataGrid>(() => new Metadata.MetadataGrid(resource.Name, module, module.File, ResourceNodes.Schema(module, entries)));
-        return new ResourceContainerInfo(module, resource, new ContainerContents.ResourcesFile(entries, grid));
-    }
-
-    internal static ResourceContainerInfo AvaloniaAssetsOf(LoadedModule module, MetadataResource resource) =>
-        new(module, resource, new ContainerContents.AvaloniaAssets());
 }
