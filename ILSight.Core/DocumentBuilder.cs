@@ -27,16 +27,16 @@ internal sealed class DocumentBuilder : ITextOutput
     public readonly Dictionary<object, int> LocalKeys = new();
     public readonly Stack<OpenFold> OpenFolds = new();
     public readonly List<(OpenFold Start, int EndLine)> Folds = new();
-    public LoadedModule? Assembly { get; init; }
-    public int LineFirstSpan;
-    public int IndentLevel;
-    public bool LineStarted;
-    public bool LineClassified;
-    public CodeReference.Entity? Scope;
+    public LoadedModule? Assembly { get; internal init; }
+    internal int LineFirstSpan;
+    internal int IndentLevel;
+    internal bool LineStarted;
+    internal bool LineClassified;
+    internal CodeReference.Entity? Scope;
 
     public string IndentationString { get; set; } = "    ";
 
-    public SpanKind? Kind { get; set; }
+    public SpanKind? Kind { get; internal set; }
 
     /// <summary>Where the next text written to the current line starts.</summary>
     internal int Column => Line.Length;

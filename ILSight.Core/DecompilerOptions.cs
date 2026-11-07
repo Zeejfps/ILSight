@@ -195,7 +195,7 @@ public sealed record DecompilerOptions
     public CSharpVersion LanguageVersion { get; init; } = CSharpVersion.CSharp14;
 
     /// <summary>The toggles set away from their defaults, by name, and what each is set to.</summary>
-    public OnOffChanges<DecompilerToggle> Changes { get; init; }
+    public OnOffChanges<DecompilerToggle> Changes { get; internal init; }
 
     /// <summary>Whether any toggle is set away from its default.</summary>
     public bool HasChanges => Changes.Count > 0;

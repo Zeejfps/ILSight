@@ -149,7 +149,7 @@ public sealed class LoadedPackage : LoadedAssembly
     /// the order its tree shows them. Its reading needs the package it reads for, so
     /// <see cref="LoadedAssemblies.CreatePackage"/> assigns this just after making the package, and nothing
     /// sees the package before that; reading the value this starts with throws.</summary>
-    public Lazy<IReadOnlyList<LoadedModule>> Assemblies { get; set; } = new(static () => throw new InvalidOperationException("A package is made by LoadedAssemblies.CreatePackage."));
+    public Lazy<IReadOnlyList<LoadedModule>> Assemblies { get; internal set; } = new(static () => throw new InvalidOperationException("A package is made by LoadedAssemblies.CreatePackage."));
 }
 
 /// <summary>Making what an <see cref="AssemblyList"/> holds, and asking it for what takes reading.</summary>

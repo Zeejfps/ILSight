@@ -116,7 +116,7 @@ public static partial class ClassDiagrams
 
         public required IProgress<ExportProgress>? Progress { get; init; }
 
-        public int Done;
+        internal int Done;
     }
 
     private static void CountBuilt(BuiltTypes built)

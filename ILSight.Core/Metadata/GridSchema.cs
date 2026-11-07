@@ -28,10 +28,10 @@ public class GridSchema
     public readonly List<GridColumn> Columns = [];
 
     /// <summary>The column naming each row, or -1.</summary>
-    public int NameColumn = -1;
+    internal int NameColumn = -1;
 
     /// <summary>What is shown under a selected row, for a grid that shows something.</summary>
-    public Func<object, MetadataRowDetails?>? Details;
+    internal Func<object, MetadataRowDetails?>? Details;
 }
 
 /// <summary>A <see cref="GridSchema"/> over rows of <typeparamref name="TRow"/>, built a column at a

@@ -23,24 +23,32 @@ namespace ILSight.Core.Metadata
 	/// </summary>
 	public sealed class FilterState
 	{
-		public readonly Dictionary<string, ImmutableHashSet<uint>?> MutexSelections = new();
-		public readonly Dictionary<string, TriState> FlagStates = new();
+		internal readonly Dictionary<string, ImmutableHashSet<uint>?> Groups = new();
+		internal readonly Dictionary<string, TriState> Flags = new();
+
+		/// <summary>What each group allows; see above. Only <see cref="FilterStatePresenter"/> changes this, so
+		/// that <see cref="Revision"/> follows it.</summary>
+		public IReadOnlyDictionary<string, ImmutableHashSet<uint>?> MutexSelections => Groups;
+
+		/// <summary>What each flag is held to. Only <see cref="FilterStatePresenter"/> changes this, so that
+		/// <see cref="Revision"/> follows it.</summary>
+		public IReadOnlyDictionary<string, TriState> FlagStates => Flags;
 
 		/// <summary>Whether a row needs all the required flags or any of them. <see cref="FilterStatePresenter.SetIndependentMode"/>
 		/// changes it.</summary>
-		public MatchMode Mode = MatchMode.All;
+		public MatchMode Mode { get; internal set; } = MatchMode.All;
 
-		public int CompiledRevision = -1;
-		public uint RequiredMask;
-		public uint ExcludedMask;
+		internal int CompiledRevision = -1;
+		internal uint RequiredMask;
+		internal uint ExcludedMask;
 
 		public required FlagsSchema Schema { get; init; }
 
 		/// <summary>Changes whenever the state does, for views to notice.</summary>
-		public int Revision;
+		public int Revision { get; internal set; }
 
 		/// <summary>True when no constraints are active — the predicate degenerates to "match all".</summary>
 		public bool IsEmpty =>
-			MutexSelections.Values.All(static s => s is null) && FlagStates.Values.All(static s => s == TriState.DontCare);
+			Groups.Values.All(static s => s is null) && Flags.Values.All(static s => s == TriState.DontCare);
 }
 }

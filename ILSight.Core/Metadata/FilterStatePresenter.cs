@@ -40,7 +40,7 @@ namespace ILSight.Core.Metadata
 			var clauses = new System.Collections.Generic.List<string>();
 			foreach (var group in state.Schema.MutexGroups)
 			{
-				if (!state.MutexSelections.TryGetValue(group.Name, out var sel) || sel is null)
+				if (!state.Groups.TryGetValue(group.Name, out var sel) || sel is null)
 					continue;
 				if (sel.IsEmpty)
 				{
@@ -56,11 +56,11 @@ namespace ILSight.Core.Metadata
 					: $"{group.Name} ∈ {{{string.Join(", ", labels)}}}");
 			}
 			var requiredFlags = state.Schema.IndependentFlags
-				.Where(f => state.FlagStates.TryGetValue(f.Name, out var t) && t == TriState.Required)
+				.Where(f => state.Flags.TryGetValue(f.Name, out var t) && t == TriState.Required)
 				.Select(f => f.Name)
 				.ToList();
 			var excludedFlags = state.Schema.IndependentFlags
-				.Where(f => state.FlagStates.TryGetValue(f.Name, out var t) && t == TriState.Excluded)
+				.Where(f => state.Flags.TryGetValue(f.Name, out var t) && t == TriState.Excluded)
 				.Select(f => f.Name)
 				.ToList();
 			if (requiredFlags.Count > 0)
@@ -94,9 +94,9 @@ namespace ILSight.Core.Metadata
 			ArgumentNullException.ThrowIfNull(schema);
 			var state = new FilterState { Schema = schema };
 			foreach (var group in schema.MutexGroups)
-				state.MutexSelections[group.Name] = null;
+				state.Groups[group.Name] = null;
 			foreach (var flag in schema.IndependentFlags)
-				state.FlagStates[flag.Name] = TriState.DontCare;
+				state.Flags[flag.Name] = TriState.DontCare;
 			return state;
 		}
 
@@ -110,23 +110,23 @@ namespace ILSight.Core.Metadata
 
 		public static void SetMutexSelection(FilterState state, string groupName, ImmutableHashSet<uint>? values)
 		{
-			state.MutexSelections[groupName] = values;
+			state.Groups[groupName] = values;
 			state.Revision++;
 		}
 
 		public static void SetFlagState(FilterState state, string flagName, TriState flagState)
 		{
-			state.FlagStates[flagName] = flagState;
+			state.Flags[flagName] = flagState;
 			state.Revision++;
 		}
 
 		/// <summary>Resets every group to "any" and every flag to don't-care.</summary>
 		public static void ClearFilter(FilterState state)
 		{
-			foreach (var key in state.MutexSelections.Keys.ToArray())
-				state.MutexSelections[key] = null;
-			foreach (var key in state.FlagStates.Keys.ToArray())
-				state.FlagStates[key] = TriState.DontCare;
+			foreach (var key in state.Groups.Keys.ToArray())
+				state.Groups[key] = null;
+			foreach (var key in state.Flags.Keys.ToArray())
+				state.Flags[key] = TriState.DontCare;
 			state.Mode = MatchMode.All;
 			state.Revision++;
 		}
@@ -141,7 +141,7 @@ namespace ILSight.Core.Metadata
 				return false;
 			foreach (var group in state.Schema.MutexGroups)
 			{
-				var allowed = state.MutexSelections.GetValueOrDefault(group.Name);
+				var allowed = state.Groups.GetValueOrDefault(group.Name);
 				if (allowed != null && !allowed.Contains(value & group.Mask))
 					return false;
 			}
@@ -154,7 +154,7 @@ namespace ILSight.Core.Metadata
 			state.RequiredMask = state.ExcludedMask = 0;
 			foreach (var flag in state.Schema.IndependentFlags)
 			{
-				var wanted = state.FlagStates.GetValueOrDefault(flag.Name);
+				var wanted = state.Flags.GetValueOrDefault(flag.Name);
 				if (wanted == TriState.Required)
 					state.RequiredMask |= flag.Bit;
 				else if (wanted == TriState.Excluded)
@@ -169,8 +169,8 @@ namespace ILSight.Core.Metadata
         return state.IsEmpty
     				? null
     				: new SavedFilterState(
-    					state.MutexSelections.Where(static s => s.Value is not null).ToDictionary(static s => s.Key, static s => s.Value!.Order().ToArray()),
-    					state.FlagStates.Where(static f => f.Value != TriState.DontCare).ToDictionary(static f => f.Key, static f => f.Value),
+    					state.Groups.Where(static s => s.Value is not null).ToDictionary(static s => s.Key, static s => s.Value!.Order().ToArray()),
+    					state.Flags.Where(static f => f.Value != TriState.DontCare).ToDictionary(static f => f.Key, static f => f.Value),
     					state.Mode);
     }
 
@@ -179,13 +179,13 @@ namespace ILSight.Core.Metadata
 		{
 			foreach (var (group, values) in saved.Groups ?? new())
 			{
-				if (state.MutexSelections.ContainsKey(group))
-					state.MutexSelections[group] = values.ToImmutableHashSet();
+				if (state.Groups.ContainsKey(group))
+					state.Groups[group] = values.ToImmutableHashSet();
 			}
 			foreach (var (flag, wanted) in saved.Flags ?? new())
 			{
-				if (state.FlagStates.ContainsKey(flag))
-					state.FlagStates[flag] = wanted;
+				if (state.Flags.ContainsKey(flag))
+					state.Flags[flag] = wanted;
 			}
 			state.Mode = saved.Mode;
 			state.Revision++;

@@ -10,7 +10,7 @@ namespace ILSight.Core;
 internal sealed class DocText
 {
     public readonly List<DocBlock> Blocks = new();
-    public List<DocRun> Runs = new();
+    internal List<DocRun> Runs = new();
 
     public bool IsEmpty => Blocks.Count == 0 && Runs.Count == 0;
 }

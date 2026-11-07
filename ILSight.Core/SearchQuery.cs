@@ -56,25 +56,25 @@ public sealed class SearchQuery
 {
     public required SearchKinds Kinds { get; set; }
 
-    public AssemblyNameKind AssemblyName { get; set; }
+    public AssemblyNameKind AssemblyName { get; internal set; }
 
-    public IReadOnlyList<string> Terms { get; set; } = [];
+    public IReadOnlyList<string> Terms { get; internal set; } = [];
 
-    public Regex? Regex { get; set; }
+    public Regex? Regex { get; internal set; }
 
     /// <summary>Whether names are matched qualified, namespace and declaring types included.</summary>
-    public bool FullName { get; set; }
+    public bool FullName { get; internal set; }
 
     /// <summary>Whether a term names generic arity, so names keep their <c>`1</c> suffix.</summary>
-    public bool KeepArity { get; set; }
+    public bool KeepArity { get; internal set; }
 
     /// <summary>Whether a term names type parameters, so generic names are written with them, e.g.
     /// <c>Dictionary&lt;TKey, TValue&gt;</c>.</summary>
-    public bool Generics { get; set; }
+    public bool Generics { get; internal set; }
 
-    public string? InAssembly { get; set; }
+    public string? InAssembly { get; internal set; }
 
-    public string? InNamespace { get; set; }
+    public string? InNamespace { get; internal set; }
 
     /// <summary>True when there is nothing to match, so nothing is found.</summary>
     public bool IsEmpty => Terms.Count == 0 && Regex is null;

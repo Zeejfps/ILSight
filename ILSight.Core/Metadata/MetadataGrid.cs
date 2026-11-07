@@ -75,7 +75,7 @@ public sealed class MetadataGrid
     public readonly Dictionary<int, MetadataAddress?> Links = new();
     public readonly Dictionary<TableIndex, bool> Listed = new();
     public readonly Dictionary<int, MetadataRowDetails?> DetailCells = new();
-    public string?[]? TextCells;
+    internal string?[]? TextCells;
     public (string FirstLine, int MoreLines)?[]? LineCells;
 
     /// <summary>What names the kind of rows, the same for a table in any assembly: where a

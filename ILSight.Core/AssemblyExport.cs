@@ -13,7 +13,7 @@ public sealed record ExportError(string Message, string Details);
 /// decompiled, which the project holds as error comments instead, and what came of its PDB.</summary>
 public sealed record ExportedProject(LoadedModule Assembly, string ProjectPath, IReadOnlyList<ExportError> Errors, ProjectId Id)
 {
-    public ProjectPdb Pdb { get; init; } = new ProjectPdb.NotAsked();
+    public ProjectPdb Pdb { get; internal init; } = new ProjectPdb.NotAsked();
 }
 
 /// <summary>What came of the PDB of an exported project.</summary>

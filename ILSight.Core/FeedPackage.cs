@@ -8,22 +8,22 @@ namespace ILSight.Core;
 public sealed record FeedPackage(PackageId Id, PackageVersion Version, string Description, string Authors, WebUrl? IconUrl, IReadOnlyList<FeedVersion> Versions)
 {
     /// <summary>How many times every version was downloaded.</summary>
-    public long TotalDownloads { get; init; }
+    public long TotalDownloads { get; internal init; }
 
     /// <summary>Whether the feed vouches that the package's id prefix belongs to its owners.</summary>
-    public bool Verified { get; init; }
+    public bool Verified { get; internal init; }
 
     /// <summary>The accounts that own the package on the feed, joined by commas.</summary>
-    public string Owners { get; init; } = "";
+    public string Owners { get; internal init; } = "";
 
-    public IReadOnlyList<string> Tags { get; init; } = [];
+    public IReadOnlyList<string> Tags { get; internal init; } = [];
 
-    public WebUrl? ProjectUrl { get; init; }
+    public WebUrl? ProjectUrl { get; internal init; }
 
-    public WebUrl? LicenseUrl { get; init; }
+    public WebUrl? LicenseUrl { get; internal init; }
 
     /// <summary>How many vulnerabilities the feed knows of in the latest version.</summary>
-    public int Vulnerabilities { get; init; }
+    public int Vulnerabilities { get; internal init; }
 }
 
 /// <summary>A version a feed lists for a package, how many times it was downloaded, and where the feed

@@ -21,5 +21,5 @@ public sealed class AnalyzerContext
 
     public required AssemblyList AssemblyList { get; init; }
 
-    public CancellationToken CancellationToken { get; init; }
+    public CancellationToken CancellationToken { get; internal init; }
 }

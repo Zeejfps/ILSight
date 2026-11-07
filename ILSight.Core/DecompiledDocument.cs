@@ -100,7 +100,7 @@ public sealed class DecompiledDocument
     public required IReadOnlyDictionary<int, CodeAnchor> Statements { get; init; }
 
     /// <summary>The line of each definition by its anchor, filled by <see cref="Documents.FindLine"/> the first time it is asked for.</summary>
-    public Dictionary<CodeAnchor, int>? DefinitionLines;
+    internal Dictionary<CodeAnchor, int>? DefinitionLines;
 
     /// <summary>The statements of each method by its anchor, filled by <see cref="Documents.FindLine"/> the first time it is asked for.</summary>
     public Dictionary<CodeAnchor, (int Offset, int Line)[]>? StatementLines;

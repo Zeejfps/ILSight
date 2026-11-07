@@ -11,7 +11,7 @@ namespace ILSight.Core.Resources;
 public sealed class ResourceImage
 {
     /// <summary>The shapes it is drawn from, for a picture that is drawn from shapes.</summary>
-    public SvgDocument? Shapes { get; init; }
+    public SvgDocument? Shapes { get; internal init; }
 
     /// <summary>Whether it is drawn from shapes, so stays sharp at any size, and is stored as
     /// markup that can be shown instead.</summary>
