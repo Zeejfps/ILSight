@@ -195,6 +195,11 @@ Where a unit sits in the dependency graph matters more than its internals.
 - **Don't add structure you haven't been forced into.** A wrong guess at what varies costs more than none. No
   inheritance depth, no splitting a module just because it does two things, and no abstraction until the second
   or third case is in the code. A record of functions with one implementation is an interface in disguise.
+- **An abstraction must earn its place.** If you have to open it to learn what it costs at runtime, such as
+  allocations, threads, I/O or queries, it hides too much: write the code directly. It must also leave less to
+  keep in your head at the call site than it adds.
+- **Own every resource's lifetime.** Anything holding a handle, socket or native buffer is released explicitly,
+  never left to a finalizer.
 - **No re-export hubs.** They hide the dependency graph. Use the direct path.
 
 ### 11. Review what the compiler can't check
@@ -207,6 +212,13 @@ Before handing back code, re-read it in this order, and report anything you hit 
 4. New shared mutable state, concurrency, or ordering assumptions: anything two things can touch at once, or
    that must happen in an order the code doesn't force.
 5. Everything else.
+
+## Testing
+
+- Test functions with plain data in and plain data out.
+- Don't write an interface just to mock it. Pass a function, or real data.
+- Don't fake what you don't own: an in-memory stand-in for a real engine gives false confidence, so test against
+  the real thing.
 
 ## External code
 
