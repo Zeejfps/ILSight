@@ -26,8 +26,9 @@ namespace ILSight.Core.Metadata
 		/// Base Of Data drops out on PE32+).</summary>
 		public static GridSchema Optional(PEFile module) => Header("Optional Header", module, () => OptionalEntries(module));
 
-		static GridSchema<Entry> Header(string key, PEFile module, Func<IEnumerable<Entry>> rows) =>
-			AddColumns(CreateGrid<Entry>(key, module, rows), columns =>
+		static GridSchema<Entry> Header(string key, PEFile module, Func<IEnumerable<Entry>> rows)
+		{
+		    return AddColumns(CreateGrid<Entry>(key, module, rows), columns =>
 			{
 				AddValue(columns, "Member", e => e.Member);
 				AddValue(columns, "Offset", e => e.Offset);
@@ -35,6 +36,7 @@ namespace ILSight.Core.Metadata
 				AddValue(columns, "Value", e => e.Value, tooltip: e => e.Flags == null ? null : FilterStatePresenter.Explain(e.Flags, Convert.ToUInt32(e.Value)));
 				AddValue(columns, "Meaning", e => e.Meaning);
 			});
+		}
 
 		static readonly FlagsSchema CharacteristicsBits = Bits(typeof(Characteristics), [
 			"Relocation info stripped from file",

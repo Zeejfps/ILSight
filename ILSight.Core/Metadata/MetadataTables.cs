@@ -26,7 +26,10 @@ internal static class MetadataTables
     {
         var m = file.Metadata;
 
-        GridSchema<T> Table<T>(Func<IEnumerable<T>> rows) => CreateTable(table, file, rows);
+        GridSchema<T> Table<T>(Func<IEnumerable<T>> rows)
+        {
+            return CreateTable(table, file, rows);
+        }
 
         IEnumerable<int> Rids() => Enumerable.Range(1, m.GetTableRowCount(table));
 

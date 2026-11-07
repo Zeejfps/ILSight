@@ -118,7 +118,10 @@ public static class Theming
 
     /// <summary>The theme the app is drawn in: the chosen one as resolved, or the built-in dark one while
     /// the chosen one's file is missing. The choice is kept, so the theme comes back with its file.</summary>
-    public static AppTheme ResolveTheme(AppState appState) => ThemeCatalogs.FindTheme(appState.Themes, appState.Theme);
+    public static AppTheme ResolveTheme(AppState appState)
+    {
+        return ThemeCatalogs.FindTheme(appState.Themes, appState.Theme);
+    }
 
     /// <summary>The user's themes folder, made with the theme schema in it when missing, for the screen to
     /// show; null when the settings live in memory only, or after reporting why it cannot be made.</summary>

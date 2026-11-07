@@ -11,7 +11,10 @@ public sealed class BlobTooltipTests
         return Assert.IsType<GridContent>(node.Content()).Grid;
     }
 
-    private static string? TooltipText(MetadataGrid grid, int row, string column) => MetadataGrids.GetTooltip(grid, row, grid.Column(column))?.Text;
+    private static string? TooltipText(MetadataGrid grid, int row, string column)
+    {
+        return MetadataGrids.GetTooltip(grid, row, grid.Column(column))?.Text;
+    }
 
     private static List<string?> ListTooltipTexts(MetadataGrid grid, string column)
     {

@@ -33,9 +33,11 @@ internal static class MethodUsedByAnalyzer
         foreach (var user in users)
             yield return user is IMethod method ? ParentOf(method) : user;
 
-        IMethod ParentOf(IMethod method) =>
-            ((MetadataModule)method.ParentModule!).GetDefinition(
+        IMethod ParentOf(IMethod method)
+        {
+            return ((MetadataModule)method.ParentModule!).GetDefinition(
                 AnalyzerHelpers.EnsureMapping(context, method.DeclaringTypeDefinition!).GetParentMethod((MethodDefinitionHandle)method.MetadataToken));
+        }
 
         bool References(MetadataModule module, ILOpCode opCode, EntityHandle token)
         {

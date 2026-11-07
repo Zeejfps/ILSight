@@ -9,10 +9,15 @@ namespace ILSight.Core;
 public sealed partial class BrowseNode
 {
     /// <summary>The node of the metadata of <paramref name="file"/>, titled <paramref name="title"/>, under <paramref name="parent"/>.</summary>
-    internal static BrowseNode MetadataFolder(LoadedModule module, BrowseNode parent, MetadataFile file, string title) =>
-        new(parent, new NodeSubject.Metadata { Value = new MetadataFolderInfo { Module = module, File = file, Title = title } });
+    internal static BrowseNode MetadataFolder(LoadedModule module, BrowseNode parent, MetadataFile file, string title)
+    {
+        return new(parent, new NodeSubject.Metadata { Value = new MetadataFolderInfo { Module = module, File = file, Title = title } });
+    }
 
-    private BrowseNode Part(MetadataTableInfo part) => new(this, new NodeSubject.MetadataTable { Value = part });
+    private BrowseNode Part(MetadataTableInfo part)
+    {
+        return new(this, new NodeSubject.MetadataTable { Value = part });
+    }
 
     /// <summary>For a PE file its headers and debug directory, then the tables and the four heaps.</summary>
     private BrowseNode[] ListMetadata(MetadataFolderInfo folder)
@@ -35,8 +40,10 @@ public sealed partial class BrowseNode
         return result.ToArray();
     }
 
-    private void AddHeader(List<BrowseNode> result, MetadataFolderInfo folder, PEHeaderKind which, GridSchema header) =>
+    private void AddHeader(List<BrowseNode> result, MetadataFolderInfo folder, PEHeaderKind which, GridSchema header)
+    {
         result.Add(Part(MetadataTables.CreateGridPart(folder.Module, folder.File, header.Key, new MetadataPartKey.Header(which), MetadataGridRole.Header, header)));
+    }
 
     /// <summary>A node per table: the grid of its rows. An empty table, whose grid cannot always be read,
     /// and a table ILSpy does not list show only how many rows there are.</summary>

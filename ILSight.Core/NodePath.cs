@@ -128,5 +128,8 @@ public sealed class NodePath : IEquatable<NodePath>
         return hash.ToHashCode();
     }
 
-    public override string ToString() => NodeDefinitions.DescribePath(this);
+    public override string ToString()
+    {
+        return NodeDefinitions.DescribePath(this);
+    }
 }

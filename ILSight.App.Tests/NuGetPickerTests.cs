@@ -242,7 +242,10 @@ public sealed class NuGetPickerTests : IDisposable
     /// <summary>The details of version 2.0.0 of the package selected, once they are no longer loading.</summary>
     private static VersionDetails ReadDetails(NuGetPicker picker, PostedActions posted)
     {
-        VersionDetails? DetailsNow() => NuGetPicking.EnsureDetails(picker, picker.Selected!, PackageVersion.Parse("2.0.0")!);
+        VersionDetails? DetailsNow()
+        {
+            return NuGetPicking.EnsureDetails(picker, picker.Selected!, PackageVersion.Parse("2.0.0")!);
+        }
         Poll.Until(() => DetailsNow() is not VersionDetails.Loading, posted.Run);
         return DetailsNow()!;
     }

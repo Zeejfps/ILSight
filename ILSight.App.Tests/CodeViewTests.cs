@@ -16,7 +16,10 @@ public sealed class CodeViewTests
         return (view, line, column);
     }
 
-    private static CodeViewDriver ThreeLines() => CodeViewDriver.Showing(Documents.CreateFromText("t", "alpha beta\ngamma delta\nepsilon"));
+    private static CodeViewDriver ThreeLines()
+    {
+        return CodeViewDriver.Showing(Documents.CreateFromText("t", "alpha beta\ngamma delta\nepsilon"));
+    }
 
     [Fact]
     public void Only_the_lines_in_view_are_recorded_in_a_100k_line_document()

@@ -25,23 +25,26 @@ public sealed partial class BrowseNode
 
     /// <summary>The entries of a container: a <c>.resources</c> file's byte and stream entries, its BAML
     /// among them, or Avalonia's assets, sorted by their paths.</summary>
-    private BrowseNode[] ListEntries(ResourceContainerInfo container) => container.Contents switch
+    private BrowseNode[] ListEntries(ResourceContainerInfo container)
     {
-        ContainerContents.ResourcesFile file => file.Entries.Value
-            .Select(e => e.Value switch
-            {
-                byte[] bytes => Entry(container.Module, e.Key, bytes),
-                MemoryStream stream => Entry(container.Module, e.Key, stream.ToArray()),
-                _ => (BrowseNode?)null,
-            })
-            .OfType<BrowseNode>()
-            .ToArray(),
-        ContainerContents.AvaloniaAssets => AvaloniaResources.ReadEntries(ResourceNodes.ReadData(container))
-            .OrderBy(e => e.Path, NaturalStringComparer.Instance)
-            .Select(e => (BrowseNode)new BrowseNode(this, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
-            .ToArray(),
-        _ => throw new System.Diagnostics.UnreachableException(),
-    };
+        return container.Contents switch
+        {
+            ContainerContents.ResourcesFile file => file.Entries.Value
+                .Select(e => e.Value switch
+                {
+                    byte[] bytes => Entry(container.Module, e.Key, bytes),
+                    MemoryStream stream => Entry(container.Module, e.Key, stream.ToArray()),
+                    _ => (BrowseNode?)null,
+                })
+                .OfType<BrowseNode>()
+                .ToArray(),
+            ContainerContents.AvaloniaAssets => AvaloniaResources.ReadEntries(ResourceNodes.ReadData(container))
+                .OrderBy(e => e.Path, NaturalStringComparer.Instance)
+                .Select(e => (BrowseNode)new BrowseNode(this, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
+                .ToArray(),
+            _ => throw new System.Diagnostics.UnreachableException(),
+        };
+    }
 
     private BrowseNode Entry(LoadedModule module, string name, byte[] data)
     {

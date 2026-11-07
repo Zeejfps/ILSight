@@ -99,7 +99,10 @@ public static class IconTheming
 
     /// <summary>The icon theme the app is drawn with: the chosen one as resolved, or the reference one while
     /// the chosen one's file is missing. The choice is kept, so the icon theme comes back with its file.</summary>
-    public static IconTheme ResolveIconTheme(AppState appState) => ThemeCatalogs.FindTheme(appState.IconThemes, appState.IconTheme);
+    public static IconTheme ResolveIconTheme(AppState appState)
+    {
+        return ThemeCatalogs.FindTheme(appState.IconThemes, appState.IconTheme);
+    }
 
     /// <summary>The user's icon themes folder, made with the icon theme schema in it when missing, for the
     /// screen to show; null when the settings live in memory only, or after reporting why it cannot be made.</summary>

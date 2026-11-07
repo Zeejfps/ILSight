@@ -114,53 +114,56 @@ public sealed class SettingsFormatTests : IDisposable
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(actual)), actual);
     }
 
-    private static AppSettings ExpectedSettings() => new()
+    private static AppSettings ExpectedSettings()
     {
-        AssemblyLists =
-        [
-            new AssemblyListRecord("Work", [A, B],
-                [new CodeAnchor(CodeAnchorKind.Statement, A, 0x06000001, 7)],
-                new Dictionary<AssemblyPath, string> { [A] = Rooted("Fixture/A.pdb") },
-                new Dictionary<AssemblyPath, string> { [B] = ".NETCoreApp,Version=v8.0" },
-                ExpectedDocuments()),
-            new AssemblyListRecord("Play", [B], []),
-        ],
-        ActiveAssemblyList = "Work",
-        Theme = ThemeId<ThemeFile>.Of("monokai"),
-        IconTheme = ThemeId<IconThemeFile>.Of("custom-icons"),
-        Language = DecompilationLanguage.IL,
-        Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }.With(DecompilerToggles.FindToggle("AlwaysUseBraces")!, false),
-        FoldedOptionGroups = ["Other"],
-        Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, false, 1.25f, new CodeFont("Mono", @"C:\Fonts\Mono.ttf", 1),
-            TokenFormat.Hex, true, true, true, false),
-        Locale = Locale.De,
-        ApiVisibility = ApiVisibility.All,
-        SearchKinds = SearchKinds.Types | SearchKinds.Literals,
-        Layout = new DockLayout
+        return new()
         {
-            Root = new DockSplit
+            AssemblyLists =
+            [
+                new AssemblyListRecord("Work", [A, B],
+                    [new CodeAnchor(CodeAnchorKind.Statement, A, 0x06000001, 7)],
+                    new Dictionary<AssemblyPath, string> { [A] = Rooted("Fixture/A.pdb") },
+                    new Dictionary<AssemblyPath, string> { [B] = ".NETCoreApp,Version=v8.0" },
+                    ExpectedDocuments()),
+                new AssemblyListRecord("Play", [B], []),
+            ],
+            ActiveAssemblyList = "Work",
+            Theme = ThemeId<ThemeFile>.Of("monokai"),
+            IconTheme = ThemeId<IconThemeFile>.Of("custom-icons"),
+            Language = DecompilationLanguage.IL,
+            Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }.With(DecompilerToggles.FindToggle("AlwaysUseBraces")!, false),
+            FoldedOptionGroups = ["Other"],
+            Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, false, 1.25f, new CodeFont("Mono", @"C:\Fonts\Mono.ttf", 1),
+                TokenFormat.Hex, true, true, true, false),
+            Locale = Locale.De,
+            ApiVisibility = ApiVisibility.All,
+            SearchKinds = SearchKinds.Types | SearchKinds.Literals,
+            Layout = new DockLayout
             {
-                Id = 1, Direction = Direction.Horizontal, Ratio = 0.25f,
-                First = new DockGroup { Id = 2, Panels = ["tree"], Active = "tree" },
-                Second = new DockGroup { Id = 3, Panels = ["documents", "search"], Active = "search" },
+                Root = new DockSplit
+                {
+                    Id = 1, Direction = Direction.Horizontal, Ratio = 0.25f,
+                    First = new DockGroup { Id = 2, Panels = ["tree"], Active = "tree" },
+                    Second = new DockGroup { Id = 3, Panels = ["documents", "search"], Active = "search" },
+                },
+                Windows = [new DockWindow { Id = 4, Root = new DockGroup { Id = 5, Panels = ["analyzer"], Active = "analyzer" }, X = 10f, Y = 20f, Width = 300f, Height = 200f }],
+                NextId = 6,
             },
-            Windows = [new DockWindow { Id = 4, Root = new DockGroup { Id = 5, Panels = ["analyzer"], Active = "analyzer" }, X = 10f, Y = 20f, Width = 300f, Height = 200f }],
-            NextId = 6,
-        },
-        Bookmarks = ExpectedBookmarks(),
-        BookmarkColumns = [1.5f, 2.5f],
-        SearchColumns = [3.5f, 1f],
-        ExportColumns = [2f, 0.5f],
-        FlagsFilters = new Dictionary<string, SavedFilterState>
-        {
-            ["TypeDef/Attributes"] = new(new Dictionary<string, uint[]> { ["Visibility"] = [1u, 2u] },
-                new Dictionary<string, TriState> { ["Sealed"] = TriState.Required }, MatchMode.Any),
-        },
-        Window = new WindowBounds(10, 20, 1200, 800, true),
-        ExportWindow = new WindowBounds(30, 40, 900, 600, false),
-        NuGet = new SavedNuGetSearch("https://api.nuget.org/v3/index.json", true),
-        NuGetWindow = new WindowBounds(50, 60, 700, 500, false),
-    };
+            Bookmarks = ExpectedBookmarks(),
+            BookmarkColumns = [1.5f, 2.5f],
+            SearchColumns = [3.5f, 1f],
+            ExportColumns = [2f, 0.5f],
+            FlagsFilters = new Dictionary<string, SavedFilterState>
+            {
+                ["TypeDef/Attributes"] = new(new Dictionary<string, uint[]> { ["Visibility"] = [1u, 2u] },
+                    new Dictionary<string, TriState> { ["Sealed"] = TriState.Required }, MatchMode.Any),
+            },
+            Window = new WindowBounds(10, 20, 1200, 800, true),
+            ExportWindow = new WindowBounds(30, 40, 900, 600, false),
+            NuGet = new SavedNuGetSearch("https://api.nuget.org/v3/index.json", true),
+            NuGetWindow = new WindowBounds(50, 60, 700, 500, false),
+        };
+    }
 
     private static DocumentsRecord ExpectedDocuments()
     {
@@ -201,15 +204,21 @@ public sealed class SettingsFormatTests : IDisposable
         ];
     }
 
-    private static NodePath CalculatorPlace() => NodeDefinitions.CreatePath(A,
-    [
-        new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
-        new NodePathStep(new NodePathSegment.Definition("T:Ns.Calculator"), "Calculator"),
-    ]);
+    private static NodePath CalculatorPlace()
+    {
+        return NodeDefinitions.CreatePath(A,
+        [
+            new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
+            new NodePathStep(new NodePathSegment.Definition("T:Ns.Calculator"), "Calculator"),
+        ]);
+    }
 
-    private static NodePath OtherPlace() => NodeDefinitions.CreatePath(B,
-    [
-        new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
-        new NodePathStep(new NodePathSegment.Definition("T:Ns.Other"), "Other"),
-    ]);
+    private static NodePath OtherPlace()
+    {
+        return NodeDefinitions.CreatePath(B,
+        [
+            new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
+            new NodePathStep(new NodePathSegment.Definition("T:Ns.Other"), "Other"),
+        ]);
+    }
 }

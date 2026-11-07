@@ -20,17 +20,35 @@ public static class ScreenLayout
         return layout;
     }
 
-    public static void OpenAnalyzer(UiState uiState) => Docking.OpenAnalyzer(uiState.MainLayout, FindActivePanel(uiState));
+    public static void OpenAnalyzer(UiState uiState)
+    {
+        Docking.OpenAnalyzer(uiState.MainLayout, FindActivePanel(uiState));
+    }
 
-    public static void OpenDecompilerOptions(UiState uiState) => Docking.OpenDecompilerOptions(uiState.MainLayout, FindActivePanel(uiState));
+    public static void OpenDecompilerOptions(UiState uiState)
+    {
+        Docking.OpenDecompilerOptions(uiState.MainLayout, FindActivePanel(uiState));
+    }
 
-    public static void OpenDisplayOptions(UiState uiState) => Docking.OpenDisplayOptions(uiState.MainLayout, FindActivePanel(uiState));
+    public static void OpenDisplayOptions(UiState uiState)
+    {
+        Docking.OpenDisplayOptions(uiState.MainLayout, FindActivePanel(uiState));
+    }
 
-    public static void OpenBookmarks(UiState uiState) =>Docking.OpenBookmarks(uiState.MainLayout, FindActivePanel(uiState));
+    public static void OpenBookmarks(UiState uiState)
+    {
+        Docking.OpenBookmarks(uiState.MainLayout, FindActivePanel(uiState));
+    }
 
-    public static void OpenExports(UiState uiState) => Docking.OpenExports(uiState.MainLayout, FindActivePanel(uiState));
+    public static void OpenExports(UiState uiState)
+    {
+        Docking.OpenExports(uiState.MainLayout, FindActivePanel(uiState));
+    }
 
-    public static void OpenAssembliesPanel(UiState uiState) => Docking.OpenAssemblies(uiState.MainLayout);
+    public static void OpenAssembliesPanel(UiState uiState)
+    {
+        Docking.OpenAssemblies(uiState.MainLayout);
+    }
 
     /// <summary>Docks <paramref name="view"/> if it is not, and brings it to the front.</summary>
     public static void OpenPanel(UiState uiState, DockView view)

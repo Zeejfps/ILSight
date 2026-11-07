@@ -92,7 +92,10 @@ public sealed class BuiltInThemeTests
         Assert.Contains("GitHub Dark", japanese);
     }
 
-    private static AppTheme Resolve(string id) => ThemeCatalogs.FindTheme(Theming.CreateCatalog(BuiltInThemes.Files), ThemeId<ThemeFile>.Of(id));
+    private static AppTheme Resolve(string id)
+    {
+        return ThemeCatalogs.FindTheme(Theming.CreateCatalog(BuiltInThemes.Files), ThemeId<ThemeFile>.Of(id));
+    }
 
     private static ThemeType? TypeOf(string id) => BuiltInThemes.Files.Single(f => f.Id.Text == id).Type;
 
@@ -112,7 +115,10 @@ public sealed class ThemeLoadingTests
 
     private static ThemeId<ThemeFile> Id(string text) => ThemeId<ThemeFile>.Of(text);
 
-    private static ThemeFile User(string id, string json) => Theming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json));
+    private static ThemeFile User(string id, string json)
+    {
+        return Theming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json));
+    }
 
     private static ThemeCatalog Load(params ThemeFile[] users)
     {

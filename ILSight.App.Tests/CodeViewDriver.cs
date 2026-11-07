@@ -123,8 +123,10 @@ internal sealed class CodeViewDriver
     /// <summary>The top of the row a glyph run drawn at canvas height <paramref name="y"/> sits in.</summary>
     public float RowTop(float y) => Frames.Height - y - CellInset;
 
-    public static DecompiledDocument Numbered(int count, string prefix = "line ") =>
-        Documents.CreateFromText("numbered", string.Join('\n', Enumerable.Range(0, count).Select(i => prefix + i)));
+    public static DecompiledDocument Numbered(int count, string prefix = "line ")
+    {
+        return Documents.CreateFromText("numbered", string.Join('\n', Enumerable.Range(0, count).Select(i => prefix + i)));
+    }
 
     public static DecompiledDocument Greeter() => s_greeter.Value;
 

@@ -22,7 +22,7 @@ public static class ItemSelections
         where T : class
     {
         selection.Item = item;
-        selection.Rows.Select(IndexIn(selection, items), items.Count, reveal);
+        selection.Rows.Select(FindIndexIn(selection, items), items.Count, reveal);
     }
 
     public static void Clear<T>(ItemSelection<T> selection)
@@ -55,7 +55,7 @@ public static class ItemSelections
     public static void DropIfGone<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
     {
-        if (IndexIn(selection, items) >= 0)
+        if (FindIndexIn(selection, items) >= 0)
             return;
         Clear(selection);
     }
@@ -66,7 +66,7 @@ public static class ItemSelections
         where T : class
     {
         DropIfGone(selection, items);
-        selection.Rows.Select(IndexIn(selection, items), items.Count, reveal: false);
+        selection.Rows.Select(FindIndexIn(selection, items), items.Count, reveal: false);
     }
 
     /// <summary>Selects the item at the row the list widget left <see cref="ItemSelection{T}.Rows"/> at.</summary>
@@ -87,7 +87,7 @@ public static class ItemSelections
     }
 
     /// <summary>The selected item's row in <paramref name="items"/>, or -1.</summary>
-    public static int IndexIn<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
+    public static int FindIndexIn<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
     {
         if (selection.Item == null)

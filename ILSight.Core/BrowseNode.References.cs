@@ -75,12 +75,16 @@ public sealed partial class BrowseNode
     }
 
     /// <summary>The node of a type forwarded to another assembly, under <paramref name="parent"/>.</summary>
-    internal static BrowseNode Forwarded(LoadedModule module, BrowseNode parent, ForwardedType type) =>
-        new(parent, new NodeSubject.ForwardedType { Value = NodeDefinitions.CreateForwardedType(module, type) });
+    internal static BrowseNode Forwarded(LoadedModule module, BrowseNode parent, ForwardedType type)
+    {
+        return new(parent, new NodeSubject.ForwardedType { Value = NodeDefinitions.CreateForwardedType(module, type) });
+    }
 
     /// <summary>The node of the type <paramref name="handle"/> names, used from a reference, under this node.</summary>
-    private BrowseNode UsedType(LoadedModule module, TypeReferenceHandle handle) =>
-        new(this, new NodeSubject.TypeReference { Value = UsedTypeInfo(module, handle) });
+    private BrowseNode UsedType(LoadedModule module, TypeReferenceHandle handle)
+    {
+        return new(this, new NodeSubject.TypeReference { Value = UsedTypeInfo(module, handle) });
+    }
 
     /// <summary>The type <paramref name="handle"/> names, used from a reference, as listed under this node.</summary>
     private TypeReferenceInfo UsedTypeInfo(LoadedModule module, TypeReferenceHandle handle)

@@ -6,10 +6,16 @@ public sealed partial class BrowseNode
 {
     /// <summary>The root of <paramref name="module"/>'s tree: at the top, or for one read out of a package
     /// under the folder holding its file.</summary>
-    internal static BrowseNode ModuleRoot(LoadedModule module, BrowseNode? parent) => new(parent, new NodeSubject.Module { Value = module });
+    internal static BrowseNode ModuleRoot(LoadedModule module, BrowseNode? parent)
+    {
+        return new(parent, new NodeSubject.Module { Value = module });
+    }
 
     /// <summary>The root of a listed file that could not be read, without children, showing why.</summary>
-    internal static BrowseNode FailedRoot(FailedAssembly failed) => new(null, new NodeSubject.FailedAssembly { Value = failed });
+    internal static BrowseNode FailedRoot(FailedAssembly failed)
+    {
+        return new(null, new NodeSubject.FailedAssembly { Value = failed });
+    }
 
     /// <summary>The metadata, the debug metadata when there is some, the references and the resources,
     /// then every namespace a type is in or a name nests in, flat and sorted by name, each knowing the

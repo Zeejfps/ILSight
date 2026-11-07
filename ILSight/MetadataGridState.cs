@@ -248,7 +248,10 @@ public sealed class MetadataGridState
 
     /// <summary>What copying the current cell takes: the part of its text selected, else all of it,
     /// lines hidden while it is closed included.</summary>
-    internal string CellText() => Cell.Copied(ShownText, MetadataGrids.GetText(Grid, Selected, CurrentColumn));
+    internal string CellText()
+    {
+        return Cell.Copied(ShownText, MetadataGrids.GetText(Grid, Selected, CurrentColumn));
+    }
 
     internal string RowText(int row)
     {

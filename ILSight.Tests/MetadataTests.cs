@@ -249,7 +249,10 @@ public sealed class MetadataTests
         Assert.Contains("// 02 TypeDef: ", text);
     }
 
-    private static string[] NamesOf(MetadataGrid grid, int[] rows) => rows.Select(r => MetadataGrids.GetText(grid, r, grid.Column("Name"))).ToArray();
+    private static string[] NamesOf(MetadataGrid grid, int[] rows)
+    {
+        return rows.Select(r => MetadataGrids.GetText(grid, r, grid.Column("Name"))).ToArray();
+    }
 
     [Fact]
     public void The_patterns_typed_into_a_filter_are_kept_only_up_to_a_limit()
@@ -312,6 +315,22 @@ public sealed class MetadataTests
         Assert.DoesNotContain("Calculator`1", names);
         Assert.DoesNotContain("<>c", names);
         Assert.Equal("Visibility = NotPublic ∧ ¬Abstract", FilterStatePresenter.Describe(state));
+    }
+
+    [Fact]
+    public void Setting_the_independent_mode_counts_as_a_change_only_when_it_is_one()
+    {
+        var grid = TypeDefs();
+        var state = FilterStatePresenter.CreateFilterState(grid.Columns[grid.Column("Attributes")].Flags!);
+        var before = state.Revision;
+
+        FilterStatePresenter.SetIndependentMode(state, state.Mode);
+        var unchanged = state.Revision;
+        FilterStatePresenter.SetIndependentMode(state, MatchMode.Any);
+
+        Assert.Equal(before, unchanged);
+        Assert.Equal(before + 1, state.Revision);
+        Assert.Equal(MatchMode.Any, state.Mode);
     }
 
     [Fact]
@@ -383,7 +402,10 @@ public sealed class MetadataTests
         return Enumerable.Range(0, grid.RowCount).Select(r => (Hex(grid, r, first), Hex(grid, r, second))).ToArray();
     }
 
-    private static int Hex(MetadataGrid grid, int row, string column) => Convert.ToInt32(MetadataGrids.GetText(grid, row, grid.Column(column)), 16);
+    private static int Hex(MetadataGrid grid, int row, string column)
+    {
+        return Convert.ToInt32(MetadataGrids.GetText(grid, row, grid.Column(column)), 16);
+    }
 
     private static int Token(EntityHandle handle) => MetadataTokens.GetToken(handle);
 

@@ -10,8 +10,10 @@ public sealed class CodeViewScrollTests
 {
     private const int FitColumns = 37;
 
-    private static DecompiledDocument Document(int widest) =>
-        Documents.CreateFromText("t", string.Join('\n', Enumerable.Range(0, 1000).Select(i => i == 999 ? new string('w', widest) : $"line {i}")));
+    private static DecompiledDocument Document(int widest)
+    {
+        return Documents.CreateFromText("t", string.Join('\n', Enumerable.Range(0, 1000).Select(i => i == 999 ? new string('w', widest) : $"line {i}")));
+    }
 
     private static List<(float Left, float Top, float Width, float Height)> Thumbs(CodeViewDriver view)
     {
@@ -63,12 +65,15 @@ public sealed class CodeViewScrollTests
         var b = new CodeViewState();
         var documentA = CodeViewDriver.Numbered(1000);
         var documentB = CodeViewDriver.Numbered(1000, "row ");
-        void Show(int tab, CodeViewState state, DecompiledDocument document) => frames.Run(1f / 60f, ui =>
+        void Show(int tab, CodeViewState state, DecompiledDocument document)
         {
-            using var screen = ui.Screen();
-            using (ui.Id(tab))
-                CodeViewWidget.RenderCodeView(ui, "code", document, state);
-        });
+            frames.Run(1f / 60f, ui =>
+            {
+                using var screen = ui.Screen();
+                using (ui.Id(tab))
+                    CodeViewWidget.RenderCodeView(ui, "code", document, state);
+            });
+        }
 
         Show(1, a, documentA);
         frames.MovePointer(200f, 150f);

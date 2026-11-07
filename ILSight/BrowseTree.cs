@@ -389,14 +389,17 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
 
     private TreeRow FailedRow(Exception error) => new($"Error: {error.Message}", NodeIcons.Failed(_iconColors, _icons), Tooltip: error.Message);
 
-    public TreeRow Row(BrowseNode node) => new(
-        RowLabel(node),
-        NodeIcons.Icon(node, _iconColors, _icons),
-        NodeDefinitions.GetVisibility(node.Subject).IsPublicApi ? 0u : _theme.TextMuted,
-        Tooltip: NodeText.Tooltip(node),
-        Secondary: SecondaryOf(node),
-        SecondaryBold: NodeText.PickedFramework(node),
-        Spinning: IsReopening(node));
+    public TreeRow Row(BrowseNode node)
+    {
+        return new(
+            RowLabel(node),
+            NodeIcons.Icon(node, _iconColors, _icons),
+            NodeDefinitions.GetVisibility(node.Subject).IsPublicApi ? 0u : _theme.TextMuted,
+            Tooltip: NodeText.Tooltip(node),
+            Secondary: SecondaryOf(node),
+            SecondaryBold: NodeText.PickedFramework(node),
+            Spinning: IsReopening(node));
+    }
 
     /// <summary>Whether the node is the root of a listed file being reopened.</summary>
     private bool IsReopening(BrowseNode node)

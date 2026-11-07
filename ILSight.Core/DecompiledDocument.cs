@@ -122,7 +122,10 @@ public sealed class DecompiledDocument
     /// a line of its own and nested whole inside any region it starts in.</summary>
     public required ImmutableArray<FoldRegion> Folds { get; init; }
 
-    public override string ToString() => Title;
+    public override string ToString()
+    {
+        return Title;
+    }
 }
 
 /// <summary>Finding things in a <see cref="DecompiledDocument"/>.</summary>

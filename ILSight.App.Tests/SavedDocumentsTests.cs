@@ -117,11 +117,14 @@ public sealed class SavedDocumentsTests : IDisposable
     private static TypeAnchor FixtureType(string name) => new(PathOf(AppStateDriver.FixturePath), $"{AppStateDriver.FixturesNamespace}.{name}");
 
     /// <summary>Where the fixture type <paramref name="name"/> is, as this build saves it.</summary>
-    private static NodePath FixturePlace(string name) => NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath),
-    [
-        new NodePathStep(new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace), AppStateDriver.FixturesNamespace),
-        new NodePathStep(new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.{name}"), name),
-    ]);
+    private static NodePath FixturePlace(string name)
+    {
+        return NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath),
+        [
+            new NodePathStep(new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace), AppStateDriver.FixturesNamespace),
+            new NodePathStep(new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.{name}"), name),
+        ]);
+    }
 
     [Fact]
     public void Scrolling_alone_writes_no_settings_and_the_next_save_keeps_where_the_view_stands()
@@ -405,8 +408,10 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal(["First"], kept.Select(static t => t.Title));
     }
 
-    private static NodeDocumentRecord HandTab(string panel, string title) =>
-        new(panel, title, NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
+    private static NodeDocumentRecord HandTab(string panel, string title)
+    {
+        return new(panel, title, NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
+    }
 
     [Fact]
     public void A_new_panel_skips_every_panel_saved_documents_were_docked_as_however_numbered()

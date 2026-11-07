@@ -89,7 +89,7 @@ internal static class OmnibarView
         if (omnibar.SuggestionCount == 0)
             return;
         Searches.Move(omnibar.Search, by);
-        var index = ItemSelections.IndexIn(omnibar.Search.Selection, omnibar.Search.Rows);
+        var index = ItemSelections.FindIndexIn(omnibar.Search.Selection, omnibar.Search.Rows);
         if (index < omnibar.SuggestionCount)
             return;
         Searches.Select(omnibar.Search, omnibar.Search.Rows[omnibar.SuggestionCount - 1]);

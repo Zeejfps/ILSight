@@ -117,40 +117,43 @@ public static class NodeContentLoader
         _ => new CodeExport.Document(RequestOf(session, node)),
     };
 
-    private static DocumentRequest RequestOf(BrowseSession session, BrowseNode node) => node.Subject switch
+    private static DocumentRequest RequestOf(BrowseSession session, BrowseNode node)
     {
-        NodeSubject.TypeDefinition type => new DocumentRequest.Type(type.Definition, node.Text, node.FullName),
-        NodeSubject.MemberDefinition member => new DocumentRequest.Member(member.Definition, node.Text, node.FullName),
-        NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
-            or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
-            or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType =>
-            new DocumentRequest.Summary(SummaryOf(session, node), node.SourceModule, node.Text, node.FullName),
-        NodeSubject.Resources => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
-        NodeSubject.ResourceContainer container => container.Value.Contents switch
+        return node.Subject switch
         {
-            ContainerContents.AvaloniaAssets => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
-            ContainerContents.ResourcesFile => ResourceRequest(node, ResourceNodes.CreateData(container.Value)),
+            NodeSubject.TypeDefinition type => new DocumentRequest.Type(type.Definition, node.Text, node.FullName),
+            NodeSubject.MemberDefinition member => new DocumentRequest.Member(member.Definition, node.Text, node.FullName),
+            NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
+                or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
+                or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType =>
+                new DocumentRequest.Summary(SummaryOf(session, node), node.SourceModule, node.Text, node.FullName),
+            NodeSubject.Resources => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
+            NodeSubject.ResourceContainer container => container.Value.Contents switch
+            {
+                ContainerContents.AvaloniaAssets => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
+                ContainerContents.ResourcesFile => ResourceRequest(node, ResourceNodes.CreateData(container.Value)),
+                _ => throw new UnreachableException(),
+            },
+            NodeSubject.ResourceEntry entry => entry.Value.Source switch
+            {
+                ResourceSource.Baml baml => new DocumentRequest.Baml(entry.Value.Module, baml.Data, node.Text, node.FullName),
+                ResourceSource.Manifest or ResourceSource.Entry => ResourceRequest(node, ResourceNodes.CreateData(entry.Value)),
+                _ => throw new UnreachableException(),
+            },
+            NodeSubject.Metadata metadata => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListFolderLines(metadata.Value)), node.SourceModule, node.Text, node.FullName),
+            NodeSubject.MetadataTables tables => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListTablesLines(tables.Folder)), node.SourceModule, node.Text,
+                node.FullName),
+            NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListPartLines(table.Value)), node.SourceModule, node.Text, node.FullName),
+            NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(session.ChildrenOf(node).Select(DescribePackageChild).ToList()), null,
+                node.Text, node.FullName),
+            NodeSubject.PackageFile file => ResourceRequest(node, ResourceNodes.CreateData(file.Value)),
+            NodeSubject.Module module => new DocumentRequest.ModulePreview(module.Value, node.Text, node.FullName),
+            NodeSubject.FailedAssembly failed => new DocumentRequest.Failure(failed.Value, node.Text, node.FullName),
+            NodeSubject.Namespace => new DocumentRequest.Summary(new SummaryInfo.Namespace(node.Text, ListNamespaceEntries(session, node)), node.SourceModule,
+                node.Text, node.FullName),
             _ => throw new UnreachableException(),
-        },
-        NodeSubject.ResourceEntry entry => entry.Value.Source switch
-        {
-            ResourceSource.Baml baml => new DocumentRequest.Baml(entry.Value.Module, baml.Data, node.Text, node.FullName),
-            ResourceSource.Manifest or ResourceSource.Entry => ResourceRequest(node, ResourceNodes.CreateData(entry.Value)),
-            _ => throw new UnreachableException(),
-        },
-        NodeSubject.Metadata metadata => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListFolderLines(metadata.Value)), node.SourceModule, node.Text, node.FullName),
-        NodeSubject.MetadataTables tables => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListTablesLines(tables.Folder)), node.SourceModule, node.Text,
-            node.FullName),
-        NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListPartLines(table.Value)), node.SourceModule, node.Text, node.FullName),
-        NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(session.ChildrenOf(node).Select(DescribePackageChild).ToList()), null,
-            node.Text, node.FullName),
-        NodeSubject.PackageFile file => ResourceRequest(node, ResourceNodes.CreateData(file.Value)),
-        NodeSubject.Module module => new DocumentRequest.ModulePreview(module.Value, node.Text, node.FullName),
-        NodeSubject.FailedAssembly failed => new DocumentRequest.Failure(failed.Value, node.Text, node.FullName),
-        NodeSubject.Namespace => new DocumentRequest.Summary(new SummaryInfo.Namespace(node.Text, ListNamespaceEntries(session, node)), node.SourceModule,
-            node.Text, node.FullName),
-        _ => throw new UnreachableException(),
-    };
+        };
+    }
 
     private static DocumentRequest.Resource ResourceRequest(BrowseNode node, ResourceData resource) =>
         new(node.SourceModule, resource.Description, resource.ReadData, node.Text, node.FullName);
@@ -160,27 +163,30 @@ public static class NodeContentLoader
         new(session.ChildrenOf(node).Select(static c => c.ResourceData).OfType<ResourceData>().Select(static r => r.Description).ToList());
 
     /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists.</summary>
-    private static SummaryInfo SummaryOf(BrowseSession session, BrowseNode node) => node.Subject switch
+    private static SummaryInfo SummaryOf(BrowseSession session, BrowseNode node)
     {
-        NodeSubject.References => new SummaryInfo.References(
-            ChildrenAbout<NodeSubject.AssemblyReference>(session, node).Select(static r => new SummaryLink(r.FullName, NodeDefinitions.FindTarget(r.Subject))).ToList(),
-            ChildrenAbout<NodeSubject.ModuleReference>(session, node).Select(static m => m.Text).ToList()),
-        NodeSubject.AssemblyReference reference => new SummaryInfo.AssemblyReference(reference.Value.Module, reference.Value.Reference),
-        NodeSubject.ReferencedTypes => new SummaryInfo.Used(ListUsed(session, node)),
-        NodeSubject.TypeReference or NodeSubject.MemberReference => new SummaryInfo.Used([UsedOf(session, node)]),
-        NodeSubject.ModuleReference module => new SummaryInfo.ModuleReference(module.Value.Name, module.Value.ContainsMetadata,
-            ChildrenAbout<NodeSubject.ImportedMethod>(session, node).Select(static i => new SummaryLink(i.FullName, NodeDefinitions.FindTarget(i.Subject))).ToList()),
-        NodeSubject.ImportedMethod import => new SummaryInfo.ImportedMethod(new SummaryLink(node.FullName, NodeDefinitions.FindTarget(node.Subject)), import.Value.EntryPoint,
-            import.Value.ModuleName),
-        NodeSubject.ForwardedType forwarded => new SummaryInfo.ForwardedType(forwarded.Value.FullName, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination),
-        NodeSubject.BaseTypes or NodeSubject.DerivedTypes =>
-            new SummaryInfo.Types(session.ChildrenOf(node).Select(static c => new SummaryLink(c.Text, NodeDefinitions.FindTarget(c.Subject))).ToList()),
-        NodeSubject.BaseType or NodeSubject.DerivedType => new SummaryInfo.Types([new SummaryLink(node.Text, NodeDefinitions.FindTarget(node.Subject))]),
-        NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.Resources or NodeSubject.ResourceContainer
-            or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
-            or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly => throw new UnreachableException(),
-        _ => throw new UnreachableException(),
-    };
+        return node.Subject switch
+        {
+            NodeSubject.References => new SummaryInfo.References(
+                ChildrenAbout<NodeSubject.AssemblyReference>(session, node).Select(static r => new SummaryLink(r.FullName, NodeDefinitions.FindTarget(r.Subject))).ToList(),
+                ChildrenAbout<NodeSubject.ModuleReference>(session, node).Select(static m => m.Text).ToList()),
+            NodeSubject.AssemblyReference reference => new SummaryInfo.AssemblyReference(reference.Value.Module, reference.Value.Reference),
+            NodeSubject.ReferencedTypes => new SummaryInfo.Used(ListUsed(session, node)),
+            NodeSubject.TypeReference or NodeSubject.MemberReference => new SummaryInfo.Used([UsedOf(session, node)]),
+            NodeSubject.ModuleReference module => new SummaryInfo.ModuleReference(module.Value.Name, module.Value.ContainsMetadata,
+                ChildrenAbout<NodeSubject.ImportedMethod>(session, node).Select(static i => new SummaryLink(i.FullName, NodeDefinitions.FindTarget(i.Subject))).ToList()),
+            NodeSubject.ImportedMethod import => new SummaryInfo.ImportedMethod(new SummaryLink(node.FullName, NodeDefinitions.FindTarget(node.Subject)), import.Value.EntryPoint,
+                import.Value.ModuleName),
+            NodeSubject.ForwardedType forwarded => new SummaryInfo.ForwardedType(forwarded.Value.FullName, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination),
+            NodeSubject.BaseTypes or NodeSubject.DerivedTypes =>
+                new SummaryInfo.Types(session.ChildrenOf(node).Select(static c => new SummaryLink(c.Text, NodeDefinitions.FindTarget(c.Subject))).ToList()),
+            NodeSubject.BaseType or NodeSubject.DerivedType => new SummaryInfo.Types([new SummaryLink(node.Text, NodeDefinitions.FindTarget(node.Subject))]),
+            NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.Resources or NodeSubject.ResourceContainer
+                or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
+                or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly => throw new UnreachableException(),
+            _ => throw new UnreachableException(),
+        };
+    }
 
     /// <summary>The children of <paramref name="node"/> that stand for a <typeparamref name="TSubject"/>.</summary>
     private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(BrowseSession session, BrowseNode node) where TSubject : NodeSubject =>
@@ -230,8 +236,10 @@ public static class NodeContentLoader
         };
     }
 
-    private static ForwardedLine ForwardedLineOf(BrowseNode node, NodeSubject.ForwardedType forwarded) =>
-        new(forwarded.Value.Label, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination);
+    private static ForwardedLine ForwardedLineOf(BrowseNode node, NodeSubject.ForwardedType forwarded)
+    {
+        return new(forwarded.Value.Label, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination);
+    }
 
     private static SpanKind UsedMemberSpan(IMember member) => member switch
     {

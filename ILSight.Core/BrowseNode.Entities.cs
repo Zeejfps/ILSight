@@ -56,10 +56,12 @@ public sealed partial class BrowseNode
         return result.ToArray();
     }
 
-    private BrowseNode[] ListBaseTypes(DefinedType type) =>
-        type.Symbol.DirectBaseTypes
+    private BrowseNode[] ListBaseTypes(DefinedType type)
+    {
+        return type.Symbol.DirectBaseTypes
             .Select(t => (BrowseNode)new BrowseNode(this, new NodeSubject.BaseType { Value = NodeDefinitions.CreateBaseType(type.Module, t) }))
             .ToArray();
+    }
 
     /// <summary>The types in scope of <paramref name="type"/> that derive from it directly, as
     /// <see cref="DerivedTypes"/> finds them, under <paramref name="parent"/>.</summary>

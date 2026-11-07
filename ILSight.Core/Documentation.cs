@@ -406,8 +406,10 @@ internal static class Documentation
             base.StartNode(node);
         }
 
-        private static bool IsDeclaredParameter(AstNode node) =>
-            node is ParameterDeclaration && node.Parent is EntityDeclaration;
+        private static bool IsDeclaredParameter(AstNode node)
+        {
+            return node is ParameterDeclaration && node.Parent is EntityDeclaration;
+        }
     }
 
     public static void AddRun(DocText doc, string text, DocStyle style, CodeReference? reference = null)

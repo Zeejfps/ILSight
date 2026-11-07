@@ -88,8 +88,10 @@ public sealed class IconThemeLoadingTests
 
     private static ThemeId<IconThemeFile> Id(string text) => ThemeId<IconThemeFile>.Of(text);
 
-    private static IconThemeFile User(string id, string json, MemoryIconAssets? assets = null) =>
-        IconTheming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json), assets ?? new MemoryIconAssets());
+    private static IconThemeFile User(string id, string json, MemoryIconAssets? assets = null)
+    {
+        return IconTheming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json), assets ?? new MemoryIconAssets());
+    }
 
     private static IconThemeCatalog Load(params IconThemeFile[] users)
     {
