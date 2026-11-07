@@ -791,7 +791,7 @@ public static class CodeViewWidget
     {
         var frame = state.Frame;
         frame.Document = document;
-        frame.Folds = state.Folds;
+        frame.Folds = state.Folds.Layout;
         frame.Palette = palette;
         frame.Background = theme.EditorBackground;
         frame.GutterHover = theme.Text;

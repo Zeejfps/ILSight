@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using ILSight.Core;
 
 namespace ILSight;
@@ -6,25 +7,50 @@ namespace ILSight;
 /// collapsed above it, not the number of the line it shows.</summary>
 internal readonly record struct CodeRow(int Index);
 
-/// <summary>Which of a document's <see cref="DecompiledDocument.Folds"/> are collapsed, and the rows
-/// that leaves: row r shows line <see cref="CodeFolding.GetLineAt"/>(r). <see cref="Rows"/>,
-/// <see cref="IsIdentity"/> and <see cref="RowCount"/> follow <see cref="Collapsed"/>: change it only through
-/// <see cref="CodeFolding"/>, which rebuilds them when either changes, never per frame.</summary>
-internal sealed class CodeFolds
+/// <summary>Which of a document's folds are collapsed and the rows that leaves, immutable and replaced whole by
+/// <see cref="CodeFolding"/>, so that the rows can't fall out of step with the folds.</summary>
+internal sealed class CodeFoldLayout
 {
-    public DecompiledDocument Document = DecompiledDocument.Empty;
+    /// <summary>What a view holds before it shows a document.</summary>
+    public static readonly CodeFoldLayout None = new()
+    {
+        Document = DecompiledDocument.Empty,
+        Collapsed = [],
+        Rows = [],
+        IsIdentity = true,
+        RowCount = 0,
+    };
+
+    public required DecompiledDocument Document { get; init; }
 
     /// <summary>Whether each of the document's folds is collapsed.</summary>
-    public bool[] Collapsed = [];
+    public required ImmutableArray<bool> Collapsed { get; init; }
 
-    /// <summary>The line each row shows, while <see cref="IsIdentity"/> is false; it may be longer than
-    /// <see cref="RowCount"/>.</summary>
-    public int[] Rows = [];
+    /// <summary>The line each row shows, while <see cref="IsIdentity"/> is false.</summary>
+    public required ImmutableArray<int> Rows { get; init; }
 
     /// <summary>Whether no fold is collapsed, so that every row shows the line of its own number.</summary>
-    public bool IsIdentity = true;
+    public required bool IsIdentity { get; init; }
 
-    public int RowCount;
+    public required int RowCount { get; init; }
+}
+
+/// <summary>A code view's folds: which of a document's <see cref="DecompiledDocument.Folds"/> are collapsed, and
+/// the rows that leaves: row r shows line <see cref="CodeFolding.GetLineAt"/>(r). Changed only through
+/// <see cref="CodeFolding"/>, which lays them out again when either changes, never per frame.</summary>
+internal sealed class CodeFolds
+{
+    public CodeFoldLayout Layout = CodeFoldLayout.None;
+
+    public DecompiledDocument Document => Layout.Document;
+
+    public ImmutableArray<bool> Collapsed => Layout.Collapsed;
+
+    public ImmutableArray<int> Rows => Layout.Rows;
+
+    public bool IsIdentity => Layout.IsIdentity;
+
+    public int RowCount => Layout.RowCount;
 
     public bool AnyCollapsed => !IsIdentity;
 }
@@ -35,30 +61,36 @@ internal static class CodeFolding
 {
     public static void Reset(CodeFolds state, DecompiledDocument document)
     {
-        state.Document = document;
         var folds = document.Folds;
-        state.Collapsed = folds.Length == 0 ? [] : new bool[folds.Length];
+        var collapsed = new bool[folds.Length];
         for (var i = 0; i < folds.Length; i++)
-            state.Collapsed[i] = folds[i].DefaultCollapsed;
-        Rebuild(state);
+            collapsed[i] = folds[i].DefaultCollapsed;
+        state.Layout = CreateLayout(document, collapsed);
     }
 
     public static bool IsCollapsed(CodeFolds state, int fold)
     {
-        return state.Collapsed[fold];
+        return IsCollapsed(state.Layout, fold);
+    }
+
+    public static bool IsCollapsed(CodeFoldLayout layout, int fold)
+    {
+        return layout.Collapsed[fold];
     }
 
     public static void SetCollapsed(CodeFolds state, int fold, bool collapsed)
     {
         if (state.Collapsed[fold] == collapsed) return;
-        state.Collapsed[fold] = collapsed;
-        Rebuild(state);
+        var changed = state.Collapsed.ToArray();
+        changed[fold] = collapsed;
+        state.Layout = CreateLayout(state.Document, changed);
     }
 
     public static void SetAll(CodeFolds state, bool collapsed)
     {
-        Array.Fill(state.Collapsed, collapsed);
-        Rebuild(state);
+        var changed = new bool[state.Collapsed.Length];
+        Array.Fill(changed, collapsed);
+        state.Layout = CreateLayout(state.Document, changed);
     }
 
     /// <summary>Expands every fold that hides <paramref name="line"/>; returns whether any did.</summary>
@@ -66,17 +98,18 @@ internal static class CodeFolding
     {
         if (state.IsIdentity) return false;
         var folds = state.Document.Folds;
-        var changed = false;
+        bool[]? opened = null;
         for (var i = 0; i < folds.Length && folds[i].StartLine < line; i++)
         {
             if (state.Collapsed[i] && line <= folds[i].EndLine)
             {
-                state.Collapsed[i] = false;
-                changed = true;
+                opened ??= state.Collapsed.ToArray();
+                opened[i] = false;
             }
         }
-        if (changed) Rebuild(state);
-        return changed;
+        if (opened == null) return false;
+        state.Layout = CreateLayout(state.Document, opened);
+        return true;
     }
 
     /// <summary>The collapsed fold whose row is <paramref name="line"/>, or null.</summary>
@@ -106,7 +139,13 @@ internal static class CodeFolding
     /// <summary>The line <paramref name="row"/>, one of the rows, shows.</summary>
     public static int GetLineAt(CodeFolds state, CodeRow row)
     {
-        return state.IsIdentity ? row.Index : state.Rows[row.Index];
+        return GetLineAt(state.Layout, row);
+    }
+
+    /// <summary>The line <paramref name="row"/>, one of the rows of <paramref name="layout"/>, shows.</summary>
+    public static int GetLineAt(CodeFoldLayout layout, CodeRow row)
+    {
+        return layout.IsIdentity ? row.Index : layout.Rows[row.Index];
     }
 
     /// <summary>Whether <paramref name="row"/> is one of the rows.</summary>
@@ -147,28 +186,23 @@ internal static class CodeFolding
         return HasRow(state, next) ? GetLineAt(state, next) : state.Document.Lines.Length;
     }
 
-    private static void Rebuild(CodeFolds state)
+    private static CodeFoldLayout CreateLayout(DecompiledDocument document, bool[] collapsed)
     {
-        var lines = state.Document.Lines.Length;
-        var folds = state.Document.Folds;
-        state.IsIdentity = Array.IndexOf(state.Collapsed, true) < 0;
-        if (state.IsIdentity)
-        {
-            state.RowCount = lines;
-            return;
-        }
+        var lines = document.Lines.Length;
+        var folds = document.Folds;
+        if (Array.IndexOf(collapsed, true) < 0)
+            return new CodeFoldLayout { Document = document, Collapsed = [..collapsed], Rows = [], IsIdentity = true, RowCount = lines };
 
-        if (state.Rows.Length < lines)
-            state.Rows = new int[lines];
+        var rows = new int[lines];
         var count = 0;
         var next = 0;
         for (var line = 0; line < lines;)
         {
-            state.Rows[count++] = line;
+            rows[count++] = line;
             while (next < folds.Length && folds[next].StartLine < line)
                 next++;
-            line = next < folds.Length && folds[next].StartLine == line && state.Collapsed[next] ? folds[next].EndLine + 1 : line + 1;
+            line = next < folds.Length && folds[next].StartLine == line && collapsed[next] ? folds[next].EndLine + 1 : line + 1;
         }
-        state.RowCount = count;
+        return new CodeFoldLayout { Document = document, Collapsed = [..collapsed], Rows = [..rows.AsSpan(0, count)], IsIdentity = false, RowCount = count };
     }
 }

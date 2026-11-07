@@ -245,4 +245,50 @@ public sealed class CodeViewFoldTests
         Assert.Equal(allRows, folds.RowCount);
         Assert.False(folds.AnyCollapsed);
     }
+
+    [Fact]
+    public void A_layout_stays_as_it_was_when_the_folds_change_after_it()
+    {
+        var document = CodeViewDriver.Outline();
+        var folds = new CodeFolds();
+        CodeFolding.Reset(folds, document);
+        CodeFolding.SetAll(folds, false);
+        var before = folds.Layout;
+
+        CodeFolding.SetCollapsed(folds, 0, true);
+
+        Assert.NotSame(before, folds.Layout);
+        Assert.False(before.Collapsed[0]);
+        Assert.True(before.IsIdentity);
+        Assert.Equal(document.Lines.Length, before.RowCount);
+    }
+
+    [Fact]
+    public void Revealing_a_line_no_fold_hides_leaves_the_layout_as_it_is()
+    {
+        var document = CodeViewDriver.Outline();
+        var folds = new CodeFolds();
+        CodeFolding.Reset(folds, document);
+        CodeFolding.SetAll(folds, false);
+        CodeFolding.SetCollapsed(folds, 0, true);
+        var before = folds.Layout;
+
+        var revealed = CodeFolding.Reveal(folds, document.Folds[0].StartLine);
+
+        Assert.False(revealed);
+        Assert.Same(before, folds.Layout);
+    }
+
+    [Fact]
+    public void The_rows_of_a_layout_are_only_the_rows_shown()
+    {
+        var document = CodeViewDriver.Outline();
+        var folds = new CodeFolds();
+        CodeFolding.Reset(folds, document);
+        CodeFolding.SetAll(folds, false);
+
+        CodeFolding.SetCollapsed(folds, 0, true);
+
+        Assert.Equal(folds.RowCount, folds.Rows.Length);
+    }
 }

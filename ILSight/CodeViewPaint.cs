@@ -9,7 +9,9 @@ internal sealed class CodeViewFrame
     public int[] CodePoints = new int[256];
 
     public DecompiledDocument Document = DecompiledDocument.Empty;
-    public CodeFolds Folds = new();
+    /// <summary>The folds as the rows of this frame were counted, which go on holding for them while they
+    /// are painted, should the view's change meanwhile, as a menu's item does.</summary>
+    public CodeFoldLayout Folds = CodeFoldLayout.None;
     public CodeViewPalette Palette = BuiltInThemes.Dark.Code;
     public uint Background;
     public uint GutterHover;
