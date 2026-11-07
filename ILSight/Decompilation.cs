@@ -105,7 +105,7 @@ public static class Decompilation
     {
         if (target == null)
             return -1;
-        return target.FindLine(tab.Document, node);
+        return Bookmarks.FindLine(target, tab.Document, node);
     }
 
     /// <summary>Decompiles the node <paramref name="tab"/> shows again if it was shown in another language,

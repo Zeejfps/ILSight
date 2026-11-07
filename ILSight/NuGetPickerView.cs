@@ -149,10 +149,10 @@ internal static class NuGetPickerView
 
     private static void MoveSelection(NuGetPicker picker, KeyStroke stroke, IReadOnlyList<FeedPackage> results, int page)
     {
-        var index = picker.Selection.IndexIn(results);
+        var index = ItemSelections.IndexIn(picker.Selection, results);
         if (!UiWidgets.ApplyListKey(stroke, ref index, results.Count, page))
             return;
-        picker.Selection.Select(results[index], results);
+        ItemSelections.Select(picker.Selection, results[index], results);
     }
 
     /// <summary>A package's row: its name line and the lines of its description.</summary>
@@ -223,11 +223,11 @@ internal static class NuGetPickerView
     {
         var results = picker.Results;
         var listId = ui.GetId(ListId);
-        picker.Selection.ShowIn(results);
+        ItemSelections.ShowIn(picker.Selection, results);
         using var list = ui.SelectableList(listId, results.Count, picker.Selection.Rows, RowHeight(ui));
         for (var i = list.First; i < list.End; i++)
             Row(ui, picker, list, results[i], i);
-        picker.Selection.TakeFrom(results);
+        ItemSelections.TakeFrom(picker.Selection, results);
         return list.Activated;
     }
 

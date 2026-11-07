@@ -20,7 +20,7 @@ public static class Bookmarks
 
     private static bool IsMarked(BookmarkList list, Bookmark bookmark)
     {
-        return list.Items.Exists(bookmark.MarksSameLine);
+        return list.Items.Exists(other => MarkSameLine(bookmark, other));
     }
 
     /// <summary>Removes <paramref name="bookmark"/>; returns the row it was in, or -1 when it was not listed.</summary>
@@ -93,7 +93,7 @@ public static class Bookmarks
     {
         foreach (var bookmark in list.Items)
         {
-            if (bookmark.FindLine(document, node) == line)
+            if (Bookmarks.FindLine(bookmark, document, node) == line)
                 return bookmark;
         }
         return null;
@@ -110,7 +110,7 @@ public static class Bookmarks
         marks.Lines.Clear();
         foreach (var bookmark in list.Items)
         {
-            var line = bookmark.FindLine(document, node);
+            var line = Bookmarks.FindLine(bookmark, document, node);
             if (line >= 0)
                 marks.Lines[line] = marks.Lines.GetValueOrDefault(line) || bookmark.Enabled;
         }
@@ -130,14 +130,14 @@ public static class Bookmarks
 
     public static List<BookmarkRecord> ListRecords(BookmarkList list)
     {
-        return list.Items.ConvertAll(static b => b.ToRecord());
+        return list.Items.ConvertAll(static b => Bookmarks.CreateRecord(b));
     }
 
     /// <summary>Replaces the list with the bookmarks in <paramref name="saved"/> that know their place.
     /// Returns how many were left out because one before them marks the same line.</summary>
     public static int LoadBookmarks(BookmarkList list, IEnumerable<BookmarkRecord>? saved)
     {
-        var bookmarks = (saved ?? []).Select(static r => r.Location != null ? Bookmark.FromRecord(r, r.Location) : null)
+        var bookmarks = (saved ?? []).Select(static r => r.Location != null ? Bookmarks.CreateFromRecord(r, r.Location) : null)
             .OfType<Bookmark>();
         return Import(list, bookmarks, BookmarkImportMode.Replace);
     }
@@ -177,7 +177,7 @@ public static class Bookmarks
         switch (toggle)
         {
             case BookmarkToggle.Added added:
-                panel.Selection.Select(added.Bookmark, bookmarks);
+                ItemSelections.Select(panel.Selection, added.Bookmark, bookmarks);
                 break;
             case BookmarkToggle.Removed removed:
                 TakeRemoved(panel, removed.Bookmark, removed.Row, bookmarks);
@@ -202,10 +202,10 @@ public static class Bookmarks
         var kept = Math.Min(row, bookmarks.Count - 1);
         if (kept < 0)
         {
-            panel.Selection.Clear();
+            ItemSelections.Clear(panel.Selection);
             return;
         }
-        panel.Selection.Select(bookmarks[kept], bookmarks, reveal: false);
+        ItemSelections.Select(panel.Selection, bookmarks[kept], bookmarks, reveal: false);
     }
 
     /// <summary>Forgets the rename of a bookmark that is gone, as importing in its place drops it.</summary>
@@ -272,7 +272,7 @@ public static class Bookmarks
         var anchor = tab.Document.AnchorAt(line);
         var name = CreateName(appState.Bookmarks, nameOf);
         var info = ILSpyTree.Describe(node, anchor);
-        var bookmark = Bookmark.At(node, tab.Language, line, anchor, name, info);
+        var bookmark = Bookmarks.CreateAt(node, tab.Language, line, anchor, name, info);
         Add(appState.Bookmarks, bookmark);
         return new BookmarkToggle.Added(bookmark);
     }
@@ -471,6 +471,86 @@ public static class Bookmarks
     {
         if (found.Place == null)
             return null;
-        return Bookmark.FromRecord(found.Record, found.Place);
+        return Bookmarks.CreateFromRecord(found.Record, found.Place);
+    }
+
+    private static Bookmark CreateBookmark(NodePath place, DecompilationLanguage language, int line, CodeAnchor? anchor, string name,
+        ILSpyBookmarkInfo ilspy, BookmarkViewState? viewState, bool enabled)
+    {
+        return new Bookmark
+        {
+            Place = place,
+            Language = language,
+            Line = line,
+            Anchor = anchor,
+            Name = name,
+            ILSpy = ilspy,
+            ViewState = viewState,
+            Enabled = enabled,
+            Location = $"{place.Label}:{line + 1}",
+            Module = place.FilePath.FileName,
+        };
+    }
+
+    /// <summary>The bookmark made in the document of <paramref name="node"/>.</summary>
+    public static Bookmark CreateAt(BrowseNode node, DecompilationLanguage language, int line, CodeAnchor? anchor, string name, ILSpyBookmarkInfo ilspy)
+    {
+        return CreateBookmark(node.Path, language, line, anchor, name, ilspy, null, true);
+    }
+
+    /// <summary>The bookmark <paramref name="record"/> describes, made in the document of <paramref name="place"/>.</summary>
+    public static Bookmark CreateFromRecord(BookmarkRecord record, NodePath place)
+    {
+        CodeAnchor? anchor = record.Kind switch
+        {
+            BookmarkKind.Token => new CodeAnchor(CodeAnchorKind.Definition, record.FileName, (int)record.Token),
+            BookmarkKind.Body => new CodeAnchor(CodeAnchorKind.Statement, record.FileName, (int)record.Token, record.ILOffset),
+            _ => null,
+        };
+        var ilspy = new ILSpyBookmarkInfo(record.AssemblyFullName, record.ModuleName, record.Token,
+            record.MemberName, record.LocationNodeName, record.ViewState?.SelectedTreeNodePath);
+        return CreateBookmark(place, record.Language ?? DecompilationLanguage.CSharp, Math.Max(0, record.LineNumber - 1), anchor,
+            record.Name, ilspy, record.ViewState, record.Enabled);
+    }
+
+    /// <summary>This bookmark as ILSpy's bookmarks file holds it, with this app's place and language.</summary>
+    public static BookmarkRecord CreateRecord(Bookmark bookmark)
+    {
+        return new(
+        bookmark.Name,
+        bookmark.Enabled,
+        bookmark.Anchor?.FilePath ?? bookmark.Place.FilePath,
+        bookmark.ILSpy.AssemblyFullName,
+        bookmark.ILSpy.ModuleName,
+        bookmark.ILSpy.Token,
+        bookmark.Anchor?.Kind switch
+        {
+            CodeAnchorKind.Definition => BookmarkKind.Token,
+            CodeAnchorKind.Statement => BookmarkKind.Body,
+            _ => BookmarkKind.Line,
+        },
+        bookmark.Anchor != null && bookmark.Anchor.Value.Kind == CodeAnchorKind.Statement ? bookmark.Anchor.Value.ILOffset : 0,
+        bookmark.Line + 1,
+        bookmark.ILSpy.MemberName,
+        bookmark.ILSpy.LocationNodeName,
+        bookmark.ViewState ?? new BookmarkViewState(1, 0, 0d, 0d, null, null, null, bookmark.ILSpy.TreePath?.ToList()),
+        bookmark.Place,
+        bookmark.Language);
+    }
+
+    /// <summary>Whether <paramref name="other"/> marks the same line: the same anchor, or for one
+    /// without, the same line of the same place in the same language.</summary>
+    public static bool MarkSameLine(Bookmark bookmark, Bookmark other)
+    {
+        return bookmark.Anchor != null ? other.Anchor == bookmark.Anchor
+        : other.Anchor == null && bookmark.Language == other.Language && bookmark.Line == other.Line && bookmark.Place.Equals(other.Place);
+    }
+
+    /// <summary>The line it marks in <paramref name="document"/>, shown for <paramref name="node"/>, or -1.</summary>
+    public static int FindLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
+    {
+        return bookmark.Anchor != null ? document.FindLine(bookmark.Anchor.Value)
+        : bookmark.Language == document.Language && bookmark.Place.Equals(node.Path) && bookmark.Line < document.Lines.Length ? bookmark.Line
+        : -1;
     }
 }

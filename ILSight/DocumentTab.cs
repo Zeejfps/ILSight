@@ -323,7 +323,8 @@ public sealed class DocumentTab
         _work?.Cancel();
         _work = null;
         Diagram?.Close();
-        Comparison?.Close();
+        if (Comparison != null)
+            Comparisons.CloseComparison(Comparison);
     }
 }
 

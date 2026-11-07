@@ -55,7 +55,7 @@ internal static class DisplayOptionsPanelView
     private static void ListInstalledFontsOnce(Ui<UiState> ui)
     {
         var screen = ui.State;
-        if (!screen.CodeFonts.TakeListingRequest())
+        if (!CodeDisplay.TakeListingRequest(screen.CodeFonts))
             return;
         ui.ListSystemFonts(families => KeepInstalledFonts(screen, families));
     }
@@ -348,7 +348,7 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Strings;
         var choices = ui.State.CodeFonts;
         var chosen = ui.State.Display.Font;
-        var shown = CodeFontChoices.NameOf(chosen);
+        var shown = CodeDisplay.GetFontName(chosen);
         var width = ControlWidth(PickerMinWidth, MeasureFontPicker(ui, shown), FontPickerMaxWidth);
         using var menu = ui.SelectButton("code-font", shown, width);
         if (!menu.IsOpen)

@@ -6,66 +6,77 @@ namespace ILSight;
 /// leave it selected. The list widget works by position: <see cref="ShowIn"/> gives it the item's
 /// row before it records, and <see cref="TakeFrom"/> takes back the row it picked.</summary>
 public sealed class ItemSelection<T> where T : class
-{
-    public T? Item { get; private set; }
+{    public T? Item { get; set; }
 
     /// <summary>The selected item's row, for the list widget.</summary>
     public ListSelection Rows { get; } = new();
+}
 
+/// <summary>Moving what an <see cref="ItemSelection{T}"/> selects.</summary>
+public static class ItemSelections
+{
     /// <summary>Selects <paramref name="item"/> of <paramref name="items"/> and, unless told otherwise,
     /// scrolls it into view.</summary>
-    public void Select(T item, IReadOnlyList<T> items, bool reveal = true)
+    public static void Select<T>(ItemSelection<T> selection, T item, IReadOnlyList<T> items, bool reveal = true)
+        where T : class
     {
-        Item = item;
-        Rows.Select(IndexIn(items), items.Count, reveal);
+        selection.Item = item;
+        selection.Rows.Select(IndexIn(selection, items), items.Count, reveal);
     }
 
-    public void Clear()
+    public static void Clear<T>(ItemSelection<T> selection)
+        where T : class
     {
-        Item = null;
-        Rows.Clear();
+        selection.Item = null;
+        selection.Rows.Clear();
     }
 
     /// <summary>Selects the item <paramref name="by"/> rows on from the selected one, kept within
     /// <paramref name="items"/>; with nothing selected, a move back selects the first.</summary>
-    public void Move(int by, IReadOnlyList<T> items)
+    public static void Move<T>(ItemSelection<T> selection, int by, IReadOnlyList<T> items)
+        where T : class
     {
-        ShowIn(items);
-        Rows.Move(by, items.Count);
-        TakeFrom(items);
+        ShowIn(selection, items);
+        selection.Rows.Move(by, items.Count);
+        TakeFrom(selection, items);
     }
 
     /// <summary>Scrolls the selected item into view the next time the list is recorded.</summary>
-    public void Reveal(IReadOnlyList<T> items)
+    public static void Reveal<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
+        where T : class
     {
-        if (Item == null)
+        if (selection.Item == null)
             return;
-        Select(Item, items);
+        Select(selection, selection.Item, items);
     }
 
     /// <summary>Drops the selection when the selected item is no longer one of <paramref name="items"/>.</summary>
-    public void DropIfGone(IReadOnlyList<T> items)
+    public static void DropIfGone<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
+        where T : class
     {
-        if (IndexIn(items) >= 0)
+        if (IndexIn(selection, items) >= 0)
             return;
-        Clear();
+        Clear(selection);
     }
 
     /// <summary>Gives <see cref="Rows"/> the selected item's row in <paramref name="items"/>, keeping a
     /// reveal already asked for; call it before the list widget records.</summary>
-    public void ShowIn(IReadOnlyList<T> items)
+    public static void ShowIn<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
+        where T : class
     {
-        DropIfGone(items);
-        Rows.Select(IndexIn(items), items.Count, reveal: false);
+        DropIfGone(selection, items);
+        selection.Rows.Select(IndexIn(selection, items), items.Count, reveal: false);
     }
 
     /// <summary>Selects the item at the row the list widget left <see cref="Rows"/> at.</summary>
-    public void TakeFrom(IReadOnlyList<T> items)
+    public static void TakeFrom<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
+        where T : class
     {
-        Item = ItemAt(items, Rows.Index);
+        selection.Item = GetItemAt(items, selection.Rows.Index);
     }
 
-    private static T? ItemAt(IReadOnlyList<T> items, int index)
+    private static T? GetItemAt<T>(IReadOnlyList<T> items, int index)
+        where T : class
     {
         if (index < 0)
             return null;
@@ -75,13 +86,14 @@ public sealed class ItemSelection<T> where T : class
     }
 
     /// <summary>The selected item's row in <paramref name="items"/>, or -1.</summary>
-    public int IndexIn(IReadOnlyList<T> items)
+    public static int IndexIn<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
+        where T : class
     {
-        if (Item == null)
+        if (selection.Item == null)
             return -1;
         for (var i = 0; i < items.Count; i++)
         {
-            if (ReferenceEquals(items[i], Item))
+            if (ReferenceEquals(items[i], selection.Item))
                 return i;
         }
         return -1;

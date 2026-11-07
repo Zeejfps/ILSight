@@ -89,7 +89,7 @@ internal static class OmnibarView
         if (omnibar.SuggestionCount == 0)
             return;
         Searches.Move(omnibar.Search, by);
-        var index = omnibar.Search.Selection.IndexIn(omnibar.Search.Rows);
+        var index = ItemSelections.IndexIn(omnibar.Search.Selection, omnibar.Search.Rows);
         if (index < omnibar.SuggestionCount)
             return;
         Searches.Select(omnibar.Search, omnibar.Search.Rows[omnibar.SuggestionCount - 1]);
@@ -129,7 +129,7 @@ internal static class OmnibarView
         menu.Shown.Clear();
         menu.Shown.AddRange(children.Where(c => HoldsFilter(menu, tree.RowLabel(c))));
         SelectWaitingChild(menu);
-        menu.Selection.DropIfGone(menu.Shown);
+        ItemSelections.DropIfGone(menu.Selection, menu.Shown);
         SelectFirstMatch(menu);
     }
 
@@ -145,7 +145,7 @@ internal static class OmnibarView
             return;
         if (!menu.Shown.Contains(menu.ToSelect))
             return;
-        menu.Selection.Select(menu.ToSelect, menu.Shown);
+        ItemSelections.Select(menu.Selection, menu.ToSelect, menu.Shown);
         menu.ToSelect = null;
     }
 
@@ -158,7 +158,7 @@ internal static class OmnibarView
             return;
         if (menu.Shown.Count == 0)
             return;
-        menu.Selection.Select(menu.Shown[0], menu.Shown);
+        ItemSelections.Select(menu.Selection, menu.Shown[0], menu.Shown);
     }
 
     /// <summary>Follows <paramref name="node"/> as <paramref name="tree"/> shows it; none when it is null.
@@ -451,9 +451,9 @@ internal static class OmnibarView
     private static void MoveSelection(ItemSelection<BrowseNode> selection, IReadOnlyList<BrowseNode> shown, KeyboardKey key)
     {
         if (key == KeyboardKey.DownArrow)
-            selection.Move(1, shown);
+            ItemSelections.Move(selection, 1, shown);
         if (key == KeyboardKey.UpArrow)
-            selection.Move(-1, shown);
+            ItemSelections.Move(selection, -1, shown);
     }
 
     /// <summary>A child picked from the list, and whether it is to open in a new tab.</summary>
@@ -466,7 +466,7 @@ internal static class OmnibarView
         var rowHeight = ui.Theme.RowHeight;
         var height = Math.Min(shown.Count, MenuRows) * rowHeight;
         var picked = new PickedChild(null, false);
-        menu.Selection.ShowIn(shown);
+        ItemSelections.ShowIn(menu.Selection, shown);
         using (var list = ui.SelectableList(listId, shown.Count, menu.Selection.Rows, rowHeight, new Box { Width = Sizing.Grow(), Height = height },
                    keys: false, selectOnClick: true))
         {
@@ -477,7 +477,7 @@ internal static class OmnibarView
                     picked = row;
             }
         }
-        menu.Selection.TakeFrom(shown);
+        ItemSelections.TakeFrom(menu.Selection, shown);
         return picked;
     }
 

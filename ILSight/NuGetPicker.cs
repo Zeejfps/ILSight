@@ -428,7 +428,7 @@ public sealed class NuGetPicker
     private void ClearShown()
     {
         _shown = null;
-        Selection.Clear();
+        ItemSelections.Clear(Selection);
     }
 
     /// <summary>The search running or last run; null before any, or once it was stopped or dropped.</summary>
@@ -534,9 +534,9 @@ public sealed class NuGetPicker
     private void ShowFound(FeedSearch searched, FeedPage page)
     {
         _shown = new ShownPage(searched, page);
-        Selection.Clear();
+        ItemSelections.Clear(Selection);
         if (page.Packages.Count > 0)
-            Selection.Select(page.Packages[0], page.Packages);
+            ItemSelections.Select(Selection, page.Packages[0], page.Packages);
     }
 
     private void ReportSearchFailure(FeedSearch searched, Exception error)

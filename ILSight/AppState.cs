@@ -203,7 +203,7 @@ public sealed class AppState
         SettingsPlace = new SettingsPlace(settings.FilePath);
         View = ReadViewSettings(settings);
         Window = settings.Window;
-        Tooltips = new CodeTooltips(Assemblies, ReportError);
+        Tooltips = new CodeTooltips { Assemblies = Assemblies, ReportError = ReportError, Version = Assemblies.Version };
         Theme = settings.Theme;
         IconTheme = settings.IconTheme;
         Language = settings.Language;

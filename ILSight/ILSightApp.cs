@@ -28,7 +28,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
     private readonly Channel<RunArguments> _inbox;
-    private readonly CodeFontFaces _codeFonts = new(LoadFont(MonoFonts.Code, MonoFontFile));
+    private readonly CodeFontFaces _codeFonts = new() { Bundled = LoadFont(MonoFonts.Code, MonoFontFile) };
 
     internal ILSightApp(
         AppState appState,
@@ -169,7 +169,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         var chosen = uiState.Display.Font;
         if (!ShownChanges.TakeCodeFont(uiState, chosen))
             return null;
-        var face = codeFonts.FaceOf(chosen);
+        var face = CodeDisplay.EnsureFace(codeFonts, chosen);
         if (face != null)
             return face;
         SetCodeFont(uiState, null);

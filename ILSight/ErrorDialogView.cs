@@ -25,7 +25,7 @@ internal static class ErrorDialogView
     {
         if (errors.Count == 0)
             return;
-        dialog.Selection.Select(errors[^1], errors);
+        ItemSelections.Select(dialog.Selection, errors[^1], errors);
         dialog.IsOpen = true;
     }
 
@@ -93,7 +93,7 @@ internal static class ErrorDialogView
         });
         if (!dialog.IsOpen) return;
 
-        shown.Selection.ShowIn(errors.Entries);
+        ItemSelections.ShowIn(shown.Selection, errors.Entries);
         if (errors.Entries.Count > 1)
             List(ui, errors, shown);
 
@@ -151,6 +151,6 @@ internal static class ErrorDialogView
                 ui.Text(GetText(shown, entry, t).Title, new Box { Width = Sizing.Grow() }, color: titleColor, overflow: TextOverflow.Ellipsis);
             }
         }
-        shown.Selection.TakeFrom(entries);
+        ItemSelections.TakeFrom(shown.Selection, entries);
     }
 }

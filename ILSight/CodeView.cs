@@ -733,7 +733,7 @@ public static class CodeViewWidget
             return null;
         if (document.Lines[span.Value.Line].Spans[span.Value.Span].Reference is not CodeReference.Entity entity)
             return null;
-        tooltips.TryGet(entity, out var tooltip);
+        TooltipLookups.TryGetTooltip(tooltips, entity, out var tooltip);
         return tooltip;
     }
 
@@ -1024,7 +1024,7 @@ public static class CodeViewWidget
 
     private static CodeHtmlStyle CopyStyleOf(Ui<UiState> ui, CodeViewFrame frame)
     {
-        var family = CodeFontChoices.NameOf(ui.State.Display.Font);
+        var family = CodeDisplay.GetFontName(ui.State.Display.Font);
         return new CodeHtmlStyle(frame.Palette, frame.Background, frame.ErrorText, family, frame.FontSize, frame.RowHeight);
     }
 

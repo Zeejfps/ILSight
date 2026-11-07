@@ -122,7 +122,7 @@ public static class Searches
         var searched = new Search.Searched(search.Typed, search.Kinds, assemblies.Version);
         search.LastSearched = searched;
         search.Rows.Clear();
-        search.Selection.Clear();
+        ItemSelections.Clear(search.Selection);
         var listed = assemblies.Assemblies;
         search.SearchedAssemblies.Clear();
         search.SearchedAssemblies.UnionWith(listed);
@@ -153,7 +153,7 @@ public static class Searches
         if (closed == 0)
             return;
         search.Rows.RemoveAll(r => !search.SearchedAssemblies.Contains(r.Node.Assembly));
-        search.Selection.DropIfGone(search.Rows);
+        ItemSelections.DropIfGone(search.Selection, search.Rows);
     }
 
     private static List<LoadedModule> MarkSearched(Search search, IReadOnlyList<LoadedModule> listed)
@@ -254,12 +254,12 @@ public static class Searches
 
     public static void Select(Search search, SearchResult row)
     {
-        search.Selection.Select(row, search.Rows);
+        ItemSelections.Select(search.Selection, row, search.Rows);
     }
 
     public static void Move(Search search, int by)
     {
-        search.Selection.Move(by, search.Rows);
+        ItemSelections.Move(search.Selection, by, search.Rows);
     }
 
     /// <summary>Empties the query, and drops a focus asked for that the box has not taken yet.</summary>
@@ -299,7 +299,7 @@ public static class Searches
         search.Descending = search.Sort == sort && sort != SearchSort.Relevance;
         search.Sort = sort;
         search.Rows.Sort((a, b) => Compare(search, a, b));
-        search.Selection.Reveal(search.Rows);
+        ItemSelections.Reveal(search.Selection, search.Rows);
     }
 
     private static int Compare(Search search, SearchResult a, SearchResult b)

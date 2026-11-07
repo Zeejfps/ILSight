@@ -8,56 +8,54 @@ namespace ILSight;
 /// while the open assemblies stay the same. A lookup that finishes after they changed is dropped.
 /// </summary>
 public sealed class CodeTooltips
-{
-    private readonly AssemblyList _assemblies;
-    private readonly Action<AppProblem> _reportError;
-    private readonly Dictionary<CodeReference.Entity, CodeTooltip?> _found = new();
-    private readonly HashSet<CodeReference.Entity> _pending = new();
-    private int _version;
-
-    public CodeTooltips(AssemblyList assemblies, Action<AppProblem> reportError)
-    {
-        _assemblies = assemblies;
-        _reportError = reportError;
-        _version = assemblies.Version;
-    }
+{    public required AssemblyList Assemblies { get; init; }
+    public required Action<AppProblem> ReportError { get; init; }
+    public readonly Dictionary<CodeReference.Entity, CodeTooltip?> Found = new();
+    public readonly HashSet<CodeReference.Entity> Pending = new();
+    public required int Version;
 
     /// <summary>Whether a lookup is still running in the background.</summary>
-    public bool IsLookingUp => _pending.Count > 0;
+    public bool IsLookingUp => Pending.Count > 0;
+}
 
+/// <summary>Looking up the tooltips of references hovered in code.</summary>
+public static class TooltipLookups
+{
     /// <summary>Whether the lookup of <paramref name="reference"/> is done, with its
     /// <paramref name="tooltip"/>, null when it has none. Starts the lookup the first time.</summary>
-    public bool TryGet(CodeReference.Entity reference, out CodeTooltip? tooltip)
+    public static bool TryGetTooltip(CodeTooltips tooltips, CodeReference.Entity reference, out CodeTooltip? tooltip)
     {
-        ForgetIfStale();
-        if (_found.TryGetValue(reference, out tooltip))
+        ForgetIfStale(tooltips);
+        if (tooltips.Found.TryGetValue(reference, out tooltip))
             return true;
-        LookUp(reference);
+        LookUp(tooltips, reference);
         return false;
     }
 
-    private void ForgetIfStale()
+    private static void ForgetIfStale(CodeTooltips tooltips)
     {
-        if (_version == _assemblies.Version)
+        if (tooltips.Version == tooltips.Assemblies.Version)
             return;
-        _version = _assemblies.Version;
-        _found.Clear();
-        _pending.Clear();
+        tooltips.Version = tooltips.Assemblies.Version;
+        tooltips.Found.Clear();
+        tooltips.Pending.Clear();
     }
 
-    private void LookUp(CodeReference.Entity reference) =>
-        Background.Start(LookUpAsync(reference), _reportError);
-
-    private async Task LookUpAsync(CodeReference.Entity reference)
+    private static void LookUp(CodeTooltips tooltips, CodeReference.Entity reference)
     {
-        if (!_pending.Add(reference))
+        Background.Start(LookUpAsync(tooltips, reference), tooltips.ReportError);
+    }
+
+    private static async Task LookUpAsync(CodeTooltips tooltips, CodeReference.Entity reference)
+    {
+        if (!tooltips.Pending.Add(reference))
             return;
-        var version = _version;
-        var outcome = await Background.Run(() => _assemblies.Describe(reference));
-        if (version != _version)
+        var version = tooltips.Version;
+        var outcome = await Background.Run(() => tooltips.Assemblies.Describe(reference));
+        if (version != tooltips.Version)
             return;
-        _pending.Remove(reference);
-        _found[reference] = outcome switch
+        tooltips.Pending.Remove(reference);
+        tooltips.Found[reference] = outcome switch
         {
             Outcome<CodeTooltip>.Ok ok => ok.Value,
             Outcome<CodeTooltip>.Failed => null,

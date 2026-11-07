@@ -526,7 +526,7 @@ internal static class DiagramView
         var target = row.Value.Target;
         if (target == null)
             return null;
-        tooltips.TryGet(target, out var tooltip);
+        TooltipLookups.TryGetTooltip(tooltips, target, out var tooltip);
         return tooltip;
     }
 
