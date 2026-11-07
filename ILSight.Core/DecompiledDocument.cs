@@ -66,21 +66,18 @@ public readonly record struct DocumentSpan(int Start, int Length, SpanKind Kind,
 /// cover <see cref="Text"/> exactly, with no gaps.</summary>
 public readonly struct DocumentLine
 {
-    private readonly DocumentSpan[] _spans;
-    private readonly int _first;
-    private readonly int _count;
+    public required string Text { get; init; }
 
-    internal DocumentLine(string text, DocumentSpan[] spans, int first, int count)
-    {
-        Text = text;
-        _spans = spans;
-        _first = first;
-        _count = count;
-    }
+    /// <summary>The spans of the whole document, which the lines share.</summary>
+    public required DocumentSpan[] DocumentSpans { get; init; }
 
-    public string Text { get; }
+    /// <summary>Where this line's spans start in <see cref="DocumentSpans"/>.</summary>
+    public required int FirstSpan { get; init; }
 
-    public ReadOnlySpan<DocumentSpan> Spans => new(_spans, _first, _count);
+    /// <summary>How many spans this line has.</summary>
+    public required int SpanCount { get; init; }
+
+    public ReadOnlySpan<DocumentSpan> Spans => new(DocumentSpans, FirstSpan, SpanCount);
 
     public override string ToString() => Text;
 }

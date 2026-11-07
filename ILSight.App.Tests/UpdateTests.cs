@@ -70,8 +70,11 @@ public sealed class UpdateTests : IDisposable
     private static AppDriver Opened(FakeFeed feed, bool checkAutomatically = true, ITextMeasurer? measurer = null)
     {
         var app = AppDriver.Opened(width: 1600f, measurer: measurer);
-        app.AppState.Updates = new AppUpdates(
-            new UpdateFeed(() => feed.IsInstalled, feed.FindUpdate, feed.Download, feed.ApplyAfterExit), checkAutomatically);
+        app.AppState.Updates = new AppUpdates
+        {
+            Feed = new UpdateFeed(() => feed.IsInstalled, feed.FindUpdate, feed.Download, feed.ApplyAfterExit),
+            CheckAutomatically = checkAutomatically,
+        };
         app.Run();
         return app;
     }

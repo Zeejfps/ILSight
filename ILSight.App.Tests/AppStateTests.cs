@@ -453,8 +453,11 @@ public sealed class AppStateTests
         var replaced = new HeldSearch();
         var current = new HeldSearch();
         var streams = new Queue<HeldSearch>([replaced, current]);
-        var search = new Search(problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), TestSession.Shared,
-            (_, _, _, _) => streams.Dequeue().Stream());
+        var search = new Search
+        {
+            ReportError = problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title),
+            Stream = (_, _, _, _) => streams.Dequeue().Stream(),
+        };
         var assemblies = new AssemblyList();
         search.Query = "Greet";
         Searches.Update(search, assemblies, 0, true);

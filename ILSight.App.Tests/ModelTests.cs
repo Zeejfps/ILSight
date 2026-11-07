@@ -813,7 +813,7 @@ public sealed class FrameworkPickerTests
     {
         var posted = PostedActions.OfThisTest();
         var reported = new List<string>();
-        var picker = new FrameworkPicker(problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), static () => throw new InvalidDataException("no runtime"));
+        var picker = new FrameworkPicker { ReportError = problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), ListAssemblies = static () => throw new InvalidDataException("no runtime") };
 
         FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
@@ -832,7 +832,7 @@ public sealed class FrameworkPickerTests
             new RuntimeAssembly("System.Net.Sockets", "Microsoft.NETCore.App", FakePath("b.dll")),
             new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll")),
         };
-        var picker = new FrameworkPicker(static _ => { }, () => assemblies);
+        var picker = new FrameworkPicker { ReportError = static _ => { }, ListAssemblies = () => assemblies };
         var list = new AssemblyList();
         FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
@@ -851,7 +851,7 @@ public sealed class FrameworkPickerTests
         var posted = PostedActions.OfThisTest();
         var open = new RuntimeAssembly("Fixtures", "Microsoft.NETCore.App", PathOf(AppStateDriver.FixturePath));
         var other = new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll"));
-        var picker = new FrameworkPicker(static _ => { }, () => [open, other]);
+        var picker = new FrameworkPicker { ReportError = static _ => { }, ListAssemblies = () => [open, other] };
         var list = new AssemblyList();
         FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);

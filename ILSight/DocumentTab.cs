@@ -175,7 +175,7 @@ public sealed class DocumentTab
         Language = language;
         Options = options;
         Content = new TabContent.Loading(node);
-        return new LoadTicket(work);
+        return new LoadTicket { Work = work };
     }
 
     /// <summary>Ends the load <paramref name="load"/> was given for. False when the tab was pointed
@@ -331,12 +331,7 @@ public sealed class DocumentTab
 /// diagram, to cancel it and to tell whether it was overtaken.</summary>
 public sealed class LoadTicket
 {
-    internal LoadTicket(CancellationTokenSource work)
-    {
-        Work = work;
-    }
-
-    internal CancellationTokenSource Work { get; }
+    public required CancellationTokenSource Work { get; init; }
 
     public CancellationToken Token => Work.Token;
 }

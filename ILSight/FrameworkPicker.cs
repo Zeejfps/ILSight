@@ -7,23 +7,17 @@ namespace ILSight;
 /// in the background, filtered by name.</summary>
 public sealed class FrameworkPicker
 {
-    public readonly Action<AppProblem> ReportError;
+    /// <summary>Tells the user the runtime could not be scanned.</summary>
+    public required Action<AppProblem> ReportError { get; init; }
 
     /// <summary>Lists the assemblies to offer.</summary>
-    public readonly Func<IReadOnlyList<RuntimeAssembly>> ListAssemblies;
+    public required Func<IReadOnlyList<RuntimeAssembly>> ListAssemblies { get; init; }
+
     public readonly List<RuntimeAssembly> Filtered = new();
     public readonly HashSet<AssemblyPath> Listed = new();
     public int ListedVersion = -1;
     public string? AppliedFilter;
     public bool FocusFilter;
-
-    /// <param name="reportError">Tells the user the runtime could not be scanned.</param>
-    /// <param name="listAssemblies">Lists the assemblies to offer.</param>
-    public FrameworkPicker(Action<AppProblem> reportError, Func<IReadOnlyList<RuntimeAssembly>> listAssemblies)
-    {
-        ReportError = reportError;
-        ListAssemblies = listAssemblies;
-    }
 
     public bool IsOpen;
     public string Filter = "";

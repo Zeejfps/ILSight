@@ -143,7 +143,7 @@ public sealed class AppSettings
         }
         if (fields == null)
             return new SettingsLoadResult(new AppSettings(), new SettingsProblem.Empty());
-        var file = new SettingsReader(fields);
+        var file = new SettingsReader { Fields = fields };
         var settings = Parse(file, out var layoutProblem);
         if (file.LeftOut.Count == 0)
             return new SettingsLoadResult(settings, layoutProblem);

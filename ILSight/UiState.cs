@@ -22,16 +22,16 @@ public sealed class UiState : IUiState
     public UiState(ViewSettings saved, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime)
     {
         Tree = new BrowseTree(session, reportError);
-        FoldedOptionGroups = new FoldedGroups(new HashSet<string>(saved.FoldedOptionGroups ?? []));
+        FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) };
         BookmarkColumns.Restore(saved.BookmarkColumns);
         SearchColumns.Restore(saved.SearchColumns);
         ExportColumns.Restore(saved.ExportColumns);
-        Search = new Search(reportError, session);
+        Search = Searches.CreateSearch(reportError, session);
         Search.Kinds = saved.SearchKinds;
-        Omnibar = new Omnibar(reportError, session);
-        MetadataFilters = new MetadataFilters(saved.FlagsFilters);
+        Omnibar = new Omnibar { Search = Searches.CreateSearch(reportError, session) };
+        MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters);
         Runtime = runtime;
-        Picker = new FrameworkPicker(reportError, () => RuntimeAssemblies.ListAssemblies(runtime));
+        Picker = new FrameworkPicker { ReportError = reportError, ListAssemblies = () => RuntimeAssemblies.ListAssemblies(runtime) };
         NuGetPicker = new NuGetPicker(reportError);
         NuGetPicker.Restore(saved.NuGet);
         DialogWindows.Restore(NuGetPicker.Window, saved.NuGetWindow);

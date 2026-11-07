@@ -21,7 +21,7 @@ public static class Reloads
         Stop(reload);
         var work = new CancellationTokenSource();
         reload.Work = work;
-        return new ReloadTicket(reload.Current, work);
+        return new ReloadTicket { Id = reload.Current, Work = work };
     }
 
     public static void Stop(Reload reload)
@@ -73,15 +73,9 @@ public static class Reloads
 /// <summary>Given for one reload by <see cref="Reload.Start"/>.</summary>
 public sealed class ReloadTicket
 {
-    internal ReloadTicket(int id, CancellationTokenSource work)
-    {
-        Id = id;
-        Work = work;
-    }
+    public required int Id { get; init; }
 
-    internal int Id { get; }
-
-    internal CancellationTokenSource Work { get; }
+    public required CancellationTokenSource Work { get; init; }
 
     public CancellationToken Token => Work.Token;
 }

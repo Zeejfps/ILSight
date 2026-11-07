@@ -12,15 +12,8 @@ public sealed class Omnibar
     /// <summary>The search a bar runs, or null while every bar shows its path.</summary>
     public OmnibarSearch? Searching;
 
-    /// <param name="reportError">Tells the user a search failed.</param>
-    /// <param name="session">The browse tree the search finds nodes of.</param>
-    public Omnibar(Action<AppProblem> reportError, BrowseSession session)
-    {
-        Search = new Search(reportError, session);
-    }
-
     /// <summary>The query typed into the bar and its matches, the closest first.</summary>
-    public Search Search { get; }
+    public required Search Search { get; init; }
 
     /// <summary>The document panel whose bar searches, or null while every bar shows its path.</summary>
     public string? SearchingPanel => Searching?.Panel;
@@ -48,9 +41,9 @@ public sealed class Omnibar
     }
 
     /// <summary>The search one bar runs, and whether its box is yet to take focus.</summary>
-    public sealed class OmnibarSearch(string panel)
+    public sealed class OmnibarSearch
     {
-        public string Panel { get; } = panel;
+        public required string Panel { get; init; }
 
         public bool IsFocusPending = true;
     }

@@ -73,14 +73,17 @@ public sealed class SavedAssemblyLists
         if (Find(name) != null)
             return;
         var analyzed = record.Analyzed ?? new List<CodeAnchor>();
-        var list = new SavedList(name, record.Assemblies.ToList(), analyzed.ToList());
+        var list = new SavedList { Name = name, Paths = record.Assemblies.ToList(), Analyzed = analyzed.ToList() };
         CopyPicks(record.Pdbs, list.Pdbs);
         ReadFrameworks(record.Frameworks, list.Frameworks);
         list.Documents = record.Documents;
         _lists.Add(list);
     }
 
-    private static SavedList CreateEmpty(string name) => new(name, new List<AssemblyPath>(), new List<CodeAnchor>());
+    private static SavedList CreateEmpty(string name)
+    {
+        return new SavedList { Name = name, Paths = new List<AssemblyPath>(), Analyzed = new List<CodeAnchor>() };
+    }
 
     private static void CopyPicks<T>(IReadOnlyDictionary<AssemblyPath, T>? picks, Dictionary<AssemblyPath, T> into)
     {
@@ -221,7 +224,7 @@ public sealed class SavedAssemblyLists
     /// <exception cref="ArgumentException"><paramref name="name"/> is blank.</exception>
     public string Create(string name)
     {
-        return Add(new SavedList(name, new List<AssemblyPath>(), new List<CodeAnchor>()));
+        return Add(new SavedList { Name = name, Paths = new List<AssemblyPath>(), Analyzed = new List<CodeAnchor>() });
     }
 
     /// <summary>Adds a list of the assemblies at <paramref name="paths"/>, named <paramref name="name"/>
@@ -229,7 +232,7 @@ public sealed class SavedAssemblyLists
     /// <exception cref="ArgumentException"><paramref name="name"/> is blank.</exception>
     public string Create(string name, IReadOnlyList<AssemblyPath> paths)
     {
-        return Add(new SavedList(name, paths.ToList(), new List<CodeAnchor>()));
+        return Add(new SavedList { Name = name, Paths = paths.ToList(), Analyzed = new List<CodeAnchor>() });
     }
 
     /// <summary>Adds a list with the assemblies, analyses and picks of the one named
@@ -238,7 +241,7 @@ public sealed class SavedAssemblyLists
     /// <exception cref="ArgumentException"><paramref name="name"/> is blank.</exception>
     public string Duplicate(string source, string name)
     {
-        var copy = new SavedList(name, PathsOf(source).ToList(), AnalysesOf(source).ToList());
+        var copy = new SavedList { Name = name, Paths = PathsOf(source).ToList(), Analyzed = AnalysesOf(source).ToList() };
         var original = Find(source);
         if (original != null)
             CopyPicksOf(original, copy);
@@ -345,12 +348,12 @@ public sealed class SavedAssemblyLists
 
     /// <summary>A list: its name, its assemblies' paths, the symbols analyzed in it, what was picked for
     /// its assemblies, by assembly path, and the documents it had open.</summary>
-    private sealed class SavedList(string name, List<AssemblyPath> paths, List<CodeAnchor> analyzed)
+    private sealed class SavedList
     {
-        public string Name = name;
+        public required string Name;
         public DocumentsRecord? Documents;
-        public List<AssemblyPath> Paths { get; } = paths;
-        public List<CodeAnchor> Analyzed { get; } = analyzed;
+        public required List<AssemblyPath> Paths { get; init; }
+        public required List<CodeAnchor> Analyzed { get; init; }
         public Dictionary<AssemblyPath, string> Pdbs { get; } = new();
         public Dictionary<AssemblyPath, TargetFrameworkId> Frameworks { get; } = new();
     }

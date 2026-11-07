@@ -135,7 +135,7 @@ public sealed class TypeDiagram
         _layout?.Cancel();
         var work = CancellationTokenSource.CreateLinkedTokenSource(_open.Token);
         _layout = work;
-        return new LoadTicket(work);
+        return new LoadTicket { Work = work };
     }
 
     /// <summary>Ends the layout <paramref name="ticket"/> was given for. False when another started since,

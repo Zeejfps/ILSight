@@ -32,7 +32,7 @@ internal static class OmnibarView
     /// <summary>Has the bar of <paramref name="panel"/> search, from an empty query, its box taking focus.</summary>
     public static void StartSearch(Omnibar omnibar, string panel)
     {
-        omnibar.Searching = new Omnibar.OmnibarSearch(panel);
+        omnibar.Searching = new Omnibar.OmnibarSearch { Panel = panel };
         Searches.Clear(omnibar.Search);
         omnibar.Menu = null;
     }
@@ -59,7 +59,7 @@ internal static class OmnibarView
     /// <paramref name="next"/>, the crumb after it, to be selected.</summary>
     public static void OpenMenu(Omnibar omnibar, string panel, BrowseNode node, BrowseNode? next)
     {
-        omnibar.Menu = new CrumbMenu(panel, node, next);
+        omnibar.Menu = new CrumbMenu { Panel = panel, Node = node, ToSelect = next };
     }
 
     /// <summary>True once after <see cref="StartSearch"/>: the search box should take focus.</summary>

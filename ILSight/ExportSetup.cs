@@ -6,11 +6,11 @@ namespace ILSight;
 
 /// <summary>An open assembly as the export dialog lists it: whether it is exported, and the name of
 /// its project.</summary>
-public sealed class ExportChoice(LoadedModule assembly, string name)
+public sealed class ExportChoice
 {
-    public LoadedModule Assembly { get; } = assembly;
+    public required LoadedModule Assembly { get; init; }
     public bool Included;
-    public string Name = name;
+    public required string Name;
 }
 
 /// <summary>What keeps an export from starting.</summary>
@@ -91,7 +91,7 @@ public sealed class ExportSetup
             return;
         Choices.Clear();
         foreach (var project in AssemblyExport.NameProjects(assemblies))
-            Choices.Add(new ExportChoice(project.Assembly, project.Name));
+            Choices.Add(new ExportChoice { Assembly = project.Assembly, Name = project.Name });
         TickFirstChoice(picked);
         RowSelection.Clear();
         SolutionName = "";

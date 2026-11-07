@@ -22,12 +22,12 @@ public sealed record PackageFile(string Name, string FullName, long Length)
 
 /// <summary>A folder in a <see cref="AssemblyPackage"/>, with the folders and files right inside
 /// it, each sorted by name.</summary>
-public sealed class PackageFolder(string name, string fullName)
+public sealed class PackageFolder
 {
-    public string Name { get; } = name;
+    public required string Name { get; init; }
 
     /// <summary>The path from the package's root, with <c>/</c> between folders; empty for the root.</summary>
-    public string FullName { get; } = fullName;
+    public required string FullName { get; init; }
 
     public List<PackageFolder> Folders { get; } = new();
 
@@ -191,7 +191,7 @@ public sealed class AssemblyPackage
     /// <summary>The folders and files of a package as they are listed, sorted into a tree once all are in.</summary>
     private sealed class FileTree
     {
-        private readonly PackageFolder _root = new("", "");
+        private readonly PackageFolder _root = new() { Name = "", FullName = "" };
         private readonly Dictionary<string, PackageFolder> _folders = new(StringComparer.Ordinal);
         private readonly Dictionary<string, PackageFile> _files = new(StringComparer.Ordinal);
 
@@ -216,7 +216,7 @@ public sealed class AssemblyPackage
                 return found;
             var (parentName, name) = SplitName(fullName);
             var parent = AddFolder(parentName);
-            var folder = new PackageFolder(name, fullName);
+            var folder = new PackageFolder { Name = name, FullName = fullName };
             parent.Folders.Add(folder);
             _folders.Add(fullName, folder);
             return folder;

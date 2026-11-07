@@ -21,8 +21,11 @@ public delegate IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchStream(Assem
 /// hits in closed ones dropped, keeping the selection.</summary>
 public sealed class Search
 {
-    public readonly Action<AppProblem> ReportError;
-    public readonly SearchStream Stream;
+    /// <summary>Tells the user a search failed.</summary>
+    public required Action<AppProblem> ReportError { get; init; }
+
+    /// <summary>Streams a query's hits.</summary>
+    public required SearchStream Stream { get; init; }
 
     /// <summary>The hits so far, in the order the sort says, of the assemblies in
     /// <see cref="SearchedAssemblies"/> only; <see cref="Searches"/> keeps them so.</summary>
@@ -33,15 +36,6 @@ public sealed class Search
     public double TypedAt;
     public Searched? LastSearched;
     public bool IsFocusPending;
-
-    /// <param name="reportError">Tells the user a search failed.</param>
-    /// <param name="session">The browse tree the search finds nodes of.</param>
-    /// <param name="stream">Streams a query's hits; a search of the assemblies' nodes by default.</param>
-    public Search(Action<AppProblem> reportError, BrowseSession session, SearchStream? stream = null)
-    {
-        ReportError = reportError;
-        Stream = stream ?? ((_, query, within, cancellationToken) => AssemblySearch.SearchAsync(session, within, query, cancellationToken));
-    }
 
     public string Query = "";
 
@@ -69,6 +63,17 @@ public sealed class Search
 /// and sorting and picking from what it found.</summary>
 public static class Searches
 {
+    /// <summary>A search finding nodes of the browse tree <paramref name="session"/>, telling the user with
+    /// <paramref name="reportError"/> when it fails.</summary>
+    public static Search CreateSearch(Action<AppProblem> reportError, BrowseSession session)
+    {
+        return new Search
+        {
+            ReportError = reportError,
+            Stream = (_, query, within, cancellationToken) => AssemblySearch.SearchAsync(session, within, query, cancellationToken),
+        };
+    }
+
     private const double DebounceSeconds = 0.15;
     private const string NamespaceScope = "innamespace";
     private const string AssemblyScope = "inassembly";

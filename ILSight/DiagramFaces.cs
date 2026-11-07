@@ -57,7 +57,7 @@ internal static class DiagramFaces
 
     private static CardFace MeasureCard(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, TypeCard card)
     {
-        var stack = new RowStack(ui);
+        var stack = new RowStack { Ui = ui, RowHeight = MathF.Ceiling(ui.LineHeight()) + RowPadding };
         AddHeader(stack, card);
         var headerHeight = stack.Top;
         foreach (var section in card.Sections)
@@ -214,9 +214,9 @@ internal static class DiagramFaces
 
     /// <summary>The rows of a card stacked from its top, and how wide the widest of them is, measured in
     /// the screen's fonts.</summary>
-    private sealed class RowStack(Ui<UiState> ui)
+    private sealed class RowStack
     {
-        public Ui<UiState> Ui { get; } = ui;
+        public required Ui<UiState> Ui { get; init; }
 
         public List<CardRow> Rows { get; } = new();
 
@@ -224,7 +224,7 @@ internal static class DiagramFaces
 
         public float Width;
 
-        public float RowHeight { get; } = MathF.Ceiling(ui.LineHeight()) + RowPadding;
+        public required float RowHeight { get; init; }
 
         public float IconSize => Ui.Theme.IconSize;
 

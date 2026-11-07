@@ -559,7 +559,7 @@ public sealed class NuGetPicker
         if (_icons.TryGetValue(url, out var icon))
             return icon;
         _iconCount++;
-        icon = new PackageIcon(IconImagePrefix + _iconCount);
+        icon = new PackageIcon { ImageId = IconImagePrefix + _iconCount };
         _icons.Add(url, icon);
         FetchIcon(setup, url, icon);
         return icon;
@@ -780,9 +780,9 @@ public sealed class NuGetPicker
 }
 
 /// <summary>A package's icon: the image the screen draws it as, and what it shows once its pixels are in.</summary>
-public sealed class PackageIcon(string imageId)
+public sealed class PackageIcon
 {
-    public string ImageId { get; } = imageId;
+    public required string ImageId { get; init; }
 
     /// <summary>The icon's pixels as drawn; null until they are in.</summary>
     public ShownIcon? Shown { get; set; }

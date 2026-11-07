@@ -120,7 +120,7 @@ public sealed class DocumentViews
     {
         if (Contains(tab))
             return;
-        var view = new TabView(panel);
+        var view = new TabView { Panel = panel, ImageId = $"{panel}-image" };
         PictureViews.Follow(view.Picture, tab.Image);
         _views.Add(tab, view);
         _changes++;

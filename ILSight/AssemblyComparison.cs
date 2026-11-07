@@ -59,7 +59,7 @@ public sealed class AssemblyComparison
         _work?.Cancel();
         var work = CancellationTokenSource.CreateLinkedTokenSource(_open.Token);
         _work = work;
-        return new LoadTicket(work);
+        return new LoadTicket { Work = work };
     }
 
     /// <summary>Ends the comparison <paramref name="ticket"/> was given for. False when another started since,

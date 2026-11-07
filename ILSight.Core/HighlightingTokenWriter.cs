@@ -96,12 +96,17 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
     private SpanScope StartSpan(SpanKind? kind)
     {
         _builder.Kind = kind;
-        return new SpanScope(_builder);
+        return new SpanScope { Builder = _builder };
     }
 
-    private ref struct SpanScope(DocumentBuilder builder)
+    private ref struct SpanScope
     {
-        public void Dispose() => builder.Kind = null;
+        public required DocumentBuilder Builder { get; init; }
+
+        public void Dispose()
+        {
+            Builder.Kind = null;
+        }
     }
 
     private bool IsStringDelimiter(string token) =>

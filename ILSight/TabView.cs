@@ -5,14 +5,8 @@ namespace ILSight;
 /// its diagram, and the rows of its comparison. Made when the tab opens, and dropped, with its image, when it closes.</summary>
 public sealed class TabView
 {
-    public TabView(string panel)
-    {
-        Panel = panel;
-        ImageId = $"{panel}-image";
-    }
-
     /// <summary>The name of the tab's panel in the layout.</summary>
-    public string Panel { get; }
+    public required string Panel { get; init; }
 
     /// <summary>The path to the node the tab shows, for its omnibar.</summary>
     public Breadcrumb Breadcrumb { get; } = new();
@@ -33,5 +27,5 @@ public sealed class TabView
     public ComparisonRows Comparison { get; } = new();
 
     /// <summary>The image the tab's picture is drawn as.</summary>
-    public string ImageId { get; }
+    public required string ImageId { get; init; }
 }

@@ -73,7 +73,7 @@ internal sealed class DocumentBuilder : ITextOutput
         var spans = _spans.ToArray();
         var lines = ImmutableArray.CreateBuilder<DocumentLine>(_lines.Count);
         foreach (var (text, first, count) in _lines)
-            lines.Add(new DocumentLine(text, spans, first, count));
+            lines.Add(new DocumentLine { Text = text, DocumentSpans = spans, FirstSpan = first, SpanCount = count });
         var built = lines.MoveToImmutable();
         return new DecompiledDocument(title, _language, error, built, _definitions, Statements(), FoldRegions(built));
     }
@@ -211,7 +211,7 @@ internal sealed class DocumentBuilder : ITextOutput
         var scope = reference is ILVariable ? null : _scope;
         if (!_localKeys.TryGetValue(reference, out var key))
             _localKeys.Add(reference, key = _localKeys.Count);
-        CodeReference local = reference is int ? new CodeReference.Label(text, key, scope) : new CodeReference.Local(text, key, scope);
+        CodeReference local = reference is int ? new CodeReference.Label { Name = text, Key = key, Scope = scope } : new CodeReference.Local { Name = text, Key = key, Scope = scope };
         Write(text, Kind ?? spanKind, local, isDefinition);
     }
 

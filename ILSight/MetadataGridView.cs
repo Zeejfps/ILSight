@@ -9,7 +9,7 @@ using ZGF.KeyboardModule;
 
 namespace ILSight;
 
-/// <summary>What the user asked of a <see cref="MetadataGridWidget.MetadataGridView"/> this frame.</summary>
+/// <summary>What the user asked of a <see cref="MetadataGridWidget.RenderMetadataGrid"/> this frame.</summary>
 /// <param name="Target">The table row a token cell leads to.</param>
 /// <param name="Definition">What a row stands for in the code, to decompile.</param>
 /// <param name="InNewTab">Whether to show either in a new tab.</param>
@@ -22,8 +22,25 @@ public static class MetadataGridWidget
 
     public static MetadataGridResult RenderMetadataGrid(Ui<UiState> ui, string id, MetadataGridState state, MetadataFilters flags)
     {
-        var frame = new MetadataGridFrame(ui, id, state, flags);
+        var listId = ui.GetId(id);
+        var frame = new MetadataGridFrame
+        {
+            Ui = ui,
+            Grid = state.Grid,
+            State = state,
+            Flags = flags,
+            Strings = ui.State.Strings,
+            ListId = listId,
+            MenuId = HashCode.Combine(listId, MetadataGridFrame.MenuSalt),
+        };
         return frame.Render();
+    }
+
+    /// <summary>Filters starting from a copy of <paramref name="saved"/>, what the settings kept.</summary>
+    public static MetadataFilters CreateFilters(Dictionary<string, SavedFilterState>? saved)
+    {
+        var copied = saved != null ? new Dictionary<string, SavedFilterState>(saved) : new Dictionary<string, SavedFilterState>();
+        return new MetadataFilters { Saved = copied };
     }
 
     /// <summary>The filter of <paramref name="column"/>, a column of flags, as last left.</summary>
@@ -200,7 +217,7 @@ public static class MetadataGridWidget
     }
 }
 
-/// <summary>One frame of a <see cref="MetadataGridWidget.MetadataGridView"/>: what every step of
+/// <summary>One frame of a <see cref="MetadataGridWidget.RenderMetadataGrid"/>: what every step of
 /// drawing it shares, kept on the stack.</summary>
 internal ref struct MetadataGridFrame
 {
@@ -208,43 +225,32 @@ internal ref struct MetadataGridFrame
     private const float MaxAutoWidth = 480f;
     private const float FlyoutMinWidth = 320f;
     private const int FlyoutSalt = 0x4D44464C;
-    private const int MenuSalt = 0x4D44474D;
+    public const int MenuSalt = 0x4D44474D;
 
-    private readonly Ui<UiState> _ui;
-    private readonly MetadataGrid _grid;
-    private readonly MetadataGridState _state;
-    private readonly MetadataFilters _flags;
-    private readonly Strings _t;
-    private readonly int _listId;
-    private readonly int _menuId;
+    public required Ui<UiState> Ui { get; init; }
+    public required MetadataGrid Grid { get; init; }
+    public required MetadataGridState State { get; init; }
+    public required MetadataFilters Flags { get; init; }
+    public required Strings Strings { get; init; }
+    public required int ListId { get; init; }
+    public required int MenuId { get; init; }
     private bool _focused;
     private MetadataGridResult _result;
 
-    public MetadataGridFrame(Ui<UiState> ui, string id, MetadataGridState state, MetadataFilters flags)
-    {
-        _ui = ui;
-        _grid = state.Grid;
-        _state = state;
-        _flags = flags;
-        _t = ui.State.Strings;
-        _listId = ui.GetId(id);
-        _menuId = HashCode.Combine(_listId, MenuSalt);
-    }
-
     public MetadataGridResult Render()
     {
-        var columns = _state.Columns ??= Measure();
-        _state.RowHeight = _ui.Theme.RowHeight;
-        _state.UpdateView(_flags);
+        var columns = State.Columns ??= Measure();
+        State.RowHeight = Ui.Theme.RowHeight;
+        State.UpdateView(Flags);
 
-        using var pane = _ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = _ui.Theme.PaneBackground });
-        var table = _ui.Table(_listId, columns, _state.Cell, _state.Scroll);
+        using var pane = Ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = Ui.Theme.PaneBackground });
+        var table = Ui.Table(ListId, columns, State.Cell, State.Scroll);
         Header(table);
         FlagsFlyout();
-        _state.UpdateView(_flags);
+        State.UpdateView(Flags);
 
         _focused = table.Focused;
-        table.TakeKeys(_state.View.Length);
+        table.TakeKeys(State.View.Length);
         if (_focused)
             _result = Keys();
         Rows(table, columns);
@@ -256,10 +262,10 @@ internal ref struct MetadataGridFrame
 
     private TableColumns Measure()
     {
-        var theme = _ui.Theme;
+        var theme = Ui.Theme;
         var padding = theme.GapTight * 2;
-        var widths = new float[_grid.Columns.Count];
-        var rows = Math.Min(_grid.RowCount, AutoFitRows);
+        var widths = new float[Grid.Columns.Count];
+        var rows = Math.Min(Grid.RowCount, AutoFitRows);
         for (var c = 0; c < widths.Length; c++)
         {
             var width = MeasureColumn(c, rows);
@@ -270,8 +276,8 @@ internal ref struct MetadataGridFrame
 
     private float MeasureColumn(int c, int rows)
     {
-        var theme = _ui.Theme;
-        var column = _grid.Columns[c];
+        var theme = Ui.Theme;
+        var column = Grid.Columns[c];
         float? size = null;
         string? family = null;
         if (IsMono(column))
@@ -279,9 +285,9 @@ internal ref struct MetadataGridFrame
             size = theme.FontSize;
             family = MonoFonts.Code;
         }
-        var width = _ui.MeasureText(column.Name, theme.FontSizeSmall) + theme.IconSize * 2 + theme.GapTight * 2;
+        var width = Ui.MeasureText(column.Name, theme.FontSizeSmall) + theme.IconSize * 2 + theme.GapTight * 2;
         for (var row = 0; row < rows; row++)
-            width = MathF.Max(width, _ui.MeasureText(_grid.Text(row, c), size, family: family));
+            width = MathF.Max(width, Ui.MeasureText(Grid.Text(row, c), size, family: family));
         return width;
     }
 
@@ -289,57 +295,57 @@ internal ref struct MetadataGridFrame
 
     private void Header(TableFrame table)
     {
-        var icons = _ui.State.Icons;
-        var sortGlyph = _state.Descending ? icons.SortDescending : icons.SortAscending;
-        var sort = new TableSort(_state.SortColumn, new UiIcon(sortGlyph));
-        var heading = new MetadataGridHeading(_grid, _state, _flags, _t, icons, _listId);
-        var clicked = table.Header(_state.Headers, sort, MetadataGridWidget.RenderHeading, heading);
+        var icons = Ui.State.Icons;
+        var sortGlyph = State.Descending ? icons.SortDescending : icons.SortAscending;
+        var sort = new TableSort(State.SortColumn, new UiIcon(sortGlyph));
+        var heading = new MetadataGridHeading { Grid = Grid, State = State, Flags = Flags, Strings = Strings, Icons = icons, ListId = ListId };
+        var clicked = table.Header(State.Headers, sort, MetadataGridWidget.RenderHeading, heading);
         if (clicked < 0) return;
-        if (clicked == _state.EditingColumn) return;
-        _state.SortBy(clicked);
+        if (clicked == State.EditingColumn) return;
+        State.SortBy(clicked);
     }
 
     private void FlagsFlyout()
     {
-        if (_state.FlagsColumn < 0) return;
-        var theme = _ui.Theme;
-        var filter = MetadataGridWidget.FindFilter(_flags, _grid, _state.FlagsColumn);
+        if (State.FlagsColumn < 0) return;
+        var theme = Ui.Theme;
+        var filter = MetadataGridWidget.FindFilter(Flags, Grid, State.FlagsColumn);
         var width = FlagsFilterView.ContentWidth + theme.TooltipPaddingX * 2 + theme.ScrollBarHitWidth;
-        var funnelId = MetadataGridWidget.GetFunnelId(_listId, _state.FlagsColumn);
-        using var flyout = _ui.Flyout(HashCode.Combine(_listId, FlyoutSalt), ref _state.FlagsOpen, funnelId,
+        var funnelId = MetadataGridWidget.GetFunnelId(ListId, State.FlagsColumn);
+        using var flyout = Ui.Flyout(HashCode.Combine(ListId, FlyoutSalt), ref State.FlagsOpen, funnelId,
             new Box { Width = Sizing.Fit(FlyoutMinWidth, width), Gap = theme.Gap });
         if (!flyout.IsOpen) return;
-        FlagsFilterView.Render(_ui, filter);
+        FlagsFilterView.Render(Ui, filter);
     }
 
     private MetadataGridResult Keys()
     {
-        if (_state.View.Length == 0) return default;
+        if (State.View.Length == 0) return default;
         var result = default(MetadataGridResult);
-        var keys = _ui.Input.Keys;
+        var keys = Ui.Input.Keys;
         for (var i = 0; i < keys.Count; i++)
         {
             var stroke = keys[i];
             var modifiers = stroke.Modifiers & (KeyModifiers.Control | KeyModifiers.Shift | KeyModifiers.Alt | KeyModifiers.Super);
             switch (modifiers, stroke.Key)
             {
-                case (0, KeyboardKey.Space) when _state.IsOpen:
-                case (0, KeyboardKey.Escape) when _state.IsOpen:
-                    _state.CollapseCurrent();
-                    _state.SelectAllText();
+                case (0, KeyboardKey.Space) when State.IsOpen:
+                case (0, KeyboardKey.Escape) when State.IsOpen:
+                    State.CollapseCurrent();
+                    State.SelectAllText();
                     continue;
-                case (0, KeyboardKey.Space) when _state.HasCurrentCell && _grid.Lines(_state.Selected, _state.CurrentColumn).MoreLines > 0:
-                    _state.Expand(_state.Selected, _state.CurrentColumn);
-                    _state.SelectAllText();
+                case (0, KeyboardKey.Space) when State.HasCurrentCell && Grid.Lines(State.Selected, State.CurrentColumn).MoreLines > 0:
+                    State.Expand(State.Selected, State.CurrentColumn);
+                    State.SelectAllText();
                     continue;
             }
-            if (!_state.HasCurrentCell)
+            if (!State.HasCurrentCell)
                 continue;
-            if (_ui.IsPressedAt(Shortcuts.SelectAll, i))
-                _state.SelectAllText();
-            else if (_ui.IsPressedAt(Shortcuts.GoToToken, i))
+            if (Ui.IsPressedAt(Shortcuts.SelectAll, i))
+                State.SelectAllText();
+            else if (Ui.IsPressedAt(Shortcuts.GoToToken, i))
             {
-                var target = _grid.Link(_state.Selected, _state.CurrentColumn);
+                var target = Grid.Link(State.Selected, State.CurrentColumn);
                 if (target != null)
                     result = new MetadataGridResult(target, null, false);
             }
@@ -349,26 +355,26 @@ internal ref struct MetadataGridFrame
 
     private void Rows(TableFrame table, TableColumns columns)
     {
-        var rowHeight = _state.RowHeight;
-        var width = columns.TotalWidth + _ui.Theme.ShellPaddingX * 2;
-        var details = MetadataDetailsView.Height(_ui, _grid, _state.Details, _state.Selected, width);
-        MetadataGridWidget.MeasureTallRows(_state, rowHeight, details);
-        using var body = table.Body(_state.View.Length, tall: _state.TallRows);
+        var rowHeight = State.RowHeight;
+        var width = columns.TotalWidth + Ui.Theme.ShellPaddingX * 2;
+        var details = MetadataDetailsView.Height(Ui, Grid, State.Details, State.Selected, width);
+        MetadataGridWidget.MeasureTallRows(State, rowHeight, details);
+        using var body = table.Body(State.View.Length, tall: State.TallRows);
         Arrive(body, rowHeight);
         for (var index = body.First; index < body.End; index++)
         {
-            var row = _state.RowAt(index);
-            var height = _state.TallRowsByIndex.GetValueOrDefault(index);
+            var row = State.RowAt(index);
+            var height = State.TallRowsByIndex.GetValueOrDefault(index);
             if (height.Cells <= 0f)
             {
                 Row(body, index, row, rowHeight);
                 continue;
             }
-            using (_ui.Column(new Box { Width = width, Height = height.Cells + height.Details, Gap = 0f }))
+            using (Ui.Column(new Box { Width = width, Height = height.Cells + height.Details, Gap = 0f }))
             {
                 Row(body, index, row, height.Cells);
                 if (height.Details > 0f)
-                    MetadataDetailsView.Render(_ui, _grid, _state.Details, row, height.Details);
+                    MetadataDetailsView.Render(Ui, Grid, State.Details, row, height.Details);
             }
         }
         Answer(body);
@@ -377,9 +383,9 @@ internal ref struct MetadataGridFrame
     private void Arrive(TableBody body, float rowHeight)
     {
         if (body.Viewport <= 0f) return;
-        var pending = _state.Pending;
+        var pending = State.Pending;
         if (pending == null) return;
-        _state.Pending = null;
+        State.Pending = null;
         switch (pending)
         {
             case PendingGridScroll.Restore restore:
@@ -395,17 +401,17 @@ internal ref struct MetadataGridFrame
 
     private void ArriveAtRestored(TableBody body, float rowHeight, GridPosition restore)
     {
-        _state.Scroll.X = restore.ScrollX;
+        State.Scroll.X = restore.ScrollX;
         body.ScrollTo(restore.TopRow * rowHeight);
         var row = restore.Row;
         if (row != null)
-            _state.SelectCell(row.Value, restore.Column ?? MetadataGridState.None);
+            State.SelectCell(row.Value, restore.Column ?? MetadataGridState.None);
     }
 
     private void ArriveAtRevealed(TableBody body, float rowHeight, int row)
     {
-        _state.SelectCell(row, _state.CurrentColumn);
-        var index = _state.IndexOf(row);
+        State.SelectCell(row, State.CurrentColumn);
+        var index = State.IndexOf(row);
         if (index < 0) return;
         var top = body.TopOf(index);
         var outOfView = top < body.Offset || top + rowHeight > body.Offset + body.Viewport;
@@ -416,7 +422,7 @@ internal ref struct MetadataGridFrame
     private void Row(TableBody body, int index, int row, float height)
     {
         using var cells = body.Row(index, row, height);
-        for (var c = 0; c < _grid.Columns.Count; c++)
+        for (var c = 0; c < Grid.Columns.Count; c++)
         {
             ExpandOnPress(cells.CellAt(c), row, c);
             Cell(cells, row, c);
@@ -427,47 +433,47 @@ internal ref struct MetadataGridFrame
     {
         if (!cell.Pressed) return;
         if (!CanExpand(row, column)) return;
-        _state.Expand(row, column);
+        State.Expand(row, column);
     }
 
     private bool CanExpand(int row, int column)
     {
-        if (_state.IsOpenAt(row, column))
+        if (State.IsOpenAt(row, column))
             return false;
-        return _grid.Lines(row, column).MoreLines > 0;
+        return Grid.Lines(row, column).MoreLines > 0;
     }
 
     /// <summary>Does what the user asked of the rows this frame: open, copy or show the menu.</summary>
     private void Answer(TableBody body)
     {
         if (body.Activated)
-            OpenDefinition(_state.Selected, body.InNewTab);
+            OpenDefinition(State.Selected, body.InNewTab);
         if (body.CopyRequested)
-            _ui.ClipboardText = _state.CopiedText();
+            Ui.ClipboardText = State.CopiedText();
         if (body.ContextMenuRequested)
-            _ui.OpenContextMenu(_menuId, body.ContextMenuAt);
+            Ui.OpenContextMenu(MenuId, body.ContextMenuAt);
     }
 
     private void OpenDefinition(int row, bool inNewTab)
     {
-        var definition = _grid.Definition(row);
+        var definition = Grid.Definition(row);
         if (definition == null) return;
         _result = new MetadataGridResult(null, definition, inNewTab);
     }
 
     private void Cell(TableRow cells, int row, int c)
     {
-        var theme = _ui.Theme;
-        var column = _grid.Columns[c];
+        var theme = Ui.Theme;
+        var column = Grid.Columns[c];
         var cellId = cells.CellAt(c).Id;
-        var target = column.IsToken ? _grid.Link(row, c) : null;
-        var expanded = _state.IsOpenAt(row, c);
+        var target = column.IsToken ? Grid.Link(row, c) : null;
+        var expanded = State.IsOpenAt(row, c);
         uint? color = theme.Text;
         UiIcon? link = null;
         if (target != null)
         {
             color = null;
-            link = new UiIcon(_ui.State.Icons.LinkToken);
+            link = new UiIcon(Ui.State.Icons.LinkToken);
         }
         float? size = null;
         string? family = null;
@@ -479,7 +485,7 @@ internal ref struct MetadataGridFrame
         string? more = null;
         if (!expanded)
             more = MoreLines(row, c, cellId);
-        var followed = cells.TextCell(c, _state.ShownAt(row, c), color, size, family, link: link, linkTooltip: _t.MetadataGoToToken, suffix: more,
+        var followed = cells.TextCell(c, State.ShownAt(row, c), color, size, family, link: link, linkTooltip: Strings.MetadataGoToToken, suffix: more,
             expanded: expanded);
         if (followed)
             _result = new MetadataGridResult(target, null, false);
@@ -488,47 +494,47 @@ internal ref struct MetadataGridFrame
     /// <summary>How many lines a closed multi-line cell hides, as its suffix; null for a single line.</summary>
     private string? MoreLines(int row, int column, int cellId)
     {
-        var more = _grid.Lines(row, column).MoreLines;
+        var more = Grid.Lines(row, column).MoreLines;
         if (more == 0) return null;
-        var t = _t;
-        using (_ui.Id(cellId))
-            return _ui.Memo("more-lines", (more, t), static a => a.t.MetadataMoreLines(a.more));
+        var t = Strings;
+        using (Ui.Id(cellId))
+            return Ui.Memo("more-lines", (more, t), static a => a.t.MetadataMoreLines(a.more));
     }
 
     private void Tooltip(int row, int column, int cellId)
     {
-        if (!_ui.IsHovered(cellId)) return;
-        var content = _grid.Tooltip(row, column);
+        if (!Ui.IsHovered(cellId)) return;
+        var content = Grid.Tooltip(row, column);
         if (content == null) return;
-        using var tooltip = _ui.TooltipContent(cellId);
+        using var tooltip = Ui.TooltipContent(cellId);
         if (!tooltip.IsOpen) return;
-        MetadataTooltipView.Render(_ui, content);
+        MetadataTooltipView.Render(Ui, content);
     }
 
     private MetadataGridResult? Menu()
     {
-        using var menu = _ui.ContextMenu(_menuId);
+        using var menu = Ui.ContextMenu(MenuId);
         if (!menu.IsOpen) return null;
-        if (_state.Selected < 0) return null;
-        if (_state.Selected >= _grid.RowCount) return null;
-        var row = _state.Selected;
-        var column = _state.CurrentColumn;
+        if (State.Selected < 0) return null;
+        if (State.Selected >= Grid.RowCount) return null;
+        var row = State.Selected;
+        var column = State.CurrentColumn;
         MetadataGridResult? result = null;
-        if (_ui.MenuItem(_t.CodeCopy, Shortcuts.Copy, enabled: column >= 0, id: "copy"))
-            _ui.ClipboardText = _state.CellText();
-        if (_ui.MenuItem(_t.MetadataCopyRow, id: "copy-row"))
-            _ui.ClipboardText = _state.RowText(row);
-        var target = column >= 0 ? _grid.Link(row, column) : null;
-        var definition = _grid.Definition(row);
+        if (Ui.MenuItem(Strings.CodeCopy, Shortcuts.Copy, enabled: column >= 0, id: "copy"))
+            Ui.ClipboardText = State.CellText();
+        if (Ui.MenuItem(Strings.MetadataCopyRow, id: "copy-row"))
+            Ui.ClipboardText = State.RowText(row);
+        var target = column >= 0 ? Grid.Link(row, column) : null;
+        var definition = Grid.Definition(row);
         if (target == null && definition == null) return null;
-        _ui.MenuSeparator();
-        if (target != null && _ui.MenuItem(_t.MetadataGoToToken, Shortcuts.GoToToken, id: "go-to-token"))
+        Ui.MenuSeparator();
+        if (target != null && Ui.MenuItem(Strings.MetadataGoToToken, Shortcuts.GoToToken, id: "go-to-token"))
             result = new MetadataGridResult(target, null, false);
         if (definition != null)
         {
-            if (_ui.MenuItem(_t.CodeGoToDefinition, Shortcuts.Enter, id: "go-to-definition"))
+            if (Ui.MenuItem(Strings.CodeGoToDefinition, Shortcuts.Enter, id: "go-to-definition"))
                 result = new MetadataGridResult(null, definition, false);
-            if (_ui.MenuItem(_t.CodeOpenInNewTab, id: "open-in-new-tab"))
+            if (Ui.MenuItem(Strings.CodeOpenInNewTab, id: "open-in-new-tab"))
                 result = new MetadataGridResult(null, definition, true);
         }
         return result;

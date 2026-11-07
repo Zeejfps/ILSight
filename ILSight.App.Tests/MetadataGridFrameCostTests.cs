@@ -19,7 +19,7 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     {
         var grid = OpenTable("TypeRef");
         var state = new MetadataGridState(grid);
-        var flags = new MetadataFilters(null);
+        var flags = MetadataGridWidget.CreateFilters(null);
         var frames = new UiFrames(Screens.Blank(), width: 1200f, height: 300f, body: ui => Render(ui, grid, state, flags)) { FrameTime = 1f / 60f };
         frames.Frame();
         state.Reveal(1);
@@ -41,7 +41,7 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     {
         var grid = OpenTable("TypeRef");
         var state = new MetadataGridState(grid);
-        state.UpdateView(new MetadataFilters(null));
+        state.UpdateView(MetadataGridWidget.CreateFilters(null));
         state.Open[(2, 1)] = 3;
         state.Open[(1, 1)] = 2;
         state.Open[(1, 2)] = 4;

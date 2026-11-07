@@ -343,7 +343,7 @@ internal static class CodeTooltipView
         layout.Strings = t;
         layout.CodeBackground = UiColor.Mix(ui.Theme.SurfaceRaised, ui.Theme.Text, CodeChipMix);
         layout.CodeBlockBackground = UiColor.Mix(ui.Theme.SurfaceRaised, ui.Theme.EditorBackground, CodeBlockMix);
-        Build(layout, new TooltipStyles(ui, palette), t, tooltip);
+        Build(layout, CreateStyles(ui, palette), t, tooltip);
         return layout;
     }
 
@@ -595,18 +595,35 @@ internal static class CodeTooltipView
 
     /// <summary>The text styles of a tooltip in the current theme and code palette: prose at the
     /// theme's text size, headings smaller and muted.</summary>
-    private sealed class TooltipStyles(Ui<UiState> ui, CodeViewPalette palette)
+    private sealed class TooltipStyles
     {
-        public Ui<UiState> Ui { get; } = ui;
-        public CodeViewPalette Palette { get; } = palette;
-        public float Size { get; } = ui.Theme.FontSize;
+        public required Ui<UiState> Ui { get; init; }
+        public required CodeViewPalette Palette { get; init; }
+        public required float Size { get; init; }
 
-        public TextStyle Plain { get; } = ui.StyleText(ui.Theme.Text, ui.Theme.FontSize);
-        public TextStyle Bold { get; } = ui.StyleText(ui.Theme.Text, ui.Theme.FontSize, bold: true);
-        public TextStyle Italic { get; } = ui.StyleText(ui.Theme.Text, ui.Theme.FontSize, family: TextFonts.Italic);
-        public TextStyle Heading { get; } = ui.StyleText(GetHeadingColor(ui.Theme), ui.Theme.FontSizeSmall, bold: true);
-        public TextStyle Container { get; } = ui.StyleText(ui.Theme.TextMuted, ui.Theme.FontSize, family: MonoFonts.Code);
-        public TextStyle CodeBlock { get; } = ui.StyleText(ui.Theme.Text, ui.Theme.FontSize, family: MonoFonts.Code);
+        public required TextStyle Plain { get; init; }
+        public required TextStyle Bold { get; init; }
+        public required TextStyle Italic { get; init; }
+        public required TextStyle Heading { get; init; }
+        public required TextStyle Container { get; init; }
+        public required TextStyle CodeBlock { get; init; }
+    }
+
+    private static TooltipStyles CreateStyles(Ui<UiState> ui, CodeViewPalette palette)
+    {
+        var theme = ui.Theme;
+        return new TooltipStyles
+        {
+            Ui = ui,
+            Palette = palette,
+            Size = theme.FontSize,
+            Plain = ui.StyleText(theme.Text, theme.FontSize),
+            Bold = ui.StyleText(theme.Text, theme.FontSize, bold: true),
+            Italic = ui.StyleText(theme.Text, theme.FontSize, family: TextFonts.Italic),
+            Heading = ui.StyleText(GetHeadingColor(theme), theme.FontSizeSmall, bold: true),
+            Container = ui.StyleText(theme.TextMuted, theme.FontSize, family: MonoFonts.Code),
+            CodeBlock = ui.StyleText(theme.Text, theme.FontSize, family: MonoFonts.Code),
+        };
     }
 
     private static TextStyle GetCodeStyle(TooltipStyles styles, SpanKind kind)

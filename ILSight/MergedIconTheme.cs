@@ -48,10 +48,15 @@ internal sealed class MergedIconTheme
         foreach (var (key, layers) in _icons)
             TakeTopIcon(key, layers, glyphs, values, errors);
         if (fallback == null)
-            return new IconTheme(new IconSet(glyphs), ListFaces(null), values);
+            return CreateTheme(new IconSet(glyphs), ListFaces(null), values);
         foreach (var (key, value) in fallback.Values)
             values.TryAdd(key, value);
-        return new IconTheme(new IconSet(glyphs, fallback.Set), ListFaces(fallback), values);
+        return CreateTheme(new IconSet(glyphs, fallback.Set), ListFaces(fallback), values);
+    }
+
+    private static IconTheme CreateTheme(IconSet set, IReadOnlyList<FontFace> fonts, Dictionary<string, IconValue> values)
+    {
+        return new IconTheme { Icons = new AppIcons(set), Set = set, Fonts = fonts, Values = values };
     }
 
     /// <summary>Takes the topmost of <paramref name="layers"/> that can be drawn, reporting each one above
