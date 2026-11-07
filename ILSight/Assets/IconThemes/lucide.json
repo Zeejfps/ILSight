@@ -144,6 +144,8 @@
     "toolbar.forward": { "font": "lucide", "glyph": "E049" },
     // Open the decompiler options.
     "toolbar.decompilerOptions": { "font": "lucide", "glyph": "E1B1" },
+    // Open the display options.
+    "toolbar.displayOptions": { "font": "lucide", "glyph": "E154" },
 
     // The File menu, and the same commands in the assemblies panel's menu.
 

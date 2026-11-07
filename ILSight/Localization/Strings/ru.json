@@ -55,6 +55,7 @@
   "toolbar.back": "Назад ({shortcut})",
   "toolbar.forward": "Вперёд ({shortcut})",
   "toolbar.open": "Открыть сборку ({shortcut})",
+  "toolbar.display_options": "Параметры отображения ({shortcut})",
   "toolbar.back_history": "История назад",
   "toolbar.forward_history": "История вперёд",
   "toolbar.decompile_csharp": "Декомпилировать в C#",

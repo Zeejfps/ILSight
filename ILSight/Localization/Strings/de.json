@@ -55,6 +55,7 @@
   "toolbar.back": "Zurück ({shortcut})",
   "toolbar.forward": "Vorwärts ({shortcut})",
   "toolbar.open": "Assembly öffnen ({shortcut})",
+  "toolbar.display_options": "Anzeigeoptionen ({shortcut})",
   "toolbar.back_history": "Verlauf zurück",
   "toolbar.forward_history": "Verlauf vorwärts",
   "toolbar.decompile_csharp": "Nach C# dekompilieren",

@@ -299,6 +299,10 @@
           "description": "Open the decompiler options.",
           "$ref": "#/definitions/icon"
         },
+        "toolbar.displayOptions": {
+          "description": "Open the display options.",
+          "$ref": "#/definitions/icon"
+        },
         "file.open": {
           "description": "Open an assembly.",
           "$ref": "#/definitions/icon"

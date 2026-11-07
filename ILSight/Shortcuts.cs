@@ -68,8 +68,10 @@ internal static class Shortcuts
     public static readonly Shortcut ContextMenu = Shortcut.Key(KeyboardKey.F10, Shift);
     public static readonly Shortcut CloseWindow = Shortcut.Key(KeyboardKey.F4, Alt);
 
-    // macOS's app and Window menus, which the system handles.
+    /// <summary>Opens the display options, as the toolbar's gear does, and Settings in macOS's app menu.</summary>
     public static readonly Shortcut Settings = Shortcut.Command(KeyboardKey.Comma);
+
+    // macOS's app and Window menus, which the system handles.
     public static readonly Shortcut Hide = Shortcut.Command(KeyboardKey.H);
     public static readonly Shortcut HideOthers = Shortcut.Command(KeyboardKey.H, Alt);
     public static readonly Shortcut Quit = Shortcut.Command(KeyboardKey.Q);
@@ -86,6 +88,7 @@ internal static class Shortcuts
         new(Back, static (ui, _) => Commands.Later(ui.State, static a => GoBack(a)), WhileTyping: true),
         new(Forward, static (ui, _) => Commands.Later(ui.State, static a => GoForward(a)), WhileTyping: true),
         new(Open, static (ui, _) => MainMenuView.OpenFile(ui)),
+        new(Settings, static (ui, _) => OpenDisplayOptions(ui.State), WhileTyping: true),
         new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language)),
         new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs))),
         new(ReloadAll, static (ui, _) => Commands.Later(ui.State, Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded) => RefreshAssemblies(a, expanded))),

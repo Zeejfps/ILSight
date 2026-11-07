@@ -55,6 +55,7 @@
   "toolbar.back": "뒤로 ({shortcut})",
   "toolbar.forward": "앞으로 ({shortcut})",
   "toolbar.open": "어셈블리 열기 ({shortcut})",
+  "toolbar.display_options": "표시 옵션 ({shortcut})",
   "toolbar.back_history": "뒤로 기록",
   "toolbar.forward_history": "앞으로 기록",
   "toolbar.decompile_csharp": "C#으로 디컴파일",

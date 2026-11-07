@@ -82,6 +82,13 @@ internal static class ToolbarView
                         OpenDecompilerOptions(ui.State);
                 }
             }
+
+            // The gear is on its own at the far end, where settings usually are, and shows whatever the
+            // language: display options apply to IL too.
+            ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
+            if (ui.IconButton("display-options", ui.State.Icons.ToolbarDisplayOptions,
+                    ui.Memo("display-options-tip", t, static s => s.ToolbarDisplayOptions(Shortcuts.Settings)), variant: ButtonVariant.Neutral))
+                OpenDisplayOptions(ui.State);
         }
     }
 

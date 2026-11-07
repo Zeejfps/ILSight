@@ -55,6 +55,7 @@
   "toolbar.back": "后退 ({shortcut})",
   "toolbar.forward": "前进 ({shortcut})",
   "toolbar.open": "打开程序集 ({shortcut})",
+  "toolbar.display_options": "显示选项 ({shortcut})",
   "toolbar.back_history": "后退历史记录",
   "toolbar.forward_history": "前进历史记录",
   "toolbar.decompile_csharp": "反编译为 C#",

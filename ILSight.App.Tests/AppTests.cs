@@ -571,6 +571,36 @@ public sealed class AppTests
     }
 
     [Fact]
+    public void The_toolbar_ends_in_a_gear_that_opens_the_display_options_whatever_the_language()
+    {
+        var app = AppDriver.Opened(width: 1600f);
+        SetLanguage(app.AppState, DecompilationLanguage.IL);
+        app.Run(2);
+        var theme = app.Theme;
+        var gear = app.TextRect(Icons.ToolbarDisplayOptions);
+        Assert.False(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
+
+        app.Click(Icons.ToolbarDisplayOptions).Frame(2);
+
+        Assert.True(gear.Right >= 1600f - theme.ShellPaddingX - theme.IconButtonSize, $"the gear ends at {gear.Right}");
+        Assert.True(gear.X > app.TextRect("IL").Right);
+        Assert.True(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
+        Assert.True(app.Frames.Drew("Line numbers"));
+    }
+
+    [Fact]
+    public void The_settings_shortcut_opens_the_display_options()
+    {
+        var app = AppDriver.Opened(width: 1600f);
+        app.Run(2);
+        Assert.False(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
+
+        app.Frames.Key(Shortcuts.Settings).Frame(2);
+
+        Assert.True(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
+    }
+
+    [Fact]
     public void The_menu_bar_is_set_apart_from_the_toolbar_by_its_color_and_a_line()
     {
         var app = new AppDriver();
