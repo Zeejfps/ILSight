@@ -316,10 +316,17 @@ public sealed class AnalyzerTests
         Assert.Null(caller.Children);
     }
 
-    private static AnalyzerKindNode RunningKind(AppStateDriver d)
+    private static AnalyzerKindNode NewKind(AppStateDriver d)
     {
         var symbol = Core.Analysis.Analyzers.Of(First(d))!;
-        return new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol)[0], Work = new CancellationTokenSource() };
+        return new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol)[0] };
+    }
+
+    private static AnalyzerKindNode RunningKind(AppStateDriver d)
+    {
+        var kind = NewKind(d);
+        kind.Run = new AnalyzerRun.Running(new CancellationTokenSource());
+        return kind;
     }
 
     [Fact]
@@ -368,10 +375,54 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var kind = RunningKind(d);
-        kind.Work = null;
+        kind.Run = new AnalyzerRun.Stopped();
 
         CancelNode(kind);
 
+        Assert.IsType<AnalyzerRun.Stopped>(kind.Run);
+    }
+
+    [Fact]
+    public void An_analysis_not_started_is_neither_running_nor_done_and_can_start()
+    {
+        var kind = NewKind(AppStateDriver.Opened());
+
+        Assert.False(kind.HasStarted);
+        Assert.False(kind.IsDone);
+        Assert.Null(kind.Work);
+    }
+
+    [Fact]
+    public void An_analysis_running_has_started_and_is_not_done()
+    {
+        var kind = RunningKind(AppStateDriver.Opened());
+
+        Assert.True(kind.HasStarted);
+        Assert.False(kind.IsDone);
+        Assert.NotNull(kind.Work);
+    }
+
+    [Fact]
+    public void An_analysis_stopped_has_started_and_neither_runs_nor_is_done()
+    {
+        var kind = RunningKind(AppStateDriver.Opened());
+
+        CancelNode(kind);
+
+        Assert.IsType<AnalyzerRun.Stopped>(kind.Run);
+        Assert.True(kind.HasStarted);
+        Assert.False(kind.IsDone);
+        Assert.Null(kind.Work);
+    }
+
+    [Fact]
+    public void An_analysis_done_has_started_and_no_longer_runs()
+    {
+        var kind = RunningKind(AppStateDriver.Opened());
+        kind.Run = new AnalyzerRun.Done();
+
+        Assert.True(kind.HasStarted);
+        Assert.True(kind.IsDone);
         Assert.Null(kind.Work);
     }
 
@@ -397,7 +448,7 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var rows = NewRows();
-        var kind = RunningKind(d);
+        var kind = NewKind(d);
 
         Assert.True(rows.HasChildren(kind));
         Assert.Same(rows.Loading, Assert.Single(ListChildren(rows, kind)));

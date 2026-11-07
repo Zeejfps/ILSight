@@ -171,11 +171,10 @@ public static class Analysis
 
     private static void CancelRun(AnalyzerKindNode kind)
     {
-        var work = kind.Work;
-        if (work == null)
+        if (kind.Run is not AnalyzerRun.Running running)
             return;
-        kind.Work = null;
-        work.Cancel();
+        kind.Run = new AnalyzerRun.Stopped();
+        running.Work.Cancel();
     }
 
     /// <summary>Runs the analysis over <paramref name="assemblies"/> unless it already started,
@@ -185,14 +184,13 @@ public static class Analysis
     {
         if (kind.HasStarted)
             return;
-        kind.HasStarted = true;
-        Background.Start(RunKindAsync(kind, assemblies, changed, failed), reportError);
+        var work = new CancellationTokenSource();
+        kind.Run = new AnalyzerRun.Running(work);
+        Background.Start(RunKindAsync(kind, work, assemblies, changed, failed), reportError);
     }
 
-    private static async Task RunKindAsync(AnalyzerKindNode kind, AssemblyList assemblies, Action changed, Action<Exception> failed)
+    private static async Task RunKindAsync(AnalyzerKindNode kind, CancellationTokenSource work, AssemblyList assemblies, Action changed, Action<Exception> failed)
     {
-        var work = new CancellationTokenSource();
-        kind.Work = work;
         var token = work.Token;
         try
         {
@@ -230,8 +228,7 @@ public static class Analysis
         if (kind.Work != work)
             return;
         kind.Found.AddRange(found);
-        kind.IsDone = true;
-        kind.Work = null;
+        kind.Run = new AnalyzerRun.Done();
         work.Dispose();
         changed();
     }

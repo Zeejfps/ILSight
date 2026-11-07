@@ -22,6 +22,24 @@ public sealed class AnalyzerSymbolNode : AnalyzerNode
     public List<AnalyzerNode>? Children;
 }
 
+/// <summary>How one analysis of a symbol stands. It runs once: stopped is cancelled, and it doesn't run
+/// again.</summary>
+public abstract record AnalyzerRun
+{
+    private AnalyzerRun()
+    {
+    }
+
+    public sealed record NotStarted : AnalyzerRun;
+
+    /// <summary>In flight; <see cref="Work"/> cancels it.</summary>
+    public sealed record Running(CancellationTokenSource Work) : AnalyzerRun;
+
+    public sealed record Stopped : AnalyzerRun;
+
+    public sealed record Done : AnalyzerRun;
+}
+
 /// <summary>One analysis of a symbol, run in the background the first time it is expanded.</summary>
 public sealed class AnalyzerKindNode : AnalyzerNode
 {
@@ -31,12 +49,14 @@ public sealed class AnalyzerKindNode : AnalyzerNode
 
     public readonly List<AnalyzerNode> Found = new();
 
+    public AnalyzerRun Run = new AnalyzerRun.NotStarted();
+
     /// <summary>What cancels the run in flight, or null while there is none.</summary>
-    public CancellationTokenSource? Work;
+    public CancellationTokenSource? Work => Run is AnalyzerRun.Running running ? running.Work : null;
 
-    public bool IsDone;
+    public bool IsDone => Run is AnalyzerRun.Done;
 
-    public bool HasStarted;
+    public bool HasStarted => Run is not AnalyzerRun.NotStarted;
 }
 
 /// <summary>Stands in the results while an analysis runs, or tells why it failed.</summary>
