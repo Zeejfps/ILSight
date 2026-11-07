@@ -203,14 +203,14 @@ public sealed class AnalyzerTests
 
         d.Analyze(reference);
         var waiting = analyzer.Roots.ToList();
-        var savedWhileFinding = analyzer.ListSavedAnalyses();
+        var savedWhileFinding = Analysis.ListSavedAnalyses(analyzer);
         var revisionWhileFinding = analyzer.Revision;
         d.Settle();
 
         Assert.IsType<AnalyzerPendingNode>(Assert.Single(waiting));
         Assert.Empty(savedWhileFinding);
         Assert.StartsWith("First()", Assert.Single(analyzer.Found()).Symbol.Label);
-        Assert.Single(analyzer.ListSavedAnalyses());
+        Assert.Single(Analysis.ListSavedAnalyses(analyzer));
         Assert.NotEqual(revisionWhileFinding, analyzer.Revision);
     }
 
@@ -257,7 +257,7 @@ public sealed class AnalyzerTests
         var analyzer = d.AppState.Analyzer;
 
         d.Analyze(reference);
-        analyzer.Remove(analyzer.Roots[0]);
+        Analysis.RemoveRoot(analyzer, analyzer.Roots[0]);
         d.Settle();
 
         Assert.Empty(analyzer.Roots);
@@ -295,7 +295,7 @@ public sealed class AnalyzerTests
         d.Analyze(First(d));
         d.Analyze(d.Fixture("Greeter"));
 
-        analyzer.Remove(analyzer.Roots[0]);
+        Analysis.RemoveRoot(analyzer, analyzer.Roots[0]);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
         CloseAllAssemblies(d.AppState);
 
@@ -312,7 +312,7 @@ public sealed class AnalyzerTests
         var root = analyzer.Found()[0];
         var caller = (AnalyzerSymbolNode)Expand(d, root, "Used By").Found[0];
 
-        analyzer.Remove(root);
+        Analysis.RemoveRoot(analyzer, root);
 
         Assert.Null(ListedChildren(caller));
     }

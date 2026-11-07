@@ -63,7 +63,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     {
         if (!View.TryGetSelectedRoot(out var root))
             return;
-        if (analyzer.Contains(root))
+        if (Analysis.HasRoot(analyzer, root))
             return;
         View.ClearSelection();
     }

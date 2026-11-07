@@ -27,8 +27,8 @@ public static class AssemblyLists
             AssemblyLists.AddList(appState.Lists, name);
         if (!AssemblyLists.ActivateList(appState.Lists, name))
             return;
-        appState.Analyzer.Clear();
-        appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
+        Analysis.ClearRoots(appState.Analyzer);
+        Analysis.AddPending(appState.Analyzer, appState.Lists.ActiveAnalyses);
         ReopenDocuments(appState);
     }
 
@@ -55,7 +55,7 @@ public static class AssemblyLists
     internal static void RememberActiveAssemblyList(AppState appState)
     {
         RememberOpenAssemblies(appState);
-        var analyzed = appState.Analyzer.ListSavedAnalyses();
+        var analyzed = Analysis.ListSavedAnalyses(appState.Analyzer);
         AssemblyLists.RememberActiveAnalyses(appState.Lists, analyzed);
         AssemblyLists.RememberActiveDocuments(appState.Lists, SaveDocuments(appState));
     }
@@ -86,7 +86,7 @@ public static class AssemblyLists
         ReopenDocuments(appState);
         Navigation.ClearHistory(appState.History);
         RestoreActiveAssemblyList(appState);
-        appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
+        Analysis.AddPending(appState.Analyzer, appState.Lists.ActiveAnalyses);
         RestoreAnalyses(appState);
     }
 

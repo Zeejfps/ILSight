@@ -217,7 +217,7 @@ public sealed class AppState
         Analyzer = new AnalyzerTree();
         AssemblyLists.LoadLists(Lists, settings.AssemblyLists, settings.ActiveAssemblyList);
         leftOutBookmarks = LoadBookmarks(Bookmarks, settings.Bookmarks);
-        Analyzer.AddPending(Lists.ActiveAnalyses);
+        Analysis.AddPending(Analyzer, Lists.ActiveAnalyses);
     }
 
     private static Locale ChooseLocale(AppSettings settings)

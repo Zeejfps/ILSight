@@ -44,9 +44,9 @@ internal static class AnalyzerPanelView
                 rows.ExpandAll();
             ui.Separator(theme.IconSize);
             if (ui.IconButton("remove", ui.State.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root != null) && root != null)
-                ui.State.Later(root, static (a, r) => a.Analyzer.Remove(r));
+                ui.State.Later(root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
             if (ui.IconButton("clear", ui.State.Icons.AnalyzerRemoveAll, t.AnalyzerRemoveAll, any))
-                ui.State.Later(static a => a.Analyzer.Clear());
+                ui.State.Later(static a => Analysis.ClearRoots(a.Analyzer));
         }
     }
 
@@ -81,7 +81,7 @@ internal static class AnalyzerPanelView
     {
         var root = rows.FindSelectedRoot();
         if (root != null)
-            screen.Later(root, static (a, r) => a.Analyzer.Remove(r));
+            screen.Later(root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
     }
 
     private static void GoTo(AppState appState, AnalyzerNode? node)
@@ -103,7 +103,7 @@ internal static class AnalyzerPanelView
             return;
         if (rows.View.Selected is not AnalyzerSymbolNode node)
             return;
-        var isRoot = analyzer.Contains(node);
+        var isRoot = Analysis.HasRoot(analyzer, node);
         var target = node.Symbol.Reference;
         if (target != null)
             GoToItems(ui, target);
@@ -111,9 +111,9 @@ internal static class AnalyzerPanelView
             ui.State.Later((rows, symbol: node.Symbol), static (a, s) => Analyze(s.rows, a, s.symbol));
         ui.MenuSeparator();
         if (isRoot && ui.MenuItem(t.AnalyzerRemove, id: "remove"))
-            ui.State.Later(node, static (a, n) => a.Analyzer.Remove(n));
+            ui.State.Later(node, static (a, n) => Analysis.RemoveRoot(a.Analyzer, n));
         if (ui.MenuItem(t.AnalyzerClear, id: "clear"))
-            ui.State.Later(static a => a.Analyzer.Clear());
+            ui.State.Later(static a => Analysis.ClearRoots(a.Analyzer));
     }
 
     private static void GoToItems(Ui<UiState> ui, CodeReference.Navigable target)

@@ -99,7 +99,7 @@ public sealed partial class ILSightApp
     /// <summary>Expands <paramref name="root"/> and selects it, unless it was removed meanwhile.</summary>
     private static void ShowAnalysis(UiState uiState, AppState appState, AnalyzerSymbolNode root)
     {
-        if (!appState.Analyzer.Contains(root))
+        if (!Analysis.HasRoot(appState.Analyzer, root))
             return;
         uiState.Analyzer.Show(root);
     }

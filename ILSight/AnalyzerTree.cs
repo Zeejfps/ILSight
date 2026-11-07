@@ -156,151 +156,28 @@ public sealed class AnalyzerPendingNode(CodeAnchor? savedAs) : AnalyzerNode
 /// </summary>
 public sealed class AnalyzerTree
 {
-    private readonly List<AnalyzerNode> _roots = new();
+    public readonly List<AnalyzerNode> Roots = new();
 
-    public IReadOnlyList<AnalyzerNode> Roots => _roots;
-
-    /// <summary>Changes whenever what <see cref="ListSavedAnalyses"/> lists changes.</summary>
-    public int Revision { get; private set; }
+    /// <summary>Changes whenever what <see cref="Analysis.ListSavedAnalyses"/> lists changes.</summary>
+    public int Revision;
 
     /// <summary>Changes whenever a root is added, replaced or removed.</summary>
-    public int Changes { get; private set; }
+    public int Changes;
 
     /// <summary>Changes whenever an analysis under a root finds more or ends.</summary>
-    public int Findings { get; private set; }
-
-    internal void NoteFindings()
-    {
-        Findings++;
-    }
+    public int Findings;
 
     /// <summary>True while a root waits for its symbol to be found.</summary>
     public bool IsFinding
     {
         get
         {
-            foreach (var root in _roots)
+            foreach (var root in Roots)
             {
                 if (root is AnalyzerPendingNode)
                     return true;
             }
             return false;
         }
-    }
-
-    /// <summary>Adds <paramref name="symbol"/> as a root, unless a root analyzes it already, and
-    /// returns the root that does.</summary>
-    public AnalyzerSymbolNode AddRoot(AnalysisSymbol symbol)
-    {
-        var existing = FindRoot(symbol);
-        if (existing != null)
-            return existing;
-        var root = new AnalyzerSymbolNode(symbol);
-        _roots.Add(root);
-        Revision++;
-        Changes++;
-        return root;
-    }
-
-    private AnalyzerSymbolNode? FindRoot(AnalysisSymbol symbol)
-    {
-        if (symbol.Reference == null)
-            return null;
-        foreach (var root in _roots)
-        {
-            if (root is AnalyzerSymbolNode found && Equals(found.Symbol.Reference, symbol.Reference))
-                return found;
-        }
-        return null;
-    }
-
-    /// <summary>Adds a root that waits for its symbol to be found, saved as <paramref name="savedAs"/>
-    /// meanwhile, or not saved when it is null.</summary>
-    public AnalyzerPendingNode AddPending(CodeAnchor? savedAs)
-    {
-        var root = new AnalyzerPendingNode(savedAs);
-        _roots.Add(root);
-        if (savedAs != null)
-            Revision++;
-        Changes++;
-        return root;
-    }
-
-    /// <summary>Adds a waiting root for each of <paramref name="analyzed"/>, in order, saved as it.</summary>
-    public void AddPending(IReadOnlyList<CodeAnchor> analyzed)
-    {
-        foreach (var anchor in analyzed)
-            AddPending(anchor);
-    }
-
-    /// <summary>The roots restored from the saved analyses that are still waiting for their symbols.</summary>
-    public List<AnalyzerPendingNode> ListRestoring()
-    {
-        return _roots
-            .OfType<AnalyzerPendingNode>()
-            .Where(static p => p.SavedAs != null)
-            .ToList();
-    }
-
-    /// <summary>Turns the waiting <paramref name="pending"/> into the analysis of <paramref name="symbol"/>,
-    /// in its place; when another root analyzes it already, <paramref name="pending"/> goes. Returns
-    /// the root that analyzes <paramref name="symbol"/>, or null once <paramref name="pending"/> was removed.</summary>
-    public AnalyzerSymbolNode? Resolve(AnalyzerPendingNode pending, AnalysisSymbol symbol)
-    {
-        var index = _roots.IndexOf(pending);
-        if (index < 0)
-            return null;
-        var existing = FindRoot(symbol);
-        if (existing != null)
-        {
-            Remove(pending);
-            return existing;
-        }
-        var root = new AnalyzerSymbolNode(symbol);
-        _roots[index] = root;
-        if (symbol.Definition != pending.SavedAs)
-            Revision++;
-        Changes++;
-        return root;
-    }
-
-    public bool Contains(AnalyzerNode root) => _roots.Contains(root);
-
-    public void Remove(AnalyzerNode root)
-    {
-        if (!_roots.Remove(root)) return;
-        if (SavedAnalysisOf(root) != null)
-            Revision++;
-        Changes++;
-        root.Cancel();
-    }
-
-    /// <summary>The analyses the roots save as, in their order.</summary>
-    public List<CodeAnchor> ListSavedAnalyses()
-    {
-        var saved = new List<CodeAnchor>();
-        foreach (var root in _roots)
-        {
-            var anchor = SavedAnalysisOf(root);
-            if (anchor != null)
-                saved.Add(anchor.Value);
-        }
-        return saved;
-    }
-
-    private static CodeAnchor? SavedAnalysisOf(AnalyzerNode root) => root switch
-    {
-        AnalyzerSymbolNode symbol => symbol.Symbol.Definition,
-        AnalyzerPendingNode pending => pending.SavedAs,
-        _ => null,
-    };
-
-    public void Clear()
-    {
-        foreach (var root in _roots)
-            root.Cancel();
-        _roots.Clear();
-        Revision++;
-        Changes++;
     }
 }

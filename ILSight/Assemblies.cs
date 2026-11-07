@@ -286,7 +286,7 @@ public static class Assemblies
     private static void ClearAssemblies(AppState appState)
     {
         appState.Assemblies.Clear();
-        appState.Analyzer.Clear();
+        Analysis.ClearRoots(appState.Analyzer);
     }
 
     /// <summary>Reloads every assembly of the open list from disk in the background, then commands the view
