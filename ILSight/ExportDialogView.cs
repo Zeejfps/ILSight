@@ -25,6 +25,7 @@ internal static class ExportDialogView
         picker.Order.Clear();
         picker.Order.AddRange(choices.Where(static c => c.Included));
         picker.Order.AddRange(choices.Where(static c => !c.Included));
+        picker.Anchor = null;
         ClearFilter(picker);
     }
 
@@ -78,6 +79,37 @@ internal static class ExportDialogView
     {
         foreach (var choice in ListShown(picker))
             choice.Included = all;
+    }
+
+    /// <summary>Follows a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
+    /// (Shift held), every row in <paramref name="shown"/> from the anchor to it takes the same tick, as
+    /// in a list of checkboxes elsewhere; rows outside the range keep theirs. Without an anchor among
+    /// <paramref name="shown"/>, only <paramref name="clicked"/> changes. Either way it becomes the
+    /// anchor. <paramref name="shown"/> is the list as shown before the click, so a row that
+    /// Selected only hides once unticked still counts.</summary>
+    public static void TickClicked(AssemblyPicker picker, IReadOnlyList<ExportChoice> shown, ExportChoice clicked, bool extend)
+    {
+        var anchor = picker.Anchor;
+        picker.Anchor = clicked;
+        if (!extend || anchor == null)
+            return;
+        var from = IndexOf(shown, anchor);
+        var to = IndexOf(shown, clicked);
+        if (from < 0 || to < 0)
+            return;
+        for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
+            shown[i].Included = clicked.Included;
+    }
+
+    /// <summary>Where <paramref name="choice"/> is in <paramref name="shown"/>, by identity, or -1.</summary>
+    private static int IndexOf(IReadOnlyList<ExportChoice> shown, ExportChoice choice)
+    {
+        for (var i = 0; i < shown.Count; i++)
+        {
+            if (shown[i] == choice)
+                return i;
+        }
+        return -1;
     }
 
     private const float WindowWidth = 640f;
@@ -510,7 +542,7 @@ internal static class ExportDialogView
             using (ui.Scroll("export-choices", new Box { Height = Sizing.Grow(), Padding = new Spacing(0f, theme.GapTight) }))
             {
                 foreach (var choice in shown)
-                    PickRow(ui, choice);
+                    PickRow(ui, picker, shown, choice);
             }
         }
     }
@@ -528,14 +560,16 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>An assembly to tick, with its version, and its file's path on hover.</summary>
-    private static void PickRow(Ui<UiState> ui, ExportChoice choice)
+    /// <summary>An assembly to tick, with its version, and its file's path on hover. Shift-click ticks
+    /// the range from the last row clicked.</summary>
+    private static void PickRow(Ui<UiState> ui, AssemblyPicker picker, List<ExportChoice> shown, ExportChoice choice)
     {
         var theme = ui.Theme;
         using (ui.Id(choice.Assembly.FilePath.Text))
         using (ui.Row(new Box { Gap = theme.Gap, Padding = new Spacing(theme.Gap, 0f) }))
         {
-            ui.Checkbox(choice.Assembly.Name, ref choice.Included, id: "include", width: Sizing.Grow(), compact: true);
+            if (ui.Checkbox(choice.Assembly.Name, ref choice.Included, id: "include", width: Sizing.Grow(), compact: true))
+                TickClicked(picker, shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
             ui.Tooltip(ui.GetId("include"), choice.Assembly.FilePath.Text, TooltipAnchor.Pointer);
             var version = choice.Assembly.Version;
             if (version != null)

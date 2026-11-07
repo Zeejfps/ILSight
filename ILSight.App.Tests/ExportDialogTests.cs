@@ -218,6 +218,81 @@ public sealed class ExportDialogTests : IDisposable
         Assert.Equal(true, ExportDialogView.GetAllShownIncluded(picker));
     }
 
+    private static AppStateDriver OpenedThree()
+    {
+        var d = OpenedTwo();
+        OpenAssembly(d.AppState, typeof(FactAttribute).Assembly.Location);
+        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
+        d.Settle();
+        return d;
+    }
+
+    /// <summary>Flips <paramref name="choice"/>'s tick as its checkbox does, then follows the click.</summary>
+    private static void Click(AssemblyPicker picker, List<ExportChoice> shown, ExportChoice choice, bool shift)
+    {
+        choice.Included = !choice.Included;
+        ExportDialogView.TickClicked(picker, shown, choice, shift);
+    }
+
+    [Fact]
+    public void Shift_click_ticks_every_row_from_the_last_one_clicked()
+    {
+        var d = OpenedThree();
+        d.OpenExportSetup(null);
+        var picker = d.Ui.ExportSetup.Picker;
+        var shown = ExportDialogView.ListShown(picker);
+
+        Click(picker, shown, shown[0], shift: false);
+        Click(picker, shown, shown[2], shift: true);
+
+        Assert.Equal([true, true, true], shown.Select(c => c.Included));
+    }
+
+    [Fact]
+    public void Shift_click_upwards_unticks_the_range_when_the_clicked_row_is_unticked()
+    {
+        var d = OpenedThree();
+        d.OpenExportSetup(null);
+        var picker = d.Ui.ExportSetup.Picker;
+        var shown = ExportDialogView.ListShown(picker);
+        ExportDialogView.IncludeShown(picker, true);
+
+        Click(picker, shown, shown[2], shift: false);
+        Click(picker, shown, shown[1], shift: true);
+
+        Assert.Equal([true, false, false], shown.Select(c => c.Included));
+    }
+
+    [Fact]
+    public void Shift_click_with_no_row_clicked_before_ticks_only_that_row()
+    {
+        var d = OpenedThree();
+        d.OpenExportSetup(null);
+        var picker = d.Ui.ExportSetup.Picker;
+        var shown = ExportDialogView.ListShown(picker);
+
+        Click(picker, shown, shown[2], shift: true);
+
+        Assert.Equal([false, false, true], shown.Select(c => c.Included));
+    }
+
+    [Fact]
+    public void Shift_click_counts_a_row_that_Selected_only_hides_once_unticked()
+    {
+        var d = OpenedThree();
+        d.OpenExportSetup(null);
+        var picker = d.Ui.ExportSetup.Picker;
+        ExportDialogView.IncludeShown(picker, true);
+        picker.SelectedOnly = true;
+        var shown = ExportDialogView.ListShown(picker);
+
+        Click(picker, shown, shown[0], shift: false);
+        Click(picker, shown, shown[1], shift: false);
+        Click(picker, shown, shown[2], shift: true);
+
+        Assert.Empty(ExportDialogView.ListShown(picker));
+    }
+
     [Fact]
     public void Selected_only_hides_the_unticked_assemblies()
     {
