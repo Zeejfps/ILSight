@@ -110,6 +110,12 @@ public sealed class UiState : IUiState
     /// <summary>The decompiler options panel's folded groups.</summary>
     public required FoldedGroups FoldedOptionGroups { get; init; }
 
+    /// <summary>What the decompiler options panel is searched for; empty shows every option.</summary>
+    public string DecompilerOptionsQuery = "";
+
+    /// <summary>What the display options panel is searched for; empty shows every option.</summary>
+    public string DisplayOptionsQuery = "";
+
     /// <summary>How the documents draw code: its size and the aids drawn around it.</summary>
     public required DisplayOptions Display;
 

@@ -611,6 +611,10 @@
           "description": "Put the display options back to their defaults.",
           "$ref": "#/definitions/icon"
         },
+        "options.search": {
+          "description": "The search over the decompiler or display options.",
+          "$ref": "#/definitions/icon"
+        },
         "export.add": {
           "description": "Add assemblies to export.",
           "$ref": "#/definitions/icon"

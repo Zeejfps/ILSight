@@ -342,6 +342,8 @@
     "options.fontLarger": { "font": "lucide", "glyph": "E13D" },
     // Put the display options back to their defaults.
     "options.resetDisplay": { "font": "lucide", "glyph": "E148" },
+    // The search over the decompiler or display options.
+    "options.search": { "font": "lucide", "glyph": "E151" },
 
     // Exports: the export dialog, the exports panel and the status bar.
 

@@ -8,10 +8,12 @@ namespace ILSight;
 
 /// <summary>The decompiler's toggles, grouped by the C# version that brought each feature, newest
 /// first, then the rest. Every change shows in the open documents at once. Features newer than the
-/// picked version are greyed out but keep their state for when a newer version is picked.</summary>
+/// picked version are greyed out but keep their state for when a newer version is picked. A search
+/// narrows the groups to the toggles it matches, every group open while it does, and a group's box
+/// then sets only the toggles shown.</summary>
 internal static class DecompilerOptionsPanelView
 {
-    private sealed record Section(string Key, DecompilerToggleGroup Group, CSharpVersion? Version, DecompilerToggle[] Toggles);
+    internal sealed record Section(string Key, DecompilerToggleGroup Group, CSharpVersion? Version, DecompilerToggle[] Toggles);
 
     private static readonly Section[] Sections = BuildSections();
 
@@ -25,9 +27,11 @@ internal static class DecompilerOptionsPanelView
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar())
         {
-            if (ui.IconButton("collapse", ui.State.Icons.OptionsCollapseAll, t.CodeCollapseAll, !AllFolded(folded)))
+            OptionSearch.Field(ui, ref ui.State.DecompilerOptionsQuery);
+            var searching = ui.State.DecompilerOptionsQuery.Trim().Length > 0;
+            if (ui.IconButton("collapse", ui.State.Icons.OptionsCollapseAll, t.CodeCollapseAll, !searching && !AllFolded(folded)))
                 OptionFolds.Fold(folded, Sections.Select(static s => s.Key));
-            if (ui.IconButton("expand", ui.State.Icons.OptionsExpandAll, t.CodeExpandAll, folded.Count > 0))
+            if (ui.IconButton("expand", ui.State.Icons.OptionsExpandAll, t.CodeExpandAll, !searching && folded.Count > 0))
                 OptionFolds.UnfoldAll(folded);
             ui.Separator(theme.IconSize);
             if (ui.IconButton("reset", ui.State.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
@@ -42,18 +46,27 @@ internal static class DecompilerOptionsPanelView
             ui.Separator();
         }
 
+        var words = OptionSearch.SplitWords(ui.State.DecompilerOptionsQuery);
+        var sections = words.Length == 0 ? Sections : FindMatchingSections(t, words);
+        if (sections.Length == 0)
+        {
+            OptionSearch.NoMatch(ui, ref ui.State.DecompilerOptionsQuery);
+            return;
+        }
+        // A search shows every group open, and leaves the folds as they were for when it is cleared.
+        var shownFolds = words.Length == 0 ? folded : null;
         var rowHeight = theme.RowHeight;
         string? flipped = null;
-        using (var list = ui.VirtualScroll("decompiler-options", RowCount(folded), rowHeight))
+        using (var list = ui.VirtualScroll("decompiler-options", RowCount(sections, shownFolds), rowHeight))
         {
             for (var i = list.First; i < list.End; i++)
             {
-                var (section, toggle) = RowAt(folded, i);
+                var (section, toggle) = RowAt(sections, shownFolds, i);
                 using (ui.Id(i))
                 {
                     if (toggle is null)
                     {
-                        if (Header(ui, folded, section, options, rowHeight, tooNew))
+                        if (Header(ui, shownFolds, section, options, rowHeight, tooNew))
                             flipped = section.Key;
                     }
                     else
@@ -67,15 +80,35 @@ internal static class DecompilerOptionsPanelView
             OptionFolds.Flip(folded, flipped);
     }
 
-    /// <summary>Draws a section's header: a chevron and a checkbox that sets every toggle in it,
+    /// <summary>The sections with only the toggles <paramref name="words"/> match, by the toggle's label,
+    /// its name in the decompiler or its section's title; a section none match is left out.</summary>
+    internal static Section[] FindMatchingSections(Strings t, string[] words)
+    {
+        var matching = new List<Section>();
+        foreach (var section in Sections)
+        {
+            var title = Title(t, section);
+            var toggles = section.Toggles
+                .Where(toggle => OptionSearch.IsMatch(t.Culture, words, Label(t, toggle), toggle.Name, title))
+                .ToArray();
+            if (toggles.Length > 0)
+                matching.Add(section with { Toggles = toggles });
+        }
+        return matching.ToArray();
+    }
+
+    private static string Label(Strings t, DecompilerToggle toggle) => DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name;
+
+    /// <summary>Draws a section's header: a chevron and a checkbox that sets every toggle shown in it,
     /// showing a square when only some are on. Returns true when the row besides the checkbox was
-    /// clicked to fold or unfold.</summary>
-    private static bool Header(Ui<UiState> ui, FoldedGroups folded, Section section, DecompilerOptions options, float rowHeight,
+    /// clicked to fold or unfold, which it can't while <paramref name="folded"/> is null, as during a
+    /// search.</summary>
+    private static bool Header(Ui<UiState> ui, FoldedGroups? folded, Section section, DecompilerOptions options, float rowHeight,
         string? tooNew)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
-        var isFolded = OptionFolds.IsFolded(folded, section.Key);
+        var isFolded = IsFolded(folded, section);
         var allowed = IsAllowed(section, options);
         var item = ui.Interact(section.Key);
         using (ui.Row(item.Id, new Box
@@ -97,7 +130,15 @@ internal static class DecompilerOptionsPanelView
         }
         if (!allowed && tooNew != null)
             ui.Tooltip(item.Id, tooNew);
-        return item.Clicked;
+        return folded != null && item.Clicked;
+    }
+
+    /// <summary>Whether <paramref name="section"/> is folded; none is while <paramref name="folded"/> is null.</summary>
+    private static bool IsFolded(FoldedGroups? folded, Section section)
+    {
+        if (folded == null)
+            return false;
+        return OptionFolds.IsFolded(folded, section.Key);
     }
 
     private static bool IsAllowed(Section section, DecompilerOptions options)
@@ -147,7 +188,7 @@ internal static class DecompilerOptionsPanelView
         }))
         {
             var on = DecompilerToggles.IsOn(options, toggle);
-            if (ui.Checkbox(DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name, ref on, id: toggle.Name, enabled: DecompilerToggles.Allows(options, toggle),
+            if (ui.Checkbox(Label(t, toggle), ref on, id: toggle.Name, enabled: DecompilerToggles.Allows(options, toggle),
                     width: Sizing.Grow(), bold: DecompilerToggles.IsChanged(options, toggle)))
                 Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
         }
@@ -171,21 +212,21 @@ internal static class DecompilerOptionsPanelView
         return true;
     }
 
-    private static int RowCount(FoldedGroups folded)
+    private static int RowCount(Section[] sections, FoldedGroups? folded)
     {
         var count = 0;
-        foreach (var section in Sections)
-            count += 1 + (OptionFolds.IsFolded(folded, section.Key) ? 0 : section.Toggles.Length);
+        foreach (var section in sections)
+            count += 1 + (IsFolded(folded, section) ? 0 : section.Toggles.Length);
         return count;
     }
 
     /// <summary>The section a row is in, and the toggle it shows, or null for the section's header.</summary>
-    private static (Section Section, DecompilerToggle? Toggle) RowAt(FoldedGroups folded, int row)
+    private static (Section Section, DecompilerToggle? Toggle) RowAt(Section[] sections, FoldedGroups? folded, int row)
     {
-        foreach (var section in Sections)
+        foreach (var section in sections)
         {
             if (row == 0) return (section, null);
-            var shown = OptionFolds.IsFolded(folded, section.Key) ? 0 : section.Toggles.Length;
+            var shown = IsFolded(folded, section) ? 0 : section.Toggles.Length;
             if (row <= shown) return (section, section.Toggles[row - 1]);
             row -= 1 + shown;
         }

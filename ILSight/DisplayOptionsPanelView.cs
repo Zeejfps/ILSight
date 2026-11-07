@@ -14,7 +14,8 @@ namespace ILSight;
 /// <summary>How the app is drawn, as settings cards: the interface's theme, icon theme, scale, language and title bar, then the
 /// code's font size and switches for line numbers, the current line's highlight, matching brackets and the omnibar,
 /// then how the tree writes metadata tokens, whether it lists empty metadata tables, whether it nests namespaces and whether what it picks shows in a preview tab. Each option is a row of its card, named on the left, with its control at the right. Every change
-/// shows at once; an option changed from its default has a bold name.</summary>
+/// shows at once; an option changed from its default has a bold name. A search over them shows only the
+/// rows it matches, and the cards that have any.</summary>
 internal static class DisplayOptionsPanelView
 {
     private const string PaneId = "display-options";
@@ -38,6 +39,11 @@ internal static class DisplayOptionsPanelView
     public static void Render(Ui<UiState> ui, AppState appState)
     {
         var theme = ui.Theme;
+        using var panel = ui.Column(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
+        using (ui.PaneToolbar())
+            OptionSearch.Field(ui, ref ui.State.DisplayOptionsQuery);
+        ui.Separator();
+        var words = OptionSearch.SplitWords(ui.State.DisplayOptionsQuery);
         using var pane = ui.Scroll(PaneId, new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
         using var form = ui.Column(new Box
         {
@@ -46,10 +52,31 @@ internal static class DisplayOptionsPanelView
             Padding = theme.PanelPadding,
         });
         ListInstalledFontsOnce(ui);
-        InterfaceSection(ui, appState);
-        CodeSection(ui);
-        TreeSection(ui);
-        ResetRow(ui);
+        var shown = InterfaceSection(ui, appState, words);
+        shown |= CodeSection(ui, words);
+        shown |= TreeSection(ui, words);
+        if (words.Length == 0)
+            ResetRow(ui);
+        else if (!shown)
+            OptionSearch.NoMatch(ui, ref ui.State.DisplayOptionsQuery);
+    }
+
+    /// <summary>Whether the option called <paramref name="title"/> is shown for <paramref name="words"/>:
+    /// always without a search, else when they match its title, its <paramref name="description"/> or
+    /// its section's <paramref name="heading"/>.</summary>
+    private static bool Shows(Strings t, string[] words, string heading, string title, string? description = null)
+    {
+        if (words.Length == 0)
+            return true;
+        return OptionSearch.IsMatch(t.Culture, words, title, description, heading);
+    }
+
+    /// <summary>Draws the line between the rows of a card before each row but its first.</summary>
+    private static void NextRow(Ui<UiState> ui, ref int rows)
+    {
+        if (rows > 0)
+            ui.Separator();
+        rows++;
     }
 
     private static void ListInstalledFontsOnce(Ui<UiState> ui)
@@ -60,40 +87,63 @@ internal static class DisplayOptionsPanelView
         ui.ListSystemFonts(families => KeepInstalledFonts(screen, families));
     }
 
-    /// <summary>The theme, the icon theme, the scale, the language and the title bar. Only the scale and the
-    /// title bar are options a reset puts back, so only their names turn bold.</summary>
-    private static void InterfaceSection(Ui<UiState> ui, AppState appState)
+    /// <summary>The theme, the icon theme, the scale, the language and the title bar, those the search
+    /// matches; false, drawing nothing, when it matches none. Only the scale and the title bar are
+    /// options a reset puts back, so only their names turn bold.</summary>
+    private static bool InterfaceSection(Ui<UiState> ui, AppState appState, string[] words)
     {
         var t = ui.State.Strings;
+        var heading = t.DisplayOptionsInterface;
+        var theme = Shows(t, words, heading, t.DisplayOptionsTheme);
+        var iconTheme = Shows(t, words, heading, t.DisplayOptionsIconTheme);
+        var scale = Shows(t, words, heading, t.DisplayOptionsUiScale, t.DisplayOptionsUiScaleDescription);
+        var language = Shows(t, words, heading, t.DisplayOptionsLanguage);
+        var titleBar = ui.CanDrawTitleBar && Shows(t, words, heading, t.DisplayOptionsSystemTitleBar);
+        if (!theme && !iconTheme && !scale && !language && !titleBar)
+            return false;
+
         using var section = Section(ui, ui.Memo("interface", t, static s => Heading(s.DisplayOptionsInterface)));
         using var card = Card(ui);
-        using (OptionRow(ui, t.DisplayOptionsTheme, null, false))
-            ThemePicker(ui, appState.Themes, appState.Theme, appState.SettingsPlace);
-        ui.Separator();
-
-        using (OptionRow(ui, t.DisplayOptionsIconTheme, null, false))
-            IconThemePicker(ui, appState.IconThemes, appState.IconTheme, appState.SettingsPlace);
-        ui.Separator();
-
-        var changed = ui.State.Display.UiScale != DisplayOptions.Default.UiScale;
-        using (OptionRow(ui, t.DisplayOptionsUiScale, t.DisplayOptionsUiScaleDescription, changed))
-            UiScalePicker(ui);
-        ui.Separator();
-
-        using (OptionRow(ui, t.DisplayOptionsLanguage, null, false))
-            LanguagePicker(ui, appState.Locale);
-        SystemTitleBarRow(ui);
+        var rows = 0;
+        if (theme)
+        {
+            NextRow(ui, ref rows);
+            using (OptionRow(ui, t.DisplayOptionsTheme, null, false))
+                ThemePicker(ui, appState.Themes, appState.Theme, appState.SettingsPlace);
+        }
+        if (iconTheme)
+        {
+            NextRow(ui, ref rows);
+            using (OptionRow(ui, t.DisplayOptionsIconTheme, null, false))
+                IconThemePicker(ui, appState.IconThemes, appState.IconTheme, appState.SettingsPlace);
+        }
+        if (scale)
+        {
+            NextRow(ui, ref rows);
+            var changed = ui.State.Display.UiScale != DisplayOptions.Default.UiScale;
+            using (OptionRow(ui, t.DisplayOptionsUiScale, t.DisplayOptionsUiScaleDescription, changed))
+                UiScalePicker(ui);
+        }
+        if (language)
+        {
+            NextRow(ui, ref rows);
+            using (OptionRow(ui, t.DisplayOptionsLanguage, null, false))
+                LanguagePicker(ui, appState.Locale);
+        }
+        if (titleBar)
+        {
+            NextRow(ui, ref rows);
+            SystemTitleBarRow(ui);
+        }
+        return true;
     }
 
-    /// <summary>The switch between the menus in the title bar and the system's title bar, only where the
-    /// platform lets the menus into the title bar.</summary>
+    /// <summary>The switch between the menus in the title bar and the system's title bar, offered only
+    /// where the platform lets the menus into the title bar.</summary>
     private static void SystemTitleBarRow(Ui<UiState> ui)
     {
-        if (!ui.CanDrawTitleBar)
-            return;
         var t = ui.State.Strings;
         var display = ui.State.Display;
-        ui.Separator();
         var system = display.SystemTitleBar;
         var changed = system != DisplayOptions.Default.SystemTitleBar;
         if (SwitchRow(ui, t.DisplayOptionsSystemTitleBar, ref system, "system-title-bar", changed))
@@ -304,41 +354,70 @@ internal static class DisplayOptionsPanelView
         return itemIds[index].ToString();
     }
 
-    private static void CodeSection(Ui<UiState> ui)
+    /// <summary>The code's font and size, with a preview under them, and the aids drawn around it, those
+    /// the search matches; false, drawing nothing, when it matches none.</summary>
+    private static bool CodeSection(Ui<UiState> ui, string[] words)
     {
         var t = ui.State.Strings;
         var display = ui.State.Display;
         var defaults = DisplayOptions.Default;
+        var heading = t.DisplayOptionsCode;
+        var hint = ui.Memo("zoom-hint", t, static s => s.DisplayOptionsZoomHint(Shortcuts.ZoomReset.Label));
+        var font = Shows(t, words, heading, t.DisplayOptionsFont);
+        var fontSize = Shows(t, words, heading, t.DisplayOptionsFontSize, hint);
+        var lineNumbers = Shows(t, words, heading, t.DisplayOptionsLineNumbers);
+        var currentLine = Shows(t, words, heading, t.DisplayOptionsCurrentLine);
+        var brackets = Shows(t, words, heading, t.DisplayOptionsMatchingBrackets);
+        var omnibar = Shows(t, words, heading, t.DisplayOptionsOmnibar);
+        if (!font && !fontSize && !lineNumbers && !currentLine && !brackets && !omnibar)
+            return false;
+
         using var section = Section(ui, ui.Memo("code", t, static s => Heading(s.DisplayOptionsCode)));
         using var card = Card(ui);
-        using (OptionRow(ui, t.DisplayOptionsFont, null, display.Font != null))
-            FontPicker(ui);
-        ui.Separator();
-
-        var hint = ui.Memo("zoom-hint", t, static s => s.DisplayOptionsZoomHint(Shortcuts.ZoomReset.Label));
-        using (OptionRow(ui, t.DisplayOptionsFontSize, hint, display.FontSize != null))
-            FontSizeStepper(ui);
-        FontPreview(ui);
-        ui.Separator();
-
-        var lineNumbers = display.ShowLineNumbers;
-        if (SwitchRow(ui, t.DisplayOptionsLineNumbers, ref lineNumbers, "line-numbers", lineNumbers != defaults.ShowLineNumbers))
-            SetDisplayOptions(ui.State, display with { ShowLineNumbers = lineNumbers });
-        ui.Separator();
-
-        var currentLine = display.HighlightCurrentLine;
-        if (SwitchRow(ui, t.DisplayOptionsCurrentLine, ref currentLine, "current-line", currentLine != defaults.HighlightCurrentLine))
-            SetDisplayOptions(ui.State, display with { HighlightCurrentLine = currentLine });
-        ui.Separator();
-
-        var brackets = display.HighlightMatchingBrackets;
-        if (SwitchRow(ui, t.DisplayOptionsMatchingBrackets, ref brackets, "matching-brackets", brackets != defaults.HighlightMatchingBrackets))
-            SetDisplayOptions(ui.State, display with { HighlightMatchingBrackets = brackets });
-        ui.Separator();
-
-        var omnibar = display.ShowOmnibar;
-        if (SwitchRow(ui, t.DisplayOptionsOmnibar, ref omnibar, "omnibar", omnibar != defaults.ShowOmnibar))
-            SetDisplayOptions(ui.State, display with { ShowOmnibar = omnibar });
+        var rows = 0;
+        if (font)
+        {
+            NextRow(ui, ref rows);
+            using (OptionRow(ui, t.DisplayOptionsFont, null, display.Font != null))
+                FontPicker(ui);
+        }
+        if (fontSize)
+        {
+            NextRow(ui, ref rows);
+            using (OptionRow(ui, t.DisplayOptionsFontSize, hint, display.FontSize != null))
+                FontSizeStepper(ui);
+        }
+        if (font || fontSize)
+            FontPreview(ui);
+        if (lineNumbers)
+        {
+            NextRow(ui, ref rows);
+            var on = display.ShowLineNumbers;
+            if (SwitchRow(ui, t.DisplayOptionsLineNumbers, ref on, "line-numbers", on != defaults.ShowLineNumbers))
+                SetDisplayOptions(ui.State, display with { ShowLineNumbers = on });
+        }
+        if (currentLine)
+        {
+            NextRow(ui, ref rows);
+            var on = display.HighlightCurrentLine;
+            if (SwitchRow(ui, t.DisplayOptionsCurrentLine, ref on, "current-line", on != defaults.HighlightCurrentLine))
+                SetDisplayOptions(ui.State, display with { HighlightCurrentLine = on });
+        }
+        if (brackets)
+        {
+            NextRow(ui, ref rows);
+            var on = display.HighlightMatchingBrackets;
+            if (SwitchRow(ui, t.DisplayOptionsMatchingBrackets, ref on, "matching-brackets", on != defaults.HighlightMatchingBrackets))
+                SetDisplayOptions(ui.State, display with { HighlightMatchingBrackets = on });
+        }
+        if (omnibar)
+        {
+            NextRow(ui, ref rows);
+            var on = display.ShowOmnibar;
+            if (SwitchRow(ui, t.DisplayOptionsOmnibar, ref on, "omnibar", on != defaults.ShowOmnibar))
+                SetDisplayOptions(ui.State, display with { ShowOmnibar = on });
+        }
+        return true;
     }
 
     /// <summary>The bundled font and the installed monospaced ones, the chosen one shown by name even
@@ -423,31 +502,52 @@ internal static class DisplayOptionsPanelView
         return MathF.Ceiling(width) + ui.Theme.Gap * 2;
     }
 
-    private static void TreeSection(Ui<UiState> ui)
+    /// <summary>How the tree writes tokens and what it lists, those options the search matches; false,
+    /// drawing nothing, when it matches none.</summary>
+    private static bool TreeSection(Ui<UiState> ui, string[] words)
     {
         var t = ui.State.Strings;
-        using var section = Section(ui, ui.Memo("tree", t, static s => Heading(s.DisplayOptionsTree)));
-        using var card = Card(ui);
         var display = ui.State.Display;
         var defaults = DisplayOptions.Default;
-        var changed = display.TreeTokens != defaults.TreeTokens;
-        using (OptionRow(ui, t.DisplayOptionsTokens, t.DisplayOptionsTokensDescription, changed))
-            TokenFormatPicker(ui);
-        ui.Separator();
+        var heading = t.DisplayOptionsTree;
+        var tokens = Shows(t, words, heading, t.DisplayOptionsTokens, t.DisplayOptionsTokensDescription);
+        var emptyTables = Shows(t, words, heading, t.DisplayOptionsEmptyTables);
+        var nested = Shows(t, words, heading, t.DisplayOptionsNestedNamespaces);
+        var previewTabs = Shows(t, words, heading, t.DisplayOptionsPreviewTabs);
+        if (!tokens && !emptyTables && !nested && !previewTabs)
+            return false;
 
-        var emptyTables = display.ShowEmptyMetadataTables;
-        if (SwitchRow(ui, t.DisplayOptionsEmptyTables, ref emptyTables, "empty-tables", emptyTables != defaults.ShowEmptyMetadataTables))
-            SetDisplayOptions(ui.State, display with { ShowEmptyMetadataTables = emptyTables });
-        ui.Separator();
-
-        var nested = display.NestedNamespaces;
-        if (SwitchRow(ui, t.DisplayOptionsNestedNamespaces, ref nested, "nested-namespaces", nested != defaults.NestedNamespaces))
-            SetDisplayOptions(ui.State, display with { NestedNamespaces = nested });
-        ui.Separator();
-
-        var previewTabs = display.PreviewTabs;
-        if (SwitchRow(ui, t.DisplayOptionsPreviewTabs, ref previewTabs, "preview-tabs", previewTabs != defaults.PreviewTabs))
-            SetDisplayOptions(ui.State, display with { PreviewTabs = previewTabs });
+        using var section = Section(ui, ui.Memo("tree", t, static s => Heading(s.DisplayOptionsTree)));
+        using var card = Card(ui);
+        var rows = 0;
+        if (tokens)
+        {
+            NextRow(ui, ref rows);
+            using (OptionRow(ui, t.DisplayOptionsTokens, t.DisplayOptionsTokensDescription, display.TreeTokens != defaults.TreeTokens))
+                TokenFormatPicker(ui);
+        }
+        if (emptyTables)
+        {
+            NextRow(ui, ref rows);
+            var on = display.ShowEmptyMetadataTables;
+            if (SwitchRow(ui, t.DisplayOptionsEmptyTables, ref on, "empty-tables", on != defaults.ShowEmptyMetadataTables))
+                SetDisplayOptions(ui.State, display with { ShowEmptyMetadataTables = on });
+        }
+        if (nested)
+        {
+            NextRow(ui, ref rows);
+            var on = display.NestedNamespaces;
+            if (SwitchRow(ui, t.DisplayOptionsNestedNamespaces, ref on, "nested-namespaces", on != defaults.NestedNamespaces))
+                SetDisplayOptions(ui.State, display with { NestedNamespaces = on });
+        }
+        if (previewTabs)
+        {
+            NextRow(ui, ref rows);
+            var on = display.PreviewTabs;
+            if (SwitchRow(ui, t.DisplayOptionsPreviewTabs, ref on, "preview-tabs", on != defaults.PreviewTabs))
+                SetDisplayOptions(ui.State, display with { PreviewTabs = on });
+        }
+        return true;
     }
 
     private static void TokenFormatPicker(Ui<UiState> ui)
