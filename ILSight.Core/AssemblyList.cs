@@ -223,7 +223,7 @@ public static class AssemblyListing
     /// <see cref="Generation"/>, as a clear does, so that no assembly read with the options before is kept.</summary>
     public static bool UseLoadOptions(AssemblyList list, DecompilerOptions options)
     {
-        var loadsReferences = options.IsOn(DecompilerToggle.AutoLoadAssemblyReferences);
+        var loadsReferences = DecompilerToggles.IsOn(options, DecompilerToggle.AutoLoadAssemblyReferences);
         var readerOptions = ChooseReaderOptions(options);
         if (IsSame(list.ReadOptions, loadsReferences, readerOptions))
             return false;
@@ -239,7 +239,7 @@ public static class AssemblyListing
 
     private static MetadataReaderOptions ChooseReaderOptions(DecompilerOptions options)
     {
-        if (options.IsOn(DecompilerToggle.ApplyWindowsRuntimeProjections))
+        if (DecompilerToggles.IsOn(options, DecompilerToggle.ApplyWindowsRuntimeProjections))
             return MetadataReaderOptions.ApplyWindowsRuntimeProjections;
         return MetadataReaderOptions.None;
     }

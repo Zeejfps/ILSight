@@ -834,7 +834,7 @@ internal static class SettingsJson
                 leaveOut();
                 continue;
             }
-            options = options.With(toggle, value);
+            options = DecompilerToggles.SetToggle(options, toggle, value);
         }
         return options;
     }

@@ -123,7 +123,7 @@ public static class Tabs
     {
         if (language != tab.Language)
             return false;
-        return tab.Options.ProducesSameCode(options, language);
+        return DecompilerToggles.ProducesSameCode(tab.Options, options, language);
     }
 
     /// <summary>Points the tab at <paramref name="node"/>, cancelling what was in flight, and shows it

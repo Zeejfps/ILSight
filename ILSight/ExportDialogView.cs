@@ -374,7 +374,7 @@ internal static class ExportDialogView
         if (toggle == null)
             return;
         var label = DecompilerOptionLabels.Label(t, name) ?? name;
-        var on = options.IsOn(toggle);
+        var on = DecompilerToggles.IsOn(options, toggle);
         if (ui.Checkbox(label, ref on, id: name, compact: true))
             Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
     }

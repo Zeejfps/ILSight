@@ -110,7 +110,7 @@ public sealed class DecompilationTests
     public void Locals_take_their_names_from_the_pdb_until_debug_symbols_are_off()
     {
         var grow = Trees.TestAssembly.Fixtures().Child("Circle", "Grow(double, int) : double");
-        var off = DecompilerOptions.Default.With(DecompilerToggle.UseDebugSymbols, false);
+        var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
         var named = Documents.GetText(grow.Decompile(DecompilationLanguage.CSharp));
         var guessed = Documents.GetText(grow.Decompile(DecompilationLanguage.CSharp, off));
@@ -125,7 +125,7 @@ public sealed class DecompilationTests
     public void IL_names_locals_from_the_pdb_until_debug_symbols_are_off()
     {
         var grow = Trees.TestAssembly.Fixtures().Child("Circle", "Grow(double, int) : double");
-        var off = DecompilerOptions.Default.With(DecompilerToggle.UseDebugSymbols, false);
+        var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
         var named = Documents.GetText(grow.Decompile(DecompilationLanguage.IL));
         var unnamed = Documents.GetText(grow.Decompile(DecompilationLanguage.IL, off));
@@ -139,13 +139,13 @@ public sealed class DecompilationTests
     public void IL_comes_out_the_same_under_any_toggle_but_debug_symbols()
     {
         var braces = DecompilerToggles.FindToggle("AlwaysUseBraces")!;
-        var bracesOff = DecompilerOptions.Default.With(braces, false);
-        var symbolsOff = DecompilerOptions.Default.With(DecompilerToggle.UseDebugSymbols, false);
+        var bracesOff = DecompilerToggles.SetToggle(DecompilerOptions.Default, braces, false);
+        var symbolsOff = DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
-        Assert.True(DecompilerOptions.Default.ProducesSameCode(bracesOff, DecompilationLanguage.IL));
-        Assert.False(DecompilerOptions.Default.ProducesSameCode(bracesOff, DecompilationLanguage.CSharp));
-        Assert.False(DecompilerOptions.Default.ProducesSameCode(bracesOff, DecompilationLanguage.ILWithCSharp));
-        Assert.False(DecompilerOptions.Default.ProducesSameCode(symbolsOff, DecompilationLanguage.IL));
+        Assert.True(DecompilerToggles.ProducesSameCode(DecompilerOptions.Default, bracesOff, DecompilationLanguage.IL));
+        Assert.False(DecompilerToggles.ProducesSameCode(DecompilerOptions.Default, bracesOff, DecompilationLanguage.CSharp));
+        Assert.False(DecompilerToggles.ProducesSameCode(DecompilerOptions.Default, bracesOff, DecompilationLanguage.ILWithCSharp));
+        Assert.False(DecompilerToggles.ProducesSameCode(DecompilerOptions.Default, symbolsOff, DecompilationLanguage.IL));
     }
 
     [Fact]
@@ -224,7 +224,7 @@ public sealed class DecompilationTests
     {
         var count = Trees.TestAssembly.Calculator().Child("Count : int");
         var docs = DecompilerToggles.FindToggle("ShowXmlDocumentation")!;
-        var off = DecompilerOptions.Default.With(docs, false);
+        var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, docs, false);
 
         Assert.Contains("/// <summary>How many items were added.</summary>", Documents.GetText(count.Decompile(DecompilationLanguage.CSharp)));
         Assert.DoesNotContain("///", Documents.GetText(count.Decompile(DecompilationLanguage.CSharp, off)));
@@ -246,15 +246,15 @@ public sealed class DecompilationTests
         var assembly = Trees.TestAssembly;
         var count = assembly.Calculator().Child("Count : int");
         var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
-        var off = DecompilerOptions.Default.With(bodies, false);
+        var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, bodies, false);
         var offOnCSharp5 = off with { LanguageVersion = CSharpVersion.CSharp5 };
 
         Assert.Contains("return _items.Count;", Documents.GetText(count.Decompile(DecompilationLanguage.CSharp, off)));
-        Assert.False(offOnCSharp5.Allows(bodies));
-        Assert.False(offOnCSharp5.IsOn(bodies));
-        Assert.True(DecompilerOptions.Default.IsOn(bodies));
-        Assert.Equal(DecompilerOptions.Default, off.With(bodies, true));
-        Assert.Equal(off, DecompilerOptions.Default.With(bodies, false));
+        Assert.False(DecompilerToggles.Allows(offOnCSharp5, bodies));
+        Assert.False(DecompilerToggles.IsOn(offOnCSharp5, bodies));
+        Assert.True(DecompilerToggles.IsOn(DecompilerOptions.Default, bodies));
+        Assert.Equal(DecompilerOptions.Default, DecompilerToggles.SetToggle(off, bodies, true));
+        Assert.Equal(off, DecompilerToggles.SetToggle(DecompilerOptions.Default, bodies, false));
     }
 
     [Fact]
@@ -425,5 +425,32 @@ public sealed class DecompilationTests
                      rowSize * (MetadataTokens.GetRowNumber(attribute) - 1) + rowSize - blobIndexSize;
         image.AsSpan(offset, blobIndexSize).Fill(0xFF);
         return image;
+    }
+
+    [Fact]
+    public void Default_changes_hold_nothing_and_a_toggle_set_back_to_its_default_goes()
+    {
+        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
+
+        OnOffChanges<DecompilerToggle> none = default;
+        var set = none.With([bodies], !bodies.DefaultValue);
+        var back = set.With([bodies], bodies.DefaultValue);
+
+        Assert.Equal(0, none.Count);
+        Assert.False(none.Contains(bodies));
+        Assert.True(set.Contains(bodies));
+        Assert.Equal(0, back.Count);
+    }
+
+    [Fact]
+    public void Options_copied_with_with_keep_holding_only_what_differs()
+    {
+        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
+        var set = DecompilerToggles.SetToggle(DecompilerOptions.Default, bodies, !bodies.DefaultValue);
+
+        var copy = set with { Changes = set.Changes.With([bodies], bodies.DefaultValue) };
+
+        Assert.False(copy.HasChanges);
+        Assert.Equal(DecompilerOptions.Default, copy);
     }
 }

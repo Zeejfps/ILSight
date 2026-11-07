@@ -266,7 +266,7 @@ public sealed class AppTests
         app.ClickStartingWith("String concatenation");
         app.Settle(1);
 
-        Assert.False(app.AppState.DecompilerOptions.IsOn(DecompilerToggles.FindToggle("StringConcat")!));
+        Assert.False(DecompilerToggles.IsOn(app.AppState.DecompilerOptions, DecompilerToggles.FindToggle("StringConcat")!));
         Assert.Contains("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
 
         app.Click(Icons.OptionsResetDecompiler);
@@ -348,11 +348,11 @@ public sealed class AppTests
 
         app.Click("C# 8.0 / VS 2019");
         app.Settle(1);
-        Assert.All(csharp8, t => Assert.False(app.AppState.DecompilerOptions.IsOn(t)));
+        Assert.All(csharp8, t => Assert.False(DecompilerToggles.IsOn(app.AppState.DecompilerOptions, t)));
         Assert.DoesNotContain(nameof(CSharpVersion.CSharp8), app.Ui.FoldedOptionGroups.Folded);
 
         app.Click("switch expressions").Frame();
-        Assert.Equal(csharp8.Length - 1, csharp8.Count(app.AppState.DecompilerOptions.IsChanged));
+        Assert.Equal(csharp8.Length - 1, csharp8.Count(toggle => DecompilerToggles.IsChanged(app.AppState.DecompilerOptions, toggle)));
         Assert.False(IsBold(app, "switch expressions"));
         Assert.True(IsBold(app, "Async iterators"));
         Assert.True(IsBold(app, "C# 8.0 / VS 2019"));

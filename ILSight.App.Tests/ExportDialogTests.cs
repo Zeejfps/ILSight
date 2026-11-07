@@ -416,7 +416,7 @@ public sealed class ExportDialogTests : IDisposable
 
         app.Click("A folder per namespace part").Frame(2);
 
-        Assert.Equal(!nested.DefaultValue, app.AppState.DecompilerOptions.IsOn(nested));
+        Assert.Equal(!nested.DefaultValue, DecompilerToggles.IsOn(app.AppState.DecompilerOptions, nested));
     }
 
     [Fact]
@@ -462,7 +462,7 @@ public sealed class ExportDialogTests : IDisposable
 
         ResetDecompilerToggles(d.AppState);
 
-        Assert.Equal(!sdk.DefaultValue, d.AppState.DecompilerOptions.IsOn(sdk));
+        Assert.Equal(!sdk.DefaultValue, DecompilerToggles.IsOn(d.AppState.DecompilerOptions, sdk));
     }
 
     [Fact]

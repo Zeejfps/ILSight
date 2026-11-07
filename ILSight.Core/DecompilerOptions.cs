@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Reflection;
 using ICSharpCode.Decompiler;
@@ -41,7 +40,7 @@ public enum DecompilerToggleGroup
 
 /// <summary>One of the decompiler's on/off choices, named as the decompiler names it; <see cref="All"/>
 /// holds every one there is.</summary>
-public sealed class DecompilerToggle
+public sealed class DecompilerToggle : IOnOffChoice
 {
     public required string Name { get; init; }
 
@@ -77,6 +76,70 @@ public static class DecompilerToggles
     public static DecompilerToggle? FindToggle(string name)
     {
         return DecompilerToggle.ByName.GetValueOrDefault(name);
+    }
+
+    /// <summary>Whether <paramref name="toggle"/> is set away from its default.</summary>
+    public static bool IsChanged(DecompilerOptions options, DecompilerToggle toggle)
+    {
+        return options.Changes.Contains(toggle);
+    }
+
+    /// <summary>Whether <paramref name="toggle"/> is on as chosen, whether or not the version allows it.</summary>
+    public static bool IsOn(DecompilerOptions options, DecompilerToggle toggle)
+    {
+        return options.Changes.TryGetValue(toggle, out var value) ? value : toggle.DefaultValue;
+    }
+
+    /// <summary>Whether the options' <see cref="DecompilerOptions.LanguageVersion"/> is new enough for
+    /// <paramref name="toggle"/>.</summary>
+    public static bool Allows(DecompilerOptions options, DecompilerToggle toggle)
+    {
+        return toggle.IntroducedIn == null || toggle.IntroducedIn <= options.LanguageVersion;
+    }
+
+    /// <summary>Whether code in <paramref name="language"/> comes out the same with
+    /// <paramref name="options"/> as with <paramref name="other"/>.</summary>
+    public static bool ProducesSameCode(DecompilerOptions options, DecompilerOptions other, DecompilationLanguage language)
+    {
+        if (DecompilationLanguages.ShowsCSharp(language))
+            return LeaveOutProjectExport(options).Equals(LeaveOutProjectExport(other));
+        var symbols = DecompilerToggle.UseDebugSymbols;
+        return IsOn(options, symbols) == IsOn(other, symbols);
+    }
+
+    /// <summary>The options with every toggle that shapes code back at its default; the project
+    /// export toggles, which the export dialog sets, stay as they are.</summary>
+    public static DecompilerOptions ResetCodeToggles(DecompilerOptions options)
+    {
+        var shapingCode = DecompilerToggle.All.Where(static t => t.Group != DecompilerToggleGroup.ProjectExport);
+        return options with { Changes = options.Changes.Without(shapingCode) };
+    }
+
+    /// <summary>The options with the project export toggles at their defaults, as they only shape
+    /// exported projects, not code.</summary>
+    private static DecompilerOptions LeaveOutProjectExport(DecompilerOptions options)
+    {
+        var shapingProjects = DecompilerToggle.All.Where(static t => t.Group == DecompilerToggleGroup.ProjectExport);
+        return options with { Changes = options.Changes.Without(shapingProjects) };
+    }
+
+    public static DecompilerOptions SetToggle(DecompilerOptions options, DecompilerToggle toggle, bool value)
+    {
+        return SetToggle(options, [toggle], value);
+    }
+
+    public static DecompilerOptions SetToggle(DecompilerOptions options, IEnumerable<DecompilerToggle> toggles, bool value)
+    {
+        return options with { Changes = options.Changes.With(toggles, value) };
+    }
+
+    internal static void ApplyOptions(DecompilerOptions options, DecompilerSettings settings)
+    {
+        foreach (var (toggle, value) in options.Changes)
+        {
+            if (Allows(options, toggle))
+                ApplyToggle(toggle, settings, value);
+        }
     }
 
     internal static void ApplyToggle(DecompilerToggle toggle, DecompilerSettings settings, bool value)
@@ -126,81 +189,16 @@ public static class DecompilerToggles
 /// back with a newer version.</summary>
 public sealed record DecompilerOptions
 {
-    private static readonly IComparer<DecompilerToggle> ByName =
-        Comparer<DecompilerToggle>.Create(static (a, b) => string.CompareOrdinal(a.Name, b.Name));
-
     public static DecompilerOptions Default { get; } = new();
-
-    private ImmutableSortedDictionary<DecompilerToggle, bool> _changed = ImmutableSortedDictionary.Create<DecompilerToggle, bool>(ByName);
 
     /// <summary>The C# version written.</summary>
     public CSharpVersion LanguageVersion { get; init; } = CSharpVersion.CSharp14;
 
     /// <summary>The toggles set away from their defaults, by name, and what each is set to.</summary>
-    public IEnumerable<KeyValuePair<DecompilerToggle, bool>> Changes => _changed;
+    public OnOffChanges<DecompilerToggle> Changes { get; init; }
 
     /// <summary>Whether any toggle is set away from its default.</summary>
-    public bool HasChanges => _changed.Count > 0;
-
-    /// <summary>Whether <paramref name="toggle"/> is set away from its default.</summary>
-    public bool IsChanged(DecompilerToggle toggle) => _changed.ContainsKey(toggle);
-
-    /// <summary>Whether <paramref name="toggle"/> is on as chosen, whether or not the version allows it.</summary>
-    public bool IsOn(DecompilerToggle toggle) => _changed.TryGetValue(toggle, out var value) ? value : toggle.DefaultValue;
-
-    /// <summary>Whether <see cref="LanguageVersion"/> is new enough for <paramref name="toggle"/>.</summary>
-    public bool Allows(DecompilerToggle toggle) => toggle.IntroducedIn == null || toggle.IntroducedIn <= LanguageVersion;
-
-    /// <summary>Whether code in <paramref name="language"/> comes out the same with these options as
-    /// with <paramref name="other"/>.</summary>
-    public bool ProducesSameCode(DecompilerOptions other, DecompilationLanguage language)
-    {
-        if (DecompilationLanguages.ShowsCSharp(language))
-            return WithoutProjectExport().Equals(other.WithoutProjectExport());
-        var symbols = DecompilerToggle.UseDebugSymbols;
-        return IsOn(symbols) == other.IsOn(symbols);
-    }
-
-    /// <summary>These options with every toggle that shapes code back at its default; the project
-    /// export toggles, which the export dialog sets, stay as they are.</summary>
-    public DecompilerOptions WithCodeTogglesReset()
-    {
-        var toggles = _changed.ToBuilder();
-        foreach (var toggle in DecompilerToggle.All)
-        {
-            if (toggle.Group != DecompilerToggleGroup.ProjectExport)
-                toggles.Remove(toggle);
-        }
-        return this with { _changed = toggles.ToImmutable() };
-    }
-
-    /// <summary>These options with the project export toggles at their defaults, as they only shape
-    /// exported projects, not code.</summary>
-    private DecompilerOptions WithoutProjectExport()
-    {
-        var toggles = _changed.ToBuilder();
-        foreach (var toggle in DecompilerToggle.All)
-        {
-            if (toggle.Group == DecompilerToggleGroup.ProjectExport)
-                toggles.Remove(toggle);
-        }
-        return this with { _changed = toggles.ToImmutable() };
-    }
-
-    public DecompilerOptions With(DecompilerToggle toggle, bool value) => With([toggle], value);
-
-    public DecompilerOptions With(IEnumerable<DecompilerToggle> toggles, bool value)
-    {
-        var changed = _changed.ToBuilder();
-        foreach (var toggle in toggles)
-        {
-            if (value == toggle.DefaultValue)
-                changed.Remove(toggle);
-            else
-                changed[toggle] = value;
-        }
-        return this with { _changed = changed.ToImmutable() };
-    }
+    public bool HasChanges => Changes.Count > 0;
 
     /// <summary>Whether <paramref name="other"/> makes the same choices; the same options are equal at once,
     /// without walking the toggles.</summary>
@@ -212,22 +210,18 @@ public sealed record DecompilerOptions
             return false;
         if (LanguageVersion != other.LanguageVersion)
             return false;
-        if (_changed.Count != other._changed.Count)
+        if (Changes.Count != other.Changes.Count)
             return false;
-        return HasSameToggles(other);
+        foreach (var (toggle, value) in Changes)
+        {
+            if (!other.Changes.TryGetValue(toggle, out var otherValue) || otherValue != value)
+                return false;
+        }
+        return true;
     }
 
-    private bool HasSameToggles(DecompilerOptions other) =>
-        _changed.All(t => other._changed.TryGetValue(t.Key, out var value) && value == t.Value);
-
-    public override int GetHashCode() => HashCode.Combine(LanguageVersion, _changed.Count);
-
-    internal void Apply(DecompilerSettings settings)
+    public override int GetHashCode()
     {
-        foreach (var (toggle, value) in _changed)
-        {
-            if (Allows(toggle))
-                DecompilerToggles.ApplyToggle(toggle, settings, value);
-        }
+        return HashCode.Combine(LanguageVersion, Changes.Count);
     }
 }

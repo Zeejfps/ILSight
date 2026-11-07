@@ -131,7 +131,7 @@ public sealed class SettingsFormatTests : IDisposable
             Theme = ThemeId<ThemeFile>.Of("monokai"),
             IconTheme = ThemeId<IconThemeFile>.Of("custom-icons"),
             Language = DecompilationLanguage.IL,
-            Decompiler = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }.With(DecompilerToggles.FindToggle("AlwaysUseBraces")!, false),
+            Decompiler = DecompilerToggles.SetToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }, DecompilerToggles.FindToggle("AlwaysUseBraces")!, false),
             FoldedOptionGroups = ["Other"],
             Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, false, 1.25f, new CodeFont("Mono", @"C:\Fonts\Mono.ttf", 1),
                 TokenFormat.Hex, true, true, true, false),

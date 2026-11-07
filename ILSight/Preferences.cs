@@ -46,13 +46,13 @@ public static class Preferences
 
     public static void SetDecompilerToggle(AppState appState, DecompilerToggle toggle, bool value)
     {
-        var options = appState.DecompilerOptions.With(toggle, value);
+        var options = DecompilerToggles.SetToggle(appState.DecompilerOptions, toggle, value);
         SetDecompilerOptions(appState, options);
     }
 
     public static void SetDecompilerToggles(AppState appState, IEnumerable<DecompilerToggle> toggles, bool value)
     {
-        var options = appState.DecompilerOptions.With(toggles, value);
+        var options = DecompilerToggles.SetToggle(appState.DecompilerOptions, toggles, value);
         SetDecompilerOptions(appState, options);
     }
 
@@ -60,7 +60,7 @@ public static class Preferences
     /// version and how projects are exported.</summary>
     public static void ResetDecompilerToggles(AppState appState)
     {
-        var options = appState.DecompilerOptions.WithCodeTogglesReset();
+        var options = DecompilerToggles.ResetCodeToggles(appState.DecompilerOptions);
         SetDecompilerOptions(appState, options);
     }
 

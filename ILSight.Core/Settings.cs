@@ -17,7 +17,7 @@ internal static class Settings
             ThrowOnAssemblyResolveErrors = false,
             ExpandMemberDefinitions = true,
         };
-        options.Apply(settings);
+        DecompilerToggles.ApplyOptions(options, settings);
         settings.CSharpFormattingOptions.IndentationString = Indentation;
         return settings;
     }

@@ -325,14 +325,12 @@ public sealed class ExportTests : IDisposable
     {
         var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces")!;
         var deadCode = DecompilerToggles.FindToggle("RemoveDeadCode")!;
-        var changed = DecompilerOptions.Default
-            .With(nested, !nested.DefaultValue)
-            .With(deadCode, !deadCode.DefaultValue);
+        var changed = DecompilerToggles.SetToggle(DecompilerToggles.SetToggle(DecompilerOptions.Default, nested, !nested.DefaultValue), deadCode, !deadCode.DefaultValue);
 
-        var reset = changed.WithCodeTogglesReset();
+        var reset = DecompilerToggles.ResetCodeToggles(changed);
 
-        Assert.Equal(!nested.DefaultValue, reset.IsOn(nested));
-        Assert.Equal(deadCode.DefaultValue, reset.IsOn(deadCode));
+        Assert.Equal(!nested.DefaultValue, DecompilerToggles.IsOn(reset, nested));
+        Assert.Equal(deadCode.DefaultValue, DecompilerToggles.IsOn(reset, deadCode));
     }
 
     [Fact]
@@ -349,8 +347,8 @@ public sealed class ExportTests : IDisposable
     public void The_project_export_toggles_leave_decompiled_code_as_it_was()
     {
         var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces")!;
-        var changed = DecompilerOptions.Default.With(nested, !nested.DefaultValue);
+        var changed = DecompilerToggles.SetToggle(DecompilerOptions.Default, nested, !nested.DefaultValue);
 
-        Assert.True(changed.ProducesSameCode(DecompilerOptions.Default, DecompilationLanguage.CSharp));
+        Assert.True(DecompilerToggles.ProducesSameCode(changed, DecompilerOptions.Default, DecompilationLanguage.CSharp));
     }
 }

@@ -51,6 +51,7 @@ internal static class ShapeExceptions
         "ILSight.Core.AssemblyPicks`1",
         "ILSight.Core.NaturalStringComparer",
         "ILSight.Core.NuGetSource",
+        "ILSight.Core.OnOffChanges`1",
         "ILSight.Core.PackageId",
         "ILSight.Core.PackageVersion",
         "ILSight.Core.TargetFrameworkId",
@@ -90,15 +91,6 @@ internal static class ShapeExceptions
     /// <summary>Methods on records, still to move to static functions.</summary>
     public static readonly string[] RecordsWithMethods =
     [
-        "ILSight.Core.DecompilerOptions.Allows",
-        "ILSight.Core.DecompilerOptions.Apply",
-        "ILSight.Core.DecompilerOptions.HasSameToggles",
-        "ILSight.Core.DecompilerOptions.IsChanged",
-        "ILSight.Core.DecompilerOptions.IsOn",
-        "ILSight.Core.DecompilerOptions.ProducesSameCode",
-        "ILSight.Core.DecompilerOptions.With",
-        "ILSight.Core.DecompilerOptions.WithCodeTogglesReset",
-        "ILSight.Core.DecompilerOptions.WithoutProjectExport",
     ];
 
     /// <summary>Static caches that are purely a speed-up, by why they may stay, and the one seam. These stay.</summary>

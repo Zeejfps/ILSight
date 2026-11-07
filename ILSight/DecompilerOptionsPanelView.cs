@@ -111,7 +111,12 @@ internal static class DecompilerOptionsPanelView
     /// <summary>True when every toggle in <paramref name="section"/> is on, false when none is, null otherwise.</summary>
     private static bool? State(Section section, DecompilerOptions options)
     {
-        var on = section.Toggles.Count(options.IsOn);
+        var on = 0;
+        foreach (var toggle in section.Toggles)
+        {
+            if (DecompilerToggles.IsOn(options, toggle))
+                on++;
+        }
         if (on == section.Toggles.Length)
             return true;
         if (on == 0)
@@ -124,7 +129,7 @@ internal static class DecompilerOptionsPanelView
     {
         foreach (var toggle in section.Toggles)
         {
-            if (options.IsChanged(toggle)) return true;
+            if (DecompilerToggles.IsChanged(options, toggle)) return true;
         }
         return false;
     }
@@ -141,9 +146,9 @@ internal static class DecompilerOptionsPanelView
             AlignY = Align.Center,
         }))
         {
-            var on = options.IsOn(toggle);
-            if (ui.Checkbox(DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name, ref on, id: toggle.Name, enabled: options.Allows(toggle),
-                    width: Sizing.Grow(), bold: options.IsChanged(toggle)))
+            var on = DecompilerToggles.IsOn(options, toggle);
+            if (ui.Checkbox(DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name, ref on, id: toggle.Name, enabled: DecompilerToggles.Allows(options, toggle),
+                    width: Sizing.Grow(), bold: DecompilerToggles.IsChanged(options, toggle)))
                 Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
         }
     }
