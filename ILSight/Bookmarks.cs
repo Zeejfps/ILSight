@@ -104,9 +104,9 @@ public static class Bookmarks
     public static IReadOnlyDictionary<int, bool> ListMarkedLines(BookmarkList list, DecompiledDocument document, BrowseNode node)
     {
         var marks = list.MarksByDocument.GetOrCreateValue(document);
-        if (marks.Revision == list.Revision && Equals(marks.Place, node.Path)) return marks.Lines;
+        if (marks.Revision == list.Revision && Equals(marks.Place, BrowseNodes.GetPath(node))) return marks.Lines;
         marks.Revision = list.Revision;
-        marks.Place = node.Path;
+        marks.Place = BrowseNodes.GetPath(node);
         marks.Lines.Clear();
         foreach (var bookmark in list.Items)
         {
@@ -146,7 +146,7 @@ public static class Bookmarks
     /// so that it is saved with the labels the node shows now.</summary>
     public static void Resolve(BookmarkList list, Bookmark bookmark, BrowseNode node)
     {
-        bookmark.Place = node.Path;
+        bookmark.Place = BrowseNodes.GetPath(node);
         list.Revision++;
     }
 
@@ -387,7 +387,7 @@ public static class Bookmarks
         var node = ILSpyTree.Locate(assemblies, session, record.FileName, treePath, record.Token, record.MemberName);
         if (node == null)
             return new FoundBookmark(record, null);
-        return new FoundBookmark(record, node.Path);
+        return new FoundBookmark(record, BrowseNodes.GetPath(node));
     }
 
     private static void TakeImported(AppState appState, Outcome<List<FoundBookmark>> found, string file)
@@ -499,7 +499,7 @@ public static class Bookmarks
     /// <summary>The bookmark made in the document of <paramref name="node"/>.</summary>
     public static Bookmark CreateAt(BrowseNode node, DecompilationLanguage language, int line, CodeAnchor? anchor, string name, ILSpyBookmarkInfo ilspy)
     {
-        return CreateBookmark(node.Path, language, line, anchor, name, ilspy, null, true);
+        return CreateBookmark(BrowseNodes.GetPath(node), language, line, anchor, name, ilspy, null, true);
     }
 
     /// <summary>The bookmark <paramref name="record"/> describes, made in the document of <paramref name="place"/>.</summary>
@@ -554,7 +554,7 @@ public static class Bookmarks
     public static int FindLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
     {
         return bookmark.Anchor != null ? Documents.FindLine(document, bookmark.Anchor.Value)
-        : bookmark.Language == document.Language && bookmark.Place.Equals(node.Path) && bookmark.Line < document.Lines.Length ? bookmark.Line
+        : bookmark.Language == document.Language && bookmark.Place.Equals(BrowseNodes.GetPath(node)) && bookmark.Line < document.Lines.Length ? bookmark.Line
         : -1;
     }
 }

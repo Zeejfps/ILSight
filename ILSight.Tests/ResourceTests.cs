@@ -130,7 +130,7 @@ public sealed class ResourceTests
 
         var image = Assert.IsType<ImageContent>(resources.Child("logo.png").Content()).Image;
         Assert.Equal(Expected, image.Rgba);
-        Assert.Equal(Fixture("logo.png"), resources.Child("logo.png").ReadResource());
+        Assert.Equal(Fixture("logo.png"), BrowseNodes.ReadResource(resources.Child("logo.png")));
     }
 
     [Fact]
@@ -220,8 +220,8 @@ public sealed class ResourceTests
         var file = Resources(Trees.TestAssembly).Child("Mixed.resources");
 
         Assert.True(file.HasResource);
-        Assert.Equal(Fixture("Mixed.resources"), file.ReadResource());
-        Assert.Equal("Mixed.resources", file.ResourceFileName);
+        Assert.Equal(Fixture("Mixed.resources"), BrowseNodes.ReadResource(file));
+        Assert.Equal("Mixed.resources", BrowseNodes.GetResourceFileName(file));
         Assert.True(file.HasChildren);
         Assert.IsType<GridContent>(file.Content(DecompilationLanguage.IL));
         Assert.False(NodeContentLoader.DependsOnLanguage(file));
@@ -262,9 +262,9 @@ public sealed class ResourceTests
     {
         var baml = MainWindowBaml();
 
-        var saved = Encoding.UTF8.GetString(baml.ReadResource());
+        var saved = Encoding.UTF8.GetString(BrowseNodes.ReadResource(baml));
 
-        Assert.Equal("mainwindow.xaml", baml.ResourceFileName);
+        Assert.Equal("mainwindow.xaml", BrowseNodes.GetResourceFileName(baml));
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", saved);
     }
 

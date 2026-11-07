@@ -90,7 +90,7 @@ public sealed class TargetFrameworkTests
 
         Assert.All(shapes, shape => Assert.Equal(before, shape));
         Assert.Same(sample, SampleOf(app.AppState));
-        Assert.Equal(greeter.Path, tree.View.Selected!.Path);
+        Assert.Equal(BrowseNodes.GetPath(greeter), BrowseNodes.GetPath(tree.View.Selected!));
         Assert.NotSame(greeter, tree.View.Selected);
         Assert.Same(FixturesOf(app.AppState), app.AppState.Tabs.Active!.Node!.Assembly);
         Assert.Empty(app.AppState.Errors.Entries);

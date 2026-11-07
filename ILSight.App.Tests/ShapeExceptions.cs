@@ -70,7 +70,6 @@ internal static class ShapeExceptions
         "ILSight.AnalyzerRows",
         "ILSight.BrowseTree",
         "ILSight.ComparisonRows",
-        "ILSight.Core.BrowseNode",
         "ILSight.Core.BrowseSession",
         "ILSight.UiState",
     ];

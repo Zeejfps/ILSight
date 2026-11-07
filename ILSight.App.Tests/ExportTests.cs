@@ -76,7 +76,7 @@ public sealed class ExportTests : IDisposable
         Assert.True(CanSaveCode(node));
         SaveCode(d.AppState, node, path);
 
-        Assert.Equal(node.ReadResource(), File.ReadAllBytes(path));
+        Assert.Equal(BrowseNodes.ReadResource(node), File.ReadAllBytes(path));
     }
 
     [Fact]

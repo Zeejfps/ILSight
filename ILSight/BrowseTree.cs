@@ -286,7 +286,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             foreach (var node in nodes)
             {
                 if (!View.IsExpanded(node)) continue;
-                paths.Add(node.Path);
+                paths.Add(BrowseNodes.GetPath(node));
                 if (_session.PeekChildren(node) is ChildrenState.Ready loaded)
                     Collect(loaded.Children);
             }

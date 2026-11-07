@@ -5,7 +5,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core;
 
-public sealed partial class BrowseNode
+public static partial class BrowseNodes
 {
     private const string LocalFunctionMarker = ">g__";
 
@@ -24,21 +24,21 @@ public sealed partial class BrowseNode
         LoadedAssemblies.EnsureReferenceUsage(module);
         return module.File.AssemblyReferences
             .OrderBy(r => r.Name, NaturalStringComparer.Instance)
-            .Select(r => (BrowseNode)new BrowseNode(parent, new NodeSubject.AssemblyReference { Value = new AssemblyReferenceInfo { Module = module, Reference = r } }))
+            .Select(r => Create(parent, new NodeSubject.AssemblyReference { Value = new AssemblyReferenceInfo { Module = module, Reference = r } }))
             .ToArray();
     }
 
     /// <summary>The types the module uses from the reference, then the references of the assembly it
     /// resolves to, found where following it finds it but not listed; only the types when it resolves
     /// to none.</summary>
-    private BrowseNode[] ListReferenceContents(AssemblyReferenceInfo reference)
+    private static BrowseNode[] ListReferenceContents(BrowseNode parent, AssemblyReferenceInfo reference)
     {
         var children = new List<BrowseNode>();
         if (ForwardedTypes.UsesReference(LoadedAssemblies.EnsureReferenceUsage(reference.Module), reference.Reference.Handle))
-            children.Add(new BrowseNode(this, new NodeSubject.ReferencedTypes { Reference = reference }));
+            children.Add(Create(parent, new NodeSubject.ReferencedTypes { Reference = reference }));
         var referenced = ResolveReferenced(reference);
         if (referenced != null)
-            children.AddRange(ListAssemblyReferences(referenced, this));
+            children.AddRange(ListAssemblyReferences(referenced, parent));
         return children.ToArray();
     }
 
@@ -53,41 +53,41 @@ public sealed partial class BrowseNode
 
     /// <summary>The types the module uses from <paramref name="reference"/>, sorted by namespace, then
     /// name, and after them the types it forwards there.</summary>
-    private BrowseNode[] ListUsedTypes(AssemblyReferenceInfo reference)
+    private static BrowseNode[] ListUsedTypes(BrowseNode parent, AssemblyReferenceInfo reference)
     {
         var module = reference.Module;
         var usage = LoadedAssemblies.EnsureReferenceUsage(module);
         var metadata = module.File.Metadata;
         var handle = reference.Reference.Handle;
         var used = ForwardedTypes.ListTypesIn(usage, handle)
-            .Select(h => UsedTypeInfo(module, h))
+            .Select(h => CreateUsedTypeInfo(parent, module, h))
             .OrderBy(i => i.Namespace, NaturalStringComparer.Instance)
             .ThenBy(i => i.Label, NaturalStringComparer.Instance)
-            .Select(i => new BrowseNode(this, new NodeSubject.TypeReference { Value = i }));
+            .Select(i => Create(parent, new NodeSubject.TypeReference { Value = i }));
         var forwarded = ForwardedTypes.ListForwardedTo(usage, handle)
             .Select(h => ForwardedTypes.Read(metadata, h))
             .OrderBy(f => f.Namespace, NaturalStringComparer.Instance)
             .ThenBy(f => f.Label, NaturalStringComparer.Instance)
-            .Select(f => (BrowseNode)Forwarded(module, this, f));
+            .Select(f => (BrowseNode)CreateForwarded(module, parent, f));
         return used
             .Concat(forwarded)
             .ToArray();
     }
 
     /// <summary>The node of a type forwarded to another assembly, under <paramref name="parent"/>.</summary>
-    internal static BrowseNode Forwarded(LoadedModule module, BrowseNode parent, ForwardedType type)
+    internal static BrowseNode CreateForwarded(LoadedModule module, BrowseNode parent, ForwardedType type)
     {
-        return new(parent, new NodeSubject.ForwardedType { Value = NodeDefinitions.CreateForwardedType(module, type) });
+        return Create(parent, new NodeSubject.ForwardedType { Value = NodeDefinitions.CreateForwardedType(module, type) });
     }
 
     /// <summary>The node of the type <paramref name="handle"/> names, used from a reference, under this node.</summary>
-    private BrowseNode UsedType(LoadedModule module, TypeReferenceHandle handle)
+    private static BrowseNode CreateUsedType(BrowseNode parent, LoadedModule module, TypeReferenceHandle handle)
     {
-        return new(this, new NodeSubject.TypeReference { Value = UsedTypeInfo(module, handle) });
+        return Create(parent, new NodeSubject.TypeReference { Value = CreateUsedTypeInfo(parent, module, handle) });
     }
 
     /// <summary>The type <paramref name="handle"/> names, used from a reference, as listed under this node.</summary>
-    private TypeReferenceInfo UsedTypeInfo(LoadedModule module, TypeReferenceHandle handle)
+    private static TypeReferenceInfo CreateUsedTypeInfo(BrowseNode parent, LoadedModule module, TypeReferenceHandle handle)
     {
         var metadata = module.File.Metadata;
         var reference = metadata.GetTypeReference(handle);
@@ -95,15 +95,15 @@ public sealed partial class BrowseNode
         var bare = ReflectionHelper.SplitTypeParameterCountFromReflectionName(name, out var arity);
         var label = ForwardedTypes.LabelOf(bare, arity);
         var ns = metadata.GetString(reference.Namespace);
-        return new TypeReferenceInfo { Module = module, Handle = handle, Namespace = ns, Label = label, FullName = QualifiedName(ns, label), ReflectionName = QualifiedReflectionName(ns, name) };
+        return new TypeReferenceInfo { Module = module, Handle = handle, Namespace = ns, Label = label, FullName = GetQualifiedName(parent, ns, label), ReflectionName = GetQualifiedReflectionName(parent, ns, name) };
     }
 
     /// <summary>The full name of a type labelled <paramref name="label"/> listed under this node: after the
     /// type it is nested in, when this node is one, else after its namespace.</summary>
-    private string QualifiedName(string ns, string label)
+    private static string GetQualifiedName(BrowseNode parent, string ns, string label)
     {
-        if (Subject is NodeSubject.TypeReference)
-            return $"{FullName}.{label}";
+        if (parent.Subject is NodeSubject.TypeReference)
+            return $"{GetFullName(parent)}.{label}";
         if (ns.Length == 0)
             return label;
         return $"{ns}.{label}";
@@ -111,9 +111,9 @@ public sealed partial class BrowseNode
 
     /// <summary>The reflection name of a type metadata names <paramref name="name"/> listed under this node:
     /// after the type it is nested in, when this node is one, else after its namespace.</summary>
-    private string QualifiedReflectionName(string ns, string name)
+    private static string GetQualifiedReflectionName(BrowseNode parent, string ns, string name)
     {
-        if (Subject is NodeSubject.TypeReference holder)
+        if (parent.Subject is NodeSubject.TypeReference holder)
             return $"{holder.Value.ReflectionName}+{name}";
         if (ns.Length == 0)
             return name;
@@ -130,27 +130,27 @@ public sealed partial class BrowseNode
 
     /// <summary>The types nested in the used type and the members of it the module uses, each sorted by
     /// label; a member used under several type arguments once, and overloads whose labels match each.</summary>
-    private BrowseNode[] ListUsedOf(TypeReferenceInfo type)
+    private static BrowseNode[] ListUsedOf(BrowseNode parent, TypeReferenceInfo type)
     {
         var usage = LoadedAssemblies.EnsureReferenceUsage(type.Module);
         var module = LoadedAssemblies.EnsureMainModule(type.Module);
         var nested = ForwardedTypes.ListTypesIn(usage, type.Handle)
-            .Select(h => UsedType(type.Module, h))
+            .Select(h => CreateUsedType(parent, type.Module, h))
             .OrderBy(n => n.Text, NaturalStringComparer.Instance)
             .Cast<BrowseNode>();
         var members = ForwardedTypes.ListMembersOf(usage, type.Handle)
-            .Select(h => UsedMember(type.Module, h, ResolveDeclared(module, h)))
-            .DistinctBy(n => n.Segment)
+            .Select(h => CreateUsedMember(parent, type.Module, h, ResolveDeclared(module, h)))
+            .DistinctBy(n => BrowseNodes.GetSegment(n))
             .OrderBy(n => n.Text, NaturalStringComparer.Instance);
         return nested
             .Concat(members)
             .ToArray();
     }
 
-    private BrowseNode UsedMember(LoadedModule module, MemberReferenceHandle handle, IMember declared)
+    private static BrowseNode CreateUsedMember(BrowseNode parent, LoadedModule module, MemberReferenceHandle handle, IMember declared)
     {
-        var info = new MemberReferenceInfo { Module = module, Handle = handle, Declared = declared, FullName = $"{FullName}.{EntityText.Label(declared)}" };
-        return new BrowseNode(this, new NodeSubject.MemberReference { Value = info });
+        var info = new MemberReferenceInfo { Module = module, Handle = handle, Declared = declared, FullName = $"{GetFullName(parent)}.{EntityText.Label(declared)}" };
+        return Create(parent, new NodeSubject.MemberReference { Value = info });
     }
 
     /// <summary>The member <paramref name="handle"/> uses as its type declares it: for an accessor, the
@@ -180,19 +180,19 @@ public sealed partial class BrowseNode
         var imports = ListImportsByModule(metadata);
         return Enumerable.Range(1, metadata.GetTableRowCount(TableIndex.ModuleRef))
             .Select(MetadataTokens.ModuleReferenceHandle)
-            .Select(h => ModuleReferenceOf(module, parent, h, imports))
+            .Select(h => CreateModuleReference(module, parent, h, imports))
             .OrderBy(n => n.Text, NaturalStringComparer.Instance)
             .Cast<BrowseNode>()
             .ToArray();
     }
 
-    private static BrowseNode ModuleReferenceOf(LoadedModule module, BrowseNode parent, ModuleReferenceHandle handle,
+    private static BrowseNode CreateModuleReference(LoadedModule module, BrowseNode parent, ModuleReferenceHandle handle,
         Dictionary<ModuleReferenceHandle, List<MethodDefinitionHandle>> imports)
     {
         var metadata = module.File.Metadata;
         var name = metadata.GetString(metadata.GetModuleReference(handle).Name);
-        var info = new ModuleReferenceInfo { Module = module, Name = name, ContainsMetadata = IsModuleWithMetadata(metadata, name), Imports = ImportsFrom(imports, handle) };
-        return new BrowseNode(parent, new NodeSubject.ModuleReference { Value = info });
+        var info = new ModuleReferenceInfo { Module = module, Name = name, ContainsMetadata = IsModuleWithMetadata(metadata, name), Imports = ListImportsFrom(imports, handle) };
+        return Create(parent, new NodeSubject.ModuleReference { Value = info });
     }
 
     /// <summary>Whether the assembly's file table lists the module as one holding metadata.</summary>
@@ -226,7 +226,7 @@ public sealed partial class BrowseNode
         return imports;
     }
 
-    private static IReadOnlyList<MethodDefinitionHandle> ImportsFrom(Dictionary<ModuleReferenceHandle, List<MethodDefinitionHandle>> imports,
+    private static IReadOnlyList<MethodDefinitionHandle> ListImportsFrom(Dictionary<ModuleReferenceHandle, List<MethodDefinitionHandle>> imports,
         ModuleReferenceHandle module)
     {
         if (imports.TryGetValue(module, out var methods))
@@ -235,20 +235,20 @@ public sealed partial class BrowseNode
     }
 
     /// <summary>The methods imported from the module, sorted by label, then by the type declaring each.</summary>
-    private BrowseNode[] ListImports(ModuleReferenceInfo module)
+    private static BrowseNode[] ListImports(BrowseNode parent, ModuleReferenceInfo module)
     {
         var typeSystem = LoadedAssemblies.EnsureMainModule(module.Module);
         var imports = new List<ImportedMethodInfo>();
         foreach (var handle in module.Imports)
         {
-            var import = ImportOf(typeSystem.GetDefinition(handle), module);
+            var import = CreateImport(typeSystem.GetDefinition(handle), module);
             if (import != null)
                 imports.Add(import);
         }
         return imports
             .OrderBy(i => i.Label, NaturalStringComparer.Instance)
             .ThenBy(i => i.DeclaringTypeName, NaturalStringComparer.Instance)
-            .Select(i => (BrowseNode)new BrowseNode(this, new NodeSubject.ImportedMethod { Value = i }))
+            .Select(i => Create(parent, new NodeSubject.ImportedMethod { Value = i }))
             .ToArray();
     }
 
@@ -256,7 +256,7 @@ public sealed partial class BrowseNode
     /// type declaring it. A stub the compiler generates as a local function, as <c>[LibraryImport]</c>
     /// does, is labelled and goes as the method declaring it, with the stub's own parameters, the ones
     /// the module is called with. Null for a method no type declares or with no address.</summary>
-    private static ImportedMethodInfo? ImportOf(IMethod method, ModuleReferenceInfo module)
+    private static ImportedMethodInfo? CreateImport(IMethod method, ModuleReferenceInfo module)
     {
         var declaring = method.DeclaringTypeDefinition;
         if (declaring == null)
@@ -265,11 +265,11 @@ public sealed partial class BrowseNode
         if (shown == null)
             return null;
         var entryPoint = ReadEntryPoint(module.Module.File.Metadata, method);
-        return new ImportedMethodInfo { Shown = shown, Id = IdStringProvider.GetIdString(method), Label = ImportLabelOf(method), DeclaringTypeName = EntityText.FullName(declaring), EntryPoint = entryPoint, ModuleName = module.Name };
+        return new ImportedMethodInfo { Shown = shown, Id = IdStringProvider.GetIdString(method), Label = GetImportLabel(method), DeclaringTypeName = EntityText.FullName(declaring), EntryPoint = entryPoint, ModuleName = module.Name };
     }
 
     /// <summary>The tree's label for <paramref name="method"/>, named as the method enclosing it when it is a local function.</summary>
-    private static string ImportLabelOf(IMethod method)
+    private static string GetImportLabel(IMethod method)
     {
         var label = EntityText.Label(method);
         var enclosing = FindEnclosingName(method.Name);

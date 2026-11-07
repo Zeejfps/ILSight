@@ -15,7 +15,7 @@ public static class Navigation
     /// <summary>Records a new place, dropping what was forward of the current one.</summary>
     public static void RecordPlace(NavigationHistory history, BrowseNode node, DecompilationLanguage language)
     {
-        var place = node.Path;
+        var place = BrowseNodes.GetPath(node);
         if (IsCurrentPlace(history, place))
             return;
         AddEntry(history, new HistoryEntry.Node(place, NodeIcons.Of(node.Subject), NodeDefinitions.GetVisibility(node.Subject).Accessibility, language, null));

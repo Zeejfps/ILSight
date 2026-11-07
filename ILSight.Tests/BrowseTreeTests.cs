@@ -38,7 +38,7 @@ public sealed class BrowseTreeTests
         Assert.False(circle.IsPublicApi);
         Assert.False(circle.Child("Area : double").IsPublicApi);
         Assert.Equal(NodeAccessibility.Public, circle.Child("Area : double").Accessibility);
-        Assert.Equal("ILSight.Tests.Fixtures.Calculator<T>", fixtures.Child("Calculator<T>").FullName);
+        Assert.Equal("ILSight.Tests.Fixtures.Calculator<T>", BrowseNodes.GetFullName(fixtures.Child("Calculator<T>")));
     }
 
     [Fact]
@@ -187,9 +187,9 @@ public sealed class BrowseTreeTests
         var (list, assembly) = Trees.OpenTestAssembly();
         var add = assembly.Calculator().Child("Add(T) : void");
 
-        Assert.Same(add, list.FindNode(add.Path));
-        Assert.Same(add, list.FindListedNode(add.Path));
-        Assert.Same(assembly.Root, list.FindNode(assembly.Root.Path));
+        Assert.Same(add, list.FindNode(BrowseNodes.GetPath(add)));
+        Assert.Same(add, list.FindListedNode(BrowseNodes.GetPath(add)));
+        Assert.Same(assembly.Root, list.FindNode(BrowseNodes.GetPath(assembly.Root)));
     }
 
     [Fact]

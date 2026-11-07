@@ -88,10 +88,10 @@ public sealed class PathIdentityTests : IDisposable
 
         var after = new AssemblyList();
         after.Open(path);
-        var found = places.Select(p => after.FindNode(p.Path)).ToArray();
+        var found = places.Select(p => after.FindNode(BrowseNodes.GetPath(p))).ToArray();
 
         Assert.All(found, Assert.NotNull);
-        Assert.Equal(places.Select(static p => p.Path), found.Select(static f => f!.Path));
+        Assert.Equal(places.Select(static p => BrowseNodes.GetPath(p)), found.Select(static f => BrowseNodes.GetPath(f!)));
         Assert.Equal(["Box<TItem>", "Put(TItem) : void"], found.Take(2).Select(static f => f!.Text));
         Assert.Equal(TypeShape.Record, found[2]!.TypeShape);
         Assert.Equal(MemberShape.Constant, found[3]!.MemberShape);
@@ -123,7 +123,7 @@ public sealed class PathIdentityTests : IDisposable
         WritePackage(path, withNotes: true);
 
         var list = new AssemblyList();
-        var found = new[] { list.FindNode(lib.Path), list.FindNode(shape.Path) };
+        var found = new[] { list.FindNode(BrowseNodes.GetPath(lib)), list.FindNode(BrowseNodes.GetPath(shape)) };
 
         Assert.Equal(["net10.0", "Shape"], found.Select(static f => f?.Text));
         Assert.Equal("lib", found[0]!.Parent!.Text);
@@ -135,15 +135,15 @@ public sealed class PathIdentityTests : IDisposable
     {
         Assert.Equal(2, nodes.Length);
         Assert.Equal(nodes[0].Text, nodes[1].Text);
-        Assert.NotEqual(nodes[0].Path, nodes[1].Path);
+        Assert.NotEqual(BrowseNodes.GetPath(nodes[0]), BrowseNodes.GetPath(nodes[1]));
         var reopened = new AssemblyList();
         reopened.Open(path);
 
-        var found = nodes.Select(n => reopened.FindNode(n.Path)).ToArray();
+        var found = nodes.Select(n => reopened.FindNode(BrowseNodes.GetPath(n))).ToArray();
 
         Assert.All(found, Assert.NotNull);
         Assert.NotSame(found[0], found[1]);
-        Assert.Equal(nodes.Select(static n => n.Path), found.Select(static f => f!.Path));
+        Assert.Equal(nodes.Select(static n => BrowseNodes.GetPath(n)), found.Select(static f => BrowseNodes.GetPath(f!)));
     }
 
     /// <summary>Gives the first entry of the debug directory of the file at <paramref name="path"/> of type

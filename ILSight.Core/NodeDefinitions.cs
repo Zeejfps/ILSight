@@ -205,7 +205,7 @@ public static class NodeDefinitions
         var n = node;
         while (n.Parent != null)
         {
-            var segment = n.Segment ?? throw new UnreachableException();
+            var segment = BrowseNodes.GetSegment(n) ?? throw new UnreachableException();
             steps.Add(new NodePathStep(segment, n.Text));
             if (segment.IsPackageEntry)
             {

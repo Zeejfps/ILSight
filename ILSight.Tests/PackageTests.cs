@@ -121,7 +121,7 @@ public sealed class PackageTests
         Assert.Empty(list.Assemblies.Intersect(old));
         var root = TestAssemblyRoot(fresh.Root.Child(LibFolder));
         Assert.Same(list.Assemblies[1], root.Assembly);
-        Assert.Same(root, list.FindNode(old[1].Root.Path));
+        Assert.Same(root, list.FindNode(BrowseNodes.GetPath(old[1].Root)));
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public sealed class PackageTests
         var first = new AssemblyList();
         var calculator = TestAssemblyRoot(first.Open(packagePath).Root.Child(LibFolder)).Assembly.Calculator();
 
-        var path = calculator.Path;
+        var path = BrowseNodes.GetPath(calculator);
         var second = new AssemblyList();
         var found = second.FindNode(path);
 
@@ -248,7 +248,7 @@ public sealed class PackageTests
         var readme = package.Root.Child("readme.txt");
         var native = package.Root.Child("runtimes/win-x64/native", "native.dll");
 
-        Assert.Equal("Read me", Encoding.UTF8.GetString(readme.ReadResource()));
+        Assert.Equal("Read me", Encoding.UTF8.GetString(BrowseNodes.ReadResource(readme)));
         Assert.IsType<NodeSubject.PackageFile>(native.Subject);
         Assert.False(native.IsImage);
         Assert.Contains("Read me", Documents.GetText(readme.Decompile(DecompilationLanguage.CSharp)));

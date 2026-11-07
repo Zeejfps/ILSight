@@ -62,7 +62,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var used = assembly.Root.Child("References", Core, "Referenced types", nameof(NodeContent));
 
         Assert.IsType<NodeSubject.TypeReference>(used.Subject);
-        Assert.Equal(typeof(NodeContent).FullName, used.FullName);
+        Assert.Equal(typeof(NodeContent).FullName, BrowseNodes.GetFullName(used));
         Assert.Null(list.FindNode(used.Destination));
         Assert.NotEmpty(used.Children);
         Assert.All(used.Children, m => Assert.Null(list.FindNode(m.Destination)));

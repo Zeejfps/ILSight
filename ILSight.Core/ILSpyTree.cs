@@ -134,7 +134,7 @@ public static class ILSpyTree
     public static ILSpyBookmarkInfo Describe(BrowseNode place, CodeAnchor? anchor)
     {
         var assembly = place.Assembly;
-        var entity = BrowseNode.EntityOf(place);
+        var entity = BrowseNodes.GetEntity(place);
         var token = entity is null ? 0u : (uint)MetadataTokens.GetToken(entity.MetadataToken);
         if (anchor != null && anchor.Value.FilePath.Equals(assembly.FilePath))
         {
@@ -146,7 +146,7 @@ public static class ILSpyTree
         {
             token = (uint)anchor.Value.Token;
         }
-        var location = BrowseNode.EntityOf(place)?.FullName ?? NameOf(place);
+        var location = BrowseNodes.GetEntity(place)?.FullName ?? NameOf(place);
         return new ILSpyBookmarkInfo(assembly.FullName, assembly.FilePath.FileName, token, entity?.FullName ?? location ?? place.Text, location,
             PathOf(place));
     }

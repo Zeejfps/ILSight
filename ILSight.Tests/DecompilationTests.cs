@@ -403,7 +403,7 @@ public sealed class DecompilationTests
         while (pending.Count > 0)
         {
             var node = pending.Pop();
-            if (BrowseNode.EntityOf(node) == null && !IsModule(node))
+            if (BrowseNodes.GetEntity(node) == null && !IsModule(node))
                 nodes.Add(node);
             if (IsLeafToSummarize(node))
                 continue;

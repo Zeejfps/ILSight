@@ -198,7 +198,7 @@ internal static class TreePaneView
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))
             ui.State.Later(jump.Target, static (a, target) => GoTo(a, target));
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))
-            ui.ClipboardText = node.FullName;
+            ui.ClipboardText = BrowseNodes.GetFullName(node);
         DocsItem(ui, node);
         if (Analyzers.Of(node) != null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
             ui.State.Later((screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));

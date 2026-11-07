@@ -67,7 +67,7 @@ public static class NodeContentLoader
     /// offered under: the node's name, made safe for a file name, with the language's extension.</summary>
     public static string SuggestCodeFileName(BrowseNode node, DecompilationLanguage language)
     {
-        var name = IsModule(node) ? node.Assembly.Name : BrowseNode.EntityOf(node)?.Name ?? node.Text;
+        var name = IsModule(node) ? node.Assembly.Name : BrowseNodes.GetEntity(node)?.Name ?? node.Text;
         var extension = DecompilationLanguages.IsIL(language) ? ".il" : ".cs";
         return WholeProjectDecompiler.CleanUpFileName(name, extension);
     }
@@ -103,7 +103,7 @@ public static class NodeContentLoader
     private static ImageContent LoadImage(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken)
     {
-        var image = ResourceImages.DecodeImage(node.ReadResource());
+        var image = ResourceImages.DecodeImage(BrowseNodes.ReadResource(node));
         if (!image.IsVector)
             return new ImageContent(image);
         var source = Decompile(session, node, language, options, cancellationToken);
@@ -121,46 +121,50 @@ public static class NodeContentLoader
     {
         return node.Subject switch
         {
-            NodeSubject.TypeDefinition type => new DocumentRequest.Type(type.Definition, node.Text, node.FullName),
-            NodeSubject.MemberDefinition member => new DocumentRequest.Member(member.Definition, node.Text, node.FullName),
+            NodeSubject.TypeDefinition type => new DocumentRequest.Type(type.Definition, node.Text, BrowseNodes.GetFullName(node)),
+            NodeSubject.MemberDefinition member => new DocumentRequest.Member(member.Definition, node.Text, BrowseNodes.GetFullName(node)),
             NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
                 or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
                 or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType =>
-                new DocumentRequest.Summary(SummaryOf(session, node), node.SourceModule, node.Text, node.FullName),
-            NodeSubject.Resources => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
+                new DocumentRequest.Summary(SummaryOf(session, node), node.SourceModule, node.Text, BrowseNodes.GetFullName(node)),
+            NodeSubject.Resources => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, BrowseNodes.GetFullName(node)),
             NodeSubject.ResourceContainer container => container.Value.Contents switch
             {
-                ContainerContents.AvaloniaAssets => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
+                ContainerContents.AvaloniaAssets => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, BrowseNodes.GetFullName(node)),
                 ContainerContents.ResourcesFile => ResourceRequest(node, ResourceNodes.CreateData(container.Value)),
                 _ => throw new UnreachableException(),
             },
             NodeSubject.ResourceEntry entry => entry.Value.Source switch
             {
-                ResourceSource.Baml baml => new DocumentRequest.Baml(entry.Value.Module, baml.Data, node.Text, node.FullName),
+                ResourceSource.Baml baml => new DocumentRequest.Baml(entry.Value.Module, baml.Data, node.Text, BrowseNodes.GetFullName(node)),
                 ResourceSource.Manifest or ResourceSource.Entry => ResourceRequest(node, ResourceNodes.CreateData(entry.Value)),
                 _ => throw new UnreachableException(),
             },
-            NodeSubject.Metadata metadata => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListFolderLines(metadata.Value)), node.SourceModule, node.Text, node.FullName),
+            NodeSubject.Metadata metadata => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListFolderLines(metadata.Value)), node.SourceModule, node.Text, BrowseNodes.GetFullName(node)),
             NodeSubject.MetadataTables tables => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListTablesLines(tables.Folder)), node.SourceModule, node.Text,
-                node.FullName),
-            NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListPartLines(table.Value)), node.SourceModule, node.Text, node.FullName),
+                BrowseNodes.GetFullName(node)),
+            NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListPartLines(table.Value)), node.SourceModule, node.Text, BrowseNodes.GetFullName(node)),
             NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(session.ChildrenOf(node).Select(DescribePackageChild).ToList()), null,
-                node.Text, node.FullName),
+                node.Text, BrowseNodes.GetFullName(node)),
             NodeSubject.PackageFile file => ResourceRequest(node, ResourceNodes.CreateData(file.Value)),
-            NodeSubject.Module module => new DocumentRequest.ModulePreview(module.Value, node.Text, node.FullName),
-            NodeSubject.FailedAssembly failed => new DocumentRequest.Failure(failed.Value, node.Text, node.FullName),
+            NodeSubject.Module module => new DocumentRequest.ModulePreview(module.Value, node.Text, BrowseNodes.GetFullName(node)),
+            NodeSubject.FailedAssembly failed => new DocumentRequest.Failure(failed.Value, node.Text, BrowseNodes.GetFullName(node)),
             NodeSubject.Namespace => new DocumentRequest.Summary(new SummaryInfo.Namespace(node.Text, ListNamespaceEntries(session, node)), node.SourceModule,
-                node.Text, node.FullName),
+                node.Text, BrowseNodes.GetFullName(node)),
             _ => throw new UnreachableException(),
         };
     }
 
-    private static DocumentRequest.Resource ResourceRequest(BrowseNode node, ResourceData resource) =>
-        new(node.SourceModule, resource.Description, resource.ReadData, node.Text, node.FullName);
+    private static DocumentRequest.Resource ResourceRequest(BrowseNode node, ResourceData resource)
+    {
+        return new(node.SourceModule, resource.Description, resource.ReadData, node.Text, BrowseNodes.GetFullName(node));
+    }
 
     /// <summary>A comment a resource, describing each that <paramref name="node"/> lists.</summary>
-    private static SummaryInfo.Comments DescribeResources(BrowseSession session, BrowseNode node) =>
-        new(session.ChildrenOf(node).Select(static c => c.ResourceData).OfType<ResourceData>().Select(static r => r.Description).ToList());
+    private static SummaryInfo.Comments DescribeResources(BrowseSession session, BrowseNode node)
+    {
+        return new(session.ChildrenOf(node).Select(static c => BrowseNodes.GetResourceData(c)).OfType<ResourceData>().Select(static r => r.Description).ToList());
+    }
 
     /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists.</summary>
     private static SummaryInfo SummaryOf(BrowseSession session, BrowseNode node)
@@ -168,14 +172,14 @@ public static class NodeContentLoader
         return node.Subject switch
         {
             NodeSubject.References => new SummaryInfo.References(
-                ChildrenAbout<NodeSubject.AssemblyReference>(session, node).Select(static r => new SummaryLink(r.FullName, NodeDefinitions.FindTarget(r.Subject))).ToList(),
+                ChildrenAbout<NodeSubject.AssemblyReference>(session, node).Select(static r => new SummaryLink(BrowseNodes.GetFullName(r), NodeDefinitions.FindTarget(r.Subject))).ToList(),
                 ChildrenAbout<NodeSubject.ModuleReference>(session, node).Select(static m => m.Text).ToList()),
             NodeSubject.AssemblyReference reference => new SummaryInfo.AssemblyReference(reference.Value.Module, reference.Value.Reference),
             NodeSubject.ReferencedTypes => new SummaryInfo.Used(ListUsed(session, node)),
             NodeSubject.TypeReference or NodeSubject.MemberReference => new SummaryInfo.Used([UsedOf(session, node)]),
             NodeSubject.ModuleReference module => new SummaryInfo.ModuleReference(module.Value.Name, module.Value.ContainsMetadata,
-                ChildrenAbout<NodeSubject.ImportedMethod>(session, node).Select(static i => new SummaryLink(i.FullName, NodeDefinitions.FindTarget(i.Subject))).ToList()),
-            NodeSubject.ImportedMethod import => new SummaryInfo.ImportedMethod(new SummaryLink(node.FullName, NodeDefinitions.FindTarget(node.Subject)), import.Value.EntryPoint,
+                ChildrenAbout<NodeSubject.ImportedMethod>(session, node).Select(static i => new SummaryLink(BrowseNodes.GetFullName(i), NodeDefinitions.FindTarget(i.Subject))).ToList()),
+            NodeSubject.ImportedMethod import => new SummaryInfo.ImportedMethod(new SummaryLink(BrowseNodes.GetFullName(node), NodeDefinitions.FindTarget(node.Subject)), import.Value.EntryPoint,
                 import.Value.ModuleName),
             NodeSubject.ForwardedType forwarded => new SummaryInfo.ForwardedType(forwarded.Value.FullName, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination),
             NodeSubject.BaseTypes or NodeSubject.DerivedTypes =>
@@ -194,7 +198,7 @@ public static class NodeContentLoader
 
     private static string DescribePackageChild(BrowseNode child)
     {
-        var file = child.ResourceData;
+        var file = BrowseNodes.GetResourceData(child);
         if (file != null)
             return file.Description;
         if (child.Subject is NodeSubject.Package)

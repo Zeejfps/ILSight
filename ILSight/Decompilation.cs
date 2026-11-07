@@ -60,7 +60,7 @@ public static class Decompilation
     {
         if (node.Assembly is FailedAssembly)
             return;
-        Errors.Report(appState, new AppProblem.DecompilationFailed(node.FullName, error));
+        Errors.Report(appState, new AppProblem.DecompilationFailed(BrowseNodes.GetFullName(node), error));
     }
 
     /// <summary>Commands the view to return to the arrival's position, else to reveal the grid's row or the

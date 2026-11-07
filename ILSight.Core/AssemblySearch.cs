@@ -357,7 +357,7 @@ public static class AssemblySearch
                 return;
             if (NodeDefinitions.GetVisibility(node.Subject).IsCompilerGenerated)
                 return;
-            if (!BrowseNode.IsMember(node.Parent))
+            if (!BrowseNodes.IsMember(node.Parent))
                 AddResult(search, node);
         }
 
@@ -373,7 +373,7 @@ public static class AssemblySearch
                 return;
             }
             node = FindSourceDeclaredAncestor(node);
-            if (node != null && BrowseNode.IsMember(node.Parent))
+            if (node != null && BrowseNodes.IsMember(node.Parent))
                 node = node.Parent;
             if (node is not null)
                 AddResult(search, node);
@@ -433,7 +433,7 @@ public static class AssemblySearch
         /// <summary>The name a node is matched by: a constructor's its type's, an entity's its own, else its label.</summary>
         private static string GetNodeName(BrowseNode node)
         {
-            var entity = BrowseNode.EntityOf(node);
+            var entity = BrowseNodes.GetEntity(node);
             if (entity == null)
                 return node.Text;
             if (entity is IMethod method && method.IsConstructor && method.DeclaringTypeDefinition != null)

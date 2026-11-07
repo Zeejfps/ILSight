@@ -246,7 +246,7 @@ public sealed class ResourceViewTests
 
         SaveResource(app.AppState, node, path);
 
-        Assert.Equal(node.ReadResource(), File.ReadAllBytes(path));
+        Assert.Equal(BrowseNodes.ReadResource(node), File.ReadAllBytes(path));
         Assert.Empty(app.AppState.Errors.Entries);
     }
 }

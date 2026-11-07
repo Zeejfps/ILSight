@@ -48,7 +48,7 @@ public static class Exports
     {
         try
         {
-            var bytes = node.ReadResource();
+            var bytes = BrowseNodes.ReadResource(node);
             File.WriteAllBytes(path, bytes);
         }
         catch (Exception e) when (IsFileError(e))

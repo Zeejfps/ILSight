@@ -29,7 +29,7 @@ public sealed class DocumentTab
     {
         TabContent.Reloading reloading => reloading.Location,
         TabContent.Gone gone => gone.Location,
-        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node?.Path,
+        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node == null ? null : BrowseNodes.GetPath(Node),
         TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison or TabContent.Reopening => null,
         _ => throw new UnreachableException(),
     };

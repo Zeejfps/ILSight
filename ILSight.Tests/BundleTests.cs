@@ -61,7 +61,7 @@ public sealed class BundleTests
 
         var deps = bundle.Root.Child("App.deps.json");
 
-        Assert.Equal("{}", Encoding.UTF8.GetString(deps.ReadResource()));
+        Assert.Equal("{}", Encoding.UTF8.GetString(BrowseNodes.ReadResource(deps)));
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class BundleTests
         var broken = bundle.Root.Child("Broken.dll");
 
         Assert.IsType<NodeSubject.PackageFile>(broken.Subject);
-        Assert.Throws<InvalidDataException>(() => broken.ReadResource());
+        Assert.Throws<InvalidDataException>(() => BrowseNodes.ReadResource(broken));
     }
 
     [Fact]

@@ -53,17 +53,20 @@ public sealed class BrowseSession
         return _otherRoots.GetValue(assembly, static a => CreateRoot(a));
     }
 
-    private static BrowseNode CreateRoot(LoadedAssembly assembly) => assembly switch
+    private static BrowseNode CreateRoot(LoadedAssembly assembly)
     {
-        FailedAssembly failed => BrowseNode.FailedRoot(failed),
-        LoadedPackage package => BrowseNode.PackageRoot(package),
-        _ => throw new UnreachableException(),
-    };
+        return assembly switch
+        {
+            FailedAssembly failed => BrowseNodes.CreateFailedRoot(failed),
+            LoadedPackage package => BrowseNodes.CreatePackageRoot(package),
+            _ => throw new UnreachableException(),
+        };
+    }
 
     internal BrowseNode RootOf(LoadedModule module)
     {
         if (module.Place == null)
-            return _moduleRoots.GetValue(module, static m => BrowseNode.ModuleRoot(m, null));
+            return _moduleRoots.GetValue(module, static m => BrowseNodes.CreateModuleRoot(m, null));
         return RootInPackage(module, module.Place);
     }
 
@@ -76,7 +79,7 @@ public sealed class BrowseSession
         var packageRoot = RootOf(place.Container);
         var folder = FindFolderNode(packageRoot, place.File.Folder) ?? packageRoot;
         LoadChildren(folder);
-        return _moduleRoots.GetValue(module, m => BrowseNode.ModuleRoot(m, folder));
+        return _moduleRoots.GetValue(module, m => BrowseNodes.CreateModuleRoot(m, folder));
     }
 
     /// <summary>The node of the folder at <paramref name="folder"/>, a path from the package's root: the
@@ -199,13 +202,16 @@ public sealed class BrowseSession
 
     /// <summary>Whether <paramref name="node"/> has children, answered without building them where
     /// possible. Children that failed to build count, so that why can be shown.</summary>
-    public bool HasChildren(BrowseNode node) => PeekChildren(node) switch
+    public bool HasChildren(BrowseNode node)
     {
-        ChildrenState.Ready ready => ready.Children.Count > 0,
-        ChildrenState.Failed => true,
-        ChildrenState.Running or ChildrenState.Unloaded => node.MayHaveChildren,
-        _ => throw new UnreachableException(),
-    };
+        return PeekChildren(node) switch
+        {
+            ChildrenState.Ready ready => ready.Children.Count > 0,
+            ChildrenState.Failed => true,
+            ChildrenState.Running or ChildrenState.Unloaded => BrowseNodes.CanHaveChildren(node),
+            _ => throw new UnreachableException(),
+        };
+    }
 
     /// <summary>The child of <paramref name="parent"/> standing where <paramref name="other"/> stands under
     /// its own parent, naming the same thing: its counterpart under a copy of the same file read again.
@@ -214,7 +220,7 @@ public sealed class BrowseSession
     {
         if (PeekChildren(parent) is not ChildrenState.Ready ready)
             return null;
-        var segment = other.Segment;
+        var segment = BrowseNodes.GetSegment(other);
         if (segment == null)
             return null;
         return FindChild(ready.Children, segment);
@@ -227,7 +233,7 @@ public sealed class BrowseSession
         BrowseNode? found = null;
         foreach (var child in children)
         {
-            if (!segment.Equals(child.Segment))
+            if (!segment.Equals(BrowseNodes.GetSegment(child)))
                 continue;
             if (found != null)
                 return null;
@@ -253,7 +259,7 @@ public sealed class BrowseSession
         BrowseNode[] built;
         try
         {
-            built = node.CreateChildren();
+            built = BrowseNodes.CreateChildren(node);
         }
         catch (Exception e)
         {
@@ -427,7 +433,7 @@ public sealed class BrowseSession
     /// <paramref name="inner"/> before <paramref name="child"/>.</summary>
     private static bool SortsBefore(BrowseNode inner, BrowseNode child)
     {
-        var key = NamespaceNames.LastSegment(inner.FullName) + ".";
+        var key = NamespaceNames.LastSegment(BrowseNodes.GetFullName(inner)) + ".";
         return NaturalStringComparer.Instance.Compare(key, ReflectionNameOf(child)) < 0;
     }
 
