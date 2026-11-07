@@ -158,12 +158,12 @@ public static class Analysis
     {
         var tree = appState.Analyzer;
         kind.StartOnce(appState.Assemblies, () => NoteFindings(tree), error => ReportAnalysisFailure(appState, kind, error),
-            appState.ReportError);
+            problem => Errors.Report(appState, problem));
     }
 
     private static void ReportAnalysisFailure(AppState appState, AnalyzerKindNode kind, Exception error)
     {
-        appState.ReportError(new AppProblem.AnalysisFailed(kind.Subject.Label, kind.Kind, error));
+        Errors.Report(appState, new AppProblem.AnalysisFailed(kind.Subject.Label, kind.Kind, error));
     }
 
     /// <summary>Adds a root that shows as loading, in the analyzer, while what <paramref name="reference"/>
@@ -171,8 +171,10 @@ public static class Analysis
     /// its analysis, which the view is commanded to show. The root goes when the reference does not
     /// resolve, which is reported. Once the root was removed, as clearing the list removes them all,
     /// what is found is dropped.</summary>
-    public static void AddToAnalyzer(AppState appState, CodeReference.Navigable reference) =>
-        Background.Start(AddToAnalyzerAsync(appState, reference), appState.ReportError);
+    public static void AddToAnalyzer(AppState appState, CodeReference.Navigable reference)
+    {
+        Background.Start(AddToAnalyzerAsync(appState, reference), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task AddToAnalyzerAsync(AppState appState, CodeReference.Navigable reference)
     {
@@ -218,15 +220,17 @@ public static class Analysis
         var shown = ResolveRoot(appState.Analyzer, root, symbol);
         if (shown == null)
             return;
-        appState.EnqueueCommand(new ViewCommand.ShowAnalysis(shown));
+        appState.ViewCommands.Enqueue(new ViewCommand.ShowAnalysis(shown));
     }
 
     /// <summary>Finds the symbols of the roots restored from the saved analyses in the background,
     /// opening their assemblies' files without listing them, and turns each root into the analysis of
     /// its symbol, or removes it when its symbol is gone, unless the list was cleared meanwhile.
     /// Reports why the symbols could not be found.</summary>
-    public static void RestoreAnalyses(AppState appState) =>
-        Background.Start(RestoreAnalysesAsync(appState), appState.ReportError);
+    public static void RestoreAnalyses(AppState appState)
+    {
+        Background.Start(RestoreAnalysesAsync(appState), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task RestoreAnalysesAsync(AppState appState)
     {
@@ -245,7 +249,7 @@ public static class Analysis
                 AnalyzeAgain(appState, restoring, ok.Value);
                 break;
             case Outcome<List<AnalysisSymbol?>>.Failed failed:
-                appState.ReportError(new AppProblem.AnalysesNotRestored(failed.Error));
+                Errors.Report(appState, new AppProblem.AnalysesNotRestored(failed.Error));
                 RemoveRoots(appState, restoring);
                 break;
             default:

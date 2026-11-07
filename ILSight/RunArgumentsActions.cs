@@ -40,7 +40,7 @@ public static class RunArgumentsActions
     private static void ReportIgnored(AppState appState, RunArguments arguments)
     {
         if (arguments.Ignored.Count > 0)
-            appState.ReportError(new AppProblem.ArgumentsIgnored(arguments.Ignored.ToList()));
+            Errors.Report(appState, new AppProblem.ArgumentsIgnored(arguments.Ignored.ToList()));
     }
 
     /// <summary>Opens <paramref name="files"/>, then shows the namespace, type or member they

@@ -53,7 +53,7 @@ public static class Exports
         }
         catch (Exception e) when (IsFileError(e))
         {
-            appState.ReportError(new AppProblem.ResourceNotSaved(node.Text, e.Message));
+            Errors.Report(appState, new AppProblem.ResourceNotSaved(node.Text, e.Message));
         }
     }
 
@@ -77,7 +77,7 @@ public static class Exports
         }
         catch (Exception e) when (IsFileError(e))
         {
-            appState.ReportError(new AppProblem.PackageFileNotExtracted(place.File.Name, e.Message));
+            Errors.Report(appState, new AppProblem.PackageFileNotExtracted(place.File.Name, e.Message));
         }
     }
 
@@ -112,12 +112,12 @@ public static class Exports
     /// add what a finished one wrote. One taken out of the queue leaves nothing behind.</summary>
     private static void RunExport<T>(AppState appState, ExportJob job, string subject, Func<ExportStart, T> work,
         Func<ExportReport, T, ExportReport> complete) =>
-        Background.Start(RunExportAsync(appState, job, subject, work, complete), appState.ReportError);
+        Background.Start(RunExportAsync(appState, job, subject, work, complete), problem => Errors.Report(appState, problem));
 
     private static async Task RunExportAsync<T>(AppState appState, ExportJob job, string subject, Func<ExportStart, T> work,
         Func<ExportReport, T, ExportReport> complete)
     {
-        appState.EnqueueCommand(new ViewCommand.OpenPanel(DockView.Exports));
+        appState.ViewCommands.Enqueue(new ViewCommand.OpenPanel(DockView.Exports));
         var turn = await Exports.EnterQueue(appState.Export, job);
         if (turn is not ExportStart start)
             return;
@@ -261,7 +261,7 @@ public static class Exports
     /// opened.</summary>
     private static ExportReport OpenDiagram(AppState appState, ExportReport report, string page)
     {
-        appState.EnqueueCommand(new ViewCommand.OpenFile(page));
+        appState.ViewCommands.Enqueue(new ViewCommand.OpenFile(page));
         return ReportWritten(report, page);
     }
 

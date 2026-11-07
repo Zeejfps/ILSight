@@ -1,3 +1,4 @@
+using static ILSight.Settings;
 using System.Globalization;
 using System.Reflection;
 using ILSight.Localization;
@@ -73,6 +74,6 @@ public sealed class LocalizationTests
         SetLocale(d.AppState, Locale.Ja);
         d.Pump();
 
-        Assert.Equal(Locale.Ja, AppState.Load(temp.Settings(), TestSession.Shared).Locale);
+        Assert.Equal(Locale.Ja, LoadAppState(temp.Settings(), TestSession.Shared).Locale);
     }
 }

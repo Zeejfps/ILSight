@@ -70,7 +70,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
 
     private static void OpenErrors(AppDriver app)
     {
-        app.AppState.ReportError(new AppProblem.ResourceNotSaved("something.dll", "details"));
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved("something.dll", "details"));
         app.Ui.ErrorDialog.IsOpen = true;
     }
 }

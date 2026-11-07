@@ -418,7 +418,7 @@ public sealed class IconAssetFolderTests : IDisposable
         var settings = _temp.Settings();
         settings.Locale = Locale.En;
 
-        var appState = AppState.Load(settings, TestSession.Shared);
+        var appState = LoadAppState(settings, TestSession.Shared);
 
         var error = Assert.Single(appState.Errors.Entries);
         Assert.Equal("Problems in the icon theme bad.json", error.Words().Title);
@@ -462,7 +462,7 @@ public sealed class UserIconThemeTests : IDisposable
     [Fact]
     public void The_icon_theme_is_lucide_by_default_and_a_chosen_one_is_saved()
     {
-        var appState = AppState.Load(Settings(), TestSession.Shared);
+        var appState = LoadAppState(Settings(), TestSession.Shared);
         Assert.Equal("lucide", appState.IconTheme.Text);
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, ResolveIconTheme(appState).Icons.NodeClass);
 
@@ -485,7 +485,7 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var settings = Settings();
         settings.IconTheme = Id("gone");
-        var appState = AppState.Load(settings, TestSession.Shared);
+        var appState = LoadAppState(settings, TestSession.Shared);
 
         Assert.Same(ThemeCatalogs.FindTheme(appState.IconThemes, Id("lucide")), ResolveIconTheme(appState));
         SaveSettings(appState);
@@ -499,7 +499,7 @@ public sealed class UserIconThemeTests : IDisposable
         WriteIconTheme("shapes", """{ "name": "Shapes", "icons": { "node.class": { "svg": "svg/class.svg" } } }""");
         var settings = Settings();
         settings.IconTheme = Id("shapes");
-        var appState = AppState.Load(settings, TestSession.Shared);
+        var appState = LoadAppState(settings, TestSession.Shared);
 
         Assert.Equal(["lucide", "shapes"], appState.IconThemes.Ids.Select(static i => i.Text));
         Assert.Equal("Shapes", ThemeCatalogs.ListNames(appState.IconThemes, CultureInfo.InvariantCulture).Last());
@@ -511,7 +511,7 @@ public sealed class UserIconThemeTests : IDisposable
     public void A_problem_in_an_icon_theme_is_reported_once_under_its_file_until_it_changes()
     {
         WriteIconTheme("escape", """{ "icons": { "node.class": { "svg": "../class.svg" } } }""");
-        var appState = AppState.Load(Settings(), TestSession.Shared);
+        var appState = LoadAppState(Settings(), TestSession.Shared);
         var error = Assert.Single(appState.Errors.Entries);
 
         ReloadUserIconThemes(appState);
@@ -524,7 +524,7 @@ public sealed class UserIconThemeTests : IDisposable
     [Fact]
     public void The_icon_themes_folder_is_made_with_the_schema_and_a_readme_that_are_no_themes()
     {
-        var appState = AppState.Load(Settings(), TestSession.Shared);
+        var appState = LoadAppState(Settings(), TestSession.Shared);
 
         var folder = PrepareIconThemesFolder(appState);
         ReloadUserIconThemes(appState);
@@ -539,7 +539,7 @@ public sealed class UserIconThemeTests : IDisposable
     [Fact]
     public void A_custom_icon_theme_extends_the_one_shown_lists_every_icon_and_is_switched_to()
     {
-        var appState = AppState.Load(Settings(), TestSession.Shared);
+        var appState = LoadAppState(Settings(), TestSession.Shared);
 
         var path = CreateCustomIconTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.IconThemes, parent, Strings.En.Culture)));
 
@@ -563,7 +563,7 @@ public sealed class UserIconThemeTests : IDisposable
     {
         _temp.Write(ClassPicture, MemoryIconAssets.Picture);
         WriteIconTheme("shapes", """{ "icons": { "node.class": { "svg": "svg/class.svg" } } }""");
-        var appState = AppState.Load(Settings(), TestSession.Shared);
+        var appState = LoadAppState(Settings(), TestSession.Shared);
         var catalog = appState.IconThemes;
         var shapes = ThemeCatalogs.FindTheme(catalog, Id("shapes"));
         var lines = IconThemeDraft.Compose("Mine", Id("shapes"), shapes).Split('\n');
@@ -585,7 +585,7 @@ public sealed class UserIconThemeTests : IDisposable
     [Fact]
     public void No_custom_icon_theme_is_made_while_the_settings_live_in_memory()
     {
-        var appState = AppState.Load(new AppSettings { Locale = Locale.En }, TestSession.Shared);
+        var appState = LoadAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared);
 
         Assert.Null(CreateCustomIconTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.IconThemes, parent, Strings.En.Culture))));
         Assert.Null(PrepareIconThemesFolder(appState));

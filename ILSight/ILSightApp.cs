@@ -53,7 +53,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
         CheckOnStartup(_appState);
-        Background.Start(ApplyPendingArguments(), _appState.ReportError);
+        Background.Start(ApplyPendingArguments(), problem => Errors.Report(_appState, problem));
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -265,7 +265,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
             // this loop, which would leave the pipe answering later runs with no one to follow them.
             catch (Exception e)
             {
-                _appState.ReportError(new AppProblem.Unexpected(e));
+                Errors.Report(_appState, new AppProblem.Unexpected(e));
             }
             UiState.FrontAsked = true;
         }

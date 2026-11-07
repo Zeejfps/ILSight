@@ -20,8 +20,10 @@ public static class Decompilation
         Load(appState, tab, node, load);
     }
 
-    private static void Load(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load) =>
-        Background.Start(LoadAsync(appState, tab, node, load), appState.ReportError);
+    private static void Load(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
+    {
+        Background.Start(LoadAsync(appState, tab, node, load), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task LoadAsync(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
     {
@@ -58,7 +60,7 @@ public static class Decompilation
     {
         if (node.Assembly is FailedAssembly)
             return;
-        appState.ReportError(new AppProblem.DecompilationFailed(node.FullName, error));
+        Errors.Report(appState, new AppProblem.DecompilationFailed(node.FullName, error));
     }
 
     /// <summary>Commands the view to return to the arrival's position, else to reveal the grid's row or the
@@ -68,7 +70,7 @@ public static class Decompilation
         var position = arrival.Position;
         if (position != null)
         {
-            appState.EnqueueCommand(new ViewCommand.RestoreView(tab, position.Value));
+            appState.ViewCommands.Enqueue(new ViewCommand.RestoreView(tab, position.Value));
             return;
         }
         if (tab.Grid != null)
@@ -79,14 +81,14 @@ public static class Decompilation
         var line = FindLineToReveal(tab, arrival.Target);
         if (line < 0)
             return;
-        appState.EnqueueCommand(new ViewCommand.RevealLine(tab, line));
+        appState.ViewCommands.Enqueue(new ViewCommand.RevealLine(tab, line));
     }
 
     private static void RevealRow(AppState appState, DocumentTab tab, int? row)
     {
         if (row == null)
             return;
-        appState.EnqueueCommand(new ViewCommand.RevealRow(tab, row.Value));
+        appState.ViewCommands.Enqueue(new ViewCommand.RevealRow(tab, row.Value));
     }
 
     /// <summary>The line <paramref name="target"/> marks, else the node's definition, or -1.</summary>

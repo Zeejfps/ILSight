@@ -146,7 +146,7 @@ public sealed class PreviewTabTests
 
         var empty = Docking.OpenEmptyTab(app.AppState);
         Tabs.MakeActive(app.AppState.Tabs, empty);
-        app.AppState.EnqueueCommand(new ViewCommand.ShowTab(empty, before));
+        app.AppState.ViewCommands.Enqueue(new ViewCommand.ShowTab(empty, before));
         app.Run(2);
         Pick(app, "Farewell");
 

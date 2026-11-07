@@ -1,12 +1,7 @@
-using System.Globalization;
 using ZGF.Desktop;
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.Bookmarks;
 using static ILSight.IconTheming;
-using static ILSight.SavedDocuments;
-using static ILSight.Settings;
-using static ILSight.Theming;
 
 namespace ILSight;
 
@@ -21,20 +16,20 @@ namespace ILSight;
 public sealed class AppState
 {
     /// <summary>Where the settings are written, and the user's themes are found.</summary>
-    public SettingsPlace SettingsPlace { get; }
+    public required SettingsPlace SettingsPlace { get; init; }
 
     /// <summary>What the settings keep of the screen, as the screen last handed it over, or as the
     /// settings held it until it does.</summary>
-    public ViewSettings View;
+    public required ViewSettings View;
 
     /// <summary>The main window as it was left: as the settings held it until the app closes.</summary>
     public WindowBounds? Window;
 
-    public AssemblyList Assemblies { get; } = new();
+    public required AssemblyList Assemblies { get; init; }
 
     /// <summary>The browse tree of the assemblies: their roots, the children built so far and the
     /// nodes of their types and members.</summary>
-    public BrowseSession Session { get; }
+    public required BrowseSession Session { get; init; }
 
     /// <summary>The named assembly lists, one of which <see cref="Assemblies"/> holds open.</summary>
     public SavedAssemblyLists Lists { get; } = AssemblyLists.CreateLists();
@@ -56,19 +51,19 @@ public sealed class AppState
     public BookmarkList Bookmarks { get; } = new();
 
     /// <summary>The symbols being analyzed and what the analyses found.</summary>
-    public AnalyzerTree Analyzer { get; }
+    public AnalyzerTree Analyzer { get; } = new();
 
-    public ErrorLog Errors { get; } = new();
+    public required ErrorLog Errors { get; init; }
 
     /// <summary>The newer version looked for, downloaded and offered, if any.</summary>
-    public AppUpdates Updates { get; internal set; }
+    public required AppUpdates Updates { get; set; }
     public DocumentTabs Tabs { get; } = new();
 
     /// <summary>The tabs reopened from the open list's saved documents that wait for what they showed.</summary>
     public ReopenedTabs Reopened { get; } = new();
 
     /// <summary>The declarations and documentation shown when hovering types and members in code.</summary>
-    public CodeTooltips Tooltips { get; }
+    public required CodeTooltips Tooltips { get; init; }
 
     /// <summary>The themes the app can be drawn in, built-in and the user's.</summary>
     public ThemeCatalog Themes { get; } = Theming.CreateCatalog(BuiltInThemes.Files);
@@ -145,19 +140,12 @@ public sealed class AppState
         {
             foreach (var tab in Tabs.Open)
             {
-                if (IsDiagramBusy(tab))
+                var diagram = tab.Diagram;
+                if (diagram != null && diagram.IsBusy)
                     return true;
             }
             return false;
         }
-    }
-
-    private static bool IsDiagramBusy(DocumentTab tab)
-    {
-        var diagram = tab.Diagram;
-        if (diagram == null)
-            return false;
-        return diagram.IsBusy;
     }
 
     /// <summary>True while an open tab compares two assemblies in the background.</summary>
@@ -167,78 +155,11 @@ public sealed class AppState
         {
             foreach (var tab in Tabs.Open)
             {
-                if (IsComparisonBusy(tab))
+                var comparison = tab.Comparison;
+                if (comparison != null && comparison.IsComparing)
                     return true;
             }
             return false;
         }
-    }
-
-    private static bool IsComparisonBusy(DocumentTab tab)
-    {
-        var comparison = tab.Comparison;
-        if (comparison == null)
-            return false;
-        return comparison.IsComparing;
-    }
-
-    /// <summary>The app state <paramref name="settings"/> describe, with the open list's documents
-    /// reopened, what is saved recorded as saved, and the user's themes and icon themes read.</summary>
-    public static AppState Load(AppSettings settings, BrowseSession session)
-    {
-        var appState = new AppState(settings, session, out var leftOutBookmarks);
-        ReopenDocuments(appState);
-        appState.LastSaved = CaptureSavedSources(appState);
-        ReportLeftOutBookmarks(appState, leftOutBookmarks);
-        LoadThemes(appState);
-        LoadIconThemes(appState);
-        return appState;
-    }
-
-    /// <summary>The app state <paramref name="settings"/> describe, before anything is reopened or read
-    /// from disk; <see cref="Load"/> does that.</summary>
-    private AppState(AppSettings settings, BrowseSession session, out int leftOutBookmarks)
-    {
-        Session = session;
-        SettingsPlace = new SettingsPlace(settings.FilePath);
-        View = ReadViewSettings(settings);
-        Window = settings.Window;
-        Tooltips = new CodeTooltips { Assemblies = Assemblies, ReportError = ReportError, Version = Assemblies.Version };
-        Theme = settings.Theme;
-        IconTheme = settings.IconTheme;
-        Language = settings.Language;
-        DecompilerOptions = settings.Decompiler;
-        Assemblies.UseLoadOptions(DecompilerOptions);
-        Locale = ChooseLocale(settings);
-        ApiVisibility = settings.ApiVisibility;
-        Updates = new AppUpdates { Feed = GitHubUpdates.CreateFeed(), CheckAutomatically = settings.CheckForUpdates };
-        var first = AddTab();
-        ILSight.Tabs.MakeActive(Tabs, first);
-        Analyzer = new AnalyzerTree();
-        AssemblyLists.LoadLists(Lists, settings.AssemblyLists, settings.ActiveAssemblyList);
-        leftOutBookmarks = LoadBookmarks(Bookmarks, settings.Bookmarks);
-        Analysis.AddPending(Analyzer, Lists.ActiveAnalyses);
-    }
-
-    private static Locale ChooseLocale(AppSettings settings)
-    {
-        if (settings.Locale != null)
-            return settings.Locale.Value;
-        return Locales.For(CultureInfo.CurrentUICulture);
-    }
-
-    public void ReportError(AppProblem problem)
-    {
-        ErrorDialogView.AddError(Errors, problem, DateTime.Now);
-    }
-
-    /// <summary>Queues <paramref name="command"/> for the view to run before it draws next.</summary>
-    public void EnqueueCommand(ViewCommand command) => ViewCommands.Enqueue(command);
-
-    internal DocumentTab AddTab()
-    {
-        var tab = new DocumentTab();
-        ILSight.Tabs.Add(Tabs, tab);
-        return tab;
     }
 }

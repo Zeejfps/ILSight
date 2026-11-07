@@ -1,7 +1,13 @@
 using System.Diagnostics;
+using System.Globalization;
 using ZGF.Desktop;
 using ILSight.Core;
+using ILSight.Localization;
 using static ILSight.AssemblyLists;
+using static ILSight.Bookmarks;
+using static ILSight.IconTheming;
+using static ILSight.SavedDocuments;
+using static ILSight.Theming;
 
 namespace ILSight;
 
@@ -9,6 +15,59 @@ namespace ILSight;
 public static class Settings
 {
     private static readonly Saving.Unchanged Unchanged = new();
+
+    /// <summary>The app state <paramref name="settings"/> describe, with the open list's documents
+    /// reopened, what is saved recorded as saved, and the user's themes and icon themes read.</summary>
+    public static AppState LoadAppState(AppSettings settings, BrowseSession session)
+    {
+        var appState = CreateAppState(settings, session);
+        var first = Tabs.AddNew(appState.Tabs);
+        Tabs.MakeActive(appState.Tabs, first);
+        LoadLists(appState.Lists, settings.AssemblyLists, settings.ActiveAssemblyList);
+        var leftOutBookmarks = LoadBookmarks(appState.Bookmarks, settings.Bookmarks);
+        Analysis.AddPending(appState.Analyzer, appState.Lists.ActiveAnalyses);
+        ReopenDocuments(appState);
+        appState.LastSaved = CaptureSavedSources(appState);
+        ReportLeftOutBookmarks(appState, leftOutBookmarks);
+        LoadThemes(appState);
+        LoadIconThemes(appState);
+        return appState;
+    }
+
+    /// <summary>The app state <paramref name="settings"/> describe, before anything is reopened or read
+    /// from disk; <see cref="LoadAppState"/> does that. The tooltips report to the error log rather than to
+    /// the app state, which they are part of.</summary>
+    private static AppState CreateAppState(AppSettings settings, BrowseSession session)
+    {
+        var assemblies = new AssemblyList();
+        var errors = new ErrorLog();
+        var appState = new AppState
+        {
+            Session = session,
+            SettingsPlace = new SettingsPlace(settings.FilePath),
+            View = ReadViewSettings(settings),
+            Window = settings.Window,
+            Assemblies = assemblies,
+            Errors = errors,
+            Tooltips = new CodeTooltips { Assemblies = assemblies, ReportError = problem => Errors.Report(errors, problem), Version = assemblies.Version },
+            Theme = settings.Theme,
+            IconTheme = settings.IconTheme,
+            Language = settings.Language,
+            DecompilerOptions = settings.Decompiler,
+            Locale = ChooseLocale(settings),
+            ApiVisibility = settings.ApiVisibility,
+            Updates = new AppUpdates { Feed = GitHubUpdates.CreateFeed(), CheckAutomatically = settings.CheckForUpdates },
+        };
+        assemblies.UseLoadOptions(settings.Decompiler);
+        return appState;
+    }
+
+    private static Locale ChooseLocale(AppSettings settings)
+    {
+        if (settings.Locale != null)
+            return settings.Locale.Value;
+        return Locales.For(CultureInfo.CurrentUICulture);
+    }
 
     /// <summary>The folder <paramref name="name"/> beside <paramref name="settingsFile"/>; null while the
     /// settings are kept in memory only.</summary>
@@ -66,7 +125,7 @@ public static class Settings
     {
         if (problem is SettingsProblem.None)
             return;
-        appState.ReportError(new AppProblem.SettingsUnreadable(appState.SettingsPlace.FilePath, problem));
+        Errors.Report(appState, new AppProblem.SettingsUnreadable(appState.SettingsPlace.FilePath, problem));
     }
 
     /// <summary>Writes the settings, counting what they were copied from as saved only once the write
@@ -154,7 +213,7 @@ public static class Settings
         appState.SaveRetry = new SaveRetry.Failed();
         if (wasFailing)
             return;
-        appState.ReportError(new AppProblem.SettingsNotSaved(error));
+        Errors.Report(appState, new AppProblem.SettingsNotSaved(error));
     }
 
     /// <summary>Takes what the settings keep of the screen, as it changed, to be written with the next save.</summary>

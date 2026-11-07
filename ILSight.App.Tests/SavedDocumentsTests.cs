@@ -23,13 +23,25 @@ public sealed class SavedDocumentsTests : IDisposable
 
     public void Dispose() => _temp.Dispose();
 
-    private static CodeViewState CodeOf(AppDriver app, DocumentTab tab) => DocumentPanels.GetView(app.Ui.Documents, tab).Code;
+    private static CodeViewState CodeOf(AppDriver app, DocumentTab tab)
+    {
+        return DocumentPanels.GetView(app.Ui.Documents, tab).Code;
+    }
 
-    private static DiagramViewState DiagramOf(AppDriver app, DocumentTab tab) => DocumentPanels.GetView(app.Ui.Documents, tab).Diagram;
+    private static DiagramViewState DiagramOf(AppDriver app, DocumentTab tab)
+    {
+        return DocumentPanels.GetView(app.Ui.Documents, tab).Diagram;
+    }
 
-    private static MetadataGridState GridOf(AppDriver app, DocumentTab tab) => DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), tab.Grid!);
+    private static MetadataGridState GridOf(AppDriver app, DocumentTab tab)
+    {
+        return DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), tab.Grid!);
+    }
 
-    private static DocumentTab GridTab(AppDriver app) => app.AppState.Tabs.Open.Single(t => t.Grid != null);
+    private static DocumentTab GridTab(AppDriver app)
+    {
+        return app.AppState.Tabs.Open.Single(t => t.Grid != null);
+    }
 
     /// <summary>An app showing the TypeDef table with Greeter's row selected, saved on exit; the row.</summary>
     private int SaveGridOnGreeter()
@@ -48,7 +60,10 @@ public sealed class SavedDocumentsTests : IDisposable
         return row;
     }
 
-    private static DocumentTab TabTitled(AppDriver app, string title) => app.AppState.Tabs.Open.Single(t => t.Title == title);
+    private static DocumentTab TabTitled(AppDriver app, string title)
+    {
+        return app.AppState.Tabs.Open.Single(t => t.Title == title);
+    }
 
     private static CodeViewPosition ScrollTo(AppDriver app, DocumentTab tab, int topLine, TextPosition anchor, TextPosition caret)
     {

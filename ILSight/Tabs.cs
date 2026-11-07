@@ -9,6 +9,14 @@ namespace ILSight;
 /// a tab shows, and the load that brings it.</summary>
 public static class Tabs
 {
+    /// <summary>Opens a new tab, showing nothing yet.</summary>
+    public static DocumentTab AddNew(DocumentTabs tabs)
+    {
+        var tab = new DocumentTab();
+        Add(tabs, tab);
+        return tab;
+    }
+
     public static void Add(DocumentTabs tabs, DocumentTab tab)
     {
         tabs.Open.Add(tab);

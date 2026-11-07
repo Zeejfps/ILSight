@@ -50,7 +50,7 @@ public static class ILSightAppLauncher
     /// <summary>The app state to start from over <paramref name="session"/>, which the tests share.</summary>
     internal static AppState LoadAppState(SettingsLoadResult loadResult, RunArguments arguments, BrowseSession session)
     {
-        var appState = AppState.Load(loadResult.Settings, session);
+        var appState = Settings.LoadAppState(loadResult.Settings, session);
         ReportSettingsProblem(appState, loadResult.Problem);
         ApplyStartupOptions(appState, arguments);
         return appState;

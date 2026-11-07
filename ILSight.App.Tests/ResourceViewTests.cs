@@ -17,7 +17,10 @@ public sealed class ResourceViewTests
         return (app, app.AppState.Tabs.Active!);
     }
 
-    private static string ImageOf(AppDriver app, DocumentTab tab) => DocumentPanels.GetView(app.Ui.Documents, tab).ImageId;
+    private static string ImageOf(AppDriver app, DocumentTab tab)
+    {
+        return DocumentPanels.GetView(app.Ui.Documents, tab).ImageId;
+    }
 
     [Fact]
     public void A_picture_shows_at_its_size_under_what_it_is()

@@ -128,7 +128,10 @@ internal static class TempSettings
 internal static class Screens
 {
     /// <summary>A screen over an app state with nothing open, for drawing a widget alone.</summary>
-    public static UiState Blank() => ILSightApp.CreateUiState(AppState.Load(new AppSettings { Locale = Locale.En }, TestSession.Shared));
+    public static UiState Blank()
+    {
+        return ILSightApp.CreateUiState(LoadAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared));
+    }
 }
 
 /// <summary>A <see cref="AppState"/> and, unless made without one, the screen over it, whose posted
@@ -296,7 +299,7 @@ internal sealed class AppDriver
         if (queuedArguments != null)
             inbox.Writer.TryWrite(queuedArguments);
         App = new ILSightApp(AppState, Ui, CommandLines.Parse([]).Arguments.Files, inbox);
-        Background.Start(App.ApplyPendingArguments(), AppState.ReportError);
+        Background.Start(App.ApplyPendingArguments(), problem => Errors.Report(AppState, problem));
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;
         Frames.BeforeFrame = PumpAtFrameTime;

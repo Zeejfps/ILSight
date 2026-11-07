@@ -120,7 +120,7 @@ public static class Diagrams
     {
         LeaveActiveTab(appState);
         Tabs.MakeActive(appState.Tabs, tab);
-        appState.EnqueueCommand(new ViewCommand.ShowTab(tab, Beside: null));
+        appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
     /// <summary>Records the diagram <paramref name="tab"/> shows as worked in now, so going back returns to it.</summary>
@@ -156,8 +156,10 @@ public static class Diagrams
     /// <summary>Reads the card of <paramref name="type"/> and its neighbours in the background, adds them to
     /// the diagram <paramref name="tab"/> shows, taking the type's assembly as one of its own, then
     /// commands the view to focus the card.</summary>
-    private static void AddWithNeighbours(AppState appState, DocumentTab tab, CodeReference.Entity type) =>
-        Background.Start(AddWithNeighboursAsync(appState, tab, type), appState.ReportError);
+    private static void AddWithNeighbours(AppState appState, DocumentTab tab, CodeReference.Entity type)
+    {
+        Background.Start(AddWithNeighboursAsync(appState, tab, type), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task AddWithNeighboursAsync(AppState appState, DocumentTab tab, CodeReference.Entity type)
     {
@@ -191,12 +193,12 @@ public static class Diagrams
         }
         Diagrams.TakeHome(diagram, cards[0]);
         Diagrams.AddCards(diagram, cards);
-        appState.EnqueueCommand(new ViewCommand.FocusCard(tab, cards[0].Type));
+        appState.ViewCommands.Enqueue(new ViewCommand.FocusCard(tab, cards[0].Type));
     }
 
     private static void ReportUnreadable(AppState appState, CodeReference.Entity type, Exception? error)
     {
-        appState.ReportError(new AppProblem.TypeNotDiagrammed(type, error));
+        Errors.Report(appState, new AppProblem.TypeNotDiagrammed(type, error));
     }
 
     /// <summary>Adds to <paramref name="diagram"/> the types <paramref name="card"/> derives from, or, for an
@@ -251,8 +253,10 @@ public static class Diagrams
 
     /// <summary>Reads the cards of <paramref name="types"/>, which <paramref name="card"/> links to, in the
     /// background and adds them to <paramref name="diagram"/>.</summary>
-    private static void AddCards(AppState appState, TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types) =>
-        Background.Start(AddCardsAsync(appState, diagram, card, types), appState.ReportError);
+    private static void AddCards(AppState appState, TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types)
+    {
+        Background.Start(AddCardsAsync(appState, diagram, card, types), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task AddCardsAsync(AppState appState, TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types)
     {
@@ -274,8 +278,10 @@ public static class Diagrams
 
     /// <summary>Searches the open assemblies in the background for the types deriving from
     /// <paramref name="card"/>, or implementing it, and adds them to <paramref name="diagram"/>.</summary>
-    public static void ExpandDerived(AppState appState, TypeDiagram diagram, TypeCard card) =>
-        Background.Start(ExpandDerivedAsync(appState, diagram, card), appState.ReportError);
+    public static void ExpandDerived(AppState appState, TypeDiagram diagram, TypeCard card)
+    {
+        Background.Start(ExpandDerivedAsync(appState, diagram, card), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task ExpandDerivedAsync(AppState appState, TypeDiagram diagram, TypeCard card)
     {
@@ -316,8 +322,10 @@ public static class Diagrams
     /// <summary>Shows the diagram <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in,
     /// the assemblies it names its own, and reads in the background the cards of its types still found,
     /// which it adds unless the tab was pointed elsewhere or the diagram closed meanwhile.</summary>
-    internal static void ReopenDiagram(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved) =>
-        Background.Start(ReopenDiagramAsync(appState, reopened, saved), appState.ReportError);
+    internal static void ReopenDiagram(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
+    {
+        Background.Start(ReopenDiagramAsync(appState, reopened, saved), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task ReopenDiagramAsync(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
     {
@@ -389,14 +397,16 @@ public static class Diagrams
 
     private static void ReportUnreadableDiagram(AppState appState, DiagramDocumentRecord saved, Exception error)
     {
-        appState.ReportError(new AppProblem.DiagramNotReopened(saved.Title ?? string.Empty, error));
+        Errors.Report(appState, new AppProblem.DiagramNotReopened(saved.Title ?? string.Empty, error));
     }
 
     /// <summary>Lays out <paramref name="diagram"/> in the background, its cards and labels as large as
     /// <paramref name="measures"/> says, cancelling the layout in flight, and holds the layout unless
     /// another was started meanwhile or the diagram was closed.</summary>
-    public static void LayOutDiagram(AppState appState, TypeDiagram diagram, DiagramMeasures measures) =>
-        Background.Start(LayOutDiagramAsync(appState, diagram, measures), appState.ReportError);
+    public static void LayOutDiagram(AppState appState, TypeDiagram diagram, DiagramMeasures measures)
+    {
+        Background.Start(LayOutDiagramAsync(appState, diagram, measures), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task LayOutDiagramAsync(AppState appState, TypeDiagram diagram, DiagramMeasures measures)
     {
@@ -421,7 +431,7 @@ public static class Diagrams
 
     private static void ReportLayoutFailure(AppState appState, Exception error)
     {
-        appState.ReportError(new AppProblem.DiagramNotLaidOut(error));
+        Errors.Report(appState, new AppProblem.DiagramNotLaidOut(error));
     }
 
     public static bool HasCard(TypeDiagram diagram, CodeReference.Entity type)

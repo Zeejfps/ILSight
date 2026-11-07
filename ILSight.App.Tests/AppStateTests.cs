@@ -81,9 +81,9 @@ public sealed class AppStateTests
         var lineBefore = DocumentPanels.GetView(d.Ui.Documents, code).Code.Pending;
         var rowBefore = DocumentPanels.GetGridState(DocumentPanels.GetView(d.Ui.Documents, grid), table).Pending;
 
-        d.AppState.EnqueueCommand(new ViewCommand.ExpandNodes([ns]));
-        d.AppState.EnqueueCommand(new ViewCommand.RevealLine(code, lines));
-        d.AppState.EnqueueCommand(new ViewCommand.RevealRow(grid, rows));
+        d.AppState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes([ns]));
+        d.AppState.ViewCommands.Enqueue(new ViewCommand.RevealLine(code, lines));
+        d.AppState.ViewCommands.Enqueue(new ViewCommand.RevealRow(grid, rows));
         d.NextFrame();
 
         Assert.False(d.Ui.Tree.View.IsExpanded(ns));

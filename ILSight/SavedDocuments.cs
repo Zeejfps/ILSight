@@ -77,12 +77,12 @@ public static class SavedDocuments
         var reopened = saved.Tabs.ConvertAll(r => ReopenTab(appState, r));
         MakeSavedActive(appState, reopened, saved.Active);
         MakeSavedPreview(appState, reopened, saved.Preview);
-        appState.EnqueueCommand(new ViewCommand.ShowReopened(reopened, saved.Layout));
+        appState.ViewCommands.Enqueue(new ViewCommand.ShowReopened(reopened, saved.Layout));
     }
 
     private static ReopenedTab ReopenTab(AppState appState, DocumentRecord record)
     {
-        var tab = appState.AddTab();
+        var tab = Tabs.AddNew(appState.Tabs);
         WaitForSaved(tab, record);
         return WaitFor(appState.Reopened, tab, record);
     }
@@ -269,8 +269,10 @@ public static class SavedDocuments
         return node.Location;
     }
 
-    private static void FindReopenedNodes(AppState appState, List<WaitingNode> nodes) =>
-        Background.Start(FindReopenedNodesAsync(appState, nodes), appState.ReportError);
+    private static void FindReopenedNodes(AppState appState, List<WaitingNode> nodes)
+    {
+        Background.Start(FindReopenedNodesAsync(appState, nodes), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task FindReopenedNodesAsync(AppState appState, List<WaitingNode> nodes)
     {
@@ -331,7 +333,7 @@ public static class SavedDocuments
     {
         if (tab != appState.Tabs.Active)
             return;
-        appState.EnqueueCommand(new ViewCommand.RevealNode(node));
+        appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
     }
 
     private sealed record SavedTab(DocumentTab Tab, DocumentRecord Record);

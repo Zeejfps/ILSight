@@ -531,7 +531,10 @@ public static class DocumentPanels
         ActivateTab(uiState, tab);
     }
 
-    private static bool IsTabPanel(UiState uiState, string panel) => DocumentPanels.FindTab(uiState.Documents, panel) != null;
+    private static bool IsTabPanel(UiState uiState, string panel)
+    {
+        return DocumentPanels.FindTab(uiState.Documents, panel) != null;
+    }
 
     private static int WrapIndex(int index, int count)
     {
@@ -633,7 +636,10 @@ public static class DocumentPanels
     }
 
     /// <summary>The panel of the active tab, which the views dock beside, or null.</summary>
-    internal static string? FindActivePanel(UiState uiState) => DocumentPanels.FindPanel(uiState.Documents, uiState.ActiveTab);
+    internal static string? FindActivePanel(UiState uiState)
+    {
+        return DocumentPanels.FindPanel(uiState.Documents, uiState.ActiveTab);
+    }
 
     /// <summary>Lets each view follow the grid or picture its tab shows.</summary>
     public static void FollowTabContent(UiState uiState)

@@ -20,8 +20,10 @@ public static class Assemblies
         OpenInBackground(appState, files);
     }
 
-    private static void OpenInBackground(AppState appState, AssemblyPath[] files) =>
-        Background.Start(OpenInBackgroundAsync(appState, files), appState.ReportError);
+    private static void OpenInBackground(AppState appState, AssemblyPath[] files)
+    {
+        Background.Start(OpenInBackgroundAsync(appState, files), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task OpenInBackgroundAsync(AppState appState, AssemblyPath[] files)
     {
@@ -55,7 +57,7 @@ public static class Assemblies
     {
         if (error is OperationCanceledException)
             return;
-        appState.ReportError(new AppProblem.OpenFailed(error));
+        Errors.Report(appState, new AppProblem.OpenFailed(error));
     }
 
     /// <summary>Opens the file at <paramref name="path"/>, as a file dialog or a download names it; nothing
@@ -82,8 +84,10 @@ public static class Assemblies
 
     /// <summary>Opens, in the background, the assemblies <paramref name="assembly"/> references that
     /// can be found.</summary>
-    public static void OpenDependencies(AppState appState, LoadedModule assembly) =>
-        Background.Start(OpenDependenciesAsync(appState, assembly), appState.ReportError);
+    public static void OpenDependencies(AppState appState, LoadedModule assembly)
+    {
+        Background.Start(OpenDependenciesAsync(appState, assembly), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task OpenDependenciesAsync(AppState appState, LoadedModule assembly)
     {
@@ -97,8 +101,10 @@ public static class Assemblies
     /// <summary>Checks in the background that the PDB at <paramref name="pdbPath"/> can be read for
     /// <paramref name="assembly"/>, then has the assembly read it in place of the one it finds itself,
     /// kept with the list, and reopens the assembly to show it. Reports why when it cannot be read.</summary>
-    public static void UsePdb(AppState appState, LoadedModule assembly, string pdbPath) =>
-        Background.Start(UsePdbAsync(appState, assembly, pdbPath), appState.ReportError);
+    public static void UsePdb(AppState appState, LoadedModule assembly, string pdbPath)
+    {
+        Background.Start(UsePdbAsync(appState, assembly, pdbPath), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task UsePdbAsync(AppState appState, LoadedModule assembly, string pdbPath)
     {
@@ -122,7 +128,7 @@ public static class Assemblies
 
     private static void ReportUnreadablePdb(AppState appState, LoadedAssembly assembly, string pdbPath, PdbCheck check)
     {
-        appState.ReportError(new AppProblem.PdbUnusable(pdbPath, assembly.Name, check));
+        Errors.Report(appState, new AppProblem.PdbUnusable(pdbPath, assembly.Name, check));
     }
 
     /// <summary>Resolves <paramref name="assembly"/>'s references against the framework
@@ -161,8 +167,10 @@ public static class Assemblies
     /// <summary>Reads the item of the list holding <paramref name="assembly"/> again in the background,
     /// its nodes loaded as far as they were, then lists it where the item is and shows each tab's place
     /// in it again. The other assemblies stay as they are.</summary>
-    private static void ReopenAssembly(AppState appState, LoadedAssembly assembly) =>
-        Background.Start(ReopenAssemblyAsync(appState, assembly), appState.ReportError);
+    private static void ReopenAssembly(AppState appState, LoadedAssembly assembly)
+    {
+        Background.Start(ReopenAssemblyAsync(appState, assembly), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task ReopenAssemblyAsync(AppState appState, LoadedAssembly assembly)
     {
@@ -234,7 +242,7 @@ public static class Assemblies
                 ShowReopened(appState, item, ok.Value, tabs);
                 break;
             case Outcome<Reopened>.Failed failed:
-                appState.ReportError(new AppProblem.AssemblyNotReloaded(item.Name, failed.Error));
+                Errors.Report(appState, new AppProblem.AssemblyNotReloaded(item.Name, failed.Error));
                 break;
             default:
                 throw new UnreachableException();
@@ -292,8 +300,10 @@ public static class Assemblies
     /// <summary>Reloads every assembly of the open list from disk in the background, then commands the view
     /// to expand the tree at <paramref name="expanded"/>, the paths of the nodes it had expanded, and
     /// shows each tab's place again, decompiled from the fresh files.</summary>
-    public static void RefreshAssemblies(AppState appState, List<NodePath> expanded) =>
-        Background.Start(RefreshAssembliesAsync(appState, expanded), appState.ReportError);
+    public static void RefreshAssemblies(AppState appState, List<NodePath> expanded)
+    {
+        Background.Start(RefreshAssembliesAsync(appState, expanded), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task RefreshAssembliesAsync(AppState appState, List<NodePath> expanded)
     {
@@ -377,7 +387,7 @@ public static class Assemblies
                 break;
             case Outcome<Reloaded>.Failed failed:
                 ShowReopenedDocuments(appState);
-                appState.ReportError(new AppProblem.AssembliesNotReloaded(failed.Error));
+                Errors.Report(appState, new AppProblem.AssembliesNotReloaded(failed.Error));
                 break;
             default:
                 throw new UnreachableException();
@@ -386,7 +396,7 @@ public static class Assemblies
 
     private static void ShowReloaded(AppState appState, Reloaded reloaded, int intent, List<ReloadingTab> tabs)
     {
-        appState.EnqueueCommand(new ViewCommand.ExpandNodes(reloaded.Expanded));
+        appState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes(reloaded.Expanded));
         for (var i = 0; i < tabs.Count; i++)
             ReshowTab(appState, tabs[i], reloaded.Places[i], intent);
         ShowReopenedDocuments(appState);
@@ -398,7 +408,7 @@ public static class Assemblies
         if (!ShowAgain(appState, reloading, node))
             return;
         if (reloading.Tab == appState.Tabs.Active && appState.Intent.IsCurrent(intent))
-            appState.EnqueueCommand(new ViewCommand.RevealNode(node!));
+            appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node!));
     }
 
     /// <summary>Shows <paramref name="node"/>, the tab's place found again, in the tab, or that its place
@@ -422,13 +432,15 @@ public static class Assemblies
     private static void ReleaseGoneTab(AppState appState, DocumentTab tab, NodePath location)
     {
         Tabs.ShowGone(tab, location);
-        appState.ReportError(new AppProblem.GoneAfterReload(location));
+        Errors.Report(appState, new AppProblem.GoneAfterReload(location));
     }
 
     /// <summary>Opens <paramref name="paths"/> in the background as a reload does, so that another
     /// reload or clearing the list stops it, and the settings are saved once it is done.</summary>
-    internal static void OpenAssembliesAsReload(AppState appState, List<AssemblyPath> paths) =>
-        Background.Start(OpenAssembliesAsReloadAsync(appState, paths), appState.ReportError);
+    internal static void OpenAssembliesAsReload(AppState appState, List<AssemblyPath> paths)
+    {
+        Background.Start(OpenAssembliesAsReloadAsync(appState, paths), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task OpenAssembliesAsReloadAsync(AppState appState, List<AssemblyPath> paths)
     {
@@ -449,7 +461,7 @@ public static class Assemblies
                 SaveSettings(appState);
                 break;
             case Outcome<LoadedAssembly?>.Failed failed:
-                appState.ReportError(new AppProblem.OpenFailed(failed.Error));
+                Errors.Report(appState, new AppProblem.OpenFailed(failed.Error));
                 break;
             default:
                 throw new UnreachableException();

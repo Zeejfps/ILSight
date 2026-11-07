@@ -114,7 +114,7 @@ public static class IconTheming
         var error = CreateThemeFolder(folder, SchemaFileName, BuiltInIconThemes.ReadSchema(), BuiltInIconThemes.ReadGuide());
         if (error == null)
             return folder;
-        appState.ReportError(new AppProblem.ThemesFolderNotMade(ThemeKind.Icon, error));
+        Errors.Report(appState, new AppProblem.ThemesFolderNotMade(ThemeKind.Icon, error));
         return null;
     }
 

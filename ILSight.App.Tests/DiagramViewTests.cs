@@ -58,7 +58,10 @@ public sealed class DiagramViewTests
         return !view.Transition.IsMoving;
     }
 
-    private static DiagramViewState ViewOf(AppDriver app, DocumentTab tab) => DocumentPanels.GetView(app.Ui.Documents, tab).Diagram;
+    private static DiagramViewState ViewOf(AppDriver app, DocumentTab tab)
+    {
+        return DocumentPanels.GetView(app.Ui.Documents, tab).Diagram;
+    }
 
     [Fact]
     public void A_cards_own_members_start_open_and_what_it_inherits_starts_folded_and_a_click_flips_either_by_value()

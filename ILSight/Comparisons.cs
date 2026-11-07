@@ -53,8 +53,10 @@ public static class Comparisons
     /// <summary>Compares the assemblies of <paramref name="comparison"/>, as they are open now, in the
     /// background, and shows what changed unless another comparison started or it was closed meanwhile.
     /// Shows why when either is no longer open or the comparison fails.</summary>
-    private static void Compare(AppState appState, AssemblyComparison comparison) =>
-        Background.Start(CompareAsync(appState, comparison), appState.ReportError);
+    private static void Compare(AppState appState, AssemblyComparison comparison)
+    {
+        Background.Start(CompareAsync(appState, comparison), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task CompareAsync(AppState appState, AssemblyComparison comparison)
     {
@@ -107,7 +109,7 @@ public static class Comparisons
     private static void ReportFailure(AppState appState, AssemblyComparison comparison, LoadedModule left, LoadedModule right, Exception error)
     {
         Comparisons.ShowFailure(comparison, new ComparisonFailure.Failed(left.NameAndVersion, right.NameAndVersion));
-        appState.ReportError(new AppProblem.ComparisonFailed(left.NameAndVersion, right.NameAndVersion, error));
+        Errors.Report(appState, new AppProblem.ComparisonFailed(left.NameAndVersion, right.NameAndVersion, error));
     }
 
     /// <summary>Puts the right assembly on the left and the left one on the right.</summary>

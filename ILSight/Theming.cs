@@ -113,7 +113,7 @@ public static class Theming
             .Where(e => !known.Contains(e))
             .GroupBy(static e => e.File);
         foreach (var fileErrors in byFile)
-            appState.ReportError(new AppProblem.ThemeFileProblems(kind, fileErrors.Key, fileErrors.ToList()));
+            Errors.Report(appState, new AppProblem.ThemeFileProblems(kind, fileErrors.Key, fileErrors.ToList()));
     }
 
     /// <summary>The theme the app is drawn in: the chosen one as resolved, or the built-in dark one while
@@ -133,7 +133,7 @@ public static class Theming
         var error = CreateThemeFolder(folder, SchemaFileName, BuiltInThemes.ReadSchema(), BuiltInThemes.ReadGuide());
         if (error == null)
             return folder;
-        appState.ReportError(new AppProblem.ThemesFolderNotMade(ThemeKind.Color, error));
+        Errors.Report(appState, new AppProblem.ThemesFolderNotMade(ThemeKind.Color, error));
         return null;
     }
 
@@ -296,7 +296,7 @@ public static class Theming
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            appState.ReportError(new AppProblem.CustomThemeNotWritten(kind, path, e.Message));
+            Errors.Report(appState, new AppProblem.CustomThemeNotWritten(kind, path, e.Message));
             return false;
         }
     }
@@ -312,8 +312,10 @@ public static class Theming
     /// <summary>Reads the themes of <paramref name="folder"/> again whenever it changes, until its watch
     /// stops. Makes the folder when it is missing, and again when it is removed while watched. When the
     /// folder cannot be made or watched, reports why and leaves the themes to be read again by hand.</summary>
-    internal static void WatchThemeFolder(AppState appState, WatchedThemeFolder folder) =>
-        Background.Start(WatchThemeFolderAsync(appState, folder), appState.ReportError);
+    internal static void WatchThemeFolder(AppState appState, WatchedThemeFolder folder)
+    {
+        Background.Start(WatchThemeFolderAsync(appState, folder), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task WatchThemeFolderAsync(AppState appState, WatchedThemeFolder folder)
     {
@@ -362,7 +364,7 @@ public static class Theming
 
     private static void ReportUnwatched(AppState appState, WatchedThemeFolder folder, string reason)
     {
-        appState.ReportError(new AppProblem.ThemesNotWatched(folder.Kind, reason));
+        Errors.Report(appState, new AppProblem.ThemesNotWatched(folder.Kind, reason));
     }
 
     public static void StopWatchingUserThemes(AppState appState)

@@ -279,8 +279,10 @@ public static class Bookmarks
 
     /// <summary>Shows the line <paramref name="bookmark"/> marks in the active tab, opening its
     /// assembly first if it is not open, and records it in the history.</summary>
-    public static void GoToBookmark(AppState appState, Bookmark bookmark) =>
-        Background.Start(GoToBookmarkAsync(appState, bookmark), appState.ReportError);
+    public static void GoToBookmark(AppState appState, Bookmark bookmark)
+    {
+        Background.Start(GoToBookmarkAsync(appState, bookmark), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task GoToBookmarkAsync(AppState appState, Bookmark bookmark)
     {
@@ -320,7 +322,7 @@ public static class Bookmarks
 
     private static void ReportBookmarkGone(AppState appState, Bookmark bookmark, Exception? error)
     {
-        appState.ReportError(new AppProblem.BookmarkGone(bookmark.Name, bookmark.Place, error));
+        Errors.Report(appState, new AppProblem.BookmarkGone(bookmark.Name, bookmark.Place, error));
     }
 
     /// <summary>Goes to the next enabled bookmark after <paramref name="from"/>, or the previous when
@@ -340,15 +342,17 @@ public static class Bookmarks
         var error = BookmarkFile.Write(path, records);
         if (error == null)
             return;
-        appState.ReportError(new AppProblem.BookmarksNotExported(error));
+        Errors.Report(appState, new AppProblem.BookmarksNotExported(error));
     }
 
     /// <summary>Reads the bookmarks in the file at <paramref name="path"/> — this app's or the real
     /// ILSpy's — and finds the place of each in the background: takes them at once when there are
     /// none yet, and otherwise waits in <see cref="AppState.Imports"/> for the user to say how. Bookmarks
     /// whose place is not found are left out and reported.</summary>
-    public static void ImportBookmarks(AppState appState, string path) =>
-        Background.Start(ImportBookmarksAsync(appState, path), appState.ReportError);
+    public static void ImportBookmarks(AppState appState, string path)
+    {
+        Background.Start(ImportBookmarksAsync(appState, path), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task ImportBookmarksAsync(AppState appState, string path)
     {
@@ -356,11 +360,11 @@ public static class Bookmarks
         var read = BookmarkFile.Read(path, out var error);
         if (read == null)
         {
-            appState.ReportError(new AppProblem.BookmarksNotImported(file, error ?? ""));
+            Errors.Report(appState, new AppProblem.BookmarksNotImported(file, error ?? ""));
             return;
         }
         if (read.Unreadable.Count > 0)
-            appState.ReportError(new AppProblem.ImportedBookmarksUnreadable(file, read.Unreadable));
+            Errors.Report(appState, new AppProblem.ImportedBookmarksUnreadable(file, read.Unreadable));
         var records = read.Bookmarks;
         appState.Imports.Finding++;
         var assemblies = appState.Assemblies;
@@ -394,7 +398,7 @@ public static class Bookmarks
                 TakeImported(appState, ok.Value, file);
                 break;
             case Outcome<List<FoundBookmark>>.Failed failed:
-                appState.ReportError(new AppProblem.BookmarksNotImported(file, failed.Error.ToString()));
+                Errors.Report(appState, new AppProblem.BookmarksNotImported(file, failed.Error.ToString()));
                 break;
             default:
                 throw new UnreachableException();
@@ -424,7 +428,7 @@ public static class Bookmarks
         if (lost.Count == 0)
             return;
         var lines = lost.ConvertAll(DescribeLostBookmark);
-        appState.ReportError(new AppProblem.ImportedBookmarksLost(file, lines));
+        Errors.Report(appState, new AppProblem.ImportedBookmarksLost(file, lines));
     }
 
     private static string DescribeLostBookmark(FoundBookmark lost)
@@ -460,7 +464,7 @@ public static class Bookmarks
     {
         if (leftOut == 0)
             return;
-        appState.ReportError(new AppProblem.BookmarksLeftOut(leftOut));
+        Errors.Report(appState, new AppProblem.BookmarksLeftOut(leftOut));
     }
 
     /// <summary>A bookmark read, and where it was found.</summary>

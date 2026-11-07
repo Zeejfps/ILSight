@@ -161,12 +161,17 @@ public static class Updates
     public static void CheckOnStartup(AppState appState)
     {
         if (appState.Updates.CheckAutomatically)
-            Background.Start(Check(appState.Updates, asked: false), appState.ReportError);
+            StartCheck(appState, asked: false);
     }
 
     public static void CheckForUpdates(AppState appState)
     {
-        Background.Start(Check(appState.Updates, asked: true), appState.ReportError);
+        StartCheck(appState, asked: true);
+    }
+
+    private static void StartCheck(AppState appState, bool asked)
+    {
+        Background.Start(Check(appState.Updates, asked), problem => Errors.Report(appState, problem));
     }
 
     public static void SetCheckAutomatically(AppState appState, bool check)
@@ -177,12 +182,12 @@ public static class Updates
     /// <summary>Closes the app the normal way, so that it saves what it has, into the update.</summary>
     public static void RestartToUpdate(AppState appState)
     {
-        Background.Start(RestartToUpdateAsync(appState), appState.ReportError);
+        Background.Start(RestartToUpdateAsync(appState), problem => Errors.Report(appState, problem));
     }
 
     private static async Task RestartToUpdateAsync(AppState appState)
     {
         if (await ApplyAfterExit(appState.Updates))
-            appState.EnqueueCommand(new ViewCommand.Quit());
+            appState.ViewCommands.Enqueue(new ViewCommand.Quit());
     }
 }

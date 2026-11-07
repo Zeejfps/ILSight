@@ -127,7 +127,7 @@ public static class Navigation
             return;
         }
         Tabs.MakeActive(appState.Tabs, showing);
-        appState.EnqueueCommand(new ViewCommand.ShowTab(showing, Beside: null));
+        appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(showing, Beside: null));
     }
 
     /// <summary>The tab showing <paramref name="node"/>, the active one first; null when none does.</summary>
@@ -166,7 +166,10 @@ public static class Navigation
     }
 
     /// <summary>Keeps <paramref name="tab"/> open, so that what is picked next shows in another tab.</summary>
-    public static void KeepTabOpen(AppState appState, DocumentTab tab) => Tabs.Keep(appState.Tabs, tab);
+    public static void KeepTabOpen(AppState appState, DocumentTab tab)
+    {
+        Tabs.Keep(appState.Tabs, tab);
+    }
 
     /// <summary>Has what is picked and followed shown in the preview tab, or, when <paramref name="on"/>
     /// is false, in the active tab, the preview tab then kept open as any other.</summary>
@@ -184,8 +187,10 @@ public static class Navigation
     /// type or member <paramref name="idString"/> names, written as XML documentation ids are, looked
     /// for in the assemblies read from them, or in every open one when there are none. Reports when
     /// none has it.</summary>
-    public static void OpenAndShowId(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString) =>
-        Background.Start(OpenAndShowIdAsync(appState, paths, idString), appState.ReportError);
+    public static void OpenAndShowId(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString)
+    {
+        Background.Start(OpenAndShowIdAsync(appState, paths, idString), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task OpenAndShowIdAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString)
     {
@@ -236,13 +241,15 @@ public static class Navigation
 
     private static void ReportMissingId(AppState appState, string idString)
     {
-        appState.ReportError(new AppProblem.IdNotFound(idString));
+        Errors.Report(appState, new AppProblem.IdNotFound(idString));
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background (it may load an assembly),
     /// then shows it in the tab it was asked from, or a new one.</summary>
-    public static void Navigate(AppState appState, CodeReference.Navigable reference, bool inNewTab) =>
-        Background.Start(NavigateAsync(appState, reference, inNewTab), appState.ReportError);
+    public static void Navigate(AppState appState, CodeReference.Navigable reference, bool inNewTab)
+    {
+        Background.Start(NavigateAsync(appState, reference, inNewTab), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task NavigateAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab)
     {
@@ -298,8 +305,10 @@ public static class Navigation
 
     /// <summary>Resolves <paramref name="reference"/> in the background, as <see cref="Navigate"/> does,
     /// then shows the metadata table row that defines it in the tab it was asked from, or a new one.</summary>
-    public static void ShowInMetadata(AppState appState, CodeReference.Navigable reference, bool inNewTab) =>
-        Background.Start(ShowInMetadataAsync(appState, reference, inNewTab), appState.ReportError);
+    public static void ShowInMetadata(AppState appState, CodeReference.Navigable reference, bool inNewTab)
+    {
+        Background.Start(ShowInMetadataAsync(appState, reference, inNewTab), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task ShowInMetadataAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab)
     {
@@ -342,22 +351,24 @@ public static class Navigation
 
     /// <summary>Resolves <paramref name="reference"/> in the background, then has the view open its page of
     /// the .NET API reference, or reports that it has none.</summary>
-    public static void ShowInApiReference(AppState appState, CodeReference.Entity reference) =>
-        Background.Start(ShowInApiReferenceAsync(appState, reference), appState.ReportError);
+    public static void ShowInApiReference(AppState appState, CodeReference.Entity reference)
+    {
+        Background.Start(ShowInApiReferenceAsync(appState, reference), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task ShowInApiReferenceAsync(AppState appState, CodeReference.Entity reference)
     {
         var assemblies = appState.Assemblies;
         var found = await Background.Run(() => assemblies.FindApiReferencePage(reference));
         if (found is Outcome<string>.Ok ok && ok.Value != null)
-            appState.EnqueueCommand(new ViewCommand.OpenWebPage(ok.Value));
+            appState.ViewCommands.Enqueue(new ViewCommand.OpenWebPage(ok.Value));
         else
             ReportNoApiReferencePage(appState, reference);
     }
 
     private static void ReportNoApiReferencePage(AppState appState, CodeReference reference)
     {
-        appState.ReportError(new AppProblem.NoApiReferencePage(reference.Name));
+        Errors.Report(appState, new AppProblem.NoApiReferencePage(reference.Name));
     }
 
     /// <summary>Goes where a node points: what a reference, a forwarded type, an imported method, or a base
@@ -395,8 +406,10 @@ public static class Navigation
         return index != appState.History.CurrentIndex;
     }
 
-    private static void Restore(AppState appState, HistoryEntry.Node entry) =>
-        Background.Start(RestoreAsync(appState, entry), appState.ReportError);
+    private static void Restore(AppState appState, HistoryEntry.Node entry)
+    {
+        Background.Start(RestoreAsync(appState, entry), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task RestoreAsync(AppState appState, HistoryEntry.Node entry)
     {
@@ -455,7 +468,7 @@ public static class Navigation
 
     private static void ReportHistoryPlaceGone(AppState appState, NodePath place, Exception? error)
     {
-        appState.ReportError(new AppProblem.HistoryPlaceGone(place, error));
+        Errors.Report(appState, new AppProblem.HistoryPlaceGone(place, error));
     }
 
     /// <summary>Brings the tab showing <paramref name="diagram"/> to the front, dropping what was being
@@ -467,7 +480,7 @@ public static class Navigation
         if (tab == null)
             return;
         Tabs.MakeActive(appState.Tabs, tab);
-        appState.EnqueueCommand(new ViewCommand.ShowTab(tab, Beside: null));
+        appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
     internal static DocumentTab? FindTabShowing(AppState appState, TypeDiagram diagram)
@@ -482,7 +495,7 @@ public static class Navigation
 
     internal static void ReportUnresolvedReference(AppState appState, CodeReference reference, Exception? error)
     {
-        appState.ReportError(new AppProblem.Unresolved(reference, error));
+        Errors.Report(appState, new AppProblem.Unresolved(reference, error));
     }
 
     /// <summary>Records where the active tab's view is in the history entry it shows, before it shows
@@ -517,7 +530,7 @@ public static class Navigation
         var shownIn = FindOrOpenTab(appState, destination);
         Tabs.MakeActive(appState.Tabs, shownIn);
         LoadIntoTab(appState, shownIn, node, new Arrival(position, target, row));
-        appState.EnqueueCommand(new ViewCommand.RevealNode(node));
+        appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
     }
 
     /// <summary>The tab <paramref name="destination"/> leads to now, brought to the front, else a new one
@@ -528,7 +541,7 @@ public static class Navigation
         if (tab == null)
             tab = OpenNewTab(appState);
         else
-            appState.EnqueueCommand(new ViewCommand.ShowTab(tab, Beside: null));
+            appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
         if (IsPreviewed(appState, destination))
             Tabs.MakePreview(appState.Tabs, tab);
         return tab;
@@ -590,15 +603,15 @@ public static class Navigation
         var empty = FindEmptyActiveTab(appState);
         if (empty == null)
             return OpenNewTab(appState);
-        appState.EnqueueCommand(new ViewCommand.ShowTab(empty, Beside: null));
+        appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(empty, Beside: null));
         return empty;
     }
 
     /// <summary>Opens an empty tab, which the view docks beside the active one.</summary>
     internal static DocumentTab OpenNewTab(AppState appState)
     {
-        var tab = appState.AddTab();
-        appState.EnqueueCommand(new ViewCommand.ShowTab(tab, appState.Tabs.Active));
+        var tab = Tabs.AddNew(appState.Tabs);
+        appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, appState.Tabs.Active));
         return tab;
     }
 }

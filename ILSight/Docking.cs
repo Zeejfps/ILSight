@@ -11,7 +11,10 @@ namespace ILSight;
 public static class Docking
 {
     /// <summary>Opens an empty tab for a panel the screen made for itself.</summary>
-    public static DocumentTab OpenEmptyTab(AppState appState) => appState.AddTab();
+    public static DocumentTab OpenEmptyTab(AppState appState)
+    {
+        return Tabs.AddNew(appState.Tabs);
+    }
 
     /// <summary>Makes <paramref name="tab"/>, when it is open, the tab the user works in, decompiling
     /// again what it shows when the language or the options changed since.</summary>
