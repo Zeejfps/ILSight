@@ -69,7 +69,7 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Run(2);
         var shown = app.AppState.Tabs.Active!;
-        var label = app.Ui.Tree.Label(shown.Node!);
+        var label = Trees.GetLabel(app.Ui.Tree, shown.Node!);
         var tab = app.Frames.TextRects()
             .Where(t => t.Text == label)
             .Select(t => t.Rect)
@@ -471,7 +471,7 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Run(2);
         var shown = app.AppState.Tabs.Active!;
-        var label = app.Ui.Tree.Label(shown.Node!);
+        var label = Trees.GetLabel(app.Ui.Tree, shown.Node!);
         var documentTab = app.Frames.TextRects()
             .Where(t => t.Text == label)
             .Select(t => t.Rect)

@@ -50,8 +50,8 @@ public sealed class PresentationTests
         var list = new AssemblyList();
         var original = list.Open(AppStateDriver.FixturePath);
         var duplicate = list.Open(copy);
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
-        tree.Sync(list);
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        Trees.SyncRoots(tree, list);
 
         var first = tree.Row(original.Root);
         var second = tree.Row(duplicate.Root);
@@ -60,7 +60,7 @@ public sealed class PresentationTests
         Assert.StartsWith(original.Name, first.Label);
         Assert.Equal($"{duplicate.Name} (copy)", second.Label);
         Assert.Equal(first.Secondary, second.Secondary);
-        Assert.Equal(second.Label, tree.Label(duplicate.Root));
+        Assert.Equal(second.Label, Trees.GetLabel(tree, duplicate.Root));
         Assert.Contains(original.FilePath.Text, first.Tooltip);
         Assert.Contains(duplicate.FilePath.Text, second.Tooltip);
         Assert.Contains(original.FullName, first.Tooltip);
@@ -71,8 +71,8 @@ public sealed class PresentationTests
     {
         var list = new AssemblyList();
         var assembly = list.Open(AppStateDriver.FixturePath);
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
-        tree.Sync(list);
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        Trees.SyncRoots(tree, list);
 
         Assert.Equal(assembly.Name, tree.Row(assembly.Root).Label);
     }
@@ -82,8 +82,8 @@ public sealed class PresentationTests
     {
         var list = new AssemblyList();
         var assembly = list.Open(AppStateDriver.FixturePath);
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
-        tree.Sync(list);
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        Trees.SyncRoots(tree, list);
 
         var row = tree.Row(assembly.Root);
 
@@ -98,8 +98,8 @@ public sealed class PresentationTests
         var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
         var ns = root.Child(AppStateDriver.FixturesNamespace);
         var privateField = ns.Child("Outline").Children.Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
-        tree.SetStyle(UiTheme.Light, BuiltInThemes.Light.Icons, Icons);
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        Trees.SetTreeStyle(tree, UiTheme.Light, BuiltInThemes.Light.Icons, Icons);
 
         var field = tree.Row(privateField);
         var hidden = tree.Row(ns.Child("Hidden"));
@@ -121,17 +121,17 @@ public sealed class PresentationTests
         var assembly = list.Open(AppStateDriver.FixturePath);
         var greeter = assembly.Root.Child(AppStateDriver.FixturesNamespace, "Greeter");
         var member = greeter.Children.First(c => c.Token != null);
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
-        tree.Sync(list);
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        Trees.SyncRoots(tree, list);
         var identity = tree.Row(assembly.Root).Secondary;
 
         Assert.Null(tree.Row(greeter).Secondary);
-        tree.ShowTokens(TokenFormat.Hex);
+        Trees.ShowTokens(tree, TokenFormat.Hex);
         Assert.Equal($"@{greeter.Token:X8}", tree.Row(greeter).Secondary);
         Assert.StartsWith("@02", tree.Row(greeter).Secondary);
         Assert.Equal($"@{member.Token:X8}", tree.Row(member).Secondary);
         Assert.Equal(identity, tree.Row(assembly.Root).Secondary);
-        tree.ShowTokens(TokenFormat.Decimal);
+        Trees.ShowTokens(tree, TokenFormat.Decimal);
         Assert.Equal($"@{greeter.Token}", tree.Row(greeter).Secondary);
     }
 
@@ -141,7 +141,7 @@ public sealed class PresentationTests
         var runtime = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Runtime.dll");
         var facade = new AssemblyList().Open(runtime);
         var forwarded = facade.Root.Child("System").Children.First(c => c.Text == "Object");
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
 
         var row = tree.Row(forwarded);
 
@@ -160,7 +160,7 @@ public sealed class PresentationTests
             .Where(c => c.Icon == NodeIcon.ReferencedTypes)
             .SelectMany(t => t.Children)
             .First(c => c.Text == "List<>");
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
 
         var row = tree.Row(used);
 
@@ -174,7 +174,7 @@ public sealed class PresentationTests
     {
         var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
         var hidden = root.Child(AppStateDriver.FixturesNamespace, "Hidden");
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
 
         var row = tree.Row(hidden);
 

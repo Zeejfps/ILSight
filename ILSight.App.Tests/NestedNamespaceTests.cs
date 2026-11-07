@@ -56,7 +56,7 @@ public sealed class NestedNamespaceTests
         var ilsight = app.Node("ILSight");
         var fixtures = app.Node(AppStateDriver.FixturesNamespace);
 
-        tree.ExpandNamespaces();
+        Trees.ExpandNamespaces(tree);
         app.RunUntil(() => tree.View.IsExpanded(fixtures));
 
         Assert.All(EnclosingNamespaces, name => Assert.True(tree.View.IsExpanded(app.Node(name))));
@@ -64,34 +64,34 @@ public sealed class NestedNamespaceTests
         Assert.Equal([app.Node("ILSight.App"), app.Node("ILSight.Tests")], ShownChildren(app, ilsight));
         Assert.True(tree.HasChildren(ilsight));
         Assert.Contains(fixtures, ShownChildren(app, app.Node("ILSight.App.Tests")));
-        Assert.Equal("ILSight", tree.RowLabel(ilsight));
-        Assert.Equal("App", tree.RowLabel(app.Node("ILSight.App")));
-        Assert.Equal("Fixtures", tree.RowLabel(fixtures));
-        Assert.Equal(AppStateDriver.FixturesNamespace, tree.Label(fixtures));
+        Assert.Equal("ILSight", Trees.GetRowLabel(tree, ilsight));
+        Assert.Equal("App", Trees.GetRowLabel(tree, app.Node("ILSight.App")));
+        Assert.Equal("Fixtures", Trees.GetRowLabel(tree, fixtures));
+        Assert.Equal(AppStateDriver.FixturesNamespace, Trees.GetLabel(tree, fixtures));
         Assert.True(IsShownNested(app, app.Fixture("Greeter")));
     }
 
     [Fact]
     public void Showing_public_api_a_namespace_of_internal_types_is_hidden_unless_a_namespace_nested_in_it_shows()
     {
-        var tree = new BrowseTree(TestSession.Shared, static _ => { });
+        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
         var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
         var fixtures = root.Child(AppStateDriver.FixturesNamespace);
         var vault = root.Child(AppStateDriver.FixturesNamespace + ".Vault");
         var door = root.Child(AppStateDriver.FixturesNamespace + ".Vault.Door");
         fixtures.LoadChildren();
         vault.LoadChildren();
-        tree.ShowApi(ApiVisibility.PublicOnly);
+        Trees.ShowApi(tree, ApiVisibility.PublicOnly);
 
         Assert.DoesNotContain(vault, tree.GetChildren(root).Nodes);
         Assert.Contains(door, tree.GetChildren(root).Nodes);
 
-        tree.NestNamespaces(true);
+        Trees.NestNamespaces(tree, true);
         Assert.Contains(vault, tree.GetChildren(fixtures).Nodes);
         Assert.Equal([door], tree.GetChildren(vault).Nodes);
 
-        tree.NestNamespaces(false);
-        tree.ShowApi(ApiVisibility.AllButCompilerGenerated);
+        Trees.NestNamespaces(tree, false);
+        Trees.ShowApi(tree, ApiVisibility.AllButCompilerGenerated);
         Assert.Contains(vault, tree.GetChildren(root).Nodes);
     }
 
@@ -113,7 +113,7 @@ public sealed class NestedNamespaceTests
     {
         var app = OpenedNested();
         var farewell = app.Fixture("Farewell");
-        app.Ui.Tree.CollapseAll();
+        Trees.CollapseTree(app.Ui.Tree);
 
         Navigate(app.AppState, farewell.Definition, inNewTab: false);
         app.Settle(1);
@@ -131,7 +131,7 @@ public sealed class NestedNamespaceTests
         app.Show(greeter, 2);
         app.Show(app.Fixture("Farewell"), 2);
         Nest(app, true);
-        app.Ui.Tree.CollapseAll();
+        Trees.CollapseTree(app.Ui.Tree);
 
         GoBack(app.AppState);
         app.Settle(1);
@@ -152,7 +152,7 @@ public sealed class NestedNamespaceTests
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
         app.Show(app.Fixture("Greeter"), 2);
         Nest(app, false);
-        app.Ui.Tree.CollapseAll();
+        Trees.CollapseTree(app.Ui.Tree);
 
         GoToBookmark(app.AppState, bookmark);
         app.Settle(1);
@@ -173,7 +173,7 @@ public sealed class NestedNamespaceTests
         var before = app.Node("ILSight.App");
         app.Show(app.Fixture("Greeter"), 2);
 
-        RefreshAssemblies(app.AppState, app.Ui.Tree.ExpandedPaths());
+        RefreshAssemblies(app.AppState, Trees.ListExpandedPaths(app.Ui.Tree));
         app.Settle(1);
 
         var greeter = app.Fixture("Greeter");

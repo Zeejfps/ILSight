@@ -105,7 +105,7 @@ public sealed class PackageBrowsingTests
         var app = OpenedPackage(temp);
         var assembly = Greeter(app).Assembly;
         var path = temp.PathOf("Extracted.dll");
-        app.Ui.Tree.Reveal(assembly.Root);
+        Trees.RevealNode(app.Ui.Tree, assembly.Root);
         app.Run(2);
 
         app.Frames.FilePicker.Answer = path;

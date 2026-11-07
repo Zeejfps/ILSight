@@ -16,7 +16,7 @@ public sealed class AnalyzerTests
     private static AnalyzerKindNode Expand(AppStateDriver d, AnalyzerSymbolNode symbol, string header)
     {
         var rows = d.Ui.Analyzer;
-        var kind = rows.GetChildren(symbol).OfType<AnalyzerKindNode>().Single(k => Core.Analysis.Analyzers.GetHeader(k.Kind) == header);
+        var kind = Analysis.ListChildren(rows, symbol).OfType<AnalyzerKindNode>().Single(k => Core.Analysis.Analyzers.GetHeader(k.Kind) == header);
         rows.View.SetExpanded(kind, true);
         rows.GetChildren(kind);
         d.RunUntil(() => kind.IsDone);
@@ -111,7 +111,7 @@ public sealed class AnalyzerTests
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Ui.Tree.Reveal(First(d));
+        Trees.RevealNode(d.Ui.Tree, First(d));
         app.Run(2);
         var leftmost = app.Frames.TextRects()
             .Where(t => t.Text == First(d).Text)
@@ -412,7 +412,7 @@ public sealed class AnalyzerTests
         app.Run(3);
         var root = analyzer.Roots[0];
         var rows = app.Ui.Analyzer;
-        var kinds = rows.GetChildren(root).OfType<AnalyzerKindNode>().ToList();
+        var kinds = Analysis.ListChildren(rows, root).OfType<AnalyzerKindNode>().ToList();
 
         app.ClickLast(Icons.AnalyzerExpandAll).Frame();
         var expanded = kinds.All(k => rows.View.IsExpanded(k));

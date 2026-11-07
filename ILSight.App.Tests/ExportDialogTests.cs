@@ -381,7 +381,7 @@ public sealed class ExportDialogTests : IDisposable
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.Settle(2);
         var second = app.AppState.Assemblies.Assemblies[1];
-        var row = app.TextRect(app.Ui.Tree.Label(second.Root));
+        var row = app.TextRect(Trees.GetLabel(app.Ui.Tree, second.Root));
 
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
         app.ClickMenuItem("Export…").Frame(2);

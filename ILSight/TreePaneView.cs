@@ -21,14 +21,14 @@ internal static class TreePaneView
     {
         var theme = ui.Theme;
         var tree = ui.State.Tree;
-        tree.SetStyle(theme, ui.State.NodeIconPalette, ui.State.Icons);
-        tree.ShowTokens(ui.State.Display.TreeTokens);
-        tree.ShowEmptyTables(ui.State.Display.ShowEmptyMetadataTables);
-        tree.NestNamespaces(ui.State.Display.NestedNamespaces);
+        Trees.SetTreeStyle(tree, theme, ui.State.NodeIconPalette, ui.State.Icons);
+        Trees.ShowTokens(tree, ui.State.Display.TreeTokens);
+        Trees.ShowEmptyTables(tree, ui.State.Display.ShowEmptyMetadataTables);
+        Trees.NestNamespaces(tree, ui.State.Display.NestedNamespaces);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, tabs, assemblies);
         ui.Separator();
-        if (tree.Roots.Count == 0)
+        if (tree.Roots.Length == 0)
             EmptyHint(ui);
         var result = ui.TreeView(TreeId, tree.Roots, tree, tree.View, new Box { Padding = new Spacing(0f, theme.GapTight) });
         AnalyzeOnShortcut(ui);
@@ -42,16 +42,16 @@ internal static class TreePaneView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var tree = ui.State.Tree;
-        var any = tree.Roots.Count > 0;
+        var any = tree.Roots.Length > 0;
         using (ui.PaneToolbar())
         {
             var opened = FindOpenedNode(tabs);
             if (ui.IconButton("select-opened", ui.State.Icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened != null) && opened != null)
                 SelectOpenedNode(ui, assemblies, opened);
             if (ui.IconButton("collapse", ui.State.Icons.AssembliesCollapseAll, t.CodeCollapseAll, any))
-                tree.CollapseAll();
+                Trees.CollapseTree(tree);
             if (ui.IconButton("expand", ui.State.Icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
-                tree.ExpandNamespaces();
+                Trees.ExpandNamespaces(tree);
             ui.Separator(theme.IconSize);
             var picked = FindPickedAssembly(tree);
             if (ui.IconButton("close-assembly", ui.State.Icons.AssembliesCloseAssembly, t.TreeCloseAssembly, picked != null) && picked != null)
@@ -74,7 +74,7 @@ internal static class TreePaneView
     {
         if (!AssemblyListing.IsListed(assemblies, node.Root.Assembly))
             return;
-        ui.State.Tree.Reveal(node);
+        Trees.RevealNode(ui.State.Tree, node);
         ui.Focus(ui.GetId(TreeId), takesText: false);
     }
 

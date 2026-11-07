@@ -1,3 +1,6 @@
+using ILSight.Localization;
+using ZGF.Gui.Immediate.Widgets;
+using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Analysis;
@@ -398,5 +401,184 @@ public static class Analysis
             return;
         }
         ResolveAnalysis(appState, root, symbol);
+    }
+
+    public static void SetRowStyle(AnalyzerRows rows, UiTheme theme, NodeIconPalette iconColors, AppIcons icons, Strings strings)
+    {
+        rows.Theme = theme;
+        rows.IconColors = iconColors;
+        rows.Icons = icons;
+        rows.Strings = strings;
+    }
+
+    /// <summary>Shows the roots of <paramref name="analyzer"/>, listing the rows again when the roots changed,
+    /// dropping a selection whose root is gone, or when an analysis found more.</summary>
+    public static void FollowTree(AnalyzerRows rows, AnalyzerTree analyzer)
+    {
+        rows.Roots = analyzer.Roots;
+        rows.Asked.Clear();
+        FollowRoots(rows, analyzer);
+        FollowFindings(rows, analyzer);
+    }
+
+    private static void FollowRoots(AnalyzerRows rows, AnalyzerTree analyzer)
+    {
+        if (analyzer.Changes == rows.SeenChanges)
+            return;
+        rows.SeenChanges = analyzer.Changes;
+        rows.View.Refresh();
+        DropSelectionOfRemovedRoot(rows, analyzer);
+    }
+
+    private static void DropSelectionOfRemovedRoot(AnalyzerRows rows, AnalyzerTree analyzer)
+    {
+        if (!rows.View.TryGetSelectedRoot(out var root))
+            return;
+        if (Analysis.HasRoot(analyzer, root))
+            return;
+        rows.View.ClearSelection();
+    }
+
+    private static void FollowFindings(AnalyzerRows rows, AnalyzerTree analyzer)
+    {
+        if (analyzer.Findings == rows.SeenFindings)
+            return;
+        rows.SeenFindings = analyzer.Findings;
+        rows.View.Refresh();
+    }
+
+    /// <summary>Expands <paramref name="root"/> and selects it.</summary>
+    public static void ShowRoot(AnalyzerRows rows, AnalyzerSymbolNode root)
+    {
+        rows.View.SetExpanded(root, true);
+        rows.View.Refresh();
+        rows.View.Select(root);
+    }
+
+    /// <summary>The root the selection sits under, or null when nothing showing is selected.</summary>
+    public static AnalyzerNode? FindSelectedRoot(AnalyzerRows rows)
+    {
+        if (!rows.View.TryGetSelectedRoot(out var root))
+            return null;
+        return root;
+    }
+
+    /// <summary>Expands every root found and each analysis of it, running those not run yet.</summary>
+    public static void ExpandAllRows(AnalyzerRows rows)
+    {
+        foreach (var root in rows.Roots)
+        {
+            if (root is AnalyzerSymbolNode symbol)
+                ExpandWithAnalyses(rows, symbol);
+        }
+    }
+
+    private static void ExpandWithAnalyses(AnalyzerRows rows, AnalyzerSymbolNode symbol)
+    {
+        rows.View.SetExpanded(symbol, true);
+        foreach (var child in Analysis.EnsureChildren(symbol))
+        {
+            if (child is AnalyzerSymbolNode accessor)
+                ExpandWithAnalyses(rows, accessor);
+            else
+                rows.View.SetExpanded(child, true);
+        }
+    }
+
+    public static void CollapseAllRows(AnalyzerRows rows)
+    {
+        rows.View.CollapseAll();
+    }
+
+    public static bool HasChildren(AnalyzerRows rows, AnalyzerNode node)
+    {
+        return node switch
+        {
+            AnalyzerSymbolNode symbol => Analysis.EnsureChildren(symbol).Count > 0,
+            AnalyzerKindNode kind => !kind.IsDone || kind.Found.Count > 0,
+            AnalyzerMessageNode or AnalyzerPendingNode => false,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    public static IReadOnlyList<AnalyzerNode> ListChildren(AnalyzerRows rows, AnalyzerNode node)
+    {
+        switch (node)
+        {
+            case AnalyzerSymbolNode symbol:
+                return Analysis.EnsureChildren(symbol);
+            case AnalyzerKindNode kind:
+                AskToRun(rows, kind);
+                return ListResults(rows, kind);
+            case AnalyzerMessageNode or AnalyzerPendingNode:
+                return [];
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    /// <summary>Asks once for <paramref name="kind"/> to run, unless it already started.</summary>
+    private static void AskToRun(AnalyzerRows rows, AnalyzerKindNode kind)
+    {
+        if (kind.HasStarted)
+            return;
+        if (!rows.Asked.Add(kind))
+            return;
+        rows.AppCommands.Enqueue(Commands.Create(kind, static (a, k) => Analysis.RunAnalysis(a, k)));
+    }
+
+    private static IReadOnlyList<AnalyzerNode> ListResults(AnalyzerRows rows, AnalyzerKindNode kind)
+    {
+        if (kind.IsDone)
+            return kind.Found;
+        var results = new List<AnalyzerNode>(kind.Found);
+        results.Add(rows.Loading);
+        return results;
+    }
+
+    public static TreeRow GetRow(AnalyzerRows rows, AnalyzerNode node)
+    {
+        return node switch
+        {
+            AnalyzerSymbolNode symbol => CreateSymbolRow(rows, symbol.Symbol),
+            AnalyzerKindNode kind => CreateKindRow(rows, kind),
+            AnalyzerMessageNode message => CreateMessageRow(rows, message),
+            AnalyzerPendingNode => CreateLoadingRow(rows),
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static TreeRow CreateSymbolRow(AnalyzerRows rows, AnalysisSymbol symbol)
+    {
+        var icon = NodeIcons.Icon(NodeIcons.Of(symbol.Shape), symbol.Accessibility, rows.IconColors, rows.Icons);
+        return new TreeRow(symbol.Label, icon, Tooltip: symbol.Location, Secondary: symbol.Location);
+    }
+
+    private static TreeRow CreateKindRow(AnalyzerRows rows, AnalyzerKindNode kind)
+    {
+        var icon = new UiIcon(rows.Icons.AnalyzerAnalysis, rows.Theme.TextMuted);
+        return new TreeRow(GetKindLabel(rows, kind), icon);
+    }
+
+    private static string GetKindLabel(AnalyzerRows rows, AnalyzerKindNode kind)
+    {
+        var header = AnalyzerText.Header(rows.Strings, kind.Kind);
+        if (!kind.IsDone)
+            return header;
+        return $"{header} ({kind.Found.Count})";
+    }
+
+    private static TreeRow CreateMessageRow(AnalyzerRows rows, AnalyzerMessageNode message)
+    {
+        if (message.Error == null)
+            return CreateLoadingRow(rows);
+        var icon = new UiIcon(rows.Icons.StatusError, rows.Theme.Danger);
+        return new TreeRow(message.Error, icon, rows.Theme.Danger);
+    }
+
+    private static TreeRow CreateLoadingRow(AnalyzerRows rows)
+    {
+        var icon = new UiIcon(rows.Icons.StatusLoading, rows.Theme.TextMuted);
+        return new TreeRow(rows.Strings.AnalyzerLoading, icon, rows.Theme.TextMuted, Spinning: true);
     }
 }

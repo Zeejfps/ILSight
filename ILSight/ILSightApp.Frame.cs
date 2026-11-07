@@ -54,7 +54,7 @@ public sealed partial class ILSightApp
     {
         if (!AssemblyListing.UseLoadOptions(appState.Assemblies, appState.DecompilerOptions))
             return;
-        RefreshAssemblies(appState, uiState.Tree.ExpandedPaths());
+        RefreshAssemblies(appState, Trees.ListExpandedPaths(uiState.Tree));
     }
 
     /// <summary>Opens the error dialog on the newest error whenever one is reported.</summary>

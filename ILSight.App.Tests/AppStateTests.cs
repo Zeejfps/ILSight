@@ -241,8 +241,8 @@ public sealed class AppStateTests
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
 
-        RefreshAssemblies(d.AppState, d.Ui.Tree.ExpandedPaths());
-        RefreshAssemblies(d.AppState, d.Ui.Tree.ExpandedPaths());
+        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
+        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
         d.Settle();
 
         Assert.Equal(["Greeter", "Farewell"], d.AppState.Tabs.Open.Select(t => t.Node!.Text));
@@ -258,7 +258,7 @@ public sealed class AppStateTests
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.Ui.Tree.View.SetExpanded(d.Fixture("Greeter"), true);
 
-        RefreshAssemblies(d.AppState, d.Ui.Tree.ExpandedPaths());
+        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
         d.Settle();
 
         var view = d.Ui.Tree.View;
@@ -277,7 +277,7 @@ public sealed class AppStateTests
         d.Show(before);
         d.Show(d.Fixture("Farewell"));
 
-        RefreshAssemblies(d.AppState, d.Ui.Tree.ExpandedPaths());
+        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
         d.Settle();
         GoBack(d.AppState);
         d.Settle();
@@ -546,7 +546,7 @@ public sealed class AppStateTests
         d.Show(greeter);
         File.Delete(copy);
 
-        RefreshAssemblies(d.AppState, d.Ui.Tree.ExpandedPaths());
+        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Tabs.Open);

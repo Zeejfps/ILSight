@@ -127,7 +127,7 @@ internal static class OmnibarView
         menu.Children = children;
         menu.ShownFilter = menu.Filter;
         menu.Shown.Clear();
-        menu.Shown.AddRange(children.Where(c => HoldsFilter(menu, tree.RowLabel(c))));
+        menu.Shown.AddRange(children.Where(c => HoldsFilter(menu, Trees.GetRowLabel(tree, c))));
         SelectWaitingChild(menu);
         ItemSelections.DropIfGone(menu.Selection, menu.Shown);
         SelectFirstMatch(menu);
@@ -183,7 +183,7 @@ internal static class OmnibarView
     {
         if (node == null)
             return [];
-        return tree.ListPathTo(node)
+        return Trees.ListPathTo(tree, node)
             .Select(n => new Crumb(n, GetCrumbLabel(n, tree)))
             .ToArray();
     }
@@ -193,8 +193,8 @@ internal static class OmnibarView
     private static string GetCrumbLabel(BrowseNode node, BrowseTree tree)
     {
         if (node.Subject is NodeSubject.Module)
-            return tree.Label(node);
-        return tree.RowLabel(node);
+            return Trees.GetLabel(tree, node);
+        return Trees.GetRowLabel(tree, node);
     }
 
     public static void Render(Ui<UiState> ui, DocumentTab tab)
@@ -488,7 +488,7 @@ internal static class OmnibarView
         using var row = list.Row(index, ui.GetId("child"), new Box { Gap = theme.GapTight });
         var color = row.Selected ? theme.SelectionText : CrumbColor(theme, child);
         NodeIcons.Draw(ui, child);
-        ui.Text(ui.State.Tree.RowLabel(child), new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
+        ui.Text(Trees.GetRowLabel(ui.State.Tree, child), new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
         if (row.Interaction.Clicked)
             return new PickedChild(child, IsCommandHeld(ui));
         if (row.Interaction.ClickedWith(PointerButton.Middle))

@@ -188,7 +188,7 @@ public static class DocumentPanels
         var view = documents.Views.GetValueOrDefault(tab);
         if (view == null)
             return;
-        view.Comparison.Restore(saved);
+        Comparisons.RestoreRowsView(view.Comparison, saved);
     }
 
     /// <summary>Scrolls the code of <paramref name="tab"/>, an open tab, to <paramref name="line"/> and flashes it.</summary>
@@ -235,7 +235,7 @@ public static class DocumentPanels
         return tab.Content switch
         {
             TabContent.Diagram => new TabPanelView.Diagram(Diagrams.SaveView(view.Diagram)),
-            TabContent.Comparison => new TabPanelView.Comparison(view.Comparison.Save()),
+            TabContent.Comparison => new TabPanelView.Comparison(Comparisons.SaveRowsView(view.Comparison)),
             TabContent.Empty or TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Report
                 or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone => new TabPanelView.None(),
             _ => throw new UnreachableException(),

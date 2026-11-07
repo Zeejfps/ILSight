@@ -140,7 +140,7 @@ public sealed class MetadataGridTests
         var app = AppDriver.Opened(width: 1800f);
         var greeter = app.Node(AppStateDriver.FixturesNamespace, "Greeter");
         app.Show(greeter, 3);
-        app.Ui.Tree.Reveal(greeter);
+        Trees.RevealNode(app.Ui.Tree, greeter);
         app.Run(2);
         var tab = app.AppState.Tabs.Active!;
         var row = app.TextRect("Greeter");

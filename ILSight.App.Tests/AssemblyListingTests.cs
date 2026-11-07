@@ -329,7 +329,7 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         SwitchAssemblyList(d.AppState, SavedAssemblyLists.DefaultName);
-        RefreshAssemblies(d.AppState, d.Ui.Tree.ExpandedPaths());
+        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
@@ -341,9 +341,9 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Opened();
         var tree = d.Ui.Tree;
         var root = tree.Roots[0];
-        tree.CollapseAll();
+        Trees.CollapseTree(tree);
 
-        tree.ExpandNamespaces();
+        Trees.ExpandNamespaces(tree);
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.RunUntil(() => tree.View.IsExpanded(ns));
 
@@ -446,7 +446,7 @@ public sealed class AssemblyListingTests
         var app = AppDriver.Opened();
         var greeter = app.Fixture("Greeter");
         app.Show(greeter, 2);
-        app.Ui.Tree.CollapseAll();
+        Trees.CollapseTree(app.Ui.Tree);
         app.Ui.Tree.View.Select(app.Ui.Tree.Roots[0]);
         app.Run(2);
 

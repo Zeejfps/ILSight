@@ -1,3 +1,6 @@
+using ILSight.Localization;
+using ZGF.Gui.Immediate.Widgets;
+using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Comparison;
@@ -166,5 +169,215 @@ public static class Comparisons
     public static void CloseComparison(AssemblyComparison comparison)
     {
         comparison.Open.Cancel();
+    }
+
+    /// <summary>Draws the rows in <paramref name="theme"/>, <paramref name="icons"/> and <paramref name="strings"/>,
+    /// building them again when any of them changed.</summary>
+    public static void SetRowStyle(ComparisonRows rows, UiTheme theme, NodeIconPalette iconColors, AppIcons icons, Strings strings)
+    {
+        if (IsStyledAs(rows, theme, iconColors, icons, strings))
+            return;
+        rows.Theme = theme;
+        rows.IconColors = iconColors;
+        rows.Icons = icons;
+        rows.Strings = strings;
+        rows.Rows.Clear();
+    }
+
+    private static bool IsStyledAs(ComparisonRows rows, UiTheme theme, NodeIconPalette iconColors, AppIcons icons, Strings strings)
+    {
+        var isStyled = theme == rows.Theme && iconColors == rows.IconColors;
+        if (!isStyled)
+            return false;
+        return icons == rows.Icons && strings == rows.Strings;
+    }
+
+    /// <summary>Shows <paramref name="diff"/>, listing the rows anew when it is not the one shown.</summary>
+    public static void FollowDiff(ComparisonRows rows, ApiDiff? diff)
+    {
+        if (diff == rows.ShownDiff)
+            return;
+        rows.ShownDiff = diff;
+        rows.Rows.Clear();
+        ListRoots(rows);
+        ExpandChangedNamespaces(rows);
+    }
+
+    /// <summary>Shows only the entries that differ when <paramref name="only"/>, else all of them.</summary>
+    public static void ShowOnlyDifferences(ComparisonRows rows, bool only)
+    {
+        if (only == rows.OnlyDifferences)
+            return;
+        rows.OnlyDifferences = only;
+        rows.Changes++;
+        ListRoots(rows);
+    }
+
+    public static ComparisonViewRecord SaveRowsView(ComparisonRows rows)
+    {
+        return new(rows.OnlyDifferences);
+    }
+
+    /// <summary>Shows the rows as <paramref name="saved"/> says they were shown.</summary>
+    public static void RestoreRowsView(ComparisonRows rows, ComparisonViewRecord saved)
+    {
+        ShowOnlyDifferences(rows, saved.OnlyDifferences);
+    }
+
+    private static void ListRoots(ComparisonRows rows)
+    {
+        rows.Roots = ListShown(rows, ListNamespaces(rows));
+        rows.View.Refresh();
+    }
+
+    private static IReadOnlyList<ApiEntry> ListNamespaces(ComparisonRows rows)
+    {
+        if (rows.ShownDiff == null)
+            return [];
+        return rows.ShownDiff.Namespaces;
+    }
+
+    private static void ExpandChangedNamespaces(ComparisonRows rows)
+    {
+        foreach (var root in rows.Roots)
+        {
+            if (root.HasChanges)
+                rows.View.SetExpanded(root, true);
+        }
+        rows.View.Refresh();
+    }
+
+    public static void ExpandAllRows(ComparisonRows rows)
+    {
+        foreach (var root in rows.Roots)
+            ExpandWithChildren(rows, root);
+        rows.View.Refresh();
+    }
+
+    private static void ExpandWithChildren(ComparisonRows rows, ApiEntry entry)
+    {
+        if (!HasChildren(rows, entry))
+            return;
+        rows.View.SetExpanded(entry, true);
+        foreach (var child in ListChildren(rows, entry))
+            ExpandWithChildren(rows, child);
+    }
+
+    public static void CollapseAllRows(ComparisonRows rows)
+    {
+        rows.View.CollapseAll();
+    }
+
+    public static bool HasChildren(ComparisonRows rows, ApiEntry entry)
+    {
+        if (!rows.OnlyDifferences)
+            return entry.Children.Count > 0;
+        return HoldsChanges(entry);
+    }
+
+    /// <summary>Whether a child of <paramref name="entry"/> differs or holds one that does. Allocates nothing.</summary>
+    private static bool HoldsChanges(ApiEntry entry)
+    {
+        foreach (var child in entry.Children)
+        {
+            if (child.HasChanges)
+                return true;
+        }
+        return false;
+    }
+
+    public static IReadOnlyList<ApiEntry> ListChildren(ComparisonRows rows, ApiEntry entry)
+    {
+        return ListShown(rows, entry.Children);
+    }
+
+    private static IReadOnlyList<ApiEntry> ListShown(ComparisonRows rows, IReadOnlyList<ApiEntry> entries)
+    {
+        if (!rows.OnlyDifferences)
+            return entries;
+        return entries
+            .Where(static e => e.HasChanges)
+            .ToList();
+    }
+
+    public static TreeRow GetRow(ComparisonRows rows, ApiEntry entry)
+    {
+        if (rows.Rows.TryGetValue(entry, out var row))
+            return row;
+        row = CreateRow(rows, entry);
+        rows.Rows.Add(entry, row);
+        return row;
+    }
+
+    private static TreeRow CreateRow(ComparisonRows rows, ApiEntry entry)
+    {
+        var icon = NodeIcons.Icon(NodeIcons.Of(entry.Shape), entry.Accessibility, rows.IconColors, rows.Icons);
+        var color = GetColor(rows, entry);
+        var tooltip = DescribeDeclarations(rows, entry);
+        var change = NameChange(rows, entry.Change);
+        return new TreeRow(entry.Text, icon, color, tooltip, change);
+    }
+
+    /// <summary>The color of what was added, removed or changed; muted for what is the same throughout,
+    /// and the theme's text color for what holds a difference.</summary>
+    private static uint GetColor(ComparisonRows rows, ApiEntry entry)
+    {
+        return entry.Change switch
+        {
+            ApiChange.Added => rows.Theme.Success,
+            ApiChange.Removed => rows.Theme.Danger,
+            ApiChange.Changed => rows.Theme.Warning,
+            _ => GetUnchangedColor(rows, entry),
+        };
+    }
+
+    private static uint GetUnchangedColor(ComparisonRows rows, ApiEntry entry)
+    {
+        if (entry.HasChanges)
+            return 0;
+        return rows.Theme.TextMuted;
+    }
+
+    /// <summary>How the entry is declared: on both sides when it changed, else on the side it is on;
+    /// null for a namespace.</summary>
+    private static string? DescribeDeclarations(ComparisonRows rows, ApiEntry entry)
+    {
+        return entry switch
+        {
+            ApiEntry.Namespace => null,
+            ApiEntry.Entity entity => DescribeDeclarations(rows, entity.Sides),
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static string DescribeDeclarations(ComparisonRows rows, ApiSides sides)
+    {
+        return sides switch
+        {
+            ApiSides.LeftOnly left => left.Left.Declaration,
+            ApiSides.RightOnly right => right.Right.Declaration,
+            ApiSides.Both both => DescribeDeclarations(rows, both),
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static string DescribeDeclarations(ComparisonRows rows, ApiSides.Both sides)
+    {
+        if (sides.Left.Declaration == sides.Right.Declaration)
+            return sides.Right.Declaration;
+        var left = rows.Strings.ComparisonLeftDeclaration(sides.Left.Declaration);
+        var right = rows.Strings.ComparisonRightDeclaration(sides.Right.Declaration);
+        return left + Environment.NewLine + right;
+    }
+
+    private static string? NameChange(ComparisonRows rows, ApiChange change)
+    {
+        return change switch
+        {
+            ApiChange.Added => rows.Strings.ComparisonAdded,
+            ApiChange.Removed => rows.Strings.ComparisonRemoved,
+            ApiChange.Changed => rows.Strings.ComparisonChanged,
+            _ => null,
+        };
     }
 }

@@ -21,7 +21,7 @@ public sealed class UiState : IUiState
     /// <param name="session">The browse tree the tree and searches show nodes of.</param>
     public UiState(ViewSettings saved, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime)
     {
-        Tree = new BrowseTree(session, reportError);
+        Tree = new BrowseTree { Session = session, ReportError = reportError };
         FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) };
         BookmarkColumns.Restore(saved.BookmarkColumns);
         SearchColumns.Restore(saved.SearchColumns);
@@ -37,7 +37,7 @@ public sealed class UiState : IUiState
         DialogWindows.Restore(NuGetPicker.Window, saved.NuGetWindow);
         DialogWindows.Restore(ExportSetup.Window, saved.ExportWindow);
         Display = saved.Display ?? DisplayOptions.Default;
-        Analyzer = new AnalyzerRows(AppCommands);
+        Analyzer = new AnalyzerRows { AppCommands = AppCommands };
         MainLayout = RestoreLayout(this, saved.Layout);
         DocumentPanels.SkipPanels(Documents, Docking.ListDocumentPanels(MainLayout));
         KeptView = CaptureViewSources(this);

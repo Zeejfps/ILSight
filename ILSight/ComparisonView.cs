@@ -20,8 +20,8 @@ internal static class ComparisonView
     public static void Render(Ui<UiState> ui, DocumentTab tab, AssemblyComparison comparison)
     {
         var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
-        rows.SetStyle(ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
-        rows.Follow(comparison.Diff);
+        Comparisons.SetRowStyle(rows, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
+        Comparisons.FollowDiff(rows, comparison.Diff);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!ui.State.Display.ShowOmnibar)
             OwnToolbar(ui, tab, comparison);
@@ -55,9 +55,9 @@ internal static class ComparisonView
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
         {
             if (ui.IconButton("collapse", icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
-                rows.CollapseAll();
+                Comparisons.CollapseAllRows(rows);
             if (ui.IconButton("expand", icons.AnalyzerExpandAll, t.CodeExpandAll, any))
-                rows.ExpandAll();
+                Comparisons.ExpandAllRows(rows);
             ui.Separator(ui.Theme.IconSize);
             if (ui.IconButton("swap", icons.ComparisonSwap, t.ComparisonSwap))
                 ui.State.Later(comparison, static (a, c) => SwapComparedAssemblies(a, c));
@@ -71,7 +71,7 @@ internal static class ComparisonView
     {
         var only = rows.OnlyDifferences;
         if (ui.Checkbox(ui.State.Strings.ComparisonOnlyDifferences, ref only, id: "only-differences"))
-            rows.ShowOnlyDifferences(only);
+            Comparisons.ShowOnlyDifferences(rows, only);
     }
 
     private static void HiddenMembersCheckbox(Ui<UiState> ui, AssemblyComparison comparison)

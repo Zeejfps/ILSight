@@ -268,7 +268,7 @@ public sealed class DisplayOptionsTests
         Assert.True(IsBold(app, "Nested namespaces"));
         Assert.Contains(outermost, app.Ui.Tree.GetChildren(root).Nodes);
         Assert.DoesNotContain(fixtures, app.Ui.Tree.GetChildren(root).Nodes);
-        Assert.Equal("Fixtures", app.Ui.Tree.RowLabel(fixtures));
+        Assert.Equal("Fixtures", Trees.GetRowLabel(app.Ui.Tree, fixtures));
     }
 
     [Fact]

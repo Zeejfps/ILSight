@@ -85,7 +85,7 @@ public sealed partial class ILSightApp
     {
         if (!AssemblyListing.IsListed(appState.Assemblies, node.Root.Assembly))
             return;
-        uiState.Tree.Reveal(node);
+        Trees.RevealNode(uiState.Tree, node);
     }
 
     private static void ExpandListed(UiState uiState, AppState appState, IReadOnlyList<BrowseNode> nodes)
@@ -93,7 +93,7 @@ public sealed partial class ILSightApp
         var listed = nodes
             .Where(n => AssemblyListing.IsListed(appState.Assemblies, n.Root.Assembly))
             .ToList();
-        uiState.Tree.Expand(listed);
+        Trees.ExpandNodes(uiState.Tree, listed);
     }
 
     /// <summary>Expands <paramref name="root"/> and selects it, unless it was removed meanwhile.</summary>
@@ -101,7 +101,7 @@ public sealed partial class ILSightApp
     {
         if (!Analysis.HasRoot(appState.Analyzer, root))
             return;
-        uiState.Analyzer.Show(root);
+        Analysis.ShowRoot(uiState.Analyzer, root);
     }
 
     private static void RestoreView(UiState uiState, AppState appState, DocumentTab tab, ViewPosition position)

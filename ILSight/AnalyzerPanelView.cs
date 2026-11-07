@@ -17,7 +17,7 @@ internal static class AnalyzerPanelView
     {
         var t = ui.State.Strings;
         var rows = ui.State.Analyzer;
-        rows.SetStyle(ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, t);
+        Analysis.SetRowStyle(rows, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, t);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, analyzer, rows);
         ui.Separator();
@@ -35,13 +35,13 @@ internal static class AnalyzerPanelView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var any = analyzer.Roots.Count > 0;
-        var root = rows.FindSelectedRoot();
+        var root = Analysis.FindSelectedRoot(rows);
         using (ui.PaneToolbar())
         {
             if (ui.IconButton("collapse", ui.State.Icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
-                rows.CollapseAll();
+                Analysis.CollapseAllRows(rows);
             if (ui.IconButton("expand", ui.State.Icons.AnalyzerExpandAll, t.CodeExpandAll, any))
-                rows.ExpandAll();
+                Analysis.ExpandAllRows(rows);
             ui.Separator(theme.IconSize);
             if (ui.IconButton("remove", ui.State.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root != null) && root != null)
                 ui.State.Later(root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
@@ -79,7 +79,7 @@ internal static class AnalyzerPanelView
 
     private static void RemoveSelectedAnalysis(UiState screen, AnalyzerRows rows)
     {
-        var root = rows.FindSelectedRoot();
+        var root = Analysis.FindSelectedRoot(rows);
         if (root != null)
             screen.Later(root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
     }
@@ -133,14 +133,14 @@ internal static class AnalyzerPanelView
         if (root == null)
             return;
         OpenAnalyzer(screen);
-        screen.Analyzer.Show(root);
+        Analysis.ShowRoot(screen.Analyzer, root);
     }
 
     /// <summary>Analyzes <paramref name="symbol"/>, or finds the root analyzing it already, and shows that root.</summary>
     internal static void Analyze(AnalyzerRows rows, AppState appState, AnalysisSymbol symbol)
     {
         var root = AddToAnalyzer(appState, symbol);
-        rows.Show(root);
+        Analysis.ShowRoot(rows, root);
     }
 
     /// <summary>Opens the analyzer if it is not, where a root shows as loading while what

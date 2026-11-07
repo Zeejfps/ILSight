@@ -26,6 +26,9 @@ internal static class ShapeExceptions
         ["ILSight.RunArgumentsReceiver"] = "BCL IDisposable, as the app stops it",
         ["ILSight.Core.TextListConverter"] = "System.Text.Json JsonConverter, a base class",
         ["ILSight.CodeViewPalette"] = "ZGF ThemeColorsGenerator generates its color tables, with no GeneratedCode to tell by",
+        ["ILSight.AnalyzerRows"] = "ZGF ITreeModel, an interface",
+        ["ILSight.BrowseTree"] = "ZGF ITreeModel, an interface",
+        ["ILSight.ComparisonRows"] = "ZGF ITreeModel, an interface",
         ["ILSight.ILSightApp"] = "ZGF ImmediateGuiApp, the base class of an app",
         ["ILSight.Localization.LocalizationService"] = "ZGF LocalizationGenerator generates it, with no GeneratedCode to tell by",
         ["ILSight.Localization.Strings"] = "ZGF LocalizationGenerator generates it as a class",
@@ -67,8 +70,6 @@ internal static class ShapeExceptions
     /// <summary>Types with methods, still to become data and functions.</summary>
     public static readonly string[] NotYetData =
     [
-        "ILSight.AnalyzerRows",
-        "ILSight.BrowseTree",
         "ILSight.ComparisonRows",
         "ILSight.Core.BrowseSession",
         "ILSight.UiState",
@@ -77,9 +78,7 @@ internal static class ShapeExceptions
     /// <summary>Constructors that take arguments, still to become object initializers or functions.</summary>
     public static readonly string[] ConstructorsLeft =
     [
-        "ILSight.AnalyzerRows",
         "ILSight.AppIcons",
-        "ILSight.BrowseTree",
         "ILSight.Core.AssemblyLoadException",
         "ILSight.Core.LocatingTokenWriter",
         "ILSight.UiState",

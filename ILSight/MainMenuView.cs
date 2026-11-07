@@ -189,7 +189,7 @@ internal static class MainMenuView
         ui.MenuSeparator();
         var tree = ui.State.Tree;
         var selected = tree.View.TryGetSelected(out var picked) ? picked.Assembly : null;
-        var anyOpen = tree.Roots.Count > 0;
+        var anyOpen = tree.Roots.Length > 0;
         if (ui.MenuItem(t.FileClose, enabled: selected != null, id: "close", icon: new UiIcon(icons.FileClose)) && selected != null)
             ui.State.Later(selected, static (a, assembly) => CloseAssembly(a, assembly));
         if (ui.MenuItem(t.FileCloseFailed, enabled: AnyFailedToLoad(appState.Assemblies), id: "close-failed", icon: new UiIcon(icons.FileCloseFailed)))
@@ -199,7 +199,7 @@ internal static class MainMenuView
         if (ui.MenuItem(t.FileSortList, enabled: anyOpen, id: "sort-list", icon: new UiIcon(icons.FileSortList)))
             ui.State.Later(static a => SortAssemblies(a));
         if (ui.MenuItem(t.FileReloadAll, Shortcuts.ReloadAll, enabled: anyOpen, id: "reload-all", icon: new UiIcon(icons.FileReloadAll)))
-            ui.State.Later(tree.ExpandedPaths(), static (a, expanded) => RefreshAssemblies(a, expanded));
+            ui.State.Later(Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
     }
 
     private static void ExportItems(Ui<UiState> ui, AppState appState)
@@ -208,7 +208,7 @@ internal static class MainMenuView
         var canSave = CanSaveCode(appState.Tabs.Active?.Node);
         if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Icons.FileSaveCode)))
             SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language);
-        var anyOpen = ui.State.Tree.Roots.Count > 0;
+        var anyOpen = ui.State.Tree.Roots.Length > 0;
         if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
             Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs));
         if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
