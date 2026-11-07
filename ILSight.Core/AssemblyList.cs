@@ -25,8 +25,7 @@ public sealed class AssemblyList
 {
     /// <summary>What was read, by path, reachable only holding the lock: assemblies, packages and the
     /// assemblies read out of packages. Beside it the <see cref="Listing"/>, read without the lock and
-    /// replaced only holding it. It also covers what <see cref="LoadedAssembly.IsListed"/> says of each item.
-    /// Hold it only through <see cref="AssemblyListing"/>, and never while reading files.</summary>
+    /// replaced only holding it. Hold it only through <see cref="AssemblyListing"/>, and never while reading files.</summary>
     public Guarded<Dictionary<AssemblyPath, LoadedAssembly>, Listing> State { get; } = new(new Dictionary<AssemblyPath, LoadedAssembly>(), Listing.Empty);
 
     /// <summary>The list as of now, all of one moment.</summary>
@@ -163,9 +162,9 @@ public static class AssemblyListing
             list.Pdbs.Forget(item.FilePath, andUnder: isPackage);
             list.TargetFrameworks.Forget(item.FilePath, andUnder: isPackage);
             ForgetReadOutOf(held.Value, item);
-            if (!item.IsListed) return;
-            item.IsListed = false;
-            ChangeListed(held, held.Snapshot.Listed.Remove(item));
+            var listed = held.Snapshot.Listed;
+            if (!listed.Contains(item)) return;
+            ChangeListed(held, listed.Remove(item));
         }
         list.ChangedHandlers?.Invoke();
     }
@@ -253,8 +252,6 @@ public static class AssemblyListing
             var now = held.Snapshot;
             held.Snapshot = now with { Generation = now.Generation + 1 };
             if (now.Listed.IsEmpty && held.Value.Count == 0) return;
-            foreach (var assembly in now.Listed)
-                assembly.IsListed = false;
             held.Value.Clear();
             ChangeListed(held, ImmutableArray<LoadedAssembly>.Empty);
         }
@@ -282,13 +279,12 @@ public static class AssemblyListing
     {
         using (var held = list.State.Enter())
         {
-            if (!item.IsListed) return false;
+            var listed = held.Snapshot.Listed;
+            if (!listed.Contains(item)) return false;
             if (!ForgetKnown(held.Value, item)) return false;
             ForgetReadOutOf(held.Value, item);
             Know(held.Value, fresh);
-            item.IsListed = false;
-            fresh.IsListed = true;
-            ChangeListed(held, held.Snapshot.Listed.Replace(item, fresh));
+            ChangeListed(held, listed.Replace(item, fresh));
         }
         WarmUpLater(fresh);
         list.ChangedHandlers?.Invoke();
@@ -555,8 +551,8 @@ public static class AssemblyListing
             foreach (var known in held.Value.Values)
             {
                 if (known is not LoadedModule assembly) continue;
-                if (listedOnly && !assembly.ListedItem.IsListed) continue;
                 if (!string.Equals(assembly.Name, reference.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                if (listedOnly && !held.Snapshot.Listed.Contains(assembly.ListedItem)) continue;
                 if (exactOrNewer && reference.Version != null && assembly.Version != null && assembly.Version < reference.Version) continue;
                 if (best is null || (assembly.Version ?? new Version()) > (best.Version ?? new Version()))
                     best = assembly;
@@ -604,9 +600,9 @@ public static class AssemblyListing
             if (generation != held.Snapshot.Generation) return false;
             if (cancellationToken.IsCancellationRequested) return false;
             if (!HoldsPathFor(held, assembly)) return false;
-            if (assembly.IsListed) return true;
-            assembly.IsListed = true;
-            ChangeListed(held, ListInPlaceOfFailure(held.Snapshot.Listed, assembly));
+            var listed = held.Snapshot.Listed;
+            if (listed.Contains(assembly)) return true;
+            ChangeListed(held, ListInPlaceOfFailure(listed, assembly));
         }
         WarmUpLater(assembly);
         list.ChangedHandlers?.Invoke();
@@ -694,7 +690,6 @@ public static class AssemblyListing
         var failure = FindFailure(listed, assembly.FilePath);
         if (failure == null)
             return listed.Add(assembly);
-        failure.IsListed = false;
         return listed.Replace(failure, assembly);
     }
 

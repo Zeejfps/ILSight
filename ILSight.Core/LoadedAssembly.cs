@@ -56,9 +56,6 @@ public abstract class LoadedAssembly
 
     public required AssemblyList List { get; init; }
 
-    /// <summary>Whether the list holds this as an item, which its gate guards.</summary>
-    public bool IsListed;
-
     public override string ToString() => FullName;
 }
 
