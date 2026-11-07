@@ -103,7 +103,7 @@ public static class NodeContentLoader
     private static ImageContent LoadImage(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken)
     {
-        var image = ResourceImage.Decode(node.ReadResource());
+        var image = ResourceImages.DecodeImage(node.ReadResource());
         if (!image.IsVector)
             return new ImageContent(image);
         var source = Decompile(session, node, language, options, cancellationToken);

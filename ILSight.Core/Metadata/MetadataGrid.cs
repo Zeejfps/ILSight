@@ -62,97 +62,105 @@ public sealed class MetadataGrid
     /// <summary>How many patterns are kept, which the user types, so nothing else bounds them.</summary>
     internal const int MaxPatterns = 256;
 
-    private static readonly ConcurrentDictionary<string, Regex?> Patterns = new();
+    internal static readonly ConcurrentDictionary<string, Regex?> Patterns = new();
 
     internal static int CachedPatterns => Patterns.Count;
 
-    private readonly LoadedModule _module;
-    private readonly MetadataFile _file;
-    private readonly GridSchema _schema;
-    private readonly IReadOnlyList<object> _rows;
-    private readonly IReadOnlyList<GridColumn> _columns;
-    private readonly Dictionary<int, MetadataTooltip?> _tooltips = new();
-    private readonly Dictionary<int, MetadataAddress?> _links = new();
-    private readonly Dictionary<TableIndex, bool> _listed = new();
-    private readonly Dictionary<int, MetadataRowDetails?> _details = new();
-    private string?[]? _text;
-    private (string FirstLine, int MoreLines)?[]? _lines;
-
-    /// <summary>The grid titled <paramref name="title"/> of what <paramref name="schema"/> reads from
-    /// <paramref name="file"/>, which is <paramref name="module"/>'s own metadata or its debug metadata.</summary>
-    internal MetadataGrid(string title, LoadedModule module, MetadataFile file, GridSchema schema)
-    {
-        Title = title;
-        _module = module;
-        _file = file;
-        _schema = schema;
-        _rows = schema.LoadRows();
-        _columns = schema.Columns;
-        Columns = _columns.Select(static c => c.Column).ToArray();
-    }
+    public required LoadedModule Module { get; init; }
+    public required MetadataFile File { get; init; }
+    public required GridSchema Schema { get; init; }
+    public required IReadOnlyList<object> Rows { get; init; }
+    public required IReadOnlyList<GridColumn> GridColumns { get; init; }
+    public readonly Dictionary<int, MetadataTooltip?> Tooltips = new();
+    public readonly Dictionary<int, MetadataAddress?> Links = new();
+    public readonly Dictionary<TableIndex, bool> Listed = new();
+    public readonly Dictionary<int, MetadataRowDetails?> DetailCells = new();
+    public string?[]? TextCells;
+    public (string FirstLine, int MoreLines)?[]? LineCells;
 
     /// <summary>What names the kind of rows, the same for a table in any assembly: where a
     /// column's flags filter is kept.</summary>
-    public string Key => _schema.Key;
+    public string Key => Schema.Key;
 
     /// <summary>Whether the selected row shows its <see cref="Details"/> under it, as a debug
     /// information's decoded value does.</summary>
-    public bool HasDetails => _schema.Details != null;
+    public bool HasDetails => Schema.Details != null;
 
     /// <summary>What the grid lists, as its node is labelled.</summary>
-    public string Title { get; }
+    public required string Title { get; init; }
 
-    public IReadOnlyList<MetadataColumn> Columns { get; }
+    public required IReadOnlyList<MetadataColumn> Columns { get; init; }
 
-    public int RowCount => _rows.Count;
+    public int RowCount => Rows.Count;
+}
+
+/// <summary>Reading the cells of a <see cref="MetadataGrid"/>: their text, links, tooltips and details, each worked out once and kept.</summary>
+public static class MetadataGrids
+{
+    /// <summary>The grid titled <paramref name="title"/> of what <paramref name="schema"/> reads from
+    /// <paramref name="file"/>, which is <paramref name="module"/>'s own metadata or its debug metadata.</summary>
+    public static MetadataGrid CreateGrid(string title, LoadedModule module, MetadataFile file, GridSchema schema)
+    {
+        var columns = schema.Columns;
+        return new MetadataGrid
+        {
+            Title = title,
+            Module = module,
+            File = file,
+            Schema = schema,
+            Rows = schema.LoadRows(),
+            GridColumns = columns,
+            Columns = columns.Select(static c => c.Column).ToArray(),
+        };
+    }
 
     /// <summary>The text of a cell: numbers in the column's format, often hex.</summary>
-    public string Text(int row, int column)
+    public static string GetText(MetadataGrid grid, int row, int column)
     {
-        var text = _text ??= new string?[_rows.Count * _columns.Count];
-        var index = row * _columns.Count + column;
-        return text[index] ??= Format(Value(row, column), _columns[column].Format);
+        var text = grid.TextCells ??= new string?[grid.Rows.Count * grid.GridColumns.Count];
+        var index = row * grid.GridColumns.Count + column;
+        return text[index] ??= FormatValue(GetValue(grid, row, column), grid.GridColumns[column].Format);
     }
 
     /// <summary>The rows of <paramref name="order"/>, or of the table in its own order, that pass
     /// every one of <paramref name="filters"/>, one per column or null.</summary>
-    public int[] Filter(int[]? order, IReadOnlyList<MetadataColumnFilter?> filters)
+    public static int[] FilterRows(MetadataGrid grid, int[]? order, IReadOnlyList<MetadataColumnFilter?> filters)
     {
-        var active = Enumerable.Range(0, Math.Min(filters.Count, _columns.Count)).Where(c => filters[c] is { IsActive: true }).ToArray();
-        var rows = order ?? Enumerable.Range(0, _rows.Count).ToArray();
+        var active = Enumerable.Range(0, Math.Min(filters.Count, grid.GridColumns.Count)).Where(c => filters[c] is { IsActive: true }).ToArray();
+        var rows = order ?? Enumerable.Range(0, grid.Rows.Count).ToArray();
         if (active.Length == 0) return rows;
-        return rows.Where(row => Array.TrueForAll(active, c => Matches(row, c, filters[c]!))).ToArray();
+        return rows.Where(row => Array.TrueForAll(active, c => MatchesCell(grid, row, c, filters[c]!))).ToArray();
     }
 
     /// <summary>What is shown under <paramref name="row"/> while it is selected; null when it has
     /// nothing.</summary>
-    public MetadataRowDetails? Details(int row)
+    public static MetadataRowDetails? GetDetails(MetadataGrid grid, int row)
     {
-        var details = _schema.Details;
+        var details = grid.Schema.Details;
         if (details == null) return null;
-        if (_details.TryGetValue(row, out var known)) return known;
+        if (grid.DetailCells.TryGetValue(row, out var known)) return known;
         MetadataRowDetails? result;
         try
         {
-            result = details(_rows[row]);
+            result = details(grid.Rows[row]);
         }
         catch (Exception e) when (IsUnreadable(e))
         {
             result = null;
         }
-        _details[row] = result;
+        grid.DetailCells[row] = result;
         return result;
     }
 
     /// <summary>A cell's text up to its first line break, and how many lines follow it — none for
     /// text on one line.</summary>
-    public (string FirstLine, int MoreLines) Lines(int row, int column)
+    public static (string FirstLine, int MoreLines) GetLines(MetadataGrid grid, int row, int column)
     {
-        var lines = _lines ??= new (string, int)?[_rows.Count * _columns.Count];
-        var index = row * _columns.Count + column;
+        var lines = grid.LineCells ??= new (string, int)?[grid.Rows.Count * grid.GridColumns.Count];
+        var index = row * grid.GridColumns.Count + column;
         var known = lines[index];
         if (known != null) return known.Value;
-        var text = Text(row, column).TrimEnd('\r', '\n');
+        var text = GetText(grid, row, column).TrimEnd('\r', '\n');
         var end = text.IndexOf('\n');
         var result = end < 0 ? (text, 0) : (text[..end].TrimEnd('\r'), text.AsSpan(end).Count('\n'));
         lines[index] = result;
@@ -161,11 +169,11 @@ public sealed class MetadataGrid
 
     /// <summary>The order that sorts the rows by <paramref name="column"/>, as row indices; ties
     /// keep the table's order.</summary>
-    public int[] Order(int column, bool descending)
+    public static int[] OrderRows(MetadataGrid grid, int column, bool descending)
     {
-        var keys = new object?[_rows.Count];
+        var keys = new object?[grid.Rows.Count];
         for (var row = 0; row < keys.Length; row++)
-            keys[row] = Value(row, column);
+            keys[row] = GetValue(grid, row, column);
         var order = Enumerable.Range(0, keys.Length).ToArray();
         var sign = descending ? -1 : 1;
         Array.Sort(order, (a, b) =>
@@ -177,18 +185,18 @@ public sealed class MetadataGrid
     }
 
     /// <summary>What hovering a cell explains, or null when its column has nothing to say.</summary>
-    public MetadataTooltip? Tooltip(int row, int column)
+    public static MetadataTooltip? GetTooltip(MetadataGrid grid, int row, int column)
     {
-        var info = _columns[column];
+        var info = grid.GridColumns[column];
         if (info.Column.Flags == null && info.Tooltip == null) return null;
-        var index = row * _columns.Count + column;
-        if (_tooltips.TryGetValue(index, out var known)) return known;
+        var index = row * grid.GridColumns.Count + column;
+        if (grid.Tooltips.TryGetValue(index, out var known)) return known;
         object? value;
         try
         {
             value = info.Column.Flags != null
-                ? ExplainFlags(info.Column.Flags, Value(row, column))
-                : info.Tooltip!(_rows[row], row + 1);
+                ? ExplainFlags(info.Column.Flags, GetValue(grid, row, column))
+                : info.Tooltip!(grid.Rows[row], row + 1);
         }
         catch (Exception e) when (IsUnreadable(e))
         {
@@ -200,81 +208,85 @@ public sealed class MetadataGrid
             string text when !string.IsNullOrWhiteSpace(text) => new MetadataTooltip(text, []),
             _ => null,
         };
-        _tooltips[index] = result;
+        grid.Tooltips[index] = result;
         return result;
     }
 
     /// <summary>The row a token cell points at, in the table of this metadata it names; null for a
     /// cell that is not a token, a nil token or a table this metadata lists no rows of. A row past
     /// the table's end, as the end of an empty member list is, leads to the last row.</summary>
-    public MetadataAddress? Link(int row, int column)
+    public static MetadataAddress? GetLink(MetadataGrid grid, int row, int column)
     {
-        if (!_columns[column].Column.IsToken) return null;
-        var index = row * _columns.Count + column;
-        if (_links.TryGetValue(index, out var known)) return known;
-        var result = FindLink(row, column);
-        _links[index] = result;
+        if (!grid.GridColumns[column].Column.IsToken) return null;
+        var index = row * grid.GridColumns.Count + column;
+        if (grid.Links.TryGetValue(index, out var known)) return known;
+        var result = FindLink(grid, row, column);
+        grid.Links[index] = result;
         return result;
     }
 
-    private MetadataAddress? FindLink(int row, int column)
+    private static MetadataAddress? FindLink(MetadataGrid grid, int row, int column)
     {
-        if (Value(row, column) is not int token || (token & 0xFFFFFF) == 0) return null;
+        if (GetValue(grid, row, column) is not int token || (token & 0xFFFFFF) == 0) return null;
         var table = (TableIndex)(token >>> 24);
-        if (!IsListed(table)) return null;
-        var count = _file.Metadata.GetTableRowCount(table);
+        if (!IsTableListed(grid, table)) return null;
+        var count = grid.File.Metadata.GetTableRowCount(table);
         return new MetadataAddress(table, Math.Min(token & 0xFFFFFF, count) - 1);
     }
 
     /// <summary>Whether this metadata's tables list <paramref name="table"/> as a grid of rows, as they
     /// do a table they can read that has rows.</summary>
-    private bool IsListed(TableIndex table)
+    private static bool IsTableListed(MetadataGrid grid, TableIndex table)
     {
-        if (_listed.TryGetValue(table, out var known)) return known;
-        var listed = Enum.IsDefined(table) && _file.Metadata.GetTableRowCount(table) > 0 && MetadataTables.Create(table, _file) != null;
-        _listed[table] = listed;
+        if (grid.Listed.TryGetValue(table, out var known)) return known;
+        var listed = Enum.IsDefined(table) && grid.File.Metadata.GetTableRowCount(table) > 0 && MetadataTables.Create(table, grid.File) != null;
+        grid.Listed[table] = listed;
         return listed;
     }
 
     /// <summary>The row of <paramref name="token"/>'s table it is, or -1 when this does not list
     /// that table.</summary>
-    public int RowOf(int token) => _schema.Table != null && (int)_schema.Table == token >>> 24 ? (token & 0xFFFFFF) - 1 : -1;
+    public static int GetRow(MetadataGrid grid, int token)
+    {
+        return grid.Schema.Table != null && (int)grid.Schema.Table == token >>> 24 ? (token & 0xFFFFFF) - 1 : -1;
+    }
 
     /// <summary>
     /// What the row stands for in the decompiled code, as the double-click on it goes to: the type,
     /// member or assembly it is — a reference resolved to its definition. Null for a row that is
     /// none, or a row of debug metadata.
     /// </summary>
-    public CodeReference.Navigable? Definition(int row)
+    public static CodeReference.Navigable? FindDefinition(MetadataGrid grid, int row)
     {
-        var file = _file;
-        if (!ReferenceEquals(file, _module.File) || _schema.Table == null) return null;
-        var token = (int)_schema.Table << 24 | row + 1;
+        var file = grid.File;
+        if (!ReferenceEquals(file, grid.Module.File) || grid.Schema.Table == null) return null;
+        var token = (int)grid.Schema.Table << 24 | row + 1;
         var handle = MetadataTokens.EntityHandle(token);
-        var name = handle.Kind == HandleKind.AssemblyDefinition ? _module.Name
-            : _schema.NameColumn >= 0 ? Text(row, _schema.NameColumn)
+        var name = handle.Kind == HandleKind.AssemblyDefinition ? grid.Module.Name
+            : grid.Schema.NameColumn >= 0 ? GetText(grid, row, grid.Schema.NameColumn)
             : token.ToString("X8");
         return CodeReferences.Find(file.Metadata, handle, name, AssemblyPath.Of(file.FileName));
     }
 
-    private bool Matches(int row, int column, MetadataColumnFilter filter)
+    private static bool MatchesCell(MetadataGrid grid, int row, int column, MetadataColumnFilter filter)
     {
-        var value = Value(row, column);
+        var value = GetValue(grid, row, column);
         if (value is null) return false;
-        if (filter.Flags is { IsEmpty: false } flags && !flags.Matches(Bits(value)))
+        var flags = filter.Flags;
+        if (flags != null && !flags.IsEmpty && !FilterStatePresenter.MatchesFilter(flags, GetBits(value)))
             return false;
         var text = filter.Text;
         if (text.Length == 0) return true;
         var pattern = FindPattern(text);
         if (pattern != null)
             return pattern.IsMatch(value.ToString() ?? "");
-        if (_columns[column].Column.IsNumeric)
+        if (grid.GridColumns[column].Column.IsNumeric)
         {
             var compared = Compare(value, text);
             if (compared != null)
                 return compared.Value;
         }
-        return Text(row, column).Contains(text, StringComparison.OrdinalIgnoreCase);
+        return GetText(grid, row, column).Contains(text, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>What the flags set in <paramref name="cell"/> mean; null for an empty cell.</summary>
@@ -282,17 +294,17 @@ public sealed class MetadataGrid
     {
         if (cell == null)
             return null;
-        return FilterStatePresenter.Explain(flags, Bits(cell));
+        return FilterStatePresenter.Explain(flags, GetBits(cell));
     }
 
     internal static Regex? FindPattern(string text)
     {
         if (text.Length < 2 || text[0] != '/' || text[^1] != '/') return null;
-        if (Patterns.TryGetValue(text, out var kept))
+        if (MetadataGrid.Patterns.TryGetValue(text, out var kept))
             return kept;
-        if (Patterns.Count >= MaxPatterns)
-            Patterns.Clear();
-        return Patterns.GetOrAdd(text, static t =>
+        if (MetadataGrid.Patterns.Count >= MetadataGrid.MaxPatterns)
+            MetadataGrid.Patterns.Clear();
+        return MetadataGrid.Patterns.GetOrAdd(text, static t =>
         {
             try
             {
@@ -340,11 +352,11 @@ public sealed class MetadataGrid
         };
     }
 
-    private object? Value(int row, int column)
+    private static object? GetValue(MetadataGrid grid, int row, int column)
     {
         try
         {
-            return _columns[column].Value(_rows[row], row + 1);
+            return grid.GridColumns[column].Value(grid.Rows[row], row + 1);
         }
         catch (Exception e) when (IsUnreadable(e))
         {
@@ -354,9 +366,12 @@ public sealed class MetadataGrid
 
     /// <summary>Whether <paramref name="e"/> is how metadata that cannot be read fails, which leaves
     /// its cell empty.</summary>
-    private static bool IsUnreadable(Exception e) => e is BadImageFormatException or ArgumentException or InvalidOperationException;
+    private static bool IsUnreadable(Exception e)
+    {
+        return e is BadImageFormatException or ArgumentException or InvalidOperationException;
+    }
 
-    private static string Format(object? value, string? format)
+    private static string FormatValue(object? value, string? format)
     {
         if (value is null) return "";
         if (!string.IsNullOrEmpty(format))
@@ -378,7 +393,13 @@ public sealed class MetadataGrid
         return string.CompareOrdinal(a.ToString(), b.ToString());
     }
 
-    private static bool IsNumber(object value) => value is Enum || Type.GetTypeCode(value.GetType()) is >= TypeCode.SByte and <= TypeCode.Decimal;
+    private static bool IsNumber(object value)
+    {
+        return value is Enum || Type.GetTypeCode(value.GetType()) is >= TypeCode.SByte and <= TypeCode.Decimal;
+    }
 
-    private static uint Bits(object value) => unchecked((uint)Convert.ToInt64(value, CultureInfo.InvariantCulture));
+    private static uint GetBits(object value)
+    {
+        return unchecked((uint)Convert.ToInt64(value, CultureInfo.InvariantCulture));
+    }
 }

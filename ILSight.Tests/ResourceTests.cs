@@ -26,7 +26,7 @@ public sealed class ResourceTests
     [InlineData("pointer.cur", "CUR")]
     public void Pictures_decode_to_their_pixels(string name, string format)
     {
-        var image = ResourceImage.Decode(Fixture(name));
+        var image = ResourceImages.DecodeImage(Fixture(name));
 
         Assert.Equal((2, 2, format), (image.Width, image.Height, image.Format));
         Assert.Equal(Expected, image.Rgba);
@@ -35,7 +35,7 @@ public sealed class ResourceTests
     [Fact]
     public void A_bitmap_without_alpha_is_opaque()
     {
-        var image = ResourceImage.Decode(Fixture("logo.bmp"));
+        var image = ResourceImages.DecodeImage(Fixture("logo.bmp"));
 
         Assert.Equal((2, 2, "BMP"), (image.Width, image.Height, image.Format));
         Assert.Equal(Expected[..12], image.Rgba[..12]);
@@ -45,7 +45,7 @@ public sealed class ResourceTests
     [Fact]
     public void A_gif_decodes_its_first_frame()
     {
-        var image = ResourceImage.Decode(Fixture("red.gif"));
+        var image = ResourceImages.DecodeImage(Fixture("red.gif"));
 
         Assert.Equal((1, 1, "GIF"), (image.Width, image.Height, image.Format));
         Assert.Equal([255, 0, 0, 255], image.Rgba);
@@ -57,7 +57,7 @@ public sealed class ResourceTests
         var pixels = Enumerable.Repeat(unchecked((int)0x2040A0FF), 16 * 16).ToArray();
         var data = JpegSharp.Api.Jpeg.Encode(JpegSharp.Api.JpegImage.CreateFromRgba8888(16, 16, pixels));
 
-        var image = ResourceImage.Decode(data);
+        var image = ResourceImages.DecodeImage(data);
 
         Assert.Equal((16, 16, "JPEG"), (image.Width, image.Height, image.Format));
         Assert.InRange(image.Rgba[2], 0x90, 0xB0);
@@ -67,7 +67,7 @@ public sealed class ResourceTests
     [Fact]
     public void An_svg_draws_at_its_own_size()
     {
-        var image = ResourceImage.Decode(Fixture("shape.svg"));
+        var image = ResourceImages.DecodeImage(Fixture("shape.svg"));
 
         Assert.Equal((4, 2, "SVG"), (image.Width, image.Height, image.Format));
         Assert.Equal([255, 0, 0, 255], image.Rgba[..4]);
@@ -110,8 +110,8 @@ public sealed class ResourceTests
     [Fact]
     public void Anything_else_is_no_picture()
     {
-        Assert.Throws<InvalidDataException>(() => ResourceImage.Decode(Fixture("blob.bin")));
-        Assert.Throws<InvalidDataException>(() => ResourceImage.Decode([0x89, (byte)'P', (byte)'N', (byte)'G', 1, 2]));
+        Assert.Throws<InvalidDataException>(() => ResourceImages.DecodeImage(Fixture("blob.bin")));
+        Assert.Throws<InvalidDataException>(() => ResourceImages.DecodeImage([0x89, (byte)'P', (byte)'N', (byte)'G', 1, 2]));
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public sealed class ResourceTests
         var file = Resources(assembly).Child("Mixed.resources");
 
         var grid = Assert.IsType<GridContent>(file.Content()).Grid;
-        var rows = Enumerable.Range(0, grid.RowCount).Select(r => (grid.Text(r, 0), grid.Text(r, 1), grid.Text(r, 2))).ToList();
+        var rows = Enumerable.Range(0, grid.RowCount).Select(r => (MetadataGrids.GetText(grid, r, 0), MetadataGrids.GetText(grid, r, 1), MetadataGrids.GetText(grid, r, 2))).ToList();
 
         Assert.Equal(["Name", "Value", "Type"], grid.Columns.Select(c => c.Name));
         Assert.Equal(
@@ -204,11 +204,11 @@ public sealed class ResourceTests
                 ("Poem", "roses\nviolets\nsugar", "System.String"),
             ],
             rows);
-        Assert.Equal("first line\nsecond line", grid.Tooltip(2, 1)!.Text);
-        Assert.Equal(("first line", 1), grid.Lines(2, 1));
-        Assert.Equal(("Hello", 0), grid.Lines(1, 1));
+        Assert.Equal("first line\nsecond line", MetadataGrids.GetTooltip(grid, 2, 1)!.Text);
+        Assert.Equal(("first line", 1), MetadataGrids.GetLines(grid, 2, 1));
+        Assert.Equal(("Hello", 0), MetadataGrids.GetLines(grid, 1, 1));
         Assert.False(grid.HasDetails);
-        Assert.Null(grid.Tooltip(1, 1));
+        Assert.Null(MetadataGrids.GetTooltip(grid, 1, 1));
         Assert.Equal([("Notes.xml", false), ("Picture.png", true)], file.Children.Select(static c => (c.Text, c.IsImage)));
         Assert.Equal(Expected, Assert.IsType<ImageContent>(file.Child("Picture.png").Content()).Image.Rgba);
         Assert.Contains(("root", SpanKind.Keyword), file.Child("Notes.xml").Decompile(DecompilationLanguage.CSharp).SpansOf().Select(s => (s.Text, s.Span.Kind)));

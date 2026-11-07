@@ -66,7 +66,7 @@ public sealed class PackageFileInfo
     public required PackageFile File { get; init; }
 
     /// <summary>Whether it is shown as a picture, being named as one is.</summary>
-    public bool IsImage => ResourceImage.IsImageName(File.Name);
+    public bool IsImage => ResourceImages.IsImageName(File.Name);
 
     public string Description => $"{File.FullName} ({File.Length} bytes)";
 

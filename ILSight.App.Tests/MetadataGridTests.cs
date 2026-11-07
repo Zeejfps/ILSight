@@ -69,7 +69,7 @@ public sealed class MetadataGridTests
         app.Show(Table(app, "TypeDef"), 2);
         var tab = app.AppState.Tabs.Active!;
         var grid = tab.Grid!;
-        var methodList = grid.Text(0, grid.Column("MethodList"));
+        var methodList = MetadataGrids.GetText(grid, 0, grid.Column("MethodList"));
 
         GridOf(app, tab).Scroll.X = 10000f;
         app.Run(3);
@@ -95,7 +95,7 @@ public sealed class MetadataGridTests
     public void Going_back_to_a_grid_after_switching_language_returns_to_the_row_it_left()
     {
         var (app, tab, grid, row) = ShowGreeterRow();
-        var baseType = grid.Text(row, grid.Column("BaseType"));
+        var baseType = MetadataGrids.GetText(grid, row, grid.Column("BaseType"));
         app.Frames.Click(TextBeside(app, "Greeter", "Greeter"));
         app.Frames.Click(TextBeside(app, baseType, "Greeter"), modifiers: KeyModifiers.Control);
         app.Settle(3);
@@ -113,7 +113,7 @@ public sealed class MetadataGridTests
     public void Ctrl_clicking_a_token_shows_its_row_and_going_back_returns_to_the_row_it_left()
     {
         var (app, tab, grid, row) = ShowGreeterRow();
-        var baseType = grid.Text(row, grid.Column("BaseType"));
+        var baseType = MetadataGrids.GetText(grid, row, grid.Column("BaseType"));
         app.Frames.Click(TextBeside(app, "Greeter", "Greeter"));
 
         app.Frames.Click(TextBeside(app, baseType, "Greeter"), modifiers: KeyModifiers.Control);
@@ -121,7 +121,7 @@ public sealed class MetadataGridTests
 
         var typeRefs = tab.Grid!;
         Assert.Same(Table(app, "TypeRef"), tab.Node);
-        Assert.Equal("Object", typeRefs.Text(GridOf(app, tab).Selected, typeRefs.Column("Name")));
+        Assert.Equal("Object", MetadataGrids.GetText(typeRefs, GridOf(app, tab).Selected, typeRefs.Column("Name")));
         app.TextRect("Object");
 
         GoBack(app.AppState);
@@ -148,7 +148,7 @@ public sealed class MetadataGridTests
 
         var typeDefs = tab.Grid!;
         Assert.Same(Table(app, "TypeDef"), tab.Node);
-        Assert.Equal("Greeter", typeDefs.Text(GridOf(app, tab).Selected, typeDefs.Column("Name")));
+        Assert.Equal("Greeter", MetadataGrids.GetText(typeDefs, GridOf(app, tab).Selected, typeDefs.Column("Name")));
 
         GoBack(app.AppState);
         app.Settle(3);
@@ -160,7 +160,7 @@ public sealed class MetadataGridTests
     public void Clicking_the_link_icon_of_a_hovered_token_shows_its_row()
     {
         var (app, tab, grid, row) = ShowGreeterRow();
-        var token = TextBeside(app, grid.Text(row, grid.Column("BaseType")), "Greeter");
+        var token = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("BaseType")), "Greeter");
 
         app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);
         app.Frames.Click(TextBeside(app, Text(Icons.LinkToken), "Greeter"));
@@ -174,9 +174,9 @@ public sealed class MetadataGridTests
     {
         var (app, _, grid) = ShowTable("TypeDef");
         var baseType = grid.Column("BaseType");
-        var row = Enumerable.Range(0, grid.RowCount).First(r => grid.Link(r, baseType) != null);
-        var name = grid.Text(row, grid.Column("Name"));
-        var token = TextBeside(app, grid.Text(row, baseType), name);
+        var row = Enumerable.Range(0, grid.RowCount).First(r => MetadataGrids.GetLink(grid, r, baseType) != null);
+        var name = MetadataGrids.GetText(grid, row, grid.Column("Name"));
+        var token = TextBeside(app, MetadataGrids.GetText(grid, row, baseType), name);
         app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);
         var icon = TextBeside(app, Text(Icons.LinkToken), name);
 
@@ -221,9 +221,9 @@ public sealed class MetadataGridTests
         var name = grid.Column("Name");
 
         app.Click("Name");
-        var ascending = GridOf(app, tab).Order!.Select(r => grid.Text(r, name)).ToList();
+        var ascending = GridOf(app, tab).Order!.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
         app.Click("Name");
-        var descending = GridOf(app, tab).Order!.Select(r => grid.Text(r, name)).ToList();
+        var descending = GridOf(app, tab).Order!.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
 
         Assert.Equal(ascending.Order(StringComparer.CurrentCulture), ascending);
         Assert.Equal(descending.OrderDescending(StringComparer.CurrentCulture), descending);
@@ -233,7 +233,7 @@ public sealed class MetadataGridTests
     public void Hovering_a_flags_cell_breaks_its_bits_down()
     {
         var (app, _, grid, row) = ShowGreeterRow();
-        var attributes = TextBeside(app, grid.Text(row, grid.Column("Attributes")), "Greeter");
+        var attributes = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Attributes")), "Greeter");
 
         app.Frames.MovePointer(attributes.X + 2f, attributes.Y + attributes.Height / 2).Frame(90);
 
@@ -261,7 +261,7 @@ public sealed class MetadataGridTests
 
         app.Frames.Click(FunnelOf(app, "Name"));
         app.Frames.Type("greet").Frame(2);
-        var filtered = GridOf(app, tab).View.Select(r => grid.Text(r, name)).ToList();
+        var filtered = GridOf(app, tab).View.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
 
         Assert.Contains("Greeter", filtered);
@@ -281,7 +281,7 @@ public sealed class MetadataGridTests
         var visibility = System.Reflection.TypeAttributes.VisibilityMask;
         Assert.NotEmpty(GridOf(app, tab).View);
         Assert.All(GridOf(app, tab).View, r =>
-            Assert.Equal(1u, Convert.ToUInt32(grid.Text(r, attributes), 16) & (uint)visibility));
+            Assert.Equal(1u, Convert.ToUInt32(MetadataGrids.GetText(grid, r, attributes), 16) & (uint)visibility));
         app.TextRect("Visibility = Public");
 
         using var temp = new TempDir();
@@ -299,8 +299,8 @@ public sealed class MetadataGridTests
         var app = AppDriver.Opened(width: 1800f, height: 1200f);
         app.Show(app.Node("Metadata", "COFF Header"), 3);
         var grid = app.AppState.Tabs.Active!.Grid!;
-        var row = Enumerable.Range(0, grid.RowCount).Single(r => grid.Text(r, grid.Column("Member")) == "Characteristics");
-        var value = TextBeside(app, grid.Text(row, grid.Column("Value")), "Characteristics");
+        var row = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, grid.Column("Member")) == "Characteristics");
+        var value = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Value")), "Characteristics");
 
         app.Frames.MovePointer(value.X + 2f, value.Y + value.Height / 2).Frame(90);
 
@@ -341,7 +341,7 @@ public sealed class MetadataGridTests
     public void Clicking_a_token_selects_its_cell_for_Ctrl_C_instead_of_following_it()
     {
         var (app, tab, grid, row) = ShowGreeterRow();
-        var baseType = grid.Text(row, grid.Column("BaseType"));
+        var baseType = MetadataGrids.GetText(grid, row, grid.Column("BaseType"));
 
         app.Frames.Click(TextBeside(app, baseType, "Greeter"));
         app.Settle();
@@ -374,20 +374,20 @@ public sealed class MetadataGridTests
         var tab = app.AppState.Tabs.Active!;
         var grid = tab.Grid!;
         var kind = grid.Column("KindString");
-        var options = Enumerable.Range(0, grid.RowCount).Single(r => grid.Text(r, kind).StartsWith("Compilation Options"));
+        var options = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
 
         GridOf(app, tab).Reveal(options);
         app.Run(4);
 
         Assert.Equal(options, GridOf(app, tab).Selected);
-        Assert.True(app.TextRect("language").Y > TextBeside(app, grid.Text(options, kind), grid.Text(options, kind)).Y);
+        Assert.True(app.TextRect("language").Y > TextBeside(app, MetadataGrids.GetText(grid, options, kind), MetadataGrids.GetText(grid, options, kind)).Y);
     }
 
     /// <summary>Where each of <paramref name="rows"/> stands, by its token cell.</summary>
     private static float[] FindTops(AppDriver app, MetadataGrid grid, params int[] rows)
     {
         var token = grid.Column("Token");
-        return rows.Select(row => app.TextRect(grid.Text(row, token)).Y).ToArray();
+        return rows.Select(row => app.TextRect(MetadataGrids.GetText(grid, row, token)).Y).ToArray();
     }
 
     [Fact]
@@ -430,7 +430,7 @@ public sealed class MetadataGridTests
         var (app, tab, grid) = ShowTable("TypeDef");
         var state = GridOf(app, tab);
         var name = grid.Column("Name");
-        state.Filters[name] = new MetadataColumnFilter { Text = grid.Text(1, name) };
+        state.Filters[name] = new MetadataColumnFilter { Text = MetadataGrids.GetText(grid, 1, name) };
         state.UpdateView(app.Ui.MetadataFilters);
         state.Open[(2, name)] = 4;
 
@@ -448,7 +448,7 @@ public sealed class MetadataGridTests
         var name = grid.Column("Name");
         var line = state.RowHeight;
 
-        state.Filters[name] = new MetadataColumnFilter { Text = $"/^({grid.Text(1, name)}|{grid.Text(3, name)})$/" };
+        state.Filters[name] = new MetadataColumnFilter { Text = $"/^({MetadataGrids.GetText(grid, 1, name)}|{MetadataGrids.GetText(grid, 3, name)})$/" };
         state.Open[(2, name)] = 4;
         app.Run(3);
 
@@ -465,7 +465,7 @@ public sealed class MetadataGridTests
         var grid = tab.Grid!;
         var state = GridOf(app, tab);
         var kind = grid.Column("KindString");
-        var selected = Enumerable.Range(0, grid.RowCount - 1).First(r => grid.Text(r, kind).StartsWith("Compilation Options"));
+        var selected = Enumerable.Range(0, grid.RowCount - 1).First(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
         state.Reveal(selected);
         app.Run(4);
         var closed = FindTops(app, grid, selected, selected + 1);

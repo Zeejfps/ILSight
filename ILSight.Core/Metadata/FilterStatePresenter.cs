@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Collections.Immutable;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
 using System;
@@ -63,7 +65,7 @@ namespace ILSight.Core.Metadata
 				.ToList();
 			if (requiredFlags.Count > 0)
 			{
-				var joiner = state.IndependentMode == MatchMode.All ? " ∧ " : " ∨ ";
+				var joiner = state.Mode == MatchMode.All ? " ∧ " : " ∨ ";
 				clauses.Add(requiredFlags.Count == 1
 					? requiredFlags[0]
 					: $"({string.Join(joiner, requiredFlags)})");
@@ -86,5 +88,107 @@ namespace ILSight.Core.Metadata
 				? label[..idx]
 				: label;
 		}
-	}
+
+		public static FilterState CreateFilterState(FlagsSchema schema)
+		{
+			ArgumentNullException.ThrowIfNull(schema);
+			var state = new FilterState { Schema = schema };
+			foreach (var group in schema.MutexGroups)
+				state.MutexSelections[group.Name] = null;
+			foreach (var flag in schema.IndependentFlags)
+				state.FlagStates[flag.Name] = TriState.DontCare;
+			return state;
+		}
+
+		public static void SetIndependentMode(FilterState state, MatchMode mode)
+		{
+			if (state.Mode == mode)
+				return;
+			state.Mode = mode;
+			state.Revision++;
+		}
+
+		public static void SetMutexSelection(FilterState state, string groupName, ImmutableHashSet<uint>? values)
+		{
+			state.MutexSelections[groupName] = values;
+			state.Revision++;
+		}
+
+		public static void SetFlagState(FilterState state, string flagName, TriState flagState)
+		{
+			state.FlagStates[flagName] = flagState;
+			state.Revision++;
+		}
+
+		/// <summary>Resets every group to "any" and every flag to don't-care.</summary>
+		public static void ClearFilter(FilterState state)
+		{
+			foreach (var key in state.MutexSelections.Keys.ToArray())
+				state.MutexSelections[key] = null;
+			foreach (var key in state.FlagStates.Keys.ToArray())
+				state.FlagStates[key] = TriState.DontCare;
+			state.Mode = MatchMode.All;
+			state.Revision++;
+		}
+
+		/// <summary>Whether a row whose flags are <paramref name="value"/> passes: it holds an allowed
+		/// value of every narrowed group, none of the excluded flags, and all or any of the required ones.</summary>
+		public static bool MatchesFilter(FilterState state, uint value)
+		{
+			if (state.CompiledRevision != state.Revision)
+				CompileFilter(state);
+			if ((value & state.ExcludedMask) != 0)
+				return false;
+			foreach (var group in state.Schema.MutexGroups)
+			{
+				var allowed = state.MutexSelections.GetValueOrDefault(group.Name);
+				if (allowed != null && !allowed.Contains(value & group.Mask))
+					return false;
+			}
+			return state.RequiredMask == 0
+				|| (state.Mode == MatchMode.All ? (value & state.RequiredMask) == state.RequiredMask : (value & state.RequiredMask) != 0);
+		}
+
+		private static void CompileFilter(FilterState state)
+		{
+			state.RequiredMask = state.ExcludedMask = 0;
+			foreach (var flag in state.Schema.IndependentFlags)
+			{
+				var wanted = state.FlagStates.GetValueOrDefault(flag.Name);
+				if (wanted == TriState.Required)
+					state.RequiredMask |= flag.Bit;
+				else if (wanted == TriState.Excluded)
+					state.ExcludedMask |= flag.Bit;
+			}
+			state.CompiledRevision = state.Revision;
+		}
+
+		/// <summary>The constraints to keep, or null when there are none.</summary>
+		public static SavedFilterState? SaveFilter(FilterState state)
+    {
+        return state.IsEmpty
+    				? null
+    				: new SavedFilterState(
+    					state.MutexSelections.Where(static s => s.Value is not null).ToDictionary(static s => s.Key, static s => s.Value!.Order().ToArray()),
+    					state.FlagStates.Where(static f => f.Value != TriState.DontCare).ToDictionary(static f => f.Key, static f => f.Value),
+    					state.Mode);
+    }
+
+		/// <summary>Applies what <see cref="Save"/> kept, skipping groups and flags the schema no longer has.</summary>
+		public static void RestoreFilter(FilterState state, SavedFilterState saved)
+		{
+			foreach (var (group, values) in saved.Groups ?? new())
+			{
+				if (state.MutexSelections.ContainsKey(group))
+					state.MutexSelections[group] = values.ToImmutableHashSet();
+			}
+			foreach (var (flag, wanted) in saved.Flags ?? new())
+			{
+				if (state.FlagStates.ContainsKey(flag))
+					state.FlagStates[flag] = wanted;
+			}
+			state.Mode = saved.Mode;
+			state.Revision++;
+		}
+}
 }

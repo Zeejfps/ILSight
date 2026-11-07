@@ -90,9 +90,9 @@ public sealed class NavigationTests
         var fields = Assert.IsType<MetadataGrid>(MetadataTables.EnsureGrid(TableOf(field.Node)));
         Assert.Equal("System.Private.CoreLib", add.Node.Assembly.Name);
         Assert.Equal(TableIndex.MethodDef, TableOf(add.Node).ListedTable);
-        Assert.Equal("Add", methods.Text(add.Row, methods.Column("Name")));
+        Assert.Equal("Add", MetadataGrids.GetText(methods, add.Row, methods.Column("Name")));
         Assert.Same(assembly, field.Node.Assembly);
-        Assert.Equal("_items", fields.Text(field.Row, fields.Column("Name")));
+        Assert.Equal("_items", MetadataGrids.GetText(fields, field.Row, fields.Column("Name")));
         Assert.Equal(TableIndex.Assembly, TableOf(self.Node).ListedTable);
         Assert.Equal(0, self.Row);
     }

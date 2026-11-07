@@ -92,16 +92,16 @@ public sealed class MetadataTests
                 {
                     for (var column = 0; column < grid.Columns.Count; column++)
                     {
-                        Assert.NotNull(grid.Text(row, column));
-                        grid.Tooltip(row, column);
-                        var link = grid.Link(row, column);
+                        Assert.NotNull(MetadataGrids.GetText(grid, row, column));
+                        MetadataGrids.GetTooltip(grid, row, column);
+                        var link = MetadataGrids.GetLink(grid, row, column);
                         if (link != null)
                         {
                             var target = Assert.IsType<MetadataTarget>(TestSession.Shared.FindMetadataRow(node, link.Value));
                             Assert.InRange(target.Row, 0, Grid(target.Node).RowCount - 1);
                         }
                     }
-                    grid.Definition(row);
+                    MetadataGrids.FindDefinition(grid, row);
                 }
                 count++;
             }
@@ -122,9 +122,9 @@ public sealed class MetadataTests
         var row = grid.RowNamed("Calculator`1");
 
         Assert.Equal(["RID", "Token", "Offset", "Attributes", "Name", "Namespace", "BaseType", "FieldList", "MethodList"], grid.Columns.Select(c => c.Name));
-        Assert.Equal((row + 1).ToString(), grid.Text(row, grid.Column("RID")));
-        Assert.Equal($"02{row + 1:X6}", grid.Text(row, grid.Column("Token")));
-        Assert.Equal(Trees.FixturesNamespace, grid.Text(row, grid.Column("Namespace")));
+        Assert.Equal((row + 1).ToString(), MetadataGrids.GetText(grid, row, grid.Column("RID")));
+        Assert.Equal($"02{row + 1:X6}", MetadataGrids.GetText(grid, row, grid.Column("Token")));
+        Assert.Equal(Trees.FixturesNamespace, MetadataGrids.GetText(grid, row, grid.Column("Namespace")));
         Assert.True(grid.Columns[grid.Column("BaseType")].IsToken);
         Assert.False(grid.Columns[grid.Column("Name")].IsToken);
     }
@@ -134,7 +134,7 @@ public sealed class MetadataTests
     {
         var grid = TypeDefs();
 
-        var tooltip = grid.Tooltip(grid.RowNamed("Calculator`1"), grid.Column("Attributes"))!;
+        var tooltip = MetadataGrids.GetTooltip(grid, grid.RowNamed("Calculator`1"), grid.Column("Attributes"))!;
 
         Assert.Equal(["Visibility", "Layout", "ClassSemantics", "StringFormat", "Flags"], tooltip.Groups.Select(g => g.Header));
         var visibility = tooltip.Groups[0];
@@ -174,13 +174,13 @@ public sealed class MetadataTests
         var grid = Grid(types);
         var row = grid.RowNamed("Calculator`1");
 
-        var link = Assert.IsType<MetadataAddress>(grid.Link(row, grid.Column("BaseType")));
+        var link = Assert.IsType<MetadataAddress>(MetadataGrids.GetLink(grid, row, grid.Column("BaseType")));
         var target = Assert.IsType<MetadataTarget>(TestSession.Shared.FindMetadataRow(types, link));
 
         Assert.Same(Table(assembly, "TypeRef"), target.Node);
         var typeRefs = Grid(target.Node);
-        Assert.Equal("Object", typeRefs.Text(target.Row, typeRefs.Column("Name")));
-        Assert.Equal(target.Row, typeRefs.RowOf(Convert.ToInt32(grid.Text(row, grid.Column("BaseType")), 16)));
+        Assert.Equal("Object", MetadataGrids.GetText(typeRefs, target.Row, typeRefs.Column("Name")));
+        Assert.Equal(target.Row, MetadataGrids.GetRow(typeRefs, Convert.ToInt32(MetadataGrids.GetText(grid, row, grid.Column("BaseType")), 16)));
     }
 
     [Fact]
@@ -190,12 +190,12 @@ public sealed class MetadataTests
         var types = Grid(Table(assembly, "TypeDef"));
         var references = Grid(Table(assembly, "TypeRef"));
 
-        var calculator = types.Definition(types.RowNamed("Calculator`1"))!;
-        var obj = references.Definition(references.RowNamed("Object"))!;
+        var calculator = MetadataGrids.FindDefinition(types, types.RowNamed("Calculator`1"))!;
+        var obj = MetadataGrids.FindDefinition(references, references.RowNamed("Object"))!;
 
         Assert.Same(assembly.Calculator(), list.FindNode(calculator));
         Assert.Equal("Object", list.FindNode(obj)!.Text);
-        Assert.Null(Grid(Metadata(assembly).Child("DOS Header")).Definition(0));
+        Assert.Null(MetadataGrids.FindDefinition(Grid(Metadata(assembly).Child("DOS Header")), 0));
     }
 
     [Fact]
@@ -204,12 +204,12 @@ public sealed class MetadataTests
         var grid = TypeDefs();
         var name = grid.Column("Name");
 
-        var ascending = grid.Order(name, descending: false).Select(r => grid.Text(r, name)).ToList();
-        var descending = grid.Order(name, descending: true).Select(r => grid.Text(r, name)).ToList();
+        var ascending = MetadataGrids.OrderRows(grid, name, descending: false).Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
+        var descending = MetadataGrids.OrderRows(grid, name, descending: true).Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
 
         Assert.Equal(ascending.Order(StringComparer.CurrentCulture), ascending);
         Assert.Equal(ascending.OrderDescending(StringComparer.CurrentCulture), descending);
-        var ties = grid.Order(name, descending: true).Where(r => grid.Text(r, name) == "<>c").ToList();
+        var ties = MetadataGrids.OrderRows(grid, name, descending: true).Where(r => MetadataGrids.GetText(grid, r, name) == "<>c").ToList();
         Assert.Equal(ties.Order(), ties);
     }
 
@@ -223,7 +223,7 @@ public sealed class MetadataTests
 
         Assert.Contains("// GUID: ", codeView);
         Assert.Contains("// Path: ", codeView);
-        Assert.Contains("CodeView", Enumerable.Range(0, Grid(directory).RowCount).Select(r => Grid(directory).Text(r, Grid(directory).Column("Type"))));
+        Assert.Contains("CodeView", Enumerable.Range(0, Grid(directory).RowCount).Select(r => MetadataGrids.GetText(Grid(directory), r, Grid(directory).Column("Type"))));
     }
 
     [Fact]
@@ -249,16 +249,16 @@ public sealed class MetadataTests
         Assert.Contains("// 02 TypeDef: ", text);
     }
 
-    private static string[] NamesOf(MetadataGrid grid, int[] rows) => rows.Select(r => grid.Text(r, grid.Column("Name"))).ToArray();
+    private static string[] NamesOf(MetadataGrid grid, int[] rows) => rows.Select(r => MetadataGrids.GetText(grid, r, grid.Column("Name"))).ToArray();
 
     [Fact]
     public void The_patterns_typed_into_a_filter_are_kept_only_up_to_a_limit()
     {
         for (var pattern = 0; pattern < MetadataGrid.MaxPatterns * 3; pattern++)
-            Assert.NotNull(MetadataGrid.FindPattern($"/limit{pattern}/"));
+            Assert.NotNull(MetadataGrids.FindPattern($"/limit{pattern}/"));
 
         Assert.InRange(MetadataGrid.CachedPatterns, 1, MetadataGrid.MaxPatterns);
-        Assert.Matches(MetadataGrid.FindPattern("/^limit0$/")!, "LIMIT0");
+        Assert.Matches(MetadataGrids.FindPattern("/^limit0$/")!, "LIMIT0");
     }
 
     private static MetadataColumnFilter?[] Filters(MetadataGrid grid, string column, MetadataColumnFilter filter)
@@ -273,8 +273,8 @@ public sealed class MetadataTests
     {
         var grid = TypeDefs();
 
-        var part = NamesOf(grid, grid.Filter(null, Filters(grid, "Name", new MetadataColumnFilter { Text = "calcULATOR" })));
-        var regex = NamesOf(grid, grid.Filter(null, Filters(grid, "Name", new MetadataColumnFilter { Text = "/^(Circle|Size)$/" })));
+        var part = NamesOf(grid, MetadataGrids.FilterRows(grid, null, Filters(grid, "Name", new MetadataColumnFilter { Text = "calcULATOR" })));
+        var regex = NamesOf(grid, MetadataGrids.FilterRows(grid, null, Filters(grid, "Name", new MetadataColumnFilter { Text = "/^(Circle|Size)$/" })));
 
         Assert.Contains("Calculator`1", part);
         Assert.All(part, n => Assert.Contains("calculator", n, StringComparison.OrdinalIgnoreCase));
@@ -287,10 +287,10 @@ public sealed class MetadataTests
         var grid = TypeDefs();
         var rid = grid.Column("RID");
 
-        var above = grid.Filter(null, Filters(grid, "RID", new MetadataColumnFilter { Text = "> 0x3" }));
-        var shown = grid.Filter(null, Filters(grid, "Token", new MetadataColumnFilter { Text = "02000002" }));
+        var above = MetadataGrids.FilterRows(grid, null, Filters(grid, "RID", new MetadataColumnFilter { Text = "> 0x3" }));
+        var shown = MetadataGrids.FilterRows(grid, null, Filters(grid, "Token", new MetadataColumnFilter { Text = "02000002" }));
 
-        Assert.All(above, r => Assert.True(int.Parse(grid.Text(r, rid)) > 3));
+        Assert.All(above, r => Assert.True(int.Parse(MetadataGrids.GetText(grid, r, rid)) > 3));
         Assert.Equal(grid.RowCount - 3, above.Length);
         Assert.Equal([1], shown);
     }
@@ -300,12 +300,12 @@ public sealed class MetadataTests
     {
         var grid = TypeDefs();
         var schema = grid.Columns[grid.Column("Attributes")].Flags!;
-        var state = new FilterState(schema);
+        var state = FilterStatePresenter.CreateFilterState(schema);
         var filters = Filters(grid, "Attributes", new MetadataColumnFilter { Flags = state });
 
-        state.SetMutexSelection("Visibility", [(uint)System.Reflection.TypeAttributes.NotPublic]);
-        state.SetFlagState("Abstract", TriState.Excluded);
-        var names = NamesOf(grid, grid.Filter(null, filters));
+        FilterStatePresenter.SetMutexSelection(state, "Visibility", [(uint)System.Reflection.TypeAttributes.NotPublic]);
+        FilterStatePresenter.SetFlagState(state, "Abstract", TriState.Excluded);
+        var names = NamesOf(grid, MetadataGrids.FilterRows(grid, null, filters));
 
         Assert.Contains("Visibility", schema.MutexGroups.Select(g => g.Name));
         Assert.Contains("Circle", names);
@@ -318,9 +318,9 @@ public sealed class MetadataTests
     public void Filters_keep_the_sorted_order()
     {
         var grid = TypeDefs();
-        var order = grid.Order(grid.Column("Name"), descending: true);
+        var order = MetadataGrids.OrderRows(grid, grid.Column("Name"), descending: true);
 
-        var rows = grid.Filter(order, Filters(grid, "Namespace", new MetadataColumnFilter { Text = "Fixtures" }));
+        var rows = MetadataGrids.FilterRows(grid, order, Filters(grid, "Namespace", new MetadataColumnFilter { Text = "Fixtures" }));
 
         Assert.Equal(order.Where(rows.Contains), rows);
     }
@@ -329,20 +329,20 @@ public sealed class MetadataTests
     public void A_flags_filter_round_trips_through_its_saved_form()
     {
         var schema = FlagsSchemaInferer.For(typeof(System.Reflection.TypeAttributes));
-        var state = new FilterState(schema);
-        state.SetMutexSelection("Visibility", [1u, 2u]);
-        state.SetFlagState("Abstract", TriState.Required);
-        state.IndependentMode = MatchMode.Any;
+        var state = FilterStatePresenter.CreateFilterState(schema);
+        FilterStatePresenter.SetMutexSelection(state, "Visibility", [1u, 2u]);
+        FilterStatePresenter.SetFlagState(state, "Abstract", TriState.Required);
+        FilterStatePresenter.SetIndependentMode(state, MatchMode.Any);
 
-        var saved = state.Save()!;
-        var restored = new FilterState(schema);
-        restored.Restore(saved with { Groups = new(saved.Groups!) { ["Gone"] = [1u] }, Flags = new(saved.Flags!) { ["Missing"] = TriState.Required } });
+        var saved = FilterStatePresenter.SaveFilter(state)!;
+        var restored = FilterStatePresenter.CreateFilterState(schema);
+        FilterStatePresenter.RestoreFilter(restored, saved with { Groups = new(saved.Groups!) { ["Gone"] = [1u] }, Flags = new(saved.Flags!) { ["Missing"] = TriState.Required } });
 
         Assert.Equal(FilterStatePresenter.Describe(state), FilterStatePresenter.Describe(restored));
-        Assert.Equal(MatchMode.Any, restored.IndependentMode);
+        Assert.Equal(MatchMode.Any, restored.Mode);
         Assert.Equal(["Abstract"], saved.Flags!.Keys);
         Assert.Equal(["Visibility"], saved.Groups!.Keys);
-        Assert.Null(new FilterState(schema).Save());
+        Assert.Null(FilterStatePresenter.SaveFilter(FilterStatePresenter.CreateFilterState(schema)));
     }
 
     [Fact]
@@ -350,14 +350,14 @@ public sealed class MetadataTests
     {
         var assembly = Trees.TestAssembly;
         var coff = Grid(Metadata(assembly).Child("COFF Header"));
-        var characteristics = Enumerable.Range(0, coff.RowCount).Single(r => coff.Text(r, coff.Column("Member")) == "Characteristics");
+        var characteristics = Enumerable.Range(0, coff.RowCount).Single(r => MetadataGrids.GetText(coff, r, coff.Column("Member")) == "Characteristics");
 
-        var bits = Assert.Single(coff.Tooltip(characteristics, coff.Column("Value"))!.Groups).Flags;
+        var bits = Assert.Single(MetadataGrids.GetTooltip(coff, characteristics, coff.Column("Value"))!.Groups).Flags;
 
         Assert.False(coff.HasDetails);
         Assert.Equal(16, bits.Count);
         Assert.Contains(new MetadataFlag("File is executable (0002)", true), bits);
-        Assert.Null(coff.Tooltip(0, coff.Column("Value")));
+        Assert.Null(MetadataGrids.GetTooltip(coff, 0, coff.Column("Value")));
         Assert.False(Grid(Table(assembly, "TypeDef")).HasDetails);
     }
 
@@ -369,8 +369,8 @@ public sealed class MetadataTests
         var grid = Grid(pdb.Table("CustomDebugInformation"));
         var kind = grid.Column("KindString");
 
-        var options = Enumerable.Range(0, grid.RowCount).Single(r => grid.Text(r, kind).StartsWith("Compilation Options"));
-        var table = Assert.IsType<MetadataTableDetails>(grid.Details(options));
+        var options = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
+        var table = Assert.IsType<MetadataTableDetails>(MetadataGrids.GetDetails(grid, options));
 
         Assert.True(grid.HasDetails);
         Assert.Equal(["Name", "Value"], table.Headers);
@@ -383,7 +383,7 @@ public sealed class MetadataTests
         return Enumerable.Range(0, grid.RowCount).Select(r => (Hex(grid, r, first), Hex(grid, r, second))).ToArray();
     }
 
-    private static int Hex(MetadataGrid grid, int row, string column) => Convert.ToInt32(grid.Text(row, grid.Column(column)), 16);
+    private static int Hex(MetadataGrid grid, int row, string column) => Convert.ToInt32(MetadataGrids.GetText(grid, row, grid.Column(column)), 16);
 
     private static int Token(EntityHandle handle) => MetadataTokens.GetToken(handle);
 
@@ -424,7 +424,7 @@ public sealed class MetadataTests
         for (var row = 0; row < layouts.RowCount; row++)
         {
             var layout = md.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.EntityHandle(Hex(layouts, row, "Parent"))).GetLayout();
-            Assert.Equal((int.Parse(layouts.Text(row, layouts.Column("PackingSize"))), int.Parse(layouts.Text(row, layouts.Column("ClassSize")))), (layout.PackingSize, layout.Size));
+            Assert.Equal((int.Parse(MetadataGrids.GetText(layouts, row, layouts.Column("PackingSize"))), int.Parse(MetadataGrids.GetText(layouts, row, layouts.Column("ClassSize")))), (layout.PackingSize, layout.Size));
         }
     }
 
@@ -459,10 +459,10 @@ public sealed class MetadataTests
         Assert.Equal(2, log.RowCount);
         Assert.Equal(type, Hex(log, 0, "Handle"));
         Assert.Equal((int)EditAndContinueOperation.AddMethod, Hex(log, 1, "FuncCode"));
-        Assert.Equal(nameof(EditAndContinueOperation.AddMethod), log.Tooltip(1, log.Column("FuncCode"))!.Text);
+        Assert.Equal(nameof(EditAndContinueOperation.AddMethod), MetadataGrids.GetTooltip(log, 1, log.Column("FuncCode"))!.Text);
         Assert.Equal(1, map.RowCount);
         Assert.Equal(type, Hex(map, 0, "Handle"));
-        Assert.Equal(new MetadataAddress(TableIndex.TypeDef, 0), map.Link(0, map.Column("Handle")));
+        Assert.Equal(new MetadataAddress(TableIndex.TypeDef, 0), MetadataGrids.GetLink(map, 0, map.Column("Handle")));
         Assert.Equal(new MetadataTarget(Table(assembly, "TypeDef"), 0), TestSession.Shared.FindMetadataRow(Table(assembly, "EncMap"), new MetadataAddress(TableIndex.TypeDef, 0)));
     }
 
@@ -500,9 +500,9 @@ public sealed class MetadataTests
             {
                 for (var column = 0; column < grid.Columns.Count; column++)
                 {
-                    grid.Text(row, column);
-                    grid.Tooltip(row, column);
-                    grid.Link(row, column);
+                    MetadataGrids.GetText(grid, row, column);
+                    MetadataGrids.GetTooltip(grid, row, column);
+                    MetadataGrids.GetLink(grid, row, column);
                 }
             }
         }

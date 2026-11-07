@@ -11,10 +11,10 @@ namespace ILSight.Core.Metadata;
 
 /// <summary>One column of a <see cref="GridSchema"/>: its cell value and tooltip, read from a row
 /// and its 1-based RID.</summary>
-internal sealed record GridColumn(MetadataColumn Column, string? Format, Func<object, int, object?> Value, Func<object, int, object?>? Tooltip);
+public sealed record GridColumn(MetadataColumn Column, string? Format, Func<object, int, object?> Value, Func<object, int, object?>? Tooltip);
 
 /// <summary>What a <see cref="MetadataGrid"/> lists: its columns, and how to read its rows.</summary>
-internal abstract class GridSchema(string key, TableIndex? table)
+public abstract class GridSchema(string key, TableIndex? table)
 {
     private readonly List<GridColumn> _columns = [];
 
@@ -96,7 +96,7 @@ internal abstract class GridSchema(string key, TableIndex? table)
 
 /// <summary>A <see cref="GridSchema"/> over rows of <typeparamref name="TRow"/>, built a column at a
 /// time. A table's starts with its RID and Token.</summary>
-internal sealed class GridSchema<TRow> : GridSchema
+public sealed class GridSchema<TRow> : GridSchema
 {
     private readonly MetadataFile _file;
     private readonly Func<IEnumerable<TRow>> _rows;

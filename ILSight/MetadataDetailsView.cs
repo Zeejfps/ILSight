@@ -21,7 +21,7 @@ internal static class MetadataDetailsView
         if (!grid.HasDetails) return 0f;
         var theme = ui.Theme;
         var padding = theme.GapTight * 2;
-        switch (grid.Details(row))
+        switch (MetadataGrids.GetDetails(grid, row))
         {
             case MetadataTextDetails text:
                 var size = MeasureText(texts, row, text.Text);
@@ -78,7 +78,7 @@ internal static class MetadataDetailsView
             Background = theme.Surface,
         });
         using var scope = ui.Id(row);
-        switch (grid.Details(row))
+        switch (MetadataGrids.GetDetails(grid, row))
         {
             case MetadataTextDetails text:
                 Text(ui, grid, texts, row, text);

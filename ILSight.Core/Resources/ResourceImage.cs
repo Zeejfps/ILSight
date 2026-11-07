@@ -10,84 +10,80 @@ namespace ILSight.Core.Resources;
 /// it was stored in. An SVG keeps its shapes too, to be drawn again at another size.</summary>
 public sealed class ResourceImage
 {
-    private readonly SvgDocument? _shapes;
-
-    internal ResourceImage(int width, int height, byte[] rgba, string format, SvgDocument? shapes = null)
-    {
-        Width = width;
-        Height = height;
-        Rgba = rgba;
-        Format = format;
-        _shapes = shapes;
-    }
+    /// <summary>The shapes it is drawn from, for a picture that is drawn from shapes.</summary>
+    public SvgDocument? Shapes { get; init; }
 
     /// <summary>Whether it is drawn from shapes, so stays sharp at any size, and is stored as
     /// markup that can be shown instead.</summary>
-    public bool IsVector => _shapes != null;
+    public bool IsVector => Shapes != null;
 
-    public int Width { get; }
+    public required int Width { get; init; }
 
-    public int Height { get; }
+    public required int Height { get; init; }
 
-    public byte[] Rgba { get; }
+    public required byte[] Rgba { get; init; }
 
     /// <summary>What it was stored as: PNG, JPEG, BMP, GIF, ICO, CUR or SVG.</summary>
-    public string Format { get; }
+    public required string Format { get; init; }
+}
 
+/// <summary>Decoding pictures into pixels, and drawing them at other sizes.</summary>
+public static class ResourceImages
+{
     /// <summary>The picture at <paramref name="scale"/> times its size: drawn again from its shapes
     /// when it has them, so it stays sharp; else this picture, to be stretched.</summary>
-    public ResourceImage DrawnAt(float scale)
+    public static ResourceImage DrawAt(ResourceImage image, float scale)
     {
-        if (_shapes == null)
-            return this;
-        return SvgPicture.Rasterize(_shapes, Width * scale, Height * scale);
+        if (image.Shapes == null)
+            return image;
+        return SvgPicture.Rasterize(image.Shapes, image.Width * scale, image.Height * scale);
     }
 
     /// <summary>The picture shrunk to fit a square <paramref name="side"/> pixels across, keeping its
     /// aspect: drawn again from its shapes when it has them, else each pixel the average of those it
     /// covers. A picture that fits already is itself.</summary>
-    public ResourceImage FitInto(int side)
+    public static ResourceImage FitInto(ResourceImage image, int side)
     {
-        var longest = Math.Max(Width, Height);
+        var longest = Math.Max(image.Width, image.Height);
         if (longest <= side)
-            return this;
+            return image;
         var scale = (float)side / longest;
-        if (_shapes != null)
-            return DrawnAt(scale);
-        var width = Math.Max(1, (int)MathF.Round(Width * scale));
-        var height = Math.Max(1, (int)MathF.Round(Height * scale));
-        return new ResourceImage(width, height, AverageInto(width, height), Format);
+        if (image.Shapes != null)
+            return DrawAt(image, scale);
+        var width = Math.Max(1, (int)MathF.Round(image.Width * scale));
+        var height = Math.Max(1, (int)MathF.Round(image.Height * scale));
+        return new ResourceImage { Width = width, Height = height, Rgba = AverageOver(image, width, height), Format = image.Format };
     }
 
-    private byte[] AverageInto(int width, int height)
+    private static byte[] AverageOver(ResourceImage image, int width, int height)
     {
         var rgba = new byte[width * height * 4];
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)
-                AverageCell(rgba, x, y, width, height);
+                AverageOverCell(image, rgba, x, y, width, height);
         }
         return rgba;
     }
 
     /// <summary>Gives pixel <paramref name="x"/>, <paramref name="y"/> of the shrunk picture the average
     /// of the pixels it covers, their colors weighed by their alpha so clear pixels lend no color.</summary>
-    private void AverageCell(byte[] target, int x, int y, int width, int height)
+    private static void AverageOverCell(ResourceImage image, byte[] target, int x, int y, int width, int height)
     {
-        var left = x * Width / width;
-        var right = Math.Max(left + 1, (x + 1) * Width / width);
-        var top = y * Height / height;
-        var bottom = Math.Max(top + 1, (y + 1) * Height / height);
+        var left = x * image.Width / width;
+        var right = Math.Max(left + 1, (x + 1) * image.Width / width);
+        var top = y * image.Height / height;
+        var bottom = Math.Max(top + 1, (y + 1) * image.Height / height);
         long red = 0, green = 0, blue = 0, alpha = 0;
         for (var sy = top; sy < bottom; sy++)
         {
             for (var sx = left; sx < right; sx++)
             {
-                var at = (sy * Width + sx) * 4;
-                var a = Rgba[at + 3];
-                red += Rgba[at] * a;
-                green += Rgba[at + 1] * a;
-                blue += Rgba[at + 2] * a;
+                var at = (sy * image.Width + sx) * 4;
+                var a = image.Rgba[at + 3];
+                red += image.Rgba[at] * a;
+                green += image.Rgba[at + 1] * a;
+                blue += image.Rgba[at + 2] * a;
                 alpha += a;
             }
         }
@@ -103,20 +99,20 @@ public sealed class ResourceImage
 
     /// <summary>Whether the picture is dark marks on a see-through background, which a dark backdrop
     /// would hide: a good share of it clear, and what shows mostly dark.</summary>
-    public bool IsDarkOnClear()
+    public static bool IsDarkOnClear(ResourceImage image)
     {
         long shown = 0;
         long clear = 0;
         var luminance = 0.0;
-        for (var at = 0; at < Rgba.Length; at += 4)
+        for (var at = 0; at < image.Rgba.Length; at += 4)
         {
-            if (Rgba[at + 3] < ClearAlpha)
+            if (image.Rgba[at + 3] < ClearAlpha)
             {
                 clear++;
                 continue;
             }
             shown++;
-            luminance += LuminanceAt(at);
+            luminance += GetLuminanceAt(image, at);
         }
         if (shown == 0)
             return false;
@@ -129,29 +125,34 @@ public sealed class ResourceImage
     private const double MinClearShare = 0.2;
     private const double MaxDarkLuminance = 0.3;
 
-    private double LuminanceAt(int at) => (0.2126 * Rgba[at] + 0.7152 * Rgba[at + 1] + 0.0722 * Rgba[at + 2]) / 255.0;
+    private static double GetLuminanceAt(ResourceImage image, int at)
+    {
+        return (0.2126 * image.Rgba[at] + 0.7152 * image.Rgba[at + 1] + 0.0722 * image.Rgba[at + 2]) / 255.0;
+    }
 
     /// <summary>The formats ILSpy shows as pictures, by the file extension of the resource name.</summary>
-    internal static bool IsImageName(string name) =>
-        Path.GetExtension(name).ToLowerInvariant() is ".png" or ".jpg" or ".jpeg" or ".bmp" or ".gif" or ".ico" or ".cur" or ".svg";
+    internal static bool IsImageName(string name)
+    {
+        return Path.GetExtension(name).ToLowerInvariant() is ".png" or ".jpg" or ".jpeg" or ".bmp" or ".gif" or ".ico" or ".cur" or ".svg";
+    }
 
     /// <summary>The picture in <paramref name="data"/>, recognized by its content rather than its
     /// name. Throws <see cref="InvalidDataException"/> when it is no picture this can decode.</summary>
-    internal static ResourceImage Decode(byte[] data)
+    internal static ResourceImage DecodeImage(byte[] data)
     {
         try
         {
             ReadOnlySpan<byte> span = data;
             if (span.StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G']))
-                return Png(data);
+                return DecodePng(data);
             if (span.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8]))
-                return Jpeg(data);
+                return DecodeJpeg(data);
             if (span.StartsWith("BM"u8))
-                return Bitmap(span, "BMP");
+                return DecodeBitmap(span, "BMP");
             if (span.StartsWith("GIF8"u8))
                 return Gif.Decode(span);
             if (span.Length >= 6 && span[0] == 0 && span[1] == 0 && span[2] is 1 or 2)
-                return Icon(span);
+                return DecodeIcon(span);
             if (SvgPicture.IsSvg(data))
                 return SvgPicture.Rasterize(data);
         }
@@ -162,7 +163,7 @@ public sealed class ResourceImage
         throw new InvalidDataException("This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.");
     }
 
-    private static ResourceImage Png(byte[] data)
+    private static ResourceImage DecodePng(byte[] data)
     {
         var png = PngSharp.Api.Png.DecodeFromByteArray(data);
         var ihdr = png.Ihdr;
@@ -220,7 +221,7 @@ public sealed class ResourceImage
             rgba[i * 4 + 2] = b;
             rgba[i * 4 + 3] = a;
         }
-        return new ResourceImage(width, height, rgba, "PNG");
+        return new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = "PNG" };
 
         static int Raw(byte[] src, int at, bool wide) => wide ? src[at] << 8 | src[at + 1] : src[at];
 
@@ -233,17 +234,17 @@ public sealed class ResourceImage
             };
     }
 
-    private static ResourceImage Jpeg(byte[] data)
+    private static ResourceImage DecodeJpeg(byte[] data)
     {
         var jpeg = JpegSharp.Api.Jpeg.DecodeAnyPrecision(data);
         var pixels = jpeg.ToRgba8888();
         var rgba = new byte[pixels.Length * 4];
         for (var i = 0; i < pixels.Length; i++)
             BinaryPrimitives.WriteInt32BigEndian(rgba.AsSpan(i * 4), pixels[i]);
-        return new ResourceImage(jpeg.Width, jpeg.Height, rgba, "JPEG");
+        return new ResourceImage { Width = jpeg.Width, Height = jpeg.Height, Rgba = rgba, Format = "JPEG" };
     }
 
-    private static ResourceImage Icon(ReadOnlySpan<byte> data)
+    private static ResourceImage DecodeIcon(ReadOnlySpan<byte> data)
     {
         var format = data[2] == 2 ? "CUR" : "ICO";
         var count = BinaryPrimitives.ReadUInt16LittleEndian(data[4..]);
@@ -263,21 +264,21 @@ public sealed class ResourceImage
         var payload = data.Slice(offset, size);
         if (payload.StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G']))
         {
-            var png = Png(payload.ToArray());
-            return new ResourceImage(png.Width, png.Height, png.Rgba, format);
+            var png = DecodePng(payload.ToArray());
+            return new ResourceImage { Width = png.Width, Height = png.Height, Rgba = png.Rgba, Format = format };
         }
-        return Dib(payload, format, isIcon: true);
+        return DecodeDib(payload, format, isIcon: true);
     }
 
-    private static ResourceImage Bitmap(ReadOnlySpan<byte> data, string format)
+    private static ResourceImage DecodeBitmap(ReadOnlySpan<byte> data, string format)
     {
         var pixels = BinaryPrimitives.ReadInt32LittleEndian(data[10..]);
-        return Dib(data[14..], format, isIcon: false, pixelOffset: pixels - 14);
+        return DecodeDib(data[14..], format, isIcon: false, pixelOffset: pixels - 14);
     }
 
     /// <summary>A device-independent bitmap: a BMP after its file header, or a picture of an icon,
     /// whose height counts its AND mask too.</summary>
-    private static ResourceImage Dib(ReadOnlySpan<byte> dib, string format, bool isIcon, int pixelOffset = -1)
+    private static ResourceImage DecodeDib(ReadOnlySpan<byte> dib, string format, bool isIcon, int pixelOffset = -1)
     {
         var headerSize = BinaryPrimitives.ReadInt32LittleEndian(dib);
         int width, height, bits, compression = 0, colors = 0;
@@ -390,7 +391,7 @@ public sealed class ResourceImage
                 }
             }
         }
-        return new ResourceImage(width, height, rgba, format);
+        return new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = format };
 
         static byte Channel(uint value, uint mask)
         {
@@ -465,7 +466,7 @@ public sealed class ResourceImage
                             rgba[pixel + 2] = palette[index * 3 + 2];
                             rgba[pixel + 3] = 255;
                         }
-                        return new ResourceImage(width, height, rgba, "GIF");
+                        return new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = "GIF" };
                     default:
                         throw new InvalidDataException("The GIF has no picture.");
                 }

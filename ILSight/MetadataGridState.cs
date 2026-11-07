@@ -104,7 +104,7 @@ public sealed class MetadataGridState
     {
         Descending = SortColumn == column && !Descending;
         SortColumn = column;
-        Order = Grid.Order(column, Descending);
+        Order = MetadataGrids.OrderRows(Grid, column, Descending);
         if (Selected != None)
             Pending = new PendingGridScroll.Reveal(Selected);
     }
@@ -137,7 +137,7 @@ public sealed class MetadataGridState
         if (key == ViewKey) return;
         var selected = Selected;
         ViewKey = key;
-        View = Grid.Filter(Order, Filters);
+        View = MetadataGrids.FilterRows(Grid, Order, Filters);
         KeepSelected(selected);
     }
 
@@ -220,7 +220,7 @@ public sealed class MetadataGridState
     /// the cell grown downward to show every line, which leaves the rows above where they were.</summary>
     internal void Expand(int row, int column)
     {
-        var lines = Grid.Text(row, column).Count(static ch => ch == '\n') + 1;
+        var lines = MetadataGrids.GetText(Grid, row, column).Count(static ch => ch == '\n') + 1;
         Open[(row, column)] = lines;
     }
 
@@ -235,8 +235,8 @@ public sealed class MetadataGridState
     {
         if (row < 0) return "";
         if (column < 0) return "";
-        if (IsOpenAt(row, column)) return Grid.Text(row, column);
-        return Grid.Lines(row, column).FirstLine;
+        if (IsOpenAt(row, column)) return MetadataGrids.GetText(Grid, row, column);
+        return MetadataGrids.GetLines(Grid, row, column).FirstLine;
     }
 
     /// <summary>What copying takes: the current cell's text, or the whole row's without one.</summary>
@@ -248,13 +248,13 @@ public sealed class MetadataGridState
 
     /// <summary>What copying the current cell takes: the part of its text selected, else all of it,
     /// lines hidden while it is closed included.</summary>
-    internal string CellText() => Cell.Copied(ShownText, Grid.Text(Selected, CurrentColumn));
+    internal string CellText() => Cell.Copied(ShownText, MetadataGrids.GetText(Grid, Selected, CurrentColumn));
 
     internal string RowText(int row)
     {
         var grid = Grid;
         var cells = Enumerable.Range(0, grid.Columns.Count)
-            .Select(c => grid.Text(row, c));
+            .Select(c => MetadataGrids.GetText(grid, row, c));
         return string.Join('\t', cells);
     }
 

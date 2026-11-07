@@ -30,7 +30,7 @@ public sealed class ResourceEntryInfo
     public required ResourceSource Source { get; init; }
 
     /// <summary>Whether it is shown as a picture: named as a picture is, and no BAML.</summary>
-    public bool IsImage => Source is not ResourceSource.Baml && ResourceImage.IsImageName(Name);
+    public bool IsImage => Source is not ResourceSource.Baml && ResourceImages.IsImageName(Name);
 
     public string Description => Source switch
     {

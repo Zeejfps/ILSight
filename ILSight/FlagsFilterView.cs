@@ -34,7 +34,7 @@ internal static class FlagsFilterView
         {
             ui.Text(t.MetadataFilterHint, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
             if (ui.Button(t.MetadataFilterClear, id: "clear"))
-                filter.Clear();
+                FilterStatePresenter.ClearFilter(filter);
         }
     }
 
@@ -105,7 +105,7 @@ internal static class FlagsFilterView
                 var chip = chips[i];
                 var on = IsOn(chip, selection);
                 if (Chip(ui, chip.Label, on, i))
-                    filter.SetMutexSelection(group.Name, Pick(group, selection, chip.Value, shift));
+                    FilterStatePresenter.SetMutexSelection(filter, group.Name, Pick(group, selection, chip.Value, shift));
             }
         }
     }
@@ -192,10 +192,10 @@ internal static class FlagsFilterView
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
             ui.Text(t.MetadataFilterRequired, color: theme.Text, size: theme.FontSizeSmall, bold: true);
-            var mode = filter.IndependentMode;
+            var mode = filter.Mode;
             ReadOnlySpan<Segment<MatchMode>> modes = [new Segment<MatchMode>(MatchMode.All, t.MetadataFilterAll), new Segment<MatchMode>(MatchMode.Any, t.MetadataFilterAny)];
             if (ui.SegmentedControl("mode", ref mode, modes))
-                filter.IndependentMode = mode;
+                FilterStatePresenter.SetIndependentMode(filter, mode);
         }
     }
 
@@ -204,7 +204,7 @@ internal static class FlagsFilterView
         var theme = ui.Theme;
         var current = filter.FlagStates.GetValueOrDefault(flag);
         if (Pill(ui, current))
-            filter.SetFlagState(flag, Next(current));
+            FilterStatePresenter.SetFlagState(filter, flag, Next(current));
         var color = current == TriState.DontCare ? theme.TextMuted : theme.Text;
         ui.Text(flag, color: color, size: theme.FontSizeSmall);
     }

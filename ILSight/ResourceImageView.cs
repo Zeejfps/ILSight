@@ -106,7 +106,7 @@ internal static class ResourceImageView
         var uploaded = ui.GetState<Uploaded>(ui.GetId(imageId));
         if (!NeedsUpload(ui, imageId, uploaded, image, scale))
             return;
-        var drawn = image.DrawnAt(scale);
+        var drawn = ResourceImages.DrawAt(image, scale);
         ui.SetImage(imageId, drawn.Width, drawn.Height, drawn.Rgba);
         uploaded.Image = image;
         uploaded.Scale = scale;

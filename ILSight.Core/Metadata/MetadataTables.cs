@@ -550,14 +550,14 @@ internal static class MetadataTables
     internal static MetadataTableInfo CreateGridPart(LoadedModule module, MetadataFile file, string title, MetadataPartKey key, MetadataGridRole role,
         GridSchema schema)
     {
-        return new MetadataTableInfo { Module = module, File = file, Title = title, Key = key, Part = new MetadataPart.Grid(role, schema, new Lazy<MetadataGrid>(() => new MetadataGrid(title, module, file, schema))) };
+        return new MetadataTableInfo { Module = module, File = file, Title = title, Key = key, Part = new MetadataPart.Grid(role, schema, new Lazy<MetadataGrid>(() => MetadataGrids.CreateGrid(title, module, file, schema))) };
     }
 
     internal static MetadataTableInfo CreateDebugDirectoryPart(LoadedModule module, PEFile file)
     {
         const string title = "Debug Directory";
         var schema = PEHeaderEntries.DebugDirectory(file);
-        return new MetadataTableInfo { Module = module, File = file, Title = title, Key = new MetadataPartKey.DebugDirectory(), Part = new MetadataPart.DebugDirectory(file, new Lazy<MetadataGrid>(() => new MetadataGrid(title, module, file, schema))) };
+        return new MetadataTableInfo { Module = module, File = file, Title = title, Key = new MetadataPartKey.DebugDirectory(), Part = new MetadataPart.DebugDirectory(file, new Lazy<MetadataGrid>(() => MetadataGrids.CreateGrid(title, module, file, schema))) };
     }
 
     internal static MetadataTableInfo CreateRowCountPart(LoadedModule module, MetadataFile file, TableIndex table, int rows)

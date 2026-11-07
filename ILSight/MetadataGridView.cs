@@ -51,9 +51,9 @@ public static class MetadataGridWidget
         var schema = grid.Columns[column].Flags;
         if (schema == null)
             throw new ArgumentException($"{key} is not a flags column.", nameof(column));
-        state = new FilterState(schema);
+        state = FilterStatePresenter.CreateFilterState(schema);
         if (filters.Saved.TryGetValue(key, out var saved))
-            state.Restore(saved);
+            FilterStatePresenter.RestoreFilter(state, saved);
         filters.States.Add(key, state);
         return state;
     }
@@ -68,7 +68,7 @@ public static class MetadataGridWidget
     {
         foreach (var (key, state) in filters.States)
         {
-            var saved = state.Save();
+            var saved = FilterStatePresenter.SaveFilter(state);
             if (saved != null)
                 filters.Saved[key] = saved;
             else
@@ -287,7 +287,7 @@ internal ref struct MetadataGridFrame
         }
         var width = Ui.MeasureText(column.Name, theme.FontSizeSmall) + theme.IconSize * 2 + theme.GapTight * 2;
         for (var row = 0; row < rows; row++)
-            width = MathF.Max(width, Ui.MeasureText(Grid.Text(row, c), size, family: family));
+            width = MathF.Max(width, Ui.MeasureText(MetadataGrids.GetText(Grid, row, c), size, family: family));
         return width;
     }
 
@@ -334,7 +334,7 @@ internal ref struct MetadataGridFrame
                     State.CollapseCurrent();
                     State.SelectAllText();
                     continue;
-                case (0, KeyboardKey.Space) when State.HasCurrentCell && Grid.Lines(State.Selected, State.CurrentColumn).MoreLines > 0:
+                case (0, KeyboardKey.Space) when State.HasCurrentCell && MetadataGrids.GetLines(Grid, State.Selected, State.CurrentColumn).MoreLines > 0:
                     State.Expand(State.Selected, State.CurrentColumn);
                     State.SelectAllText();
                     continue;
@@ -345,7 +345,7 @@ internal ref struct MetadataGridFrame
                 State.SelectAllText();
             else if (Ui.IsPressedAt(Shortcuts.GoToToken, i))
             {
-                var target = Grid.Link(State.Selected, State.CurrentColumn);
+                var target = MetadataGrids.GetLink(Grid, State.Selected, State.CurrentColumn);
                 if (target != null)
                     result = new MetadataGridResult(target, null, false);
             }
@@ -440,7 +440,7 @@ internal ref struct MetadataGridFrame
     {
         if (State.IsOpenAt(row, column))
             return false;
-        return Grid.Lines(row, column).MoreLines > 0;
+        return MetadataGrids.GetLines(Grid, row, column).MoreLines > 0;
     }
 
     /// <summary>Does what the user asked of the rows this frame: open, copy or show the menu.</summary>
@@ -456,7 +456,7 @@ internal ref struct MetadataGridFrame
 
     private void OpenDefinition(int row, bool inNewTab)
     {
-        var definition = Grid.Definition(row);
+        var definition = MetadataGrids.FindDefinition(Grid, row);
         if (definition == null) return;
         _result = new MetadataGridResult(null, definition, inNewTab);
     }
@@ -466,7 +466,7 @@ internal ref struct MetadataGridFrame
         var theme = Ui.Theme;
         var column = Grid.Columns[c];
         var cellId = cells.CellAt(c).Id;
-        var target = column.IsToken ? Grid.Link(row, c) : null;
+        var target = column.IsToken ? MetadataGrids.GetLink(Grid, row, c) : null;
         var expanded = State.IsOpenAt(row, c);
         uint? color = theme.Text;
         UiIcon? link = null;
@@ -494,7 +494,7 @@ internal ref struct MetadataGridFrame
     /// <summary>How many lines a closed multi-line cell hides, as its suffix; null for a single line.</summary>
     private string? MoreLines(int row, int column, int cellId)
     {
-        var more = Grid.Lines(row, column).MoreLines;
+        var more = MetadataGrids.GetLines(Grid, row, column).MoreLines;
         if (more == 0) return null;
         var t = Strings;
         using (Ui.Id(cellId))
@@ -504,7 +504,7 @@ internal ref struct MetadataGridFrame
     private void Tooltip(int row, int column, int cellId)
     {
         if (!Ui.IsHovered(cellId)) return;
-        var content = Grid.Tooltip(row, column);
+        var content = MetadataGrids.GetTooltip(Grid, row, column);
         if (content == null) return;
         using var tooltip = Ui.TooltipContent(cellId);
         if (!tooltip.IsOpen) return;
@@ -524,8 +524,8 @@ internal ref struct MetadataGridFrame
             Ui.ClipboardText = State.CellText();
         if (Ui.MenuItem(Strings.MetadataCopyRow, id: "copy-row"))
             Ui.ClipboardText = State.RowText(row);
-        var target = column >= 0 ? Grid.Link(row, column) : null;
-        var definition = Grid.Definition(row);
+        var target = column >= 0 ? MetadataGrids.GetLink(Grid, row, column) : null;
+        var definition = MetadataGrids.FindDefinition(Grid, row);
         if (target == null && definition == null) return null;
         Ui.MenuSeparator();
         if (target != null && Ui.MenuItem(Strings.MetadataGoToToken, Shortcuts.GoToToken, id: "go-to-token"))

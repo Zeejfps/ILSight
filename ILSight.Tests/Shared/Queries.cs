@@ -117,7 +117,7 @@ internal static class MetadataQueries
         var column = grid.Column("Name");
         for (var row = 0; row < grid.RowCount; row++)
         {
-            if (grid.Text(row, column) == name) return row;
+            if (MetadataGrids.GetText(grid, row, column) == name) return row;
         }
         throw new InvalidOperationException($"No row named {name}");
     }

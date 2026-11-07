@@ -37,7 +37,7 @@ internal static class SvgPicture
         var widthPx = WholePixels(width * scale);
         var heightPx = WholePixels(height * scale);
         var rgba = document.Rasterize(widthPx, heightPx);
-        return new ResourceImage(widthPx, heightPx, rgba, Format, document);
+        return new ResourceImage { Width = widthPx, Height = heightPx, Rgba = rgba, Format = Format, Shapes = document };
     }
 
     private static string ReadText(byte[] data)

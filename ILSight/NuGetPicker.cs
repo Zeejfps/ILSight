@@ -653,7 +653,7 @@ public static class NuGetPicking
     {
         if (pixels == null)
             return;
-        icon.Shown = new ShownIcon(icon.ImageId, pixels, pixels.IsDarkOnClear());
+        icon.Shown = new ShownIcon(icon.ImageId, pixels, ResourceImages.IsDarkOnClear(pixels));
     }
 
     private static async Task FetchIconAsync(NuGetPicker picker, NuGetSetup setup, WebUrl url, PackageIcon icon)
