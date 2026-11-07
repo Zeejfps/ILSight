@@ -1,3 +1,4 @@
+using static ILSight.Core.Metadata.GridSchemas;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
 using System;
@@ -26,12 +27,14 @@ namespace ILSight.Core.Metadata
 		public static GridSchema Optional(PEFile module) => Header("Optional Header", module, () => OptionalEntries(module));
 
 		static GridSchema<Entry> Header(string key, PEFile module, Func<IEnumerable<Entry>> rows) =>
-			new GridSchema<Entry>(key, module, rows)
-				.Value("Member", e => e.Member)
-				.Value("Offset", e => e.Offset)
-				.Value("Size", e => e.Size)
-				.Value("Value", e => e.Value, tooltip: e => e.Flags == null ? null : FilterStatePresenter.Explain(e.Flags, Convert.ToUInt32(e.Value)))
-				.Value("Meaning", e => e.Meaning);
+			AddColumns(CreateGrid<Entry>(key, module, rows), columns =>
+			{
+				AddValue(columns, "Member", e => e.Member);
+				AddValue(columns, "Offset", e => e.Offset);
+				AddValue(columns, "Size", e => e.Size);
+				AddValue(columns, "Value", e => e.Value, tooltip: e => e.Flags == null ? null : FilterStatePresenter.Explain(e.Flags, Convert.ToUInt32(e.Value)));
+				AddValue(columns, "Meaning", e => e.Meaning);
+			});
 
 		static readonly FlagsSchema CharacteristicsBits = Bits(typeof(Characteristics), [
 			"Relocation info stripped from file",
@@ -197,11 +200,13 @@ namespace ILSight.Core.Metadata
 				("Delay Import Descriptor", header.DelayImportTableDirectory),
 				("CLI Header", header.CorHeaderTableDirectory),
 			];
-			return new GridSchema<(string Name, DirectoryEntry Entry)>("Data Directories", module, () => rows)
-				.Value("Name", r => r.Name)
-				.Value("RVA", r => r.Entry.RelativeVirtualAddress, "X8")
-				.Value("Size", r => r.Entry.Size, "X8")
-				.Value("Section", r => headers.GetContainingSectionIndex(r.Entry.RelativeVirtualAddress) is >= 0 and var index ? headers.SectionHeaders[index].Name : "");
+			return AddColumns(CreateGrid<(string Name, DirectoryEntry Entry)>("Data Directories", module, () => rows), columns =>
+			{
+				AddValue(columns, "Name", r => r.Name);
+				AddValue(columns, "RVA", r => r.Entry.RelativeVirtualAddress, "X8");
+				AddValue(columns, "Size", r => r.Entry.Size, "X8");
+				AddValue(columns, "Section", r => headers.GetContainingSectionIndex(r.Entry.RelativeVirtualAddress) is >= 0 and var index ? headers.SectionHeaders[index].Name : "");
+			});
 		}
 
 		/// <summary>
@@ -211,19 +216,21 @@ namespace ILSight.Core.Metadata
 		public static GridSchema DebugDirectory(PEFile module)
 		{
 			var reader = module.Reader;
-			return new GridSchema<DebugDirectoryEntry>("Debug Directory", module, () => reader.ReadDebugDirectory())
-				.Value("Timestamp", e => e.Stamp)
-				.Value("MajorVersion", e => e.MajorVersion)
-				.Value("MinorVersion", e => e.MinorVersion)
-				.Value("Type", e => e.Type.ToString())
-				.Value("SizeOfRawData", e => e.DataSize)
-				.Value("AddressOfRawData", e => e.DataRelativeVirtualAddress, "X8")
-				.Value("PointerToRawData", e => e.DataPointer, "X8")
-				.Value("RawData", e =>
+			return AddColumns(CreateGrid<DebugDirectoryEntry>("Debug Directory", module, () => reader.ReadDebugDirectory()), columns =>
+			{
+				AddValue(columns, "Timestamp", e => e.Stamp);
+				AddValue(columns, "MajorVersion", e => e.MajorVersion);
+				AddValue(columns, "MinorVersion", e => e.MinorVersion);
+				AddValue(columns, "Type", e => e.Type.ToString());
+				AddValue(columns, "SizeOfRawData", e => e.DataSize);
+				AddValue(columns, "AddressOfRawData", e => e.DataRelativeVirtualAddress, "X8");
+				AddValue(columns, "PointerToRawData", e => e.DataPointer, "X8");
+				AddValue(columns, "RawData", e =>
 				{
 					var data = reader.GetEntireImage().GetContent(reader.IsLoadedImage ? e.DataRelativeVirtualAddress : e.DataPointer, e.DataSize);
 					return data.ToHexString(data.Length);
 				});
+			});
 		}
 	}
 

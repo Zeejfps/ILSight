@@ -1,3 +1,4 @@
+using static ILSight.Core.Metadata.GridSchemas;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
@@ -25,7 +26,7 @@ internal static class MetadataTables
     {
         var m = file.Metadata;
 
-        GridSchema<T> Table<T>(Func<IEnumerable<T>> rows) => new(table, file, rows);
+        GridSchema<T> Table<T>(Func<IEnumerable<T>> rows) => CreateTable(table, file, rows);
 
         IEnumerable<int> Rids() => Enumerable.Range(1, m.GetTableRowCount(table));
 
@@ -39,180 +40,267 @@ internal static class MetadataTables
 
         return table switch
         {
-            TableIndex.Module => Table<ModuleDefinition>(() => [m.GetModuleDefinition()]).Offset()
-                .Value("Generation", r => r.Generation)
-                .Name(r => r.Name)
-                .Guid("Mvid", r => r.Mvid, r => m.GetGuid(r.Mvid).ToString())
-                .Guid("GenerationId", r => r.GenerationId)
-                .Guid("BaseGenerationId", r => r.BaseGenerationId),
+            TableIndex.Module => AddColumns(Table<ModuleDefinition>(() => [m.GetModuleDefinition()]), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Generation", r => r.Generation);
+                AddName(columns, r => r.Name);
+                AddGuid(columns, "Mvid", r => r.Mvid, r => m.GetGuid(r.Mvid).ToString());
+                AddGuid(columns, "GenerationId", r => r.GenerationId);
+                AddGuid(columns, "BaseGenerationId", r => r.BaseGenerationId);
+            }),
 
-            TableIndex.TypeRef => Table(() => m.TypeReferences.Select(m.GetTypeReference)).Offset()
-                .Handle("ResolutionScope", r => r.ResolutionScope)
-                .Name(r => r.Name)
-                .String("Namespace", r => r.Namespace),
+            TableIndex.TypeRef => AddColumns(Table(() => m.TypeReferences.Select(m.GetTypeReference)), columns =>
+            {
+                AddOffset(columns);
+                AddHandle(columns, "ResolutionScope", r => r.ResolutionScope);
+                AddName(columns, r => r.Name);
+                AddString(columns, "Namespace", r => r.Namespace);
+            }),
 
-            TableIndex.TypeDef => Table(() => m.GetTypeDefListColumns().Select(c => (Type: m.GetTypeDefinition(c.Type), c.FieldList, c.MethodList))).Offset()
-                .Value("Attributes", r => r.Type.Attributes, "X8")
-                .Name(r => r.Type.Name)
-                .String("Namespace", r => r.Type.Namespace)
-                .Handle("BaseType", r => r.Type.BaseType, r => BaseTypeTooltip(file, r.Type.BaseType))
-                .List("FieldList", TableIndex.Field, r => r.FieldList, r => r.Type.GetFields().FirstOrDefault(),
-                    "(type has no fields; the stored value is the start of its empty field list: the next type's first field row, or one past the end of the Field table)")
-                .List("MethodList", TableIndex.MethodDef, r => r.MethodList, r => r.Type.GetMethods().FirstOrDefault(),
-                    "(type has no methods; the stored value is the start of its empty method list: the next type's first method row, or one past the end of the MethodDef table)"),
+            TableIndex.TypeDef => AddColumns(Table(() => m.GetTypeDefListColumns().Select(c => (Type: m.GetTypeDefinition(c.Type), c.FieldList, c.MethodList))), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.Type.Attributes, "X8");
+                AddName(columns, r => r.Type.Name);
+                AddString(columns, "Namespace", r => r.Type.Namespace);
+                AddHandle(columns, "BaseType", r => r.Type.BaseType, r => BaseTypeTooltip(file, r.Type.BaseType));
+                AddList(columns, "FieldList", TableIndex.Field, r => r.FieldList, r => r.Type.GetFields().FirstOrDefault(),
+                    "(type has no fields; the stored value is the start of its empty field list: the next type's first field row, or one past the end of the Field table)");
+                AddList(columns, "MethodList", TableIndex.MethodDef, r => r.MethodList, r => r.Type.GetMethods().FirstOrDefault(),
+                    "(type has no methods; the stored value is the start of its empty method list: the next type's first method row, or one past the end of the MethodDef table)");
+            }),
 
-            TableIndex.Field => Table(() => m.FieldDefinitions.Select(m.GetFieldDefinition)).Offset()
-                .Value("Attributes", r => r.Attributes, "X8")
-                .Name(r => r.Name)
-                .Signature("Signature", r => r.Signature),
+            TableIndex.Field => AddColumns(Table(() => m.FieldDefinitions.Select(m.GetFieldDefinition)), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                AddName(columns, r => r.Name);
+                AddSignature(columns, "Signature", r => r.Signature);
+            }),
 
-            TableIndex.MethodDef => Table(() => m.GetMethodDefParamLists().Select(c => (Method: m.GetMethodDefinition(c.Method), c.ParamList))).Offset()
-                .Value("Attributes", r => r.Method.Attributes, "X8")
-                .Value("ImplAttributes", r => r.Method.ImplAttributes, "X8")
-                .Value("RVA", r => r.Method.RelativeVirtualAddress, "X8")
-                .Name(r => r.Method.Name)
-                .Signature("Signature", r => r.Method.Signature)
-                .List("ParamList", TableIndex.Param, r => r.ParamList, r => r.Method.GetParameters().FirstOrDefault(),
-                    "(method has no Param rows; the stored value is the start of its empty parameter list: the next method's first Param row, or one past the end of the Param table)"),
+            TableIndex.MethodDef => AddColumns(Table(() => m.GetMethodDefParamLists().Select(c => (Method: m.GetMethodDefinition(c.Method), c.ParamList))), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.Method.Attributes, "X8");
+                AddValue(columns, "ImplAttributes", r => r.Method.ImplAttributes, "X8");
+                AddValue(columns, "RVA", r => r.Method.RelativeVirtualAddress, "X8");
+                AddName(columns, r => r.Method.Name);
+                AddSignature(columns, "Signature", r => r.Method.Signature);
+                AddList(columns, "ParamList", TableIndex.Param, r => r.ParamList, r => r.Method.GetParameters().FirstOrDefault(),
+                    "(method has no Param rows; the stored value is the start of its empty parameter list: the next method's first Param row, or one past the end of the Param table)");
+            }),
 
-            TableIndex.Param => Table(() => Rids().Select(rid => m.GetParameter(MetadataTokens.ParameterHandle(rid)))).Offset()
-                .Value("Attributes", r => r.Attributes, "X8")
-                .Value("Sequence", r => r.SequenceNumber)
-                .Name(r => r.Name),
+            TableIndex.Param => AddColumns(Table(() => Rids().Select(rid => m.GetParameter(MetadataTokens.ParameterHandle(rid)))), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                AddValue(columns, "Sequence", r => r.SequenceNumber);
+                AddName(columns, r => r.Name);
+            }),
 
-            TableIndex.InterfaceImpl => Table(m.GetInterfaceImplRows)
-                .Handle("Class", r => r.Class)
-                .Handle("Interface", r => r.Interface),
+            TableIndex.InterfaceImpl => AddColumns(Table(m.GetInterfaceImplRows), columns =>
+            {
+                AddHandle(columns, "Class", r => r.Class);
+                AddHandle(columns, "Interface", r => r.Interface);
+            }),
 
-            TableIndex.MemberRef => Table(() => m.MemberReferences.Select(m.GetMemberReference)).Offset()
-                .Handle("Parent", r => r.Parent)
-                .Name(r => r.Name)
-                .Signature("Signature", r => r.Signature),
+            TableIndex.MemberRef => AddColumns(Table(() => m.MemberReferences.Select(m.GetMemberReference)), columns =>
+            {
+                AddOffset(columns);
+                AddHandle(columns, "Parent", r => r.Parent);
+                AddName(columns, r => r.Name);
+                AddSignature(columns, "Signature", r => r.Signature);
+            }),
 
-            TableIndex.Constant => Table(() => Rids().Select(rid => m.GetConstant(MetadataTokens.ConstantHandle(rid)))).Offset()
-                .Value("Type", r => r.TypeCode, "X8", r => r.TypeCode.ToString())
-                .Handle("Parent", r => r.Parent)
-                .Blob("Value", r => r.Value, r => ConstantText(m, r)),
+            TableIndex.Constant => AddColumns(Table(() => Rids().Select(rid => m.GetConstant(MetadataTokens.ConstantHandle(rid)))), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Type", r => r.TypeCode, "X8", r => r.TypeCode.ToString());
+                AddHandle(columns, "Parent", r => r.Parent);
+                AddBlob(columns, "Value", r => r.Value, r => ConstantText(m, r));
+            }),
 
-            TableIndex.CustomAttribute => Table(() => m.CustomAttributes.Select(m.GetCustomAttribute)).Offset()
-                .Handle("Parent", r => r.Parent)
-                .Handle("Constructor", r => r.Constructor)
-                .Blob("Value", r => r.Value),
+            TableIndex.CustomAttribute => AddColumns(Table(() => m.CustomAttributes.Select(m.GetCustomAttribute)), columns =>
+            {
+                AddOffset(columns);
+                AddHandle(columns, "Parent", r => r.Parent);
+                AddHandle(columns, "Constructor", r => r.Constructor);
+                AddBlob(columns, "Value", r => r.Value);
+            }),
 
-            TableIndex.FieldMarshal => Table(m.GetFieldMarshals)
-                .Handle("Parent", r => r.Parent)
-                .Blob("NativeType", r => r.NativeType),
+            TableIndex.FieldMarshal => AddColumns(Table(m.GetFieldMarshals), columns =>
+            {
+                AddHandle(columns, "Parent", r => r.Parent);
+                AddBlob(columns, "NativeType", r => r.NativeType);
+            }),
 
-            TableIndex.DeclSecurity => Table(() => m.DeclarativeSecurityAttributes.Select(m.GetDeclarativeSecurityAttribute)).Offset()
-                .Handle("Parent", r => r.Parent)
-                .Value("Action", r => r.Action, "X8", r => r.Action.ToString())
-                .Blob("PermissionSet", r => r.PermissionSet),
+            TableIndex.DeclSecurity => AddColumns(Table(() => m.DeclarativeSecurityAttributes.Select(m.GetDeclarativeSecurityAttribute)), columns =>
+            {
+                AddOffset(columns);
+                AddHandle(columns, "Parent", r => r.Parent);
+                AddValue(columns, "Action", r => r.Action, "X8", r => r.Action.ToString());
+                AddBlob(columns, "PermissionSet", r => r.PermissionSet);
+            }),
 
-            TableIndex.ClassLayout => Table(m.GetClassLayouts)
-                .Handle("Parent", r => r.Parent)
-                .Value("PackingSize", r => (ushort)r.PackingSize)
-                .Value("ClassSize", r => r.ClassSize),
+            TableIndex.ClassLayout => AddColumns(Table(m.GetClassLayouts), columns =>
+            {
+                AddHandle(columns, "Parent", r => r.Parent);
+                AddValue(columns, "PackingSize", r => (ushort)r.PackingSize);
+                AddValue(columns, "ClassSize", r => r.ClassSize);
+            }),
 
-            TableIndex.FieldLayout => Table(m.GetFieldLayoutRows)
-                .Handle("Field", r => r.Field)
-                .Value("FieldOffset", r => r.Offset, "X8"),
+            TableIndex.FieldLayout => AddColumns(Table(m.GetFieldLayoutRows), columns =>
+            {
+                AddHandle(columns, "Field", r => r.Field);
+                AddValue(columns, "FieldOffset", r => r.Offset, "X8");
+            }),
 
-            TableIndex.StandAloneSig => Table(() => Rids().Select(rid => m.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(rid)))).Offset()
-                .Signature("Signature", r => r.Signature, r => LocalsText(file, r)),
+            TableIndex.StandAloneSig => AddColumns(Table(() => Rids().Select(rid => m.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(rid)))), columns =>
+            {
+                AddOffset(columns);
+                AddSignature(columns, "Signature", r => r.Signature, r => LocalsText(file, r));
+            }),
 
-            TableIndex.EventMap => Table(m.GetEventMaps)
-                .Handle("Parent", r => r.Parent)
-                .Handle("EventList", r => r.EventList),
+            TableIndex.EventMap => AddColumns(Table(m.GetEventMaps), columns =>
+            {
+                AddHandle(columns, "Parent", r => r.Parent);
+                AddHandle(columns, "EventList", r => r.EventList);
+            }),
 
-            TableIndex.Event => Table(() => m.EventDefinitions.Select(m.GetEventDefinition)).Offset()
-                .Value("Attributes", r => r.Attributes, "X8")
-                .Name(r => r.Name)
-                .Handle("Type", r => r.Type),
+            TableIndex.Event => AddColumns(Table(() => m.EventDefinitions.Select(m.GetEventDefinition)), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                AddName(columns, r => r.Name);
+                AddHandle(columns, "Type", r => r.Type);
+            }),
 
-            TableIndex.PropertyMap => Table(m.GetPropertyMaps)
-                .Handle("Parent", r => r.Parent)
-                .Handle("PropertyList", r => r.PropertyList),
+            TableIndex.PropertyMap => AddColumns(Table(m.GetPropertyMaps), columns =>
+            {
+                AddHandle(columns, "Parent", r => r.Parent);
+                AddHandle(columns, "PropertyList", r => r.PropertyList);
+            }),
 
-            TableIndex.Property => Table(() => m.PropertyDefinitions.Select(m.GetPropertyDefinition)).Offset()
-                .Value("Attributes", r => r.Attributes, "X8")
-                .Name(r => r.Name)
-                .Signature("Signature", r => r.Signature, r => PropertySignatureText(file, r)),
+            TableIndex.Property => AddColumns(Table(() => m.PropertyDefinitions.Select(m.GetPropertyDefinition)), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                AddName(columns, r => r.Name);
+                AddSignature(columns, "Signature", r => r.Signature, r => PropertySignatureText(file, r));
+            }),
 
-            TableIndex.MethodSemantics => Table(m.GetMethodSemantics)
-                .Value("Semantics", r => r.Semantics, "X8")
-                .Handle("Method", r => r.Method)
-                .Handle("Association", r => r.Association),
+            TableIndex.MethodSemantics => AddColumns(Table(m.GetMethodSemantics), columns =>
+            {
+                AddValue(columns, "Semantics", r => r.Semantics, "X8");
+                AddHandle(columns, "Method", r => r.Method);
+                AddHandle(columns, "Association", r => r.Association);
+            }),
 
-            TableIndex.MethodImpl => Table(() => Rids().Select(rid => m.GetMethodImplementation(MetadataTokens.MethodImplementationHandle(rid))))
-                .Handle("Type", r => r.Type)
-                .Handle("MethodDeclaration", r => r.MethodDeclaration)
-                .Handle("MethodBody", r => r.MethodBody),
+            TableIndex.MethodImpl => AddColumns(Table(() => Rids().Select(rid => m.GetMethodImplementation(MetadataTokens.MethodImplementationHandle(rid)))), columns =>
+            {
+                AddHandle(columns, "Type", r => r.Type);
+                AddHandle(columns, "MethodDeclaration", r => r.MethodDeclaration);
+                AddHandle(columns, "MethodBody", r => r.MethodBody);
+            }),
 
-            TableIndex.ModuleRef => Table(() => m.GetModuleReferences().Select(m.GetModuleReference)).Offset()
-                .Name(r => r.Name),
+            TableIndex.ModuleRef => AddColumns(Table(() => m.GetModuleReferences().Select(m.GetModuleReference)), columns =>
+            {
+                AddOffset(columns);
+                AddName(columns, r => r.Name);
+            }),
 
-            TableIndex.TypeSpec => Table(() => m.GetTypeSpecifications().Select(m.GetTypeSpecification)).Offset()
-                .Blob("Signature", r => r.Signature, r =>
+            TableIndex.TypeSpec => AddColumns(Table(() => m.GetTypeSpecifications().Select(m.GetTypeSpecification)), columns =>
+            {
+                AddOffset(columns);
+                AddBlob(columns, "Signature", r => r.Signature, r =>
                 {
                     ITextOutput output = new PlainTextOutput();
                     r.DecodeSignature(new DisassemblerSignatureTypeProvider(file, output), default)(ILNameSyntax.Signature);
                     return output.ToString();
-                }),
+                });
+            }),
 
-            TableIndex.ImplMap => Table(m.GetImplMaps)
-                .Value("MappingFlags", r => r.MappingFlags, "X8")
-                .Handle("MemberForwarded", r => r.MemberForwarded)
-                .String("ImportName", r => r.ImportName)
-                .Handle("ImportScope", r => r.ImportScope),
+            TableIndex.ImplMap => AddColumns(Table(m.GetImplMaps), columns =>
+            {
+                AddValue(columns, "MappingFlags", r => r.MappingFlags, "X8");
+                AddHandle(columns, "MemberForwarded", r => r.MemberForwarded);
+                AddString(columns, "ImportName", r => r.ImportName);
+                AddHandle(columns, "ImportScope", r => r.ImportScope);
+            }),
 
-            TableIndex.FieldRva => Table(m.GetFieldRvas)
-                .Handle("Field", r => r.Field)
-                .Value("RVA", r => r.RelativeVirtualAddress, "X8"),
+            TableIndex.FieldRva => AddColumns(Table(m.GetFieldRvas), columns =>
+            {
+                AddHandle(columns, "Field", r => r.Field);
+                AddValue(columns, "RVA", r => r.RelativeVirtualAddress, "X8");
+            }),
 
-            TableIndex.Assembly => Table<AssemblyDefinition>(() => m.IsAssembly ? [m.GetAssemblyDefinition()] : []).Offset()
-                .Value("HashAlgorithm", r => r.HashAlgorithm, "X4", r => r.HashAlgorithm.ToString())
-                .Value("Flags", r => r.Flags, "X4")
-                .Value("Version", r => r.Version)
-                .Name(r => r.Name)
-                .String("Culture", r => r.Culture),
+            TableIndex.Assembly => AddColumns(Table<AssemblyDefinition>(() => m.IsAssembly ? [m.GetAssemblyDefinition()] : []), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "HashAlgorithm", r => r.HashAlgorithm, "X4", r => r.HashAlgorithm.ToString());
+                AddValue(columns, "Flags", r => r.Flags, "X4");
+                AddValue(columns, "Version", r => r.Version);
+                AddName(columns, r => r.Name);
+                AddString(columns, "Culture", r => r.Culture);
+            }),
 
-            TableIndex.AssemblyRef => Table(() => m.AssemblyReferences.Select(m.GetAssemblyReference)).Offset()
-                .Value("Version", r => r.Version)
-                .Value("Flags", r => r.Flags, "X8")
-                .Blob("PublicKeyOrToken", r => r.PublicKeyOrToken, r => Hex(r.PublicKeyOrToken))
-                .Name(r => r.Name)
-                .String("Culture", r => r.Culture),
+            TableIndex.AssemblyRef => AddColumns(Table(() => m.AssemblyReferences.Select(m.GetAssemblyReference)), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Version", r => r.Version);
+                AddValue(columns, "Flags", r => r.Flags, "X8");
+                AddBlob(columns, "PublicKeyOrToken", r => r.PublicKeyOrToken, r => Hex(r.PublicKeyOrToken));
+                AddName(columns, r => r.Name);
+                AddString(columns, "Culture", r => r.Culture);
+            }),
 
-            TableIndex.File => Table(() => m.AssemblyFiles.Select(m.GetAssemblyFile)).Offset()
-                .Value("Attributes", r => r.ContainsMetadata ? 1 : 0, "X8", r => r.ContainsMetadata ? "ContainsMetaData" : "ContainsNoMetaData")
-                .Name(r => r.Name)
-                .Blob("HashValue", r => r.HashValue, r => Hex(r.HashValue)),
+            TableIndex.File => AddColumns(Table(() => m.AssemblyFiles.Select(m.GetAssemblyFile)), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.ContainsMetadata ? 1 : 0, "X8", r => r.ContainsMetadata ? "ContainsMetaData" : "ContainsNoMetaData");
+                AddName(columns, r => r.Name);
+                AddBlob(columns, "HashValue", r => r.HashValue, r => Hex(r.HashValue));
+            }),
 
-            TableIndex.ExportedType => Table(() => m.ExportedTypes.Select(m.GetExportedType)).Offset()
-                .Value("Attributes", r => r.Attributes, "X8")
-                .Value("TypeDefId", r => r.GetTypeDefinitionId(), "X8")
-                .String("TypeName", r => r.Name)
-                .String("TypeNamespace", r => r.Namespace)
-                .Handle("Implementation", r => r.Implementation),
+            TableIndex.ExportedType => AddColumns(Table(() => m.ExportedTypes.Select(m.GetExportedType)), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                AddValue(columns, "TypeDefId", r => r.GetTypeDefinitionId(), "X8");
+                AddString(columns, "TypeName", r => r.Name);
+                AddString(columns, "TypeNamespace", r => r.Namespace);
+                AddHandle(columns, "Implementation", r => r.Implementation);
+            }),
 
-            TableIndex.ManifestResource => Table(() => m.ManifestResources.Select(m.GetManifestResource)).Offset()
-                .Value("Attributes", r => r.Attributes, "X8")
-                .Name(r => r.Name)
-                .Handle("Implementation", r => r.Implementation),
+            TableIndex.ManifestResource => AddColumns(Table(() => m.ManifestResources.Select(m.GetManifestResource)), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                AddName(columns, r => r.Name);
+                AddHandle(columns, "Implementation", r => r.Implementation);
+            }),
 
-            TableIndex.NestedClass => Table(m.GetNestedClasses)
-                .Handle("NestedClass", r => r.NestedClass)
-                .Handle("EnclosingClass", r => r.EnclosingClass),
+            TableIndex.NestedClass => AddColumns(Table(m.GetNestedClasses), columns =>
+            {
+                AddHandle(columns, "NestedClass", r => r.NestedClass);
+                AddHandle(columns, "EnclosingClass", r => r.EnclosingClass);
+            }),
 
-            TableIndex.GenericParam => Table(() => Rids().Select(rid => m.GetGenericParameter(MetadataTokens.GenericParameterHandle(rid)))).Offset()
-                .Value("Number", r => r.Index)
-                .Value("Attributes", r => r.Attributes, "X8")
-                .Handle("Owner", r => r.Parent)
-                .Name(r => r.Name),
+            TableIndex.GenericParam => AddColumns(Table(() => Rids().Select(rid => m.GetGenericParameter(MetadataTokens.GenericParameterHandle(rid)))), columns =>
+            {
+                AddOffset(columns);
+                AddValue(columns, "Number", r => r.Index);
+                AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                AddHandle(columns, "Owner", r => r.Parent);
+                AddName(columns, r => r.Name);
+            }),
 
-            TableIndex.MethodSpec => Table(() => m.GetMethodSpecifications().Select(m.GetMethodSpecification)).Offset()
-                .Handle("Method", r => r.Method)
-                .Blob("Signature", r => r.Signature, r =>
+            TableIndex.MethodSpec => AddColumns(Table(() => m.GetMethodSpecifications().Select(m.GetMethodSpecification)), columns =>
+            {
+                AddOffset(columns);
+                AddHandle(columns, "Method", r => r.Method);
+                AddBlob(columns, "Signature", r => r.Signature, r =>
                 {
                     ITextOutput output = new PlainTextOutput();
                     var first = true;
@@ -225,22 +313,27 @@ internal static class MetadataTables
                         type(ILNameSyntax.TypeName);
                     }
                     return output.ToString();
-                }),
+                });
+            }),
 
-            TableIndex.GenericParamConstraint => Table(() => Rids().Select(rid => m.GetGenericParameterConstraint(MetadataTokens.GenericParameterConstraintHandle(rid)))).Offset()
-                .Handle("Owner", r => r.Parameter, r =>
+            TableIndex.GenericParamConstraint => AddColumns(Table(() => Rids().Select(rid => m.GetGenericParameterConstraint(MetadataTokens.GenericParameterConstraintHandle(rid)))), columns =>
+            {
+                AddOffset(columns);
+                AddHandle(columns, "Owner", r => r.Parameter, r =>
                 {
                     ITextOutput output = new PlainTextOutput();
                     var p = m.GetGenericParameter(r.Parameter);
                     output.Write("parameter " + p.Index + (p.Name.IsNil ? "" : " (" + m.GetString(p.Name) + ")") + " of ");
                     p.Parent.WriteTo(file, output, default);
                     return output.ToString();
-                })
-                .Handle("Type", r => r.Type),
+                });
+                AddHandle(columns, "Type", r => r.Type);
+            }),
 
-            TableIndex.Document => Table(() => m.Documents.Select(m.GetDocument))
-                .Value("Name", r => m.GetString(r.Name), tooltip: r => $"{MetadataTokens.GetHeapOffset(r.Name):X} \"{m.GetString(r.Name)}\"")
-                .Guid("HashAlgorithm", r => r.HashAlgorithm, r =>
+            TableIndex.Document => AddColumns(Table(() => m.Documents.Select(m.GetDocument)), columns =>
+            {
+                AddValue(columns, "Name", r => m.GetString(r.Name), tooltip: r => $"{MetadataTokens.GetHeapOffset(r.Name):X} \"{m.GetString(r.Name)}\"");
+                AddGuid(columns, "HashAlgorithm", r => r.HashAlgorithm, r =>
                 {
                     if (r.HashAlgorithm.IsNil)
                         return null;
@@ -250,9 +343,9 @@ internal static class MetadataTables
                     if (guid == KnownGuids.HashAlgorithmSHA256)
                         return "SHA256 [8829d00f-11b8-4213-878b-770e8597ac16]";
                     return "Unknown [" + guid + "]";
-                })
-                .Blob("Hash", r => r.Hash, r => Hex(r.Hash))
-                .Guid("Language", r => r.Language, r =>
+                });
+                AddBlob(columns, "Hash", r => r.Hash, r => Hex(r.Hash));
+                AddGuid(columns, "Language", r => r.Language, r =>
                 {
                     if (r.Language.IsNil)
                         return null;
@@ -264,17 +357,19 @@ internal static class MetadataTables
                     if (guid == KnownGuids.FSharpLanguageGuid)
                         return "Visual F# [ab4f38c9-b6e6-43ba-be3b-58080b2ccce3]";
                     return "Unknown [" + guid + "]";
-                }),
+                });
+            }),
 
-            TableIndex.MethodDebugInformation => Table(() => m.MethodDebugInformation.Select(m.GetMethodDebugInformation))
-                .Handle("Document", r => r.Document, r =>
+            TableIndex.MethodDebugInformation => AddColumns(Table(() => m.MethodDebugInformation.Select(m.GetMethodDebugInformation)), columns =>
+            {
+                AddHandle(columns, "Document", r => r.Document, r =>
                 {
                     if (r.Document.IsNil)
                         return null;
                     var document = m.GetDocument(r.Document);
                     return $"{MetadataTokens.GetHeapOffset(document.Name):X} \"{m.GetString(document.Name)}\"";
-                })
-                .Blob("SequencePoints", r => r.SequencePointsBlob, r =>
+                });
+                AddBlob(columns, "SequencePoints", r => r.SequencePointsBlob, r =>
                 {
                     if (r.SequencePointsBlob.IsNil)
                         return null;
@@ -282,50 +377,69 @@ internal static class MetadataTables
                     foreach (var p in r.GetSequencePoints())
                         sb.AppendLine($"document='{MetadataTokens.GetToken(p.Document):X8}', offset={p.Offset}, start={p.StartLine};{p.StartColumn}, end={p.EndLine};{p.EndColumn}, hidden={p.IsHidden}");
                     return sb.ToString().TrimEnd();
-                })
-                .Handle("LocalSignature", r => r.LocalSignature, r =>
+                });
+                AddHandle(columns, "LocalSignature", r => r.LocalSignature, r =>
                 {
                     if (r.LocalSignature.IsNil)
                         return null;
                     return LocalsText(file, m.GetStandaloneSignature(r.LocalSignature));
-                }),
+                });
+            }),
 
-            TableIndex.LocalScope => Table(() => m.LocalScopes.Select(m.GetLocalScope))
-                .Handle("Method", r => r.Method)
-                .Handle("ImportScope", r => r.ImportScope, NoTooltip)
-                .Handle("VariableList", r => r.GetLocalVariables().FirstOrDefault(), NoTooltip)
-                .Handle("ConstantList", r => r.GetLocalConstants().FirstOrDefault(), NoTooltip)
-                .Value("StartOffset", r => r.StartOffset)
-                .Value("Length", r => r.Length),
+            TableIndex.LocalScope => AddColumns(Table(() => m.LocalScopes.Select(m.GetLocalScope)), columns =>
+            {
+                AddHandle(columns, "Method", r => r.Method);
+                AddHandle(columns, "ImportScope", r => r.ImportScope, NoTooltip);
+                AddHandle(columns, "VariableList", r => r.GetLocalVariables().FirstOrDefault(), NoTooltip);
+                AddHandle(columns, "ConstantList", r => r.GetLocalConstants().FirstOrDefault(), NoTooltip);
+                AddValue(columns, "StartOffset", r => r.StartOffset);
+                AddValue(columns, "Length", r => r.Length);
+            }),
 
-            TableIndex.LocalVariable => Table(() => m.LocalVariables.Select(m.GetLocalVariable))
-                .Value("Attributes", r => r.Attributes, "X8")
-                .Value("Index", r => r.Index)
-                .Name(r => r.Name),
+            TableIndex.LocalVariable => AddColumns(Table(() => m.LocalVariables.Select(m.GetLocalVariable)), columns =>
+            {
+                AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                AddValue(columns, "Index", r => r.Index);
+                AddName(columns, r => r.Name);
+            }),
 
-            TableIndex.LocalConstant => Table(() => m.LocalConstants.Select(m.GetLocalConstant))
-                .Name(r => r.Name)
-                .Blob("Signature", r => r.Signature),
+            TableIndex.LocalConstant => AddColumns(Table(() => m.LocalConstants.Select(m.GetLocalConstant)), columns =>
+            {
+                AddName(columns, r => r.Name);
+                AddBlob(columns, "Signature", r => r.Signature);
+            }),
 
-            TableIndex.ImportScope => Table(() => m.ImportScopes.Select(m.GetImportScope))
-                .Handle("Parent", r => r.Parent, NoTooltip)
-                .Blob("Imports", r => r.ImportsBlob),
+            TableIndex.ImportScope => AddColumns(Table(() => m.ImportScopes.Select(m.GetImportScope)), columns =>
+            {
+                AddHandle(columns, "Parent", r => r.Parent, NoTooltip);
+                AddBlob(columns, "Imports", r => r.ImportsBlob);
+            }),
 
-            TableIndex.StateMachineMethod => Table(() => StateMachineMethods(m))
-                .Handle("MoveNextMethod", r => r.MoveNext)
-                .Handle("KickoffMethod", r => r.Kickoff),
+            TableIndex.StateMachineMethod => AddColumns(Table(() => StateMachineMethods(m)), columns =>
+            {
+                AddHandle(columns, "MoveNextMethod", r => r.MoveNext);
+                AddHandle(columns, "KickoffMethod", r => r.Kickoff);
+            }),
 
             TableIndex.CustomDebugInformation => CustomDebugInformationTable.Columns(Table(() => m.CustomDebugInformation.Select(m.GetCustomDebugInformation)), file),
 
-            TableIndex.EncLog => Table(m.GetEditAndContinueLogEntries).Offset()
-                .Handle("Handle", r => r.Handle)
-                .Value("FuncCode", r => r.Operation, "X8", r => r.Operation.ToString()),
+            TableIndex.EncLog => AddColumns(Table(m.GetEditAndContinueLogEntries), columns =>
+            {
+                AddOffset(columns);
+                AddHandle(columns, "Handle", r => r.Handle);
+                AddValue(columns, "FuncCode", r => r.Operation, "X8", r => r.Operation.ToString());
+            }),
 
-            TableIndex.EncMap => Table(m.GetEditAndContinueMapEntries).Offset()
-                .Handle("Handle", r => r),
+            TableIndex.EncMap => AddColumns(Table(m.GetEditAndContinueMapEntries), columns =>
+            {
+                AddOffset(columns);
+                AddHandle(columns, "Handle", r => r);
+            }),
 
-            TableIndex.FieldPtr or TableIndex.MethodPtr or TableIndex.ParamPtr or TableIndex.EventPtr or TableIndex.PropertyPtr => Table(() => m.GetPtrRows(table))
-                .Handle("Handle", r => r),
+            TableIndex.FieldPtr or TableIndex.MethodPtr or TableIndex.ParamPtr or TableIndex.EventPtr or TableIndex.PropertyPtr => AddColumns(Table(() => m.GetPtrRows(table)), columns =>
+            {
+                AddHandle(columns, "Handle", r => r);
+            }),
 
             _ => null,
         };

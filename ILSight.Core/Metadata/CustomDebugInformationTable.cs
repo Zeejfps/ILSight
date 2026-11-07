@@ -1,3 +1,4 @@
+using static ILSight.Core.Metadata.GridSchemas;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
 using System.Reflection.Metadata;
@@ -35,15 +36,16 @@ internal static class CustomDebugInformationTable
     public static GridSchema<CustomDebugInformation> Columns(GridSchema<CustomDebugInformation> table, MetadataFile file)
     {
         var m = file.Metadata;
-        return table.Offset()
-            .Handle("Parent", r => r.Parent)
-            .Value("Kind", r => MetadataTokens.GetHeapOffset(r.Kind), "X2")
-            .Value("KindGUID", r => m.GetGuid(r.Kind), "D")
-            .Value("KindString", r => KindString(m, r.Kind))
-            .Value("Info", r => !r.Kind.IsNil && m.GetGuid(r.Kind) == KnownGuids.EmbeddedSource ? EmbeddedSourceFormat(m, r.Value) : null)
-            .Blob("Value", r => r.Value, r => r.Value.IsNil ? "<nil>" : m.GetBlobReader(r.Value).ToHexString())
-            .Value("ValueLength", r => m.GetBlobReader(r.Value).Length, "X8")
-            .WithDetails(r => Details(m, r));
+        AddOffset(table);
+        AddHandle(table, "Parent", r => r.Parent);
+        AddValue(table, "Kind", r => MetadataTokens.GetHeapOffset(r.Kind), "X2");
+        AddValue(table, "KindGUID", r => m.GetGuid(r.Kind), "D");
+        AddValue(table, "KindString", r => KindString(m, r.Kind));
+        AddValue(table, "Info", r => !r.Kind.IsNil && m.GetGuid(r.Kind) == KnownGuids.EmbeddedSource ? EmbeddedSourceFormat(m, r.Value) : null);
+        AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? "<nil>" : m.GetBlobReader(r.Value).ToHexString());
+        AddValue(table, "ValueLength", r => m.GetBlobReader(r.Value).Length, "X8");
+        SetDetails(table, r => Details(m, r));
+        return table;
     }
 
     private static string KindString(MetadataReader metadata, GuidHandle kind)

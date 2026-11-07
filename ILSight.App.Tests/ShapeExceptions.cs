@@ -83,8 +83,6 @@ internal static class ShapeExceptions
         "ILSight.Core.LoadedAssembly",
         "ILSight.Core.LoadedModule",
         "ILSight.Core.LoadedPackage",
-        "ILSight.Core.Metadata.GridSchema",
-        "ILSight.Core.Metadata.GridSchema`1",
         "ILSight.DiagramViewState",
         "ILSight.DocumentTab",
         "ILSight.DocumentTabs",
@@ -109,8 +107,6 @@ internal static class ShapeExceptions
         "ILSight.Core.LoadedModule",
         "ILSight.Core.LoadedPackage",
         "ILSight.Core.LocatingTokenWriter",
-        "ILSight.Core.Metadata.GridSchema",
-        "ILSight.Core.Metadata.GridSchema`1",
         "ILSight.MetadataGridState",
         "ILSight.UiState",
     ];

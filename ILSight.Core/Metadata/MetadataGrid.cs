@@ -108,7 +108,7 @@ public static class MetadataGrids
             Module = module,
             File = file,
             Schema = schema,
-            Rows = schema.LoadRows(),
+            Rows = schema.ReadRows(),
             GridColumns = columns,
             Columns = columns.Select(static c => c.Column).ToArray(),
         };

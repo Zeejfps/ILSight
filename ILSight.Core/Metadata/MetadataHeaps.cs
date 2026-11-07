@@ -1,3 +1,4 @@
+using static ILSight.Core.Metadata.GridSchemas;
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
 using System.Reflection.Metadata;
@@ -15,28 +16,36 @@ internal static class MetadataHeaps
         var m = file.Metadata;
 
         IEnumerable<StringHandle> Strings() => Walk(MetadataTokens.StringHandle(0), m.GetNextHandle, static h => h.IsNil);
-        yield return ($"String Heap ({Strings().Count()})", new GridSchema<StringHandle>("String Heap", file, Strings)
-            .Value("Offset", h => m.GetHeapOffset(h), "X8")
-            .Value("Length", h => m.GetString(h).Length)
-            .Value("Value", h => m.GetString(h)));
+        yield return ($"String Heap ({Strings().Count()})", AddColumns(CreateGrid<StringHandle>("String Heap", file, Strings), columns =>
+        {
+            AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
+            AddValue(columns, "Length", h => m.GetString(h).Length);
+            AddValue(columns, "Value", h => m.GetString(h));
+        }));
 
         IEnumerable<UserStringHandle> UserStrings() => Walk(MetadataTokens.UserStringHandle(0), m.GetNextHandle, static h => h.IsNil);
-        yield return ($"UserString Heap ({UserStrings().Count()})", new GridSchema<UserStringHandle>("UserString Heap", file, UserStrings)
-            .Value("Offset", h => m.GetHeapOffset(h), "X8")
-            .Value("Length", h => m.GetUserString(h).Length)
-            .Value("Value", h => m.GetUserString(h)));
+        yield return ($"UserString Heap ({UserStrings().Count()})", AddColumns(CreateGrid<UserStringHandle>("UserString Heap", file, UserStrings), columns =>
+        {
+            AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
+            AddValue(columns, "Length", h => m.GetUserString(h).Length);
+            AddValue(columns, "Value", h => m.GetUserString(h));
+        }));
 
         IEnumerable<GuidHandle> Guids() => Enumerable.Range(1, m.GetHeapSize(HeapIndex.Guid) >> 4).Select(MetadataTokens.GuidHandle);
-        yield return ($"Guid Heap ({Guids().Count()})", new GridSchema<GuidHandle>("Guid Heap", file, Guids)
-            .Value("Index", h => m.GetHeapOffset(h))
-            .Value("Length", _ => 16)
-            .Value("Value", h => m.GetGuid(h).ToString()));
+        yield return ($"Guid Heap ({Guids().Count()})", AddColumns(CreateGrid<GuidHandle>("Guid Heap", file, Guids), columns =>
+        {
+            AddValue(columns, "Index", h => m.GetHeapOffset(h));
+            AddValue(columns, "Length", _ => 16);
+            AddValue(columns, "Value", h => m.GetGuid(h).ToString());
+        }));
 
         IEnumerable<BlobHandle> Blobs() => Walk(MetadataTokens.BlobHandle(0), m.GetNextHandle, static h => h.IsNil);
-        yield return ($"Blob Heap ({Blobs().Count()})", new GridSchema<BlobHandle>("Blob Heap", file, Blobs)
-            .Value("Offset", h => m.GetHeapOffset(h), "X8")
-            .Value("Length", h => m.GetBlobReader(h).Length)
-            .Value("Value", h => m.GetBlobReader(h).ToHexString()));
+        yield return ($"Blob Heap ({Blobs().Count()})", AddColumns(CreateGrid<BlobHandle>("Blob Heap", file, Blobs), columns =>
+        {
+            AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
+            AddValue(columns, "Length", h => m.GetBlobReader(h).Length);
+            AddValue(columns, "Value", h => m.GetBlobReader(h).ToHexString());
+        }));
     }
 
     /// <summary>
