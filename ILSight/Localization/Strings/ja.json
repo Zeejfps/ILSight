@@ -586,7 +586,6 @@
   "process_picker.unreadable": "プロセスのアセンブリ一覧を読み取れませんでした。",
   "process_picker.no_answer": "応答なし",
   "process_picker.in_memory": "メモリ内",
-  "process_picker.entry": "エントリ アセンブリ: {file}",
   "process_picker.count": {"other": "{count:N0} 個のプロセス"},
   "process_picker.refresh": "更新",
   "process_picker.column_name": "名前",

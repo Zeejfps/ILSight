@@ -586,7 +586,6 @@
   "process_picker.unreadable": "Die Liste der Assemblys des Prozesses konnte nicht gelesen werden.",
   "process_picker.no_answer": "keine Antwort",
   "process_picker.in_memory": "im Speicher",
-  "process_picker.entry": "Einstiegs-Assembly: {file}",
   "process_picker.count": {"one": "{count:N0} Prozess", "other": "{count:N0} Prozesse"},
   "process_picker.refresh": "Aktualisieren",
   "process_picker.column_name": "Name",

@@ -95,7 +95,11 @@ internal static class ProcessPickerView
     private static Ui.Scope Pane(Ui<UiState> ui, float share)
     {
         var theme = ui.Theme;
-        return ui.Panel(new Box { Width = Sizing.Percent(share), Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true });
+        // No gap: a table's header, the line under it and its rows meet.
+        return ui.Panel(new Box
+        {
+            Width = Sizing.Percent(share), Height = Sizing.Grow(), Gap = 0f, Padding = theme.BorderWidth, Background = theme.Field, Clip = true,
+        });
     }
 
     /// <summary>Walks the processes from the filter, leaving Home and End to its text.</summary>
@@ -177,13 +181,6 @@ internal static class ProcessPickerView
     private static bool Modules(Ui<UiState> ui, ProcessPicker picker)
     {
         var t = ui.State.Strings;
-        var theme = ui.Theme;
-        var entry = GetEntryAssembly(picker.Modules);
-        if (entry != null)
-        {
-            ui.Text(t.ProcessPickerEntry(entry.FileName), new Box { Padding = new Spacing(theme.ShellPaddingX, theme.GapTight) },
-                color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
-        }
         switch (picker.Modules)
         {
             case ModuleScan.None:

@@ -586,7 +586,6 @@
   "process_picker.unreadable": "无法读取进程的程序集列表。",
   "process_picker.no_answer": "无响应",
   "process_picker.in_memory": "在内存中",
-  "process_picker.entry": "入口程序集：{file}",
   "process_picker.count": {"other": "{count:N0} 个进程"},
   "process_picker.refresh": "刷新",
   "process_picker.column_name": "名称",

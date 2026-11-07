@@ -586,7 +586,6 @@
   "process_picker.unreadable": "프로세스의 어셈블리 목록을 읽을 수 없습니다.",
   "process_picker.no_answer": "응답 없음",
   "process_picker.in_memory": "메모리 내",
-  "process_picker.entry": "진입 어셈블리: {file}",
   "process_picker.count": {"other": "프로세스 {count:N0}개"},
   "process_picker.refresh": "새로 고침",
   "process_picker.column_name": "이름",

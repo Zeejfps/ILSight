@@ -586,7 +586,6 @@
   "process_picker.unreadable": "Не удалось прочитать список сборок процесса.",
   "process_picker.no_answer": "нет ответа",
   "process_picker.in_memory": "в памяти",
-  "process_picker.entry": "Входная сборка: {file}",
   "process_picker.count": {"one": "{count:N0} процесс", "few": "{count:N0} процесса", "many": "{count:N0} процессов", "other": "{count:N0} процесса"},
   "process_picker.refresh": "Обновить",
   "process_picker.column_name": "Имя",

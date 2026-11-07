@@ -586,7 +586,6 @@
   "process_picker.unreadable": "No se pudo leer la lista de ensamblados del proceso.",
   "process_picker.no_answer": "sin respuesta",
   "process_picker.in_memory": "en memoria",
-  "process_picker.entry": "Ensamblado de entrada: {file}",
   "process_picker.count": {"one": "{count:N0} proceso", "other": "{count:N0} procesos"},
   "process_picker.refresh": "Actualizar",
   "process_picker.column_name": "Nombre",
