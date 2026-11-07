@@ -297,7 +297,7 @@ public static class Trees
         }
     }
 
-    /// <summary>Expands <paramref name="nodes"/>, e.g. those <see cref="ExpandedPaths"/> named before
+    /// <summary>Expands <paramref name="nodes"/>, e.g. those <see cref="ListExpandedPaths"/> named before
     /// a reload.</summary>
     public static void ExpandNodes(BrowseTree tree, IEnumerable<BrowseNode> nodes)
     {

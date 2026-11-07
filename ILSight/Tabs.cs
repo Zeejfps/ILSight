@@ -85,8 +85,8 @@ public static class Tabs
         return tab;
     }
 
-    /// <summary>Keeps where the view of what the tab shows stands, for <see cref="Position"/>. Not counted
-    /// in <see cref="Changes"/>: it moves with every scroll, so it is saved with whatever else is, and on exit,
+    /// <summary>Keeps where the view of what the tab shows stands, for <see cref="DocumentTab.Position"/>. Not counted
+    /// in <see cref="DocumentTab.Changes"/>: it moves with every scroll, so it is saved with whatever else is, and on exit,
     /// as the window's bounds are.</summary>
     public static void KeepPosition(DocumentTab tab, ViewPosition position)
     {
@@ -187,8 +187,7 @@ public static class Tabs
         return arrival;
     }
 
-    /// <summary>Shows <paramref name="document"/>, which no node stands for, titled
-    /// <paramref name="title"/>, cancelling what was in flight.</summary>
+    /// <summary>Shows <paramref name="report"/>, which no node stands for, cancelling what was in flight.</summary>
     public static void ShowReport(DocumentTab tab, ExportReport report)
     {
         PointElsewhere(tab);

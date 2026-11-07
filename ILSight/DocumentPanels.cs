@@ -66,7 +66,7 @@ public static class DocumentPanels
     }
 
     /// <summary>Leaves <paramref name="panels"/>, which saved documents were docked as, to them:
-    /// <see cref="NewPanel"/> hands out none of them.</summary>
+    /// <see cref="CreatePanel"/> hands out none of them.</summary>
     public static void SkipPanels(DocumentViews documents, IEnumerable<string> panels)
     {
         foreach (var panel in panels)

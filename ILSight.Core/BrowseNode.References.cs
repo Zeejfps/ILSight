@@ -80,13 +80,13 @@ public static partial class BrowseNodes
         return Create(parent, new NodeSubject.ForwardedType { Value = NodeDefinitions.CreateForwardedType(module, type) });
     }
 
-    /// <summary>The node of the type <paramref name="handle"/> names, used from a reference, under this node.</summary>
+    /// <summary>The node of the type <paramref name="handle"/> names, used from a reference, under <paramref name="parent"/>.</summary>
     private static BrowseNode CreateUsedType(BrowseNode parent, LoadedModule module, TypeReferenceHandle handle)
     {
         return Create(parent, new NodeSubject.TypeReference { Value = CreateUsedTypeInfo(parent, module, handle) });
     }
 
-    /// <summary>The type <paramref name="handle"/> names, used from a reference, as listed under this node.</summary>
+    /// <summary>The type <paramref name="handle"/> names, used from a reference, as listed under <paramref name="parent"/>.</summary>
     private static TypeReferenceInfo CreateUsedTypeInfo(BrowseNode parent, LoadedModule module, TypeReferenceHandle handle)
     {
         var metadata = module.File.Metadata;
@@ -98,7 +98,7 @@ public static partial class BrowseNodes
         return new TypeReferenceInfo { Module = module, Handle = handle, Namespace = ns, Label = label, FullName = GetQualifiedName(parent, ns, label), ReflectionName = GetQualifiedReflectionName(parent, ns, name) };
     }
 
-    /// <summary>The full name of a type labelled <paramref name="label"/> listed under this node: after the
+    /// <summary>The full name of a type labelled <paramref name="label"/> listed under <paramref name="parent"/>: after the
     /// type it is nested in, when this node is one, else after its namespace.</summary>
     private static string GetQualifiedName(BrowseNode parent, string ns, string label)
     {
@@ -109,7 +109,7 @@ public static partial class BrowseNodes
         return $"{ns}.{label}";
     }
 
-    /// <summary>The reflection name of a type metadata names <paramref name="name"/> listed under this node:
+    /// <summary>The reflection name of a type metadata names <paramref name="name"/> listed under <paramref name="parent"/>:
     /// after the type it is nested in, when this node is one, else after its namespace.</summary>
     private static string GetQualifiedReflectionName(BrowseNode parent, string ns, string name)
     {

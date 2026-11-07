@@ -78,10 +78,10 @@ public sealed class AppState
     public ThemeFolderWatch IconThemesWatch { get; } = new ThemeFolderWatch { Filters = IconThemeFiles, IncludesSubfolders = true };
 
     /// <summary>The id of the chosen theme, kept even while no theme has it.</summary>
-    public ThemeId<ThemeFile> Theme;
+    public required ThemeId<ThemeFile> Theme;
 
     /// <summary>The id of the chosen icon theme, kept even while no icon theme has it.</summary>
-    public ThemeId<IconThemeFile> IconTheme;
+    public required ThemeId<IconThemeFile> IconTheme;
     public ApiVisibility ApiVisibility;
 
     /// <summary>Whether what is picked and followed shows in the preview tab rather than the active tab.</summary>
@@ -93,7 +93,7 @@ public sealed class AppState
     public DecompilationLanguage Language { get; set; }
 
     /// <summary>How C# is decompiled.</summary>
-    public DecompilerOptions DecompilerOptions { get; set; }
+    public required DecompilerOptions DecompilerOptions { get; set; }
 
     /// <summary>The commands the features queue for the view when none is on the stack, for the screen to run
     /// in order before it draws next.</summary>

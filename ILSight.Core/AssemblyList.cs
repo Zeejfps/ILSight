@@ -117,7 +117,7 @@ public static class AssemblyListing
     /// system starts loading in the background. A file that is missing or not a .NET assembly is listed
     /// all the same, as a <see cref="FailedAssembly"/>, and the assembly takes its place
     /// once the file loads. Once <paramref name="cancellationToken"/> is cancelled
-    /// the assembly is no longer listed, so cancelling before <see cref="Clear"/> keeps the opens of
+    /// the assembly is no longer listed, so cancelling before <see cref="CloseAll"/> keeps the opens of
     /// several files out of the list that follows.</summary>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled,
     /// or the list was cleared while the file was read.</exception>
@@ -220,7 +220,7 @@ public static class AssemblyListing
     /// <summary>Takes from <paramref name="options"/> the toggles that apply as assemblies are read: whether
     /// references load their assemblies, and whether Windows Runtime metadata is projected. Returns true
     /// when they changed, so that the open assemblies must be read again to follow them. A change ends the
-    /// <see cref="Generation"/>, as a clear does, so that no assembly read with the options before is kept.</summary>
+    /// <see cref="AssemblyList.Generation"/>, as a clear does, so that no assembly read with the options before is kept.</summary>
     public static bool UseLoadOptions(AssemblyList list, DecompilerOptions options)
     {
         var loadsReferences = DecompilerToggles.IsOn(options, DecompilerToggle.AutoLoadAssemblyReferences);
@@ -498,7 +498,7 @@ public static class AssemblyListing
         return TryLoad(list, path, list.Generation);
     }
 
-    /// <summary>The assembly at <paramref name="path"/>, as <see cref="TryLoad(AssemblyPath, int)"/> loads it;
+    /// <summary>The assembly at <paramref name="path"/>, as <see cref="TryLoad(AssemblyList, AssemblyPath, int)"/> loads it;
     /// null for a package, which has no metadata of its own, or a file that failed to load.</summary>
     internal static LoadedModule? TryLoadAssembly(AssemblyList list, AssemblyPath path)
     {
@@ -724,7 +724,7 @@ public static class AssemblyListing
     }
 
     /// <summary>What <paramref name="path"/> holds: an assembly, a package, or an assembly in a
-    /// package, read from a path <see cref="AssemblyPackage.PathOf"/> made.</summary>
+    /// package, read from a path <see cref="AssemblyPackages.GetFilePath"/> made.</summary>
     /// <exception cref="AssemblyLoadException">There is no such file, or it is none of those.</exception>
     private static LoadedAssembly Read(AssemblyList list, AssemblyPath path, int generation)
     {

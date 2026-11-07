@@ -29,7 +29,7 @@ public abstract class LoadedAssembly
     }
 
     /// <summary>The absolute path of the file this was loaded from; for an assembly read out of a
-    /// package, the path through the package, as <see cref="AssemblyPackage.PathOf"/> gives it.</summary>
+    /// package, the path through the package, as <see cref="AssemblyPackages.GetFilePath"/> gives it.</summary>
     public required AssemblyPath FilePath { get; init; }
 
     /// <summary>The item of the list that holds this assembly: itself, or the package it was read out of.</summary>
@@ -63,7 +63,7 @@ public abstract class LoadedAssembly
 }
 
 /// <summary>An assembly or WebCIL module that was read: a file on disk, or, when <see cref="Place"/>
-/// says so, one read out of a package, known by the path <see cref="AssemblyPackage.PathOf"/> gives it.
+/// says so, one read out of a package, known by the path <see cref="AssemblyPackages.GetFilePath"/> gives it.
 /// What takes reading is held as a <see cref="Lazy{T}"/>, read once whichever thread asks first, and asked
 /// for with the <c>Ensure</c> functions of <see cref="LoadedAssemblies"/>.</summary>
 public sealed class LoadedModule : LoadedAssembly
