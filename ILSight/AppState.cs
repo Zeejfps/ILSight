@@ -66,13 +66,13 @@ public sealed class AppState
     public required CodeTooltips Tooltips { get; init; }
 
     /// <summary>The themes the app can be drawn in, built-in and the user's.</summary>
-    public ThemeCatalog Themes { get; } = Theming.CreateCatalog(BuiltInThemes.Files);
+    public ThemeCatalog<ThemeFile, ThemeContents, AppTheme> Themes { get; } = Theming.CreateCatalog(BuiltInThemes.Files);
 
     /// <summary>Watches the user's themes folder while the app runs.</summary>
     public ThemeFolderWatch ThemesWatch { get; } = Theming.CreateThemeWatch();
 
     /// <summary>The icon themes the app can be drawn with, built-in and the user's.</summary>
-    public IconThemeCatalog IconThemes { get; } = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
+    public ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> IconThemes { get; } = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
 
     /// <summary>Watches the user's icon themes folder, and the fonts and pictures in it, while the app runs.</summary>
     public ThemeFolderWatch IconThemesWatch { get; } = new ThemeFolderWatch { Filters = IconThemeFiles, IncludesSubfolders = true };

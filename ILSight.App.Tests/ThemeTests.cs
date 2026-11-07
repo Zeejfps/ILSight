@@ -120,7 +120,7 @@ public sealed class ThemeLoadingTests
         return Theming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json));
     }
 
-    private static ThemeCatalog Load(params ThemeFile[] users)
+    private static ThemeCatalog<ThemeFile, ThemeContents, AppTheme> Load(params ThemeFile[] users)
     {
         var catalog = Theming.CreateCatalog(BuiltInThemes.Files);
         ThemeCatalogs.LoadUserThemes(catalog, users);

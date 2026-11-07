@@ -45,7 +45,7 @@ public sealed class BuiltInIconThemeTests
     public void The_reference_icon_theme_loads_without_errors_and_draws_every_key_in_its_font()
     {
         var catalog = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
-        var reference = ThemeCatalogs.FindTheme(catalog, IconThemeCatalog.ReferenceId);
+        var reference = ThemeCatalogs.FindTheme(catalog, IconTheming.ReferenceId);
 
         Assert.Empty(BuiltInIconThemes.Errors);
         Assert.Empty(catalog.Errors);
@@ -93,7 +93,7 @@ public sealed class IconThemeLoadingTests
         return IconTheming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json), assets ?? new MemoryIconAssets());
     }
 
-    private static IconThemeCatalog Load(params IconThemeFile[] users)
+    private static ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> Load(params IconThemeFile[] users)
     {
         var catalog = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
         ThemeCatalogs.LoadUserThemes(catalog, users);

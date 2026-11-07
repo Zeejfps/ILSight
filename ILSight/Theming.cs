@@ -20,6 +20,10 @@ internal sealed record WatchedThemeFolder(
 /// reported once, until it is fixed.</summary>
 public static class Theming
 {
+    /// <summary>The built-in dark theme, which settings start on and an id no theme has shows.</summary>
+    public static readonly ThemeId<ThemeFile> DarkId = ThemeId<ThemeFile>.Of("dark");
+    public static readonly ThemeId<ThemeFile> LightId = ThemeId<ThemeFile>.Of("light");
+
     private const string ThemeFilePattern = "*" + ThemeFile.Extension;
     private const string SchemaFileName = "theme.schema.json";
     private const string GuideFileName = "README.md";
@@ -141,13 +145,13 @@ public static class Theming
     /// <paramref name="schemaFileName"/>, for theme files to name in <c>$schema</c>, and a README of
     /// <paramref name="guide"/> on writing themes. Returns why it failed, or null.</summary>
     /// <summary>The catalog of <paramref name="builtIns"/>, the built-in themes in the order a menu lists them, which
-    /// must include <see cref="ThemeCatalog.DarkId"/> and <see cref="ThemeCatalog.LightId"/>.</summary>
-    public static ThemeCatalog CreateCatalog(IReadOnlyList<ThemeFile> builtIns)
+    /// must include <see cref="Theming.DarkId"/> and <see cref="Theming.LightId"/>.</summary>
+    public static ThemeCatalog<ThemeFile, ThemeContents, AppTheme> CreateCatalog(IReadOnlyList<ThemeFile> builtIns)
     {
-        var catalog = new ThemeCatalog
+        var catalog = new ThemeCatalog<ThemeFile, ThemeContents, AppTheme>
         {
             BuiltIns = builtIns,
-            DefaultId = ThemeCatalog.DarkId,
+            DefaultId = Theming.DarkId,
             Build = static (themes, file, chain) => BuildChainTheme(themes, file, chain),
             FindFallbackId = static file => GetFallbackId(file),
         };
@@ -193,7 +197,7 @@ public static class Theming
 
     private static ThemeId<ThemeFile> GetIdOfType(ThemeType type)
     {
-        return type == ThemeType.Light ? ThemeCatalog.LightId : ThemeCatalog.DarkId;
+        return type == ThemeType.Light ? Theming.LightId : Theming.DarkId;
     }
 
     private static ThemeFile CreateFile(ThemeId<ThemeFile> id, string file)

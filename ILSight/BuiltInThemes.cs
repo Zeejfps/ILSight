@@ -19,13 +19,13 @@ public static class BuiltInThemes
 
     public static IReadOnlyList<ThemeFile> Files { get; } = ReadFiles();
 
-    private static readonly ThemeCatalog Catalog = Theming.CreateCatalog(Files);
+    private static readonly ThemeCatalog<ThemeFile, ThemeContents, AppTheme> Catalog = Theming.CreateCatalog(Files);
 
     /// <summary>The default dark theme, whose code and icon colors the screen starts with until the app
     /// hands it the chosen theme.</summary>
-    public static AppTheme Dark { get; } = ThemeCatalogs.FindTheme(Catalog, ThemeCatalog.DarkId);
+    public static AppTheme Dark { get; } = ThemeCatalogs.FindTheme(Catalog, Theming.DarkId);
 
-    public static AppTheme Light { get; } = ThemeCatalogs.FindTheme(Catalog, ThemeCatalog.LightId);
+    public static AppTheme Light { get; } = ThemeCatalogs.FindTheme(Catalog, Theming.LightId);
 
     /// <summary>What was wrong in the built-in theme files; nothing, unless one was broken by an edit.</summary>
     public static IReadOnlyList<ThemeError> Errors => Catalog.Errors;
@@ -57,9 +57,9 @@ public static class BuiltInThemes
 
     private static int RankOf(ThemeFile file)
     {
-        if (file.Id.Equals(ThemeCatalog.DarkId))
+        if (file.Id.Equals(Theming.DarkId))
             return DarkRank;
-        if (file.Id.Equals(ThemeCatalog.LightId))
+        if (file.Id.Equals(Theming.LightId))
             return LightRank;
         if (file.Type == ThemeType.Light)
             return OtherLightRank;

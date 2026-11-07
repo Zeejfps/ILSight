@@ -238,7 +238,7 @@ internal static class MainMenuView
     }
 
     /// <summary>The submenu of the catalog's themes, built-in ones first, the one shown picked.</summary>
-    private static void ThemeMenu(Ui<UiState> ui, ThemeCatalog catalog, ThemeId<ThemeFile> current)
+    private static void ThemeMenu(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> catalog, ThemeId<ThemeFile> current)
     {
         var t = ui.State.Strings;
         using var themes = ui.SubMenu(t.ViewTheme, id: "theme");

@@ -1169,11 +1169,11 @@ internal static class SettingsJson
     private static ThemeId<ThemeFile> GetThemeId(string? saved)
     {
         if (saved == null)
-            return ThemeCatalog.DarkId;
+            return Theming.DarkId;
         var old = GetOldThemeId(saved);
         if (old != null)
             return ThemeId<ThemeFile>.Of(old);
-        return ThemeId<ThemeFile>.Parse(saved) ?? ThemeCatalog.DarkId;
+        return ThemeId<ThemeFile>.Parse(saved) ?? Theming.DarkId;
     }
 
     private static string? GetOldThemeId(string name)
@@ -1198,8 +1198,8 @@ internal static class SettingsJson
     private static ThemeId<IconThemeFile> GetIconThemeId(string? saved)
     {
         if (saved == null)
-            return IconThemeCatalog.ReferenceId;
-        return ThemeId<IconThemeFile>.Parse(saved) ?? IconThemeCatalog.ReferenceId;
+            return IconTheming.ReferenceId;
+        return ThemeId<IconThemeFile>.Parse(saved) ?? IconTheming.ReferenceId;
     }
 
     /// <summary>Writes the settings to <see cref="AppSettings.FilePath"/>, replacing the file whole so a failed

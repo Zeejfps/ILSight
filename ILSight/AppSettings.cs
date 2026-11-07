@@ -24,10 +24,10 @@ public sealed class AppSettings
     public string? ActiveAssemblyList { get; set; }
 
     /// <summary>The id of the chosen theme, the name of its file without the extension.</summary>
-    public ThemeId<ThemeFile> Theme { get; set; } = ThemeCatalog.DarkId;
+    public ThemeId<ThemeFile> Theme { get; set; } = Theming.DarkId;
 
     /// <summary>The id of the chosen icon theme, the name of its file without the extension.</summary>
-    public ThemeId<IconThemeFile> IconTheme { get; set; } = IconThemeCatalog.ReferenceId;
+    public ThemeId<IconThemeFile> IconTheme { get; set; } = IconTheming.ReferenceId;
     public DecompilationLanguage Language { get; set; } = DecompilationLanguage.CSharp;
     public DecompilerOptions Decompiler { get; set; } = DecompilerOptions.Default;
 

@@ -14,16 +14,20 @@ namespace ILSight;
 /// folder changes. What is wrong in an icon theme is reported once, until it is fixed.</summary>
 public static class IconTheming
 {
+    /// <summary>The reference icon theme: every theme can draw in its fonts, and a key no theme in a chain
+    /// draws is drawn as it draws it.</summary>
+    public static readonly ThemeId<IconThemeFile> ReferenceId = ThemeId<IconThemeFile>.Of("lucide");
+
     /// <summary>The catalog of <paramref name="builtIns"/>, the built-in icon themes in the order a menu lists them,
-    /// which must include <see cref="IconThemeCatalog.ReferenceId"/>, mapping every key.</summary>
-    public static IconThemeCatalog CreateCatalog(IReadOnlyList<IconThemeFile> builtIns)
+    /// which must include <see cref="IconTheming.ReferenceId"/>, mapping every key.</summary>
+    public static ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> CreateCatalog(IReadOnlyList<IconThemeFile> builtIns)
     {
-        var catalog = new IconThemeCatalog
+        var catalog = new ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme>
         {
             BuiltIns = builtIns,
-            DefaultId = IconThemeCatalog.ReferenceId,
+            DefaultId = IconTheming.ReferenceId,
             Build = static (themes, file, chain) => BuildChainTheme(themes, file, chain),
-            FindFallbackId = static _ => IconThemeCatalog.ReferenceId,
+            FindFallbackId = static _ => IconTheming.ReferenceId,
         };
         ThemeCatalogs.LoadUserThemes(catalog, []);
         return catalog;
@@ -35,10 +39,10 @@ public static class IconTheming
         var merged = new MergedIconTheme();
         var isReference = IsReference(file);
         if (!isReference)
-            Theming.AddFonts(merged, ThemeCatalogs.GetBuiltInContents(catalog, IconThemeCatalog.ReferenceId));
+            Theming.AddFonts(merged, ThemeCatalogs.GetBuiltInContents(catalog, IconTheming.ReferenceId));
         foreach (var link in chain)
             Theming.AddContents(merged, link.Contents);
-        var fallback = isReference ? null : ThemeCatalogs.ResolveTheme(catalog, IconThemeCatalog.ReferenceId);
+        var fallback = isReference ? null : ThemeCatalogs.ResolveTheme(catalog, IconTheming.ReferenceId);
         var errors = new List<ThemeError>();
         var theme = Theming.BuildTheme(merged, fallback, errors);
         ThemeCatalogs.AddCatalogErrors(catalog, errors);
@@ -47,7 +51,7 @@ public static class IconTheming
 
     private static bool IsReference(IconThemeFile file)
     {
-        return file.Id.Equals(IconThemeCatalog.ReferenceId);
+        return file.Id.Equals(IconTheming.ReferenceId);
     }
 
     private static IconThemeFile CreateFile(ThemeId<IconThemeFile> id, string file, IconAssets assets)

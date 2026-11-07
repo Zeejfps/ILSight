@@ -103,7 +103,7 @@ internal static class DisplayOptionsPanelView
     /// <summary>The themes of the catalog, built-in ones first, then the buttons that start a custom theme
     /// from the one shown, open the themes folder and read the user's themes again, while the settings
     /// have a folder to keep themes in.</summary>
-    private static void ThemePicker(Ui<UiState> ui, ThemeCatalog themes, ThemeId<ThemeFile> chosen, SettingsPlace settingsPlace)
+    private static void ThemePicker(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen, SettingsPlace settingsPlace)
     {
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
         PickTheme(ui, themes, chosen);
@@ -114,7 +114,7 @@ internal static class DisplayOptionsPanelView
         ReloadThemesButton(ui);
     }
 
-    private static void PickTheme(Ui<UiState> ui, ThemeCatalog themes, ThemeId<ThemeFile> chosen)
+    private static void PickTheme(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen)
     {
         var labels = ThemeCatalogs.ListNames(themes, ui.State.Strings.Culture);
         var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
@@ -157,7 +157,7 @@ internal static class DisplayOptionsPanelView
     /// <summary>The icon themes of the catalog, built-in ones first, then the buttons that start a custom
     /// icon theme from the one shown, open the icon themes folder and read the user's icon themes again,
     /// while the settings have a folder to keep icon themes in.</summary>
-    private static void IconThemePicker(Ui<UiState> ui, IconThemeCatalog themes, ThemeId<IconThemeFile> chosen, SettingsPlace settingsPlace)
+    private static void IconThemePicker(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen, SettingsPlace settingsPlace)
     {
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
         PickIconTheme(ui, themes, chosen);
@@ -168,7 +168,7 @@ internal static class DisplayOptionsPanelView
         ReloadIconThemesButton(ui);
     }
 
-    private static void PickIconTheme(Ui<UiState> ui, IconThemeCatalog themes, ThemeId<IconThemeFile> chosen)
+    private static void PickIconTheme(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen)
     {
         var labels = ThemeCatalogs.ListNames(themes, ui.State.Strings.Culture);
         var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
