@@ -22,17 +22,20 @@ public abstract record HistoryEntry
 /// outlive reloads and pin no assembly; a diagram is forgotten once its tab closes.</summary>
 public sealed class NavigationHistory
 {
-    /// <summary>Every place recorded, oldest first.</summary>
-    public readonly List<HistoryEntry> Entries = new();
+    private const int Capacity = 200;
+
+    /// <summary>Every place recorded, oldest first, and the one being shown. An index rather than back and
+    /// forward stacks, as the history menus name the entry to go to by where it is.</summary>
+    public readonly CursorList<HistoryEntry> Entries = new(Capacity);
 
     /// <summary>The index in <see cref="Entries"/> of the place being shown, or -1 before any.</summary>
-    public int CurrentIndex = -1;
+    public int CurrentIndex => Entries.CurrentIndex;
 
     /// <summary>Changes whenever an entry is added or dropped, or another becomes current.</summary>
-    public int Revision;
+    public int Revision => Entries.Revision;
 
     public bool CanGoBack => CurrentIndex > 0;
     public bool CanGoForward => CurrentIndex < Entries.Count - 1;
 
-    public HistoryEntry? Current => CurrentIndex >= 0 ? Entries[CurrentIndex] : null;
+    public HistoryEntry? Current => Entries.Current;
 }

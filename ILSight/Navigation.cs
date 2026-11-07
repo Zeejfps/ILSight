@@ -10,8 +10,6 @@ namespace ILSight;
 /// forward through the history.</summary>
 public static class Navigation
 {
-    private const int HistoryCapacity = 200;
-
     /// <summary>Records a new place, dropping what was forward of the current one.</summary>
     public static void RecordPlace(NavigationHistory history, BrowseNode node, DecompilationLanguage language)
     {
@@ -40,20 +38,13 @@ public static class Navigation
 
     private static void AddEntry(NavigationHistory history, HistoryEntry entry)
     {
-        history.Entries.RemoveRange(history.CurrentIndex + 1, history.Entries.Count - history.CurrentIndex - 1);
         history.Entries.Add(entry);
-        if (history.Entries.Count > HistoryCapacity)
-            history.Entries.RemoveAt(0);
-        history.CurrentIndex = history.Entries.Count - 1;
-        history.Revision++;
     }
 
     /// <summary>Forgets every place.</summary>
     public static void ClearHistory(NavigationHistory history)
     {
         history.Entries.Clear();
-        history.CurrentIndex = -1;
-        history.Revision++;
     }
 
     /// <summary>Forgets <paramref name="diagram"/>, closed for good; the entry before a forgotten current
@@ -67,12 +58,7 @@ public static class Navigation
             if (entry.Shown != diagram)
                 continue;
             history.Entries.RemoveAt(i);
-            if (i <= history.CurrentIndex)
-                history.CurrentIndex--;
-            history.Revision++;
         }
-        if (history.CurrentIndex < 0 && history.Entries.Count > 0)
-            history.CurrentIndex = 0;
     }
 
     /// <summary>Remembers where the view of the current place stands as it is left.</summary>
@@ -80,15 +66,14 @@ public static class Navigation
     {
         if (history.Current is not HistoryEntry.Node node)
             return;
-        history.Entries[history.CurrentIndex] = node with { Language = language, Position = position };
+        history.Entries.ReplaceCurrent(node with { Language = language, Position = position });
     }
 
     /// <summary>Makes the entry at <paramref name="index"/> current, keeping every entry on either side.</summary>
     private static HistoryEntry? MoveToEntry(NavigationHistory history, int index)
     {
-        if (index < 0 || index >= history.Entries.Count || index == history.CurrentIndex) return null;
-        history.CurrentIndex = index;
-        history.Revision++;
+        if (!history.Entries.MoveTo(index))
+            return null;
         return history.Entries[index];
     }
 
