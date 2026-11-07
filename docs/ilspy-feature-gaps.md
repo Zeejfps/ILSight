@@ -1,9 +1,9 @@
 # ILSpy feature gaps
 
-What upstream ILSpy has that our app (`ILSight`) doesn't, as of ILSpy 11.1 (23 Sep 2026). 11.0
+What upstream ILSpy has that our app (`ILSight`) doesn't, as of ILSpy 11.2 (27 Oct 2026). 11.0
 ported upstream from WPF to Avalonia; the feature set carried over.
 
-Sources: https://github.com/icsharpcode/ILSpy/releases and the `v11.1` source.
+Sources: https://github.com/icsharpcode/ILSpy/releases and the `v11.2` source.
 
 - **ReadyToRun disassembly** (a plugin upstream).
 - **Windows PDBs:** local names come only from portable PDBs; upstream also reads Windows PDBs
@@ -13,7 +13,10 @@ Sources: https://github.com/icsharpcode/ILSpy/releases and the `v11.1` source.
   the font picker offers just the bundled font.
 - **Open from the GAC** (Windows).
 - **Open from a running process.**
-- **Check for updates.**
+- **Search in the options** (11.2): a search box over the options pages narrows them to the ones
+  that match and highlights the hits; the decompiler page also hides the options that don't.
+- **Highlight usages at the caret** (11.2, off by default): every use of the symbol under the caret
+  is marked as the caret moves. We mark them only on a click or a hover.
 
 ## Won't do
 
