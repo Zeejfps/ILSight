@@ -1066,7 +1066,7 @@ public static class CodeViewWidget
                 state.FocusFind = false;
             }
 
-            var submitted = ui.TextField("find", ref state.Query, t.FindPlaceholder, Sizing.Grow(AppLayout.FindMinWidth, AppLayout.FindWidth));
+            var submitted = ui.TextField("find", ref state.Query, t.FindPlaceholder, Sizing.Grow(AppLayout.FindMinWidth, AppLayout.FindWidth), clearable: true);
             var queryChanged = !string.Equals(state.Query, state.Find.Query, StringComparison.Ordinal);
             if (FindMatches(state, document, state.Query))
             {

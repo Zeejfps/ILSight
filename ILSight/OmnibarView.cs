@@ -422,7 +422,7 @@ internal static class OmnibarView
         var fieldId = ui.GetId(FilterFieldId);
         if (TakeFocus(menu))
             ui.Focus(fieldId);
-        var submitted = ui.TextField(FilterFieldId, ref menu.Filter, ui.State.Strings.OmnibarFilter, Sizing.Grow());
+        var submitted = ui.TextField(FilterFieldId, ref menu.Filter, ui.State.Strings.OmnibarFilter, Sizing.Grow(), clearable: true);
         if (!ui.HasFocus(fieldId))
             return false;
         foreach (var stroke in ui.Input.Keys)
@@ -488,7 +488,7 @@ internal static class OmnibarView
         bool submitted;
         using (ui.PaneToolbar())
         {
-            submitted = ui.TextField(SearchFieldId, ref omnibar.Search.Query, t.OmnibarSearch, Sizing.Grow(), ui.State.Icons.SearchField);
+            submitted = ui.TextField(SearchFieldId, ref omnibar.Search.Query, t.OmnibarSearch, Sizing.Grow(), ui.State.Icons.SearchField, clearable: true);
             SyntaxTooltip(ui, omnibar, fieldId);
         }
         WalkSuggestions(ui, omnibar, fieldId);

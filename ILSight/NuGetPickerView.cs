@@ -103,7 +103,7 @@ internal static class NuGetPickerView
                 MoveSelectionFromQuery(ui, picker);
             if (NuGetPicking.TakeQueryFocus(picker))
                 ui.Focus(ui.GetId(QueryId));
-            if (ui.TextField(QueryId, ref picker.Query, t.NugetQuery, Sizing.Grow(), ui.State.Icons.SearchField))
+            if (ui.TextField(QueryId, ref picker.Query, t.NugetQuery, Sizing.Grow(), ui.State.Icons.SearchField, clearable: true))
                 Submit(ui, picker);
             ui.Checkbox(t.NugetPrerelease, ref picker.IncludePrerelease, id: "nuget-prerelease");
             ui.Leaf(new Box { Width = theme.Gap });

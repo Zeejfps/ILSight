@@ -43,13 +43,14 @@ internal static class OptionSearch
         return compare.IndexOf(text, word, Loose) >= 0;
     }
 
-    /// <summary>The search field, filling the row it is in. Escape empties it while it has focus.</summary>
+    /// <summary>The search field, filling the row it is in. Escape empties it while it has focus, and so
+    /// does the cross at its end while it holds text.</summary>
     public static void Field(Ui<UiState> ui, ref string query)
     {
         var t = ui.State.Strings;
         if (query.Length > 0 && ui.HasFocus(ui.GetId(FieldId)) && ui.Input.TakeKey(KeyboardKey.Escape))
             query = "";
-        ui.TextField(FieldId, ref query, t.OptionsSearchPlaceholder, Sizing.Grow(), ui.State.Icons.OptionsSearch);
+        ui.TextField(FieldId, ref query, t.OptionsSearchPlaceholder, Sizing.Grow(), ui.State.Icons.OptionsSearch, clearable: true);
     }
 
     /// <summary>Says that no option matches, with a button that empties the search.</summary>

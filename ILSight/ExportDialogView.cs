@@ -510,7 +510,7 @@ internal static class ExportDialogView
         var t = ui.State.Strings;
         using (ui.Row())
         {
-            ui.TextField("filter", ref picker.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Icons.ExportFilter);
+            ui.TextField("filter", ref picker.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Icons.ExportFilter, clearable: true);
             ui.Checkbox(t.ExportSelectedOnly, ref picker.SelectedOnly, id: "selected-only");
         }
     }

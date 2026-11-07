@@ -139,7 +139,7 @@ internal static class SearchPanelView
         if (Searches.TakeFocus(search))
             ui.Focus(fieldId);
         var width = Sizing.Grow(AppLayout.SearchMinWidth, AppLayout.SearchWidth);
-        var submitted = ui.TextField("search", ref search.Query, t.SearchField, width, ui.State.Icons.SearchField);
+        var submitted = ui.TextField("search", ref search.Query, t.SearchField, width, ui.State.Icons.SearchField, clearable: true);
         ui.Tooltip(fieldId, ui.Memo("search-syntax", t, static s => s.SearchSyntaxTooltip(Shortcuts.Search.Label)));
         if (!ui.HasFocus(fieldId))
             return;

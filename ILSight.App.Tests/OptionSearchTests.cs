@@ -126,4 +126,19 @@ public sealed class OptionSearchTests
         Assert.Equal("", app.Ui.DisplayOptionsQuery);
         Assert.True(app.Frames.Drew("UI scale"));
     }
+
+    [Fact]
+    public void The_search_field_shows_a_cross_only_while_it_holds_text()
+    {
+        var app = AppDriver.Opened(width: 1600f);
+        OpenDisplayOptions(app.Ui);
+        app.Run(2);
+        var empty = app.Frames.Canvas.Lines.Count;
+
+        // Spaces alone hide no option, so the only lines it adds are the cross's two.
+        app.Ui.DisplayOptionsQuery = "  ";
+        app.Run(2);
+
+        Assert.Equal(empty + 2, app.Frames.Canvas.Lines.Count);
+    }
 }

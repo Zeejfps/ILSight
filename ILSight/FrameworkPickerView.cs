@@ -125,7 +125,7 @@ internal static class FrameworkPickerView
 
             if (TakeFilterFocus(picker))
                 ui.Focus(ui.GetId("picker-filter"));
-            open |= ui.TextField("picker-filter", ref picker.Filter, t.PickerFilter);
+            open |= ui.TextField("picker-filter", ref picker.Filter, t.PickerFilter, clearable: true);
 
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
             {

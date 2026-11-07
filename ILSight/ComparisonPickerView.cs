@@ -148,7 +148,7 @@ internal static class ComparisonPickerView
                 MoveSelectionFromFilter(ui, picker, listId);
             if (TakeFilterFocus(picker))
                 ui.Focus(ui.GetId(FilterId));
-            compare |= ui.TextField(FilterId, ref picker.Filter, t.ComparePickerFilter);
+            compare |= ui.TextField(FilterId, ref picker.Filter, t.ComparePickerFilter, clearable: true);
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
                 compare |= ListOrHint(ui, picker, listId);
             using (ui.Row(new Box { Gap = theme.GapTight }))
