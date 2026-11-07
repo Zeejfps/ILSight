@@ -55,207 +55,183 @@ public abstract class NodeSubject
     }
 
     /// <summary>A module that was read: an assembly, or a WebCIL module; the root of its tree.</summary>
-    public sealed class Module(LoadedModule value) : NodeSubject
+    public sealed class Module : NodeSubject
     {
-        public LoadedModule Value { get; } = value;
+        public required LoadedModule Value { get; init; }
     }
 
-    public sealed class Namespace(NamespaceInfo value) : NodeSubject
+    public sealed class Namespace : NodeSubject
     {
-        public NamespaceInfo Value { get; } = value;
+        public required NamespaceInfo Value { get; init; }
     }
 
     /// <summary>A listed file that could not be read as a .NET assembly; the root of its tree.</summary>
-    public sealed class FailedAssembly(Core.FailedAssembly value) : NodeSubject
+    public sealed class FailedAssembly : NodeSubject
     {
-        public Core.FailedAssembly Value { get; } = value;
+        public required Core.FailedAssembly Value { get; init; }
     }
 
-    public sealed class TypeDefinition(DefinedType definition) : NodeSubject
+    public sealed class TypeDefinition : NodeSubject
     {
-        public DefinedType Definition { get; } = definition;
+        public required DefinedType Definition { get; init; }
     }
 
     /// <summary>A field, property, event or method, or the accessor of a property or event.</summary>
-    public sealed class MemberDefinition(DefinedMember definition) : NodeSubject
+    public sealed class MemberDefinition : NodeSubject
     {
-        public DefinedMember Definition { get; } = definition;
+        public required DefinedMember Definition { get; init; }
     }
 
     /// <summary>The folder of the assemblies and modules <see cref="Owner"/> references.</summary>
-    public sealed class References(LoadedModule owner) : NodeSubject
+    public sealed class References : NodeSubject
     {
-        public LoadedModule Owner { get; } = owner;
+        public required LoadedModule Owner { get; init; }
     }
 
-    public sealed class AssemblyReference(AssemblyReferenceInfo value) : NodeSubject
+    public sealed class AssemblyReference : NodeSubject
     {
-        public AssemblyReferenceInfo Value { get; } = value;
+        public required AssemblyReferenceInfo Value { get; init; }
     }
 
     /// <summary>The folder of the types a module uses from the assembly <see cref="Reference"/> names.</summary>
-    public sealed class ReferencedTypes(AssemblyReferenceInfo reference) : NodeSubject
+    public sealed class ReferencedTypes : NodeSubject
     {
-        public AssemblyReferenceInfo Reference { get; } = reference;
+        public required AssemblyReferenceInfo Reference { get; init; }
     }
 
-    public sealed class TypeReference(TypeReferenceInfo value) : NodeSubject
+    public sealed class TypeReference : NodeSubject
     {
-        public TypeReferenceInfo Value { get; } = value;
+        public required TypeReferenceInfo Value { get; init; }
     }
 
-    public sealed class MemberReference(MemberReferenceInfo value) : NodeSubject
+    public sealed class MemberReference : NodeSubject
     {
-        public MemberReferenceInfo Value { get; } = value;
+        public required MemberReferenceInfo Value { get; init; }
     }
 
-    public sealed class ModuleReference(ModuleReferenceInfo value) : NodeSubject
+    public sealed class ModuleReference : NodeSubject
     {
-        public ModuleReferenceInfo Value { get; } = value;
+        public required ModuleReferenceInfo Value { get; init; }
     }
 
-    public sealed class ImportedMethod(ImportedMethodInfo value) : NodeSubject
+    public sealed class ImportedMethod : NodeSubject
     {
-        public ImportedMethodInfo Value { get; } = value;
+        public required ImportedMethodInfo Value { get; init; }
     }
 
-    public sealed class ForwardedType(ForwardedTypeInfo value) : NodeSubject
+    public sealed class ForwardedType : NodeSubject
     {
-        public ForwardedTypeInfo Value { get; } = value;
+        public required ForwardedTypeInfo Value { get; init; }
     }
 
     /// <summary>The folder of the types <see cref="Type"/> derives from directly.</summary>
-    public sealed class BaseTypes(DefinedType type) : NodeSubject
+    public sealed class BaseTypes : NodeSubject
     {
-        public DefinedType Type { get; } = type;
+        public required DefinedType Type { get; init; }
     }
 
-    public sealed class BaseType(BaseTypeInfo value) : NodeSubject
+    public sealed class BaseType : NodeSubject
     {
-        public BaseTypeInfo Value { get; } = value;
+        public required BaseTypeInfo Value { get; init; }
     }
 
     /// <summary>The folder of the types of the open assemblies that derive from <see cref="Type"/> directly.</summary>
-    public sealed class DerivedTypes(DefinedType type) : NodeSubject
+    public sealed class DerivedTypes : NodeSubject
     {
-        public DefinedType Type { get; } = type;
+        public required DefinedType Type { get; init; }
     }
 
-    public sealed class DerivedType(DerivedTypeInfo value) : NodeSubject
+    public sealed class DerivedType : NodeSubject
     {
-        public DerivedTypeInfo Value { get; } = value;
+        public required DerivedTypeInfo Value { get; init; }
     }
 
     /// <summary>The folder of <see cref="Owner"/>'s manifest resources.</summary>
-    public sealed class Resources(LoadedModule owner) : NodeSubject
+    public sealed class Resources : NodeSubject
     {
-        public LoadedModule Owner { get; } = owner;
+        public required LoadedModule Owner { get; init; }
     }
 
     /// <summary>A manifest resource that holds entries: a <c>.resources</c> file, or Avalonia's asset container.</summary>
-    public sealed class ResourceContainer(ResourceContainerInfo value) : NodeSubject
+    public sealed class ResourceContainer : NodeSubject
     {
-        public ResourceContainerInfo Value { get; } = value;
+        public required ResourceContainerInfo Value { get; init; }
     }
 
-    public sealed class ResourceEntry(ResourceEntryInfo value) : NodeSubject
+    public sealed class ResourceEntry : NodeSubject
     {
-        public ResourceEntryInfo Value { get; } = value;
+        public required ResourceEntryInfo Value { get; init; }
     }
 
     /// <summary>The raw CLI metadata of a file: a module's own, or its debug metadata.</summary>
-    public sealed class Metadata(MetadataFolderInfo value) : NodeSubject
+    public sealed class Metadata : NodeSubject
     {
-        public MetadataFolderInfo Value { get; } = value;
+        public required MetadataFolderInfo Value { get; init; }
     }
 
     /// <summary>The folder of the tables of the metadata <see cref="Folder"/> stands for.</summary>
-    public sealed class MetadataTables(MetadataFolderInfo folder) : NodeSubject
+    public sealed class MetadataTables : NodeSubject
     {
-        public MetadataFolderInfo Folder { get; } = folder;
+        public required MetadataFolderInfo Folder { get; init; }
     }
 
     /// <summary>A part of a metadata folder: a header, directory, table or heap, or a debug directory entry.</summary>
-    public sealed class MetadataTable(MetadataTableInfo value) : NodeSubject
+    public sealed class MetadataTable : NodeSubject
     {
-        public MetadataTableInfo Value { get; } = value;
+        public required MetadataTableInfo Value { get; init; }
     }
 
     /// <summary>A listed package or bundle, standing for its root folder, or a folder in it.</summary>
-    public sealed class Package(PackageFolderInfo value) : NodeSubject
+    public sealed class Package : NodeSubject
     {
-        public PackageFolderInfo Value { get; } = value;
+        public required PackageFolderInfo Value { get; init; }
     }
 
     /// <summary>A file of a package that is no assembly.</summary>
-    public sealed class PackageFile(PackageFileInfo value) : NodeSubject
+    public sealed class PackageFile : NodeSubject
     {
-        public PackageFileInfo Value { get; } = value;
+        public required PackageFileInfo Value { get; init; }
     }
 }
 
 /// <summary>An assembly <see cref="Module"/> references, as its metadata names it.</summary>
 public sealed class AssemblyReferenceInfo
 {
-    internal AssemblyReferenceInfo(LoadedModule module, ICSharpCode.Decompiler.Metadata.AssemblyReference reference)
-    {
-        Module = module;
-        Reference = reference;
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
-
-    public ICSharpCode.Decompiler.Metadata.AssemblyReference Reference { get; }
+    public required ICSharpCode.Decompiler.Metadata.AssemblyReference Reference { get; init; }
 }
 
 /// <summary>A type <see cref="Module"/> uses from one of its references: labelled as <c>typeof</c> names
 /// an open generic type, and fully named after the type it is nested in, else after its namespace.</summary>
 public sealed class TypeReferenceInfo
 {
-    internal TypeReferenceInfo(LoadedModule module, TypeReferenceHandle handle, string ns, string label, string fullName, string reflectionName)
-    {
-        Module = module;
-        Handle = handle;
-        Namespace = ns;
-        Label = label;
-        FullName = fullName;
-        ReflectionName = reflectionName;
-    }
-
     /// <summary>The name with its namespace, the types it is nested in and how many type parameters it
     /// has, as metadata writes it: <c>System.Collections.Generic.List`1</c>.</summary>
-    public string ReflectionName { get; }
+    public required string ReflectionName { get; init; }
 
-    public LoadedModule Module { get; }
+    public required LoadedModule Module { get; init; }
 
-    public TypeReferenceHandle Handle { get; }
+    public required TypeReferenceHandle Handle { get; init; }
 
-    public string Namespace { get; }
+    public required string Namespace { get; init; }
 
-    public string Label { get; }
+    public required string Label { get; init; }
 
-    public string FullName { get; }
+    public required string FullName { get; init; }
 }
 
 /// <summary>A member <see cref="Module"/> uses of a type from one of its references, as the type
 /// declares it: for an accessor, the property or event it belongs to.</summary>
 public sealed class MemberReferenceInfo
 {
-    internal MemberReferenceInfo(LoadedModule module, MemberReferenceHandle handle, IMember declared, string fullName)
-    {
-        Module = module;
-        Handle = handle;
-        Declared = declared;
-        FullName = fullName;
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
+    public required MemberReferenceHandle Handle { get; init; }
 
-    public MemberReferenceHandle Handle { get; }
+    public required IMember Declared { get; init; }
 
-    public IMember Declared { get; }
-
-    public string FullName { get; }
+    public required string FullName { get; init; }
 
     /// <summary>What sort of member is used, as its type declares it.</summary>
     public MemberShape Shape => EntityText.ShapeOf(Declared);
@@ -265,85 +241,56 @@ public sealed class MemberReferenceInfo
 /// of the assembly, which holds metadata when the assembly's file table says so.</summary>
 public sealed class ModuleReferenceInfo
 {
-    internal ModuleReferenceInfo(LoadedModule module, string name, bool containsMetadata, IReadOnlyList<MethodDefinitionHandle> imports)
-    {
-        Module = module;
-        Name = name;
-        ContainsMetadata = containsMetadata;
-        Imports = imports;
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
+    public required string Name { get; init; }
 
-    public string Name { get; }
-
-    public bool ContainsMetadata { get; }
+    public required bool ContainsMetadata { get; init; }
 
     /// <summary>The methods the module imports from it.</summary>
-    public IReadOnlyList<MethodDefinitionHandle> Imports { get; }
+    public required IReadOnlyList<MethodDefinitionHandle> Imports { get; init; }
 }
 
 /// <summary>A method imported from a module: <see cref="Shown"/> is the method it is labelled and goes
 /// as, which for a stub the compiler generates as a local function is the method declaring it.</summary>
 public sealed class ImportedMethodInfo
 {
-    internal ImportedMethodInfo(DefinedMember shown, string id, string label, string declaringTypeName, string entryPoint, string moduleName)
-    {
-        Shown = shown;
-        Id = id;
-        Label = label;
-        DeclaringTypeName = declaringTypeName;
-        EntryPoint = entryPoint;
-        ModuleName = moduleName;
-    }
-
-    public DefinedMember Shown { get; }
+    public required DefinedMember Shown { get; init; }
 
     /// <summary>The XML documentation id of the method that calls into the module, the stub itself for a
     /// local function.</summary>
-    public string Id { get; }
+    public required string Id { get; init; }
 
     /// <summary>The method as the tree labels it, with the parameters the module is called with.</summary>
-    public string Label { get; }
+    public required string Label { get; init; }
 
-    public string DeclaringTypeName { get; }
+    public required string DeclaringTypeName { get; init; }
 
     /// <summary>The name of the function the method calls in the module.</summary>
-    public string EntryPoint { get; }
+    public required string EntryPoint { get; init; }
 
-    public string ModuleName { get; }
+    public required string ModuleName { get; init; }
 }
 
 /// <summary>A type <see cref="Module"/> forwards to the assembly <see cref="Destination"/> names.</summary>
 public sealed class ForwardedTypeInfo
 {
-    internal ForwardedTypeInfo(LoadedModule module, ForwardedType type)
-    {
-        Module = module;
-        Handle = type.Handle;
-        Namespace = type.Namespace;
-        Label = type.Label;
-        SortName = type.SortName;
-        Arity = type.Arity;
-        Destination = type.Destination;
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
+    public required ExportedTypeHandle Handle { get; init; }
 
-    public ExportedTypeHandle Handle { get; }
-
-    public string Namespace { get; }
+    public required string Namespace { get; init; }
 
     /// <summary>The type as <c>typeof</c> names an open generic type, e.g. <c>Dictionary&lt;,&gt;</c>.</summary>
-    public string Label { get; }
+    public required string Label { get; init; }
 
     /// <summary>The name without type parameters, which it sorts by, then by <see cref="Arity"/>.</summary>
-    public string SortName { get; }
+    public required string SortName { get; init; }
 
     /// <summary>How many type parameters it has.</summary>
-    public int Arity { get; }
+    public required int Arity { get; init; }
 
-    public string Destination { get; }
+    public required string Destination { get; init; }
 
     public string FullName => Namespace.Length == 0 ? Label : $"{Namespace}.{Label}";
 
@@ -362,23 +309,15 @@ public sealed class ForwardedTypeInfo
 /// <summary>A type a type derives from directly, as <see cref="Module"/> names it, and what it resolves to.</summary>
 public sealed class BaseTypeInfo
 {
-    internal BaseTypeInfo(LoadedModule module, IType type, BaseTypeTarget target, NodeVisibility visibility)
-    {
-        Module = module;
-        Type = type;
-        Target = target;
-        Visibility = visibility;
-    }
-
-    public LoadedModule Module { get; }
+    public required LoadedModule Module { get; init; }
 
     /// <summary>The type as it is derived from, with its type arguments.</summary>
-    public IType Type { get; }
+    public required IType Type { get; init; }
 
-    public BaseTypeTarget Target { get; }
+    public required BaseTypeTarget Target { get; init; }
 
     /// <summary>How visible the type is, when it can be navigated to; else as visible as anything is.</summary>
-    public NodeVisibility Visibility { get; }
+    public required NodeVisibility Visibility { get; init; }
 }
 
 /// <summary>What a base type resolves to: a definition that can be navigated to, one that cannot, or none.</summary>
@@ -399,98 +338,63 @@ public abstract record BaseTypeTarget
 /// belongs to, and the reference it is navigated to by.</summary>
 public sealed class DerivedTypeInfo
 {
-    internal DerivedTypeInfo(LoadedModule module, ITypeDefinition symbol, CodeReference.Entity reference)
-    {
-        Module = module;
-        Symbol = symbol;
-        Reference = reference;
-        Visibility = NodeDefinitions.GetReferencedVisibility(symbol);
-    }
-
-    public NodeVisibility Visibility { get; }
+    public required NodeVisibility Visibility { get; init; }
 
     /// <summary>The module whose tree lists the type, under a type of its own.</summary>
-    public LoadedModule Module { get; }
+    public required LoadedModule Module { get; init; }
 
-    public ITypeDefinition Symbol { get; }
+    public required ITypeDefinition Symbol { get; init; }
 
-    public CodeReference.Entity Reference { get; }
+    public required CodeReference.Entity Reference { get; init; }
 }
 
 /// <summary>A type a module defines, with the handle its node is found by and the reference it is navigated to by.</summary>
 public sealed class DefinedType
 {
-    internal DefinedType(LoadedModule module, ITypeDefinition symbol, TypeDefinitionHandle handle, CodeReference.Entity reference)
-    {
-        Module = module;
-        Symbol = symbol;
-        Handle = handle;
-        Reference = reference;
-        Visibility = NodeDefinitions.GetDefinitionVisibility(symbol);
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
+    public required ITypeDefinition Symbol { get; init; }
 
-    public ITypeDefinition Symbol { get; }
+    public required TypeDefinitionHandle Handle { get; init; }
 
-    public TypeDefinitionHandle Handle { get; }
-
-    public CodeReference.Entity Reference { get; }
+    public required CodeReference.Entity Reference { get; init; }
 
     public TypeShape Shape => EntityText.ShapeOf(Symbol);
 
     /// <summary>How visible the type is: compiler-generated when the compiler made it up, or a type it is nested in.</summary>
-    public NodeVisibility Visibility { get; }
+    public required NodeVisibility Visibility { get; init; }
 }
 
 /// <summary>A member a module defines, with the handle its node is found by and the reference it is navigated to by.</summary>
 public sealed class DefinedMember
 {
-    internal DefinedMember(LoadedModule module, IMember symbol, CodeReference.Entity reference)
-    {
-        Module = module;
-        Symbol = symbol;
-        Reference = reference;
-        Visibility = NodeDefinitions.GetDefinitionVisibility(symbol);
-    }
+    public required LoadedModule Module { get; init; }
 
-    public LoadedModule Module { get; }
-
-    public IMember Symbol { get; }
+    public required IMember Symbol { get; init; }
 
     public EntityHandle Handle => Reference.Handle;
 
-    public CodeReference.Entity Reference { get; }
+    public required CodeReference.Entity Reference { get; init; }
 
     public MemberShape Shape => EntityText.ShapeOf(Symbol);
 
     /// <summary>How visible the member is: compiler-generated when the compiler made it up, or the property,
     /// event or type that holds it.</summary>
-    public NodeVisibility Visibility { get; }
+    public required NodeVisibility Visibility { get; init; }
 }
 
 /// <summary>A namespace of <see cref="Module"/>: the types it defines there and those it forwards from
 /// there to other assemblies. One that holds neither is listed only because others nest in it.</summary>
 public sealed class NamespaceInfo
 {
-    internal NamespaceInfo(LoadedModule module, string name, IReadOnlyList<ITypeDefinition> types, IReadOnlyList<ForwardedTypeInfo> forwarded)
-    {
-        Module = module;
-        Name = name;
-        Types = types;
-        Forwarded = forwarded;
-        IsPublicApi = forwarded.Count > 0 || types.Any(EntityText.IsPublicApi);
-        IsCompilerGenerated = forwarded.Count == 0 && types.All(Members.IsCompilerGenerated);
-    }
-
-    public LoadedModule Module { get; }
+    public required LoadedModule Module { get; init; }
 
     /// <summary>The full name; empty for the global namespace.</summary>
-    public string Name { get; }
+    public required string Name { get; init; }
 
-    public IReadOnlyList<ITypeDefinition> Types { get; }
+    public required IReadOnlyList<ITypeDefinition> Types { get; init; }
 
-    public IReadOnlyList<ForwardedTypeInfo> Forwarded { get; }
+    public required IReadOnlyList<ForwardedTypeInfo> Forwarded { get; init; }
 
     /// <summary>The name as the tree shows it: <c>-</c> for the global namespace.</summary>
     public string Label => Name.Length == 0 ? "-" : Name;
@@ -499,8 +403,8 @@ public sealed class NamespaceInfo
     public bool IsEnclosingOnly => Types.Count == 0 && Forwarded.Count == 0;
 
     /// <summary>Whether a type here is visible outside the module: one it forwards, or a public one.</summary>
-    public bool IsPublicApi { get; }
+    public required bool IsPublicApi { get; init; }
 
     /// <summary>Whether everything here is something the compiler made up.</summary>
-    public bool IsCompilerGenerated { get; }
+    public required bool IsCompilerGenerated { get; init; }
 }

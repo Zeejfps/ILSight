@@ -20,11 +20,41 @@ public static class NodeDefinitions
     {
         var definition = type.GetDefinition();
         if (definition == null)
-            return new BaseTypeInfo(module, type, new BaseTypeTarget.Unresolved(), NodeVisibility.Open);
+            return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Unresolved(), Visibility = NodeVisibility.Open };
         var reference = CodeReferences.Find(definition);
         if (reference == null)
-            return new BaseTypeInfo(module, type, new BaseTypeTarget.Unaddressed(definition), NodeVisibility.Open);
-        return new BaseTypeInfo(module, type, new BaseTypeTarget.Navigable(definition, reference), GetReferencedVisibility(definition));
+            return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Unaddressed(definition), Visibility = NodeVisibility.Open };
+        return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Navigable(definition, reference), Visibility = GetReferencedVisibility(definition) };
+    }
+
+    /// <summary><paramref name="type"/> as <paramref name="module"/> forwards it.</summary>
+    internal static ForwardedTypeInfo CreateForwardedType(LoadedModule module, ForwardedType type)
+    {
+        return new ForwardedTypeInfo
+        {
+            Module = module,
+            Handle = type.Handle,
+            Namespace = type.Namespace,
+            Label = type.Label,
+            SortName = type.SortName,
+            Arity = type.Arity,
+            Destination = type.Destination,
+        };
+    }
+
+    /// <summary>The namespace <paramref name="name"/> of <paramref name="module"/>, holding <paramref name="types"/>
+    /// and forwarding <paramref name="forwarded"/>.</summary>
+    internal static NamespaceInfo CreateNamespace(LoadedModule module, string name, IReadOnlyList<ITypeDefinition> types, IReadOnlyList<ForwardedTypeInfo> forwarded)
+    {
+        return new NamespaceInfo
+        {
+            Module = module,
+            Name = name,
+            Types = types,
+            Forwarded = forwarded,
+            IsPublicApi = forwarded.Count > 0 || types.Any(EntityText.IsPublicApi),
+            IsCompilerGenerated = forwarded.Count == 0 && types.All(Members.IsCompilerGenerated),
+        };
     }
 
     /// <summary>The derived type <paramref name="type"/>; null when it has no reference to be navigated to.</summary>
@@ -33,7 +63,7 @@ public static class NodeDefinitions
         var reference = CodeReferences.Find(type);
         if (reference == null)
             return null;
-        return new DerivedTypeInfo(module, type, reference);
+        return new DerivedTypeInfo { Module = module, Symbol = type, Reference = reference, Visibility = GetReferencedVisibility(type) };
     }
 
     /// <summary>The definition of <paramref name="type"/> in <paramref name="module"/>; null when it has no
@@ -45,7 +75,7 @@ public static class NodeDefinitions
         var reference = CodeReferences.Find(type);
         if (reference == null)
             return null;
-        return new DefinedType(module, type, (TypeDefinitionHandle)type.MetadataToken, reference);
+        return new DefinedType { Module = module, Symbol = type, Handle = (TypeDefinitionHandle)type.MetadataToken, Reference = reference, Visibility = GetDefinitionVisibility(type) };
     }
 
     /// <summary>The definition of <paramref name="member"/> in <paramref name="module"/>; null when it has
@@ -55,7 +85,7 @@ public static class NodeDefinitions
         var reference = CodeReferences.Find(member);
         if (reference == null)
             return null;
-        return new DefinedMember(module, member, reference);
+        return new DefinedMember { Module = module, Symbol = member, Reference = reference, Visibility = GetDefinitionVisibility(member) };
     }
 
     /// <summary>A reference to the type or member a node of <paramref name="subject"/> defines, as documents

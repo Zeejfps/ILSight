@@ -200,7 +200,7 @@ public sealed partial class BrowseNode
         var definition = NodeDefinitions.FindType(module, type);
         if (definition == null)
             return null;
-        return new BrowseNode(parent, new NodeSubject.TypeDefinition(definition));
+        return new BrowseNode(parent, new NodeSubject.TypeDefinition { Definition = definition });
     }
 
     /// <summary>The node of <paramref name="member"/>, under <paramref name="parent"/>; null for a member
@@ -210,7 +210,7 @@ public sealed partial class BrowseNode
         var definition = NodeDefinitions.FindMember(module, member);
         if (definition == null)
             return null;
-        return new BrowseNode(parent, new NodeSubject.MemberDefinition(definition));
+        return new BrowseNode(parent, new NodeSubject.MemberDefinition { Definition = definition });
     }
 
     /// <summary>The type or member <paramref name="node"/> defines; null for a node of anything else.</summary>

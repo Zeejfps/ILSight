@@ -23,9 +23,9 @@ public sealed partial class BrowseNode
         var module = definition.Module;
         var result = new List<BrowseNode>();
         if (type.DirectBaseTypes.Any())
-            result.Add(new BrowseNode(this, new NodeSubject.BaseTypes(definition)));
+            result.Add(new BrowseNode(this, new NodeSubject.BaseTypes { Type = definition }));
         if (DerivedTypes.CanHave(type))
-            result.Add(new BrowseNode(this, new NodeSubject.DerivedTypes(definition)));
+            result.Add(new BrowseNode(this, new NodeSubject.DerivedTypes { Type = definition }));
 
         foreach (var nested in type.NestedTypes.OrderBy(t => t.Name, NaturalStringComparer.Instance))
             AddIfListed(result, ForType(module, this, nested));
@@ -58,7 +58,7 @@ public sealed partial class BrowseNode
 
     private BrowseNode[] ListBaseTypes(DefinedType type) =>
         type.Symbol.DirectBaseTypes
-            .Select(t => (BrowseNode)new BrowseNode(this, new NodeSubject.BaseType(NodeDefinitions.CreateBaseType(type.Module, t))))
+            .Select(t => (BrowseNode)new BrowseNode(this, new NodeSubject.BaseType { Value = NodeDefinitions.CreateBaseType(type.Module, t) }))
             .ToArray();
 
     /// <summary>The types in scope of <paramref name="type"/> that derive from it directly, as
@@ -70,7 +70,7 @@ public sealed partial class BrowseNode
         {
             var info = NodeDefinitions.FindDerivedType(module, derived);
             if (info != null)
-                result.Add(new BrowseNode(parent, new NodeSubject.DerivedType(info)));
+                result.Add(new BrowseNode(parent, new NodeSubject.DerivedType { Value = info }));
         }
         return result.ToArray();
     }

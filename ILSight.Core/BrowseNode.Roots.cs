@@ -6,10 +6,10 @@ public sealed partial class BrowseNode
 {
     /// <summary>The root of <paramref name="module"/>'s tree: at the top, or for one read out of a package
     /// under the folder holding its file.</summary>
-    internal static BrowseNode ModuleRoot(LoadedModule module, BrowseNode? parent) => new(parent, new NodeSubject.Module(module));
+    internal static BrowseNode ModuleRoot(LoadedModule module, BrowseNode? parent) => new(parent, new NodeSubject.Module { Value = module });
 
     /// <summary>The root of a listed file that could not be read, without children, showing why.</summary>
-    internal static BrowseNode FailedRoot(FailedAssembly failed) => new(null, new NodeSubject.FailedAssembly(failed));
+    internal static BrowseNode FailedRoot(FailedAssembly failed) => new(null, new NodeSubject.FailedAssembly { Value = failed });
 
     /// <summary>The metadata, the debug metadata when there is some, the references and the resources,
     /// then every namespace a type is in or a name nests in, flat and sorted by name, each knowing the
@@ -21,9 +21,9 @@ public sealed partial class BrowseNode
         var symbols = module.DebugSymbols;
         if (symbols != null)
             result.Add(MetadataFolder(module, this, symbols.File, symbols.Title));
-        result.Add(new BrowseNode(this, new NodeSubject.References(module)));
+        result.Add(new BrowseNode(this, new NodeSubject.References { Owner = module }));
         if (!file.Resources.IsEmpty)
-            result.Add(new BrowseNode(this, new NodeSubject.Resources(module)));
+            result.Add(new BrowseNode(this, new NodeSubject.Resources { Owner = module }));
 
         var byNamespace = new Dictionary<string, List<ITypeDefinition>>(StringComparer.Ordinal);
         foreach (var type in module.MainModule.TopLevelTypeDefinitions)
@@ -45,10 +45,10 @@ public sealed partial class BrowseNode
         {
             var types = byNamespace.GetValueOrDefault(name, []);
             var forwarded = forwardedByNamespace.GetValueOrDefault(name, [])
-                .Select(f => new ForwardedTypeInfo(module, f))
+                .Select(f => NodeDefinitions.CreateForwardedType(module, f))
                 .ToList();
-            var info = new NamespaceInfo(module, name, types, forwarded);
-            var node = new BrowseNode(this, new NodeSubject.Namespace(info)) { EnclosingNamespace = FindEnclosing(namespaces, name) };
+            var info = NodeDefinitions.CreateNamespace(module, name, types, forwarded);
+            var node = new BrowseNode(this, new NodeSubject.Namespace { Value = info }) { EnclosingNamespace = FindEnclosing(namespaces, name) };
             namespaces.Add(name, node);
             result.Add(node);
         }
@@ -77,7 +77,7 @@ public sealed partial class BrowseNode
                 children.Add((type.Name, type.TypeParameterCount, node));
         }
         foreach (var forwarded in ns.Forwarded)
-            children.Add((forwarded.SortName, forwarded.Arity, new BrowseNode(this, new NodeSubject.ForwardedType(forwarded))));
+            children.Add((forwarded.SortName, forwarded.Arity, new BrowseNode(this, new NodeSubject.ForwardedType { Value = forwarded })));
         return children
             .OrderBy(static c => c.Name, NaturalStringComparer.Instance)
             .ThenBy(static c => c.Arity)

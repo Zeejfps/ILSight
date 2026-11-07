@@ -24,7 +24,7 @@ public sealed partial class BrowseNode
         module.ReadReferenceUsage();
         return module.File.AssemblyReferences
             .OrderBy(r => r.Name, NaturalStringComparer.Instance)
-            .Select(r => (BrowseNode)new BrowseNode(parent, new NodeSubject.AssemblyReference(new AssemblyReferenceInfo(module, r))))
+            .Select(r => (BrowseNode)new BrowseNode(parent, new NodeSubject.AssemblyReference { Value = new AssemblyReferenceInfo { Module = module, Reference = r } }))
             .ToArray();
     }
 
@@ -35,7 +35,7 @@ public sealed partial class BrowseNode
     {
         var children = new List<BrowseNode>();
         if (reference.Module.ReferenceUsage.Uses(reference.Reference.Handle))
-            children.Add(new BrowseNode(this, new NodeSubject.ReferencedTypes(reference)));
+            children.Add(new BrowseNode(this, new NodeSubject.ReferencedTypes { Reference = reference }));
         var referenced = ResolveReferenced(reference);
         if (referenced != null)
             children.AddRange(ListAssemblyReferences(referenced, this));
@@ -63,7 +63,7 @@ public sealed partial class BrowseNode
             .Select(h => UsedTypeInfo(module, h))
             .OrderBy(i => i.Namespace, NaturalStringComparer.Instance)
             .ThenBy(i => i.Label, NaturalStringComparer.Instance)
-            .Select(i => new BrowseNode(this, new NodeSubject.TypeReference(i)));
+            .Select(i => new BrowseNode(this, new NodeSubject.TypeReference { Value = i }));
         var forwarded = usage.ForwardedTo(handle)
             .Select(h => ForwardedTypes.Read(metadata, h))
             .OrderBy(f => f.Namespace, NaturalStringComparer.Instance)
@@ -76,11 +76,11 @@ public sealed partial class BrowseNode
 
     /// <summary>The node of a type forwarded to another assembly, under <paramref name="parent"/>.</summary>
     internal static BrowseNode Forwarded(LoadedModule module, BrowseNode parent, ForwardedType type) =>
-        new(parent, new NodeSubject.ForwardedType(new ForwardedTypeInfo(module, type)));
+        new(parent, new NodeSubject.ForwardedType { Value = NodeDefinitions.CreateForwardedType(module, type) });
 
     /// <summary>The node of the type <paramref name="handle"/> names, used from a reference, under this node.</summary>
     private BrowseNode UsedType(LoadedModule module, TypeReferenceHandle handle) =>
-        new(this, new NodeSubject.TypeReference(UsedTypeInfo(module, handle)));
+        new(this, new NodeSubject.TypeReference { Value = UsedTypeInfo(module, handle) });
 
     /// <summary>The type <paramref name="handle"/> names, used from a reference, as listed under this node.</summary>
     private TypeReferenceInfo UsedTypeInfo(LoadedModule module, TypeReferenceHandle handle)
@@ -91,7 +91,7 @@ public sealed partial class BrowseNode
         var bare = ReflectionHelper.SplitTypeParameterCountFromReflectionName(name, out var arity);
         var label = ForwardedTypes.LabelOf(bare, arity);
         var ns = metadata.GetString(reference.Namespace);
-        return new TypeReferenceInfo(module, handle, ns, label, QualifiedName(ns, label), QualifiedReflectionName(ns, name));
+        return new TypeReferenceInfo { Module = module, Handle = handle, Namespace = ns, Label = label, FullName = QualifiedName(ns, label), ReflectionName = QualifiedReflectionName(ns, name) };
     }
 
     /// <summary>The full name of a type labelled <paramref name="label"/> listed under this node: after the
@@ -145,8 +145,8 @@ public sealed partial class BrowseNode
 
     private BrowseNode UsedMember(LoadedModule module, MemberReferenceHandle handle, IMember declared)
     {
-        var info = new MemberReferenceInfo(module, handle, declared, $"{FullName}.{EntityText.Label(declared)}");
-        return new BrowseNode(this, new NodeSubject.MemberReference(info));
+        var info = new MemberReferenceInfo { Module = module, Handle = handle, Declared = declared, FullName = $"{FullName}.{EntityText.Label(declared)}" };
+        return new BrowseNode(this, new NodeSubject.MemberReference { Value = info });
     }
 
     /// <summary>The member <paramref name="handle"/> uses as its type declares it: for an accessor, the
@@ -187,8 +187,8 @@ public sealed partial class BrowseNode
     {
         var metadata = module.File.Metadata;
         var name = metadata.GetString(metadata.GetModuleReference(handle).Name);
-        var info = new ModuleReferenceInfo(module, name, IsModuleWithMetadata(metadata, name), ImportsFrom(imports, handle));
-        return new BrowseNode(parent, new NodeSubject.ModuleReference(info));
+        var info = new ModuleReferenceInfo { Module = module, Name = name, ContainsMetadata = IsModuleWithMetadata(metadata, name), Imports = ImportsFrom(imports, handle) };
+        return new BrowseNode(parent, new NodeSubject.ModuleReference { Value = info });
     }
 
     /// <summary>Whether the assembly's file table lists the module as one holding metadata.</summary>
@@ -244,7 +244,7 @@ public sealed partial class BrowseNode
         return imports
             .OrderBy(i => i.Label, NaturalStringComparer.Instance)
             .ThenBy(i => i.DeclaringTypeName, NaturalStringComparer.Instance)
-            .Select(i => (BrowseNode)new BrowseNode(this, new NodeSubject.ImportedMethod(i)))
+            .Select(i => (BrowseNode)new BrowseNode(this, new NodeSubject.ImportedMethod { Value = i }))
             .ToArray();
     }
 
@@ -261,8 +261,7 @@ public sealed partial class BrowseNode
         if (shown == null)
             return null;
         var entryPoint = ReadEntryPoint(module.Module.File.Metadata, method);
-        return new ImportedMethodInfo(shown, IdStringProvider.GetIdString(method), ImportLabelOf(method), EntityText.FullName(declaring), entryPoint,
-            module.Name);
+        return new ImportedMethodInfo { Shown = shown, Id = IdStringProvider.GetIdString(method), Label = ImportLabelOf(method), DeclaringTypeName = EntityText.FullName(declaring), EntryPoint = entryPoint, ModuleName = module.Name };
     }
 
     /// <summary>The tree's label for <paramref name="method"/>, named as the method enclosing it when it is a local function.</summary>

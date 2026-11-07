@@ -10,9 +10,9 @@ public sealed partial class BrowseNode
 {
     /// <summary>The node of the metadata of <paramref name="file"/>, titled <paramref name="title"/>, under <paramref name="parent"/>.</summary>
     internal static BrowseNode MetadataFolder(LoadedModule module, BrowseNode parent, MetadataFile file, string title) =>
-        new(parent, new NodeSubject.Metadata(new MetadataFolderInfo(module, file, title)));
+        new(parent, new NodeSubject.Metadata { Value = new MetadataFolderInfo(module, file, title) });
 
-    private BrowseNode Part(MetadataTableInfo part) => new(this, new NodeSubject.MetadataTable(part));
+    private BrowseNode Part(MetadataTableInfo part) => new(this, new NodeSubject.MetadataTable { Value = part });
 
     /// <summary>For a PE file its headers and debug directory, then the tables and the four heaps.</summary>
     private BrowseNode[] ListMetadata(MetadataFolderInfo folder)
@@ -29,7 +29,7 @@ public sealed partial class BrowseNode
                 directories)));
             result.Add(Part(MetadataTableInfo.DebugDirectoryOf(folder.Module, pe)));
         }
-        result.Add(new BrowseNode(this, new NodeSubject.MetadataTables(folder)));
+        result.Add(new BrowseNode(this, new NodeSubject.MetadataTables { Folder = folder }));
         foreach (var (title, heap) in MetadataHeaps.Create(file))
             result.Add(Part(MetadataTableInfo.GridOf(folder.Module, file, title, new MetadataPartKey.Heap(heap.Key), MetadataGridRole.Heap, heap)));
         return result.ToArray();
