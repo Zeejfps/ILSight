@@ -9,7 +9,7 @@ Sources: https://github.com/icsharpcode/ILSpy/releases and the `v11.2` source.
 - **Windows PDBs:** local names come only from portable PDBs; upstream also reads Windows PDBs
   (through Mono.Cecil).
 - **Word wrap** in the code view.
-- **Installed code fonts on macOS and Linux:** `ISystemFonts` lists them on Windows only, so elsewhere
+- **Installed code fonts on Linux:** `ISystemFonts` lists them on Windows and macOS only, so on Linux
   the font picker offers just the bundled font.
 - **Open from the GAC** (Windows).
 - **Open from a running process.**
