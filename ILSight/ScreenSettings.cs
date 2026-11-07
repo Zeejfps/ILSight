@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Core.Processes;
 
 namespace ILSight;
 
@@ -26,6 +27,12 @@ public static class ScreenSettings
             Runtime = runtime,
             Picker = new FrameworkPicker { ReportError = reportError, ListAssemblies = () => RuntimeAssemblies.ListAssemblies(runtime) },
             NuGetPicker = new NuGetPicker { ReportError = reportError },
+            ProcessPicker = new ProcessPicker
+            {
+                ReportError = reportError,
+                FindProcesses = RunningProcesses.FindProcessesAsync,
+                FindModules = RunningProcesses.FindModulesAsync,
+            },
             Display = saved.Display ?? DisplayOptions.Default,
             Analyzer = new AnalyzerRows { AppCommands = appCommands },
             MainLayout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) },

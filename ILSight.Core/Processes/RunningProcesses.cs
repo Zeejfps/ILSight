@@ -35,18 +35,18 @@ public sealed record RunningProcess(ProcessId Id, string Name, ProcessInfo? Info
 
 /// <summary>A module a process has loaded: one whose file can be opened, or one with no file to open, loaded
 /// from bytes, made at run time, or in a file this user can't see.</summary>
-public abstract record ProcessModule
+public abstract record RunningModule
 {
-    private ProcessModule()
+    private RunningModule()
     {
     }
 
     /// <summary>The file name of a module on disk; the assembly's simple name of one in memory.</summary>
     public abstract string Name { get; init; }
 
-    public sealed record OnDisk(string Name, AssemblyPath Path) : ProcessModule;
+    public sealed record OnDisk(string Name, AssemblyPath Path) : RunningModule;
 
-    public sealed record InMemory(string Name) : ProcessModule;
+    public sealed record InMemory(string Name) : RunningModule;
 }
 
 /// <summary>What asking a process for its modules came to.</summary>
@@ -57,7 +57,7 @@ public abstract record ModuleListing
     }
 
     /// <summary>The modules, sorted by name.</summary>
-    public sealed record Listed(IReadOnlyList<ProcessModule> Modules) : ModuleListing;
+    public sealed record Listed(IReadOnlyList<RunningModule> Modules) : ModuleListing;
 
     /// <summary>The process could not be asked: it is gone, refused, or didn't answer in time.</summary>
     public sealed record Unreachable(string Detail) : ModuleListing;
@@ -173,9 +173,9 @@ public static class RunningProcesses
 
     /// <summary>The modules a rundown reported, each once, with a file where one of its paths names a file
     /// that is there, sorted by name.</summary>
-    internal static IReadOnlyList<ProcessModule> ResolveModules(IReadOnlyList<RundownModule> modules)
+    internal static IReadOnlyList<RunningModule> ResolveModules(IReadOnlyList<RundownModule> modules)
     {
-        var result = new List<ProcessModule>();
+        var result = new List<RunningModule>();
         var seenPaths = new HashSet<AssemblyPath>();
         var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -185,13 +185,13 @@ public static class RunningProcesses
             if (path != null)
             {
                 if (seenPaths.Add(path))
-                    result.Add(new ProcessModule.OnDisk(path.FileName, path));
+                    result.Add(new RunningModule.OnDisk(path.FileName, path));
                 continue;
             }
 
             var name = module.AssemblyName ?? GetNonBlank(module.IlPath) ?? GetNonBlank(module.NativePath) ?? "(dynamic module)";
             if (seenNames.Add(name))
-                result.Add(new ProcessModule.InMemory(name));
+                result.Add(new RunningModule.InMemory(name));
         }
 
         return result.OrderBy(static m => m.Name, StringComparer.OrdinalIgnoreCase).ToList();
@@ -204,7 +204,7 @@ public static class RunningProcesses
     /// app is, which opens as a bundle. A relative path on the command line is relative to where the process
     /// started, which isn't known, so it is passed over.
     /// </summary>
-    public static AssemblyPath? FindEntryAssembly(RunningProcess process, IReadOnlyList<ProcessModule> modules)
+    public static AssemblyPath? FindEntryAssembly(RunningProcess process, IReadOnlyList<RunningModule> modules)
     {
         if (process.Info == null)
             return null;
@@ -213,7 +213,7 @@ public static class RunningProcesses
         {
             foreach (var module in modules)
             {
-                if (module is ProcessModule.OnDisk onDisk
+                if (module is RunningModule.OnDisk onDisk
                     && string.Equals(Path.GetFileNameWithoutExtension(onDisk.Name), entryName, StringComparison.OrdinalIgnoreCase))
                     return onDisk.Path;
             }

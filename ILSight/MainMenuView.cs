@@ -184,6 +184,8 @@ internal static class MainMenuView
             FrameworkPickerView.Open(ui.State.Picker);
         if (ui.MenuItem(t.FileOpenFromNuget, id: "open-from-nuget", icon: new UiIcon(icons.FileOpenFromNuGet)))
             NuGetPicking.OpenPicker(ui.State.NuGetPicker);
+        if (ui.MenuItem(t.FileOpenFromProcess, id: "open-from-process", icon: new UiIcon(icons.FileOpenFromProcess)))
+            ProcessPicking.OpenPicker(ui.State.ProcessPicker);
         ui.MenuSeparator();
         ExportItems(ui, appState);
         ui.MenuSeparator();

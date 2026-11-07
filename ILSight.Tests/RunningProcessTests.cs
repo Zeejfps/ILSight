@@ -74,7 +74,7 @@ public sealed class RunningProcessTests
         var listing = await RunningProcesses.FindModulesAsync(Self, CancellationToken.None);
 
         var modules = Assert.IsType<ModuleListing.Listed>(listing).Modules;
-        var core = Assert.IsType<ProcessModule.OnDisk>(Assert.Single(modules, m => m.Name == "ILSight.Core.dll"));
+        var core = Assert.IsType<RunningModule.OnDisk>(Assert.Single(modules, m => m.Name == "ILSight.Core.dll"));
         Assert.Equal(AssemblyPath.Of(CoreAssemblyPath), core.Path);
         Assert.Contains(modules, m => m.Name == "System.Private.CoreLib.dll");
     }
@@ -91,7 +91,7 @@ public sealed class RunningProcessTests
             var listing = await RunningProcesses.FindModulesAsync(Self, CancellationToken.None);
 
             var modules = Assert.IsType<ModuleListing.Listed>(listing).Modules;
-            Assert.Contains(new ProcessModule.InMemory("SampleApp"), modules);
+            Assert.Contains(new RunningModule.InMemory("SampleApp"), modules);
         }
         finally
         {
@@ -153,20 +153,20 @@ public sealed class RunningProcessTests
 
         Assert.Equal(
         [
-            new ProcessModule.InMemory("(dynamic module)"),
-            new ProcessModule.InMemory("/nowhere/Gone.dll"),
-            new ProcessModule.InMemory("Generated"),
-            new ProcessModule.OnDisk("ILSight.Core.dll", AssemblyPath.Of(CoreAssemblyPath)),
+            new RunningModule.InMemory("(dynamic module)"),
+            new RunningModule.InMemory("/nowhere/Gone.dll"),
+            new RunningModule.InMemory("Generated"),
+            new RunningModule.OnDisk("ILSight.Core.dll", AssemblyPath.Of(CoreAssemblyPath)),
         ], modules);
     }
 
     [Fact]
     public void The_entry_assembly_is_the_module_the_runtime_names()
     {
-        var modules = new ProcessModule[]
+        var modules = new RunningModule[]
         {
-            new ProcessModule.InMemory("ILSight.Core"),
-            new ProcessModule.OnDisk("ILSight.Core.dll", AssemblyPath.Of(CoreAssemblyPath)),
+            new RunningModule.InMemory("ILSight.Core"),
+            new RunningModule.OnDisk("ILSight.Core.dll", AssemblyPath.Of(CoreAssemblyPath)),
         };
 
         Assert.Equal(AssemblyPath.Of(CoreAssemblyPath), RunningProcesses.FindEntryAssembly(CreateProcess(entryName: "ILSight.Core", commandLine: null), modules));

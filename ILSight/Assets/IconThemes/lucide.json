@@ -155,6 +155,8 @@
     "file.openFromFramework": { "font": "lucide", "glyph": "E100" },
     // Open a package from a NuGet feed.
     "file.openFromNuGet": { "font": "lucide", "glyph": "E269" },
+    // Open an assembly a running .NET process has loaded.
+    "file.openFromProcess": { "font": "lucide", "glyph": "E038" },
     // Save the code shown.
     "file.saveCode": { "font": "lucide", "glyph": "E14D" },
     // Export assemblies as projects.

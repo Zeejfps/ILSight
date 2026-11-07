@@ -166,6 +166,9 @@ public sealed class UiState : IUiState
     /// <summary>The "open from NuGet" dialog.</summary>
     public required NuGetPicker NuGetPicker { get; init; }
 
+    /// <summary>The "open from running process" dialog.</summary>
+    public required ProcessPicker ProcessPicker { get; init; }
+
     /// <summary>What the export dialog asks for, and whether it is open.</summary>
     public ExportSetup ExportSetup { get; } = new();
 }

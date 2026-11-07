@@ -315,6 +315,10 @@
           "description": "Open a package from a NuGet feed.",
           "$ref": "#/definitions/icon"
         },
+        "file.openFromProcess": {
+          "description": "Open an assembly a running .NET process has loaded.",
+          "$ref": "#/definitions/icon"
+        },
         "file.saveCode": {
           "description": "Save the code shown.",
           "$ref": "#/definitions/icon"

@@ -30,6 +30,7 @@ public static class MainView
         FrameworkPickerView.Render(ui, appState.Assemblies);
         ComparisonPickerView.Render(ui, appState.Assemblies);
         NuGetPickerView.Render(ui);
+        ProcessPickerView.Render(ui);
         AssemblyListsDialogView.Render(ui, appState.Lists);
         AssemblyListDeleteDialogView.Render(ui, appState.Lists);
         BookmarkImportDialogView.Render(ui, appState.Imports);
