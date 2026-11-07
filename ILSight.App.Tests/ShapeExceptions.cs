@@ -49,6 +49,8 @@ internal static class ShapeExceptions
         "ILSight.CodeFontSize",
         "ILSight.Core.AssemblyPath",
         "ILSight.Core.AssemblyPicks`1",
+        "ILSight.Core.AsyncGuarded`1",
+        "ILSight.Core.AsyncGuarded`1+Held",
         "ILSight.Core.Guarded`1",
         "ILSight.Core.Guarded`1+Scope",
         "ILSight.Core.Guarded`2",

@@ -22,11 +22,9 @@ public sealed class NuGetFeed
 
     public required HttpClient Client { get; init; }
 
-    /// <summary>Lets one call at a time read the service index, which a failed read leaves unread for the next.</summary>
-    public readonly SemaphoreSlim IndexGate = new(1, 1);
-
-    /// <summary>The service index, once it is read; <see cref="NuGetFeeds.EnsureIndexAsync"/> hands it back.</summary>
-    public ServiceIndex? Index;
+    /// <summary>The service index, once it is read, which one call at a time reads; a failed read leaves it
+    /// unread for the next. <see cref="NuGetFeeds.EnsureIndexAsync"/> hands it back.</summary>
+    public AsyncGuarded<ServiceIndex?> Index { get; } = new(null);
 
     public required NuGetSource Source { get; init; }
 
@@ -183,17 +181,13 @@ public static class NuGetFeeds
 
     private static async Task<NuGetFeed.ServiceIndex> EnsureIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
     {
-        await feed.IndexGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            if (feed.Index == null)
-                feed.Index = await FetchIndexAsync(feed, cancellationToken).ConfigureAwait(false);
-            return feed.Index;
-        }
-        finally
-        {
-            feed.IndexGate.Release();
-        }
+        using var held = await feed.Index.EnterAsync(cancellationToken).ConfigureAwait(false);
+        var index = held.Value;
+        if (index != null)
+            return index;
+        index = await FetchIndexAsync(feed, cancellationToken).ConfigureAwait(false);
+        held.Value = index;
+        return index;
     }
 
     private static async Task<NuGetFeed.ServiceIndex> FetchIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
