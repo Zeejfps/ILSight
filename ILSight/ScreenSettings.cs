@@ -40,9 +40,12 @@ public static class ScreenSettings
         uiState.BookmarkColumns.Restore(saved.BookmarkColumns);
         uiState.SearchColumns.Restore(saved.SearchColumns);
         uiState.ExportColumns.Restore(saved.ExportColumns);
+        uiState.ProcessColumns.Restore(saved.ProcessColumns);
+        uiState.ProcessModuleColumns.Restore(saved.ProcessModuleColumns);
         NuGetPicking.RestoreSearch(uiState.NuGetPicker, saved.NuGet);
         DialogWindows.Restore(uiState.NuGetPicker.Window, saved.NuGetWindow);
         DialogWindows.Restore(uiState.ExportSetup.Window, saved.ExportWindow);
+        DialogWindows.Restore(uiState.ProcessPicker.Window, saved.ProcessWindow);
         ScreenLayout.ConnectLayout(uiState);
         DocumentPanels.SkipPanels(uiState.Documents, Docking.ListDocumentPanels(uiState.MainLayout));
         uiState.KeptView = CaptureViewSources(uiState);
@@ -79,6 +82,9 @@ public static class ScreenSettings
             uiState.Display,
             uiState.NuGetPicker.SearchChanges,
             uiState.NuGetPicker.Window.Changes,
+            uiState.ProcessPicker.Window.Changes,
+            uiState.ProcessColumns.Changes,
+            uiState.ProcessModuleColumns.Changes,
             uiState.Documents.Revision);
     }
 
@@ -96,6 +102,9 @@ public static class ScreenSettings
             uiState.Display,
             NuGetPicking.GetKeptSearch(uiState.NuGetPicker),
             uiState.NuGetPicker.Window.Bounds,
+            uiState.ProcessPicker.Window.Bounds,
+            uiState.ProcessColumns.Weights.ToList(),
+            uiState.ProcessModuleColumns.Weights.ToList(),
             DocumentPanels.SavePanels(uiState.Documents));
     }
 }

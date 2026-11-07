@@ -117,6 +117,8 @@ internal static class ShapeExceptions
         ["ILSight.BookmarksPanelView.HeaderTexts"] = "text per language",
         ["ILSight.DisplayOptionsPanelView.TokenFormatLabels"] = "text per language",
         ["ILSight.DisplayOptionsPanelView.UiScaleLabels"] = "text per language",
+        ["ILSight.ProcessPickerView.ModuleHeaders"] = "text per language",
+        ["ILSight.ProcessPickerView.ProcessHeaders"] = "text per language",
         ["ILSight.SearchPanelView.Headers"] = "text per language",
         ["ILSight.SearchPanelView.Summaries"] = "text per language",
         ["ILSight.ToolbarView.LanguageSegments"] = "text per language",

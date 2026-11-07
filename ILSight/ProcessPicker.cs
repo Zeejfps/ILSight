@@ -17,6 +17,9 @@ public sealed class ProcessPicker
     /// <summary>Lists the modules a process has loaded.</summary>
     public required Func<ProcessId, CancellationToken, Task<ModuleListing>> FindModules { get; init; }
 
+    /// <summary>Where the dialog's window is, kept between runs.</summary>
+    public DialogWindow Window { get; } = new();
+
     public bool IsOpen;
     public bool FocusFilter;
     public string Filter = "";

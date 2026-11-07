@@ -162,6 +162,9 @@ public sealed class SettingsFormatTests : IDisposable
             ExportWindow = new WindowBounds(30, 40, 900, 600, false),
             NuGet = new SavedNuGetSearch("https://api.nuget.org/v3/index.json", true),
             NuGetWindow = new WindowBounds(50, 60, 700, 500, false),
+            ProcessWindow = new WindowBounds(70, 80, 900, 600, false),
+            ProcessColumns = [2f, 1f, 3f, 1f],
+            ProcessModuleColumns = [1f, 4f],
         };
     }
 

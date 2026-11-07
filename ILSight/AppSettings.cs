@@ -73,6 +73,15 @@ public sealed class AppSettings
     /// <summary>The "open from NuGet" dialog's window as it was left; null opens it at its default size, centered.</summary>
     public WindowBounds? NuGetWindow { get; set; }
 
+    /// <summary>The "open from running process" dialog's window as it was left; null opens it at its default size, centered.</summary>
+    public WindowBounds? ProcessWindow { get; set; }
+
+    /// <summary>The widths of the running processes' columns, as dragged.</summary>
+    public List<float>? ProcessColumns { get; set; }
+
+    /// <summary>The widths of the columns of a process's assemblies, as dragged.</summary>
+    public List<float>? ProcessModuleColumns { get; set; }
+
     public const int MinWindowWidth = 480;
     public const int MinWindowHeight = 320;
     public const int MaxWindowSize = 16384;

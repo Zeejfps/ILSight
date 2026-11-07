@@ -187,6 +187,9 @@ public static class Settings
             Display = view.Display,
             NuGet = view.NuGet,
             NuGetWindow = view.NuGetWindow,
+            ProcessWindow = view.ProcessWindow,
+            ProcessColumns = view.ProcessColumns,
+            ProcessModuleColumns = view.ProcessModuleColumns,
         };
     }
 
@@ -244,6 +247,9 @@ public static class Settings
             settings.Display,
             settings.NuGet,
             settings.NuGetWindow,
+            settings.ProcessWindow,
+            settings.ProcessColumns,
+            settings.ProcessModuleColumns,
             Tabs: null);
     }
 }

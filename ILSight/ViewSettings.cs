@@ -23,6 +23,9 @@ public sealed record ViewSettings(
     DisplayOptions? Display,
     SavedNuGetSearch? NuGet,
     WindowBounds? NuGetWindow,
+    WindowBounds? ProcessWindow,
+    List<float>? ProcessColumns,
+    List<float>? ProcessModuleColumns,
     IReadOnlyList<TabPanel>? Tabs);
 
 /// <summary>The panel <see cref="Tab"/> is docked as, and how what it shows is viewed.</summary>

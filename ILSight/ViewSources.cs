@@ -17,4 +17,7 @@ public readonly record struct ViewSources(
     DisplayOptions Display,
     int NuGetSearch,
     int NuGetWindow,
+    int ProcessWindow,
+    int ProcessColumns,
+    int ProcessModuleColumns,
     int Documents);

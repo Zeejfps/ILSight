@@ -16,6 +16,7 @@ public sealed class AutosaveTests : IDisposable
 
     private static readonly WindowBounds MovedExportWindow = new(-900, 200, 700, 800, false);
     private static readonly WindowBounds MovedNuGetWindow = new(100, -300, 900, 600, false);
+    private static readonly WindowBounds MovedProcessWindow = new(-200, 150, 960, 640, false);
 
     [Theory]
     [InlineData(nameof(AppSettings.Theme))]
@@ -30,6 +31,9 @@ public sealed class AutosaveTests : IDisposable
     [InlineData(nameof(AppSettings.ExportColumns))]
     [InlineData(nameof(AppSettings.ExportWindow))]
     [InlineData(nameof(AppSettings.NuGetWindow))]
+    [InlineData(nameof(AppSettings.ProcessWindow))]
+    [InlineData(nameof(AppSettings.ProcessColumns))]
+    [InlineData(nameof(AppSettings.ProcessModuleColumns))]
     public void A_saved_setting_changed_alone_is_saved_with_the_next_frame(string field)
     {
         var app = new AppDriver(settings: _temp.Settings());
@@ -83,6 +87,15 @@ public sealed class AutosaveTests : IDisposable
             case nameof(AppSettings.NuGetWindow):
                 screen.NuGetPicker.Window.Bounds = MovedNuGetWindow;
                 break;
+            case nameof(AppSettings.ProcessWindow):
+                screen.ProcessPicker.Window.Bounds = MovedProcessWindow;
+                break;
+            case nameof(AppSettings.ProcessColumns):
+                screen.ProcessColumns.Restore([2f, 1f, 3f, 1f]);
+                break;
+            case nameof(AppSettings.ProcessModuleColumns):
+                screen.ProcessModuleColumns.Restore([1f, 4f]);
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(field), field, null);
         }
@@ -102,6 +115,9 @@ public sealed class AutosaveTests : IDisposable
         nameof(AppSettings.ExportColumns) => saved.ExportColumns?.SequenceEqual([1f, 4f, 1f]) == true,
         nameof(AppSettings.ExportWindow) => saved.ExportWindow == MovedExportWindow,
         nameof(AppSettings.NuGetWindow) => saved.NuGetWindow == MovedNuGetWindow,
+        nameof(AppSettings.ProcessWindow) => saved.ProcessWindow == MovedProcessWindow,
+        nameof(AppSettings.ProcessColumns) => saved.ProcessColumns?.SequenceEqual([2f, 1f, 3f, 1f]) == true,
+        nameof(AppSettings.ProcessModuleColumns) => saved.ProcessModuleColumns?.SequenceEqual([1f, 4f]) == true,
         _ => throw new ArgumentOutOfRangeException(nameof(field), field, null),
     };
 

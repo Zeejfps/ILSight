@@ -107,6 +107,18 @@ public sealed class UiState : IUiState
         new TableColumn(3f, 80f),
         new TableColumn(2f, 60f));
 
+    /// <summary>The columns of the running processes: name, id, entry assembly and runtime.</summary>
+    public TableColumns ProcessColumns { get; } = new(
+        new TableColumn(2f, 80f),
+        new TableColumn(1f, 48f),
+        new TableColumn(2f, 80f),
+        new TableColumn(1f, 56f));
+
+    /// <summary>The columns of the assemblies a process loaded: name and folder.</summary>
+    public TableColumns ProcessModuleColumns { get; } = new(
+        new TableColumn(2f, 100f),
+        new TableColumn(3f, 80f));
+
     /// <summary>The decompiler options panel's folded groups.</summary>
     public required FoldedGroups FoldedOptionGroups { get; init; }
 

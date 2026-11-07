@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
@@ -17,6 +19,13 @@ internal static class ProcessPickerView
     private const string ProcessListId = "process-list";
     private const string ModuleListId = "process-modules";
 
+    private static readonly ConditionalWeakTable<Strings, string[]> ProcessHeaders = new();
+    private static readonly ConditionalWeakTable<Strings, string[]> ModuleHeaders = new();
+
+    /// <summary>The share of the dialog's width the processes take; the assemblies, whose folders are
+    /// shown too, take the rest.</summary>
+    private const float ProcessPaneShare = 0.4f;
+
     public static void Render(Ui<UiState> ui)
     {
         var picker = ui.State.ProcessPicker;
@@ -26,8 +35,9 @@ internal static class ProcessPickerView
 
         var open = false;
         var close = false;
-        var card = new Box { Width = Sizing.Grow(0f, AppLayout.ProcessPickerWidth), Height = Sizing.Percent(AppLayout.PickerHeight) };
-        using (var dialog = ui.Dialog("process-picker", ui.State.Strings.ProcessPickerTitle, ref picker.IsOpen, card))
+        using (var dialog = ui.WindowDialog("process-picker", ui.State.Strings.ProcessPickerTitle, ref picker.IsOpen,
+            AppLayout.ProcessDialogWidth, AppLayout.ProcessDialogHeight, ref picker.Window.Bounds,
+            minWidth: AppLayout.ProcessDialogMinWidth, minHeight: AppLayout.ProcessDialogMinHeight))
         {
             if (dialog.IsOpen)
                 Content(ui, picker, ref open, ref close);
@@ -38,10 +48,11 @@ internal static class ProcessPickerView
             Commands.Later(ui.State, ListToOpen(picker), static (a, paths) => OpenAssemblies(a, paths));
             close = true;
         }
-        // Escape, the close button or the backdrop only clear IsOpen.
+        // Escape or the close button only clear IsOpen.
         var dismissed = wasOpen && !picker.IsOpen;
         if (close || dismissed)
             ClosePicker(picker);
+        DialogWindows.Settle(picker.Window, ui.Input.IsDown(PointerButton.Left));
     }
 
     private static void Content(Ui<UiState> ui, ProcessPicker picker, ref bool open, ref bool close)
@@ -57,9 +68,9 @@ internal static class ProcessPickerView
 
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
         {
-            using (Pane(ui))
+            using (Pane(ui, ProcessPaneShare))
                 open |= Processes(ui, picker, processListId);
-            using (Pane(ui))
+            using (Pane(ui, 1f - ProcessPaneShare))
                 open |= Modules(ui, picker);
         }
 
@@ -79,10 +90,12 @@ internal static class ProcessPickerView
     private static string Summary(Strings t, int processes, int modules, int selected) =>
         $"{t.ProcessPickerCount(processes)} · {t.PickerCount(modules)} · {t.PickerSelected(selected)}";
 
-    private static Ui.Scope Pane(Ui<UiState> ui)
+    /// <summary>A pane taking <paramref name="share"/> of the row, whatever its rows hold, so that neither
+    /// pane changes width as rows scroll into view.</summary>
+    private static Ui.Scope Pane(Ui<UiState> ui, float share)
     {
         var theme = ui.Theme;
-        return ui.Panel(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true });
+        return ui.Panel(new Box { Width = Sizing.Percent(share), Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true });
     }
 
     /// <summary>Walks the processes from the filter, leaving Home and End to its text.</summary>
@@ -130,25 +143,34 @@ internal static class ProcessPickerView
         }
     }
 
+    /// <summary>The processes as a table whose columns can be resized: name, id, entry assembly and runtime.
+    /// True when one was activated.</summary>
     private static bool ProcessRows(Ui<UiState> ui, ProcessPicker picker, int listId)
     {
-        var theme = ui.Theme;
         var t = ui.State.Strings;
-        using var list = ui.SelectableList(listId, picker.Filtered.Count, picker.ProcessSelection);
-        for (var i = list.First; i < list.End; i++)
+        var theme = ui.Theme;
+        var headers = ProcessHeaders.GetValue(t, static t =>
+            [t.ProcessPickerColumnName, t.ProcessPickerColumnId, t.ProcessPickerColumnEntry, t.ProcessPickerColumnRuntime]);
+        var table = ui.Table(listId, ui.State.ProcessColumns, picker.ProcessSelection);
+        table.Header(headers);
+        using var body = table.Body(picker.Filtered.Count);
+        for (var i = body.First; i < body.End; i++)
         {
             var process = picker.Filtered[i];
-            using (ui.Id(process.Id.Value))
-            using (var row = list.Row(i, ui.GetId("row"), new Box { Gap = theme.Gap, AlignY = Align.Center }))
+            using var row = body.Row(i, process.Id.Value);
+            var nameColor = row.Selected ? theme.SelectionText : theme.Text;
+            row.TextCell(0, process.Name, nameColor);
+            row.TextCell(1, process.Id.ToString(), theme.TextMuted);
+            if (process.Info == null)
             {
-                var nameColor = row.Selected ? theme.SelectionText : theme.Text;
-                ui.Text(process.Name, new Box { Width = Sizing.Grow() }, color: nameColor, overflow: TextOverflow.Ellipsis);
-                ui.Text(process.Id.ToString(), color: theme.TextMuted, size: theme.FontSizeSmall);
-                var runtime = process.Info == null ? t.ProcessPickerNoAnswer : process.Info.RuntimeVersion ?? "";
-                ui.Text(runtime, color: theme.TextMuted, size: theme.FontSizeSmall);
+                row.TextCell(2, "", theme.TextMuted);
+                row.TextCell(3, t.ProcessPickerNoAnswer, theme.TextMuted);
+                continue;
             }
+            row.TextCell(2, process.Info.EntryAssemblyName ?? "", theme.TextMuted);
+            row.TextCell(3, process.Info.RuntimeVersion ?? "", theme.TextMuted);
         }
-        return list.Activated;
+        return body.Activated;
     }
 
     /// <summary>The selected process's assemblies, or why they aren't shown. True when some were activated.</summary>
@@ -185,38 +207,42 @@ internal static class ProcessPickerView
         }
     }
 
+    /// <summary>The assemblies as a table whose columns can be resized: name, and the folder or that it is
+    /// only in memory. True when the picked-out ones were activated.</summary>
     private static bool ModuleRows(Ui<UiState> ui, ProcessPicker picker, IReadOnlyList<RunningModule> modules)
     {
-        var theme = ui.Theme;
         var t = ui.State.Strings;
-        using var list = ui.SelectableList(ui.GetId(ModuleListId), modules, picker.ModuleSelection);
-        for (var i = list.First; i < list.End; i++)
+        var theme = ui.Theme;
+        var headers = ModuleHeaders.GetValue(t, static t => [t.ProcessPickerColumnAssembly, t.ProcessPickerColumnFolder]);
+        var table = ui.Table(ModuleListId, ui.State.ProcessModuleColumns, picker.ModuleSelection);
+        table.Header(headers);
+        using var rows = table.Body(modules);
+        for (var i = rows.First; i < rows.End; i++)
         {
-            var module = modules[i];
-            using (ui.Id(i))
-            using (var row = list.Row(i, ui.GetId("row"), new Box { Gap = theme.GapTight }))
+            using var row = rows.Row(i);
+            switch (modules[i])
             {
-                var nameColor = row.Selected ? theme.SelectionText : theme.Text;
-                NodeIcons.Draw(ui, NodeIcon.Assembly);
-                using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
-                {
-                    switch (module)
+                case RunningModule.OnDisk onDisk:
+                    using (row.Cell(0))
                     {
-                        case RunningModule.OnDisk onDisk:
-                            ui.Text(onDisk.Name, color: nameColor, overflow: TextOverflow.Ellipsis);
-                            ui.Text(Path.GetDirectoryName(onDisk.Path.Text) ?? "", new Box { Width = Sizing.Grow() },
-                                color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
-                            break;
-                        case RunningModule.InMemory inMemory:
-                            ui.Text(inMemory.Name, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
-                            ui.Text(t.ProcessPickerInMemory, color: theme.TextMuted, size: theme.FontSizeSmall);
-                            break;
-                        default:
-                            throw new UnreachableException();
+                        NodeIcons.Draw(ui, NodeIcon.Assembly);
+                        ui.Text(onDisk.Name, new Box { Width = Sizing.Grow() }, color: row.Selected ? theme.SelectionText : theme.Text,
+                            overflow: TextOverflow.Ellipsis);
                     }
-                }
+                    row.TextCell(1, Path.GetDirectoryName(onDisk.Path.Text) ?? "", theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
+                    break;
+                case RunningModule.InMemory inMemory:
+                    using (row.Cell(0))
+                    {
+                        NodeIcons.Draw(ui, NodeIcon.Assembly);
+                        ui.Text(inMemory.Name, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
+                    }
+                    row.TextCell(1, t.ProcessPickerInMemory, theme.TextMuted);
+                    break;
+                default:
+                    throw new UnreachableException();
             }
         }
-        return list.Activated;
+        return rows.Activated;
     }
 }
