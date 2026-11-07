@@ -15,7 +15,7 @@ public static class DocumentPanels
         var shown = view.Grid;
         if (shown != null && ReferenceEquals(shown.Grid, grid))
             return shown;
-        shown = new MetadataGridState(grid);
+        shown = MetadataGridWidget.CreateState(grid);
         view.Grid = shown;
         return shown;
     }

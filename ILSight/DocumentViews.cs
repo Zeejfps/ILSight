@@ -98,7 +98,7 @@ public sealed class DocumentViews
 
     private static TabPanelView SaveView(DocumentTab tab, TabView view) => tab.Content switch
     {
-        TabContent.Diagram => new TabPanelView.Diagram(view.Diagram.Save()),
+        TabContent.Diagram => new TabPanelView.Diagram(Diagrams.SaveView(view.Diagram)),
         TabContent.Comparison => new TabPanelView.Comparison(view.Comparison.Save()),
         TabContent.Empty or TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Report
             or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone => new TabPanelView.None(),
@@ -190,7 +190,7 @@ public sealed class DocumentViews
         }
         var grid = position.Grid;
         if (grid != null)
-            DocumentPanels.GetGridState(view, shown).Restore(grid.Value);
+            MetadataGridWidget.RestorePosition(DocumentPanels.GetGridState(view, shown), grid.Value);
     }
 
     /// <summary>Returns the view of the diagram <paramref name="tab"/>, an open tab, shows to how
@@ -200,7 +200,7 @@ public sealed class DocumentViews
         var view = _views.GetValueOrDefault(tab);
         if (view == null)
             return;
-        view.Diagram.Restore(saved);
+        Diagrams.RestoreView(view.Diagram, saved);
     }
 
     /// <summary>Returns the view of the comparison <paramref name="tab"/>, an open tab, shows to how
@@ -233,7 +233,7 @@ public sealed class DocumentViews
         var grid = tab.Grid;
         if (grid == null || row >= grid.RowCount)
             return;
-        DocumentPanels.GetGridState(view, grid).Reveal(row);
+        MetadataGridWidget.RevealRow(DocumentPanels.GetGridState(view, grid), row);
     }
 
     /// <summary>Selects the card of <paramref name="type"/> on the diagram <paramref name="tab"/>, an open tab,
@@ -243,6 +243,6 @@ public sealed class DocumentViews
         var view = _views.GetValueOrDefault(tab);
         if (view == null)
             return;
-        view.Diagram.Focus(type);
+        Diagrams.FocusCard(view.Diagram, type);
     }
 }

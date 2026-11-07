@@ -32,6 +32,40 @@ public static class Diagrams
         view.FoldsVersion++;
     }
 
+    /// <summary>Shows members hidden from other assemblies on every card when <paramref name="shows"/>.</summary>
+    public static void ShowHiddenMembers(DiagramViewState view, bool shows)
+    {
+        if (shows == view.ShowsHiddenMembers)
+            return;
+        view.ShowsHiddenMembers = shows;
+        view.FilterChanges++;
+    }
+
+    /// <summary>Selects the card of <paramref name="type"/> and brings it into view once it is laid out.</summary>
+    public static void FocusCard(DiagramViewState view, CodeReference.Entity type)
+    {
+        view.Selected = type;
+        view.PendingFocus = type;
+    }
+
+    /// <summary>What the settings keep of the view.</summary>
+    public static DiagramViewRecord SaveView(DiagramViewState view)
+    {
+        var corner = view.Camera.Corner;
+        return new DiagramViewRecord(corner.X, corner.Y, view.Camera.Zoom, view.FlippedFolds.ToList(), view.ShowsHiddenMembers);
+    }
+
+    /// <summary>Returns the view to how <paramref name="saved"/> says it was, which the first layout then
+    /// keeps rather than fitting itself to the view.</summary>
+    public static void RestoreView(DiagramViewState view, DiagramViewRecord saved)
+    {
+        DiagramCameras.Restore(view.Camera, new PointF(saved.X, saved.Y), saved.Zoom);
+        if (saved.Folds != null)
+            RestoreFolds(view, saved.Folds);
+        view.ShowsHiddenMembers = saved.ShowsHiddenMembers;
+        view.IsFitPending = false;
+    }
+
     /// <summary>Folds and opens the parts as <paramref name="flipped"/>, as the view saved them, says.</summary>
     public static void RestoreFolds(DiagramViewState view, IEnumerable<CardFold> flipped)
     {

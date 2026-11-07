@@ -55,24 +55,17 @@ public sealed class DiagramViewState
     /// <summary>The type whose card is selected, or null.</summary>
     public CodeReference.Entity? Selected;
 
-    private int _filterChanges;
+    /// <summary>Counts the changes to <see cref="ShowsHiddenMembers"/>.</summary>
+    public int FilterChanges;
 
     /// <summary>Whether members hidden from other assemblies show on the cards of types from assemblies
-    /// other than the diagram's own.</summary>
-    public bool ShowsHiddenMembers { get; private set; }
+    /// other than the diagram's own. Changed through <see cref="Diagrams.ShowHiddenMembers"/>, which counts
+    /// each change in <see cref="FilterChanges"/>.</summary>
+    public bool ShowsHiddenMembers;
 
     /// <summary>Counts the changes to what the settings keep of the view: where it looks and how near,
     /// the folds, and the filter.</summary>
-    public int Changes => Camera.Changes + FoldsVersion + _filterChanges;
-
-    /// <summary>Shows members hidden from other assemblies on every card when <paramref name="shows"/>.</summary>
-    public void ShowHiddenMembers(bool shows)
-    {
-        if (shows == ShowsHiddenMembers)
-            return;
-        ShowsHiddenMembers = shows;
-        _filterChanges++;
-    }
+    public int Changes => Camera.Changes + FoldsVersion + FilterChanges;
 
     /// <summary>Set until the first layout is fitted to the view.</summary>
     public bool IsFitPending = true;
@@ -96,29 +89,4 @@ public sealed class DiagramViewState
     public TypeCard? MenuCard;
 
     internal KeptTooltip Tooltip { get; } = new();
-
-    /// <summary>Selects the card of <paramref name="type"/> and brings it into view once it is laid out.</summary>
-    public void Focus(CodeReference.Entity type)
-    {
-        Selected = type;
-        PendingFocus = type;
-    }
-
-    /// <summary>What the settings keep of the view.</summary>
-    public DiagramViewRecord Save()
-    {
-        var corner = Camera.Corner;
-        return new DiagramViewRecord(corner.X, corner.Y, Camera.Zoom, FlippedFolds.ToList(), ShowsHiddenMembers);
-    }
-
-    /// <summary>Returns the view to how <paramref name="saved"/> says it was, which the first layout then
-    /// keeps rather than fitting itself to the view.</summary>
-    public void Restore(DiagramViewRecord saved)
-    {
-        DiagramCameras.Restore(Camera, new PointF(saved.X, saved.Y), saved.Zoom);
-        if (saved.Folds != null)
-            Diagrams.RestoreFolds(this, saved.Folds);
-        ShowsHiddenMembers = saved.ShowsHiddenMembers;
-        IsFitPending = false;
-    }
 }

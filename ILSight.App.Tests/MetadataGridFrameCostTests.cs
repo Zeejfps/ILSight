@@ -18,11 +18,11 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     public void A_metadata_grid_with_a_row_selected_allocates_nothing_per_frame(bool scrolling)
     {
         var grid = OpenTable("TypeRef");
-        var state = new MetadataGridState(grid);
+        var state = MetadataGridWidget.CreateState(grid);
         var flags = MetadataGridWidget.CreateFilters(null);
         var frames = new UiFrames(Screens.Blank(), width: 1200f, height: 300f, body: ui => Render(ui, grid, state, flags)) { FrameTime = 1f / 60f };
         frames.Frame();
-        state.Reveal(1);
+        MetadataGridWidget.RevealRow(state, 1);
         frames.MovePointer(200f, 120f);
 
         frames.Canvas.Recording = false;
@@ -40,8 +40,8 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     public void Measuring_the_tall_rows_of_a_metadata_grid_allocates_nothing()
     {
         var grid = OpenTable("TypeRef");
-        var state = new MetadataGridState(grid);
-        state.UpdateView(MetadataGridWidget.CreateFilters(null));
+        var state = MetadataGridWidget.CreateState(grid);
+        MetadataGridWidget.UpdateView(state, MetadataGridWidget.CreateFilters(null));
         state.Open[(2, 1)] = 3;
         state.Open[(1, 1)] = 2;
         state.Open[(1, 2)] = 4;

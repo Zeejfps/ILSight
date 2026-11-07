@@ -91,7 +91,7 @@ internal static class DiagramView
     {
         var shows = view.ShowsHiddenMembers;
         if (ui.Checkbox(ui.State.Strings.DiagramShowHiddenMembers, ref shows, id: "show-hidden-members"))
-            view.ShowHiddenMembers(shows);
+            Diagrams.ShowHiddenMembers(view, shows);
     }
 
     /// <summary>Where the cards were drawn on the last frame.</summary>

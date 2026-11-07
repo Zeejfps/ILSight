@@ -42,7 +42,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var grid = tab.Grid;
         Assert.NotNull(grid);
         var row = grid.RowNamed("Greeter");
-        GridOf(app, tab).Reveal(row);
+        MetadataGridWidget.RevealRow(GridOf(app, tab), row);
         app.Run(3);
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
         return row;
@@ -199,7 +199,7 @@ public sealed class SavedDocumentsTests : IDisposable
         DiagramCameras.Restore(view.Camera, new PointF(-30f, 12f), 1.5f);
         var fields = new CardFold.Own(diagram.Diagram!.Cards[0].Anchor, MemberSection.Fields);
         Diagrams.ToggleFold(view, fields);
-        view.ShowHiddenMembers(true);
+        Diagrams.ShowHiddenMembers(view, true);
         ActivateTab(app.Ui, greeter);
         app.Run(3);
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
@@ -233,7 +233,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var tab = GridTab(app);
         KeepTabOpen(app.AppState, tab);
         var row = tab.Grid!.RowNamed("Greeter");
-        GridOf(app, tab).Reveal(row);
+        MetadataGridWidget.RevealRow(GridOf(app, tab), row);
         app.Run(3);
         app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
         app.Run(3);
