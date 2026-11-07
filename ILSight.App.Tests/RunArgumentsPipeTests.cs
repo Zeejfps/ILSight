@@ -30,7 +30,7 @@ public sealed class RunArgumentsPipeTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.FindAddress(temp.PathOf("settings.json"));
-        using var receiver = RunArgumentsReceiver.TryClaim(address);
+        using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
 
         var handedOver = RunArgumentsPipe.TrySend(address, Arguments("--navigateto=T:Some.Type", "relative.dll"));
@@ -46,7 +46,7 @@ public sealed class RunArgumentsPipeTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.FindAddress(temp.PathOf("settings.json"));
-        using var receiver = RunArgumentsReceiver.TryClaim(address);
+        using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
         receiver.Inbox.Writer.TryComplete();
 
@@ -71,7 +71,7 @@ public sealed class RunArgumentsPipeTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.FindAddress(temp.PathOf("settings.json"));
-        using var receiver = RunArgumentsReceiver.TryClaim(address);
+        using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
 
         var sends = Enumerable.Range(0, 16).Select(i => Task.Run(() => RunArgumentsPipe.TrySend(address, Arguments(i + ".dll")))).ToArray();
@@ -86,7 +86,7 @@ public sealed class RunArgumentsPipeTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.FindAddress(temp.PathOf("settings.json"));
-        using var receiver = RunArgumentsReceiver.TryClaim(address);
+        using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
         using (var gone = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly))
         {
@@ -103,7 +103,7 @@ public sealed class RunArgumentsPipeTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.FindAddress(temp.PathOf("settings.json"));
-        using var receiver = RunArgumentsReceiver.TryClaim(address);
+        using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
         var app = new AppDriver(inbox: receiver.Inbox);
         app.Run();

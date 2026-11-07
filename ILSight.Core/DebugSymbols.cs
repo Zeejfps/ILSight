@@ -1,3 +1,4 @@
+using static ILSight.Core.DebugSymbols;
 // Adapted from ILSpy's PortableDebugInfoProvider and DebugInfoUtils (MIT License, Copyright (c) AlphaSierraPapa for the SharpDevelop Team).
 
 using System.Collections.Immutable;
@@ -31,42 +32,68 @@ public enum PdbCheck
 /// assembly read out of one. The decompiler takes local names from it, and the tree shows its
 /// metadata beside the assembly's.
 /// </summary>
+/// <remarks>The decompiler's IDebugInfoProvider demands the methods here, which forward to <see cref="DebugSymbolFiles"/>.</remarks>
 internal sealed class DebugSymbols : IDebugInfoProvider
+{
+    internal const string PdbExtension = ".pdb";
+
+    /// <summary>The PDB's own metadata.</summary>
+    public required MetadataFile File { get; init; }
+
+    /// <summary>What the tree calls <see cref="File"/>.</summary>
+    public required string Title { get; init; }
+
+    public required string Description { get; init; }
+
+    public string SourceFileName => File.FileName;
+
+    public MetadataReader Metadata => File.Metadata;
+
+    public sealed record PdbImage(string Path, byte[] Image);
+
+    public IList<SequencePoint> GetSequencePoints(MethodDefinitionHandle method)
+    {
+        return DebugSymbolFiles.GetSequencePoints(this, method);
+    }
+
+    public IList<Variable> GetVariables(MethodDefinitionHandle method)
+    {
+        return DebugSymbolFiles.GetVariables(this, method);
+    }
+
+    public bool TryGetName(MethodDefinitionHandle method, int index, out string name)
+    {
+        return DebugSymbolFiles.TryGetName(this, method, index, out name);
+    }
+
+    /// <summary>The tuple element names and <c>dynamic</c> flags the compiler recorded for local
+    /// <paramref name="index"/>, which its signature cannot carry.</summary>
+    public bool TryGetExtraTypeInfo(MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
+    {
+        return DebugSymbolFiles.TryGetExtraTypeInfo(this, method, index, out extraTypeInfo);
+    }
+}
+
+/// <summary>Finding the portable PDB of an assembly, and reading the names and lines it holds.</summary>
+internal static class DebugSymbolFiles
 {
     private const string EmbeddedTitle = "Debug Metadata (Embedded)";
     private const string BesideTitle = "Debug Metadata (From portable PDB)";
     private const string EmbeddedDescription = "Embedded in this assembly";
     private const string BesideDescription = "Loaded from portable PDB: ";
-    internal const string PdbExtension = ".pdb";
     private const string WindowsPdbSignature = "Microsoft C/C++ MSF 7.00";
     private const int BitsPerByte = 8;
 
     /// <summary>Whether a portable PDB can be generated for <paramref name="file"/>: only when its debug
     /// directory names a PDB, which the generated one must match.</summary>
-    internal static bool CanGenerateFor(PEFile file) => PortablePdbWriter.HasCodeViewDebugDirectoryEntry(file);
-
-    private DebugSymbols(MetadataFile file, string title, string description)
+    internal static bool CanGenerateFor(PEFile file)
     {
-        File = file;
-        Title = title;
-        Description = description;
+        return PortablePdbWriter.HasCodeViewDebugDirectoryEntry(file);
     }
-
-    /// <summary>The PDB's own metadata.</summary>
-    public MetadataFile File { get; }
-
-    /// <summary>What the tree calls <see cref="File"/>.</summary>
-    public string Title { get; }
-
-    public string Description { get; }
-
-    public string SourceFileName => File.FileName;
-
-    private MetadataReader Metadata => File.Metadata;
 
     /// <summary>The symbols for <paramref name="assembly"/>, or null when it has none or they cannot be
     /// read. A PDB beside it is looked for in <paramref name="package"/> when it was read out of one.</summary>
-    public static DebugSymbols? Load(PEFile assembly, AssemblyPackage? package)
+    public static DebugSymbols? LoadSymbols(PEFile assembly, AssemblyPackage? package)
     {
         try
         {
@@ -91,7 +118,7 @@ internal sealed class DebugSymbols : IDebugInfoProvider
             var image = System.IO.File.ReadAllBytes(pdbPath);
             var provider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(image));
             var file = new MetadataFile(MetadataFile.MetadataFileKind.ProgramDebugDatabase, pdbPath, provider);
-            return new DebugSymbols(file, BesideTitle, BesideDescription + pdbPath);
+            return new DebugSymbols { File = file, Title = BesideTitle, Description = BesideDescription + pdbPath };
         }
         catch (Exception e) when (IsUnreadable(e))
         {
@@ -100,7 +127,7 @@ internal sealed class DebugSymbols : IDebugInfoProvider
     }
 
     /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>.</summary>
-    public static PdbCheck Check(PEFile assembly, string pdbPath)
+    public static PdbCheck CheckPdb(PEFile assembly, string pdbPath)
     {
         try
         {
@@ -151,7 +178,7 @@ internal sealed class DebugSymbols : IDebugInfoProvider
                 continue;
             var provider = assembly.Reader.ReadEmbeddedPortablePdbDebugDirectoryData(entry);
             var file = new MetadataFile(MetadataFile.MetadataFileKind.ProgramDebugDatabase, assembly.FileName, provider, isEmbedded: true);
-            return new DebugSymbols(file, EmbeddedTitle, EmbeddedDescription);
+            return new DebugSymbols { File = file, Title = EmbeddedTitle, Description = EmbeddedDescription };
         }
         return null;
     }
@@ -170,12 +197,10 @@ internal sealed class DebugSymbols : IDebugInfoProvider
             if (!IsBuiltWith(provider, codeView, entry))
                 continue;
             var file = new MetadataFile(MetadataFile.MetadataFileKind.ProgramDebugDatabase, pdb.Path, provider);
-            return new DebugSymbols(file, BesideTitle, BesideDescription + pdb.Path);
+            return new DebugSymbols { File = file, Title = BesideTitle, Description = BesideDescription + pdb.Path };
         }
         return null;
     }
-
-    private sealed record PdbImage(string Path, byte[] Image);
 
     /// <summary>The PDB the CodeView entry names in the assembly's folder, else the one named
     /// after the assembly; null when neither is there.</summary>
@@ -186,7 +211,7 @@ internal sealed class DebugSymbols : IDebugInfoProvider
         var image = TryReadFile(named, package);
         if (image != null)
             return new PdbImage(named, image);
-        var sibling = Path.ChangeExtension(assemblyPath, PdbExtension);
+        var sibling = Path.ChangeExtension(assemblyPath, DebugSymbols.PdbExtension);
         image = TryReadFile(sibling, package);
         if (image != null)
             return new PdbImage(sibling, image);
@@ -224,19 +249,21 @@ internal sealed class DebugSymbols : IDebugInfoProvider
         return id.Stamp == entry.Stamp;
     }
 
-    private static bool IsUnreadable(Exception e) =>
-        e is BadImageFormatException or IOException or UnauthorizedAccessException or InvalidOperationException or InvalidDataException;
+    private static bool IsUnreadable(Exception e)
+    {
+        return e is BadImageFormatException or IOException or UnauthorizedAccessException or InvalidOperationException or InvalidDataException;
+    }
 
-    public IList<SequencePoint> GetSequencePoints(MethodDefinitionHandle method)
+    public static IList<SequencePoint> GetSequencePoints(DebugSymbols symbols, MethodDefinitionHandle method)
     {
         var points = new List<SequencePoint>();
-        var debugInformation = Metadata.GetMethodDebugInformation(method);
+        var debugInformation = symbols.Metadata.GetMethodDebugInformation(method);
         foreach (var point in debugInformation.GetSequencePoints())
-            points.Add(ToSequencePoint(point));
+            points.Add(ToSequencePoint(symbols, point));
         return points;
     }
 
-    private SequencePoint ToSequencePoint(System.Reflection.Metadata.SequencePoint point)
+    private static SequencePoint ToSequencePoint(DebugSymbols symbols, System.Reflection.Metadata.SequencePoint point)
     {
         return new SequencePoint
         {
@@ -245,85 +272,85 @@ internal sealed class DebugSymbols : IDebugInfoProvider
             StartColumn = point.StartColumn,
             EndLine = point.EndLine,
             EndColumn = point.EndColumn,
-            DocumentUrl = DocumentNameOf(point.Document),
+            DocumentUrl = GetDocumentName(symbols, point.Document),
         };
     }
 
-    private string DocumentNameOf(DocumentHandle handle)
+    private static string GetDocumentName(DebugSymbols symbols, DocumentHandle handle)
     {
         if (handle.IsNil)
             return "";
-        var document = Metadata.GetDocument(handle);
-        return Metadata.GetString(document.Name);
+        var document = symbols.Metadata.GetDocument(handle);
+        return symbols.Metadata.GetString(document.Name);
     }
 
-    public IList<Variable> GetVariables(MethodDefinitionHandle method)
+    public static IList<Variable> GetVariables(DebugSymbols symbols, MethodDefinitionHandle method)
     {
         var variables = new List<Variable>();
-        foreach (var handle in LocalsOf(method))
+        foreach (var handle in ListLocals(symbols, method))
         {
-            var local = Metadata.GetLocalVariable(handle);
-            variables.Add(new Variable(local.Index, Metadata.GetString(local.Name)));
+            var local = symbols.Metadata.GetLocalVariable(handle);
+            variables.Add(new Variable(local.Index, symbols.Metadata.GetString(local.Name)));
         }
         return variables;
     }
 
-    public bool TryGetName(MethodDefinitionHandle method, int index, out string name)
+    public static bool TryGetName(DebugSymbols symbols, MethodDefinitionHandle method, int index, out string name)
     {
         name = null!;
-        var handle = FindLocal(method, index);
+        var handle = FindLocal(symbols, method, index);
         if (handle.IsNil)
             return false;
-        var local = Metadata.GetLocalVariable(handle);
-        name = Metadata.GetString(local.Name);
+        var local = symbols.Metadata.GetLocalVariable(handle);
+        name = symbols.Metadata.GetString(local.Name);
         return true;
     }
 
     /// <summary>The tuple element names and <c>dynamic</c> flags the compiler recorded for local
     /// <paramref name="index"/>, which its signature cannot carry.</summary>
-    public bool TryGetExtraTypeInfo(MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
+    public static bool TryGetExtraTypeInfo(DebugSymbols symbols, MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
     {
         extraTypeInfo = default;
-        var local = FindLocal(method, index);
+        var local = FindLocal(symbols, method, index);
         if (local.IsNil)
             return false;
-        foreach (var handle in Metadata.GetCustomDebugInformation(local))
+        foreach (var handle in symbols.Metadata.GetCustomDebugInformation(local))
         {
-            var information = Metadata.GetCustomDebugInformation(handle);
-            var kind = Metadata.GetGuid(information.Kind);
+            var information = symbols.Metadata.GetCustomDebugInformation(handle);
+            var kind = symbols.Metadata.GetGuid(information.Kind);
             if (kind == KnownGuids.TupleElementNames)
-                extraTypeInfo.TupleElementNames = ReadTupleElementNames(information.Value);
+                extraTypeInfo.TupleElementNames = ReadTupleElementNames(symbols, information.Value);
             else if (kind == KnownGuids.DynamicLocalVariables)
-                extraTypeInfo.DynamicFlags = ReadDynamicFlags(information.Value);
+                extraTypeInfo.DynamicFlags = ReadDynamicFlags(symbols, information.Value);
         }
         if (extraTypeInfo.TupleElementNames != null)
             return true;
         return extraTypeInfo.DynamicFlags != null;
     }
 
-    private LocalVariableHandle FindLocal(MethodDefinitionHandle method, int index)
+    private static LocalVariableHandle FindLocal(DebugSymbols symbols, MethodDefinitionHandle method, int index)
     {
-        foreach (var handle in LocalsOf(method))
+        foreach (var handle in ListLocals(symbols, method))
         {
-            if (Metadata.GetLocalVariable(handle).Index == index)
+            if (symbols.Metadata.GetLocalVariable(handle).Index == index)
                 return handle;
         }
         return default;
     }
 
-    private IEnumerable<LocalVariableHandle> LocalsOf(MethodDefinitionHandle method)
+    private static IEnumerable<LocalVariableHandle> ListLocals(DebugSymbols symbols, MethodDefinitionHandle method)
     {
-        foreach (var scopeHandle in Metadata.GetLocalScopes(method))
+        foreach (var scopeHandle in symbols.Metadata.GetLocalScopes(method))
         {
-            var scope = Metadata.GetLocalScope(scopeHandle);
+            var scope = symbols.Metadata.GetLocalScope(scopeHandle);
             foreach (var local in scope.GetLocalVariables())
                 yield return local;
         }
     }
 
-    private string?[] ReadTupleElementNames(BlobHandle blob)
+    private static string?[] ReadTupleElementNames(DebugSymbols symbols, BlobHandle blob)
     {
-        var reader = Metadata.GetBlobReader(blob);
+        var reader = symbols.Metadata.GetBlobReader(blob);
         var names = new List<string?>();
         while (reader.RemainingBytes > 0)
             names.Add(ReadTupleElementName(ref reader));
@@ -342,9 +369,9 @@ internal sealed class DebugSymbols : IDebugInfoProvider
     }
 
     /// <summary>One flag per bit, lowest bit of each byte first.</summary>
-    private bool[] ReadDynamicFlags(BlobHandle blob)
+    private static bool[] ReadDynamicFlags(DebugSymbols symbols, BlobHandle blob)
     {
-        var bytes = Metadata.GetBlobBytes(blob);
+        var bytes = symbols.Metadata.GetBlobBytes(blob);
         var flags = new bool[bytes.Length * BitsPerByte];
         for (var i = 0; i < flags.Length; i++)
         {

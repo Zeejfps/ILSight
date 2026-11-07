@@ -325,14 +325,14 @@ internal static class Documentation
     private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly)
     {
         var settings = Settings.Create();
-        var output = new DocumentBuilder(DecompilationLanguage.CSharp, assembly);
+        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly };
         TokenWriter writer = new TextTokenWriter(output, settings);
         writer = TokenWriter.InsertRequiredSpaces(writer);
         writer = new HighlightingTokenWriter(writer, output);
         var parameters = new ParameterStarts(writer, output);
         var ambience = new CSharpAmbience { ConversionFlags = SignatureFlags };
         ambience.ConvertSymbol(entity, parameters, settings.CSharpFormattingOptions);
-        var line = output.Build(entity.Name).Lines[0];
+        var line = DocumentWriting.BuildDocument(output, entity.Name).Lines[0];
         var constraints = WriteConstraints(entity, assembly, settings);
         return new CodeSignature(line, parameters.Starts, constraints);
     }
@@ -351,7 +351,7 @@ internal static class Documentation
         var constraints = declaration.Children.OfType<Constraint>().ToList();
         if (constraints.Count == 0)
             return [];
-        var output = new DocumentBuilder(DecompilationLanguage.CSharp, assembly);
+        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly };
         TokenWriter writer = new TextTokenWriter(output, settings);
         writer = TokenWriter.InsertRequiredSpaces(writer);
         writer = new HighlightingTokenWriter(writer, output);
@@ -360,7 +360,7 @@ internal static class Documentation
             constraint.AcceptVisitor(new CSharpOutputVisitor(writer, settings.CSharpFormattingOptions));
             output.WriteLine();
         }
-        return ListConstraintLines(output.Build(entity.Name).Lines);
+        return ListConstraintLines(DocumentWriting.BuildDocument(output, entity.Name).Lines);
     }
 
     /// <summary>The written clauses without the blank lines between them.</summary>

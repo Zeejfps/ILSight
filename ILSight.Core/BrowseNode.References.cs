@@ -46,7 +46,7 @@ public sealed partial class BrowseNode
     /// cannot be found or read.</summary>
     private static LoadedModule? ResolveReferenced(AssemblyReferenceInfo reference)
     {
-        if (reference.Module.Resolver.ResolveAssembly(reference.Reference) is not LoadedModule referenced)
+        if (AssemblyResolving.ResolveAssembly(reference.Module.Resolver, reference.Reference) is not LoadedModule referenced)
             return null;
         return referenced;
     }

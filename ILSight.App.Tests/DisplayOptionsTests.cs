@@ -663,11 +663,11 @@ public sealed class MatchingBracketsTests
     [Fact]
     public void Brackets_in_strings_do_not_count()
     {
-        var builder = new DocumentBuilder(DecompilationLanguage.CSharp);
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
         builder.Write("if (", SpanKind.Plain);
         builder.Write("\")\"", SpanKind.String);
         builder.Write(")", SpanKind.Plain);
-        var document = builder.Build("t");
+        var document = DocumentWriting.BuildDocument(builder, "t");
 
         Assert.Equal(Pair(0, 3, 0, 7), Find(document, 0, 3));
         Assert.Null(Find(document, 0, 5));

@@ -146,9 +146,9 @@ public static class Documents
     /// <summary>A document of plain lines, e.g. a placeholder while decompiling.</summary>
     public static DecompiledDocument CreateFromText(string title, string text, DecompilationLanguage language = DecompilationLanguage.CSharp)
     {
-        var builder = new DocumentBuilder(language);
+        var builder = new DocumentBuilder { Language = language };
         builder.Write(text, SpanKind.Plain);
-        return builder.Build(title);
+        return DocumentWriting.BuildDocument(builder, title);
     }
 
     /// <summary>The index of the line that defines <paramref name="reference"/>, or -1.</summary>

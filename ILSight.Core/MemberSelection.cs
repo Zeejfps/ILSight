@@ -41,70 +41,84 @@ internal static class MemberSelection
         return members;
     }
 
-    /// <summary>Keeps <paramref name="ctor"/> and the members whose initializers it runs.</summary>
-    public sealed class Constructor(IMethod ctor) : IAstTransform
+    /// <summary>Keeps <see cref="Kept"/> and the members whose initializers it runs. The decompiler's
+    /// IAstTransform demands <see cref="Run"/>.</summary>
+    public sealed class Constructor : IAstTransform
     {
-        private readonly HashSet<ISymbol?> _removed = new();
+        public required IMethod Kept { get; init; }
 
         public void Run(AstNode rootNode, TransformContext context)
         {
-            ConstructorDeclaration? kept = null;
-            foreach (var node in rootNode.Children)
-            {
-                switch (node)
-                {
-                    case ConstructorDeclaration cd:
-                        if (cd.GetSymbol() == ctor)
-                            kept = cd;
-                        else
-                            Remove(cd);
-                        break;
-                    case FieldDeclaration fd when fd.Variables.All(static v => v.Initializer is null):
-                        Remove(fd);
-                        break;
-                    case EventDeclaration ed when ed.Variables.All(static v => v.Initializer is null):
-                        Remove(ed);
-                        break;
-                    case PropertyDeclaration { Initializer: null } pd:
-                        Remove(pd);
-                        break;
-                    case CustomEventDeclaration or IndexerDeclaration:
-                        Remove(node);
-                        break;
-                }
-            }
-            if (kept?.Initializer?.ConstructorInitializerType == ConstructorInitializerType.This)
-            {
-                foreach (var node in rootNode.Children)
-                {
-                    if (node is not ConstructorDeclaration)
-                        Remove(node);
-                }
-            }
-            foreach (var node in rootNode.Children)
-            {
-                if (node is Comment && _removed.Contains(node.GetSymbol()))
-                    node.Remove();
-            }
-        }
-
-        private void Remove(AstNode node)
-        {
-            node.Remove();
-            _removed.Add(node.GetSymbol());
+            KeepConstructor(Kept, rootNode);
         }
     }
 
-    /// <summary>Keeps only <paramref name="field"/>.</summary>
-    public sealed class Field(IField field) : IAstTransform
+    /// <summary>Keeps only <see cref="Kept"/>. The decompiler's IAstTransform demands <see cref="Run"/>.</summary>
+    public sealed class Field : IAstTransform
     {
+        public required IField Kept { get; init; }
+
         public void Run(AstNode rootNode, TransformContext context)
+        {
+            KeepField(Kept, rootNode);
+        }
+    }
+
+    private static void KeepConstructor(IMethod ctor, AstNode rootNode)
+    {
+        var removed = new HashSet<ISymbol?>();
+        ConstructorDeclaration? kept = null;
+        foreach (var node in rootNode.Children)
+        {
+            switch (node)
+            {
+                case ConstructorDeclaration cd:
+                    if (cd.GetSymbol() == ctor)
+                        kept = cd;
+                    else
+                        Remove(removed, cd);
+                    break;
+                case FieldDeclaration fd when fd.Variables.All(static v => v.Initializer is null):
+                    Remove(removed, fd);
+                    break;
+                case EventDeclaration ed when ed.Variables.All(static v => v.Initializer is null):
+                    Remove(removed, ed);
+                    break;
+                case PropertyDeclaration { Initializer: null } pd:
+                    Remove(removed, pd);
+                    break;
+                case CustomEventDeclaration or IndexerDeclaration:
+                    Remove(removed, node);
+                    break;
+            }
+        }
+        if (kept?.Initializer?.ConstructorInitializerType == ConstructorInitializerType.This)
         {
             foreach (var node in rootNode.Children)
             {
-                if (node is EntityDeclaration or Comment && node.GetSymbol() != field)
-                    node.Remove();
+                if (node is not ConstructorDeclaration)
+                    Remove(removed, node);
             }
+        }
+        foreach (var node in rootNode.Children)
+        {
+            if (node is Comment && removed.Contains(node.GetSymbol()))
+                node.Remove();
+        }
+    }
+
+    private static void Remove(HashSet<ISymbol?> removed, AstNode node)
+    {
+        node.Remove();
+        removed.Add(node.GetSymbol());
+    }
+
+    private static void KeepField(IField field, AstNode rootNode)
+    {
+        foreach (var node in rootNode.Children)
+        {
+            if (node is EntityDeclaration or Comment && node.GetSymbol() != field)
+                node.Remove();
         }
     }
 }

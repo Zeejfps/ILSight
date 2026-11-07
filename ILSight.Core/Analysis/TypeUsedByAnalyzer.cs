@@ -33,7 +33,7 @@ internal static class TypeUsedByAnalyzer
         var module = typeSystem.MainModule;
         var metadata = module.MetadataFile.Metadata;
         var decoder = new FindTypeDecoder(module, analyzedType);
-        var attributeDecoder = new FindTypeInAttributeDecoder(module, analyzedType);
+        var attributeDecoder = AnalyzerHelpers.CreateDecoder(module, analyzedType);
 
         foreach (var result in AnalyzerHelpers.AttributeOwners(typeSystem, UsesType))
             yield return result;

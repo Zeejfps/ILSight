@@ -96,7 +96,7 @@ public static class AssemblyExport
             return (null, null);
         if (!pdb)
             return (part, null);
-        return part.Halves();
+        return GetHalves(part);
     }
 
     private static ExportedProject WriteProject(LoadedModule assembly, DecompilerOptions options, string projectPath, string? strongNameKeyFile,
@@ -322,39 +322,54 @@ public static class AssemblyExport
     {
         if (progress == null)
             return null;
-        var part = new PartProgress(progress, assembly.Name, index + 1, bounds.Length - 1, bounds[index], bounds[index + 1]);
-        part.Start();
+        var part = new PartProgress { Progress = progress, Name = assembly.Name, Part = index + 1, Parts = bounds.Length - 1, From = bounds[index], To = bounds[index + 1] };
+        StartPart(part);
         return part;
     }
 
     /// <summary>The decompiler's progress within one part of an export, which spans
-    /// <paramref name="from"/> to <paramref name="to"/> of the whole, passed on as the export's.</summary>
-    private sealed class PartProgress(IProgress<ExportProgress> progress, string name, int part, int parts, float from, float to)
-        : IProgress<DecompilationProgress>
+    /// <see cref="From"/> to <see cref="To"/> of the whole, passed on as the export's. The decompiler's
+    /// <see cref="IProgress{T}"/> demands <see cref="Report"/>.</summary>
+    private sealed class PartProgress : IProgress<DecompilationProgress>
     {
-        public void Start() => progress.Report(new ExportProgress(name, part, parts, from));
-
-        /// <summary>This part's span cut in two, for two steps that each take half of it.</summary>
-        public (PartProgress First, PartProgress Second) Halves()
-        {
-            var middle = (from + to) / 2;
-            var first = new PartProgress(progress, name, part, parts, from, middle);
-            var second = new PartProgress(progress, name, part, parts, middle, to);
-            return (first, second);
-        }
+        public required IProgress<ExportProgress> Progress { get; init; }
+        public required string Name { get; init; }
+        public required int Part { get; init; }
+        public required int Parts { get; init; }
+        public required float From { get; init; }
+        public required float To { get; init; }
 
         public void Report(DecompilationProgress value)
         {
-            var fraction = FractionAt(value.UnitsCompleted, value.TotalUnits);
-            progress.Report(new ExportProgress(name, part, parts, fraction));
+            ReportPart(this, value);
         }
+    }
 
-        private float FractionAt(int done, int total)
-        {
-            if (total <= 0)
-                return from;
-            var share = Math.Clamp((float)done / total, 0f, 1f);
-            return from + (to - from) * share;
-        }
+    private static void StartPart(PartProgress part)
+    {
+        part.Progress.Report(new ExportProgress(part.Name, part.Part, part.Parts, part.From));
+    }
+
+    /// <summary>The span of <paramref name="part"/> cut in two, for two steps that each take half of it.</summary>
+    private static (PartProgress First, PartProgress Second) GetHalves(PartProgress part)
+    {
+        var middle = (part.From + part.To) / 2;
+        var first = new PartProgress { Progress = part.Progress, Name = part.Name, Part = part.Part, Parts = part.Parts, From = part.From, To = middle };
+        var second = new PartProgress { Progress = part.Progress, Name = part.Name, Part = part.Part, Parts = part.Parts, From = middle, To = part.To };
+        return (first, second);
+    }
+
+    private static void ReportPart(PartProgress part, DecompilationProgress value)
+    {
+        var fraction = GetFractionAt(part, value.UnitsCompleted, value.TotalUnits);
+        part.Progress.Report(new ExportProgress(part.Name, part.Part, part.Parts, fraction));
+    }
+
+    private static float GetFractionAt(PartProgress part, int done, int total)
+    {
+        if (total <= 0)
+            return part.From;
+        var share = Math.Clamp((float)done / total, 0f, 1f);
+        return part.From + (part.To - part.From) * share;
     }
 }

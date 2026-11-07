@@ -301,7 +301,7 @@ public sealed class AssemblyList
         foreach (var reference in assembly.File.AssemblyReferences)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var found = assembly.Resolver.LoadAssembly(reference);
+            var found = AssemblyResolving.LoadAssembly(assembly.Resolver, reference);
             if (found == null)
                 continue;
             if (TryList(found, generation, cancellationToken))
@@ -336,7 +336,7 @@ public sealed class AssemblyList
             case CodeReference.Assembly assembly:
                 if (assembly.Referenced == null)
                     return (owner, EntityHandle.AssemblyDefinition);
-                var target = owner.Resolver.ResolveAssembly(new AssemblyReference(owner.File, assembly.Referenced.Value));
+                var target = AssemblyResolving.ResolveAssembly(owner.Resolver, new AssemblyReference(owner.File, assembly.Referenced.Value));
                 return (target, EntityHandle.AssemblyDefinition);
             default:
                 throw new UnreachableException();

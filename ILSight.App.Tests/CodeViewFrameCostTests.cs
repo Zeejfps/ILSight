@@ -181,7 +181,7 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
 
     private static DecompiledDocument Folded(int lines)
     {
-        var builder = new DocumentBuilder(DecompilationLanguage.CSharp);
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
         for (var member = 0; member < lines / 10; member++)
         {
             builder.Write($"    public void Member{member}()", SpanKind.Plain);
@@ -198,7 +198,7 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
             builder.MarkFoldEnd();
             builder.WriteLine();
         }
-        return builder.Build("folded");
+        return DocumentWriting.BuildDocument(builder, "folded");
     }
 
     private static void Frame(CodeViewDriver view, bool scrolling)

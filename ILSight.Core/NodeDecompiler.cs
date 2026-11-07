@@ -42,11 +42,11 @@ internal static class NodeDecompiler
         }
         catch (Exception e)
         {
-            var error = new DocumentBuilder(language);
+            var error = new DocumentBuilder { Language = language };
             error.Write($"// Error decompiling {request.FullName}", SpanKind.Comment);
             error.WriteLine();
             error.Write(e.ToString(), SpanKind.Comment);
-            return error.BuildFailure(request.Title, e);
+            return DocumentWriting.BuildFailure(error, request.Title, e);
         }
     }
 
@@ -56,7 +56,7 @@ internal static class NodeDecompiler
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
             return DescribeLoadError(failure, language);
-        var builder = new DocumentBuilder(language, ModuleOf(request));
+        var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request) };
         if (note != null)
             WriteComment(builder, note);
         var settings = Settings.Create(options);
@@ -65,18 +65,18 @@ internal static class NodeDecompiler
         else
             WriteIL(request, builder, language, settings, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        return builder.Build(request.Title);
+        return DocumentWriting.BuildDocument(builder, request.Title);
     }
 
     /// <summary>Why the file <paramref name="failure"/> names could not be read.</summary>
     private static DecompiledDocument DescribeLoadError(DocumentRequest.Failure failure, DecompilationLanguage language)
     {
         var error = failure.Assembly.Error;
-        var builder = new DocumentBuilder(language);
+        var builder = new DocumentBuilder { Language = language };
         WriteComment(builder, error.Message);
         if (error.InnerException != null)
             builder.Write(error.InnerException.ToString(), SpanKind.Comment);
-        return builder.BuildFailure(failure.Title, error);
+        return DocumentWriting.BuildFailure(builder, failure.Title, error);
     }
 
     /// <summary>The module the document of <paramref name="request"/> is read from; null for a package's.</summary>
@@ -319,10 +319,10 @@ internal static class NodeDecompiler
         switch (member)
         {
             case IMethod { IsConstructor: true } ctor when ctor.DeclaringType.IsReferenceType != false:
-                decompiler.AstTransforms.Add(new MemberSelection.Constructor(ctor));
+                decompiler.AstTransforms.Add(new MemberSelection.Constructor { Kept = ctor });
                 return decompiler.Decompile(MemberSelection.FieldsAndConstructors(declaring, ctor.IsStatic));
             case IField { IsConst: false } field:
-                decompiler.AstTransforms.Add(new MemberSelection.Field(field));
+                decompiler.AstTransforms.Add(new MemberSelection.Field { Kept = field });
                 return decompiler.Decompile(MemberSelection.FieldsAndConstructors(declaring, field.IsStatic));
             default:
                 return decompiler.Decompile(member.MetadataToken);
@@ -493,7 +493,7 @@ internal static class NodeDecompiler
                 break;
             case SummaryInfo.AssemblyReference reference:
                 WriteComment(output, reference.Reference.FullName);
-                var path = reference.Module.Resolver.FindFile(reference.Reference);
+                var path = AssemblyResolving.FindAssemblyFile(reference.Module.Resolver, reference.Reference);
                 WriteComment(output, path is null ? "Not found" : $"Resolves to {path}");
                 break;
             case SummaryInfo.Used used:

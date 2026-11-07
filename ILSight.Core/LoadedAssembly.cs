@@ -94,10 +94,10 @@ public sealed class LoadedModule : LoadedAssembly
         Place = place;
         DetectedTargetFramework = TryDetectTargetFramework(file);
         TargetFramework = PickTargetFramework();
-        Resolver = new AssemblyResolver(list, FilePath, TargetFramework, place?.Container.Package);
+        Resolver = AssemblyResolving.CreateResolver(list, FilePath, TargetFramework, place?.Container.Package);
         _typeSystem = new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(File, Resolver, Settings.Create()));
         _debugSymbols = new Lazy<DebugSymbols?>(LoadDebugSymbols);
-        _canGeneratePdb = new Lazy<bool>(() => PEFile != null && DebugSymbols.CanGenerateFor(PEFile));
+        _canGeneratePdb = new Lazy<bool>(() => PEFile != null && DebugSymbolFiles.CanGenerateFor(PEFile));
         _referenceUsage = new Lazy<ReferenceUsage>(() => ForwardedTypes.ReadUsage(File.Metadata));
     }
 
@@ -199,7 +199,7 @@ public sealed class LoadedModule : LoadedAssembly
     {
         if (PEFile == null)
             return PdbCheck.Unreadable;
-        return DebugSymbols.Check(PEFile, pdbPath);
+        return DebugSymbolFiles.CheckPdb(PEFile, pdbPath);
     }
 
     /// <summary>The name a portable PDB of this assembly is written under.</summary>
@@ -216,8 +216,8 @@ public sealed class LoadedModule : LoadedAssembly
             return null;
         var picked = List.Pdbs.Find(FilePath);
         if (picked == null)
-            return DebugSymbols.Load(PEFile, Place?.Container.Package);
-        return DebugSymbols.LoadPicked(picked);
+            return DebugSymbolFiles.LoadSymbols(PEFile, Place?.Container.Package);
+        return DebugSymbolFiles.LoadPicked(picked);
     }
 
     /// <summary>The assembly's portable PDB, read once; null when it has none.</summary>

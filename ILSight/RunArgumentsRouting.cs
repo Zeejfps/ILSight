@@ -26,14 +26,14 @@ public static class RunArgumentsRouting
     /// over, whether <paramref name="newInstance"/> asked for that or the running app could not be reached.</summary>
     public static RunArgumentsReceiver? ForwardOrReceive(RunArgumentsAddress address, RunArguments arguments, bool newInstance)
     {
-        var receiver = RunArgumentsReceiver.TryClaim(address);
+        var receiver = RunArgumentsPipe.TryClaim(address);
         if (receiver != null)
             return receiver;
         if (newInstance)
-            return RunArgumentsReceiver.StandBy(address);
+            return RunArgumentsPipe.StandBy(address);
         var handedOver = RunArgumentsPipe.TrySend(address, arguments);
         if (handedOver)
             return null;
-        return RunArgumentsReceiver.StandBy(address);
+        return RunArgumentsPipe.StandBy(address);
     }
 }

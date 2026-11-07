@@ -57,9 +57,9 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         {
             var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _settings, _cancellationToken);
             var syntaxTree = decompiler.Decompile(handle);
-            var builder = new DocumentBuilder(DecompilationLanguage.CSharp, _assembly);
+            var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = _assembly };
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
-            _csharp = builder.Build("");
+            _csharp = DocumentWriting.BuildDocument(builder, "");
             _points = FindPoints(decompiler.CreateSequencePoints(syntaxTree), handle);
         }
         catch (Exception e) when (e is not OperationCanceledException)
@@ -142,7 +142,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         var end = EndColumnOn(point, number, text);
         if (output is DocumentBuilder builder)
         {
-            builder.WriteSourceLine(line, from, start, end);
+            DocumentWriting.WriteSourceLine(builder, line, from, start, end);
             return;
         }
         WriteComment(output, text.Substring(from));
