@@ -1,23 +1,69 @@
-# Builds the NativeAOT app for every platform and packs each with Velopack. A version tag such as v1.2.3
-# then publishes them all as one GitHub Release, which is the feed installed apps update from. See
-# docs/plans/ilsight-migration.md.
+# Builds the NativeAOT app for every platform and packs each with Velopack. Run from the Actions tab
+# with "release" ticked, it then publishes them all as one GitHub Release, which is the feed installed
+# apps update from, tagged with the version it was built as.
 #
-# Run by hand from the Actions tab for the same build without a release, or on a pull request that
-# changes this file; each leaves the packed files as a build artifact.
+# The version is the day's date in UTC and which release of that day it is: 2026.11.7-1, then
+# 2026.11.7-2. Velopack wants three numbers in SemVer order, and a number alone after the dash sorts as
+# a number, so -10 comes after -2. A version with no -N would sort above all of that day's, so there is
+# never one. The tag is only made once every platform has built, so a failed run takes no number.
+#
+# Run without "release", or on a pull request that changes this file, it builds the same and leaves the
+# packed files as a build artifact.
 name: release
 
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      release:
+        description: Publish a release
+        type: boolean
+        default: false
   pull_request:
     paths:
       - ".github/workflows/release.yml"
+
+# Two releases at once would pick the same number, so they queue; other runs don't wait on anything.
+concurrency:
+  group: ${{ inputs.release && 'release' || format('build-{0}', github.run_id) }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pick.outputs.version }}
+      short: ${{ steps.pick.outputs.short }}
+      bundle: ${{ steps.pick.outputs.bundle }}
+    steps:
+      - uses: actions/checkout@v6
+
+      # macOS wants a bundle's versions as numbers alone: the date for people, and for the build a
+      # number that grows with each release, the month and day run together then N, as 2026.1107.2.
+      - name: Pick the version
+        id: pick
+        run: |
+          read -r year month day < <(date -u '+%Y %-m %-d')
+          date="$year.$month.$day"
+          # The highest N already tagged today, matched as a literal prefix.
+          last=0
+          for tag in $(git ls-remote --tags --refs origin | sed 's|.*refs/tags/||'); do
+            n=${tag#"v$date-"}
+            if [ "$n" != "$tag" ] && [[ "$n" =~ ^[0-9]+$ ]] && [ "$n" -gt "$last" ]; then
+              last=$n
+            fi
+          done
+          n=$(( last + 1 ))
+          version="$date-$n"
+          echo "Version: $version"
+          {
+            echo "version=$version"
+            echo "short=$date"
+            echo "bundle=$year.$(( month * 100 + day )).$n"
+          } >> "$GITHUB_OUTPUT"
+
   build:
     name: build (${{ matrix.rid }})
     # NativeAOT can't cross-compile between OSes, but it can between macOS architectures, so both Macs
@@ -32,6 +78,7 @@ jobs:
           - { rid: osx-arm64, os: macos-latest, exe: ILSight, glfw: glfw3, icon: packaging/AppIcon.icns, pack_args: --bundleId com.builtbyzee.ilsight }
           - { rid: osx-x64, os: macos-latest, exe: ILSight, glfw: glfw3, icon: packaging/AppIcon.icns, pack_args: --bundleId com.builtbyzee.ilsight }
           - { rid: linux-x64, os: ubuntu-22.04, exe: ILSight, glfw: libglfw.so.3, icon: ILSight/Assets/Icon/Linux/app_icon_512.png }
+    needs: version
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -39,13 +86,12 @@ jobs:
     env:
       PUBLISH_DIR: publish/${{ matrix.rid }}
       PACK_DIR: publish/${{ matrix.rid }}
+      VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
           lfs: true
-          # MinVer reads the version from the tags and the commit count since, so it needs the history.
-          fetch-depth: 0
 
       # The fonts and GLFW natives are LFS objects inside the submodules, which the option above may
       # leave as pointer files. A pointer still builds, so the app would only fail once it runs.
@@ -60,21 +106,10 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
 
-      - name: Read the version
-        run: |
-          version=$(dotnet msbuild ILSight/ILSight.csproj -restore -t:MinVer -getProperty:MinVerVersion | tail -n 1 | tr -d '\r')
-          echo "Version: $version"
-          case "$version" in
-            ""|0.0.0*) echo "::error::MinVer found no version tag: '$version'"; exit 1 ;;
-          esac
-          # A release must be the version its tag says, or its files and its name disagree.
-          if [ "$GITHUB_REF_TYPE" = tag ] && [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME builds version $version"; exit 1
-          fi
-          echo "VERSION=$version" >> "$GITHUB_ENV"
-
+      # The version picked above replaces the one MinVer would read from the tags, which local builds
+      # still use.
       - name: Publish
-        run: dotnet publish ILSight/ILSight.csproj -c Release -r ${{ matrix.rid }} -o "$PUBLISH_DIR"
+        run: dotnet publish ILSight/ILSight.csproj -c Release -r ${{ matrix.rid }} -o "$PUBLISH_DIR" -p:MinVerVersionOverride="$VERSION"
 
       # What only fails at launch, so the build can't catch it.
       - name: Check the output
@@ -118,7 +153,8 @@ jobs:
           mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
           cp -R "$PUBLISH_DIR/." "$app/Contents/MacOS/"
           cp packaging/Assets.car packaging/AppIcon.icns "$app/Contents/Resources/"
-          sed "s/__VERSION__/$VERSION/g" ILSight/Info.plist.in > "$app/Contents/Info.plist"
+          sed -e "s/__VERSION__/${{ needs.version.outputs.short }}/g" -e "s/__BUILD__/${{ needs.version.outputs.bundle }}/g" \
+            ILSight/Info.plist.in > "$app/Contents/Info.plist"
           echo "PACK_DIR=$app" >> "$GITHUB_ENV"
 
       # Each RID is its own channel: both Macs would otherwise share the channel "osx", and each one's
@@ -143,15 +179,15 @@ jobs:
   # run, which fails with 422 already_exists. `vpk pack` wrote each channel's feed, so uploading its
   # files is all an installed app needs.
   publish:
-    if: github.ref_type == 'tag'
-    needs: build
+    if: inputs.release
+    needs: [version, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      TAG: ${{ github.ref_name }}
+      TAG: v${{ needs.version.outputs.version }}
     steps:
       - uses: actions/download-artifact@v8
         with:
@@ -159,11 +195,11 @@ jobs:
           path: releases
           merge-multiple: true
 
-      # Running a tag again replaces its release and leaves the tag.
+      # Creating the release makes its tag on the commit that was built. A tag taken meanwhile fails it,
+      # rather than replacing a release that installs already have.
       - name: Publish the release
         run: |
-          gh release delete "$TAG" --yes 2>/dev/null || true
-          gh release create "$TAG" --title "ILSight ${TAG#v}" --generate-notes
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "ILSight ${TAG#v}" --generate-notes
           # assets.*.json is vpk's own build record, which no feed refers to.
           mapfile -t files < <(find releases -type f ! -name 'assets.*.json')
           printf 'Uploading: %s\n' "${files[@]}"
