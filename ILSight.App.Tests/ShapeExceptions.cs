@@ -67,10 +67,7 @@ internal static class ShapeExceptions
     /// <summary>Types with methods, still to become data and functions.</summary>
     public static readonly string[] NotYetData =
     [
-        "ILSight.AnalyzerKindNode",
-        "ILSight.AnalyzerNode",
         "ILSight.AnalyzerRows",
-        "ILSight.AnalyzerSymbolNode",
         "ILSight.BrowseTree",
         "ILSight.ComparisonRows",
         "ILSight.Core.AssemblyList",
@@ -85,11 +82,7 @@ internal static class ShapeExceptions
     /// <summary>Constructors that take arguments, still to become object initializers or functions.</summary>
     public static readonly string[] ConstructorsLeft =
     [
-        "ILSight.AnalyzerKindNode",
-        "ILSight.AnalyzerMessageNode",
-        "ILSight.AnalyzerPendingNode",
         "ILSight.AnalyzerRows",
-        "ILSight.AnalyzerSymbolNode",
         "ILSight.AppIcons",
         "ILSight.BrowseTree",
         "ILSight.Core.AssemblyLoadException",

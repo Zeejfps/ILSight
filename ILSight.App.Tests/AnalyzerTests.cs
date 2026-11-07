@@ -1,4 +1,3 @@
-using System.Reflection;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Testing;
@@ -45,7 +44,7 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.Opened();
         var elsewhere = new AssemblyList().Open(AppStateDriver.FixturePath).Root.Child(AppStateDriver.FixturesNamespace, "Outline");
         var symbol = Core.Analysis.Analyzers.Of(elsewhere)!;
-        var kind = new AnalyzerKindNode(symbol, Core.Analysis.Analyzers.KindsFor(symbol).Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By"));
+        var kind = new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol).Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
 
         RunAnalysis(d.AppState, kind);
         d.RunUntil(() => kind.IsDone);
@@ -314,15 +313,78 @@ public sealed class AnalyzerTests
 
         Analysis.RemoveRoot(analyzer, root);
 
-        Assert.Null(ListedChildren(caller));
+        Assert.Null(caller.Children);
     }
 
-    /// <summary>The children <paramref name="node"/> has listed so far, or null; private, as nothing
-    /// public reads them without listing them.</summary>
-    private static object? ListedChildren(AnalyzerSymbolNode node)
+    private static AnalyzerKindNode RunningKind(AppStateDriver d)
     {
-        var field = typeof(AnalyzerSymbolNode).GetField("_children", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        return field.GetValue(node);
+        var symbol = Core.Analysis.Analyzers.Of(First(d))!;
+        return new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol)[0], Work = new CancellationTokenSource() };
+    }
+
+    [Fact]
+    public void Cancelling_a_symbol_cancels_the_analyses_listed_under_it()
+    {
+        var d = AppStateDriver.Opened();
+        var running = RunningKind(d);
+        var work = running.Work!;
+        var symbol = new AnalyzerSymbolNode { Symbol = running.Subject, Children = [running] };
+
+        CancelNode(symbol);
+
+        Assert.True(work.IsCancellationRequested);
+        Assert.Null(running.Work);
+    }
+
+    [Fact]
+    public void Cancelling_a_symbol_whose_children_were_never_listed_leaves_them_unlisted()
+    {
+        var d = AppStateDriver.Opened();
+        var symbol = new AnalyzerSymbolNode { Symbol = Core.Analysis.Analyzers.Of(First(d))! };
+
+        CancelNode(symbol);
+
+        Assert.Null(symbol.Children);
+    }
+
+    [Fact]
+    public void Cancelling_an_analysis_cancels_its_run_and_the_analyses_under_what_it_found()
+    {
+        var d = AppStateDriver.Opened();
+        var kind = RunningKind(d);
+        var nested = RunningKind(d);
+        kind.Found.Add(new AnalyzerSymbolNode { Symbol = kind.Subject, Children = [nested] });
+        var work = kind.Work!;
+        var nestedWork = nested.Work!;
+
+        CancelNode(kind);
+
+        Assert.True(work.IsCancellationRequested);
+        Assert.True(nestedWork.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Cancelling_an_analysis_that_is_not_running_does_nothing()
+    {
+        var d = AppStateDriver.Opened();
+        var kind = RunningKind(d);
+        kind.Work = null;
+
+        CancelNode(kind);
+
+        Assert.Null(kind.Work);
+    }
+
+    [Fact]
+    public void Cancelling_a_message_row_has_nothing_to_stop()
+    {
+        CancelNode(new AnalyzerMessageNode { Error = "failed" });
+    }
+
+    [Fact]
+    public void Cancelling_a_root_still_waiting_for_its_symbol_has_nothing_to_stop()
+    {
+        CancelNode(new AnalyzerPendingNode { SavedAs = null });
     }
 
     [Fact]

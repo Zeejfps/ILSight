@@ -20,7 +20,7 @@ public static class Analysis
         var existing = FindRoot(tree, symbol);
         if (existing != null)
             return existing;
-        var root = new AnalyzerSymbolNode(symbol);
+        var root = new AnalyzerSymbolNode { Symbol = symbol };
         tree.Roots.Add(root);
         tree.Revision++;
         tree.Changes++;
@@ -43,7 +43,7 @@ public static class Analysis
     /// meanwhile, or not saved when it is null.</summary>
     public static AnalyzerPendingNode AddPending(AnalyzerTree tree, CodeAnchor? savedAs)
     {
-        var root = new AnalyzerPendingNode(savedAs);
+        var root = new AnalyzerPendingNode { SavedAs = savedAs };
         tree.Roots.Add(root);
         if (savedAs != null)
             tree.Revision++;
@@ -81,7 +81,7 @@ public static class Analysis
             RemoveRoot(tree, pending);
             return existing;
         }
-        var root = new AnalyzerSymbolNode(symbol);
+        var root = new AnalyzerSymbolNode { Symbol = symbol };
         tree.Roots[index] = root;
         if (symbol.Definition != pending.SavedAs)
             tree.Revision++;
@@ -100,7 +100,7 @@ public static class Analysis
         if (SavedAnalysisOf(root) != null)
             tree.Revision++;
         tree.Changes++;
-        root.Cancel();
+        CancelNode(root);
     }
 
     /// <summary>The analyses the roots save as, in their order.</summary>
@@ -119,10 +119,123 @@ public static class Analysis
     public static void ClearRoots(AnalyzerTree tree)
     {
         foreach (var root in tree.Roots)
-            root.Cancel();
+            CancelNode(root);
         tree.Roots.Clear();
         tree.Revision++;
         tree.Changes++;
+    }
+
+    /// <summary>The children of <paramref name="symbol"/>, listed the first time they are asked for.</summary>
+    public static List<AnalyzerNode> EnsureChildren(AnalyzerSymbolNode symbol)
+    {
+        if (symbol.Children == null)
+            symbol.Children = ListChildren(symbol);
+        return symbol.Children;
+    }
+
+    private static List<AnalyzerNode> ListChildren(AnalyzerSymbolNode symbol)
+    {
+        var children = new List<AnalyzerNode>();
+        foreach (var accessor in Analyzers.AccessorsOf(symbol.Symbol))
+            children.Add(new AnalyzerSymbolNode { Symbol = accessor });
+        foreach (var kind in Analyzers.KindsFor(symbol.Symbol))
+            children.Add(new AnalyzerKindNode { Subject = symbol.Symbol, Kind = kind });
+        return children;
+    }
+
+    /// <summary>Cancels the analyses running under <paramref name="node"/>, leaving children never listed
+    /// unlisted.</summary>
+    internal static void CancelNode(AnalyzerNode node)
+    {
+        switch (node)
+        {
+            case AnalyzerSymbolNode symbol:
+                CancelAll(symbol.Children);
+                break;
+            case AnalyzerKindNode kind:
+                CancelRun(kind);
+                CancelAll(kind.Found);
+                break;
+            case AnalyzerMessageNode or AnalyzerPendingNode:
+                break;
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    private static void CancelAll(List<AnalyzerNode>? nodes)
+    {
+        if (nodes == null)
+            return;
+        foreach (var node in nodes)
+            CancelNode(node);
+    }
+
+    private static void CancelRun(AnalyzerKindNode kind)
+    {
+        var work = kind.Work;
+        if (work == null)
+            return;
+        kind.Work = null;
+        work.Cancel();
+    }
+
+    /// <summary>Runs the analysis over <paramref name="assemblies"/> unless it already started,
+    /// calling <paramref name="changed"/> each time results come in. When it fails, it ends with a row
+    /// telling why and hands the exception to <paramref name="failed"/>.</summary>
+    internal static void StartAnalysisOnce(AnalyzerKindNode kind, AssemblyList assemblies, Action changed, Action<Exception> failed, Action<AppProblem> reportError)
+    {
+        if (kind.HasStarted)
+            return;
+        kind.HasStarted = true;
+        Background.Start(RunKindAsync(kind, assemblies, changed, failed), reportError);
+    }
+
+    private static async Task RunKindAsync(AnalyzerKindNode kind, AssemblyList assemblies, Action changed, Action<Exception> failed)
+    {
+        var work = new CancellationTokenSource();
+        kind.Work = work;
+        var token = work.Token;
+        try
+        {
+            await foreach (var batch in Analyzers.RunAsync(assemblies, kind.Subject, kind.Kind, token))
+                Deliver(kind, work, CreateNodes(batch), changed);
+            Finish(kind, work, [], changed);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+        catch (Exception e)
+        {
+            Finish(kind, work, [new AnalyzerMessageNode { Error = e.Message }], changed);
+            failed(e);
+        }
+    }
+
+    private static List<AnalyzerNode> CreateNodes(IReadOnlyList<AnalysisSymbol> symbols)
+    {
+        return symbols
+            .Select(static s => (AnalyzerNode)new AnalyzerSymbolNode { Symbol = s })
+            .ToList();
+    }
+
+    private static void Deliver(AnalyzerKindNode kind, CancellationTokenSource work, List<AnalyzerNode> found, Action changed)
+    {
+        if (kind.Work != work)
+            return;
+        kind.Found.AddRange(found);
+        changed();
+    }
+
+    private static void Finish(AnalyzerKindNode kind, CancellationTokenSource work, List<AnalyzerNode> found, Action changed)
+    {
+        if (kind.Work != work)
+            return;
+        kind.Found.AddRange(found);
+        kind.IsDone = true;
+        kind.Work = null;
+        work.Dispose();
+        changed();
     }
 
     private static CodeAnchor? SavedAnalysisOf(AnalyzerNode root)
@@ -131,7 +244,8 @@ public static class Analysis
         {
             AnalyzerSymbolNode symbol => symbol.Symbol.Definition,
             AnalyzerPendingNode pending => pending.SavedAs,
-            _ => null,
+            AnalyzerKindNode or AnalyzerMessageNode => null,
+            _ => throw new UnreachableException(),
         };
     }
 
@@ -157,7 +271,7 @@ public static class Analysis
     public static void RunAnalysis(AppState appState, AnalyzerKindNode kind)
     {
         var tree = appState.Analyzer;
-        kind.StartOnce(appState.Assemblies, () => NoteFindings(tree), error => ReportAnalysisFailure(appState, kind, error),
+        StartAnalysisOnce(kind, appState.Assemblies, () => NoteFindings(tree), error => ReportAnalysisFailure(appState, kind, error),
             problem => Errors.Report(appState, problem));
     }
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
@@ -105,7 +106,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     private void ExpandWithAnalyses(AnalyzerSymbolNode symbol)
     {
         View.SetExpanded(symbol, true);
-        foreach (var child in symbol.Children)
+        foreach (var child in Analysis.EnsureChildren(symbol))
         {
             if (child is AnalyzerSymbolNode accessor)
                 ExpandWithAnalyses(accessor);
@@ -116,12 +117,16 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
 
     public void CollapseAll() => View.CollapseAll();
 
-    public bool HasChildren(AnalyzerNode node) => node switch
+    public bool HasChildren(AnalyzerNode node)
     {
-        AnalyzerSymbolNode symbol => symbol.Children.Count > 0,
-        AnalyzerKindNode kind => !kind.IsDone || kind.Found.Count > 0,
-        _ => false,
-    };
+        return node switch
+        {
+            AnalyzerSymbolNode symbol => Analysis.EnsureChildren(symbol).Count > 0,
+            AnalyzerKindNode kind => !kind.IsDone || kind.Found.Count > 0,
+            AnalyzerMessageNode or AnalyzerPendingNode => false,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     TreeChildren<AnalyzerNode> ITreeModel<AnalyzerNode>.GetChildren(AnalyzerNode node) => TreeChildren<AnalyzerNode>.Of(GetChildren(node));
 
@@ -130,12 +135,14 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         switch (node)
         {
             case AnalyzerSymbolNode symbol:
-                return symbol.Children;
+                return Analysis.EnsureChildren(symbol);
             case AnalyzerKindNode kind:
                 AskToRun(kind);
                 return ListResults(kind);
-            default:
+            case AnalyzerMessageNode or AnalyzerPendingNode:
                 return [];
+            default:
+                throw new UnreachableException();
         }
     }
 
@@ -158,13 +165,17 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         return results;
     }
 
-    public TreeRow Row(AnalyzerNode node) => node switch
+    public TreeRow Row(AnalyzerNode node)
     {
-        AnalyzerSymbolNode symbol => SymbolRow(symbol.Symbol),
-        AnalyzerKindNode kind => KindRow(kind),
-        AnalyzerMessageNode message => MessageRow(message),
-        _ => LoadingRow(),
-    };
+        return node switch
+        {
+            AnalyzerSymbolNode symbol => SymbolRow(symbol.Symbol),
+            AnalyzerKindNode kind => KindRow(kind),
+            AnalyzerMessageNode message => MessageRow(message),
+            AnalyzerPendingNode => LoadingRow(),
+            _ => throw new UnreachableException(),
+        };
+    }
 
     private TreeRow SymbolRow(AnalysisSymbol symbol)
     {
