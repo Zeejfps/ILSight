@@ -164,7 +164,7 @@ public static class IconTheming
     private static readonly byte[] Utf8Bom = [0xEF, 0xBB, 0xBF];
 
     /// <summary>Reads the icon theme <paramref name="id"/> from the file at <paramref name="path"/> and the
-    /// fonts and pictures it names inside its folder; a file that cannot be read has no <see cref="Contents"/>.</summary>
+    /// fonts and pictures it names inside its folder; a file that cannot be read has no <see cref="IconThemeFile.Contents"/>.</summary>
     public static IconThemeFile ReadThemeFile(ThemeId<IconThemeFile> id, string path)
     {
         var folder = Path.GetDirectoryName(Path.GetFullPath(path))!;

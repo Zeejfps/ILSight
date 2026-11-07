@@ -60,7 +60,7 @@ public static class ItemSelections
         Clear(selection);
     }
 
-    /// <summary>Gives <see cref="Rows"/> the selected item's row in <paramref name="items"/>, keeping a
+    /// <summary>Gives <see cref="ItemSelection{T}.Rows"/> the selected item's row in <paramref name="items"/>, keeping a
     /// reveal already asked for; call it before the list widget records.</summary>
     public static void ShowIn<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
@@ -69,7 +69,7 @@ public static class ItemSelections
         selection.Rows.Select(IndexIn(selection, items), items.Count, reveal: false);
     }
 
-    /// <summary>Selects the item at the row the list widget left <see cref="Rows"/> at.</summary>
+    /// <summary>Selects the item at the row the list widget left <see cref="ItemSelection{T}.Rows"/> at.</summary>
     public static void TakeFrom<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
     {

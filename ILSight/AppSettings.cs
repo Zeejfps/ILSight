@@ -8,13 +8,13 @@ using ILSight.Localization;
 namespace ILSight;
 
 /// <summary>What persists between runs, in the user's app-data folder, as read from its file by
-/// <see cref="Load"/>: whatever the file held, every value here is one the app can use.</summary>
+/// <see cref="SettingsJson.LoadSettings"/>: whatever the file held, every value here is one the app can use.</summary>
 public sealed class AppSettings
 {
     public static string DefaultPath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ILSight", "settings.json");
 
-    /// <summary>Where <see cref="Save"/> writes; null keeps the settings in memory only.</summary>
+    /// <summary>Where <see cref="SettingsJson.SaveSettings"/> writes; null keeps the settings in memory only.</summary>
     public string? FilePath { get; set; }
 
     /// <summary>The named assembly lists, the open one's as it was left.</summary>

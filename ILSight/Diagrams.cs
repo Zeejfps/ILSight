@@ -515,7 +515,7 @@ public static class Diagrams
         diagram.LayoutWork = null;
     }
 
-    /// <summary>Starts moving to <paramref name="layout"/> when it is another than <see cref="Layout"/>;
+    /// <summary>Starts moving to <paramref name="layout"/> when it is another than <see cref="LayoutTransition.Layout"/>;
     /// the first layout is drawn at once. True when it was another.</summary>
     public static bool FollowLayout(LayoutTransition transition, TypeLayout? layout)
     {

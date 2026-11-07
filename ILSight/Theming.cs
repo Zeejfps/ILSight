@@ -765,7 +765,7 @@ public static class Theming
     private static readonly HashSet<string> IconKeys = ListColorKeys(NodeIconPalette.ColorKeys);
 
     /// <summary>Reads the theme <paramref name="id"/> from the file at <paramref name="path"/>; a file that
-    /// cannot be read has no <see cref="Contents"/>.</summary>
+    /// cannot be read has no <see cref="ThemeFile.Contents"/>.</summary>
     public static ThemeFile ReadThemeFile(ThemeId<ThemeFile> id, string path)
     {
         var theme = CreateFile(id, path);

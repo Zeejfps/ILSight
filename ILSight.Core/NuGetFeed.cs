@@ -72,7 +72,7 @@ public static class NuGetFeeds
     }
 
     /// <summary>How many pages a search that matched <paramref name="totalHits"/> packages has, up to
-    /// the last one <see cref="MaxSkip"/> lets start; at least one.</summary>
+    /// the last one <see cref="NuGetFeed.MaxSkip"/> lets start; at least one.</summary>
     public static int CountPages(int totalHits)
     {
         var reachable = Math.Min(totalHits, NuGetFeed.MaxSkip + NuGetFeed.PageSize);

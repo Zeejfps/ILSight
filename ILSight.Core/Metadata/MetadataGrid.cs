@@ -82,7 +82,7 @@ public sealed class MetadataGrid
     /// column's flags filter is kept.</summary>
     public string Key => Schema.Key;
 
-    /// <summary>Whether the selected row shows its <see cref="Details"/> under it, as a debug
+    /// <summary>Whether the selected row shows its <see cref="MetadataGrid.GetDetails"/> under it, as a debug
     /// information's decoded value does.</summary>
     public bool HasDetails => Schema.Details != null;
 

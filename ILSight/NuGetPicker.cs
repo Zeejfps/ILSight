@@ -165,7 +165,7 @@ public sealed class NuGetPicker
     }
 
     /// <summary>How many times the feed searched or whether prereleases count changed, for the
-    /// settings to keep <see cref="Save"/> once it did.</summary>
+    /// settings to keep <see cref="GetKeptSearch"/> once it did.</summary>
     public int SearchChanges { get; set; }
 
     /// <summary>Whether the packages shown are what the feed, query and prerelease choice now ask for:
@@ -391,7 +391,7 @@ public static class NuGetPicking
         return images;
     }
 
-    /// <summary>True once after <see cref="Open"/>: the query box should take focus.</summary>
+    /// <summary>True once after <see cref="OpenPicker"/>: the query box should take focus.</summary>
     public static bool TakeQueryFocus(NuGetPicker picker)
     {
         var focus = picker.FocusQuery;

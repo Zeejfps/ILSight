@@ -174,7 +174,7 @@ namespace ILSight.Core.Metadata
     					state.Mode);
     }
 
-		/// <summary>Applies what <see cref="Save"/> kept, skipping groups and flags the schema no longer has.</summary>
+		/// <summary>Applies what <see cref="SaveFilter"/> kept, skipping groups and flags the schema no longer has.</summary>
 		public static void RestoreFilter(FilterState state, SavedFilterState saved)
 		{
 			foreach (var (group, values) in saved.Groups ?? new())

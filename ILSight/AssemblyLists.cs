@@ -445,7 +445,7 @@ public static class AssemblyLists
         return holder == FindList(lists, name);
     }
 
-    /// <summary>Renames the list named <paramref name="name"/>, unless <see cref="CanRename"/> says no.</summary>
+    /// <summary>Renames the list named <paramref name="name"/>, unless <see cref="CanRenameList"/> says no.</summary>
     public static bool RenameList(SavedAssemblyLists lists, string name, string newName)
     {
         if (!CanRenameList(lists, name, newName))
@@ -475,7 +475,7 @@ public static class AssemblyLists
     }
 
     /// <summary>The name of the list that opens when the open list named <paramref name="name"/> is
-    /// deleted: the one after it, else the one before, else a new empty <see cref="DefaultName"/>.</summary>
+    /// deleted: the one after it, else the one before, else a new empty <see cref="SavedAssemblyLists.DefaultName"/>.</summary>
     public static string FindReplacement(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);

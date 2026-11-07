@@ -239,7 +239,7 @@ public static class AssemblyPackages
             SortFolder(child);
     }
 
-    /// <summary>Every file of the package, folder by folder in the order <see cref="Root"/> lists them:
+    /// <summary>Every file of the package, folder by folder in the order <see cref="AssemblyPackage.Root"/> lists them:
     /// a folder's folders, then its files.</summary>
     public static List<PackageFile> ListFiles(AssemblyPackage package)
     {
@@ -270,7 +270,7 @@ public static class AssemblyPackages
         return null;
     }
 
-    /// <summary>The file at <paramref name="path"/>, a path made by <see cref="PathOf"/>; null when
+    /// <summary>The file at <paramref name="path"/>, a path made by <see cref="GetFilePath"/>; null when
     /// the package has none there.</summary>
     internal static PackageFile? FindFileAt(AssemblyPackage package, AssemblyPath path)
     {
@@ -379,7 +379,7 @@ public static class AssemblyPackages
         return package.FilePath.Combine(relative);
     }
 
-    /// <summary>The package file a path made by <see cref="PathOf"/> runs through, and the path of the
+    /// <summary>The package file a path made by <see cref="GetFilePath"/> runs through, and the path of the
     /// file inside it; null when no file on disk lies along <paramref name="path"/>.</summary>
     internal static (AssemblyPath Package, string FullName)? SplitPath(AssemblyPath path)
     {

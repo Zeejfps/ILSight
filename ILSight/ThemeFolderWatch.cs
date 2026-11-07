@@ -20,9 +20,9 @@ public enum ThemeFolderEventKind
 public readonly record struct ThemeFolderEvent(ThemeFolderEventKind Kind, string Reason = "");
 
 /// <summary>Watches a folder of the user's themes for changes to the files of the kinds it is made for,
-/// such as the theme files of the themes folder. <see cref="NextChange"/> completes once those files
+/// such as the theme files of the themes folder. <see cref="Theming.FindNextChange"/> completes once those files
 /// changed and then stayed quiet for a moment, so the several writes of one save count once, or once the
-/// watch is lost. What happens while no one waits stays pending until the next <see cref="NextChange"/>
+/// watch is lost. What happens while no one waits stays pending until the next <see cref="Theming.FindNextChange"/>
 /// takes it. The file system tells of changes on other threads; this only completes a task there, for
 /// the UI thread to await.</summary>
 public sealed class ThemeFolderWatch

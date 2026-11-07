@@ -128,7 +128,7 @@ public sealed class DecompiledDocument
 /// <summary>Finding things in a <see cref="DecompiledDocument"/>.</summary>
 public static class Documents
 {
-    /// <summary>The index in <see cref="Folds"/> of the region starting on <paramref name="line"/>, or null.</summary>
+    /// <summary>The index in <see cref="DecompiledDocument.Folds"/> of the region starting on <paramref name="line"/>, or null.</summary>
     public static int? FindFoldStartingAt(DecompiledDocument document, int line)
     {
         int low = 0, high = document.Folds.Length - 1;

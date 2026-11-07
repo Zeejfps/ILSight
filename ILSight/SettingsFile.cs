@@ -1202,7 +1202,7 @@ internal static class SettingsJson
         return ThemeId<IconThemeFile>.Parse(saved) ?? IconThemeCatalog.ReferenceId;
     }
 
-    /// <summary>Writes the settings to <see cref="FilePath"/>, replacing the file whole so a failed
+    /// <summary>Writes the settings to <see cref="AppSettings.FilePath"/>, replacing the file whole so a failed
     /// write never leaves it truncated.</summary>
     public static SettingsWriteResult SaveSettings(AppSettings settings)
     {

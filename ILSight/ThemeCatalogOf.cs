@@ -4,14 +4,14 @@ namespace ILSight;
 
 /// <summary>The themes of one kind, color or icon, by id: the built-in ones, then the user's. Each is
 /// resolved over the themes it extends once, when the catalog loads; one that cannot be resolved falls
-/// back to its parent, else to the built-in theme <see cref="FallbackIdOf"/> names. Keeps what was wrong
+/// back to its parent, else to the built-in theme <see cref="ThemeCatalog{TFile, TContents, TTheme}.FindFallbackId"/> names. Keeps what was wrong
 /// in each file.</summary>
 public class ThemeCatalog<TFile, TContents, TTheme>
     where TFile : class, IThemeFile<TFile, TContents>
     where TContents : class
     where TTheme : class
 {
-    /// <summary>The built-in themes in the order a menu lists them, which must include <see cref="DefaultId"/>.</summary>
+    /// <summary>The built-in themes in the order a menu lists them, which must include <see cref="ThemeCatalog{TFile, TContents, TTheme}.DefaultId"/>.</summary>
     public required IReadOnlyList<TFile> BuiltIns { get; init; }
 
     /// <summary>The theme <c>file</c> and the themes it extends, <c>chain</c>, each with what it sets, the one extending
@@ -98,7 +98,7 @@ public static class ThemeCatalogs
             AddCatalogError(catalog, error);
     }
 
-    /// <summary>The theme <paramref name="id"/>, which must be one of <see cref="Ids"/>, resolved the
+    /// <summary>The theme <paramref name="id"/>, which must be one of <see cref="ThemeCatalog{TFile, TContents, TTheme}.Ids"/>, resolved the
     /// first time it is asked for.</summary>
     public static TTheme ResolveTheme<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
         where TFile : class, IThemeFile<TFile, TContents>
@@ -208,7 +208,7 @@ public static class ThemeCatalogs
     }
 
     /// <summary>What <paramref name="file"/> shows when it cannot be resolved: its parent as that resolves,
-    /// else the built-in theme <see cref="FallbackIdOf"/> names.</summary>
+    /// else the built-in theme <see cref="ThemeCatalog{TFile, TContents, TTheme}.FindFallbackId"/> names.</summary>
     private static TTheme FallBackFrom<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
         where TFile : class, IThemeFile<TFile, TContents>
         where TContents : class
@@ -276,7 +276,7 @@ public static class ThemeCatalogs
         catalog.Errors.Add(error);
     }
 
-    /// <summary>The theme <paramref name="id"/> as resolved, or the built-in <see cref="DefaultId"/> when
+    /// <summary>The theme <paramref name="id"/> as resolved, or the built-in <see cref="ThemeCatalog{TFile, TContents, TTheme}.DefaultId"/> when
     /// there is none with that id.</summary>
     public static TTheme FindTheme<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
         where TFile : class, IThemeFile<TFile, TContents>
@@ -288,7 +288,7 @@ public static class ThemeCatalogs
         return catalog.Themes[catalog.DefaultId];
     }
 
-    /// <summary>The id of the theme <see cref="Find"/> shows for <paramref name="id"/>: the id itself when
+    /// <summary>The id of the theme <see cref="FindTheme"/> shows for <paramref name="id"/>: the id itself when
     /// it resolves, else the theme it falls back to.</summary>
     public static ThemeId<TFile> FindShownId<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
         where TFile : class, IThemeFile<TFile, TContents>
@@ -309,7 +309,7 @@ public static class ThemeCatalogs
         return ThemeNames.GetName(catalog.Files[id].Name, culture);
     }
 
-    /// <summary>Where <paramref name="id"/> is in <see cref="Ids"/>, or -1. Allocates nothing.</summary>
+    /// <summary>Where <paramref name="id"/> is in <see cref="ThemeCatalog{TFile, TContents, TTheme}.Ids"/>, or -1. Allocates nothing.</summary>
     public static int FindThemeIndex<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
         where TFile : class, IThemeFile<TFile, TContents>
         where TContents : class
@@ -324,7 +324,7 @@ public static class ThemeCatalogs
     }
 
     /// <summary>Every theme's name in <paramref name="culture"/>'s language, in the order of
-    /// <see cref="Ids"/>. Kept until the language or the themes change.</summary>
+    /// <see cref="ThemeCatalog{TFile, TContents, TTheme}.Ids"/>. Kept until the language or the themes change.</summary>
     public static string[] ListNames<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, CultureInfo culture)
         where TFile : class, IThemeFile<TFile, TContents>
         where TContents : class

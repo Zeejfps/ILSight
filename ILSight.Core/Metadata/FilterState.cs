@@ -17,7 +17,7 @@ namespace ILSight.Core.Metadata
 
 	/// <summary>
 	/// Mutable per-column user state for the schema-driven flag filter. The popup UI
-	/// pokes at this; <see cref="Matches"/> applies it to a row's value. <c>null</c> in
+	/// pokes at this; <see cref="FilterStatePresenter.MatchesFilter"/> applies it to a row's value. <c>null</c> in
 	/// <see cref="MutexSelections"/> means the user picked "any" for that group — every
 	/// row passes that axis.
 	/// </summary>
