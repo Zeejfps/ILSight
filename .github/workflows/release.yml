@@ -2,10 +2,11 @@
 # with "release" ticked, it then publishes them all as one GitHub Release, which is the feed installed
 # apps update from, tagged with the version it was built as.
 #
-# The version is the day's date in UTC and which release of that day it is: 2026.11.7-1, then
-# 2026.11.7-2. Velopack wants three numbers in SemVer order, and a number alone after the dash sorts as
-# a number, so -10 comes after -2. A version with no -N would sort above all of that day's, so there is
-# never one. The tag is only made once every platform has built, so a failed run takes no number.
+# The version is the day's date in UTC and which build of that day it is: 2026.11.7-build.1, then
+# 2026.11.7-build.2. Velopack wants three numbers in SemVer order, and the number after "build." sorts as
+# a number, so build.10 comes after build.2. A version with no suffix would sort above all of that day's,
+# so there is never one. The tag is only made once every platform has built, so a failed run takes no
+# number.
 #
 # Run without "release", or on a pull request that changes this file, it builds the same and leaves the
 # packed files as a build artifact.
@@ -47,16 +48,16 @@ jobs:
         run: |
           read -r year month day < <(date -u '+%Y %-m %-d')
           date="$year.$month.$day"
-          # The highest N already tagged today, matched as a literal prefix.
+          # The highest build already tagged today, matched as a literal prefix.
           last=0
           for tag in $(git ls-remote --tags --refs origin | sed 's|.*refs/tags/||'); do
-            n=${tag#"v$date-"}
+            n=${tag#"v$date-build."}
             if [ "$n" != "$tag" ] && [[ "$n" =~ ^[0-9]+$ ]] && [ "$n" -gt "$last" ]; then
               last=$n
             fi
           done
           n=$(( last + 1 ))
-          version="$date-$n"
+          version="$date-build.$n"
           echo "Version: $version"
           {
             echo "version=$version"
