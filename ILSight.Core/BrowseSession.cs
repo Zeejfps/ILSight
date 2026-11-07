@@ -41,20 +41,14 @@ public sealed class BrowseSession
     public readonly ConditionalWeakTable<BrowseNode, IReadOnlyList<BrowseNode>> Inner = new();
     public readonly ConditionalWeakTable<LoadedAssembly, BrowseNode> OtherRoots = new();
     public readonly ConditionalWeakTable<LoadedModule, ConcurrentDictionary<EntityHandle, BrowseNode>> Index = new();
-    public readonly ConditionalWeakTable<BrowseNode, ChildSlot> Children = new();
 
-    /// <summary>Where one node's children stand. <see cref="State"/> is read and changed only holding
-    /// <see cref="Gate"/>, as <see cref="BrowseSessions"/> does.</summary>
-    public sealed class ChildSlot
-    {
-        public readonly Lock Gate = new();
-        public ChildrenState State = ChildrenState.NotLoaded;
-    }
+    /// <summary>Where each node's children stand, which can only be read or changed holding its lock.</summary>
+    public readonly ConditionalWeakTable<BrowseNode, Guarded<ChildrenState>> Children = new();
 }
 
 /// <summary>Building and finding the nodes of a <see cref="BrowseSession"/>. All of this is thread-safe, and it is
-/// what keeps the session so: its tables are safe to share, and a node's <see cref="BrowseSession.ChildSlot"/> is
-/// read and changed only holding its gate.</summary>
+/// what keeps the session so: its tables are safe to share, and where a node's children stand is
+/// <see cref="Guarded{T}"/>.</summary>
 public static class BrowseSessions
 {
     private const string NamespaceIdPrefix = "N:";
@@ -131,8 +125,8 @@ public static class BrowseSessions
     {
         if (!session.Children.TryGetValue(node, out var slot))
             return ChildrenState.NotLoaded;
-        lock (slot.Gate)
-            return slot.State;
+        using var held = slot.Enter();
+        return held.Value;
     }
 
     /// <summary><see cref="PeekChildren"/>, with the children as the tree lists them when it nests
@@ -162,18 +156,18 @@ public static class BrowseSessions
     {
         var slot = EnsureSlot(session, node);
         Task<ChildrenState> load;
-        lock (slot.Gate)
+        using (var held = slot.Enter())
         {
-            switch (slot.State)
+            switch (held.Value)
             {
                 case ChildrenState.Ready or ChildrenState.Failed:
-                    return Task.FromResult(slot.State);
+                    return Task.FromResult(held.Value);
                 case ChildrenState.Running running:
                     load = running.Load;
                     break;
                 case ChildrenState.Unloaded:
                     var building = new TaskCompletionSource<ChildrenState>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    slot.State = new ChildrenState.Running(building.Task);
+                    held.Value = new ChildrenState.Running(building.Task);
                     load = building.Task;
                     _ = Task.Run(() => FinishBuilding(session, node, slot, building));
                     break;
@@ -192,18 +186,18 @@ public static class BrowseSessions
         var slot = EnsureSlot(session, node);
         TaskCompletionSource<ChildrenState>? building = null;
         Task<ChildrenState> load;
-        lock (slot.Gate)
+        using (var held = slot.Enter())
         {
-            switch (slot.State)
+            switch (held.Value)
             {
                 case ChildrenState.Ready or ChildrenState.Failed:
-                    return slot.State;
+                    return held.Value;
                 case ChildrenState.Running running:
                     load = running.Load;
                     break;
                 case ChildrenState.Unloaded:
                     building = new TaskCompletionSource<ChildrenState>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    slot.State = new ChildrenState.Running(building.Task);
+                    held.Value = new ChildrenState.Running(building.Task);
                     load = building.Task;
                     break;
                 default:
@@ -266,17 +260,17 @@ public static class BrowseSessions
         return found;
     }
 
-    private static BrowseSession.ChildSlot EnsureSlot(BrowseSession session, BrowseNode node)
+    private static Guarded<ChildrenState> EnsureSlot(BrowseSession session, BrowseNode node)
     {
-        return session.Children.GetValue(node, static _ => new BrowseSession.ChildSlot());
+        return session.Children.GetValue(node, static _ => new Guarded<ChildrenState>(ChildrenState.NotLoaded));
     }
 
     /// <summary>Builds the children, records the nodes they index, then hands them out.</summary>
-    private static ChildrenState FinishBuilding(BrowseSession session, BrowseNode node, BrowseSession.ChildSlot slot, TaskCompletionSource<ChildrenState> building)
+    private static ChildrenState FinishBuilding(BrowseSession session, BrowseNode node, Guarded<ChildrenState> slot, TaskCompletionSource<ChildrenState> building)
     {
         var state = BuildChildren(session, node);
-        lock (slot.Gate)
-            slot.State = state;
+        using (var held = slot.Enter())
+            held.Value = state;
         building.SetResult(state);
         return state;
     }
