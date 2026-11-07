@@ -375,6 +375,59 @@ public sealed class AnalyzerTests
         Assert.Null(kind.Work);
     }
 
+    private static AnalyzerRows NewRows()
+    {
+        return new AnalyzerRows { AppCommands = new Queue<AppCommand>() };
+    }
+
+    [Fact]
+    public void A_symbol_row_lists_what_can_be_asked_of_it()
+    {
+        var d = AppStateDriver.Opened();
+        var rows = NewRows();
+        var symbol = new AnalyzerSymbolNode { Symbol = Core.Analysis.Analyzers.Of(First(d))! };
+
+        Assert.True(rows.HasChildren(symbol));
+        Assert.NotEmpty(ListChildren(rows, symbol));
+        Assert.Equal(symbol.Symbol.Label, rows.Row(symbol).Label);
+    }
+
+    [Fact]
+    public void An_analysis_row_lists_a_loading_row_and_asks_once_to_run()
+    {
+        var d = AppStateDriver.Opened();
+        var rows = NewRows();
+        var kind = RunningKind(d);
+
+        Assert.True(rows.HasChildren(kind));
+        Assert.Same(rows.Loading, Assert.Single(ListChildren(rows, kind)));
+        ListChildren(rows, kind);
+
+        Assert.Single(rows.AppCommands);
+    }
+
+    [Fact]
+    public void A_message_row_has_no_children_and_tells_why()
+    {
+        var rows = NewRows();
+        var message = new AnalyzerMessageNode { Error = "failed" };
+
+        Assert.False(rows.HasChildren(message));
+        Assert.Empty(ListChildren(rows, message));
+        Assert.Equal("failed", rows.Row(message).Label);
+    }
+
+    [Fact]
+    public void A_root_waiting_for_its_symbol_has_no_children_and_shows_as_loading()
+    {
+        var rows = NewRows();
+        var pending = new AnalyzerPendingNode { SavedAs = null };
+
+        Assert.False(rows.HasChildren(pending));
+        Assert.Empty(ListChildren(rows, pending));
+        Assert.True(rows.Row(pending).Spinning);
+    }
+
     [Fact]
     public void Cancelling_a_message_row_has_nothing_to_stop()
     {

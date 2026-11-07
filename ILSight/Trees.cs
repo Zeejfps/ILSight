@@ -370,7 +370,7 @@ public static class Trees
         switch (state)
         {
             case ChildrenState.Ready ready:
-                return TreeChildren<BrowseNode>.Of(GetShownChildren(tree, node, ready.Children));
+                return TreeChildren<BrowseNode>.Of(EnsureShownChildren(tree, node, ready.Children));
             case ChildrenState.Failed failed:
                 return TreeChildren<BrowseNode>.Placeholder(CreateFailedRow(tree, failed.Error));
             case ChildrenState.Running or ChildrenState.Unloaded:
@@ -381,13 +381,13 @@ public static class Trees
         }
     }
 
-    private static BrowseNode[] GetShownChildren(BrowseTree tree, BrowseNode node, IReadOnlyList<BrowseNode> children)
+    private static BrowseNode[] EnsureShownChildren(BrowseTree tree, BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
         if (tree.ShownChildren.TryGetValue(node, out var cached)) return cached;
         return ListShownChildren(tree, node, children);
     }
 
-    /// <summary>Apart from <see cref="GetShownChildren"/>, which runs per expanded row every frame, as a lambda
+    /// <summary>Apart from <see cref="EnsureShownChildren"/>, which runs per expanded row every frame, as a lambda
     /// capturing a parameter costs its closure on the way in, before anything else is looked at.</summary>
     private static BrowseNode[] ListShownChildren(BrowseTree tree, BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
