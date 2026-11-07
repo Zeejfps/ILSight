@@ -71,16 +71,21 @@ internal static class ShapeExceptions
     /// <summary>Types with methods, still to become data and functions.</summary>
     public static readonly string[] NotYetData =
     [
-        "ILSight.ComparisonRows",
     ];
 
     /// <summary>Constructors that take arguments, still to become object initializers or functions.</summary>
     public static readonly string[] ConstructorsLeft =
     [
-        "ILSight.AppIcons",
-        "ILSight.Core.AssemblyLoadException",
-        "ILSight.Core.LocatingTokenWriter",
     ];
+
+    /// <summary>Types with no behaviour but a constructor taking arguments, which an external type demands, by
+    /// what demands it. These stay. An entry with no methods can't be a seam, as it would fail as stale.</summary>
+    public static readonly Dictionary<string, string> ConstructorSeams = new()
+    {
+        ["ILSight.AppIcons"] = "ZGF ThemeIconsGenerator generates it with that constructor",
+        ["ILSight.Core.AssemblyLoadException"] = "BCL Exception, a base class, which takes the message and inner exception",
+        ["ILSight.Core.LocatingTokenWriter"] = "Decompiler DecoratingTokenWriter, a base class, which takes the writer decorated",
+    };
 
     /// <summary>Extension functions, still to become plain ones.</summary>
     public static readonly string[] ExtensionsLeft =

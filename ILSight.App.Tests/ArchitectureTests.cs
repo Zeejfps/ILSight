@@ -60,6 +60,16 @@ public sealed class ArchitectureTests
     }
 
     [Fact]
+    public void A_constructor_seam_still_takes_constructor_arguments()
+    {
+        var found = ListDeclaredTypes().Where(HasConstructorArguments).Select(GetName).ToHashSet();
+
+        var stale = ShapeExceptions.ConstructorSeams.Keys.Where(seam => !found.Contains(seam));
+
+        Assert.Empty(stale);
+    }
+
+    [Fact]
     public void No_function_is_an_extension_unless_it_is_listed()
     {
         var found = ListDeclaredTypes().SelectMany(ListExtensions).ToHashSet();
@@ -109,7 +119,13 @@ public sealed class ArchitectureTests
     {
         if (IsRecord(type) || type.IsEnum || type.IsSubclassOf(typeof(Delegate))) return false;
         if (ShapeExceptions.Seams.ContainsKey(GetName(type))) return false;
+        if (ShapeExceptions.ConstructorSeams.ContainsKey(GetName(type))) return false;
         if (ShapeExceptions.SelfContained.Contains(GetName(type))) return false;
+        return HasConstructorArguments(type);
+    }
+
+    private static bool HasConstructorArguments(Type type)
+    {
         return type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
             .Any(static constructor => !constructor.IsPrivate && constructor.GetParameters().Length > 0);
     }
