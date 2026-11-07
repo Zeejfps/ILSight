@@ -27,18 +27,13 @@ public static class Diagrams
     /// <summary>Opens <paramref name="fold"/> when it is folded, and folds it when it is open.</summary>
     public static void ToggleFold(DiagramViewState view, CardFold fold)
     {
-        if (!view.FlippedFolds.Remove(fold))
-            view.FlippedFolds.Add(fold);
-        view.FoldsVersion++;
+        view.FlippedFolds.Flip(fold);
     }
 
     /// <summary>Shows members hidden from other assemblies on every card when <paramref name="shows"/>.</summary>
     public static void ShowHiddenMembers(DiagramViewState view, bool shows)
     {
-        if (shows == view.ShowsHiddenMembers)
-            return;
-        view.ShowsHiddenMembers = shows;
-        view.FilterChanges++;
+        view.HiddenMembersFilter.Set(shows);
     }
 
     /// <summary>Selects the card of <paramref name="type"/> and brings it into view once it is laid out.</summary>
@@ -62,16 +57,14 @@ public static class Diagrams
         DiagramCameras.Restore(view.Camera, new PointF(saved.X, saved.Y), saved.Zoom);
         if (saved.Folds != null)
             RestoreFolds(view, saved.Folds);
-        view.ShowsHiddenMembers = saved.ShowsHiddenMembers;
+        view.HiddenMembersFilter.Set(saved.ShowsHiddenMembers);
         view.IsFitPending = false;
     }
 
     /// <summary>Folds and opens the parts as <paramref name="flipped"/>, as the view saved them, says.</summary>
     public static void RestoreFolds(DiagramViewState view, IEnumerable<CardFold> flipped)
     {
-        view.FlippedFolds.Clear();
-        view.FlippedFolds.UnionWith(flipped);
-        view.FoldsVersion++;
+        view.FlippedFolds.Replace(flipped);
     }
 
     /// <summary>Keeps <paramref name="faces"/>, measured for <paramref name="key"/>, in place of those before.</summary>

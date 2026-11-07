@@ -20,7 +20,6 @@ public static class Tabs
     public static void Add(DocumentTabs tabs, DocumentTab tab)
     {
         tabs.Open.Add(tab);
-        tabs.OwnChanges++;
     }
 
     /// <summary>Cancels the tab's work and closes it. The tab stops being active if it was.</summary>
@@ -30,11 +29,10 @@ public static class Tabs
             return;
         Tabs.Cancel(tab);
         tabs.ClosedChanges += tab.Changes;
-        tabs.OwnChanges++;
         if (tab == tabs.Active)
-            tabs.Active = null;
+            tabs.LastWorkedIn.Set(null);
         if (tab == tabs.Preview)
-            tabs.Preview = null;
+            tabs.Previewing.Set(null);
         if (tab == tabs.LastDiagram)
             tabs.LastDiagram = null;
     }
@@ -44,9 +42,7 @@ public static class Tabs
     {
         if (!tabs.Open.Contains(tab))
             throw new InvalidOperationException("Only an open tab can be active.");
-        if (tab != tabs.Active)
-            tabs.OwnChanges++;
-        tabs.Active = tab;
+        tabs.LastWorkedIn.Set(tab);
         if (tab.Diagram != null)
             tabs.LastDiagram = tab;
     }
@@ -56,9 +52,7 @@ public static class Tabs
     {
         if (!tabs.Open.Contains(tab))
             throw new InvalidOperationException("Only an open tab can be the preview tab.");
-        if (tab != tabs.Preview)
-            tabs.OwnChanges++;
-        tabs.Preview = tab;
+        tabs.Previewing.Set(tab);
     }
 
     /// <summary>Keeps <paramref name="tab"/> open: it is no longer the preview tab, if it was.</summary>
@@ -66,8 +60,7 @@ public static class Tabs
     {
         if (tab != tabs.Preview)
             return;
-        tabs.Preview = null;
-        tabs.OwnChanges++;
+        tabs.Previewing.Set(null);
     }
 
     public static bool IsOpen(DocumentTabs tabs, DocumentTab tab)

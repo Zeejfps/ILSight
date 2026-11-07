@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight;
 
 /// <summary>The open document tabs, the one the user last worked in, the preview tab, which shows
@@ -6,23 +8,26 @@ namespace ILSight;
 public sealed class DocumentTabs
 {
     /// <summary>The tabs open, in order.</summary>
-    public readonly List<DocumentTab> Open = new();
+    public readonly TrackedList<DocumentTab> Open = new();
 
     /// <summary>The tab of the diagram last worked in, which may since show something else.</summary>
     public DocumentTab? LastDiagram;
 
-    /// <summary>The tabs opened and closed and the changes of which is active or the preview.</summary>
-    public int OwnChanges;
-
     /// <summary>What the tabs closed had counted as <see cref="DocumentTab.Changes"/>.</summary>
     public int ClosedChanges;
 
+    /// <summary>The tab the user last worked in, and how many times that changed.</summary>
+    public Tracked<DocumentTab?> LastWorkedIn { get; } = new(null);
+
+    /// <summary>The tab that shows what is picked, and how many times that changed.</summary>
+    public Tracked<DocumentTab?> Previewing { get; } = new(null);
+
     /// <summary>The tab the user last worked in, where the tree and navigation show what they pick.</summary>
-    public DocumentTab? Active;
+    public DocumentTab? Active => LastWorkedIn.Value;
 
     /// <summary>The tab that shows what is picked, replaced by what is picked next, until it is kept
     /// open; null when no tab is one.</summary>
-    public DocumentTab? Preview;
+    public DocumentTab? Preview => Previewing.Value;
 
     /// <summary>The tab of the diagram the user last worked in, which types shown in a diagram are added
     /// to; null when no open tab shows a diagram the user worked in.</summary>
@@ -45,7 +50,7 @@ public sealed class DocumentTabs
     {
         get
         {
-            var changes = OwnChanges + ClosedChanges;
+            var changes = Open.Revision + LastWorkedIn.Changes + Previewing.Changes + ClosedChanges;
             foreach (var tab in Open)
                 changes += tab.Changes;
             return changes;

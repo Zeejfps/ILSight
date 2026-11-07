@@ -34,12 +34,11 @@ public sealed class DiagramViewState
     public DiagramCamera Camera { get; } = new();
 
     /// <summary>The parts of the cards folded or opened against how they start: a card's own members show
-    /// until folded, what it inherits stays folded until opened. Changed through <see cref="Diagrams"/>, which
-    /// counts each change in <see cref="FoldsVersion"/>.</summary>
-    public HashSet<CardFold> FlippedFolds { get; } = new();
+    /// until folded, what it inherits stays folded until opened.</summary>
+    public TrackedSet<CardFold> FlippedFolds { get; } = new();
 
     /// <summary>Counts the changes to <see cref="FlippedFolds"/>.</summary>
-    public int FoldsVersion;
+    public int FoldsVersion => FlippedFolds.Revision;
 
     public LayoutTransition Transition { get; } = new();
 
@@ -55,17 +54,16 @@ public sealed class DiagramViewState
     /// <summary>The type whose card is selected, or null.</summary>
     public CodeReference.Entity? Selected;
 
-    /// <summary>Counts the changes to <see cref="ShowsHiddenMembers"/>.</summary>
-    public int FilterChanges;
-
     /// <summary>Whether members hidden from other assemblies show on the cards of types from assemblies
-    /// other than the diagram's own. Changed through <see cref="Diagrams.ShowHiddenMembers"/>, which counts
-    /// each change in <see cref="FilterChanges"/>.</summary>
-    public bool ShowsHiddenMembers;
+    /// other than the diagram's own, and how many times that changed.</summary>
+    public Tracked<bool> HiddenMembersFilter { get; } = new(false);
+
+    /// <summary>Whether members hidden from other assemblies show.</summary>
+    public bool ShowsHiddenMembers => HiddenMembersFilter.Value;
 
     /// <summary>Counts the changes to what the settings keep of the view: where it looks and how near,
     /// the folds, and the filter.</summary>
-    public int Changes => Camera.Changes + FoldsVersion + FilterChanges;
+    public int Changes => Camera.Changes + FoldsVersion + HiddenMembersFilter.Changes;
 
     /// <summary>Set until the first layout is fitted to the view.</summary>
     public bool IsFitPending = true;
