@@ -412,5 +412,12 @@
   "ProcessModuleColumns": [
     1,
     4
-  ]
+  ],
+  "CloseWindow": {
+    "X": 90,
+    "Y": 100,
+    "Width": 560,
+    "Height": 600,
+    "Maximized": false
+  }
 }

@@ -20,4 +20,5 @@ public readonly record struct ViewSources(
     int ProcessWindow,
     int ProcessColumns,
     int ProcessModuleColumns,
+    int CloseWindow,
     int Documents);

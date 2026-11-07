@@ -190,6 +190,7 @@ public static class Settings
             ProcessWindow = view.ProcessWindow,
             ProcessColumns = view.ProcessColumns,
             ProcessModuleColumns = view.ProcessModuleColumns,
+            CloseWindow = view.CloseWindow,
         };
     }
 
@@ -250,6 +251,7 @@ public static class Settings
             settings.ProcessWindow,
             settings.ProcessColumns,
             settings.ProcessModuleColumns,
+            settings.CloseWindow,
             Tabs: null);
     }
 }

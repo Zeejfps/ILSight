@@ -165,6 +165,7 @@ public sealed class SettingsFormatTests : IDisposable
             ProcessWindow = new WindowBounds(70, 80, 900, 600, false),
             ProcessColumns = [2f, 1f, 3f, 1f],
             ProcessModuleColumns = [1f, 4f],
+            CloseWindow = new WindowBounds(90, 100, 560, 600, false),
         };
     }
 

@@ -41,7 +41,8 @@ internal sealed record SettingsFile(
     WindowBoundsJson? NuGetWindow,
     WindowBoundsJson? ProcessWindow,
     List<float>? ProcessColumns,
-    List<float>? ProcessModuleColumns)
+    List<float>? ProcessModuleColumns,
+    WindowBoundsJson? CloseWindow)
 {
     /// <summary>The one list that settings files kept before lists had names.</summary>
     public const string OldAssemblies = "Assemblies";
@@ -281,7 +282,8 @@ internal static class SettingsJson
             WriteWindow(settings.NuGetWindow),
             WriteWindow(settings.ProcessWindow),
             settings.ProcessColumns,
-            settings.ProcessModuleColumns);
+            settings.ProcessModuleColumns,
+            WriteWindow(settings.CloseWindow));
     }
 
     private static Dictionary<string, SavedFilterStateJson?>? WriteFilters(Dictionary<string, SavedFilterState>? filters)
@@ -1013,6 +1015,7 @@ internal static class SettingsJson
             ProcessWindow = SanitizeDialogWindow(ReadWindow(file, nameof(SettingsFile.ProcessWindow))),
             ProcessColumns = SettingsJson.Read(file, nameof(SettingsFile.ProcessColumns), json.ListSingle),
             ProcessModuleColumns = SettingsJson.Read(file, nameof(SettingsFile.ProcessModuleColumns), json.ListSingle),
+            CloseWindow = SanitizeDialogWindow(ReadWindow(file, nameof(SettingsFile.CloseWindow))),
         };
     }
 

@@ -178,6 +178,9 @@ public sealed class UiState : IUiState
     /// <summary>The "open from NuGet" dialog.</summary>
     public required NuGetPicker NuGetPicker { get; init; }
 
+    /// <summary>The "close assemblies" dialog.</summary>
+    public AssemblyCloser Closer { get; } = new();
+
     /// <summary>The "open from running process" dialog.</summary>
     public required ProcessPicker ProcessPicker { get; init; }
 

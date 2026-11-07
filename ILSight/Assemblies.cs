@@ -262,6 +262,13 @@ public static class Assemblies
         AssemblyListing.CloseAssembly(appState.Assemblies, assembly);
     }
 
+    /// <summary>Takes <paramref name="items"/> off the list; one no longer on it is passed over.</summary>
+    public static void CloseAssemblies(AppState appState, IReadOnlyList<LoadedAssembly> items)
+    {
+        foreach (var item in items)
+            AssemblyListing.CloseAssembly(appState.Assemblies, item);
+    }
+
     /// <summary>Takes the files that failed to load off the list.</summary>
     public static void CloseFailedAssemblies(AppState appState)
     {

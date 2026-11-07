@@ -16,6 +16,10 @@ internal static class AppLayout
     public const float ProcessDialogHeight = 640f;
     public const float ProcessDialogMinWidth = 640f;
     public const float ProcessDialogMinHeight = 400f;
+    public const float CloseDialogWidth = 560f;
+    public const float CloseDialogHeight = 600f;
+    public const float CloseDialogMinWidth = 400f;
+    public const float CloseDialogMinHeight = 320f;
     public const float ListsDialogWidth = 480f;
     public const float ListPickerMinWidth = 140f;
     public const float ListPickerMaxWidth = 240f;

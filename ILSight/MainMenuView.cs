@@ -194,6 +194,8 @@ internal static class MainMenuView
         var anyOpen = tree.Roots.Length > 0;
         if (ui.MenuItem(t.FileClose, enabled: selected != null, id: "close", icon: new UiIcon(icons.FileClose)) && selected != null)
             Commands.Later(ui.State, selected, static (a, assembly) => CloseAssembly(a, assembly));
+        if (ui.MenuItem(t.FileCloseAssemblies, enabled: anyOpen, id: "close-assemblies", icon: new UiIcon(icons.FileCloseAssemblies)))
+            AssemblyClosing.OpenCloser(ui.State.Closer, appState.Assemblies, selected);
         if (ui.MenuItem(t.FileCloseFailed, enabled: AnyFailedToLoad(appState.Assemblies), id: "close-failed", icon: new UiIcon(icons.FileCloseFailed)))
             Commands.Later(ui.State, static a => CloseFailedAssemblies(a));
         if (ui.MenuItem(t.FileClearList, enabled: anyOpen, id: "clear-list", icon: new UiIcon(icons.FileClearList)))

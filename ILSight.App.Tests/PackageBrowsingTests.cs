@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using ILSight.Core;
+using ILSight.Localization;
 using static ILSight.Assemblies;
 using static ILSight.Navigation;
 using static ILSight.App.Tests.BuiltInGlyphs;
@@ -54,7 +55,7 @@ public sealed class PackageBrowsingTests
     }
 
     [Fact]
-    public void The_close_button_closes_a_selected_package_but_not_an_assembly_inside_it()
+    public void The_close_button_ticks_a_selected_package_but_not_for_an_assembly_inside_it()
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
@@ -62,12 +63,15 @@ public sealed class PackageBrowsingTests
 
         app.Ui.Tree.View.Select(Greeter(app).Assembly.Root);
         app.Run(2);
-        app.Click(Icons.AssembliesCloseAssembly);
-        Assert.Single(app.AppState.Assemblies.Listed);
+        app.Click(Icons.AssembliesCloseAssembly).Frame(2);
+        Assert.False(Assert.Single(app.Ui.Closer.Order).Included);
+        AssemblyClosing.CloseCloser(app.Ui.Closer);
 
         app.Ui.Tree.View.Select(package.Root);
         app.Run(2);
-        app.Click(Icons.AssembliesCloseAssembly);
+        app.Click(Icons.AssembliesCloseAssembly).Frame(2);
+        Assert.True(Assert.Single(app.Ui.Closer.Order).Included);
+        app.ClickLast(Strings.En.FileClose).Frame(2);
 
         Assert.Empty(app.AppState.Assemblies.Listed);
     }

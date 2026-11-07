@@ -17,6 +17,7 @@ public sealed class AutosaveTests : IDisposable
     private static readonly WindowBounds MovedExportWindow = new(-900, 200, 700, 800, false);
     private static readonly WindowBounds MovedNuGetWindow = new(100, -300, 900, 600, false);
     private static readonly WindowBounds MovedProcessWindow = new(-200, 150, 960, 640, false);
+    private static readonly WindowBounds MovedCloseWindow = new(300, 120, 560, 600, false);
 
     [Theory]
     [InlineData(nameof(AppSettings.Theme))]
@@ -34,6 +35,7 @@ public sealed class AutosaveTests : IDisposable
     [InlineData(nameof(AppSettings.ProcessWindow))]
     [InlineData(nameof(AppSettings.ProcessColumns))]
     [InlineData(nameof(AppSettings.ProcessModuleColumns))]
+    [InlineData(nameof(AppSettings.CloseWindow))]
     public void A_saved_setting_changed_alone_is_saved_with_the_next_frame(string field)
     {
         var app = new AppDriver(settings: _temp.Settings());
@@ -96,6 +98,9 @@ public sealed class AutosaveTests : IDisposable
             case nameof(AppSettings.ProcessModuleColumns):
                 screen.ProcessModuleColumns.Restore([1f, 4f]);
                 break;
+            case nameof(AppSettings.CloseWindow):
+                screen.Closer.Window.Bounds = MovedCloseWindow;
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(field), field, null);
         }
@@ -118,6 +123,7 @@ public sealed class AutosaveTests : IDisposable
         nameof(AppSettings.ProcessWindow) => saved.ProcessWindow == MovedProcessWindow,
         nameof(AppSettings.ProcessColumns) => saved.ProcessColumns?.SequenceEqual([2f, 1f, 3f, 1f]) == true,
         nameof(AppSettings.ProcessModuleColumns) => saved.ProcessModuleColumns?.SequenceEqual([1f, 4f]) == true,
+        nameof(AppSettings.CloseWindow) => saved.CloseWindow == MovedCloseWindow,
         _ => throw new ArgumentOutOfRangeException(nameof(field), field, null),
     };
 

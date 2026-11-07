@@ -1,6 +1,7 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
+using ILSight.Localization;
 using ZGF.KeyboardModule;
 using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
@@ -458,19 +459,18 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void The_assemblies_panels_remove_button_closes_the_selected_assembly_only()
+    public void The_assemblies_panels_remove_button_offers_the_assembly_of_the_selected_node_to_close()
     {
         var app = AppDriver.Opened();
-        var root = app.Ui.Tree.Roots[0];
         app.Ui.Tree.View.Select(app.Node(AppStateDriver.FixturesNamespace));
         app.Run(2);
 
-        app.Click(Icons.AssembliesCloseAssembly);
+        app.Click(Icons.AssembliesCloseAssembly).Frame(2);
+        Assert.True(app.Ui.Closer.IsOpen);
+        Assert.True(Assert.Single(app.Ui.Closer.Order).Included);
         Assert.Single(app.AppState.Assemblies.Assemblies);
 
-        app.Ui.Tree.View.Select(root);
-        app.Run(2);
-        app.Click(Icons.AssembliesCloseAssembly);
+        app.ClickLast(Strings.En.FileClose).Frame(2);
 
         Assert.Empty(app.AppState.Assemblies.Assemblies);
     }

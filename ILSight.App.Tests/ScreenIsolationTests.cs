@@ -20,7 +20,7 @@ public sealed class ScreenIsolationTests : IDisposable
     private static readonly Type[] ScreenTypes =
     [
         typeof(UiState), typeof(TabView), typeof(PictureView), typeof(BrowseTree), typeof(AnalyzerRows), typeof(BookmarksPanel),
-        typeof(ErrorDialog), typeof(AssemblyListsDialog), typeof(FrameworkPicker), typeof(NuGetPicker), typeof(ProcessPicker), typeof(Search), typeof(ExportSetup), typeof(AssemblyPicker),
+        typeof(ErrorDialog), typeof(AssemblyListsDialog), typeof(FrameworkPicker), typeof(NuGetPicker), typeof(ProcessPicker), typeof(AssemblyCloser), typeof(Search), typeof(ExportSetup), typeof(AssemblyPicker),
         typeof(MetadataFilters), typeof(MainLayout), typeof(CodeViewState), typeof(MetadataGridState), typeof(TableColumns), typeof(FoldedGroups),
         typeof(TreeViewState<>),
     ];

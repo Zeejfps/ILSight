@@ -46,6 +46,7 @@ public static class ScreenSettings
         DialogWindows.Restore(uiState.NuGetPicker.Window, saved.NuGetWindow);
         DialogWindows.Restore(uiState.ExportSetup.Window, saved.ExportWindow);
         DialogWindows.Restore(uiState.ProcessPicker.Window, saved.ProcessWindow);
+        DialogWindows.Restore(uiState.Closer.Window, saved.CloseWindow);
         ScreenLayout.ConnectLayout(uiState);
         DocumentPanels.SkipPanels(uiState.Documents, Docking.ListDocumentPanels(uiState.MainLayout));
         uiState.KeptView = CaptureViewSources(uiState);
@@ -85,6 +86,7 @@ public static class ScreenSettings
             uiState.ProcessPicker.Window.Changes,
             uiState.ProcessColumns.Changes,
             uiState.ProcessModuleColumns.Changes,
+            uiState.Closer.Window.Changes,
             uiState.Documents.Revision);
     }
 
@@ -105,6 +107,7 @@ public static class ScreenSettings
             uiState.ProcessPicker.Window.Bounds,
             uiState.ProcessColumns.Weights.ToList(),
             uiState.ProcessModuleColumns.Weights.ToList(),
+            uiState.Closer.Window.Bounds,
             DocumentPanels.SavePanels(uiState.Documents));
     }
 }

@@ -82,6 +82,9 @@ public sealed class AppSettings
     /// <summary>The widths of the columns of a process's assemblies, as dragged.</summary>
     public List<float>? ProcessModuleColumns { get; set; }
 
+    /// <summary>The "close assemblies" dialog's window as it was left; null opens it at its default size, centered.</summary>
+    public WindowBounds? CloseWindow { get; set; }
+
     public const int MinWindowWidth = 480;
     public const int MinWindowHeight = 320;
     public const int MaxWindowSize = 16384;

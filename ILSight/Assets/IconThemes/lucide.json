@@ -165,6 +165,8 @@
     "file.generatePdb": { "font": "lucide", "glyph": "E20C" },
     // Close the selected assembly.
     "file.close": { "font": "lucide", "glyph": "E1B2" },
+    // Close assemblies picked out from a list.
+    "file.closeAssemblies": { "font": "lucide", "glyph": "E18E" },
     // Close the assemblies that failed to open.
     "file.closeFailed": { "font": "lucide", "glyph": "E0CD" },
     // Close every assembly.

@@ -26,6 +26,7 @@ public sealed record ViewSettings(
     WindowBounds? ProcessWindow,
     List<float>? ProcessColumns,
     List<float>? ProcessModuleColumns,
+    WindowBounds? CloseWindow,
     IReadOnlyList<TabPanel>? Tabs);
 
 /// <summary>The panel <see cref="Tab"/> is docked as, and how what it shows is viewed.</summary>

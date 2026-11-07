@@ -53,9 +53,8 @@ internal static class TreePaneView
             if (ui.IconButton("expand", ui.State.Icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
                 Trees.ExpandNamespaces(tree);
             ui.Separator(theme.IconSize);
-            var picked = FindPickedAssembly(tree);
-            if (ui.IconButton("close-assembly", ui.State.Icons.AssembliesCloseAssembly, t.TreeCloseAssembly, picked != null) && picked != null)
-                Commands.Later(ui.State, picked.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
+            if (ui.IconButton("close-assembly", ui.State.Icons.AssembliesCloseAssembly, t.TreeCloseAssemblies, any))
+                AssemblyClosing.OpenCloser(ui.State.Closer, assemblies, tree.View.Selected?.Assembly);
         }
     }
 
