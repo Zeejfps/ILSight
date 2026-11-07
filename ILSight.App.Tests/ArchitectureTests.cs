@@ -145,7 +145,7 @@ public sealed class ArchitectureTests
         if (method.IsDefined(typeof(CompilerGeneratedAttribute), false)) return true;
         if (method.IsSpecialName) return true;
         // What a record may write for itself: see rule 1.
-        if (method.Name is "Equals" or "GetHashCode" or "PrintMembers") return true;
+        if (method.Name is "Equals" or "GetHashCode" or "PrintMembers" or "ToString") return true;
         if (IsCaseOfStructUnion(method)) return true;
         return ShapeExceptions.RecordSeams.ContainsKey($"{GetName(method.DeclaringType!)}.{method.Name}");
     }

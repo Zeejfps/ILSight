@@ -6,7 +6,8 @@ what the data is, and a function says what is done to it.
 
 ### 1. Types are data
 
-A type holds fields and properties computed from them, which change nothing. It has no methods. Use the
+A type holds fields and properties computed from them, which change nothing but may keep a memo of their own
+answer. It has no methods. Use the
 plainest keyword that does the job:
 
 - `sealed class`: state that changes or has an identity.
@@ -15,9 +16,9 @@ plainest keyword that does the job:
 
 The only other code a type may hold:
 
-- a constructor that validates (rule 6);
-- `const`s;
-- equality members, where comparing by value needs them;
+- a constructor that validates (rule 6) or wires up the type's own parts;
+- `const`s, and `static readonly` instances of itself, such as `Empty` or `Default`;
+- overrides of `object`'s members: equality, where comparing by value needs it, and `ToString`;
 - a method an external interface demands, forwarding to a static function;
 - the methods of a self-contained type (rule 9);
 - the per-case functions of a struct union (rule 2).
@@ -73,6 +74,9 @@ public static void Rename<T>(T item, string title) where T : IHasTitle
 - The function is generic rather than taking the interface, so a struct isn't boxed.
 
 Passing the values is simpler. Use a projection when a function writes back or needs too many to list.
+
+Where something takes a callback, hand it a lambda over the static function: `problem => Errors.Report(state,
+problem)`. On a hot path, build it once rather than per call.
 
 ### 4. Functions are static and grouped by feature
 
