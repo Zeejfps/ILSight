@@ -1,6 +1,6 @@
 # ILSight Icon
 
-The app icon for ILSight. Needed by Phase 4 (`vpk pack --icon`) and Phase 5 (About page) of [ilsight-migration.md](ilsight-migration.md).
+The app icon for ILSight, used by the installer (`vpk pack --icon`) and the About page.
 Sources and the build live in `Assets/Icon/Source/`; `python package.py <vectorcraft-cli.exe>` regenerates every output.
 
 ## Concept
