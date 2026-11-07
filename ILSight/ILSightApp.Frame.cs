@@ -19,7 +19,7 @@ public sealed partial class ILSightApp
     internal static UiState CreateUiState(AppState appState)
     {
         var uiState = new UiState(appState.View, appState.ReportError, appState.Session, appState.Assemblies.Runtime);
-        uiState.Documents.SkipPanels(AssemblyLists.ListDocumentPanels(appState.Lists));
+        DocumentPanels.SkipPanels(uiState.Documents, AssemblyLists.ListDocumentPanels(appState.Lists));
         FollowActiveTab(uiState, appState.Tabs.Active);
         RunViewCommands(uiState, appState);
         ShowInRestoredDocuments(uiState, appState.Tabs);
@@ -82,16 +82,16 @@ public sealed partial class ILSightApp
     /// <summary>Allocates nothing.</summary>
     private static void KeepTabPositions(UiState uiState, DocumentTabs tabs)
     {
-        for (var i = 0; i < tabs.Count; i++)
-            KeepTabPosition(uiState, tabs[i]);
+        for (var i = 0; i < tabs.Open.Count; i++)
+            KeepTabPosition(uiState, tabs.Open[i]);
     }
 
     private static void KeepTabPosition(UiState uiState, DocumentTab tab)
     {
-        var position = uiState.Documents.FindPosition(tab);
+        var position = DocumentPanels.FindViewPosition(uiState.Documents, tab);
         if (position == null)
             return;
-        tab.KeepPosition(position.Value);
+        Tabs.KeepPosition(tab, position.Value);
     }
 
     private static void KeepChangedViewSettings(UiState uiState, AppState appState)

@@ -92,13 +92,13 @@ public static class SavedDocuments
         switch (record)
         {
             case NodeDocumentRecord node:
-                tab.WaitForNode(node.Location, node.Title, node.Language);
+                Tabs.WaitForNode(tab, node.Location, node.Title, node.Language);
                 break;
             case DiagramDocumentRecord diagram:
-                tab.WaitForDiagram(diagram.Title);
+                Tabs.WaitForDiagram(tab, diagram.Title);
                 break;
             case ComparisonDocumentRecord comparison:
-                tab.WaitForComparison(comparison.Title);
+                Tabs.WaitForComparison(tab, comparison.Title);
                 break;
         }
     }
@@ -109,7 +109,7 @@ public static class SavedDocuments
         var active = FindReopened(reopened, panel);
         if (active == null)
             active = reopened[0];
-        appState.Tabs.MakeActive(active.Tab);
+        Tabs.MakeActive(appState.Tabs, active.Tab);
     }
 
     private static void MakeSavedPreview(AppState appState, List<ReopenedTab> reopened, string? panel)
@@ -117,7 +117,7 @@ public static class SavedDocuments
         var preview = FindReopened(reopened, panel);
         if (preview == null)
             return;
-        appState.Tabs.MakePreview(preview.Tab);
+        Tabs.MakePreview(appState.Tabs, preview.Tab);
     }
 
     private static ReopenedTab? FindReopened(List<ReopenedTab> reopened, string? panel)
@@ -133,7 +133,7 @@ public static class SavedDocuments
     internal static DocumentsRecord? SaveDocuments(AppState appState)
     {
         var saved = appState.Tabs
-            .Select(t => SaveTab(appState, t))
+            .Open.Select(t => SaveTab(appState, t))
             .OfType<SavedTab>()
             .ToList();
         if (saved.Count == 0)
@@ -312,11 +312,11 @@ public static class SavedDocuments
         if (!FinishWaiting(appState.Reopened, waiting.Reopened))
             return;
         var tab = waiting.Reopened.Tab;
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return;
         if (node == null)
         {
-            tab.ShowGone(waiting.Record.Location);
+            Tabs.ShowGone(tab, waiting.Record.Location);
             return;
         }
         var position = FindSavedPosition(appState, waiting.Record);

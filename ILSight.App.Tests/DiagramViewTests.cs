@@ -48,7 +48,7 @@ public sealed class DiagramViewTests
         var diagram = tab.Diagram;
         if (diagram == null)
             return false;
-        if (!app.Ui.Documents.Contains(tab))
+        if (!DocumentPanels.HasView(app.Ui.Documents, tab))
             return false;
         var view = ViewOf(app, tab);
         if (view.LaidOutVersion != diagram.Version)
@@ -58,7 +58,7 @@ public sealed class DiagramViewTests
         return !view.Transition.IsMoving;
     }
 
-    private static DiagramViewState ViewOf(AppDriver app, DocumentTab tab) => app.Ui.Documents.ViewOf(tab).Diagram;
+    private static DiagramViewState ViewOf(AppDriver app, DocumentTab tab) => DocumentPanels.GetView(app.Ui.Documents, tab).Diagram;
 
     [Fact]
     public void A_cards_own_members_start_open_and_what_it_inherits_starts_folded_and_a_click_flips_either_by_value()
@@ -82,7 +82,7 @@ public sealed class DiagramViewTests
     private static List<DocumentTab> ListDiagramTabs(AppDriver app)
     {
         return app.AppState.Tabs
-            .Where(static t => t.Diagram != null)
+            .Open.Where(static t => t.Diagram != null)
             .ToList();
     }
 

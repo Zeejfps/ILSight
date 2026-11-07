@@ -67,7 +67,7 @@ public sealed partial class ILSightApp
 
     private static void ShowTabIfOpen(UiState uiState, AppState appState, DocumentTab tab, DocumentTab? beside)
     {
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return;
         ShowTab(uiState, tab, beside);
     }
@@ -76,7 +76,7 @@ public sealed partial class ILSightApp
     private static void ShowReopenedIfOpen(UiState uiState, AppState appState, IReadOnlyList<ReopenedTab> tabs, DockLayout? layout)
     {
         var open = tabs
-            .Where(r => appState.Tabs.Contains(r.Tab))
+            .Where(r => Tabs.IsOpen(appState.Tabs, r.Tab))
             .ToList();
         ShowReopenedTabs(uiState, open, layout);
     }
@@ -106,30 +106,30 @@ public sealed partial class ILSightApp
 
     private static void RestoreView(UiState uiState, AppState appState, DocumentTab tab, ViewPosition position)
     {
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return;
-        uiState.Documents.RestoreView(tab, position);
+        DocumentPanels.RestoreView(uiState.Documents, tab, position);
     }
 
     private static void RevealLine(UiState uiState, AppState appState, DocumentTab tab, int line)
     {
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return;
-        uiState.Documents.RevealLine(tab, line);
+        DocumentPanels.RevealLine(uiState.Documents, tab, line);
     }
 
     private static void RevealRow(UiState uiState, AppState appState, DocumentTab tab, int row)
     {
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return;
-        uiState.Documents.RevealRow(tab, row);
+        DocumentPanels.RevealRow(uiState.Documents, tab, row);
     }
 
     private static void FocusCard(UiState uiState, AppState appState, DocumentTab tab, CodeReference.Entity type)
     {
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return;
-        uiState.Documents.FocusCard(tab, type);
+        DocumentPanels.FocusCard(uiState.Documents, tab, type);
     }
 
     /// <summary>Runs the commands <paramref name="uiState"/> queued for the app state, in the order queued.</summary>
@@ -147,7 +147,7 @@ public sealed partial class ILSightApp
         if (!uiState.Layout.Contains(panel))
             return;
         var tab = OpenEmptyTab(appState);
-        uiState.Documents.Add(tab, panel);
+        DocumentPanels.AddView(uiState.Documents, tab, panel);
         var becomesActive = focus || uiState.Layout.Focused == panel;
         if (becomesActive)
             FocusTab(appState, tab);

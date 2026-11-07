@@ -19,7 +19,7 @@ internal static class ComparisonView
 
     public static void Render(Ui<UiState> ui, DocumentTab tab, AssemblyComparison comparison)
     {
-        var rows = ui.State.Documents.ViewOf(tab).Comparison;
+        var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
         rows.SetStyle(ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
         rows.Follow(comparison.Diff);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
@@ -50,7 +50,7 @@ internal static class ComparisonView
     {
         var t = ui.State.Strings;
         var icons = ui.State.Icons;
-        var rows = ui.State.Documents.ViewOf(tab).Comparison;
+        var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
         var any = rows.Roots.Count > 0;
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
         {

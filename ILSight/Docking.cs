@@ -17,10 +17,10 @@ public static class Docking
     /// again what it shows when the language or the options changed since.</summary>
     public static void FocusTab(AppState appState, DocumentTab tab)
     {
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return;
         appState.Intent.Begin();
-        appState.Tabs.MakeActive(tab);
+        Tabs.MakeActive(appState.Tabs, tab);
         DecompileAgainIfOutdated(appState, tab);
     }
 
@@ -28,12 +28,12 @@ public static class Docking
     /// active tab, which leaves none active until the view focuses another.</summary>
     public static bool CloseTab(AppState appState, DocumentTab tab)
     {
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return false;
         appState.Intent.Begin();
         var wasActive = tab == appState.Tabs.Active;
         ForgetDiagramOf(appState, tab);
-        appState.Tabs.Remove(tab);
+        Tabs.Remove(appState.Tabs, tab);
         return wasActive;
     }
 
@@ -53,13 +53,13 @@ public static class Docking
     {
         var kept = FindTabToKeep(appState);
         var others = appState.Tabs
-            .Where(t => t != kept)
+            .Open.Where(t => t != kept)
             .ToList();
         foreach (var tab in others)
             CloseTab(appState, tab);
         ForgetDiagramOf(appState, kept);
-        kept.Clear();
-        appState.Tabs.MakeActive(kept);
+        Tabs.Clear(kept);
+        Tabs.MakeActive(appState.Tabs, kept);
     }
 
     private static DocumentTab FindTabToKeep(AppState appState)
@@ -67,15 +67,15 @@ public static class Docking
         var active = appState.Tabs.Active;
         if (active != null)
             return active;
-        if (appState.Tabs.Count > 0)
-            return appState.Tabs[0];
+        if (appState.Tabs.Open.Count > 0)
+            return appState.Tabs.Open[0];
         return OpenNewTab(appState);
     }
 
     /// <summary>Closes every document tab, leaving none open.</summary>
     internal static void CloseAllTabs(AppState appState)
     {
-        var all = appState.Tabs.ToList();
+        var all = appState.Tabs.Open.ToList();
         foreach (var tab in all)
             CloseTab(appState, tab);
     }

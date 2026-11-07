@@ -253,7 +253,7 @@ public sealed class ExportsPanelTests : IDisposable
         var german = Strings.For(Locale.De);
         var tab = app.AppState.Tabs.Active!;
         Assert.Equal(german.ExportReportTitle, DocumentsView.Tab(app.Ui, app.AppState.Tabs, tab).Title);
-        Assert.Contains(german.ExportWritten, Documents.GetText(app.Ui.Documents.ViewOf(tab).Code.Document!));
+        Assert.Contains(german.ExportWritten, Documents.GetText(DocumentPanels.GetView(app.Ui.Documents, tab).Code.Document!));
     }
 
     [Fact]

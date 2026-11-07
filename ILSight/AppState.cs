@@ -143,7 +143,7 @@ public sealed class AppState
     {
         get
         {
-            foreach (var tab in Tabs)
+            foreach (var tab in Tabs.Open)
             {
                 if (IsDiagramBusy(tab))
                     return true;
@@ -165,7 +165,7 @@ public sealed class AppState
     {
         get
         {
-            foreach (var tab in Tabs)
+            foreach (var tab in Tabs.Open)
             {
                 if (IsComparisonBusy(tab))
                     return true;
@@ -213,7 +213,7 @@ public sealed class AppState
         ApiVisibility = settings.ApiVisibility;
         Updates = new AppUpdates { Feed = GitHubUpdates.CreateFeed(), CheckAutomatically = settings.CheckForUpdates };
         var first = AddTab();
-        Tabs.MakeActive(first);
+        ILSight.Tabs.MakeActive(Tabs, first);
         Analyzer = new AnalyzerTree();
         AssemblyLists.LoadLists(Lists, settings.AssemblyLists, settings.ActiveAssemblyList);
         leftOutBookmarks = LoadBookmarks(Bookmarks, settings.Bookmarks);
@@ -238,7 +238,7 @@ public sealed class AppState
     internal DocumentTab AddTab()
     {
         var tab = new DocumentTab();
-        Tabs.Add(tab);
+        ILSight.Tabs.Add(Tabs, tab);
         return tab;
     }
 }

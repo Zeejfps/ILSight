@@ -179,7 +179,7 @@ public static class Assemblies
     private static List<ReloadingTab> ListTabsShowing(AppState appState, LoadedAssembly item)
     {
         var showing = new List<ReloadingTab>();
-        foreach (var tab in appState.Tabs)
+        foreach (var tab in appState.Tabs.Open)
         {
             var location = tab.Location;
             if (location == null)
@@ -315,13 +315,13 @@ public static class Assemblies
     private static List<ReloadingTab> ReleaseShownTabs(AppState appState)
     {
         var reloading = new List<ReloadingTab>();
-        foreach (var tab in appState.Tabs)
+        foreach (var tab in appState.Tabs.Open)
         {
             var location = tab.Location;
             if (location == null)
                 continue;
             var position = FindPositionToKeep(appState, tab);
-            tab.ShowReloading(location);
+            Tabs.ShowReloading(tab, location);
             reloading.Add(new ReloadingTab(tab, location, tab.Version, position));
         }
         return reloading;
@@ -406,7 +406,7 @@ public static class Assemblies
     private static bool ShowAgain(AppState appState, ReloadingTab reloading, BrowseNode? node)
     {
         var tab = reloading.Tab;
-        if (!appState.Tabs.Contains(tab))
+        if (!Tabs.IsOpen(appState.Tabs, tab))
             return false;
         if (tab.Version != reloading.Version)
             return false;
@@ -421,7 +421,7 @@ public static class Assemblies
 
     private static void ReleaseGoneTab(AppState appState, DocumentTab tab, NodePath location)
     {
-        tab.ShowGone(location);
+        Tabs.ShowGone(tab, location);
         appState.ReportError(new AppProblem.GoneAfterReload(location));
     }
 

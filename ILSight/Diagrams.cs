@@ -119,7 +119,7 @@ public static class Diagrams
     private static void BringToFront(AppState appState, DocumentTab tab)
     {
         LeaveActiveTab(appState);
-        appState.Tabs.MakeActive(tab);
+        Tabs.MakeActive(appState.Tabs, tab);
         appState.EnqueueCommand(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
@@ -146,9 +146,9 @@ public static class Diagrams
     {
         LeaveActiveTab(appState);
         var tab = FindOrOpenEmptyTab(appState);
-        tab.ShowDiagram(title, new TypeDiagram());
-        appState.Tabs.Keep(tab);
-        appState.Tabs.MakeActive(tab);
+        Tabs.ShowDiagram(tab, title, new TypeDiagram());
+        Tabs.Keep(appState.Tabs, tab);
+        Tabs.MakeActive(appState.Tabs, tab);
         RecordInHistory(appState, tab);
         AddWithNeighbours(appState, tab, type);
     }
@@ -343,7 +343,7 @@ public static class Diagrams
         var diagram = new TypeDiagram();
         TakeHomes(diagram, saved.HomeAssemblies);
         var title = saved.Title ?? string.Empty;
-        tab.ShowDiagram(title, diagram);
+        Tabs.ShowDiagram(tab, title, diagram);
         WorkInIfActive(appState, tab);
         return diagram;
     }
@@ -361,7 +361,7 @@ public static class Diagrams
     {
         if (tab != appState.Tabs.Active)
             return;
-        appState.Tabs.MakeActive(tab);
+        Tabs.MakeActive(appState.Tabs, tab);
     }
 
     private static List<TypeCard> ReadCards(AssemblyList list, List<TypeAnchor> types)

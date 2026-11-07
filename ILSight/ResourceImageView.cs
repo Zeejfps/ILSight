@@ -23,7 +23,7 @@ internal static class ResourceImageView
     public static void Render(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab, TabContent.Picture shown)
     {
         var theme = ui.Theme;
-        var view = ui.State.Documents.ViewOf(tab);
+        var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var image = shown.Image;
         var hasSource = shown.Source != null;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = theme.PaneBackground });

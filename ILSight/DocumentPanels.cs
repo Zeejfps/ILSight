@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using ILSight.Core;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 
@@ -8,6 +10,238 @@ namespace ILSight;
 /// app state through <see cref="UiState.AppCommands"/>.</summary>
 public static class DocumentPanels
 {
+    private const string PanelPrefix = "document-";
+
+    /// <summary>How <paramref name="tab"/>, an open tab, is shown.</summary>
+    public static TabView GetView(DocumentViews documents, DocumentTab tab)
+    {
+        return documents.Views[tab];
+    }
+
+    /// <summary>The panel <paramref name="tab"/>, an open tab, is docked as.</summary>
+    public static string GetPanel(DocumentViews documents, DocumentTab tab)
+    {
+        return GetView(documents, tab).Panel;
+    }
+
+    public static bool HasView(DocumentViews documents, DocumentTab tab)
+    {
+        return documents.Views.ContainsKey(tab);
+    }
+
+    /// <summary>The panel <paramref name="tab"/> is docked as, or null when there is no tab or it has no view.</summary>
+    public static string? FindPanel(DocumentViews documents, DocumentTab? tab)
+    {
+        if (tab == null)
+            return null;
+        if (!documents.Views.TryGetValue(tab, out var view))
+            return null;
+        return view.Panel;
+    }
+
+    /// <summary>The open tab docked as <paramref name="panel"/>. Allocates nothing.</summary>
+    public static DocumentTab? FindTab(DocumentViews documents, string? panel)
+    {
+        foreach (var (tab, view) in documents.Views)
+        {
+            if (view.Panel == panel)
+                return tab;
+        }
+        return null;
+    }
+
+    /// <summary>A document panel no tab was shown in before, nor any of those <see cref="SkipPanels"/> was given.</summary>
+    public static string CreatePanel(DocumentViews documents)
+    {
+        var panel = NextPanel(documents);
+        while (documents.Skipped.Contains(panel))
+            panel = NextPanel(documents);
+        return panel;
+    }
+
+    private static string NextPanel(DocumentViews documents)
+    {
+        documents.Panels++;
+        return $"{PanelPrefix}{documents.Panels}";
+    }
+
+    /// <summary>Leaves <paramref name="panels"/>, which saved documents were docked as, to them:
+    /// <see cref="NewPanel"/> hands out none of them.</summary>
+    public static void SkipPanels(DocumentViews documents, IEnumerable<string> panels)
+    {
+        foreach (var panel in panels)
+            documents.Skipped.Add(panel);
+    }
+
+    /// <summary>The panel each tab with a view is docked as, and how its diagram or comparison is viewed,
+    /// for the settings to keep.</summary>
+    public static List<TabPanel> SavePanels(DocumentViews documents)
+    {
+        var panels = new List<TabPanel>();
+        foreach (var (tab, view) in documents.Views)
+            panels.Add(new TabPanel(tab, view.Panel, SaveView(tab, view)));
+        return panels;
+    }
+
+    /// <summary>Shows <paramref name="tab"/> in a new panel, unless it is shown already.</summary>
+    public static void AddView(DocumentViews documents, DocumentTab tab)
+    {
+        if (HasView(documents, tab))
+            return;
+        AddView(documents, tab, CreatePanel(documents));
+    }
+
+    /// <summary>Shows <paramref name="tab"/> in <paramref name="panel"/>, unless it is shown already, its view
+    /// following what the tab shows from the start, so what is asked of the view before it is next drawn,
+    /// such as a row to reveal, is not undone when it first takes the tab's content.</summary>
+    public static void AddView(DocumentViews documents, DocumentTab tab, string panel)
+    {
+        if (HasView(documents, tab))
+            return;
+        var view = new TabView { Panel = panel, ImageId = $"{panel}-image" };
+        PictureViews.Follow(view.Picture, tab.Image);
+        documents.Views.Add(tab, view);
+        documents.OwnChanges++;
+    }
+
+    /// <summary>Drops the view of <paramref name="tab"/>, keeping its image to free.</summary>
+    public static void RemoveView(DocumentViews documents, DocumentTab tab)
+    {
+        if (!documents.Views.Remove(tab, out var view))
+            return;
+        documents.ReleasedImages.Add(view.ImageId);
+        documents.DroppedChanges += CountViewChanges(view);
+        documents.OwnChanges++;
+    }
+
+    /// <summary>The tabs with a view that <paramref name="tabs"/> no longer holds, in a list the next call reuses.</summary>
+    public static IReadOnlyList<DocumentTab> ListClosedTabs(DocumentViews documents, DocumentTabs tabs)
+    {
+        documents.Closed.Clear();
+        foreach (var tab in documents.Views.Keys)
+        {
+            if (!Tabs.IsOpen(tabs, tab))
+                documents.Closed.Add(tab);
+        }
+        return documents.Closed;
+    }
+
+    /// <summary>Lets each view follow the grid or picture its tab shows.</summary>
+    public static void FollowViewContent(DocumentViews documents)
+    {
+        foreach (var (tab, view) in documents.Views)
+            PictureViews.Follow(view.Picture, tab.Image);
+    }
+
+    /// <summary>Where the view of <paramref name="tab"/> stands, or null when it has none.</summary>
+    public static ViewPosition? FindViewPosition(DocumentViews documents, DocumentTab tab)
+    {
+        if (!documents.Views.TryGetValue(tab, out var view))
+            return null;
+        return GetPosition(view, tab);
+    }
+
+    /// <summary>The images of the views dropped since the last call, for the canvas to free.</summary>
+    public static IReadOnlyList<string> TakeReleasedImages(DocumentViews documents)
+    {
+        if (documents.ReleasedImages.Count == 0)
+            return Array.Empty<string>();
+        var released = documents.ReleasedImages.ToArray();
+        documents.ReleasedImages.Clear();
+        return released;
+    }
+
+    /// <summary>Returns the view of <paramref name="tab"/>, an open tab, to <paramref name="position"/>, when it is
+    /// a position of the view the tab shows, a grid's or a code view's.</summary>
+    public static void RestoreView(DocumentViews documents, DocumentTab tab, ViewPosition position)
+    {
+        var view = documents.Views.GetValueOrDefault(tab);
+        if (view == null)
+            return;
+        var shown = tab.Grid;
+        if (shown == null)
+        {
+            var code = position.Code;
+            if (code != null)
+                CodeViewWidget.RestorePosition(view.Code, code.Value);
+            return;
+        }
+        var grid = position.Grid;
+        if (grid != null)
+            MetadataGridWidget.RestorePosition(GetGridState(view, shown), grid.Value);
+    }
+
+    /// <summary>Returns the view of the diagram <paramref name="tab"/>, an open tab, shows to how
+    /// <paramref name="saved"/> says it was.</summary>
+    public static void RestoreDiagramView(DocumentViews documents, DocumentTab tab, DiagramViewRecord saved)
+    {
+        var view = documents.Views.GetValueOrDefault(tab);
+        if (view == null)
+            return;
+        Diagrams.RestoreView(view.Diagram, saved);
+    }
+
+    /// <summary>Returns the view of the comparison <paramref name="tab"/>, an open tab, shows to how
+    /// <paramref name="saved"/> says it was.</summary>
+    public static void RestoreComparisonView(DocumentViews documents, DocumentTab tab, ComparisonViewRecord saved)
+    {
+        var view = documents.Views.GetValueOrDefault(tab);
+        if (view == null)
+            return;
+        view.Comparison.Restore(saved);
+    }
+
+    /// <summary>Scrolls the code of <paramref name="tab"/>, an open tab, to <paramref name="line"/> and flashes it.</summary>
+    public static void RevealLine(DocumentViews documents, DocumentTab tab, int line)
+    {
+        var view = documents.Views.GetValueOrDefault(tab);
+        if (view == null)
+            return;
+        if (line >= tab.Document.Lines.Length)
+            return;
+        CodeViewWidget.RevealLine(view.Code, line);
+    }
+
+    /// <summary>Selects the grid row <paramref name="row"/> of <paramref name="tab"/>, an open tab, and scrolls to it.</summary>
+    public static void RevealRow(DocumentViews documents, DocumentTab tab, int row)
+    {
+        var view = documents.Views.GetValueOrDefault(tab);
+        if (view == null)
+            return;
+        var grid = tab.Grid;
+        if (grid == null || row >= grid.RowCount)
+            return;
+        MetadataGridWidget.RevealRow(GetGridState(view, grid), row);
+    }
+
+    /// <summary>Selects the card of <paramref name="type"/> on the diagram <paramref name="tab"/>, an open tab,
+    /// shows, and brings it into view once it is laid out.</summary>
+    public static void FocusCard(DocumentViews documents, DocumentTab tab, CodeReference.Entity type)
+    {
+        var view = documents.Views.GetValueOrDefault(tab);
+        if (view == null)
+            return;
+        Diagrams.FocusCard(view.Diagram, type);
+    }
+
+    /// <summary>What <paramref name="view"/> counts toward <see cref="DocumentViews.Revision"/>.</summary>
+    public static int CountViewChanges(TabView view)
+    {
+        return view.Diagram.Changes + view.Comparison.Changes;
+    }
+
+    private static TabPanelView SaveView(DocumentTab tab, TabView view)
+    {
+        return tab.Content switch
+        {
+            TabContent.Diagram => new TabPanelView.Diagram(Diagrams.SaveView(view.Diagram)),
+            TabContent.Comparison => new TabPanelView.Comparison(view.Comparison.Save()),
+            TabContent.Empty or TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Report
+                or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone => new TabPanelView.None(),
+            _ => throw new UnreachableException(),
+        };
+    }
+
     /// <summary>The view of <paramref name="grid"/>: the one kept for it, or a new one when the tab
     /// showed another grid, or none, before.</summary>
     public static MetadataGridState GetGridState(TabView view, MetadataGrid grid)
@@ -46,7 +280,7 @@ public static class DocumentPanels
     private static string AddReopenedView(UiState uiState, ReopenedTab reopened)
     {
         var panel = ChooseReopenedPanel(uiState, reopened.Record.Panel);
-        uiState.Documents.Add(reopened.Tab, panel);
+        DocumentPanels.AddView(uiState.Documents, reopened.Tab, panel);
         RestoreDiagramView(uiState, reopened);
         RestoreComparisonView(uiState, reopened);
         return panel;
@@ -57,7 +291,7 @@ public static class DocumentPanels
     {
         if (!IsTabPanel(uiState, saved))
             return saved;
-        return uiState.Documents.NewPanel();
+        return DocumentPanels.CreatePanel(uiState.Documents);
     }
 
     private static void RestoreDiagramView(UiState uiState, ReopenedTab reopened)
@@ -67,7 +301,7 @@ public static class DocumentPanels
         var view = diagram.View;
         if (view == null)
             return;
-        uiState.Documents.RestoreDiagramView(reopened.Tab, view);
+        DocumentPanels.RestoreDiagramView(uiState.Documents, reopened.Tab, view);
     }
 
     private static void RestoreComparisonView(UiState uiState, ReopenedTab reopened)
@@ -77,7 +311,7 @@ public static class DocumentPanels
         var view = comparison.View;
         if (view == null)
             return;
-        uiState.Documents.RestoreComparisonView(reopened.Tab, view);
+        DocumentPanels.RestoreComparisonView(uiState.Documents, reopened.Tab, view);
     }
 
     /// <summary>Docks the panels of <paramref name="panels"/>, by the names they were saved as, that the
@@ -127,17 +361,17 @@ public static class DocumentPanels
     /// panels of the documents no tab is shown in out of the layout.</summary>
     public static void ShowInRestoredDocuments(UiState uiState, DocumentTabs tabs)
     {
-        for (var i = 0; i < tabs.Count; i++)
-            ShowInRestoredPlace(uiState, tabs[i]);
+        for (var i = 0; i < tabs.Open.Count; i++)
+            ShowInRestoredPlace(uiState, tabs.Open[i]);
         uiState.Layout.Retain(p => IsShownPanel(uiState, p));
     }
 
     private static void ShowInRestoredPlace(UiState uiState, DocumentTab tab)
     {
-        if (uiState.Documents.Contains(tab))
+        if (DocumentPanels.HasView(uiState.Documents, tab))
             return;
-        var panel = uiState.Documents.NewPanel();
-        uiState.Documents.Add(tab, panel);
+        var panel = DocumentPanels.CreatePanel(uiState.Documents);
+        DocumentPanels.AddView(uiState.Documents, tab, panel);
         if (DockPanels.PlaceDocument(uiState.Layout, panel, p => IsTabPanel(uiState, p)))
             return;
         Docking.DockDocument(uiState.MainLayout, panel, panel);
@@ -154,7 +388,7 @@ public static class DocumentPanels
     /// <summary>A new panel the layout makes for itself, with an empty tab asked for to be opened in it.</summary>
     internal static string OpenTabForPanel(UiState uiState)
     {
-        var panel = uiState.Documents.NewPanel();
+        var panel = DocumentPanels.CreatePanel(uiState.Documents);
         uiState.Later((uiState, panel), static (a, s) => ILSightApp.OpenTabIn(s.uiState, a, s.panel, focus: false));
         return panel;
     }
@@ -170,17 +404,17 @@ public static class DocumentPanels
 
     private static void CloseTabOf(UiState uiState, string panel)
     {
-        var tab = uiState.Documents.FindTab(panel);
+        var tab = DocumentPanels.FindTab(uiState.Documents, panel);
         if (tab == null)
             return;
-        uiState.Documents.Remove(tab);
+        RemoveView(uiState.Documents, tab);
         uiState.Later((uiState, tab), static (a, s) => ILSightApp.CloseTabAndFocusNext(s.uiState, a, s.tab));
     }
 
     /// <summary>Focuses the tab of the panel the layout focuses now, else the first group's front tab.</summary>
     public static void FocusNextTab(UiState uiState)
     {
-        var next = uiState.Documents.FindTab(uiState.Layout.Focused);
+        var next = DocumentPanels.FindTab(uiState.Documents, uiState.Layout.Focused);
         if (next == null)
             next = FindFrontTab(uiState);
         if (next == null)
@@ -208,7 +442,7 @@ public static class DocumentPanels
     private static DocumentTab? FindFrontTab(UiState uiState, DockNode node)
     {
         if (node is DockGroup group)
-            return uiState.Documents.FindTab(group.Active);
+            return DocumentPanels.FindTab(uiState.Documents, group.Active);
         if (node is not DockSplit split)
             return null;
         var first = FindFrontTab(uiState, split.First);
@@ -229,7 +463,7 @@ public static class DocumentPanels
     {
         if (tabs.Active != null)
             return;
-        var attempt = new TabFocusTry(uiState.Layout.Changes, tabs.Count);
+        var attempt = new TabFocusTry(uiState.Layout.Changes, tabs.Open.Count);
         if (attempt == uiState.LastTabFocusTry)
             return;
         uiState.LastTabFocusTry = attempt;
@@ -241,19 +475,19 @@ public static class DocumentPanels
     public static void ShowTab(UiState uiState, DocumentTab tab, DocumentTab? beside)
     {
         var documents = uiState.Documents;
-        documents.Add(tab);
-        var panel = documents.PanelOf(tab);
+        DocumentPanels.AddView(documents, tab);
+        var panel = DocumentPanels.GetPanel(documents, tab);
         if (!uiState.Layout.Contains(panel))
-            Docking.DockDocument(uiState.MainLayout, panel, documents.FindPanel(beside));
+            Docking.DockDocument(uiState.MainLayout, panel, DocumentPanels.FindPanel(documents, beside));
         uiState.Layout.Activate(panel);
     }
 
     /// <summary>Brings <paramref name="tab"/>'s panel to the front and asks for it to become the active tab.</summary>
     public static void ActivateTab(UiState uiState, DocumentTab tab)
     {
-        if (!uiState.Documents.Contains(tab))
+        if (!DocumentPanels.HasView(uiState.Documents, tab))
             return;
-        uiState.Layout.Activate(uiState.Documents.PanelOf(tab));
+        uiState.Layout.Activate(DocumentPanels.GetPanel(uiState.Documents, tab));
         AskToFocusTab(uiState, tab);
     }
 
@@ -262,7 +496,7 @@ public static class DocumentPanels
     public static void SyncActiveTab(UiState uiState, DocumentTab? active)
     {
         FollowActiveTab(uiState, active);
-        var tab = uiState.Documents.FindTab(uiState.Layout.Focused);
+        var tab = DocumentPanels.FindTab(uiState.Documents, uiState.Layout.Focused);
         if (tab == null)
             return;
         if (tab == active)
@@ -282,7 +516,7 @@ public static class DocumentPanels
         var active = uiState.ActiveTab;
         if (active == null)
             return;
-        var activePanel = uiState.Documents.PanelOf(active);
+        var activePanel = DocumentPanels.GetPanel(uiState.Documents, active);
         var group = uiState.Layout.GroupOf(activePanel);
         if (group == null)
             return;
@@ -291,13 +525,13 @@ public static class DocumentPanels
             return;
         var index = panels.IndexOf(activePanel);
         var next = panels[WrapIndex(index + by, panels.Count)];
-        var tab = uiState.Documents.FindTab(next);
+        var tab = DocumentPanels.FindTab(uiState.Documents, next);
         if (tab == null)
             return;
         ActivateTab(uiState, tab);
     }
 
-    private static bool IsTabPanel(UiState uiState, string panel) => uiState.Documents.FindTab(panel) != null;
+    private static bool IsTabPanel(UiState uiState, string panel) => DocumentPanels.FindTab(uiState.Documents, panel) != null;
 
     private static int WrapIndex(int index, int count)
     {
@@ -318,7 +552,7 @@ public static class DocumentPanels
     /// <summary>Closes <paramref name="tab"/>'s panel, which asks for the tab to be closed.</summary>
     public static void CloseTab(UiState uiState, DocumentTab tab)
     {
-        uiState.Layout.Close(uiState.Documents.PanelOf(tab));
+        uiState.Layout.Close(DocumentPanels.GetPanel(uiState.Documents, tab));
     }
 
     /// <summary>Closes the document tabs of <paramref name="tab"/>'s group but <paramref name="tab"/>.</summary>
@@ -368,7 +602,7 @@ public static class DocumentPanels
     public static List<DocumentTab> ListTabsInGroup(UiState uiState, DocumentTab tab)
     {
         var tabs = new List<DocumentTab>();
-        var group = uiState.Layout.GroupOf(uiState.Documents.PanelOf(tab));
+        var group = uiState.Layout.GroupOf(DocumentPanels.GetPanel(uiState.Documents, tab));
         if (group == null)
             return tabs;
         AddTabsOf(uiState, tabs, group);
@@ -386,7 +620,7 @@ public static class DocumentPanels
     /// <summary>Adds the tab of <paramref name="panel"/> to <paramref name="tabs"/> when it is a document's.</summary>
     private static void AddTabOf(UiState uiState, List<DocumentTab> tabs, string? panel)
     {
-        var tab = uiState.Documents.FindTab(panel);
+        var tab = DocumentPanels.FindTab(uiState.Documents, panel);
         if (tab == null)
             return;
         tabs.Add(tab);
@@ -399,12 +633,12 @@ public static class DocumentPanels
     }
 
     /// <summary>The panel of the active tab, which the views dock beside, or null.</summary>
-    internal static string? FindActivePanel(UiState uiState) => uiState.Documents.FindPanel(uiState.ActiveTab);
+    internal static string? FindActivePanel(UiState uiState) => DocumentPanels.FindPanel(uiState.Documents, uiState.ActiveTab);
 
     /// <summary>Lets each view follow the grid or picture its tab shows.</summary>
     public static void FollowTabContent(UiState uiState)
     {
-        uiState.Documents.FollowContent();
+        DocumentPanels.FollowViewContent(uiState.Documents);
     }
 
     /// <summary>Drops the view of each tab closed, keeping its image to free, and closes its panel; and
@@ -418,10 +652,10 @@ public static class DocumentPanels
     private static void DropClosedTabViews(UiState uiState, DocumentTabs tabs)
     {
         var documents = uiState.Documents;
-        foreach (var tab in documents.ListClosed(tabs))
+        foreach (var tab in DocumentPanels.ListClosedTabs(documents, tabs))
         {
-            var panel = documents.PanelOf(tab);
-            documents.Remove(tab);
+            var panel = DocumentPanels.GetPanel(documents, tab);
+            RemoveView(documents, tab);
             ClosePanel(uiState, panel);
         }
     }
@@ -435,8 +669,8 @@ public static class DocumentPanels
 
     private static void AddOpenTabViews(UiState uiState, DocumentTabs tabs)
     {
-        for (var i = 0; i < tabs.Count; i++)
-            uiState.Documents.Add(tabs[i]);
+        for (var i = 0; i < tabs.Open.Count; i++)
+            DocumentPanels.AddView(uiState.Documents, tabs.Open[i]);
     }
 
     /// <summary>The tab in front of each group that has one.</summary>

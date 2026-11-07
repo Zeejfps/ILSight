@@ -17,9 +17,9 @@ public static class Comparisons
         LeaveActiveTab(appState);
         var tab = FindOrOpenEmptyTab(appState);
         var comparison = new AssemblyComparison { LeftPath = left.FilePath, RightPath = right.FilePath };
-        tab.ShowComparison(title, comparison);
-        appState.Tabs.Keep(tab);
-        appState.Tabs.MakeActive(tab);
+        Tabs.ShowComparison(tab, title, comparison);
+        Tabs.Keep(appState.Tabs, tab);
+        Tabs.MakeActive(appState.Tabs, tab);
         Compare(appState, comparison);
     }
 
@@ -32,7 +32,7 @@ public static class Comparisons
         var comparison = new AssemblyComparison { LeftPath = saved.LeftPath, RightPath = saved.RightPath };
         Comparisons.TakeInScope(comparison, saved.Scope);
         var title = saved.Title ?? string.Empty;
-        reopened.Tab.ShowComparison(title, comparison);
+        Tabs.ShowComparison(reopened.Tab, title, comparison);
         Compare(appState, comparison);
     }
 

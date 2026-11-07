@@ -28,7 +28,7 @@ public sealed class DiagramTests
     private static List<DocumentTab> ListDiagramTabs(AppStateDriver d)
     {
         return d.AppState.Tabs
-            .Where(static t => t.Diagram != null)
+            .Open.Where(static t => t.Diagram != null)
             .ToList();
     }
 
@@ -99,12 +99,12 @@ public sealed class DiagramTests
     {
         var d = AppStateDriver.Opened();
         var empty = OpenNewTab(d.AppState);
-        d.AppState.Tabs.MakeActive(empty);
-        var tabs = d.AppState.Tabs.Count;
+        Tabs.MakeActive(d.AppState.Tabs, empty);
+        var tabs = d.AppState.Tabs.Open.Count;
 
         ShowInNew(d, "Greeter");
 
-        Assert.Equal(tabs, d.AppState.Tabs.Count);
+        Assert.Equal(tabs, d.AppState.Tabs.Open.Count);
         Assert.NotNull(empty.Diagram);
     }
 

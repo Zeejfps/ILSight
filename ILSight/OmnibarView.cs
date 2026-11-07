@@ -201,7 +201,7 @@ internal static class OmnibarView
     {
         if (!ui.State.Display.ShowOmnibar)
             return;
-        var panel = ui.State.Documents.PanelOf(tab);
+        var panel = DocumentPanels.GetPanel(ui.State.Documents, tab);
         if (ContinueSearch(ui, panel))
             SearchBar(ui);
         else
@@ -230,7 +230,7 @@ internal static class OmnibarView
 
     private static void PathBar(Ui<UiState> ui, DocumentTab tab, string panel)
     {
-        var view = ui.State.Documents.ViewOf(tab);
+        var view = DocumentPanels.GetView(ui.State.Documents, tab);
         FollowPath(view.Breadcrumb, tab.Node, ui.State.Tree);
         var crumbs = view.Breadcrumb.Crumbs;
         var menuOwner = 0;

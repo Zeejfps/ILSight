@@ -11,12 +11,12 @@ public static class Decompilation
     /// When the tab already shows <paramref name="node"/> as the language and options would, only does the latter.</summary>
     public static void LoadIntoTab(AppState appState, DocumentTab tab, BrowseNode node, Arrival arrival = default)
     {
-        if (tab.Shows(node, appState.Language, appState.DecompilerOptions))
+        if (Tabs.IsShowing(tab, node, appState.Language, appState.DecompilerOptions))
         {
             Arrive(appState, tab, arrival);
             return;
         }
-        var load = tab.StartLoading(node, appState.Language, appState.DecompilerOptions, arrival);
+        var load = Tabs.StartLoading(tab, node, appState.Language, appState.DecompilerOptions, arrival);
         Load(appState, tab, node, load);
     }
 
@@ -32,16 +32,16 @@ public static class Decompilation
 
     private static void FinishLoading(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load, Task<NodeContent> loading)
     {
-        if (!tab.FinishLoading(load))
+        if (!Tabs.FinishLoading(tab, load))
             return;
         if (loading.IsCanceled)
             return;
         var error = loading.Exception?.GetBaseException();
         if (error != null)
-            tab.ShowFailed(error.Message);
+            Tabs.ShowFailed(tab, error.Message);
         else
-            tab.ShowLoaded(loading.Result);
-        var arrival = tab.TakeArrival();
+            Tabs.ShowLoaded(tab, loading.Result);
+        var arrival = Tabs.TakeArrival(tab);
         var failure = error ?? tab.Document.Error;
         if (failure != null)
         {
@@ -117,7 +117,7 @@ public static class Decompilation
             return;
         if (!NodeContentLoader.DependsOnLanguage(node))
             return;
-        if (tab.IsCurrent(appState.Language, appState.DecompilerOptions))
+        if (Tabs.IsCurrent(tab, appState.Language, appState.DecompilerOptions))
             return;
         var position = FindPositionToKeep(appState, tab);
         LoadIntoTab(appState, tab, node, new Arrival(position));

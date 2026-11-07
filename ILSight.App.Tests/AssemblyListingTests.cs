@@ -234,7 +234,7 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         Assert.Empty(d.AppState.Assemblies.Assemblies);
-        Assert.Null(Assert.Single(d.AppState.Tabs).Location);
+        Assert.Null(Assert.Single(d.AppState.Tabs.Open).Location);
         Assert.Empty(d.AppState.History.Entries);
 
         SwitchAssemblyList(d.AppState, SavedAssemblyLists.DefaultName);
@@ -248,15 +248,15 @@ public sealed class AssemblyListingTests
     {
         var d = AppStateDriver.Opened();
         AssemblyLists.AddList(d.AppState.Lists, Other);
-        foreach (var tab in d.AppState.Tabs.ToList())
+        foreach (var tab in d.AppState.Tabs.Open.ToList())
             CloseTab(d.AppState, tab);
 
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
 
-        var empty = Assert.Single(d.AppState.Tabs);
+        var empty = Assert.Single(d.AppState.Tabs.Open);
         Assert.Same(empty, d.AppState.Tabs.Active);
-        Assert.True(d.Ui.Layout.Contains(d.Ui.Documents.PanelOf(empty)));
+        Assert.True(d.Ui.Layout.Contains(DocumentPanels.GetPanel(d.Ui.Documents, empty)));
         Assert.Null(empty.Location);
     }
 

@@ -81,9 +81,6 @@ internal static class ShapeExceptions
         "ILSight.Core.LoadedAssembly",
         "ILSight.Core.LoadedModule",
         "ILSight.Core.LoadedPackage",
-        "ILSight.DocumentTab",
-        "ILSight.DocumentTabs",
-        "ILSight.DocumentViews",
         "ILSight.UiState",
     ];
 

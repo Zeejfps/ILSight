@@ -58,7 +58,7 @@ public sealed class AppTests
         app.DoubleClick("Greeter");
         app.Settle();
 
-        var tab = Assert.Single(app.AppState.Tabs);
+        var tab = Assert.Single(app.AppState.Tabs.Open);
         Assert.Equal("Greeter", tab.Node!.Text);
         Assert.True(app.Ui.Tree.View.IsExpanded(tab.Node));
     }
@@ -82,7 +82,7 @@ public sealed class AppTests
 
         app.Frames.Drag(from, aside, onto).Frame().Release().Frame(2);
 
-        var shownPanel = app.Ui.Documents.PanelOf(shown);
+        var shownPanel = DocumentPanels.GetPanel(app.Ui.Documents, shown);
         Assert.Same(layout.GroupOf(DockPanels.Assemblies), layout.GroupOf(shownPanel));
         Assert.Equal(shownPanel, layout.GroupOf(shownPanel)!.Active);
         Assert.IsType<DockGroup>(layout.Root);

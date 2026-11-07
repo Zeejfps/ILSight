@@ -69,7 +69,7 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var d = Restored(WithTab($"\"Path\": {GreeterPath}"));
 
-        Assert.Same(d.Fixture("Greeter"), Assert.Single(d.AppState.Tabs).Node);
+        Assert.Same(d.Fixture("Greeter"), Assert.Single(d.AppState.Tabs.Open).Node);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class SavedPlacesTests : IDisposable
         var (d, problem) = RestoredWith(WithTab($"\"Path\": {path}"));
 
         Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
-        Assert.Null(Assert.Single(d.AppState.Tabs).Node);
+        Assert.Null(Assert.Single(d.AppState.Tabs.Open).Node);
     }
 
     [Fact]

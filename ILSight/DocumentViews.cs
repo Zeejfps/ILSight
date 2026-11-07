@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using ILSight.Core;
-
 namespace ILSight;
 
 /// <summary>How each open tab is shown, found by the tab or by the panel it is docked as: each tab with a
@@ -8,15 +5,25 @@ namespace ILSight;
 /// the views dropped wait here until the canvas frees them.</summary>
 public sealed class DocumentViews
 {
-    private const string PanelPrefix = "document-";
+    public readonly Dictionary<DocumentTab, TabView> Views = new();
 
-    private readonly Dictionary<DocumentTab, TabView> _views = new();
-    private readonly List<DocumentTab> _closed = new();
-    private readonly List<string> _releasedImages = new();
-    private readonly HashSet<string> _skipped = new();
-    private int _panels;
-    private int _changes;
-    private int _droppedChanges;
+    /// <summary>The buffer <see cref="DocumentPanels.ListClosedTabs"/> reuses.</summary>
+    public readonly List<DocumentTab> Closed = new();
+
+    /// <summary>The images of the views dropped, until the canvas frees them.</summary>
+    public readonly List<string> ReleasedImages = new();
+
+    /// <summary>The panels saved documents were docked as, which no new tab gets.</summary>
+    public readonly HashSet<string> Skipped = new();
+
+    /// <summary>Counts the panels handed out, which number the next.</summary>
+    public int Panels;
+
+    /// <summary>Counts the views made and dropped.</summary>
+    public int OwnChanges;
+
+    /// <summary>What the views dropped had counted, as <see cref="Revision"/> does.</summary>
+    public int DroppedChanges;
 
     /// <summary>Counts up whenever a view is made or dropped, or a view's diagram or comparison is viewed
     /// otherwise as <see cref="DiagramViewState.Changes"/> and <see cref="ComparisonRows.Changes"/> count; it
@@ -25,224 +32,10 @@ public sealed class DocumentViews
     {
         get
         {
-            var revision = _changes + _droppedChanges;
-            foreach (var view in _views.Values)
-                revision += CountChanges(view);
+            var revision = OwnChanges + DroppedChanges;
+            foreach (var view in Views.Values)
+                revision += DocumentPanels.CountViewChanges(view);
             return revision;
         }
-    }
-
-    private static int CountChanges(TabView view) => view.Diagram.Changes + view.Comparison.Changes;
-
-    /// <summary>How <paramref name="tab"/>, an open tab, is shown.</summary>
-    public TabView ViewOf(DocumentTab tab) => _views[tab];
-
-    /// <summary>The panel <paramref name="tab"/>, an open tab, is docked as.</summary>
-    public string PanelOf(DocumentTab tab) => ViewOf(tab).Panel;
-
-    public bool Contains(DocumentTab tab) => _views.ContainsKey(tab);
-
-    /// <summary>The panel <paramref name="tab"/> is docked as, or null when there is no tab or it has no view.</summary>
-    public string? FindPanel(DocumentTab? tab)
-    {
-        if (tab == null)
-            return null;
-        if (!_views.TryGetValue(tab, out var view))
-            return null;
-        return view.Panel;
-    }
-
-    /// <summary>The open tab docked as <paramref name="panel"/>. Allocates nothing.</summary>
-    public DocumentTab? FindTab(string? panel)
-    {
-        foreach (var (tab, view) in _views)
-        {
-            if (view.Panel == panel)
-                return tab;
-        }
-        return null;
-    }
-
-    /// <summary>A document panel no tab was shown in before, nor any of those <see cref="SkipPanels"/> was given.</summary>
-    public string NewPanel()
-    {
-        var panel = NextPanel();
-        while (_skipped.Contains(panel))
-            panel = NextPanel();
-        return panel;
-    }
-
-    private string NextPanel()
-    {
-        _panels++;
-        return $"{PanelPrefix}{_panels}";
-    }
-
-    /// <summary>Leaves <paramref name="panels"/>, which saved documents were docked as, to them:
-    /// <see cref="NewPanel"/> hands out none of them.</summary>
-    public void SkipPanels(IEnumerable<string> panels)
-    {
-        foreach (var panel in panels)
-            _skipped.Add(panel);
-    }
-
-    /// <summary>The panel each tab with a view is docked as, and how its diagram or comparison is viewed,
-    /// for the settings to keep.</summary>
-    public List<TabPanel> SavePanels()
-    {
-        var panels = new List<TabPanel>();
-        foreach (var (tab, view) in _views)
-            panels.Add(new TabPanel(tab, view.Panel, SaveView(tab, view)));
-        return panels;
-    }
-
-    private static TabPanelView SaveView(DocumentTab tab, TabView view) => tab.Content switch
-    {
-        TabContent.Diagram => new TabPanelView.Diagram(Diagrams.SaveView(view.Diagram)),
-        TabContent.Comparison => new TabPanelView.Comparison(view.Comparison.Save()),
-        TabContent.Empty or TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Report
-            or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone => new TabPanelView.None(),
-        _ => throw new UnreachableException(),
-    };
-
-    /// <summary>Shows <paramref name="tab"/> in a new panel, unless it is shown already.</summary>
-    public void Add(DocumentTab tab)
-    {
-        if (Contains(tab))
-            return;
-        Add(tab, NewPanel());
-    }
-
-    /// <summary>Shows <paramref name="tab"/> in <paramref name="panel"/>, unless it is shown already, its view
-    /// following what the tab shows from the start, so what is asked of the view before it is next drawn,
-    /// such as a row to reveal, is not undone when it first takes the tab's content.</summary>
-    public void Add(DocumentTab tab, string panel)
-    {
-        if (Contains(tab))
-            return;
-        var view = new TabView { Panel = panel, ImageId = $"{panel}-image" };
-        PictureViews.Follow(view.Picture, tab.Image);
-        _views.Add(tab, view);
-        _changes++;
-    }
-
-    /// <summary>Drops the view of <paramref name="tab"/>, keeping its image to free.</summary>
-    public void Remove(DocumentTab tab)
-    {
-        if (!_views.Remove(tab, out var view))
-            return;
-        _releasedImages.Add(view.ImageId);
-        _droppedChanges += CountChanges(view);
-        _changes++;
-    }
-
-    /// <summary>The tabs with a view that <paramref name="tabs"/> no longer holds, in a list the next call reuses.</summary>
-    public IReadOnlyList<DocumentTab> ListClosed(DocumentTabs tabs)
-    {
-        _closed.Clear();
-        foreach (var tab in _views.Keys)
-        {
-            if (!tabs.Contains(tab))
-                _closed.Add(tab);
-        }
-        return _closed;
-    }
-
-    /// <summary>Lets each view follow the grid or picture its tab shows.</summary>
-    public void FollowContent()
-    {
-        foreach (var (tab, view) in _views)
-            PictureViews.Follow(view.Picture, tab.Image);
-    }
-
-    /// <summary>Where the view of <paramref name="tab"/> stands, or null when it has none.</summary>
-    public ViewPosition? FindPosition(DocumentTab tab)
-    {
-        if (!_views.TryGetValue(tab, out var view))
-            return null;
-        return DocumentPanels.GetPosition(view, tab);
-    }
-
-    /// <summary>The images of the views dropped since the last call, for the canvas to free.</summary>
-    public IReadOnlyList<string> TakeReleasedImages()
-    {
-        if (_releasedImages.Count == 0)
-            return Array.Empty<string>();
-        var released = _releasedImages.ToArray();
-        _releasedImages.Clear();
-        return released;
-    }
-
-    /// <summary>Returns the view of <paramref name="tab"/>, an open tab, to <paramref name="position"/>, when it is
-    /// a position of the view the tab shows, a grid's or a code view's.</summary>
-    public void RestoreView(DocumentTab tab, ViewPosition position)
-    {
-        var view = _views.GetValueOrDefault(tab);
-        if (view == null)
-            return;
-        var shown = tab.Grid;
-        if (shown == null)
-        {
-            var code = position.Code;
-            if (code != null)
-                CodeViewWidget.RestorePosition(view.Code, code.Value);
-            return;
-        }
-        var grid = position.Grid;
-        if (grid != null)
-            MetadataGridWidget.RestorePosition(DocumentPanels.GetGridState(view, shown), grid.Value);
-    }
-
-    /// <summary>Returns the view of the diagram <paramref name="tab"/>, an open tab, shows to how
-    /// <paramref name="saved"/> says it was.</summary>
-    public void RestoreDiagramView(DocumentTab tab, DiagramViewRecord saved)
-    {
-        var view = _views.GetValueOrDefault(tab);
-        if (view == null)
-            return;
-        Diagrams.RestoreView(view.Diagram, saved);
-    }
-
-    /// <summary>Returns the view of the comparison <paramref name="tab"/>, an open tab, shows to how
-    /// <paramref name="saved"/> says it was.</summary>
-    public void RestoreComparisonView(DocumentTab tab, ComparisonViewRecord saved)
-    {
-        var view = _views.GetValueOrDefault(tab);
-        if (view == null)
-            return;
-        view.Comparison.Restore(saved);
-    }
-
-    /// <summary>Scrolls the code of <paramref name="tab"/>, an open tab, to <paramref name="line"/> and flashes it.</summary>
-    public void RevealLine(DocumentTab tab, int line)
-    {
-        var view = _views.GetValueOrDefault(tab);
-        if (view == null)
-            return;
-        if (line >= tab.Document.Lines.Length)
-            return;
-        CodeViewWidget.RevealLine(view.Code, line);
-    }
-
-    /// <summary>Selects the grid row <paramref name="row"/> of <paramref name="tab"/>, an open tab, and scrolls to it.</summary>
-    public void RevealRow(DocumentTab tab, int row)
-    {
-        var view = _views.GetValueOrDefault(tab);
-        if (view == null)
-            return;
-        var grid = tab.Grid;
-        if (grid == null || row >= grid.RowCount)
-            return;
-        MetadataGridWidget.RevealRow(DocumentPanels.GetGridState(view, grid), row);
-    }
-
-    /// <summary>Selects the card of <paramref name="type"/> on the diagram <paramref name="tab"/>, an open tab,
-    /// shows, and brings it into view once it is laid out.</summary>
-    public void FocusCard(DocumentTab tab, CodeReference.Entity type)
-    {
-        var view = _views.GetValueOrDefault(tab);
-        if (view == null)
-            return;
-        Diagrams.FocusCard(view.Diagram, type);
     }
 }

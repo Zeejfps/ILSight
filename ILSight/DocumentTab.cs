@@ -7,14 +7,21 @@ namespace ILSight;
 
 /// <summary>An open tab: where it points, the node found there, and what it shows of it, which arrives
 /// from the background. A load started for it cancels the one before, whose result is then dropped.
-/// Mutated on the UI thread only.</summary>
+/// Changed through <see cref="Tabs"/>, on the UI thread only.</summary>
 public sealed class DocumentTab
 {
-    private CancellationTokenSource? _work;
-    private Arrival _arrival;
-    private ViewPosition _viewPosition;
-    private string? _title;
-    private int _changes;
+    /// <summary>What cancels the load in flight, or null while there is none.</summary>
+    public CancellationTokenSource? Work;
+
+    /// <summary>Where the view is to stand once the load in flight arrives.</summary>
+    public Arrival Arrival;
+
+    /// <summary>Where the view of the shown node last stood, as <see cref="Position"/> gives it.</summary>
+    public ViewPosition ViewPosition;
+
+    /// <summary>What <see cref="Changes"/> had counted when the tab was last pointed somewhere, past what
+    /// its diagram or comparison counts now.</summary>
+    public int PointedChanges;
 
     /// <summary>Where the tab points: the path of its node, or while the node is away the path it is
     /// found again by or no longer exists at; outlives reloads of the assembly.</summary>
@@ -41,12 +48,12 @@ public sealed class DocumentTab
         _ => throw new UnreachableException(),
     };
 
-    public DecompilationLanguage Language { get; private set; }
+    public DecompilationLanguage Language;
 
     /// <summary>The options <see cref="Document"/> was decompiled with.</summary>
-    public DecompilerOptions Options { get; private set; } = DecompilerOptions.Default;
+    public DecompilerOptions Options = DecompilerOptions.Default;
 
-    public TabContent Content { get; private set; } = new TabContent.Empty();
+    public TabContent Content = new TabContent.Empty();
 
     /// <summary>The code, document or markup the tab shows, or an empty document while it shows none.</summary>
     public DecompiledDocument Document => Content switch
@@ -91,7 +98,7 @@ public sealed class DocumentTab
                 return null;
             if (Node == null)
                 return null;
-            return _viewPosition;
+            return ViewPosition;
         }
     }
 
@@ -102,231 +109,25 @@ public sealed class DocumentTab
         get
         {
             if (IsBusy)
-                return _arrival.Position;
+                return Arrival.Position;
             return Position;
         }
     }
 
-    /// <summary>Keeps where the view of what the tab shows stands, for <see cref="Position"/>. Not counted
-    /// in <see cref="Changes"/>: it moves with every scroll, so it is saved with whatever else is, and on exit,
-    /// as the window's bounds are.</summary>
-    public void KeepPosition(ViewPosition position)
-    {
-        _viewPosition = position;
-    }
-
     /// <summary>Counts up whenever the tab is pointed somewhere, the diagram it shows gains or loses a
     /// card, or the comparison it shows swaps its sides or takes in more or less; it never counts down.</summary>
-    public int Changes => _changes + CountContentChanges();
+    public int Changes => PointedChanges + Tabs.CountContentChanges(this);
 
-    private int CountContentChanges()
-    {
-        var diagram = Diagram;
-        if (diagram != null)
-            return diagram.Version;
-        var comparison = Comparison;
-        if (comparison != null)
-            return comparison.Version;
-        return 0;
-    }
-
-    public bool IsBusy => _work != null;
+    public bool IsBusy => Work != null;
 
     /// <summary>The name of what the tab shows, kept while its node is away, or null for a new tab.</summary>
-    public string? Title => _title;
+    public string? Title;
 
     /// <summary>The full identity of what the tab shows, or null for a new tab.</summary>
-    public string? Tooltip => Node != null ? NodeText.Tooltip(Node) : _title;
+    public string? Tooltip => Node != null ? NodeText.Tooltip(Node) : Title;
 
     /// <summary>Changes whenever the tab is pointed somewhere, or loses its node.</summary>
-    public int Version { get; private set; }
-
-    /// <summary>Whether the tab shows <paramref name="node"/>, done loading, as <paramref name="language"/>
-    /// and <paramref name="options"/> would show it.</summary>
-    public bool Shows(BrowseNode node, DecompilationLanguage language, DecompilerOptions options)
-    {
-        if (!ReferenceEquals(node, Node))
-            return false;
-        if (IsBusy)
-            return false;
-        if (!NodeContentLoader.DependsOnLanguage(node))
-            return true;
-        return IsCurrent(language, options);
-    }
-
-    /// <summary>Whether what the tab shows was decompiled in <paramref name="language"/> with options
-    /// that produce the same code as <paramref name="options"/>.</summary>
-    public bool IsCurrent(DecompilationLanguage language, DecompilerOptions options)
-    {
-        if (language != Language)
-            return false;
-        return Options.ProducesSameCode(options, language);
-    }
-
-    /// <summary>Points the tab at <paramref name="node"/>, cancelling what was in flight, and shows it
-    /// loading until <see cref="FinishLoading"/>; keeps <paramref name="arrival"/> until then.</summary>
-    public LoadTicket StartLoading(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, Arrival arrival)
-    {
-        PointElsewhere();
-        var work = new CancellationTokenSource();
-        _work = work;
-        _arrival = arrival;
-        _title = NodeText.Name(node);
-        Language = language;
-        Options = options;
-        Content = new TabContent.Loading(node);
-        return new LoadTicket { Work = work };
-    }
-
-    /// <summary>Ends the load <paramref name="load"/> was given for. False when the tab was pointed
-    /// elsewhere or cancelled since, and what the load brought should be dropped.</summary>
-    public bool FinishLoading(LoadTicket load)
-    {
-        load.Work.Dispose();
-        if (_work != load.Work)
-            return false;
-        _work = null;
-        return true;
-    }
-
-    /// <summary>Shows <paramref name="loaded"/>, which the finished load of the tab's node brought.</summary>
-    public void ShowLoaded(NodeContent loaded)
-    {
-        var node = LoadingNode();
-        Content = loaded switch
-        {
-            GridContent grid => new TabContent.Table(node, grid.Grid),
-            ImageContent image => new TabContent.Picture(node, image.Image, image.Source),
-            DocumentContent document => new TabContent.Code(node, document.Document),
-            _ => throw new InvalidOperationException($"No tab shows {loaded.GetType().Name}."),
-        };
-    }
-
-    /// <summary>Shows that the finished load of the tab's node failed with <paramref name="message"/>.</summary>
-    public void ShowFailed(string message)
-    {
-        Content = new TabContent.Failed(LoadingNode(), message);
-    }
-
-    /// <summary>The node the tab is loading; only a loading tab can show what its load brought.</summary>
-    private BrowseNode LoadingNode()
-    {
-        if (Content is not TabContent.Loading loading)
-            throw new InvalidOperationException("Only a loading tab can show what its load brought.");
-        return loading.Node;
-    }
-
-    /// <summary>Where the view was to stand once the load arrived, given when it started; forgotten once taken.</summary>
-    public Arrival TakeArrival()
-    {
-        var arrival = _arrival;
-        _arrival = new Arrival();
-        return arrival;
-    }
-
-    /// <summary>Shows <paramref name="document"/>, which no node stands for, titled
-    /// <paramref name="title"/>, cancelling what was in flight.</summary>
-    public void ShowReport(ExportReport report)
-    {
-        PointElsewhere();
-        _title = null;
-        Content = new TabContent.Report(report);
-    }
-
-    /// <summary>Shows <paramref name="diagram"/>, titled <paramref name="title"/>, cancelling what was in flight.</summary>
-    public void ShowDiagram(string title, TypeDiagram diagram)
-    {
-        PointElsewhere();
-        _title = title;
-        Content = new TabContent.Diagram(diagram);
-    }
-
-    /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, cancelling what was in flight.</summary>
-    public void ShowComparison(string title, AssemblyComparison comparison)
-    {
-        PointElsewhere();
-        _title = title;
-        Content = new TabContent.Comparison(comparison);
-    }
-
-    /// <summary>Shows nothing, as a new tab does, cancelling what was in flight.</summary>
-    public void Clear()
-    {
-        PointElsewhere();
-        _title = null;
-        Content = new TabContent.Empty();
-    }
-
-    /// <summary>Lets go of the node while its assembly reloads, keeping <paramref name="location"/> to find it again.</summary>
-    public void ShowReloading(NodePath location)
-    {
-        Release(new TabContent.Reloading(location));
-    }
-
-    /// <summary>Lets go of the node, which the reloaded assemblies no longer hold at <paramref name="location"/>.</summary>
-    public void ShowGone(NodePath location)
-    {
-        Release(new TabContent.Gone(location));
-    }
-
-    private void Release(TabContent content)
-    {
-        PointElsewhere();
-        Content = content;
-    }
-
-    /// <summary>Shows the tab, titled <paramref name="title"/>, waiting for the node at
-    /// <paramref name="location"/>, which it showed in <paramref name="language"/> when the documents were
-    /// saved, to be found once the assemblies are listed.</summary>
-    public void WaitForNode(NodePath location, string? title, DecompilationLanguage language)
-    {
-        PointElsewhere();
-        _title = title;
-        Language = language;
-        Content = new TabContent.Reloading(location);
-    }
-
-    /// <summary>Shows the tab, titled <paramref name="title"/>, waiting for the diagram it showed when the
-    /// documents were saved to be read once the assemblies are listed.</summary>
-    public void WaitForDiagram(string? title)
-    {
-        Wait(title);
-    }
-
-    /// <summary>Shows the tab, titled <paramref name="title"/>, waiting for the assemblies the comparison it
-    /// showed when the documents were saved compared to be listed.</summary>
-    public void WaitForComparison(string? title)
-    {
-        Wait(title);
-    }
-
-    private void Wait(string? title)
-    {
-        PointElsewhere();
-        _title = title;
-        Content = new TabContent.Reopening();
-    }
-
-    /// <summary>Counts the tab as pointed somewhere else, past what its diagram counted, and cancels
-    /// what was in flight.</summary>
-    private void PointElsewhere()
-    {
-        _changes = Changes + 1;
-        Version++;
-        Cancel();
-    }
-
-    /// <summary>Cancels what is in flight for what the tab shows: its load, its diagram's reading and
-    /// layout, or its comparison, the diagram or comparison closed for good.</summary>
-    public void Cancel()
-    {
-        _work?.Cancel();
-        _work = null;
-        if (Diagram != null)
-            Diagrams.CloseDiagram(Diagram);
-        if (Comparison != null)
-            Comparisons.CloseComparison(Comparison);
-    }
+    public int Version;
 }
 
 /// <summary>Given for one load of something shown, whether what a tab shows, a comparison or the layout of a

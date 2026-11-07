@@ -14,7 +14,7 @@ public sealed class DockingTests
         var app = AppDriver.Opened();
         app.Show(app.Fixture("Greeter"));
         var greeter = app.AppState.Tabs.Active!;
-        var greeterPanel = app.Ui.Documents.PanelOf(greeter);
+        var greeterPanel = DocumentPanels.GetPanel(app.Ui.Documents, greeter);
         var layout = app.Ui.Layout;
 
         layout.Dock(DockPanels.Assemblies, layout.GroupOf(greeterPanel)!, DockEdge.Center);
@@ -77,7 +77,7 @@ public sealed class DockingTests
 
         Assert.Equal([DockPanels.Assemblies], left);
         var split = Assert.IsType<DockSplit>(layout.Root);
-        Assert.Same(layout.GroupOf(d.Ui.Documents.PanelOf(d.AppState.Tabs.Active!)), split.Second);
+        Assert.Same(layout.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, d.AppState.Tabs.Active!)), split.Second);
         Assert.Equal("Greeter", d.AppState.Tabs.Active!.Node!.Text);
     }
 
@@ -103,7 +103,7 @@ public sealed class DockingTests
         d.Show(d.Fixture("Farewell"), inNewTab: true);
         var farewell = d.AppState.Tabs.Active!;
         var layout = d.Ui.Layout;
-        layout.Dock(app.Ui.Documents.PanelOf(farewell), layout.Root, DockEdge.Bottom);
+        layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, farewell), layout.Root, DockEdge.Bottom);
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 40f, 300f, 300f));
         OpenBookmarks(d.Ui);
         app.Run(2);
@@ -116,8 +116,8 @@ public sealed class DockingTests
         var split = Assert.IsType<DockSplit>(layout.Root);
         Assert.Equal([DockPanels.Assemblies], Assert.IsType<DockGroup>(split.First).Panels);
         var documents = Assert.IsType<DockGroup>(split.Second);
-        Assert.Equal(d.AppState.Tabs.Select(d.Ui.Documents.PanelOf).Order(), documents.Panels.Order());
-        Assert.Equal(app.Ui.Documents.PanelOf(farewell), documents.Active);
+        Assert.Equal(d.AppState.Tabs.Open.Select(tab => DocumentPanels.GetPanel(d.Ui.Documents, tab)).Order(), documents.Panels.Order());
+        Assert.Equal(DocumentPanels.GetPanel(app.Ui.Documents, farewell), documents.Active);
         Assert.Same(farewell, d.AppState.Tabs.Active);
         Assert.Empty(layout.Windows);
         Assert.False(layout.Contains(DockPanels.Bookmarks));
@@ -169,7 +169,7 @@ public sealed class LayoutPersistenceTests : IDisposable
 
         var next = new AppStateDriver(_temp.Settings());
         var layout = next.Ui.Layout;
-        var documents = layout.GroupOf(next.Ui.Documents.PanelOf(next.AppState.Tabs.Active!))!;
+        var documents = layout.GroupOf(DocumentPanels.GetPanel(next.Ui.Documents, next.AppState.Tabs.Active!))!;
         var views = layout.GroupOf(DockPanels.Analyzer)!;
         var split = ParentOf(layout.Root, views)!;
 
@@ -177,7 +177,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         Assert.Equal(Direction.Vertical, split.Direction);
         Assert.Same(documents, split.First);
         Assert.Same(views, split.Second);
-        Assert.Single(next.AppState.Tabs);
+        Assert.Single(next.AppState.Tabs.Open);
     }
 
     [Fact]

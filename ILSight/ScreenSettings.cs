@@ -50,6 +50,6 @@ public static class ScreenSettings
             uiState.Display,
             NuGetPicking.GetKeptSearch(uiState.NuGetPicker),
             uiState.NuGetPicker.Window.Bounds,
-            uiState.Documents.SavePanels());
+            DocumentPanels.SavePanels(uiState.Documents));
     }
 }

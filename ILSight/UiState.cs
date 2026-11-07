@@ -39,7 +39,7 @@ public sealed class UiState : IUiState
         Display = saved.Display ?? DisplayOptions.Default;
         Analyzer = new AnalyzerRows(AppCommands);
         MainLayout = RestoreLayout(this, saved.Layout);
-        Documents.SkipPanels(Docking.ListDocumentPanels(MainLayout));
+        DocumentPanels.SkipPanels(Documents, Docking.ListDocumentPanels(MainLayout));
         KeptView = CaptureViewSources(this);
     }
 

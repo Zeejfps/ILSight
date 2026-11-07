@@ -332,8 +332,8 @@ public static class Exports
     public static void ShowExportReport(AppState appState, ExportReport report)
     {
         var tab = OpenNewTab(appState);
-        appState.Tabs.MakeActive(tab);
-        tab.ShowReport(report);
+        Tabs.MakeActive(appState.Tabs, tab);
+        Tabs.ShowReport(tab, report);
     }
 
     /// <summary>The runs of every export in the order the exports panel lists them: the running one,

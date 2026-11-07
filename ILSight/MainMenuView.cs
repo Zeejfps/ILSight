@@ -228,7 +228,7 @@ internal static class MainMenuView
         ApiVisibilityMenu(ui, appState.ApiVisibility);
         ui.MenuSeparator();
         PanelsMenu(ui);
-        if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.Tabs.Count > 0, id: "close-all-documents"))
+        if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.Tabs.Open.Count > 0, id: "close-all-documents"))
             CloseAllTabs(ui.State);
         if (ui.MenuItem(t.ViewResetLayout, id: "reset-layout"))
             AskToResetLayout(ui.State);

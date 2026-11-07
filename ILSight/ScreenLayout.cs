@@ -143,7 +143,7 @@ public static class ScreenLayout
     /// <summary>A new document panel, with an empty tab asked for to be opened in it as the active tab.</summary>
     private static string OpenActiveTabPanel(UiState uiState)
     {
-        var panel = uiState.Documents.NewPanel();
+        var panel = DocumentPanels.CreatePanel(uiState.Documents);
         uiState.Later((uiState, panel), static (a, s) => ILSightApp.OpenTabIn(s.uiState, a, s.panel, focus: true));
         return panel;
     }

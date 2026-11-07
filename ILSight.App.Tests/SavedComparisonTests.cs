@@ -46,7 +46,7 @@ public sealed class SavedComparisonTests : IDisposable
     private static AssemblyComparison? FindComparison(AppDriver app)
     {
         return app.AppState.Tabs
-            .Select(static t => t.Comparison)
+            .Open.Select(static t => t.Comparison)
             .FirstOrDefault(static c => c != null);
     }
 
@@ -66,21 +66,21 @@ public sealed class SavedComparisonTests : IDisposable
         var comparison = tab.Comparison!;
         SwapComparedAssemblies(app.AppState, comparison);
         ChangeComparedScope(app.AppState, comparison, ApiScope.AllDeclared);
-        app.Ui.Documents.ViewOf(tab).Comparison.ShowOnlyDifferences(false);
+        DocumentPanels.GetView(app.Ui.Documents, tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
-        var panel = app.Ui.Documents.PanelOf(tab);
+        var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
 
         var next = Restart(app);
 
-        var restored = next.AppState.Tabs.Single(t => t.Comparison != null);
+        var restored = next.AppState.Tabs.Open.Single(t => t.Comparison != null);
         var reopened = restored.Comparison!;
         Assert.Equal("ApiDiffSample API diff", restored.Title);
-        Assert.Equal(panel, next.Ui.Documents.PanelOf(restored));
+        Assert.Equal(panel, DocumentPanels.GetPanel(next.Ui.Documents, restored));
         Assert.Equal(RightPath, reopened.LeftPath.Text);
         Assert.Equal(LeftPath, reopened.RightPath.Text);
         Assert.Equal(ApiScope.AllDeclared, reopened.Diff!.Scope);
         Assert.Equal("ApiDiffSample (2.0.0.0)", reopened.Diff.LeftName);
-        Assert.False(next.Ui.Documents.ViewOf(restored).Comparison.OnlyDifferences);
+        Assert.False(DocumentPanels.GetView(next.Ui.Documents, restored).Comparison.OnlyDifferences);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.Settle(2);
         Assert.Equal(RightPath, ReadSavedComparison().LeftPath.Text);
 
-        app.Ui.Documents.ViewOf(tab).Comparison.ShowOnlyDifferences(false);
+        DocumentPanels.GetView(app.Ui.Documents, tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
         Assert.False(ReadSavedComparison().View!.OnlyDifferences);
     }

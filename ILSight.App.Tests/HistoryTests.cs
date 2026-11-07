@@ -23,7 +23,7 @@ public sealed class HistoryTests
         return CodeOf(app, app.AppState.Tabs.Active!).Position;
     }
 
-    private static CodeViewState CodeOf(AppDriver app, DocumentTab tab) => app.Ui.Documents.ViewOf(tab).Code;
+    private static CodeViewState CodeOf(AppDriver app, DocumentTab tab) => DocumentPanels.GetView(app.Ui.Documents, tab).Code;
 
     [Fact]
     public void Going_back_and_forward_returns_each_place_to_where_it_was_left()

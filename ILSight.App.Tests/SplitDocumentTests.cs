@@ -64,7 +64,7 @@ public sealed class SplitDocumentTests
 
         var d = new AppStateDriver(new AppSettings { Layout = saved });
 
-        var panel = d.Ui.Documents.PanelOf(Assert.Single(d.AppState.Tabs));
+        var panel = DocumentPanels.GetPanel(d.Ui.Documents, Assert.Single(d.AppState.Tabs.Open));
         var panels = d.Ui.Layout.AllGroups().SelectMany(g => g.Panels).ToList();
         Assert.Equal([DockPanels.Assemblies, panel], panels);
         Assert.NotEqual("document-7", panel);
@@ -78,8 +78,8 @@ public sealed class SplitDocumentTests
         var d = app.Driver;
 
         app.Frames.MovePointer(250f, 400f).Frame().Wheel(-5).Frame(2);
-        Assert.True(app.Ui.Documents.ViewOf(left).Code.ScrollY > 0f);
-        Assert.Equal(0f, app.Ui.Documents.ViewOf(right).Code.ScrollY);
+        Assert.True(DocumentPanels.GetView(app.Ui.Documents, left).Code.ScrollY > 0f);
+        Assert.Equal(0f, DocumentPanels.GetView(app.Ui.Documents, right).Code.ScrollY);
 
         app.Frames.Click(750f, 400f).Frame();
         Assert.Same(right, d.AppState.Tabs.Active);
@@ -112,13 +112,13 @@ public sealed class SplitDocumentTests
     public void Closing_all_documents_from_the_view_menu_closes_the_tabs_of_every_group()
     {
         var (app, left, right) = SideBySide();
-        Assert.NotSame(app.Ui.Layout.GroupOf(app.Ui.Documents.PanelOf(left)), app.Ui.Layout.GroupOf(app.Ui.Documents.PanelOf(right)));
+        Assert.NotSame(app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left)), app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, right)));
 
         app.Click("View");
         app.ClickMenuItem("Close all documents").Frame(2);
         app.Settle(2);
 
-        Assert.Empty(app.AppState.Tabs);
+        Assert.Empty(app.AppState.Tabs.Open);
     }
 
     private static (AppDriver App, DocumentTab Left, DocumentTab Right) SideBySide()
@@ -132,7 +132,7 @@ public sealed class SplitDocumentTests
         var left = d.AppState.Tabs.Active!;
         d.Show(d.Fixture("Outline"), inNewTab: true);
         var right = d.AppState.Tabs.Active!;
-        layout.Dock(app.Ui.Documents.PanelOf(right), layout.GroupOf(app.Ui.Documents.PanelOf(left))!, DockEdge.Right, 0.5f);
+        layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, right), layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left))!, DockEdge.Right, 0.5f);
         app.Run(3);
         return (app, left, right);
     }

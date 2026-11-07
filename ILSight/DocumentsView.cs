@@ -56,7 +56,7 @@ internal static class DocumentsView
 
     private static void RenderGrid(Ui<UiState> ui, DocumentTab tab, MetadataGrid grid)
     {
-        var view = ui.State.Documents.ViewOf(tab);
+        var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters);
         if (picked.Target != null && tab.Node != null)
             ui.State.Later((node: tab.Node, target: picked.Target.Value, picked.InNewTab), static (a, s) => ShowMetadataLink(a, s.node, s.target, s.InNewTab));
@@ -68,7 +68,7 @@ internal static class DocumentsView
     public static void RenderCode(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var lines = !tab.IsBusy && tab.Node != null && tab.Document.Error == null ? ListMarkedLines(bookmarks, tab.Document, tab.Node) : null;
-        var view = ui.State.Documents.ViewOf(tab);
+        var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var document = FindDocumentToShow(ui.State, view, tab);
         var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display);
         if (result.Intent != null)

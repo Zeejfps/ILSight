@@ -23,7 +23,7 @@ public sealed class OmnibarTests
     private static IReadOnlyList<Crumb> ActiveCrumbs(AppDriver app)
     {
         var tab = app.AppState.Tabs.Active!;
-        return app.Ui.Documents.ViewOf(tab).Breadcrumb.Crumbs;
+        return DocumentPanels.GetView(app.Ui.Documents, tab).Breadcrumb.Crumbs;
     }
 
     /// <summary>The row of the active document's omnibar: where its search button, the last search
@@ -151,7 +151,7 @@ public sealed class OmnibarTests
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
         app.Settle(2);
 
-        Assert.Equal(app.Ui.Documents.PanelOf(app.AppState.Tabs.Active!), searchedIn);
+        Assert.Equal(DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!), searchedIn);
         Assert.Same(app.Fixture("Farewell"), app.AppState.Tabs.Active!.Node);
         Assert.False(omnibar.IsSearching);
         CrumbRect(app, "Farewell");
@@ -197,7 +197,7 @@ public sealed class OmnibarTests
 
         app.Frames.Click(BarRow(app)).Frame(2);
 
-        Assert.True(OmnibarView.IsSearchingIn(app.Ui.Omnibar, app.Ui.Documents.PanelOf(app.AppState.Tabs.Active!)));
+        Assert.True(OmnibarView.IsSearchingIn(app.Ui.Omnibar, DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!)));
         Assert.True(app.Frames.WantsTextInput);
     }
 
@@ -222,7 +222,7 @@ public sealed class OmnibarTests
     public void Ctrl_M_then_Ctrl_L_in_the_code_still_folds_everything_rather_than_searching()
     {
         var app = Showing("Greeter");
-        var view = app.Ui.Documents.ViewOf(app.AppState.Tabs.Active!);
+        var view = DocumentPanels.GetView(app.Ui.Documents, app.AppState.Tabs.Active!);
 
         app.Frames.Click(700f, 400f).Frame();
         app.Frames.Key(KeyboardKey.M, KeyModifiers.Control).Frame();

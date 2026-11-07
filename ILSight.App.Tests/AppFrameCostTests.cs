@@ -35,7 +35,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         var app = AppDriver.Opened();
         OpenBookmarks(app.Ui);
         app.Settle(2);
-        app.Ui.Layout.Close(app.Ui.Documents.PanelOf(app.AppState.Tabs.Active!));
+        app.Ui.Layout.Close(DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!));
         app.Settle(5);
 
         app.Frames.Canvas.Recording = false;
@@ -43,7 +43,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => app.Run());
 
         output.WriteLine($"tool panels only: {allocated:N0} B/frame allocated");
-        Assert.Empty(app.AppState.Tabs);
+        Assert.Empty(app.AppState.Tabs.Open);
         Assert.True(app.Ui.Layout.Contains(DockPanels.Bookmarks));
         Assert.Equal(0, allocated);
     }
@@ -55,7 +55,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         app.Settle(2);
         app.Show(app.Fixture("Greeter"), 2);
         app.Settle(5);
-        var panel = app.Ui.Documents.PanelOf(app.AppState.Tabs.Active!);
+        var panel = DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!);
         OmnibarView.OpenMenu(app.Ui.Omnibar, panel, app.Node(AppStateDriver.FixturesNamespace), app.Fixture("Greeter"));
         app.Settle(5);
 

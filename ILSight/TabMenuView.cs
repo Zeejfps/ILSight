@@ -16,7 +16,7 @@ internal static class TabMenuView
     {
         if (request == null)
             return;
-        var tab = ui.State.Documents.FindTab(request.Value.Panel);
+        var tab = DocumentPanels.FindTab(ui.State.Documents, request.Value.Panel);
         if (tab == null)
             return;
         ui.State.TabMenuTarget = tab;
@@ -28,7 +28,7 @@ internal static class TabMenuView
     {
         if (panel == null)
             return;
-        var tab = ui.State.Documents.FindTab(panel);
+        var tab = DocumentPanels.FindTab(ui.State.Documents, panel);
         if (tab == null)
             return;
         ui.State.Later(tab, static (a, kept) => KeepTabOpen(a, kept));
@@ -42,7 +42,7 @@ internal static class TabMenuView
         var tab = ui.State.TabMenuTarget;
         if (tab == null)
             return;
-        if (!ui.State.Documents.Contains(tab))
+        if (!DocumentPanels.HasView(ui.State.Documents, tab))
             return;
         TabMenu(ui, tabs, tab);
     }

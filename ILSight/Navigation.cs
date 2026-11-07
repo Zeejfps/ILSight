@@ -126,7 +126,7 @@ public static class Navigation
             ShowNode(appState, node);
             return;
         }
-        appState.Tabs.MakeActive(showing);
+        Tabs.MakeActive(appState.Tabs, showing);
         appState.EnqueueCommand(new ViewCommand.ShowTab(showing, Beside: null));
     }
 
@@ -136,7 +136,7 @@ public static class Navigation
         var active = appState.Tabs.Active;
         if (active != null && active.Node == node)
             return active;
-        foreach (var tab in appState.Tabs)
+        foreach (var tab in appState.Tabs.Open)
         {
             if (tab.Node == node)
                 return tab;
@@ -166,7 +166,7 @@ public static class Navigation
     }
 
     /// <summary>Keeps <paramref name="tab"/> open, so that what is picked next shows in another tab.</summary>
-    public static void KeepTabOpen(AppState appState, DocumentTab tab) => appState.Tabs.Keep(tab);
+    public static void KeepTabOpen(AppState appState, DocumentTab tab) => Tabs.Keep(appState.Tabs, tab);
 
     /// <summary>Has what is picked and followed shown in the preview tab, or, when <paramref name="on"/>
     /// is false, in the active tab, the preview tab then kept open as any other.</summary>
@@ -177,7 +177,7 @@ public static class Navigation
             return;
         var preview = appState.Tabs.Preview;
         if (preview != null)
-            appState.Tabs.Keep(preview);
+            Tabs.Keep(appState.Tabs, preview);
     }
 
     /// <summary>Opens the files at <paramref name="paths"/> in the background, then shows the namespace,
@@ -466,13 +466,13 @@ public static class Navigation
         var tab = FindTabShowing(appState, diagram);
         if (tab == null)
             return;
-        appState.Tabs.MakeActive(tab);
+        Tabs.MakeActive(appState.Tabs, tab);
         appState.EnqueueCommand(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
     internal static DocumentTab? FindTabShowing(AppState appState, TypeDiagram diagram)
     {
-        foreach (var tab in appState.Tabs)
+        foreach (var tab in appState.Tabs.Open)
         {
             if (tab.Diagram == diagram)
                 return tab;
@@ -515,7 +515,7 @@ public static class Navigation
         int? row = null)
     {
         var shownIn = FindOrOpenTab(appState, destination);
-        appState.Tabs.MakeActive(shownIn);
+        Tabs.MakeActive(appState.Tabs, shownIn);
         LoadIntoTab(appState, shownIn, node, new Arrival(position, target, row));
         appState.EnqueueCommand(new ViewCommand.RevealNode(node));
     }
@@ -530,7 +530,7 @@ public static class Navigation
         else
             appState.EnqueueCommand(new ViewCommand.ShowTab(tab, Beside: null));
         if (IsPreviewed(appState, destination))
-            appState.Tabs.MakePreview(tab);
+            Tabs.MakePreview(appState.Tabs, tab);
         return tab;
     }
 
@@ -548,7 +548,7 @@ public static class Navigation
     /// which nothing replaces; else null.</summary>
     private static DocumentTab? FindOriginToReplace(AppState appState, DocumentTab? origin)
     {
-        var open = appState.Tabs.KeepIfOpen(origin);
+        var open = Tabs.KeepIfOpen(appState.Tabs, origin);
         if (open == null)
             return null;
         if (!open.IsReplaceable)

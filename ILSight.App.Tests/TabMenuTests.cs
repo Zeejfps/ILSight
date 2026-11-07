@@ -45,12 +45,12 @@ public sealed class TabMenuTests
         PickFromTabMenu(app, "Greeter", "Close all to the right");
 
         Assert.Equal([NodeText.Name(assembly), "Greeter"], TitlesInGroup(app));
-        Assert.Equal(2, app.AppState.Tabs.Count);
+        Assert.Equal(2, app.AppState.Tabs.Open.Count);
 
         PickFromTabMenu(app, "Greeter", "Close others");
 
         Assert.Equal(["Greeter"], TitlesInGroup(app));
-        Assert.Single(app.AppState.Tabs);
+        Assert.Single(app.AppState.Tabs.Open);
     }
 
     [Fact]
@@ -68,14 +68,14 @@ public sealed class TabMenuTests
     {
         var (app, _) = OpenTabs();
         var tab = app.AppState.Tabs.Active!;
-        var group = app.Ui.Layout.GroupOf(app.Ui.Documents.PanelOf(tab))!;
+        var group = app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, tab))!;
         group.Panels.Add(DockPanels.Bookmarks);
         app.Run(2);
 
         CloseTabsInGroup(app.Ui, tab);
         app.Settle(2);
 
-        Assert.Empty(app.AppState.Tabs);
+        Assert.Empty(app.AppState.Tabs.Open);
         Assert.Same(group, app.Ui.Layout.GroupOf(DockPanels.Bookmarks));
     }
 
@@ -92,6 +92,6 @@ public sealed class TabMenuTests
         Assert.True(app.Frames.Drew("Close others"));
         Assert.True(app.Frames.Drew(Shortcuts.CloseTab.Label));
         app.ClickMenuItem("Close others").Frame(2);
-        Assert.Single(app.AppState.Tabs);
+        Assert.Single(app.AppState.Tabs.Open);
     }
 }

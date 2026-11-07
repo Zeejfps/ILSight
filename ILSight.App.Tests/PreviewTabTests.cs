@@ -54,7 +54,7 @@ public sealed class PreviewTabTests
         Assert.Equal("Greeter", shownFirst);
         Assert.Same(preview, app.AppState.Tabs.Preview);
         Assert.Equal("Farewell", preview!.Node!.Text);
-        Assert.Single(app.AppState.Tabs);
+        Assert.Single(app.AppState.Tabs.Open);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class PreviewTabTests
 
         Assert.Null(previewAfterOpening);
         Assert.Equal("Greeter", kept.Node!.Text);
-        Assert.Equal(2, app.AppState.Tabs.Count);
+        Assert.Equal(2, app.AppState.Tabs.Open.Count);
         Assert.Equal("Farewell", app.AppState.Tabs.Preview!.Node!.Text);
         Assert.Same(app.AppState.Tabs.Preview, app.AppState.Tabs.Active);
     }
@@ -90,7 +90,7 @@ public sealed class PreviewTabTests
         Assert.Same(kept, app.AppState.Tabs.Active);
         Assert.Same(preview, app.AppState.Tabs.Preview);
         Assert.Equal("Farewell", preview!.Node!.Text);
-        Assert.Equal(2, app.AppState.Tabs.Count);
+        Assert.Equal(2, app.AppState.Tabs.Open.Count);
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public sealed class PreviewTabTests
         var before = app.AppState.Tabs.Preview!;
 
         var empty = Docking.OpenEmptyTab(app.AppState);
-        app.AppState.Tabs.MakeActive(empty);
+        Tabs.MakeActive(app.AppState.Tabs, empty);
         app.AppState.EnqueueCommand(new ViewCommand.ShowTab(empty, before));
         app.Run(2);
         Pick(app, "Farewell");
