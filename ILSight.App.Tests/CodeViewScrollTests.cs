@@ -1,3 +1,4 @@
+using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Testing;
 using ZGF.Gui.Immediate.Widgets;
@@ -30,7 +31,8 @@ public sealed class CodeViewScrollTests
         var view = CodeViewDriver.Showing(Document(200));
         view.Click(0, 0);
 
-        view.Key(KeyboardKey.End).Frame(4);
+        view.Key(Shortcut.Command(KeyboardKey.End));
+        view.Key(KeyboardKey.Home).Frame(4);
 
         var last = view.DrawnText().Single(d => d.Text.StartsWith("www"));
         var horizontal = Thumbs(view).Single(t => t.Width > t.Height);
@@ -43,9 +45,7 @@ public sealed class CodeViewScrollTests
         var view = CodeViewDriver.Showing(Document(FitColumns));
         view.Click(0, 0);
 
-        view.Key(KeyboardKey.End);
-        for (var i = 0; i < 20; i++)
-            view.Key(KeyboardKey.RightArrow);
+        view.Key(Shortcut.Command(KeyboardKey.End));
         view.Run();
 
         var thumbs = Thumbs(view);

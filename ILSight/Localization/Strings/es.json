@@ -141,6 +141,7 @@
   "display_options.line_numbers": "Números de línea",
   "display_options.current_line": "Resaltar línea actual",
   "display_options.matching_brackets": "Resaltar los corchetes correspondientes",
+  "display_options.usages_at_caret": "Resaltar los usos en el cursor",
   "display_options.omnibar": "Barra de ruta y búsqueda",
   "display_options.tree": "Árbol",
   "display_options.tokens": "Tokens de metadatos",

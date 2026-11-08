@@ -141,6 +141,7 @@
   "display_options.line_numbers": "Номера строк",
   "display_options.current_line": "Выделять текущую строку",
   "display_options.matching_brackets": "Выделять парные скобки",
+  "display_options.usages_at_caret": "Выделять использования символа под курсором",
   "display_options.omnibar": "Строка пути и поиска",
   "display_options.tree": "Дерево",
   "display_options.tokens": "Токены метаданных",

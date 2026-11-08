@@ -15,7 +15,7 @@ namespace ILSight.App.Tests;
 
 public sealed class DisplayOptionsTests
 {
-    private const float TallWindow = 1100f;
+    private const float TallWindow = 1200f;
 
     private static CodeViewDriver Showing(DecompiledDocument document, DisplayOptions? display, int frames = 2)
     {
@@ -118,6 +118,77 @@ public sealed class DisplayOptionsTests
         Assert.Equal(2, brackets.Count);
         Assert.Equal(view.TextLeft + 1 * CodeViewDriver.Cell, brackets.Min(b => b.X));
         Assert.Equal(view.TextLeft + 6 * CodeViewDriver.Cell, brackets.Max(b => b.X));
+    }
+
+    /// <summary>"a = b + a;" over a line of nothing, a and b locals: the pointer rests on the second line so
+    /// it marks nothing itself.</summary>
+    private static DecompiledDocument Locals()
+    {
+        var a = new CodeReference.Local { Name = "a", Key = 0, Scope = null };
+        var b = new CodeReference.Local { Name = "b", Key = 1, Scope = null };
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
+        DocumentWriting.Write(builder, "a", SpanKind.Local, a, isDefinition: true);
+        DocumentWriting.Write(builder, " = ", SpanKind.Plain);
+        DocumentWriting.Write(builder, "b", SpanKind.Local, b);
+        DocumentWriting.Write(builder, " + ", SpanKind.Plain);
+        DocumentWriting.Write(builder, "a", SpanKind.Local, a);
+        DocumentWriting.Write(builder, ";", SpanKind.Plain);
+        DocumentWriting.WriteLine(builder);
+        DocumentWriting.Write(builder, "          ", SpanKind.Plain);
+        return DocumentWriting.BuildDocument(builder, "locals");
+    }
+
+    private static CodeViewDriver ClickedOnB(DisplayOptions display)
+    {
+        var view = Showing(Locals(), display);
+        view.Click(0, 4);
+        view.MoveTo(1, 8);
+        return view;
+    }
+
+    [Fact]
+    public void Usages_follow_the_caret_when_asked()
+    {
+        var view = ClickedOnB(new DisplayOptions(HighlightUsagesAtCaret: true));
+        Assert.Equal("b", view.State.Frame.Highlight?.Name);
+
+        view.Key(KeyboardKey.Home).Frame();
+
+        Assert.Equal(new TextPosition(0, 0), view.State.Selection.Caret);
+        Assert.Equal("a", view.State.Frame.Highlight?.Name);
+    }
+
+    [Fact]
+    public void A_caret_just_after_a_name_marks_its_usages()
+    {
+        var view = ClickedOnB(new DisplayOptions(HighlightUsagesAtCaret: true));
+
+        view.Key(KeyboardKey.End).Frame();
+        view.Key(KeyboardKey.LeftArrow).Frame();
+
+        Assert.Equal(new TextPosition(0, 9), view.State.Selection.Caret);
+
+        Assert.Equal("a", view.State.Frame.Highlight?.Name);
+    }
+
+    [Fact]
+    public void A_caret_off_any_name_marks_nothing_when_usages_follow_it()
+    {
+        var view = ClickedOnB(new DisplayOptions(HighlightUsagesAtCaret: true));
+
+        view.Key(KeyboardKey.DownArrow).Frame();
+
+        Assert.Null(view.State.Frame.Highlight);
+    }
+
+    [Fact]
+    public void Without_the_option_the_clicked_usages_stay_marked_as_the_caret_moves()
+    {
+        var view = ClickedOnB(DisplayOptions.Default);
+
+        view.Key(KeyboardKey.Home).Frame();
+
+        Assert.Equal("b", view.State.Frame.Highlight?.Name);
     }
 
     [Fact]

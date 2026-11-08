@@ -141,6 +141,7 @@
   "display_options.line_numbers": "줄 번호",
   "display_options.current_line": "현재 줄 강조 표시",
   "display_options.matching_brackets": "짝이 맞는 괄호 강조 표시",
+  "display_options.usages_at_caret": "캐럿 위치의 사용 위치 강조 표시",
   "display_options.omnibar": "경로 및 검색 표시줄",
   "display_options.tree": "트리",
   "display_options.tokens": "메타데이터 토큰",

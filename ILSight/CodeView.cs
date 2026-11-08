@@ -53,7 +53,7 @@ internal abstract record CodePress
 internal readonly record struct CodeSpanAt(int Line, int Span);
 
 /// <summary>Where a code view is to scroll once it is laid out: to a line revealed and flashed, back to where
-/// it stood, or to a find match.</summary>
+/// it stood, to a find match, or to the caret.</summary>
 internal abstract record PendingScroll
 {
     private PendingScroll()
@@ -67,6 +67,9 @@ internal abstract record PendingScroll
 
     /// <summary>Bring the columns from <see cref="ColumnStart"/> to <see cref="ColumnEnd"/> of <see cref="Line"/> into view.</summary>
     public sealed record ShowMatch(int Line, int ColumnStart, int ColumnEnd) : PendingScroll;
+
+    /// <summary>Scroll as little as brings the caret into view, after a key moved it.</summary>
+    public sealed record ShowCaret : PendingScroll;
 }
 
 /// <summary>What the pointer is over in a code view this frame: nothing; the text of a line, on one of its spans
@@ -154,7 +157,12 @@ public sealed class CodeViewState
     /// <summary>The index of the find match selected, or null; kept while find is closed, for F3 to go on from.</summary>
     internal int? CurrentMatch;
     internal int KeyScrollRows;
-    internal int KeyScrollPages;
+    /// <summary>How many rows Page Up and Page Down move, a view less one, as last laid out.</summary>
+    internal int PageRows = 1;
+    internal CaretGoal? Goal;
+    /// <summary>When the caret, at <see cref="BlinkCaret"/>, last moved: it shows from then for half a blink.</summary>
+    internal double BlinkFrom;
+    internal TextPosition BlinkCaret;
 
     public CodeSelection Selection { get; } = new();
 
@@ -298,7 +306,8 @@ public static class CodeViewWidget
             state.Pending = null;
         state.Flash = null;
         state.CurrentMatch = null;
-        state.KeyScrollRows = state.KeyScrollPages = 0;
+        state.KeyScrollRows = 0;
+        state.Goal = null;
     }
 
     internal static void RevealFolds(CodeViewState state, int line)
@@ -391,6 +400,24 @@ public static class CodeViewWidget
             else high = mid;
         }
         return low;
+    }
+
+    private const double CaretBlinkSeconds = 0.53;
+
+    /// <summary>Whether the caret shows this frame: only in a focused view, from when it last moved for half a
+    /// blink, then off for as long, asking for the frame where that next changes.</summary>
+    private static bool IsCaretShown(Ui<UiState> ui, CodeViewState state, bool focused)
+    {
+        if (!focused)
+            return false;
+        if (state.Selection.Caret != state.BlinkCaret)
+        {
+            state.BlinkCaret = state.Selection.Caret;
+            state.BlinkFrom = ui.RealTime;
+        }
+        var phase = (ui.RealTime - state.BlinkFrom) % (CaretBlinkSeconds * 2);
+        ui.RequestUpdateIn(CaretBlinkSeconds - phase % CaretBlinkSeconds);
+        return phase < CaretBlinkSeconds;
     }
 
     private static readonly DisplayOptions Plain = new(HighlightMatchingBrackets: false);
@@ -598,8 +625,10 @@ public static class CodeViewWidget
             }
 
             Scroll(ui, state, document, rowHeight, advance, textLeft, content, scrollDeltaY);
+            var marked = shown.HighlightUsagesAtCaret ? FindReferenceAt(document, state.Selection.Caret) : state.Marked;
             FillFrame(ui, state, document, theme, palette, cell, rowHeight, markWidth, foldLeft, foldWidth, gutterWidth, textLeft, digits,
-                focused || findFocused, bookmarks, hover, hoverReference, hoverNavigable);
+                focused || findFocused, bookmarks, hover, hoverReference ?? marked, hoverNavigable);
+            state.Frame.Caret = IsCaretShown(ui, state, focused) ? state.Selection.Caret : null;
             FillDisplayAids(state, document, shown, fontSize);
 
             using (ui.Box(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f }))
@@ -787,7 +816,7 @@ public static class CodeViewWidget
 
     private static void FillFrame(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, UiTheme theme, CodeViewPalette palette, CellMetrics cell,
         float rowHeight, float markWidth, float foldLeft, float foldWidth, float gutterWidth, float textLeft, int digits, bool active,
-        IReadOnlyDictionary<int, bool>? bookmarks, CodeHover hover, CodeReference? hoverReference, bool hoverNavigable)
+        IReadOnlyDictionary<int, bool>? bookmarks, CodeHover hover, CodeReference? highlight, bool hoverNavigable)
     {
         var frame = state.Frame;
         frame.Document = document;
@@ -796,6 +825,8 @@ public static class CodeViewWidget
         frame.Background = theme.EditorBackground;
         frame.GutterHover = theme.Text;
         frame.Selection = active ? theme.TextSelection : theme.SelectionInactive;
+        frame.CaretColor = theme.Text;
+        frame.CaretWidth = theme.CaretWidth;
         frame.ErrorText = theme.Danger;
         frame.SeparatorWidth = theme.SeparatorWidth;
         frame.OutlineWidth = theme.BorderWidth;
@@ -816,7 +847,7 @@ public static class CodeViewWidget
         frame.Digits = digits;
         frame.SelectionStart = state.Selection.Start;
         frame.SelectionEnd = state.Selection.End;
-        frame.Highlight = hoverReference ?? state.Marked;
+        frame.Highlight = highlight;
         frame.Underline = hoverNavigable && !state.PressMoved ? hover.Span : null;
         frame.HoverFold = hover.Chevron;
         frame.HoverChip = hover.Chip;
@@ -868,11 +899,8 @@ public static class CodeViewWidget
             }
         }
 
-        if (state.KeyScrollPages != 0 && viewport > 0f)
-        {
-            deltaY += state.KeyScrollPages * MathF.Max(1f, MathF.Floor(viewport / rowHeight) - 1f) * rowHeight;
-            state.KeyScrollPages = 0;
-        }
+        if (viewport > 0f)
+            state.PageRows = (int)MathF.Max(1f, MathF.Floor(viewport / rowHeight) - 1f);
         deltaY += state.KeyScrollRows * rowHeight;
         state.KeyScrollRows = 0;
         if (deltaY != 0f)
@@ -912,6 +940,57 @@ public static class CodeViewWidget
                 state.ScrollX = to - visible + 4f * advance;
             state.Pending = null;
         }
+        else if (pending is PendingScroll.ShowCaret)
+        {
+            if (viewport <= 0f || content.Width <= 0f)
+            {
+                ui.RequestUpdate();
+                return;
+            }
+            ShowCaret(state, document, rowHeight, advance, textLeft, content);
+            state.Pending = null;
+        }
+    }
+
+    /// <summary>Scrolls as little as brings the caret's row, and its column on a line that is shown, into view.</summary>
+    private static void ShowCaret(CodeViewState state, DecompiledDocument document, float rowHeight, float advance, float textLeft, UiRect content)
+    {
+        var folds = state.Folds;
+        var caret = state.Selection.Caret;
+        var row = CodeFolding.FindRowOf(folds, caret.Line);
+        var top = GetRowTop(row, rowHeight);
+        if (top < state.ScrollY)
+            state.ScrollY = top;
+        else if (top + rowHeight > state.ScrollY + content.Height)
+            state.ScrollY = MathF.Max(0f, top + rowHeight - content.Height);
+        if (CodeFolding.GetLineAt(folds, row) != caret.Line)
+            return;
+        var visible = content.Width - textLeft - advance;
+        var x = Math.Min(caret.Column, document.Lines[caret.Line].Text.Length) * advance;
+        if (x < state.ScrollX)
+            state.ScrollX = MathF.Max(0f, x - 4f * advance);
+        else if (x > state.ScrollX + visible)
+            state.ScrollX = x - visible + 4f * advance;
+    }
+
+    /// <summary>What the span at <paramref name="at"/> refers to, or else the span just before it, so a caret
+    /// at the end of a name finds it; null when neither refers to anything.</summary>
+    private static CodeReference? FindReferenceAt(DecompiledDocument document, TextPosition at)
+    {
+        if (at.Line < 0 || at.Line >= document.Lines.Length) return null;
+        var spans = document.Lines[at.Line].Spans;
+        foreach (var column in (ReadOnlySpan<int>)[at.Column, at.Column - 1])
+        {
+            if (column < 0)
+                continue;
+            var index = CodeText.SpanAt(spans, column);
+            if (index == null)
+                continue;
+            var reference = spans[index.Value].Reference;
+            if (reference != null)
+                return reference;
+        }
+        return null;
     }
 
     /// <summary>The type or member named at <paramref name="at"/> or just before it, as the caret
@@ -941,38 +1020,113 @@ public static class CodeViewWidget
         {
             if (RunShortcut(ui, state, document, focused, k))
                 continue;
-            switch (keys[k].Key)
+            if (keys[k].Key == KeyboardKey.Escape && state.FindOpen)
             {
-                case KeyboardKey.Escape when state.FindOpen:
-                    state.FindOpen = false;
-                    ui.Focus(focusId, takesText: false);
-                    break;
-                case KeyboardKey.UpArrow when focused:
-                    state.KeyScrollRows--;
-                    break;
-                case KeyboardKey.DownArrow when focused:
-                    state.KeyScrollRows++;
-                    break;
-                case KeyboardKey.PageUp when focused:
-                    state.KeyScrollPages--;
-                    break;
-                case KeyboardKey.PageDown when focused:
-                    state.KeyScrollPages++;
-                    break;
-                case KeyboardKey.Home when focused:
-                    state.KeyScrollRows -= document.Lines.Length;
-                    break;
-                case KeyboardKey.End when focused:
-                    state.KeyScrollRows += document.Lines.Length;
-                    break;
-                case KeyboardKey.LeftArrow when focused:
-                    state.ScrollX = MathF.Max(0f, state.ScrollX - KeyScrollColumns * advance);
-                    break;
-                case KeyboardKey.RightArrow when focused:
-                    state.ScrollX += KeyScrollColumns * advance;
-                    break;
+                state.FindOpen = false;
+                ui.Focus(focusId, takesText: false);
+                continue;
             }
+            if (focused)
+                MoveCaret(state, document, keys[k].Key, keys[k].Modifiers);
         }
+    }
+
+    /// <summary>Moves the caret as <paramref name="key"/> with <paramref name="modifiers"/> asks, extending the
+    /// selection with Shift, and scrolls it into view: the arrows by character, by word with Ctrl, or Option on
+    /// macOS, and by row; Home and End to the ends of the line, and with Ctrl, or Command on macOS, as Command
+    /// with the arrows, to the ends of the document; Page Up and Page Down by a view, scrolling with it.
+    /// Ctrl with Up or Down scrolls a row and leaves the caret. Alt with Left or Right goes back and forward,
+    /// outside macOS, and moves nothing here.</summary>
+    private static void MoveCaret(CodeViewState state, DecompiledDocument document, KeyboardKey key, KeyModifiers modifiers)
+    {
+        if (document.Lines.Length == 0)
+            return;
+        var mac = OperatingSystem.IsMacOS();
+        var command = (modifiers & (mac ? KeyModifiers.Super : KeyModifiers.Control)) != 0;
+        var byWord = (modifiers & (mac ? KeyModifiers.Alt : KeyModifiers.Control)) != 0;
+        var extend = (modifiers & KeyModifiers.Shift) != 0;
+        var alt = (modifiers & KeyModifiers.Alt) != 0;
+        var folds = state.Folds;
+        var selection = state.Selection;
+        var caret = CodeText.Clamp(document, selection.Caret);
+        var collapses = !extend && selection.HasSelection;
+        TextPosition to;
+        switch (key)
+        {
+            case KeyboardKey.LeftArrow when !mac && alt:
+            case KeyboardKey.RightArrow when !mac && alt:
+                return;
+            case KeyboardKey.LeftArrow when mac && command:
+            case KeyboardKey.Home when !command:
+                to = CodeCaret.GetLineStart(document, caret);
+                break;
+            case KeyboardKey.RightArrow when mac && command:
+            case KeyboardKey.End when !command:
+                to = CodeCaret.GetLineEnd(document, caret);
+                break;
+            case KeyboardKey.LeftArrow when collapses && !byWord:
+                to = selection.Start;
+                break;
+            case KeyboardKey.RightArrow when collapses && !byWord:
+                to = selection.End;
+                break;
+            case KeyboardKey.LeftArrow:
+                to = CodeCaret.StepLeft(document, folds, caret, byWord);
+                break;
+            case KeyboardKey.RightArrow:
+                to = CodeCaret.StepRight(document, folds, caret, byWord);
+                break;
+            case KeyboardKey.UpArrow when mac && command:
+            case KeyboardKey.Home:
+                to = default;
+                break;
+            case KeyboardKey.DownArrow when mac && command:
+            case KeyboardKey.End:
+                to = CodeCaret.GetEnd(document, folds);
+                break;
+            case KeyboardKey.UpArrow when !mac && command:
+                state.KeyScrollRows--;
+                return;
+            case KeyboardKey.DownArrow when !mac && command:
+                state.KeyScrollRows++;
+                return;
+            case KeyboardKey.UpArrow:
+                MoveRows(state, document, caret, -1, extend);
+                return;
+            case KeyboardKey.DownArrow:
+                MoveRows(state, document, caret, 1, extend);
+                return;
+            case KeyboardKey.PageUp:
+                state.KeyScrollRows -= state.PageRows;
+                MoveRows(state, document, caret, -state.PageRows, extend);
+                return;
+            case KeyboardKey.PageDown:
+                state.KeyScrollRows += state.PageRows;
+                MoveRows(state, document, caret, state.PageRows, extend);
+                return;
+            default:
+                return;
+        }
+        PutCaret(state, to, extend);
+    }
+
+    /// <summary>Moves the caret <paramref name="rows"/> rows, keeping to the column it held before Up and Down
+    /// began moving it.</summary>
+    private static void MoveRows(CodeViewState state, DecompiledDocument document, TextPosition caret, int rows, bool extend)
+    {
+        var goal = state.Goal;
+        var column = goal != null && goal.Value.At == state.Selection.Caret ? goal.Value.Column : caret.Column;
+        var to = CodeCaret.MoveRows(document, state.Folds, caret, rows, column);
+        PutCaret(state, to, extend);
+        state.Goal = new CaretGoal(to, column);
+    }
+
+    private static void PutCaret(CodeViewState state, TextPosition to, bool extend)
+    {
+        var selection = state.Selection;
+        selection.Select(extend ? selection.Anchor : to, to);
+        if (state.Pending == null)
+            state.Pending = new PendingScroll.ShowCaret();
     }
 
     /// <summary>Runs the code's shortcut the key at <paramref name="index"/> completes, if any; false
@@ -1287,6 +1441,10 @@ public static class CodeViewWidget
             }
         }
 
+        var caret = frame.Caret;
+        if (caret != null)
+            PaintCaret(p, frame, caret.Value, x0, r, index, collapsedFold, chipStart + chipText.Length);
+
         if (frame.GutterWidth <= 0f) return;
         p.FillRect(new UiRect(left, r.Y, frame.GutterWidth, r.Height), frame.Background);
         p.FillRect(new UiRect(left + frame.GutterWidth - frame.SeparatorWidth, r.Y, frame.SeparatorWidth, r.Height), frame.Palette.GutterSeparator);
@@ -1300,6 +1458,21 @@ public static class CodeViewWidget
         }
         if (fold != null && frame.FoldWidth > 0f)
             PaintChevron(p, frame, left + frame.FoldLeft + frame.FoldWidth / 2, r.Y + r.Height / 2, collapsed, fold == frame.HoverFold ? frame.GutterHover : frame.Palette.GutterText);
+    }
+
+    /// <summary><paramref name="caret"/>, on the line <paramref name="index"/> when it stands there, or after the chip of the
+    /// collapsed fold <paramref name="collapsedFold"/>, ending at column <paramref name="chipEnd"/>, when that
+    /// hides it.</summary>
+    private static void PaintCaret(UiPainter p, CodeViewFrame frame, TextPosition caret, float x0, UiRect row, int index, int? collapsedFold, int chipEnd)
+    {
+        int column;
+        if (caret.Line == index)
+            column = caret.Column;
+        else if (collapsedFold != null && caret.Line > index && caret.Line <= frame.Document.Folds[collapsedFold.Value].EndLine)
+            column = chipEnd;
+        else
+            return;
+        p.FillRect(new UiRect(x0 + column * frame.Advance, row.Y, frame.CaretWidth, row.Height), frame.CaretColor);
     }
 
     /// <summary>The line's number, right-aligned, brighter on the highlighted current line.</summary>

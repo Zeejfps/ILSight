@@ -141,6 +141,7 @@
   "display_options.line_numbers": "行番号",
   "display_options.current_line": "現在の行を強調表示",
   "display_options.matching_brackets": "対応するかっこを強調表示",
+  "display_options.usages_at_caret": "キャレット位置のシンボルの使用箇所を強調表示",
   "display_options.omnibar": "パスと検索バー",
   "display_options.tree": "ツリー",
   "display_options.tokens": "メタデータ トークン",

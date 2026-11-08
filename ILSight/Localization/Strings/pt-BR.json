@@ -141,6 +141,7 @@
   "display_options.line_numbers": "Números de linha",
   "display_options.current_line": "Destacar linha atual",
   "display_options.matching_brackets": "Destacar os colchetes correspondentes",
+  "display_options.usages_at_caret": "Destacar os usos no cursor",
   "display_options.omnibar": "Barra de caminho e pesquisa",
   "display_options.tree": "Árvore",
   "display_options.tokens": "Tokens de metadados",

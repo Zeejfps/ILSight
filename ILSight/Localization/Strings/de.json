@@ -141,6 +141,7 @@
   "display_options.line_numbers": "Zeilennummern",
   "display_options.current_line": "Aktuelle Zeile hervorheben",
   "display_options.matching_brackets": "Zugehörige Klammern hervorheben",
+  "display_options.usages_at_caret": "Verwendungen an der Einfügemarke hervorheben",
   "display_options.omnibar": "Pfad- und Suchleiste",
   "display_options.tree": "Baum",
   "display_options.tokens": "Metadaten-Token",

@@ -212,6 +212,7 @@
     "ShowLineNumbers": false,
     "HighlightCurrentLine": true,
     "HighlightMatchingBrackets": false,
+    "HighlightUsagesAtCaret": true,
     "ShowOmnibar": false,
     "UiScale": 1.25,
     "Font": {

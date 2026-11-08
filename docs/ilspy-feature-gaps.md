@@ -16,8 +16,6 @@ Sources: https://github.com/icsharpcode/ILSpy/releases and the `v11.2` source.
   diagnostics endpoint only; upstream also reads the native module list of a .NET Framework process.
 - **Search in the options** (11.2): a search box over the options pages narrows them to the ones
   that match and highlights the hits; the decompiler page also hides the options that don't.
-- **Highlight usages at the caret** (11.2, off by default): every use of the symbol under the caret
-  is marked as the caret moves. We mark them only on a click or a hover.
 
 ## Won't do
 

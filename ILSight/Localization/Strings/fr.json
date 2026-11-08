@@ -141,6 +141,7 @@
   "display_options.line_numbers": "Numéros de ligne",
   "display_options.current_line": "Mettre en évidence la ligne courante",
   "display_options.matching_brackets": "Mettre en évidence les crochets correspondants",
+  "display_options.usages_at_caret": "Mettre en évidence les utilisations au curseur",
   "display_options.omnibar": "Barre de chemin et de recherche",
   "display_options.tree": "Arbre",
   "display_options.tokens": "Jetons de métadonnées",

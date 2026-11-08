@@ -322,7 +322,7 @@ public sealed class CodeViewTests
 
         view.Key(KeyboardKey.PageDown).Frame();
         var paged = view.DrawnText().Single(d => d.Text == $"line {page}").Top;
-        view.Key(KeyboardKey.End).Frame();
+        view.Key(Shortcut.Command(KeyboardKey.End)).Frame();
         var end = view.DrawnText().Any(d => d.Text == "line 999");
 
         Assert.Equal(CodeViewDriver.Origin, paged);

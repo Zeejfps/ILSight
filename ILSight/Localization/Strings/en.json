@@ -146,6 +146,7 @@
   "display_options.line_numbers": "Line numbers",
   "display_options.current_line": "Highlight current line",
   "display_options.matching_brackets": "Highlight matching brackets",
+  "display_options.usages_at_caret": "Highlight usages at the caret",
   "display_options.omnibar": "Path and search bar",
   "display_options.tree": "Tree",
   "display_options.tokens": "Metadata tokens",

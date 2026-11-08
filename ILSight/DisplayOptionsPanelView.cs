@@ -368,8 +368,9 @@ internal static class DisplayOptionsPanelView
         var lineNumbers = Shows(t, words, heading, t.DisplayOptionsLineNumbers);
         var currentLine = Shows(t, words, heading, t.DisplayOptionsCurrentLine);
         var brackets = Shows(t, words, heading, t.DisplayOptionsMatchingBrackets);
+        var usages = Shows(t, words, heading, t.DisplayOptionsUsagesAtCaret);
         var omnibar = Shows(t, words, heading, t.DisplayOptionsOmnibar);
-        if (!font && !fontSize && !lineNumbers && !currentLine && !brackets && !omnibar)
+        if (!font && !fontSize && !lineNumbers && !currentLine && !brackets && !usages && !omnibar)
             return false;
 
         using var section = Section(ui, ui.Memo("code", t, static s => Heading(s.DisplayOptionsCode)));
@@ -409,6 +410,13 @@ internal static class DisplayOptionsPanelView
             var on = display.HighlightMatchingBrackets;
             if (SwitchRow(ui, t.DisplayOptionsMatchingBrackets, ref on, "matching-brackets", on != defaults.HighlightMatchingBrackets))
                 SetDisplayOptions(ui.State, display with { HighlightMatchingBrackets = on });
+        }
+        if (usages)
+        {
+            NextRow(ui, ref rows);
+            var on = display.HighlightUsagesAtCaret;
+            if (SwitchRow(ui, t.DisplayOptionsUsagesAtCaret, ref on, "usages-at-caret", on != defaults.HighlightUsagesAtCaret))
+                SetDisplayOptions(ui.State, display with { HighlightUsagesAtCaret = on });
         }
         if (omnibar)
         {

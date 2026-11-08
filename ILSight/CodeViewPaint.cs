@@ -52,4 +52,9 @@ internal sealed class CodeViewFrame
 
     /// <summary>The bracket at the caret and its match when they are highlighted.</summary>
     public BracketPair? Brackets;
+
+    /// <summary>The caret while it shows, in a focused view and the on half of its blink; else null.</summary>
+    public TextPosition? Caret;
+    public uint CaretColor;
+    public float CaretWidth;
 }

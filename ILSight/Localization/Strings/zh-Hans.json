@@ -141,6 +141,7 @@
   "display_options.line_numbers": "行号",
   "display_options.current_line": "突出显示当前行",
   "display_options.matching_brackets": "突出显示匹配的括号",
+  "display_options.usages_at_caret": "突出显示插入点处符号的用法",
   "display_options.omnibar": "路径和搜索栏",
   "display_options.tree": "树",
   "display_options.tokens": "元数据标记",

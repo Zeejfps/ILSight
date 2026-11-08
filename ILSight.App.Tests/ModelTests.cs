@@ -412,7 +412,7 @@ public sealed class AppSettingsTests : IDisposable
     public void Display_options_round_trip_and_a_font_missing_its_file_is_left_out_alone()
     {
         var settings = SettingsJson.LoadSettings(SettingsFile).Settings;
-        settings.Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, false, 1.25f, new CodeFont("Mono", "/mono.ttf", 1),
+        settings.Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, true, false, 1.25f, new CodeFont("Mono", "/mono.ttf", 1),
             TokenFormat.Hex, true, true, true, false);
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(settings));
 
