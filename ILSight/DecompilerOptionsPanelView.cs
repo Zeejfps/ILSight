@@ -9,8 +9,8 @@ namespace ILSight;
 /// <summary>The decompiler's toggles, grouped by the C# version that brought each feature, newest
 /// first, then the rest. Every change shows in the open documents at once. Features newer than the
 /// picked version are greyed out but keep their state for when a newer version is picked. A search
-/// narrows the groups to the toggles it matches, every group open while it does, and a group's box
-/// then sets only the toggles shown.</summary>
+/// narrows the groups to the toggles it matches, every group open while it does, the words it found
+/// marked in their labels, and a group's box then sets only the toggles shown.</summary>
 internal static class DecompilerOptionsPanelView
 {
     internal sealed record Section(string Key, DecompilerToggleGroup Group, CSharpVersion? Version, DecompilerToggle[] Toggles);
@@ -188,8 +188,15 @@ internal static class DecompilerOptionsPanelView
         }))
         {
             var on = DecompilerToggles.IsOn(options, toggle);
-            if (ui.Checkbox(Label(t, toggle), ref on, id: toggle.Name, enabled: DecompilerToggles.Allows(options, toggle),
-                    width: Sizing.Grow(), bold: DecompilerToggles.IsChanged(options, toggle)))
+            var label = Label(t, toggle);
+            var enabled = DecompilerToggles.Allows(options, toggle);
+            var bold = DecompilerToggles.IsChanged(options, toggle);
+            var style = ui.StyleText(enabled ? null : theme.TextDisabled, bold: bold);
+            var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.DecompilerOptionsQuery, label, style);
+            var flipped = runs != null
+                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui), ref on, toggle.Name, enabled, Sizing.Grow())
+                : ui.Checkbox(label, ref on, id: toggle.Name, enabled: enabled, width: Sizing.Grow(), bold: bold);
+            if (flipped)
                 Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
         }
     }

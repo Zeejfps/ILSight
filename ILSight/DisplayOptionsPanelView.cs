@@ -15,7 +15,7 @@ namespace ILSight;
 /// code's font size and switches for line numbers, the current line's highlight, matching brackets and the omnibar,
 /// then how the tree writes metadata tokens, whether it lists empty metadata tables, whether it nests namespaces and whether what it picks shows in a preview tab. Each option is a row of its card, named on the left, with its control at the right. Every change
 /// shows at once; an option changed from its default has a bold name. A search over them shows only the
-/// rows it matches, and the cards that have any.</summary>
+/// rows it matches, and the cards that have any, with the words it found marked in their names and descriptions.</summary>
 internal static class DisplayOptionsPanelView
 {
     private const string PaneId = "display-options";
@@ -657,11 +657,35 @@ internal static class DisplayOptionsPanelView
         });
         using (ui.Column(new Box { Width = TitleWidth(ui, title, changed), Gap = theme.GapTight }))
         {
-            ui.Text(title, new Box { Width = Sizing.Grow() }, bold: changed, overflow: TextOverflow.Ellipsis);
+            var query = ui.State.DisplayOptionsQuery;
+            var mark = OptionSearch.GetMarkBackground(ui);
+            var titleRuns = OptionSearch.EnsureMarkedRuns(ui, query, title, ui.StyleText(bold: changed));
+            if (titleRuns != null)
+            {
+                using (ui.Box(new Box { Width = Sizing.Grow(), Clip = true }))
+                    ui.RichText(titleRuns, wrap: false, markBackground: mark);
+            }
+            else
+            {
+                ui.Text(title, new Box { Width = Sizing.Grow() }, bold: changed, overflow: TextOverflow.Ellipsis);
+            }
             if (description != null)
-                ui.Text(description, new Box { Width = Sizing.Percent(WholeWidth) }, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
+                Description(ui, description, query, mark);
         }
         return row;
+    }
+
+    /// <summary>A row's description, muted and small, wrapping in the title's width, the hits of
+    /// <paramref name="query"/> in it marked on <paramref name="mark"/>.</summary>
+    private static void Description(Ui<UiState> ui, string description, string query, uint mark)
+    {
+        var theme = ui.Theme;
+        var box = new Box { Width = Sizing.Percent(WholeWidth) };
+        var runs = OptionSearch.EnsureMarkedRuns(ui, query, description, ui.StyleText(theme.TextMuted, theme.FontSizeSmall), part: 1);
+        if (runs != null)
+            ui.RichText(runs, box, markBackground: mark);
+        else
+            ui.Text(description, box, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
     }
 
     /// <summary>The title's share of a row: what the control leaves. The description wraps in it and

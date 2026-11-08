@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using System.Globalization;
 using ILSight.Core;
 using ILSight.Localization;
@@ -9,6 +10,77 @@ namespace ILSight.App.Tests;
 public sealed class OptionSearchTests
 {
     private static readonly Strings En = Strings.For(Locale.En);
+
+    /// <summary>Whether a line of the last frame reads <paramref name="text"/>: the texts drawn at one height
+    /// joined from left to right, as a marked label is drawn in pieces.</summary>
+    private static bool DrewLine(AppDriver app, string text) =>
+        app.Frames.TextRects()
+            .GroupBy(t => MathF.Round(t.Rect.Y))
+            .Any(line => string.Concat(line.OrderBy(t => t.Rect.X).Select(t => t.Text)).Contains(text, StringComparison.Ordinal));
+
+    /// <summary>The rects of the last frame filled with the code's find-match color, as marks are.</summary>
+    private static List<UiRect> Marks(AppDriver app) =>
+        app.Frames.Canvas.Rects.Where(r => r.Inputs.Style.BackgroundColor == BuiltInThemes.Dark.Code.FindMatch)
+            .Select(r => app.Frames.ToUi(r.Inputs.Position)).ToList();
+
+    private static List<(int Start, int End)> Hits(string query, string text) =>
+        OptionSearch.FindHits(CultureInfo.InvariantCulture, query, text);
+
+    [Fact]
+    public void The_hits_of_a_search_are_every_place_each_word_is_found_ignoring_case_and_accents()
+    {
+        Assert.Equal([(0, 4), (10, 14)], Hits("line", "Line, the line"));
+        Assert.Equal([(0, 4), (10, 15)], Hits("CODE opcoe", "Codes and opções"));
+        Assert.Empty(Hits("tree", "Line numbers"));
+        Assert.Empty(Hits("   ", "Line numbers"));
+    }
+
+    [Fact]
+    public void Hits_that_overlap_or_touch_are_joined()
+    {
+        Assert.Equal([(0, 4), (5, 9)], Hits("line ine numb", "Line numbers"));
+        Assert.Equal([(0, 4)], Hits("li ne", "Line numbers"));
+    }
+
+    [Fact]
+    public void Marked_runs_cover_the_text_with_only_the_hits_marked()
+    {
+        var style = new ZGF.Gui.TextStyle();
+
+        var runs = OptionSearch.CreateMarkedRuns("Show line numbers", [(5, 9)], style);
+
+        Assert.Equal(["Show ", "line", " numbers"], runs.Select(r => r.Text));
+        Assert.Equal([false, true, false], runs.Select(r => r.IsMarked));
+    }
+
+    [Fact]
+    public void A_display_option_marks_the_words_the_search_found_in_its_name()
+    {
+        var app = AppDriver.Opened(width: 1600f);
+        OpenDisplayOptions(app.Ui);
+        app.Run();
+        Assert.Empty(Marks(app));
+
+        app.Ui.DisplayOptionsQuery = "numbers";
+        app.Run();
+
+        var mark = Assert.Single(Marks(app));
+        var line = app.TextRect("Line ");
+        Assert.True(mark.X >= line.X + line.Width - 1f && MathF.Abs(mark.Y - line.Y) < line.Height, $"mark at {mark}, 'Line ' at {line}");
+        Assert.True(app.Frames.Drew("numbers"));
+    }
+
+    [Fact]
+    public void A_decompiler_option_marks_the_words_the_search_found_in_its_label()
+    {
+        var app = AppDriver.Opened(width: 1600f);
+        OpenDecompilerOptions(app.Ui);
+        app.Ui.DecompilerOptionsQuery = "switch";
+        app.Run();
+
+        Assert.NotEmpty(Marks(app));
+        Assert.True(DrewLine(app, "switch expressions"));
+    }
 
     private static bool IsMatch(string query, string first, string? second = null, string? third = null) =>
         OptionSearch.IsMatch(CultureInfo.InvariantCulture, OptionSearch.SplitWords(query), first, second, third);
@@ -89,8 +161,8 @@ public sealed class OptionSearchTests
         app.Ui.DisplayOptionsQuery = "line";
         app.Run();
 
-        Assert.True(app.Frames.Drew("Line numbers"));
-        Assert.True(app.Frames.Drew("Highlight current line"));
+        Assert.True(DrewLine(app, "Line numbers"));
+        Assert.True(DrewLine(app, "Highlight current line"));
         Assert.False(app.Frames.Drew("UI scale"));
         Assert.False(app.Frames.Drew("TREE"));
         Assert.False(app.Frames.Drew("Reset to defaults"));

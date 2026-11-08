@@ -14,8 +14,6 @@ Sources: https://github.com/icsharpcode/ILSpy/releases and the `v11.2` source.
 - **Open from the GAC** (Windows).
 - **Open from a running .NET Framework process** (Windows): we find .NET (Core) processes by their
   diagnostics endpoint only; upstream also reads the native module list of a .NET Framework process.
-- **Search in the options** (11.2): a search box over the options pages narrows them to the ones
-  that match and highlights the hits; the decompiler page also hides the options that don't.
 
 ## Won't do
 
