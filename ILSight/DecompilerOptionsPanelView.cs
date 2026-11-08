@@ -10,7 +10,7 @@ namespace ILSight;
 /// first, then the rest. Every change shows in the open documents at once. Features newer than the
 /// picked version are greyed out but keep their state for when a newer version is picked. A search
 /// narrows the groups to the toggles it matches, every group open while it does, the words it found
-/// marked in their labels, and a group's box then sets only the toggles shown.</summary>
+/// marked in their labels and the groups' titles, and a group's box then sets only the toggles shown.</summary>
 internal static class DecompilerOptionsPanelView
 {
     internal sealed record Section(string Key, DecompilerToggleGroup Group, CSharpVersion? Version, DecompilerToggle[] Toggles);
@@ -125,7 +125,13 @@ internal static class DecompilerOptionsPanelView
             var mark = isFolded ? icons.OptionsGroupFolded : icons.OptionsGroupUnfolded;
             ui.Icon(new UiIcon(mark, theme.TextMuted));
             var all = State(section, options);
-            if (ui.Checkbox(Title(t, section), ref all, id: "all", enabled: allowed, width: Sizing.Grow(), bold: Changed(section, options)))
+            var title = Title(t, section);
+            var bold = Changed(section, options);
+            var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.DecompilerOptionsQuery, title, ui.StyleText(allowed ? null : theme.TextDisabled, bold: bold));
+            var flipped = runs != null
+                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui), ref all, "all", allowed, Sizing.Grow())
+                : ui.Checkbox(title, ref all, id: "all", enabled: allowed, width: Sizing.Grow(), bold: bold);
+            if (flipped)
                 Commands.Later(ui.State, (toggles: section.Toggles, on: all == true), static (a, s) => SetDecompilerToggles(a, s.toggles, s.on));
         }
         if (!allowed && tooNew != null)

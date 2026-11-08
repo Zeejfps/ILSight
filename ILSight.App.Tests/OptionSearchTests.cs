@@ -71,6 +71,18 @@ public sealed class OptionSearchTests
     }
 
     [Fact]
+    public void A_decompiler_options_group_marks_the_words_the_search_found_in_its_title()
+    {
+        var app = AppDriver.Opened(width: 1600f);
+        OpenDecompilerOptions(app.Ui);
+        app.Ui.DecompilerOptionsQuery = "F# code";
+        app.Run();
+
+        var title = app.TextRect("F#");
+        Assert.Contains(Marks(app), m => MathF.Abs(m.Y - title.Y) < title.Height && m.X <= title.X && m.X + m.Width >= title.X + title.Width - 1f);
+    }
+
+    [Fact]
     public void A_decompiler_option_marks_the_words_the_search_found_in_its_label()
     {
         var app = AppDriver.Opened(width: 1600f);
