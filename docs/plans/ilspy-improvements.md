@@ -59,8 +59,20 @@ Open issues found in `ILSight`, `ILSight.Core`, `ZGF.Gui.Immediate` and `ZGF.Gui
 2. **Lookup dictionaries never trim.** `_textStyles` (`Ui.cs:40`, never cleared), `_lineHeights` (`:44`) and
    `_cells` (`:45`, cleared only on DPI change) grow with animated colours or zoomed sizes. Fix: age them like
    `FrameCache`.
-3. **Small per-frame costs.** `UiInput.cs:213` allocates a string per typed character; caret positions are
-   measured uncached every frame (`UiTextField.cs:228-230, 321-322`, `UiSelectableText.cs:122, 132-133, 152-162`).
+3. **Caret offsets are re-summed on every measure.** `Ui.MeasureText(text, length)` (`Ui.cs:684-685`) calls
+   `MeasureTextPrefix` (`ZGF.Gui/RenderedCanvasBase.cs:1264`), which finds the cached shape but copies every
+   glyph into a buffer and sums the prefix, each call O(n). Past 256 characters the buffer is a new
+   `ShapedGlyph[text.Length * 2]` per call. A focused field does this for caret and anchor every frame it draws
+   (`UiTextField.cs:228-229`, two more per block while composing at `:321-322`), the caret blink redraws twice a
+   second, an active `SelectableText` does it per frame (`UiSelectableText.cs:122, 132-133`), and `CaretAt`
+   (`:146-164`) does ~log n per frame while dragging. Fix: `ICanvas.MeasureTextPrefixes(text, style, offsets)`
+   that sums each glyph's advance into its cluster's slot once, reading the backend's cached shape without
+   copying, and a `FrameCache<StyledText, float[]>` in `Ui` so `MeasureText(text, length)` is a lookup.
+4. **Composing text allocates every frame.** `UiTextField.cs:222` builds `shown` with `text.Insert(...)` each frame
+   while an input method is composing. Fix: keep it in `TextFieldState`, keyed on text, caret and preedit.
+5. **A string per typed character.** `UiInput.Character` (`UiInput.cs:213`) appends
+   `new Rune(codePoint).ToString()`, though `Seal` (`:312`) builds the frame's string anyway. Per keystroke, not per
+   frame. Fix: `EncodeToUtf16` into a `stackalloc char[2]` and append the span.
 
 ## Structure
 
