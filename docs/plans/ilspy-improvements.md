@@ -68,9 +68,6 @@ Open issues found in `ILSight`, `ILSight.Core`, `ZGF.Gui.Immediate` and `ZGF.Gui
    (`:146-164`) does ~log n per frame while dragging. Fix: `ICanvas.MeasureTextPrefixes(text, style, offsets)`
    that sums each glyph's advance into its cluster's slot once, reading the backend's cached shape without
    copying, and a `FrameCache<StyledText, float[]>` in `Ui` so `MeasureText(text, length)` is a lookup.
-4. **Composing text allocates every frame.** `UiTextField.cs:222` builds `shown` with `text.Insert(...)` each frame
-   while an input method is composing. Fix: keep it in `TextFieldState`, keyed on text, caret and preedit.
-
 ## Structure
 
 1. **Widget results are inconsistent.** `TextField` returns "submitted", not "changed" (`UiTextField.cs:95-105`),
