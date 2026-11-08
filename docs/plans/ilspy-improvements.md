@@ -56,9 +56,6 @@ Open issues found in `ILSight`, `ILSight.Core`, `ZGF.Gui.Immediate` and `ZGF.Gui
    recursively by concatenation (`ReadTypeName`, `:167-174`), concatenates `type.member` per member (`:133`), and
    each hit runs `FindNode` (`AddResult`, `:355`). Fix: cache qualified names per handle, compare through
    `MetadataStringComparer`, resolve hit nodes lazily.
-2. **Lookup dictionaries never trim.** `_textStyles` (`Ui.cs:40`, never cleared), `_lineHeights` (`:44`) and
-   `_cells` (`:45`, cleared only on DPI change) grow with animated colours or zoomed sizes. Fix: age them like
-   `FrameCache`.
 
 ## Structure
 
