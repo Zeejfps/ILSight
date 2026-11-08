@@ -70,9 +70,6 @@ Open issues found in `ILSight`, `ILSight.Core`, `ZGF.Gui.Immediate` and `ZGF.Gui
    copying, and a `FrameCache<StyledText, float[]>` in `Ui` so `MeasureText(text, length)` is a lookup.
 4. **Composing text allocates every frame.** `UiTextField.cs:222` builds `shown` with `text.Insert(...)` each frame
    while an input method is composing. Fix: keep it in `TextFieldState`, keyed on text, caret and preedit.
-5. **A string per typed character.** `UiInput.Character` (`UiInput.cs:213`) appends
-   `new Rune(codePoint).ToString()`, though `Seal` (`:312`) builds the frame's string anyway. Per keystroke, not per
-   frame. Fix: `EncodeToUtf16` into a `stackalloc char[2]` and append the span.
 
 ## Structure
 
