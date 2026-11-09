@@ -384,9 +384,9 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.UseSetup(picker, Setup());
 
         NuGetPicking.OpenPicker(picker);
-        app.RunUntil(() => picker.Results.Count > 0);
+        app.Frames.WaitUntil(() => picker.Results.Count > 0, Patience);
         app.Frames.Key(KeyboardKey.Enter);
-        app.RunUntil(() => app.AppState.Assemblies.Listed.Count > 0);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count > 0, Patience);
         app.Settle(2);
 
         Assert.False(picker.IsOpen);
@@ -403,13 +403,13 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.UseSetup(picker, Setup());
 
         NuGetPicking.OpenPicker(picker);
-        app.RunUntil(() => picker.Results.Count > 0);
+        app.Frames.WaitUntil(() => picker.Results.Count > 0, Patience);
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("Fixtures/version")).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "1.0.0")).Frame();
         var picked = picker.Version;
         app.Frames.ClickOn(Selector.AtPath("nuget-open")).Frame();
-        app.RunUntil(() => app.AppState.Assemblies.Listed.Count > 0);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count > 0, Patience);
         app.Settle(2);
 
         Assert.Equal("1.0.0", picked?.Text);
@@ -425,7 +425,7 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.UseSetup(picker, Setup());
 
         NuGetPicking.OpenPicker(picker);
-        app.RunUntil(() => picker.Results.Count > 0);
+        app.Frames.WaitUntil(() => picker.Results.Count > 0, Patience);
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Open from NuGet"));
@@ -443,11 +443,11 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.UseSetup(picker, Setup());
 
         NuGetPicking.OpenPicker(picker);
-        app.RunUntil(() => picker.Results.Count > 0);
+        app.Frames.WaitUntil(() => picker.Results.Count > 0, Patience);
         app.Run(2);
         var first = app.Frames.Drew("Page 1 of 3");
         app.Frames.ClickOn(Selector.AtPath("nuget-next")).Frame();
-        app.RunUntil(() => !picker.IsSearching);
+        app.Frames.WaitUntil(() => !picker.IsSearching, Patience);
         app.Run(2);
 
         Assert.True(first);
@@ -465,9 +465,9 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.UseSetup(picker, Setup());
 
         NuGetPicking.OpenPicker(picker);
-        app.RunUntil(() => picker.Results.Count > 0);
+        app.Frames.WaitUntil(() => picker.Results.Count > 0, Patience);
         var icon = NuGetPicking.EnsureIcon(picker, picker.Results[0])!;
-        app.RunUntil(() => icon.Shown != null);
+        app.Frames.WaitUntil(() => icon.Shown != null, Patience);
         app.Run(2);
         var drawn = app.Frames.Canvas.Images.Any(i => i.Inputs.ImageId == icon.ImageId);
         app.Frames.Key(KeyboardKey.Escape);
@@ -486,7 +486,7 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.UseSetup(picker, Setup());
 
         NuGetPicking.OpenPicker(picker);
-        app.RunUntil(() => picker.Results.Count > 0);
+        app.Frames.WaitUntil(() => picker.Results.Count > 0, Patience);
         app.Run(2);
 
         Assert.Null(NuGetPicking.EnsureIcon(picker, picker.Results[0]));
@@ -506,9 +506,9 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.UseSetup(picker, Setup());
 
         NuGetPicking.OpenPicker(picker);
-        app.RunUntil(() => picker.Results.Count > 0);
+        app.Frames.WaitUntil(() => picker.Results.Count > 0, Patience);
         app.Run(2);
-        app.RunUntil(() => app.Frames.Drew("Dep"));
+        app.Frames.WaitUntil(() => app.Frames.Drew("Dep"), Patience);
 
         Assert.True(app.Frames.Drew("Verified owner"));
         Assert.True(app.Frames.Drew("1,234,567"));

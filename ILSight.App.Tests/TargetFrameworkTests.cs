@@ -72,7 +72,7 @@ public sealed class TargetFrameworkTests
     {
         var app = AppDriver.Opened(width: 1600f);
         OpenAssembly(app.AppState, SampleAppPath);
-        app.RunUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)));
+        app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)), Patience);
         var fixtures = FixturesOf(app.AppState);
         var sample = SampleOf(app.AppState);
         var tree = app.Ui.Tree;
@@ -111,7 +111,7 @@ public sealed class TargetFrameworkTests
         using var temp = new TempDir();
         var app = new AppDriver();
         OpenAssembly(app.AppState, WritePackage(temp));
-        app.RunUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
         var package = app.AppState.Assemblies.Listed[0].Root;
         var folder = package.Child("lib/net10.0");

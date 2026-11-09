@@ -135,7 +135,7 @@ public sealed class CloseAssembliesTests
     {
         var app = AppDriver.Opened();
         OpenAssembly(app.AppState, KeyboardPath);
-        app.RunUntil(() => app.AppState.Assemblies.Listed.Count == 2);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
@@ -144,7 +144,7 @@ public sealed class CloseAssembliesTests
         closer.Order[1].Included = true;
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
-        app.RunUntil(() => app.AppState.Assemblies.Listed.Count == 1);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 1, Patience);
 
         Assert.False(closer.IsOpen);
         Assert.Equal(AppStateDriver.FixturePath, Assert.Single(app.AppState.Assemblies.Listed).FilePath.Text);

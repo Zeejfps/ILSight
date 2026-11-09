@@ -80,7 +80,7 @@ public sealed class UpdateTests : IDisposable
     }
 
     private static void AwaitStatus<T>(AppDriver app) where T : UpdateStatus =>
-        app.RunUntil(() => app.AppState.Updates.Status is T);
+        app.Frames.WaitUntil(() => app.AppState.Updates.Status is T, Patience);
 
     private static void OpenAbout(AppDriver app)
     {
@@ -142,8 +142,8 @@ public sealed class UpdateTests : IDisposable
 
         CheckOnStartup(uneventful.AppState);
         CheckOnStartup(failing.AppState);
-        uneventful.RunUntil(() => uneventful.AppState.Updates.Status is UpdateStatus.Idle);
-        failing.RunUntil(() => failing.AppState.Updates.Status is UpdateStatus.Idle);
+        uneventful.Frames.WaitUntil(() => uneventful.AppState.Updates.Status is UpdateStatus.Idle, Patience);
+        failing.Frames.WaitUntil(() => failing.AppState.Updates.Status is UpdateStatus.Idle, Patience);
 
         Assert.Empty(failing.AppState.Errors.Entries);
     }
@@ -233,7 +233,7 @@ public sealed class UpdateTests : IDisposable
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText(Strings.En.AboutRestartToUpdate("9.0.0"))).Frame(2);
-        app.RunUntil(() => app.Frames.QuitRequested);
+        app.Frames.WaitUntil(() => app.Frames.QuitRequested, Patience);
 
         Assert.Same(feed.Downloaded, feed.Applied);
     }

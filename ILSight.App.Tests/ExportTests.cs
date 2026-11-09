@@ -97,12 +97,12 @@ public sealed class ExportTests : IDisposable
     {
         var app = new AppDriver();
         OpenAssembly(app.AppState, SampleAppPath);
-        app.RunUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)));
+        app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)), Patience);
         app.Settle(2);
         app.Frames.FilePicker.Answer = _temp.Path;
 
         app.PickFromTreeMenu(SampleOf(app.Driver).Name, "Create diagram…");
-        app.RunUntil(() => app.Frames.OpenedFiles.Count == 1);
+        app.Frames.WaitUntil(() => app.Frames.OpenedFiles.Count == 1, Patience);
 
         var page = Path.Combine(_temp.Path, "SampleApp diagram", "index.html");
         var report = Assert.Single(app.AppState.FinishedExports);

@@ -6,7 +6,6 @@ namespace ILSight.App.Tests;
 
 public sealed class CodeViewTooltipTests
 {
-    private const double PollSeconds = 0.05;
     private const double RestSeconds = 2;
     private const float WindowHeight = 700f;
     private const double LeaveGraceSeconds = 0.3;
@@ -22,10 +21,14 @@ public sealed class CodeViewTooltipTests
         return view;
     }
 
-    /// <summary>Runs frames until <paramref name="text"/> is drawn, as the lookup runs in the background.</summary>
+    /// <summary>Runs the hover out: its delay, the lookup it starts in the background, and the delay before the
+    /// tooltip shows what the lookup found; then <paramref name="text"/> is drawn.</summary>
     private static void RunUntilDrawn(CodeViewDriver view, string text)
     {
-        Poll.Until(() => view.Frames.Drew(text), () => view.Frames.Wait(PollSeconds).Frame());
+        view.Frames.Settle(SettleSeconds);
+        view.Frames.WaitUntil(() => !view.Tooltips!.IsLookingUp, Patience);
+        view.Frames.Settle(SettleSeconds);
+        Assert.True(view.Frames.Drew(text), $"'{text}' was not drawn");
     }
 
     private static void RestOn(CodeViewDriver view, string text)

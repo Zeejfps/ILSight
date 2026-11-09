@@ -17,7 +17,7 @@ public sealed class AssemblyMenuTests
         var missing = temp.PathOf("Missing.dll");
         var app = AppDriver.Opened();
         OpenAssemblies(app.AppState, [PathOf(missing), PathOf(CoreLibPath)]);
-        app.RunUntil(() => app.AppState.Assemblies.Listed.Count == 3);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 3, Patience);
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
@@ -82,9 +82,9 @@ public sealed class AssemblyMenuTests
         var internalType = app.Fixture("Hidden").Definition;
 
         ShowInApiReference(app.AppState, greeter);
-        app.RunUntil(() => app.Frames.OpenedUrls.Count == 1);
+        app.Frames.WaitUntil(() => app.Frames.OpenedUrls.Count == 1, Patience);
         ShowInApiReference(app.AppState, internalType);
-        app.RunUntil(() => app.AppState.Errors.Entries.Count == 1);
+        app.Frames.WaitUntil(() => app.AppState.Errors.Entries.Count == 1, Patience);
 
         Assert.EndsWith("/ilsight.app.tests.fixtures.greeter", app.Frames.OpenedUrls[0]);
         Assert.StartsWith("Hidden has no page in the .NET API reference", app.AppState.Errors.Entries[0].Words().FullText);
@@ -100,7 +100,7 @@ public sealed class AssemblyMenuTests
 
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Load dependencies")).Frame();
-        app.RunUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"), Patience);
         app.Settle(2);
 
         var names = app.Ui.Tree.Roots.Select(r => r.Assembly.Name).ToList();

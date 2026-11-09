@@ -13,7 +13,6 @@ namespace ILSight.App.Tests;
 public sealed class DiagramViewTests
 {
     private const string VehicleDiagram = "Vehicle diagram";
-    private const double PollSeconds = 0.05;
     private const float Near = 0.5f;
 
     /// <summary>How far in from the diagram's left its toolbar draws its first icon.</summary>
@@ -31,10 +30,11 @@ public sealed class DiagramViewTests
         return app;
     }
 
-    /// <summary>Runs frames until the active tab's diagram is laid out as it is now and its cards stopped moving.</summary>
+    /// <summary>Waits for the active tab's diagram to be laid out as it is now, and runs its cards' move out.</summary>
     private static void SettleDiagram(AppDriver app)
     {
-        app.RunUntil(() => IsLaidOut(app));
+        app.RunOut();
+        Assert.True(IsLaidOut(app));
         app.Run();
     }
 
@@ -358,8 +358,9 @@ public sealed class DiagramViewTests
         var app = PickFromTree("Vehicle", "Show in diagram");
 
         app.Frames.MovePointer(CardText(app, "Mileage() : int"));
+        app.RunOut();
 
-        Poll.Until(() => app.Frames.Drew("How far the vehicle has gone."), () => app.Frames.Wait(PollSeconds).Frame());
+        Assert.True(app.Frames.Drew("How far the vehicle has gone."));
     }
 
     [Fact]

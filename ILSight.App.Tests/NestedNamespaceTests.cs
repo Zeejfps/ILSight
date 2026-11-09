@@ -57,7 +57,7 @@ public sealed class NestedNamespaceTests
         var fixtures = app.Node(AppStateDriver.FixturesNamespace);
 
         Trees.ExpandNamespaces(tree);
-        app.RunUntil(() => tree.View.IsExpanded(fixtures));
+        app.Frames.WaitUntil(() => tree.View.IsExpanded(fixtures), Patience);
 
         Assert.All(EnclosingNamespaces, name => Assert.True(tree.View.IsExpanded(app.Node(name))));
         Assert.True(tree.View.IsExpanded(fixtures));

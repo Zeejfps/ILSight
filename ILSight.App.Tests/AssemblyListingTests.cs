@@ -484,7 +484,7 @@ public sealed class AssemblyListingTests
         var folder = Path.GetDirectoryName(other)!;
 
         app.Frames.DropFiles(folder, other).Frame();
-        app.RunUntil(() => AssemblyListing.ListFilePaths(app.AppState.Assemblies).Contains(PathOf(other)));
+        app.Frames.WaitUntil(() => AssemblyListing.ListFilePaths(app.AppState.Assemblies).Contains(PathOf(other)), Patience);
 
         Assert.Equal([AppStateDriver.FixturePath, other], AssemblyListing.ListFilePaths(app.AppState.Assemblies).Select(static p => p.Text));
     }

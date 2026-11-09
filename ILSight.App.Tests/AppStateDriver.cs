@@ -160,6 +160,13 @@ internal static class Screens
 internal sealed class AppStateDriver
 {
     public const string FixturesAssembly = "ILSight.App.Tests";
+
+    /// <summary>The most virtual time a test lets pass for what moves or waits on the clock to finish, as a
+    /// search's debounce or a diagram's cards gliding into place.</summary>
+    public const double SettleSeconds = 10;
+
+    /// <summary>The most real time a test waits for the UI to be ready or a condition to hold.</summary>
+    public static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
     public const string FixturesNamespace = "ILSight.App.Tests.Fixtures";
 
     private readonly PostedActions _posted = PostedActions.OfThisTest();
@@ -367,21 +374,28 @@ internal sealed class AppDriver
 
     public void Run(int frames = 1) => Frames.Frame(frames);
 
-    /// <summary>Runs frames until <paramref name="done"/>.</summary>
-    public void RunUntil(Func<bool> done) => Poll.Until(done, () => Frames.Frame());
 
     /// <summary>Waits until the UI is ready, with the background work done and a frame run after it, then runs
     /// <paramref name="frames"/> frames.</summary>
     public void Settle(int frames = 0)
     {
-        Frames.WaitUntilReady(StepTimeout);
+        Frames.WaitUntilReady(Patience);
         Run(frames);
     }
 
-    /// <summary>Runs frames without advancing time, each pumping the app state first, until none is asked for.</summary>
-    private void RunFramesInPlace() => Frames.WaitUntil(static () => true, StepTimeout);
+    /// <summary>Runs out what waits on the clock and the work it starts: virtual time until only ambient updates are
+    /// pending, as a search's debounce, then the background work that started, then the clock again for what
+    /// that set moving, as cards gliding to a new layout.</summary>
+    public void RunOut()
+    {
+        Frames.Settle(SettleSeconds);
+        Settle();
+        Frames.Settle(SettleSeconds);
+    }
 
-    private static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(30);
+    /// <summary>Runs frames without advancing time, each pumping the app state first, until none is asked for.</summary>
+    private void RunFramesInPlace() => Frames.WaitUntil(static () => true, Patience);
+
 
     /// <summary>Shows <paramref name="node"/> as <see cref="AppStateDriver.Show"/>, then runs <paramref name="frames"/> frames.</summary>
     public void Show(BrowseNode node, int frames = 0, bool inNewTab = false)

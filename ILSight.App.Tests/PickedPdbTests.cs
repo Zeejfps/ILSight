@@ -18,13 +18,13 @@ public sealed class PickedPdbTests
         var copy = CopyFixtureWithoutPdb(temp);
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
         OpenAssembly(app.AppState, copy);
-        app.RunUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(copy)));
+        app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(copy)), Patience);
         app.Settle(2);
         Assert.Null(LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver)));
         app.Frames.FilePicker.Answer = FixturePdb;
 
         app.PickFromTreeMenu(OpenAssemblyOf(app.Driver).Name, "Select PDB…");
-        app.RunUntil(() => app.AppState.Assemblies.Pdbs.All.Count > 0);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Pdbs.All.Count > 0, Patience);
         app.Settle(2);
 
         Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver))!.SourceFileName);

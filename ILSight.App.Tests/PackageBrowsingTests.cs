@@ -19,7 +19,7 @@ public sealed class PackageBrowsingTests
         var app = new AppDriver();
 
         OpenAssembly(app.AppState, WritePackage(temp));
-        app.RunUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
 
         Assert.Equal(NodeIcon.Package, Assert.Single(app.Ui.Tree.Roots).Icon);
@@ -128,7 +128,7 @@ public sealed class PackageBrowsingTests
 
         app.Frames.FilePicker.Answer = folder;
         app.PickFromTreeMenu(PackageName, "Extract all files…");
-        app.RunUntil(() => app.AppState.FinishedExports.Count == 1);
+        app.Frames.WaitUntil(() => app.AppState.FinishedExports.Count == 1, Patience);
 
         var report = app.AppState.FinishedExports[0];
         var dll = Path.Combine(folder, "lib", "net10.0", Path.GetFileName(AppStateDriver.FixturePath));
@@ -142,7 +142,7 @@ public sealed class PackageBrowsingTests
     {
         var app = new AppDriver();
         OpenAssembly(app.AppState, WritePackage(temp));
-        app.RunUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
         return app;
     }

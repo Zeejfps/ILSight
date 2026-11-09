@@ -84,7 +84,7 @@ public sealed class SavedDocumentsTests : IDisposable
     /// <summary>Runs frames until the diagram of <paramref name="tab"/> is laid out and its cards stopped moving.</summary>
     private static void SettleDiagram(AppDriver app, DocumentTab tab)
     {
-        app.RunUntil(() => IsLaidOut(app, tab));
+        app.Frames.WaitUntil(() => IsLaidOut(app, tab), Patience);
         app.Run();
     }
 

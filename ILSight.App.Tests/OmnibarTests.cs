@@ -61,8 +61,11 @@ public sealed class OmnibarTests
     {
         var omnibar = app.Ui.Omnibar;
         app.Frames.Key(Shortcuts.OmnibarSearch).Frame(2);
-        app.Frames.Type(query).Frame().Wait(1);
-        app.RunUntil(() => !omnibar.Search.IsBusy && omnibar.Search.ShowsQuery && omnibar.SuggestionCount > moreThan);
+        app.Frames.Type(query).Frame();
+        app.RunOut();
+        Assert.False(omnibar.Search.IsBusy);
+        Assert.True(omnibar.Search.ShowsQuery);
+        Assert.True(omnibar.SuggestionCount > moreThan, $"{omnibar.SuggestionCount} suggestions");
     }
 
     [Fact]

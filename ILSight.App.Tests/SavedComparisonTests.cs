@@ -24,11 +24,11 @@ public sealed class SavedComparisonTests : IDisposable
     {
         var app = new AppDriver(settings: _temp.Settings());
         OpenAssemblies(app.AppState, [PathOf(LeftPath), PathOf(RightPath)]);
-        app.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, Patience);
         app.Settle(2);
         var assemblies = app.AppState.Assemblies.Assemblies;
         CompareAssemblies(app.AppState, assemblies[0], assemblies[1], Names.Comparison(assemblies[0]));
-        app.RunUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null, Patience);
         app.Settle(2);
         return app;
     }
@@ -38,7 +38,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
         var next = new AppDriver(settings: _temp.Settings());
         RestoreActiveAssemblyList(next.AppState);
-        next.RunUntil(() => FindComparison(next)?.Diff != null);
+        next.Frames.WaitUntil(() => FindComparison(next)?.Diff != null, Patience);
         next.Settle(2);
         return next;
     }
@@ -109,7 +109,7 @@ public sealed class SavedComparisonTests : IDisposable
 
         var next = new AppDriver(settings: _temp.Settings());
         RestoreActiveAssemblyList(next.AppState);
-        next.RunUntil(() => FindComparison(next)?.Failure != null);
+        next.Frames.WaitUntil(() => FindComparison(next)?.Failure != null, Patience);
 
         Assert.Equal(new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll"), FindComparison(next)!.Failure);
     }

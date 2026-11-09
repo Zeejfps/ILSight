@@ -204,7 +204,7 @@ public sealed class ComparisonTests
         PickCompareWith(app);
 
         app.Frames.ClickOn(Selector.AtPath("compare-picker-compare")).Frame();
-        app.RunUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null, Patience);
         app.Settle(2);
 
         Assert.False(app.Ui.ComparisonPicker.IsOpen);
@@ -222,7 +222,7 @@ public sealed class ComparisonTests
         Assert.True(app.TextRect(app.Ui.Icons.ComparisonSwap).Y < app.TextRect(Compared).Y);
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-2/swap")).Frame();
-        app.RunUntil(() => comparison.Diff!.LeftName == RightName);
+        app.Frames.WaitUntil(() => comparison.Diff!.LeftName == RightName, Patience);
         app.Settle(2);
 
         Assert.Equal(LeftPath, comparison.RightPath.Text);
@@ -249,7 +249,7 @@ public sealed class ComparisonTests
     {
         var app = OpenBothOnScreen();
         CompareAssemblies(app.AppState, Opened(app.Driver, LeftPath), Opened(app.Driver, RightPath), Names.Comparison(Opened(app.Driver, LeftPath)));
-        app.RunUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null, Patience);
         app.Settle(2);
         return app;
     }
@@ -258,7 +258,7 @@ public sealed class ComparisonTests
     {
         var app = new AppDriver(width: 1400f);
         OpenAssemblies(app.AppState, [PathOf(LeftPath), PathOf(RightPath)]);
-        app.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, Patience);
         app.Settle(2);
         return app;
     }

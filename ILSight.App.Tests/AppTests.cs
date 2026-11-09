@@ -19,8 +19,10 @@ public sealed class AppTests
         var app = AppDriver.Opened(width);
         OpenSearch(app.Ui);
         app.Run();
-        app.Frames.Type(text).Frame().Wait(1);
-        app.RunUntil(() => !app.Ui.Search.IsBusy && app.Ui.Search.Rows.Count > moreRowsThan);
+        app.Frames.Type(text).Frame();
+        app.RunOut();
+        Assert.False(app.Ui.Search.IsBusy);
+        Assert.True(app.Ui.Search.Rows.Count > moreRowsThan, $"{app.Ui.Search.Rows.Count} rows");
         return app;
     }
 
@@ -31,7 +33,7 @@ public sealed class AppTests
         view.SetExpanded(app.Node(), true);
         view.SetExpanded(app.Node(AppStateDriver.FixturesNamespace), true);
         view.Refresh();
-        app.RunUntil(() => app.Frames.Drew(until));
+        app.Frames.WaitUntil(() => app.Frames.Drew(until), Patience);
         return app;
     }
 
@@ -436,7 +438,7 @@ public sealed class AppTests
         Assert.True(icon.Right <= events.X && events.X - icon.Right < 16f, $"the events icon ends at {icon.Right}, its label starts at {events.X}");
         Assert.True(MathF.Abs(icon.Y + icon.Height / 2 - (events.Y + events.Height / 2)) < 4f);
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
-        app.RunUntil(() => app.Ui.Search is { IsBusy: false, Rows.Count: > 0 });
+        app.Frames.WaitUntil(() => app.Ui.Search is { IsBusy: false, Rows.Count: > 0 }, Patience);
 
         Assert.Equal(SearchKinds.Methods, app.Ui.Search.Kinds);
         Assert.All(app.Ui.Search.Rows, r => Assert.Equal(NodeIcon.Method, r.Node.Icon));
