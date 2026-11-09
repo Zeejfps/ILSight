@@ -157,7 +157,7 @@ internal static class DiagramView
             view.LaidOutVersion = view.MeasuredVersion;
         Diagrams.AdvanceTransition(view.Transition, ui.DeltaTime);
         if (view.Transition.IsMoving)
-            ui.RequestUpdate();
+            ui.RequestAnimationFrame();
     }
 
     /// <summary>Moves the view along with the selected card, which was drawn at <paramref name="before"/>, so

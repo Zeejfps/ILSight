@@ -11,7 +11,9 @@ public sealed class BrowseTreeTests
         var root = assembly.Root;
 
         Assert.IsType<NodeSubject.Module>(root.Subject);
-        Assert.Equal("ILSight.Tests (0.0.0.0, .NETCoreApp, v10.0)", root.Text);
+        // MinVer versions the build from the release tags, so the label names whatever this one is.
+        var version = typeof(BrowseTreeTests).Assembly.GetName().Version;
+        Assert.Equal($"ILSight.Tests ({version}, .NETCoreApp, v10.0)", root.Text);
         Assert.IsType<NodeSubject.Metadata>(root.Children[0].Subject);
         Assert.IsType<NodeSubject.References>(root.Children.First(c => c.Subject is not NodeSubject.Metadata).Subject);
         var namespaces = root.Children.Where(c => c.Subject is NodeSubject.Namespace).Select(c => c.Text).ToArray();

@@ -600,7 +600,7 @@ public static class CodeViewWidget
                 {
                     scrollDeltaY = AutoScroll(dy, rowHeight, ui.DeltaTime);
                     state.ScrollX = MathF.Max(0f, state.ScrollX + AutoScroll(dx, advance, ui.DeltaTime));
-                    ui.RequestUpdate();
+                    ui.RequestAnimationFrame();
                 }
             }
 
@@ -870,7 +870,7 @@ public static class CodeViewWidget
             {
                 frame.FlashLine = flash.Value.Line;
                 frame.Flash = UiColor.Mix(theme.EditorBackground, palette.Flash, 1f - t);
-                ui.RequestUpdate();
+                ui.RequestAnimationFrame();
             }
         }
     }

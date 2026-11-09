@@ -152,6 +152,7 @@ internal sealed class AppStateDriver
 
     private AppStateDriver(SettingsLoadResult loadResult, RunArguments arguments, bool withScreen)
     {
+        Step = Pump;
         loadResult.Settings.Locale ??= Locale.En;
         AppState = ILSightAppLauncher.LoadAppState(loadResult, arguments, TestSession.Shared);
         if (withScreen)
@@ -215,8 +216,12 @@ internal sealed class AppStateDriver
         AppFrames.RunAppCommands(Ui, AppState);
     }
 
-    /// <summary>Pumps until <paramref name="done"/>.</summary>
-    public void RunUntil(Func<bool> done) => Poll.Until(done, Pump);
+    /// <summary>What a step of waiting does: a pump, or for a driver under an <see cref="AppDriver"/>, frames, which
+    /// pump it first and run what work started in a frame posted back to the frame's own queue.</summary>
+    public Action Step;
+
+    /// <summary>Steps until <paramref name="done"/>.</summary>
+    public void RunUntil(Func<bool> done) => Poll.Until(done, Step);
 
     /// <summary>Has what is picked and followed shown in the active tab, as the display option does.</summary>
     public void TurnOffPreviewTabs()
@@ -303,6 +308,7 @@ internal sealed class AppDriver
         Frames = UiFrames.Running(App, measurer, width: width, height: height);
         Frames.FrameTime = 1f / 60f;
         Frames.BeforeFrame = PumpAtFrameTime;
+        Driver.Step = RunFramesInPlace;
     }
 
     private void PumpAtFrameTime()
@@ -343,6 +349,11 @@ internal sealed class AppDriver
         Driver.Settle();
         Run(frames);
     }
+
+    /// <summary>Runs frames without advancing time, each pumping the app state first, until none is asked for.</summary>
+    private void RunFramesInPlace() => Frames.WaitUntil(static () => true, StepTimeout);
+
+    private static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>Shows <paramref name="node"/> as <see cref="AppStateDriver.Show"/>, then runs <paramref name="frames"/> frames.</summary>
     public void Show(BrowseNode node, int frames = 0, bool inNewTab = false)
