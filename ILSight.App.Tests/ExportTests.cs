@@ -157,7 +157,7 @@ public sealed class ExportTests : IDisposable
         var app = AppDriver.Opened();
         app.Run(2);
 
-        app.Click("File").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
 
         IconGlyph[] icons = [Icons.FileOpen, Icons.FileOpenFromFramework, Icons.FileOpenFromProcess, Icons.FileSaveCode, Icons.FileExportProject,
             Icons.FileGeneratePdb, Icons.FileClose, Icons.FileCloseAssemblies, Icons.FileCloseFailed, Icons.FileClearList, Icons.FileSortList, Icons.FileReloadAll];
@@ -354,7 +354,7 @@ public sealed class ExportTests : IDisposable
         var app = AppDriver.Opened();
         app.Run(2);
 
-        app.Click("File").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
 
         Assert.True(app.Frames.Drew("Export…"));
         Assert.False(app.Frames.Drew("Export all as solution…"));

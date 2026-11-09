@@ -20,14 +20,14 @@ public sealed class AssemblyMenuTests
         app.RunUntil(() => app.AppState.Assemblies.Listed.Count == 3);
         app.Settle(2);
 
-        app.Click("File").Frame(2);
-        app.ClickMenuItem("Sort list by name").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Sort list by name")).Frame(2);
 
         var sorted = AssemblyListing.ListFilePaths(app.AppState.Assemblies);
         Assert.Equal([AppStateDriver.FixturePath, missing, CoreLibPath], sorted.Select(static p => p.Text));
 
-        app.Click("File").Frame(2);
-        app.ClickMenuItem("Close assemblies that failed to load").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close assemblies that failed to load")).Frame(2);
 
         var roots = app.Ui.Tree.Roots;
         Assert.Equal([AppStateDriver.FixturePath, CoreLibPath], roots.Select(r => r.Assembly.FilePath.Text));
@@ -99,7 +99,7 @@ public sealed class AssemblyMenuTests
         var row = app.TextRect(name);
 
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
-        app.ClickMenuItem("Load dependencies").Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Load dependencies")).Frame();
         app.RunUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"));
         app.Settle(2);
 

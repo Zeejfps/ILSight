@@ -225,8 +225,8 @@ public sealed class DisplayOptionsTests
         app.Run();
         Assert.True(app.Frames.Drew("100%"));
 
-        app.Click("100%").Frame();
-        app.Click("125%").Frame();
+        app.Frames.ClickOn(Selector.WithText("100%")).Frame();
+        app.Frames.ClickOn(Selector.WithText("125%")).Frame();
 
         Assert.Equal(1.25f, app.Ui.Display.UiScale);
         Assert.True(app.Frames.Drew("125%"));
@@ -271,19 +271,19 @@ public sealed class DisplayOptionsTests
         app.Run();
         var size = app.Ui.Theme.MonoFontSize;
 
-        app.ClickLast(Icons.OptionsFontLarger).Frame();
-        app.Click("Line numbers").Frame();
-        app.Click("Highlight current line").Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Line numbers")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Highlight current line")).Frame();
 
         var changed = new DisplayOptions(FontSize: CodeFontSize.Clamp(size + 1f), ShowLineNumbers: false, HighlightCurrentLine: true);
         Assert.Equal(changed, app.Ui.Display);
         Assert.True(IsBold(app, "Line numbers"));
         Assert.False(IsBold(app, "UI scale"));
 
-        app.Click("Reset to defaults").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Reset to defaults")).Frame(2);
         Assert.True(app.Ui.ConfirmingDisplayReset);
         Assert.Equal(changed, app.Ui.Display);
-        app.Click("Reset").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Reset")).Frame(2);
 
         Assert.False(app.Ui.ConfirmingDisplayReset);
         Assert.Equal(DisplayOptions.Default, app.Ui.Display);
@@ -297,8 +297,8 @@ public sealed class DisplayOptionsTests
         app.Run();
         Assert.False(IsBold(app, "Metadata tokens"));
 
-        app.Click("Hidden").Frame();
-        app.Click("Hexadecimal").Frame();
+        app.Frames.ClickOn(Selector.WithText("Hidden")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Hexadecimal")).Frame();
 
         Assert.Equal(TokenFormat.Hex, app.Ui.Display.TreeTokens);
         Assert.True(IsBold(app, "Metadata tokens"));
@@ -314,7 +314,7 @@ public sealed class DisplayOptionsTests
         app.Run();
         Assert.DoesNotContain(empty, app.Ui.Tree.GetChildren(tables).Nodes);
 
-        app.Click("Show empty metadata tables").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Show empty metadata tables")).Frame(2);
 
         Assert.True(app.Ui.Display.ShowEmptyMetadataTables);
         Assert.True(IsBold(app, "Show empty metadata tables"));
@@ -333,7 +333,7 @@ public sealed class DisplayOptionsTests
         Assert.Contains(fixtures, app.Ui.Tree.GetChildren(root).Nodes);
         Assert.DoesNotContain(outermost, app.Ui.Tree.GetChildren(root).Nodes);
 
-        app.Click("Nested namespaces").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Nested namespaces")).Frame(2);
 
         Assert.True(app.Ui.Display.NestedNamespaces);
         Assert.True(IsBold(app, "Nested namespaces"));
@@ -350,7 +350,7 @@ public sealed class DisplayOptionsTests
         OpenDisplayOptions(app.Ui);
         app.Run();
 
-        app.Click("Preview tabs").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Preview tabs")).Frame(2);
 
         Assert.NotNull(shown);
         Assert.False(app.Ui.Display.PreviewTabs);
@@ -367,8 +367,8 @@ public sealed class DisplayOptionsTests
         app.Run();
         Assert.Equal("dark", app.AppState.Theme.Text);
 
-        app.Click("Dark").Frame();
-        app.Click("Dracula").Frame();
+        app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Dracula")).Frame();
 
         Assert.Equal("dracula", app.AppState.Theme.Text);
         Assert.Equal(ThemeCatalogs.FindTheme(app.AppState.Themes, ThemeId<ThemeFile>.Of("dracula")).Ui.Background, app.Frames.WindowBackground);
@@ -383,8 +383,8 @@ public sealed class DisplayOptionsTests
         OpenDisplayOptions(app.Ui);
         app.Run();
 
-        app.Click("Dark").Frame();
-        app.Click("Midnight").Frame();
+        app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Midnight")).Frame();
 
         Assert.Equal("midnight", app.AppState.Theme.Text);
         Assert.Equal(0xFF000010u, app.Frames.WindowBackground);
@@ -400,11 +400,11 @@ public sealed class DisplayOptionsTests
         OpenDisplayOptions(app.Ui);
         app.Run();
 
-        app.Click("Dark").Frame();
+        app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
         app.Frames.Click(TwinRects(app)[1]).Frame();
         Assert.Equal("twin-b", app.AppState.Theme.Text);
 
-        app.Click("Twin").Frame();
+        app.Frames.ClickOn(Selector.WithText("Twin")).Frame();
         app.Frames.Click(TwinRects(app)[1]).Frame();
         Assert.Equal("twin-a", app.AppState.Theme.Text);
         Assert.Equal(0xFF00000Au, app.Frames.WindowBackground);
@@ -416,7 +416,7 @@ public sealed class DisplayOptionsTests
         var app = AppDriver.Opened(width: 1600f);
         OpenDisplayOptions(app.Ui);
         app.Run();
-        app.Click("Dark").Frame();
+        app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
         Assert.True(IsDrawn(app, "Dracula"));
 
         Theming.ReloadUserThemes(app.AppState);
@@ -433,7 +433,7 @@ public sealed class DisplayOptionsTests
         OpenDisplayOptions(app.Ui);
         app.Run();
 
-        app.ClickLast(Icons.OptionsCustomizeTheme).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-theme")).Frame();
 
         Assert.Equal("dark-custom", app.AppState.Theme.Text);
         Assert.Equal([temp.PathOf(Path.Combine("themes", "dark-custom.json"))], app.Frames.OpenedFiles);
@@ -569,8 +569,8 @@ public sealed class DisplayOptionsTests
         OpenDisplayOptions(app.Ui);
         app.Run();
 
-        app.Click("English").Frame();
-        app.Click("Deutsch").Frame();
+        app.Frames.ClickOn(Selector.WithText("English")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Deutsch")).Frame();
 
         Assert.Equal(Localization.Locale.De, app.AppState.Locale);
         Assert.True(app.Frames.Drew("Sprache"));
@@ -582,10 +582,10 @@ public sealed class DisplayOptionsTests
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
         OpenDisplayOptions(app.Ui);
         app.Run();
-        app.Click("Line numbers").Frame();
+        app.Frames.ClickOn(Selector.WithText("Line numbers")).Frame();
 
-        app.Click("Reset to defaults").Frame(2);
-        app.Click("Cancel").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Reset to defaults")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
 
         Assert.False(app.Ui.ConfirmingDisplayReset);
         Assert.False(app.Ui.Display.ShowLineNumbers);
@@ -598,9 +598,9 @@ public sealed class DisplayOptionsTests
         OpenDisplayOptions(app.Ui);
         app.Run();
 
-        app.ClickLast(Icons.OptionsFontLarger).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
         Assert.True(IsBold(app, "Font size"));
-        app.ClickLast(Icons.OptionsFontSmaller).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/smaller")).Frame();
 
         Assert.Null(app.Ui.Display.FontSize);
         Assert.False(IsBold(app, "Font size"));
@@ -645,7 +645,7 @@ public sealed class DisplayOptionsTests
     {
         var app = OpenedWithFonts(Family("Consolas", "consola.ttf"), Family("Segoe UI", "segoeui.ttf", monospaced: false));
 
-        app.Click("JetBrains Mono").Frame();
+        app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame();
 
         Assert.True(app.Frames.Drew("Consolas"));
         Assert.False(app.Frames.Drew("Segoe UI"));
@@ -658,16 +658,16 @@ public sealed class DisplayOptionsTests
         var path = temp.Write("consola.ttf", FontBytes);
         var app = OpenedWithFonts(Family("Consolas", path));
 
-        app.Click("JetBrains Mono").Frame();
-        app.Click("Consolas").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Consolas")).Frame(2);
 
         Assert.Equal(new CodeFont("Consolas", path, 0), app.Ui.Display.Font);
         Assert.Equal(MonoFonts.Code, app.Frames.RegisteredFonts[^1].Family);
         Assert.Equal(FontBytes, app.Frames.RegisteredFonts[^1].Data);
         Assert.True(IsBold(app, "Font"));
 
-        app.Click("Consolas").Frame();
-        app.Click("JetBrains Mono").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Consolas")).Frame();
+        app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame(2);
 
         Assert.Null(app.Ui.Display.Font);
         Assert.NotEqual(FontBytes, app.Frames.RegisteredFonts[^1].Data);
@@ -690,7 +690,7 @@ public sealed class DisplayOptionsTests
     {
         var app = OpenedWithFonts();
 
-        app.ClickLast(Icons.OptionsFontLarger).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
 
         var preview = app.Frames.Canvas.Texts.First(t => t.Inputs.Text.StartsWith("The quick brown fox"));
         Assert.Equal(MonoFonts.Code, preview.Inputs.Style.FontFamily.Value);

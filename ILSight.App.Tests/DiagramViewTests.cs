@@ -116,7 +116,7 @@ public sealed class DiagramViewTests
     private static void PickFromCardMenu(AppDriver app, string card, string item)
     {
         RightClick(app, CardText(app, card));
-        app.ClickMenuItem(item).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame();
         SettleDiagram(app);
     }
 
@@ -171,7 +171,7 @@ public sealed class DiagramViewTests
         app.Settle(2);
         Assert.Equal("Bike", app.AppState.Tabs.Active!.Node!.Text);
 
-        app.Click(VehicleDiagram).Frame();
+        app.Frames.ClickOn(Selector.WithText(VehicleDiagram)).Frame();
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
         Assert.Equal("Mileage() : int", app.AppState.Tabs.Active!.Node!.Text);
@@ -297,7 +297,7 @@ public sealed class DiagramViewTests
         var moved = CardText(app, "Vehicle");
         Assert.Equal(vehicle.X, moved.X, Near);
         Assert.Equal(vehicle.Y, moved.Y, Near);
-        app.Click("Fit to view").Frame();
+        app.Frames.ClickOn(Selector.WithText("Fit to view")).Frame();
         Assert.True(DrewOnDiagram(app, "Vehicles *"));
     }
 
@@ -339,7 +339,7 @@ public sealed class DiagramViewTests
         Assert.Equal("Exception", exception.Name);
         Assert.DoesNotContain(Diagrams.FindFace(view, exception.Type)!.Rows, IsHiddenMember);
 
-        app.Click("Show private and internal members");
+        app.Frames.ClickOn(Selector.WithText("Show private and internal members"));
         SettleDiagram(app);
 
         Assert.Contains(Diagrams.FindFace(view, exception.Type)!.Rows, IsHiddenMember);
@@ -387,10 +387,10 @@ public sealed class DiagramViewTests
         var camera = ViewOf(app, DiagramTab(app)).Camera;
         var fitted = camera.Zoom;
 
-        app.Click(BuiltInGlyphs.Icons.ResourceZoomIn).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-2/zoom-in")).Frame();
         Assert.True(camera.Zoom > fitted);
 
-        app.Click("Fit to view").Frame();
+        app.Frames.ClickOn(Selector.WithText("Fit to view")).Frame();
         Assert.Equal(fitted, camera.Zoom, 0.001f);
     }
 }

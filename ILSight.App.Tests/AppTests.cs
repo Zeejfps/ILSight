@@ -55,7 +55,7 @@ public sealed class AppTests
     {
         var app = ExpandedTree(until: "Greeter");
 
-        app.DoubleClick("Greeter");
+        app.DoubleClickOn(Selector.WithText("Greeter"));
         app.Settle();
 
         var tab = Assert.Single(app.AppState.Tabs.Open);
@@ -130,7 +130,7 @@ public sealed class AppTests
         app.Run(2);
 
         app.Frames.ClickOn(Selector.AtPath("error-close")).Frame(2);
-        app.MoveTo("1 error").Wait(2).Frame(2);
+        app.Frames.MoveTo(Selector.WithText("1 error")).Frame().Wait(2).Frame(2);
 
         Assert.True(app.Frames.Drew("Cannot save broken.dll — first"));
     }
@@ -146,11 +146,11 @@ public sealed class AppTests
         Assert.True(app.Ui.ErrorDialog.IsOpen);
         Assert.Equal("Cannot save broken.dll", app.Ui.ErrorDialog.SelectedError!.Words().Title);
 
-        app.Click("Copy");
+        app.Frames.ClickOn(Selector.WithText("Copy"));
         Assert.Equal(app.AppState.Errors.Entries[1].Words().FullText, app.Frames.Clipboard.Text);
 
-        app.Click("Cannot save first.dll");
-        app.Click("Copy");
+        app.Frames.ClickOn(Selector.WithText("Cannot save first.dll"));
+        app.Frames.ClickOn(Selector.WithText("Copy"));
         Assert.StartsWith("Cannot save first.dll", app.Frames.Clipboard.Text);
 
         app.Frames.ClickOn(Selector.AtPath("error-close"));
@@ -182,7 +182,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.AtPath("error-close"));
         app.Run(2);
 
-        app.Click("1 error").Frame();
+        app.Frames.ClickOn(Selector.WithText("1 error")).Frame();
         Assert.True(app.Ui.ErrorDialog.IsOpen);
         app.Frames.ClickOn(Selector.AtPath("error-close"));
         app.Run(2);
@@ -200,7 +200,7 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Run();
 
-        app.Click("IL");
+        app.Frames.ClickOn(Selector.WithText("IL"));
         app.Settle();
 
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Language);
@@ -213,7 +213,7 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Show(app.Fixture("Greeter"), 1);
 
-        app.Click("IL+C#");
+        app.Frames.ClickOn(Selector.WithText("IL+C#"));
         app.Settle(1);
 
         Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Language);
@@ -229,15 +229,15 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Run();
 
-        app.Click("C# 14.0 / VS 2026");
-        app.ClickMenuItem("C# 5.0 / VS 2012");
+        app.Frames.ClickOn(Selector.WithText("C# 14.0 / VS 2026"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "C# 5.0 / VS 2012"));
         app.Settle(1);
 
         Assert.Equal(CSharpVersion.CSharp5, app.AppState.DecompilerOptions.LanguageVersion);
         Assert.Equal(CSharpVersion.CSharp5, app.AppState.Tabs.Active!.Options.LanguageVersion);
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == "C# 5.0 / VS 2012");
 
-        app.Click("IL");
+        app.Frames.ClickOn(Selector.WithText("IL"));
         app.Settle(1);
 
         Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Text == "C# 5.0 / VS 2012");
@@ -261,16 +261,16 @@ public sealed class AppTests
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp1));
         Assert.DoesNotContain("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
 
-        app.Click("View");
-        app.Click("Panels");
-        app.ClickMenuItem("Decompiler options").Frame();
-        app.ClickStartingWith("String concatenation");
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.WithText("Panels"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Decompiler options")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/StringConcat"));
         app.Settle(1);
 
         Assert.False(DecompilerToggles.IsOn(app.AppState.DecompilerOptions, DecompilerToggles.FindToggle("StringConcat")!));
         Assert.Contains("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
 
-        app.Click(Icons.OptionsResetDecompiler);
+        app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/reset"));
         app.Settle(1);
 
         Assert.Equal(DecompilerOptions.Default, app.AppState.DecompilerOptions);
@@ -301,7 +301,7 @@ public sealed class AppTests
         OpenDecompilerOptions(app.Ui);
         app.Run();
 
-        app.Click("switch expressions").Frame();
+        app.Frames.ClickOn(Selector.WithText("switch expressions")).Frame();
         Assert.Equal(DecompilerOptions.Default with { LanguageVersion = CSharpVersion.CSharp7 }, app.AppState.DecompilerOptions);
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text.StartsWith("Features newer than"));
 
@@ -329,11 +329,11 @@ public sealed class AppTests
         OpenDecompilerOptions(app.Ui);
         app.Run();
 
-        app.ClickLast(Icons.OptionsCollapseAll);
+        app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/collapse"));
         Assert.False(app.Frames.Drew("switch expressions"));
         Assert.True(app.Frames.Drew("C# 8.0 / VS 2019"));
 
-        app.ClickLast(Icons.OptionsExpandAll);
+        app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/expand"));
         Assert.Empty(app.Ui.FoldedOptionGroups.Folded);
         Assert.True(app.Frames.Drew("Extension members"));
     }
@@ -347,19 +347,19 @@ public sealed class AppTests
         app.Run();
         var csharp8 = DecompilerToggle.All.Where(t => t.IntroducedIn == CSharpVersion.CSharp8).ToArray();
 
-        app.Click("C# 8.0 / VS 2019");
+        app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
         app.Settle(1);
         Assert.All(csharp8, t => Assert.False(DecompilerToggles.IsOn(app.AppState.DecompilerOptions, t)));
         Assert.DoesNotContain(nameof(CSharpVersion.CSharp8), app.Ui.FoldedOptionGroups.Folded);
 
-        app.Click("switch expressions").Frame();
+        app.Frames.ClickOn(Selector.WithText("switch expressions")).Frame();
         Assert.Equal(csharp8.Length - 1, csharp8.Count(toggle => DecompilerToggles.IsChanged(app.AppState.DecompilerOptions, toggle)));
         Assert.False(IsBold(app, "switch expressions"));
         Assert.True(IsBold(app, "Async iterators"));
         Assert.True(IsBold(app, "C# 8.0 / VS 2019"));
         Assert.False(IsBold(app, "C# 7.3 / VS 2017.7"));
 
-        app.Click("C# 8.0 / VS 2019");
+        app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
         app.Settle(1);
         Assert.Equal(DecompilerOptions.Default, app.AppState.DecompilerOptions);
         Assert.False(IsBold(app, "C# 8.0 / VS 2019"));
@@ -401,22 +401,22 @@ public sealed class AppTests
         Assert.Equal(SearchSort.Relevance, search.Sort);
         Assert.Equal(search.Rows.Select(r => r.Fitness).OrderDescending(), search.Rows.Select(r => r.Fitness));
 
-        app.Click("Name").Frame();
+        app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         Assert.Equal(names.Order(StringComparer.OrdinalIgnoreCase), search.Rows.Select(r => r.Text));
         Assert.Same(selected, search.SelectedRow!.Node);
         Assert.True(app.Frames.Drew(Text(Icons.SortAscending)));
 
-        app.Click("Name").Frame();
+        app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         Assert.Equal(names.OrderDescending(StringComparer.OrdinalIgnoreCase), search.Rows.Select(r => r.Text));
         Assert.Same(selected, search.SelectedRow!.Node);
         Assert.True(app.Frames.Drew(Text(Icons.SortDescending)));
 
-        app.Click("Name").Frame();
+        app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         Assert.Equal(SearchSort.Relevance, search.Sort);
         Assert.Equal(names, search.Rows.Select(r => r.Text));
         Assert.Same(selected, search.SelectedRow!.Node);
 
-        app.Click("Assembly").Frame();
+        app.Frames.ClickOn(Selector.WithText("Assembly")).Frame();
         Assert.Equal(SearchSort.Assembly, search.Sort);
         Assert.False(search.Descending);
     }
@@ -427,9 +427,9 @@ public sealed class AppTests
         var app = Searching("Greet", moreRowsThan: 0);
         Assert.Contains(app.Ui.Search.Rows, r => r.Node.Icon == NodeIcon.Class);
 
-        app.Click("Types and members").Frame();
+        app.Frames.ClickOn(Selector.WithText("Types and members")).Frame();
         foreach (var kind in new[] { "Types", "Fields", "Properties", "Events" })
-            app.ClickMenuItem(kind).Frame();
+            app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, kind)).Frame();
         Assert.True(app.Frames.Drew("Namespaces"));
         var events = app.LastTextRect("Events");
         var icon = app.LastTextRect(Icons.NodeEvent);
@@ -451,18 +451,18 @@ public sealed class AppTests
         OpenSearch(app.Ui);
         app.Run(2);
 
-        app.Click("Types and members").Frame();
-        app.ClickMenuItem("All").Frame();
+        app.Frames.ClickOn(Selector.WithText("Types and members")).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "All")).Frame();
         Assert.Equal(SearchKinds.All, app.Ui.Search.Kinds);
         Assert.True(app.Frames.Drew("All kinds"));
 
-        app.ClickMenuItem("Resources").Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Resources")).Frame();
         Assert.Equal(SearchKinds.Resources, app.Ui.Search.Kinds);
-        app.ClickMenuItem("Namespaces").Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Namespaces")).Frame();
         Assert.True(app.Frames.Drew("Kinds · 2"));
 
-        app.ClickMenuItem("Resources").Frame();
-        app.ClickMenuItem("Namespaces").Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Resources")).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Namespaces")).Frame();
         Assert.Equal(SearchKinds.All, app.Ui.Search.Kinds);
     }
 
@@ -489,9 +489,9 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Run();
 
-        app.Click("View");
+        app.Frames.ClickOn(Selector.WithText("View"));
         Assert.False(app.Frames.Drew("Analyzer"));
-        app.Click("Panels");
+        app.Frames.ClickOn(Selector.WithText("Panels"));
         app.Run(2);
 
         var analyzer = app.LastTextRect("Analyzer");
@@ -525,7 +525,7 @@ public sealed class AppTests
         var row = app.TextRect(name);
 
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
-        app.ClickMenuItem("Scope search to this assembly").Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Scope search to this assembly")).Frame(2);
 
         Assert.Equal($"inassembly:{name} ", app.Ui.Search.Query);
         Assert.True(app.Ui.Layout.Contains(DockPanels.Search));
@@ -563,10 +563,10 @@ public sealed class AppTests
                                                       && r.Inputs.Position.Left <= open.X && r.Inputs.Position.Left + r.Inputs.Position.Width >= open.Right
                                                       && r.Inputs.Position.Width <= theme.IconButtonSize + 1f);
 
-        app.Click(Icons.ToolbarOpen).Frame();
+        app.Frames.ClickOn(Selector.AtPath("open")).Frame();
         Assert.Equal(["Open assembly"], app.Frames.FilePicker.Titles);
 
-        app.Click(Icons.ToolbarSearch).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("search")).Frame(2);
         Assert.True(app.Ui.Layout.Contains(DockPanels.Search));
         Assert.True(app.Frames.Drew("Search…"));
     }
@@ -581,7 +581,7 @@ public sealed class AppTests
         var gear = app.TextRect(Icons.ToolbarDisplayOptions);
         Assert.False(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
 
-        app.Click(Icons.ToolbarDisplayOptions).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("display-options")).Frame(2);
 
         Assert.True(gear.Right >= 1600f - theme.ShellPaddingX - theme.IconButtonSize, $"the gear ends at {gear.Right}");
         Assert.True(gear.X > app.TextRect("IL").Right);
@@ -652,9 +652,9 @@ public sealed class AppTests
         app.Run();
         Assert.Equal("dark", app.AppState.Theme.Text);
 
-        app.Click("View");
-        app.Click("Theme");
-        app.ClickMenuItem("Dracula");
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.WithText("Theme"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Dracula"));
         app.Run();
 
         Assert.Equal("dracula", app.AppState.Theme.Text);
@@ -667,9 +667,9 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Run();
 
-        app.Click("View");
-        app.Click("Decompiler");
-        app.ClickMenuItem("IL");
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.WithText("Decompiler"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "IL"));
         app.Settle();
 
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Language);
@@ -681,9 +681,9 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Run();
 
-        app.Click("View");
-        app.Click("Show types and members");
-        app.ClickMenuItem("All, including compiler-generated");
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.WithText("Show types and members"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "All, including compiler-generated"));
         app.Settle();
 
         Assert.Equal(ApiVisibility.All, app.AppState.ApiVisibility);
@@ -695,9 +695,9 @@ public sealed class AppTests
         var app = new AppDriver();
         app.Run(2);
 
-        app.Click("View");
-        app.Click("Language");
-        app.Click("Deutsch");
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.WithText("Language"));
+        app.Frames.ClickOn(Selector.WithText("Deutsch"));
 
         Assert.Equal(Localization.Locale.De, app.AppState.Locale);
     }
@@ -708,15 +708,15 @@ public sealed class AppTests
         var app = AppDriver.Opened(width: 1600f);
         app.Run();
 
-        app.Click("Help");
-        app.ClickMenuItem("About ILSight").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Help"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "About ILSight")).Frame(2);
 
         Assert.True(app.Ui.IsAboutOpen);
         Assert.True(app.Frames.Drew(AppVersions.Decompiler));
         Assert.True(app.Frames.Drew(AppVersions.Runtime));
         Assert.DoesNotContain('+', AppVersions.App);
         Assert.DoesNotContain('+', AppVersions.Decompiler);
-        app.Click("Check for updates").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Check for updates")).Frame(2);
         Assert.True(app.Ui.IsAboutOpen);
 
         app.Frames.ClickOn(Selector.AtPath("about-close")).Frame(2);

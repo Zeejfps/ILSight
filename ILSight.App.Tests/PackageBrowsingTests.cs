@@ -63,15 +63,15 @@ public sealed class PackageBrowsingTests
 
         app.Ui.Tree.View.Select(Greeter(app).Assembly.Root);
         app.Run(2);
-        app.Click(Icons.AssembliesCloseAssembly).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         Assert.False(Assert.Single(app.Ui.Closer.Order).Included);
         AssemblyClosing.CloseCloser(app.Ui.Closer);
 
         app.Ui.Tree.View.Select(package.Root);
         app.Run(2);
-        app.Click(Icons.AssembliesCloseAssembly).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         Assert.True(Assert.Single(app.Ui.Closer.Order).Included);
-        app.ClickLast(Strings.En.FileClose).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
 
         Assert.Empty(app.AppState.Assemblies.Listed);
     }

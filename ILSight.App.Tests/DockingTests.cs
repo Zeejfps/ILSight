@@ -36,9 +36,9 @@ public sealed class DockingTests
         layout.Close(DockPanels.Assemblies);
         app.Run(2);
         var closed = !layout.Contains(DockPanels.Assemblies);
-        app.Click("View");
-        app.Click("Panels");
-        app.ClickMenuItem("Assemblies").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.WithText("Panels"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Assemblies")).Frame(2);
 
         Assert.True(closed);
         var split = Assert.IsType<DockSplit>(layout.Root);
@@ -54,11 +54,11 @@ public sealed class DockingTests
         app.Run(2);
         Assert.False(app.Frames.Drew("Navigate"));
 
-        app.Click("View");
+        app.Frames.ClickOn(Selector.WithText("View"));
         Assert.True(app.Frames.Drew("Back"));
         Assert.True(app.Frames.Drew("Forward"));
-        app.Click("Panels");
-        app.ClickMenuItem("Search").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Panels"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Search")).Frame(2);
 
         Assert.True(layout.Contains(DockPanels.Search));
         Assert.True(app.Frames.Drew("Search…"));
@@ -108,10 +108,10 @@ public sealed class DockingTests
         OpenBookmarks(d.Ui);
         app.Run(2);
 
-        app.Click("View");
-        app.ClickMenuItem("Reset layout").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Reset layout")).Frame(2);
         Assert.True(layout.Contains(DockPanels.Bookmarks));
-        app.Click("Reset").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Reset")).Frame(2);
 
         var split = Assert.IsType<DockSplit>(layout.Root);
         Assert.Equal([DockPanels.Assemblies], Assert.IsType<DockGroup>(split.First).Panels);
@@ -134,10 +134,10 @@ public sealed class LayoutResetTests
         OpenBookmarks(screen);
         app.Run(2);
 
-        app.Click("View");
-        app.ClickMenuItem("Reset layout").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Reset layout")).Frame(2);
         Assert.True(screen.ConfirmingLayoutReset);
-        app.Click("Cancel").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
 
         Assert.False(screen.ConfirmingLayoutReset);
         Assert.True(screen.Layout.Contains(DockPanels.Bookmarks));

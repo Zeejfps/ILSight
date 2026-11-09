@@ -331,12 +331,12 @@ public sealed class ExportDialogTests : IDisposable
         app.Run(2);
         var setup = app.Ui.ExportSetup;
 
-        app.Click(Icons.ExportAdd).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
         Assert.Equal(ExportPage.Choose, setup.Page);
-        app.Click("Done").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Done")).Frame(2);
         Assert.Equal(ExportPage.Main, setup.Page);
 
-        app.Click(Icons.ExportAdd).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
 
         Assert.Equal(ExportPage.Main, setup.Page);
@@ -354,7 +354,7 @@ public sealed class ExportDialogTests : IDisposable
         app.Run(2);
 
         Assert.True(app.Frames.Drew("No assemblies match the filter."));
-        app.Click("Clear filter").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Clear filter")).Frame(2);
 
         Assert.Equal("", setup.Picker.Filter);
         Assert.Single(ExportDialogView.ListShown(setup.Picker));
@@ -368,7 +368,7 @@ public sealed class ExportDialogTests : IDisposable
         Exports.IncludeAll(app.Ui.ExportSetup, false);
         app.Run(2);
 
-        app.Click(Icons.ExportAdd).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
 
         Assert.Equal(ExportPage.Choose, app.Ui.ExportSetup.Page);
     }
@@ -407,7 +407,7 @@ public sealed class ExportDialogTests : IDisposable
         Assert.False(setup.RowSelection.Count > 0);
 
         ClickRowOf(app, first);
-        app.Click(Icons.ExportRemovePicked).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("remove-selected")).Frame(2);
 
         Assert.Equal([false, true], setup.Choices.Select(c => c.Included));
         Assert.True(setup.RowSelection.IsOnly(setup.Choices[1]));
@@ -459,7 +459,7 @@ public sealed class ExportDialogTests : IDisposable
         var row = app.TextRect(Trees.GetLabel(app.Ui.Tree, second.Root));
 
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
-        app.ClickMenuItem("Export…").Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Export…")).Frame(2);
 
         var setup = app.Ui.ExportSetup;
         Assert.True(setup.IsOpen);
@@ -489,7 +489,7 @@ public sealed class ExportDialogTests : IDisposable
         app.OpenExportSetup(null);
         app.Run(2);
 
-        app.Click("A folder per namespace part").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("A folder per namespace part")).Frame(2);
 
         Assert.Equal(!nested.DefaultValue, DecompilerToggles.IsOn(app.AppState.DecompilerOptions, nested));
     }

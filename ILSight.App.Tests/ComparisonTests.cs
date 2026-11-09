@@ -190,7 +190,7 @@ public sealed class ComparisonTests
         var app = OpenBothOnScreen();
         PickCompareWith(app);
 
-        app.ClickLast("Cancel").Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("compare-picker-cancel")).Frame(2);
 
         Assert.False(app.Ui.ComparisonPicker.IsOpen);
         Assert.Null(app.Ui.ComparisonPicker.Compared);
@@ -203,7 +203,7 @@ public sealed class ComparisonTests
         var app = OpenBothOnScreen();
         PickCompareWith(app);
 
-        app.ClickLast("Compare").Frame();
+        app.Frames.ClickOn(Selector.AtPath("compare-picker-compare")).Frame();
         app.RunUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null);
         app.Settle(2);
 
@@ -221,7 +221,7 @@ public sealed class ComparisonTests
         var comparison = app.AppState.Tabs.Active!.Comparison!;
         Assert.True(app.TextRect(app.Ui.Icons.ComparisonSwap).Y < app.TextRect(Compared).Y);
 
-        app.Click(app.Ui.Icons.ComparisonSwap).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-2/swap")).Frame();
         app.RunUntil(() => comparison.Diff!.LeftName == RightName);
         app.Settle(2);
 
@@ -268,7 +268,7 @@ public sealed class ComparisonTests
     {
         var row = app.TextRect("ApiDiffSample");
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
-        app.ClickMenuItem("Compare with…").Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Compare with…")).Frame();
         app.Run(2);
     }
 
@@ -277,7 +277,7 @@ public sealed class ComparisonTests
     {
         var app = ComparedOnScreen();
 
-        app.Click("Only differences").Frame();
+        app.Frames.ClickOn(Selector.WithText("Only differences")).Frame();
 
         Assert.True(app.Frames.Drew("IStore"));
     }

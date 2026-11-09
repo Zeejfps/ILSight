@@ -61,7 +61,7 @@ public sealed class PreviewTabTests
     public void Double_clicking_a_node_keeps_its_tab_open_and_the_next_node_picked_opens_a_new_preview_tab()
     {
         var app = Revealed();
-        app.DoubleClick("Greeter").Frame(2);
+        app.DoubleClickOn(Selector.WithText("Greeter")).Frame(2);
         app.Settle(2);
         var kept = app.AppState.Tabs.Active!;
         var previewAfterOpening = app.AppState.Tabs.Preview;
@@ -131,7 +131,7 @@ public sealed class PreviewTabTests
         var title = PreviewTitle(app, "Greeter");
 
         app.Frames.Click(title.X + 2f, title.Y + title.Height / 2, PointerButton.Right).Frame();
-        app.ClickMenuItem("Keep tab open").Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Keep tab open")).Frame(2);
 
         Assert.Null(app.AppState.Tabs.Preview);
         Assert.Equal("Greeter", app.AppState.Tabs.Active!.Node!.Text);

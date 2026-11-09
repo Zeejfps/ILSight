@@ -126,7 +126,7 @@ public sealed class HistoryTests
         ClickBackDropdown(app);
         var greeter = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Greeter").Inputs.Position;
         var outline = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Outline").Inputs.Position;
-        app.ClickMenuItem("Outline");
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Outline"));
         app.Settle(4);
 
         Assert.True(greeter.Top > outline.Top);

@@ -405,10 +405,10 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.OpenPicker(picker);
         app.RunUntil(() => picker.Results.Count > 0);
         app.Run(2);
-        app.ClickLast("2.0.0").Frame();
-        app.ClickMenuItem("1.0.0").Frame();
+        app.Frames.ClickOn(Selector.AtPath("Fixtures/version")).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "1.0.0")).Frame();
         var picked = picker.Version;
-        app.ClickLast("Open").Frame();
+        app.Frames.ClickOn(Selector.AtPath("nuget-open")).Frame();
         app.RunUntil(() => app.AppState.Assemblies.Listed.Count > 0);
         app.Settle(2);
 
@@ -446,7 +446,7 @@ public sealed class NuGetPickerTests : IDisposable
         app.RunUntil(() => picker.Results.Count > 0);
         app.Run(2);
         var first = app.Frames.Drew("Page 1 of 3");
-        app.Click(app.Ui.Icons.NugetNextPage).Frame();
+        app.Frames.ClickOn(Selector.AtPath("nuget-next")).Frame();
         app.RunUntil(() => !picker.IsSearching);
         app.Run(2);
 

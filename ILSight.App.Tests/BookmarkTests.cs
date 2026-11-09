@@ -511,10 +511,10 @@ public sealed class BookmarkTests : IDisposable
         var (app, d, _, _) = ShowBookmark();
         app.Frames.FilePicker.Answer = path;
 
-        app.Click(Icons.BookmarksImport).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/bookmarks/import")).Frame();
         app.Settle(2);
         var asked = app.Frames.Drew("Import bookmarks");
-        app.Click("Merge").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Merge")).Frame(2);
 
         Assert.True(asked);
         Assert.Equal(2, d.AppState.Bookmarks.Items.Count);

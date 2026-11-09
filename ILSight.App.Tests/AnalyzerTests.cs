@@ -97,7 +97,7 @@ public sealed class AnalyzerTests
         app.Ui.Analyzer.View.Select(caller);
         app.Run(3);
 
-        app.DoubleClick(app.Frames.Canvas.Texts.Last(t => t.Inputs.Text.StartsWith("Third()")).Inputs.Text);
+        app.DoubleClickOn(Selector.WithText(app.Frames.Canvas.Texts.Last(t => t.Inputs.Text.StartsWith("Third()")).Inputs.Text));
         d.Settle();
         AnalyzerPanelView.Analyze(app.Ui.Analyzer, app.AppState, caller.Symbol);
 
@@ -501,7 +501,7 @@ public sealed class AnalyzerTests
         var row = app.Frames.TextRects().Last(t => t.Text.StartsWith("First()")).Rect;
 
         ClickAt(app, row, PointerButton.Right).Frame();
-        app.ClickMenuItem("Clear").Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Clear")).Frame(2);
 
         Assert.Empty(d.AppState.Analyzer.Roots);
     }
@@ -518,10 +518,10 @@ public sealed class AnalyzerTests
         var rows = app.Ui.Analyzer;
         var kinds = Analysis.ListChildren(rows, root).OfType<AnalyzerKindNode>().ToList();
 
-        app.ClickLast(Icons.AnalyzerExpandAll).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/expand")).Frame();
         var expanded = kinds.All(k => rows.View.IsExpanded(k));
         d.RunUntil(() => kinds.All(k => k.IsDone));
-        app.ClickLast(Icons.AnalyzerCollapseAll).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/collapse")).Frame();
 
         Assert.NotEmpty(kinds);
         Assert.True(expanded);
@@ -540,9 +540,9 @@ public sealed class AnalyzerTests
         app.Ui.Analyzer.View.Select(caller);
         app.Run(3);
 
-        app.ClickLast(Icons.AnalyzerRemove).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/remove")).Frame(2);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
-        app.Click(Icons.AnalyzerRemoveAll).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/clear")).Frame(2);
 
         Assert.Equal(["Greeter"], left);
         Assert.Empty(analyzer.Roots);

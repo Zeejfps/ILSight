@@ -377,7 +377,7 @@ public sealed class AssemblyListingTests
 
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
         var shownAfterRightClick = first.Node;
-        app.ClickMenuItem("Open in new tab").Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Open in new tab")).Frame(2);
         app.Settle(2);
 
         Assert.Same(greeter, shownAfterRightClick);
@@ -395,10 +395,10 @@ public sealed class AssemblyListingTests
         app.Show(greeter, 2);
         var tab = app.AppState.Tabs.Active!;
 
-        app.Click("Farewell").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Farewell")).Frame(2);
         var shownAfterClick = tab.Node;
         var selectedAfterClick = app.Ui.Tree.View.Selected;
-        app.DoubleClick("Farewell").Frame(2);
+        app.DoubleClickOn(Selector.WithText("Farewell")).Frame(2);
         app.Settle(2);
 
         Assert.Same(greeter, shownAfterClick);
@@ -417,7 +417,7 @@ public sealed class AssemblyListingTests
         var row = app.TextRect("Farewell");
 
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
-        app.ClickMenuItem("Open").Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Open")).Frame(2);
         app.Settle(2);
 
         Assert.Same(tab, app.AppState.Tabs.Active);
@@ -465,12 +465,12 @@ public sealed class AssemblyListingTests
         app.Ui.Tree.View.Select(app.Node(AppStateDriver.FixturesNamespace));
         app.Run(2);
 
-        app.Click(Icons.AssembliesCloseAssembly).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         Assert.True(app.Ui.Closer.IsOpen);
         Assert.True(Assert.Single(app.Ui.Closer.Order).Included);
         Assert.Single(app.AppState.Assemblies.Assemblies);
 
-        app.ClickLast(Strings.En.FileClose).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
 
         Assert.Empty(app.AppState.Assemblies.Assemblies);
     }
@@ -526,7 +526,7 @@ public sealed class AssemblyListingTests
         var app = AppDriver.Opened();
         app.Run(2);
 
-        app.Click(Icons.ToolbarManageLists).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("manage-lists")).Frame(2);
 
         Assert.True(app.Ui.ListsDialog.IsOpen);
     }
@@ -536,7 +536,7 @@ public sealed class AssemblyListingTests
     {
         var app = OpenedDialog();
 
-        app.ClickLast("Activate").Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("Other/activate")).Frame(2);
         app.Settle(2);
 
         Assert.Equal(Other, app.AppState.Lists.Active);
@@ -549,7 +549,7 @@ public sealed class AssemblyListingTests
     {
         var app = OpenedDialog();
 
-        app.Click("New list").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("New list")).Frame(2);
         app.Frames.Type("Work").Frame(2);
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
 
@@ -564,8 +564,8 @@ public sealed class AssemblyListingTests
         var app = OpenedDialog();
         var preset = AssemblyListPresets.ListInstalled(new InstalledRuntime())[0];
 
-        app.Click("Add preconfigured").Frame(2);
-        app.ClickMenuItem(preset.Name).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Add preconfigured")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, preset.Name)).Frame(2);
 
         Assert.Equal(preset.Name, Assert.IsType<ListsDialogMode.Renaming>(app.Ui.ListsDialog.Mode).List);
         Assert.Equal(preset.Paths, AssemblyLists.GetPaths(app.AppState.Lists, preset.Name));
@@ -577,7 +577,7 @@ public sealed class AssemblyListingTests
     {
         var app = OpenedDialog();
 
-        app.DoubleClick(Other).Frame(2);
+        app.DoubleClickOn(Selector.WithText(Other)).Frame(2);
         Assert.Equal(Other, Assert.IsType<ListsDialogMode.Renaming>(app.Ui.ListsDialog.Mode).List);
         app.Frames.Type("Gone").Frame(2);
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
@@ -593,11 +593,11 @@ public sealed class AssemblyListingTests
     {
         var app = OpenedDialog();
 
-        app.ClickLast(Icons.ListsDelete).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("delete")).Frame(2);
         Assert.True(app.Frames.Drew("Delete assembly list"));
         Assert.Equal(SavedAssemblyLists.DefaultName, Assert.IsType<ListsDialogMode.ConfirmingDelete>(app.Ui.ListsDialog.Mode).List);
         Assert.Equal(Other, AssemblyLists.FindReplacement(app.AppState.Lists, SavedAssemblyLists.DefaultName));
-        app.Click("Delete list").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Delete list")).Frame(2);
         app.Settle(2);
 
         Assert.Equal([Other], app.AppState.Lists.Names);
@@ -609,7 +609,7 @@ public sealed class AssemblyListingTests
     {
         var app = OpenedDialog();
 
-        app.ClickLast(Icons.ListsDelete).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("delete")).Frame(2);
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
         app.Frames.FrameTime = UiWidgets.DialogOutSeconds;
         app.Frames.Frame(2);

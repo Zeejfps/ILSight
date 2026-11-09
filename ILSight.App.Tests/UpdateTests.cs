@@ -90,7 +90,7 @@ public sealed class UpdateTests : IDisposable
 
     private static void ClickCheckForUpdates(AppDriver app)
     {
-        app.Click(Strings.En.AboutCheckForUpdates).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(Strings.En.AboutCheckForUpdates)).Frame(2);
     }
 
     [Fact]
@@ -217,7 +217,7 @@ public sealed class UpdateTests : IDisposable
 
     private static void Ask<T>(AppDriver app) where T : UpdateStatus
     {
-        app.Click(app.Ui.Strings.AboutCheckForUpdates).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(app.Ui.Strings.AboutCheckForUpdates)).Frame(2);
         AwaitStatus<T>(app);
         app.Run(2);
     }
@@ -232,7 +232,7 @@ public sealed class UpdateTests : IDisposable
         AwaitStatus<UpdateStatus.Ready>(app);
         app.Run(2);
 
-        app.Click(Strings.En.AboutRestartToUpdate("9.0.0")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(Strings.En.AboutRestartToUpdate("9.0.0"))).Frame(2);
         app.RunUntil(() => app.Frames.QuitRequested);
 
         Assert.Same(feed.Downloaded, feed.Applied);
@@ -247,7 +247,7 @@ public sealed class UpdateTests : IDisposable
         AwaitStatus<UpdateStatus.Ready>(app);
         app.Run(2);
 
-        app.Click(Strings.En.AboutRestartToUpdate("9.0.0")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(Strings.En.AboutRestartToUpdate("9.0.0"))).Frame(2);
         AwaitStatus<UpdateStatus.Failed>(app);
         app.Run(2);
 
@@ -263,7 +263,7 @@ public sealed class UpdateTests : IDisposable
         Assert.True(app.AppState.Updates.CheckAutomatically);
 
         OpenAbout(app);
-        app.Click(Strings.En.AboutCheckAutomatically).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(Strings.En.AboutCheckAutomatically)).Frame(2);
         app.Run(2);
 
         Assert.False(_temp.Settings().CheckForUpdates);

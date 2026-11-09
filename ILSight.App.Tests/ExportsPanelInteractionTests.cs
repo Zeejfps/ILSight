@@ -100,7 +100,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
 
         app.Frames.Wait(1).Click(app.TextRect("Greeter"), button: PointerButton.Right).Frame(2);
         Assert.True(app.Frames.Drew("Copy folder path"));
-        app.ClickMenuItem("Remove from history").Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Remove from history")).Frame();
 
         Assert.Equal("Farewell", Assert.Single(app.AppState.FinishedExports).Name);
     }

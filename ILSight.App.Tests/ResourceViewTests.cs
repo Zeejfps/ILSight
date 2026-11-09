@@ -61,11 +61,11 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = ShowResource("logo.png");
 
-        app.ClickLast(Icons.ResourceZoomIn).Frame();
-        app.ClickLast(Icons.ResourceZoomIn).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
         var zoomed = DrawnSize(app, tab);
         app.TextRect("400%");
-        app.ClickLast(Icons.ResourceZoomReset).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-reset")).Frame();
 
         Assert.Equal((8f, 8f), zoomed);
         Assert.Equal((2f, 2f), DrawnSize(app, tab));
@@ -77,7 +77,7 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = ShowResource("shape.svg");
 
-        app.ClickLast(Icons.ResourceZoomIn).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
 
         Assert.Equal((8f, 4f), DrawnSize(app, tab));
         Assert.Equal((8, 4), UploadedSize(app, tab));
@@ -87,7 +87,7 @@ public sealed class ResourceViewTests
     public void A_zoom_lasts_until_another_picture_arrives_in_the_tab()
     {
         var (app, tab) = ShowResource("shape.svg");
-        app.ClickLast(Icons.ResourceZoomIn).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
         var zoomedBefore = !DocumentPanels.GetView(app.Ui.Documents, tab).Picture.Zoom.IsOwnSize;
 
         app.Show(app.Node(["Resources", "logo.png"]), 3);
@@ -102,10 +102,10 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = ShowResource("shape.svg");
 
-        app.Click("Source").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Source")).Frame(2);
         var showsSource = DocumentPanels.GetView(app.Ui.Documents, tab).Picture.ShowsSource;
         var drewPicture = app.Frames.Canvas.Images.Any(i => i.Inputs.ImageId == ImageOf(app, tab));
-        app.Click("Picture").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Picture")).Frame(2);
 
         Assert.True(showsSource);
         Assert.False(drewPicture);

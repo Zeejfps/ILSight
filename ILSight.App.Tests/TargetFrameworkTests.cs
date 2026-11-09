@@ -23,8 +23,8 @@ public sealed class TargetFrameworkTests
     {
         var row = app.TextRect(FixturesOf(app.AppState).Name);
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
-        app.ClickMenuItem("Target framework").Frame();
-        app.ClickMenuItem(item).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Target framework")).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame();
         app.Settle(2);
     }
 

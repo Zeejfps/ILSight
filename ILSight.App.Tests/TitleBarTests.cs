@@ -56,7 +56,7 @@ public sealed class TitleBarTests : IDisposable
     public void With_a_menu_open_hovering_the_app_icon_opens_the_window_menu_as_the_other_menus_do()
     {
         var app = WithTitleBarToDrawIn();
-        app.Click("File").Frame();
+        app.Frames.ClickOn(Selector.WithText("File")).Frame();
         var icon = app.Frames.RectOf(AppIcon);
 
         app.Frames.MovePointer(icon.X + icon.Width / 2f, icon.Y + icon.Height / 2f).Frame(2);
@@ -72,7 +72,7 @@ public sealed class TitleBarTests : IDisposable
 
         app.Frames.ClickOn(AppIcon);
         app.Run();
-        app.ClickMenuItem("Maximize");
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Maximize"));
 
         Assert.Equal(WindowState.Maximized, app.Frames.RequestedWindowState);
     }
@@ -84,14 +84,14 @@ public sealed class TitleBarTests : IDisposable
 
         app.Frames.ClickOn(AppIcon);
         app.Run();
-        app.ClickMenuItem("Restore");
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Restore"));
         Assert.Null(app.Frames.RequestedWindowState);
         app.Frames.Key(KeyboardKey.Escape).Frame();
 
         app.Frames.WindowBounds = new WindowBounds(0, 0, 1000, 700, Maximized: true);
         app.Frames.ClickOn(AppIcon);
         app.Run();
-        app.ClickMenuItem("Restore");
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Restore"));
         Assert.Equal(WindowState.Normal, app.Frames.RequestedWindowState);
     }
 
@@ -102,13 +102,13 @@ public sealed class TitleBarTests : IDisposable
         OpenDisplayOptions(app.Ui);
         app.Run();
 
-        app.Click(SystemTitleBarOption).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(SystemTitleBarOption)).Frame(2);
 
         Assert.True(app.Ui.Display.SystemTitleBar);
         Assert.Null(app.Frames.TitleBarBackground);
         Assert.Empty(app.Frames.TitleBarDragAreas);
 
-        app.Click(SystemTitleBarOption).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(SystemTitleBarOption)).Frame(2);
 
         Assert.False(app.Ui.Display.SystemTitleBar);
         Assert.NotNull(app.Frames.TitleBarBackground);

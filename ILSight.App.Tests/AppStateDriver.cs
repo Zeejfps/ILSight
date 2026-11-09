@@ -400,11 +400,6 @@ internal sealed class AppDriver
     /// <summary>Where <paramref name="icon"/> was last drawn, as <see cref="LastTextRect(string)"/>.</summary>
     public UiRect LastTextRect(IconGlyph icon) => LastTextRect(BuiltInGlyphs.Text(icon));
 
-    public UiFrames Click(IconGlyph icon) => Frames.Click(TextRect(icon));
-
-    /// <summary>Clicks where <paramref name="icon"/> was last drawn, as <see cref="ClickLast(string)"/>.</summary>
-    public UiFrames ClickLast(IconGlyph icon) => Frames.Click(LastTextRect(icon));
-
     /// <summary>Where the text was drawn on the last frame, in window coordinates.</summary>
     public UiRect TextRect(string text) => Drawn(text, Frames.Canvas.Texts.FirstOrDefault(t => t.Inputs.Text == text));
 
@@ -468,35 +463,13 @@ internal sealed class AppDriver
 
     private float StatusBarTop => Frames.Height - Theme.StatusBarHeight - 0.5f;
 
-    public UiFrames MoveTo(string text) => Frames.MoveTo(Selector.WithText(text)).Frame();
-
-    public UiFrames Click(string text) => Frames.ClickOn(Selector.WithText(text));
-
-    /// <summary>Clicks the first text drawn starting with <paramref name="prefix"/>, as a label cut
-    /// short with an ellipsis is.</summary>
-    public UiFrames ClickStartingWith(string prefix)
-    {
-        var drawn = Frames.Canvas.Texts.FirstOrDefault(t => t.Inputs.Text.StartsWith(prefix, StringComparison.Ordinal));
-        return Frames.Click(Drawn(prefix, drawn));
-    }
-
-    /// <summary>Clicks the last drawn <paramref name="text"/>: the one in the topmost open menu
-    /// when the same text is also on the window below it.</summary>
-    public UiFrames ClickMenuItem(string text) => Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, text));
-
-    /// <summary>Right-clicks the tree row drawn as <paramref name="row"/> and picks <paramref name="item"/>
+    /// <summary>Right-clicks the tree row labelled <paramref name="row"/> and picks <paramref name="item"/>
     /// from its menu.</summary>
     public void PickFromTreeMenu(string row, string item)
     {
         Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, row), PointerButton.Right).Frame();
-        ClickMenuItem(item).Frame();
+        Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame();
     }
-
-    /// <summary>Clicks where <paramref name="text"/> was last drawn, such as an icon that the assemblies
-    /// panel's toolbar also draws.</summary>
-    public UiFrames ClickLast(string text) => Frames.Click(LastTextRect(text));
-
-    public UiFrames DoubleClick(string text) => DoubleClickOn(Selector.WithText(text));
 
     /// <summary>Double-clicks where a press reaches the node <paramref name="selector"/> names.</summary>
     public UiFrames DoubleClickOn(Selector selector)

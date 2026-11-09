@@ -138,12 +138,12 @@ public sealed class CloseAssembliesTests
         app.RunUntil(() => app.AppState.Assemblies.Listed.Count == 2);
         app.Run(2);
 
-        app.Click(BuiltInGlyphs.Icons.AssembliesCloseAssembly).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         var closer = app.Ui.Closer;
         Assert.True(closer.IsOpen);
         closer.Order[1].Included = true;
         app.Run(2);
-        app.ClickLast(Strings.En.FileClose).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
         app.RunUntil(() => app.AppState.Assemblies.Listed.Count == 1);
 
         Assert.False(closer.IsOpen);

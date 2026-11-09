@@ -135,7 +135,7 @@ public sealed class ExportsPanelTests : IDisposable
         var start = Assert.IsType<ExportStart>(Exports.EnterQueue(app.AppState.Export, TestJobs.Named("Fixtures")).Result);
         app.Run(2);
 
-        app.Click("Cancel").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
 
         Assert.True(start.Token.IsCancellationRequested);
         Assert.True(app.AppState.Export.Running!.IsCancelling);

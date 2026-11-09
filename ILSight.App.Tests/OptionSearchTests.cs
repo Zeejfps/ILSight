@@ -158,7 +158,7 @@ public sealed class OptionSearchTests
         app.Ui.DecompilerOptionsQuery = "switch expressions";
         app.Run();
 
-        app.Click("C# 8.0 / VS 2019");
+        app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
         app.Settle(1);
 
         var changed = DecompilerToggle.All.Where(t => DecompilerToggles.IsChanged(app.AppState.DecompilerOptions, t));
@@ -189,7 +189,7 @@ public sealed class OptionSearchTests
         app.Run();
         Assert.True(app.Frames.Drew("No options match the search."));
 
-        app.Click("Clear search").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Clear search")).Frame(2);
 
         Assert.Equal("", app.Ui.DisplayOptionsQuery);
         Assert.True(app.Frames.Drew("UI scale"));
@@ -201,7 +201,7 @@ public sealed class OptionSearchTests
         var app = AppDriver.Opened(width: 1600f);
         OpenDisplayOptions(app.Ui);
         app.Run();
-        app.Click("Search options").Frame();
+        app.Frames.ClickOn(Selector.WithText("Search options")).Frame();
         app.Frames.Type("line").Frame();
         Assert.Equal("line", app.Ui.DisplayOptionsQuery);
 

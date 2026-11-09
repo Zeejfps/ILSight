@@ -114,8 +114,8 @@ public sealed class SplitDocumentTests
         var (app, left, right) = SideBySide();
         Assert.NotSame(app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left)), app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, right)));
 
-        app.Click("View");
-        app.ClickMenuItem("Close all documents").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close all documents")).Frame(2);
         app.Settle(2);
 
         Assert.Empty(app.AppState.Tabs.Open);

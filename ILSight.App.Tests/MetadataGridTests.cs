@@ -146,7 +146,7 @@ public sealed class MetadataGridTests
         var row = app.TextRect("Greeter");
 
         app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
-        app.ClickMenuItem("Show in metadata").Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Show in metadata")).Frame();
         app.Settle(3);
 
         var typeDefs = tab.Grid!;
@@ -223,9 +223,9 @@ public sealed class MetadataGridTests
         var (app, tab, grid, _) = ShowGreeterRow();
         var name = grid.Column("Name");
 
-        app.Click("Name");
+        app.Frames.ClickOn(Selector.WithText("Name"));
         var ascending = GridOf(app, tab).Order!.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
-        app.Click("Name");
+        app.Frames.ClickOn(Selector.WithText("Name"));
         var descending = GridOf(app, tab).Order!.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
 
         Assert.Equal(ascending.Order(StringComparer.CurrentCulture), ascending);
@@ -279,7 +279,7 @@ public sealed class MetadataGridTests
         var attributes = grid.Column("Attributes");
 
         app.Frames.Click(FunnelOf(app, "Attributes"));
-        app.Click("Public (0001)").Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Public (0001)")).Frame(2);
 
         var visibility = System.Reflection.TypeAttributes.VisibilityMask;
         Assert.NotEmpty(GridOf(app, tab).View);
