@@ -57,8 +57,7 @@ public sealed class AssemblyMenuTests
         app.Run(2);
 
         app.PickFromTreeMenu("Greeter", "Show in .NET API reference");
-        var row = app.TextRect("Hidden");
-        app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Hidden"), PointerButton.Right).Frame();
 
         Assert.Equal([MicrosoftDocs.FindPage(greeter)!], app.Frames.OpenedUrls);
         Assert.EndsWith("/ilsight.app.tests.fixtures.greeter", app.Frames.OpenedUrls[0]);
@@ -96,9 +95,8 @@ public sealed class AssemblyMenuTests
         var app = AppDriver.Opened();
         app.Run(2);
         var name = app.AppState.Assemblies.Assemblies[0].Name;
-        var row = app.TextRect(name);
 
-        app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, name), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Load dependencies")).Frame();
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"), Patience);
         app.Settle(2);

@@ -524,9 +524,8 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.Run(2);
         var name = app.AppState.Assemblies.Assemblies[0].Name;
-        var row = app.TextRect(name);
 
-        app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, name), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Scope search to this assembly")).Frame(2);
 
         Assert.Equal($"inassembly:{name} ", app.Ui.Search.Query);

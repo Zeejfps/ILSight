@@ -26,33 +26,31 @@ public sealed class OmnibarTests
         return DocumentPanels.GetView(app.Ui.Documents, tab).Breadcrumb.Crumbs;
     }
 
-    /// <summary>The row of the active document's omnibar: where its search button, the last search
-    /// icon drawn, was drawn.</summary>
-    private static UiRect BarRow(AppDriver app) => app.LastTextRect(BuiltInGlyphs.Icons.SearchField);
-
-    /// <summary>Where the active document's omnibar drew the crumb reading <paramref name="label"/>.</summary>
-    private static UiRect CrumbRect(AppDriver app, string label)
+    /// <summary>The crumb reading <paramref name="label"/>, in whichever document's bar shows it.</summary>
+    private static SemanticNode FindCrumb(AppDriver app, string label)
     {
-        var bar = BarRow(app);
-        return app.Frames.TextRects()
-            .Where(t => t.Text == label)
-            .Select(t => t.Rect)
-            .First(r => IsInRow(r, bar));
+        return app.Frames.Snapshot().Nodes.Single(n => IsPart(n, "crumb") && n.SelfAndDescendants().Any(c => c.Label == label));
     }
 
-    private static bool IsInRow(UiRect rect, UiRect row)
+    private static bool IsPart(SemanticNode node, string name)
     {
-        var middle = rect.Y + rect.Height / 2;
-        return middle > row.Y && middle < row.Y + row.Height;
+        var path = node.Path;
+        if (path == null)
+            return false;
+        return path.Segments[^1] is TestSegment.Named named && named.Name == name;
     }
 
-    /// <summary>Clicks the arrow after the crumb reading <paramref name="label"/>.</summary>
+    /// <summary>Clicks the crumb reading <paramref name="label"/>.</summary>
+    private static UiFrames ClickCrumb(AppDriver app, string label)
+    {
+        return app.Frames.ClickOn(new Selector.ByPath(FindCrumb(app, label).Path!));
+    }
+
+    /// <summary>Clicks the arrow after the crumb reading <paramref name="label"/>, which shares its depth.</summary>
     private static void ClickArrowAfter(AppDriver app, string label)
     {
-        var crumb = CrumbRect(app, label);
-        var theme = app.Theme;
-        var x = crumb.X + crumb.Width + theme.GapTight + theme.IconSize / 2;
-        app.Frames.Click(x, crumb.Y + crumb.Height / 2).Frame(2);
+        var crumb = FindCrumb(app, label).Path!.Segments;
+        app.Frames.ClickOn(GetPath([.. crumb.Take(crumb.Count - 1), new TestSegment.Named("children")])).Frame(2);
     }
 
     /// <summary>Starts a search in the active bar with Ctrl+L and types <paramref name="query"/>, waiting
@@ -78,8 +76,8 @@ public sealed class OmnibarTests
             .ToList();
 
         Assert.Equal([FixturesAssembly, AppStateDriver.FixturesNamespace, "Greeter"], labels);
-        CrumbRect(app, FixturesAssembly);
-        CrumbRect(app, "Greeter");
+        FindCrumb(app, FixturesAssembly);
+        FindCrumb(app, "Greeter");
     }
 
     [Fact]
@@ -101,7 +99,7 @@ public sealed class OmnibarTests
     {
         var app = Showing("Greeter");
 
-        app.Frames.Click(CrumbRect(app, AppStateDriver.FixturesNamespace)).Frame(2);
+        ClickCrumb(app, AppStateDriver.FixturesNamespace).Frame(2);
         app.Settle(2);
 
         Assert.Same(app.Node(AppStateDriver.FixturesNamespace), app.AppState.Tabs.Active!.Node);
@@ -157,7 +155,7 @@ public sealed class OmnibarTests
         Assert.Equal(DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!), searchedIn);
         Assert.Same(app.Fixture("Farewell"), app.AppState.Tabs.Active!.Node);
         Assert.False(omnibar.IsSearching);
-        CrumbRect(app, "Farewell");
+        FindCrumb(app, "Farewell");
     }
 
     [Fact]
@@ -177,7 +175,7 @@ public sealed class OmnibarTests
         Assert.Same(omnibar.Search.Rows[1], second);
         Assert.False(omnibar.IsSearching);
         Assert.Same(app.Fixture("Greeter"), app.AppState.Tabs.Active!.Node);
-        CrumbRect(app, "Greeter");
+        FindCrumb(app, "Greeter");
     }
 
     [Fact]
@@ -198,7 +196,7 @@ public sealed class OmnibarTests
     {
         var app = Showing("Greeter");
 
-        app.Frames.Click(BarRow(app)).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/search")).Frame(2);
 
         Assert.True(OmnibarView.IsSearchingIn(app.Ui.Omnibar, DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!)));
         Assert.True(app.Frames.WantsTextInput);

@@ -143,9 +143,8 @@ public sealed class MetadataGridTests
         Trees.RevealNode(app.Ui.Tree, greeter);
         app.Run(2);
         var tab = app.AppState.Tabs.Active!;
-        var row = app.TextRect("Greeter");
 
-        app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Show in metadata")).Frame();
         app.Settle(3);
 

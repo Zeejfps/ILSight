@@ -113,11 +113,7 @@ public sealed class AnalyzerTests
         var d = app.Driver;
         Trees.RevealNode(d.Ui.Tree, First(d));
         app.Run(2);
-        var leftmost = app.Frames.TextRects()
-            .Where(t => t.Text == First(d).Text)
-            .Select(t => t.Rect)
-            .MinBy(r => r.X);
-        ClickAt(app, leftmost);
+        app.Frames.ClickOn(GetFixtureRow("Outline", First(d).Text));
         d.Settle();
 
         app.Frames.Key(Shortcuts.Analyze).Frame(2);
@@ -143,8 +139,7 @@ public sealed class AnalyzerTests
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
         ShowFirstCaller(app);
-        var third = app.Frames.TextRects().Last(t => t.Text.StartsWith("Third()"));
-        ClickAt(app, third.Rect).Frame();
+        app.Frames.ClickOn(GetAnalyzerRow("First() : int", "Used By", "Third() : int")).Frame();
 
         app.Frames.Key(Shortcuts.Analyze).Frame(2);
 
@@ -162,8 +157,6 @@ public sealed class AnalyzerTests
         app.Run(3);
     }
 
-    private static UiFrames ClickAt(AppDriver app, UiRect row, PointerButton button = PointerButton.Left) =>
-        app.Frames.Click(row.X + 4f, row.Y + row.Height / 2, button);
 
     [Fact]
     public void A_reference_in_the_code_is_analyzed_once_it_is_found()
@@ -498,9 +491,7 @@ public sealed class AnalyzerTests
         var d = app.Driver;
         d.Analyze(First(d));
         app.Run(3);
-        var row = app.Frames.TextRects().Last(t => t.Text.StartsWith("First()")).Rect;
-
-        ClickAt(app, row, PointerButton.Right).Frame();
+        app.Frames.ClickOn(GetAnalyzerRow("First() : int"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Clear")).Frame(2);
 
         Assert.Empty(d.AppState.Analyzer.Roots);
@@ -554,8 +545,7 @@ public sealed class AnalyzerTests
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
         ShowFirstCaller(app);
-        var third = app.Frames.TextRects().Last(t => t.Text.StartsWith("Third()"));
-        ClickAt(app, third.Rect).Frame();
+        app.Frames.ClickOn(GetAnalyzerRow("First() : int", "Used By", "Third() : int")).Frame();
 
         app.Frames.Key(KeyboardKey.Delete).Frame(2);
 

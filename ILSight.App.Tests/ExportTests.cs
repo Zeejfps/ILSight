@@ -296,7 +296,7 @@ public sealed class ExportTests : IDisposable
 
         Assert.True(app.Frames.Drew("Exporting 2/3 · Fixtures"));
         Assert.True(app.Frames.Drew("1 more queued"));
-        app.Frames.Click(app.StatusText(Text(Icons.ExportCancel))).Frame();
+        app.Frames.ClickOn(Selector.AtPath("cancel-export")).Frame();
 
         Assert.True(start.Token.IsCancellationRequested);
     }

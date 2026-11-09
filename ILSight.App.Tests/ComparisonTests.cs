@@ -266,8 +266,7 @@ public sealed class ComparisonTests
     /// <summary>Right-clicks the left assembly's row and picks Compare with… from its menu.</summary>
     private static void PickCompareWith(AppDriver app)
     {
-        var row = app.TextRect("ApiDiffSample");
-        app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(GetTreeRow(LeftName), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Compare with…")).Frame();
         app.Run(2);
     }

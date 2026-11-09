@@ -359,7 +359,7 @@ public sealed class AssemblyListingTests
         var greeter = app.Fixture("Greeter");
         app.Show(greeter, 2);
 
-        app.Frames.Click(app.TextRect(Icons.AssembliesCollapseAll)).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/collapse")).Frame(2);
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
         Assert.Same(greeter, app.AppState.Tabs.Active!.Node);
@@ -373,9 +373,8 @@ public sealed class AssemblyListingTests
         var farewell = app.Fixture("Farewell");
         app.Show(greeter, 2);
         var first = app.AppState.Tabs.Active!;
-        var row = app.TextRect("Farewell");
 
-        app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Farewell"), PointerButton.Right).Frame();
         var shownAfterRightClick = first.Node;
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Open in new tab")).Frame(2);
         app.Settle(2);
@@ -414,9 +413,8 @@ public sealed class AssemblyListingTests
         var farewell = app.Fixture("Farewell");
         app.Show(app.Fixture("Greeter"), 2);
         var tab = app.AppState.Tabs.Active!;
-        var row = app.TextRect("Farewell");
 
-        app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Farewell"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Open")).Frame(2);
         app.Settle(2);
 
@@ -451,7 +449,7 @@ public sealed class AssemblyListingTests
         app.Ui.Tree.View.Select(app.Ui.Tree.Roots[0]);
         app.Run(2);
 
-        app.Frames.Click(app.TextRect(Icons.AssembliesSelectOpened)).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/select-opened")).Frame(2);
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
         Assert.True(app.Ui.Tree.View.IsExpanded(app.Node(AppStateDriver.FixturesNamespace)));

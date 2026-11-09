@@ -1,3 +1,4 @@
+using System.Globalization;
 using ZGF.Desktop;
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
@@ -417,11 +418,25 @@ internal static class ExportsPanelView
                 Detail(ui, detail, OutcomeTextColor(theme, report));
                 Folder(ui, report.Folder);
             }
+            RecordFinishedPaths(ui, hit.Id, report.Run);
             ui.Tooltip(hit.Id, report.Folder);
         }
         ui.Separator();
         return removed;
     }
+
+    /// <summary>Has tests find a finished export's row by its number, from 1 for the first export of the session, and
+    /// its buttons under it, as <c>#1/open-folder</c>, since every row has the same buttons.</summary>
+    private static void RecordFinishedPaths(Ui<UiState> ui, int rowId, ExportRun run)
+    {
+        if (!ui.WantsSemantics)
+            return;
+        ui.RecordTestPath(rowId, new TestSegment.Keyed(run.Number.ToString(CultureInfo.InvariantCulture)));
+        foreach (var name in FinishedButtons)
+            ui.RecordTestPath(ui.GetId(name), new TestSegment.Named(name), under: rowId);
+    }
+
+    private static readonly string[] FinishedButtons = ["open-folder", "show-report", "remove"];
 
     private static string DescribeFinished(Strings t, ExportReport report)
     {

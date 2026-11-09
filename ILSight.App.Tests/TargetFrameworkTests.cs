@@ -21,8 +21,7 @@ public sealed class TargetFrameworkTests
     /// Target framework submenu, then waits for the reload.</summary>
     private static void PickFramework(AppDriver app, string item)
     {
-        var row = app.TextRect(FixturesOf(app.AppState).Name);
-        app.Frames.Click(row.X + 2f, row.Y + row.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, FixturesOf(app.AppState).Name), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Target framework")).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame();
         app.Settle(2);

@@ -30,8 +30,7 @@ public sealed class TabMenuTests
 
     private static void PickFromTabMenu(AppDriver app, string title, string item)
     {
-        var tab = app.LastTabTitleRect(title);
-        app.Frames.Click(tab.X + 4f, tab.Y + tab.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(GetTab(title), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame(2);
         app.Settle(2);
     }
@@ -85,9 +84,8 @@ public sealed class TabMenuTests
         var app = AppDriver.Opened(width: 1600f);
         app.Settle(2);
         var title = NodeText.Name(app.AppState.Tabs.Active!.Node!);
-        var tab = app.LastTabTitleRect(title);
 
-        app.Frames.Click(tab.X + 4f, tab.Y + tab.Height / 2, PointerButton.Right).Frame();
+        app.Frames.ClickOn(GetTab(title), PointerButton.Right).Frame();
 
         Assert.True(app.Frames.Drew("Close others"));
         Assert.True(app.Frames.Drew(Shortcuts.CloseTab.Label));

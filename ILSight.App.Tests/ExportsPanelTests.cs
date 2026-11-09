@@ -52,7 +52,7 @@ public sealed class ExportsPanelTests : IDisposable
         SaveCode(app.AppState, app.Fixture("Farewell"), Path.Combine(Folder("Second"), "Farewell.cs"));
         app.Settle(2);
 
-        app.Frames.Click(app.LastTextRect("Open folder")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/open-folder")).Frame();
 
         Assert.Equal([first], app.Frames.OpenedFolders);
     }
@@ -66,7 +66,7 @@ public sealed class ExportsPanelTests : IDisposable
         SaveCode(app.AppState, app.Fixture("Farewell"), _temp.PathOf("Farewell.cs"));
         app.Settle(2);
 
-        app.Frames.Click(app.LastTextRect(Icons.ExportShowReport)).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report")).Frame(2);
 
         var tab = app.AppState.Tabs.Active!;
         var shown = Assert.IsType<TabContent.Report>(tab.Content);
@@ -232,7 +232,7 @@ public sealed class ExportsPanelTests : IDisposable
         app.Run(2);
         Assert.False(app.Ui.Layout.Contains(DockPanels.Exports));
 
-        app.Frames.Click(app.StatusText("Exporting Fixtures…")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("export-glance")).Frame(2);
 
         Assert.True(app.Ui.Layout.Contains(DockPanels.Exports));
         Exports.LeaveQueue(app.AppState.Export, start);

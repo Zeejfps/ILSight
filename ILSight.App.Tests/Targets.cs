@@ -26,6 +26,13 @@ internal static class Targets
         return GetTreeRow([AppStateDriver.FixturesAssembly, AppStateDriver.FixturesNamespace, .. keys]);
     }
 
+    /// <summary>The row of the analyzer at <paramref name="keys"/>: the labels of it and of every row above it, an
+    /// analysis by its header without the count after it.</summary>
+    public static Selector GetAnalyzerRow(params string[] keys)
+    {
+        return GetPath([Name("dock"), Name("analyzer"), Name("analyzer"), .. keys.Select(Key)]);
+    }
+
     /// <summary>The item <paramref name="name"/> of the menu a tree row's right-click opens.</summary>
     public static Selector GetTreeMenuItem(string name)
     {

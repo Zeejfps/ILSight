@@ -141,6 +141,15 @@ public static class Trees
         return node.Subject is NodeSubject.Module && tree.RootLabels.TryGetValue(node, out var label) ? label.Row : NodeText.Name(node);
     }
 
+    /// <summary>What tells a row apart from its siblings, for tests to find it by: its label, but an assembly by
+    /// the name tabs give it, which adds its version, or its folder, only when another listed has its name.</summary>
+    public static string GetKey(BrowseTree tree, BrowseNode node)
+    {
+        if (node.Subject is NodeSubject.Module)
+            return GetLabel(tree, node);
+        return GetRowLabel(tree, node);
+    }
+
     private static bool IsNested(BrowseTree tree, BrowseNode node)
     {
         return tree.NestsNamespaces && node.EnclosingNamespace != null;
