@@ -159,6 +159,7 @@ internal static class Screens
 /// name a locale.</summary>
 internal sealed class AppStateDriver
 {
+    public const string FixturesAssembly = "ILSight.App.Tests";
     public const string FixturesNamespace = "ILSight.App.Tests.Fixtures";
 
     private readonly PostedActions _posted = PostedActions.OfThisTest();
@@ -258,7 +259,7 @@ internal sealed class AppStateDriver
     private bool IsSettled()
     {
         var appState = AppState;
-        return !appState.IsReloading && !appState.IsReopening && !appState.IsFindingDocuments && !appState.IsFindingAnalyses &&!appState.IsResolving && !appState.IsImporting && !appState.IsExporting && !appState.IsDiagramming && !appState.IsComparing && !IsSearching() && appState.Tabs.Open.All(static t => !t.IsBusy) && _posted.IsEmpty;
+        return appState.Work.Outstanding.Count == 0 && !appState.IsReloading && !appState.IsReopening && !appState.IsFindingDocuments && !appState.IsFindingAnalyses &&!appState.IsResolving && !appState.IsImporting && !appState.IsExporting && !appState.IsDiagramming && !appState.IsComparing && !IsSearching() && appState.Tabs.Open.All(static t => !t.IsBusy) && _posted.IsEmpty;
     }
 
     private bool IsSearching()
@@ -399,10 +400,10 @@ internal sealed class AppDriver
     /// <summary>Where <paramref name="icon"/> was last drawn, as <see cref="LastTextRect(string)"/>.</summary>
     public UiRect LastTextRect(IconGlyph icon) => LastTextRect(BuiltInGlyphs.Text(icon));
 
-    public UiFrames Click(IconGlyph icon) => Click(BuiltInGlyphs.Text(icon));
+    public UiFrames Click(IconGlyph icon) => Frames.Click(TextRect(icon));
 
     /// <summary>Clicks where <paramref name="icon"/> was last drawn, as <see cref="ClickLast(string)"/>.</summary>
-    public UiFrames ClickLast(IconGlyph icon) => ClickLast(BuiltInGlyphs.Text(icon));
+    public UiFrames ClickLast(IconGlyph icon) => Frames.Click(LastTextRect(icon));
 
     /// <summary>Where the text was drawn on the last frame, in window coordinates.</summary>
     public UiRect TextRect(string text) => Drawn(text, Frames.Canvas.Texts.FirstOrDefault(t => t.Inputs.Text == text));
@@ -467,9 +468,9 @@ internal sealed class AppDriver
 
     private float StatusBarTop => Frames.Height - Theme.StatusBarHeight - 0.5f;
 
-    public UiFrames MoveTo(string text) => Frames.MovePointer(TextRect(text)).Frame();
+    public UiFrames MoveTo(string text) => Frames.MoveTo(Selector.WithText(text)).Frame();
 
-    public UiFrames Click(string text) => Frames.Click(TextRect(text));
+    public UiFrames Click(string text) => Frames.ClickOn(Selector.WithText(text));
 
     /// <summary>Clicks the first text drawn starting with <paramref name="prefix"/>, as a label cut
     /// short with an ellipsis is.</summary>
@@ -481,14 +482,13 @@ internal sealed class AppDriver
 
     /// <summary>Clicks the last drawn <paramref name="text"/>: the one in the topmost open menu
     /// when the same text is also on the window below it.</summary>
-    public UiFrames ClickMenuItem(string text) => Frames.Click(LastTextRect(text));
+    public UiFrames ClickMenuItem(string text) => Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, text));
 
     /// <summary>Right-clicks the tree row drawn as <paramref name="row"/> and picks <paramref name="item"/>
     /// from its menu.</summary>
     public void PickFromTreeMenu(string row, string item)
     {
-        var at = TextRect(row);
-        Frames.Click(at.X + 2f, at.Y + at.Height / 2, PointerButton.Right).Frame();
+        Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, row), PointerButton.Right).Frame();
         ClickMenuItem(item).Frame();
     }
 
@@ -496,5 +496,16 @@ internal sealed class AppDriver
     /// panel's toolbar also draws.</summary>
     public UiFrames ClickLast(string text) => Frames.Click(LastTextRect(text));
 
-    public UiFrames DoubleClick(string text) => Frames.DoubleClick(TextRect(text));
+    public UiFrames DoubleClick(string text) => DoubleClickOn(Selector.WithText(text));
+
+    /// <summary>Double-clicks where a press reaches the node <paramref name="selector"/> names.</summary>
+    public UiFrames DoubleClickOn(Selector selector)
+    {
+        var at = Frames.Target(selector) switch
+        {
+            TargetResult.Hittable hittable => hittable.At,
+            var other => throw new InvalidOperationException($"Cannot double-click {selector}: {other}"),
+        };
+        return Frames.DoubleClick(at.X, at.Y);
+    }
 }

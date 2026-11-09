@@ -115,7 +115,7 @@ public sealed class OmnibarTests
         var menu = app.Ui.Omnibar.Menu;
         Assert.NotNull(menu);
         var selected = menu.Selection.Item;
-        app.ClickMenuItem("Farewell").Frame(2);
+        app.Frames.ClickOn(GetCrumbChild("document-1", "Farewell")).Frame(2);
         app.Settle(2);
 
         Assert.Same(app.Fixture("Greeter"), selected);
@@ -183,7 +183,7 @@ public sealed class OmnibarTests
         var app = Showing("Greeter");
         SearchFor(app, "Farewell");
 
-        app.ClickMenuItem("Farewell").Frame(2);
+        app.Frames.ClickOn(GetSuggestion("document-1", "Farewell")).Frame(2);
         app.Settle(2);
 
         Assert.Same(app.Fixture("Farewell"), app.AppState.Tabs.Active!.Node);

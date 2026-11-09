@@ -129,6 +129,7 @@ public sealed class AppTests
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved("broken.dll", "first\nsecond\nthird\nfourth"));
         app.Run(2);
 
+        app.Frames.ClickOn(Selector.AtPath("error-close")).Frame(2);
         app.MoveTo("1 error").Wait(2).Frame(2);
 
         Assert.True(app.Frames.Drew("Cannot save broken.dll — first"));
@@ -152,7 +153,7 @@ public sealed class AppTests
         app.Click("Copy");
         Assert.StartsWith("Cannot save first.dll", app.Frames.Clipboard.Text);
 
-        app.Click("Close");
+        app.Frames.ClickOn(Selector.AtPath("error-close"));
         app.Run(2);
         Assert.False(app.Ui.ErrorDialog.IsOpen);
         Assert.Equal(2, app.AppState.Errors.Entries.Count);
@@ -178,12 +179,12 @@ public sealed class AppTests
         var app = new AppDriver();
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved("first.dll", "details one"));
         app.Run(2);
-        app.Click("Close");
+        app.Frames.ClickOn(Selector.AtPath("error-close"));
         app.Run(2);
 
-        app.Click("1 error");
+        app.Click("1 error").Frame();
         Assert.True(app.Ui.ErrorDialog.IsOpen);
-        app.Click("Close");
+        app.Frames.ClickOn(Selector.AtPath("error-close"));
         app.Run(2);
 
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved("second.dll", "details two"));
@@ -718,7 +719,7 @@ public sealed class AppTests
         app.Click("Check for updates").Frame(2);
         Assert.True(app.Ui.IsAboutOpen);
 
-        app.Click("Close").Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("about-close")).Frame(2);
 
         Assert.False(app.Ui.IsAboutOpen);
         Assert.False(app.Frames.Drew(AppVersions.Decompiler));

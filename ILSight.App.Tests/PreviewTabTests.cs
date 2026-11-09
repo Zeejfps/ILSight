@@ -20,7 +20,7 @@ public sealed class PreviewTabTests
 
     private static void Pick(AppDriver app, string row)
     {
-        app.Click(row).Frame(2);
+        app.Frames.ClickOn(GetFixtureRow(row)).Frame(2);
         app.Settle(2);
     }
 

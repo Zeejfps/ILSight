@@ -279,7 +279,7 @@ public sealed class MetadataGridTests
         var attributes = grid.Column("Attributes");
 
         app.Frames.Click(FunnelOf(app, "Attributes"));
-        app.ClickMenuItem("Public (0001)").Frame(2);
+        app.Click("Public (0001)").Frame(2);
 
         var visibility = System.Reflection.TypeAttributes.VisibilityMask;
         Assert.NotEmpty(GridOf(app, tab).View);

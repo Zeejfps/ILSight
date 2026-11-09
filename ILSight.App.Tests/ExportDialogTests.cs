@@ -438,10 +438,10 @@ public sealed class ExportDialogTests : IDisposable
         app.Frames.Key(Shortcuts.Export).Frame(2);
         Assert.True(app.Ui.ExportSetup.IsOpen);
         app.Frames.FilePicker.Answer = _temp.Path;
-        app.Click("Browse…").Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("browse")).Frame(2);
         Assert.Equal(_temp.Path, app.Ui.ExportSetup.Folder);
 
-        app.ClickMenuItem("Export").Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("export-start")).Frame(2);
         app.Settle(1);
 
         Assert.False(app.Ui.ExportSetup.IsOpen);

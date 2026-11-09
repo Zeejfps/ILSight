@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
@@ -256,6 +257,7 @@ internal static class OmnibarView
         var theme = ui.Theme;
         var node = crumb.Node;
         var i = ui.Interact("crumb");
+        RecordDepthPath(ui, i.Id, depth, "crumb");
         var width = Sizing.Shrink(CrumbMinWidth) with { Priority = depth };
         using (ui.Row(i.Id, new Box
         {
@@ -276,6 +278,15 @@ internal static class OmnibarView
             Commands.Later(ui.State, (node, inNewTab: IsCommandHeld(ui)), static (a, s) => PickNode(a, s.node, s.inNewTab));
         if (i.ClickedWith(PointerButton.Middle))
             Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
+    }
+
+    /// <summary>Has tests find a crumb's <paramref name="name"/>d part by the crumb's depth, as <c>#1/crumb</c>, since
+    /// two crumbs can read the same, such as an assembly and its namespace of one name.</summary>
+    private static void RecordDepthPath(Ui<UiState> ui, int id, int depth, string name)
+    {
+        if (!ui.WantsSemantics)
+            return;
+        ui.RecordTestPath(id, new TestPath([new TestSegment.Keyed(depth.ToString(CultureInfo.InvariantCulture)), new TestSegment.Named(name)]));
     }
 
     /// <summary>Public API in the text color, the rest muted, as the tree shows them.</summary>
@@ -309,6 +320,7 @@ internal static class OmnibarView
         var theme = ui.Theme;
         var omnibar = ui.State.Omnibar;
         var i = ui.Interact("children");
+        RecordDepthPath(ui, i.Id, index, "children");
         if (i.Clicked)
             ToggleChildren(omnibar, panel, crumbs, index);
         var open = IsMenuOpenAt(omnibar, panel, node);
@@ -469,13 +481,23 @@ internal static class OmnibarView
         using var id = ui.Id(RuntimeHelpers.GetHashCode(child));
         using var row = list.Row(index, ui.GetId("child"), new Box { Gap = theme.GapTight });
         var color = row.Selected ? theme.SelectionText : CrumbColor(theme, child);
+        var label = Trees.GetRowLabel(ui.State.Tree, child);
         NodeIcons.Draw(ui, child);
-        ui.Text(Trees.GetRowLabel(ui.State.Tree, child), new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
+        ui.Text(label, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
+        RecordChildPath(ui, row.Interaction.Id, label);
         if (row.Interaction.Clicked)
             return new PickedChild(child, IsCommandHeld(ui));
         if (row.Interaction.ClickedWith(PointerButton.Middle))
             return new PickedChild(child, true);
         return new PickedChild(null, false);
+    }
+
+    /// <summary>Has tests find a child's row by its label, as <c>child/#Greeter</c>.</summary>
+    private static void RecordChildPath(Ui<UiState> ui, int id, string label)
+    {
+        if (!ui.WantsSemantics)
+            return;
+        ui.RecordTestPath(id, new TestPath([new TestSegment.Named("child"), new TestSegment.Keyed(label)]));
     }
 
     /// <summary>The search box, whose Enter goes to the selected match, else the best, and whose Up and
@@ -593,6 +615,7 @@ internal static class OmnibarView
         var nameColor = selected ? theme.SelectionText : theme.Text;
         using (ui.Row(i.Id, SuggestionBox(theme, selected, i.Hovered)))
         {
+            DescribeSuggestion(ui, i.Id, match.Text, selected);
             NodeIcons.Draw(ui, node);
             ui.Text(match.Text, new Box { Width = Sizing.Grow() with { Priority = 1 } }, color: nameColor, overflow: TextOverflow.Ellipsis);
             ui.Text(match.Location, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
@@ -602,6 +625,16 @@ internal static class OmnibarView
         if (i.ClickedWith(PointerButton.Middle))
             return new PickedMatch(match, true);
         return new PickedMatch(null, false);
+    }
+
+    /// <summary>Has tests find a suggestion by its text, as <c>suggestion/#Farewell</c>, as a list item that is
+    /// selected while it is the one Enter goes to.</summary>
+    private static void DescribeSuggestion(Ui<UiState> ui, int id, string text, bool selected)
+    {
+        if (!ui.WantsSemantics)
+            return;
+        ui.RecordTestPath(id, new TestPath([new TestSegment.Named("suggestion"), new TestSegment.Keyed(text)]));
+        ui.Semantics(SemanticRole.ListItem, text, selected ? SemanticStates.Selected : SemanticStates.None);
     }
 
     /// <summary>A row of a list that has focus, as the search box holds it for the suggestions.</summary>
