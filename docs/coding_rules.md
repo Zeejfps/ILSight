@@ -1,43 +1,213 @@
 # Coding rules
 
-Deciding where a boundary lives, which methods go on an interface and which properties on a class, is
-expensive and easy to get wrong, and worse for an AI that has to guess it. So we stop deciding. A type says
-what the data is, and a function says what is done to it.
+Guidelines for C#, meant to hold for any project. What is particular to one project, such as which type is
+the big one and what counts as external, goes in that project's own instructions.
 
-### 1. Types are data
+Written against C# 14 and .NET 10.
 
-A type holds fields and properties computed from them, which do no real work and change nothing. It has no
-methods. Use the
-plainest keyword that does the job:
+**How to read them:**
+
+- **MUST** and **MUST NOT**: no exceptions, other than the ones a rule names or a project lists (see
+  "Checked by").
+- **SHOULD** and **SHOULD NOT**: the default. Depart from it only for a reason, and say the reason when
+  handing back the code.
+- **MAY**: allowed, and never required.
+
+## Premises
+
+Three things have evidence behind them as ways to cut bugs:
+
+1. **Less code tends to have fewer bugs.** Size is one of the steadiest predictors of how many bugs a
+   program has. That argues for not writing what isn't needed. It doesn't argue for squeezing what is needed
+   into fewer lines.
+2. **Checking what crosses a boundary:** files, the network, user input. A check shows the data has the right
+   shape, and nothing more: not that it is permitted, current or safe to act on.
+3. **Types that can't hold an invalid state**, so the compiler rejects the mistake.
+
+The fourth is our own bet, and not proven:
+
+4. **Stop deciding where behaviour lives.** Deciding which methods go on an interface and which properties on
+   a class is expensive and easy to get wrong, and worse for an AI that has to guess it. So a type says what
+   the data is, and a function says what is done to it. Smaller code should also be simpler code: no
+   abstraction and no object-oriented machinery that hasn't been forced on us.
+
+OOP keeps one place: where there is no boundary to guess, as with `List` or `Dictionary` (rule 6).
+
+**When they pull apart.** A type that rules out a mistake costs code, so premises 1 and 3 often disagree. Pay
+the code where the mistake is one a caller could plausibly make, and not otherwise. Premise 4 gives way to
+the other three. The machinery these rules bring themselves, such as projections, seams and exception lists,
+answers to rule 1 like any other.
+
+## Less code
+
+### 1. Write less, and add no structure you haven't been forced into
+
+- You MUST NOT write what isn't needed yet: no speculative options, parameters or layers.
+- You MUST delete what is dead.
+- You SHOULD use the BCL before writing your own.
+- You MUST NOT add an abstraction for a variation that isn't in the code yet. A wrong guess at what varies
+  costs more than none. Two cases that look alike don't have to be generalized either.
+- You SHOULD NOT use inheritance beyond one level, or split a module just because it does two things.
+- An abstraction MUST make plain what matters to its caller about its cost: whether it does I/O, blocks,
+  allocates on a hot path, or runs a query. If you have to open it to learn that, it hides too much.
+- An abstraction MUST leave less to keep in your head at the call site than it adds.
+
+### 2. Keep data together until it splits itself
+
+You can't see where data should divide until a lot is built on it, so don't guess. Being large is no defect.
+
+- Data SHOULD start in one big type, and new data SHOULD be a field there, not a new type.
+- A class with one instance and one owner MAY fold into it.
+- A split that turns out wrong SHOULD be folded back.
+
+You MUST NOT split because it would be tidier. Split when one of these forces it:
+
+- **There's more than one**, such as one per open document.
+- **It lives for a different time.**
+- **It crosses a thread:** a background job gets its own copy.
+- **It crosses a project:** a lower project can't see the big type, so it has its own or a projection.
+- **The division has become obvious:** the same few fields change together, and the same functions take only
+  those.
+- **Fields must agree with each other.** Values that are only valid together are one value (rule 10).
+
+Unions still apply inside a big type. A function MUST take only what it touches: two fields if it needs two,
+a projection if it writes back, and the whole type only when it works on the whole of it.
+
+### 3. Interfaces only project data
+
+- You MUST NOT write an interface for behaviour.
+- Where something has to be swappable, you SHOULD take a function, or a record of functions when several go
+  together. You MUST NOT do either before a second case exists: a record of functions with one implementation
+  is an interface in disguise.
+- An interface MAY be a **projection**: a function that needs a subset of a big type declares it, and is
+  generic over anything that has it.
+
+```csharp
+public interface IHasTitle
+{
+    string Title { get; set; }
+}
+
+public static void Rename<T>(T item, string title) where T : class, IHasTitle
+```
+
+- A projection MUST hold only properties. A field can't satisfy one.
+- It SHOULD sit beside the function, and be shared only once two functions want the same subset.
+- The function MUST be generic rather than take the interface, so a struct read through it isn't boxed.
+- A function that writes back MUST constrain `T` to `class` or take `ref T`. Otherwise a struct is changed
+  only in the copy the function was handed.
+- You SHOULD pass the values instead where you can, as it is simpler. Use a projection when a function writes
+  back or needs too many to list.
+
+Where something takes a callback, you SHOULD hand it the static function, or a lambda over it where it needs
+more: `problem => Errors.Report(state, problem)`.
+
+## Data and functions
+
+### 4. Types are data
+
+A type holds fields, and properties computed from them. It MUST NOT have methods, and a computed property
+MUST NOT do real work or change anything. You SHOULD use the plainest keyword that does the job:
 
 - `sealed class`: state that changes or has an identity.
 - `struct`: a small value.
-- `record`: when you want comparison by value, `with`, or a one-line declaration (rule 7).
+- `record`: an id, a position or a result, where you want comparison by value.
 
-The only other code a type may hold:
+**A record compares by value.** You MUST NOT use one for anything that has an identity or that changes. It
+brings two hazards the compiler won't show:
+
+- **Equality:** as a key, or in `Remove`, `IndexOf` or `==`, it matches anything with the same contents, and a
+  mutable one changes its hash inside a set. Each field compares by its own type's rules, so a `List` field
+  still compares by reference.
+- **Cycles:** generated `Equals` and `GetHashCode` walk every field, and `ToString` every public member, so a
+  record that can reach itself can overflow the stack, even just from the debugger showing it.
+
+The only other code a type MAY hold:
 
 - a private constructor that only assigns, to stop a union or a validated type being built any other way;
 - `const`s, and `static readonly` instances of itself, such as `Empty` or `Default`, as long as they can't
   change;
 - equality members, where comparing by value needs them;
 - a `ToString` that is a one-liner over its own fields;
-- a method an external interface demands, forwarding to a static function;
-- the methods of a self-contained type (rule 9);
-- the per-case functions of a struct union (rule 2).
+- a method an external type demands, forwarding to a static function (rule 12);
+- the methods of a self-contained type (rule 6);
+- the per-case functions of a struct union (rule 8).
 
-**Constructors hold no logic.** A type is built with an object initializer, or by a static `Create` or `Parse`
-function, and parts it must have are `required`. On a plain class, `init` can't change later, and `with` doesn't
-apply. A positional record's declaration counts as data.
+**Constructors hold no logic.**
 
-**A value that may not be loaded is typed `Lazy<T>`**, and a function named `Ensure...` hands back the loaded
-`T`. Functions that need it take `T`, so the type says whether it's loaded. A memo of a plain computation is a
-public field filled by a function.
+- A constructor MUST only assign. A positional record's declaration counts as data.
+- A type MUST be built with an object initializer, or by a static `Create` or `Parse` function.
+- Parts it must have MUST be `required`. That makes the caller set them, and no more: what they are set to is
+  still for a type to say (rule 10).
 
-### 2. Prefer unions
+On a plain class, `init` can't be assigned later, though what it refers to can still change, and `with`
+doesn't apply.
 
-When something is one of several things, a result, a state, a kind of node, make it a union, so that what it
-can't be is impossible to write. Don't use optional fields and bools: N of them make 2^N states, when you meant
-about three.
+**Loaded or not is said by the type.**
+
+- A function that needs loaded data MUST take the loaded `T`, not something that might hold it.
+- A value loaded once, on first use, SHOULD be a `Lazy<T>`, with a function named `Ensure...` that hands back
+  the loaded `T`.
+- `Lazy<T>` remembers a failure and has no way to load asynchronously or to try again. Where loading can
+  fail, be retried or run in the background, its states SHOULD be a union (rule 8).
+
+### 5. Functions are static and grouped by feature
+
+- A function MUST be `static`, in a `static class` named for the feature, not the type: `Orders`, not
+  `OrderExtensions`.
+- It MUST take everything it works on as parameters. Anything else it needs is a bug in its signature.
+- It MUST NOT be an extension. Call it by its feature or with `using static`.
+
+### 6. Behaviour is only for what is entirely self-contained
+
+Encapsulation earns its place where there's no boundary to guess. A type of our own MAY carry behaviour only
+if both of these hold:
+
+- **It depends on nothing else:** only its type parameters, other self-contained types, and the parts of the
+  BCL that are themselves plain values and collections.
+- **It changes nothing outside itself:** no app callbacks, statics, files or clock. It MAY read a
+  self-contained type or own one, but MUST NOT modify one passed in.
+
+There are two kinds:
+
+- **A container** is a general tool, as `List` is: it could be used in any app, and knows nothing of this
+  one. When a field carries a promise, such as being touched only under a lock, never growing past a size, or
+  recording that it was changed, you SHOULD put it in a container that keeps the promise, rather than in a
+  comment or a check.
+- **A validated value** keeps one value valid, like a `Url`, a `PackageId` or a `Percentage`. It MAY be named
+  for the domain, but all it knows of the domain is what makes it valid. It MUST have a private constructor
+  and a static `Parse` or `Create`, so holding one means holding a valid one.
+
+`default` skips the constructor, which decides the keyword for a validated value:
+
+- Where zero is a valid value, as for a `Percentage`, it SHOULD be a `readonly record struct`, so that it
+  needs no object of its own and `item.Opacity = 999` doesn't compile.
+- Where there is no valid zero, as for a `Url` or an id that can't be empty, it MUST be a `sealed record`.
+- A check on a number MUST keep `NaN` out too, as clamping lets it through.
+
+If it does anything with the app's domain beyond keeping itself valid, it MUST be data and functions.
+
+### 7. Dependencies are passed in
+
+- You MUST NOT use global mutable state or ambient control flow: statics, thread-locals, `AsyncLocal`, service
+  locators, string-keyed containers, events whose handlers can't be known statically, and implicit
+  registries. Pass the dependency in. If that makes a signature ugly, the ugliness was already there.
+- A `static class` MUST hold only functions, constants and read-only tables. Mutable state, including a static
+  `Lazy`, lives in a type that is passed in. A memo in such a type is fine.
+- A static cache MAY stay if it's purely a speed-up: same input, same output, thread-safe, and size-limited
+  unless its keys go away by themselves. What reads the machine never qualifies: pass it in, so a signature
+  shows the dependency.
+- You SHOULD keep down how many units each one depends on. More files with the same dependencies between them
+  cost nothing, and more dependencies do. A god class is a problem for what it reaches, not for its size.
+
+## Invalid states
+
+### 8. Prefer unions
+
+When something is one of several things, a result, a state, a kind of node, you SHOULD make it a union, so
+that what it can't be is impossible to write. You SHOULD NOT use optional fields and bools for states that
+exclude each other: N of them make 2^N states, when you meant about three. Bools that really are independent
+are fine.
 
 ```csharp
 public abstract record Payment
@@ -52,48 +222,77 @@ public abstract record Payment
 }
 ```
 
-- The private constructor closes it. Use `private protected` where nesting the cases would rename too much,
-  or a case needs cases under it.
-- **The compiler can't see it's closed, so a new case doesn't break the build.** A `switch` over a union names
-  every case, its fallback arm throws, and each case has a test.
-- **A union rebuilt on a hot path, such as every frame, is a `readonly struct`**, because nothing built that
-  often may allocate: a private tag, a slot for what each case holds, a private constructor, one static
-  function per case, and a property per case that checks the tag and gives null otherwise. Only for what
-  really is rebuilt that often.
+- A union MUST have a private constructor. It MAY be `private protected` where nesting the cases would rename
+  too much, or a case needs cases under it.
+- That closes it against accident, not against intent. A record's copy constructor stays `protected`, so code
+  elsewhere can still derive from one deliberately, and `private protected` lets the rest of the assembly in.
+- Cases with an identity, or that change, MUST be sealed classes under an abstract class, for the reasons in
+  rule 4.
+- **The compiler can't see it's closed, so a new case doesn't break the build.** A `switch` over a union MUST
+  name every case, and its fallback arm MUST throw. Each case SHOULD have a test. When adding a case, you MUST
+  find every `switch` over the union, since no test of the case itself will.
+- Once a project is on a C# with union types built in, it SHOULD use those instead.
+- A union that is measured to cost too much in allocations on a hot path, such as one rebuilt every frame,
+  MAY be a `readonly struct`: a private tag, a slot for what each case holds, a private constructor, one
+  static function per case, and a property per case that checks the tag and gives null otherwise. Its
+  `default` MUST be a valid case.
 
-### 3. Interfaces only project data
+### 9. A function that can fail returns a result
 
-No interfaces for behaviour. Where something must be swappable, take a function, or a record of functions
-when several go together, and only once a second case exists. Most things have one implementation and need
-neither.
+- A function that can fail in a way the caller should handle MUST return a union. One that can't go wrong
+  just returns its value.
+- Where the only other outcome is that there is nothing, it MAY return null.
+- Exceptions MUST be kept for bugs and for what the program can't go on from.
+- A seam (rule 12) MUST catch the exceptions it knows an external library throws, and turn them into a
+  result. It MUST NOT catch the ones it doesn't know.
+- Cancellation isn't a failure. `OperationCanceledException` SHOULD be left to reach whoever cancelled.
 
-An interface is allowed as a **projection**: a function that needs a subset of a big type declares it, and
-is generic over anything that has it.
+### 10. Make illegal states unrepresentable, and never lie to the compiler
 
-```csharp
-public interface IHasTitle
-{
-    string Title { get; set; }
-}
+Given a choice, you SHOULD pick the type or API that makes a kind of error impossible to write, over one that
+is correct only while the caller remembers a rule.
 
-public static void Rename<T>(T item, string title) where T : IHasTitle
-```
+- Nullable reference types MUST be enabled.
+- Identifiers and units SHOULD have their own types where two could be swapped. `UserId` and `OrgId` as bare
+  strings swap silently, and so do `Millis` and `Seconds`. Use a BCL type such as `TimeSpan` where there is
+  one, and a one-field `readonly record struct` where there isn't.
+- **Invariants are enforced.** A type with one MUST have a private constructor, a static function that
+  validates, and get-only fields with no `init`, because `with` skips the constructor. That holds for fields
+  that must agree with each other as much as for one field. A value that must change and stay valid gets a
+  type of its own (rule 6).
+- **The escape hatches are where checking stops:** unchecked casts, `!`, `dynamic`, suppressed warnings,
+  unsafe code, reflection by string name, raw queries, and catch-all `catch`. You SHOULD NOT use one. If you
+  have to, you MUST isolate it in the smallest function you can, say in a comment what it relies on, and flag
+  it when handing back the code.
 
-- It holds only properties, and a field can't satisfy one.
-- It sits beside the function, and is shared only once two functions want the same subset.
-- The function is generic rather than taking the interface, so a struct isn't boxed.
+## Boundaries
 
-Passing the values is simpler. Use a projection when a function writes back or needs too many to list.
+### 11. Parse at every boundary; never assert across one
 
-Where something takes a callback, hand it a lambda over the static function: `problem => Errors.Report(state,
-problem)`.
+A boundary is anywhere data enters without the compiler having seen it made: network, env vars, arguments,
+files, databases, messages, interop, user input.
 
-### 4. Functions are static and grouped by feature
+- Data MUST be converted once at the edge, by a function that takes the untrusted shape and validates it.
+- Code past the edge MUST NOT check it again, or assume what the edge didn't check.
+- Parsing settles what the data is. Whether it is allowed, still current, or small enough to handle are
+  separate checks, and SHOULD be made where they matter.
 
-- A function is `static`, in a `static class` named for the feature, not the type: `Orders`, not
-  `OrderExtensions`.
-- It takes everything it works on as parameters. Anything else it needs is a bug in its signature.
-- Call it by its feature or with `using static`, never extension syntax.
+### 12. External code sits behind a seam
+
+Frameworks, libraries, submodules and the BCL don't fit these rules, and we don't refactor them to. A seam is
+where one of them is made to fit. It is needed where an external type demands behaviour of ours, or throws,
+or hands us data we can't trust. Plain use of a library needs none.
+
+- A class MAY have behaviour only because an external type demands it, and MUST say so in its first line.
+- It MUST hold no logic, and forward to a static function. A constructor an external base class demands stays.
+- External types SHOULD stay in the seam where they reasonably can. Where one is the real domain object, pass
+  it through.
+- **Own every resource's lifetime.** Anything holding a handle, socket or native buffer MUST be released
+  explicitly, with `using` where its life is one scope, and never left to a finalizer.
+
+## Conventions
+
+These prevent no bugs by themselves. They are here so that code reads one way, and they are all SHOULD.
 
 **Names are verbs:** `GetTotal`, not `Total` or `TotalOf`; `CreateOrder`, not `Order`.
 
@@ -103,140 +302,56 @@ problem)`.
 - Name it to read clearly on its own: `RenderCodeView(ui, ...)`.
 - A delegate type stays a noun, and a struct union's case function is named for the case.
 
-### 5. Functions return a result, or nothing if they can't go wrong
+**Functions have block bodies**, with braces, not `=>`.
 
-A function that can fail in a way the caller should handle returns a union. Exceptions remain only for bugs,
-for what the program can't go on from, and at a seam, which catches what an external library throws and
-turns it into a result.
+**Check for null with a null check, and for a type with a type check:**
 
-### 6. Make illegal states unrepresentable, and never lie to the compiler
+```csharp
+// YES
+if (module.Place == null) return null;
+return module.Place.Container;
 
-Given a choice, pick the type or API that makes a kind of error impossible to write, over one that is correct
-only while the caller remembers a rule.
+if (assembly is not LoadedModule module) return null;
 
-- **Parse at every boundary; never assert across one.** A boundary is anywhere data enters without the compiler
-  having seen it made: network, env vars, arguments, files, databases, messages, interop, user input. Convert
-  once at the edge, with a function that takes the untrusted shape and validates it. Everything past it is
-  trusted for a reason.
-- **Give every identifier and unit its own type.** `UserId` and `OrgId` as bare strings swap silently, and so do
-  `Millis` and `Seconds`. A one-field `readonly record struct` costs nothing at runtime.
-- **Invariants are enforced.** A type with one has a private constructor, a static function that validates, and
-  get-only fields with no `init`, because `with` skips the constructor. A value that must change and stay valid
-  gets a type of its own (rule 9).
-- **Avoid the escape hatches, which are where checking stops:** unchecked casts, `!`, `dynamic`, suppressed
-  warnings, reflection by string name, and catch-all `catch`. If you must use one, isolate it in the smallest
-  function you can, make that function total, justify it in a comment, and flag it when handing back the code.
+// NO: property and empty patterns used as null checks
+if (assembly is LoadedModule { Place: { } place }) ...
+if (Find(path) is not { } node) return;
+```
 
-### 7. A record compares by value, so only use one for that
+A pattern like `{ Prop: { } x }` or `is { } x` hides that the check is a null check. Put the value in a local
+if needed, then write `== null` / `!= null`; use `is T x` only to test for a type.
 
-A record suits an id, a position or a result. For anything with an identity or that changes, use a plain
-class, because a record brings two hazards the compiler won't show:
+## Review what the compiler can't check
 
-- **Equality:** as a key, or in `Remove`, `IndexOf` or `==`, it matches anything with the same contents, and a
-  mutable one changes its hash inside a set. This only goes one level down: a `List` or delegate field still
-  compares by reference.
-- **Cycles:** generated `Equals`, `GetHashCode` and `ToString` walk every field, so a record that can reach
-  itself overflows the stack, even just from the debugger showing it.
+Before handing back code, you MUST re-read it in this order, and report anything you hit in the first four:
 
-### 8. Keep data together until it splits itself
-
-You can't see where data's seams belong until a lot is built on it, so don't guess. Data starts in one big
-type, and being large is no defect. New data is a field there, not a new type, and a class with one instance
-and one owner can fold into it.
-
-Split only when forced:
-
-- **There's more than one**, such as one per open document.
-- **It lives for a different time.**
-- **It crosses a thread:** a background job gets its own copy.
-- **It crosses a project:** a lower project can't see the big type, so it has its own or a projection.
-- **The seam has become obvious:** the same few fields change together, and the same functions take only those.
-
-"It would be tidier" isn't on that list. A split that turns out wrong gets folded back.
-
-Unions still apply inside a big type, and functions still take only what they touch: two fields if they need
-two, a projection if they write back, and the whole type only when they work on the whole of it.
-
-### 9. Behaviour is only for what is entirely self-contained
-
-Encapsulation earns its place where there's no boundary to guess, as with `List` or `Dictionary`. A type of
-our own may carry behaviour if all of these hold:
-
-- **It depends on nothing else:** only the BCL, its type parameters, and other self-contained types.
-- **It changes nothing outside itself:** no app callbacks, statics, files or clock. It may read a
-  self-contained type or own one, but doesn't modify one passed in.
-- **It can be used more than once:** a general tool, not something small that exists for one feature.
-
-This covers records and structs too, so a `Url` type keeps `Parse` behind its private constructor, and holding
-one means holding a valid one.
-
-**A tiny value type** that only keeps one value valid, like a `Percentage`, may serve a single feature. It's a
-`readonly record struct` with a private constructor, so it allocates nothing and `item.Opacity = 999` doesn't
-compile. `default` skips the constructor, so it must read as valid, and clamping lets `NaN` through, so keep
-that out too.
-
-If it knows about the app's domain, it's data and functions.
-
-### 10. Structure by coupling, not by shape
-
-Where a unit sits in the dependency graph matters more than its internals.
-
-- **Minimize fan-out, not file count.** What counts is how many modules a unit depends on and how many depend on
-  it. More files at the same edge count is neutral, and more edges isn't. A god class is a fan-out problem, not a
-  size problem.
-- **No global mutable state or ambient control flow:** statics, thread-locals, `AsyncLocal`, service locators,
-  string-keyed containers, events whose handlers can't be known statically, and implicit registries. Pass the
-  dependency in. If that makes a signature ugly, the ugliness was already there.
-- **A `static class` holds functions, constants and read-only tables.** Mutable state, including a static `Lazy`,
-  lives in a type that is passed in. A memo in such a type is fine.
-- **A static cache is the one exception**, if it's purely a speed-up: same input, same output, thread-safe, and
-  size-limited unless its keys go away by themselves. What reads the machine never qualifies: pass it in, so a
-  signature shows the dependency.
-- **Don't add structure you haven't been forced into.** A wrong guess at what varies costs more than none. No
-  inheritance depth, no splitting a module just because it does two things, and no abstraction until the second
-  or third case is in the code. A record of functions with one implementation is an interface in disguise.
-- **An abstraction must earn its place.** If you have to open it to learn what it costs at runtime, such as
-  allocations, threads, I/O or queries, it hides too much: write the code directly. It must also leave less to
-  keep in your head at the call site than it adds.
-- **Own every resource's lifetime.** Anything holding a handle, socket or native buffer is released explicitly,
-  never left to a finalizer.
-- **No re-export hubs.** They hide the dependency graph. Use the direct path.
-
-### 11. Review what the compiler can't check
-
-Before handing back code, re-read it in this order, and report anything you hit in the first four:
-
-1. Every place checking was bypassed: casts, `!`, suppressions, unsafe code, raw queries, swallowed exceptions.
+1. Every escape hatch (rule 10), and every swallowed exception.
 2. Changed public signatures and types. Check the call sites.
 3. New boundary crossings: a request, env read, deserialization, query or file read. Each needs a parse.
 4. New shared mutable state, concurrency, or ordering assumptions: anything two things can touch at once, or
    that must happen in an order the code doesn't force.
-5. Everything else.
+5. Everything else, including each SHOULD you departed from.
 
 ## Testing
 
-- Test functions with plain data in and plain data out.
-- Don't write an interface just to mock it. Pass a function, or real data.
-- Don't fake what you don't own: an in-memory stand-in for a real engine gives false confidence, so test against
-  the real thing.
-
-## External code
-
-Frameworks, libraries, submodules and the BCL don't fit this, and we don't refactor them to. Isolate each
-behind a seam:
-
-- A class has behaviour only because an external type demands it, and says so in its first line.
-- It holds no logic, and forwards to a static function. A constructor an external base class demands stays.
-- External types stay in the seam where they reasonably can. Where one is the real domain object, pass it
-  through.
+- You SHOULD test functions with plain data in and plain data out.
+- You MUST NOT write an interface just to mock it. Pass a function, or real data.
+- You SHOULD NOT fake what you don't own: an in-memory stand-in for a real engine gives false confidence, so
+  test against the real thing.
 
 ## Checked by
 
-Encode boundaries as tests, so that a violation fails the build rather than waiting on review. An architecture
-test fails on any behaviour interface, any type with methods, constructor arguments or extension functions
-that isn't on its list of exceptions, and static state, and each exception says why it's there. A stale entry fails too, so the list only
-shrinks, and a new one has to be argued on. A self-contained type is checked to name only the BCL and other
-such types.
+A project SHOULD encode the MUSTs as tests, so that a violation fails the build rather than waiting on
+review. An architecture test fails on any behaviour interface, any type with methods, constructor arguments
+or extension functions, and any static state, unless it is on a list of exceptions.
 
-A test can't see inside a method body, so whether a seam is free of logic, or a self-contained type really
-stays in itself, is for review.
+The lists are of two kinds:
+
+- **What stays:** seams, self-contained types, struct unions and static caches. Each entry MUST say why it's
+  there, and a new one has to be argued for.
+- **What is still to be converted.** These lists only shrink.
+
+A stale entry on either fails too. A self-contained type is checked to name only the BCL and other such types.
+
+A test that works by reflection can't see inside a method body. So whether a seam is free of logic, or a
+self-contained type really stays in itself, is for review, or for an analyzer where a rule proves worth one.
