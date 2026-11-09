@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Processes;
 
@@ -8,27 +9,29 @@ public static class ScreenSettings
 {
     /// <summary>The screen as the settings left it.</summary>
     /// <param name="saved">What the settings kept of the screen when they were last saved.</param>
+    /// <param name="work">Where the work the screen starts in the background is counted.</param>
     /// <param name="reportError">Tells the user that something done in the background failed.</param>
     /// <param name="session">The browse tree the tree and searches show nodes of.</param>
     /// <param name="runtime">What this machine has installed.</param>
-    public static UiState CreateScreen(ViewSettings saved, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime)
+    public static UiState CreateScreen(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime)
     {
         var appCommands = new Queue<AppCommand>();
-        var search = Searches.CreateSearch(reportError, session);
+        var search = Searches.CreateSearch(work, reportError, session);
         search.Kinds = saved.SearchKinds;
         var uiState = new UiState
         {
             AppCommands = appCommands,
-            Tree = new BrowseTree { Session = session, ReportError = reportError },
+            Tree = new BrowseTree { Session = session, Work = work, ReportError = reportError },
             FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) },
             Search = search,
-            Omnibar = new Omnibar { Search = Searches.CreateSearch(reportError, session) },
+            Omnibar = new Omnibar { Search = Searches.CreateSearch(work, reportError, session) },
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
             Runtime = runtime,
-            Picker = new FrameworkPicker { ReportError = reportError, ListAssemblies = () => RuntimeAssemblies.ListAssemblies(runtime) },
-            NuGetPicker = new NuGetPicker { ReportError = reportError },
+            Picker = new FrameworkPicker { Work = work, ReportError = reportError, ListAssemblies = () => RuntimeAssemblies.ListAssemblies(runtime) },
+            NuGetPicker = new NuGetPicker { Work = work, ReportError = reportError },
             ProcessPicker = new ProcessPicker
             {
+                Work = work,
                 ReportError = reportError,
                 FindProcesses = RunningProcesses.FindProcessesAsync,
                 FindModules = RunningProcesses.FindModulesAsync,

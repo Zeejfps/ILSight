@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ZGF.Desktop;
 using ILSight.Core;
 using ILSight.Localization;
@@ -54,6 +55,10 @@ public sealed class AppState
     public AnalyzerTree Analyzer { get; } = new();
 
     public required ErrorLog Errors { get; init; }
+
+    /// <summary>Where the work the app starts in the background is counted until it ends, so a harness waiting
+    /// for the UI to be ready waits for it.</summary>
+    public required BackgroundWork Work { get; init; }
 
     /// <summary>The newer version looked for, downloaded and offered, if any.</summary>
     public required AppUpdates Updates { get; set; }

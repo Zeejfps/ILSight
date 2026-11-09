@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using static ILSight.NuGetPicker;
 using System.Diagnostics;
 using ILSight.Core;
@@ -16,6 +17,9 @@ public sealed class NuGetPicker
     /// <summary>How many pixels across a package's icon is fetched at, enough for its row on a screen
     /// of twice the usual density.</summary>
     public const int IconPixels = 64;
+
+    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
+    public required BackgroundWork Work { get; init; }
 
     /// <summary>Tells the user a search or a download failed.</summary>
     public required Action<AppProblem> ReportError { get; init; }
@@ -305,7 +309,7 @@ public static class NuGetPicking
     /// reported, and nuget.org searched in its place.</summary>
     private static void ReadSetup(NuGetPicker picker)
     {
-        Background.Start(ReadSetupAsync(picker), picker.ReportError);
+        Background.Start(picker.Work, nameof(ReadSetupAsync), ReadSetupAsync(picker), picker.ReportError);
     }
 
     private static async Task ReadSetupAsync(NuGetPicker picker)
@@ -566,7 +570,7 @@ public static class NuGetPicking
 
     private static void StartSearch(NuGetPicker picker, FeedSearch wanted)
     {
-        Background.Start(StartSearchAsync(picker, wanted), picker.ReportError);
+        Background.Start(picker.Work, nameof(StartSearchAsync), StartSearchAsync(picker, wanted), picker.ReportError);
     }
 
     private static async Task StartSearchAsync(NuGetPicker picker, FeedSearch wanted)
@@ -646,7 +650,7 @@ public static class NuGetPicking
     /// keeps none, so its row keeps the stand-in.</summary>
     private static void FetchIcon(NuGetPicker picker, NuGetSetup setup, WebUrl url, PackageIcon icon)
     {
-        Background.Start(FetchIconAsync(picker, setup, url, icon), picker.ReportError);
+        Background.Start(picker.Work, nameof(FetchIconAsync), FetchIconAsync(picker, setup, url, icon), picker.ReportError);
     }
 
     private static void ShowIcon(PackageIcon icon, ResourceImage? pixels)
@@ -703,7 +707,7 @@ public static class NuGetPicking
     /// or asked for again meanwhile.</summary>
     private static void ReadDetails(NuGetPicker picker, DetailsKey key, NuGetFeed feed, FeedVersion version, VersionDetails.Loading loading)
     {
-        Background.Start(ReadDetailsAsync(picker, key, feed, version, loading), picker.ReportError);
+        Background.Start(picker.Work, nameof(ReadDetailsAsync), ReadDetailsAsync(picker, key, feed, version, loading), picker.ReportError);
     }
 
     private static async Task ReadDetailsAsync(NuGetPicker picker, DetailsKey key, NuGetFeed feed, FeedVersion version, VersionDetails.Loading loading)
@@ -754,7 +758,7 @@ public static class NuGetPicking
     /// into the cache, in the background, for <see cref="TakeDownloaded"/> to hand over.</summary>
     public static void DownloadPicked(NuGetPicker picker)
     {
-        Background.Start(DownloadAsync(picker), picker.ReportError);
+        Background.Start(picker.Work, nameof(DownloadAsync), DownloadAsync(picker), picker.ReportError);
     }
 
     private static async Task DownloadAsync(NuGetPicker picker)

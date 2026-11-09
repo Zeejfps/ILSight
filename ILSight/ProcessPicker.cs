@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Processes;
@@ -8,6 +9,9 @@ namespace ILSight;
 /// opens and filtered by name, id or entry assembly, and the assemblies the selected one has loaded.</summary>
 public sealed class ProcessPicker
 {
+    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
+    public required BackgroundWork Work { get; init; }
+
     /// <summary>Tells the user that looking for the processes failed.</summary>
     public required Action<AppProblem> ReportError { get; init; }
 

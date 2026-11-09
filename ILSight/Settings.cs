@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using System.Globalization;
 using ZGF.Desktop;
@@ -41,15 +42,17 @@ public static class Settings
     {
         var assemblies = new AssemblyList();
         var errors = new ErrorLog();
+        var work = new BackgroundWork();
         var appState = new AppState
         {
+            Work = work,
             Session = session,
             SettingsPlace = new SettingsPlace(settings.FilePath),
             View = ReadViewSettings(settings),
             Window = settings.Window,
             Assemblies = assemblies,
             Errors = errors,
-            Tooltips = new CodeTooltips { Assemblies = assemblies, ReportError = problem => Errors.Report(errors, problem), Version = assemblies.Version },
+            Tooltips = new CodeTooltips { Assemblies = assemblies, Work = work, ReportError = problem => Errors.Report(errors, problem), Version = assemblies.Version },
             Theme = settings.Theme,
             IconTheme = settings.IconTheme,
             Language = settings.Language,

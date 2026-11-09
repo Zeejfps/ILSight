@@ -22,7 +22,7 @@ public static class Assemblies
 
     private static void OpenInBackground(AppState appState, AssemblyPath[] files)
     {
-        Background.Start(OpenInBackgroundAsync(appState, files), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(OpenInBackgroundAsync), OpenInBackgroundAsync(appState, files), problem => Errors.Report(appState, problem));
     }
 
     private static async Task OpenInBackgroundAsync(AppState appState, AssemblyPath[] files)
@@ -86,7 +86,7 @@ public static class Assemblies
     /// can be found.</summary>
     public static void OpenDependencies(AppState appState, LoadedModule assembly)
     {
-        Background.Start(OpenDependenciesAsync(appState, assembly), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(OpenDependenciesAsync), OpenDependenciesAsync(appState, assembly), problem => Errors.Report(appState, problem));
     }
 
     private static async Task OpenDependenciesAsync(AppState appState, LoadedModule assembly)
@@ -103,7 +103,7 @@ public static class Assemblies
     /// kept with the list, and reopens the assembly to show it. Reports why when it cannot be read.</summary>
     public static void UsePdb(AppState appState, LoadedModule assembly, string pdbPath)
     {
-        Background.Start(UsePdbAsync(appState, assembly, pdbPath), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(UsePdbAsync), UsePdbAsync(appState, assembly, pdbPath), problem => Errors.Report(appState, problem));
     }
 
     private static async Task UsePdbAsync(AppState appState, LoadedModule assembly, string pdbPath)
@@ -169,7 +169,7 @@ public static class Assemblies
     /// in it again. The other assemblies stay as they are.</summary>
     private static void ReopenAssembly(AppState appState, LoadedAssembly assembly)
     {
-        Background.Start(ReopenAssemblyAsync(appState, assembly), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(ReopenAssemblyAsync), ReopenAssemblyAsync(appState, assembly), problem => Errors.Report(appState, problem));
     }
 
     private static async Task ReopenAssemblyAsync(AppState appState, LoadedAssembly assembly)
@@ -315,7 +315,7 @@ public static class Assemblies
     /// shows each tab's place again, decompiled from the fresh files.</summary>
     public static void RefreshAssemblies(AppState appState, List<NodePath> expanded)
     {
-        Background.Start(RefreshAssembliesAsync(appState, expanded), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(RefreshAssembliesAsync), RefreshAssembliesAsync(appState, expanded), problem => Errors.Report(appState, problem));
     }
 
     private static async Task RefreshAssembliesAsync(AppState appState, List<NodePath> expanded)
@@ -452,7 +452,7 @@ public static class Assemblies
     /// reload or clearing the list stops it, and the settings are saved once it is done.</summary>
     internal static void OpenAssembliesAsReload(AppState appState, List<AssemblyPath> paths)
     {
-        Background.Start(OpenAssembliesAsReloadAsync(appState, paths), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(OpenAssembliesAsReloadAsync), OpenAssembliesAsReloadAsync(appState, paths), problem => Errors.Report(appState, problem));
     }
 
     private static async Task OpenAssembliesAsReloadAsync(AppState appState, List<AssemblyPath> paths)

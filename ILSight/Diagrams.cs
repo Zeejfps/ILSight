@@ -151,7 +151,7 @@ public static class Diagrams
     /// commands the view to focus the card.</summary>
     private static void AddWithNeighbours(AppState appState, DocumentTab tab, CodeReference.Entity type)
     {
-        Background.Start(AddWithNeighboursAsync(appState, tab, type), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(AddWithNeighboursAsync), AddWithNeighboursAsync(appState, tab, type), problem => Errors.Report(appState, problem));
     }
 
     private static async Task AddWithNeighboursAsync(AppState appState, DocumentTab tab, CodeReference.Entity type)
@@ -248,7 +248,7 @@ public static class Diagrams
     /// background and adds them to <paramref name="diagram"/>.</summary>
     private static void AddCards(AppState appState, TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types)
     {
-        Background.Start(AddCardsAsync(appState, diagram, card, types), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(AddCardsAsync), AddCardsAsync(appState, diagram, card, types), problem => Errors.Report(appState, problem));
     }
 
     private static async Task AddCardsAsync(AppState appState, TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types)
@@ -273,7 +273,7 @@ public static class Diagrams
     /// <paramref name="card"/>, or implementing it, and adds them to <paramref name="diagram"/>.</summary>
     public static void ExpandDerived(AppState appState, TypeDiagram diagram, TypeCard card)
     {
-        Background.Start(ExpandDerivedAsync(appState, diagram, card), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(ExpandDerivedAsync), ExpandDerivedAsync(appState, diagram, card), problem => Errors.Report(appState, problem));
     }
 
     private static async Task ExpandDerivedAsync(AppState appState, TypeDiagram diagram, TypeCard card)
@@ -317,7 +317,7 @@ public static class Diagrams
     /// which it adds unless the tab was pointed elsewhere or the diagram closed meanwhile.</summary>
     internal static void ReopenDiagram(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
     {
-        Background.Start(ReopenDiagramAsync(appState, reopened, saved), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(ReopenDiagramAsync), ReopenDiagramAsync(appState, reopened, saved), problem => Errors.Report(appState, problem));
     }
 
     private static async Task ReopenDiagramAsync(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
@@ -398,7 +398,7 @@ public static class Diagrams
     /// another was started meanwhile or the diagram was closed.</summary>
     public static void LayOutDiagram(AppState appState, TypeDiagram diagram, DiagramMeasures measures)
     {
-        Background.Start(LayOutDiagramAsync(appState, diagram, measures), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(LayOutDiagramAsync), LayOutDiagramAsync(appState, diagram, measures), problem => Errors.Report(appState, problem));
     }
 
     private static async Task LayOutDiagramAsync(AppState appState, TypeDiagram diagram, DiagramMeasures measures)

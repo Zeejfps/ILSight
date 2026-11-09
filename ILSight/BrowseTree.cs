@@ -16,6 +16,9 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
     /// <summary>The browse tree whose nodes this shows.</summary>
     public required BrowseSession Session { get; init; }
 
+    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
+    public required BackgroundWork Work { get; init; }
+
     /// <summary>Tells the user that something done in the background failed.</summary>
     public required Action<AppProblem> ReportError { get; init; }
 

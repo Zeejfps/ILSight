@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ILSight.Core;
 
 namespace ILSight;
@@ -21,6 +22,9 @@ public delegate IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchStream(Assem
 /// hits in closed ones dropped, keeping the selection.</summary>
 public sealed class Search
 {
+    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
+    public required BackgroundWork Work { get; init; }
+
     /// <summary>Tells the user a search failed.</summary>
     public required Action<AppProblem> ReportError { get; init; }
 
@@ -65,10 +69,11 @@ public static class Searches
 {
     /// <summary>A search finding nodes of the browse tree <paramref name="session"/>, telling the user with
     /// <paramref name="reportError"/> when it fails.</summary>
-    public static Search CreateSearch(Action<AppProblem> reportError, BrowseSession session)
+    public static Search CreateSearch(BackgroundWork work, Action<AppProblem> reportError, BrowseSession session)
     {
         return new Search
         {
+            Work = work,
             ReportError = reportError,
             Stream = (_, query, within, cancellationToken) => AssemblySearch.SearchAsync(session, within, query, cancellationToken),
         };
@@ -175,7 +180,7 @@ public static class Searches
         var work = new CancellationTokenSource();
         search.Runs.Add(work);
         var batches = search.Stream(assemblies, query, within, work.Token);
-        Background.Start(RunAsync(search, batches, work), search.ReportError);
+        Background.Start(search.Work, nameof(RunAsync), RunAsync(search, batches, work), search.ReportError);
     }
 
     private static async Task RunAsync(Search search, IAsyncEnumerable<IReadOnlyList<SearchResult>> batches, CancellationTokenSource work)

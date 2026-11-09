@@ -174,7 +174,7 @@ public static class Navigation
     /// none has it.</summary>
     public static void OpenAndShowId(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString)
     {
-        Background.Start(OpenAndShowIdAsync(appState, paths, idString), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(OpenAndShowIdAsync), OpenAndShowIdAsync(appState, paths, idString), problem => Errors.Report(appState, problem));
     }
 
     private static async Task OpenAndShowIdAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString)
@@ -233,7 +233,7 @@ public static class Navigation
     /// then shows it in the tab it was asked from, or a new one.</summary>
     public static void Navigate(AppState appState, CodeReference.Navigable reference, bool inNewTab)
     {
-        Background.Start(NavigateAsync(appState, reference, inNewTab), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(NavigateAsync), NavigateAsync(appState, reference, inNewTab), problem => Errors.Report(appState, problem));
     }
 
     private static async Task NavigateAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab)
@@ -292,7 +292,7 @@ public static class Navigation
     /// then shows the metadata table row that defines it in the tab it was asked from, or a new one.</summary>
     public static void ShowInMetadata(AppState appState, CodeReference.Navigable reference, bool inNewTab)
     {
-        Background.Start(ShowInMetadataAsync(appState, reference, inNewTab), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(ShowInMetadataAsync), ShowInMetadataAsync(appState, reference, inNewTab), problem => Errors.Report(appState, problem));
     }
 
     private static async Task ShowInMetadataAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab)
@@ -338,7 +338,7 @@ public static class Navigation
     /// the .NET API reference, or reports that it has none.</summary>
     public static void ShowInApiReference(AppState appState, CodeReference.Entity reference)
     {
-        Background.Start(ShowInApiReferenceAsync(appState, reference), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(ShowInApiReferenceAsync), ShowInApiReferenceAsync(appState, reference), problem => Errors.Report(appState, problem));
     }
 
     private static async Task ShowInApiReferenceAsync(AppState appState, CodeReference.Entity reference)
@@ -393,7 +393,7 @@ public static class Navigation
 
     private static void Restore(AppState appState, HistoryEntry.Node entry)
     {
-        Background.Start(RestoreAsync(appState, entry), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(RestoreAsync), RestoreAsync(appState, entry), problem => Errors.Report(appState, problem));
     }
 
     private static async Task RestoreAsync(AppState appState, HistoryEntry.Node entry)

@@ -290,7 +290,7 @@ public static class Bookmarks
     /// assembly first if it is not open, and records it in the history.</summary>
     public static void GoToBookmark(AppState appState, Bookmark bookmark)
     {
-        Background.Start(GoToBookmarkAsync(appState, bookmark), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(GoToBookmarkAsync), GoToBookmarkAsync(appState, bookmark), problem => Errors.Report(appState, problem));
     }
 
     private static async Task GoToBookmarkAsync(AppState appState, Bookmark bookmark)
@@ -360,7 +360,7 @@ public static class Bookmarks
     /// whose place is not found are left out and reported.</summary>
     public static void ImportBookmarks(AppState appState, string path)
     {
-        Background.Start(ImportBookmarksAsync(appState, path), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(ImportBookmarksAsync), ImportBookmarksAsync(appState, path), problem => Errors.Report(appState, problem));
     }
 
     private static async Task ImportBookmarksAsync(AppState appState, string path)

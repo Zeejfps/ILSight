@@ -318,7 +318,7 @@ public static class Theming
     /// folder cannot be made or watched, reports why and leaves the themes to be read again by hand.</summary>
     internal static void WatchThemeFolder(AppState appState, WatchedThemeFolder folder)
     {
-        Background.Start(WatchThemeFolderAsync(appState, folder), problem => Errors.Report(appState, problem));
+        Background.StartForever(WatchThemeFolderAsync(appState, folder), problem => Errors.Report(appState, problem));
     }
 
     private static async Task WatchThemeFolderAsync(AppState appState, WatchedThemeFolder folder)

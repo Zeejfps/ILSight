@@ -455,6 +455,7 @@ public sealed class AppStateTests
         var streams = new Queue<HeldSearch>([replaced, current]);
         var search = new Search
         {
+            Work = new BackgroundWork(),
             ReportError = problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title),
             Stream = (_, _, _, _) => streams.Dequeue().Stream(),
         };

@@ -318,7 +318,7 @@ public static class Trees
 
     private static void ExpandAssembly(BrowseTree tree, BrowseNode root, int ticket)
     {
-        Background.Start(ExpandAssemblyAsync(tree, root, ticket), tree.ReportError);
+        Background.Start(tree.Work, nameof(ExpandAssemblyAsync), ExpandAssemblyAsync(tree, root, ticket), tree.ReportError);
     }
 
     private static async Task ExpandAssemblyAsync(BrowseTree tree, BrowseNode root, int ticket)
@@ -484,7 +484,7 @@ public static class Trees
 
     private static void BuildChildren(BrowseTree tree, BrowseNode node)
     {
-        Background.Start(BuildChildrenAsync(tree, node), tree.ReportError);
+        Background.Start(tree.Work, nameof(BuildChildrenAsync), BuildChildrenAsync(tree, node), tree.ReportError);
     }
 
     private static async Task BuildChildrenAsync(BrowseTree tree, BrowseNode node)

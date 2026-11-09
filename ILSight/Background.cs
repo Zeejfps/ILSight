@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using ZGF.Gui.Immediate;
 
 namespace ILSight;
 
@@ -22,10 +23,23 @@ public static class Background
     /// <summary>Waits for <paramref name="task"/> as <see cref="BackgroundWork{T}"/> does.</summary>
     public static BackgroundWork<T> Wait<T>(Task<T> task) => new(task);
 
-    /// <summary>Lets <paramref name="workflow"/>, started on the UI thread, run to its end, and reports an
-    /// exception it ends with as <see cref="AppProblem.Unexpected"/> rather than letting it end the process.
-    /// The one <c>async void</c> in the app.</summary>
-    public static async void Start(Task workflow, Action<AppProblem> reportError)
+    /// <summary>Lets <paramref name="workflow"/>, started on the UI thread, run to its end, counted in
+    /// <paramref name="work"/> as <paramref name="name"/> until then, so a harness waiting for the UI to be ready
+    /// waits for it. An exception it ends with is reported as <see cref="AppProblem.Unexpected"/> rather than
+    /// ending the process, so the work counted always ends without one.</summary>
+    public static void Start(BackgroundWork work, string name, Task workflow, Action<AppProblem> reportError)
+    {
+        work.Track(name, Report(workflow, reportError));
+    }
+
+    /// <summary>As <see cref="Start"/>, for a workflow that runs as long as the app does, such as watching a
+    /// folder, which nothing waiting for the UI to be ready could wait out, so it is not counted.</summary>
+    public static void StartForever(Task workflow, Action<AppProblem> reportError)
+    {
+        _ = Report(workflow, reportError);
+    }
+
+    private static async Task Report(Task workflow, Action<AppProblem> reportError)
     {
         try
         {

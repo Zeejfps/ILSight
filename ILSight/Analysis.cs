@@ -177,16 +177,16 @@ public static class Analysis
         running.Work.Cancel();
     }
 
-    /// <summary>Runs the analysis over <paramref name="assemblies"/> unless it already started,
-    /// calling <paramref name="changed"/> each time results come in. When it fails, it ends with a row
+    /// <summary>Runs the analysis over <paramref name="assemblies"/> unless it already started, counted in
+    /// <paramref name="backgroundWork"/>, calling <paramref name="changed"/> each time results come in. When it fails, it ends with a row
     /// telling why and hands the exception to <paramref name="failed"/>.</summary>
-    internal static void StartAnalysisOnce(AnalyzerKindNode kind, AssemblyList assemblies, Action changed, Action<Exception> failed, Action<AppProblem> reportError)
+    internal static void StartAnalysisOnce(BackgroundWork backgroundWork, AnalyzerKindNode kind, AssemblyList assemblies, Action changed, Action<Exception> failed, Action<AppProblem> reportError)
     {
         if (kind.HasStarted)
             return;
         var work = new CancellationTokenSource();
         kind.Run = new AnalyzerRun.Running(work);
-        Background.Start(RunKindAsync(kind, work, assemblies, changed, failed), reportError);
+        Background.Start(backgroundWork, nameof(RunKindAsync), RunKindAsync(kind, work, assemblies, changed, failed), reportError);
     }
 
     private static async Task RunKindAsync(AnalyzerKindNode kind, CancellationTokenSource work, AssemblyList assemblies, Action changed, Action<Exception> failed)
@@ -266,7 +266,7 @@ public static class Analysis
     public static void RunAnalysis(AppState appState, AnalyzerKindNode kind)
     {
         var tree = appState.Analyzer;
-        StartAnalysisOnce(kind, appState.Assemblies, () => NoteFindings(tree), error => ReportAnalysisFailure(appState, kind, error),
+        StartAnalysisOnce(appState.Work, kind, appState.Assemblies, () => NoteFindings(tree), error => ReportAnalysisFailure(appState, kind, error),
             problem => Errors.Report(appState, problem));
     }
 
@@ -282,7 +282,7 @@ public static class Analysis
     /// what is found is dropped.</summary>
     public static void AddToAnalyzer(AppState appState, CodeReference.Navigable reference)
     {
-        Background.Start(AddToAnalyzerAsync(appState, reference), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(AddToAnalyzerAsync), AddToAnalyzerAsync(appState, reference), problem => Errors.Report(appState, problem));
     }
 
     private static async Task AddToAnalyzerAsync(AppState appState, CodeReference.Navigable reference)
@@ -338,7 +338,7 @@ public static class Analysis
     /// Reports why the symbols could not be found.</summary>
     public static void RestoreAnalyses(AppState appState)
     {
-        Background.Start(RestoreAnalysesAsync(appState), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(RestoreAnalysesAsync), RestoreAnalysesAsync(appState), problem => Errors.Report(appState, problem));
     }
 
     private static async Task RestoreAnalysesAsync(AppState appState)

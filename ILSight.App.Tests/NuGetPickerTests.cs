@@ -60,7 +60,7 @@ public sealed class NuGetPickerTests : IDisposable
 
     private NuGetPicker OpenPicker(PostedActions posted, SavedNuGetSearch? saved = null)
     {
-        var picker = new NuGetPicker { ReportError = problem => _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title) };
+        var picker = new NuGetPicker { Work = new BackgroundWork(), ReportError = problem => _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title) };
         NuGetPicking.RestoreSearch(picker, saved);
         NuGetPicking.UseSetup(picker, Setup());
         NuGetPicking.OpenPicker(picker);

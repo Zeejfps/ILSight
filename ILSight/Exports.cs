@@ -112,7 +112,7 @@ public static class Exports
     /// add what a finished one wrote. One taken out of the queue leaves nothing behind.</summary>
     private static void RunExport<T>(AppState appState, ExportJob job, string subject, Func<ExportStart, T> work,
         Func<ExportReport, T, ExportReport> complete) =>
-        Background.Start(RunExportAsync(appState, job, subject, work, complete), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(RunExportAsync), RunExportAsync(appState, job, subject, work, complete), problem => Errors.Report(appState, problem));
 
     private static async Task RunExportAsync<T>(AppState appState, ExportJob job, string subject, Func<ExportStart, T> work,
         Func<ExportReport, T, ExportReport> complete)

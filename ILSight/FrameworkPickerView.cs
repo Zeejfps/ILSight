@@ -19,7 +19,7 @@ internal static class FrameworkPickerView
     /// <summary>Scans the runtime the first time it opens, and again after a scan failed.</summary>
     public static void Open(FrameworkPicker picker)
     {
-        Background.Start(OpenAsync(picker), picker.ReportError);
+        Background.Start(picker.Work, nameof(OpenAsync), OpenAsync(picker), picker.ReportError);
     }
 
     private static async Task OpenAsync(FrameworkPicker picker)

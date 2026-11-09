@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 
@@ -10,6 +11,9 @@ namespace ILSight;
 public sealed class CodeTooltips
 {
     public required AssemblyList Assemblies { get; init; }
+    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
+    public required BackgroundWork Work { get; init; }
+
     public required Action<AppProblem> ReportError { get; init; }
     public readonly Dictionary<CodeReference.Entity, CodeTooltip?> Found = new();
     public readonly HashSet<CodeReference.Entity> Pending = new();
@@ -44,7 +48,7 @@ public static class TooltipLookups
 
     private static void LookUp(CodeTooltips tooltips, CodeReference.Entity reference)
     {
-        Background.Start(LookUpAsync(tooltips, reference), tooltips.ReportError);
+        Background.Start(tooltips.Work, nameof(LookUpAsync), LookUpAsync(tooltips, reference), tooltips.ReportError);
     }
 
     private static async Task LookUpAsync(CodeTooltips tooltips, CodeReference.Entity reference)

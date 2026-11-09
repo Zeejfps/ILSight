@@ -58,7 +58,7 @@ public static class Comparisons
     /// Shows why when either is no longer open or the comparison fails.</summary>
     private static void Compare(AppState appState, AssemblyComparison comparison)
     {
-        Background.Start(CompareAsync(appState, comparison), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(CompareAsync), CompareAsync(appState, comparison), problem => Errors.Report(appState, problem));
     }
 
     private static async Task CompareAsync(AppState appState, AssemblyComparison comparison)

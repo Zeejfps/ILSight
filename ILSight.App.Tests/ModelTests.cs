@@ -18,7 +18,7 @@ public sealed class BrowseTreeTests
     public void A_node_whose_children_are_not_built_shows_a_loading_row_until_they_are()
     {
         var d = new AppStateDriver();
-        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
         var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
 
         var first = tree.GetChildren(root);
@@ -36,7 +36,7 @@ public sealed class BrowseTreeTests
     {
         using var temp = new TempDir();
         var d = new AppStateDriver();
-        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
         var root = new AssemblyList().Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(temp)).Root;
         var container = root.Child("Resources", BrokenAssemblies.AvaloniaContainer);
 
@@ -55,7 +55,7 @@ public sealed class BrowseTreeTests
     [Fact]
     public void An_assembly_spins_while_it_is_reopened()
     {
-        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
         var assembly = new AssemblyList().Open(AppStateDriver.FixturePath);
         var reopens = new Reopens();
         Trees.ShowReopening(tree, reopens.Files);
@@ -72,7 +72,7 @@ public sealed class BrowseTreeTests
     public void Revealing_a_hidden_non_public_node_selects_its_nearest_shown_ancestor()
     {
         var d = new AppStateDriver();
-        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
         var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
         var ns = root.Child(AppStateDriver.FixturesNamespace);
         var secret = ns.Child("Hidden", "Secret() : int");
@@ -89,7 +89,7 @@ public sealed class BrowseTreeTests
     [Fact]
     public void Compiler_generated_members_show_only_when_everything_is_shown()
     {
-        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
         var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
         var counter = root.Child(AppStateDriver.FixturesNamespace, "Counter");
         var backingField = counter.Child("<Count>k__BackingField : int");
@@ -105,7 +105,7 @@ public sealed class BrowseTreeTests
     [Fact]
     public void The_public_children_cache_does_not_keep_closed_assemblies_alive()
     {
-        var tree = new BrowseTree { Session = TestSession.Shared, ReportError = static _ => { } };
+        var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
         Trees.ShowApi(tree, ApiVisibility.PublicOnly);
         var assembly = FilterAndClose(tree);
 
@@ -813,7 +813,7 @@ public sealed class FrameworkPickerTests
     {
         var posted = PostedActions.OfThisTest();
         var reported = new List<string>();
-        var picker = new FrameworkPicker { ReportError = problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), ListAssemblies = static () => throw new InvalidDataException("no runtime") };
+        var picker = new FrameworkPicker { Work = new BackgroundWork(), ReportError = problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), ListAssemblies = static () => throw new InvalidDataException("no runtime") };
 
         FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
@@ -832,7 +832,7 @@ public sealed class FrameworkPickerTests
             new RuntimeAssembly("System.Net.Sockets", "Microsoft.NETCore.App", FakePath("b.dll")),
             new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll")),
         };
-        var picker = new FrameworkPicker { ReportError = static _ => { }, ListAssemblies = () => assemblies };
+        var picker = new FrameworkPicker { Work = new BackgroundWork(), ReportError = static _ => { }, ListAssemblies = () => assemblies };
         var list = new AssemblyList();
         FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
@@ -851,7 +851,7 @@ public sealed class FrameworkPickerTests
         var posted = PostedActions.OfThisTest();
         var open = new RuntimeAssembly("Fixtures", "Microsoft.NETCore.App", PathOf(AppStateDriver.FixturePath));
         var other = new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll"));
-        var picker = new FrameworkPicker { ReportError = static _ => { }, ListAssemblies = () => [open, other] };
+        var picker = new FrameworkPicker { Work = new BackgroundWork(), ReportError = static _ => { }, ListAssemblies = () => [open, other] };
         var list = new AssemblyList();
         FrameworkPickerView.Open(picker);
         Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);

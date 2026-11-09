@@ -271,7 +271,7 @@ public static class SavedDocuments
 
     private static void FindReopenedNodes(AppState appState, List<WaitingNode> nodes)
     {
-        Background.Start(FindReopenedNodesAsync(appState, nodes), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(FindReopenedNodesAsync), FindReopenedNodesAsync(appState, nodes), problem => Errors.Report(appState, problem));
     }
 
     private static async Task FindReopenedNodesAsync(AppState appState, List<WaitingNode> nodes)

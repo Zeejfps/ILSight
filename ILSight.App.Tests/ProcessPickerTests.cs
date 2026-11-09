@@ -171,6 +171,7 @@ public sealed class ProcessPickerTests
         var reported = new List<AppProblem>();
         var picker = new ProcessPicker
         {
+            Work = new BackgroundWork(),
             ReportError = reported.Add,
             FindProcesses = static _ => throw new InvalidDataException("broken"),
             FindModules = static (_, _) => Task.FromResult<ModuleListing>(new ModuleListing.Listed([])),
@@ -189,6 +190,7 @@ public sealed class ProcessPickerTests
         var posted = PostedActions.OfThisTest();
         var picker = new ProcessPicker
         {
+            Work = new BackgroundWork(),
             ReportError = static problem => throw new InvalidOperationException(problem.ToString()),
             FindProcesses = RunningProcesses.FindProcessesAsync,
             FindModules = RunningProcesses.FindModulesAsync,
@@ -228,6 +230,7 @@ public sealed class ProcessPickerTests
     {
         return new ProcessPicker
         {
+            Work = new BackgroundWork(),
             ReportError = static problem => throw new InvalidOperationException(problem.ToString()),
             FindProcesses = _ => Task.FromResult<IReadOnlyList<RunningProcess>>(processes.ToList()),
             FindModules = findModules,

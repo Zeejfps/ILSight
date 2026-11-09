@@ -171,7 +171,7 @@ public static class Updates
 
     private static void StartCheck(AppState appState, bool asked)
     {
-        Background.Start(Check(appState.Updates, asked), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(Check), Check(appState.Updates, asked), problem => Errors.Report(appState, problem));
     }
 
     public static void SetCheckAutomatically(AppState appState, bool check)
@@ -182,7 +182,7 @@ public static class Updates
     /// <summary>Closes the app the normal way, so that it saves what it has, into the update.</summary>
     public static void RestartToUpdate(AppState appState)
     {
-        Background.Start(RestartToUpdateAsync(appState), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(RestartToUpdateAsync), RestartToUpdateAsync(appState), problem => Errors.Report(appState, problem));
     }
 
     private static async Task RestartToUpdateAsync(AppState appState)

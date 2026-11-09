@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 
@@ -7,6 +8,9 @@ namespace ILSight;
 /// in the background, filtered by name.</summary>
 public sealed class FrameworkPicker
 {
+    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
+    public required BackgroundWork Work { get; init; }
+
     /// <summary>Tells the user the runtime could not be scanned.</summary>
     public required Action<AppProblem> ReportError { get; init; }
 

@@ -52,7 +52,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
         CheckOnStartup(_appState);
-        Background.Start(ApplyPendingArguments(), problem => Errors.Report(_appState, problem));
+        Background.StartForever(ApplyPendingArguments(), problem => Errors.Report(_appState, problem));
     }
 
     protected override void OnUpdate(Ui<UiState> ui)

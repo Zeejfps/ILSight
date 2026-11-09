@@ -25,7 +25,7 @@ internal static partial class AppFrames
     /// and any other tab in the place of the documents. It takes the theme and strings with its first frame.</summary>
     internal static UiState CreateUiState(AppState appState)
     {
-        var uiState = CreateScreen(appState.View, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime);
+        var uiState = CreateScreen(appState.View, appState.Work, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime);
         DocumentPanels.SkipPanels(uiState.Documents, AssemblyLists.ListDocumentPanels(appState.Lists));
         FollowActiveTab(uiState, appState.Tabs.Active);
         RunViewCommands(uiState, appState);

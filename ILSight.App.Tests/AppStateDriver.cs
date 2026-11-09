@@ -16,12 +16,15 @@ using static ILSight.App.Tests.TestPaths;
 namespace ILSight.App.Tests;
 
 /// <summary>Actions posted from other threads, queued until the test runs them. A test's drivers
-/// share one, which is also where <c>await</c> on the test's thread continues.</summary>
+/// share one, which is also where <c>await</c> on the test's thread continues. Each app's frames are woken
+/// when something is posted, so one waiting for its UI to be ready runs a frame, which runs the queue.</summary>
 internal sealed class PostedActions
 {
     [ThreadStatic] private static PostedActions? _ofThisTest;
 
     private readonly ConcurrentQueue<Action> _queue = new();
+    private readonly object _gate = new();
+    private Action[] _wakes = [];
     private readonly UiSynchronizationContext _context;
 
     private PostedActions()
@@ -44,7 +47,22 @@ internal sealed class PostedActions
         return posted;
     }
 
-    public void Post(Action action) => _queue.Enqueue(action);
+    public void Post(Action action)
+    {
+        _queue.Enqueue(action);
+        Action[] wakes;
+        lock (_gate)
+            wakes = _wakes;
+        foreach (var wake in wakes)
+            wake();
+    }
+
+    /// <summary>Has <paramref name="wake"/> called, from any thread, whenever something is posted.</summary>
+    public void WakeOnPost(Action wake)
+    {
+        lock (_gate)
+            _wakes = [.. _wakes, wake];
+    }
 
     /// <summary>Runs what was posted so far, and what that posts.</summary>
     public void Run()
@@ -198,6 +216,9 @@ internal sealed class AppStateDriver
 
     /// <summary>Runs what was posted, then what a frame does around drawing when there is a screen,
     /// then the autosave.</summary>
+    /// <summary>Has <paramref name="wake"/> called whenever something is posted to the test's queue.</summary>
+    public void WakeOnPost(Action wake) => _posted.WakeOnPost(wake);
+
     public void Pump()
     {
         _posted.Run();
@@ -304,9 +325,14 @@ internal sealed class AppDriver
         if (queuedArguments != null)
             inbox.Writer.TryWrite(queuedArguments);
         App = new ILSightApp(AppState, Ui, CommandLines.Parse([]).Arguments.Files, inbox);
-        Background.Start(App.ApplyPendingArguments(), problem => Errors.Report(AppState, problem));
-        Frames = UiFrames.Running(App, measurer, width: width, height: height);
+        Frames = UiFrames.Running(App, measurer, width: width, height: height, background: AppState.Work);
         Frames.FrameTime = 1f / 60f;
+        // What the test starts outside a frame comes back through the test's queue, which wakes these frames, so
+        // waiting for the UI to be ready runs the frame that pumps it. UiFrames hands out its Ui only to a frame,
+        // so one empty frame, which takes no time, fetches it.
+        var ui = Frames.Run(0f, static ui => ui);
+        Driver.WakeOnPost(ui.RequestFrame);
+        Background.StartForever(App.ApplyPendingArguments(), problem => Errors.Report(AppState, problem));
         Frames.BeforeFrame = PumpAtFrameTime;
         Driver.Step = RunFramesInPlace;
     }
@@ -343,10 +369,11 @@ internal sealed class AppDriver
     /// <summary>Runs frames until <paramref name="done"/>.</summary>
     public void RunUntil(Func<bool> done) => Poll.Until(done, () => Frames.Frame());
 
-    /// <summary>Waits out the background work, then runs <paramref name="frames"/> frames.</summary>
+    /// <summary>Waits until the UI is ready, with the background work done and a frame run after it, then runs
+    /// <paramref name="frames"/> frames.</summary>
     public void Settle(int frames = 0)
     {
-        Driver.Settle();
+        Frames.WaitUntilReady(StepTimeout);
         Run(frames);
     }
 

@@ -20,7 +20,7 @@ public static class ProcessPicking
     /// <summary>Looks for the processes again, keeping those shown until the new list comes.</summary>
     public static void Refresh(ProcessPicker picker)
     {
-        Background.Start(ScanAsync(picker), picker.ReportError);
+        Background.Start(picker.Work, nameof(ScanAsync), ScanAsync(picker), picker.ReportError);
     }
 
     private static async Task ScanAsync(ProcessPicker picker)
@@ -131,7 +131,7 @@ public static class ProcessPicking
             return;
         }
         picker.Modules = new ModuleScan.Loading(selected);
-        Background.Start(LoadModulesAsync(picker, selected, picker.ModuleRequest, picker.ModuleWork.Token), picker.ReportError);
+        Background.Start(picker.Work, nameof(LoadModulesAsync), LoadModulesAsync(picker, selected, picker.ModuleRequest, picker.ModuleWork.Token), picker.ReportError);
     }
 
     private static void StopModules(ProcessPicker picker)

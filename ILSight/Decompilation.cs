@@ -22,7 +22,7 @@ public static class Decompilation
 
     private static void Load(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
     {
-        Background.Start(LoadAsync(appState, tab, node, load), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(LoadAsync), LoadAsync(appState, tab, node, load), problem => Errors.Report(appState, problem));
     }
 
     private static async Task LoadAsync(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
