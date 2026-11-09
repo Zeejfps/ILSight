@@ -540,6 +540,20 @@ public static class Analysis
         };
     }
 
+    /// <summary>What tells a row apart from its siblings, for tests to find it by: its label, but an analysis
+    /// by its header alone, since the count after it changes once it is done.</summary>
+    public static string GetKey(AnalyzerRows rows, AnalyzerNode node)
+    {
+        return node switch
+        {
+            AnalyzerSymbolNode symbol => symbol.Symbol.Label,
+            AnalyzerKindNode kind => AnalyzerText.Header(rows.Strings, kind.Kind),
+            AnalyzerMessageNode message => message.Error ?? rows.Strings.AnalyzerLoading,
+            AnalyzerPendingNode => rows.Strings.AnalyzerLoading,
+            _ => throw new UnreachableException(),
+        };
+    }
+
     private static TreeRow CreateSymbolRow(AnalyzerRows rows, AnalysisSymbol symbol)
     {
         var icon = NodeIcons.Icon(NodeIcons.Of(symbol.Shape), symbol.Accessibility, rows.IconColors, rows.Icons);

@@ -300,6 +300,13 @@ public static class Comparisons
             .ToList();
     }
 
+    /// <summary>What tells an entry apart from its siblings, for tests to find its row by: its label, which for a
+    /// member is its signature, so overloads differ.</summary>
+    public static string GetKey(ApiEntry entry)
+    {
+        return entry.Text;
+    }
+
     public static TreeRow GetRow(ComparisonRows rows, ApiEntry entry)
     {
         if (rows.Rows.TryGetValue(entry, out var row))

@@ -11,6 +11,7 @@ internal static class Program
     {
         // First, because an install or update runs the app just to handle its hook, and this then exits.
         VelopackApp.Build().Run();
+        LinuxMenu.EnsureEntry();
 
         var commandLine = CommandLines.Parse(args);
         ILSightAppLauncher.LaunchApp(commandLine.Launch, commandLine.Arguments);

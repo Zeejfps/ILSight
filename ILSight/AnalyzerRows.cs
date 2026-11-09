@@ -40,4 +40,9 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     {
         return Analysis.GetRow(this, node);
     }
+
+    public string KeyOf(AnalyzerNode node)
+    {
+        return Analysis.GetKey(this, node);
+    }
 }

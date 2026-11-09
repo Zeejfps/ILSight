@@ -71,6 +71,8 @@ desktop_exec() {
     desktop_string "\"$quoted\""
 }
 
+# Writes the menu entry the app itself keeps up to date on launch (ILSight/LinuxMenu.cs, through
+# ZGF's LinuxDesktopEntry); the two must stay identical, or every launch rewrites it.
 # StartupWMClass is the window title: GLFW uses it for WM_CLASS when no class hint is set,
 # and that is what lets the desktop match the open window to this entry.
 install_desktop_entry() {
@@ -97,6 +99,7 @@ Icon=$(desktop_string "$icon_file")
 StartupWMClass=ILSight
 Categories=Development;
 Terminal=false
+X-ILSight-Managed=true
 EOF
     mv -f "$desktop_file.part" "$desktop_file"
     say "Added ILSight to the application menu."

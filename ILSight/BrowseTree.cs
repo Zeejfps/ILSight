@@ -55,4 +55,9 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
     {
         return Trees.GetRow(this, node);
     }
+
+    public string KeyOf(BrowseNode node)
+    {
+        return Trees.GetRowLabel(this, node);
+    }
 }

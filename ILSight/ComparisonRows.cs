@@ -42,4 +42,9 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
     {
         return Comparisons.GetRow(this, entry);
     }
+
+    public string KeyOf(ApiEntry entry)
+    {
+        return Comparisons.GetKey(entry);
+    }
 }
