@@ -485,6 +485,31 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
+    public void A_wide_assemblies_panel_shows_every_tool_and_no_more_button()
+    {
+        var app = AppDriver.Opened(width: 1600f);
+        app.Run(2);
+
+        Assert.IsType<TargetResult.Hittable>(app.Frames.Target(Selector.AtPath("dock/assemblies/clear-list")));
+        Assert.IsType<TargetResult.NotFound>(app.Frames.Target(Selector.AtPath("dock/assemblies/more")));
+    }
+
+    [Fact]
+    public void A_narrow_assemblies_panel_puts_the_tools_that_dont_fit_in_its_more_menu()
+    {
+        var app = AppDriver.Opened(width: 360f);
+        app.Run(2);
+
+        Assert.IsType<TargetResult.Hittable>(app.Frames.Target(Selector.AtPath("dock/assemblies/select-opened")));
+        Assert.IsType<TargetResult.NotFound>(app.Frames.Target(Selector.AtPath("dock/assemblies/clear-list")));
+
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/more")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Clear list")).Frame(2);
+
+        Assert.Empty(app.AppState.Assemblies.Assemblies);
+    }
+
+    [Fact]
     public void The_assemblies_panels_close_failed_button_is_disabled_while_none_failed()
     {
         var app = AppDriver.Opened();

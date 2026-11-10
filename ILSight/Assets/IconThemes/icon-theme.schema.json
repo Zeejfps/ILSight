@@ -403,6 +403,10 @@
           "description": "Reload every assembly.",
           "$ref": "#/definitions/icon"
         },
+        "assemblies.moreActions": {
+          "description": "Show the toolbar's actions that don't fit in it.",
+          "$ref": "#/definitions/icon"
+        },
         "assemblies.openContainingFolder": {
           "description": "Open the folder holding the assembly.",
           "$ref": "#/definitions/icon"

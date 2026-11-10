@@ -208,6 +208,8 @@
     "assemblies.sortList": { "font": "lucide", "glyph": "E415" },
     // Reload every assembly.
     "assemblies.reloadAll": { "font": "lucide", "glyph": "E148" },
+    // Show the toolbar's actions that don't fit in it.
+    "assemblies.moreActions": { "font": "lucide", "glyph": "E0B7" },
     // Open the folder holding the assembly.
     "assemblies.openContainingFolder": { "font": "lucide", "glyph": "E247" },
     // Extract a file or a folder from a package.

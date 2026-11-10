@@ -16,6 +16,10 @@ internal static class TreePaneView
 {
     private const string TreeId = "tree";
     private const string MenuId = "tree-menu";
+    private const string ToolbarId = "tree-toolbar";
+
+    /// <summary>How many tools <see cref="Tool"/> draws; the separators count as tools.</summary>
+    private const int ToolCount = 10;
 
     public static void Render(Ui<UiState> ui, DocumentTabs tabs, AssemblyList assemblies, DecompilationLanguage language)
     {
@@ -37,36 +41,140 @@ internal static class TreePaneView
         ContextMenu(ui, assemblies, language);
     }
 
+    /// <summary>The panel's toolbar: as many of its tools as fit, in order, and the rest in the menu of a
+    /// "more" button after them. What fits is worked out from the width the toolbar had last frame, so
+    /// the first frame shows them all.</summary>
     private static void Toolbar(Ui<UiState> ui, DocumentTabs tabs, AssemblyList assemblies)
     {
-        var t = ui.State.Strings;
+        var toolbarId = ui.GetId(ToolbarId);
+        var shown = CountShownTools(ui, toolbarId);
+        using (ui.PaneToolbar(toolbarId, new Box { Width = Sizing.Grow(), Clip = true }))
+        {
+            for (var i = 0; i < shown; i++)
+                Tool(ui, tabs, assemblies, i, shown, inMenu: false);
+            if (shown == ToolCount)
+                return;
+            using var menu = ui.DropdownButton("more", ui.State.Strings.TreeMoreActions, glyph: ui.State.Icons.AssembliesMoreActions);
+            if (!menu.IsOpen)
+                return;
+            for (var i = shown; i < ToolCount; i++)
+                Tool(ui, tabs, assemblies, i, shown, inMenu: true);
+        }
+    }
+
+    private static bool IsToolSeparator(int index)
+    {
+        return index == 3 || index == 6;
+    }
+
+    /// <summary>How many tools, from the first, fit in the toolbar as wide as it was last frame: all of
+    /// them if they fit together, else as many as fit beside the "more" button.</summary>
+    private static int CountShownTools(Ui ui, int toolbarId)
+    {
+        if (!ui.TryGetRect(toolbarId, out var rect))
+            return ToolCount;
         var theme = ui.Theme;
+        var room = rect.Width - 2f * theme.ShellPaddingX;
+        if (MeasureTools(theme, ToolCount) <= room)
+            return ToolCount;
+        var beside = room - theme.GapTight - theme.IconButtonSize;
+        var shown = 0;
+        while (shown < ToolCount && MeasureTools(theme, shown + 1) <= beside)
+            shown++;
+        return shown;
+    }
+
+    /// <summary>How wide the first <paramref name="count"/> tools are in the toolbar, with the gaps
+    /// between them.</summary>
+    private static float MeasureTools(UiTheme theme, int count)
+    {
+        var width = 0f;
+        for (var i = 0; i < count; i++)
+        {
+            if (i > 0)
+                width += theme.GapTight;
+            width += IsToolSeparator(i) ? theme.SeparatorWidth : theme.IconButtonSize;
+        }
+        return width;
+    }
+
+    /// <summary>The tool at <paramref name="index"/>, as a button in the toolbar or an item of the "more"
+    /// menu, the first <paramref name="shown"/> being in the toolbar. A separator is drawn only between
+    /// two tools in the same place.</summary>
+    private static void Tool(Ui<UiState> ui, DocumentTabs tabs, AssemblyList assemblies, int index, int shown, bool inMenu)
+    {
+        var t = ui.State.Strings;
         var icons = ui.State.Icons;
         var tree = ui.State.Tree;
         var any = tree.Roots.Length > 0;
-        using (ui.PaneToolbar())
+        switch (index)
         {
-            var opened = FindOpenedNode(tabs);
-            if (ui.IconButton("select-opened", icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened != null) && opened != null)
-                SelectOpenedNode(ui, assemblies, opened);
-            if (ui.IconButton("collapse", icons.AssembliesCollapseAll, t.CodeCollapseAll, any))
-                Trees.CollapseTree(tree);
-            if (ui.IconButton("expand", icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
-                Trees.ExpandNamespaces(tree);
-            ui.Separator(theme.IconSize);
-            if (ui.IconButton("sort-list", icons.AssembliesSortList, t.TreeSortList, any))
-                Commands.Later(ui.State, static a => SortAssemblies(a));
-            var reloadTip = ui.Memo("reload-all-tip", t, static s => s.TreeReloadAll(Shortcuts.ReloadAll));
-            if (ui.IconButton("reload-all", icons.AssembliesReloadAll, reloadTip, any))
-                Commands.Later(ui.State, Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
-            ui.Separator(theme.IconSize);
-            if (ui.IconButton("close-assembly", icons.AssembliesCloseAssembly, t.TreeCloseAssemblies, any))
-                AssemblyClosing.OpenCloser(ui.State.Closer, assemblies, tree.View.Selected?.Assembly);
-            if (ui.IconButton("close-failed", icons.AssembliesCloseFailed, t.TreeCloseFailed, AssemblyListing.AnyFailedToLoad(assemblies)))
-                Commands.Later(ui.State, static a => CloseFailedAssemblies(a));
-            if (ui.IconButton("clear-list", icons.AssembliesClearList, t.TreeClearList, any))
-                Commands.Later(ui.State, static a => CloseAllAssemblies(a));
+            case 0:
+            {
+                var opened = FindOpenedNode(tabs);
+                if (DrawTool(ui, inMenu, "select-opened", icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened != null) && opened != null)
+                    SelectOpenedNode(ui, assemblies, opened);
+                return;
+            }
+            case 1:
+                if (DrawTool(ui, inMenu, "collapse", icons.AssembliesCollapseAll, t.CodeCollapseAll, any))
+                    Trees.CollapseTree(tree);
+                return;
+            case 2:
+                if (DrawTool(ui, inMenu, "expand", icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
+                    Trees.ExpandNamespaces(tree);
+                return;
+            case 3:
+            case 6:
+                DrawToolSeparator(ui, inMenu, index, shown);
+                return;
+            case 4:
+                if (DrawTool(ui, inMenu, "sort-list", icons.AssembliesSortList, t.TreeSortList, any))
+                    Commands.Later(ui.State, static a => SortAssemblies(a));
+                return;
+            case 5:
+            {
+                var label = inMenu ? t.TreeReloadAll : ui.Memo("reload-all-tip", t, static s => s.TreeReloadAllTip(Shortcuts.ReloadAll));
+                if (DrawTool(ui, inMenu, "reload-all", icons.AssembliesReloadAll, label, any, Shortcuts.ReloadAll))
+                    Commands.Later(ui.State, Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
+                return;
+            }
+            case 7:
+                if (DrawTool(ui, inMenu, "close-assembly", icons.AssembliesCloseAssembly, t.TreeCloseAssemblies, any))
+                    AssemblyClosing.OpenCloser(ui.State.Closer, assemblies, tree.View.Selected?.Assembly);
+                return;
+            case 8:
+                if (DrawTool(ui, inMenu, "close-failed", icons.AssembliesCloseFailed, t.TreeCloseFailed, AssemblyListing.AnyFailedToLoad(assemblies)))
+                    Commands.Later(ui.State, static a => CloseFailedAssemblies(a));
+                return;
+            case 9:
+                if (DrawTool(ui, inMenu, "clear-list", icons.AssembliesClearList, t.TreeClearList, any))
+                    Commands.Later(ui.State, static a => CloseAllAssemblies(a));
+                return;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(index), index, "The assemblies panel has no such tool.");
         }
+    }
+
+    /// <summary>An icon button with <paramref name="label"/> as its tooltip, or a menu item showing the
+    /// icon, the label and <paramref name="shortcut"/>; true on the frame it is picked.</summary>
+    private static bool DrawTool(Ui ui, bool inMenu, string id, IconGlyph glyph, string label, bool enabled, Shortcut? shortcut = null)
+    {
+        if (inMenu)
+            return ui.MenuItem(label, shortcut, enabled, id: id, icon: new UiIcon(glyph));
+        return ui.IconButton(id, glyph, label, enabled);
+    }
+
+    private static void DrawToolSeparator(Ui ui, bool inMenu, int index, int shown)
+    {
+        if (inMenu)
+        {
+            if (index > shown)
+                ui.MenuSeparator();
+            return;
+        }
+        if (index + 1 < shown)
+            ui.Separator(ui.Theme.IconSize);
     }
 
     /// <summary>The node the active tab shows, or null when it shows none.</summary>
