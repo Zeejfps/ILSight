@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate;
 
@@ -76,7 +77,8 @@ public readonly struct BackgroundWork<T>(Task<T> task)
 
         private static void Continue(object? continuation)
         {
-            var action = (Action)continuation!;
+            if (continuation is not Action action)
+                throw new UnreachableException("OnCompleted posts Continue with the continuation it was given.");
             action();
         }
 

@@ -163,13 +163,25 @@ namespace ILSight.Core.Metadata
 			state.CompiledRevision = state.Revision;
 		}
 
+		/// <summary>The values picked in each group that has any picked, in order.</summary>
+		private static Dictionary<string, uint[]> SaveGroups(FilterState state)
+		{
+			var groups = new Dictionary<string, uint[]>();
+			foreach (var (name, values) in state.Groups)
+			{
+				if (values != null)
+					groups[name] = values.Order().ToArray();
+			}
+			return groups;
+		}
+
 		/// <summary>The constraints to keep, or null when there are none.</summary>
 		public static SavedFilterState? SaveFilter(FilterState state)
     {
         return state.IsEmpty
     				? null
     				: new SavedFilterState(
-    					state.Groups.Where(static s => s.Value is not null).ToDictionary(static s => s.Key, static s => s.Value!.Order().ToArray()),
+    					SaveGroups(state),
     					state.Flags.Where(static f => f.Value != TriState.DontCare).ToDictionary(static f => f.Key, static f => f.Value),
     					state.Mode);
     }

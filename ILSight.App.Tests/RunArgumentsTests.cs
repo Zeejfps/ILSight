@@ -98,9 +98,32 @@ public sealed class RunArgumentsTests
     {
         var commandLine = CommandLines.Parse(["--settings= other.json ", "--gl", "--newinstance", "--language=IL"]);
 
-        Assert.Equal(new LaunchConfig("other.json", RenderBackendKind.OpenGl, NewInstance: true), commandLine.Launch);
+        Assert.Equal(new LaunchConfig(FullFilePath.Of(Path.GetFullPath("other.json")), RenderBackendKind.OpenGl, NewInstance: true), commandLine.Launch);
         Assert.Equal(DecompilationLanguage.IL, commandLine.Arguments.Language);
         Assert.Empty(commandLine.Arguments.Ignored);
+    }
+
+    [Fact]
+    public void A_settings_file_is_made_absolute_from_this_process_s_folder_so_it_has_one()
+    {
+        var bare = CommandLines.Parse(["--settings=settings.json"]).Launch.SettingsPath;
+        var nested = CommandLines.Parse(["--settings=" + Path.Combine("sub", "..", "other.json")]).Launch.SettingsPath;
+
+        Assert.Equal(Path.GetFullPath("settings.json"), bare.Text);
+        Assert.Equal(Environment.CurrentDirectory, bare.Folder);
+        Assert.Equal(Path.GetFullPath("other.json"), nested.Text);
+    }
+
+    [Fact]
+    public void A_settings_path_that_names_no_file_is_ignored_as_given()
+    {
+        var folder = "--settings=sub" + Path.DirectorySeparatorChar;
+        var invalid = "--settings=a\0.json";
+
+        var commandLine = CommandLines.Parse([folder, invalid]);
+
+        Assert.Equal(AppSettings.DefaultPath, commandLine.Launch.SettingsPath);
+        Assert.Equal([folder, invalid], commandLine.Arguments.Ignored);
     }
 
     [Fact]

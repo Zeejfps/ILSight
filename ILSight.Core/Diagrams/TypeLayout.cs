@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Msagl.Core;
 using Microsoft.Msagl.Core.Geometry.Curves;
 using Microsoft.Msagl.Core.Layout;
@@ -168,7 +169,8 @@ public static class DiagramLayouts
 
     private static void Cancel(object? cancel)
     {
-        var token = (CancelToken)cancel!;
+        if (cancel is not CancelToken token)
+            throw new UnreachableException("Calculate registers Cancel with the CancelToken it cancels.");
         token.Canceled = true;
     }
 
@@ -207,7 +209,9 @@ public static class DiagramLayouts
         var pieces = new List<RoutePiece>();
         AddPieces(pieces, curve, origin);
         var tip = Place(edge.EdgeGeometry.TargetArrowhead.TipPosition, origin);
-        return new LinkRoute((TypeLink)edge.UserData, pieces, tip, LabelCenterOf(edge, origin), SourceTipOf(edge, origin));
+        if (edge.UserData is not TypeLink link)
+            throw new UnreachableException("Every edge of the graph carries the link it was made for.");
+        return new LinkRoute(link, pieces, tip, LabelCenterOf(edge, origin), SourceTipOf(edge, origin));
     }
 
     private static PointF? SourceTipOf(Edge edge, MsaglPoint origin)

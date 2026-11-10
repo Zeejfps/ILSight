@@ -167,7 +167,7 @@ public static partial class BrowseNodes
     {
         var reference = module.MetadataFile.Metadata.GetMemberReference(handle);
         if (reference.GetKind() == MemberReferenceKind.Field)
-            return (IMember)module.ResolveEntity(handle);
+            return DecompilerFacts.ResolveMember(module, handle);
         return module.ResolveMethod(handle, default);
     }
 
@@ -307,7 +307,7 @@ public static partial class BrowseNodes
     /// <summary>The name the method's import gives, else the method's own, as the runtime looks it up.</summary>
     private static string ReadEntryPoint(MetadataReader metadata, IMethod method)
     {
-        var handle = (MethodDefinitionHandle)method.MetadataToken;
+        var handle = DecompilerFacts.GetMethodHandle(method);
         var import = metadata.GetMethodDefinition(handle).GetImport();
         if (import.Name.IsNil)
             return method.Name;

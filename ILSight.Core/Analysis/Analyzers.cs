@@ -173,7 +173,7 @@ public static class Analyzers
 
     /// <summary>The accessors of a property or event, which ILSpy analyzes on their own.</summary>
     public static IReadOnlyList<AnalysisSymbol> AccessorsOf(AnalysisSymbol symbol) =>
-        symbol.Symbol is IEntity entity ? Members.Accessors(entity).Select(static m => Describe(m)!).ToArray() : [];
+        symbol.Symbol is IEntity entity ? Members.Accessors(entity).Select(static m => DescribeEntity(m)).ToArray() : [];
 
     /// <summary>Runs <paramref name="kind"/> on <paramref name="symbol"/> over the open assemblies on
     /// the thread pool, yielding results in batches as they are found. Results come sorted when the
@@ -201,12 +201,17 @@ public static class Analyzers
         switch (symbol)
         {
             case IEntity entity:
-                return new AnalysisSymbol { Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity), Location = Where(entity), Reference = CodeReferences.Find(entity) };
+                return DescribeEntity(entity);
             case IModule module:
                 return new AnalysisSymbol { Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName, Location = module.MetadataFile?.FileName ?? "", Reference = module.MetadataFile != null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null };
             default:
                 return null;
         }
+    }
+
+    private static AnalysisSymbol DescribeEntity(IEntity entity)
+    {
+        return new AnalysisSymbol { Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity), Location = Where(entity), Reference = CodeReferences.Find(entity) };
     }
 
     private static string Where(IEntity entity)

@@ -77,9 +77,17 @@ public static class CommandLines
             AddAssemblyPath(reader, arg);
     }
 
+    /// <summary>Takes <paramref name="arg"/>'s value as the settings file, made absolute from this process's
+    /// folder, so that finding the running app, reading and writing all use the same path.</summary>
     private static void ReadSettingsPath(Reader reader, string arg)
     {
-        var path = ReadName(arg.Substring(SettingsOption.Length));
+        var name = ReadName(arg.Substring(SettingsOption.Length));
+        if (name == null)
+        {
+            reader.Ignored.Add(arg);
+            return;
+        }
+        var path = FullFilePath.Parse(Path.Combine(Environment.CurrentDirectory, name));
         if (path == null)
         {
             reader.Ignored.Add(arg);
@@ -162,7 +170,7 @@ public static class CommandLines
     {
         public readonly List<AssemblyPath> AssemblyPaths = new();
         public readonly List<string> Ignored = new();
-        public string SettingsPath = AppSettings.DefaultPath;
+        public FullFilePath SettingsPath = AppSettings.DefaultPath;
         public RenderBackendKind RenderBackend = RenderBackendKind.Auto;
         public bool NewInstance;
         public DecompilationLanguage? Language;

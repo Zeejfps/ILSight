@@ -36,7 +36,7 @@ internal static class CustomDebugInformationTable
     public static GridSchema<CustomDebugInformation> Columns(GridSchema<CustomDebugInformation> table, MetadataFile file)
     {
         var m = file.Metadata;
-        AddOffset(table);
+        AddOffset(table, TableIndex.CustomDebugInformation);
         AddHandle(table, "Parent", r => r.Parent);
         AddValue(table, "Kind", r => MetadataTokens.GetHeapOffset(r.Kind), "X2");
         AddValue(table, "KindGUID", r => m.GetGuid(r.Kind), "D");

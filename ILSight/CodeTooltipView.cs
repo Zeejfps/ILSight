@@ -167,10 +167,10 @@ internal static class CodeTooltipView
         switch (shape)
         {
             case EntryShape.Column when entry.Label != null:
-                RenderColumnEntry(ui, layout, entry, labelWidth);
+                RenderColumnEntry(ui, layout, entry.Label, entry.Blocks, labelWidth);
                 break;
             case EntryShape.Stacked when entry.Label != null:
-                RenderStackedEntry(ui, layout, entry);
+                RenderStackedEntry(ui, layout, entry.Label, entry.Blocks);
                 break;
             default:
                 RenderBlocks(ui, layout, entry.Blocks);
@@ -179,25 +179,26 @@ internal static class CodeTooltipView
     }
 
     /// <summary>The label in its column, its blocks beside it.</summary>
-    private static void RenderColumnEntry(Ui<UiState> ui, TooltipLayout layout, TooltipEntry entry, float labelWidth)
+    private static void RenderColumnEntry(Ui<UiState> ui, TooltipLayout layout, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks,
+        float labelWidth)
     {
         using (ui.Row(new Box { Gap = 0f }))
         {
             using (ui.Column(new Box { Width = labelWidth }))
-                Text(ui, layout, entry.Label!);
+                Text(ui, layout, label);
             using (ui.Column(new Box { Width = Sizing.Grow() }))
-                RenderBlocks(ui, layout, entry.Blocks);
+                RenderBlocks(ui, layout, blocks);
         }
     }
 
     /// <summary>The label on a line of its own, its blocks indented under it.</summary>
-    private static void RenderStackedEntry(Ui<UiState> ui, TooltipLayout layout, TooltipEntry entry)
+    private static void RenderStackedEntry(Ui<UiState> ui, TooltipLayout layout, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks)
     {
         using (ui.Column(new Box { Gap = ExceptionGap }))
         {
-            Text(ui, layout, entry.Label!);
+            Text(ui, layout, label);
             using (ui.Column(new Box { Padding = new Spacing(ExceptionIndent, 0f, 0f, 0f) }))
-                RenderBlocks(ui, layout, entry.Blocks);
+                RenderBlocks(ui, layout, blocks);
         }
     }
 

@@ -74,14 +74,11 @@ public static class Settings
 
     /// <summary>The folder <paramref name="name"/> beside <paramref name="settingsFile"/>; null while the
     /// settings are kept in memory only.</summary>
-    public static string? FindFolderBeside(string? settingsFile, string name)
+    public static string? FindFolderBeside(FullFilePath? settingsFile, string name)
     {
         if (settingsFile == null)
             return null;
-        var folder = Path.GetDirectoryName(settingsFile);
-        if (folder == null)
-            return null;
-        return Path.Combine(folder, name);
+        return Path.Combine(settingsFile.Folder, name);
     }
 
     /// <summary>Saves the settings when what they are saved from changed since the last save written,
@@ -128,7 +125,7 @@ public static class Settings
     {
         if (problem is SettingsProblem.None)
             return;
-        Errors.Report(appState, new AppProblem.SettingsUnreadable(appState.SettingsPlace.FilePath, problem));
+        Errors.Report(appState, new AppProblem.SettingsUnreadable(appState.SettingsPlace.FilePath?.Text, problem));
     }
 
     /// <summary>Writes the settings, counting what they were copied from as saved only once the write

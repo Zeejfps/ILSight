@@ -128,6 +128,15 @@ public static class MetadataGridWidget
         state.Rows.Select(index, state.View.Length, reveal: false);
     }
 
+    /// <summary>The flags <paramref name="filter"/>, the filter of a column of flags, picks, which every such
+    /// filter has.</summary>
+    private static FilterState GetFlagsFilter(MetadataColumnFilter filter)
+    {
+        if (filter.Flags == null)
+            throw new UnreachableException("The filter of a column of flags has flags, as CreateColumnFilter gives it.");
+        return filter.Flags;
+    }
+
     private static int ComputeViewKey(MetadataGridState state, MetadataFilters flags)
     {
         var key = new HashCode();
@@ -136,7 +145,7 @@ public static class MetadataGridWidget
         for (var c = 0; c < state.Grid.Columns.Count; c++)
         {
             if (IsFlagsColumn(state, c))
-                key.Add(EnsureColumnFilter(state, c, flags).Flags!.Revision);
+                key.Add(GetFlagsFilter(EnsureColumnFilter(state, c, flags)).Revision);
             key.Add(state.Filters[c]?.Text);
         }
         return key.ToHashCode() | 1;

@@ -138,7 +138,7 @@ namespace ILSight.Core.Metadata
 		{
 			var headers = module.Reader.PEHeaders;
 			var reader = module.Reader.GetEntireImage().GetReader(headers.PEHeaderStartOffset, 128);
-			var header = headers.PEHeader!;
+			var header = DecompilerFacts.GetPEHeader(headers);
 			bool isPE32Plus = header.Magic == PEMagic.PE32Plus;
 
 			var entries = new List<Entry>();
@@ -184,7 +184,7 @@ namespace ILSight.Core.Metadata
 		public static GridSchema DataDirectories(PEFile module)
 		{
 			var headers = module.Reader.PEHeaders;
-			var header = headers.PEHeader!;
+			var header = DecompilerFacts.GetPEHeader(headers);
 			(string Name, DirectoryEntry Entry)[] rows = [
 				("Export Table", header.ExportTableDirectory),
 				("Import Table", header.ImportTableDirectory),

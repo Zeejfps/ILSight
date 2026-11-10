@@ -47,9 +47,9 @@ internal sealed class BamlProjectDecompiler(
 
     private ProjectItemInfo SaveXaml(BamlDecompilationResult result, string xamlName, string itemType)
     {
-        var path = Path.Combine(TargetDirectory, xamlName);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        result.Xaml.Save(path);
+        var path = FullFilePath.Of(Path.Combine(TargetDirectory, xamlName));
+        Directory.CreateDirectory(path.Folder);
+        result.Xaml.Save(path.Text);
         return new ProjectItemInfo(itemType, xamlName);
     }
 

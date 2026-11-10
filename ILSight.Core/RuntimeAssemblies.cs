@@ -66,11 +66,14 @@ public static class RuntimeAssemblies
         {
             var frameworks = Path.Combine(root, "shared", "Microsoft.NETCore.App");
             if (!Directory.Exists(frameworks)) continue;
-            var versions = Directory.EnumerateDirectories(frameworks)
-                .Select(dir => (Dir: dir, Version: ParseVersion(Path.GetFileName(dir))))
-                .Where(d => d.Version is not null && File.Exists(Path.Combine(d.Dir, "System.Private.CoreLib.dll")))
-                .ToList();
-            var best = versions.OrderByDescending(d => d.Version!.Major == major).ThenByDescending(d => d.Version).Select(d => d.Dir).FirstOrDefault();
+            var versions = new List<(string Dir, Version Version)>();
+            foreach (var dir in Directory.EnumerateDirectories(frameworks))
+            {
+                var version = ParseVersion(Path.GetFileName(dir));
+                if (version != null && File.Exists(Path.Combine(dir, "System.Private.CoreLib.dll")))
+                    versions.Add((dir, version));
+            }
+            var best = versions.OrderByDescending(d => d.Version.Major == major).ThenByDescending(d => d.Version).Select(d => d.Dir).FirstOrDefault();
             if (best is not null) return best;
         }
         return null;

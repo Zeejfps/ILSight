@@ -1,5 +1,6 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -46,7 +47,24 @@ public static class GridSchemas
 {
     private static IReadOnlyList<object> LoadRows<TRow>(Func<IEnumerable<TRow>> rows)
     {
-        return rows().Select(static r => (object)r!).ToArray();
+        var loaded = new List<object>();
+        foreach (var row in rows())
+        {
+            if (row == null)
+                throw new UnreachableException("A grid's rows are the rows of a metadata table or heap, which are never null.");
+            loaded.Add(row);
+        }
+        return loaded;
+    }
+
+    /// <summary><paramref name="row"/> as the <typeparamref name="TRow"/> it is. A grid's rows are erased to
+    /// <see cref="object"/> so that one grid can list any kind; each is handed back only to the columns and
+    /// details of the schema that read it, so it is always of that schema's row type.</summary>
+    private static TRow GetRow<TRow>(object row)
+    {
+        if (row is not TRow typed)
+            throw new UnreachableException($"A {row.GetType().Name} row was handed to a schema of {typeof(TRow).Name} rows, though a grid hands each row only to the schema that read it.");
+        return typed;
     }
 
     /// <summary>A schema named <paramref name="key"/> of what <paramref name="rows"/> reads from <paramref name="file"/>.</summary>
@@ -78,10 +96,9 @@ public static class GridSchemas
         AddColumn(schema, name, format, (r, _) => get(r), tooltip == null ? null : (r, _) => tooltip(r));
     }
 
-    /// <summary>Where each row starts in the file.</summary>
-    public static void AddOffset<TRow>(GridSchema<TRow> schema)
+    /// <summary>Where each row of <paramref name="table"/>, which <paramref name="schema"/> lists, starts in the file.</summary>
+    public static void AddOffset<TRow>(GridSchema<TRow> schema, TableIndex table)
     {
-        var table = schema.Table!.Value;
         var metadata = schema.File.Metadata;
         var start = schema.File.MetadataOffset + metadata.GetTableMetadataOffset(table);
         var size = metadata.GetTableRowSize(table);
@@ -128,10 +145,10 @@ public static class GridSchemas
     }
 
     /// <summary>The offset of a signature blob, explained by what <paramref name="decode"/> reads from the
-    /// blob, else by the row it is the signature of.</summary>
-    public static void AddSignature<TRow>(GridSchema<TRow> schema, string name, Func<TRow, BlobHandle> get, Func<TRow, string?>? decode = null)
+    /// blob, else by the row of <paramref name="table"/>, which <paramref name="schema"/> lists, it is the
+    /// signature of.</summary>
+    public static void AddSignature<TRow>(GridSchema<TRow> schema, TableIndex table, string name, Func<TRow, BlobHandle> get, Func<TRow, string?>? decode = null)
     {
-        var table = schema.Table!.Value;
         AddColumn(schema, name, "X8", (r, _) => MetadataTokens.GetHeapOffset(get(r)), (r, rid) => ExplainSignature(schema.File, r, MetadataTokens.EntityHandle(table, rid), decode), isToken: false);
     }
 
@@ -162,7 +179,7 @@ public static class GridSchemas
     /// <summary>What is shown under a selected row.</summary>
     public static void SetDetails<TRow>(GridSchema<TRow> schema, Func<TRow, MetadataRowDetails?> get)
     {
-        schema.Details = r => get((TRow)r);
+        schema.Details = r => get(GetRow<TRow>(r));
     }
 
     private static void AddColumn<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchema<TRow> schema, string name, string? format, Func<TRow, int, T> value,
@@ -172,8 +189,8 @@ public static class GridSchemas
         var numeric = type.IsEnum || Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
         var flags = FlagsSchemaInferer.IsFlags(typeof(T)) ? FlagsSchemaInferer.For(typeof(T)) : null;
         schema.Columns.Add(new GridColumn(new MetadataColumn(name, isToken, numeric, flags), format,
-            (r, rid) => value((TRow)r, rid),
-            tooltip == null ? null : (r, rid) => tooltip((TRow)r, rid)));
+            (r, rid) => value(GetRow<TRow>(r), rid),
+            tooltip == null ? null : (r, rid) => tooltip(GetRow<TRow>(r), rid)));
     }
 
     /// <summary>

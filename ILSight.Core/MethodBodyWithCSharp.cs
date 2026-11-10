@@ -97,15 +97,19 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     }
 
     /// <summary>Writes the statements that start at IL offset <paramref name="offset"/>; the
-    /// instructions come in order, so the points before it are passed by.</summary>
+    /// instructions come in order, so the points before it are passed by. Without the C#, there are no
+    /// points.</summary>
     private void WriteCSharpAt(ITextOutput output, int offset)
     {
         WriteFailureAt(output, offset);
+        var csharp = _csharp;
+        if (csharp == null)
+            return;
         while (_next < _points.Count && _points[_next].Offset < offset)
             _next++;
         while (_next < _points.Count && _points[_next].Offset == offset)
         {
-            WriteStatement(output, _points[_next]);
+            WriteStatement(output, csharp, _points[_next]);
             _next++;
         }
     }
@@ -119,14 +123,14 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         WriteComment(output, _failure);
     }
 
-    private void WriteStatement(ITextOutput output, SequencePoint point)
+    private void WriteStatement(ITextOutput output, DecompiledDocument csharp, SequencePoint point)
     {
         if (point.IsHidden)
         {
             WriteComment(output, NoCSharp);
             return;
         }
-        var lines = _csharp!.Lines;
+        var lines = csharp.Lines;
         var indent = IndentOf(lines[point.StartLine - 1].Text);
         for (var line = point.StartLine; line <= point.EndLine; line++)
             WriteStatementLine(output, point, lines[line - 1], line, indent);

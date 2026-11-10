@@ -11,11 +11,13 @@ namespace ILSight;
 /// <see cref="SettingsJson.LoadSettings"/>: whatever the file held, every value here is one the app can use.</summary>
 public sealed class AppSettings
 {
-    public static string DefaultPath { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ILSight", "settings.json");
+    /// <summary>The settings file in the user's app-data folder; under this process's folder when the
+    /// system names no app-data folder.</summary>
+    public static FullFilePath DefaultPath { get; } = FullFilePath.Of(Path.Combine(Environment.CurrentDirectory,
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ILSight", "settings.json"));
 
     /// <summary>Where <see cref="SettingsJson.SaveSettings"/> writes; null keeps the settings in memory only.</summary>
-    public string? FilePath { get; set; }
+    public FullFilePath? FilePath { get; set; }
 
     /// <summary>The named assembly lists, the open one's as it was left.</summary>
     public List<AssemblyListRecord> AssemblyLists { get; set; } = new();

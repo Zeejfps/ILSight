@@ -383,7 +383,9 @@ public static class Docking
     {
         var first = documents[0];
         DockBeside(layout, first, layout.Dock.Root, DockEdge.Right, DocumentShare);
-        var group = layout.Dock.GroupOf(first)!;
+        var group = layout.Dock.GroupOf(first);
+        if (group == null)
+            throw new UnreachableException($"{first}, just docked, is in no group.");
         foreach (var panel in documents.Skip(1))
             layout.Dock.Dock(panel, group, DockEdge.Center);
     }

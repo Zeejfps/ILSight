@@ -180,7 +180,7 @@ internal static class NodeDecompiler
     private static List<TypeDefinitionHandle> TypeHandles(CodeExport.Namespace ns)
     {
         return ns.Types
-            .Select(static t => (TypeDefinitionHandle)t.MetadataToken)
+            .Select(static t => DecompilerFacts.GetTypeHandle(t))
             .ToList();
     }
 
@@ -314,8 +314,8 @@ internal static class NodeDecompiler
     private static SyntaxTree DecompileMember(CSharpDecompiler decompiler, IMember member, ITypeDefinition declaring)
     {
         var module = decompiler.TypeSystem.MainModule;
-        member = (IMember)module.ResolveEntity(member.MetadataToken);
-        declaring = module.GetDefinition((TypeDefinitionHandle)declaring.MetadataToken);
+        member = DecompilerFacts.ResolveMember(module, member.MetadataToken);
+        declaring = module.GetDefinition(DecompilerFacts.GetTypeHandle(declaring));
         switch (member)
         {
             case IMethod { IsConstructor: true } ctor when ctor.DeclaringType.IsReferenceType != false:

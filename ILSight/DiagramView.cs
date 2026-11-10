@@ -764,7 +764,9 @@ internal static class DiagramView
 
     private static void PaintIconAndText(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, uint color, bool bold, bool underlined)
     {
-        PaintIcon(p, frame, rect, left, row.Icon!.Value, row.Accessibility);
+        if (row.Icon == null)
+            throw new UnreachableException($"A {row.Kind} row has an icon, as DiagramFaces gives it one.");
+        PaintIcon(p, frame, rect, left, row.Icon.Value, row.Accessibility);
         var textLeft = left + (frame.Theme.IconSize + DiagramFaces.IconGap) * frame.Zoom;
         PaintText(p, frame, rect, textLeft, row.Text, color, bold: bold);
         if (underlined)

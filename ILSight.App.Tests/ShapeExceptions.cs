@@ -54,6 +54,7 @@ internal static class ShapeExceptions
         "ILSight.Core.BoundedList`1",
         "ILSight.Core.ByReference`1",
         "ILSight.Core.CursorList`1",
+        "ILSight.Core.FullFilePath",
         "ILSight.Core.Guarded`1",
         "ILSight.Core.Guarded`1+Scope",
         "ILSight.Core.Guarded`2",

@@ -735,7 +735,7 @@ public static class AssemblyListing
         var definition = Definitions.Resolve(LoadedAssemblies.EnsureMainModule(owner), handle);
         if (definition == null)
             return (null, default);
-        return (TryLoadAssembly(list, AssemblyPath.Of(definition.ParentModule!.MetadataFile!.FileName), generation), definition.MetadataToken);
+        return (TryLoadAssembly(list, AssemblyPath.Of(DecompilerFacts.GetMetadataFile(definition).FileName), generation), definition.MetadataToken);
     }
 
     /// <summary>What <paramref name="path"/> holds: an assembly, a package, or an assembly in a

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
 using static ILSight.AssemblyLists;
 using static ILSight.Decompilation;
@@ -415,12 +416,12 @@ public static class Assemblies
         if (!ShowAgain(appState, reloading, node))
             return;
         if (reloading.Tab == appState.Tabs.Active && appState.Intent.IsCurrent(intent))
-            appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node!));
+            appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
     }
 
     /// <summary>Shows <paramref name="node"/>, the tab's place found again, in the tab, or that its place
     /// is gone, unless the tab was closed or shows something else now. True when it shows the node.</summary>
-    private static bool ShowAgain(AppState appState, ReloadingTab reloading, BrowseNode? node)
+    private static bool ShowAgain(AppState appState, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node)
     {
         var tab = reloading.Tab;
         if (!Tabs.IsOpen(appState.Tabs, tab))

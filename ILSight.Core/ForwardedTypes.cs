@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
@@ -44,6 +45,8 @@ internal static class ForwardedTypes
     {
         var name = NameOf(metadata, handle);
         var label = LabelOf(name.Name, name.TypeParameterCount);
+        if (exported.Implementation.Kind != HandleKind.AssemblyReference)
+            throw new UnreachableException("Only top-level forwarded types are read, and each names the assembly it is forwarded to.");
         var destination = metadata.GetAssemblyReference((AssemblyReferenceHandle)exported.Implementation);
         return new ForwardedType(handle, name.Namespace, label, name.Name, name.TypeParameterCount, metadata.GetString(destination.Name));
     }

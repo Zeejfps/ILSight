@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ILSight.Core;
 using static ILSight.Analysis;
 using static ILSight.Assemblies;
@@ -470,7 +471,7 @@ public static class AssemblyLists
         if (lists.Lists.Count == 0)
             lists.Lists.Add(CreateEmpty(SavedAssemblyLists.DefaultName));
         if (list == lists.ActiveList)
-            lists.ActiveList = FindList(lists, replacement)!;
+            lists.ActiveList = FindRemainingList(lists, replacement);
         lists.Revision++;
     }
 
@@ -487,6 +488,16 @@ public static class AssemblyLists
         if (index > 0)
             return lists.Lists[index - 1].Name;
         return SavedAssemblyLists.DefaultName;
+    }
+
+    /// <summary>The list named <paramref name="name"/>, which <see cref="FindReplacement"/> named after the
+    /// list it replaces was removed: one of those left, or the empty one made when none was.</summary>
+    private static SavedAssemblyLists.SavedList FindRemainingList(SavedAssemblyLists lists, string name)
+    {
+        var list = FindList(lists, name);
+        if (list == null)
+            throw new UnreachableException($"No list named {name} is left, though the list that takes a deleted one's place always is.");
+        return list;
     }
 
     private static SavedAssemblyLists.SavedList? FindList(SavedAssemblyLists lists, string? name)

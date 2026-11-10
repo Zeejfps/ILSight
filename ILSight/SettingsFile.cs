@@ -918,9 +918,9 @@ internal static class SettingsJson
 
     /// <summary>The settings in the file at <paramref name="path"/>, each value read on its own, so a
     /// value the file holds wrong leaves out only that one, for its default to stand in.</summary>
-    public static SettingsLoadResult LoadSettings(string path)
+    public static SettingsLoadResult LoadSettings(FullFilePath path)
     {
-        var (settings, problem) = ReadSettings(path);
+        var (settings, problem) = ReadSettings(path.Text);
         settings.FilePath = MaySaveOverFile(problem) ? path : null;
         return new SettingsLoadResult(settings, problem);
     }
@@ -1222,12 +1222,12 @@ internal static class SettingsJson
     public static SettingsWriteResult SaveSettings(AppSettings settings)
     {
         if (settings.FilePath == null) return new SettingsWriteResult.Written();
-        var temporary = settings.FilePath + ".tmp";
+        var temporary = settings.FilePath.Text + ".tmp";
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(settings.FilePath)!);
+            Directory.CreateDirectory(settings.FilePath.Folder);
             File.WriteAllText(temporary, JsonSerializer.Serialize(SettingsJson.Write(settings), AppSettingsJson.Default.SettingsFile));
-            File.Move(temporary, settings.FilePath, overwrite: true);
+            File.Move(temporary, settings.FilePath.Text, overwrite: true);
             return new SettingsWriteResult.Written();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

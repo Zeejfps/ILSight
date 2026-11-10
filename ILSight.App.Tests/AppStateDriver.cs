@@ -139,7 +139,7 @@ internal static class TempSettings
 {
     public static AppSettings Settings(this TempDir temp)
     {
-        return SettingsJson.LoadSettings(temp.PathOf("settings.json")).Settings;
+        return SettingsJson.LoadSettings(FullFilePath.Of(temp.PathOf("settings.json"))).Settings;
     }
 }
 

@@ -20,7 +20,9 @@ internal static class MethodUsedByAnalyzer
     {
         if (analyzed.ParentModule?.MetadataFile == null || analyzed.DeclaringTypeDefinition?.MetadataToken.IsNil != false)
             yield break;
-        var baseMethod = analyzed.IsVirtual ? null : (IMethod?)InheritanceHelper.GetBaseMember(analyzed);
+        IMethod? baseMethod = null;
+        if (!analyzed.IsVirtual && InheritanceHelper.GetBaseMember(analyzed) is IMethod found)
+            baseMethod = found;
 
         var parent = ParentOf(analyzed);
         if (parent.MetadataToken != analyzed.MetadataToken)
@@ -35,8 +37,8 @@ internal static class MethodUsedByAnalyzer
 
         IMethod ParentOf(IMethod method)
         {
-            return ((MetadataModule)method.ParentModule!).GetDefinition(
-                AnalyzerHelpers.EnsureMapping(context, method.DeclaringTypeDefinition!).GetParentMethod((MethodDefinitionHandle)method.MetadataToken));
+            return DecompilerFacts.GetMetadataModule(method).GetDefinition(
+                AnalyzerHelpers.EnsureMapping(context, DecompilerFacts.GetDeclaringTypeDefinition(method)).GetParentMethod(DecompilerFacts.GetMethodHandle(method)));
         }
 
         bool References(MetadataModule module, ILOpCode opCode, EntityHandle token)

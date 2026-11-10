@@ -126,10 +126,17 @@ public static class MetadataGrids
     /// every one of <paramref name="filters"/>, one per column or null.</summary>
     public static int[] FilterRows(MetadataGrid grid, int[]? order, IReadOnlyList<MetadataColumnFilter?> filters)
     {
-        var active = Enumerable.Range(0, Math.Min(filters.Count, grid.GridColumns.Count)).Where(c => filters[c] is { IsActive: true }).ToArray();
+        var active = new List<(int Column, MetadataColumnFilter Filter)>();
+        var columns = Math.Min(filters.Count, grid.GridColumns.Count);
+        for (var c = 0; c < columns; c++)
+        {
+            var filter = filters[c];
+            if (filter != null && filter.IsActive)
+                active.Add((c, filter));
+        }
         var rows = order ?? Enumerable.Range(0, grid.Rows.Count).ToArray();
-        if (active.Length == 0) return rows;
-        return rows.Where(row => Array.TrueForAll(active, c => MatchesCell(grid, row, c, filters[c]!))).ToArray();
+        if (active.Count == 0) return rows;
+        return rows.Where(row => active.TrueForAll(a => MatchesCell(grid, row, a.Column, a.Filter))).ToArray();
     }
 
     /// <summary>What is shown under <paramref name="row"/> while it is selected; null when it has
@@ -196,7 +203,7 @@ public static class MetadataGrids
         {
             value = info.Column.Flags != null
                 ? ExplainFlags(info.Column.Flags, GetValue(grid, row, column))
-                : info.Tooltip!(grid.Rows[row], row + 1);
+                : info.Tooltip?.Invoke(grid.Rows[row], row + 1);
         }
         catch (Exception e) when (IsUnreadable(e))
         {

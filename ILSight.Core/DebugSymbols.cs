@@ -2,6 +2,7 @@ using static ILSight.Core.DebugSymbols;
 // Adapted from ILSpy's PortableDebugInfoProvider and DebugInfoUtils (MIT License, Copyright (c) AlphaSierraPapa for the SharpDevelop Team).
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using ICSharpCode.Decompiler.DebugInfo;
@@ -61,7 +62,7 @@ public sealed class DebugSymbols : IDebugInfoProvider
         return DebugSymbolFiles.GetVariables(this, method);
     }
 
-    public bool TryGetName(MethodDefinitionHandle method, int index, out string name)
+    public bool TryGetName(MethodDefinitionHandle method, int index, [MaybeNullWhen(false)] out string name)
     {
         return DebugSymbolFiles.TryGetName(this, method, index, out name);
     }
@@ -242,7 +243,9 @@ internal static class DebugSymbolFiles
 
     private static bool IsBuiltWith(MetadataReaderProvider provider, CodeViewDebugDirectoryData codeView, DebugDirectoryEntry entry)
     {
-        var header = provider.GetMetadataReader().DebugMetadataHeader!;
+        var header = provider.GetMetadataReader().DebugMetadataHeader;
+        if (header == null)
+            return false;
         var id = new BlobContentId(header.Id);
         if (id.Guid != codeView.Guid)
             return false;
@@ -295,9 +298,9 @@ internal static class DebugSymbolFiles
         return variables;
     }
 
-    public static bool TryGetName(DebugSymbols symbols, MethodDefinitionHandle method, int index, out string name)
+    public static bool TryGetName(DebugSymbols symbols, MethodDefinitionHandle method, int index, [MaybeNullWhen(false)] out string name)
     {
-        name = null!;
+        name = null;
         var handle = FindLocal(symbols, method, index);
         if (handle.IsNil)
             return false;

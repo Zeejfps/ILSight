@@ -104,7 +104,14 @@ public static class Exports
         return true;
     }
 
-    private static string FolderOf(string path) => Path.GetDirectoryName(path)!;
+    /// <summary>The folder of <paramref name="path"/>, which a save dialog gave, and so names a file in one.</summary>
+    private static string FolderOf(string path)
+    {
+        var folder = Path.GetDirectoryName(path);
+        if (folder == null)
+            throw new UnreachableException($"'{path}', which a save dialog gave, names no file in a folder.");
+        return folder;
+    }
 
     /// <summary>Queues <paramref name="job"/> and shows the exports panel, where it waits, runs and
     /// ends. Once its turn comes, does <paramref name="work"/> in the background, then records how it

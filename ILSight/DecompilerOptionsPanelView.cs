@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
@@ -209,12 +210,16 @@ internal static class DecompilerOptionsPanelView
 
     private static string TooNew(Strings t, CSharpVersion version) => t.DecompilerOptionsTooNew(CSharpVersions.Label(version));
 
-    private static string Title(Strings t, Section section) => section.Group switch
+    private static string Title(Strings t, Section section)
     {
-        DecompilerToggleGroup.Language => CSharpVersions.Label(section.Version!.Value),
-        DecompilerToggleGroup.FSharp => t.DecompilerOptionsFsharp,
-        _ => t.DecompilerOptionsOther,
-    };
+        if (section.Version != null)
+            return CSharpVersions.Label(section.Version.Value);
+        return section.Group switch
+        {
+            DecompilerToggleGroup.FSharp => t.DecompilerOptionsFsharp,
+            _ => t.DecompilerOptionsOther,
+        };
+    }
 
     private static bool AllFolded(FoldedGroups folded)
     {
@@ -246,11 +251,20 @@ internal static class DecompilerOptionsPanelView
         throw new ArgumentOutOfRangeException(nameof(row));
     }
 
+    /// <summary>The C# version <paramref name="toggle"/>, a language toggle, came with, which every language
+    /// toggle names.</summary>
+    private static CSharpVersion GetIntroducedIn(DecompilerToggle toggle)
+    {
+        if (toggle.IntroducedIn == null)
+            throw new UnreachableException($"The language toggle {toggle.Name} names no C# version, though DecompilerToggles gives each one.");
+        return toggle.IntroducedIn.Value;
+    }
+
     private static Section[] BuildSections()
     {
         var all = DecompilerToggle.All;
         var language = all.Where(static t => t.Group == DecompilerToggleGroup.Language)
-            .GroupBy(static t => t.IntroducedIn!.Value)
+            .GroupBy(static t => GetIntroducedIn(t))
             .OrderByDescending(static g => g.Key)
             .Select(static g => new Section(g.Key.ToString(), DecompilerToggleGroup.Language, g.Key, g.ToArray()));
         var rest = new[] { DecompilerToggleGroup.Other, DecompilerToggleGroup.FSharp }

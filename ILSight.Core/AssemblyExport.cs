@@ -70,24 +70,24 @@ public static class AssemblyExport
     /// <summary>Decompiles <paramref name="assembly"/> into a project whose file is
     /// <paramref name="projectPath"/>, with its code and resources in the folder beside it, and
     /// writes what <paramref name="extras"/> asks for besides.</summary>
+    /// <exception cref="ArgumentException"><paramref name="projectPath"/> is no absolute path of a file.</exception>
     public static ExportedProject ExportProject(LoadedModule assembly, DecompilerOptions options, string projectPath, ProjectExtras? extras = null,
         IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var part = Part(progress, assembly, 0, WholeExport);
-        return ExportProject(assembly, options, projectPath, extras ?? ProjectExtras.None, part, cancellationToken);
+        return ExportProject(assembly, options, FullFilePath.Of(projectPath), extras ?? ProjectExtras.None, part, cancellationToken);
     }
 
     /// <summary>Exports the project, then the PDB when one is asked for; each takes half of the
     /// part's share of the export.</summary>
-    private static ExportedProject ExportProject(LoadedModule assembly, DecompilerOptions options, string projectPath, ProjectExtras extras,
+    private static ExportedProject ExportProject(LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath, ProjectExtras extras,
         PartProgress? part, CancellationToken cancellationToken)
     {
         var (projectPart, pdbPart) = SplitForPdb(part, extras.Pdb);
         var project = WriteProject(assembly, options, projectPath, extras.StrongNameKeyFile, projectPart, cancellationToken);
         if (!extras.Pdb)
             return project;
-        var folder = Path.GetDirectoryName(projectPath)!;
-        return WithPdb(project, options, folder, extras.EmbedSourcesInPdb, pdbPart, cancellationToken);
+        return WithPdb(project, options, projectPath.Folder, extras.EmbedSourcesInPdb, pdbPart, cancellationToken);
     }
 
     private static (PartProgress? Project, PartProgress? Pdb) SplitForPdb(PartProgress? part, bool pdb)
@@ -99,20 +99,20 @@ public static class AssemblyExport
         return GetHalves(part);
     }
 
-    private static ExportedProject WriteProject(LoadedModule assembly, DecompilerOptions options, string projectPath, string? strongNameKeyFile,
+    private static ExportedProject WriteProject(LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath, string? strongNameKeyFile,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
-        var folder = Path.GetDirectoryName(projectPath)!;
+        var folder = projectPath.Folder;
         Directory.CreateDirectory(folder);
         var decompiler = CreateProjectDecompiler(assembly, options, cancellationToken);
         decompiler.ProgressIndicator = progress;
         decompiler.StrongNameKeyFile = strongNameKeyFile;
-        using var projectFile = new StreamWriter(projectPath);
+        using var projectFile = new StreamWriter(projectPath.Text);
         var id = decompiler.DecompileProject(assembly.File, folder, projectFile, cancellationToken);
         var errors = decompiler.Errors
             .Select(static e => new ExportError(e.Message, e.ToString()))
             .ToList();
-        return new ExportedProject(assembly, projectPath, errors, id);
+        return new ExportedProject(assembly, projectPath.Text, errors, id);
     }
 
     private static WholeProjectDecompiler CreateProjectDecompiler(LoadedModule assembly, DecompilerOptions options, CancellationToken cancellationToken)
@@ -137,11 +137,12 @@ public static class AssemblyExport
     /// <summary>Decompiles each of <paramref name="projects"/> into a project in a folder of its own,
     /// named as the project, beside <paramref name="solutionPath"/>, then writes the solution that
     /// holds them.</summary>
+    /// <exception cref="ArgumentException"><paramref name="solutionPath"/> is no absolute path of a file.</exception>
     public static List<ExportedProject> ExportSolution(IReadOnlyList<SolutionProject> projects, DecompilerOptions options, string solutionPath,
         ProjectExtras? extras = null, IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var withExtras = extras ?? ProjectExtras.None;
-        var folder = Path.GetDirectoryName(solutionPath)!;
+        var folder = FullFilePath.Of(solutionPath).Folder;
         var assemblies = projects.Select(static p => p.Assembly).ToList();
         var bounds = PartBounds(assemblies);
         var exported = new List<ExportedProject>();
@@ -149,7 +150,7 @@ public static class AssemblyExport
         {
             cancellationToken.ThrowIfCancellationRequested();
             var project = projects[i];
-            var projectPath = ProjectPathIn(folder, project.Name);
+            var projectPath = FullFilePath.Of(ProjectPathIn(folder, project.Name));
             var part = Part(progress, project.Assembly, i, bounds);
             exported.Add(ExportProject(project.Assembly, options, projectPath, withExtras, part, cancellationToken));
         }

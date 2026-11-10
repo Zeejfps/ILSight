@@ -154,7 +154,9 @@ internal static class AssemblyResolving
             yield break;
         while (directory.Length > resolver.Package.FilePath.Text.Length)
         {
-            directory = Path.GetDirectoryName(directory)!;
+            directory = Path.GetDirectoryName(directory);
+            if (directory == null)
+                yield break;
             yield return directory;
         }
     }

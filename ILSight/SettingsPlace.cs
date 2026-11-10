@@ -1,8 +1,10 @@
+using ILSight.Core;
+
 namespace ILSight;
 
 /// <summary>Where the settings are written, and the user's themes and icon themes are found beside
 /// them; <paramref name="FilePath"/> is null while the settings are kept in memory only.</summary>
-public sealed record SettingsPlace(string? FilePath)
+public sealed record SettingsPlace(FullFilePath? FilePath)
 {
     private const string ThemesFolderName = "themes";
     private const string IconThemesFolderName = "icon-themes";

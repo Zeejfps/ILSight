@@ -99,14 +99,15 @@ public static class Diagrams
     public static void ShowInDiagram(AppState appState, CodeReference.Entity type, string newTitle)
     {
         var tab = appState.Tabs.Diagram;
-        if (tab == null)
+        var diagram = tab?.Diagram;
+        if (tab == null || diagram == null)
         {
             ShowInNewDiagram(appState, type, newTitle);
             return;
         }
         BringToFront(appState, tab);
-        RecordInHistory(appState, tab);
-        AddWithNeighbours(appState, tab, type);
+        RecordInHistory(appState, tab, diagram);
+        AddWithNeighbours(appState, tab, diagram, type);
     }
 
     private static void BringToFront(AppState appState, DocumentTab tab)
@@ -116,10 +117,14 @@ public static class Diagrams
         appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
-    /// <summary>Records the diagram <paramref name="tab"/> shows as worked in now, so going back returns to it.</summary>
-    private static void RecordInHistory(AppState appState, DocumentTab tab)
+    /// <summary>Records <paramref name="diagram"/>, which <paramref name="tab"/> shows, as worked in now, so going
+    /// back returns to it.</summary>
+    private static void RecordInHistory(AppState appState, DocumentTab tab, TypeDiagram diagram)
     {
-        RecordDiagram(appState.History, tab.Diagram!, tab.Title!);
+        var title = tab.Title;
+        if (title == null)
+            throw new UnreachableException("A tab showing a diagram has a title, as Tabs.ShowDiagram gives it one.");
+        RecordDiagram(appState.History, diagram, title);
     }
 
     /// <summary>Opens the code of <paramref name="target"/>, picked on <paramref name="diagram"/>, beside it,
@@ -129,7 +134,7 @@ public static class Diagrams
         var tab = FindTabShowing(appState, diagram);
         if (tab == null)
             return;
-        RecordInHistory(appState, tab);
+        RecordInHistory(appState, tab, diagram);
         Navigate(appState, target, inNewTab);
     }
 
@@ -139,24 +144,24 @@ public static class Diagrams
     {
         LeaveActiveTab(appState);
         var tab = FindOrOpenEmptyTab(appState);
-        Tabs.ShowDiagram(tab, title, new TypeDiagram());
+        var diagram = new TypeDiagram();
+        Tabs.ShowDiagram(tab, title, diagram);
         Tabs.Keep(appState.Tabs, tab);
         Tabs.MakeActive(appState.Tabs, tab);
-        RecordInHistory(appState, tab);
-        AddWithNeighbours(appState, tab, type);
+        RecordDiagram(appState.History, diagram, title);
+        AddWithNeighbours(appState, tab, diagram, type);
     }
 
     /// <summary>Reads the card of <paramref name="type"/> and its neighbours in the background, adds them to
-    /// the diagram <paramref name="tab"/> shows, taking the type's assembly as one of its own, then
-    /// commands the view to focus the card.</summary>
-    private static void AddWithNeighbours(AppState appState, DocumentTab tab, CodeReference.Entity type)
+    /// <paramref name="diagram"/>, which <paramref name="tab"/> shows, taking the type's assembly as one of its
+    /// own, then commands the view to focus the card.</summary>
+    private static void AddWithNeighbours(AppState appState, DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type)
     {
-        Background.Start(appState.Work, nameof(AddWithNeighboursAsync), AddWithNeighboursAsync(appState, tab, type), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(AddWithNeighboursAsync), AddWithNeighboursAsync(appState, tab, diagram, type), problem => Errors.Report(appState, problem));
     }
 
-    private static async Task AddWithNeighboursAsync(AppState appState, DocumentTab tab, CodeReference.Entity type)
+    private static async Task AddWithNeighboursAsync(AppState appState, DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type)
     {
-        var diagram = tab.Diagram!;
         var token = diagram.Token;
         Diagrams.StartReading(diagram);
         var assemblies = appState.Assemblies;

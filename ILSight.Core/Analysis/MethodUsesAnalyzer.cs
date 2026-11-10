@@ -22,7 +22,7 @@ internal static class MethodUsesAnalyzer
             throw new InvalidOperationException("Should never happen.");
         var file = method.ParentModule.MetadataFile;
         var module = AssemblyListing.EnsureTypeSystemOf(context.AssemblyList, file).MainModule;
-        return AnalyzerHelpers.EnsureMapping(context, method).GetMethodParts((MethodDefinitionHandle)method.MetadataToken)
+        return AnalyzerHelpers.EnsureMapping(context, method).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
             .SelectMany(part => ScanMethod(module, part)).Distinct();
     }
 

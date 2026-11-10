@@ -35,7 +35,7 @@ internal static class FieldAccessAnalyzer
         if (method.MetadataToken.IsNil || method.ParentModule is not MetadataModule module || module.MetadataFile == null)
             return false;
         var file = module.MetadataFile;
-        return AnalyzerHelpers.EnsureMapping(context, method.DeclaringTypeDefinition!).GetMethodParts((MethodDefinitionHandle)method.MetadataToken)
+        return AnalyzerHelpers.EnsureMapping(context, DecompilerFacts.GetDeclaringTypeDefinition(method)).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
             .Any(part => AnalyzerHelpers.HasToken(AnalyzerHelpers.ReadBody(file, part), (opCode, token) =>
                 Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && AnalyzerHelpers.IsSame(found, field)));
     }

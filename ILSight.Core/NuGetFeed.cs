@@ -166,7 +166,10 @@ public static class NuGetFeeds
     private static async Task WriteWholeFileAsync(HttpResponseMessage response, string path, CancellationToken cancellationToken)
     {
         var temporary = path + ".download";
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var folder = Path.GetDirectoryName(path);
+        if (folder == null)
+            throw new ArgumentException($"'{path}' names no file in a folder.", nameof(path));
+        Directory.CreateDirectory(folder);
         try
         {
             await using (var file = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))

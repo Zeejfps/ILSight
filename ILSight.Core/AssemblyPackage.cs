@@ -309,7 +309,7 @@ public static class AssemblyPackages
             if (path == null)
                 return new ExtractFailure.OutsideFolder(file);
             WriteFile(package, file, path);
-            written.Add(path);
+            written.Add(path.Text);
             return null;
         }
         catch (Exception e) when (IsExtractError(e))
@@ -319,12 +319,14 @@ public static class AssemblyPackages
     }
 
     /// <summary>Where <paramref name="file"/> goes under <paramref name="root"/>, at its path from
-    /// <paramref name="folder"/>; null when that path leads out of <paramref name="root"/>.</summary>
-    private static string? FindTargetPath(PackageFile file, PackageFolder folder, string root)
+    /// <paramref name="folder"/>; null when that path leads out of <paramref name="root"/>, or names no file.</summary>
+    private static FullFilePath? FindTargetPath(PackageFile file, PackageFolder folder, string root)
     {
         var relative = GetRelativePath(folder, file).Replace(Separator, Path.DirectorySeparatorChar);
-        var path = Path.GetFullPath(Path.Combine(root, relative));
-        if (!IsInside(path, root))
+        var path = FullFilePath.Parse(Path.GetFullPath(Path.Combine(root, relative)));
+        if (path == null)
+            return null;
+        if (!IsInside(path.Text, root))
             return null;
         return path;
     }
@@ -345,11 +347,11 @@ public static class AssemblyPackages
         return path.StartsWith(prefix, comparison);
     }
 
-    private static void WriteFile(AssemblyPackage package, PackageFile file, string path)
+    private static void WriteFile(AssemblyPackage package, PackageFile file, FullFilePath path)
     {
         var bytes = ReadFile(package, file);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllBytes(path, bytes);
+        Directory.CreateDirectory(path.Folder);
+        File.WriteAllBytes(path.Text, bytes);
     }
 
     private static bool IsExtractError(Exception e)

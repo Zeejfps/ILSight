@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using ILSight.Core;
 
 namespace ILSight;
 
@@ -11,9 +12,9 @@ public static class RunArgumentsRouting
 
     /// <summary>Where the runs with the settings at <paramref name="settingsPath"/> meet: the same for
     /// every spelling of the path the file system takes as one.</summary>
-    public static RunArgumentsAddress FindAddress(string settingsPath)
+    public static RunArgumentsAddress FindAddress(FullFilePath settingsPath)
     {
-        var path = Path.GetFullPath(settingsPath);
+        var path = settingsPath.Text;
         if (OperatingSystem.IsWindows())
             path = path.ToUpperInvariant();
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(path));

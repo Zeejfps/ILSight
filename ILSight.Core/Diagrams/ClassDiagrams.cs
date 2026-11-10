@@ -458,7 +458,7 @@ public static partial class ClassDiagrams
 
     private static bool IsHiddenEntity(DiagramTypes diagram, IEntity entity)
     {
-        return CSharpDecompiler.MemberIsHidden(entity.ParentModule!.MetadataFile, entity.MetadataToken, diagram.Settings);
+        return CSharpDecompiler.MemberIsHidden(DecompilerFacts.GetMetadataFile(entity), entity.MetadataToken, diagram.Settings);
     }
 
     // A field of a property's type whose name holds the property's, as _name does for Name.
@@ -592,11 +592,11 @@ public static partial class ClassDiagrams
             return null;
         var relations = new Dictionary<string, string>();
         foreach (var property in properties)
-            Relate(relations, ReferToOne(diagram, property));
+            RelateOne(diagram, relations, property);
         return relations;
     }
 
-    private static DiagramReference ReferToOne(DiagramTypes diagram, IProperty property)
+    private static void RelateOne(DiagramTypes diagram, Dictionary<string, string> relations, IProperty property)
     {
         var type = property.ReturnType;
         var label = property.Name;
@@ -607,7 +607,7 @@ public static partial class ClassDiagrams
             type = underlying;
             label += " ?";
         }
-        return ClassDiagrams.ReferTo(diagram.Names, type, label);
+        Relate(relations, label, ClassDiagrams.ReferTo(diagram.Names, type, label));
     }
 
     private static string WriteIndexerParameters(IProperty indexer)
@@ -622,14 +622,14 @@ public static partial class ClassDiagrams
             return null;
         var relations = new Dictionary<string, string>();
         foreach (var relation in many)
-            Relate(relations, ClassDiagrams.ReferTo(diagram.Names, relation.ElementType, relation.Property.Name));
+            Relate(relations, relation.Property.Name, ClassDiagrams.ReferTo(diagram.Names, relation.ElementType, relation.Property.Name));
         return relations;
     }
 
-    // Relations are keyed by label; a label two properties share keeps the last.
-    private static void Relate(Dictionary<string, string> relations, DiagramReference reference)
+    // Relations are keyed by label, the name of the property; a label two properties share keeps the last.
+    private static void Relate(Dictionary<string, string> relations, string label, DiagramReference reference)
     {
-        relations[reference.Label!] = reference.To;
+        relations[label] = reference.To;
     }
 
     /// <summary>The class <paramref name="type"/> derives from, unless that is object.</summary>
@@ -689,28 +689,29 @@ public static partial class ClassDiagrams
     /// <paramref name="members"/>, under its name; null when none has any.</summary>
     internal static Dictionary<string, string>? CollectDocs(DiagramDocs docs, ITypeDefinition type, IEnumerable<IMember> members)
     {
-        if (docs.Provider == null)
+        var provider = docs.Provider;
+        if (provider == null)
             return null;
         var found = new Dictionary<string, string>();
-        AddDoc(docs, found, string.Empty, type);
+        AddDoc(provider, found, string.Empty, type);
         foreach (var member in members)
-            AddDoc(docs, found, member.Name, member);
+            AddDoc(provider, found, member.Name, member);
         if (found.Count == 0)
             return null;
         return found;
     }
 
-    private static void AddDoc(DiagramDocs docs, Dictionary<string, string> found, string key, IEntity entity)
+    private static void AddDoc(IDocumentationProvider provider, Dictionary<string, string> found, string key, IEntity entity)
     {
-        var text = GetDocText(docs, entity);
+        var text = GetDocText(provider, entity);
         if (string.IsNullOrEmpty(text))
             return;
         found[key] = text;
     }
 
-    private static string? GetDocText(DiagramDocs docs, IEntity entity)
+    private static string? GetDocText(IDocumentationProvider provider, IEntity entity)
     {
-        var xml = ReadDocXml(docs, entity);
+        var xml = ReadDocXml(provider, entity);
         if (xml == null)
             return null;
         var text = xml
@@ -725,11 +726,11 @@ public static partial class ClassDiagrams
         return HorizontalSpace().Replace(plain, " ");
     }
 
-    private static string? ReadDocXml(DiagramDocs docs, IEntity entity)
+    private static string? ReadDocXml(IDocumentationProvider provider, IEntity entity)
     {
         try
         {
-            return docs.Provider!.GetDocumentation(entity);
+            return provider.GetDocumentation(entity);
         }
         catch (Exception e) when (e is XmlException or IOException or UnauthorizedAccessException)
         {

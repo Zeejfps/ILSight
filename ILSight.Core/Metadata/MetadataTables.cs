@@ -45,7 +45,7 @@ internal static class MetadataTables
         {
             TableIndex.Module => AddColumns(Table<ModuleDefinition>(() => [m.GetModuleDefinition()]), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Generation", r => r.Generation);
                 AddName(columns, r => r.Name);
                 AddGuid(columns, "Mvid", r => r.Mvid, r => m.GetGuid(r.Mvid).ToString());
@@ -55,7 +55,7 @@ internal static class MetadataTables
 
             TableIndex.TypeRef => AddColumns(Table(() => m.TypeReferences.Select(m.GetTypeReference)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddHandle(columns, "ResolutionScope", r => r.ResolutionScope);
                 AddName(columns, r => r.Name);
                 AddString(columns, "Namespace", r => r.Namespace);
@@ -63,7 +63,7 @@ internal static class MetadataTables
 
             TableIndex.TypeDef => AddColumns(Table(() => m.GetTypeDefListColumns().Select(c => (Type: m.GetTypeDefinition(c.Type), c.FieldList, c.MethodList))), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.Type.Attributes, "X8");
                 AddName(columns, r => r.Type.Name);
                 AddString(columns, "Namespace", r => r.Type.Namespace);
@@ -76,27 +76,27 @@ internal static class MetadataTables
 
             TableIndex.Field => AddColumns(Table(() => m.FieldDefinitions.Select(m.GetFieldDefinition)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.Attributes, "X8");
                 AddName(columns, r => r.Name);
-                AddSignature(columns, "Signature", r => r.Signature);
+                AddSignature(columns, table, "Signature", r => r.Signature);
             }),
 
             TableIndex.MethodDef => AddColumns(Table(() => m.GetMethodDefParamLists().Select(c => (Method: m.GetMethodDefinition(c.Method), c.ParamList))), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.Method.Attributes, "X8");
                 AddValue(columns, "ImplAttributes", r => r.Method.ImplAttributes, "X8");
                 AddValue(columns, "RVA", r => r.Method.RelativeVirtualAddress, "X8");
                 AddName(columns, r => r.Method.Name);
-                AddSignature(columns, "Signature", r => r.Method.Signature);
+                AddSignature(columns, table, "Signature", r => r.Method.Signature);
                 AddList(columns, "ParamList", TableIndex.Param, r => r.ParamList, r => r.Method.GetParameters().FirstOrDefault(),
                     "(method has no Param rows; the stored value is the start of its empty parameter list: the next method's first Param row, or one past the end of the Param table)");
             }),
 
             TableIndex.Param => AddColumns(Table(() => Rids().Select(rid => m.GetParameter(MetadataTokens.ParameterHandle(rid)))), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.Attributes, "X8");
                 AddValue(columns, "Sequence", r => r.SequenceNumber);
                 AddName(columns, r => r.Name);
@@ -110,15 +110,15 @@ internal static class MetadataTables
 
             TableIndex.MemberRef => AddColumns(Table(() => m.MemberReferences.Select(m.GetMemberReference)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddHandle(columns, "Parent", r => r.Parent);
                 AddName(columns, r => r.Name);
-                AddSignature(columns, "Signature", r => r.Signature);
+                AddSignature(columns, table, "Signature", r => r.Signature);
             }),
 
             TableIndex.Constant => AddColumns(Table(() => Rids().Select(rid => m.GetConstant(MetadataTokens.ConstantHandle(rid)))), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Type", r => r.TypeCode, "X8", r => r.TypeCode.ToString());
                 AddHandle(columns, "Parent", r => r.Parent);
                 AddBlob(columns, "Value", r => r.Value, r => ConstantText(m, r));
@@ -126,7 +126,7 @@ internal static class MetadataTables
 
             TableIndex.CustomAttribute => AddColumns(Table(() => m.CustomAttributes.Select(m.GetCustomAttribute)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddHandle(columns, "Parent", r => r.Parent);
                 AddHandle(columns, "Constructor", r => r.Constructor);
                 AddBlob(columns, "Value", r => r.Value);
@@ -140,7 +140,7 @@ internal static class MetadataTables
 
             TableIndex.DeclSecurity => AddColumns(Table(() => m.DeclarativeSecurityAttributes.Select(m.GetDeclarativeSecurityAttribute)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddHandle(columns, "Parent", r => r.Parent);
                 AddValue(columns, "Action", r => r.Action, "X8", r => r.Action.ToString());
                 AddBlob(columns, "PermissionSet", r => r.PermissionSet);
@@ -161,8 +161,8 @@ internal static class MetadataTables
 
             TableIndex.StandAloneSig => AddColumns(Table(() => Rids().Select(rid => m.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(rid)))), columns =>
             {
-                AddOffset(columns);
-                AddSignature(columns, "Signature", r => r.Signature, r => LocalsText(file, r));
+                AddOffset(columns, table);
+                AddSignature(columns, table, "Signature", r => r.Signature, r => LocalsText(file, r));
             }),
 
             TableIndex.EventMap => AddColumns(Table(m.GetEventMaps), columns =>
@@ -173,7 +173,7 @@ internal static class MetadataTables
 
             TableIndex.Event => AddColumns(Table(() => m.EventDefinitions.Select(m.GetEventDefinition)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.Attributes, "X8");
                 AddName(columns, r => r.Name);
                 AddHandle(columns, "Type", r => r.Type);
@@ -187,10 +187,10 @@ internal static class MetadataTables
 
             TableIndex.Property => AddColumns(Table(() => m.PropertyDefinitions.Select(m.GetPropertyDefinition)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.Attributes, "X8");
                 AddName(columns, r => r.Name);
-                AddSignature(columns, "Signature", r => r.Signature, r => PropertySignatureText(file, r));
+                AddSignature(columns, table, "Signature", r => r.Signature, r => PropertySignatureText(file, r));
             }),
 
             TableIndex.MethodSemantics => AddColumns(Table(m.GetMethodSemantics), columns =>
@@ -209,13 +209,13 @@ internal static class MetadataTables
 
             TableIndex.ModuleRef => AddColumns(Table(() => m.GetModuleReferences().Select(m.GetModuleReference)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddName(columns, r => r.Name);
             }),
 
             TableIndex.TypeSpec => AddColumns(Table(() => m.GetTypeSpecifications().Select(m.GetTypeSpecification)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddBlob(columns, "Signature", r => r.Signature, r =>
                 {
                     ITextOutput output = new PlainTextOutput();
@@ -240,7 +240,7 @@ internal static class MetadataTables
 
             TableIndex.Assembly => AddColumns(Table<AssemblyDefinition>(() => m.IsAssembly ? [m.GetAssemblyDefinition()] : []), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "HashAlgorithm", r => r.HashAlgorithm, "X4", r => r.HashAlgorithm.ToString());
                 AddValue(columns, "Flags", r => r.Flags, "X4");
                 AddValue(columns, "Version", r => r.Version);
@@ -250,7 +250,7 @@ internal static class MetadataTables
 
             TableIndex.AssemblyRef => AddColumns(Table(() => m.AssemblyReferences.Select(m.GetAssemblyReference)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Version", r => r.Version);
                 AddValue(columns, "Flags", r => r.Flags, "X8");
                 AddBlob(columns, "PublicKeyOrToken", r => r.PublicKeyOrToken, r => Hex(r.PublicKeyOrToken));
@@ -260,7 +260,7 @@ internal static class MetadataTables
 
             TableIndex.File => AddColumns(Table(() => m.AssemblyFiles.Select(m.GetAssemblyFile)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.ContainsMetadata ? 1 : 0, "X8", r => r.ContainsMetadata ? "ContainsMetaData" : "ContainsNoMetaData");
                 AddName(columns, r => r.Name);
                 AddBlob(columns, "HashValue", r => r.HashValue, r => Hex(r.HashValue));
@@ -268,7 +268,7 @@ internal static class MetadataTables
 
             TableIndex.ExportedType => AddColumns(Table(() => m.ExportedTypes.Select(m.GetExportedType)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.Attributes, "X8");
                 AddValue(columns, "TypeDefId", r => r.GetTypeDefinitionId(), "X8");
                 AddString(columns, "TypeName", r => r.Name);
@@ -278,7 +278,7 @@ internal static class MetadataTables
 
             TableIndex.ManifestResource => AddColumns(Table(() => m.ManifestResources.Select(m.GetManifestResource)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Attributes", r => r.Attributes, "X8");
                 AddName(columns, r => r.Name);
                 AddHandle(columns, "Implementation", r => r.Implementation);
@@ -292,7 +292,7 @@ internal static class MetadataTables
 
             TableIndex.GenericParam => AddColumns(Table(() => Rids().Select(rid => m.GetGenericParameter(MetadataTokens.GenericParameterHandle(rid)))), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddValue(columns, "Number", r => r.Index);
                 AddValue(columns, "Attributes", r => r.Attributes, "X8");
                 AddHandle(columns, "Owner", r => r.Parent);
@@ -301,7 +301,7 @@ internal static class MetadataTables
 
             TableIndex.MethodSpec => AddColumns(Table(() => m.GetMethodSpecifications().Select(m.GetMethodSpecification)), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddHandle(columns, "Method", r => r.Method);
                 AddBlob(columns, "Signature", r => r.Signature, r =>
                 {
@@ -321,7 +321,7 @@ internal static class MetadataTables
 
             TableIndex.GenericParamConstraint => AddColumns(Table(() => Rids().Select(rid => m.GetGenericParameterConstraint(MetadataTokens.GenericParameterConstraintHandle(rid)))), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddHandle(columns, "Owner", r => r.Parameter, r =>
                 {
                     ITextOutput output = new PlainTextOutput();
@@ -428,14 +428,14 @@ internal static class MetadataTables
 
             TableIndex.EncLog => AddColumns(Table(m.GetEditAndContinueLogEntries), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddHandle(columns, "Handle", r => r.Handle);
                 AddValue(columns, "FuncCode", r => r.Operation, "X8", r => r.Operation.ToString());
             }),
 
             TableIndex.EncMap => AddColumns(Table(m.GetEditAndContinueMapEntries), columns =>
             {
-                AddOffset(columns);
+                AddOffset(columns, table);
                 AddHandle(columns, "Handle", r => r);
             }),
 

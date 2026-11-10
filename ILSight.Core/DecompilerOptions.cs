@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
 using ICSharpCode.Decompiler;
 
@@ -157,7 +158,8 @@ public static class DecompilerToggles
             if (property.GetCustomAttribute<BrowsableAttribute>() is { Browsable: false }) continue;
             var category = property.GetCustomAttribute<CategoryAttribute>()?.Category;
             if (category == null) continue;
-            var value = (bool)property.GetValue(defaults)!;
+            if (property.GetValue(defaults) is not bool value)
+                throw new UnreachableException($"{property.Name}, a bool property, holds no bool.");
             var version = FindIntroduced(category);
             if (version != null)
                 toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.Language, IntroducedIn = version, DefaultValue = value });

@@ -674,8 +674,12 @@ public static class Theming
         line = 0;
         if (reader.TokenType == JsonTokenType.EndObject)
             return false;
-        key = reader.GetString()!;
         line = GetLine(json, reader);
+        var name = reader.GetString();
+        if (name == null)
+            AddJsonError(json, line, ThemeProblem.InvalidJson, detail: "A key is null.");
+        else
+            key = name;
         reader.Read();
         return true;
     }
@@ -685,7 +689,15 @@ public static class Theming
     internal static ThemeName? ReadJsonName(ThemeJson json, ref Utf8JsonReader reader, int line, string fallback)
     {
         if (reader.TokenType == JsonTokenType.String)
-            return new ThemeName.Plain(reader.GetString()!);
+        {
+            var plain = reader.GetString();
+            if (plain == null)
+            {
+                AddJsonError(json, line, ThemeProblem.InvalidName);
+                return null;
+            }
+            return new ThemeName.Plain(plain);
+        }
         if (reader.TokenType != JsonTokenType.StartObject)
         {
             AddJsonError(json, line, ThemeProblem.InvalidName);
@@ -1110,7 +1122,9 @@ public static class Theming
             WaitForQuiet(watch);
             return;
         }
-        LoseWatch(watch, (FileSystemWatcher)sender, e.GetException());
+        if (sender is not FileSystemWatcher watcher)
+            throw new UnreachableException("Only a FileSystemWatcher raises its own Error event.");
+        LoseWatch(watch, watcher, e.GetException());
     }
 
     private static void LoseWatch(ThemeFolderWatch watch, FileSystemWatcher watcher, Exception error)

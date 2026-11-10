@@ -4,6 +4,7 @@ using System.Text.Json;
 using ZGF.Fonts;
 using ZGF.Gui.Immediate;
 using ZGF.Svg;
+using ILSight.Core;
 using static ILSight.Preferences;
 using static ILSight.Theming;
 
@@ -174,7 +175,7 @@ public static class IconTheming
     /// fonts and pictures it names inside its folder; a file that cannot be read has no <see cref="IconThemeFile.Contents"/>.</summary>
     public static IconThemeFile ReadThemeFile(ThemeId<IconThemeFile> id, string path)
     {
-        var folder = Path.GetDirectoryName(Path.GetFullPath(path))!;
+        var folder = FullFilePath.Of(Path.GetFullPath(path)).Folder;
         var theme = CreateFile(id, path, IconAssetFolders.Open(folder));
         var json = Theming.ReadJsonBytes(theme.Json, path);
         if (json != null)

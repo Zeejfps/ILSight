@@ -93,7 +93,7 @@ internal static class AnalyzerHelpers
         {
             CurrentModule = currentModule,
             DeclaringModule = type.ParentModule?.MetadataFile ?? throw new InvalidOperationException("Cannot use MetadataModule without PEFile as context."),
-            Handle = (TypeDefinitionHandle)type.MetadataToken,
+            Handle = DecompilerFacts.GetTypeHandle(type),
             PrimitiveType = type.KnownTypeCode == KnownTypeCode.None ? 0 : type.KnownTypeCode.ToPrimitiveTypeCode(),
         };
     }
@@ -160,8 +160,9 @@ internal static class AnalyzerHelpers
         switch (customAttribute.Parent.Kind)
         {
             case HandleKind.MethodDefinition:
-                var parent = (IMethod)ts.MainModule.ResolveEntity(customAttribute.Parent);
-                return parent?.AccessorOwner ?? parent;
+                if (ts.MainModule.ResolveEntity(customAttribute.Parent) is not IMethod parent)
+                    return null;
+                return parent.AccessorOwner ?? parent;
             case HandleKind.FieldDefinition:
             case HandleKind.PropertyDefinition:
             case HandleKind.EventDefinition:
@@ -192,14 +193,14 @@ internal static class AnalyzerHelpers
         var module = method.ParentModule?.MetadataFile;
         if (!method.HasBody || method.MetadataToken.IsNil || module == null)
             return null;
-        return AnalyzerHelpers.ReadBody(module, (MethodDefinitionHandle)method.MetadataToken);
+        return AnalyzerHelpers.ReadBody(module, DecompilerFacts.GetMethodHandle(method));
     }
 
     /// <summary>How C# maps the compiler-generated code around <paramref name="entity"/> to the
     /// methods it came from; the last one asked for is kept.</summary>
     internal static CodeMappingInfo EnsureMapping(AnalyzerContext context, IEntity entity)
     {
-        var file = entity.ParentModule!.MetadataFile!;
+        var file = DecompilerFacts.GetMetadataFile(entity);
         var mapping = context.Mapping;
         if (mapping == null || mapping.Value.File != file || mapping.Value.Handle != entity.MetadataToken)
         {
@@ -228,10 +229,10 @@ internal static class AnalyzerHelpers
     internal static IEnumerable<MetadataFile> GetModulesInScope(AnalyzerScope scope, CancellationToken ct)
     {
         if (scope.IsLocal)
-            return [scope.TypeScope.ParentModule!.MetadataFile!];
+            return [DecompilerFacts.GetMetadataFile(scope.TypeScope)];
         if (scope.EffectiveAccessibility.LessThanOrEqual(Accessibility.Internal))
             return GetModuleAndAnyFriends(scope, scope.TypeScope, ct);
-        return GetReferencingModules(scope, scope.TypeScope.ParentModule!.MetadataFile!, ct);
+        return GetReferencingModules(scope, DecompilerFacts.GetMetadataFile(scope.TypeScope), ct);
     }
 
     internal static DecompilerTypeSystem GetTypeSystem(AnalyzerScope scope, MetadataFile module)
@@ -279,24 +280,26 @@ internal static class AnalyzerHelpers
 
     private static void DetermineEffectiveAccessibility(IEntity input, out ITypeDefinition typeScope, out Accessibility accessibility)
     {
+        ITypeDefinition start;
         if (input is ITypeDefinition definition)
         {
             accessibility = Accessibility.Public;
-            typeScope = definition;
+            start = definition;
         }
         else
         {
             accessibility = input.Accessibility;
-            typeScope = input.DeclaringTypeDefinition!;
+            start = DecompilerFacts.GetDeclaringTypeDefinition(input);
         }
-        var previous = typeScope;
-        while (typeScope != null && !accessibility.LessThanOrEqual(Accessibility.Private))
+        var previous = start;
+        ITypeDefinition? current = start;
+        while (current != null && !accessibility.LessThanOrEqual(Accessibility.Private))
         {
-            accessibility = accessibility.Intersect(typeScope.Accessibility);
-            previous = typeScope;
-            typeScope = previous.DeclaringTypeDefinition!;
+            accessibility = accessibility.Intersect(current.Accessibility);
+            previous = current;
+            current = previous.DeclaringTypeDefinition;
         }
-        typeScope ??= previous;
+        typeScope = current ?? previous;
     }
 
     private static IEnumerable<MetadataFile> GetReferencingModules(AnalyzerScope scope, MetadataFile self, CancellationToken ct)
@@ -336,7 +339,7 @@ internal static class AnalyzerHelpers
 
     private static IEnumerable<MetadataFile> GetModuleAndAnyFriends(AnalyzerScope scope, ITypeDefinition typeScope, CancellationToken ct)
     {
-        var self = typeScope.ParentModule!.MetadataFile!;
+        var self = DecompilerFacts.GetMetadataFile(typeScope);
         yield return self;
         var provider = MetadataExtensions.MinimalAttributeTypeProvider;
         var friends = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

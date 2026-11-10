@@ -59,13 +59,20 @@ public static class Analysis
             AddPending(tree, anchor);
     }
 
-    /// <summary>The roots restored from the saved analyses that are still waiting for their symbols.</summary>
-    public static List<AnalyzerPendingNode> ListRestoring(AnalyzerTree tree)
+    /// <summary>The roots restored from the saved analyses that are still waiting for their symbols, each
+    /// with the analysis it was restored from.</summary>
+    public static List<(AnalyzerPendingNode Root, CodeAnchor SavedAs)> ListRestoring(AnalyzerTree tree)
     {
-        return tree.Roots
-            .OfType<AnalyzerPendingNode>()
-            .Where(static p => p.SavedAs != null)
-            .ToList();
+        var restoring = new List<(AnalyzerPendingNode Root, CodeAnchor SavedAs)>();
+        foreach (var root in tree.Roots)
+        {
+            if (root is not AnalyzerPendingNode pending)
+                continue;
+            if (pending.SavedAs == null)
+                continue;
+            restoring.Add((pending, pending.SavedAs.Value));
+        }
+        return restoring;
     }
 
     /// <summary>Turns the waiting <paramref name="pending"/> into the analysis of <paramref name="symbol"/>,
@@ -343,10 +350,11 @@ public static class Analysis
 
     private static async Task RestoreAnalysesAsync(AppState appState)
     {
-        var restoring = ListRestoring(appState.Analyzer);
-        if (restoring.Count == 0)
+        var pending = ListRestoring(appState.Analyzer);
+        if (pending.Count == 0)
             return;
-        var analyzed = restoring.ConvertAll(static r => r.SavedAs!.Value);
+        var restoring = pending.ConvertAll(static r => r.Root);
+        var analyzed = pending.ConvertAll(static r => r.SavedAs);
         var assemblies = appState.Assemblies;
         var generation = assemblies.Generation;
         var found = await Background.Run(() => FindAnalyzed(assemblies, analyzed));
