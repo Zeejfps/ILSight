@@ -399,10 +399,9 @@ internal static class DiagramView
         var row = RowOf(hit);
         if (row == null)
             return;
-        var fold = row.Value.Fold;
-        if (fold == null)
+        if (row.Value.Content is not CardRowContent.Fold fold)
             return;
-        ToggleFold(view, fold);
+        ToggleFold(view, fold.Part);
     }
 
     /// <summary>A hand over a row a click acts on: one that opens code or folds a part; none while panning.</summary>
@@ -422,7 +421,7 @@ internal static class DiagramView
     {
         if (row.IsLink)
             return true;
-        return row.Fold != null;
+        return row.Content is CardRowContent.Fold;
     }
 
     private static void FillFrame(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, DiagramHit hit)
@@ -493,7 +492,7 @@ internal static class DiagramView
             return -1;
         if (row.Face != face)
             return -1;
-        if (row.Value.Kind == CardRowKind.Stereotype)
+        if (row.Value.Content is CardRowContent.Stereotype)
             return -1;
         return row.Index;
     }
@@ -745,28 +744,29 @@ internal static class DiagramView
             p.FillRect(rect, frame.Theme.RowHover);
         var left = card.X + row.Indent * frame.Zoom;
         var underlined = isHovered && row.IsLink;
-        switch (row.Kind)
+        switch (row.Content)
         {
-            case CardRowKind.Name:
-                PaintIconAndText(p, frame, rect, left, row, frame.Theme.Text, bold: true, underlined);
+            case CardRowContent.Name name:
+                PaintIcon(p, frame, rect, left, name.Icon, name.Accessibility);
+                PaintTextAfterIcon(p, frame, rect, left, row, frame.Theme.Text, bold: true, underlined);
                 break;
-            case CardRowKind.Stereotype:
+            case CardRowContent.Stereotype:
                 PaintText(p, frame, rect, left, row.Text, frame.Theme.TextMuted, family: TextFonts.Italic);
                 break;
-            case CardRowKind.Fold:
-                PaintFold(p, frame, rect, left, row);
+            case CardRowContent.Fold fold:
+                PaintFold(p, frame, rect, left, row, fold.IsOpen);
+                break;
+            case CardRowContent.Member member:
+                PaintIcon(p, frame, rect, left, member.Icon, member.Accessibility);
+                PaintTextAfterIcon(p, frame, rect, left, row, frame.Theme.Text, bold: false, underlined);
                 break;
             default:
-                PaintIconAndText(p, frame, rect, left, row, frame.Theme.Text, bold: false, underlined);
-                break;
+                throw new UnreachableException();
         }
     }
 
-    private static void PaintIconAndText(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, uint color, bool bold, bool underlined)
+    private static void PaintTextAfterIcon(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, uint color, bool bold, bool underlined)
     {
-        if (row.Icon == null)
-            throw new UnreachableException($"A {row.Kind} row has an icon, as DiagramFaces gives it one.");
-        PaintIcon(p, frame, rect, left, row.Icon.Value, row.Accessibility);
         var textLeft = left + (frame.Theme.IconSize + DiagramFaces.IconGap) * frame.Zoom;
         PaintText(p, frame, rect, textLeft, row.Text, color, bold: bold);
         if (underlined)
@@ -797,11 +797,11 @@ internal static class DiagramView
         p.Glyph(corner, overlay.Value, frame.Palette.Restricted, overlaySize);
     }
 
-    private static void PaintFold(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row)
+    private static void PaintFold(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, bool isOpen)
     {
         var chevronWidth = DiagramFaces.ChevronWidth * frame.Zoom;
         var center = new PointF(left + chevronWidth / 2, rect.Y + rect.Height / 2);
-        p.DrawDisclosure(center, ChevronHalf * frame.Zoom, row.IsOpen, frame.Theme.TextMuted, frame.Theme.IconStrokeWidth * frame.Zoom);
+        p.DrawDisclosure(center, ChevronHalf * frame.Zoom, isOpen, frame.Theme.TextMuted, frame.Theme.IconStrokeWidth * frame.Zoom);
         PaintText(p, frame, rect, left + chevronWidth, row.Text, frame.Theme.TextMuted);
     }
 

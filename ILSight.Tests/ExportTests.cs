@@ -337,7 +337,7 @@ public sealed class ExportTests : IDisposable
     public void The_project_export_toggles_are_offered_in_their_own_group()
     {
         var toggles = DecompilerToggle.All
-            .Where(t => t.Group == DecompilerToggleGroup.ProjectExport)
+            .Where(t => t.Group is DecompilerToggleGroup.ProjectExport)
             .Select(t => t.Name);
 
         Assert.Equal(["UseSdkStyleProjectFormat", "UseNestedDirectoriesForNamespaces"], toggles);

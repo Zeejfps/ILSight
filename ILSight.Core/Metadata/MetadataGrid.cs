@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -16,18 +17,33 @@ namespace ILSight.Core.Metadata;
 /// <see cref="FilterState"/> filters on.</param>
 public sealed record MetadataColumn(string Name, bool IsToken, bool IsNumeric, FlagsSchema? Flags = null);
 
-/// <summary>
-/// What one column of a <see cref="MetadataGrid"/> is filtered by, as ILSpy's header filters do:
-/// <see cref="Text"/> — a <c>/regex/</c>, a comparison such as <c>&gt;= 0x100</c> for a number, or
-/// else a part of the cell's text, ignoring case — and for a flags column its <see cref="Flags"/>.
-/// </summary>
-public sealed class MetadataColumnFilter
+/// <summary>What one column of a <see cref="MetadataGrid"/> is filtered by, as ILSpy's header filters do:
+/// text for most columns, and for a column of flags which of them a row is to have.</summary>
+public abstract class MetadataColumnFilter
 {
-    public string Text { get; set; } = "";
+    private MetadataColumnFilter()
+    {
+    }
 
-    public FilterState? Flags { get; init; }
+    /// <summary>A <c>/regex/</c>, a comparison such as <c>&gt;= 0x100</c> for a number, or else a part
+    /// of the cell's text, ignoring case; nothing filters nothing.</summary>
+    public sealed class ByText : MetadataColumnFilter
+    {
+        public string Text { get; set; } = "";
+    }
 
-    public bool IsActive => Text.Length > 0 || Flags is { IsEmpty: false };
+    /// <summary>The flags picked for a column of flags.</summary>
+    public sealed class ByFlags : MetadataColumnFilter
+    {
+        public required FilterState Flags { get; init; }
+    }
+
+    public bool IsActive => this switch
+    {
+        ByText text => text.Text.Length > 0,
+        ByFlags flags => !flags.Flags.IsEmpty,
+        _ => throw new UnreachableException(),
+    };
 }
 
 /// <summary>What is shown under the selected row of a <see cref="MetadataGrid"/>.</summary>
@@ -279,10 +295,16 @@ public static class MetadataGrids
     {
         var value = GetValue(grid, row, column);
         if (value is null) return false;
-        var flags = filter.Flags;
-        if (flags != null && !flags.IsEmpty && !FilterStatePresenter.MatchesFilter(flags, GetBits(value)))
-            return false;
-        var text = filter.Text;
+        return filter switch
+        {
+            MetadataColumnFilter.ByFlags flags => flags.Flags.IsEmpty || FilterStatePresenter.MatchesFilter(flags.Flags, GetBits(value)),
+            MetadataColumnFilter.ByText text => MatchesText(grid, row, column, value, text.Text),
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static bool MatchesText(MetadataGrid grid, int row, int column, object value, string text)
+    {
         if (text.Length == 0) return true;
         var pattern = FindPattern(text);
         if (pattern != null)

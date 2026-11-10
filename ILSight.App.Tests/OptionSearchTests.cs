@@ -124,7 +124,7 @@ public sealed class OptionSearchTests
         var section = Assert.Single(byLabel);
         Assert.Equal("SwitchExpressions", Assert.Single(section.Toggles).Name);
         Assert.Equal("UseDebugSymbols", Assert.Single(Assert.Single(byName).Toggles).Name);
-        var csharp8 = DecompilerToggle.All.Where(t => t.IntroducedIn == CSharpVersion.CSharp8).ToArray();
+        var csharp8 = DecompilerToggle.All.Where(t => t.Group is DecompilerToggleGroup.Language { IntroducedIn: CSharpVersion.CSharp8 }).ToArray();
         Assert.Equal(csharp8, Assert.Single(byGroup).Toggles);
         Assert.Empty(DecompilerOptionsPanelView.FindMatchingSections(En, ["nothing-is-called-this"]));
     }

@@ -96,8 +96,8 @@ public static class MetadataGridWidget
     private static MetadataColumnFilter CreateColumnFilter(MetadataGridState state, int column, MetadataFilters flags)
     {
         if (!IsFlagsColumn(state, column))
-            return new MetadataColumnFilter();
-        return new MetadataColumnFilter { Flags = FindFilter(flags, state.Grid, column) };
+            return new MetadataColumnFilter.ByText();
+        return new MetadataColumnFilter.ByFlags { Flags = FindFilter(flags, state.Grid, column) };
     }
 
     private static bool IsFlagsColumn(MetadataGridState state, int column)
@@ -128,15 +128,6 @@ public static class MetadataGridWidget
         state.Rows.Select(index, state.View.Length, reveal: false);
     }
 
-    /// <summary>The flags <paramref name="filter"/>, the filter of a column of flags, picks, which every such
-    /// filter has.</summary>
-    private static FilterState GetFlagsFilter(MetadataColumnFilter filter)
-    {
-        if (filter.Flags == null)
-            throw new UnreachableException("The filter of a column of flags has flags, as CreateColumnFilter gives it.");
-        return filter.Flags;
-    }
-
     private static int ComputeViewKey(MetadataGridState state, MetadataFilters flags)
     {
         var key = new HashCode();
@@ -144,9 +135,22 @@ public static class MetadataGridWidget
         key.Add(state.Descending);
         for (var c = 0; c < state.Grid.Columns.Count; c++)
         {
-            if (IsFlagsColumn(state, c))
-                key.Add(GetFlagsFilter(EnsureColumnFilter(state, c, flags)).Revision);
-            key.Add(state.Filters[c]?.Text);
+            // A column of flags is filtered by what is kept for it, whether or not its heading was drawn yet.
+            var filter = IsFlagsColumn(state, c) ? EnsureColumnFilter(state, c, flags) : state.Filters[c];
+            switch (filter)
+            {
+                case MetadataColumnFilter.ByFlags picked:
+                    key.Add(picked.Flags.Revision);
+                    break;
+                case MetadataColumnFilter.ByText typed:
+                    key.Add(typed.Text);
+                    break;
+                case null:
+                    key.Add(0);
+                    break;
+                default:
+                    throw new UnreachableException();
+            }
         }
         return key.ToHashCode() | 1;
     }
@@ -336,16 +340,24 @@ public static class MetadataGridWidget
     {
         var filter = EnsureColumnFilter(heading.State, column, heading.Flags);
         var textId = HashCode.Combine(heading.ListId, FilterTextSalt, column);
-        if (heading.State.EditingColumn == column)
-            EditFilterText(ui, heading.State, filter, textId);
-        else if (filter.Text.Length > 0)
-            DrawFilterText(ui, heading.State, filter, textId, column);
-        else
-            DrawColumnName(ui, heading.Grid.Columns[column].Name, hovered);
+        switch (filter)
+        {
+            case MetadataColumnFilter.ByText text when heading.State.EditingColumn == column:
+                EditFilterText(ui, heading.State, text, textId);
+                break;
+            case MetadataColumnFilter.ByText text when text.Text.Length > 0:
+                DrawFilterText(ui, heading.State, text, textId, column);
+                break;
+            case MetadataColumnFilter.ByText or MetadataColumnFilter.ByFlags:
+                DrawColumnName(ui, heading.Grid.Columns[column].Name, hovered);
+                break;
+            default:
+                throw new UnreachableException();
+        }
         DrawFunnel(ui, in heading, filter, column);
     }
 
-    private static void EditFilterText(Ui ui, MetadataGridState state, MetadataColumnFilter filter, int textId)
+    private static void EditFilterText(Ui ui, MetadataGridState state, MetadataColumnFilter.ByText filter, int textId)
     {
         var text = filter.Text;
         using (ui.Id(textId))
@@ -358,7 +370,7 @@ public static class MetadataGridWidget
         }
     }
 
-    private static void DrawFilterText(Ui ui, MetadataGridState state, MetadataColumnFilter filter, int textId, int column)
+    private static void DrawFilterText(Ui ui, MetadataGridState state, MetadataColumnFilter.ByText filter, int textId, int column)
     {
         var theme = ui.Theme;
         var shown = ui.Interact(textId);
@@ -399,27 +411,31 @@ public static class MetadataGridWidget
 
     private static void ClickFunnel(MetadataGridState state, MetadataColumnFilter filter, int column)
     {
-        if (filter.Flags != null)
+        switch (filter)
         {
-            ToggleFlagsFlyout(state, column);
-            return;
+            case MetadataColumnFilter.ByFlags:
+                ToggleFlagsFlyout(state, column);
+                break;
+            case MetadataColumnFilter.ByText text when text.Text.Length > 0:
+                text.Text = "";
+                StopEditingFilter(state);
+                break;
+            case MetadataColumnFilter.ByText:
+                StartEditingFilter(state, column);
+                break;
+            default:
+                throw new UnreachableException();
         }
-        if (filter.Text.Length > 0)
-        {
-            filter.Text = "";
-            StopEditingFilter(state);
-            return;
-        }
-        StartEditingFilter(state, column);
     }
 
     private static IconGlyph GetFunnelGlyph(AppIcons icons, MetadataColumnFilter filter)
     {
-        if (filter.Flags != null)
-            return icons.MetadataFilter;
-        if (filter.Text.Length > 0)
-            return icons.MetadataClearFilter;
-        return icons.MetadataFilter;
+        return filter switch
+        {
+            MetadataColumnFilter.ByText text when text.Text.Length > 0 => icons.MetadataClearFilter,
+            MetadataColumnFilter.ByText or MetadataColumnFilter.ByFlags => icons.MetadataFilter,
+            _ => throw new UnreachableException(),
+        };
     }
 
     private static uint GetFunnelColor(UiTheme theme, MetadataColumnFilter filter, bool hovered)

@@ -347,7 +347,7 @@ public sealed class AppTests
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp8));
         OpenDecompilerOptions(app.Ui);
         app.Run();
-        var csharp8 = DecompilerToggle.All.Where(t => t.IntroducedIn == CSharpVersion.CSharp8).ToArray();
+        var csharp8 = DecompilerToggle.All.Where(t => t.Group is DecompilerToggleGroup.Language { IntroducedIn: CSharpVersion.CSharp8 }).ToArray();
 
         app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
         app.Settle(1);

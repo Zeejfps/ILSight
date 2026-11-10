@@ -432,7 +432,7 @@ public sealed class MetadataGridTests
         var (app, tab, grid) = ShowTable("TypeDef");
         var state = GridOf(app, tab);
         var name = grid.Column("Name");
-        state.Filters[name] = new MetadataColumnFilter { Text = MetadataGrids.GetText(grid, 1, name) };
+        state.Filters[name] = new MetadataColumnFilter.ByText { Text = MetadataGrids.GetText(grid, 1, name) };
         MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters);
         state.Open[(2, name)] = 4;
 
@@ -450,7 +450,7 @@ public sealed class MetadataGridTests
         var name = grid.Column("Name");
         var line = state.RowHeight;
 
-        state.Filters[name] = new MetadataColumnFilter { Text = $"/^({MetadataGrids.GetText(grid, 1, name)}|{MetadataGrids.GetText(grid, 3, name)})$/" };
+        state.Filters[name] = new MetadataColumnFilter.ByText { Text = $"/^({MetadataGrids.GetText(grid, 1, name)}|{MetadataGrids.GetText(grid, 3, name)})$/" };
         state.Open[(2, name)] = 4;
         app.Run(3);
 

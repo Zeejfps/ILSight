@@ -70,12 +70,12 @@ internal static class DiagramFaces
 
     private static void AddHeader(RowStack stack, TypeCard card)
     {
-        AddRow(stack, new CardRow(CardRowKind.Name, stack.RowHeight + NameRowExtra, Padding, card.Name, NodeIcons.Of(card.Shape), card.Accessibility, card.Type));
+        AddRow(stack, new CardRow(new CardRowContent.Name(NodeIcons.Of(card.Shape), card.Accessibility, card.Type), stack.RowHeight + NameRowExtra, Padding, card.Name));
         var stereotype = StereotypeOf(card.Stereotype);
         if (stereotype == null)
             return;
         var indent = Padding + stack.IconSize + IconGap;
-        AddRow(stack, new CardRow(CardRowKind.Stereotype, stack.RowHeight, indent, stereotype));
+        AddRow(stack, new CardRow(new CardRowContent.Stereotype(), stack.RowHeight, indent, stereotype));
     }
 
     private static string? StereotypeOf(TypeStereotype stereotype) => stereotype switch
@@ -132,7 +132,7 @@ internal static class DiagramFaces
             return;
         var isOpen = Diagrams.IsFoldOpen(view, fold);
         var text = $"{title} ({members.Count})";
-        AddRow(stack, new CardRow(CardRowKind.Fold, stack.RowHeight, Padding, text, Fold: fold, IsOpen: isOpen));
+        AddRow(stack, new CardRow(new CardRowContent.Fold(fold, isOpen), stack.RowHeight, Padding, text));
         if (!isOpen)
             return;
         foreach (var member in members)
@@ -141,7 +141,7 @@ internal static class DiagramFaces
 
     private static CardRow MemberRow(RowStack stack, CardMember member)
     {
-        return new CardRow(CardRowKind.Member, stack.RowHeight, Padding + ChevronWidth, member.Text, NodeIcons.Of(member.Shape), member.Accessibility, member.Reference);
+        return new CardRow(new CardRowContent.Member(NodeIcons.Of(member.Shape), member.Accessibility, member.Reference), stack.RowHeight, Padding + ChevronWidth, member.Text);
     }
 
     private static DiagramMeasures MeasuresOf(Ui<UiState> ui, TypeDiagram diagram, List<CardFace> faces)
@@ -193,22 +193,24 @@ internal static class DiagramFaces
 
     private static float MeasureRowText(Ui<UiState> ui, CardRow row)
     {
-        return row.Kind switch
+        return row.Content switch
         {
-            CardRowKind.Name => ui.MeasureText(row.Text, bold: true),
-            CardRowKind.Stereotype => ui.MeasureText(row.Text, family: TextFonts.Italic),
-            _ => ui.MeasureText(row.Text),
+            CardRowContent.Name => ui.MeasureText(row.Text, bold: true),
+            CardRowContent.Stereotype => ui.MeasureText(row.Text, family: TextFonts.Italic),
+            CardRowContent.Fold or CardRowContent.Member => ui.MeasureText(row.Text),
+            _ => throw new UnreachableException(),
         };
     }
 
     // What a row draws before its text: a chevron, an icon, or nothing.
     private static float GetLead(RowStack stack, CardRow row)
     {
-        return row.Kind switch
+        return row.Content switch
         {
-            CardRowKind.Stereotype => 0f,
-            CardRowKind.Fold => ChevronWidth,
-            _ => stack.IconSize + IconGap,
+            CardRowContent.Stereotype => 0f,
+            CardRowContent.Fold => ChevronWidth,
+            CardRowContent.Name or CardRowContent.Member => stack.IconSize + IconGap,
+            _ => throw new UnreachableException(),
         };
     }
 

@@ -276,8 +276,8 @@ public sealed class MetadataTests
     {
         var grid = TypeDefs();
 
-        var part = NamesOf(grid, MetadataGrids.FilterRows(grid, null, Filters(grid, "Name", new MetadataColumnFilter { Text = "calcULATOR" })));
-        var regex = NamesOf(grid, MetadataGrids.FilterRows(grid, null, Filters(grid, "Name", new MetadataColumnFilter { Text = "/^(Circle|Size)$/" })));
+        var part = NamesOf(grid, MetadataGrids.FilterRows(grid, null, Filters(grid, "Name", new MetadataColumnFilter.ByText { Text = "calcULATOR" })));
+        var regex = NamesOf(grid, MetadataGrids.FilterRows(grid, null, Filters(grid, "Name", new MetadataColumnFilter.ByText { Text = "/^(Circle|Size)$/" })));
 
         Assert.Contains("Calculator`1", part);
         Assert.All(part, n => Assert.Contains("calculator", n, StringComparison.OrdinalIgnoreCase));
@@ -290,8 +290,8 @@ public sealed class MetadataTests
         var grid = TypeDefs();
         var rid = grid.Column("RID");
 
-        var above = MetadataGrids.FilterRows(grid, null, Filters(grid, "RID", new MetadataColumnFilter { Text = "> 0x3" }));
-        var shown = MetadataGrids.FilterRows(grid, null, Filters(grid, "Token", new MetadataColumnFilter { Text = "02000002" }));
+        var above = MetadataGrids.FilterRows(grid, null, Filters(grid, "RID", new MetadataColumnFilter.ByText { Text = "> 0x3" }));
+        var shown = MetadataGrids.FilterRows(grid, null, Filters(grid, "Token", new MetadataColumnFilter.ByText { Text = "02000002" }));
 
         Assert.All(above, r => Assert.True(int.Parse(MetadataGrids.GetText(grid, r, rid)) > 3));
         Assert.Equal(grid.RowCount - 3, above.Length);
@@ -304,7 +304,7 @@ public sealed class MetadataTests
         var grid = TypeDefs();
         var schema = grid.Columns[grid.Column("Attributes")].Flags!;
         var state = FilterStatePresenter.CreateFilterState(schema);
-        var filters = Filters(grid, "Attributes", new MetadataColumnFilter { Flags = state });
+        var filters = Filters(grid, "Attributes", new MetadataColumnFilter.ByFlags { Flags = state });
 
         FilterStatePresenter.SetMutexSelection(state, "Visibility", [(uint)System.Reflection.TypeAttributes.NotPublic]);
         FilterStatePresenter.SetFlagState(state, "Abstract", TriState.Excluded);
@@ -339,7 +339,7 @@ public sealed class MetadataTests
         var grid = TypeDefs();
         var order = MetadataGrids.OrderRows(grid, grid.Column("Name"), descending: true);
 
-        var rows = MetadataGrids.FilterRows(grid, order, Filters(grid, "Namespace", new MetadataColumnFilter { Text = "Fixtures" }));
+        var rows = MetadataGrids.FilterRows(grid, order, Filters(grid, "Namespace", new MetadataColumnFilter.ByText { Text = "Fixtures" }));
 
         Assert.Equal(order.Where(rows.Contains), rows);
     }

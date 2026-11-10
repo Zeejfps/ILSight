@@ -28,15 +28,22 @@ public enum CSharpVersion
 }
 
 /// <summary>What a <see cref="DecompilerToggle"/> is about.</summary>
-public enum DecompilerToggleGroup
+public abstract record DecompilerToggleGroup
 {
-    /// <summary>A C# feature, used only from <see cref="DecompilerToggle.IntroducedIn"/> on.</summary>
-    Language,
-    Other,
+    private DecompilerToggleGroup()
+    {
+    }
+
+    /// <summary>A C# feature, used only from <see cref="IntroducedIn"/> on.</summary>
+    public sealed record Language(CSharpVersion IntroducedIn) : DecompilerToggleGroup;
+
+    public sealed record Other : DecompilerToggleGroup;
+
     /// <summary>Clean-ups for code the F# compiler emits.</summary>
-    FSharp,
+    public sealed record FSharp : DecompilerToggleGroup;
+
     /// <summary>How exported projects are laid out; does not change decompiled code.</summary>
-    ProjectExport,
+    public sealed record ProjectExport : DecompilerToggleGroup;
 }
 
 /// <summary>One of the decompiler's on/off choices, named as the decompiler names it; <see cref="All"/>
@@ -46,8 +53,6 @@ public sealed class DecompilerToggle : IOnOffChoice
     public required string Name { get; init; }
 
     public required DecompilerToggleGroup Group { get; init; }
-
-    public required CSharpVersion? IntroducedIn { get; init; }
 
     public required bool DefaultValue { get; init; }
 
@@ -95,7 +100,9 @@ public static class DecompilerToggles
     /// <paramref name="toggle"/>.</summary>
     public static bool Allows(DecompilerOptions options, DecompilerToggle toggle)
     {
-        return toggle.IntroducedIn == null || toggle.IntroducedIn <= options.LanguageVersion;
+        if (toggle.Group is not DecompilerToggleGroup.Language language)
+            return true;
+        return language.IntroducedIn <= options.LanguageVersion;
     }
 
     /// <summary>Whether code in <paramref name="language"/> comes out the same with
@@ -112,7 +119,7 @@ public static class DecompilerToggles
     /// export toggles, which the export dialog sets, stay as they are.</summary>
     public static DecompilerOptions ResetCodeToggles(DecompilerOptions options)
     {
-        var shapingCode = DecompilerToggle.All.Where(static t => t.Group != DecompilerToggleGroup.ProjectExport);
+        var shapingCode = DecompilerToggle.All.Where(static t => t.Group is not DecompilerToggleGroup.ProjectExport);
         return options with { Changes = options.Changes.Without(shapingCode) };
     }
 
@@ -120,7 +127,7 @@ public static class DecompilerToggles
     /// exported projects, not code.</summary>
     private static DecompilerOptions LeaveOutProjectExport(DecompilerOptions options)
     {
-        var shapingProjects = DecompilerToggle.All.Where(static t => t.Group == DecompilerToggleGroup.ProjectExport);
+        var shapingProjects = DecompilerToggle.All.Where(static t => t.Group is DecompilerToggleGroup.ProjectExport);
         return options with { Changes = options.Changes.Without(shapingProjects) };
     }
 
@@ -160,17 +167,27 @@ public static class DecompilerToggles
             if (category == null) continue;
             if (property.GetValue(defaults) is not bool value)
                 throw new UnreachableException($"{property.Name}, a bool property, holds no bool.");
-            var version = FindIntroduced(category);
-            if (version != null)
-                toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.Language, IntroducedIn = version, DefaultValue = value });
-            else if (category == "DecompilerSettings.Other")
-                toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.Other, IntroducedIn = null, DefaultValue = value });
-            else if (category == "DecompilerSettings.FSpecificOptions")
-                toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.FSharp, IntroducedIn = null, DefaultValue = value });
-            else if (category == "DecompilerSettings.ProjectExport")
-                toggles.Add(new DecompilerToggle { Name = property.Name, Group = DecompilerToggleGroup.ProjectExport, IntroducedIn = null, DefaultValue = value });
+            var group = FindGroup(category);
+            if (group != null)
+                toggles.Add(new DecompilerToggle { Name = property.Name, Group = group, DefaultValue = value });
         }
         return toggles;
+    }
+
+    /// <summary>The group the decompiler's <paramref name="category"/> stands for, or null for one whose
+    /// toggles aren't offered.</summary>
+    private static DecompilerToggleGroup? FindGroup(string category)
+    {
+        var version = FindIntroduced(category);
+        if (version != null)
+            return new DecompilerToggleGroup.Language(version.Value);
+        return category switch
+        {
+            "DecompilerSettings.Other" => new DecompilerToggleGroup.Other(),
+            "DecompilerSettings.FSpecificOptions" => new DecompilerToggleGroup.FSharp(),
+            "DecompilerSettings.ProjectExport" => new DecompilerToggleGroup.ProjectExport(),
+            _ => null,
+        };
     }
 
     /// <summary>The version a category such as <c>C# 7.3 / VS 2017.7</c> names.</summary>

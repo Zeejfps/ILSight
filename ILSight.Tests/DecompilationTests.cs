@@ -97,8 +97,8 @@ public sealed class DecompilationTests
     {
         var all = DecompilerToggle.All;
 
-        Assert.Contains(all, t => t is { Name: "SwitchExpressions", Group: DecompilerToggleGroup.Language, IntroducedIn: CSharpVersion.CSharp8, DefaultValue: true });
-        Assert.Contains(all, t => t is { Name: "AlwaysUseBraces", Group: DecompilerToggleGroup.Other, IntroducedIn: null });
+        Assert.Contains(all, t => t is { Name: "SwitchExpressions", Group: DecompilerToggleGroup.Language { IntroducedIn: CSharpVersion.CSharp8 }, DefaultValue: true });
+        Assert.Contains(all, t => t is { Name: "AlwaysUseBraces", Group: DecompilerToggleGroup.Other });
         Assert.Contains(all, t => t is { Name: "RemoveDeadCode", Group: DecompilerToggleGroup.FSharp, DefaultValue: false });
         Assert.Contains(all, t => t is { Name: "ShowXmlDocumentation", Group: DecompilerToggleGroup.Other, DefaultValue: true });
         Assert.Contains(all, t => t is { Name: "UseDebugSymbols", Group: DecompilerToggleGroup.Other, DefaultValue: true });

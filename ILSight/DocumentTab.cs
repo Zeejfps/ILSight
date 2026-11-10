@@ -120,8 +120,19 @@ public sealed class DocumentTab
 
     public bool IsBusy => Work != null;
 
-    /// <summary>The name of what the tab shows, kept while its node is away, or null for a new tab.</summary>
-    public string? Title;
+    /// <summary>The name of what the tab shows: its node's, kept by what it shows while the node is away, or
+    /// its diagram's or comparison's own; null for a new tab or a report.</summary>
+    public string? Title => Content switch
+    {
+        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node == null ? null : NodeText.Name(Node),
+        TabContent.Diagram diagram => diagram.Title,
+        TabContent.Comparison comparison => comparison.Title,
+        TabContent.Reloading reloading => reloading.Title,
+        TabContent.Reopening reopening => reopening.Title,
+        TabContent.Gone gone => gone.Title,
+        TabContent.Empty or TabContent.Report => null,
+        _ => throw new UnreachableException(),
+    };
 
     /// <summary>The full identity of what the tab shows, or null for a new tab.</summary>
     public string? Tooltip => Node != null ? NodeText.Tooltip(Node) : Title;

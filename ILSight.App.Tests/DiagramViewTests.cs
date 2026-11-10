@@ -347,9 +347,9 @@ public sealed class DiagramViewTests
 
     private static bool IsHiddenMember(CardRow row)
     {
-        if (row.Kind != CardRowKind.Member)
+        if (row.Content is not CardRowContent.Member member)
             return false;
-        return row.Accessibility is NodeAccessibility.Private or NodeAccessibility.Internal;
+        return member.Accessibility is NodeAccessibility.Private or NodeAccessibility.Internal;
     }
 
     [Fact]

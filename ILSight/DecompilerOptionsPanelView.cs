@@ -14,11 +14,11 @@ namespace ILSight;
 /// marked in their labels and the groups' titles, and a group's box then sets only the toggles shown.</summary>
 internal static class DecompilerOptionsPanelView
 {
-    internal sealed record Section(string Key, DecompilerToggleGroup Group, CSharpVersion? Version, DecompilerToggle[] Toggles);
+    internal sealed record Section(string Key, DecompilerToggleGroup Group, DecompilerToggle[] Toggles);
 
     private static readonly Section[] Sections = BuildSections();
 
-    private static readonly CSharpVersion Newest = Sections.Max(static s => s.Version ?? 0);
+    private static readonly CSharpVersion Newest = Sections.Max(static s => FindVersion(s.Group) ?? 0);
 
     public static void Render(Ui<UiState> ui, DecompilerOptions options)
     {
@@ -150,10 +150,31 @@ internal static class DecompilerOptionsPanelView
 
     private static bool IsAllowed(Section section, DecompilerOptions options)
     {
-        var version = section.Version;
-        if (version == null)
+        if (section.Group is not DecompilerToggleGroup.Language language)
             return true;
-        return version.Value <= options.LanguageVersion;
+        return language.IntroducedIn <= options.LanguageVersion;
+    }
+
+    /// <summary>The C# version the features of <paramref name="group"/> came with, or null for a group no
+    /// version holds back.</summary>
+    private static CSharpVersion? FindVersion(DecompilerToggleGroup group)
+    {
+        if (group is not DecompilerToggleGroup.Language language)
+            return null;
+        return language.IntroducedIn;
+    }
+
+    /// <summary>What a section of <paramref name="group"/> is known by where its folding is kept.</summary>
+    private static string GetKey(DecompilerToggleGroup group)
+    {
+        return group switch
+        {
+            DecompilerToggleGroup.Language language => language.IntroducedIn.ToString(),
+            DecompilerToggleGroup.Other => "Other",
+            DecompilerToggleGroup.FSharp => "FSharp",
+            DecompilerToggleGroup.ProjectExport => "ProjectExport",
+            _ => throw new UnreachableException(),
+        };
     }
 
     /// <summary>True when every toggle in <paramref name="section"/> is on, false when none is, null otherwise.</summary>
@@ -212,12 +233,13 @@ internal static class DecompilerOptionsPanelView
 
     private static string Title(Strings t, Section section)
     {
-        if (section.Version != null)
-            return CSharpVersions.Label(section.Version.Value);
         return section.Group switch
         {
+            DecompilerToggleGroup.Language language => CSharpVersions.Label(language.IntroducedIn),
             DecompilerToggleGroup.FSharp => t.DecompilerOptionsFsharp,
-            _ => t.DecompilerOptionsOther,
+            DecompilerToggleGroup.Other => t.DecompilerOptionsOther,
+            DecompilerToggleGroup.ProjectExport => throw new UnreachableException("The export's toggles have no section here: the export dialog shows them."),
+            _ => throw new UnreachableException(),
         };
     }
 
@@ -251,24 +273,16 @@ internal static class DecompilerOptionsPanelView
         throw new ArgumentOutOfRangeException(nameof(row));
     }
 
-    /// <summary>The C# version <paramref name="toggle"/>, a language toggle, came with, which every language
-    /// toggle names.</summary>
-    private static CSharpVersion GetIntroducedIn(DecompilerToggle toggle)
-    {
-        if (toggle.IntroducedIn == null)
-            throw new UnreachableException($"The language toggle {toggle.Name} names no C# version, though DecompilerToggles gives each one.");
-        return toggle.IntroducedIn.Value;
-    }
-
     private static Section[] BuildSections()
     {
         var all = DecompilerToggle.All;
-        var language = all.Where(static t => t.Group == DecompilerToggleGroup.Language)
-            .GroupBy(static t => GetIntroducedIn(t))
-            .OrderByDescending(static g => g.Key)
-            .Select(static g => new Section(g.Key.ToString(), DecompilerToggleGroup.Language, g.Key, g.ToArray()));
-        var rest = new[] { DecompilerToggleGroup.Other, DecompilerToggleGroup.FSharp }
-            .Select(group => new Section(group.ToString(), group, null, all.Where(t => t.Group == group).ToArray()))
+        // A group compares by what it holds, so the language toggles fall into one section a version.
+        var language = all.Where(static t => t.Group is DecompilerToggleGroup.Language)
+            .GroupBy(static t => t.Group)
+            .OrderByDescending(static g => FindVersion(g.Key))
+            .Select(static g => new Section(GetKey(g.Key), g.Key, g.ToArray()));
+        var rest = new DecompilerToggleGroup[] { new DecompilerToggleGroup.Other(), new DecompilerToggleGroup.FSharp() }
+            .Select(group => new Section(GetKey(group), group, all.Where(t => t.Group == group).ToArray()))
             .Where(static s => s.Toggles.Length > 0);
         return language.Concat(rest).ToArray();
     }

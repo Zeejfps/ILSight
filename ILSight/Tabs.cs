@@ -127,7 +127,6 @@ public static class Tabs
         var work = new CancellationTokenSource();
         tab.Work = work;
         tab.Arrival = arrival;
-        tab.Title = NodeText.Name(node);
         tab.Language = language;
         tab.Options = options;
         tab.Content = new TabContent.Loading(node);
@@ -184,7 +183,6 @@ public static class Tabs
     public static void ShowReport(DocumentTab tab, ExportReport report)
     {
         PointElsewhere(tab);
-        tab.Title = null;
         tab.Content = new TabContent.Report(report);
     }
 
@@ -192,36 +190,33 @@ public static class Tabs
     public static void ShowDiagram(DocumentTab tab, string title, TypeDiagram diagram)
     {
         PointElsewhere(tab);
-        tab.Title = title;
-        tab.Content = new TabContent.Diagram(diagram);
+        tab.Content = new TabContent.Diagram(diagram, title);
     }
 
     /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, cancelling what was in flight.</summary>
     public static void ShowComparison(DocumentTab tab, string title, AssemblyComparison comparison)
     {
         PointElsewhere(tab);
-        tab.Title = title;
-        tab.Content = new TabContent.Comparison(comparison);
+        tab.Content = new TabContent.Comparison(comparison, title);
     }
 
     /// <summary>Shows nothing, as a new tab does, cancelling what was in flight.</summary>
     public static void Clear(DocumentTab tab)
     {
         PointElsewhere(tab);
-        tab.Title = null;
         tab.Content = new TabContent.Empty();
     }
 
     /// <summary>Lets go of the node while its assembly reloads, keeping <paramref name="location"/> to find it again.</summary>
     public static void ShowReloading(DocumentTab tab, NodePath location)
     {
-        ReleaseNode(tab, new TabContent.Reloading(location));
+        ReleaseNode(tab, new TabContent.Reloading(location, tab.Title));
     }
 
     /// <summary>Lets go of the node, which the reloaded assemblies no longer hold at <paramref name="location"/>.</summary>
     public static void ShowGone(DocumentTab tab, NodePath location)
     {
-        ReleaseNode(tab, new TabContent.Gone(location));
+        ReleaseNode(tab, new TabContent.Gone(location, tab.Title));
     }
 
     private static void ReleaseNode(DocumentTab tab, TabContent content)
@@ -236,9 +231,8 @@ public static class Tabs
     public static void WaitForNode(DocumentTab tab, NodePath location, string? title, DecompilationLanguage language)
     {
         PointElsewhere(tab);
-        tab.Title = title;
         tab.Language = language;
-        tab.Content = new TabContent.Reloading(location);
+        tab.Content = new TabContent.Reloading(location, title);
     }
 
     /// <summary>Shows the tab, titled <paramref name="title"/>, waiting for the diagram it showed when the
@@ -258,8 +252,7 @@ public static class Tabs
     private static void WaitForDocument(DocumentTab tab, string? title)
     {
         PointElsewhere(tab);
-        tab.Title = title;
-        tab.Content = new TabContent.Reopening();
+        tab.Content = new TabContent.Reopening(title);
     }
 
     /// <summary>Counts the tab as pointed somewhere else, past what its diagram counted, and cancels

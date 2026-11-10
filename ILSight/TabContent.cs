@@ -30,22 +30,25 @@ public abstract record TabContent
     /// <summary>The report of an export, which the screen writes out.</summary>
     public sealed record Report(ExportReport Export) : TabContent;
 
-    /// <summary>A diagram of types, which grows as types are shown in it.</summary>
-    public sealed record Diagram(TypeDiagram Types) : TabContent;
+    /// <summary>A diagram of types, which grows as types are shown in it, and what its tab is titled.</summary>
+    public sealed record Diagram(TypeDiagram Types, string Title) : TabContent;
 
-    /// <summary>What changed in the API from one assembly to another.</summary>
-    public sealed record Comparison(AssemblyComparison Assemblies) : TabContent;
+    /// <summary>What changed in the API from one assembly to another, and what its tab is titled.</summary>
+    public sealed record Comparison(AssemblyComparison Assemblies, string Title) : TabContent;
 
     /// <summary>Decompiling <see cref="Node"/> failed with <see cref="Message"/>.</summary>
     public sealed record Failed(BrowseNode Node, string Message) : TabContent;
 
     /// <summary>The tab waits to find the node at <see cref="Location"/> again: its assembly is reloading,
-    /// or the saved documents are reopening.</summary>
-    public sealed record Reloading(NodePath Location) : TabContent;
+    /// or the saved documents are reopening. <see cref="Title"/> is the node's name as it was last known,
+    /// or null where the saved documents kept none.</summary>
+    public sealed record Reloading(NodePath Location, string? Title) : TabContent;
 
-    /// <summary>The saved diagram or comparison waits for the assemblies to be listed to be read again.</summary>
-    public sealed record Reopening : TabContent;
+    /// <summary>The saved diagram or comparison waits for the assemblies to be listed to be read again,
+    /// under the title it was saved with, if any.</summary>
+    public sealed record Reopening(string? Title) : TabContent;
 
-    /// <summary>The reloaded assemblies hold nothing at <see cref="Location"/> any more.</summary>
-    public sealed record Gone(NodePath Location) : TabContent;
+    /// <summary>The reloaded assemblies hold nothing at <see cref="Location"/> any more; <see cref="Title"/>
+    /// is the node's name as it was last known, if it was.</summary>
+    public sealed record Gone(NodePath Location, string? Title) : TabContent;
 }

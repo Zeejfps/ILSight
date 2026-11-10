@@ -26,7 +26,7 @@ public sealed class LoadOptionsTests
         var groups = new[] { DecompilerToggle.AutoLoadAssemblyReferences, DecompilerToggle.ApplyWindowsRuntimeProjections }
             .Select(t => t.Group);
 
-        Assert.All(groups, g => Assert.Equal(DecompilerToggleGroup.Other, g));
+        Assert.All(groups, g => Assert.IsType<DecompilerToggleGroup.Other>(g));
     }
 
     [Fact]

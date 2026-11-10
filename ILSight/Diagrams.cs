@@ -99,15 +99,14 @@ public static class Diagrams
     public static void ShowInDiagram(AppState appState, CodeReference.Entity type, string newTitle)
     {
         var tab = appState.Tabs.Diagram;
-        var diagram = tab?.Diagram;
-        if (tab == null || diagram == null)
+        if (tab == null || tab.Content is not TabContent.Diagram shown)
         {
             ShowInNewDiagram(appState, type, newTitle);
             return;
         }
         BringToFront(appState, tab);
-        RecordInHistory(appState, tab, diagram);
-        AddWithNeighbours(appState, tab, diagram, type);
+        RecordDiagram(appState.History, shown.Types, shown.Title);
+        AddWithNeighbours(appState, tab, shown.Types, type);
     }
 
     private static void BringToFront(AppState appState, DocumentTab tab)
@@ -117,24 +116,14 @@ public static class Diagrams
         appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
-    /// <summary>Records <paramref name="diagram"/>, which <paramref name="tab"/> shows, as worked in now, so going
-    /// back returns to it.</summary>
-    private static void RecordInHistory(AppState appState, DocumentTab tab, TypeDiagram diagram)
-    {
-        var title = tab.Title;
-        if (title == null)
-            throw new UnreachableException("A tab showing a diagram has a title, as Tabs.ShowDiagram gives it one.");
-        RecordDiagram(appState.History, diagram, title);
-    }
-
     /// <summary>Opens the code of <paramref name="target"/>, picked on <paramref name="diagram"/>, beside it,
     /// in a new tab when <paramref name="inNewTab"/>; going back returns to the diagram.</summary>
     public static void OpenFromDiagram(AppState appState, TypeDiagram diagram, CodeReference.Entity target, bool inNewTab)
     {
         var tab = FindTabShowing(appState, diagram);
-        if (tab == null)
+        if (tab == null || tab.Content is not TabContent.Diagram shown)
             return;
-        RecordInHistory(appState, tab, diagram);
+        RecordDiagram(appState.History, shown.Types, shown.Title);
         Navigate(appState, target, inNewTab);
     }
 
