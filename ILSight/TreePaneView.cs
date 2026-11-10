@@ -41,20 +41,31 @@ internal static class TreePaneView
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
+        var icons = ui.State.Icons;
         var tree = ui.State.Tree;
         var any = tree.Roots.Length > 0;
         using (ui.PaneToolbar())
         {
             var opened = FindOpenedNode(tabs);
-            if (ui.IconButton("select-opened", ui.State.Icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened != null) && opened != null)
+            if (ui.IconButton("select-opened", icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened != null) && opened != null)
                 SelectOpenedNode(ui, assemblies, opened);
-            if (ui.IconButton("collapse", ui.State.Icons.AssembliesCollapseAll, t.CodeCollapseAll, any))
+            if (ui.IconButton("collapse", icons.AssembliesCollapseAll, t.CodeCollapseAll, any))
                 Trees.CollapseTree(tree);
-            if (ui.IconButton("expand", ui.State.Icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
+            if (ui.IconButton("expand", icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
                 Trees.ExpandNamespaces(tree);
             ui.Separator(theme.IconSize);
-            if (ui.IconButton("close-assembly", ui.State.Icons.AssembliesCloseAssembly, t.TreeCloseAssemblies, any))
+            if (ui.IconButton("sort-list", icons.AssembliesSortList, t.TreeSortList, any))
+                Commands.Later(ui.State, static a => SortAssemblies(a));
+            var reloadTip = ui.Memo("reload-all-tip", t, static s => s.TreeReloadAll(Shortcuts.ReloadAll));
+            if (ui.IconButton("reload-all", icons.AssembliesReloadAll, reloadTip, any))
+                Commands.Later(ui.State, Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
+            ui.Separator(theme.IconSize);
+            if (ui.IconButton("close-assembly", icons.AssembliesCloseAssembly, t.TreeCloseAssemblies, any))
                 AssemblyClosing.OpenCloser(ui.State.Closer, assemblies, tree.View.Selected?.Assembly);
+            if (ui.IconButton("close-failed", icons.AssembliesCloseFailed, t.TreeCloseFailed, AssemblyListing.AnyFailedToLoad(assemblies)))
+                Commands.Later(ui.State, static a => CloseFailedAssemblies(a));
+            if (ui.IconButton("clear-list", icons.AssembliesClearList, t.TreeClearList, any))
+                Commands.Later(ui.State, static a => CloseAllAssemblies(a));
         }
     }
 

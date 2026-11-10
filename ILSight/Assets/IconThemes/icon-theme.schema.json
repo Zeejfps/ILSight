@@ -331,30 +331,6 @@
           "description": "Generate a PDB.",
           "$ref": "#/definitions/icon"
         },
-        "file.close": {
-          "description": "Close the selected assembly.",
-          "$ref": "#/definitions/icon"
-        },
-        "file.closeAssemblies": {
-          "description": "Close assemblies picked out from a list.",
-          "$ref": "#/definitions/icon"
-        },
-        "file.closeFailed": {
-          "description": "Close the assemblies that failed to open.",
-          "$ref": "#/definitions/icon"
-        },
-        "file.clearList": {
-          "description": "Close every assembly.",
-          "$ref": "#/definitions/icon"
-        },
-        "file.sortList": {
-          "description": "Sort the assemblies by name.",
-          "$ref": "#/definitions/icon"
-        },
-        "file.reloadAll": {
-          "description": "Reload every assembly.",
-          "$ref": "#/definitions/icon"
-        },
         "window.restore": {
           "description": "Restore the maximized window.",
           "$ref": "#/definitions/icon"
@@ -409,6 +385,22 @@
         },
         "assemblies.closeAssembly": {
           "description": "Close the selected assembly.",
+          "$ref": "#/definitions/icon"
+        },
+        "assemblies.closeFailed": {
+          "description": "Close the assemblies that failed to open.",
+          "$ref": "#/definitions/icon"
+        },
+        "assemblies.clearList": {
+          "description": "Close every assembly.",
+          "$ref": "#/definitions/icon"
+        },
+        "assemblies.sortList": {
+          "description": "Sort the assemblies by name.",
+          "$ref": "#/definitions/icon"
+        },
+        "assemblies.reloadAll": {
+          "description": "Reload every assembly.",
           "$ref": "#/definitions/icon"
         },
         "assemblies.openContainingFolder": {

@@ -188,22 +188,6 @@ internal static class MainMenuView
             ProcessPicking.OpenPicker(ui.State.ProcessPicker);
         ui.MenuSeparator();
         ExportItems(ui, appState);
-        ui.MenuSeparator();
-        var tree = ui.State.Tree;
-        var selected = tree.View.TryGetSelected(out var picked) ? picked.Assembly : null;
-        var anyOpen = tree.Roots.Length > 0;
-        if (ui.MenuItem(t.FileClose, enabled: selected != null, id: "close", icon: new UiIcon(icons.FileClose)) && selected != null)
-            Commands.Later(ui.State, selected, static (a, assembly) => CloseAssembly(a, assembly));
-        if (ui.MenuItem(t.FileCloseAssemblies, enabled: anyOpen, id: "close-assemblies", icon: new UiIcon(icons.FileCloseAssemblies)))
-            AssemblyClosing.OpenCloser(ui.State.Closer, appState.Assemblies, selected);
-        if (ui.MenuItem(t.FileCloseFailed, enabled: AnyFailedToLoad(appState.Assemblies), id: "close-failed", icon: new UiIcon(icons.FileCloseFailed)))
-            Commands.Later(ui.State, static a => CloseFailedAssemblies(a));
-        if (ui.MenuItem(t.FileClearList, enabled: anyOpen, id: "clear-list", icon: new UiIcon(icons.FileClearList)))
-            Commands.Later(ui.State, static a => CloseAllAssemblies(a));
-        if (ui.MenuItem(t.FileSortList, enabled: anyOpen, id: "sort-list", icon: new UiIcon(icons.FileSortList)))
-            Commands.Later(ui.State, static a => SortAssemblies(a));
-        if (ui.MenuItem(t.FileReloadAll, Shortcuts.ReloadAll, enabled: anyOpen, id: "reload-all", icon: new UiIcon(icons.FileReloadAll)))
-            Commands.Later(ui.State, Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
     }
 
     private static void ExportItems(Ui<UiState> ui, AppState appState)

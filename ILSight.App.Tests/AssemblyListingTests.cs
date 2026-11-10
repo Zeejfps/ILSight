@@ -474,6 +474,28 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
+    public void The_assemblies_panels_clear_button_closes_every_assembly()
+    {
+        var app = AppDriver.Opened();
+        app.Run(2);
+
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/clear-list")).Frame(2);
+
+        Assert.Empty(app.AppState.Assemblies.Assemblies);
+    }
+
+    [Fact]
+    public void The_assemblies_panels_close_failed_button_is_disabled_while_none_failed()
+    {
+        var app = AppDriver.Opened();
+        app.Run(2);
+
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-failed")).Frame(2);
+
+        Assert.Single(app.AppState.Assemblies.Assemblies);
+    }
+
+    [Fact]
     public void Dropping_files_on_the_window_opens_them_and_leaves_folders_out()
     {
         var app = AppDriver.Opened();

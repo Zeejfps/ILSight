@@ -94,6 +94,19 @@ public static class AssemblyListing
         return list.Now.Listed.Contains(assembly.ListedItem);
     }
 
+    /// <summary>Whether any file on the list failed to load. It reads the snapshot's array itself, as
+    /// <see cref="AssemblyList.Listed"/> boxes it, so that asking every frame allocates nothing.</summary>
+    public static bool AnyFailedToLoad(AssemblyList list)
+    {
+        var listed = list.Now.Listed;
+        for (var i = 0; i < listed.Length; i++)
+        {
+            if (listed[i] is FailedAssembly)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>True when the assembly or package at <paramref name="filePath"/> is listed and loaded.</summary>
     public static bool IsListed(AssemblyList list, AssemblyPath filePath)
     {

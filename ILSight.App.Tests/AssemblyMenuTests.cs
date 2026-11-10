@@ -11,7 +11,7 @@ public sealed class AssemblyMenuTests
     private static readonly string CoreLibPath = typeof(object).Assembly.Location;
 
     [Fact]
-    public void The_file_menu_sorts_the_list_by_name_and_closes_the_files_that_failed_to_load()
+    public void The_assemblies_panel_sorts_the_list_by_name_and_closes_the_files_that_failed_to_load()
     {
         using var temp = new TempDir();
         var missing = temp.PathOf("Missing.dll");
@@ -20,18 +20,16 @@ public sealed class AssemblyMenuTests
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 3, Patience);
         app.Settle(2);
 
-        app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Sort list by name")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/sort-list")).Frame(2);
 
         var sorted = AssemblyListing.ListFilePaths(app.AppState.Assemblies);
         Assert.Equal([AppStateDriver.FixturePath, missing, CoreLibPath], sorted.Select(static p => p.Text));
 
-        app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close assemblies that failed to load")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-failed")).Frame(2);
 
         var roots = app.Ui.Tree.Roots;
         Assert.Equal([AppStateDriver.FixturePath, CoreLibPath], roots.Select(r => r.Assembly.FilePath.Text));
-        Assert.False(AnyFailedToLoad(app.AppState.Assemblies));
+        Assert.False(AssemblyListing.AnyFailedToLoad(app.AppState.Assemblies));
     }
 
     [Fact]

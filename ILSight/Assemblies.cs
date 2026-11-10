@@ -279,12 +279,6 @@ public static class Assemblies
             AssemblyListing.CloseAssembly(appState.Assemblies, assembly);
     }
 
-    /// <summary>Whether any file on the list failed to load.</summary>
-    public static bool AnyFailedToLoad(AssemblyList assemblies)
-    {
-        return assemblies.Listed.Any(static a => a is FailedAssembly);
-    }
-
     /// <summary>Orders the list by name, and assemblies of one name by version.</summary>
     public static void SortAssemblies(AppState appState)
     {

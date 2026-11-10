@@ -163,18 +163,6 @@
     "file.exportProject": { "font": "lucide", "glyph": "E337" },
     // Generate a PDB.
     "file.generatePdb": { "font": "lucide", "glyph": "E20C" },
-    // Close the selected assembly.
-    "file.close": { "font": "lucide", "glyph": "E1B2" },
-    // Close assemblies picked out from a list.
-    "file.closeAssemblies": { "font": "lucide", "glyph": "E18E" },
-    // Close the assemblies that failed to open.
-    "file.closeFailed": { "font": "lucide", "glyph": "E0CD" },
-    // Close every assembly.
-    "file.clearList": { "font": "lucide", "glyph": "E240" },
-    // Sort the assemblies by name.
-    "file.sortList": { "font": "lucide", "glyph": "E415" },
-    // Reload every assembly.
-    "file.reloadAll": { "font": "lucide", "glyph": "E148" },
 
     // The window menu, opened from the app's icon in the title bar.
 
@@ -212,6 +200,14 @@
     "assemblies.expandNamespaces": { "font": "lucide", "glyph": "E211" },
     // Close the selected assembly.
     "assemblies.closeAssembly": { "font": "lucide", "glyph": "E18E" },
+    // Close the assemblies that failed to open.
+    "assemblies.closeFailed": { "font": "lucide", "glyph": "E0CD" },
+    // Close every assembly.
+    "assemblies.clearList": { "font": "lucide", "glyph": "E240" },
+    // Sort the assemblies by name.
+    "assemblies.sortList": { "font": "lucide", "glyph": "E415" },
+    // Reload every assembly.
+    "assemblies.reloadAll": { "font": "lucide", "glyph": "E148" },
     // Open the folder holding the assembly.
     "assemblies.openContainingFolder": { "font": "lucide", "glyph": "E247" },
     // Extract a file or a folder from a package.
