@@ -136,7 +136,7 @@ The only other code a type MAY hold:
 **Constructors hold no logic.**
 
 - A constructor MUST only assign. A positional record's declaration counts as data.
-- A type MUST be built with an object initializer, or by a static `Create` or `Parse` function.
+- A type MUST be built with an object initializer, or by a static `Create`, `Parse` or `Of` function.
 - Parts it must have MUST be `required`. That makes the caller set them, and no more: what they are set to is
   still for a type to say (rule 10).
 
@@ -176,7 +176,7 @@ There are two kinds:
   comment or a check.
 - **A validated value** keeps one value valid, like a `Url`, a `PackageId` or a `Percentage`. It MAY be named
   for the domain, but all it knows of the domain is what makes it valid. It MUST have a private constructor
-  and a static `Parse` or `Create`, so holding one means holding a valid one.
+  and a static `Parse`, `Create` or `Of`, so holding one means holding a valid one.
 
 `default` skips the constructor, which decides the keyword for a validated value:
 
@@ -260,10 +260,23 @@ is correct only while the caller remembers a rule.
   validates, and get-only fields with no `init`, because `with` skips the constructor. That holds for fields
   that must agree with each other as much as for one field. A value that must change and stay valid gets a
   type of its own (rule 6).
-- **The escape hatches are where checking stops:** unchecked casts, `!`, `dynamic`, suppressed warnings,
-  unsafe code, reflection by string name, raw queries, and catch-all `catch`. You SHOULD NOT use one. If you
-  have to, you MUST isolate it in the smallest function you can, say in a comment what it relies on, and flag
-  it when handing back the code.
+- **A cast that can fail, or a `!`, MUST NOT stand in for narrowing.** Either one means the type is wrong, or
+  that nothing checked.
+  - Narrow in place: `is T x` for a type, `!= null` for a null.
+  - A value that is always there in some state, and never in another, has the wrong type. Make the state a
+    union case that holds it (rule 8).
+  - A value whose BCL or library type is looser than it needs to be, such as a path as a `string`, SHOULD get
+    a type of its own that has already answered the question (rule 6).
+  - Where an external type is looser than what we know of it, narrow it once, in a named function in the seam
+    that throws when what we know turns out false. Call sites take what that function returns.
+  - A conversion in the arm of a `switch` on a library's own tag is narrowed by the arm. A cast up to a base
+    type can't fail, and isn't one of these.
+  - What an API hands back as `object`, such as a callback's state, MAY be cast, in a function that does
+    nothing else.
+- **The other escape hatches are where checking stops:** `dynamic`, suppressed warnings, unsafe code,
+  reflection by string name, raw queries, and catch-all `catch`. You SHOULD NOT use one. If you have to, you
+  MUST isolate it in the smallest function you can, say in a comment what it relies on, and flag it when
+  handing back the code.
 
 ## Boundaries
 
@@ -301,6 +314,8 @@ These prevent no bugs by themselves. They are here so that code reads one way, a
 - A function in a field counts too: `Read`, not `Reader`.
 - Name it to read clearly on its own: `RenderCodeView(ui, ...)`.
 - A delegate type stays a noun, and a struct union's case function is named for the case.
+- A factory MAY be named `Of`, called by its type: `ThemeId.Of(file)`. That is for making the type it is
+  called on, and nothing else: `TotalOf` is still `GetTotal`.
 
 **Functions have block bodies**, with braces, not `=>`.
 
@@ -325,7 +340,7 @@ if needed, then write `== null` / `!= null`; use `is T x` only to test for a typ
 
 Before handing back code, you MUST re-read it in this order, and report anything you hit in the first four:
 
-1. Every escape hatch (rule 10), and every swallowed exception.
+1. Every cast that can fail, `!` and escape hatch (rule 10), and every swallowed exception.
 2. Changed public signatures and types. Check the call sites.
 3. New boundary crossings: a request, env read, deserialization, query or file read. Each needs a parse.
 4. New shared mutable state, concurrency, or ordering assumptions: anything two things can touch at once, or
