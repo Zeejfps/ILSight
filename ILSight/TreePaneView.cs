@@ -359,7 +359,7 @@ internal static class TreePaneView
 
         if (result.Activated)
         {
-            Commands.Later(ui.State, node, static (a, n) => Open(a, n));
+            Open(ui.State, node);
         }
 
         if (result.ContextMenuRequested)
@@ -390,16 +390,17 @@ internal static class TreePaneView
         PreviewNode(appState, node);
     }
 
-    /// <summary>Goes where <paramref name="node"/> points when it stands for a reference, else opens it in a tab kept open.</summary>
-    private static void Open(AppState appState, BrowseNode node)
+    /// <summary>Asks to go where <paramref name="node"/> points when it stands for a reference, else to open it in a
+    /// tab kept open.</summary>
+    private static void Open(UiState screen, BrowseNode node)
     {
         var activation = NodeDefinitions.GetActivation(node.Subject);
         if (activation is Activation.Navigate jump)
         {
-            GoTo(appState, jump.Target);
+            Commands.Start(screen, nameof(NavigateHandler), jump.Target, static (a, target, ct) => a.NavigateHandler.HandleAsync(a, target, inNewTab: false, ct));
             return;
         }
-        OpenNode(appState, node);
+        Commands.Later(screen, node, static (a, n) => OpenNode(a, n));
     }
 
     private static void OpenContextMenu(Ui<UiState> ui, BrowseNode node, PointF at)
@@ -442,7 +443,7 @@ internal static class TreePaneView
 
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))
         {
-            Commands.Later(ui.State, jump.Target, static (a, target) => GoTo(a, target));
+            Commands.Start(ui.State, nameof(NavigateHandler), jump.Target, static (a, target, ct) => a.NavigateHandler.HandleAsync(a, target, inNewTab: false, ct));
         }
 
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))
@@ -460,7 +461,7 @@ internal static class TreePaneView
         var definition = NodeDefinitions.ReferenceOf(node.Subject);
         if (definition != null && ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
         {
-            Commands.Later(ui.State, definition, static (a, d) => ShowInMetadata(a, d, inNewTab: false));
+            Commands.Start(ui.State, nameof(ShowInMetadataHandler), definition, static (a, d, ct) => a.ShowInMetadataHandler.HandleAsync(a, d, inNewTab: false, ct));
         }
 
         if (node.Subject is NodeSubject.TypeDefinition type)

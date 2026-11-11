@@ -233,11 +233,11 @@ public sealed class DiagramViewTests
         var code = app.AppState.Tabs.Active!;
         Assert.NotEqual(diagram, code);
 
-        GoBack(app.AppState);
+        app.Start(GoBackAsync);
         app.Settle(2);
         Assert.Equal(diagram, app.AppState.Tabs.Active);
 
-        GoForward(app.AppState);
+        app.Start(GoForwardAsync);
         app.Settle(2);
         Assert.Equal("Mileage() : int", app.AppState.Tabs.Active!.Node!.Text);
     }

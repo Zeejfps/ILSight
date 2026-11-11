@@ -270,12 +270,12 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.History.CanGoBack, id: "back"))
         {
-            Commands.Later(ui.State, static a => GoBack(a));
+            Commands.Start(ui.State, nameof(GoBackAsync), static (a, ct) => GoBackAsync(a, ct));
         }
 
         if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.History.CanGoForward, id: "forward"))
         {
-            Commands.Later(ui.State, static a => GoForward(a));
+            Commands.Start(ui.State, nameof(GoForwardAsync), static (a, ct) => GoForwardAsync(a, ct));
         }
 
         ui.MenuSeparator();

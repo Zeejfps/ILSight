@@ -105,7 +105,8 @@ public sealed class PreviewTabTests
         var kept = app.AppState.Tabs.Active!;
         KeepTabOpen(app.AppState, kept);
 
-        Navigate(app.AppState, app.Fixture("Farewell").Definition, inNewTab: false);
+        var farewell = app.Fixture("Farewell").Definition;
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, farewell, inNewTab: false, ct));
         app.Settle(2);
 
         Assert.Same(greeter, kept.Node);

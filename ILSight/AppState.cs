@@ -42,7 +42,7 @@ public sealed class AppState
     /// <summary>The files of the list being read again one at a time, as when another framework or
     /// PDB is picked for an assembly.</summary>
     public Reopens Reopens { get; } = new();
-    public OpenRequests Opens { get; } = new();
+    public required OpenRequests Opens { get; init; }
 
     /// <summary>What the settings were saved from the last time, to save again only when it changed.</summary>
     public SavedSources LastSaved { get; set; }
@@ -63,6 +63,21 @@ public sealed class AppState
     /// <summary>Starts the workflows the screen asks for, counted in <see cref="Work"/>, and cancels them as the
     /// app shuts down.</summary>
     public required WorkflowRunner Workflows { get; init; }
+
+    /// <summary>Follows references to what they lead to.</summary>
+    public required NavigateHandler NavigateHandler { get; init; }
+
+    /// <summary>Shows the metadata table rows that define what references point at.</summary>
+    public required ShowInMetadataHandler ShowInMetadataHandler { get; init; }
+
+    /// <summary>Opens the pages of the .NET API reference types and members have.</summary>
+    public required ShowInApiReferenceHandler ShowInApiReferenceHandler { get; init; }
+
+    /// <summary>Opens files and shows what an id names among them, as a command line asks.</summary>
+    public required OpenAndShowIdHandler OpenAndShowIdHandler { get; init; }
+
+    /// <summary>Goes back and forward through <see cref="History"/>.</summary>
+    public required GoToHistoryEntryHandler GoToHistoryEntryHandler { get; init; }
 
     /// <summary>The newer version looked for, downloaded and offered, if any.</summary>
     public required AppUpdates Updates { get; set; }

@@ -179,7 +179,7 @@ internal static class ComparisonView
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box);
         if (result.Activated)
         {
-            Commands.Later(ui.State, result.Node, static (a, n) => Open(a, n, inNewTab: false));
+            Open(ui.State, result.Node, inNewTab: false);
         }
 
         if (result.ContextMenuRequested && result.Node is not null)
@@ -188,8 +188,8 @@ internal static class ComparisonView
         }
     }
 
-    /// <summary>Opens the code of <paramref name="entry"/> in the right assembly, else in the left.</summary>
-    private static void Open(AppState appState, ApiEntry? entry, bool inNewTab)
+    /// <summary>Asks for the code of <paramref name="entry"/> to be opened in the right assembly, else in the left.</summary>
+    private static void Open(UiState screen, ApiEntry? entry, bool inNewTab)
     {
         if (entry is null)
         {
@@ -202,7 +202,7 @@ internal static class ComparisonView
             return;
         }
 
-        Navigate(appState, side.Reference, inNewTab);
+        Commands.Start(screen, nameof(NavigateHandler), (side.Reference, inNewTab), static (a, s, ct) => a.NavigateHandler.HandleAsync(a, s.Reference, s.inNewTab, ct));
     }
 
     /// <summary>How the left assembly has <paramref name="entry"/>; null for a namespace or what it lacks.</summary>
@@ -258,12 +258,12 @@ internal static class ComparisonView
         var right = RightOf(entry);
         if (ui.MenuItem(t.ComparisonOpenLeft, enabled: left != null, id: "open-left") && left != null)
         {
-            Commands.Later(ui.State, left.Reference, static (a, r) => Navigate(a, r, inNewTab: false));
+            Commands.Start(ui.State, nameof(NavigateHandler), left.Reference, static (a, r, ct) => a.NavigateHandler.HandleAsync(a, r, inNewTab: false, ct));
         }
 
         if (ui.MenuItem(t.ComparisonOpenRight, enabled: right != null, id: "open-right") && right != null)
         {
-            Commands.Later(ui.State, right.Reference, static (a, r) => Navigate(a, r, inNewTab: false));
+            Commands.Start(ui.State, nameof(NavigateHandler), right.Reference, static (a, r, ct) => a.NavigateHandler.HandleAsync(a, r, inNewTab: false, ct));
         }
     }
 }

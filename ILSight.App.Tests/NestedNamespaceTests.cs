@@ -128,7 +128,7 @@ public sealed class NestedNamespaceTests
         var farewell = app.Fixture("Farewell");
         Trees.CollapseTree(app.Ui.Tree);
 
-        Navigate(app.AppState, farewell.Definition, inNewTab: false);
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, farewell.Definition, inNewTab: false, ct));
         app.Settle(1);
 
         Assert.Same(farewell, app.AppState.Tabs.Active!.Node);
@@ -146,7 +146,7 @@ public sealed class NestedNamespaceTests
         Nest(app, true);
         Trees.CollapseTree(app.Ui.Tree);
 
-        GoBack(app.AppState);
+        app.Start(GoBackAsync);
         app.Settle(1);
 
         Assert.Same(greeter, app.AppState.Tabs.Active!.Node);

@@ -376,6 +376,15 @@ internal sealed class AppStateDriver
         Settle();
     }
 
+    /// <summary>Starts <paramref name="workflow"/> over the app state now, as the app starts the workflows the screen
+    /// asks for: it runs up to its first await before this returns, and is counted in the background work, which
+    /// <see cref="Settle"/> waits out, until it ends.</summary>
+    public void Start(Func<AppState, CancellationToken, Task> workflow)
+    {
+        var appState = AppState;
+        appState.Workflows.Start(nameof(Start), ct => workflow(appState, ct));
+    }
+
     /// <summary>Analyzes <paramref name="node"/> as the views do.</summary>
     public void Analyze(BrowseNode node)
     {
@@ -457,6 +466,12 @@ internal sealed class AppDriver
     public void Run(int frames = 1)
     {
         Frames.Frame(frames);
+    }
+
+    /// <summary>Starts <paramref name="workflow"/> over the app state now, as <see cref="AppStateDriver.Start"/> does.</summary>
+    public void Start(Func<AppState, CancellationToken, Task> workflow)
+    {
+        Driver.Start(workflow);
     }
 
 

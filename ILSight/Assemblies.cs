@@ -62,12 +62,25 @@ public static class Assemblies
     /// <summary>Reports why opening failed, unless the opening was cancelled.</summary>
     internal static void ReportOpenFailure(AppState appState, Exception error)
     {
-        if (error is OperationCanceledException)
+        var problem = FindOpenProblem(error);
+        if (problem is null)
         {
             return;
         }
 
-        Errors.Report(appState, new AppProblem.OpenFailed(error));
+        Errors.Report(appState, problem);
+    }
+
+    /// <summary>What to tell the user about opening that failed with <paramref name="error"/>; null when the
+    /// opening was cancelled, which is no failure.</summary>
+    internal static AppProblem.OpenFailed? FindOpenProblem(Exception error)
+    {
+        if (error is OperationCanceledException)
+        {
+            return null;
+        }
+
+        return new AppProblem.OpenFailed(error);
     }
 
     /// <summary>Opens the file at <paramref name="path"/>, as a file dialog or a download names it; nothing

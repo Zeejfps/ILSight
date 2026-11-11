@@ -1,6 +1,5 @@
 using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -32,7 +31,7 @@ public static class RunArgumentsActions
     /// <summary>Does what the arguments a later run handed over ask of the open window: decompiles
     /// to their language, switches to their list, added when there is none, clears the list, then opens
     /// their files and shows what they name.</summary>
-    public static void ApplyArguments(AppState appState, RunArguments arguments)
+    public static Task ApplyArgumentsAsync(AppState appState, RunArguments arguments, CancellationToken ct)
     {
         ReportIgnored(appState, arguments);
         if (arguments.Language is not null)
@@ -50,7 +49,7 @@ public static class RunArgumentsActions
             CloseAllAssemblies(appState);
         }
 
-        OpenRequestedFiles(appState, arguments.Files);
+        return OpenRequestedFilesAsync(appState, arguments.Files, ct);
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)
@@ -63,13 +62,13 @@ public static class RunArgumentsActions
 
     /// <summary>Opens <paramref name="files"/>, then shows the namespace, type or member they
     /// ask to navigate to, or else the last file opened.</summary>
-    public static void OpenRequestedFiles(AppState appState, FilesToOpen files)
+    public static Task OpenRequestedFilesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
     {
         if (files.NavigateTo is null)
         {
             OpenAssemblies(appState, files.Paths);
-            return;
+            return Task.CompletedTask;
         }
-        OpenAndShowId(appState, files.Paths, files.NavigateTo);
+        return appState.OpenAndShowIdHandler.HandleAsync(appState, files.Paths, files.NavigateTo, ct);
     }
 }

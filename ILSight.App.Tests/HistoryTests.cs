@@ -39,11 +39,11 @@ public sealed class HistoryTests
         Show(app, "Greeter");
         var greeter = ScrollTo(app, 3, new TextPosition(4, 0), new TextPosition(4, 6));
 
-        GoBack(app.AppState);
+        app.Start(GoBackAsync);
         app.Settle(4);
         var back = app.AppState.Tabs.Active!.Node!.Text;
         var backPosition = CodeOf(app, app.AppState.Tabs.Active!).Position;
-        GoForward(app.AppState);
+        app.Start(GoForwardAsync);
         app.Settle(4);
         var forward = app.AppState.Tabs.Active!;
 
@@ -64,10 +64,10 @@ public sealed class HistoryTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(tab.Document.SpanAt(line, column + "return ".Length).Reference);
         var before = ScrollTo(app, 25, new TextPosition(line, column), new TextPosition(line, column + 6));
 
-        Navigate(app.AppState, reference, inNewTab: false);
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
         app.Settle(4);
         var followed = tab.Node!.Text;
-        GoBack(app.AppState);
+        app.Start(GoBackAsync);
         app.Settle(4);
 
         Assert.StartsWith("First()", followed);
@@ -85,7 +85,7 @@ public sealed class HistoryTests
 
         app.AppState.Language = DecompilationLanguage.IL;
         app.Settle(4);
-        GoBack(app.AppState);
+        app.Start(GoBackAsync);
         app.Settle(4);
         var tab = app.AppState.Tabs.Active!;
 
@@ -106,7 +106,7 @@ public sealed class HistoryTests
         Show(app, "Outline");
         var count = history.Entries.Count;
 
-        GoToHistoryEntry(app.AppState, first);
+        app.Start((a, ct) => a.GoToHistoryEntryHandler.HandleAsync(a, first, ct));
         app.Settle(4);
         var back = app.AppState.Tabs.Active!.Node!.Text;
 
@@ -145,7 +145,7 @@ public sealed class HistoryTests
         ClickBackDropdown(app);
         var row = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Outline").Inputs.Position;
 
-        GoBack(app.AppState);
+        app.Start(GoBackAsync);
         app.Settle(4);
 
         Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Position.Top == row.Top && t.Inputs.Position.Left == row.Left);

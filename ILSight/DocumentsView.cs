@@ -65,7 +65,7 @@ internal static class DocumentsView
 
         if (picked.Definition != null)
         {
-            Commands.Later(ui.State, (definition: picked.Definition, picked.InNewTab), static (a, s) => Navigate(a, s.definition, s.InNewTab));
+            Commands.Start(ui.State, nameof(NavigateHandler), (definition: picked.Definition, picked.InNewTab), static (a, s, ct) => a.NavigateHandler.HandleAsync(a, s.definition, s.InNewTab, ct));
         }
     }
 
@@ -91,7 +91,7 @@ internal static class DocumentsView
         switch (intent)
         {
             case CodeViewIntent.Navigate navigate:
-                Commands.Later(ui.State, navigate, static (a, n) => Navigate(a, n.Target, n.InNewTab));
+                Commands.Start(ui.State, nameof(NavigateHandler), navigate, static (a, n, ct) => a.NavigateHandler.HandleAsync(a, n.Target, n.InNewTab, ct));
                 break;
             case CodeViewIntent.ToggleBookmark toggle:
                 Commands.Later(ui.State, (screen: ui.State, tab, line: toggle.Line, t), static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t));
@@ -100,10 +100,10 @@ internal static class DocumentsView
                 Commands.Later(ui.State, (screen: ui.State, entity: analyze.Entity), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.entity));
                 break;
             case CodeViewIntent.ShowInMetadata metadata:
-                Commands.Later(ui.State, metadata.Target, static (a, target) => ShowInMetadata(a, target, inNewTab: false));
+                Commands.Start(ui.State, nameof(ShowInMetadataHandler), metadata.Target, static (a, target, ct) => a.ShowInMetadataHandler.HandleAsync(a, target, inNewTab: false, ct));
                 break;
             case CodeViewIntent.ShowInApiReference reference:
-                Commands.Later(ui.State, reference.Entity, static (a, entity) => ShowInApiReference(a, entity));
+                Commands.Start(ui.State, nameof(ShowInApiReferenceHandler), reference.Entity, static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a, entity, ct));
                 break;
             case CodeViewIntent.ShowInDiagram diagram:
                 Commands.Later(ui.State, (type: diagram.Type, title: t.DiagramTitle(diagram.Type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));

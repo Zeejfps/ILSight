@@ -43,10 +43,18 @@ public static class Settings
         var assemblies = new AssemblyList();
         var errors = new ErrorLog();
         var work = new BackgroundWork();
+        var opens = new OpenRequests();
+        var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
         var appState = new AppState
         {
             Work = work,
             Workflows = new WorkflowRunner(work, errors),
+            NavigateHandler = new NavigateHandler(navigation),
+            ShowInMetadataHandler = new ShowInMetadataHandler(navigation),
+            ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),
+            OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
+            GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
+            Opens = opens,
             Session = session,
             SettingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile },
             View = ReadViewSettings(settings),

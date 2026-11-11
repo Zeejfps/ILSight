@@ -429,7 +429,7 @@ internal static class DiagramView
             return;
         }
 
-        Commands.Later(screen, (diagram, target, inNewTab), static (a, s) => OpenFromDiagram(a, s.diagram, s.target, s.inNewTab));
+        Commands.Start(screen, nameof(OpenFromDiagramAsync), (diagram, target, inNewTab), static (a, s, ct) => OpenFromDiagramAsync(a, s.diagram, s.target, s.inNewTab, ct));
     }
 
     /// <summary>A press dragged further than a click pans the diagram along with the pointer.</summary>
@@ -755,7 +755,7 @@ internal static class DiagramView
 
         ui.HideTooltip();
         var inNewTab = click.Button == PointerButton.Middle || IsCommandHeld(ui.Input.Modifiers);
-        Commands.Later(ui.State, (diagram, reference, inNewTab), static (a, s) => OpenFromDiagram(a, s.diagram, s.reference, s.inNewTab));
+        Commands.Start(ui.State, nameof(OpenFromDiagramAsync), (diagram, reference, inNewTab), static (a, s, ct) => OpenFromDiagramAsync(a, s.diagram, s.reference, s.inNewTab, ct));
     }
 
     private static void CardMenu(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
@@ -785,12 +785,12 @@ internal static class DiagramView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
         {
-            Commands.Later(ui.State, (diagram, card), static (a, s) => OpenFromDiagram(a, s.diagram, s.card.Type, inNewTab: false));
+            Commands.Start(ui.State, nameof(OpenFromDiagramAsync), (diagram, card), static (a, s, ct) => OpenFromDiagramAsync(a, s.diagram, s.card.Type, inNewTab: false, ct));
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.Later(ui.State, (diagram, card), static (a, s) => OpenFromDiagram(a, s.diagram, s.card.Type, inNewTab: true));
+            Commands.Start(ui.State, nameof(OpenFromDiagramAsync), (diagram, card), static (a, s, ct) => OpenFromDiagramAsync(a, s.diagram, s.card.Type, inNewTab: true, ct));
         }
 
         ui.MenuSeparator();

@@ -63,7 +63,7 @@ internal static class ToolbarView
                 {
                     if (back.Clicked)
                     {
-                        Commands.Later(ui.State, static a => GoBack(a));
+                        Commands.Start(ui.State, nameof(GoBackAsync), static (a, ct) => GoBackAsync(a, ct));
                     }
 
                     if (back.IsOpen)
@@ -77,7 +77,7 @@ internal static class ToolbarView
                 {
                     if (forward.Clicked)
                     {
-                        Commands.Later(ui.State, static a => GoForward(a));
+                        Commands.Start(ui.State, nameof(GoForwardAsync), static (a, ct) => GoForwardAsync(a, ct));
                     }
 
                     if (forward.IsOpen)
@@ -225,7 +225,7 @@ internal static class ToolbarView
                 var icon = IconOf(ui.State, entry);
                 if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
-                    Commands.Later(ui.State, i, static (a, index) => GoToHistoryEntry(a, index));
+                    Commands.Start(ui.State, nameof(GoToHistoryEntryHandler), i, static (a, index, ct) => a.GoToHistoryEntryHandler.HandleAsync(a, index, ct));
                     return;
                 }
             }

@@ -220,7 +220,8 @@ public sealed class DiagramTests
         d.Settle();
         var tab = d.AppState.Tabs.Active!;
 
-        Navigate(d.AppState, TypeOf(d, "Greeter"), inNewTab: false);
+        var greeter = TypeOf(d, "Greeter");
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter, inNewTab: false, ct));
         d.Settle();
 
         Assert.NotSame(tab, d.AppState.Tabs.Active);

@@ -46,7 +46,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         RegisterFonts(host);
         RegisterChosenCodeFont(host);
         RegisterChosenIconFonts(host);
-        OpenStartupAssemblies(_appState, _startupFiles);
+        _appState.Workflows.Start(nameof(OpenStartupAssembliesAsync), ct => OpenStartupAssembliesAsync(_appState, _startupFiles, ct));
         StartRedrawingOnAssemblyChanges(host);
         RestoreAnalyses(_appState);
         WatchUserThemes(_appState);
@@ -140,21 +140,14 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// <summary>Leaves the arguments of later runs to windows of their own once this one closes.</summary>
     /// <summary>Does what the arguments of later runs ask as they arrive, until this window closes,
     /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
-    /// each one arriving wakes the app.</summary>
+    /// each one arriving wakes the app. Each is a workflow of its own, so arguments that fail are reported by
+    /// the workflow runner rather than ending this loop, which would leave the pipe answering later runs with no
+    /// one to follow them.</summary>
     internal async Task ApplyPendingArgumentsAsync()
     {
         await foreach (var arguments in _inbox.Reader.ReadAllAsync())
         {
-            try
-            {
-                ApplyArguments(_appState, arguments);
-            }
-            // Catches everything so that arguments that fail are reported rather than ending
-            // this loop, which would leave the pipe answering later runs with no one to follow them.
-            catch (Exception e)
-            {
-                Errors.Report(_appState, new AppProblem.Unexpected(e));
-            }
+            _appState.Workflows.Start(nameof(ApplyArgumentsAsync), ct => ApplyArgumentsAsync(_appState, arguments, ct));
             UiState.FrontAsked = true;
         }
     }

@@ -223,6 +223,11 @@ public static class Analysis
         }
     }
 
+    private static void ReportUnresolvedReference(AppState appState, CodeReference reference, Exception? error)
+    {
+        Errors.Report(appState, new AppProblem.Unresolved(reference, error));
+    }
+
     private static void AnalyzeFound(AppState appState, AnalyzerPendingNode root, BrowseNode node)
     {
         var symbol = Analyzers.Of(node);

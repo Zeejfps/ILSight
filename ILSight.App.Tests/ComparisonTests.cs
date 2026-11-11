@@ -128,7 +128,7 @@ public sealed class ComparisonTests
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
 
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
-        Navigate(d.AppState, sides.Right.Reference, inNewTab: false);
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, sides.Right.Reference, inNewTab: false, ct));
         d.Settle();
 
         var shown = d.AppState.Tabs.Active!;

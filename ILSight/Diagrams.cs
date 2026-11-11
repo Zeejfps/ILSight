@@ -126,16 +126,17 @@ public static class Diagrams
 
     /// <summary>Opens the code of <paramref name="target"/>, picked on <paramref name="diagram"/>, beside it,
     /// in a new tab when <paramref name="inNewTab"/>; going back returns to the diagram.</summary>
-    public static void OpenFromDiagram(AppState appState, TypeDiagram diagram, CodeReference.Entity target, bool inNewTab)
+    public static Task OpenFromDiagramAsync(AppState appState, TypeDiagram diagram, CodeReference.Entity target, bool inNewTab,
+        CancellationToken ct)
     {
         var tab = FindTabShowing(appState, diagram);
         if (tab is null || tab.Content is not TabContent.Diagram shown)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         appState.History.RecordDiagram(shown.Types, shown.Title);
-        Navigate(appState, target, inNewTab);
+        return appState.NavigateHandler.HandleAsync(appState, target, inNewTab, ct);
     }
 
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is

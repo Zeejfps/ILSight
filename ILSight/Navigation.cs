@@ -1,13 +1,13 @@
-using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Metadata;
-using static ILSight.Assemblies;
 using static ILSight.Decompilation;
 
 namespace ILSight;
 
-/// <summary>Moving through the code: showing nodes, following references and going back and
-/// forward through the history.</summary>
+/// <summary>Moving through the code: showing nodes and table rows in the tabs, and going back and forward through
+/// the history. What waits on a lookup is a handler of its own: <see cref="NavigateHandler"/>,
+/// <see cref="ShowInMetadataHandler"/>, <see cref="ShowInApiReferenceHandler"/>, <see cref="OpenAndShowIdHandler"/>
+/// and <see cref="GoToHistoryEntryHandler"/>.</summary>
 public static class Navigation
 {
     /// <summary><paramref name="position"/>, taken while the node was shown in <paramref name="shownIn"/>, when it
@@ -123,62 +123,9 @@ public static class Navigation
         }
     }
 
-    /// <summary>Opens the files at <paramref name="paths"/> in the background, then shows the namespace,
-    /// type or member <paramref name="idString"/> names, written as XML documentation ids are, looked
-    /// for in the assemblies read from them, or in every open one when there are none. Reports when
-    /// none has it.</summary>
-    public static void OpenAndShowId(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString)
-    {
-        Background.Start(appState.Work, nameof(OpenAndShowIdAsync), OpenAndShowIdAsync(appState, paths, idString), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task OpenAndShowIdAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString)
-    {
-        var ticket = appState.Intent.Begin();
-        var token = appState.Opens.Token;
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var found = await Background.Run(() => OpenAndFindId(assemblies, session, paths, idString, token));
-        switch (found)
-        {
-            case Outcome<BrowseNode>.Ok ok when ok.Value is not null:
-                if (!appState.Intent.IsStale(ticket))
-                {
-                    ShowNode(appState, ok.Value);
-                }
-
-                break;
-            case Outcome<BrowseNode>.Ok:
-                if (!appState.Intent.IsStale(ticket))
-                {
-                    ReportMissingId(appState, idString);
-                }
-
-                break;
-            case Outcome<BrowseNode>.Failed failed:
-                ReportOpenFailure(appState, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    private static BrowseNode? OpenAndFindId(AssemblyList assemblies, BrowseSession session, IReadOnlyList<AssemblyPath> paths, string idString,
-        CancellationToken token)
-    {
-        var opened = new List<LoadedAssembly>();
-        foreach (var path in paths)
-        {
-            opened.Add(AssemblyListing.Open(assemblies, path, token));
-        }
-
-        var scope = ListIdScope(assemblies, opened);
-        return NodeLookup.FindById(session, idString, scope);
-    }
-
     /// <summary>The assemblies an id is looked for in: those read from the files opened, a package's
     /// among them, else every open one.</summary>
-    private static List<LoadedModule> ListIdScope(AssemblyList assemblies, List<LoadedAssembly> opened)
+    internal static List<LoadedModule> ListIdScope(AssemblyList assemblies, List<LoadedAssembly> opened)
     {
         var open = assemblies.Assemblies;
         if (opened.Count == 0)
@@ -189,41 +136,6 @@ public static class Navigation
         return open
             .Where(a => opened.Contains(a.ListedItem))
             .ToList();
-    }
-
-    private static void ReportMissingId(AppState appState, string idString)
-    {
-        Errors.Report(appState, new AppProblem.IdNotFound(idString));
-    }
-
-    /// <summary>Resolves <paramref name="reference"/> in the background (it may load an assembly),
-    /// then shows it in the tab it was asked from, or a new one.</summary>
-    public static void Navigate(AppState appState, CodeReference.Navigable reference, bool inNewTab)
-    {
-        Background.Start(appState.Work, nameof(NavigateAsync), NavigateAsync(appState, reference, inNewTab), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task NavigateAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab)
-    {
-        var destination = ChooseDestination(appState, inNewTab);
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, reference), CancellationToken.None);
-        ShowResolved(appState, reference, resolved, destination);
-    }
-
-    private static void ShowResolved(AppState appState, CodeReference reference, Resolution<BrowseNode> resolved, TabDestination destination)
-    {
-        resolved.Switch((appState, reference, destination),
-            static (s, found) =>
-            {
-                LeaveActiveTab(s.appState);
-                ShowNodeIn(s.appState, s.destination, found.Value);
-                s.appState.History.RecordPlace(found.Value, s.appState.Language);
-            },
-            static (s, _) => ReportUnresolvedReference(s.appState, s.reference, null),
-            static (s, failed) => ReportUnresolvedReference(s.appState, s.reference, failed.Error),
-            static (_, _) => { });
     }
 
     /// <summary>Shows the table row a metadata token leads to where <see cref="ShowNode"/> shows a
@@ -247,195 +159,25 @@ public static class Navigation
         ShowMetadataTarget(appState, target.Value, inNewTab);
     }
 
-    /// <summary>Resolves <paramref name="reference"/> in the background, as <see cref="Navigate"/> does,
-    /// then shows the metadata table row that defines it in the tab it was asked from, or a new one.</summary>
-    public static void ShowInMetadata(AppState appState, CodeReference.Navigable reference, bool inNewTab)
-    {
-        Background.Start(appState.Work, nameof(ShowInMetadataAsync), ShowInMetadataAsync(appState, reference, inNewTab), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task ShowInMetadataAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab)
-    {
-        var destination = ChooseDestination(appState, inNewTab);
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.FindMetadataRow(assemblies, session, reference), CancellationToken.None);
-        ShowResolvedRow(appState, reference, resolved, destination);
-    }
-
-    private static void ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
-    {
-        resolved.Switch((appState, reference, destination),
-            static (s, found) => ShowRowIn(s.appState, s.destination, found.Value),
-            static (s, _) => ReportUnresolvedReference(s.appState, s.reference, null),
-            static (s, failed) => ReportUnresolvedReference(s.appState, s.reference, failed.Error),
-            static (_, _) => { });
-    }
-
-    private static void ShowRowIn(AppState appState, TabDestination destination, MetadataTarget target)
+    /// <summary>Shows the table row <paramref name="target"/> leads to in the tab <paramref name="destination"/>
+    /// leads to now, and records it in the history.</summary>
+    internal static void ShowRowIn(AppState appState, TabDestination destination, MetadataTarget target)
     {
         LeaveActiveTab(appState);
         ShowNodeIn(appState, destination, target.Node, row: target.Row);
         appState.History.RecordPlace(target.Node, appState.Language);
     }
 
-    /// <summary>Resolves <paramref name="reference"/> in the background, then has the view open its page of
-    /// the .NET API reference, or reports that it has none.</summary>
-    public static void ShowInApiReference(AppState appState, CodeReference.Entity reference)
+    /// <summary>Goes to the history entry before the current one, as <see cref="GoToHistoryEntryHandler"/> does.</summary>
+    public static Task GoBackAsync(AppState appState, CancellationToken ct)
     {
-        Background.Start(appState.Work, nameof(ShowInApiReferenceAsync), ShowInApiReferenceAsync(appState, reference), problem => Errors.Report(appState, problem));
+        return appState.GoToHistoryEntryHandler.HandleAsync(appState, appState.History.CurrentIndex - 1, ct);
     }
 
-    private static async Task ShowInApiReferenceAsync(AppState appState, CodeReference.Entity reference)
+    /// <summary>Goes to the history entry after the current one, as <see cref="GoToHistoryEntryHandler"/> does.</summary>
+    public static Task GoForwardAsync(AppState appState, CancellationToken ct)
     {
-        var assemblies = appState.Assemblies;
-        var found = await Background.Run(() => AssemblyListing.FindApiReferencePage(assemblies, reference));
-        if (found is Outcome<string>.Ok ok && ok.Value is not null)
-        {
-            appState.ViewCommands.Enqueue(new ViewCommand.OpenWebPage(ok.Value));
-        }
-        else
-        {
-            ReportNoApiReferencePage(appState, reference);
-        }
-    }
-
-    private static void ReportNoApiReferencePage(AppState appState, CodeReference reference)
-    {
-        Errors.Report(appState, new AppProblem.NoApiReferencePage(reference.Name));
-    }
-
-    /// <summary>Goes where a node points: what a reference, a forwarded type, an imported method, or a base
-    /// or derived type leads to.</summary>
-    public static void GoTo(AppState appState, CodeReference.Navigable target)
-    {
-        Navigate(appState, target, inNewTab: false);
-    }
-
-    public static void GoBack(AppState appState)
-    {
-        GoToHistoryEntry(appState, appState.History.CurrentIndex - 1);
-    }
-
-    public static void GoForward(AppState appState)
-    {
-        GoToHistoryEntry(appState, appState.History.CurrentIndex + 1);
-    }
-
-    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward.</summary>
-    public static void GoToHistoryEntry(AppState appState, int index)
-    {
-        if (!CanGoTo(appState, index))
-        {
-            return;
-        }
-
-        LeaveActiveTab(appState);
-        var entry = appState.History.MoveToEntry(index);
-        switch (entry)
-        {
-            case HistoryEntry.Node node:
-                Restore(appState, node);
-                break;
-            case HistoryEntry.Diagram diagram:
-                BringDiagramToFront(appState, diagram.Shown);
-                break;
-        }
-    }
-
-    private static bool CanGoTo(AppState appState, int index)
-    {
-        if (index < 0)
-        {
-            return false;
-        }
-
-        if (index >= appState.History.Entries.Count)
-        {
-            return false;
-        }
-
-        return index != appState.History.CurrentIndex;
-    }
-
-    private static void Restore(AppState appState, HistoryEntry.Node entry)
-    {
-        Background.Start(appState.Work, nameof(RestoreAsync), RestoreAsync(appState, entry), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task RestoreAsync(AppState appState, HistoryEntry.Node entry)
-    {
-        var destination = ChooseDestination(appState, inNewTab: false);
-        var place = entry.Place;
-        var position = KeepPosition(entry.Position, entry.Language, appState.Language);
-        var shown = FindShownNode(appState, FindTab(appState, destination), place);
-        if (shown is not null)
-        {
-            appState.Intent.Begin();
-            ShowNodeIn(appState, destination, shown, position);
-            return;
-        }
-
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, place), CancellationToken.None);
-        ShowHistoryPlace(appState, place, position, resolved, destination);
-    }
-
-    private static BrowseNode? FindShownNode(AppState appState, DocumentTab? tab, NodePath place)
-    {
-        if (tab is null)
-        {
-            return null;
-        }
-
-        var node = tab.Node;
-        if (node is null)
-        {
-            return null;
-        }
-
-        if (!place.Equals(tab.Location))
-        {
-            return null;
-        }
-
-        if (!AssemblyListing.IsListed(appState.Assemblies, node.Root.Assembly))
-        {
-            return null;
-        }
-
-        return node;
-    }
-
-    private static void ShowHistoryPlace(AppState appState, NodePath place, ViewPosition? position, Resolution<BrowseNode> resolved,
-        TabDestination destination)
-    {
-        resolved.Switch((appState, place, position, destination),
-            static (s, found) => ShowNodeIn(s.appState, s.destination, found.Value, s.position),
-            static (s, _) => ReportHistoryPlaceGone(s.appState, s.place, null),
-            static (s, failed) => ReportHistoryPlaceGone(s.appState, s.place, failed.Error),
-            static (_, _) => { });
-    }
-
-    private static void ReportHistoryPlaceGone(AppState appState, NodePath place, Exception? error)
-    {
-        Errors.Report(appState, new AppProblem.HistoryPlaceGone(place, error));
-    }
-
-    /// <summary>Brings the tab showing <paramref name="diagram"/> to the front, dropping what was being
-    /// navigated to meanwhile.</summary>
-    private static void BringDiagramToFront(AppState appState, TypeDiagram diagram)
-    {
-        appState.Intent.Begin();
-        var tab = FindTabShowing(appState, diagram);
-        if (tab is null)
-        {
-            return;
-        }
-
-        Tabs.MakeActive(appState.Tabs, tab);
-        appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
+        return appState.GoToHistoryEntryHandler.HandleAsync(appState, appState.History.CurrentIndex + 1, ct);
     }
 
     internal static DocumentTab? FindTabShowing(AppState appState, TypeDiagram diagram)
@@ -448,11 +190,6 @@ public static class Navigation
             }
         }
         return null;
-    }
-
-    internal static void ReportUnresolvedReference(AppState appState, CodeReference reference, Exception? error)
-    {
-        Errors.Report(appState, new AppProblem.Unresolved(reference, error));
     }
 
     /// <summary>Records where the active tab's view is in the history entry it shows, before it shows
@@ -525,7 +262,7 @@ public static class Navigation
     }
 
     /// <summary>The open tab <paramref name="destination"/> leads to now; null when it calls for a new one.</summary>
-    private static DocumentTab? FindTab(AppState appState, TabDestination destination)
+    internal static DocumentTab? FindTab(AppState appState, TabDestination destination)
     {
         if (destination.InNewTab)
         {

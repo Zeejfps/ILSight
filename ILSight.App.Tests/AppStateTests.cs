@@ -279,7 +279,7 @@ public sealed class AppStateTests
 
         RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
         d.Settle();
-        GoBack(d.AppState);
+        d.Start(GoBackAsync);
         d.Settle();
 
         var shown = d.AppState.Tabs.Active!.Node!;
@@ -301,7 +301,7 @@ public sealed class AppStateTests
         var tab = d.AppState.Tabs.Active!;
         var document = tab.Document;
 
-        GoBack(d.AppState);
+        d.Start(GoBackAsync);
         d.NextFrame();
 
         var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;
@@ -320,9 +320,9 @@ public sealed class AppStateTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
         var farewell = d.Fixture("Farewell");
 
-        Navigate(d.AppState, reference, inNewTab: false);
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
         ShowNode(d.AppState, farewell);
-        Navigate(d.AppState, reference, inNewTab: true);
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: true, ct));
         ActivateTab(d.Ui, d.AppState.Tabs.Open[0]);
         d.NextFrame();
         d.Settle();
@@ -340,7 +340,8 @@ public sealed class AppStateTests
         var document = d.AppState.Tabs.Active!.Document;
         var (line, column) = document.GetPosition("Name;");
 
-        Navigate(d.AppState, Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference), inNewTab: false);
+        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Tabs.Open);
@@ -384,7 +385,8 @@ public sealed class AppStateTests
 
         var document = d.AppState.Tabs.Active!.Document;
         var (line, column) = document.GetPosition("Length");
-        Navigate(d.AppState, Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference), inNewTab: true);
+        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: true, ct));
         d.Settle();
         Assert.Equal(2, d.AppState.Assemblies.Assemblies.Count);
         Searches.Update(search, d.AppState.Assemblies, 2, true);

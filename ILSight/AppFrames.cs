@@ -274,10 +274,10 @@ internal static partial class AppFrames
     }
 
     /// <summary>Opens the active list, then <paramref name="files"/>, once the app is running.</summary>
-    internal static void OpenStartupAssemblies(AppState appState, FilesToOpen files)
+    internal static Task OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
     {
         RestoreActiveAssemblyList(appState);
-        OpenRequestedFiles(appState, files);
+        return OpenRequestedFilesAsync(appState, files, ct);
     }
 
     private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)

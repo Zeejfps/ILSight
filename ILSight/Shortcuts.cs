@@ -85,8 +85,8 @@ internal static class Shortcuts
     [
         new(Search, static (ui, _) => OpenSearch(ui.State), WhileTyping: true),
         new(OmnibarSearch, static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping: true),
-        new(Back, static (ui, _) => Commands.Later(ui.State, static a => GoBack(a)), WhileTyping: true),
-        new(Forward, static (ui, _) => Commands.Later(ui.State, static a => GoForward(a)), WhileTyping: true),
+        new(Back, static (ui, _) => Commands.Start(ui.State, nameof(GoBackAsync), static (a, ct) => GoBackAsync(a, ct)), WhileTyping: true),
+        new(Forward, static (ui, _) => Commands.Start(ui.State, nameof(GoForwardAsync), static (a, ct) => GoForwardAsync(a, ct)), WhileTyping: true),
         new(Open, static (ui, _) => MainMenuView.OpenFile(ui)),
         new(Settings, static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping: true),
         new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language)),
@@ -104,12 +104,12 @@ internal static class Shortcuts
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
         {
-            Commands.Later(ui.State, static a => GoBack(a));
+            Commands.Start(ui.State, nameof(GoBackAsync), static (a, ct) => GoBackAsync(a, ct));
         }
 
         if (input.WasPressed(PointerButton.Forward))
         {
-            Commands.Later(ui.State, static a => GoForward(a));
+            Commands.Start(ui.State, nameof(GoForwardAsync), static (a, ct) => GoForwardAsync(a, ct));
         }
 
         foreach (var binding in Bindings)

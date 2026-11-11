@@ -52,7 +52,8 @@ public sealed class RunArgumentsTests
     {
         var d = new AppStateDriver();
 
-        OpenRequestedFiles(d.AppState, CommandLines.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Arguments.Files);
+        var files = CommandLines.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Arguments.Files;
+        d.Start((a, ct) => OpenRequestedFilesAsync(a, files, ct));
         d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
         d.Settle();
 
@@ -65,7 +66,8 @@ public sealed class RunArgumentsTests
     {
         var d = new AppStateDriver();
 
-        OpenRequestedFiles(d.AppState, CommandLines.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Arguments.Files);
+        var files = CommandLines.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Arguments.Files;
+        d.Start((a, ct) => OpenRequestedFilesAsync(a, files, ct));
         d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
 
         Assert.Contains("T:Nowhere.Missing", Assert.Single(d.AppState.Errors.Entries).Words().Title);
@@ -218,7 +220,7 @@ public sealed class RunArgumentsTests
     {
         var arguments = CommandLines.Parse(args).Arguments;
         var d = AppStateDriver.Started(new SettingsLoadResult(settings, new SettingsProblem.None()), arguments);
-        AppFrames.OpenStartupAssemblies(d.AppState, arguments.Files);
+        d.Start((a, ct) => AppFrames.OpenStartupAssembliesAsync(a, arguments.Files, ct));
         d.RunUntil(() => AreListed(d.AppState, arguments.Files.Paths));
         d.Settle();
         return d;
