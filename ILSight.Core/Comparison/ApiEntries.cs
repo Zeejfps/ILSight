@@ -203,14 +203,11 @@ public static class ApiEntries
         var shown = compared.Entity;
         var shape = EntityText.SymbolShapeOf(shown);
         var accessibility = EntityText.Map(shown.Accessibility);
-        var change = GetChange(sides);
         return new ApiEntry.Entity
         {
             Shape = shape,
             Text = EntityText.Label(shown),
             Accessibility = accessibility,
-            Change = change,
-            HasChanges = HasChanges(change, children),
             Children = children,
             Sides = sides,
         };
@@ -218,54 +215,14 @@ public static class ApiEntries
 
     private static ApiEntry.Namespace CreateNamespace(string text, ApiPresence presence, IReadOnlyList<ApiEntry> children)
     {
-        var change = GetChange(presence);
         return new ApiEntry.Namespace
         {
             Shape = new SymbolShape.Namespace(),
             Text = text,
             Accessibility = NodeAccessibility.None,
-            Change = change,
-            HasChanges = HasChanges(change, children),
             Children = children,
             Presence = presence,
         };
-    }
-
-    private static bool HasChanges(ApiChange change, IReadOnlyList<ApiEntry> children)
-    {
-        return change != ApiChange.Unchanged || children.Any(static c => c.HasChanges);
-    }
-
-    private static ApiChange GetChange(ApiPresence presence)
-    {
-        return presence switch
-        {
-            ApiPresence.LeftOnly => ApiChange.Removed,
-            ApiPresence.RightOnly => ApiChange.Added,
-            ApiPresence.Both => ApiChange.Unchanged,
-            _ => throw new UnreachableException(),
-        };
-    }
-
-    private static ApiChange GetChange(ApiSides sides)
-    {
-        return sides switch
-        {
-            ApiSides.LeftOnly => ApiChange.Removed,
-            ApiSides.RightOnly => ApiChange.Added,
-            ApiSides.Both both => GetChange(both),
-            _ => throw new UnreachableException(),
-        };
-    }
-
-    private static ApiChange GetChange(ApiSides.Both sides)
-    {
-        if (sides.Left.Declaration != sides.Right.Declaration)
-        {
-            return ApiChange.Changed;
-        }
-
-        return ApiChange.Unchanged;
     }
 
     /// <summary>Compares the API of <paramref name="left"/> with that of <paramref name="right"/>, taking in

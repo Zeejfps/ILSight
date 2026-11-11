@@ -420,7 +420,7 @@ public static class Comparisons
 
     private static string DescribeDeclarations(ComparisonRows rows, ApiSides.Both sides)
     {
-        if (sides.Left.Declaration == sides.Right.Declaration)
+        if (!sides.IsDeclaredDifferently)
         {
             return sides.Right.Declaration;
         }

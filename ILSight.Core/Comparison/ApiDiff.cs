@@ -46,11 +46,26 @@ public abstract record ApiSides
     {
     }
 
-    public sealed record LeftOnly(ApiSide Left) : ApiSides;
+    /// <summary>How the type or member differs from the left assembly to the right one, as its sides say.</summary>
+    public abstract ApiChange Change { get; }
 
-    public sealed record RightOnly(ApiSide Right) : ApiSides;
+    public sealed record LeftOnly(ApiSide Left) : ApiSides
+    {
+        public override ApiChange Change => ApiChange.Removed;
+    }
 
-    public sealed record Both(ApiSide Left, ApiSide Right) : ApiSides;
+    public sealed record RightOnly(ApiSide Right) : ApiSides
+    {
+        public override ApiChange Change => ApiChange.Added;
+    }
+
+    public sealed record Both(ApiSide Left, ApiSide Right) : ApiSides
+    {
+        /// <summary>Whether the two assemblies declare it differently.</summary>
+        public bool IsDeclaredDifferently => Left.Declaration != Right.Declaration;
+
+        public override ApiChange Change => IsDeclaredDifferently ? ApiChange.Changed : ApiChange.Unchanged;
+    }
 }
 
 /// <summary>A namespace, type or member of either assembly compared, labelled as the tree labels it,
@@ -68,21 +83,44 @@ public abstract class ApiEntry
 
     public required NodeAccessibility Accessibility { get; init; }
 
-    public required ApiChange Change { get; init; }
+    /// <summary>How it differs from the left assembly to the right one, as the assemblies it is in say.</summary>
+    public abstract ApiChange Change { get; }
 
     /// <summary>Whether it, or anything it holds, differs.</summary>
-    public required bool HasChanges { get; init; }
+    public bool HasChanges => Change != ApiChange.Unchanged || _holdsChanges;
 
-    public required IReadOnlyList<ApiEntry> Children { get; init; }
+    /// <summary>Whether anything it holds differs, worked out once from <see cref="Children"/>, which the tree asks
+    /// of every row it shows.</summary>
+    private bool _holdsChanges;
+
+    public required IReadOnlyList<ApiEntry> Children
+    {
+        get;
+        init
+        {
+            field = [.. value];
+            _holdsChanges = field.Any(static c => c.HasChanges);
+        }
+    }
 
     public sealed class Namespace : ApiEntry
     {
         public required ApiPresence Presence { get; init; }
+
+        public override ApiChange Change => Presence switch
+        {
+            ApiPresence.LeftOnly => ApiChange.Removed,
+            ApiPresence.RightOnly => ApiChange.Added,
+            ApiPresence.Both => ApiChange.Unchanged,
+            _ => throw new UnreachableException(),
+        };
     }
 
     public sealed class Entity : ApiEntry
     {
         public required ApiSides Sides { get; init; }
+
+        public override ApiChange Change => Sides.Change;
     }
 }
 

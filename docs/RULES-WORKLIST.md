@@ -21,7 +21,7 @@ Done items are struck through with their commit.
 | ~~A3~~ (done) | R008, R009 | `BookmarkFile.Read/Write`, `Bookmarks` callers | `Read(path, out string? error)` / `string? Write(...)` → a result union; entry problems become typed cases `ProblemTexts` translates (today hard-coded English). | S / low; BookmarkTests |
 | ~~C2~~ (done) | R008 | `SearchQueries.FindLiteral`, `AssemblySearch` | `object?` literal with `null` meaning "string" → `SearchLiteral` union. An invalid `/regex/` silently finds nothing → record `InvalidRegex(message)` so the UI can say why. | S / low; SearchTests |
 | C16 | R004 | `OnOffChanges.IOnOffChoice` | Interface with one implementation → use `DecompilerToggle` directly. | S / low |
-| C1 | R008 | `ApiDiff`, `ApiEntries` | `ApiEntry.Change` / `HasChanges` stored beside the `Sides` / `Presence` that determine them → computed. | S / low; ApiDiffTests |
+| ~~C1~~ (done) | R008 | `ApiDiff`, `ApiEntries` | `ApiEntry.Change` / `HasChanges` stored beside the `Sides` / `Presence` that determine them → computed. | S / low; ApiDiffTests |
 | ~~A1~~ (done) | R004 | `ExportQueue`, `Exports` queue functions | Public queue state changed by static functions; callers pair Enter/Leave by hand → class with private state; `Enter` returns a turn that leaves itself. | S / low; ExportTests |
 | C15 | R004 | `NuGetFeed`, `AssemblyExport`, `NodeDecompiler` | Write-temp-then-move written three times → one `AtomicFile.Write`. | S / low |
 | Z12 | R004 | `SearchPanelView.Toggle` | The search-kind selection rule lives in a view, untestable → a concept method + test. | S / low |

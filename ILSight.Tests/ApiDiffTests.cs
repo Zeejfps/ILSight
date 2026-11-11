@@ -205,6 +205,64 @@ public sealed class ApiDiffTests
     }
 
     [Fact]
+    public void The_change_of_a_type_or_member_follows_from_its_sides_in_every_case()
+    {
+        var describe = Both(Public(SampleNamespace, "Account", "Describe() : string"));
+
+        Assert.Equal(ApiChange.Removed, new ApiSides.LeftOnly(describe.Left).Change);
+        Assert.Equal(ApiChange.Added, new ApiSides.RightOnly(describe.Right).Change);
+        Assert.Equal(ApiChange.Changed, new ApiSides.Both(describe.Left, describe.Right).Change);
+        Assert.Equal(ApiChange.Unchanged, new ApiSides.Both(describe.Right, describe.Right).Change);
+        Assert.Equal(ApiChange.Added, Entity(new ApiSides.RightOnly(describe.Right)).Change);
+    }
+
+    [Theory]
+    [InlineData(ApiPresence.LeftOnly, ApiChange.Removed)]
+    [InlineData(ApiPresence.RightOnly, ApiChange.Added)]
+    [InlineData(ApiPresence.Both, ApiChange.Unchanged)]
+    public void The_change_of_a_namespace_follows_from_where_it_is(ApiPresence presence, ApiChange expected)
+    {
+        Assert.Equal(expected, Namespace(presence, []).Change);
+    }
+
+    [Fact]
+    public void An_unchanged_entry_has_changes_only_when_something_it_holds_does()
+    {
+        var deposit = Both(Public(SampleNamespace, "Account", "Deposit(decimal) : void"));
+        var unchanged = Entity(deposit);
+        var added = Entity(new ApiSides.RightOnly(deposit.Right));
+
+        Assert.False(Namespace(ApiPresence.Both, [unchanged]).HasChanges);
+        Assert.True(Namespace(ApiPresence.Both, [unchanged, added]).HasChanges);
+        Assert.True(Namespace(ApiPresence.Both, [Namespace(ApiPresence.Both, [added])]).HasChanges);
+        Assert.True(Namespace(ApiPresence.LeftOnly, []).HasChanges);
+    }
+
+    private static ApiEntry.Entity Entity(ApiSides sides)
+    {
+        return new ApiEntry.Entity
+        {
+            Shape = new SymbolShape.Member(MemberShape.Method),
+            Text = "Deposit(decimal) : void",
+            Accessibility = NodeAccessibility.Public,
+            Children = [],
+            Sides = sides,
+        };
+    }
+
+    private static ApiEntry.Namespace Namespace(ApiPresence presence, IReadOnlyList<ApiEntry> children)
+    {
+        return new ApiEntry.Namespace
+        {
+            Shape = new SymbolShape.Namespace(),
+            Text = SampleNamespace,
+            Accessibility = NodeAccessibility.None,
+            Children = children,
+            Presence = presence,
+        };
+    }
+
+    [Fact]
     public void An_added_or_removed_type_counts_once_without_its_members()
     {
         var diff = s_public.Value;
