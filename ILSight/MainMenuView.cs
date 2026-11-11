@@ -310,7 +310,7 @@ internal static class MainMenuView
             return;
         }
 
-        var names = ThemeCatalogs.ListNames(catalog, t.Culture);
+        var names = catalog.ListNames(t.Culture);
         for (var i = 0; i < catalog.Ids.Count; i++)
         {
             var id = catalog.Ids[i];

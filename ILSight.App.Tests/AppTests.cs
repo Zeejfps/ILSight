@@ -694,7 +694,7 @@ public sealed class AppTests
         app.Run();
 
         Assert.Equal("dracula", app.AppState.Theme.Text);
-        Assert.Equal(ThemeCatalogs.GetTheme(app.AppState.Themes, ThemeId<ThemeFile>.Of("dracula")).Ui.Background, app.Frames.WindowBackground);
+        Assert.Equal(app.AppState.Themes.GetTheme(ThemeId<ThemeFile>.Of("dracula")).Ui.Background, app.Frames.WindowBackground);
     }
 
     [Fact]

@@ -4,14 +4,25 @@ namespace ILSight;
 
 /// <summary>The themes of one kind, color or icon, by id: the built-in ones, then the user's. Each is
 /// resolved over the themes it extends once, when the catalog loads; one that cannot be resolved falls
-/// back to its parent, else to the built-in theme <see cref="ThemeCatalog{TFile, TContents, TTheme}.FindFallbackId"/> names. Keeps what was wrong
+/// back to its parent, else to the built-in theme <see cref="FindFallbackId"/> names. Keeps what was wrong
 /// in each file.</summary>
 public sealed class ThemeCatalog<TFile, TContents, TTheme>
     where TFile : class, IThemeFile<TFile, TContents>
     where TContents : class
     where TTheme : class
 {
-    /// <summary>The built-in themes in the order a menu lists them, which must include <see cref="ThemeCatalog{TFile, TContents, TTheme}.DefaultId"/>.</summary>
+    private const string ChainArrow = " → ";
+
+    private readonly Dictionary<ThemeId<TFile>, TFile> _files = new();
+    private readonly Dictionary<ThemeId<TFile>, TTheme> _themes = new();
+    private readonly Dictionary<ThemeId<TFile>, ThemeId<TFile>> _shownIds = new();
+    private readonly HashSet<ThemeId<TFile>> _resolving = new();
+    private readonly List<ThemeId<TFile>> _ids = new();
+    private readonly List<ThemeError> _errors = new();
+    private CultureInfo? _namesCulture;
+    private string[] _names = [];
+
+    /// <summary>The built-in themes in the order a menu lists them, which must include <see cref="DefaultId"/>.</summary>
     public required IReadOnlyList<TFile> BuiltIns { get; init; }
 
     /// <summary>The theme <c>file</c> and the themes it extends, <c>chain</c>, each with what it sets, the one extending
@@ -21,144 +32,112 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
     /// <summary>Gives the built-in theme a file shows when neither it nor its parent resolves.</summary>
     public required Func<TFile, ThemeId<TFile>> FindFallbackId { get; init; }
 
-    public readonly Dictionary<ThemeId<TFile>, TFile> Files = new();
-    public readonly Dictionary<ThemeId<TFile>, TTheme> Themes = new();
-    public readonly Dictionary<ThemeId<TFile>, ThemeId<TFile>> ShownIds = new();
-    public readonly HashSet<ThemeId<TFile>> Resolving = new();
-    /// <summary>Every theme's id, built-in ones first, in the order a menu lists them.</summary>
-    public readonly List<ThemeId<TFile>> Ids = new();
-    /// <summary>What was wrong in the theme files the last load read, each told once.</summary>
-    public readonly List<ThemeError> Errors = new();
-    public CultureInfo? NamesCulture;
-    public string[] Names = [];
-
     /// <summary>The built-in theme an id no theme has shows.</summary>
     public required ThemeId<TFile> DefaultId { get; init; }
 
-    /// <summary>Changes each time the themes are loaded, so a menu of them knows its items may have moved.</summary>
-    public int Revision { get; set; }
-}
+    /// <summary>Every theme's id, built-in ones first, in the order a menu lists them.</summary>
+    public IReadOnlyList<ThemeId<TFile>> Ids => _ids;
 
-/// <summary>Loading themes, resolving each over the ones it extends, and finding them.</summary>
-public static class ThemeCatalogs
-{
-    private const string ChainArrow = " → ";
+    /// <summary>What was wrong in the theme files the last load read, each told once.</summary>
+    public IReadOnlyList<ThemeError> Errors => _errors;
+
+    /// <summary>Changes each time the themes are loaded, so a menu of them knows its items may have moved.</summary>
+    public int Revision { get; private set; }
 
     /// <summary>Takes <paramref name="userThemes"/> in place of the user themes held before, and resolves
     /// every theme again. A user theme whose id is taken is left out.</summary>
-    public static void ReplaceUserThemes<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, IReadOnlyList<TFile> userThemes)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    public void ReplaceUserThemes(IReadOnlyList<TFile> userThemes)
     {
-        catalog.Revision++;
-        ClearCatalog(catalog);
-        foreach (var file in catalog.BuiltIns)
+        Revision++;
+        Clear();
+        foreach (var file in BuiltIns)
         {
-            AddThemeFile(catalog, file);
+            AddThemeFile(file);
         }
 
         foreach (var file in userThemes)
         {
-            AddUserThemeFile(catalog, file);
+            AddUserThemeFile(file);
         }
 
-        foreach (var id in catalog.Ids)
+        foreach (var id in _ids)
         {
-            ResolveTheme(catalog, id);
+            ResolveTheme(id);
         }
     }
 
-    private static void ClearCatalog<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private void Clear()
     {
-        catalog.Files.Clear();
-        catalog.Themes.Clear();
-        catalog.ShownIds.Clear();
-        catalog.Ids.Clear();
-        catalog.Errors.Clear();
-        catalog.NamesCulture = null;
+        _files.Clear();
+        _themes.Clear();
+        _shownIds.Clear();
+        _ids.Clear();
+        _errors.Clear();
+        _namesCulture = null;
     }
 
-    private static void AddUserThemeFile<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private void AddUserThemeFile(TFile file)
     {
-        if (catalog.Files.ContainsKey(file.Id))
+        if (_files.ContainsKey(file.Id))
         {
-            AddCatalogError(catalog, new ThemeError(file.File, 0, ThemeProblem.IdTaken, file.Id.Text));
+            AddError(new ThemeError(file.File, 0, ThemeProblem.IdTaken, file.Id.Text));
             return;
         }
-        AddThemeFile(catalog, file);
+        AddThemeFile(file);
     }
 
-    private static void AddThemeFile<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private void AddThemeFile(TFile file)
     {
-        catalog.Files[file.Id] = file;
-        catalog.Ids.Add(file.Id);
+        _files[file.Id] = file;
+        _ids.Add(file.Id);
         foreach (var error in file.Errors)
         {
-            AddCatalogError(catalog, error);
+            AddError(error);
         }
     }
 
-    /// <summary>The theme <paramref name="id"/>, which must be one of <see cref="ThemeCatalog{TFile, TContents, TTheme}.Ids"/>, resolved the
+    /// <summary>The theme <paramref name="id"/>, which must be one of <see cref="Ids"/>, resolved the
     /// first time it is asked for.</summary>
-    public static TTheme ResolveTheme<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    public TTheme ResolveTheme(ThemeId<TFile> id)
     {
-        if (catalog.Themes.TryGetValue(id, out var resolved))
+        if (_themes.TryGetValue(id, out var resolved))
         {
             return resolved;
         }
 
-        catalog.Resolving.Add(id);
-        var file = catalog.Files[id];
-        var theme = BuildChain(catalog, file);
+        _resolving.Add(id);
+        var file = _files[id];
+        var theme = BuildChain(file);
         if (theme is not null)
         {
-            catalog.ShownIds[id] = id;
+            _shownIds[id] = id;
         }
         else
         {
-            theme = FallBackFrom(catalog, file);
+            theme = FallBackFrom(file);
         }
 
-        catalog.Resolving.Remove(id);
-        catalog.Themes[id] = theme;
+        _resolving.Remove(id);
+        _themes[id] = theme;
         return theme;
     }
 
-    private static TTheme? BuildChain<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private TTheme? BuildChain(TFile file)
     {
-        var chain = ListThemeChain(catalog, file);
+        var chain = ListThemeChain(file);
         if (chain is null)
         {
             return null;
         }
 
-        return catalog.Build(catalog, file, chain);
+        return Build(this, file, chain);
     }
 
     /// <summary><paramref name="file"/> and the themes it extends, each with what it sets, the one extending
     /// no other first; null when one could not be read or the chain breaks off or goes in a circle.</summary>
-    private static List<(TFile File, TContents Contents)>? ListThemeChain<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private List<(TFile File, TContents Contents)>? ListThemeChain(TFile file)
     {
-        var files = ListThemeChainFiles(catalog, file);
+        var files = ListThemeChainFiles(file);
         if (files is null)
         {
             return null;
@@ -180,17 +159,14 @@ public static class ThemeCatalogs
 
     /// <summary><paramref name="file"/> and the themes it extends, the one extending no other first; null
     /// when the chain breaks off or goes in a circle.</summary>
-    private static List<TFile>? ListThemeChainFiles<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private List<TFile>? ListThemeChainFiles(TFile file)
     {
         var chain = new List<TFile> { file };
         var extends = file.Extends;
         var current = file;
         while (extends is not null)
         {
-            var parent = FindParent(catalog, current, extends, chain);
+            var parent = FindParent(current, extends, chain);
             if (parent is null)
             {
                 return null;
@@ -205,19 +181,16 @@ public static class ThemeCatalogs
 
     /// <summary>The theme <paramref name="child"/> extends as <paramref name="extends"/> says, or null after
     /// reporting that there is none or that it is already in <paramref name="chain"/>.</summary>
-    private static TFile? FindParent<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile child, ThemeParent<TFile> extends, List<TFile> chain)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private TFile? FindParent(TFile child, ThemeParent<TFile> extends, List<TFile> chain)
     {
-        if (!catalog.Files.TryGetValue(extends.Id, out var parent))
+        if (!_files.TryGetValue(extends.Id, out var parent))
         {
-            AddCatalogError(catalog, new ThemeError(child.File, extends.Line, ThemeProblem.UnknownParent, extends.Id.Text));
+            AddError(new ThemeError(child.File, extends.Line, ThemeProblem.UnknownParent, extends.Id.Text));
             return null;
         }
         if (chain.Contains(parent))
         {
-            AddCatalogError(catalog, new ThemeError(child.File, extends.Line, ThemeProblem.ExtendsCycle, Detail: DescribeCycle<TFile, TContents, TTheme>(chain, parent)));
+            AddError(new ThemeError(child.File, extends.Line, ThemeProblem.ExtendsCycle, Detail: DescribeCycle(chain, parent)));
             return null;
         }
         return parent;
@@ -225,10 +198,7 @@ public static class ThemeCatalogs
 
     /// <summary>The circle <paramref name="chain"/> closes by extending <paramref name="parent"/>, from
     /// the theme being resolved on: <c>a → b → a</c>.</summary>
-    private static string DescribeCycle<TFile, TContents, TTheme>(List<TFile> chain, TFile parent)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private static string DescribeCycle(List<TFile> chain, TFile parent)
     {
         var ids = chain
             .Select(static f => f.Id.Text)
@@ -238,31 +208,25 @@ public static class ThemeCatalogs
     }
 
     /// <summary>What <paramref name="file"/> shows when it cannot be resolved: its parent as that resolves,
-    /// else the built-in theme <see cref="ThemeCatalog{TFile, TContents, TTheme}.FindFallbackId"/> names.</summary>
-    private static TTheme FallBackFrom<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    /// else the built-in theme <see cref="FindFallbackId"/> names.</summary>
+    private TTheme FallBackFrom(TFile file)
     {
-        var target = GetFallBack(catalog, file);
-        var theme = ResolveTheme(catalog, target);
-        catalog.ShownIds[file.Id] = catalog.ShownIds[target];
+        var target = GetFallBack(file);
+        var theme = ResolveTheme(target);
+        _shownIds[file.Id] = _shownIds[target];
         return theme;
     }
 
-    private static ThemeId<TFile> GetFallBack<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private ThemeId<TFile> GetFallBack(TFile file)
     {
         var extends = file.Extends;
-        if (extends is not null && CanFallBackTo(catalog, extends.Id))
+        if (extends is not null && CanFallBackTo(extends.Id))
         {
             return extends.Id;
         }
 
-        var builtIn = catalog.FindFallbackId(file);
-        if (catalog.Resolving.Contains(builtIn))
+        var builtIn = FindFallbackId(file);
+        if (_resolving.Contains(builtIn))
         {
             throw new InvalidOperationException($"The built-in theme '{builtIn}' cannot be resolved.");
         }
@@ -270,27 +234,21 @@ public static class ThemeCatalogs
         return builtIn;
     }
 
-    private static bool CanFallBackTo<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> parent)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    private bool CanFallBackTo(ThemeId<TFile> parent)
     {
-        if (!catalog.Files.ContainsKey(parent))
+        if (!_files.ContainsKey(parent))
         {
             return false;
         }
 
-        return !catalog.Resolving.Contains(parent);
+        return !_resolving.Contains(parent);
     }
 
     /// <summary>What the built-in theme <paramref name="id"/> sets; throws when it could not be read, as a
     /// built-in theme always can.</summary>
-    public static TContents GetBuiltInContents<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    public TContents GetBuiltInContents(ThemeId<TFile> id)
     {
-        var contents = catalog.Files[id].Contents;
+        var contents = _files[id].Contents;
         if (contents is null)
         {
             throw new InvalidOperationException($"The built-in theme '{id}' cannot be read.");
@@ -299,78 +257,60 @@ public static class ThemeCatalogs
         return contents;
     }
 
-    public static void AddCatalogErrors<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, IEnumerable<ThemeError> errors)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    public void AddErrors(IEnumerable<ThemeError> errors)
     {
         foreach (var error in errors)
         {
-            AddCatalogError(catalog, error);
+            AddError(error);
         }
     }
 
-    public static void AddCatalogError<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeError error)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    public void AddError(ThemeError error)
     {
-        if (catalog.Errors.Contains(error))
+        if (_errors.Contains(error))
         {
             return;
         }
 
-        catalog.Errors.Add(error);
+        _errors.Add(error);
     }
 
-    /// <summary>The theme <paramref name="id"/> as resolved, or the built-in <see cref="ThemeCatalog{TFile, TContents, TTheme}.DefaultId"/> when
+    /// <summary>The theme <paramref name="id"/> as resolved, or the built-in <see cref="DefaultId"/> when
     /// there is none with that id.</summary>
-    public static TTheme GetTheme<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    public TTheme GetTheme(ThemeId<TFile> id)
     {
-        if (catalog.Themes.TryGetValue(id, out var theme))
+        if (_themes.TryGetValue(id, out var theme))
         {
             return theme;
         }
 
-        return catalog.Themes[catalog.DefaultId];
+        return _themes[DefaultId];
     }
 
     /// <summary>The id of the theme <see cref="GetTheme"/> shows for <paramref name="id"/>: the id itself when
     /// it resolves, else the theme it falls back to.</summary>
-    public static ThemeId<TFile> GetShownId<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    public ThemeId<TFile> GetShownId(ThemeId<TFile> id)
     {
-        if (catalog.ShownIds.TryGetValue(id, out var shown))
+        if (_shownIds.TryGetValue(id, out var shown))
         {
             return shown;
         }
 
-        return catalog.ShownIds[catalog.DefaultId];
+        return _shownIds[DefaultId];
     }
 
     /// <summary>The name of the theme <paramref name="id"/> in <paramref name="culture"/>'s language.</summary>
-    public static string GetThemeName<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id, CultureInfo culture)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    public string GetThemeName(ThemeId<TFile> id, CultureInfo culture)
     {
-        return ThemeNames.GetName(catalog.Files[id].Name, culture);
+        return ThemeNames.GetName(_files[id].Name, culture);
     }
 
-    /// <summary>Where <paramref name="id"/> is in <see cref="ThemeCatalog{TFile, TContents, TTheme}.Ids"/>, or -1. Allocates nothing.</summary>
-    public static int GetThemeIndex<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    /// <summary>Where <paramref name="id"/> is in <see cref="Ids"/>, or -1. Allocates nothing.</summary>
+    public int GetThemeIndex(ThemeId<TFile> id)
     {
-        for (var i = 0; i < catalog.Ids.Count; i++)
+        for (var i = 0; i < _ids.Count; i++)
         {
-            if (catalog.Ids[i].Equals(id))
+            if (_ids[i].Equals(id))
             {
                 return i;
             }
@@ -379,21 +319,18 @@ public static class ThemeCatalogs
     }
 
     /// <summary>Every theme's name in <paramref name="culture"/>'s language, in the order of
-    /// <see cref="ThemeCatalog{TFile, TContents, TTheme}.Ids"/>. Kept until the language or the themes change.</summary>
-    public static string[] ListNames<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, CultureInfo culture)
-        where TFile : class, IThemeFile<TFile, TContents>
-        where TContents : class
-        where TTheme : class
+    /// <see cref="Ids"/>. Kept until the language or the themes change.</summary>
+    public string[] ListNames(CultureInfo culture)
     {
-        if (culture.Equals(catalog.NamesCulture))
+        if (culture.Equals(_namesCulture))
         {
-            return catalog.Names;
+            return _names;
         }
 
-        catalog.Names = catalog.Ids
-            .Select(id => ThemeNames.GetName(catalog.Files[id].Name, culture))
+        _names = _ids
+            .Select(id => ThemeNames.GetName(_files[id].Name, culture))
             .ToArray();
-        catalog.NamesCulture = culture;
-        return catalog.Names;
+        _namesCulture = culture;
+        return _names;
     }
 }

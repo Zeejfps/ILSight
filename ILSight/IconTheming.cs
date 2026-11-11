@@ -30,7 +30,7 @@ public static class IconTheming
             Build = static (themes, file, chain) => BuildChainTheme(themes, file, chain),
             FindFallbackId = static _ => IconTheming.ReferenceId,
         };
-        ThemeCatalogs.ReplaceUserThemes(catalog, []);
+        catalog.ReplaceUserThemes([]);
         return catalog;
     }
 
@@ -41,7 +41,7 @@ public static class IconTheming
         var isReference = IsReference(file);
         if (!isReference)
         {
-            Theming.AddFonts(merged, ThemeCatalogs.GetBuiltInContents(catalog, IconTheming.ReferenceId));
+            Theming.AddFonts(merged, catalog.GetBuiltInContents(IconTheming.ReferenceId));
         }
 
         foreach (var link in chain)
@@ -49,10 +49,10 @@ public static class IconTheming
             Theming.AddContents(merged, link.Contents);
         }
 
-        var fallback = isReference ? null : ThemeCatalogs.ResolveTheme(catalog, IconTheming.ReferenceId);
+        var fallback = isReference ? null : catalog.ResolveTheme(IconTheming.ReferenceId);
         var errors = new List<ThemeError>();
         var theme = Theming.BuildTheme(merged, fallback, errors);
-        ThemeCatalogs.AddCatalogErrors(catalog, errors);
+        catalog.AddErrors(errors);
         return theme;
     }
 
@@ -95,7 +95,7 @@ public static class IconTheming
     private static void RefreshUserIconThemes(AppState appState, IReadOnlyList<ThemeError> known)
     {
         var files = ReadUserIconThemes(appState.SettingsPlace.IconThemesFolder);
-        ThemeCatalogs.ReplaceUserThemes(appState.IconThemes, files);
+        appState.IconThemes.ReplaceUserThemes(files);
         ReportNewErrors(appState, appState.IconThemes.Errors, known, ThemeKind.Icon);
     }
 
@@ -115,7 +115,7 @@ public static class IconTheming
     /// the chosen one's file is missing. The choice is kept, so the icon theme comes back with its file.</summary>
     public static IconTheme ResolveIconTheme(AppState appState)
     {
-        return ThemeCatalogs.GetTheme(appState.IconThemes, appState.IconTheme);
+        return appState.IconThemes.GetTheme(appState.IconTheme);
     }
 
     /// <summary>The user's icon themes folder, made with the icon theme schema in it when missing, for the
@@ -151,10 +151,10 @@ public static class IconTheming
         }
 
         var themes = appState.IconThemes;
-        var parent = ThemeCatalogs.GetShownId(themes, appState.IconTheme);
+        var parent = themes.GetShownId(appState.IconTheme);
         var id = GetFreeCustomId(parent, candidate => IsTaken(themes, folder, candidate));
         var path = Path.Combine(folder, id.Text + IconThemeFile.Extension);
-        var text = IconThemeDraft.Compose(nameOf(parent), parent, ThemeCatalogs.GetTheme(themes, parent));
+        var text = IconThemeDraft.Compose(nameOf(parent), parent, themes.GetTheme(parent));
         if (!TryWriteNewFile(appState, path, text, ThemeKind.Icon))
         {
             return null;

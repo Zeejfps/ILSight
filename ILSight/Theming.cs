@@ -62,7 +62,7 @@ public static class Theming
     private static void RefreshUserThemes(AppState appState, IReadOnlyList<ThemeError> known)
     {
         var files = ReadUserThemes(appState.SettingsPlace.ThemesFolder);
-        ThemeCatalogs.ReplaceUserThemes(appState.Themes, files);
+        appState.Themes.ReplaceUserThemes(files);
         ReportNewErrors(appState, appState.Themes.Errors, known, ThemeKind.Color);
     }
 
@@ -134,7 +134,7 @@ public static class Theming
     /// the chosen one's file is missing. The choice is kept, so the theme comes back with its file.</summary>
     public static AppTheme ResolveTheme(AppState appState)
     {
-        return ThemeCatalogs.GetTheme(appState.Themes, appState.Theme);
+        return appState.Themes.GetTheme(appState.Theme);
     }
 
     /// <summary>The user's themes folder, made with the theme schema in it when missing, for the screen to
@@ -171,7 +171,7 @@ public static class Theming
             Build = static (themes, file, chain) => BuildChainTheme(themes, file, chain),
             FindFallbackId = static file => GetFallbackId(file),
         };
-        ThemeCatalogs.ReplaceUserThemes(catalog, []);
+        catalog.ReplaceUserThemes([]);
         return catalog;
     }
 
@@ -195,7 +195,7 @@ public static class Theming
 
         var errors = new List<ThemeError>();
         var theme = BuildTheme(merged, file.File, errors);
-        ThemeCatalogs.AddCatalogErrors(catalog, errors);
+        catalog.AddErrors(errors);
         return theme;
     }
 
@@ -205,10 +205,10 @@ public static class Theming
     {
         if (root.Type is null)
         {
-            ThemeCatalogs.AddCatalogError(catalog, new ThemeError(root.File, 0, ThemeProblem.NoType));
+            catalog.AddError(new ThemeError(root.File, 0, ThemeProblem.NoType));
             return null;
         }
-        return ThemeCatalogs.GetBuiltInContents(catalog, GetIdOfType(root.Type.Value));
+        return catalog.GetBuiltInContents(GetIdOfType(root.Type.Value));
     }
 
     private static ThemeId<ThemeFile> GetFallbackId(ThemeFile file)
@@ -281,10 +281,10 @@ public static class Theming
         }
 
         var themes = appState.Themes;
-        var parent = ThemeCatalogs.GetShownId(themes, appState.Theme);
+        var parent = themes.GetShownId(appState.Theme);
         var id = GetFreeCustomId(parent, candidate => IsTaken(themes, folder, candidate));
         var path = Path.Combine(folder, id.Text + ThemeFile.Extension);
-        var text = ThemeDraft.Compose(nameOf(parent), parent, ThemeCatalogs.GetTheme(themes, parent));
+        var text = ThemeDraft.Compose(nameOf(parent), parent, themes.GetTheme(parent));
         if (!TryWriteNewFile(appState, path, text, ThemeKind.Color))
         {
             return null;
@@ -317,7 +317,7 @@ public static class Theming
         where TContents : class
         where TTheme : class
     {
-        var index = ThemeCatalogs.GetThemeIndex(themes, id);
+        var index = themes.GetThemeIndex(id);
         if (index >= 0)
         {
             return true;
