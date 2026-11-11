@@ -1,52 +1,12 @@
 using ILSight.Core;
-using ILSight.Localization;
 
 namespace ILSight;
 
-/// <summary>Choosing the theme, the icon theme, the interface language and how code is decompiled. The screen decompiles
-/// again what it shows when the language or the options change.</summary>
+/// <summary>Choosing how C# is decompiled, each choice computing new options from those chosen before. The screen
+/// decompiles again what it shows when the language or the options change. The theme, the icon theme, the interface
+/// language, what API shows and the decompilation language are chosen by assigning them on the app state.</summary>
 public static class Preferences
 {
-    public static void SetTheme(AppState appState, ThemeId<ThemeFile> theme)
-    {
-        appState.Theme = theme;
-    }
-
-    public static void SetIconTheme(AppState appState, ThemeId<IconThemeFile> iconTheme)
-    {
-        appState.IconTheme = iconTheme;
-    }
-
-    public static void SetLocale(AppState appState, Locale locale)
-    {
-        if (locale == appState.Locale)
-        {
-            return;
-        }
-
-        appState.Locale = locale;
-    }
-
-    public static void SetApiVisibility(AppState appState, ApiVisibility visibility)
-    {
-        if (visibility == appState.ApiVisibility)
-        {
-            return;
-        }
-
-        appState.ApiVisibility = visibility;
-    }
-
-    public static void SetLanguage(AppState appState, DecompilationLanguage language)
-    {
-        if (language == appState.Language)
-        {
-            return;
-        }
-
-        appState.Language = language;
-    }
-
     public static void SetLanguageVersion(AppState appState, CSharpVersion version)
     {
         var options = appState.DecompilerOptions with { LanguageVersion = version };
@@ -73,6 +33,8 @@ public static class Preferences
         SetDecompilerOptions(appState, options);
     }
 
+    /// <summary>Keeps the options chosen before when <paramref name="options"/> equal them: the screen takes new
+    /// options by reference (<see cref="ShownChanges.TakeDecompilation"/>), so equal new ones would count as a change.</summary>
     private static void SetDecompilerOptions(AppState appState, DecompilerOptions options)
     {
         if (options == appState.DecompilerOptions)

@@ -4,7 +4,6 @@ using ILSight.Core;
 using ILSight.Localization;
 using static ILSight.AssemblyLists;
 using static ILSight.Bookmarks;
-using static ILSight.Preferences;
 using static ILSight.Settings;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
@@ -77,10 +76,10 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         var bookmarks = d.AppState.Bookmarks;
 
-        SetLanguage(d.AppState, DecompilationLanguage.IL);
+        d.AppState.Language = DecompilationLanguage.IL;
         d.Settle();
         var il = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node!)).Key].Text;
-        SetLanguage(d.AppState, DecompilationLanguage.CSharp);
+        d.AppState.Language = DecompilationLanguage.CSharp;
         d.Show(d.Fixture("Outline").Children.Single(c => c.Text.StartsWith("Third()")));
         var own = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node!)).Key].Text;
 
@@ -97,7 +96,7 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, brace, Names.Bookmark);
         var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
 
-        SetLanguage(d.AppState, DecompilationLanguage.IL);
+        d.AppState.Language = DecompilationLanguage.IL;
         d.Settle();
 
         Assert.Null(bookmark.Anchor);
@@ -244,7 +243,7 @@ public sealed class BookmarkTests : IDisposable
         var app = new AppDriver(height: 500f);
         var (d, tab, line) = OutlineAt("return First();", app.Driver);
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
-        OpenBookmarks(d.Ui);
+        OpenPanel(d.Ui, DockView.Bookmarks);
         app.Run(frames);
         return (app, d, tab, line);
     }
@@ -294,7 +293,7 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
-        OpenBookmarks(d.Ui);
+        OpenPanel(d.Ui, DockView.Bookmarks);
         app.Run(3);
         var bookmarks = d.AppState.Bookmarks;
         var panel = app.Ui.BookmarksPanel;
@@ -317,7 +316,7 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
-        OpenBookmarks(d.Ui);
+        OpenPanel(d.Ui, DockView.Bookmarks);
         app.Run(3);
         var bookmarks = d.AppState.Bookmarks;
         var panel = app.Ui.BookmarksPanel;

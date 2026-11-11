@@ -6,7 +6,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Localization;
 using static ILSight.CodeDisplay;
 using static ILSight.IconTheming;
-using static ILSight.Preferences;
 using static ILSight.Theming;
 
 namespace ILSight;
@@ -202,7 +201,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
         {
-            Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => SetTheme(a, theme));
+            Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => a.Theme = theme);
         }
     }
 
@@ -271,7 +270,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
         {
-            Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => SetIconTheme(a, theme));
+            Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => a.IconTheme = theme);
         }
     }
 
@@ -375,7 +374,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "language", LocaleLabels, current);
         if (picked != NothingPicked)
         {
-            Commands.Later(ui.State, locales[picked].Locale, static (a, locale) => SetLocale(a, locale));
+            Commands.Later(ui.State, locales[picked].Locale, static (a, locale) => a.Locale = locale);
         }
     }
 

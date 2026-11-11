@@ -525,7 +525,7 @@ public sealed class ExportDialogTests : IDisposable
     public void The_export_options_live_in_the_dialog_and_not_in_the_decompiler_options()
     {
         var app = AppDriver.Opened(height: 1400f);
-        OpenDecompilerOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run(2);
         Assert.False(app.Frames.Drew("SDK-style project files"));
 

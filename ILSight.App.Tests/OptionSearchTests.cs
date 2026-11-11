@@ -63,7 +63,7 @@ public sealed class OptionSearchTests
     public void A_display_option_marks_the_words_the_search_found_in_its_name()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         Assert.Empty(Marks(app));
 
@@ -80,7 +80,7 @@ public sealed class OptionSearchTests
     public void A_decompiler_options_group_marks_the_words_the_search_found_in_its_title()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDecompilerOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Ui.DecompilerOptionsQuery = "F# code";
         app.Run();
 
@@ -92,7 +92,7 @@ public sealed class OptionSearchTests
     public void A_decompiler_option_marks_the_words_the_search_found_in_its_label()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDecompilerOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Ui.DecompilerOptionsQuery = "switch";
         app.Run();
 
@@ -142,7 +142,7 @@ public sealed class OptionSearchTests
     {
         var app = AppDriver.Opened(width: 1600f);
         OptionFolds.Fold(app.Ui.FoldedOptionGroups, Enum.GetNames<CSharpVersion>().Append("Other").Append("FSharp"));
-        OpenDecompilerOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run();
         Assert.False(app.Frames.Drew("switch expressions"));
 
@@ -162,7 +162,7 @@ public sealed class OptionSearchTests
     public void While_searching_a_groups_box_sets_only_the_options_shown()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDecompilerOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Ui.DecompilerOptionsQuery = "switch expressions";
         app.Run();
 
@@ -177,7 +177,7 @@ public sealed class OptionSearchTests
     public void Searching_the_display_options_shows_only_the_rows_it_matches_and_hides_the_reset()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Ui.DisplayOptionsQuery = "line";
         app.Run();
 
@@ -192,7 +192,7 @@ public sealed class OptionSearchTests
     public void A_search_that_matches_nothing_says_so_and_its_button_clears_it()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Ui.DisplayOptionsQuery = "nothing-is-called-this";
         app.Run();
         Assert.True(app.Frames.Drew("No options match the search."));
@@ -207,7 +207,7 @@ public sealed class OptionSearchTests
     public void Escape_in_the_search_field_empties_it()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         app.Frames.ClickOn(Selector.WithText("Search options")).Frame();
         app.Frames.Type("line").Frame();
@@ -223,7 +223,7 @@ public sealed class OptionSearchTests
     public void The_search_field_shows_a_cross_only_while_it_holds_text()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run(2);
         var empty = app.Frames.Canvas.Lines.Count;
 

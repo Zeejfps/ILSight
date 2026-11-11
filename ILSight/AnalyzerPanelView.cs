@@ -192,7 +192,7 @@ internal static class AnalyzerPanelView
             return;
         }
 
-        OpenAnalyzer(screen);
+        OpenPanel(screen, DockView.Analyzer);
         Analysis.ShowRoot(screen.Analyzer, root);
     }
 
@@ -207,7 +207,7 @@ internal static class AnalyzerPanelView
     /// <paramref name="reference"/> points at is found and analyzed.</summary>
     public static void Analyze(UiState screen, AppState appState, CodeReference.Navigable reference)
     {
-        OpenAnalyzer(screen);
+        OpenPanel(screen, DockView.Analyzer);
         AddToAnalyzer(appState, reference);
     }
 }

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using static ILSight.DocumentPanels;
@@ -19,72 +18,24 @@ public static class ScreenLayout
         dock.PanelClosed += panel => OnPanelClosed(uiState, panel);
     }
 
-    public static void OpenAnalyzer(UiState uiState)
-    {
-        Docking.OpenAnalyzer(uiState.MainLayout, FindActivePanel(uiState));
-    }
-
-    public static void OpenDecompilerOptions(UiState uiState)
-    {
-        Docking.OpenDecompilerOptions(uiState.MainLayout, FindActivePanel(uiState));
-    }
-
-    public static void OpenDisplayOptions(UiState uiState)
-    {
-        Docking.OpenDisplayOptions(uiState.MainLayout, FindActivePanel(uiState));
-    }
-
-    public static void OpenBookmarks(UiState uiState)
-    {
-        Docking.OpenBookmarks(uiState.MainLayout, FindActivePanel(uiState));
-    }
-
-    public static void OpenExports(UiState uiState)
-    {
-        Docking.OpenExports(uiState.MainLayout, FindActivePanel(uiState));
-    }
-
-    public static void OpenAssembliesPanel(UiState uiState)
-    {
-        Docking.OpenAssemblies(uiState.MainLayout);
-    }
-
-    /// <summary>Docks <paramref name="view"/> if it is not, and brings it to the front.</summary>
+    /// <summary>Docks <paramref name="view"/> if it is not, by the active document where it goes there, and
+    /// brings it to the front; the search panel as <see cref="OpenSearch"/> does.</summary>
     public static void OpenPanel(UiState uiState, DockView view)
     {
-        switch (view)
+        if (view == DockView.Search)
         {
-            case DockView.Assemblies:
-                OpenAssembliesPanel(uiState);
-                break;
-            case DockView.Search:
-                OpenSearch(uiState);
-                break;
-            case DockView.Bookmarks:
-                OpenBookmarks(uiState);
-                break;
-            case DockView.Analyzer:
-                OpenAnalyzer(uiState);
-                break;
-            case DockView.DecompilerOptions:
-                OpenDecompilerOptions(uiState);
-                break;
-            case DockView.DisplayOptions:
-                OpenDisplayOptions(uiState);
-                break;
-            case DockView.Exports:
-                OpenExports(uiState);
-                break;
-            default:
-                throw new UnreachableException();
+            OpenSearch(uiState);
+            return;
         }
+
+        Docking.Open(uiState.MainLayout, view, FindActivePanel(uiState));
     }
 
     /// <summary>Docks the search panel under the documents if it is closed, brings it to the front
     /// and puts the caret in its search box.</summary>
     public static void OpenSearch(UiState uiState)
     {
-        Docking.OpenSearch(uiState.MainLayout, FindActivePanel(uiState));
+        Docking.Open(uiState.MainLayout, DockView.Search, FindActivePanel(uiState));
         uiState.Search.IsFocusPending = true;
     }
 

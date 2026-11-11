@@ -88,7 +88,7 @@ internal static class Shortcuts
         new(Back, static (ui, _) => Commands.Later(ui.State, static a => GoBack(a)), WhileTyping: true),
         new(Forward, static (ui, _) => Commands.Later(ui.State, static a => GoForward(a)), WhileTyping: true),
         new(Open, static (ui, _) => MainMenuView.OpenFile(ui)),
-        new(Settings, static (ui, _) => OpenDisplayOptions(ui.State), WhileTyping: true),
+        new(Settings, static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping: true),
         new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language)),
         new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs))),
         new(ReloadAll, static (ui, _) => Commands.Later(ui.State, Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded) => RefreshAssemblies(a, expanded))),

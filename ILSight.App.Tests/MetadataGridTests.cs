@@ -6,7 +6,6 @@ using ILSight.Core;
 using ILSight.Core.Metadata;
 using ZGF.KeyboardModule;
 using static ILSight.Navigation;
-using static ILSight.Preferences;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
@@ -59,7 +58,7 @@ public sealed class MetadataGridTests
     {
         var (app, tab, grid) = ShowTable("TypeDef", frames: 0);
 
-        SetLanguage(app.AppState, DecompilationLanguage.IL);
+        app.AppState.Language = DecompilationLanguage.IL;
         app.Settle(2);
 
         Assert.Same(grid, tab.Grid);
@@ -106,7 +105,7 @@ public sealed class MetadataGridTests
         app.Frames.Click(TextBeside(app, baseType, "Greeter"), modifiers: KeyModifiers.Control);
         app.Settle(3);
 
-        SetLanguage(app.AppState, DecompilationLanguage.IL);
+        app.AppState.Language = DecompilationLanguage.IL;
         app.Settle(2);
         GoBack(app.AppState);
         app.Settle(3);

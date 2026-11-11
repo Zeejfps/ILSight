@@ -170,7 +170,7 @@ public sealed class AppTests
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved("broken.dll", "details"));
         app.Run(2);
 
-        SetLocale(app.AppState, Locale.De);
+        app.AppState.Locale = Locale.De;
         app.Run(2);
 
         Assert.True(app.Frames.Drew(Strings.For(Locale.De).ErrorSaveResource("broken.dll")));
@@ -285,7 +285,7 @@ public sealed class AppTests
     public void Turning_debug_symbols_off_disassembles_an_open_IL_document_again()
     {
         var app = AppDriver.Opened();
-        SetLanguage(app.AppState, DecompilationLanguage.IL);
+        app.AppState.Language = DecompilationLanguage.IL;
         app.Show(app.Fixture("Outline"), 1);
         var named = Documents.GetText(app.AppState.Tabs.Active!.Document);
 
@@ -302,7 +302,7 @@ public sealed class AppTests
         var app = AppDriver.Opened(width: 1600f);
         SetLanguageVersion(app.AppState, CSharpVersion.CSharp7);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp8));
-        OpenDecompilerOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("switch expressions")).Frame();
@@ -334,7 +334,7 @@ public sealed class AppTests
     public void The_options_toolbar_collapses_and_expands_every_group()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenDecompilerOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/collapse"));
@@ -351,7 +351,7 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened(width: 1600f);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp8));
-        OpenDecompilerOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run();
         var csharp8 = DecompilerToggle.All.Where(t => t.Group is DecompilerToggleGroup.Language { IntroducedIn: CSharpVersion.CSharp8 }).ToArray();
 
@@ -611,7 +611,7 @@ public sealed class AppTests
     public void The_toolbar_ends_in_a_gear_that_opens_the_display_options_whatever_the_language()
     {
         var app = AppDriver.Opened(width: 1600f);
-        SetLanguage(app.AppState, DecompilationLanguage.IL);
+        app.AppState.Language = DecompilationLanguage.IL;
         app.Run(2);
         var theme = app.Theme;
         var gear = app.TextRect(Icons.ToolbarDisplayOptions);

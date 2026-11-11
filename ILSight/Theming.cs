@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using ZGF.Gui.Immediate;
-using static ILSight.Preferences;
 
 namespace ILSight;
 
@@ -291,7 +290,7 @@ public static class Theming
         }
 
         ReloadUserThemes(appState);
-        SetTheme(appState, id);
+        appState.Theme = id;
         return path;
     }
 

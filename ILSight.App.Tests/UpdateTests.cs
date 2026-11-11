@@ -3,7 +3,6 @@ using ZGF.Desktop;
 using ZGF.Gui;
 using ZGF.Gui.Testing;
 using ILSight.Localization;
-using static ILSight.Preferences;
 using static ILSight.Updates;
 
 namespace ILSight.App.Tests;
@@ -236,7 +235,7 @@ public sealed class UpdateTests : IDisposable
     private static float OpenAboutIn(AppDriver app, Locale locale)
     {
         app.Frames.WindowIcon = new WindowIcon([new WindowIconImage(16, 16, new byte[16 * 16 * 4])]);
-        SetLocale(app.AppState, locale);
+        app.AppState.Locale = locale;
         app.Run(2);
         OpenAbout(app);
         app.Run(SettleFrames);

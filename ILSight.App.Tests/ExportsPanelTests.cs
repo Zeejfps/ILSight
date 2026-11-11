@@ -1,7 +1,6 @@
 using ILSight.Core;
 using ILSight.Localization;
 using static ILSight.Exports;
-using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
@@ -35,7 +34,7 @@ public sealed class ExportsPanelTests : IDisposable
     public void Starting_an_export_brings_the_exports_panel_to_the_front()
     {
         var d = AppStateDriver.Opened();
-        OpenBookmarks(d.Ui);
+        OpenPanel(d.Ui, DockView.Bookmarks);
 
         SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
         d.NextFrame();
@@ -134,7 +133,7 @@ public sealed class ExportsPanelTests : IDisposable
     public void A_cancelled_export_says_it_is_cancelling_until_it_stops()
     {
         var app = AppDriver.Opened();
-        OpenExports(app.Ui);
+        OpenPanel(app.Ui, DockView.Exports);
         var start = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Fixtures")).Result);
         app.Run(2);
 
@@ -229,7 +228,7 @@ public sealed class ExportsPanelTests : IDisposable
     public void The_running_export_shows_its_assembly_and_percentage()
     {
         var app = AppDriver.Opened();
-        OpenExports(app.Ui);
+        OpenPanel(app.Ui, DockView.Exports);
         var start = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Both")).Result);
         start.Progress.Report(new ExportProgress("Fixtures", 2, 4, 0.5f));
         app.Run(2);
@@ -285,7 +284,7 @@ public sealed class ExportsPanelTests : IDisposable
         ShowExportReport(app.AppState, app.AppState.FinishedExports[0]);
         app.Run(2);
 
-        SetLocale(app.AppState, Locale.De);
+        app.AppState.Locale = Locale.De;
         app.Run(2);
 
         var german = Strings.For(Locale.De);
@@ -303,7 +302,7 @@ public sealed class ExportsPanelTests : IDisposable
         ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
         var report = d.AppState.Tabs.Active!.Content;
 
-        SetLanguage(d.AppState, DecompilationLanguage.IL);
+        d.AppState.Language = DecompilationLanguage.IL;
         d.Settle();
 
         Assert.Same(report, d.AppState.Tabs.Active!.Content);

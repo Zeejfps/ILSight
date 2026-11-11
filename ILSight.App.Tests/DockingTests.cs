@@ -105,7 +105,7 @@ public sealed class DockingTests
         var layout = d.Ui.Layout;
         layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, farewell), layout.Root, DockEdge.Bottom);
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 40f, 300f, 300f));
-        OpenBookmarks(d.Ui);
+        OpenPanel(d.Ui, DockView.Bookmarks);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));
@@ -131,7 +131,7 @@ public sealed class LayoutResetTests
     {
         var app = new AppDriver();
         var screen = app.Ui;
-        OpenBookmarks(screen);
+        OpenPanel(screen, DockView.Bookmarks);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));
@@ -168,7 +168,7 @@ public sealed class LayoutPersistenceTests : IDisposable
     {
         var d = AppStateDriver.Opened(_temp.Settings());
         var screen = d.Ui;
-        OpenAnalyzer(screen);
+        OpenPanel(screen, DockView.Analyzer);
         screen.Layout.Dock(DockPanels.Bookmarks, screen.Layout.GroupOf(DockPanels.Analyzer)!, DockEdge.Center);
         d.NextFrame();
         SaveSettings(d.AppState);
@@ -192,7 +192,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         var d = new AppStateDriver(_temp.Settings());
         var screen = d.Ui;
         OpenSearch(screen);
-        OpenAnalyzer(screen);
+        OpenPanel(screen, DockView.Analyzer);
         screen.Layout.Dock(DockPanels.Search, screen.Layout.GroupOf(DockPanels.Analyzer)!, DockEdge.Center);
         d.NextFrame();
         SaveSettings(d.AppState);

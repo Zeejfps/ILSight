@@ -1,7 +1,6 @@
 using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.Navigation;
-using static ILSight.Preferences;
 
 namespace ILSight;
 
@@ -16,7 +15,7 @@ public static class RunArgumentsActions
         ReportIgnored(appState, arguments);
         if (arguments.Language is not null)
         {
-            SetLanguage(appState, arguments.Language.Value);
+            appState.Language = arguments.Language.Value;
         }
 
         if (arguments.AssemblyList is not null)
@@ -38,7 +37,7 @@ public static class RunArgumentsActions
         ReportIgnored(appState, arguments);
         if (arguments.Language is not null)
         {
-            SetLanguage(appState, arguments.Language.Value);
+            appState.Language = arguments.Language.Value;
         }
 
         if (arguments.AssemblyList is not null)

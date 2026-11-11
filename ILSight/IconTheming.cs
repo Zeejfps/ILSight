@@ -5,7 +5,6 @@ using ZGF.Fonts;
 using ZGF.Gui.Immediate;
 using ZGF.Svg;
 using ILSight.Core;
-using static ILSight.Preferences;
 using static ILSight.Theming;
 
 namespace ILSight;
@@ -161,7 +160,7 @@ public static class IconTheming
         }
 
         ReloadUserIconThemes(appState);
-        SetIconTheme(appState, id);
+        appState.IconTheme = id;
         return path;
     }
 

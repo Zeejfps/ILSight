@@ -1,6 +1,5 @@
 using ILSight.Core;
 using static ILSight.Navigation;
-using static ILSight.Preferences;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
@@ -84,7 +83,7 @@ public sealed class HistoryTests
         ScrollTo(app, 20, new TextPosition(21, 4), new TextPosition(22, 8));
         Show(app, "Greeter");
 
-        SetLanguage(app.AppState, DecompilationLanguage.IL);
+        app.AppState.Language = DecompilationLanguage.IL;
         app.Settle(4);
         GoBack(app.AppState);
         app.Settle(4);

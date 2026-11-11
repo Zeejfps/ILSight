@@ -35,7 +35,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
     public void A_frame_of_the_app_with_only_tool_panels_open_allocates_nothing()
     {
         var app = AppDriver.Opened();
-        OpenBookmarks(app.Ui);
+        OpenPanel(app.Ui, DockView.Bookmarks);
         app.Settle(2);
         app.Ui.Layout.Close(DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!));
         app.Settle(5);

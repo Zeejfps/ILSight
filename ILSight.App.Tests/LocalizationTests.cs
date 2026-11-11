@@ -2,7 +2,6 @@ using static ILSight.Settings;
 using System.Globalization;
 using System.Reflection;
 using ILSight.Localization;
-using static ILSight.Preferences;
 
 namespace ILSight.App.Tests;
 
@@ -68,7 +67,7 @@ public sealed class LocalizationTests
         app.Run(2);
         Assert.True(app.Frames.Drew("File"));
 
-        SetLocale(app.AppState, Locale.De);
+        app.AppState.Locale = Locale.De;
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Datei"));
@@ -80,7 +79,7 @@ public sealed class LocalizationTests
     {
         using var temp = new TempDir();
         var d = new AppStateDriver(temp.Settings());
-        SetLocale(d.AppState, Locale.Ja);
+        d.AppState.Locale = Locale.Ja;
         d.Pump();
 
         Assert.Equal(Locale.Ja, RestoreAppState(temp.Settings(), TestSession.Shared).Locale);

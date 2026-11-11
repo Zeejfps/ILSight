@@ -127,7 +127,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public void A_waiting_export_is_withdrawn_from_the_keyboard_and_the_running_one_stays()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        OpenExports(app.Ui);
+        OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Running")).Result);
         app.AppState.Export.EnterAsync(TestJobs.Named("Later"));
         app.Run(2);
@@ -147,7 +147,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public void The_remove_from_queue_button_takes_the_export_out_mid_frame_without_breaking_the_list()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        OpenExports(app.Ui);
+        OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Running")).Result);
         app.AppState.Export.EnterAsync(TestJobs.Named("Second"));
         app.AppState.Export.EnterAsync(TestJobs.Named("Third"));
@@ -174,7 +174,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var theme = app.Theme;
-        OpenExports(app.Ui);
+        OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Running")).Result);
         running.Progress.Report(new ExportProgress("Fixtures", 1, 1, 0.5f));
         app.Run(2);
@@ -201,7 +201,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public void The_running_export_keeps_the_frames_coming_so_its_spinner_turns()
     {
         var app = AppDriver.Opened();
-        OpenExports(app.Ui);
+        OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Running")).Result);
         app.Run(2);
 

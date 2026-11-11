@@ -93,7 +93,7 @@ internal static class ToolbarView
                 var languages = Languages(t);
                 if (ui.SegmentedControl("language", ref language, languages))
                 {
-                    Commands.Later(ui.State, language, static (a, l) => SetLanguage(a, l));
+                    Commands.Later(ui.State, language, static (a, l) => a.Language = l);
                 }
 
                 if (DecompilationLanguages.ShowsCSharp(language))
@@ -101,7 +101,7 @@ internal static class ToolbarView
                     LanguageVersion(ui, appState.DecompilerOptions);
                     if (ui.IconButton("decompiler-options", ui.State.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
                     {
-                        OpenDecompilerOptions(ui.State);
+                        OpenPanel(ui.State, DockView.DecompilerOptions);
                     }
                 }
             }
@@ -112,7 +112,7 @@ internal static class ToolbarView
             var displayOptionsTip = ui.Memo("display-options-tip", t, static s => s.ToolbarDisplayOptions(Shortcuts.Settings));
             if (ui.IconButton("display-options", ui.State.Icons.ToolbarDisplayOptions, displayOptionsTip, variant: ButtonVariant.Neutral))
             {
-                OpenDisplayOptions(ui.State);
+                OpenPanel(ui.State, DockView.DisplayOptions);
             }
         }
     }

@@ -505,7 +505,7 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.Equal("lucide", appState.IconTheme.Text);
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, ResolveIconTheme(appState).Icons.NodeClass);
 
-        Preferences.SetIconTheme(appState, Id("mine"));
+        appState.IconTheme = Id("mine");
         SaveSettingsIfChanged(appState, 0);
 
         Assert.Equal("mine", Settings().IconTheme.Text);
@@ -692,7 +692,7 @@ public sealed class UserIconThemeTests : IDisposable
         app.Run(2);
         Assert.Empty(app.Frames.UnregisteredFonts);
 
-        Preferences.SetIconTheme(app.AppState, Id("lucide"));
+        app.AppState.IconTheme = Id("lucide");
         app.Run(2);
 
         Assert.Equal(["icon-font:" + Path.GetFullPath(font)], app.Frames.UnregisteredFonts);
@@ -705,7 +705,7 @@ public sealed class UserIconThemeTests : IDisposable
         _temp.Write(ClassPicture, MemoryIconAssets.Picture);
         WriteIconTheme("shapes", """{ "name": "Shapes", "icons": { "node.class": { "svg": "svg/class.svg" } } }""");
         var app = new AppDriver(width: 1600f, settings: Settings());
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/icon-theme")).Frame();
@@ -720,7 +720,7 @@ public sealed class UserIconThemeTests : IDisposable
     public void Customizing_the_icon_theme_switches_to_a_new_one_and_opens_its_file()
     {
         var app = new AppDriver(width: 1600f, settings: Settings());
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-icon-theme")).Frame();
@@ -733,7 +733,7 @@ public sealed class UserIconThemeTests : IDisposable
     public void The_icon_theme_buttons_hide_while_the_settings_live_in_memory()
     {
         var app = new AppDriver(width: 1600f);
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         Assert.True(app.Frames.Drew("Icon theme"));

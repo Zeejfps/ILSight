@@ -60,16 +60,16 @@ public sealed class AutosaveTests : IDisposable
                 appState.Theme = ThemeId<ThemeFile>.Of("monokai");
                 break;
             case nameof(AppSettings.Language):
-                SetLanguage(appState, DecompilationLanguage.IL);
+                appState.Language = DecompilationLanguage.IL;
                 break;
             case nameof(AppSettings.Decompiler):
                 SetLanguageVersion(appState, CSharpVersion.CSharp7_3);
                 break;
             case nameof(AppSettings.ApiVisibility):
-                SetApiVisibility(appState, ApiVisibility.All);
+                appState.ApiVisibility = ApiVisibility.All;
                 break;
             case nameof(AppSettings.Locale):
-                SetLocale(appState, Locale.De);
+                appState.Locale = Locale.De;
                 break;
             case nameof(AppSettings.SearchKinds):
                 screen.Search.Kinds = SearchKinds.Types;
@@ -234,7 +234,7 @@ public sealed class AutosaveTests : IDisposable
         SaveSettings(d.AppState);
         var unchanged = SaveSettingsIfChanged(d.AppState, d.Now);
         var blocker = BlockSettingsWrites();
-        SetLanguage(d.AppState, DecompilationLanguage.IL);
+        d.AppState.Language = DecompilationLanguage.IL;
 
         var failed = SaveSettingsIfChanged(d.AppState, d.Now);
         var waiting = SaveSettingsIfChanged(d.AppState, d.Now + 0.5);
@@ -254,7 +254,7 @@ public sealed class AutosaveTests : IDisposable
         SaveSettings(d.AppState);
         var blocker = BlockSettingsWrites();
 
-        SetLanguage(d.AppState, DecompilationLanguage.IL);
+        d.AppState.Language = DecompilationLanguage.IL;
         d.Pump();
         d.Now += SaveRetry.DelaySeconds + 0.5;
         d.Pump();
@@ -277,7 +277,7 @@ public sealed class AutosaveTests : IDisposable
         app.Run(2);
         var blocker = BlockSettingsWrites();
 
-        SetLanguage(app.AppState, DecompilationLanguage.IL);
+        app.AppState.Language = DecompilationLanguage.IL;
         app.Run();
         var failedAt = app.Frames.RealTime;
         var wakeAt = app.Frames.WakeAt;
@@ -298,7 +298,7 @@ public sealed class AutosaveTests : IDisposable
     {
         var d = new AppStateDriver(_temp.Settings());
         var blocker = BlockSettingsWrites();
-        SetLanguage(d.AppState, DecompilationLanguage.IL);
+        d.AppState.Language = DecompilationLanguage.IL;
         d.Pump();
         Directory.Delete(blocker);
 

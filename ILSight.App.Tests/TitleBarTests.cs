@@ -102,7 +102,7 @@ public sealed class TitleBarTests : IDisposable
     public void Use_system_title_bar_in_the_display_options_puts_the_menus_in_a_bar_of_their_own_and_back()
     {
         var app = WithTitleBarToDrawIn(OptionsWidth, OptionsHeight);
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText(SystemTitleBarOption)).Frame(2);
@@ -121,7 +121,7 @@ public sealed class TitleBarTests : IDisposable
     public void Where_the_window_keeps_its_title_bar_to_itself_the_menus_have_a_bar_of_their_own_and_no_title_bar_option()
     {
         var app = new AppDriver(OptionsWidth, OptionsHeight);
-        OpenDisplayOptions(app.Ui);
+        OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run(2);
 
         Assert.Null(app.Frames.TitleBarBackground);

@@ -107,16 +107,50 @@ public static class Docking
     private const float DocumentShare = 0.66f;
     private const float AssembliesShare = 0.34f;
 
-    /// <summary>Docks the analyzer beside the search results or bookmarks, or below the documents,
-    /// if it is not docked, and brings it to the front.</summary>
-    public static void OpenAnalyzer(MainLayout layout, string? activeDocument)
+    /// <summary>Docks <paramref name="view"/> where it goes if it is not docked, and brings it to the front.</summary>
+    public static void Open(MainLayout layout, DockView view, string? activeDocument)
     {
-        if (!layout.Dock.Contains(DockPanels.Analyzer))
+        var panel = DockPanels.NameOf(view);
+        if (!layout.Dock.Contains(panel))
         {
-            DockAnalyzer(layout, activeDocument);
+            DockWhereItGoes(layout, view, activeDocument);
         }
 
-        layout.Dock.Activate(DockPanels.Analyzer);
+        layout.Dock.Activate(panel);
+    }
+
+    /// <summary>Docks <paramref name="view"/> where it goes: the assemblies left of everything; the options
+    /// beside the documents; search below them; bookmarks beside search; the analyzer beside search or
+    /// bookmarks; the exports beside any of those; and each of the last four below the documents when
+    /// there is nothing to go beside.</summary>
+    private static void DockWhereItGoes(MainLayout layout, DockView view, string? activeDocument)
+    {
+        switch (view)
+        {
+            case DockView.Assemblies:
+                DockBeside(layout, DockPanels.Assemblies, layout.Dock.Root, DockEdge.Left, AssembliesShare);
+                break;
+            case DockView.Search:
+                DockBelowDocuments(layout, DockPanels.Search, activeDocument);
+                break;
+            case DockView.Bookmarks:
+                DockBookmarks(layout, activeDocument);
+                break;
+            case DockView.Analyzer:
+                DockAnalyzer(layout, activeDocument);
+                break;
+            case DockView.DecompilerOptions:
+                DockBeside(layout, DockPanels.DecompilerOptions, GetDocumentArea(layout, activeDocument), DockEdge.Right, ToolShare);
+                break;
+            case DockView.DisplayOptions:
+                DockDisplayOptions(layout, activeDocument);
+                break;
+            case DockView.Exports:
+                DockExports(layout, activeDocument);
+                break;
+            default:
+                throw new UnreachableException();
+        }
     }
 
     private static void DockAnalyzer(MainLayout layout, string? activeDocument)
@@ -141,29 +175,6 @@ public static class Docking
         return layout.Dock.GroupOf(DockPanels.Bookmarks);
     }
 
-    /// <summary>Docks the decompiler options beside the documents if they are not, and brings them to the front.</summary>
-    public static void OpenDecompilerOptions(MainLayout layout, string? activeDocument)
-    {
-        if (!layout.Dock.Contains(DockPanels.DecompilerOptions))
-        {
-            DockBeside(layout, DockPanels.DecompilerOptions, GetDocumentArea(layout, activeDocument), DockEdge.Right, ToolShare);
-        }
-
-        layout.Dock.Activate(DockPanels.DecompilerOptions);
-    }
-
-    /// <summary>Docks the display options beside the decompiler options, or beside the documents, if
-    /// they are not, and brings them to the front.</summary>
-    public static void OpenDisplayOptions(MainLayout layout, string? activeDocument)
-    {
-        if (!layout.Dock.Contains(DockPanels.DisplayOptions))
-        {
-            DockDisplayOptions(layout, activeDocument);
-        }
-
-        layout.Dock.Activate(DockPanels.DisplayOptions);
-    }
-
     private static void DockDisplayOptions(MainLayout layout, string? activeDocument)
     {
         var decompilerOptions = layout.Dock.GroupOf(DockPanels.DecompilerOptions);
@@ -175,17 +186,6 @@ public static class Docking
         DockBeside(layout, DockPanels.DisplayOptions, GetDocumentArea(layout, activeDocument), DockEdge.Right, ToolShare);
     }
 
-    /// <summary>Docks the bookmarks panel if it is not, and brings it to the front.</summary>
-    public static void OpenBookmarks(MainLayout layout, string? activeDocument)
-    {
-        if (!layout.Dock.Contains(DockPanels.Bookmarks))
-        {
-            DockBookmarks(layout, activeDocument);
-        }
-
-        layout.Dock.Activate(DockPanels.Bookmarks);
-    }
-
     private static void DockBookmarks(MainLayout layout, string? activeDocument)
     {
         var search = layout.Dock.GroupOf(DockPanels.Search);
@@ -195,18 +195,6 @@ public static class Docking
             return;
         }
         DockBelowDocuments(layout, DockPanels.Bookmarks, activeDocument);
-    }
-
-    /// <summary>Docks the exports panel beside the search results, bookmarks or analyzer, or below
-    /// the documents, if it is not docked, and brings it to the front.</summary>
-    public static void OpenExports(MainLayout layout, string? activeDocument)
-    {
-        if (!layout.Dock.Contains(DockPanels.Exports))
-        {
-            DockExports(layout, activeDocument);
-        }
-
-        layout.Dock.Activate(DockPanels.Exports);
     }
 
     private static void DockExports(MainLayout layout, string? activeDocument)
@@ -229,29 +217,6 @@ public static class Docking
         }
 
         return layout.Dock.GroupOf(DockPanels.Analyzer);
-    }
-
-    /// <summary>Docks the search panel under the documents if it is closed, and brings it to the front.</summary>
-    public static void OpenSearch(MainLayout layout, string? activeDocument)
-    {
-        if (!layout.Dock.Contains(DockPanels.Search))
-        {
-            DockBelowDocuments(layout, DockPanels.Search, activeDocument);
-        }
-
-        layout.Dock.Activate(DockPanels.Search);
-    }
-
-    /// <summary>Docks the assemblies view where it starts out, left of everything, if it is closed,
-    /// and brings it to the front.</summary>
-    public static void OpenAssemblies(MainLayout layout)
-    {
-        if (!layout.Dock.Contains(DockPanels.Assemblies))
-        {
-            DockBeside(layout, DockPanels.Assemblies, layout.Dock.Root, DockEdge.Left, AssembliesShare);
-        }
-
-        layout.Dock.Activate(DockPanels.Assemblies);
     }
 
     /// <summary>Docks a new document into the documents' group, or where documents start out, right

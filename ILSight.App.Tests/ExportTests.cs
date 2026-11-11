@@ -5,7 +5,6 @@ using ILSight.Localization;
 using ZGF.KeyboardModule;
 using static ILSight.Assemblies;
 using static ILSight.Exports;
-using static ILSight.Preferences;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.App.Tests.TestPaths;
 
@@ -47,7 +46,7 @@ public sealed class ExportTests : IDisposable
     public void Saving_code_writes_the_node_in_the_current_language()
     {
         var d = AppStateDriver.Opened();
-        SetLanguage(d.AppState, DecompilationLanguage.IL);
+        d.AppState.Language = DecompilationLanguage.IL;
         var path = _temp.PathOf("Greeter.il");
 
         SaveCode(d.AppState, d.Fixture("Greeter"), path);

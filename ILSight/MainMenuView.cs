@@ -9,7 +9,6 @@ using static ILSight.Dialogs;
 using static ILSight.DocumentPanels;
 using static ILSight.Exports;
 using static ILSight.Navigation;
-using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 
 namespace ILSight;
@@ -140,7 +139,7 @@ internal static class MainMenuView
         ui.MenuSeparator();
         if (ui.MenuItem(t.AppMenuSettings, Shortcuts.Settings, id: "settings"))
         {
-            OpenDisplayOptions(ui.State);
+            OpenPanel(ui.State, DockView.DisplayOptions);
         }
 
         ui.MenuSeparator();
@@ -316,7 +315,7 @@ internal static class MainMenuView
             var id = catalog.Ids[i];
             if (ui.MenuRadioItem(names[i], current == id, id: id.Text))
             {
-                Commands.Later(ui.State, id, static (a, theme) => SetTheme(a, theme));
+                Commands.Later(ui.State, id, static (a, theme) => a.Theme = theme);
             }
         }
     }
@@ -341,7 +340,7 @@ internal static class MainMenuView
         var selected = current == visibility;
         if (ui.MenuRadioItem(label, selected))
         {
-            Commands.Later(ui.State, visibility, static (a, v) => SetApiVisibility(a, v));
+            Commands.Later(ui.State, visibility, static (a, v) => a.ApiVisibility = v);
         }
     }
 
@@ -358,17 +357,17 @@ internal static class MainMenuView
 
         if (PanelItem(ui, t.PanelAssemblies, DockView.Assemblies))
         {
-            OpenAssembliesPanel(screen);
+            OpenPanel(screen, DockView.Assemblies);
         }
 
         if (PanelItem(ui, t.ViewBookmarks, DockView.Bookmarks))
         {
-            OpenBookmarks(screen);
+            OpenPanel(screen, DockView.Bookmarks);
         }
 
         if (PanelItem(ui, t.PanelAnalyzer, DockView.Analyzer))
         {
-            OpenAnalyzer(screen);
+            OpenPanel(screen, DockView.Analyzer);
         }
 
         if (PanelItem(ui, t.PanelSearch, DockView.Search, Shortcuts.Search))
@@ -378,17 +377,17 @@ internal static class MainMenuView
 
         if (PanelItem(ui, t.PanelDecompilerOptions, DockView.DecompilerOptions))
         {
-            OpenDecompilerOptions(screen);
+            OpenPanel(screen, DockView.DecompilerOptions);
         }
 
         if (PanelItem(ui, t.PanelDisplayOptions, DockView.DisplayOptions))
         {
-            OpenDisplayOptions(screen);
+            OpenPanel(screen, DockView.DisplayOptions);
         }
 
         if (PanelItem(ui, t.PanelExports, DockView.Exports))
         {
-            OpenExports(screen);
+            OpenPanel(screen, DockView.Exports);
         }
     }
 
@@ -415,7 +414,7 @@ internal static class MainMenuView
             var label = DecompilationLanguages.Label(language);
             if (ui.MenuRadioItem(label, current == language))
             {
-                Commands.Later(ui.State, language, static (a, l) => SetLanguage(a, l));
+                Commands.Later(ui.State, language, static (a, l) => a.Language = l);
             }
         }
     }
@@ -442,7 +441,7 @@ internal static class MainMenuView
         {
             if (ui.MenuRadioItem(endonym, current == locale))
             {
-                Commands.Later(ui.State, locale, static (a, l) => SetLocale(a, l));
+                Commands.Later(ui.State, locale, static (a, l) => a.Locale = l);
             }
         }
     }
