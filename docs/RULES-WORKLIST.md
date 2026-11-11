@@ -28,7 +28,7 @@ Done items are struck through with their commit.
 | ~~C17~~ (done) | R008 | `NodeContent`, `DocBlock`, `MetadataRowDetails` | Open `abstract record` hierarchies → closed (private constructor, nested cases, `Match`), so the union checks see them. | S / low |
 | ~~A6~~ (done) | R006 | `DockLayoutJson`, `SettingsFile` callers | Validation split across parse and callers; `NextId` never checked against used ids → one `ToLayout` step returning parsed / parts missing / ids repeated. | S / low; SettingsFormatTests, DockingTests |
 | ~~C7~~ (done) | R001, R011 | `RunningProcesses.ResolveModules`, `FindEntryAssembly`, `FindExistingFile` | `File.Exists` inside command-line heuristics → pass `exists` in, heuristics pure. | S / low; RunningProcessTests |
-| C14 | R001, R011 | `NuGetConfig` home folder / env expansion | Env reads inside the parse → a `NuGetEnvironment` value built at the edge. | S / low; NuGetTests |
+| ~~C14~~ (done) | R001, R011 | `NuGetConfig` home folder / env expansion | Env reads inside the parse → a `NuGetEnvironment` value built at the edge. | S / low; NuGetTests |
 | Z18 | R004 | `Search`, `NuGetPicker` debounce | Debounce logic copied twice → a `TypedText` value. | S / low |
 | Z3 | R004 | `Reload`, `Reopens`, `OpenRequests`, `Reloads` | Public setters, rules in a grab-bag `Reloads` → methods on each type. | S / low |
 | Z5 | R004 | `Navigation` history ops, `NavigationHistory` | History operations mutate public `Entries` from outside → methods on `NavigationHistory`. | S / low |

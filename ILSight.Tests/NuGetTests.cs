@@ -554,7 +554,7 @@ public sealed class NuGetConfigTests
             </configuration>
             """);
 
-        var config = NuGetConfigs.Read(path, null);
+        var config = NuGetConfigs.Read(path, CreateEnvironment(null));
 
         Assert.Equal(["nuget.org", "company"], config.Sources.Select(s => s.Name));
         Assert.Equal("https://company.test/nuget/v3/index.json", config.Sources[1].Url.Text);
@@ -565,7 +565,7 @@ public sealed class NuGetConfigTests
     {
         using var temp = new TempDir();
 
-        var config = NuGetConfigs.Read(temp.PathOf("NuGet.Config"), null);
+        var config = NuGetConfigs.Read(temp.PathOf("NuGet.Config"), CreateEnvironment(null));
 
         Assert.Equal([NuGetSource.NuGetOrg], config.Sources);
     }
@@ -576,7 +576,7 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = temp.Write("NuGet.Config", "not xml");
 
-        var config = NuGetConfigs.Read(path, null);
+        var config = NuGetConfigs.Read(path, CreateEnvironment(null));
 
         Assert.Equal([NuGetSource.NuGetOrg], config.Sources);
     }
@@ -587,7 +587,7 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = WriteConfigNamingRestored(temp);
 
-        var config = NuGetConfigs.Read(path, null);
+        var config = NuGetConfigs.Read(path, CreateEnvironment(null));
 
         Assert.Equal(temp.PathOf("restored"), config.GlobalPackagesFolder);
     }
@@ -599,7 +599,7 @@ public sealed class NuGetConfigTests
         var path = WriteConfigNamingRestored(temp);
         var fromEnvironment = Path.Combine(temp.Path, "env", "..", "elsewhere");
 
-        var config = NuGetConfigs.Read(path, fromEnvironment);
+        var config = NuGetConfigs.Read(path, CreateEnvironment(fromEnvironment));
 
         Assert.Equal(temp.PathOf("elsewhere"), config.GlobalPackagesFolder);
     }
@@ -613,9 +613,61 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = WriteConfigNamingRestored(temp);
 
-        var config = NuGetConfigs.Read(path, fromEnvironment);
+        var config = NuGetConfigs.Read(path, CreateEnvironment(fromEnvironment));
 
         Assert.Equal(temp.PathOf("restored"), config.GlobalPackagesFolder);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("packages")]
+    public void With_no_absolute_nuget_packages_folder_and_none_in_the_config_the_folder_is_in_the_home_folder(string? fromEnvironment)
+    {
+        using var temp = new TempDir();
+        var path = temp.Write("NuGet.Config", "<configuration />");
+
+        var config = NuGetConfigs.Read(path, CreateEnvironment(fromEnvironment));
+
+        Assert.Equal(Path.Combine(Home, ".nuget", "packages"), config.GlobalPackagesFolder);
+    }
+
+    [Fact]
+    public void A_missing_config_has_the_global_packages_folder_in_the_home_folder()
+    {
+        using var temp = new TempDir();
+
+        var config = NuGetConfigs.Read(temp.PathOf("NuGet.Config"), CreateEnvironment(null));
+
+        Assert.Equal(Path.Combine(Home, ".nuget", "packages"), config.GlobalPackagesFolder);
+    }
+
+    [Fact]
+    public void The_variables_the_config_s_global_packages_folder_names_are_expanded()
+    {
+        using var temp = new TempDir();
+        var path = temp.Write("NuGet.Config", """
+        <configuration>
+          <config>
+            <add key="globalPackagesFolder" value="%PACKAGES_ROOT%/restored" />
+          </config>
+        </configuration>
+        """);
+        var environment = CreateEnvironment(null) with { ExpandVariables = text => text.Replace("%PACKAGES_ROOT%", Home) };
+
+        var config = NuGetConfigs.Read(path, environment);
+
+        Assert.Equal(Path.GetFullPath(Path.Combine(Home, "restored")), config.GlobalPackagesFolder);
+    }
+
+    /// <summary>A home folder that need not exist; nothing is read from it.</summary>
+    private static string Home => Path.Combine(Path.GetTempPath(), "ilsight-home");
+
+    /// <summary>An environment with <see cref="Home"/> as the home folder, <paramref name="packagesFolder"/> as
+    /// <c>NUGET_PACKAGES</c>, and no variables to expand.</summary>
+    private static NuGetEnvironment CreateEnvironment(string? packagesFolder)
+    {
+        return new NuGetEnvironment { HomeFolder = Home, PackagesFolderVariable = packagesFolder, ExpandVariables = static text => text };
     }
 
     private static string WriteConfigNamingRestored(TempDir temp)

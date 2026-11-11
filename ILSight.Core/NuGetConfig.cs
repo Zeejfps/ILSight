@@ -61,6 +61,20 @@ public sealed record NuGetSource
 /// </summary>
 public sealed record NuGetConfig(IReadOnlyList<NuGetSource> Sources, string GlobalPackagesFolder);
 
+/// <summary>What a NuGet.Config means depends on beyond the file itself: the user's home folder, the
+/// <c>NUGET_PACKAGES</c> variable, and the environment variables a path in the config may name.</summary>
+public sealed record NuGetEnvironment
+{
+    /// <summary>The user's home folder, which the default global packages folder is in.</summary>
+    public required string HomeFolder { get; init; }
+
+    /// <summary>The value of <c>NUGET_PACKAGES</c>, or null where it is not set.</summary>
+    public required string? PackagesFolderVariable { get; init; }
+
+    /// <summary>A path with the environment variables it names, as <c>%NAME%</c>, replaced by their values.</summary>
+    public required Func<string, string> ExpandVariables { get; init; }
+}
+
 /// <summary>Reading what a NuGet.Config says.</summary>
 public static class NuGetConfigs
 {
@@ -69,42 +83,43 @@ public static class NuGetConfigs
     /// <summary>The config of the user running the app.</summary>
     public static NuGetConfig ReadUser()
     {
-        return Read(GetUserConfigPath(), ReadPackagesFolderVariable());
+        var environment = ReadEnvironment();
+        return Read(GetUserConfigPath(environment), environment);
     }
 
     /// <summary>What a config that says nothing means: nuget.org, and the default packages folder.</summary>
     public static NuGetConfig CreateDefault()
     {
-        return new NuGetConfig([NuGetSource.NuGetOrg], GetGlobalPackagesFolder(null, "", ReadPackagesFolderVariable()));
+        return new NuGetConfig([NuGetSource.NuGetOrg], GetGlobalPackagesFolder(null, "", ReadEnvironment()));
     }
 
-    private static string? ReadPackagesFolderVariable()
+    /// <summary>The environment of the user running the app.</summary>
+    private static NuGetEnvironment ReadEnvironment()
     {
-        return Environment.GetEnvironmentVariable(PackagesFolderVariable);
+        return new NuGetEnvironment
+        {
+            HomeFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            PackagesFolderVariable = Environment.GetEnvironmentVariable(PackagesFolderVariable),
+            ExpandVariables = Environment.ExpandEnvironmentVariables,
+        };
     }
 
-    private static string GetUserConfigPath()
+    private static string GetUserConfigPath(NuGetEnvironment environment)
     {
         if (OperatingSystem.IsWindows())
         {
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NuGet", "NuGet.Config");
         }
 
-        return Path.Combine(GetHomeFolder(), ".nuget", "NuGet", "NuGet.Config");
+        return Path.Combine(environment.HomeFolder, ".nuget", "NuGet", "NuGet.Config");
     }
 
-    private static string GetHomeFolder()
-    {
-        return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-    }
-
-    /// <summary>The config at <paramref name="path"/>, with <paramref name="packagesFolder"/> the value of
-    /// <c>NUGET_PACKAGES</c>, or null where it is not set.</summary>
-    public static NuGetConfig Read(string path, string? packagesFolder)
+    /// <summary>The config at <paramref name="path"/>, as it reads in <paramref name="environment"/>.</summary>
+    public static NuGetConfig Read(string path, NuGetEnvironment environment)
     {
         var document = TryLoad(path);
         var sources = ListSources(document);
-        var folder = GetGlobalPackagesFolder(document, path, packagesFolder);
+        var folder = GetGlobalPackagesFolder(document, path, environment);
         return new NuGetConfig(sources, folder);
     }
 
@@ -199,8 +214,9 @@ public static class NuGetConfigs
     /// <summary>The folder restores put packages in: the one the environment names, else the config's,
     /// else <c>.nuget/packages</c> in the user's home folder. The environment's counts only as an absolute
     /// path, as NuGet takes no other, and is taken as it is, as NuGet expands no variables in it.</summary>
-    private static string GetGlobalPackagesFolder(XDocument? document, string configPath, string? fromEnvironment)
+    private static string GetGlobalPackagesFolder(XDocument? document, string configPath, NuGetEnvironment environment)
     {
+        var fromEnvironment = environment.PackagesFolderVariable;
         if (!string.IsNullOrEmpty(fromEnvironment) && Path.IsPathRooted(fromEnvironment))
         {
             return Path.GetFullPath(fromEnvironment);
@@ -209,15 +225,14 @@ public static class NuGetConfigs
         var fromConfig = FindConfigValue(document, "globalPackagesFolder");
         if (!string.IsNullOrEmpty(fromConfig))
         {
-            return ResolveFrom(configPath, fromConfig);
+            return ResolveFrom(configPath, environment.ExpandVariables(fromConfig));
         }
 
-        return Path.Combine(GetHomeFolder(), ".nuget", "packages");
+        return Path.Combine(environment.HomeFolder, ".nuget", "packages");
     }
 
-    private static string ResolveFrom(string configPath, string folder)
+    private static string ResolveFrom(string configPath, string expanded)
     {
-        var expanded = Environment.ExpandEnvironmentVariables(folder);
         var configFolder = Path.GetDirectoryName(configPath) ?? "";
         return Path.GetFullPath(Path.Combine(configFolder, expanded));
     }
