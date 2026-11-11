@@ -15,18 +15,24 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
 
 ## R001: A decision-making class reaches the outside world through one port
 
-Build: RL0101 (time, randomness, I/O, listed services used directly); suggestion while measured: RL0102 (a use case
-or adapter constructed outside the composition root).
+Build: RL0101 (time, randomness, I/O, listed services used directly), RL0103 (a static class whose functions take
+the same port), RL0105 (infrastructure, or a type holding it, in a port signature); suggestions while measured: RL0102
+(a use case or adapter constructed outside the composition root), RL0104 (another use case reached around the port).
 
 - A class that makes decisions touches I/O, time, randomness, configuration, logging and shared state only through a
   nested `public interface IPorts` it declares itself, taken as its **only** constructor parameter.
-- Code written as functions takes its port as a parameter: `TryUpdateAsync(Feed feed, FeedUpdate.IPorts ports, ct)`.
-  The port is an interface, not a record of functions (the build checks none of a delegate's name or token). Take
-  the parts of the application state the function uses, not the whole state; only an edge or a function that works
-  on all of it (saving a session) takes it. Passing the state on to a callee doesn't count: **narrow from the bottom
-  up**, callees first, then the caller (which then takes its callee's port to pass on).
-- Name port members for what the class needs (`FindOrderAsync`, `Now`, `LogOrderConfirmed`). No `DbContext`,
-  `IQueryable`, `HttpClient` or `ILogger` in their signatures. Each class lists only what it uses.
+- **Functions that share a port are one object:** a class whose constructor takes the port, the workflows its public
+  methods, the steps only it uses private, built once in the composition root. Only a lone function (no other function
+  takes its port) takes it as a parameter: `TryUpdateAsync(Feed feed, FeedUpdate.IPorts ports, ct)`. The port is an
+  interface, not a record of functions (the build checks none of a delegate's name or token). Take the parts of the
+  application state the function uses, not the whole state; only an edge or a function that works on all of it
+  (saving a session) takes it. Passing the state on to a callee doesn't count: **narrow from the bottom up**, callees
+  first, then the caller.
+- Name port members for what the class needs (`FindOrderAsync`, `Now`, `LogOrderConfirmed`). Their signatures carry
+  values: no `DbContext`, `IQueryable`, `HttpClient` or `ILogger`, and no type that holds one (a library's feed object
+  keeping an `HttpClient`). Pass what the class decides with (`PackageSource`); the adapter keeps the library's
+  objects. Each class lists only what it uses. A library's own I/O client is infrastructure: only adapters call it,
+  and it is tested through its own seam (an `HttpMessageHandler`).
 - The codebase's own services that do effects or hold shared state (a job runner like `Background.Start`, an
   error log like `Errors.Report`, a cache) are dependencies too: through the port, called by the adapter. List
   them as `rulelab.ambient_types` in `.editorconfig`. Built-in primitives (`Task.Run`, `await`, `CancellationToken`)
@@ -35,6 +41,9 @@ or adapter constructed outside the composition root).
   (`state.Intent.ResolveAsync(...)`), or a delegate handed in to do part of the job. Put it on the port. Reading and
   writing plain data on an object passed in, and calling its pure methods (`bookmarks.IsMarked(name)`), is not an
   effect: do it directly.
+- **Another use case is reached through your port too:** a member named for what you need (`ShowNode(tabs, node)`),
+  whose adapter calls the other use case, which the root built. Don't take its port, its effects or the use case
+  itself beside your port: its decisions would run in your tests, and its changes would break them.
 - Pure code (calculations, mapping, validation) is called directly, never injected. Per-call data goes in method
   parameters. If a calculation's only dependency is the time, take `now` as a parameter and have no port; a shared
   service that stamps the time (an error log) is a port member and reads its own clock.
@@ -50,7 +59,8 @@ or adapter constructed outside the composition root).
   is CS9035). Settings code never sets values on live objects; a setting changed at runtime is a command on its
   object, and saving reads the live values back into a settings value.
 - **Adapters** (`<Class>Adapter`) implement the port with real infrastructure. No branching on business data; branching
-  that translates the infrastructure (a 404 → `null`, a unique-key violation → "already exists") belongs there.
+  that translates the infrastructure (a 404 → `null`, a unique-key violation → "already exists") belongs there, and so
+  does calling another use case the root built for a port member that asks for it.
 - No port needed: adapters, decorators, the composition root (other rules still apply). Framework-created types
   (attributes, EF entities, JSON converters) take no dependencies; controllers and components stay thin and delegate.
 - Several port calls sharing a scope or transaction: return a handle (`Task<IOutboxBatch> OpenBatchAsync(...)`).
@@ -118,7 +128,7 @@ Take the first match:
 | state that changes under rules | a class with a private field its methods change |
 | a calculation or decision | a static method on a static class named for the concept (`Shipping.CalculateCost`) |
 | read → compute → write, no decisions between | **no class**: I/O at the edge, pure code in between |
-| a use case whose decisions interleave with I/O | one class, one public `HandleAsync`, one port (R001) |
+| a use case whose decisions interleave with I/O | one class, one public `HandleAsync`, one port (R001); use cases sharing a step: one class |
 | a use case with no decisions | **no class**: the endpoint calls data access |
 | 2+ implementations chosen at runtime | an interface |
 | state a framework binds or sets | framework-facing data: public as it requires, no rules |
@@ -137,8 +147,11 @@ Take the first match:
   A public `List<T>` or `readonly Dictionary` on a type with rules is a leak.
 - A framework's protocol (`ShowIn` before the widget, `TakeFrom` after) isn't your set order: expose exactly those
   members and make the second take what the first returns (`var shown = choice.ShowIn(rows); ... choice.TakeFrom(rows, shown);`).
-- One use case per class; knowledge shared by use cases lives on the type it's about. Test through public methods;
-  never add an interface only to fake it.
+- One use case per class, unless use cases share a step (a private method that reaches the port): then one class, a
+  public method each, the step private. A use case that shares no step gets its own class and port, even when they
+  work on the same state (a type of its own, with its rules, handed to each) or share a member like reporting an
+  error. Needing a port member the others don't is not the test. Knowledge shared by use cases lives on the type it's
+  about. Test through public methods; never add an interface only to fake it.
 - A helper lives with the code that uses it: when only one area calls it, it belongs there; when its last caller
   moves, it moves too; with no callers left, delete it.
 
@@ -232,7 +245,8 @@ Build: RL0801 (`switch` on a union), RL0802 (discarded `To*` / `With*`), RL0803 
 
 ## R009: Exceptions are for bugs; expected failures are results
 
-Build: RL0901 (empty catch), RL0902 (catch-all outside an edge), RL0804, CA2200 (`throw ex`), CA2201 (throwing `Exception`).
+Build: RL0901 (empty catch), RL0902 (catch-all outside an edge), RL0804, CA2200 (`throw ex`), CA2201 (throwing `Exception`);
+suggestion while measured: RL0903 (an adapter's catch that turns cancellation into a result).
 
 - Throw for bugs only (bad argument, wrong state, impossible case, corrupt data), with a built-in type and a message
   that includes the value. A custom exception type only if something catches it specifically.
@@ -245,6 +259,9 @@ Build: RL0901 (empty catch), RL0902 (catch-all outside an edge), RL0804, CA2200 
   library object or deferred sequence (`Select` without `ToList`) leaves the adapter: it would throw outside the catch.
 - Shutdown isn't a failure; a timeout is:
   `catch (Exception ex) when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested)`.
+- An adapter that turns failures into results lets cancellation through: catch the failures it reports, and a timeout
+  as `catch (TaskCanceledException) when (!ct.IsCancellationRequested)`; never `OperationCanceledException` (or
+  everything) into `Failed`, or shutdown is reported as a failure and every workflow must re-check its token.
 
 ## R010: Async all the way, with a cancellation token, nothing fire-and-forget
 

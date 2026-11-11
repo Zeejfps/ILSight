@@ -76,6 +76,10 @@ dotnet_diagnostic.RL0102.severity = warning
 dotnet_diagnostic.RL0403.severity = suggestion
 dotnet_diagnostic.RL0306.severity = suggestion
 dotnet_diagnostic.RL0307.severity = suggestion
+dotnet_diagnostic.RL0103.severity = warning
+dotnet_diagnostic.RL0105.severity = warning
+dotnet_diagnostic.RL0104.severity = suggestion
+dotnet_diagnostic.RL0903.severity = suggestion
 # R011's checks are suggestions while their precision is measured (RULES.md R011).
 dotnet_diagnostic.RL1101.severity = suggestion
 dotnet_diagnostic.RL1102.severity = suggestion

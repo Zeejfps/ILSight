@@ -60,12 +60,12 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306), a `Get*` returning -1 or `default` of a struct (RL0307) | whether a name is a verb; choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
 | R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case) |
-| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere |
+| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; whether use cases share a step (one class) or not (a class each) |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
-| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101); suggestion while measured: a use case or adapter constructed outside the composition root (RL0102) | an effect reached through an unlisted method of an object passed in; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; ports, adapters, what counts as a decision |
+| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; ports, adapters, what counts as a decision |
 | R006 | – | all, including whether an input is read all-or-nothing or leniently |
 | R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849) | parallel queries on one `DbContext`; moving async work out of sync-only callers |
-| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object or deferred sequence leaving an adapter |
+| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestion while measured: an adapter's catch that turns cancellation into a result (RL0903) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object or deferred sequence leaving an adapter; cancellation turned into a result without a catch (an awaiter or continuation) |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
 | R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
 
@@ -81,7 +81,7 @@ Mark folders whose job is I/O (an Infrastructure project, startup wiring) with `
 ## R001: A class declares its outside-world needs as a single port
 
 **Rule.** A class that makes decisions touches the outside world only through **one interface it declares itself**, received
-through its constructor (in code written as functions, as a parameter: point 8). **Adapters** implement that interface
+through its constructor (a lone function may take it as a parameter: point 8). **Adapters** implement that interface
 using real infrastructure, and make no decisions. Only the composition root builds use cases and adapters.
 
 **Why.** Anyone reading the class, human or agent, sees in one place everything it can do to the outside world.
@@ -132,6 +132,27 @@ In testing, the first handler's test failed without assembly files on disk altho
 on the port, the test chose the answer and when it arrived. Over-applied, it hurts: with the pure bookmark question on
 the port too, the test ran the fake's copy of the rule, which disagreed with the real one (R001 S13).
 
+**Another use case is reached through the port too.** When a use case needs another one done (opening an assembly ends
+by showing its root node, which is navigation's use case), that is a member of its own port, named for what it needs
+(`ShowNode(tabs, node)`), and the adapter calls the other use case, which the composition root built. The other's
+decisions and effects stay its own: don't take on its effects (inherit its port or copy its members), don't take it or
+its port beside your own, and don't call its function with its port.
+
+```csharp
+public interface IPorts
+{
+    Task<Assembly?> ReadFileAsync(string path, CancellationToken ct);
+    void ShowNode(Tabs tabs, string node);                     // the adapter calls navigation.ShowNode(tabs, node)
+}
+```
+
+In testing, the three wirings behaved alike in production. A test of opening through its port implemented 3 members,
+none of navigation's, and saw what opening decided whatever navigation would do. With navigation passed in beside the
+port, or its effects absorbed into opening's port, the same test implemented 4 (2 of them navigation's), and what it saw
+depended on navigation's rule and state; a member added to navigation's port broke opening's test fakes (and, absorbed,
+its adapter), while through the port nothing of opening's changed (S20). RL0104 suggests where a use case takes another
+one's port, extends it, or takes something beside its own.
+
 ### How
 
 1. Declare the port as a nested `public interface IPorts`. The constructor takes only that.
@@ -175,7 +196,17 @@ the port too, the test ran the fake's copy of the rule, which disagreed with the
    the same `false` (R003 Questions).
 
 2. **Name port members for what the class needs** (`FindOrderAsync`, `Now`, `LogOrderConfirmed`), not after infrastructure.
-   Port signatures must not expose infrastructure types (`DbContext`, `DbSet<T>`, `IQueryable<T>`, `HttpClient`, `ILogger`).
+   Port signatures carry values: no infrastructure types (`DbContext`, `DbSet<T>`, `IQueryable<T>`, `HttpClient`,
+   `ILogger`), and no types that hold one, such as a library's feed object that keeps an `HttpClient` and its cached index.
+   Pass what the class decides with (a `PackageSource`, a cache's two folders); the adapter keeps the library's objects
+   and what they cache. In testing, a fake whose answer held such feeds had to make an `HttpClient` it never used (a feed
+   can't exist without one, CS9035), and the browser, holding feeds, made one itself for a URL the user typed, with the
+   library's shared client: its search went to the network, past the handler the composition root chose (S21). RL0105
+   reports a port member whose signature is, or holds, a known infrastructure type or a service listed in
+   `rulelab.ambient_types`.
+   A library's own I/O client (ILSight.Core's NuGet feed client) is infrastructure: only adapters call it, and its own
+   decisions (the protocol's: read the feed's index once) are tested through its infrastructure's seam, an
+   `HttpMessageHandler`, not through ports (S21).
 3. **List only what this class uses.** If two classes need the same operation, each port declares it. Don't share wide interfaces.
 4. **Per-call data goes in method parameters**, never in a port-using class's constructor.
    ```csharp
@@ -199,14 +230,26 @@ the port too, the test ran the fake's copy of the rule, which disagreed with the
    ```
 7. **A class with no external dependencies has no port and no dependency parameters.** Prefer this. Push logic into pure
    code and keep the port-using class thin.
-8. **Code written as functions takes its port as a parameter.** The static class declares `IPorts`; the function takes
-   the data it changes, then the port, then the token. It's the same seam as a constructor's port (S14: an identical fake,
-   the same results).
+8. **Functions that share a port are one object.** A workflow and its steps, or several workflows, that reach the same
+   port are a class whose constructor takes the port: the functions are its methods, private where only it uses them,
+   and the composition root builds it once. Only a **lone function** (no other function takes its port) may take its
+   port as a parameter instead: the static class declares `IPorts`, and the function takes the data it changes, then the
+   port, then the token. That is the same seam as a constructor's port (S14: an identical fake, the same results).
    ```csharp
-   public static async Task<bool> TryUpdateAsync(Feed feed, FeedUpdate.IPorts ports, CancellationToken ct)
+   public sealed class Assemblies(Assemblies.IPorts ports)     // workflows that share steps: one object
+   {
+       public async Task UsePdbAsync(AssemblyList list, IReadOnlyList<Tab> tabs, string path, string pdb, CancellationToken ct)
+       private async Task ReopenAsync(AssemblyList list, IReadOnlyList<Tab> tabs, ReopenRequest request, CancellationToken ct)
+   }
 
-   await FeedUpdate.TryUpdateAsync(state.Feed, feedPorts, ct);   // at the edge; the composition root built feedPorts
+   public static async Task<bool> TryUpdateAsync(Feed feed, FeedUpdate.IPorts ports, CancellationToken ct)   // a lone function
    ```
+   In testing (S19), the same module as functions taking the port and as one object ran the same cases with one fake.
+   As functions, all 4 took the port (ILSight's `Assemblies`: 20, with 14 call sites passing `appState.AssemblyPorts`),
+   and a step handed another port compiled, ran, and reported a gone tab to a log nobody reads; as an object, the step
+   has no port parameter (CS1501). The wiring costs the same: the state holds the object instead of the port. Functions
+   that share a port but no step don't belong together: each gets a port of its own (R004 step 3). RL0103 reports a
+   static class whose functions take the same port.
    - **The port is an interface, not a record of functions.** A record of delegates fakes in 5 lines instead of 16 and
      needs no adapter class, but the build checks none of it: members that fail RL0301, RL1001 and RL0303 on an
      interface pass silently as delegates, and their parameters lose their names (S14).
@@ -216,16 +259,18 @@ the port too, the test ran the fake's copy of the rule, which disagreed with the
      state itself (saving a session), takes it.
    - **Narrow from the bottom up.** Passing the whole state on to a callee that takes it is not working on the whole
      state. Narrow the callees first, then the caller: a function can stop taking the state only once nothing it calls
-     needs it, and a caller that calls a narrowed function takes that function's port to pass on.
+     needs it, and a caller that calls a narrowed use case reaches it through its own port, as any use case reaches
+     another ("Where an effect comes from").
      ```csharp
      // ❌ the panel only writes the status bar; it takes the state because FeedUpdate does
      public static async Task RefreshAsync(AppState state, CancellationToken ct)
 
-     // ✅ FeedUpdate narrowed first (feed + its port), then the panel
-     public static async Task RefreshAsync(Feed feed, StatusBar status, FeedUpdate.IPorts ports, CancellationToken ct)
+     // ✅ FeedUpdate narrowed first (feed + its port), then the panel; its port's TryUpdateFeedAsync calls the update
+     public async Task RefreshAsync(Feed feed, StatusBar status, CancellationToken ct)   // FeedPanel(FeedPanel.IPorts ports)
      ```
      In testing, a test of that panel built all 5 services on the state; narrowing only the update left it so, and
-     after the panel followed, the test built a feed, a status bar and one fake port (S16).
+     after the panel followed, the test built a feed, a status bar and one fake port, which now answers only whether the
+     update happened (S16, S20).
 
 ### Adapters
 
@@ -236,7 +281,9 @@ the port too, the test ran the fake's copy of the rule, which disagreed with the
   that decision belongs in the class it serves. Branching that translates the infrastructure (a status code, a
   provider exception, a wire format) belongs in the adapter.
   Translating includes failures: a 404 becomes `null` from a `Find*` port member; anything the port has no answer for
-  propagates (R009). A library that throws lazily is translated where its values are read (R009 "Adapters translate").
+  propagates (R009). A library that throws lazily is translated where its values are read, and cancellation is not a
+  failure to translate (R009 "Adapters translate"). Calling another use case the composition root built, for a port
+  member that asks for it, is translating too ("Where an effect comes from", S20).
 - Several ports may share one adapter when they use the same infrastructure. Register each port to the shared instance:
 
   ```csharp
@@ -275,7 +322,8 @@ application through the same code, swapping adapters for fakes.
 - **Ordinary code never constructs a use case or an adapter.** It is handed what it calls.
 - **Without a DI container,** the root builds each use case once and hands it to the edges that call it, on the object
   those edges already receive (`state.GoToType`). Only edges receive that object; they pass ordinary code the parts it
-  uses (point 8).
+  uses (point 8). A use case that another one reaches is built first and handed to that one's adapter (S20); two that
+  reach each other need one of them handed over after both are built (not tested).
 
 ```csharp
 public static class AppRoot                                    // an edge file
@@ -349,14 +397,16 @@ outside the composition root.
 
 ### Checklist
 
-- [ ] Constructor takes no dependencies, or exactly one: the class's own nested `IPorts`. (Entities and value objects use `required init` properties: R005.) A function takes its static class's `IPorts` as a parameter, not a record of functions or the whole state.
+- [ ] Constructor takes no dependencies, or exactly one: the class's own nested `IPorts`. (Entities and value objects use `required init` properties: R005.)
+- [ ] Functions that share a port are one class taking it in its constructor; only a lone function takes its port as a parameter (an interface, not a record of functions or the whole state).
 - [ ] Effects reached through an object passed in (a method that reads the disk, runs work, reports an error) are on the port; plain data and pure methods on it are used directly.
+- [ ] Another use case is reached through a member of this one's port, and the adapter calls it; never its port, its effects, or the use case itself beside the port.
 - [ ] Only the composition root, in an edge file, constructs use cases and adapters; tests build the application through it.
 - [ ] Only edges and functions that work on the whole state take it; callees were narrowed first, then their callers.
 - [ ] Per-document / per-request objects come from a factory the root built; configured values arrive through constructors or `required init`, never a settings pass.
 - [ ] No `DateTime.Now`/`UtcNow`, `Guid.NewGuid()`, `Random`, `File`, `Environment`, `HttpClient` or `ILogger` in a class that makes decisions.
 - [ ] No call to the codebase's own services (job runners, error logs, caches), static or through an object passed in, in a class that makes decisions; they are listed in `rulelab.ambient_types`.
-- [ ] Port members are named after needs; no infrastructure types in their signatures.
+- [ ] Port members are named after needs; their signatures carry values: no infrastructure types, and no types that hold one (the adapter keeps the library's objects).
 - [ ] Per-call data arrives through method parameters.
 - [ ] Pure collaborators are called directly, not injected.
 - [ ] Adapters contain no business branching.
@@ -606,7 +656,7 @@ foreach (var line in lines)
 | Pattern | Meaning | Example |
 |---------|---------|---------|
 | `Raise*` | Raises an event | `RaiseOrderPlaced(order)` |
-| `Handle*` | Responds to something that arrived: an event, a message, or a use case's request. `HandleAsync` is the single public method of a use-case class (R004); the class name says which use case. It returns nothing, a value, or a result union (R009), never a bare `bool` (see Questions). | `HandleOrderPlaced(sender, e)`, `CancelOrderHandler.HandleAsync(orderId, ct)` |
+| `Handle*` | Responds to something that arrived: an event, a message, or a use case's request. `HandleAsync` is the public method of a class with one use case (R004), and the class name says which; a class of use cases that share a step names each method after its workflow (`UsePdbAsync`). It returns nothing, a value, or a result union (R009), never a bare `bool` (see Questions). | `HandleOrderPlaced(sender, e)`, `CancelOrderHandler.HandleAsync(orderId, ct)` |
 | `Log*` | Records that something happened (logging / metrics port members) | `LogOrderConfirmed(orderId)` |
 | `ThrowIf*` | Throws when the condition holds | `ThrowIfNull(value)`, `ThrowIfNegative(amount)` |
 | `Assert*` | Test code: throws unless the condition holds | `Check.Assert(account.Balance >= 0, "...")` |
@@ -689,7 +739,7 @@ Work top to bottom and take the first match.
 | State that changes under rules | a class: `required init` for the initial state, a private field that only its methods change (R005) | `account.Withdraw(amount)` |
 | A calculation or decision over data | a static method on a static class named for the concept | `Shipping.CalculateCost(order)`, `Csv.ReadRecords(reader)` |
 | Read → compute → write, with no decision between I/O calls | **no class**: do the I/O at the edge (endpoint, `Program`) and call pure code in between | `File.WriteAllText(output, PeopleCsv.ConvertToJson(File.ReadAllText(input)))` |
-| A use case whose decisions interleave with I/O | one class per use case, one public method, one port (R001); in code written as functions, a static function taking its port as a parameter (R001 point 8) | `CancelOrderHandler.HandleAsync(orderId, ct)` |
+| A use case whose decisions interleave with I/O | one class per use case, one public method, one port (R001); use cases that share a step: one class, a public method each (step 3); a lone function may take its port as a parameter (R001 point 8) | `CancelOrderHandler.HandleAsync(orderId, ct)` |
 | A use case with no decisions (plain read or write) | **no class**: the endpoint calls data access directly | `await queries.FindSummaryAsync(id, ct)` |
 | Two or more real implementations chosen at runtime | an interface + one class per implementation | `IPaymentProvider` → `StripeProvider`, `PayPalProvider` |
 | State a framework reads or writes directly (fields a widget binds by `ref`, properties a binder sets) | framework-facing data: public as the framework requires, no rules; state with rules is a type it holds (see Framework-facing state) | `picker.Filter`, `picker.IsOpen` + `picker.Choice` |
@@ -709,6 +759,18 @@ Work top to bottom and take the first match.
 ### Step 3: granularity
 
 - **One use case per class, not one class per entity.** An `OrderService` holding every use case makes every test fake the union of all their dependencies.
+- **Use cases that share a step are one class; the others are a class each.** A step is a private method that reaches
+  the port (read the file again, then show each tab's place again or report it gone). Use cases that share one are a
+  class with a public method each and the step private. A use case that shares no step with the others is a class of
+  its own with its own port, even when they work on the same state (the state, with its rules, is then a type of its
+  own, handed to each) or use the same port member (reporting an error: each port declares it, R001 point 3). Whether
+  one needs a port member the others don't is not the test: a use case can need its own member and still share a step.
+  In testing (S12), ILSight's NuGet browser (four workflows sharing state but no step) split into four use cases and a
+  state type: a test of any one workflow implemented 2 port members instead of 6, and the rule they share (an overtaken
+  search's page is never shown) was tested on the state with no fake. It cost 8 more types, and the state's 7 methods
+  became public. Splitting two workflows that share a step by "needs a member the others don't" saved nothing for the
+  one with its own member (3 members either way), turned the step into a third use case reached through ports, and
+  went from 1 port to 3 (6 members) plus an adapter that forwards to the step.
 - **Knowledge shared by use cases lives on the type it's about.** Which status transitions are allowed belongs on `Order`, not repeated in each handler.
 - **Type count is not the goal.** Sorting a grab bag into well-named homes adds types; removing pass-through layers removes them. Both are right.
 - **A helper lives with the code that uses it.** When only one area calls it, it belongs to that area (knowledge in
@@ -773,7 +835,7 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 
 ### Testing follows the seams
 
-- Use-case classes: through their one public method, with a fake port.
+- Use-case classes: through their public methods, with a fake port.
 - Domain types and static calculations: directly, with no fakes.
 - Data access (adapters, queries): against a real or local database.
 - Never test private methods. Never add an interface only so something can be faked.
@@ -781,6 +843,7 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 ### Checklist
 
 - [ ] Every new type matches a row in step 1.
+- [ ] Use cases share a class only when they share a step; one that shares none has its own class and port.
 - [ ] No type only forwards calls (adapters excepted).
 - [ ] No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` names.
 - [ ] No interface with a single implementation, except R001 ports.
@@ -1471,6 +1534,25 @@ while (!stoppingToken.IsCancellationRequested)
 - **Adapters translate** infrastructure outcomes into the port's contract (R001). Check a status where the API offers
   one (HTTP 404 → `null` from `Find*`); otherwise catch the one specific exception that means it (a unique-key
   violation → "already exists"). Everything else propagates.
+- **An adapter that translates failures into results lets cancellation through.** When its own token was cancelled,
+  `OperationCanceledException` propagates: catch the failures the port reports (`HttpRequestException`), and a timeout
+  as a failure only when nobody cancelled.
+  ```csharp
+  catch (HttpRequestException ex)
+  {
+      return new Outcome<string>.Failed { Error = ex };
+  }
+  catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+  {
+      return new Outcome<string>.Failed { Error = ex };   // HttpClient's timeout: nobody cancelled
+  }
+  ```
+  In testing, an adapter that turned everything a request threw into `Failed` reported a download cancelled at
+  shutdown as "Download failed: A task was canceled."; the search hid its own only because it re-checked its token
+  after the port call (ILSight's workaround), which every workflow has to remember. Letting cancellation through, the
+  edge saw its own shutdown and reported nothing, with no token checks in the workflows, and a timeout was still a
+  failure (S07). RL0903 suggests where an adapter's catch turns cancellation into a result; a translation done without
+  a catch (an awaiter that turns a cancelled task into `Failed`, as ILSight's `Background.Wait` does) is review-level.
 - **A library that throws lazily is translated where it's read.** Some libraries throw from property reads, when they
   decode the data under them (ICSharpCode's decompiler throws `BadImageFormatException` from almost any property of a
   corrupt file). Translating that is still adapter work, not an edge's: each adapter member reads everything its answer
@@ -1508,6 +1590,7 @@ while (!stoppingToken.IsCancellationRequested)
 - [ ] Expected failures are returned: a union per operation, `Result<T>`, `Find*` → `T?`, or `Try*`.
 - [ ] No result union is discarded.
 - [ ] Decision code has no `try` / `catch`; adapters catch only the specific exception they translate.
+- [ ] An adapter that turns failures into results lets `OperationCanceledException` through when its own token was cancelled (a timeout is a failure).
 - [ ] A lazily-throwing library's values are read inside the adapter member's catch; no library object or deferred sequence leaves the adapter.
 - [ ] Catch-alls exist only at the edge, around one unit of work, and let shutdown through (not timeouts).
 - [ ] No empty catch, no `throw ex;`, no log-and-rethrow.
