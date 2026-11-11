@@ -82,6 +82,6 @@ public sealed class LocalizationTests
         d.AppState.Locale = Locale.Ja;
         d.Pump();
 
-        Assert.Equal(Locale.Ja, RestoreAppState(temp.Settings(), TestSession.Shared).Locale);
+        Assert.Equal(Locale.Ja, AppRoot.RestoreAppState(temp.Settings(), TestSession.Shared).Locale);
     }
 }

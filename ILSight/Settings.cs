@@ -1,9 +1,7 @@
 using ZGF.Gui.Immediate;
 using System.Diagnostics;
-using System.Globalization;
 using ZGF.Desktop;
 using ILSight.Core;
-using ILSight.Localization;
 using static ILSight.AssemblyLists;
 using static ILSight.Bookmarks;
 using static ILSight.IconTheming;
@@ -12,18 +10,16 @@ using static ILSight.Theming;
 
 namespace ILSight;
 
-/// <summary>Saving the settings when something in them changed.</summary>
+/// <summary>Restoring what the settings keep into the app state, and saving the settings when something in them changed.</summary>
 public static class Settings
 {
     private static readonly Saving.Unchanged Unchanged = new();
 
-    /// <summary>The app state <paramref name="settings"/> describe, with the open list's documents
-    /// reopened, what is saved recorded as saved, and the user's themes and icon themes read.</summary>
-    public static AppState RestoreAppState(AppSettings settings, BrowseSession session)
+    /// <summary>Restores into <paramref name="appState"/> what <paramref name="settings"/> keep: the assembly
+    /// lists, the bookmarks and analyses, and the open list's documents reopened; records what is saved as saved,
+    /// reports the bookmarks left out, and reads the user's themes and icon themes.</summary>
+    public static void Restore(AppState appState, AppSettings settings)
     {
-        var appState = CreateAppState(settings, session);
-        var first = Tabs.AddNew(appState.Tabs);
-        Tabs.MakeActive(appState.Tabs, first);
         appState.Lists.Restore(settings.AssemblyLists, settings.ActiveAssemblyList);
         var leftOutBookmarks = appState.Bookmarks.Restore(settings.Bookmarks);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
@@ -32,56 +28,6 @@ public static class Settings
         ReportLeftOutBookmarks(appState, leftOutBookmarks);
         ReadThemes(appState);
         ReadIconThemes(appState);
-        return appState;
-    }
-
-    /// <summary>The app state <paramref name="settings"/> describe, before anything is reopened or read
-    /// from disk; <see cref="RestoreAppState"/> does that. The tooltips report to the error log rather than to
-    /// the app state, which they are part of.</summary>
-    private static AppState CreateAppState(AppSettings settings, BrowseSession session)
-    {
-        var assemblies = new AssemblyList();
-        var errors = new ErrorLog();
-        var work = new BackgroundWork();
-        var opens = new OpenRequests();
-        var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
-        var appState = new AppState
-        {
-            Work = work,
-            Workflows = new WorkflowRunner(work, errors),
-            NavigateHandler = new NavigateHandler(navigation),
-            ShowInMetadataHandler = new ShowInMetadataHandler(navigation),
-            ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),
-            OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
-            GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
-            Opens = opens,
-            Session = session,
-            SettingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile },
-            View = ReadViewSettings(settings),
-            Window = settings.Window,
-            Assemblies = assemblies,
-            Errors = errors,
-            Tooltips = new CodeTooltips { Assemblies = assemblies, Work = work, ReportError = problem => Errors.Report(errors, problem), Version = assemblies.Version },
-            Theme = settings.Theme,
-            IconTheme = settings.IconTheme,
-            Language = settings.Language,
-            DecompilerOptions = settings.Decompiler,
-            Locale = ChooseLocale(settings),
-            ApiVisibility = settings.ApiVisibility,
-            Updates = new AppUpdates { Feed = GitHubUpdates.CreateFeed(), CheckAutomatically = settings.CheckForUpdates },
-        };
-        AssemblyListing.UseLoadOptions(assemblies, settings.Decompiler);
-        return appState;
-    }
-
-    private static Locale ChooseLocale(AppSettings settings)
-    {
-        if (settings.Locale is not null)
-        {
-            return settings.Locale.Value;
-        }
-
-        return Locales.For(CultureInfo.CurrentUICulture);
     }
 
     /// <summary>The folder <paramref name="name"/> beside <paramref name="settingsFile"/>; null while the

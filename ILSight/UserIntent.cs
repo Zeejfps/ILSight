@@ -40,6 +40,29 @@ public sealed class UserIntent
         _resolving = NoTicket;
     }
 
+    /// <summary>Begins a request that finds a place in the background: it is resolving until
+    /// <see cref="EndResolving{T}(int, Outcome{T})"/> takes what was found for the ticket this returns.</summary>
+    public int BeginResolving()
+    {
+        var ticket = Begin();
+        StartResolving(ticket);
+        return ticket;
+    }
+
+    /// <summary>What finding a place for <paramref name="ticket"/>, begun by <see cref="BeginResolving"/>, came to:
+    /// the lookup's <paramref name="outcome"/>, whose null means the place is not there; stale, leaving the request
+    /// begun since alone, when another one has begun meanwhile. Stops resolving unless stale.</summary>
+    public Resolution<T> EndResolving<T>(int ticket, Outcome<T?> outcome) where T : class
+    {
+        return TakeResolution(ticket, outcome.Match(static ok => FoundOrMissing(ok.Value), static failed => new Resolution<T>.Failed(failed.Error)));
+    }
+
+    /// <inheritdoc cref="EndResolving{T}(int, Outcome{T})"/>
+    public Resolution<T> EndResolving<T>(int ticket, Outcome<T?> outcome) where T : struct
+    {
+        return TakeResolution(ticket, outcome.Match(static ok => FoundOrMissing(ok.Value), static failed => new Resolution<T>.Failed(failed.Error)));
+    }
+
     /// <summary>Begins a request that finds a place with <paramref name="lookup"/> in the background,
     /// resolving until it is done; the lookup's null means the place is not there. Stale when another
     /// request has begun meanwhile. <paramref name="ct"/> keeps the lookup from starting.</summary>
@@ -56,16 +79,22 @@ public sealed class UserIntent
 
     private async Task<Resolution<T>> RunLookupAsync<T>(Func<Resolution<T>> lookup, CancellationToken ct)
     {
-        var ticket = Begin();
-        StartResolving(ticket);
+        var ticket = BeginResolving();
         var outcome = await Background.Wait(Task.Run(lookup, ct));
+        return TakeResolution(ticket, outcome.Match(static ok => ok.Value, static failed => new Resolution<T>.Failed(failed.Error)));
+    }
+
+    /// <summary><paramref name="resolution"/>, unless another request began since <paramref name="ticket"/>: then
+    /// stale, the request begun since left resolving as it is.</summary>
+    private Resolution<T> TakeResolution<T>(int ticket, Resolution<T> resolution)
+    {
         if (IsStale(ticket))
         {
             return new Resolution<T>.Stale();
         }
 
         StopResolving();
-        return outcome.Match<Resolution<T>>(static ok => ok.Value, static failed => new Resolution<T>.Failed(failed.Error));
+        return resolution;
     }
 
     private static Resolution<T> FoundOrMissing<T>(T? value) where T : class

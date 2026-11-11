@@ -323,7 +323,7 @@ public sealed class AppSettingsTests : IDisposable
     {
         var loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Assemblies": [ "a.dll", """)));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         Assert.Empty(loaded.AssemblyLists);
         Assert.IsType<SettingsProblem.NotJson>(problem);
@@ -337,7 +337,7 @@ public sealed class AppSettingsTests : IDisposable
         const string broken = """{ "Assemblies": [ "a.dll", """;
         var loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written(broken)));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(loaded));
 
@@ -377,7 +377,7 @@ public sealed class AppSettingsTests : IDisposable
             loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(path));
         }
 
-        var appState = ILSightAppLauncher.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
         SaveSettings(appState);
 
         Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotRead>(loadResult.Problem).Kept);
@@ -404,7 +404,7 @@ public sealed class AppSettingsTests : IDisposable
             """;
         var loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written(json)));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         var leftOut = Assert.IsType<SettingsProblem.ValuesLeftOut>(problem);
         Assert.Equal(["Language", "Window"], leftOut.Fields);
@@ -1127,7 +1127,7 @@ public sealed class ShowInApiReferenceHandlerTests
         d.TakeViewCommands();
         var reference = new FakeApiReference { Page = new Outcome<string?>.Ok("https://learn.microsoft.com/dotnet/api/greeter") };
 
-        await new ShowInApiReferenceHandler(reference).HandleAsync(d.AppState, d.Fixture("Greeter").Definition, CancellationToken.None);
+        await new ShowInApiReferenceHandler(reference).HandleAsync(d.AppState.ViewCommands, d.Fixture("Greeter").Definition, CancellationToken.None);
 
         var opened = Assert.IsType<ViewCommand.OpenWebPage>(Assert.Single(d.TakeViewCommands()));
         Assert.Equal("https://learn.microsoft.com/dotnet/api/greeter", opened.Url);
@@ -1143,8 +1143,8 @@ public sealed class ShowInApiReferenceHandlerTests
         var none = new FakeApiReference { Page = new Outcome<string?>.Ok(null) };
         var failed = new FakeApiReference { Page = new Outcome<string?>.Failed(new IOException("unreadable")) };
 
-        await new ShowInApiReferenceHandler(none).HandleAsync(d.AppState, hidden, CancellationToken.None);
-        await new ShowInApiReferenceHandler(failed).HandleAsync(d.AppState, hidden, CancellationToken.None);
+        await new ShowInApiReferenceHandler(none).HandleAsync(d.AppState.ViewCommands, hidden, CancellationToken.None);
+        await new ShowInApiReferenceHandler(failed).HandleAsync(d.AppState.ViewCommands, hidden, CancellationToken.None);
 
         Assert.Equal("Hidden", Assert.IsType<AppProblem.NoApiReferencePage>(Assert.Single(none.Reported)).Name);
         Assert.Equal("Hidden", Assert.IsType<AppProblem.NoApiReferencePage>(Assert.Single(failed.Reported)).Name);

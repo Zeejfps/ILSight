@@ -83,7 +83,7 @@ rulelab.test_code = true
 # The edge where the workflows the screen asks for are started (R009, R010): it catches and reports what they end
 # with, and counts them as background work.
 # Edges (RULES.md "Edges"): where the framework hands control to the app. Only these start work, catch everything and
-# wire adapters: the workflow runner, the command dispatcher, the app the framework drives, and the launcher
-# (composition root).
-[{ILSight/WorkflowRunner.cs,ILSight/AppCommand.cs,ILSight/ILSightApp.cs,ILSight/ILSightAppLauncher.cs}]
+# wire adapters: the workflow runner, the command dispatcher, the app the framework drives, the launcher, and the
+# composition root (AppRoot).
+[{ILSight/WorkflowRunner.cs,ILSight/AppCommand.cs,ILSight/ILSightApp.cs,ILSight/ILSightAppLauncher.cs,ILSight/AppRoot.cs}]
 rulelab.infrastructure = true

@@ -467,7 +467,7 @@ public sealed class UserThemeTests : IDisposable
     public void User_themes_in_the_folder_beside_the_settings_are_listed_after_the_built_in_ones()
     {
         WriteTheme("my-dracula", """{ "name": "My Dracula", "extends": "dracula", "ui": { "accent": "#FF0000" } }""");
-        var appState = RestoreAppState(Settings(), TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
 
         Assert.Equal("my-dracula", appState.Themes.Ids[^1].Text);
         Assert.Equal("My Dracula", appState.Themes.ListNames(CultureInfo.InvariantCulture).Last());
@@ -479,7 +479,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var settings = Settings();
         settings.Theme = Id("gone");
-        var appState = RestoreAppState(settings, TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
         Assert.Same(appState.Themes.GetTheme(Id("dark")), ResolveTheme(appState));
         SaveSettings(appState);
@@ -490,7 +490,7 @@ public sealed class UserThemeTests : IDisposable
     public void A_problem_in_a_theme_is_reported_once_until_it_changes()
     {
         WriteTheme("broken", """{ "extends": "dark", "ui": { "accent": "purple" } }""");
-        var appState = RestoreAppState(Settings(), TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
         var error = Assert.Single(appState.Errors.Entries);
 
         ReloadUserThemes(appState);
@@ -507,7 +507,7 @@ public sealed class UserThemeTests : IDisposable
     [Fact]
     public void The_themes_folder_is_made_with_the_schema_and_a_readme_that_are_no_themes()
     {
-        var appState = RestoreAppState(Settings(), TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
 
         var folder = PrepareThemesFolder(appState);
         ReloadUserThemes(appState);
@@ -524,7 +524,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var settings = Settings();
         settings.Theme = Id("dracula");
-        var appState = RestoreAppState(settings, TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
         var dracula = appState.Themes.GetTheme(Id("dracula"));
 
         var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture)));
@@ -588,7 +588,7 @@ public sealed class UserThemeTests : IDisposable
     {
         WriteTheme("dark-custom", "{}");
         WriteTheme("dark-custom-2", "{}");
-        var appState = RestoreAppState(Settings(), TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
 
         var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture)));
 
@@ -602,7 +602,7 @@ public sealed class UserThemeTests : IDisposable
         WriteTheme("broken", """{ "type": "light", "extends": "nope" }""");
         var settings = Settings();
         settings.Theme = Id("broken");
-        var appState = RestoreAppState(settings, TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
         var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture)));
 
@@ -613,7 +613,7 @@ public sealed class UserThemeTests : IDisposable
     [Fact]
     public void A_custom_theme_that_cannot_be_written_is_reported()
     {
-        var appState = RestoreAppState(Settings(), TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
         Directory.CreateDirectory(_temp.PathOf(Path.Combine("themes", "dark-custom.json")));
 
         var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture)));
@@ -626,7 +626,7 @@ public sealed class UserThemeTests : IDisposable
     [Fact]
     public void No_custom_theme_is_made_while_the_settings_live_in_memory()
     {
-        var appState = RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared);
+        var appState = AppRoot.RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared);
 
         Assert.Null(CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture))));
         Assert.Equal("dark", appState.Theme.Text);

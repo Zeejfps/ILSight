@@ -20,17 +20,16 @@ namespace ILSight;
 /// <summary>What the app does around each frame, keeping the app state and the screen in step.</summary>
 internal static partial class AppFrames
 {
-    /// <summary>The screen over <paramref name="appState"/>, restored from what its settings kept, with the
-    /// active tab it starts with, the tabs reopened from the open list's documents docked where they were,
-    /// and any other tab in the place of the documents. It takes the theme and strings with its first frame.</summary>
-    internal static UiState CreateUiState(AppState appState)
+    /// <summary>Has the screen, just created over <paramref name="appState"/>, follow what the app state was
+    /// restored with: the tabs reopened from the open list's documents docked where they were, any other tab in
+    /// the place of the documents, and the active tab it starts with. It takes the theme and strings with its first
+    /// frame.</summary>
+    internal static void FollowRestoredAppState(UiState uiState, AppState appState)
     {
-        var uiState = CreateScreen(appState.View, appState.Work, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime);
         DocumentPanels.SkipPanels(uiState.Documents, appState.Lists.ListDocumentPanels());
         FollowActiveTab(uiState, appState.Tabs.Active);
         RunViewCommands(uiState, appState);
         ShowInRestoredDocuments(uiState, appState.Tabs);
-        return uiState;
     }
 
     /// <summary>Does what comes before drawing a frame: the screen takes the theme, icons and strings the

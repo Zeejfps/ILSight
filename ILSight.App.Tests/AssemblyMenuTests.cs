@@ -78,9 +78,9 @@ public sealed class AssemblyMenuTests
         var greeter = references.First(r => r.Name == "Greeter");
         var internalType = app.Fixture("Hidden").Definition;
 
-        app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a, greeter, ct));
+        app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, greeter, ct));
         app.Frames.WaitUntil(() => app.Frames.OpenedUrls.Count == 1, Patience);
-        app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a, internalType, ct));
+        app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, internalType, ct));
         app.Frames.WaitUntil(() => app.AppState.Errors.Entries.Count == 1, Patience);
 
         Assert.EndsWith("/ilsight.app.tests.fixtures.greeter", app.Frames.OpenedUrls[0]);

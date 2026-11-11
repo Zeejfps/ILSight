@@ -11,6 +11,11 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
     {
         /// <summary>Tells the user the reference leads nowhere.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>The node <paramref name="reference"/> leads to, null when it leads nowhere, looked for without
+        /// holding up the screen (it may read an assembly from disk); a lookup that failed comes back as
+        /// <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<BrowseNode?>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct);
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background (it may load an assembly), then shows
@@ -19,10 +24,9 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
     public async Task HandleAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab, CancellationToken ct)
     {
         var destination = ChooseDestination(appState, inNewTab);
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, reference), ct);
-        ShowResolved(appState, reference, resolved, destination);
+        var ticket = appState.Intent.BeginResolving();
+        var found = await ports.LookUpReferenceAsync(reference, ct);
+        ShowResolved(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
     }
 
     private void ShowResolved(AppState appState, CodeReference reference, Resolution<BrowseNode> resolved, TabDestination destination)

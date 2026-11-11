@@ -11,6 +11,11 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     {
         /// <summary>Tells the user the reference leads nowhere.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>The metadata table row that defines what <paramref name="reference"/> points at, null when it
+        /// leads nowhere, looked for without holding up the screen (it may read an assembly from disk); a lookup
+        /// that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<MetadataTarget?>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct);
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background, as <see cref="NavigateHandler"/> does,
@@ -20,10 +25,9 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     public async Task HandleAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab, CancellationToken ct)
     {
         var destination = ChooseDestination(appState, inNewTab);
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.FindMetadataRow(assemblies, session, reference), ct);
-        ShowResolvedRow(appState, reference, resolved, destination);
+        var ticket = appState.Intent.BeginResolving();
+        var found = await ports.LookUpMetadataRowAsync(reference, ct);
+        ShowResolvedRow(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
     }
 
     private void ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)

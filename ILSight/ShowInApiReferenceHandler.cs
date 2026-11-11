@@ -16,14 +16,14 @@ public sealed class ShowInApiReferenceHandler(ShowInApiReferenceHandler.IPorts p
         Task<Outcome<string?>> LookUpApiReferencePageAsync(CodeReference.Entity reference, CancellationToken ct);
     }
 
-    /// <summary>Has the view open the page of the .NET API reference <paramref name="reference"/> has, or reports
-    /// that it has none.</summary>
-    public async Task HandleAsync(AppState appState, CodeReference.Entity reference, CancellationToken ct)
+    /// <summary>Has the view open the page of the .NET API reference <paramref name="reference"/> has, through
+    /// <paramref name="viewCommands"/>, or reports that it has none.</summary>
+    public async Task HandleAsync(Queue<ViewCommand> viewCommands, CodeReference.Entity reference, CancellationToken ct)
     {
         var found = await ports.LookUpApiReferencePageAsync(reference, ct);
         if (found is Outcome<string?>.Ok ok && ok.Value is not null)
         {
-            appState.ViewCommands.Enqueue(new ViewCommand.OpenWebPage(ok.Value));
+            viewCommands.Enqueue(new ViewCommand.OpenWebPage(ok.Value));
         }
         else
         {

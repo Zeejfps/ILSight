@@ -183,7 +183,7 @@ internal static class Screens
     /// <summary>A screen over an app state with nothing open, for drawing a widget alone.</summary>
     public static UiState Blank()
     {
-        return AppFrames.CreateUiState(RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared));
+        return AppRoot.CreateScreen(AppRoot.RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared));
     }
 }
 
@@ -215,10 +215,10 @@ internal sealed class AppStateDriver
     {
         Step = Pump;
         loadResult.Settings.Locale ??= Locale.En;
-        AppState = ILSightAppLauncher.RestoreAppState(loadResult, arguments, TestSession.Shared);
+        AppState = AppRoot.RestoreAppState(loadResult, arguments, TestSession.Shared);
         if (withScreen)
         {
-            _ui = AppFrames.CreateUiState(AppState);
+            _ui = AppRoot.CreateScreen(AppState);
         }
 
         RestoreAnalyses(AppState);

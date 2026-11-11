@@ -1,45 +1,18 @@
 using ZGF.Gui.Immediate;
-using ILSight.Core;
-using ILSight.Core.Processes;
 
 namespace ILSight;
 
 /// <summary>What the settings keep of the screen: taking it when it changed, to be saved with the app state's settings.</summary>
 public static class ScreenSettings
 {
-    /// <summary>The screen as the settings left it.</summary>
+    /// <summary>Restores into <paramref name="uiState"/> what the settings kept of the screen besides its layout,
+    /// display options, folded groups and filters, which it was created with: the search kinds, the columns, the
+    /// NuGet search, the dialogs' windows and the panels the saved documents were docked as; then takes it all as
+    /// unchanged since.</summary>
     /// <param name="saved">What the settings kept of the screen when they were last saved.</param>
-    /// <param name="work">Where the work the screen starts in the background is counted.</param>
-    /// <param name="reportError">Tells the user that something done in the background failed.</param>
-    /// <param name="session">The browse tree the tree and searches show nodes of.</param>
-    /// <param name="runtime">What this machine has installed.</param>
-    public static UiState CreateScreen(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime)
+    public static void RestoreScreen(UiState uiState, ViewSettings saved)
     {
-        var appCommands = new Queue<AppCommand>();
-        var search = Searches.CreateSearch(work, reportError, session);
-        search.Kinds = saved.SearchKinds;
-        var uiState = new UiState
-        {
-            AppCommands = appCommands,
-            Tree = new BrowseTree { Session = session, Work = work, ReportError = reportError },
-            FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) },
-            Search = search,
-            Omnibar = new Omnibar { Search = Searches.CreateSearch(work, reportError, session) },
-            MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
-            Runtime = runtime,
-            Picker = new FrameworkPicker(new FrameworkPickerAdapter(reportError, runtime)),
-            NuGetPicker = new NuGetPicker { Work = work, ReportError = reportError },
-            ProcessPicker = new ProcessPicker
-            {
-                Work = work,
-                ReportError = reportError,
-                FindProcesses = RunningProcesses.FindProcessesAsync,
-                FindModules = RunningProcesses.GetModulesAsync,
-            },
-            Display = saved.Display ?? DisplayOptions.Default,
-            Analyzer = new AnalyzerRows { AppCommands = appCommands },
-            MainLayout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) },
-        };
+        uiState.Search.Kinds = saved.SearchKinds;
         uiState.BookmarkColumns.Restore(saved.BookmarkColumns);
         uiState.SearchColumns.Restore(saved.SearchColumns);
         uiState.ExportColumns.Restore(saved.ExportColumns);
@@ -50,10 +23,8 @@ public static class ScreenSettings
         DialogWindows.Restore(uiState.ExportSetup.Window, saved.ExportWindow);
         DialogWindows.Restore(uiState.ProcessPicker.Window, saved.ProcessWindow);
         DialogWindows.Restore(uiState.Closer.Window, saved.CloseWindow);
-        ScreenLayout.ConnectLayout(uiState);
         DocumentPanels.SkipPanels(uiState.Documents, Docking.ListDocumentPanels(uiState.MainLayout));
         uiState.KeptView = CaptureViewSources(uiState);
-        return uiState;
     }
 
     /// <summary>What the settings keep of the screen, when that changed since it was last taken; else null.</summary>

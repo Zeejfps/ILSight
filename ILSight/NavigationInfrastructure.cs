@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Core.Metadata;
 
 namespace ILSight;
 
@@ -11,6 +12,25 @@ public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assem
     public void ReportError(AppProblem problem)
     {
         Errors.Report(errors, problem);
+    }
+
+    /// <summary>Looks in the open assemblies on the thread pool and comes back on the UI thread, with whatever the
+    /// lookup threw as <see cref="Outcome{T}.Failed"/>.</summary>
+    public async Task<Outcome<BrowseNode?>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
+    {
+        return await Background.Wait(Task.Run(() => NodeLookup.Find(assemblies, session, reference), ct));
+    }
+
+    /// <inheritdoc cref="LookUpReferenceAsync"/>
+    public async Task<Outcome<MetadataTarget?>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
+    {
+        return await Background.Wait(Task.Run(() => NodeLookup.FindMetadataRow(assemblies, session, reference), ct));
+    }
+
+    /// <inheritdoc cref="LookUpReferenceAsync"/>
+    public async Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
+    {
+        return await Background.Wait(Task.Run(() => NodeLookup.Find(assemblies, session, place), ct));
     }
 
     /// <summary>Looks on the thread pool and comes back on the UI thread, with whatever the lookup threw as

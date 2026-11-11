@@ -84,6 +84,14 @@ Done items are struck through with their commit.
 - **R003 bool methods:** `Reload.Finish(ticket)` and `Reopens.Finish(path, ticket)` return `bool` (whether the work was
   still current); R003 would name them `TryFinish`. RL0304 only checks the other direction, so the build doesn't see it.
 
+## Decided by the rules, left for their areas
+
+- `Decompilation.DecompileIntoTab` starts work and reports errors itself (reached from navigation once it finds its target).
+- `Bookmarks` resolves through `Intent.ResolveAsync(() => NodeLookup.Find(...))` (an effect through a passed object).
+- Ordinary code reaching use cases on `AppState` (`Navigation.GoBackAsync` / `GoForwardAsync`, `Diagrams`): only edges should.
+- Objects the root builds that take effects as delegates (`CodeTooltips.ReportError`, `BrowseTree`, `NuGetPicker`, `ProcessPicker.FindProcesses`): ports are interfaces.
+- `FrameworkPicker` is both framework-facing data (ref-bound fields) and a use case: split per R004 "Framework-facing state".
+
 ## Where the rules don't fit this code (feeds back into RULES.md)
 
 - **Immediate-mode GUI (ZGF) binds widgets by `ref`** (`ui.TextField(ref picker.Query)`), so widget-bound inputs must be

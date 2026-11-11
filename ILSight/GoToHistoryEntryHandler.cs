@@ -10,6 +10,11 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
     {
         /// <summary>Tells the user the place an entry recorded is gone.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>The node at <paramref name="place"/>, null when it is gone, looked for without holding up the
+        /// screen (it may read an assembly from disk); a lookup that failed comes back as
+        /// <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct);
     }
 
     /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward; nothing when
@@ -62,10 +67,9 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
             return;
         }
 
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, place), ct);
-        ShowHistoryPlace(appState, place, position, resolved, destination);
+        var ticket = appState.Intent.BeginResolving();
+        var found = await ports.LookUpPlaceAsync(place, ct);
+        ShowHistoryPlace(appState, place, position, appState.Intent.EndResolving(ticket, found), destination);
     }
 
     private static BrowseNode? FindShownNode(AppState appState, DocumentTab? tab, NodePath place)

@@ -103,7 +103,7 @@ internal static class DocumentsView
                 Commands.Start(ui.State, nameof(ShowInMetadataHandler), metadata.Target, static (a, target, ct) => a.ShowInMetadataHandler.HandleAsync(a, target, inNewTab: false, ct));
                 break;
             case CodeViewIntent.ShowInApiReference reference:
-                Commands.Start(ui.State, nameof(ShowInApiReferenceHandler), reference.Entity, static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a, entity, ct));
+                Commands.Start(ui.State, nameof(ShowInApiReferenceHandler), reference.Entity, static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct));
                 break;
             case CodeViewIntent.ShowInDiagram diagram:
                 Commands.Later(ui.State, (type: diagram.Type, title: t.DiagramTitle(diagram.Type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));
