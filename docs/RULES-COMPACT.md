@@ -5,6 +5,10 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
 
 - **The build checks the mechanical parts.** A `RLxxxx` error says what to do: fix it, don't suppress it. Breaking a
   rule on purpose: `#pragma warning disable RLxxxx // reason`. This file is the judgment the build can't make.
+- **Edges** are where the framework hands control to the app: `Main` / the composition root, a UI's command
+  dispatcher, an HTTP endpoint or middleware, a worker loop, an `async void` event handler, tests. Only edges start
+  work (and create its token), catch everything (R009) and wire adapters (R001). Mark their files
+  `rulelab.infrastructure = true`.
 - **Tests** follow R002, R003, R005, R007, R008, R010, R012 (test methods needn't take a token) and R009's ban on empty
   catches; not the others. Name tests `Method_Scenario_Expected`; assertion helpers carry `[DoesNotReturnIf(false)]`
   so they narrow nulls.
@@ -190,6 +194,8 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
 
 - If a caller can't be async (an attribute, a constructor), move the async work out of it; never block on a task.
 - Work that must outlive the request goes on a queue (an outbox), not a detached task.
+- Only an edge starts work. Features return a `Task` their caller awaits; one that starts its own work returns before
+  it's done (callers read stale state) on a token nobody can cancel. List the job runner in `rulelab.ambient_types`.
 - One operation at a time per `DbContext`; real parallelism needs a context per query (`IDbContextFactory<T>`).
 - An `async void` event handler is an edge: `try` / `catch` its body and suppress VSTHRD100 with the reason.
 - No `ConfigureAwait(false)` in application code.

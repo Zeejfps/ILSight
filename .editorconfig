@@ -7,7 +7,7 @@ root = true
 
 # R001: this codebase's own static services (they hold shared state and do effects). Reached through a class's port;
 # RL0101 reports their use outside adapters, tests and infrastructure files, like DateTime.Now.
-rulelab.ambient_types = ILSight.Background, ILSight.Errors
+rulelab.ambient_types = ILSight.Background, ILSight.Errors, ILSight.WorkflowRunner
 
 # R007: braces and block bodies; one-liners only for getters, accessors and lambdas.
 csharp_prefer_braces = true:error
@@ -80,5 +80,8 @@ rulelab.test_code = true
 
 # The edge where the workflows the screen asks for are started (R009, R010): it catches and reports what they end
 # with, and counts them as background work.
-[ILSight/WorkflowRunner.cs]
+# Edges (RULES.md "Edges"): where the framework hands control to the app. Only these start work, catch everything and
+# wire adapters: the workflow runner, the command dispatcher, the app the framework drives, and the launcher
+# (composition root).
+[{ILSight/WorkflowRunner.cs,ILSight/AppCommand.cs,ILSight/ILSightApp.cs,ILSight/ILSightAppLauncher.cs}]
 rulelab.infrastructure = true

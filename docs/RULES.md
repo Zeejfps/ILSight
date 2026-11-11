@@ -27,6 +27,20 @@ Test conventions:
 - **Test data uses object initializers** (R005), so every value in a fixture is labelled.
 - **Shared helpers live in one place** (a shared test project), not copied into each test project.
 
+## Edges
+
+An **edge** is code the framework calls to hand control to the application: `Main` and the composition root (DI
+wiring, startup), a UI's command dispatcher, an HTTP endpoint, middleware or exception handler, a message or
+background-worker loop, an `async void` event handler, and tests. Edges are few, and they are the only places that:
+
+- **start work** that outlives the call that asked for it (R010), and create the `CancellationToken` it runs on;
+- **catch** everything a unit of work can throw, log it once, and carry on (R009);
+- **wire** adapters to the classes that use them, and reach infrastructure directly (R001).
+
+Everything else is ordinary code: it gets its token as a parameter, lets unexpected exceptions through, and reaches the
+world through its port. Mark edge files in `.editorconfig` (`rulelab.infrastructure = true`) so the checks can tell
+them apart.
+
 ## Enforcement
 
 The build checks what can be checked mechanically (`analyzers/`, wired in through `Directory.Build.props`):
@@ -1117,7 +1131,7 @@ var message = account.Withdraw(amount).Match(
 
 ### Catching: only at the edge
 
-The edges are the HTTP exception handler or middleware (it turns exceptions into ProblemDetails), a background worker's
+The edges (see Edges) are the HTTP exception handler or middleware (it turns exceptions into ProblemDetails), a background worker's
 loop (around one unit of work), `Main`, and tests.
 
 ```csharp
@@ -1186,12 +1200,18 @@ together on one `DbContext` threw "a second operation was started on this contex
 3. **Nothing fire-and-forget.** No `_ = SendEmailAsync(...)` (RL1002) and no un-awaited calls (VSTHRD110): a detached
    task's failure reaches no one, so R009's "failures reach the edge" can't hold. If work must outlive the request, put
    it on a queue (an outbox, R001 S09) and let a worker do it.
-4. **No `async void`** (VSTHRD100): its exceptions can't be caught by the caller. The one exception is an event handler,
+4. **Only an edge starts work.** Everything else returns a `Task` its caller awaits, all the way up to an edge (see
+   Edges). A feature that starts its own work (through `Task.Run` left running, a job runner, or a runner it was handed)
+   returns before the work is done, so its caller reads stale state, and the work runs on a token nobody can cancel
+   (R010 S05, verified). The edge hands each workflow its token, linked to shutdown, keeps track of it, and reports its
+   unexpected failure (R009). List your job runner in `rulelab.ambient_types` (R001) so a start outside an edge is
+   reported.
+5. **No `async void`** (VSTHRD100): its exceptions can't be caught by the caller. The one exception is an event handler,
    which must be `async void`: it is an edge (R009), so wrap its body in a `try` / `catch` and suppress VSTHRD100 on it
    with the reason.
-5. **One `DbContext`, one operation at a time.** Don't start two queries on the same context and `Task.WhenAll` them;
+6. **One `DbContext`, one operation at a time.** Don't start two queries on the same context and `Task.WhenAll` them;
    await each in turn. Real parallelism needs a context per query (`IDbContextFactory<T>`).
-6. **Don't write `ConfigureAwait(false)` in application code.** ASP.NET Core has no synchronization context, so it only
+7. **Don't write `ConfigureAwait(false)` in application code.** ASP.NET Core has no synchronization context, so it only
    adds noise. Libraries shared with UI apps are the exception.
 
 ### Checklist
@@ -1199,6 +1219,7 @@ together on one `DbContext` threw "a second operation was started on this contex
 - [ ] No `.Result`, `.Wait()` or `.GetAwaiter().GetResult()` on a task.
 - [ ] Every async method takes `CancellationToken ct` last and passes it to every async call.
 - [ ] Every task is awaited: no `_ = ...Async(...)`, no `async void` except event handlers (with a `try` / `catch`).
+- [ ] Only an edge starts work; features return tasks their callers await.
 - [ ] No parallel queries on one `DbContext`.
 
 ---
