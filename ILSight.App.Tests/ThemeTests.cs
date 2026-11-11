@@ -431,6 +431,22 @@ public sealed class UserThemeTests : IDisposable
         return settings;
     }
 
+    /// <summary>Customizes the theme shown as the display options do, naming it in English: switches to the new
+    /// theme and returns its file, or null when none was written.</summary>
+    private static string? CreateCustomTheme(AppState appState)
+    {
+        var themes = appState.Themes;
+        var custom = appState.UserThemes.CreateCustomTheme(appState.Theme,
+            (parent, theme) => ThemeDraft.Compose(Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)), parent, theme));
+        if (custom is null)
+        {
+            return null;
+        }
+
+        appState.Theme = custom.Id;
+        return custom.Path;
+    }
+
     [Theory]
     [InlineData("GitHubDark", "github-dark")]
     [InlineData("SolarizedLight", "solarized-light")]
@@ -493,11 +509,11 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
         var error = Assert.Single(appState.Errors.Entries);
 
-        ReloadUserThemes(appState);
+        appState.UserThemes.ReloadThemes();
         Assert.Single(appState.Errors.Entries);
 
         WriteTheme("broken", """{ "extends": "dark", "ui": { "accent": "violet" } }""");
-        ReloadUserThemes(appState);
+        appState.UserThemes.ReloadThemes();
 
         Assert.Equal("Problems in the theme broken.json", error.Words().Title);
         Assert.EndsWith("broken.json(1): ui.accent: the palette has no color named purple", error.Words().Details);
@@ -509,8 +525,8 @@ public sealed class UserThemeTests : IDisposable
     {
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
 
-        var folder = PrepareThemesFolder(appState);
-        ReloadUserThemes(appState);
+        var folder = appState.UserThemes.PrepareFolder();
+        appState.UserThemes.ReloadThemes();
 
         Assert.Equal(_temp.PathOf("themes"), folder);
         Assert.Equal(BuiltInThemes.ReadSchema(), File.ReadAllText(Path.Combine(folder!, "theme.schema.json")));
@@ -527,7 +543,7 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
         var dracula = appState.Themes.GetTheme(Id("dracula"));
 
-        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture)));
+        var path = CreateCustomTheme(appState);
 
         var text = File.ReadAllText(path!);
         Assert.Equal(_temp.PathOf(Path.Combine("themes", "dracula-custom.json")), path);
@@ -590,7 +606,7 @@ public sealed class UserThemeTests : IDisposable
         WriteTheme("dark-custom-2", "{}");
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
 
-        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture)));
+        var path = CreateCustomTheme(appState);
 
         Assert.Equal("dark-custom-3.json", Path.GetFileName(path));
         Assert.Equal("dark-custom-3", appState.Theme.Text);
@@ -604,7 +620,7 @@ public sealed class UserThemeTests : IDisposable
         settings.Theme = Id("broken");
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
-        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture)));
+        var path = CreateCustomTheme(appState);
 
         Assert.Equal("light-custom.json", Path.GetFileName(path));
         Assert.Contains("\"extends\": \"light\",", File.ReadAllText(path!));
@@ -616,7 +632,7 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
         Directory.CreateDirectory(_temp.PathOf(Path.Combine("themes", "dark-custom.json")));
 
-        var path = CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture)));
+        var path = CreateCustomTheme(appState);
 
         Assert.Null(path);
         Assert.Equal("dark", appState.Theme.Text);
@@ -628,7 +644,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var appState = AppRoot.RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared);
 
-        Assert.Null(CreateCustomTheme(appState, parent => Strings.En.ThemeCustomName(appState.Themes.GetThemeName(parent, Strings.En.Culture))));
+        Assert.Null(CreateCustomTheme(appState));
         Assert.Equal("dark", appState.Theme.Text);
     }
 
@@ -638,11 +654,10 @@ public sealed class UserThemeTests : IDisposable
         _temp.Write("themes", "not a folder");
         var d = new AppStateDriver(Settings());
 
-        WatchUserThemes(d.AppState);
+        await d.AppState.UserThemes.WatchAsync(CancellationToken.None);
 
         var error = Assert.Single(d.AppState.Errors.Entries);
         Assert.Equal("Cannot make the themes folder", error.Words().Title);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await Theming.GetNextChangeAsync(d.AppState.ThemesWatch)).Kind);
     }
 
     [Fact]
@@ -651,14 +666,14 @@ public sealed class UserThemeTests : IDisposable
         var settings = Settings();
         settings.Theme = Id("back");
         var d = new AppStateDriver(settings);
-        WatchUserThemes(d.AppState);
+        d.AppState.Workflows.StartUntilShutdown(d.AppState.UserThemes.WatchAsync);
         var folder = _temp.PathOf("themes");
 
         Directory.Delete(folder, recursive: true);
         d.RunUntil(() => Directory.Exists(folder));
         WriteTheme("back", """{ "extends": "dark", "ui": { "accent": "#00FF00" } }""");
         d.RunUntil(() => ResolveTheme(d.AppState).Ui.Accent == 0xFF00FF00);
-        StopWatchingUserThemes(d.AppState);
+        d.AppState.Workflows.CancelAll();
 
         Assert.Empty(d.AppState.Errors.Entries);
     }
@@ -669,12 +684,12 @@ public sealed class UserThemeTests : IDisposable
         var settings = Settings();
         settings.Theme = Id("live");
         var d = new AppStateDriver(settings);
-        WatchUserThemes(d.AppState);
+        d.AppState.Workflows.StartUntilShutdown(d.AppState.UserThemes.WatchAsync);
         Assert.Same(d.AppState.Themes.GetTheme(Id("dark")), ResolveTheme(d.AppState));
 
         WriteTheme("live", """{ "extends": "dark", "ui": { "accent": "#FF00FF" } }""");
         d.RunUntil(() => ResolveTheme(d.AppState).Ui.Accent == 0xFFFF00FF);
-        StopWatchingUserThemes(d.AppState);
+        d.AppState.Workflows.CancelAll();
 
         Assert.Equal("live", d.AppState.Theme.Text);
     }
@@ -686,11 +701,11 @@ public sealed class ThemeFolderWatchTests : IDisposable
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
     private readonly TempDir _temp = new();
-    private readonly ThemeFolderWatch _watch = Theming.CreateThemeWatch();
+    private readonly ThemeFolderWatch _watch = new ThemeFolderWatch { Filters = ["*.json"], IncludesSubfolders = false };
 
     public void Dispose()
     {
-        Theming.StopWatch(_watch);
+        _watch.Stop();
         _temp.Dispose();
     }
 
@@ -699,14 +714,14 @@ public sealed class ThemeFolderWatchTests : IDisposable
     [Fact]
     public async Task A_change_that_settles_while_no_one_waits_is_kept_for_the_next_wait()
     {
-        Assert.Null(Theming.StartWatch(_watch, Folder));
-        var first = Theming.GetNextChangeAsync(_watch);
+        Assert.True(_watch.TryStart(Folder, out _));
+        var first = _watch.NextChangeAsync(CancellationToken.None);
         _temp.Write("themes/a.json", "{}");
         Assert.Equal(ThemeFolderEventKind.Changed, (await first.WaitAsync(Patience)).Kind);
 
         _temp.Write("themes/b.json", "{}");
         await Task.Delay(Settled);
-        var second = Theming.GetNextChangeAsync(_watch);
+        var second = _watch.NextChangeAsync(CancellationToken.None);
 
         Assert.Equal(ThemeFolderEventKind.Changed, (await second.WaitAsync(Patience)).Kind);
     }
@@ -714,12 +729,12 @@ public sealed class ThemeFolderWatchTests : IDisposable
     [Fact]
     public async Task A_change_is_taken_once()
     {
-        Assert.Null(Theming.StartWatch(_watch, Folder));
+        Assert.True(_watch.TryStart(Folder, out _));
         _temp.Write("themes/a.json", "{}");
         await Task.Delay(Settled);
-        Assert.Equal(ThemeFolderEventKind.Changed, (await Theming.GetNextChangeAsync(_watch).WaitAsync(Patience)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Changed, (await _watch.NextChangeAsync(CancellationToken.None).WaitAsync(Patience)).Kind);
 
-        var next = Theming.GetNextChangeAsync(_watch);
+        var next = _watch.NextChangeAsync(CancellationToken.None);
         var first = await Task.WhenAny(next, Task.Delay(Settled));
 
         Assert.NotSame(next, first);
@@ -728,13 +743,13 @@ public sealed class ThemeFolderWatchTests : IDisposable
     [Fact]
     public async Task Stopping_ends_the_wait_and_drops_a_pending_change()
     {
-        Assert.Null(Theming.StartWatch(_watch, Folder));
-        var waiting = Theming.GetNextChangeAsync(_watch);
+        Assert.True(_watch.TryStart(Folder, out _));
+        var waiting = _watch.NextChangeAsync(CancellationToken.None);
 
-        Theming.StopWatch(_watch);
+        _watch.Stop();
 
         Assert.Equal(ThemeFolderEventKind.Stopped, (await waiting.WaitAsync(Patience)).Kind);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await Theming.GetNextChangeAsync(_watch)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await _watch.NextChangeAsync(CancellationToken.None)).Kind);
     }
 
     [Fact]
@@ -742,26 +757,26 @@ public sealed class ThemeFolderWatchTests : IDisposable
     {
         var missing = _temp.PathOf("missing");
 
-        var error = Theming.StartWatch(_watch, missing);
+        var isWatched = _watch.TryStart(missing, out var error);
 
-        Assert.NotNull(error);
+        Assert.False(isWatched);
         Assert.StartsWith(missing, error);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await Theming.GetNextChangeAsync(_watch)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await _watch.NextChangeAsync(CancellationToken.None)).Kind);
     }
 
     [Fact]
     public async Task Removing_the_watched_folder_loses_the_watch_and_says_so()
     {
         var folder = Folder;
-        Assert.Null(Theming.StartWatch(_watch, folder));
-        var waiting = Theming.GetNextChangeAsync(_watch);
+        Assert.True(_watch.TryStart(folder, out _));
+        var waiting = _watch.NextChangeAsync(CancellationToken.None);
 
         Directory.Delete(folder, recursive: true);
         var news = await waiting.WaitAsync(Patience);
 
         Assert.Equal(ThemeFolderEventKind.Lost, news.Kind);
         Assert.StartsWith(folder, news.Reason);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await Theming.GetNextChangeAsync(_watch)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await _watch.NextChangeAsync(CancellationToken.None)).Kind);
     }
 }
 

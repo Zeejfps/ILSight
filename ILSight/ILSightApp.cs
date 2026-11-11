@@ -48,8 +48,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         _appState.Workflows.Start(nameof(OpenStartupAssembliesAsync), ct => OpenStartupAssembliesAsync(_appState, _startupFiles, ct));
         StartRedrawingOnAssemblyChanges(host);
         RestoreAnalyses(_appState);
-        WatchUserThemes(_appState);
-        WatchUserIconThemes(_appState);
+        WatchUserThemesOnStartup(_appState);
         CheckForUpdatesOnStartup(_appState);
         Background.StartForever(ApplyPendingArgumentsAsync(), problem => Errors.Report(_appState, problem));
     }
@@ -76,8 +75,6 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         _inbox.Writer.TryComplete();
         _appState.Workflows.CancelAll();
         StopRedrawingOnAssemblyChanges(host);
-        StopWatchingUserThemes(_appState);
-        StopWatchingUserIconThemes(_appState);
         SaveOnExit(host.WindowBounds);
     }
 

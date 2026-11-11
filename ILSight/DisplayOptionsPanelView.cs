@@ -219,11 +219,16 @@ internal static class DisplayOptionsPanelView
 
     private static void CustomizeTheme(UiState screen, AppState appState, Strings t)
     {
-        var file = CreateCustomTheme(appState, parent => t.ThemeCustomName(appState.Themes.GetThemeName(parent, t.Culture)));
-        if (file is not null)
+        var themes = appState.Themes;
+        var custom = appState.UserThemes.CreateCustomTheme(appState.Theme,
+            (parent, theme) => ThemeDraft.Compose(t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)), parent, theme));
+        if (custom is null)
         {
-            screen.FilesToOpen.Enqueue(file);
+            return;
         }
+
+        appState.Theme = custom.Id;
+        screen.FilesToOpen.Enqueue(custom.Path);
     }
 
     private static void OpenThemesFolderButton(Ui<UiState> ui)
@@ -234,7 +239,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, PrepareThemesFolder(a)));
+        Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, a.UserThemes.PrepareFolder()));
     }
 
     private static void ReloadThemesButton(Ui<UiState> ui)
@@ -242,7 +247,7 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Strings;
         if (ui.IconButton("reload-themes", ui.State.Icons.OptionsReloadThemes, t.DisplayOptionsReloadThemes, variant: ButtonVariant.Neutral))
         {
-            Commands.Later(ui.State, static a => ReloadUserThemes(a));
+            Commands.Later(ui.State, static a => a.UserThemes.ReloadThemes());
         }
     }
 
@@ -288,11 +293,16 @@ internal static class DisplayOptionsPanelView
 
     private static void CustomizeIconTheme(UiState screen, AppState appState, Strings t)
     {
-        var file = CreateCustomIconTheme(appState, parent => t.ThemeCustomName(appState.IconThemes.GetThemeName(parent, t.Culture)));
-        if (file is not null)
+        var themes = appState.IconThemes;
+        var custom = appState.UserIconThemes.CreateCustomTheme(appState.IconTheme,
+            (parent, theme) => IconThemeDraft.Compose(t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)), parent, theme));
+        if (custom is null)
         {
-            screen.FilesToOpen.Enqueue(file);
+            return;
         }
+
+        appState.IconTheme = custom.Id;
+        screen.FilesToOpen.Enqueue(custom.Path);
     }
 
     private static void OpenIconThemesFolderButton(Ui<UiState> ui)
@@ -303,7 +313,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, PrepareIconThemesFolder(a)));
+        Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, a.UserIconThemes.PrepareFolder()));
     }
 
     private static void OpenFolder(UiState screen, string? folder)
@@ -319,7 +329,7 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Strings;
         if (ui.IconButton("reload-icon-themes", ui.State.Icons.OptionsReloadIconThemes, t.DisplayOptionsReloadIconThemes, variant: ButtonVariant.Neutral))
         {
-            Commands.Later(ui.State, static a => ReloadUserIconThemes(a));
+            Commands.Later(ui.State, static a => a.UserIconThemes.ReloadThemes());
         }
     }
 

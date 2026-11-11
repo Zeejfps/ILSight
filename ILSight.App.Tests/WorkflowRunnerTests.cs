@@ -146,6 +146,47 @@ public sealed class WorkflowRunnerTests
     }
 
     [Fact]
+    public async Task StartUntilShutdown_WhileTheWorkflowRuns_IsNotCountedAndShutdownEndsItUnreported()
+    {
+        var work = new BackgroundWork();
+        var errors = new ErrorLog();
+        var runner = new WorkflowRunner(work, errors);
+        var given = CancellationToken.None;
+        var ended = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        runner.StartUntilShutdown(async ct =>
+        {
+            given = ct;
+            try
+            {
+                await Task.Delay(Timeout.Infinite, ct);
+            }
+            finally
+            {
+                ended.SetResult();
+            }
+        });
+        var whileRunning = work.Outstanding;
+        runner.CancelAll();
+        await ended.Task.WaitAsync(Patience);
+
+        Assert.Empty(whileRunning);
+        Assert.True(given.IsCancellationRequested);
+        Assert.Empty(errors.Entries);
+    }
+
+    [Fact]
+    public void StartUntilShutdown_WorkflowThrows_ReportsItRatherThanThrowing()
+    {
+        var errors = new ErrorLog();
+        var runner = new WorkflowRunner(new BackgroundWork(), errors);
+
+        runner.StartUntilShutdown(static _ => throw new InvalidOperationException("at once"));
+
+        Assert.Equal("at once", Assert.IsType<InvalidOperationException>(GetReportedError(errors)).Message);
+    }
+
+    [Fact]
     public void Start_QueuedAmongCommands_StartsInTheOrderAskedWithTheAppsShutdownToken()
     {
         var driver = new AppStateDriver();

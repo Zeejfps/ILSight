@@ -493,6 +493,22 @@ public sealed class UserIconThemeTests : IDisposable
         return settings;
     }
 
+    /// <summary>Customizes the icon theme shown as the display options do, naming it in English: switches to the
+    /// new icon theme and returns its file, or null when none was written.</summary>
+    private static string? CreateCustomIconTheme(AppState appState)
+    {
+        var themes = appState.IconThemes;
+        var custom = appState.UserIconThemes.CreateCustomTheme(appState.IconTheme,
+            (parent, theme) => IconThemeDraft.Compose(Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)), parent, theme));
+        if (custom is null)
+        {
+            return null;
+        }
+
+        appState.IconTheme = custom.Id;
+        return custom.Path;
+    }
+
     private static byte[] LucideFont()
     {
         return BuiltInIconThemes.Reference.Fonts[0].Data;
@@ -553,7 +569,7 @@ public sealed class UserIconThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
         var error = Assert.Single(appState.Errors.Entries);
 
-        ReloadUserIconThemes(appState);
+        appState.UserIconThemes.ReloadThemes();
 
         Assert.Single(appState.Errors.Entries);
         Assert.Equal("Problems in the icon theme escape.json", error.Words().Title);
@@ -565,8 +581,8 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
 
-        var folder = PrepareIconThemesFolder(appState);
-        ReloadUserIconThemes(appState);
+        var folder = appState.UserIconThemes.PrepareFolder();
+        appState.UserIconThemes.ReloadThemes();
 
         Assert.Equal(_temp.PathOf("icon-themes"), folder);
         Assert.Equal(BuiltInIconThemes.ReadSchema(), File.ReadAllText(Path.Combine(folder!, "icon-theme.schema.json")));
@@ -580,7 +596,7 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
 
-        var path = CreateCustomIconTheme(appState, parent => Strings.En.ThemeCustomName(appState.IconThemes.GetThemeName(parent, Strings.En.Culture)));
+        var path = CreateCustomIconTheme(appState);
 
         var text = File.ReadAllText(path!);
         Assert.Equal(_temp.PathOf(Path.Combine("icon-themes", "lucide-custom.json")), path);
@@ -624,7 +640,7 @@ public sealed class UserIconThemeTests : IDisposable
             var edited = lines.ToArray();
             edited[i] = lines[i].Replace("// ", "");
             var file = IconTheming.ReadTheme(Id("mine"), "mine.json", Encoding.UTF8.GetBytes(string.Join('\n', edited)), assets);
-            catalog.ReplaceUserThemes([IconTheming.ReadThemeFile(Id("shapes"), _temp.PathOf("icon-themes/shapes.json")), file]);
+            catalog.ReplaceUserThemes([new UserIconThemesAdapter(new ErrorLog()).ReadThemeFile(Id("shapes"), _temp.PathOf("icon-themes/shapes.json")), file]);
             Assert.True(catalog.Errors.Count == 0, edited[i] + ": " + string.Join("; ", catalog.Errors));
         }
         Assert.Contains(lines, l => l.Trim() == "// \"node.class\": { \"svg\": \"svg/class.svg\" },");
@@ -635,8 +651,8 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var appState = AppRoot.RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared);
 
-        Assert.Null(CreateCustomIconTheme(appState, parent => Strings.En.ThemeCustomName(appState.IconThemes.GetThemeName(parent, Strings.En.Culture))));
-        Assert.Null(PrepareIconThemesFolder(appState));
+        Assert.Null(CreateCustomIconTheme(appState));
+        Assert.Null(appState.UserIconThemes.PrepareFolder());
         Assert.Equal("lucide", appState.IconTheme.Text);
     }
 
@@ -648,12 +664,12 @@ public sealed class UserIconThemeTests : IDisposable
         var settings = Settings();
         settings.IconTheme = Id("live");
         var d = new AppStateDriver(settings);
-        WatchUserIconThemes(d.AppState);
+        d.AppState.Workflows.StartUntilShutdown(d.AppState.UserIconThemes.WatchAsync);
         var before = ResolveIconTheme(d.AppState).Icons.NodeClass.Svg;
 
         _temp.Write(ClassPicture, MemoryIconAssets.Picture.Replace("currentColor", "#FF0000"));
         d.RunUntil(() => ResolveIconTheme(d.AppState).Icons.NodeClass.Svg != before);
-        StopWatchingUserIconThemes(d.AppState);
+        d.AppState.Workflows.CancelAll();
 
         Assert.False(ResolveIconTheme(d.AppState).Icons.NodeClass.Svg!.UsesCurrentColor);
         Assert.Empty(d.AppState.Errors.Entries);
@@ -667,7 +683,7 @@ public sealed class UserIconThemeTests : IDisposable
         var settings = Settings();
         settings.IconTheme = Id("live");
         var app = new AppDriver(settings: settings);
-        WatchUserIconThemes(app.AppState);
+        app.AppState.Workflows.StartUntilShutdown(app.AppState.UserIconThemes.WatchAsync);
         app.Run(2);
         var family = "icon-font:" + Path.GetFullPath(font);
         Assert.Contains(app.Frames.RegisteredFonts, f => f.Family == family);
@@ -675,7 +691,7 @@ public sealed class UserIconThemeTests : IDisposable
 
         File.WriteAllBytes(font, LucideFont().Append((byte)0).ToArray());
         app.Frames.WaitUntil(() => app.Frames.RegisteredFonts.Count > registered, Patience);
-        StopWatchingUserIconThemes(app.AppState);
+        app.AppState.Workflows.CancelAll();
 
         Assert.Equal(LucideFont().Length + 1, app.Frames.RegisteredFonts.Last(f => f.Family == family).Data.Length);
         Assert.Equal(family, app.Ui.Icons.NodeClass.Family);

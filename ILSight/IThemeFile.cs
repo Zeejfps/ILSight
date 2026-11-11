@@ -4,6 +4,12 @@ namespace ILSight;
 /// what was wrong in it.</summary>
 public interface IThemeFile<TSelf> where TSelf : IThemeFile<TSelf>
 {
+    /// <summary>Which themes files of this type hold, as the problems found in them are told.</summary>
+    static abstract ThemeKind Kind { get; }
+
+    /// <summary>What follows the id in the name of a file of this type.</summary>
+    static abstract string Extension { get; }
+
     /// <summary>The file's name without its extension, which settings and <see cref="Extends"/> know it by.</summary>
     ThemeId<TSelf> Id { get; }
 

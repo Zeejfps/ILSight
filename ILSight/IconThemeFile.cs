@@ -55,7 +55,9 @@ public sealed record IconThemeContents(IReadOnlyDictionary<string, IconFont> Fon
 /// <see cref="ThemeJson"/> reads, leaving out a bad key, value, font or picture.</summary>
 public sealed class IconThemeFile : IThemeFile<IconThemeFile, IconThemeContents>
 {
-    public const string Extension = ".json";
+    public static ThemeKind Kind => ThemeKind.Icon;
+
+    public static string Extension => ".json";
 
     public required ThemeJson Json { get; init; }
     public required IconAssets Assets { get; init; }

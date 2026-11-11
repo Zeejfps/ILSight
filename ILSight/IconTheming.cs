@@ -4,14 +4,12 @@ using System.Text.Json;
 using ZGF.Fonts;
 using ZGF.Gui.Immediate;
 using ZGF.Svg;
-using ILSight.Core;
-using static ILSight.Theming;
 
 namespace ILSight;
 
-/// <summary>The icon themes the app can be drawn with: the built-in ones and those the user keeps in the
-/// icon themes folder beside the settings, read again, fonts and pictures too, whenever a file in that
-/// folder changes. What is wrong in an icon theme is reported once, until it is fixed.</summary>
+/// <summary>The icon themes the app can be drawn with, built-in or the user's, as their files make them: each
+/// file read leniently with the fonts and pictures it names, every problem kept with its line, and each icon
+/// theme built over the ones it extends and the reference one.</summary>
 public static class IconTheming
 {
     /// <summary>The reference icon theme: every theme can draw in its fonts, and a key no theme in a chain
@@ -65,49 +63,10 @@ public static class IconTheming
         return new IconThemeFile { Id = id, Json = new ThemeJson { File = file }, Assets = assets, Name = new ThemeName.Plain(id.Text) };
     }
 
-    private const string IconThemeFilePattern = "*" + IconThemeFile.Extension;
-    private const string SchemaFileName = "icon-theme.schema.json";
-
-    /// <summary>The files whose changes the icon themes folder is watched for: the theme files, the fonts
-    /// and the pictures.</summary>
-    public static readonly IReadOnlyList<string> IconThemeFiles = [IconThemeFilePattern, "*.ttf", "*.otf", "*.svg"];
-
     /// <summary>The asset that couldn't be read, with why.</summary>
     public static IconAsset CreateFailedAsset(ThemeProblem problem, string detail)
     {
         return new IconAsset(null, problem, detail);
-    }
-
-    /// <summary>Reads the user's icon themes into the catalog and reports what is wrong in any icon theme.</summary>
-    public static void ReadIconThemes(AppState appState)
-    {
-        RefreshUserIconThemes(appState, []);
-    }
-
-    /// <summary>Reads the user's icon themes again, reporting only what is newly wrong.</summary>
-    public static void ReloadUserIconThemes(AppState appState)
-    {
-        var known = appState.IconThemes.Errors.ToList();
-        RefreshUserIconThemes(appState, known);
-    }
-
-    private static void RefreshUserIconThemes(AppState appState, IReadOnlyList<ThemeError> known)
-    {
-        var files = ReadUserIconThemes(appState.SettingsPlace.IconThemesFolder);
-        appState.IconThemes.ReplaceUserThemes(files);
-        ReportNewErrors(appState, appState.IconThemes.Errors, known, ThemeKind.Icon);
-    }
-
-    private static List<IconThemeFile> ReadUserIconThemes(string? folder)
-    {
-        if (folder is null)
-        {
-            return new List<IconThemeFile>();
-        }
-
-        return ListThemeFiles<IconThemeFile>(folder, IconThemeFilePattern, SchemaFileName)
-            .Select(static f => IconTheming.ReadThemeFile(f.Id, f.Path))
-            .ToList();
     }
 
     /// <summary>The icon theme the app is drawn with: the chosen one as resolved, or the reference one while
@@ -115,66 +74,6 @@ public static class IconTheming
     public static IconTheme ResolveIconTheme(AppState appState)
     {
         return appState.IconThemes.GetTheme(appState.IconTheme);
-    }
-
-    /// <summary>The user's icon themes folder, made with the icon theme schema in it when missing, for the
-    /// screen to show; null when the settings live in memory only, or after reporting why it cannot be made.</summary>
-    public static string? PrepareIconThemesFolder(AppState appState)
-    {
-        var folder = appState.SettingsPlace.IconThemesFolder;
-        if (folder is null)
-        {
-            return null;
-        }
-
-        var error = CreateThemeFolder(folder, SchemaFileName, BuiltInIconThemes.ReadSchema(), BuiltInIconThemes.ReadGuide());
-        if (error is null)
-        {
-            return folder;
-        }
-
-        Errors.Report(appState, new AppProblem.ThemesFolderNotMade(ThemeKind.Icon, error));
-        return null;
-    }
-
-    /// <summary>Writes a new user icon theme that extends the icon theme shown and lists every icon it can
-    /// change, commented out as shown, then reads the icon themes again and switches to it. Returns its file
-    /// for the screen to open; null when the settings live in memory only, or after reporting why the
-    /// file cannot be written. <paramref name="nameOf"/> names the icon theme by the id of the one it is made from.</summary>
-    public static string? CreateCustomIconTheme(AppState appState, Func<ThemeId<IconThemeFile>, string> nameOf)
-    {
-        var folder = PrepareIconThemesFolder(appState);
-        if (folder is null)
-        {
-            return null;
-        }
-
-        var themes = appState.IconThemes;
-        var parent = themes.GetShownId(appState.IconTheme);
-        var id = GetFreeCustomId(parent, candidate => IsTaken(themes, folder, candidate));
-        var path = Path.Combine(folder, id.Text + IconThemeFile.Extension);
-        var text = IconThemeDraft.Compose(nameOf(parent), parent, themes.GetTheme(parent));
-        if (!TryWriteNewFile(appState, path, text, ThemeKind.Icon))
-        {
-            return null;
-        }
-
-        ReloadUserIconThemes(appState);
-        appState.IconTheme = id;
-        return path;
-    }
-
-    /// <summary>Reads the user's icon themes again whenever a file in their folder changes, until
-    /// <see cref="StopWatchingUserIconThemes"/>, so the chosen icon theme redraws as its files are saved.</summary>
-    public static void WatchUserIconThemes(AppState appState)
-    {
-        var folder = new WatchedThemeFolder(appState.IconThemesWatch, PrepareIconThemesFolder, ReloadUserIconThemes, ThemeKind.Icon);
-        WatchThemeFolder(appState, folder);
-    }
-
-    public static void StopWatchingUserIconThemes(AppState appState)
-    {
-        Theming.StopWatch(appState.IconThemesWatch);
     }
 
     private const string FontsKey = "fonts";
@@ -191,19 +90,12 @@ public static class IconTheming
     private static readonly HashSet<string> RetiredKeys = ["file.exit"];
     private static readonly byte[] Utf8Bom = [0xEF, 0xBB, 0xBF];
 
-    /// <summary>Reads the icon theme <paramref name="id"/> from the file at <paramref name="path"/> and the
-    /// fonts and pictures it names inside its folder; a file that cannot be read has no <see cref="IconThemeFile.Contents"/>.</summary>
-    public static IconThemeFile ReadThemeFile(ThemeId<IconThemeFile> id, string path)
+    /// <summary>The icon theme <paramref name="id"/> of <paramref name="file"/>, which could not be read for
+    /// <paramref name="reason"/>: it has no <see cref="IconThemeFile.Contents"/>.</summary>
+    public static IconThemeFile CreateUnreadableTheme(ThemeId<IconThemeFile> id, string file, IconAssets assets, string reason)
     {
-        var folder = FullFilePath.Of(Path.GetFullPath(path)).Folder;
-        var theme = CreateFile(id, path, IconAssetFolders.Open(folder));
-        var json = Theming.ReadJsonBytes(theme.Json, path);
-        if (json is not null)
-        {
-            Theming.ReadJson(theme.Json, json, (ref Utf8JsonReader r, string k, int l) => ReadThemeKey(theme, ref r, k, l));
-        }
-
-        IconTheming.KeepThemeContents(theme);
+        var theme = CreateFile(id, file, assets);
+        Theming.MarkJsonUnreadable(theme.Json, 0, ThemeProblem.Unreadable, reason);
         return theme;
     }
 

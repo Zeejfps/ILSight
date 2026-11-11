@@ -34,8 +34,11 @@ public sealed record ThemeContents(
 /// <see cref="ThemeJson"/> reads, leaving out a bad key or value.</summary>
 public sealed class ThemeFile : IThemeFile<ThemeFile, ThemeContents>
 {
-    public const string Extension = ".json";
     public const char ColorPrefix = '#';
+
+    public static ThemeKind Kind => ThemeKind.Color;
+
+    public static string Extension => ".json";
 
     public required ThemeJson Json { get; init; }
     public readonly Dictionary<string, ThemeValue> Palette = new();

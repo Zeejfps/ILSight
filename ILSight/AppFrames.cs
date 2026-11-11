@@ -349,6 +349,14 @@ internal static partial class AppFrames
         appState.Workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(asked: false, ct));
     }
 
+    /// <summary>Reads the user's themes and icon themes again whenever their folders change, from the app's start
+    /// until it shuts down.</summary>
+    internal static void WatchUserThemesOnStartup(AppState appState)
+    {
+        appState.Workflows.StartUntilShutdown(appState.UserThemes.WatchAsync);
+        appState.Workflows.StartUntilShutdown(appState.UserIconThemes.WatchAsync);
+    }
+
     /// <summary>Opens the active list, then <paramref name="files"/> while it opens, once the app is running.</summary>
     internal static Task OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
     {

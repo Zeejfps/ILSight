@@ -22,13 +22,15 @@ internal static class AppRoot
     }
 
     /// <summary>The app state <paramref name="settings"/> describe over <paramref name="session"/>, with the tab
-    /// it starts with active and what the settings keep restored into it.</summary>
+    /// it starts with active, what the settings keep restored into it, and the user's themes and icon themes read.</summary>
     internal static AppState RestoreAppState(AppSettings settings, BrowseSession session)
     {
         var appState = CreateAppState(settings, session);
         var first = Tabs.AddNew(appState.Tabs);
         Tabs.MakeActive(appState.Tabs, first);
         Settings.Restore(appState, settings);
+        appState.UserThemes.ReadThemes();
+        appState.UserIconThemes.ReadThemes();
         return appState;
     }
 
@@ -41,6 +43,9 @@ internal static class AppRoot
         var errors = new ErrorLog();
         var work = new BackgroundWork();
         var opens = new OpenRequests();
+        var settingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile };
+        var themes = Theming.CreateCatalog(BuiltInThemes.Files);
+        var iconThemes = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
         var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
         var assemblyPorts = new AssembliesAdapter(errors, assemblies, session);
         var appState = new AppState
@@ -55,12 +60,16 @@ internal static class AppRoot
             AssemblyPorts = assemblyPorts,
             Opens = opens,
             Session = session,
-            SettingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile },
+            SettingsPlace = settingsPlace,
             View = Settings.ReadViewSettings(settings),
             Window = settings.Window,
             Assemblies = assemblies,
             Errors = errors,
             Tooltips = new CodeTooltips { Assemblies = assemblies, Work = work, ReportError = problem => Errors.Report(errors, problem), Version = assemblies.Version },
+            Themes = themes,
+            UserThemes = new UserThemes<ThemeFile, ThemeContents, AppTheme>(new UserColorThemesAdapter(errors)) { Themes = themes, Folder = settingsPlace.ThemesFolder },
+            IconThemes = iconThemes,
+            UserIconThemes = new UserThemes<IconThemeFile, IconThemeContents, IconTheme>(new UserIconThemesAdapter(errors)) { Themes = iconThemes, Folder = settingsPlace.IconThemesFolder },
             Theme = settings.Theme,
             IconTheme = settings.IconTheme,
             Language = settings.Language,

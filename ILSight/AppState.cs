@@ -2,7 +2,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Desktop;
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.IconTheming;
 
 namespace ILSight;
 
@@ -97,16 +96,18 @@ public sealed class AppState
     public required CodeTooltips Tooltips { get; init; }
 
     /// <summary>The themes the app can be drawn in, built-in and the user's.</summary>
-    public ThemeCatalog<ThemeFile, ThemeContents, AppTheme> Themes { get; } = Theming.CreateCatalog(BuiltInThemes.Files);
+    public required ThemeCatalog<ThemeFile, ThemeContents, AppTheme> Themes { get; init; }
 
-    /// <summary>Watches the user's themes folder while the app runs.</summary>
-    public ThemeFolderWatch ThemesWatch { get; } = Theming.CreateThemeWatch();
+    /// <summary>Reads the user's themes into <see cref="Themes"/>, makes their folder, writes a custom theme there
+    /// and watches it.</summary>
+    public required UserThemes<ThemeFile, ThemeContents, AppTheme> UserThemes { get; init; }
 
     /// <summary>The icon themes the app can be drawn with, built-in and the user's.</summary>
-    public ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> IconThemes { get; } = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
+    public required ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> IconThemes { get; init; }
 
-    /// <summary>Watches the user's icon themes folder, and the fonts and pictures in it, while the app runs.</summary>
-    public ThemeFolderWatch IconThemesWatch { get; } = new ThemeFolderWatch { Filters = IconThemeFiles, IncludesSubfolders = true };
+    /// <summary>Reads the user's icon themes into <see cref="IconThemes"/>, makes their folder, writes a custom
+    /// icon theme there and watches it, the fonts and pictures in it too.</summary>
+    public required UserThemes<IconThemeFile, IconThemeContents, IconTheme> UserIconThemes { get; init; }
 
     /// <summary>The id of the chosen theme, kept even while no theme has it.</summary>
     public required ThemeId<ThemeFile> Theme;

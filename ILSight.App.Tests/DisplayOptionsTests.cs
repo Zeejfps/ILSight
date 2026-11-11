@@ -419,7 +419,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
         Assert.True(IsDrawn(app, "Dracula"));
 
-        Theming.ReloadUserThemes(app.AppState);
+        app.AppState.UserThemes.ReloadThemes();
         app.Run();
 
         Assert.False(IsDrawn(app, "Dracula"));

@@ -4,9 +4,7 @@ using ZGF.Desktop;
 using ILSight.Core;
 using static ILSight.AssemblyLists;
 using static ILSight.Bookmarks;
-using static ILSight.IconTheming;
 using static ILSight.SavedDocuments;
-using static ILSight.Theming;
 
 namespace ILSight;
 
@@ -17,7 +15,7 @@ public static class Settings
 
     /// <summary>Restores into <paramref name="appState"/> what <paramref name="settings"/> keep: the assembly
     /// lists, the bookmarks and analyses, and the open list's documents reopened; records what is saved as saved,
-    /// reports the bookmarks left out, and reads the user's themes and icon themes.</summary>
+    /// and reports the bookmarks left out.</summary>
     public static void Restore(AppState appState, AppSettings settings)
     {
         appState.Lists.Restore(settings.AssemblyLists, settings.ActiveAssemblyList);
@@ -26,8 +24,6 @@ public static class Settings
         ReopenDocuments(appState);
         appState.LastSaved = CaptureSavedSources(appState);
         ReportLeftOutBookmarks(appState, leftOutBookmarks);
-        ReadThemes(appState);
-        ReadIconThemes(appState);
     }
 
     /// <summary>The folder <paramref name="name"/> beside <paramref name="settingsFile"/>; null while the

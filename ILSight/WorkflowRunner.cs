@@ -3,13 +3,15 @@ using ZGF.Gui.Immediate;
 namespace ILSight;
 
 /// <summary>The edge where the workflows the screen asks for through
-/// <see cref="Commands.Start(UiState, string, AppWorkflow)"/> run, and the only code that starts them. Each runs
-/// with a token of its own that fires when the app shuts down, is counted in the app's background work until it
-/// ends, and has an exception it ends with reported once, unless it is the cancellation shutting down asked for.
+/// <see cref="Commands.Start(UiState, string, AppWorkflow)"/> and the app's start run, and the only code that starts
+/// them. Each runs with a token of its own that fires when the app shuts down, is counted in the app's background
+/// work until it ends unless it runs until then, and has an exception it ends with reported once, unless it is the
+/// cancellation shutting down asked for.
 /// Lives on the UI thread, as the app state that holds it does.</summary>
 public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
 {
     private readonly CancellationTokenSource _shutdown = new();
+    private readonly List<Task> _untilShutdown = [];
 
     /// <summary>Starts <paramref name="workflow"/> now, on this thread, counted in the background work as
     /// <paramref name="name"/> until it ends. Its token fires when the app shuts down; one started after
@@ -18,6 +20,15 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
     public void Start(string name, Func<CancellationToken, Task> workflow)
     {
         work.Track(name, RunAsync(workflow, _shutdown.Token));
+    }
+
+    /// <summary>As <see cref="Start"/>, for a workflow that runs until the app shuts down, such as watching a
+    /// folder. It is kept here rather than counted in the background work, which a harness waiting for the UI
+    /// to be ready waits out.</summary>
+    public void StartUntilShutdown(Func<CancellationToken, Task> workflow)
+    {
+        _untilShutdown.RemoveAll(static running => running.IsCompleted);
+        _untilShutdown.Add(RunAsync(workflow, _shutdown.Token));
     }
 
     /// <summary>Cancels the workflows running, and any started later, as the app shuts down. Their ending
