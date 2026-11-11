@@ -36,7 +36,7 @@ public static class Comparisons
         }
 
         var comparison = new AssemblyComparison { LeftPath = saved.LeftPath, RightPath = saved.RightPath };
-        Comparisons.TakeInScope(comparison, saved.Scope);
+        comparison.TakeInScope(saved.Scope);
         var title = saved.Title ?? string.Empty;
         Tabs.ShowComparison(reopened.Tab, title, comparison);
         Compare(appState, comparison);
@@ -45,14 +45,14 @@ public static class Comparisons
     /// <summary>Compares the assemblies of <paramref name="comparison"/> the other way round, the right one on the left.</summary>
     public static void SwapComparedAssemblies(AppState appState, AssemblyComparison comparison)
     {
-        Comparisons.SwapSides(comparison);
+        comparison.SwapSides();
         Compare(appState, comparison);
     }
 
     /// <summary>Compares the assemblies of <paramref name="comparison"/> again, taking in what <paramref name="scope"/> says.</summary>
     public static void ChangeComparedScope(AppState appState, AssemblyComparison comparison, ApiScope scope)
     {
-        Comparisons.TakeInScope(comparison, scope);
+        comparison.TakeInScope(scope);
         Compare(appState, comparison);
     }
 
@@ -79,9 +79,9 @@ public static class Comparisons
             return;
         }
         var scope = comparison.Scope;
-        var ticket = Comparisons.StartComparing(comparison);
+        var ticket = comparison.StartComparing();
         var compared = await Background.Run(() => ApiEntries.Compare(left, right, scope, ticket.Token));
-        if (!Comparisons.FinishComparing(comparison, ticket))
+        if (!comparison.FinishComparing(ticket))
         {
             return;
         }
@@ -89,7 +89,7 @@ public static class Comparisons
         switch (compared)
         {
             case Outcome<ApiDiff>.Ok ok:
-                Comparisons.ShowDiff(comparison, ok.Value);
+                comparison.ShowDiff(ok.Value);
                 break;
             case Outcome<ApiDiff>.Failed failed:
                 ReportFailure(appState, comparison, left, right, failed.Error);
@@ -114,72 +114,13 @@ public static class Comparisons
 
     private static void ShowClosed(AppState appState, AssemblyComparison comparison, AssemblyPath filePath)
     {
-        Comparisons.ShowFailure(comparison, new ComparisonFailure.AssemblyClosed(filePath.FileName));
+        comparison.ShowFailure(new ComparisonFailure.AssemblyClosed(filePath.FileName));
     }
 
     private static void ReportFailure(AppState appState, AssemblyComparison comparison, LoadedModule left, LoadedModule right, Exception error)
     {
-        Comparisons.ShowFailure(comparison, new ComparisonFailure.Failed(left.NameAndVersion, right.NameAndVersion));
+        comparison.ShowFailure(new ComparisonFailure.Failed(left.NameAndVersion, right.NameAndVersion));
         Errors.Report(appState, new AppProblem.ComparisonFailed(left.NameAndVersion, right.NameAndVersion, error));
-    }
-
-    /// <summary>Puts the right assembly on the left and the left one on the right.</summary>
-    public static void SwapSides(AssemblyComparison comparison)
-    {
-        (comparison.LeftPath, comparison.RightPath) = (comparison.RightPath, comparison.LeftPath);
-        comparison.Version++;
-    }
-
-    /// <summary>Takes in what <paramref name="scope"/> says from now on.</summary>
-    public static void TakeInScope(AssemblyComparison comparison, ApiScope scope)
-    {
-        comparison.Scope = scope;
-        comparison.Version++;
-    }
-
-    /// <summary>Starts a comparison, cancelling the one in flight, which is then dropped, until
-    /// <see cref="FinishComparing"/>.</summary>
-    public static LoadTicket StartComparing(AssemblyComparison comparison)
-    {
-        comparison.Work?.Cancel();
-        var work = CancellationTokenSource.CreateLinkedTokenSource(comparison.Open.Token);
-        comparison.Work = work;
-        return new LoadTicket { Work = work };
-    }
-
-    /// <summary>Ends the comparison <paramref name="ticket"/> was given for. False when another started since,
-    /// or the comparison was closed, and what it brought should be dropped.</summary>
-    public static bool FinishComparing(AssemblyComparison comparison, LoadTicket ticket)
-    {
-        ticket.Work.Dispose();
-        if (comparison.Work != ticket.Work)
-        {
-            return false;
-        }
-
-        comparison.Work = null;
-        return !comparison.IsClosed;
-    }
-
-    public static void ShowDiff(AssemblyComparison comparison, ApiDiff diff)
-    {
-        comparison.Diff = diff;
-        comparison.Failure = null;
-    }
-
-    /// <summary>Shows why the assemblies cannot be compared, cancelling the comparison in flight, if any.</summary>
-    public static void ShowFailure(AssemblyComparison comparison, ComparisonFailure failure)
-    {
-        comparison.Work?.Cancel();
-        comparison.Work = null;
-        comparison.Diff = null;
-        comparison.Failure = failure;
-    }
-
-    /// <summary>Closes the comparison for good, cancelling what is in flight.</summary>
-    public static void CloseComparison(AssemblyComparison comparison)
-    {
-        comparison.Open.Cancel();
     }
 
     /// <summary>Draws the rows in <paramref name="theme"/>, <paramref name="icons"/> and <paramref name="strings"/>,

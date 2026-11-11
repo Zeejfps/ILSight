@@ -31,7 +31,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.Settle(2);
         var assemblies = app.AppState.Assemblies.Assemblies;
         CompareAssemblies(app.AppState, assemblies[0], assemblies[1], Names.Comparison(assemblies[0]));
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff is not null, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Result is ComparisonResult.Compared, Patience);
         app.Settle(2);
         return app;
     }
@@ -41,7 +41,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
         var next = new AppDriver(settings: _temp.Settings());
         RestoreActiveAssemblyList(next.AppState);
-        next.Frames.WaitUntil(() => FindComparison(next)?.Diff is not null, Patience);
+        next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Compared, Patience);
         next.Settle(2);
         return next;
     }
@@ -81,8 +81,9 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.Equal(panel, DocumentPanels.GetPanel(next.Ui.Documents, restored));
         Assert.Equal(RightPath, reopened.LeftPath.Text);
         Assert.Equal(LeftPath, reopened.RightPath.Text);
-        Assert.Equal(ApiScope.AllDeclared, reopened.Diff!.Scope);
-        Assert.Equal("ApiDiffSample (2.0.0.0)", reopened.Diff.LeftName);
+        var diff = Assert.IsType<ComparisonResult.Compared>(reopened.Result).Diff;
+        Assert.Equal(ApiScope.AllDeclared, diff.Scope);
+        Assert.Equal("ApiDiffSample (2.0.0.0)", diff.LeftName);
         Assert.False(DocumentPanels.GetView(next.Ui.Documents, restored).Comparison.OnlyDifferences);
     }
 
@@ -112,8 +113,9 @@ public sealed class SavedComparisonTests : IDisposable
 
         var next = new AppDriver(settings: _temp.Settings());
         RestoreActiveAssemblyList(next.AppState);
-        next.Frames.WaitUntil(() => FindComparison(next)?.Failure != null, Patience);
+        next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Failed, Patience);
 
-        Assert.Equal(new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll"), FindComparison(next)!.Failure);
+        var failed = Assert.IsType<ComparisonResult.Failed>(FindComparison(next)?.Result);
+        Assert.Equal(new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll"), failed.Failure);
     }
 }

@@ -21,7 +21,7 @@ internal static class ComparisonView
     {
         var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
         Comparisons.SetRowStyle(rows, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
-        Comparisons.FollowDiff(rows, comparison.Diff);
+        Comparisons.FollowDiff(rows, FindDiff(comparison));
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!ui.State.Display.ShowOmnibar)
         {
@@ -115,7 +115,7 @@ internal static class ComparisonView
     /// compared again; nothing before the first comparison finished.</summary>
     private static void Summary(Ui<UiState> ui, AssemblyComparison comparison)
     {
-        var diff = comparison.Diff;
+        var diff = FindDiff(comparison);
         if (diff is null)
         {
             return;
@@ -141,18 +141,20 @@ internal static class ComparisonView
     /// nothing differs; null when it shows the tree.</summary>
     private static string? FindHint(Ui<UiState> ui, AssemblyComparison comparison, ComparisonRows rows)
     {
-        var t = ui.State.Strings;
-        var failure = comparison.Failure;
-        if (failure is not null)
-        {
-            return ui.Memo("comparison-failure", (failure, t), static a => DescribeFailure(a.t, a.failure));
-        }
+        return comparison.Result.Match<(Ui<UiState> ui, ComparisonRows rows), string?>((ui, rows),
+            static (s, _) => s.ui.State.Strings.ComparisonComparing,
+            static (s, _) => FindNoDifferencesHint(s.ui.State.Strings, s.rows),
+            static (s, failed) => s.ui.Memo("comparison-failure", (failed.Failure, t: s.ui.State.Strings), static a => DescribeFailure(a.t, a.Failure)));
+    }
 
-        if (comparison.Diff is null)
-        {
-            return t.ComparisonComparing;
-        }
+    /// <summary>What the newest comparison found; null before the first finished, or after a failure.</summary>
+    private static ApiDiff? FindDiff(AssemblyComparison comparison)
+    {
+        return comparison.Result.Match<ApiDiff?>(static _ => null, static compared => compared.Diff, static _ => null);
+    }
 
+    private static string? FindNoDifferencesHint(Strings t, ComparisonRows rows)
+    {
         if (rows.Roots.Count == 0)
         {
             return t.ComparisonNoDifferences;

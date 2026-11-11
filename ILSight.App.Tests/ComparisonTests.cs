@@ -42,6 +42,17 @@ public sealed class ComparisonTests
         return d.AppState.Tabs.Active!.Comparison!;
     }
 
+    /// <summary>What the newest comparison of <paramref name="comparison"/> found; fails the test when it found nothing.</summary>
+    private static ApiDiff DiffOf(AssemblyComparison comparison)
+    {
+        return Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff;
+    }
+
+    private static bool HasCompared(AssemblyComparison? comparison)
+    {
+        return comparison?.Result is ComparisonResult.Compared;
+    }
+
     private static ApiEntry Entry(ApiDiff diff, string namespaceName, string type)
     {
         var ns = diff.Namespaces.Single(n => n.Text == namespaceName);
@@ -58,9 +69,10 @@ public sealed class ComparisonTests
         var tab = d.AppState.Tabs.Active!;
         Assert.Equal("ApiDiffSample API diff", tab.Title);
         Assert.NotSame(tab, d.AppState.Tabs.Preview);
-        Assert.Equal(LeftName, comparison.Diff!.LeftName);
-        Assert.Equal(RightName, comparison.Diff.RightName);
-        Assert.Equal(4, comparison.Diff.Added);
+        var diff = DiffOf(comparison);
+        Assert.Equal(LeftName, diff.LeftName);
+        Assert.Equal(RightName, diff.RightName);
+        Assert.Equal(4, diff.Added);
         Assert.Empty(d.AppState.Errors.Entries);
     }
 
@@ -72,7 +84,7 @@ public sealed class ComparisonTests
         var comparison = Compare(d, RightPath, LeftPath);
 
         Assert.Equal(RightPath, comparison.LeftPath.Text);
-        Assert.Equal(RightName, comparison.Diff!.LeftName);
+        Assert.Equal(RightName, DiffOf(comparison).LeftName);
     }
 
     [Fact]
@@ -80,15 +92,16 @@ public sealed class ComparisonTests
     {
         var d = OpenBoth();
         var comparison = Compare(d, LeftPath, RightPath);
-        var added = comparison.Diff!.Added;
-        var removed = comparison.Diff.Removed;
+        var added = DiffOf(comparison).Added;
+        var removed = DiffOf(comparison).Removed;
 
         SwapComparedAssemblies(d.AppState, comparison);
         d.Settle();
 
-        Assert.Equal(RightName, comparison.Diff!.LeftName);
-        Assert.Equal(removed, comparison.Diff.Added);
-        Assert.Equal(added, comparison.Diff.Removed);
+        var swapped = DiffOf(comparison);
+        Assert.Equal(RightName, swapped.LeftName);
+        Assert.Equal(removed, swapped.Added);
+        Assert.Equal(added, swapped.Removed);
     }
 
     [Fact]
@@ -96,13 +109,13 @@ public sealed class ComparisonTests
     {
         var d = OpenBoth();
         var comparison = Compare(d, LeftPath, RightPath);
-        Assert.Equal(ApiChange.Removed, Entry(comparison.Diff!, "ApiDiffSample", "Helper").Change);
+        Assert.Equal(ApiChange.Removed, Entry(DiffOf(comparison), "ApiDiffSample", "Helper").Change);
 
         ChangeComparedScope(d.AppState, comparison, ApiScope.AllDeclared);
         d.Settle();
 
-        Assert.Equal(ApiScope.AllDeclared, comparison.Diff!.Scope);
-        Assert.Equal(ApiChange.Changed, Entry(comparison.Diff, "ApiDiffSample", "Helper").Change);
+        Assert.Equal(ApiScope.AllDeclared, DiffOf(comparison).Scope);
+        Assert.Equal(ApiChange.Changed, Entry(DiffOf(comparison), "ApiDiffSample", "Helper").Change);
     }
 
     [Fact]
@@ -112,7 +125,7 @@ public sealed class ComparisonTests
         d.TurnOffPreviewTabs();
         var comparison = Compare(d, LeftPath, RightPath);
         var comparisonTab = d.AppState.Tabs.Active!;
-        var account = Entry(comparison.Diff!, "ApiDiffSample", "Account");
+        var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
 
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
         Navigate(d.AppState, sides.Right.Reference, inNewTab: false);
@@ -135,8 +148,8 @@ public sealed class ComparisonTests
         SwapComparedAssemblies(d.AppState, comparison);
         d.Settle();
 
-        Assert.Null(comparison.Diff);
-        Assert.Equal(new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll"), comparison.Failure);
+        var failed = Assert.IsType<ComparisonResult.Failed>(comparison.Result);
+        Assert.Equal(new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll"), failed.Failure);
     }
 
     [Fact]
@@ -151,7 +164,7 @@ public sealed class ComparisonTests
         d.Settle();
 
         Assert.True(comparison.IsClosed);
-        Assert.Null(comparison.Diff);
+        Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
         Assert.False(d.AppState.IsComparing);
     }
 
@@ -207,7 +220,7 @@ public sealed class ComparisonTests
         PickCompareWith(app);
 
         app.Frames.ClickOn(Selector.AtPath("compare-picker-compare")).Frame();
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff is not null, Patience);
+        app.Frames.WaitUntil(() => HasCompared(app.AppState.Tabs.Active?.Comparison), Patience);
         app.Settle(2);
 
         Assert.False(app.Ui.ComparisonPicker.IsOpen);
@@ -225,7 +238,7 @@ public sealed class ComparisonTests
         Assert.True(app.TextRect(app.Ui.Icons.ComparisonSwap).Y < app.TextRect(Compared).Y);
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-2/swap")).Frame();
-        app.Frames.WaitUntil(() => comparison.Diff!.LeftName == RightName, Patience);
+        app.Frames.WaitUntil(() => DiffOf(comparison).LeftName == RightName, Patience);
         app.Settle(2);
 
         Assert.Equal(LeftPath, comparison.RightPath.Text);
@@ -252,7 +265,7 @@ public sealed class ComparisonTests
     {
         var app = OpenBothOnScreen();
         CompareAssemblies(app.AppState, Opened(app.Driver, LeftPath), Opened(app.Driver, RightPath), Names.Comparison(Opened(app.Driver, LeftPath)));
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff is not null, Patience);
+        app.Frames.WaitUntil(() => HasCompared(app.AppState.Tabs.Active?.Comparison), Patience);
         app.Settle(2);
         return app;
     }
@@ -272,6 +285,49 @@ public sealed class ComparisonTests
         app.Frames.ClickOn(GetTreeRow(LeftName), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Compare with…")).Frame();
         app.Run(2);
+    }
+
+    private static AssemblyComparison NewComparison()
+    {
+        return new AssemblyComparison { LeftPath = PathOf(LeftPath), RightPath = PathOf(RightPath) };
+    }
+
+    [Fact]
+    public void SwapSides_AnyComparison_PutsTheRightOnTheLeftAndCountsAChange()
+    {
+        var comparison = NewComparison();
+
+        comparison.SwapSides();
+
+        Assert.Equal(RightPath, comparison.LeftPath.Text);
+        Assert.Equal(LeftPath, comparison.RightPath.Text);
+        Assert.Equal(1, comparison.Version);
+    }
+
+    [Fact]
+    public void TakeInScope_AnyScope_TakesItInAndCountsAChange()
+    {
+        var comparison = NewComparison();
+
+        comparison.TakeInScope(ApiScope.AllDeclared);
+
+        Assert.Equal(ApiScope.AllDeclared, comparison.Scope);
+        Assert.Equal(1, comparison.Version);
+    }
+
+    [Fact]
+    public void ShowFailure_WhileComparing_DropsTheComparisonInFlightAndSaysWhy()
+    {
+        var comparison = NewComparison();
+        var ticket = comparison.StartComparing();
+        var failure = new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll");
+
+        comparison.ShowFailure(failure);
+
+        Assert.False(comparison.IsComparing);
+        Assert.True(ticket.Token.IsCancellationRequested);
+        Assert.Equal(new ComparisonResult.Failed { Failure = failure }, comparison.Result);
+        Assert.False(comparison.FinishComparing(ticket));
     }
 
     [Fact]

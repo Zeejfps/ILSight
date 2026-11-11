@@ -326,7 +326,7 @@ public static class Tabs
 
         if (tab.Comparison is not null)
         {
-            Comparisons.CloseComparison(tab.Comparison);
+            tab.Comparison.Close();
         }
     }
 }
