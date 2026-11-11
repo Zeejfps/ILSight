@@ -81,6 +81,7 @@
   "search.column_name": "Nombre",
   "search.column_location": "Ubicación",
   "search.column_assembly": "Ensamblado",
+  "search.invalid_regex": "Expresión regular no válida",
 
   "omnibar.search": "Ir a un tipo o miembro…",
   "omnibar.contents": "Contenido de {name}",

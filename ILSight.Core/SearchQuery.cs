@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -40,7 +41,8 @@ public enum AssemblyNameKind
 /// <list type="bullet">
 /// <item><c>-term</c> must not be contained, <c>=term</c> must be the whole name, <c>~term</c>
 /// matches letters in order with gaps, <c>+term</c> is a plain term.</item>
-/// <item><c>/regex/</c> matches a regular expression instead, ignoring case.</item>
+/// <item><c>/regex/</c> matches a regular expression instead, ignoring case. The first one
+/// counts; when it is invalid nothing is found, and <see cref="Matcher"/> says why.</item>
 /// <item>A term with a dot matches qualified names, e.g. <c>Generic.List</c>.</item>
 /// <item>A term with <c>&lt;</c> matches names with their type parameters, C#-style, e.g.
 /// <c>List&lt;T&gt;</c>.</item>
@@ -58,9 +60,9 @@ public sealed class SearchQuery
 
     public AssemblyNameKind AssemblyName { get; internal set; }
 
-    public IReadOnlyList<string> Terms { get; internal set; } = [];
-
-    public Regex? Regex { get; internal set; }
+    /// <summary>How names are matched: by the terms, or by the regular expression, or not at all
+    /// when the expression is invalid.</summary>
+    public SearchMatcher Matcher { get; internal set; } = new SearchMatcher.Terms { Values = [] };
 
     /// <summary>Whether names are matched qualified, namespace and declaring types included.</summary>
     public bool FullName { get; internal set; }
@@ -76,8 +78,216 @@ public sealed class SearchQuery
 
     public string? InNamespace { get; internal set; }
 
-    /// <summary>True when there is nothing to match, so nothing is found.</summary>
-    public bool IsEmpty => Terms.Count == 0 && Regex is null;
+    /// <summary>Whether the query can find anything: it has terms, or a valid regular expression.</summary>
+    public bool CanFind => Matcher.Match(static terms => terms.Values.Count > 0, static _ => true, static _ => false);
+}
+
+/// <summary>How a <see cref="SearchQuery"/> matches names.</summary>
+public abstract record SearchMatcher
+{
+    private SearchMatcher()
+    {
+    }
+
+    /// <summary>Whether <paramref name="name"/> matches.</summary>
+    public abstract bool IsMatch(string name);
+
+    /// <summary>Every term must match; none at all finds nothing.</summary>
+    public sealed record Terms : SearchMatcher
+    {
+        public required IReadOnlyList<string> Values { get; init; }
+
+        public override bool IsMatch(string name)
+        {
+            return SearchQueries.IsEveryTermIn(Values, name);
+        }
+    }
+
+    /// <summary>A <c>/regex/</c> term, which the other terms give way to.</summary>
+    public sealed record Regex : SearchMatcher
+    {
+        public required System.Text.RegularExpressions.Regex Expression { get; init; }
+
+        public override bool IsMatch(string name)
+        {
+            return Expression.IsMatch(name);
+        }
+    }
+
+    /// <summary>A <c>/regex/</c> term that is no valid regular expression, so nothing is found.
+    /// <see cref="Message"/> says why, as .NET's parser said it.</summary>
+    public sealed record InvalidRegex : SearchMatcher
+    {
+        public required string Message { get; init; }
+
+        public override bool IsMatch(string name)
+        {
+            return false;
+        }
+    }
+
+    public TResult Match<TResult>(Func<Terms, TResult> terms, Func<Regex, TResult> regex, Func<InvalidRegex, TResult> invalidRegex)
+    {
+        return this switch
+        {
+            Terms t => terms(t),
+            Regex r => regex(r),
+            InvalidRegex i => invalidRegex(i),
+            _ => throw new UnreachableException($"SearchMatcher.Match does not handle {GetType().Name}."),
+        };
+    }
+}
+
+/// <summary>What a <see cref="SearchKinds.Literals"/> search looks for: the number the query's
+/// single term is, or else text the query matches.</summary>
+public abstract record SearchLiteral
+{
+    private SearchLiteral()
+    {
+    }
+
+    /// <summary>An integer, decimal or <c>0x</c> hex: matches integer constants and loads of any width.</summary>
+    public sealed record Integer : SearchLiteral
+    {
+        public required long Value { get; init; }
+    }
+
+    /// <summary>A number with an <c>f</c> suffix: matches <see cref="float"/> constants and loads.</summary>
+    public sealed record Single : SearchLiteral
+    {
+        public required float Value { get; init; }
+    }
+
+    /// <summary>A number with a point or an exponent: matches <see cref="double"/> constants and loads.</summary>
+    public sealed record Double : SearchLiteral
+    {
+        public required double Value { get; init; }
+    }
+
+    /// <summary>No number: matches strings, and constants written as text, that the query matches.</summary>
+    public sealed record Text : SearchLiteral;
+
+    public TResult Match<TResult>(Func<Integer, TResult> integer, Func<Single, TResult> single, Func<Double, TResult> @double, Func<Text, TResult> text)
+    {
+        return this switch
+        {
+            Integer i => integer(i),
+            Single s => single(s),
+            Double d => @double(d),
+            Text t => text(t),
+            _ => throw new UnreachableException($"SearchLiteral.Match does not handle {GetType().Name}."),
+        };
+    }
+
+    /// <summary>The literal <paramref name="query"/> looks for: a number when its single term is
+    /// one, an <see cref="Integer"/> for integers (decimal or <c>0x</c> hex), a <see cref="Single"/>
+    /// with an <c>f</c> suffix, a <see cref="Double"/> otherwise; <see cref="Text"/> when it is no
+    /// number, has several terms, or a regular expression.</summary>
+    public static SearchLiteral FromQuery(SearchQuery query)
+    {
+        var term = SearchQueries.FindSingleTerm(query);
+        if (term is null)
+        {
+            return new Text();
+        }
+
+        var number = FindNumber(term);
+        if (number is null)
+        {
+            return new Text();
+        }
+
+        return number;
+    }
+
+    private static SearchLiteral? FindNumber(string term)
+    {
+        if (IsHex(term))
+        {
+            return FindHex(term);
+        }
+
+        var integer = FindInteger(term);
+        if (integer is not null)
+        {
+            return integer;
+        }
+
+        if (IsSingle(term))
+        {
+            return FindSingle(term[..^1]);
+        }
+
+        return FindDouble(term);
+    }
+
+    private static bool IsHex(string term)
+    {
+        return term.StartsWith("0x", StringComparison.OrdinalIgnoreCase) || term.StartsWith("-0x", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Whether <paramref name="term"/> has a <see cref="float"/>'s <c>f</c> suffix.</summary>
+    private static bool IsSingle(string term)
+    {
+        return term.Length > 1 && term[^1] is 'f' or 'F';
+    }
+
+    private static Integer? FindHex(string term)
+    {
+        var negative = term[0] == '-';
+        var digits = term[(negative ? 3 : 2)..].TrimEnd('u', 'U', 'l', 'L');
+        if (!ulong.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var hex))
+        {
+            return null;
+        }
+
+        return new Integer { Value = negative ? -(long)hex : (long)hex };
+    }
+
+    /// <summary>A decimal integer, signed or not, with any <c>u</c> and <c>l</c> suffixes; one past
+    /// <see cref="long.MaxValue"/> wraps round as the <see cref="ulong"/> it is.</summary>
+    private static Integer? FindInteger(string term)
+    {
+        var digits = term.TrimEnd('u', 'U', 'l', 'L');
+        if (long.TryParse(digits, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var signed))
+        {
+            return new Integer { Value = signed };
+        }
+
+        if (!ulong.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var unsigned))
+        {
+            return null;
+        }
+
+        return new Integer { Value = (long)unsigned };
+    }
+
+    private static Single? FindSingle(string digits)
+    {
+        if (!float.TryParse(digits, NumberStyles.Float, CultureInfo.InvariantCulture, out var single))
+        {
+            return null;
+        }
+
+        return new Single { Value = single };
+    }
+
+    /// <summary>A number with a point or an exponent, and maybe a <c>d</c> suffix.</summary>
+    private static Double? FindDouble(string term)
+    {
+        var digits = term.Length > 1 && term[^1] is 'd' or 'D' ? term[..^1] : term;
+        if (!digits.Contains('.') && !digits.Contains('e') && !digits.Contains('E'))
+        {
+            return null;
+        }
+
+        if (!double.TryParse(digits, NumberStyles.Float, CultureInfo.InvariantCulture, out var real))
+        {
+            return null;
+        }
+
+        return new Double { Value = real };
+    }
 }
 
 /// <summary>Reading a search box's text into a <see cref="SearchQuery"/>, and matching names against it.</summary>
@@ -90,6 +300,7 @@ public static class SearchQueries
         var query = new SearchQuery { Kinds = kinds };
         var prefixed = false;
         var terms = new List<string>();
+        SearchMatcher? regex = null;
         foreach (var part in Split(text))
         {
             var (prefix, term) = SplitPrefix(part);
@@ -118,12 +329,12 @@ public static class SearchQueries
                     break;
             }
 
-            if (query.Regex is null && term.Length > 1 && term[0] == '/')
+            if (regex is null && term.Length > 1 && term[0] == '/')
             {
                 var pattern = term.Length > 2 && term[^1] == '/' ? term[1..^1] : term[1..];
                 query.FullName |= pattern.Contains("\\.");
                 query.Generics |= pattern.Contains('<');
-                query.Regex = TryRegex(pattern);
+                regex = ParseRegex(pattern);
                 continue;
             }
             query.FullName |= term.Contains('.');
@@ -131,19 +342,20 @@ public static class SearchQueries
             query.Generics |= term.Contains('<');
             terms.Add(term);
         }
-        query.Terms = terms;
+        query.Matcher = regex ?? new SearchMatcher.Terms { Values = terms };
         return query;
     }
 
     /// <summary>Whether <paramref name="name"/> matches every term, or the regular expression.</summary>
     public static bool IsMatch(SearchQuery query, string name)
     {
-        if (query.Regex is not null)
-        {
-            return query.Regex.IsMatch(name);
-        }
+        return query.Matcher.IsMatch(name);
+    }
 
-        foreach (var term in query.Terms)
+    /// <summary>Whether <paramref name="name"/> matches every one of <paramref name="terms"/>.</summary>
+    internal static bool IsEveryTermIn(IReadOnlyList<string> terms, string name)
+    {
+        foreach (var term in terms)
         {
             if (term.Length == 0)
             {
@@ -167,51 +379,16 @@ public static class SearchQueries
         return true;
     }
 
-    /// <summary>The single term as a number or string literal, for <see cref="SearchKinds.Literals"/>:
-    /// a <see cref="long"/> for integers (decimal or <c>0x</c> hex), a <see cref="float"/> with an
-    /// <c>f</c> suffix, a <see cref="double"/> otherwise; null when the term is not a number.</summary>
-    public static object? FindLiteral(SearchQuery query)
+    /// <summary>The query's one term, when it has exactly one and no regular expression; else null.</summary>
+    public static string? FindSingleTerm(SearchQuery query)
     {
-        if (query.Regex is not null || query.Terms.Count != 1)
+        var matcher = query.Matcher;
+        if (matcher is not SearchMatcher.Terms terms || terms.Values.Count != 1)
         {
             return null;
         }
 
-        var term = query.Terms[0];
-        if (term.StartsWith("0x", StringComparison.OrdinalIgnoreCase) || term.StartsWith("-0x", StringComparison.OrdinalIgnoreCase))
-        {
-            var negative = term[0] == '-';
-            var digits = term[(negative ? 3 : 2)..].TrimEnd('u', 'U', 'l', 'L');
-            if (!ulong.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var hex))
-            {
-                return null;
-            }
-
-            return negative ? -(long)hex : (long)hex;
-        }
-        var integer = term.TrimEnd('u', 'U', 'l', 'L');
-        if (long.TryParse(integer, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var signed))
-        {
-            return signed;
-        }
-
-        if (ulong.TryParse(integer, NumberStyles.None, CultureInfo.InvariantCulture, out var unsigned))
-        {
-            return (long)unsigned;
-        }
-
-        if (term.Length > 1 && term[^1] is 'f' or 'F')
-        {
-            return float.TryParse(term[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var single) ? single : null;
-        }
-
-        var real = term.Length > 1 && term[^1] is 'd' or 'D' ? term[..^1] : term;
-        if (real.Contains('.') || real.Contains('e') || real.Contains('E'))
-        {
-            return double.TryParse(real, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number : null;
-        }
-
-        return null;
+        return terms.Values[0];
     }
 
     /// <summary><paramref name="text"/> with its <paramref name="prefix"/> term, if any, replaced by
@@ -304,15 +481,17 @@ public static class SearchQueries
         return false;
     }
 
-    private static Regex? TryRegex(string pattern)
+    /// <summary>A matcher by <paramref name="pattern"/>, or one that says why it is no regular expression.</summary>
+    private static SearchMatcher ParseRegex(string pattern)
     {
         try
         {
-            return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var expression = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            return new SearchMatcher.Regex { Expression = expression };
         }
-        catch (ArgumentException)
+        catch (ArgumentException e)
         {
-            return null;
+            return new SearchMatcher.InvalidRegex { Message = e.Message };
         }
     }
 }

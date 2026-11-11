@@ -237,14 +237,81 @@ public sealed class SearchTests
         var query = SearchQueries.ParseQuery("md:\"Get Value\" inassembly:Core innamespace:\"\" -Async");
 
         Assert.Equal(SearchKinds.Methods, query.Kinds);
-        Assert.Equal(["Get Value", "-Async"], query.Terms);
+        Assert.Equal(["Get Value", "-Async"], Assert.IsType<SearchMatcher.Terms>(query.Matcher).Values);
         Assert.Equal("Core", query.InAssembly);
         Assert.Equal("", query.InNamespace);
-        Assert.Equal(["System.Foo:Bar"], SearchQueries.ParseQuery("System.Foo:Bar").Terms);
-        Assert.True(SearchQueries.ParseQuery("inassembly:Core").IsEmpty);
-        Assert.Equal(255L, SearchQueries.FindLiteral(SearchQueries.ParseQuery("c:0xFF")));
-        Assert.Equal(1.5f, SearchQueries.FindLiteral(SearchQueries.ParseQuery("c:1.5f")));
-        Assert.Null(SearchQueries.FindLiteral(SearchQueries.ParseQuery("c:abc")));
+        Assert.Equal(["System.Foo:Bar"], Assert.IsType<SearchMatcher.Terms>(SearchQueries.ParseQuery("System.Foo:Bar").Matcher).Values);
+        Assert.False(SearchQueries.ParseQuery("inassembly:Core").CanFind);
+    }
+
+    [Fact]
+    public void FromQuery_EachKindOfTerm_GivesItsLiteral()
+    {
+        Assert.Equal(255L, Assert.IsType<SearchLiteral.Integer>(LiteralOf("c:0xFF")).Value);
+        Assert.Equal(-16L, Assert.IsType<SearchLiteral.Integer>(LiteralOf("c:-0x10")).Value);
+        Assert.Equal(42L, Assert.IsType<SearchLiteral.Integer>(LiteralOf("c:42UL")).Value);
+        Assert.Equal(-1L, Assert.IsType<SearchLiteral.Integer>(LiteralOf("c:18446744073709551615")).Value);
+        Assert.Equal(1.5f, Assert.IsType<SearchLiteral.Single>(LiteralOf("c:1.5f")).Value);
+        Assert.Equal(2.0, Assert.IsType<SearchLiteral.Double>(LiteralOf("c:2.0")).Value);
+        Assert.Equal(1000.0, Assert.IsType<SearchLiteral.Double>(LiteralOf("c:1e3")).Value);
+        Assert.Equal(2.5, Assert.IsType<SearchLiteral.Double>(LiteralOf("c:2.5d")).Value);
+        Assert.IsType<SearchLiteral.Text>(LiteralOf("c:abc"));
+        Assert.IsType<SearchLiteral.Text>(LiteralOf("c:0xZZ"));
+        Assert.IsType<SearchLiteral.Text>(LiteralOf("c:1 2"));
+        Assert.IsType<SearchLiteral.Text>(LiteralOf("c:/^4/"));
+    }
+
+    [Fact]
+    public async Task SearchAsync_IntegerAndDoubleLiterals_FindOnlyLoadsOfTheirOwnKind()
+    {
+        var (list, assembly) = Trees.OpenTestAssembly();
+
+        var integer = await CollectAsync(list.SearchAsync("c:2"));
+        var real = await CollectAsync(list.SearchAsync("c:2.0"));
+        var pi = await CollectAsync(list.SearchAsync("c:3.141592653589793"));
+
+        var describe = assembly.Calculator().Child("Describe() : string");
+        var spread = assembly.Fixtures().Child("Circle", "Spread() : double");
+        Assert.Contains(integer, r => r.Node == describe);
+        Assert.DoesNotContain(integer, r => r.Node == spread);
+        Assert.Contains(real, r => r.Node == spread);
+        Assert.DoesNotContain(real, r => r.Node == describe);
+        Assert.Contains(pi, r => r.Location == Trees.FixturesNamespace + ".Circle" && r.Node.MemberShape == MemberShape.Property);
+    }
+
+    [Fact]
+    public async Task SearchAsync_SingleLiteral_FindsFloatConstantsOnly()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        list.Open(Trees.CoreLibPath);
+
+        var single = await CollectAsync(list.SearchAsync("c:3.4028235E+38f"));
+        var real = await CollectAsync(list.SearchAsync("c:3.4028235E+38"));
+
+        Assert.Contains(single, r => r.Text == "MaxValue : float" && r.Location == "System.Single");
+        Assert.DoesNotContain(real, r => r.Text == "MaxValue : float");
+    }
+
+    [Fact]
+    public async Task ParseQuery_InvalidRegex_RecordsWhyAndFindsNothing()
+    {
+        var (list, _) = Trees.OpenTestAssembly();
+
+        var query = SearchQueries.ParseQuery("t:/[a/");
+        var withTerm = SearchQueries.ParseQuery("/(/ Calc");
+        var results = await CollectAsync(list.SearchAsync("t:/[a/"));
+
+        var invalid = Assert.IsType<SearchMatcher.InvalidRegex>(query.Matcher);
+        Assert.NotEmpty(invalid.Message);
+        Assert.False(query.CanFind);
+        Assert.IsType<SearchMatcher.InvalidRegex>(withTerm.Matcher);
+        Assert.Empty(results);
+        Assert.IsType<SearchMatcher.Regex>(SearchQueries.ParseQuery("t:/^I.*e$/").Matcher);
+    }
+
+    private static SearchLiteral LiteralOf(string text)
+    {
+        return SearchLiteral.FromQuery(SearchQueries.ParseQuery(text));
     }
 
     [Fact]

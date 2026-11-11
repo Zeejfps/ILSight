@@ -400,6 +400,30 @@ public sealed class AppTests
     }
 
     [Fact]
+    public void SearchPanel_InvalidRegex_ShowsWhyNothingIsFoundUntilFixed()
+    {
+        var app = AppDriver.Opened();
+        OpenSearch(app.Ui);
+        app.Run();
+        app.Frames.Type("/[a/").Frame();
+        app.RunOut();
+
+        var invalid = app.Ui.Search.InvalidRegex;
+        Assert.NotNull(invalid);
+        Assert.Empty(app.Ui.Search.Rows);
+        Assert.True(app.Frames.Drew("Invalid regular expression"));
+        Assert.False(app.Frames.Drew("0 results"));
+        app.Frames.MoveTo(Selector.WithText("Invalid regular expression")).Frame().Wait(2).Frame(2);
+        Assert.Contains(app.Frames.TextRects(), t => t.Text.Length >= 10 && invalid.Message.StartsWith(t.Text, StringComparison.Ordinal));
+
+        app.Frames.Type("]").Frame();
+        app.RunOut();
+
+        Assert.Null(app.Ui.Search.InvalidRegex);
+        Assert.False(app.Frames.Drew("Invalid regular expression"));
+    }
+
+    [Fact]
     public void Clicking_a_search_header_sorts_by_it_then_reverses_it_then_goes_back_to_relevance_keeping_the_selection()
     {
         var app = Searching("Greet", moreRowsThan: 2);

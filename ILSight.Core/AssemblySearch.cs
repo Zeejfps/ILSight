@@ -29,7 +29,7 @@ public static class AssemblySearch
         var searched = assemblies.ToImmutableArray();
         return Batches.StreamAsync<SearchResult>((emit, token) =>
         {
-            if (query.IsEmpty)
+            if (!query.CanFind)
             {
                 return;
             }
@@ -243,7 +243,7 @@ public static class AssemblySearch
         {
             var file = assembly.File;
             var reader = file.Metadata;
-            var literal = SearchQueries.FindLiteral(search.Query);
+            var literal = SearchLiteral.FromQuery(search.Query);
             foreach (var handle in reader.MethodDefinitions)
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
@@ -262,7 +262,7 @@ public static class AssemblySearch
                 {
                     continue;
                 }
-                if (HasMatchInBody(search, ref body, reader, literal))
+                if (HasMatchInBody(search, body, reader, literal))
             {
                 AddResultOrAncestor(search, assembly, handle);
             }
@@ -291,59 +291,116 @@ public static class AssemblySearch
         }
         }
 
-        private static bool IsConstantMatch(Search search, object? value, object? literal)
+    private static bool IsConstantMatch(Search search, object? value, SearchLiteral literal)
     {
-        return (value, literal) switch
-            {
-                (null, _) => false,
-                (string or char or bool, long or float or double) => false,
-                (_, long number) => value is not float and not double && Convert.ToInt64(value is ulong u ? (long)u : value) == number,
-                (_, float single) => value is float f && f == single,
-                (_, double real) => value is double d && d == real,
-                _ => SearchQueries.IsMatch(search.Query, value.ToString() ?? ""),
-            };
-    }
-
-        private static bool HasMatchInBody(Search search, ref BlobReader body, MetadataReader reader, object? literal)
+        if (value is null)
         {
-            while (body.RemainingBytes > 0)
-            {
-                var code = body.DecodeOpCode();
-                switch (literal)
-                {
-                    case long number when IsIntegerLoad(code):
-                        if (ReadIntegerOperand(ref body, code) == number)
-                    {
-                        return true;
-                    }
-
-                    continue;
-                    case float single when code == ILOpCode.Ldc_r4:
-                        if (body.ReadSingle() == single)
-                    {
-                        return true;
-                    }
-
-                    continue;
-                    case double real when code == ILOpCode.Ldc_r8:
-                        if (body.ReadDouble() == real)
-                    {
-                        return true;
-                    }
-
-                    continue;
-                    case null when code == ILOpCode.Ldstr:
-                        if (SearchQueries.IsMatch(search.Query, body.DecodeUserString(reader)))
-                    {
-                        return true;
-                    }
-
-                    continue;
-                }
-                body.SkipOperand(code);
-            }
             return false;
         }
+
+        return literal.Match(
+            integer => IsIntegerConstant(value, integer.Value),
+            single => value is float f && f == single.Value,
+            real => value is double d && d == real.Value,
+            _ => SearchQueries.IsMatch(search.Query, value.ToString() ?? ""));
+    }
+
+    /// <summary>Whether <paramref name="value"/> is an integer constant, of any width, equal to <paramref name="number"/>.</summary>
+    private static bool IsIntegerConstant(object value, long number)
+    {
+        if (value is string or char or bool or float or double)
+        {
+            return false;
+        }
+
+        var integer = Convert.ToInt64(value is ulong u ? (long)u : value);
+        return integer == number;
+    }
+
+    /// <summary>Whether the method <paramref name="body"/> loads <paramref name="literal"/>.</summary>
+    private static bool HasMatchInBody(Search search, BlobReader body, MetadataReader reader, SearchLiteral literal)
+    {
+        return literal.Match(
+            integer => HasIntegerLoad(body, integer.Value),
+            single => HasSingleLoad(body, single.Value),
+            real => HasDoubleLoad(body, real.Value),
+            _ => HasStringLoad(search, body, reader));
+    }
+
+    private static bool HasIntegerLoad(BlobReader body, long value)
+    {
+        while (TrySkipToLoad(ref body, IsIntegerLoad, out var code))
+        {
+            var operand = ReadIntegerOperand(ref body, code);
+            if (operand == value)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasSingleLoad(BlobReader body, float value)
+    {
+        while (TrySkipToLoad(ref body, static code => code == ILOpCode.Ldc_r4, out _))
+        {
+            var operand = body.ReadSingle();
+            if (operand == value)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasDoubleLoad(BlobReader body, double value)
+    {
+        while (TrySkipToLoad(ref body, static code => code == ILOpCode.Ldc_r8, out _))
+        {
+            var operand = body.ReadDouble();
+            if (operand == value)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasStringLoad(Search search, BlobReader body, MetadataReader reader)
+    {
+        while (TrySkipToLoad(ref body, static code => code == ILOpCode.Ldstr, out _))
+        {
+            var operand = body.DecodeUserString(reader);
+            if (SearchQueries.IsMatch(search.Query, operand))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Moves <paramref name="body"/> past instructions to the next one <paramref name="isLoad"/>
+    /// accepts, up to its operand, and gives its <paramref name="code"/>; false at the end of the body.</summary>
+    private static bool TrySkipToLoad(ref BlobReader body, Func<ILOpCode, bool> isLoad, out ILOpCode code)
+    {
+        while (body.RemainingBytes > 0)
+        {
+            code = body.DecodeOpCode();
+            if (isLoad(code))
+            {
+                return true;
+            }
+
+            body.SkipOperand(code);
+        }
+
+        code = default;
+        return false;
+    }
 
         private static bool IsIntegerLoad(ILOpCode code)
     {
@@ -363,7 +420,12 @@ public static class AssemblySearch
 
         private static void FindToken(Search search, LoadedModule assembly)
         {
-            var term = search.Query.Terms.Count == 1 ? search.Query.Terms[0] : "";
+            var term = SearchQueries.FindSingleTerm(search.Query);
+            if (term is null)
+            {
+                return;
+            }
+
             if (term.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
             term = term[2..];

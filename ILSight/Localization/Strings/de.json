@@ -81,6 +81,7 @@
   "search.column_name": "Name",
   "search.column_location": "Ort",
   "search.column_assembly": "Assembly",
+  "search.invalid_regex": "Ungültiger regulärer Ausdruck",
 
   "omnibar.search": "Zu Typ oder Member springen…",
   "omnibar.contents": "Inhalt von {name}",

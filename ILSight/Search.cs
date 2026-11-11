@@ -39,6 +39,11 @@ public sealed class Search
     public string Typed = "";
     public double TypedAt;
     public Searched? LastSearched;
+
+    /// <summary>Why <see cref="LastSearched"/> finds nothing, when its <c>/regex/</c> is no valid
+    /// regular expression; else null.</summary>
+    public SearchMatcher.InvalidRegex? InvalidRegex;
+
     public bool IsFocusPending;
 
     public string Query = "";
@@ -200,7 +205,8 @@ public static class Searches
     private static void Start(Search search, AssemblyList assemblies, Search.Searched searched, IEnumerable<LoadedModule> within)
     {
         var query = SearchQueries.ParseQuery(searched.Query, searched.Kinds);
-        if (query.IsEmpty)
+        search.InvalidRegex = query.Matcher as SearchMatcher.InvalidRegex;
+        if (!query.CanFind)
         {
             return;
         }

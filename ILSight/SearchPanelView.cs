@@ -205,10 +205,27 @@ internal static class SearchPanelView
 
     private static void ResultCount(Ui<UiState> ui, Search search)
     {
+        var invalidRegex = search.InvalidRegex;
+        if (invalidRegex is not null)
+        {
+            InvalidRegexNotice(ui, invalidRegex);
+            return;
+        }
+
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var count = ui.Memo("search-count", (search.Rows.Count, search.IsBusy, t), static a => CountText(a.t, a.Count, a.IsBusy));
         ui.Text(count, color: theme.TextMuted, size: theme.FontSizeSmall);
+    }
+
+    /// <summary>In place of the count: that the query's <c>/regex/</c> is invalid, so nothing is found,
+    /// in the warning colour, with why in its tooltip.</summary>
+    private static void InvalidRegexNotice(Ui<UiState> ui, SearchMatcher.InvalidRegex invalidRegex)
+    {
+        var theme = ui.Theme;
+        var id = ui.GetId("search-invalid-regex");
+        ui.Text(ui.State.Strings.SearchInvalidRegex, color: theme.Warning, size: theme.FontSizeSmall, id: id);
+        ui.Tooltip(id, invalidRegex.Message);
     }
 
     private static string CountText(Strings t, int count, bool isBusy)

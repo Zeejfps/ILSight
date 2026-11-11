@@ -81,6 +81,7 @@
   "search.column_name": "Nome",
   "search.column_location": "Local",
   "search.column_assembly": "Assembly",
+  "search.invalid_regex": "Expressão regular inválida",
 
   "omnibar.search": "Ir para um tipo ou membro…",
   "omnibar.contents": "Conteúdo de {name}",
