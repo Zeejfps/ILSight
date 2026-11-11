@@ -27,7 +27,7 @@ public sealed class MetadataTests
 
     private static MetadataGrid Grid(BrowseNode node)
     {
-        return Assert.IsType<GridContent>(node.Content()).Grid;
+        return Assert.IsType<NodeContent.Table>(node.Content()).Grid;
     }
 
     private static MetadataGrid TypeDefs()
@@ -102,7 +102,7 @@ public sealed class MetadataTests
         {
             var count = 0;
             var content = node.Content();
-            if (content is GridContent { Grid: var grid })
+            if (content is NodeContent.Table { Grid: var grid })
             {
                 for (var row = 0; row < grid.RowCount; row++)
                 {
@@ -123,7 +123,7 @@ public sealed class MetadataTests
             }
             else
             {
-                Assert.Null(Assert.IsType<DocumentContent>(content).Document.Error);
+                Assert.Null(Assert.IsType<NodeContent.Code>(content).Document.Error);
             }
             foreach (var child in node.Children)
             {
@@ -410,7 +410,7 @@ public sealed class MetadataTests
         var kind = grid.Column("KindString");
 
         var options = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
-        var table = Assert.IsType<MetadataTableDetails>(MetadataGrids.FindDetails(grid, options));
+        var table = Assert.IsType<MetadataRowDetails.Table>(MetadataGrids.FindDetails(grid, options));
 
         Assert.True(grid.HasDetails);
         Assert.Equal(["Name", "Value"], table.Headers);
@@ -542,7 +542,7 @@ public sealed class MetadataTests
         foreach (var node in Metadata(corelib).Child("Tables").Children.Concat(Metadata(corelib).Children.Where(c => c.Is(MetadataGridRole.Heap))))
         {
             var content = node.Content();
-            if (content is not GridContent gridContent)
+            if (content is not NodeContent.Table gridContent)
             {
                 continue;
             }

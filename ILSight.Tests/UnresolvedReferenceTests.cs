@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Core.Metadata;
 
 namespace ILSight.Tests;
 
@@ -16,7 +17,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
     }
 
     /// <summary>A type whose base type ILSight.Core defines.</summary>
-    private sealed record Detached : NodeContent;
+    private sealed class Detached : GridSchema;
 
     private (AssemblyList List, LoadedModule Assembly) OpenAlone()
     {
@@ -47,16 +48,16 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var (_, alone) = OpenAlone();
         var (list, beside) = Trees.OpenTestAssembly();
 
-        var unresolved = BaseTypes(alone).Child(nameof(NodeContent));
-        var resolved = BaseTypes(beside).Child(nameof(NodeContent));
+        var unresolved = BaseTypes(alone).Child(nameof(GridSchema));
+        var resolved = BaseTypes(beside).Child(nameof(GridSchema));
 
         Assert.IsType<NodeSubject.BaseType>(unresolved.Subject);
         Assert.IsType<Activation.OpenSelf>(NodeDefinitions.GetActivation(unresolved.Subject));
         Assert.Equal(NodeAccessibility.None, unresolved.Accessibility);
         Assert.True(unresolved.IsPublicApi);
-        Assert.Contains(nameof(NodeContent), Documents.GetText(unresolved.Decompile(DecompilationLanguage.CSharp)));
+        Assert.Contains(nameof(GridSchema), Documents.GetText(unresolved.Decompile(DecompilationLanguage.CSharp)));
         Assert.Equal(NodeAccessibility.Public, resolved.Accessibility);
-        Assert.Equal(nameof(NodeContent), Assert.IsAssignableFrom<BrowseNode>(list.FindNode(resolved.Destination)).Text);
+        Assert.Equal(nameof(GridSchema), Assert.IsAssignableFrom<BrowseNode>(list.FindNode(resolved.Destination)).Text);
     }
 
     [Fact]
@@ -64,10 +65,10 @@ public sealed class UnresolvedReferenceTests : IDisposable
     {
         var (list, assembly) = OpenAlone();
 
-        var used = assembly.Root.Child("References", Core, "Referenced types", nameof(NodeContent));
+        var used = assembly.Root.Child("References", Core, "Referenced types", nameof(GridSchema));
 
         Assert.IsType<NodeSubject.TypeReference>(used.Subject);
-        Assert.Equal(typeof(NodeContent).FullName, BrowseNodes.GetFullName(used));
+        Assert.Equal(typeof(GridSchema).FullName, BrowseNodes.GetFullName(used));
         Assert.Null(list.FindNode(used.Destination));
         Assert.NotEmpty(used.Children);
         Assert.All(used.Children, m => Assert.Null(list.FindNode(m.Destination)));

@@ -27,18 +27,17 @@ internal static class MetadataDetailsView
             return 0f;
         }
 
-        var theme = ui.Theme;
-        var padding = theme.GapTight * 2;
-        switch (MetadataGrids.FindDetails(grid, row))
+        var details = MetadataGrids.FindDetails(grid, row);
+        if (details is null)
         {
-            case MetadataTextDetails text:
-                var size = MeasureText(texts, row, text.Text);
-                return TextHeight(ui, size, width - Left(theme) - theme.ShellPaddingX) + padding;
-            case MetadataTableDetails table:
-                return MathF.Min(MaxTableHeight, (table.Rows.Count + 1) * theme.RowHeight + padding);
-            default:
-                return 0f;
+            return 0f;
         }
+
+        var padding = ui.Theme.GapTight * 2;
+        return details.Match(
+            (Ui: ui, Texts: texts, Row: row, Width: width, Padding: padding),
+            static (at, text) => TextHeight(at.Ui, MeasureText(at.Texts, at.Row, text.Content), at.Width - Left(at.Ui.Theme) - at.Ui.Theme.ShellPaddingX) + at.Padding,
+            static (at, table) => MathF.Min(MaxTableHeight, (table.Rows.Count + 1) * at.Ui.Theme.RowHeight + at.Padding));
     }
 
     /// <summary>How big <paramref name="row"/>'s <paramref name="text"/> is, measured once.</summary>
@@ -92,15 +91,11 @@ internal static class MetadataDetailsView
             Background = theme.Surface,
         });
         using var scope = ui.Id(row);
-        switch (MetadataGrids.FindDetails(grid, row))
-        {
-            case MetadataTextDetails text:
-                Text(ui, grid, texts, row, text);
-                break;
-            case MetadataTableDetails table:
-                Table(ui, table);
-                break;
-        }
+        var details = MetadataGrids.FindDetails(grid, row);
+        details?.Switch(
+            (Ui: ui, Grid: grid, Texts: texts, Row: row),
+            static (at, text) => Text(at.Ui, at.Grid, at.Texts, at.Row, text),
+            static (at, table) => Table(at.Ui, table));
     }
 
     /// <summary><paramref name="row"/>'s <paramref name="text"/> as a document, made once.</summary>
@@ -117,13 +112,13 @@ internal static class MetadataDetailsView
         return shown;
     }
 
-    private static void Text(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, MetadataTextDetails text)
+    private static void Text(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, MetadataRowDetails.Text text)
     {
-        var shown = GetText(texts, row, grid.Title, text.Text);
+        var shown = GetText(texts, row, grid.Title, text.Content);
         CodeViewWidget.RenderCodeView(ui, "details", shown.Document, shown.View, gutter: false);
     }
 
-    private static void Table(Ui<UiState> ui, MetadataTableDetails table)
+    private static void Table(Ui<UiState> ui, MetadataRowDetails.Table table)
     {
         var theme = ui.Theme;
         var share = 1f / table.Headers.Count;

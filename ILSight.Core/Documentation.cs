@@ -362,7 +362,7 @@ internal static class Documentation
                 items.Add(ReadListItem(child));
             }
         }
-        Documentation.AddList(text, new DocList(ListKindOf(list), header, items));
+        Documentation.AddList(text, new DocBlock.List(ListKindOf(list), header, items));
     }
 
     private static DocListKind ListKindOf(XmlDocumentationElement list)
@@ -534,10 +534,10 @@ internal static class Documentation
             return;
         }
 
-        doc.Blocks.Add(new DocCode(lines));
+        doc.Blocks.Add(new DocBlock.Code(lines));
     }
 
-    public static void AddList(DocText doc, DocList list)
+    public static void AddList(DocText doc, DocBlock.List list)
     {
         BreakParagraph(doc);
         if (list.Items.Count > 0 || list.Header is not null)
@@ -552,7 +552,7 @@ internal static class Documentation
         TrimParagraphEnds(doc);
         if (doc.Runs.Count > 0)
         {
-            doc.Blocks.Add(new DocParagraph(doc.Runs));
+            doc.Blocks.Add(new DocBlock.Paragraph(doc.Runs));
         }
 
         doc.Runs = new List<DocRun>();
@@ -571,7 +571,7 @@ internal static class Documentation
         var joined = new List<DocRun>();
         foreach (var block in FinishBlocks(doc))
         {
-            if (block is not DocParagraph paragraph)
+            if (block is not DocBlock.Paragraph paragraph)
             {
                 continue;
             }

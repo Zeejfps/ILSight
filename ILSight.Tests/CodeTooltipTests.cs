@@ -16,7 +16,7 @@ public sealed class CodeTooltipTests
 
     private static string TextOf(DocBlock block)
     {
-        return TextOf(Assert.IsType<DocParagraph>(block).Runs);
+        return TextOf(Assert.IsType<DocBlock.Paragraph>(block).Runs);
     }
 
     private static string TextOf(IReadOnlyList<DocRun> runs)
@@ -26,7 +26,7 @@ public sealed class CodeTooltipTests
 
     private static DocRun RunOf(DocBlock block, string text)
     {
-        return Assert.IsType<DocParagraph>(block).Runs.Single(r => r.Text == text);
+        return Assert.IsType<DocBlock.Paragraph>(block).Runs.Single(r => r.Text == text);
     }
 
     /// <summary>The signature's text from each parameter's start to the next one's, the last to the end.</summary>
@@ -152,8 +152,8 @@ public sealed class CodeTooltipTests
         var grow = assembly.Fixtures().Child("Circle", "Grow(double, int) : double");
 
         var remarks = Section(TooltipOf(list, grow), DocSectionKind.Remarks).Blocks;
-        var bullets = Assert.IsType<DocList>(remarks[1]);
-        var code = Assert.IsType<DocCode>(remarks[2]);
+        var bullets = Assert.IsType<DocBlock.List>(remarks[1]);
+        var code = Assert.IsType<DocBlock.Code>(remarks[2]);
 
         Assert.Equal(3, remarks.Count);
         Assert.Equal("Each step multiplies once:", TextOf(remarks[0]));
@@ -170,8 +170,8 @@ public sealed class CodeTooltipTests
         var spread = assembly.Fixtures().Child("Circle", "Spread() : double");
 
         var remarks = Section(TooltipOf(list, spread), DocSectionKind.Remarks).Blocks;
-        var table = Assert.IsType<DocList>(remarks[0]);
-        var numbered = Assert.IsType<DocList>(remarks[1]);
+        var table = Assert.IsType<DocBlock.List>(remarks[0]);
+        var numbered = Assert.IsType<DocBlock.List>(remarks[1]);
 
         Assert.Equal(DocListKind.Table, table.Kind);
         Assert.Equal("Bound", TextOf(table.Header!.Term));

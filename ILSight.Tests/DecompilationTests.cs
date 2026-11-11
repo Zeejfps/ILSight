@@ -339,7 +339,7 @@ public sealed class DecompilationTests
 
         var sequential = types.SelectMany(t => languages.Select(l => Documents.GetText(t.Decompile(l)))).ToArray();
         var concurrent = (await Task.WhenAll(types.SelectMany(t => languages.Select(l => NodeContentLoader.GetContentAsync(TestSession.Shared, t, l, DecompilerOptions.Default)))))
-            .Select(c => Assert.IsType<DocumentContent>(c).Document).ToArray();
+            .Select(c => Assert.IsType<NodeContent.Code>(c).Document).ToArray();
 
         Assert.Equal(sequential, concurrent.Select(d => Documents.GetText(d)));
         Assert.DoesNotContain(concurrent, d => d.Error is not null);

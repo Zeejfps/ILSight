@@ -616,16 +616,13 @@ internal static class CodeTooltipView
 
     private static TooltipBlock BlockOf(TooltipStyles styles, DocBlock block)
     {
-        return block switch
-        {
-            DocCode code => new CodeBlock([new RichTextRun(code.Text, styles.CodeBlock)]),
-            DocList list => ListOf(styles, list),
-            DocParagraph paragraph => new TextBlock(Runs(styles, paragraph.Runs)),
-            _ => throw new ArgumentOutOfRangeException(nameof(block)),
-        };
+        return block.Match<TooltipBlock>(
+            paragraph: paragraph => new TextBlock(Runs(styles, paragraph.Runs)),
+            code: code => new CodeBlock([new RichTextRun(code.Text, styles.CodeBlock)]),
+            list: list => ListOf(styles, list));
     }
 
-    private static ListBlock ListOf(TooltipStyles styles, DocList list)
+    private static ListBlock ListOf(TooltipStyles styles, DocBlock.List list)
     {
         var isTable = list.Kind == DocListKind.Table;
         var rows = new List<ListRow>();
@@ -656,7 +653,7 @@ internal static class CodeTooltipView
         return new ListRow([new RichTextRun(term, styles.Heading)], [new RichTextRun(description, styles.Heading)]);
     }
 
-    private static ListRow ItemRow(TooltipStyles styles, DocList list, int index)
+    private static ListRow ItemRow(TooltipStyles styles, DocBlock.List list, int index)
     {
         var item = list.Items[index];
         if (list.Kind == DocListKind.Table)

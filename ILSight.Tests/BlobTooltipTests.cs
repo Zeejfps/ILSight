@@ -8,7 +8,7 @@ public sealed class BlobTooltipTests
     private static MetadataGrid Grid(string table)
     {
         var node = Trees.TestAssembly.Root.Child("Metadata", "Tables").Table(table);
-        return Assert.IsType<GridContent>(node.Content()).Grid;
+        return Assert.IsType<NodeContent.Table>(node.Content()).Grid;
     }
 
     private static string? TooltipText(MetadataGrid grid, int row, string column)

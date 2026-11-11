@@ -65,7 +65,7 @@ public sealed class ReferenceReferencesTests
         var (_, assembly) = Trees.OpenTestAssembly();
         var coreLib = RuntimeReference(assembly).Child(CoreLib);
 
-        var text = Documents.GetText(Assert.IsType<DocumentContent>(coreLib.Content()).Document);
+        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(coreLib.Content()).Document);
 
         Assert.Contains("Resolves to", text);
         Assert.Contains($"{CoreLib}.dll", text);

@@ -124,7 +124,7 @@ internal static class CustomDebugInformationTable
         }
         catch (Exception ex) when (ex is BadImageFormatException or InvalidDataException)
         {
-            return new MetadataTextDetails(metadata.GetBlobReader(row.Value).ToHexString(), null);
+            return new MetadataRowDetails.Text(metadata.GetBlobReader(row.Value).ToHexString(), null);
         }
     }
 
@@ -139,11 +139,11 @@ internal static class CustomDebugInformationTable
                 rows.Add([reader.ReadUInt32().ToString(), reader.ReadUInt32().ToString()]);
             }
 
-            return new MetadataTableDetails(["Start Offset", "Length"], rows);
+            return new MetadataRowDetails.Table(["Start Offset", "Length"], rows);
         }
         if (kind == KnownGuids.SourceLink)
         {
-            return new MetadataTextDetails(reader.ReadUTF8(reader.RemainingBytes), ".json");
+            return new MetadataRowDetails.Text(reader.ReadUTF8(reader.RemainingBytes), ".json");
         }
 
         if (kind == KnownGuids.EmbeddedSource)
@@ -152,7 +152,7 @@ internal static class CustomDebugInformationTable
 
             if (embeddedSourceFormat < 0) // unknown format, show raw data as hex
             {
-                return new MetadataTextDetails(reader.ToHexString(), null);
+                return new MetadataRowDetails.Text(reader.ToHexString(), null);
             }
 
             var embeddedSourceBytes = reader.ReadBytes(reader.RemainingBytes);
@@ -164,7 +164,7 @@ internal static class CustomDebugInformationTable
             }
 
             using var textReader = new StreamReader(embeddedSourceByteStream, detectEncodingFromByteOrderMarks: true);
-            return new MetadataTextDetails(textReader.ReadToEnd(), EmbeddedSourceExtension(metadata, row.Parent));
+            return new MetadataRowDetails.Text(textReader.ReadToEnd(), EmbeddedSourceExtension(metadata, row.Parent));
         }
         if (kind == KnownGuids.CompilationOptions)
         {
@@ -174,7 +174,7 @@ internal static class CustomDebugInformationTable
                 rows.Add([ReadNullTerminatedUtf8(ref reader), ReadNullTerminatedUtf8(ref reader)]);
             }
 
-            return new MetadataTableDetails(["Name", "Value"], rows);
+            return new MetadataRowDetails.Table(["Name", "Value"], rows);
         }
         if (kind == KnownGuids.CompilationMetadataReferences)
         {
@@ -189,7 +189,7 @@ internal static class CustomDebugInformationTable
                 var mvid = reader.ReadGuid();
                 rows.Add([fileName, aliases, flags.ToString(), timestamp.ToString(), fileSize.ToString(), mvid.ToString()]);
             }
-            return new MetadataTableDetails(["File Name", "Aliases", "Flags", "Timestamp", "File Size", "MVID"], rows);
+            return new MetadataRowDetails.Table(["File Name", "Aliases", "Flags", "Timestamp", "File Size", "MVID"], rows);
         }
         if (kind == KnownGuids.TupleElementNames)
         {
@@ -199,9 +199,9 @@ internal static class CustomDebugInformationTable
                 rows.Add([ReadNullTerminatedUtf8(ref reader)]);
             }
 
-            return new MetadataTableDetails(["Element Name"], rows);
+            return new MetadataRowDetails.Table(["Element Name"], rows);
         }
-        return new MetadataTextDetails(reader.ToHexString(), null);
+        return new MetadataRowDetails.Text(reader.ToHexString(), null);
     }
 
     /// <summary>The file extension of the Document an embedded-source row holds the text of, which

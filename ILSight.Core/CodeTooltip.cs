@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ILSight.Core;
 
 /// <summary>How a run of documentation text is shown.</summary>
@@ -15,15 +17,34 @@ public enum DocStyle
 public readonly record struct DocRun(string Text, DocStyle Style, CodeReference? Reference = null);
 
 /// <summary>A block of documentation: a paragraph, a code block or a list.</summary>
-public abstract record DocBlock;
+public abstract record DocBlock
+{
+    private DocBlock()
+    {
+    }
 
-/// <summary>A paragraph of styled runs.</summary>
-public sealed record DocParagraph(IReadOnlyList<DocRun> Runs) : DocBlock;
+    /// <summary>A paragraph of styled runs.</summary>
+    public sealed record Paragraph(IReadOnlyList<DocRun> Runs) : DocBlock;
 
-/// <summary>A code block, its lines kept and their shared indentation removed.</summary>
-public sealed record DocCode(string Text) : DocBlock;
+    /// <summary>A code block, its lines kept and their shared indentation removed.</summary>
+    public sealed record Code(string Text) : DocBlock;
 
-/// <summary>What a <see cref="DocList"/> is: bulleted, numbered, or a table of terms and their
+    /// <summary>A list. <see cref="Header"/> is a table's heading row, or a list's leading item.</summary>
+    public sealed record List(DocListKind Kind, DocListItem? Header, IReadOnlyList<DocListItem> Items) : DocBlock;
+
+    public TResult Match<TResult>(Func<Paragraph, TResult> paragraph, Func<Code, TResult> code, Func<List, TResult> list)
+    {
+        return this switch
+        {
+            Paragraph p => paragraph(p),
+            Code c => code(c),
+            List l => list(l),
+            _ => throw new UnreachableException($"DocBlock.Match does not handle {GetType().Name}."),
+        };
+    }
+}
+
+/// <summary>What a <see cref="DocBlock.List"/> is: bulleted, numbered, or a table of terms and their
 /// descriptions.</summary>
 public enum DocListKind
 {
@@ -34,9 +55,6 @@ public enum DocListKind
 
 /// <summary>One item of a list: the term it names, when it names one, and its description.</summary>
 public sealed record DocListItem(IReadOnlyList<DocRun> Term, IReadOnlyList<DocRun> Description);
-
-/// <summary>A list. <see cref="Header"/> is a table's heading row, or a list's leading item.</summary>
-public sealed record DocList(DocListKind Kind, DocListItem? Header, IReadOnlyList<DocListItem> Items) : DocBlock;
 
 /// <summary>A part of an entity's XML documentation, in the order ILSpy shows them.</summary>
 public enum DocSectionKind

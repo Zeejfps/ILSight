@@ -6,16 +6,32 @@ using ILSight.Core.Resources;
 
 namespace ILSight.Core;
 
-/// <summary>What a <see cref="BrowseNode"/> shows: a <see cref="DocumentContent"/>, a
-/// <see cref="GridContent"/> or an <see cref="ImageContent"/>.</summary>
-public abstract record NodeContent;
+/// <summary>What a <see cref="BrowseNode"/> shows: a <see cref="Code"/> document, a
+/// <see cref="Table"/> grid or a <see cref="Picture"/>.</summary>
+public abstract record NodeContent
+{
+    private NodeContent()
+    {
+    }
 
-public sealed record DocumentContent(DecompiledDocument Document) : NodeContent;
+    public sealed record Code(DecompiledDocument Document) : NodeContent;
 
-public sealed record GridContent(MetadataGrid Grid) : NodeContent;
+    public sealed record Table(MetadataGrid Grid) : NodeContent;
 
-/// <summary>A picture, and for one stored as markup, such as SVG, that markup as a document.</summary>
-public sealed record ImageContent(ResourceImage Image, DecompiledDocument? Source = null) : NodeContent;
+    /// <summary>A picture, and for one stored as markup, such as SVG, that markup as a document.</summary>
+    public sealed record Picture(ResourceImage Image, DecompiledDocument? Source = null) : NodeContent;
+
+    public TResult Match<TResult>(Func<Code, TResult> code, Func<Table, TResult> table, Func<Picture, TResult> picture)
+    {
+        return this switch
+        {
+            Code c => code(c),
+            Table t => table(t),
+            Picture p => picture(p),
+            _ => throw new UnreachableException($"NodeContent.Match does not handle {GetType().Name}."),
+        };
+    }
+}
 
 /// <summary>
 /// What a node shows and what saving its code writes: a grid, a picture, or a document, worked out
@@ -101,12 +117,12 @@ public static class NodeContentLoader
         var grid = GridOf(node);
         if (grid is not null)
         {
-            return new GridContent(grid);
+            return new NodeContent.Table(grid);
         }
 
         if (!IsImage(node))
         {
-            return new DocumentContent(Decompile(session, node, language, options, cancellationToken));
+            return new NodeContent.Code(Decompile(session, node, language, options, cancellationToken));
         }
 
         try
@@ -115,7 +131,7 @@ public static class NodeContentLoader
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new DocumentContent(NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken, e.Message));
+            return new NodeContent.Code(NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken, e.Message));
         }
     }
 
@@ -130,17 +146,17 @@ public static class NodeContentLoader
     }
 
     /// <summary>The picture, with the markup it is stored as when it is drawn from shapes.</summary>
-    private static ImageContent GetImage(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    private static NodeContent.Picture GetImage(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken)
     {
         var image = ResourceImages.DecodeImage(BrowseNodes.ReadResource(node));
         if (!image.IsVector)
         {
-            return new ImageContent(image);
+            return new NodeContent.Picture(image);
         }
 
         var source = Decompile(session, node, language, options, cancellationToken);
-        return new ImageContent(image, source);
+        return new NodeContent.Picture(image, source);
     }
 
     private static CodeExport ExportOf(BrowseSession session, BrowseNode node)

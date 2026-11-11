@@ -197,13 +197,10 @@ public static class Tabs
     public static void ShowLoaded(DocumentTab tab, NodeContent loaded)
     {
         var node = GetLoadingNode(tab);
-        tab.Content = loaded switch
-        {
-            GridContent grid => new TabContent.Table(node, grid.Grid),
-            ImageContent image => new TabContent.Picture(node, image.Image, image.Source),
-            DocumentContent document => new TabContent.Code(node, document.Document),
-            _ => throw new InvalidOperationException($"No tab shows {loaded.GetType().Name}."),
-        };
+        tab.Content = loaded.Match<TabContent>(
+            code: code => new TabContent.Code(node, code.Document),
+            table: table => new TabContent.Table(node, table.Grid),
+            picture: picture => new TabContent.Picture(node, picture.Image, picture.Source));
     }
 
     /// <summary>Shows that the finished load of the tab's node failed with <paramref name="message"/>.</summary>
