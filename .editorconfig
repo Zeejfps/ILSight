@@ -8,6 +8,8 @@ root = true
 # R001: this codebase's own static services (they hold shared state and do effects). Reached through a class's port;
 # RL0101 reports their use outside adapters, tests and infrastructure files, like DateTime.Now.
 rulelab.ambient_types = ILSight.Background, ILSight.Errors, ILSight.WorkflowRunner
+# R003: immediate-mode widget functions (they take ZGF's Ui) draw and return "activated" by the framework's convention.
+rulelab.widget_context_types = ZGF.Gui.Immediate.Ui
 
 # R007: braces and block bodies; one-liners only for getters, accessors and lambdas.
 csharp_prefer_braces = true:error
@@ -72,6 +74,8 @@ dotnet_diagnostic.RL1201.severity = error
 dotnet_diagnostic.RL1202.severity = error
 dotnet_diagnostic.RL0102.severity = warning
 dotnet_diagnostic.RL0403.severity = suggestion
+dotnet_diagnostic.RL0306.severity = suggestion
+dotnet_diagnostic.RL0307.severity = suggestion
 # R011's checks are suggestions while their precision is measured (RULES.md R011).
 dotnet_diagnostic.RL1101.severity = suggestion
 dotnet_diagnostic.RL1102.severity = suggestion

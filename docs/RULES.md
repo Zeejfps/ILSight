@@ -14,7 +14,11 @@ the evidence lives in `rules/<id>/README.md`.
 
 Test conventions:
 
-- **Names:** `<MethodUnderTest>_<Scenario>_<Expected>` (R003), e.g. `Withdraw_MoreThanBalance_ReturnsInsufficientFunds`.
+- **Names: one convention per codebase.** A codebase that already has one keeps it (sentence-style names included); a
+  new codebase uses `<MethodUnderTest>_<Scenario>_<Expected>`, e.g. `Withdraw_MoreThanBalance_ReturnsInsufficientFunds`.
+  Either way a name says what is tested, in what situation, and what should happen. Agents copy the tests next to the
+  one they write, so a second convention spreads beside the first; renaming the old tests changes nothing that runs.
+  (A stated convention: names don't change behaviour, so there is no runtime evidence to show.)
 - **Assertions narrow.** Use assertion helpers the compiler understands, so a passing null check carries over (R002):
   ```csharp
   Assert.NotNull(account);         // xUnit: [NotNull]
@@ -53,17 +57,17 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | Rule | Build-enforced | Still review / checklist |
 |------|----------------|--------------------------|
 | R002 | `!` (RL0201), `== null` (RL0202, except in expression trees, which can't contain `is`), nullable suppressions (RL0203) | where to narrow, what null means |
-| R003 | missing `Async` (RL0301), `Find*` not `T?` (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305) | whether a name is a verb; choosing the right pattern |
+| R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306), a `Get*` returning -1 or `default` of a struct (RL0307) | whether a name is a verb; choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
-| R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status |
+| R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case) |
 | R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
-| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101); suggestion while measured: a use case or adapter constructed outside the composition root (RL0102) | an effect reached through an unlisted method of an object passed in; whether a record of functions is standing in for a port; whether a function takes the whole state; ports, adapters, what counts as a decision |
-| R006 | – | all |
+| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101); suggestion while measured: a use case or adapter constructed outside the composition root (RL0102) | an effect reached through an unlisted method of an object passed in; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; ports, adapters, what counts as a decision |
+| R006 | – | all, including whether an input is read all-or-nothing or leniently |
 | R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849) | parallel queries on one `DbContext`; moving async work out of sync-only callers |
-| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804) | which failures are expected; specific catches in decision code; log-and-rethrow |
+| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object or deferred sequence leaving an adapter |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
-| R012 | null checks written as property patterns (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
+| R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
 
 To break a rule on purpose, suppress it with the reason written down:
 `#pragma warning disable RL0802 // Deliberate: demonstrates the discarded-result trap`, or on a member
@@ -145,24 +149,30 @@ the port too, the test ran the fake's copy of the rule, which disagreed with the
            void LogOrderConfirmed(int orderId);
        }
 
-       public async Task<bool> HandleAsync(int orderId, CancellationToken ct)
+       public async Task<ConfirmOrderResult> HandleAsync(int orderId, CancellationToken ct)
        {
            var order = await ports.FindOrderAsync(orderId, ct);
-           if (order is not Order.Pending pending) // missing, or not pending
+           if (order is null)
            {
-               return false;
+               return new ConfirmOrderResult.NotFound();
+           }
+
+           if (order is not Order.Pending pending)
+           {
+               return new ConfirmOrderResult.NotPending();
            }
 
            await ports.SaveOrderAsync(pending.ToConfirmed(ports.Now), ct);
            // ...
            ports.LogOrderConfirmed(pending.Id);
-           return true;
+           return new ConfirmOrderResult.Confirmed();
        }
    }
    ```
 
    `Order` is a union (R008): `pending.ToConfirmed(now)` returns an `Order.Confirmed`, which can't exist without its
-   `ConfirmedAt`.
+   `ConfirmedAt`. `ConfirmOrderResult` is a union per outcome (R009): a `bool` would make "missing" and "not pending"
+   the same `false` (R003 Questions).
 
 2. **Name port members for what the class needs** (`FindOrderAsync`, `Now`, `LogOrderConfirmed`), not after infrastructure.
    Port signatures must not expose infrastructure types (`DbContext`, `DbSet<T>`, `IQueryable<T>`, `HttpClient`, `ILogger`).
@@ -193,17 +203,29 @@ the port too, the test ran the fake's copy of the rule, which disagreed with the
    the data it changes, then the port, then the token. It's the same seam as a constructor's port (S14: an identical fake,
    the same results).
    ```csharp
-   public static async Task<bool> UpdateAsync(Feed feed, FeedUpdate.IPorts ports, CancellationToken ct)
+   public static async Task<bool> TryUpdateAsync(Feed feed, FeedUpdate.IPorts ports, CancellationToken ct)
 
-   await FeedUpdate.UpdateAsync(state.Feed, feedPorts, ct);   // at the edge; the composition root built feedPorts
+   await FeedUpdate.TryUpdateAsync(state.Feed, feedPorts, ct);   // at the edge; the composition root built feedPorts
    ```
    - **The port is an interface, not a record of functions.** A record of delegates fakes in 5 lines instead of 16 and
      needs no adapter class, but the build checks none of it: members that fail RL0301, RL1001 and RL0303 on an
      interface pass silently as delegates, and their parameters lose their names (S14).
    - **The whole application state is not a port.** Take the parts the function reads or changes (`state.Feed`), and
      its effects through its port. Given the whole state, a test had to build all 5 services on it to exercise the 2
-     the function uses, and the signature didn't say which (S14). A function that works on the whole state (saving a
-     session) takes it.
+     the function uses, and the signature didn't say which (S14). Only an edge, or a function that works on the whole
+     state itself (saving a session), takes it.
+   - **Narrow from the bottom up.** Passing the whole state on to a callee that takes it is not working on the whole
+     state. Narrow the callees first, then the caller: a function can stop taking the state only once nothing it calls
+     needs it, and a caller that calls a narrowed function takes that function's port to pass on.
+     ```csharp
+     // ❌ the panel only writes the status bar; it takes the state because FeedUpdate does
+     public static async Task RefreshAsync(AppState state, CancellationToken ct)
+
+     // ✅ FeedUpdate narrowed first (feed + its port), then the panel
+     public static async Task RefreshAsync(Feed feed, StatusBar status, FeedUpdate.IPorts ports, CancellationToken ct)
+     ```
+     In testing, a test of that panel built all 5 services on the state; narrowing only the update left it so, and
+     after the panel followed, the test built a feed, a status bar and one fake port (S16).
 
 ### Adapters
 
@@ -214,7 +236,7 @@ the port too, the test ran the fake's copy of the rule, which disagreed with the
   that decision belongs in the class it serves. Branching that translates the infrastructure (a status code, a
   provider exception, a wire format) belongs in the adapter.
   Translating includes failures: a 404 becomes `null` from a `Find*` port member; anything the port has no answer for
-  propagates (R009).
+  propagates (R009). A library that throws lazily is translated where its values are read (R009 "Adapters translate").
 - Several ports may share one adapter when they use the same infrastructure. Register each port to the shared instance:
 
   ```csharp
@@ -277,6 +299,36 @@ and its adapter kept a cache of its own: after an assembly changed on disk, the 
 and Ctrl+click on the same name reported it missing (S15). RL0102 suggests where a use case or adapter is constructed
 outside the composition root.
 
+- **Lifetime decides who builds.** What lives as long as the app, the root builds once. What lives as long as a
+  document or a request (an adapter bound to one file, a decompiler per module, a unit of work) is built by a
+  **factory the root builds** and hands to the edges, which call it when the document opens
+  (`state.Documents.Open(path)`). The factory belongs to the root (its edge file) and makes the adapter choice the root
+  made, so tests that build the app with fakes get fakes in every document. With a DI container this is a scoped
+  lifetime. Per-document *data* alone doesn't need a factory: a use case built once takes it as a parameter (point 8).
+  In testing, a per-document view built once showed the first tab's `Shop.Order` for "Order" in the second tab; built
+  by the edge that opens a tab, a test couldn't give it a fake and failed without files; built by the root's factory,
+  each tab found its own types and a test opened two tabs with no files (S18).
+- **Configuration becomes initial values.** The root reads configuration (the settings file) into a settings value
+  first, then builds each long-lived object with its configured values, through `required init` or its constructor
+  (R005). The object has no default of its own for a configured value: the default lives once, in the settings value,
+  so a value the root leaves out doesn't compile (CS9035). Settings code turns the file into a settings value and, to
+  save, the live objects' values back into one; it never sets values on live objects. A setting the user changes
+  while the app runs is a command on the object it belongs to (`view.ChangeFontSize(18)`).
+  ```csharp
+  public static AppState Build(Settings settings, Session session)   // settings read first, defaults filled in (R006)
+  {
+      return new AppState
+      {
+          Recent = RecentFiles.FromPaths(session.RecentFiles, settings.RecentFilesLimit),
+          View = new CodeView { FontSize = settings.FontSize },
+          Feed = new PackageFeed { Source = settings.PackageSource },   // required: leaving it out is CS9035
+      };
+  }
+  ```
+  In testing, building with defaults and then running a settings pass lost 15 of 25 recent files (the session was
+  restored into the list while it still had its default limit), ignored a company package feed the pass had never
+  been taught, and erased it from the user's file on the next save (S17).
+
 ### Exemptions
 
 | Kind | What to do instead |
@@ -300,6 +352,8 @@ outside the composition root.
 - [ ] Constructor takes no dependencies, or exactly one: the class's own nested `IPorts`. (Entities and value objects use `required init` properties: R005.) A function takes its static class's `IPorts` as a parameter, not a record of functions or the whole state.
 - [ ] Effects reached through an object passed in (a method that reads the disk, runs work, reports an error) are on the port; plain data and pure methods on it are used directly.
 - [ ] Only the composition root, in an edge file, constructs use cases and adapters; tests build the application through it.
+- [ ] Only edges and functions that work on the whole state take it; callees were narrowed first, then their callers.
+- [ ] Per-document / per-request objects come from a factory the root built; configured values arrive through constructors or `required init`, never a settings pass.
 - [ ] No `DateTime.Now`/`UtcNow`, `Guid.NewGuid()`, `Random`, `File`, `Environment`, `HttpClient` or `ILogger` in a class that makes decisions.
 - [ ] No call to the codebase's own services (job runners, error logs, caches), static or through an object passed in, in a class that makes decisions; they are listed in `rulelab.ambient_types`.
 - [ ] Port members are named after needs; no infrastructure types in their signatures.
@@ -440,21 +494,59 @@ port members. Framework-facing code follows the framework's own naming instead (
 
 | Pattern | Contract | Returns | Example |
 |---------|----------|---------|---------|
-| `Get*` | Must exist; throws with a message if not. On a collection: none found is an empty collection. | `T` | `GetCustomer(id)`, `GetCustomerAsync(id, ct)`, `GetAllCustomersAsync(ct)` |
-| `Find*` | Absence is normal | `T?` | `FindCustomer(id)`, `FindOrderAsync(id, ct)` |
+| `Get*` | Must exist; throws with a message if not, never returns a sentinel. On a collection: none found is an empty collection. | `T` | `GetCustomer(id)`, `GetCustomerAsync(id, ct)`, `GetAllCustomersAsync(ct)` |
+| `Find*` | Absence is normal | `T?`, or a result union with a not-found case | `FindCustomer(id)`, `FindOrderAsync(id, ct)`, `FindApiReferencePageAsync(type, ct)` → `PageLookup` (`Found` / `NotFound` / `Failed`) |
 | `Get*OrDefault` | Absence returns a documented default (BCL: `GetValueOrDefault`) | `T` | `GetTaxRateOrDefault(country)` |
 | `Try*` | May fail; never throws for it | `bool` + `[NotNullWhen(true)] out T?` | `TryGetSession(token, out var session)` |
 
 The verb answers one question: what happens when the thing is missing. It doesn't say whether the lookup does I/O;
 `Async` and the `ports.` call already show that. So there is no separate I/O verb: don't use `Load*` or `Fetch*` (RL0305).
 
+**The verb follows the shape of the result.** `Get*` returns `T` and throws when the thing is missing; `Find*` returns
+`T?`, or a result union (R008, R009) one of whose cases is "not found"; `Try*` returns `bool` with an `out`.
+
+- **A lookup that can also fail** (its background work threw) is still `Find*`: give absence a case of its own beside
+  `Failed` (`PageLookup.NotFound`), not a third verb (`LookUp*`). A generic outcome whose value may be null
+  (`Outcome<string?>`, absence as `Ok(null)`) also says "not found", but takes two checks to read; in testing, a
+  handler that checked `is Ok ok && ok.Value is not null` and reported everything else as "no page" also reported a
+  lookup that threw as "no page" (S12). RL0302 accepts a union with a case named for absence (`NotFound`, `Missing`,
+  `None`, `Absent`, `NoMatch`, `*NotFound`) or a nullable type argument. A union that can't say "not found" (a domain
+  `Order`, `Outcome<string>`) still fails it: in testing, absence then came back as `Failed`, and a type with no page
+  was reported as a failed lookup (S12).
+- **Never return a sentinel** (-1, a nil handle, `default`) for "missing". Return `T?` (`int?`, `EntityHandle?`) and
+  name it `Find*`, or name a documented default `Get*OrDefault`. In testing, a `GetRowIndex` returning -1 selected the
+  first row when moving down from a row that was gone (-1 + 1 = 0) and threw `ArgumentOutOfRangeException` when used
+  to remove it; as `int?`, `int next = FindRowIndex(rows, name) + 1;` doesn't compile (CS0266, CS8629), so each caller says
+  what a missing row means (S14). A miss that carries data (`List.BinarySearch`'s `~index`, the insertion point) is a
+  union with a `Missing { InsertAt }` case. A value that only looks like a sentinel is fine when it doesn't mean
+  missing (-1 as the position before the first row). RL0307 suggests where a `Get*` returns a literal -1 or `default`
+  of a struct; a sentinel passed on from elsewhere (`Array.IndexOf`, `FirstOrDefault()`) is review-level.
+
 ### Questions
 
 | Pattern | Meaning | Returns | Example |
 |---------|---------|---------|---------|
-| `Is*` / `Has*` / `Can*` / `Should*` | Yes/no question with no side effects | `bool` | `IsExpired(trial, now)`, `HasRole(user, "admin")`, `CanShip(order)`, `ShouldRetry(attempt)` |
+| `Is*` / `Has*` / `Can*` / `Should*` (also `Was*`, `Does*`, `Any*`, `All*`) | Yes/no question with no side effects | `bool` | `IsExpired(trial, now)`, `HasRole(user, "admin")`, `CanShip(order)`, `ShouldRetry(attempt)` |
+| A verb in the third person that states a fact | Yes/no question about the arguments, no side effects | `bool` | `range.Contains(date)`, `filter.Matches(name)`, `Equals(other)`, `Exists(path)`, `name.StartsWith("Get")` |
 
 An async question (`IsEmailRegisteredAsync`) may **read** over I/O, but never writes.
+
+**A method returning `bool` is a question or a `Try*`, and its first word says which.**
+
+- **An action that also reports whether it happened is `Try<Verb>`**: `reload.TryFinish(ticket)` ("false when another
+  reload started since"), `bookmarks.TryAdd(bookmark)` (as `Dictionary.TryAdd`). In testing, a caller of
+  `bool Finish(ticket)` wrote `reload.Finish(ticket);` and showed a stale reload's result; `if (!reload.TryFinish(ticket))`
+  reads as what it is (S13). `reload.TryFinish(ticket);` on its own line still compiles, but reads as dropping an
+  answer, like `SaveOrderAsync(order);` without `await`.
+- **A question whose subject comes first** moves the question word to the front: `EmailIsRegistered` →
+  `IsEmailRegistered`, `FileExists(path)` → `Exists(path)` (S02).
+- **A use case returns its outcome as a result union (R009), not a `bool`.** A handler whose `false` meant "missing
+  or not pending" made the endpoint answer 404 for an order that existed; with `NotFound` / `NotPending` cases each
+  outcome got its own answer (S13).
+- **Framework-facing members keep the framework's names** (`Equals`, `MoveNext`, `ICollection<T>.Remove`), and so do
+  immediate-mode widget functions, which by the framework's convention draw and return whether they were activated
+  (`if (Row(ui, "Open"))`, ImGui's `Button`): list the UI context type in `.editorconfig`
+  (`rulelab.widget_context_types = ZGF.Gui.Immediate.Ui`). RL0306 suggests where a `bool` method is named as an action.
 
 ### Values: return something new, don't act
 
@@ -514,7 +606,7 @@ foreach (var line in lines)
 | Pattern | Meaning | Example |
 |---------|---------|---------|
 | `Raise*` | Raises an event | `RaiseOrderPlaced(order)` |
-| `Handle*` | Responds to something that arrived: an event, a message, or a use case's request. `HandleAsync` is the single public method of a use-case class (R004); the class name says which use case. | `HandleOrderPlaced(sender, e)`, `CancelOrderHandler.HandleAsync(orderId, ct)` |
+| `Handle*` | Responds to something that arrived: an event, a message, or a use case's request. `HandleAsync` is the single public method of a use-case class (R004); the class name says which use case. It returns nothing, a value, or a result union (R009), never a bare `bool` (see Questions). | `HandleOrderPlaced(sender, e)`, `CancelOrderHandler.HandleAsync(orderId, ct)` |
 | `Log*` | Records that something happened (logging / metrics port members) | `LogOrderConfirmed(orderId)` |
 | `ThrowIf*` | Throws when the condition holds | `ThrowIfNull(value)`, `ThrowIfNegative(amount)` |
 | `Assert*` | Test code: throws unless the condition holds | `Check.Assert(account.Balance >= 0, "...")` |
@@ -524,12 +616,13 @@ foreach (var line in lines)
 | Pattern | Meaning | Example |
 |---------|---------|---------|
 | `*Async` | Returns an awaitable (`Task`, `ValueTask`, `IAsyncEnumerable`). Always. | `SaveOrderAsync`, `FindOrderAsync` |
-| `<Method>_<Scenario>_<Expected>` | Test method | `Withdraw_MoreThanBalance_ReturnsInsufficientFunds` |
+| `<Method>_<Scenario>_<Expected>` | Test method, in a new codebase; an existing one keeps its own convention (Scope) | `Withdraw_MoreThanBalance_ReturnsInsufficientFunds` |
 
 ### Rules for using the table
 
-1. **The name is a promise.** `Get` never returns null, `Find` never throws for absence, `Is*` has no side effects,
-   `To*` never mutates, `With*`'s return value is always used, `Add*`/`Remove*` never return a copy.
+1. **The name is a promise.** `Get` never returns null or a sentinel, `Find` never throws for absence, `Is*` has no
+   side effects, a `bool` method is a question or a `Try*`, `To*` never mutates, `With*`'s return value is always
+   used, `Add*`/`Remove*` never return a copy.
 2. **No noun-named methods.** Cheap, pure and parameterless → make it a property. Anything else → a verb from above.
    ```csharp
    // ❌ cart.Total()   Paths.DataDirectory()   Key(city)      Expired(trial, now)
@@ -567,7 +660,8 @@ Framework-facing code uses the names its framework **requires or documents**. Ev
 ### Checklist
 
 - [ ] Every method name in framework-independent code matches a pattern above; framework-facing code uses the framework's required or documented names.
-- [ ] The method keeps the pattern's promise (`Get` throws, `Find` returns `T?`, `Add` mutates, `To` converts).
+- [ ] The method keeps the pattern's promise (`Get` throws and never returns a sentinel, `Find` returns `T?` or a union with a not-found case, `Add` mutates, `To` converts).
+- [ ] Every method returning `bool` starts with a question (`Is`, `Has`, `Contains`, ...) or is a `Try*`; a use case returns a result union, not a `bool`.
 - [ ] No noun-named methods that should be properties, and no `Set*` methods that should be property setters.
 - [ ] Builders are mutable: `With*` for values, `Add*` for repeatable items, `Build()` at the end.
 - [ ] Every awaitable-returning method ends in `Async`.
@@ -617,6 +711,11 @@ Work top to bottom and take the first match.
 - **One use case per class, not one class per entity.** An `OrderService` holding every use case makes every test fake the union of all their dependencies.
 - **Knowledge shared by use cases lives on the type it's about.** Which status transitions are allowed belongs on `Order`, not repeated in each handler.
 - **Type count is not the goal.** Sorting a grab bag into well-named homes adds types; removing pass-through layers removes them. Both are right.
+- **A helper lives with the code that uses it.** When only one area calls it, it belongs to that area (knowledge in
+  one place): when its last caller moves, it moves too, and a helper with no callers left is deleted. Left behind, it
+  is the first place the next reader looks for that area's knowledge, and the wrong one. (A stated convention, not
+  measured: the compiler's IDE0051 reports a private member nobody calls, and found none here; a helper used from one
+  other area needs a whole-solution view, like the seam test.)
 
 ### Framework-facing state
 
@@ -820,6 +919,8 @@ problem at a time. See R006.
 
 - **Configuration binding ignores `required`.** A missing key binds as `null`. Options classes need `[Required]` and
   `.ValidateDataAnnotations().ValidateOnStart()` (R002).
+- **A value that comes from configuration is `required`** on the long-lived object that uses it, with no default of its
+  own: the composition root sets it at construction (R001 "Configuration becomes initial values").
 - **`where T : new()` rejects types with required members** (CS9040). Accept a `Func<T>` instead.
 - **A rule checked in an `init` accessor must keep holding.** Store a copy of a collection you were given
   (`value.ToDictionary(...)`), or the caller can empty it after the check (R006's `Result<T>.Failure`).
@@ -863,7 +964,7 @@ out through response DTOs. Domain types never meet a serializer.
    }
    ```
 2. **One step validates and converts.** Collect every error, keyed by field path, and narrow each value as you check it,
-   so the domain object is built from proven values. Never validate in one method and map in another: the mapper can't
+   so the domain object is built from proven values (all-or-nothing; a lenient reader is point 5). Never validate in one method and map in another: the mapper can't
    see the validation and ends up needing `!` (R002). DataAnnotations (`[Required]`, `[EmailAddress]`) don't satisfy this
    on their own for the same reason: they check but don't narrow, so the conversion still sees `string?`. Use them for
    simple format checks if you like, but the conversion step must still narrow every value.
@@ -906,12 +1007,37 @@ out through response DTOs. Domain types never meet a serializer.
    Both branches must return the same type, so a synchronous branch next to an async one is wrapped in `Task.FromResult`.
 4. **Values you don't control are decisions, not crashes.** Map open-ended strings (third-party statuses, enum names)
    explicitly in the conversion step: report them as errors, or map them to an `Unknown` case on purpose.
+5. **Decide per input whether one bad part spoils the whole.**
+   - **All-or-nothing** (points 2-3) for a request, a command or a message: report every problem and accept nothing.
+     Accepting part of it does something the sender didn't ask for.
+   - **Lenient** for an input whose parts stand alone and that must not be lost to one bad part (a user's settings
+     file), or a format whose consumers skip what they can't read (NuGet config, a package feed): keep what's
+     readable, fall back for what isn't, and report each problem by location (line, path). A part that is simply
+     missing is its default, not a problem.
+   - **Lenient is still one step,** and it returns the value and every problem together; it never drops a problem
+     silently. The caller (an edge) reports them.
+   ```csharp
+   public sealed record Lenient<T>
+       where T : notnull
+   {
+       public required T Value { get; init; }                         // what was readable, plus fallbacks
+       public required IReadOnlyList<ReadProblem> Problems { get; init; }   // each with its line; empty = all read
+   }
+
+   public static Lenient<Settings> ReadSettings(string text)
+   ```
+   Not a union (R008): the value always exists, and the problems are independent of it. In testing, a settings file
+   with one typo read all-or-nothing ran the app on defaults, and the next save erased the user's font, feed and
+   theme; read leniently, the three good values survived and the typo was reported with its line. Read leniently, an
+   order with one bad line placed the other two, an order nobody asked for, and the customer's fix-and-resend ordered
+   them again (S06). Cost: a lenient read followed by a save writes the fallback over what couldn't be read; one value
+   is lost, and it was reported.
 
 ### Outbound
 
-5. **Response DTOs per endpoint**, with `required init` (R005), built by `ToResponse()`. Never serialize entities: they
+6. **Response DTOs per endpoint**, with `required init` (R005), built by `ToResponse()`. Never serialize entities: they
    leak fields, crash on navigation cycles, and tie the API contract to domain property names.
-6. **Read-only queries may project straight into the response DTO** (`db.Customers.Select(c => new CustomerResponse { ... })`); no domain type is needed.
+7. **Read-only queries may project straight into the response DTO** (`db.Customers.Select(c => new CustomerResponse { ... })`); no domain type is needed.
 
 ### Not a boundary
 
@@ -967,6 +1093,7 @@ public abstract record Result<T>
 - [ ] No request body, webhook or message is deserialized into a domain or entity type.
 - [ ] Inbound DTOs: nullable, not `required`, only the fields this endpoint accepts.
 - [ ] Validation and conversion happen in one `To<Domain>()` step returning `Result<T>` with every error.
+- [ ] Requests and commands are all-or-nothing; an input read leniently (settings, a format whose consumers skip damage) returns its value and every problem, by location, in one step.
 - [ ] Unknown external values are handled explicitly.
 - [ ] No entity is serialized into a response; responses use DTOs.
 - [ ] Your own EF-mapped database is not wrapped in row DTOs.
@@ -1160,12 +1287,14 @@ public abstract record Order
 4. **Exhaustiveness: give every union a `Match` method** (one handler parameter per case) and use it outside the union
    instead of a `switch` (RL0801) or an `if` / `else if` chain over its cases (RL0803). C# can't prove a closed hierarchy
    exhaustive, so a `switch` is forced to have a `_` arm, and a case added later falls into it at runtime; an `if` chain
-   silently skips it. Adding a case to `Match` breaks every call site at compile time.
+   silently skips it. Adding a case to `Match` breaks every call site at compile time. (That is for questions every
+   case answers; a question only some cases answer is in "Using a union".)
 5. A single-case check is fine: `if (order is Order.Confirmed confirmed) { ... confirmed.ConfirmedAt ... }`.
 
 ### Using a union
 
-Pick the first that fits:
+**`Match` is for questions every case answers.** For a question only some cases answer (most questions about a wide
+union: ILSight's `NodeSubject` has 24 cases), use the last two rows. Pick the first that fits:
 
 | The operation... | Use | Why |
 |------------------|-----|-----|
@@ -1174,6 +1303,32 @@ Pick the first that fits:
 | has an effect, but every case does the same kind of thing (fill the same columns, send one message) | **`Match`** returning that as one value, then act once | Each case must supply the whole value, so none can leave a part out. |
 | is an async side effect | **`Match`** with `Task` as the result | `TResult` can be `Task`; no extra method needed. |
 | is a synchronous side effect that really differs per case | **`Switch`** (one `Action` per case) | Adding a case breaks every call site, as with `Match`. |
+| is the type's own knowledge, but only some cases have an answer (a metadata token) | a **virtual member** on the base whose default says "doesn't apply" (`null`), overridden by the cases that answer | Stated once, beside the cases. It does **not** make a case added later answer: that case gets the default. Use it only where the default is harmless for any future case (a command isn't offered); where a wrong default would do damage, make it abstract. |
+| belongs to another layer, and only some cases matter to it (what the decompiler can show) | **one `is` check per case** it cares about, each its own `if`, then what every other case gets | Every other case, including any added later, doesn't apply. An `else if` chain over the same cases is RL0803's shape, kept for questions every case answers. |
+
+Never a `switch` with a `_` arm (RL0801): at runtime it does what the `is` checks do, but it reads as covering every
+case, so a reader can't tell a deliberate default from a forgotten case. In testing (S09, a 24-case union and a 25th
+added later), the token question through `Match` took a handler per case (25) at every call site to answer for 6,
+and broke at compile time when the case was added (CS7036); as a virtual member it was one default plus 5
+overrides, and the added case, which has a token, silently answered "none", as did the `switch` with `_`. The
+decompiler's `is` checks were right for it: a forwarded type has nothing to decompile.
+
+```csharp
+public virtual int? DefinitionToken => null;                 // on NodeSubject: "this node shows no definition"
+public override int? DefinitionToken => Token;               // on Type, Method, Field, Property, Event
+
+if (subject is NodeSubject.Type type)                        // the decompiler panel: the two cases it can show
+{
+    return DecompileType(type);
+}
+
+if (subject is NodeSubject.Method method)
+{
+    return DecompileMethod(method);
+}
+
+return null;                                                 // everything else, now and later: nothing to show
+```
 
 ```csharp
 (row.Channel, row.Subject, row.Text) = notification.Match<(string Channel, string? Subject, string? Text)>(
@@ -1217,6 +1372,7 @@ update without a tracking number has no case to become). Response DTOs stay flat
 - [ ] Union base (abstract record or class) has a private constructor; cases are sealed and nested; nothing outside derives from it (RL0806).
 - [ ] Every union has a `Match`; code outside the union uses `Match`, not `switch` or an `if` / `else if` chain over cases.
 - [ ] Behaviour the type owns is an abstract member; effects that are the same kind for every case are a value returned from `Match`.
+- [ ] A question only some cases answer: a virtual member with a "doesn't apply" default (only where that default is harmless for a future case), or one `is` check per case in another layer, not a `Match` that answers "none" for most cases; never `switch` with `_`.
 - [ ] `Switch` only for synchronous side effects that differ per case.
 - [ ] Transitions are `To<State>` on the source state, and their result is used.
 - [ ] Persisted unions go through a row type with `ToX()` / `CopyTo(trackedRow)`.
@@ -1315,6 +1471,30 @@ while (!stoppingToken.IsCancellationRequested)
 - **Adapters translate** infrastructure outcomes into the port's contract (R001). Check a status where the API offers
   one (HTTP 404 → `null` from `Find*`); otherwise catch the one specific exception that means it (a unique-key
   violation → "already exists"). Everything else propagates.
+- **A library that throws lazily is translated where it's read.** Some libraries throw from property reads, when they
+  decode the data under them (ICSharpCode's decompiler throws `BadImageFormatException` from almost any property of a
+  corrupt file). Translating that is still adapter work, not an edge's: each adapter member reads everything its answer
+  needs inside its own catch of that one exception, and returns plain values or a result case (`Corrupt { Reason }`).
+  Never hand a library object or a deferred sequence (`Select` without `ToList`) past the adapter: it throws later,
+  outside every catch.
+  ```csharp
+  public TypeListing ListTypes()
+  {
+      try
+      {
+          var names = file.Types.Select(t => t.FullName).ToList();   // read now, inside the catch
+          return new TypeListing.Listed { Names = names };
+      }
+      catch (BadImageFormatException ex)
+      {
+          return new TypeListing.Corrupt { Reason = ex.Message };
+      }
+  }
+  ```
+  In testing, decision code holding the library's objects needed a catch at every entry point and the one without it
+  threw; a catch around opening the file never fired (opening reads nothing); a catch around building a LINQ query
+  missed the throw from running it. Per member, the adapter reads only what each answer needs, not the whole file up
+  front, and a bug in the library (another exception type) still propagates (S06).
 - **Never** write an empty catch (RL0901), `catch (Exception)` outside an edge (RL0902), or `throw ex;` (CA2200: it
   restarts the stack trace; use `throw;`, or wrap with the original as the inner exception).
 - **Don't log and rethrow.** The edge logs it once, with the full stack trace.
@@ -1328,6 +1508,7 @@ while (!stoppingToken.IsCancellationRequested)
 - [ ] Expected failures are returned: a union per operation, `Result<T>`, `Find*` → `T?`, or `Try*`.
 - [ ] No result union is discarded.
 - [ ] Decision code has no `try` / `catch`; adapters catch only the specific exception they translate.
+- [ ] A lazily-throwing library's values are read inside the adapter member's catch; no library object or deferred sequence leaves the adapter.
 - [ ] Catch-alls exist only at the edge, around one unit of work, and let shutdown through (not timeouts).
 - [ ] No empty catch, no `throw ex;`, no log-and-rethrow.
 
@@ -1411,7 +1592,10 @@ A level is a vocabulary, not a kind of statement:
 ### How
 
 1. **Write a method as its steps.** If a block needs a comment to say what it does, it's a step: give it that name, as
-   a method on the concept it's about (R004), not a private helper named after its caller.
+   a method on the concept it's about (R004), not a private helper named after its caller. Naming a step never needs a
+   lambda or LINQ: on a hot path (per frame, per row), the named method holds the same loop. In testing, a toolbar's
+   width step named as a method with a loop allocated nothing per frame, as it did inline; the same step written with
+   LINQ allocated 48 bytes a frame (S07).
    ```csharp
    public async Task<decimal> PlaceOrderAsync(IReadOnlyList<CartLine> lines, Customer customer, CancellationToken ct)
    {
@@ -1487,7 +1671,8 @@ Tests are exempt (Scope): a test sets up data, calls, and asserts in one method 
 **Rule.** An `if`, `while` or `do` condition, or the condition of `?:`, only asks a question: it reads locals, fields
 and properties, and calls only methods that return `bool`. Anything else it needs goes into a local on the line before.
 A null check says `is null` or `is not null`; it is never hidden in a property pattern (`is { } x`, `is not { } x`,
-`is { Length: > 0 } x` on a value that may be null).
+`is { Length: > 0 } x` on a value that may be null), at the top of a pattern or on a member inside one
+(`dto is { TrackingNumber: not { Length: > 0 } }`): there it says `TrackingNumber: null` or `TrackingNumber: not null`.
 
 **Why.** `if (FindRow(list, from) is { } index)` does three things in one condition: a lookup, a null check, and a
 declaration. "Null" appears nowhere, the lookup's result can't be seen in a debugger before the branch, and the empty
@@ -1534,7 +1719,13 @@ if (!string.IsNullOrEmpty(nickname)) { ... }       // narrows: [NotNullWhen(fals
    }
    ```
 5. **Type checks** on a local stay patterns: `if (order is Order.Shipped shipped)` names the case it wants (R008).
-6. **Don't hoist a call past what guards it.** In `if (cache.IsLoaded && cache.FindPrice(sku) is not null)` the call
+6. **Inside a pattern, say null for the member.** `dto is { Status: "shipped", TrackingNumber: not { Length: > 0 } }`
+   means "null or empty" and shows only "empty": in testing, a reader tidied it into `TrackingNumber: { Length: 0 }`
+   and a shipped update with no tracking number at all passed validation (S08). Write `TrackingNumber: null or ""`.
+   In a switch arm, `CancelledAt: not null` and then `row.CancelledAt.Value` in the arm compiles without a warning:
+   the compiler carries the check, so `CancelledAt: { } at` isn't needed. This holds after `is`, in switch expression
+   arms and in `case` labels, at any depth.
+7. **Don't hoist a call past what guards it.** In `if (cache.IsLoaded && cache.FindPrice(sku) is not null)` the call
    runs only when the cache has loaded; moved above the `if`, it runs first and throws (in testing). The same goes for
    a call that only a later `else if` needed. Check the guard first, then call, each on its own line:
    ```csharp
@@ -1549,6 +1740,6 @@ if (!string.IsNullOrEmpty(nickname)) { ... }       // narrows: [NotNullWhen(fals
 ### Checklist
 
 - [ ] No condition calls a method that returns something other than `bool`.
-- [ ] Null checks are `is null` / `is not null` (or `string.IsNullOrEmpty`), never `is { } x` or a property pattern on a nullable.
+- [ ] Null checks are `is null` / `is not null` (or `string.IsNullOrEmpty`), never `is { } x` or a property pattern on a nullable, at the top of a pattern or on a member inside one (`Member: null`, `Member: not null`, `Member: null or ""`).
 - [ ] Read-until-null loops read once at the top of each pass.
 - [ ] No call was hoisted above the check that guarded it (`a && Call()`, a later `else if`).

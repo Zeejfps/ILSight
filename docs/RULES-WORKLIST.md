@@ -81,6 +81,7 @@ Done items are struck through with their commit.
   `GetDeclaringType`, `GetAccessor`; a default rect from `DiagramView.GetCanvasRect`. Each should return `T?` (`Find*`)
   or be `Get*OrDefault`; several feed selection APIs where -1 means none.
 
+- **R003 bool names (RL0306, 47) and sentinels (RL0307, 16)** now have suggestion-level checks listing every site.
 - **R003 bool methods:** `Reload.Finish(ticket)` and `Reopens.Finish(path, ticket)` return `bool` (whether the work was
   still current); R003 would name them `TryFinish`. RL0304 only checks the other direction, so the build doesn't see it.
 
