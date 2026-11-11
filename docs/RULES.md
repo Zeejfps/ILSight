@@ -35,9 +35,12 @@ Test conventions:
 
 An **edge** is code the framework calls to hand control to the application: `Main` and the composition root (DI
 wiring, startup), a UI's command dispatcher, an HTTP endpoint, middleware or exception handler, a message or
-background-worker loop, an `async void` event handler, and tests. Edges are few, and they are the only places that:
+background-worker loop, an `async void` event handler, and tests. In a frame-driven UI (immediate mode), the edges are
+the frame edge before each draw and the commands the draw queues, started after it; the draw itself is not an edge
+(R010 "Frame-driven UIs"). Edges are few, and they are the only places that:
 
-- **start work** that outlives the call that asked for it (R010), and create the `CancellationToken` it runs on;
+- **start work** that outlives the call that asked for it (R010), and create the `CancellationToken` it runs on,
+  linked to everything that may cancel it on purpose (R009 "Cancellation someone asked for");
 - **catch** everything a unit of work can throw, log it once, and carry on (R009);
 - **build and wire** the application's use cases and adapters (the composition root: R001), and reach infrastructure
   directly (R001).
@@ -57,15 +60,15 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | Rule | Build-enforced | Still review / checklist |
 |------|----------------|--------------------------|
 | R002 | `!` (RL0201), `== null` (RL0202, except in expression trees, which can't contain `is`), nullable suppressions (RL0203) | where to narrow, what null means |
-| R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306), a `Get*` returning -1 or `default` of a struct (RL0307) | whether a name is a verb; choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) |
+| R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306: also `bool CloseTab`, `bool Set`), a `Get*` returning -1 or `default` of a struct (RL0307) | whether a name is a verb; choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) or travel through the codebase's own parameters (-1 for "no row"); a `TrySet` that should count changes; a placeholder returned to fill a generic `T` |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
 | R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case) |
-| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; whether use cases share a step (one class) or not (a class each) |
+| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each) |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
 | R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; ports, adapters, what counts as a decision |
 | R006 | – | all, including whether an input is read all-or-nothing or leniently |
-| R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849) | parallel queries on one `DbContext`; moving async work out of sync-only callers |
-| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestion while measured: an adapter's catch that turns cancellation into a result (RL0903) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object or deferred sequence leaving an adapter; cancellation turned into a result without a catch (an awaiter or continuation) |
+| R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849); a job runner listed in `rulelab.ambient_types` started from a draw (RL0101); an I/O step called without what its state change returned (the compiler: CS1503 / CS7036) | parallel queries on one `DbContext`; moving async work out of sync-only callers; state the user must see in the frame of their input; work started from a draw by other means |
+| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestion while measured: an adapter's catch that turns cancellation into a result (RL0903) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object or deferred sequence leaving an adapter; cancellation turned into a result without a catch (an awaiter or continuation); whether a workflow's token is linked to everything that cancels it on purpose |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
 | R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
 
@@ -571,6 +574,13 @@ The verb answers one question: what happens when the thing is missing. It doesn'
   union with a `Missing { InsertAt }` case. A value that only looks like a sentinel is fine when it doesn't mean
   missing (-1 as the position before the first row). RL0307 suggests where a `Get*` returns a literal -1 or `default`
   of a struct; a sentinel passed on from elsewhere (`Array.IndexOf`, `FirstOrDefault()`) is review-level.
+- **"No current item" is `int?` in the codebase's own code too**: a helper's parameter, a field, a return
+  (`PickFrom(items, int? selected)`), not only a `Find*`'s result. A framework API that uses -1 for "none" gets it only
+  in the lines that call it: `rows.Index = selected ?? -1;` before the widget, `rows.Index >= 0 ? rows.Index : null`
+  after. A named constant (`NoSelection = -1`) reads better but is still an `int` nothing makes a helper handle. In
+  testing, -1 passed into the app's own `PickFrom`, which checked only the upper bound, threw; with the constant, a
+  helper that forgot to compare compiled and threw the same way; with `int?`, `items.RemoveAt(selected)` doesn't
+  compile (CS1503), and the conversion at the widget allocated nothing per frame (S18).
 
 ### Questions
 
@@ -588,6 +598,12 @@ An async question (`IsEmailRegisteredAsync`) may **read** over I/O, but never wr
   `bool Finish(ticket)` wrote `reload.Finish(ticket);` and showed a stale reload's result; `if (!reload.TryFinish(ticket))`
   reads as what it is (S13). `reload.TryFinish(ticket);` on its own line still compiles, but reads as dropping an
   answer, like `SaveOrderAsync(order);` without `await`.
+- **An action that reports a fact about what it did** (not whether it happened: closing a tab always closes it)
+  **returns a value that names the fact**, not a bare `bool`: `var closed = tabs.Close(tab); if (closed.WasActive)`.
+  In testing, a menu that read `bool CloseTab` as "did it close" reported "Couldn't close B" for a tab that closed, and
+  `!closed` doesn't compile (CS0023). Asking first (`tabs.IsActive(tab)`, then `tabs.Close(tab)`) is right only while
+  the question comes first: asked a line later it compiled and always said "wasn't active". A caller that doesn't need
+  the fact drops the value; it is not an outcome to handle (S15).
 - **A question whose subject comes first** moves the question word to the front: `EmailIsRegistered` →
   `IsEmailRegistered`, `FileExists(path)` → `Exists(path)` (S02).
 - **A use case returns its outcome as a result union (R009), not a `bool`.** A handler whose `false` meant "missing
@@ -624,6 +640,41 @@ For records, prefer the `with` expression over a `With*` method: `options with {
 | Property setter | Sets a value. **C# uses properties for this, not `Set*` methods.** | `order.Note = "gift"`, `new Options { Timeout = t }` |
 | `Add*` / `Remove*` / `Clear*` | Adds to or removes from a collection: one inside **this** object, or the store this object represents (a repository, a `DbSet`). Mutable only; never returns a copy. | `cart.AddItem(item)`, `builder.AddLine("...")`, `orders.AddAsync(order, ct)` |
 | `Set*Async` / `Set*(a, b)` | Only when it can't be a property: async, or needs extra arguments | `SetPasswordAsync(user, password, ct)` |
+
+**A value others must notice changing counts its changes.** Its setter keeps the count (a `Version` that moves only
+when the value differs), and each consumer compares `Version` with the last one it saw; not a `bool Set(value)` (or
+`TrySet`) that tells only its caller. In testing, the settings dialog ignored `Set`'s bool and the layout kept
+measuring with the old font size (`TrySet` is the same code renamed); with `Version`, the layout followed every change,
+whoever made it, and setting the same value measured nothing. A caller that acts on its own change asks first
+(`if (font.Value != size)`). The setter keeps the type's rule, so it is one of the type's methods (R004 step 2's Rules
+test) (S16).
+
+```csharp
+public required T Value
+{
+    get;
+    set
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value))
+        {
+            return;
+        }
+
+        field = value;
+        _version++;   // public int Version => _version;
+    }
+}
+```
+
+### Work with nothing to return
+
+**Work with nothing to return returns nothing.** A helper that runs `Func<..., Task<T>>` also takes
+`Func<..., Task>`, as `Task.Run` does, so no step returns a placeholder (`return true;`) or a unit type
+(`Done.Value`) only to fill `T`; a generic type gets a non-generic sibling the same way (`Task` / `Task<T>`). If the
+step produces something its caller can use, return that instead. If you don't own the helper, write the overload once,
+as an extension method that keeps the placeholder inside it (not tested). In testing, a placeholder, a unit type and
+the overload behaved alike; only the overload left nothing to misread: `var refreshed = await latest.RunAsync(...)`
+doesn't compile (CS0815) where the placeholder's `true` could be branched on (S17).
 
 ### Builders
 
@@ -712,6 +763,9 @@ Framework-facing code uses the names its framework **requires or documents**. Ev
 - [ ] Every method name in framework-independent code matches a pattern above; framework-facing code uses the framework's required or documented names.
 - [ ] The method keeps the pattern's promise (`Get` throws and never returns a sentinel, `Find` returns `T?` or a union with a not-found case, `Add` mutates, `To` converts).
 - [ ] Every method returning `bool` starts with a question (`Is`, `Has`, `Contains`, ...) or is a `Try*`; a use case returns a result union, not a `bool`.
+- [ ] An action that reports a fact about what it did returns a value naming it (`closed.WasActive`); a value others must notice changing counts its changes (`Version`), not a `bool Set`.
+- [ ] No placeholder returned only to fill a generic `T`: the helper has a non-generic overload.
+- [ ] "No current item" is `int?` in the codebase's own code; -1 appears only in the lines that call the framework API that needs it.
 - [ ] No noun-named methods that should be properties, and no `Set*` methods that should be property setters.
 - [ ] Builders are mutable: `With*` for values, `Add*` for repeatable items, `Build()` at the end.
 - [ ] Every awaitable-returning method ends in `Async`.
@@ -754,7 +808,7 @@ Work top to bottom and take the first match.
 | Name | Can I name it after what it knows or does, without `Manager`, `Helper`, `Utils`, `Processor`, or `<Noun>Service`? Does the name say *what* it knows? `Rules`, `Logic`, `Common` and `Core` pass the suffix check but say nothing (`EmailFormat`, not `Rules`). | It doesn't know what it is. Move each member to the concept it's about. Generic helpers become extension methods grouped by the type they extend (`StringExtensions`). |
 | Order | Must callers call its methods in a set order (`Open` → `ReadHeader` → `ReadRows`)? | The steps are leaking. Expose the whole job as one call. (A framework's protocol is not your order: see Framework-facing state.) |
 | Seam | Does this interface have two implementations that exist for a reason other than the interface itself? | Remove the interface. A test fake only counts when the decision can't be separated from the I/O (an R001 port). |
-| Rules | Can a caller put this type into an invalid state (public setters, a public mutable field or collection, `with`, an unchecked constructor)? | Move the rule inside the type. If a framework needs those members public, the rule goes into its own type (Framework-facing state). |
+| Rules | Can a caller put this type into an invalid state (a public setter that skips the rule, a public mutable field or collection, `with`, an unchecked constructor)? A setter whose body keeps the rule is one of the type's methods (R003 Mutation: a value that counts its changes). | Move the rule inside the type. If a framework needs those members public, the rule goes into its own type (Framework-facing state). |
 
 ### Step 3: granularity
 
@@ -819,6 +873,14 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 - **Framework-facing data may have methods** that read its fields and call the type with the rules
   (`picker.Update(assemblies)` filters by `Filter` and calls `Choice.Offer`), but it keeps no rule about its own
   public members.
+- **It may set its own fields for one user action**: `picker.Open()` clears `Filter`, sets `IsOpen` and starts the
+  scan. That is a convenience, not a rule, so nothing may depend on such a method having run: the framework writes a
+  bound field without calling it (the window's close box sets `IsOpen` by `ref`). What must follow from a bound
+  field's value belongs to the type with the rule, told the value each frame:
+  `picker.Scan.CancelUnlessOpen(picker.IsOpen)` after the dialog's widgets. In testing, `Open()` as a method and as a
+  static function over the data (NuGet's form, written to satisfy RL0403) behaved alike; "closing cancels the scan"
+  kept by a `Close()` (method or function alike) left the scan running when the close box closed the dialog, and told
+  the value each frame, the scan stopped however the dialog closed (S13). RL0403 skips fields a widget binds by `ref`.
 - **A framework's protocol is not a set order of yours** (step 2's Order test). When the framework needs a step before
   it reads and one after it writes (`ShowIn` gives a list widget the selected item's row; `TakeFrom` reads back the
   row it picked), the type with the rule exposes exactly those members, and **the second takes what the first
@@ -848,8 +910,9 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 - [ ] No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` names.
 - [ ] No interface with a single implementation, except R001 ports.
 - [ ] No methods that must be called in a set order. A framework's protocol: exactly its members, the second taking what the first returns.
-- [ ] No public setters, public mutable fields or collections, or unchecked `init` accessors on types with rules.
+- [ ] No public setters that skip the rule (a setter that keeps it is one of its methods), public mutable fields or collections, or unchecked `init` accessors on types with rules.
 - [ ] State a framework binds or sets is public as it requires, on a type with no rules; the part with rules is a type it holds.
+- [ ] A framework-facing method that sets its own fields for one action is a convenience; whatever must follow from a bound field is kept by the rule owner, told the field's value each frame.
 
 ---
 
@@ -1580,9 +1643,25 @@ while (!stoppingToken.IsCancellationRequested)
 - **Never** write an empty catch (RL0901), `catch (Exception)` outside an edge (RL0902), or `throw ex;` (CA2200: it
   restarts the stack trace; use `throw;`, or wrap with the original as the inner exception).
 - **Don't log and rethrow.** The edge logs it once, with the full stack trace.
-- **Shutdown is not a failure; a timeout is.** Let `OperationCanceledException` through only when your own token was
-  cancelled. An `HttpClient` timeout throws `TaskCanceledException` (an `OperationCanceledException`) with nobody
-  cancelling: treat it like any other failure, or one timeout stops the host.
+- **Cancellation someone asked for is not a failure; a timeout is.** Let `OperationCanceledException` through only
+  when your own token was cancelled. An `HttpClient` timeout throws `TaskCanceledException` (an
+  `OperationCanceledException`) with nobody cancelling: treat it like any other failure, or one timeout stops the host.
+  The app cancels on purpose for more than shutdown: newer work supersedes older (newest wins), a dialog closes. So
+  the edge that starts a workflow links its token to everything that may cancel it on purpose, and ends quietly when
+  any of them did; any other cancellation is reported like any other failure.
+  ```csharp
+  runner.Start(ct => search.HandleAsync(results, query, ct), latest.Begin());   // the command: what cancels it on purpose
+
+  var link = CancellationTokenSource.CreateLinkedTokenSource([_shutdown.Token, .. cancelledOnPurposeBy]);   // the edge
+  ...
+  catch (OperationCanceledException) when (link.IsCancellationRequested)
+  {
+      return;   // shutdown, superseded or closed: someone asked for it
+  }
+  ```
+  In testing, a runner that excluded only shutdown reported a superseded search and a closed dialog's search as
+  "Unexpected: A task was canceled."; with the token linked, both ended quietly and an `HttpClient` timeout was still
+  reported. An edge that made every cancellation quiet lost the timeout (S08).
 
 ### Checklist
 
@@ -1592,7 +1671,7 @@ while (!stoppingToken.IsCancellationRequested)
 - [ ] Decision code has no `try` / `catch`; adapters catch only the specific exception they translate.
 - [ ] An adapter that turns failures into results lets `OperationCanceledException` through when its own token was cancelled (a timeout is a failure).
 - [ ] A lazily-throwing library's values are read inside the adapter member's catch; no library object or deferred sequence leaves the adapter.
-- [ ] Catch-alls exist only at the edge, around one unit of work, and let shutdown through (not timeouts).
+- [ ] Catch-alls exist only at the edge, around one unit of work, and end quietly only for cancellation someone asked for (shutdown, newer work, a closed dialog: the workflow's token is linked to each), never for a timeout.
 - [ ] No empty catch, no `throw ex;`, no log-and-rethrow.
 
 ---
@@ -1628,9 +1707,9 @@ together on one `DbContext` threw "a second operation was started on this contex
 4. **Only an edge starts work.** Everything else returns a `Task` its caller awaits, all the way up to an edge (see
    Edges). A feature that starts its own work (through `Task.Run` left running, a job runner, or a runner it was handed)
    returns before the work is done, so its caller reads stale state, and the work runs on a token nobody can cancel
-   (R010 S05, verified). The edge hands each workflow its token, linked to shutdown, keeps track of it, and reports its
-   unexpected failure (R009). List your job runner in `rulelab.ambient_types` (R001) so a start outside an edge is
-   reported.
+   (R010 S05, verified). The edge hands each workflow its token, linked to shutdown and to whatever may cancel it on
+   purpose (R009 "Cancellation someone asked for"), keeps track of it, and reports its unexpected failure (R009). List
+   your job runner in `rulelab.ambient_types` (R001) so a start outside an edge is reported.
 5. **No `async void`** (VSTHRD100): its exceptions can't be caught by the caller. The one exception is an event handler,
    which must be `async void`: it is an edge (R009), so wrap its body in a `try` / `catch` and suppress VSTHRD100 on it
    with the reason.
@@ -1639,12 +1718,39 @@ together on one `DbContext` threw "a second operation was started on this contex
 7. **Don't write `ConfigureAwait(false)` in application code.** ASP.NET Core has no synchronization context, so it only
    adds noise. Libraries shared with UI apps are the exception.
 
+### Frame-driven UIs
+
+In an immediate-mode UI the view runs every frame, and it is not an edge: work starts at the **frame edge** before the
+draw, or from a **command** the draw queues, which the frame loop starts after the draw (Edges).
+
+- **State the user must see in the frame of their input changes in that frame; only the I/O waits for the edge.** The
+  view calls the state's own method, then queues the I/O, which takes what that method returned, so it can't run
+  without the state change, and the state refuses a result for anything it didn't start:
+  ```csharp
+  var ticket = browser.Downloads.Start(browser.Selected);                       // "Downloading..." this frame
+  commands.Queue(ct => download.HandleAsync(browser.Downloads, ticket, ct));    // only the I/O is queued
+  ```
+  The frame edge starts every command a frame queued, even when the draw fails after queuing it: the state has
+  already changed. In testing, with the whole workflow queued, "Downloading..." appeared a frame after Enter and a
+  reopened dialog showed its last scan's failure for a frame; split this way, both showed in the frame of the input,
+  the I/O without its ticket didn't compile (CS1503), and a forged ticket's result was refused. Where it hurts: if the
+  queued I/O never starts, the state says "Downloading..." for nothing (verified), hence the frame edge's duty (S06).
+- **Work the draw finds it needs** (a row's icon, its details) **is recorded as pending on the state that owns it,
+  once per item, and an edge starts it for everything pending**: the frame edge before the next draw, or one command
+  the draw queues (a frame sooner). The draw shows "loading" from the pending state, in the same frame. Start one
+  workflow for the batch when the port takes a batch, or one per item when one item's failure mustn't end the others.
+  In testing, rows that started their own fetches started 9 for 3 icons, allocated 1.7 KB a frame (128 bytes with a
+  "requested" set: the lambda's closure), outlived shutdown, and retried a failing fetch every frame with nobody told;
+  recorded as pending, 3 fetches, 0 bytes a frame, cancelled at shutdown, a failure reported once. One workflow for the
+  batch let one unexpected failure stop the icons after it; one per item didn't (S07).
+
 ### Checklist
 
 - [ ] No `.Result`, `.Wait()` or `.GetAwaiter().GetResult()` on a task.
 - [ ] Every async method takes `CancellationToken ct` last and passes it to every async call.
 - [ ] Every task is awaited: no `_ = ...Async(...)`, no `async void` except event handlers (with a `try` / `catch`).
 - [ ] Only an edge starts work; features return tasks their callers await.
+- [ ] Frame-driven UIs: what the user must see changes in the frame of the input, and the queued I/O takes what that change returned; work found while drawing is recorded as pending and started by an edge.
 - [ ] No parallel queries on one `DbContext`.
 
 ---

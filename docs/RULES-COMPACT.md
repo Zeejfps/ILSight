@@ -6,9 +6,10 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
 - **The build checks the mechanical parts.** A `RLxxxx` error says what to do: fix it, don't suppress it. Breaking a
   rule on purpose: `#pragma warning disable RLxxxx // reason`. This file is the judgment the build can't make.
 - **Edges** are where the framework hands control to the app: `Main` / the composition root, a UI's command
-  dispatcher, an HTTP endpoint or middleware, a worker loop, an `async void` event handler, tests. Only edges start
-  work (and create its token), catch everything (R009) and build and wire use cases and adapters (R001's composition
-  root). Mark their files `rulelab.infrastructure = true`.
+  dispatcher, an HTTP endpoint or middleware, a worker loop, an `async void` event handler, tests; in a frame-driven
+  UI, the frame edge before the draw and the commands the draw queues (the draw is not an edge). Only edges start
+  work (and create its token, linked to whatever may cancel it on purpose), catch everything (R009) and build and
+  wire use cases and adapters (R001's composition root). Mark their files `rulelab.infrastructure = true`.
 - **Tests** follow R002, R003, R005, R007, R008, R010, R012 (test methods needn't take a token) and R009's ban on empty
   catches; not the others. Name tests the way the codebase already does (one convention per codebase); a new codebase
   uses `Method_Scenario_Expected`. Assertion helpers carry `[DoesNotReturnIf(false)]` so they narrow nulls.
@@ -105,8 +106,18 @@ action), RL0307 (a `Get*` returning -1 or `default` of a struct).
   question first (`IsEmailRegistered`, not `EmailIsRegistered`). A use case returns a result union (R009), never a
   bare `bool`. Immediate-mode widget functions keep the framework's "returns whether activated": list the UI context
   type in `rulelab.widget_context_types`.
+- **An action that reports a fact about what it did** (not whether it happened) returns a value naming it:
+  `var closed = tabs.Close(tab); if (closed.WasActive)`, not `bool CloseTab` (read as "did it close"). Asking first
+  (`IsActive`, then `Close`) is right only while nobody moves the question below the action.
+- **A value others must notice changing counts its changes:** a setter that moves a `Version` only when the value
+  differs, and each consumer compares `Version` with the last it saw; not `bool Set` / `TrySet`, which tells only its
+  caller. A caller acting on its own change asks first (`if (font.Value != size)`).
+- **Work with nothing to return returns nothing:** a helper taking `Func<..., Task<T>>` also takes `Func<..., Task>`
+  (as `Task.Run` does); never `return true;` or a unit type only to fill `T`.
 - **No sentinels.** Missing is never -1, a nil handle or `default`: `Find*` returning `T?` (`int?`, so the compiler
   makes callers handle it), a union case when the miss carries data (`Missing { InsertAt }`), or `Get*OrDefault`.
+  "No current item" is `int?` in the codebase's own helpers too (`PickFrom(items, int? selected)`), not a `-1` or a
+  `NoSelection` constant; a framework API that needs -1 gets it only where it's called (`rows.Index = selected ?? -1;`).
 - No noun-named methods: cheap, pure and parameterless → a property; otherwise a verb. No `Set*` methods (use a
   property) unless async or with extra arguments. Read the whole name: `RoundTrip` is a noun phrase.
 - Builders are mutable (`With*` values, `Add*` items, `Build()`), one per result; skip them if an initializer will do.
@@ -116,7 +127,8 @@ action), RL0307 (a `Get*` returning -1 or `default` of a struct).
 
 ## R004: A type must earn its place
 
-Build: RL0401 (vague names); suggestion while measured: RL0403 (a public field or collection the type changes itself).
+Build: RL0401 (vague names); suggestion while measured: RL0403 (a public field or collection the type changes itself,
+unless a widget binds it by `ref`).
 
 Take the first match:
 
@@ -137,14 +149,17 @@ Take the first match:
 
 - Delete a type that only forwards. No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` / `Rules` /
   `Logic` / `Common` / `Core`. Callers mustn't have to call methods in a set order: expose the whole job. No interface
-  without two real implementations (R001 ports excepted). No public setters, public mutable fields or collections on
-  types with rules.
+  without two real implementations (R001 ports excepted). No public setters that skip the rule (a setter that keeps
+  it is one of its methods), public mutable fields or collections on types with rules.
 - **Framework-facing state** (fields a widget binds by `ref`, properties a binder or ORM sets, members a framework calls
   in its order) is public and settable, as the framework requires. A type is either framework-facing data (public, no
   rules) or owns its rules (private state changed only by its methods, collections read-only); never both. When one
   object needs both, the part with rules is its own type, held by the framework-facing one:
   `picker.Filter` / `picker.IsOpen` (bound by `ref`) beside `picker.Choice` (private list, `Offer`, `Choose`).
-  A public `List<T>` or `readonly Dictionary` on a type with rules is a leak.
+  A public `List<T>` or `readonly Dictionary` on a type with rules is a leak. Framework-facing data may set its own
+  fields for one user action (`picker.Open()`): a convenience, so nothing may depend on it having run (the close box
+  writes `IsOpen` by `ref` and calls nothing). What must follow from a bound field is the rule owner's, told the value
+  each frame (`picker.Scan.CancelUnlessOpen(picker.IsOpen)`).
 - A framework's protocol (`ShowIn` before the widget, `TakeFrom` after) isn't your set order: expose exactly those
   members and make the second take what the first returns (`var shown = choice.ShowIn(rows); ... choice.TakeFrom(rows, shown);`).
 - One use case per class, unless use cases share a step (a private method that reaches the port): then one class, a
@@ -257,8 +272,11 @@ suggestion while measured: RL0903 (an adapter's catch that turns cancellation in
 - A library that throws lazily (from property reads, on a corrupt file) is translated in the adapter, where it's
   read: each member reads what its answer needs inside its own catch and returns plain values or a result case. No
   library object or deferred sequence (`Select` without `ToList`) leaves the adapter: it would throw outside the catch.
-- Shutdown isn't a failure; a timeout is:
-  `catch (Exception ex) when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested)`.
+- Cancellation someone asked for isn't a failure; a timeout is:
+  `catch (Exception ex) when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested)`. Shutdown
+  isn't the only one: the edge links a workflow's token to everything that cancels it on purpose (newer work under
+  newest-wins, a dialog that closed) and ends quietly when any did (`catch (OperationCanceledException) when
+  (link.IsCancellationRequested)`). Never make every cancellation quiet: the timeout is lost.
 - An adapter that turns failures into results lets cancellation through: catch the failures it reports, and a timeout
   as `catch (TaskCanceledException) when (!ct.IsCancellationRequested)`; never `OperationCanceledException` (or
   everything) into `Failed`, or shutdown is reported as a failure and every workflow must re-check its token.
@@ -271,6 +289,12 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
 - Work that must outlive the request goes on a queue (an outbox), not a detached task.
 - Only an edge starts work. Features return a `Task` their caller awaits; one that starts its own work returns before
   it's done (callers read stale state) on a token nobody can cancel. List the job runner in `rulelab.ambient_types`.
+- **Frame-driven UIs** (the draw isn't an edge): state the user must see in the frame of their input changes in that
+  frame, and only the I/O is queued, taking what the change returned
+  (`var ticket = downloads.Start(id); commands.Queue(ct => download.HandleAsync(downloads, ticket, ct));`); the frame
+  edge starts every queued command, even after a failed draw. Work found while drawing (icons, details) is recorded as
+  pending on its owner, once per item, and an edge starts it (the frame edge before the next draw, or one queued
+  command): one workflow for a batch the port takes, else one per item.
 - One operation at a time per `DbContext`; real parallelism needs a context per query (`IDbContextFactory<T>`).
 - An `async void` event handler is an edge: `try` / `catch` its body and suppress VSTHRD100 with the reason.
 - No `ConfigureAwait(false)` in application code.
