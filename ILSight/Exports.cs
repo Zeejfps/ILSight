@@ -602,61 +602,10 @@ public static class Exports
         return name;
     }
 
-    /// <summary>Whether the folder already holds files, which the export may replace. Looked up
-    /// again only when the folder changes.</summary>
-    public static bool CheckFolderHoldsFiles(ExportSetup setup)
-    {
-        if (setup.FolderCheck.TryGet(setup.Folder, out var holdsFiles))
-        {
-            return holdsFiles;
-        }
-
-        holdsFiles = HoldsFiles(setup.Folder.Trim());
-        setup.FolderCheck = new Memo<string, bool>(setup.Folder, holdsFiles);
-        return holdsFiles;
-    }
-
-    private static bool HoldsFiles(string folder)
-    {
-        if (!Path.IsPathFullyQualified(folder))
-        {
-            return false;
-        }
-
-        if (!Directory.Exists(folder))
-        {
-            return false;
-        }
-
-        return Directory.EnumerateFileSystemEntries(folder).Any();
-    }
-
-    /// <summary>Whether a key file is named that is not there. Looked up again only when the name changes.</summary>
-    public static bool CheckKeyFileMissing(ExportSetup setup)
-    {
-        if (setup.KeyFileCheck.TryGet(setup.StrongNameKeyFile, out var isMissing))
-        {
-            return isMissing;
-        }
-
-        isMissing = IsFileMissing(setup.StrongNameKeyFile.Trim());
-        setup.KeyFileCheck = new Memo<string, bool>(setup.StrongNameKeyFile, isMissing);
-        return isMissing;
-    }
-
-    private static bool IsFileMissing(string file)
-    {
-        if (file.Length == 0)
-        {
-            return false;
-        }
-
-        return !File.Exists(file);
-    }
-
     /// <summary>The first thing that keeps the export from starting, or null: it needs at least one
-    /// assembly, a folder, a name for each project that no other takes, and no key file that is not there.</summary>
-    public static ExportBlocker? FindBlocker(ExportSetup setup)
+    /// assembly, a folder, a name for each project that no other takes, and no key file that is not
+    /// there, as <paramref name="files"/> says.</summary>
+    public static ExportBlocker? FindBlocker(ExportSetup setup, ExportFileFacts files)
     {
         if (setup.IncludedCount == 0)
         {
@@ -679,7 +628,7 @@ public static class Exports
             return new ExportBlocker.Clash(clash);
         }
 
-        if (CheckKeyFileMissing(setup))
+        if (files.IsKeyFileMissing)
         {
             return new ExportBlocker.KeyFileMissing();
         }
@@ -687,9 +636,9 @@ public static class Exports
         return null;
     }
 
-    public static bool CanExport(ExportSetup setup)
+    public static bool CanExport(ExportSetup setup, ExportFileFacts files)
     {
-        return FindBlocker(setup) is null;
+        return FindBlocker(setup, files) is null;
     }
 
     /// <summary>What each project is written with besides its code.</summary>

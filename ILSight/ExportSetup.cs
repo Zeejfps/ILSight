@@ -32,6 +32,17 @@ public abstract record ExportBlocker
     public sealed record KeyFileMissing : ExportBlocker;
 }
 
+/// <summary>What the disk says about the folder and key file an export names: looked up where the
+/// dialog is shown and the export started, so what keeps it from starting is decided without a disk.</summary>
+public readonly record struct ExportFileFacts
+{
+    /// <summary>Whether the folder already holds files, which the export may replace.</summary>
+    public required bool FolderHoldsFiles { get; init; }
+
+    /// <summary>Whether a key file is named that is not there.</summary>
+    public required bool IsKeyFileMissing { get; init; }
+}
+
 /// <summary>The export dialog's pages: what is exported and how, or which assemblies.</summary>
 public enum ExportPage
 {
@@ -50,12 +61,6 @@ public enum ExportPage
 /// </summary>
 public sealed class ExportSetup
 {
-    /// <summary>Whether the folder held files, by the folder last looked at.</summary>
-    public Memo<string, bool> FolderCheck;
-
-    /// <summary>Whether the key file was missing, by the name last looked at.</summary>
-    public Memo<string, bool> KeyFileCheck;
-
     public bool IsOpen;
     public string Folder = "";
     public string SolutionName = "";
