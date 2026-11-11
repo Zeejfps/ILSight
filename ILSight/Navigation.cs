@@ -10,94 +10,6 @@ namespace ILSight;
 /// forward through the history.</summary>
 public static class Navigation
 {
-    /// <summary>Records a new place, dropping what was forward of the current one.</summary>
-    public static void RecordPlace(NavigationHistory history, BrowseNode node, DecompilationLanguage language)
-    {
-        var place = BrowseNodes.GetPath(node);
-        if (IsCurrentPlace(history, place))
-        {
-            return;
-        }
-
-        AddEntry(history, new HistoryEntry.Node(place, NodeIcons.Of(node.Subject), NodeDefinitions.GetVisibility(node.Subject).Accessibility, language, null));
-    }
-
-    /// <summary>Whether the place being shown is <paramref name="place"/>.</summary>
-    public static bool IsCurrentPlace(NavigationHistory history, NodePath? place)
-    {
-        if (history.Current is not HistoryEntry.Node node)
-        {
-            return false;
-        }
-
-        return node.Place.Equals(place);
-    }
-
-    /// <summary>Records <paramref name="diagram"/>, titled <paramref name="title"/>, as worked in now,
-    /// dropping what was forward of the current entry.</summary>
-    public static void RecordDiagram(NavigationHistory history, TypeDiagram diagram, string title)
-    {
-        if (history.Current is HistoryEntry.Diagram current && current.Shown == diagram)
-        {
-            return;
-        }
-
-        AddEntry(history, new HistoryEntry.Diagram(diagram, title));
-    }
-
-    private static void AddEntry(NavigationHistory history, HistoryEntry entry)
-    {
-        history.Entries.Add(entry);
-    }
-
-    /// <summary>Forgets every place.</summary>
-    public static void ClearHistory(NavigationHistory history)
-    {
-        history.Entries.Clear();
-    }
-
-    /// <summary>Forgets <paramref name="diagram"/>, closed for good; the entry before a forgotten current
-    /// one becomes current.</summary>
-    public static void ForgetDiagram(NavigationHistory history, TypeDiagram diagram)
-    {
-        for (var i = history.Entries.Count - 1; i >= 0; i--)
-        {
-            if (history.Entries[i] is not HistoryEntry.Diagram entry)
-            {
-                continue;
-            }
-
-            if (entry.Shown != diagram)
-            {
-                continue;
-            }
-
-            history.Entries.RemoveAt(i);
-        }
-    }
-
-    /// <summary>Remembers where the view of the current place stands as it is left.</summary>
-    private static void LeaveEntry(NavigationHistory history, DecompilationLanguage language, ViewPosition position)
-    {
-        if (history.Current is not HistoryEntry.Node node)
-        {
-            return;
-        }
-
-        history.Entries.ReplaceCurrent(node with { Language = language, Position = position });
-    }
-
-    /// <summary>Makes the entry at <paramref name="index"/> current, keeping every entry on either side.</summary>
-    private static HistoryEntry? MoveToEntry(NavigationHistory history, int index)
-    {
-        if (!history.Entries.MoveTo(index))
-        {
-            return null;
-        }
-
-        return history.Entries[index];
-    }
-
     /// <summary><paramref name="position"/>, taken while the node was shown in <paramref name="shownIn"/>, when it
     /// still holds once the node is shown in <paramref name="language"/>: a grid's in any language, a code view's
     /// only in the same; else null.</summary>
@@ -128,7 +40,7 @@ public static class Navigation
         appState.Intent.Begin();
         LeaveActiveTab(appState);
         ShowNodeIn(appState, ChooseDestination(appState, inNewTab), node);
-        RecordPlace(appState.History, node, appState.Language);
+        appState.History.RecordPlace(node, appState.Language);
     }
 
     /// <summary>Shows <paramref name="node"/>, picked in the tree, as <see cref="ShowNode"/> does, unless
@@ -315,7 +227,7 @@ public static class Navigation
             case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
                 LeaveActiveTab(appState);
                 ShowNodeIn(appState, destination, ok.Value);
-                RecordPlace(appState.History, ok.Value, appState.Language);
+                appState.History.RecordPlace(ok.Value, appState.Language);
                 break;
             case Outcome<BrowseNode?>.Ok:
                 ReportUnresolvedReference(appState, reference, null);
@@ -395,7 +307,7 @@ public static class Navigation
     {
         LeaveActiveTab(appState);
         ShowNodeIn(appState, destination, target.Node, row: target.Row);
-        RecordPlace(appState.History, target.Node, appState.Language);
+        appState.History.RecordPlace(target.Node, appState.Language);
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background, then has the view open its page of
@@ -450,7 +362,7 @@ public static class Navigation
         }
 
         LeaveActiveTab(appState);
-        var entry = MoveToEntry(appState.History, index);
+        var entry = appState.History.MoveToEntry(index);
         switch (entry)
         {
             case HistoryEntry.Node node:
@@ -605,12 +517,12 @@ public static class Navigation
             return;
         }
 
-        if (!IsCurrentPlace(appState.History, tab.Location))
+        if (!appState.History.IsCurrentPlace(tab.Location))
         {
             return;
         }
 
-        LeaveEntry(appState.History, tab.Language, position.Value);
+        appState.History.LeaveEntry(tab.Language, position.Value);
     }
 
     /// <summary>Where what is asked for now from the active tab will show, in a new tab when

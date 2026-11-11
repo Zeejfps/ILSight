@@ -401,7 +401,7 @@ public static class Bookmarks
                 Resolve(appState.Bookmarks, bookmark, ok.Value);
                 LeaveActiveTab(appState);
                 ShowNodeIn(appState, destination, ok.Value, target: bookmark);
-                RecordPlace(appState.History, ok.Value, appState.Language);
+                appState.History.RecordPlace(ok.Value, appState.Language);
                 break;
             case Outcome<BrowseNode?>.Ok:
                 ReportBookmarkGone(appState, bookmark, null);

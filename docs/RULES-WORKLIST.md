@@ -31,7 +31,7 @@ Done items are struck through with their commit.
 | ~~C14~~ (done) | R001, R011 | `NuGetConfig` home folder / env expansion | Env reads inside the parse → a `NuGetEnvironment` value built at the edge. | S / low; NuGetTests |
 | ~~Z18~~ (done) | R004 | `Search`, `NuGetPicker` debounce | Debounce logic copied twice → a `TypedText` value. | S / low |
 | ~~Z3~~ (done) | R004 | `Reload`, `Reopens`, `OpenRequests`, `Reloads` | Public setters, rules in a grab-bag `Reloads` → methods on each type. | S / low |
-| Z5 | R004 | `Navigation` history ops, `NavigationHistory` | History operations mutate public `Entries` from outside → methods on `NavigationHistory`. | S / low |
+| ~~Z5~~ (done) | R004 | `Navigation` history ops, `NavigationHistory` | History operations mutate public `Entries` from outside → methods on `NavigationHistory`. | S / low |
 | A8 | R004 | `BookmarkList`, `Bookmarks` | "No two bookmarks mark the same line" holds only by convention (public `Items`, setters skip `NoteChange`) → operations on `BookmarkList`, private state. | S–M / low |
 | A9, Z17 | R004 | `SavedAssemblyLists`, `AssemblyLists` | Documented invariants (unique non-empty names, one list open, `Revision`) breakable from anywhere → methods on `SavedAssemblyLists`. | M / low |
 | A13 | R004 | `AnalyzerTree`, `Analysis` | `Revision` bumped by hand in 5 places → root operations on `AnalyzerTree`. | S–M / low |

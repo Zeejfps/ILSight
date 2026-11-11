@@ -113,7 +113,7 @@ public static class Diagrams
             return;
         }
         BringToFront(appState, tab);
-        RecordDiagram(appState.History, shown.Types, shown.Title);
+        appState.History.RecordDiagram(shown.Types, shown.Title);
         AddWithNeighbours(appState, tab, shown.Types, type);
     }
 
@@ -134,7 +134,7 @@ public static class Diagrams
             return;
         }
 
-        RecordDiagram(appState.History, shown.Types, shown.Title);
+        appState.History.RecordDiagram(shown.Types, shown.Title);
         Navigate(appState, target, inNewTab);
     }
 
@@ -148,7 +148,7 @@ public static class Diagrams
         Tabs.ShowDiagram(tab, title, diagram);
         Tabs.Keep(appState.Tabs, tab);
         Tabs.MakeActive(appState.Tabs, tab);
-        RecordDiagram(appState.History, diagram, title);
+        appState.History.RecordDiagram(diagram, title);
         AddWithNeighbours(appState, tab, diagram, type);
     }
 

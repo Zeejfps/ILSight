@@ -7,7 +7,7 @@ public sealed class NavigationHistoryTests
         var history = new NavigationHistory();
         foreach (var diagram in diagrams)
         {
-            Navigation.RecordDiagram(history, diagram, "diagram");
+            history.RecordDiagram(diagram, "diagram");
         }
 
         return history;
@@ -37,7 +37,7 @@ public sealed class NavigationHistoryTests
         var (first, second, third) = (new TypeDiagram(), new TypeDiagram(), new TypeDiagram());
         var history = Holding(first, second, first, third);
 
-        Navigation.ForgetDiagram(history, first);
+        history.ForgetDiagram(first);
 
         Assert.Equal([second, third], Shown(history));
         Assert.Equal(1, history.CurrentIndex);
@@ -49,7 +49,7 @@ public sealed class NavigationHistoryTests
         var (first, second) = (new TypeDiagram(), new TypeDiagram());
         var history = Holding(first, second);
 
-        Navigation.ForgetDiagram(history, second);
+        history.ForgetDiagram(second);
 
         Assert.Equal([first], Shown(history));
         Assert.Equal(0, history.CurrentIndex);
@@ -61,7 +61,7 @@ public sealed class NavigationHistoryTests
         var diagram = new TypeDiagram();
         var history = Holding(diagram);
 
-        Navigation.ForgetDiagram(history, diagram);
+        history.ForgetDiagram(diagram);
 
         Assert.Empty(history.Entries);
         Assert.Equal(-1, history.CurrentIndex);

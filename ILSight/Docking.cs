@@ -56,7 +56,7 @@ public static class Docking
             return;
         }
 
-        Navigation.ForgetDiagram(appState.History, diagram);
+        appState.History.ForgetDiagram(diagram);
     }
 
     /// <summary>Closes every document tab but the active one, and empties that one; with no tab left
