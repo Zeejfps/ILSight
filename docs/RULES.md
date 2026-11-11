@@ -39,7 +39,7 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status |
 | R004 | vague type names (RL0401) | classification; one-implementation interfaces (an analyzer can't see across projects) |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
-| R001 | direct time / randomness / I/O outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101) | everything else: ports, adapters, what counts as a decision |
+| R001 | direct time / randomness / I/O, and the codebase's own static services listed in `rulelab.ambient_types`, outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101) | everything else: ports, adapters, what counts as a decision |
 | R006 | – | all |
 | R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849) | parallel queries on one `DbContext`; moving async work out of sync-only callers |
 | R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804) | which failures are expected; specific catches in decision code; log-and-rethrow |
@@ -73,8 +73,17 @@ Goes through the port:
 - Environment and configuration reads
 - Logging
 - Shared mutable state: caches, static fields
+- **The codebase's own static services** that do any of the above or hold shared state: a static job runner that
+  counts running work and moves it off the UI thread (`Background.Start`), a static error log (`Errors.Report`), a
+  static cache. Being written in-house doesn't make them part of the class: every caller and every test shares their
+  state, so in testing a test that passed alone failed after another test's failure (R001 S12). The adapter calls them.
+  List them in `.editorconfig` as `rulelab.ambient_types = MyApp.Background, MyApp.Errors` and RL0101 reports their
+  use like `DateTime.Now`'s.
 
 Does **not** go through the port; use it directly:
+
+- **Built-in language and runtime primitives** that hold no state of yours: `Task.Run`, `Task.WhenAll`, `await`,
+  `CancellationToken`, collections.
 
 - **Pure code**: calculations, mapping, value validation. Call it as a static method or `new` it up. Never inject it.
 - **Values**: records, DTOs, per-call input. Pass them as method parameters.
@@ -198,6 +207,7 @@ Does **not** go through the port; use it directly:
 
 - [ ] Constructor takes no dependencies, or exactly one: the class's own nested `IPorts`. (Entities and value objects use `required init` properties: R005.)
 - [ ] No `DateTime.Now`/`UtcNow`, `Guid.NewGuid()`, `Random`, `File`, `Environment`, `HttpClient` or `ILogger` in a class that makes decisions.
+- [ ] No call to the codebase's own static services (job runners, error logs, static caches) in a class that makes decisions; they are listed in `rulelab.ambient_types`.
 - [ ] Port members are named after needs; no infrastructure types in their signatures.
 - [ ] Per-call data arrives through method parameters.
 - [ ] Pure collaborators are called directly, not injected.

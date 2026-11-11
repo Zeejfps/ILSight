@@ -5,6 +5,10 @@ root = true
 
 [{ILSight,ILSight.Core,ILSight.Tests,ILSight.App.Tests}/**.cs]
 
+# R001: this codebase's own static services (they hold shared state and do effects). Reached through a class's port;
+# RL0101 reports their use outside adapters, tests and infrastructure files, like DateTime.Now.
+rulelab.ambient_types = ILSight.Background, ILSight.Errors
+
 # R007: braces and block bodies; one-liners only for getters, accessors and lambdas.
 csharp_prefer_braces = true:error
 dotnet_diagnostic.IDE0011.severity = error

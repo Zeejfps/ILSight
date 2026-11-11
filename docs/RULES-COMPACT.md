@@ -17,6 +17,10 @@ Build: RL0101 (time, randomness, I/O used directly).
   nested `public interface IPorts` it declares itself, taken as its **only** constructor parameter.
 - Name port members for what the class needs (`FindOrderAsync`, `Now`, `LogOrderConfirmed`). No `DbContext`,
   `IQueryable`, `HttpClient` or `ILogger` in their signatures. Each class lists only what it uses.
+- The codebase's own static services that do effects or hold shared state (a job runner like `Background.Start`, an
+  error log like `Errors.Report`, a static cache) are dependencies too: through the port, called by the adapter. List
+  them as `rulelab.ambient_types` in `.editorconfig`. Built-in primitives (`Task.Run`, `await`, `CancellationToken`)
+  are used directly.
 - Pure code (calculations, mapping, validation) is called directly, never injected. Per-call data goes in method
   parameters. If the only dependency is the time, take `now` as a parameter and have no port.
 - **Adapters** (`<Class>Adapter`) implement the port with real infrastructure. No branching on business data; branching
