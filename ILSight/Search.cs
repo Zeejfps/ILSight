@@ -36,8 +36,7 @@ public sealed class Search
     public readonly List<SearchResult> Rows = new();
     public readonly HashSet<LoadedAssembly> SearchedAssemblies = new(ReferenceEqualityComparer.Instance);
     public readonly List<CancellationTokenSource> Runs = new();
-    public string Typed = "";
-    public double TypedAt;
+    public readonly TypedText Typed = new();
     public Searched? LastSearched;
 
     /// <summary>Why <see cref="LastSearched"/> finds nothing, when its <c>/regex/</c> is no valid
@@ -93,7 +92,7 @@ public static class Searches
     /// typed query settles, or 0. Runs every frame, so no lambda belongs in it.</summary>
     public static double Update(Search search, AssemblyList assemblies, double now, bool shown)
     {
-        NoteTyping(search, now);
+        search.Typed.Note(search.Query, now);
         if (!shown)
         {
             return 0;
@@ -113,25 +112,14 @@ public static class Searches
         return 0;
     }
 
-    private static void NoteTyping(Search search, double now)
-    {
-        if (search.Query == search.Typed)
-        {
-            return;
-        }
-
-        search.Typed = search.Query;
-        search.TypedAt = now;
-    }
-
     private static bool IsQueryChanged(Search search, Search.Searched searched)
     {
-        return search.Typed != searched.Query || search.Kinds != searched.Kinds;
+        return search.Typed.Text != searched.Query || search.Kinds != searched.Kinds;
     }
 
     private static double RestartWhenSettled(Search search, AssemblyList assemblies, double now, Search.Searched? searched)
     {
-        var remaining = DebounceSeconds - (now - search.TypedAt);
+        var remaining = search.Typed.CalculateSecondsToSettle(now, DebounceSeconds);
         if (remaining > 0 && searched is not null && search.Kinds == searched.Kinds)
         {
             return remaining;
@@ -144,7 +132,7 @@ public static class Searches
     private static void Restart(Search search, AssemblyList assemblies)
     {
         CancelRuns(search);
-        var searched = new Search.Searched(search.Typed, search.Kinds, assemblies.Version);
+        var searched = new Search.Searched(search.Typed.Text, search.Kinds, assemblies.Version);
         search.LastSearched = searched;
         search.Rows.Clear();
         ItemSelections.Clear(search.Selection);

@@ -29,7 +29,7 @@ Done items are struck through with their commit.
 | ~~A6~~ (done) | R006 | `DockLayoutJson`, `SettingsFile` callers | Validation split across parse and callers; `NextId` never checked against used ids → one `ToLayout` step returning parsed / parts missing / ids repeated. | S / low; SettingsFormatTests, DockingTests |
 | ~~C7~~ (done) | R001, R011 | `RunningProcesses.ResolveModules`, `FindEntryAssembly`, `FindExistingFile` | `File.Exists` inside command-line heuristics → pass `exists` in, heuristics pure. | S / low; RunningProcessTests |
 | ~~C14~~ (done) | R001, R011 | `NuGetConfig` home folder / env expansion | Env reads inside the parse → a `NuGetEnvironment` value built at the edge. | S / low; NuGetTests |
-| Z18 | R004 | `Search`, `NuGetPicker` debounce | Debounce logic copied twice → a `TypedText` value. | S / low |
+| ~~Z18~~ (done) | R004 | `Search`, `NuGetPicker` debounce | Debounce logic copied twice → a `TypedText` value. | S / low |
 | Z3 | R004 | `Reload`, `Reopens`, `OpenRequests`, `Reloads` | Public setters, rules in a grab-bag `Reloads` → methods on each type. | S / low |
 | Z5 | R004 | `Navigation` history ops, `NavigationHistory` | History operations mutate public `Entries` from outside → methods on `NavigationHistory`. | S / low |
 | A8 | R004 | `BookmarkList`, `Bookmarks` | "No two bookmarks mark the same line" holds only by convention (public `Items`, setters skip `NoteChange`) → operations on `BookmarkList`, private state. | S–M / low |

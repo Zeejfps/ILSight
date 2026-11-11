@@ -34,9 +34,8 @@ public sealed class NuGetPicker
     public DownloadState DownloadRun = new DownloadState.None();
     public int RequestedPage;
     public bool IsSettling;
-    public string TypedQuery = "";
-    public string TypedUrl = "";
-    public double TypedAt;
+    public readonly TypedText TypedQuery = new();
+    public readonly TypedText TypedUrl = new();
     public SavedNuGetSearch? Kept;
     public FeedPackage? VersionsOf;
     public bool FocusQuery;
@@ -402,8 +401,8 @@ public static class NuGetPicking
     public static void PickFeed(NuGetPicker picker, NuGetSource source)
     {
         picker.FeedUrl = source.Url.Text;
-        picker.TypedUrl = source.Url.Text;
-        picker.TypedAt = double.NegativeInfinity;
+        picker.TypedUrl.Settle(source.Url.Text);
+        picker.TypedQuery.Settle();
     }
 
     /// <summary>Closes the dialog, stopping the search, the download and the fetches it started.
@@ -520,7 +519,8 @@ public static class NuGetPicking
     /// <summary>Searches what was typed with the next update, without waiting for it to settle.</summary>
     public static void SearchNow(NuGetPicker picker)
     {
-        picker.TypedAt = double.NegativeInfinity;
+        picker.TypedQuery.Settle();
+        picker.TypedUrl.Settle();
     }
 
     /// <summary>Searches again once the typed feed or query settled, or at once when another page is
@@ -528,7 +528,8 @@ public static class NuGetPicking
     /// the seconds left before what was typed settles, or 0.</summary>
     public static double UpdatePicker(NuGetPicker picker, double now)
     {
-        NoteTyping(picker, now);
+        picker.TypedQuery.Note(picker.Query, now);
+        picker.TypedUrl.Note(picker.FeedUrl, now);
         picker.IsSettling = false;
         var setup = FindReadySetup(picker);
         if (setup is null)
@@ -536,13 +537,13 @@ public static class NuGetPicking
             return 0;
         }
 
-        var source = NuGetSource.FromUrl(picker.TypedUrl);
+        var source = NuGetSource.FromUrl(picker.TypedUrl.Text);
         if (source == null)
         {
             DropResults(picker);
             return 0;
         }
-        var wanted = new FeedSearch(NuGetFeeds.EnsureFeed(setup, source), picker.TypedQuery, picker.IncludePrerelease, picker.RequestedPage);
+        var wanted = new FeedSearch(NuGetFeeds.EnsureFeed(setup, source), picker.TypedQuery.Text, picker.IncludePrerelease, picker.RequestedPage);
         if (IsNewSearch(picker, wanted))
         {
             picker.RequestedPage = 0;
@@ -554,7 +555,7 @@ public static class NuGetPicking
             return 0;
         }
 
-        var remaining = DebounceSeconds - (now - picker.TypedAt);
+        var remaining = CalculateSecondsToSettle(picker, now);
         if (remaining > 0 && IsOnlyTypingChanged(picker, wanted))
         {
             picker.IsSettling = true;
@@ -564,17 +565,12 @@ public static class NuGetPicking
         return 0;
     }
 
-    private static void NoteTyping(NuGetPicker picker, double now)
+    /// <summary>The seconds left before both the query and the feed typed settled, or 0 once they have.</summary>
+    private static double CalculateSecondsToSettle(NuGetPicker picker, double now)
     {
-        var typed = picker.Query != picker.TypedQuery || picker.FeedUrl != picker.TypedUrl;
-        if (!typed)
-        {
-            return;
-        }
-
-        picker.TypedQuery = picker.Query;
-        picker.TypedUrl = picker.FeedUrl;
-        picker.TypedAt = now;
+        var query = picker.TypedQuery.CalculateSecondsToSettle(now, DebounceSeconds);
+        var feed = picker.TypedUrl.CalculateSecondsToSettle(now, DebounceSeconds);
+        return Math.Max(query, feed);
     }
 
     /// <summary>Clears what was found once the feed typed is no URL, so nothing shows from another feed.</summary>
