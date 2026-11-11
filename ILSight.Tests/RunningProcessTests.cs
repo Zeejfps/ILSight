@@ -143,22 +143,25 @@ public sealed class RunningProcessTests
     [Fact]
     public void A_module_reported_twice_is_listed_once_and_one_with_no_file_by_its_assembly()
     {
+        var core = AppFile("ILSight.Core.dll");
+        var gone = "/nowhere/Gone.dll";
+
         var modules = RunningProcesses.ResolveModules(
         [
-            new RundownModule(CoreAssemblyPath, "", "ILSight.Core"),
-            new RundownModule("", CoreAssemblyPath, "ILSight.Core"),
+            new RundownModule(core, "", "ILSight.Core"),
+            new RundownModule("", core, "ILSight.Core"),
             new RundownModule("", "", "Generated"),
             new RundownModule("", "", "Generated"),
-            new RundownModule("/nowhere/Gone.dll", "", null),
+            new RundownModule(gone, "", null),
             new RundownModule("", "", null),
-        ]);
+        ], FilesAt(core));
 
         Assert.Equal(
         [
             new RunningModule.InMemory("(dynamic module)"),
-            new RunningModule.InMemory("/nowhere/Gone.dll"),
+            new RunningModule.InMemory(gone),
             new RunningModule.InMemory("Generated"),
-            new RunningModule.OnDisk("ILSight.Core.dll", AssemblyPath.Of(CoreAssemblyPath)),
+            new RunningModule.OnDisk("ILSight.Core.dll", AssemblyPath.Of(core)),
         ], modules);
     }
 
@@ -179,20 +182,41 @@ public sealed class RunningProcessTests
     [Fact]
     public void The_entry_assembly_is_taken_from_the_command_line_when_no_module_is_named()
     {
+        var dll = AppFile("App.dll");
+        var host = AppFile("App");
+        var bundle = AppFile("Single");
+        var spaced = AppFile("With Space.dll");
+        var exists = FilesAt(dll, host, bundle, spaced);
+
+        Assert.Equal(dll, Find($"/usr/bin/dotnet exec {dll} --flag", exists));
+        Assert.Equal(dll, Find(dll, exists));
+        Assert.Equal(dll, Find(host, exists));
+        Assert.Equal(bundle, Find(bundle, exists));
+        Assert.Equal(spaced, Find($"dotnet \"{spaced}\"", exists));
+        Assert.Null(Find("dotnet App.dll", exists));
+        Assert.Null(Find(AppFile("Missing.dll"), exists));
+        Assert.Null(Find(""));
+    }
+
+    [Fact]
+    public void A_dll_named_on_the_command_line_but_not_there_gives_way_to_the_one_beside_the_host()
+    {
+        var host = AppFile("App");
+        var dll = AppFile("App.dll");
+
+        Assert.Equal(dll, Find($"{host} {AppFile("Plugin.dll")}", FilesAt(host, dll)));
+        Assert.Equal(host, Find($"{host} {AppFile("Plugin.dll")}", FilesAt(host)));
+    }
+
+    [Fact]
+    public void The_entry_assembly_beside_an_app_host_is_found_on_disk()
+    {
         using var temp = new TempDir();
         var dll = temp.Write("App.dll", "");
         var host = temp.Write("App", "");
-        var bundle = temp.Write("Single", "");
-        var spaced = temp.Write("With Space.dll", "");
 
-        Assert.Equal(dll, Find($"/usr/bin/dotnet exec {dll} --flag"));
-        Assert.Equal(dll, Find(dll));
-        Assert.Equal(dll, Find(host));
-        Assert.Equal(bundle, Find(bundle));
-        Assert.Equal(spaced, Find($"dotnet \"{spaced}\""));
-        Assert.Null(Find("dotnet App.dll"));
-        Assert.Null(Find(temp.PathOf("Missing.dll")));
-        Assert.Null(Find(""));
+        Assert.Equal(dll, RunningProcesses.FindEntryAssembly(CreateProcess(entryName: null, $"\"{host}\" --flag"), [])?.Text);
+        Assert.Null(RunningProcesses.FindEntryAssembly(CreateProcess(entryName: null, $"\"{temp.PathOf("Missing.dll")}\""), []));
     }
 
     [Fact]
@@ -286,9 +310,22 @@ public sealed class RunningProcessTests
         });
     }
 
-    private static string? Find(string commandLine)
+    private static string? Find(string commandLine, Func<string, bool>? exists = null)
     {
-        return RunningProcesses.FindEntryAssembly(CreateProcess(entryName: null, commandLine), [])?.Text;
+        return RunningProcesses.FindEntryAssembly(CreateProcess(entryName: null, commandLine), [], exists ?? FilesAt())?.Text;
+    }
+
+    /// <summary>An absolute path to <paramref name="name"/> in a folder that need not exist.</summary>
+    private static string AppFile(string name)
+    {
+        return Path.GetFullPath(Path.Combine(Path.GetTempPath(), "ILSightApps", name));
+    }
+
+    /// <summary>A file check that finds exactly <paramref name="paths"/>.</summary>
+    private static Func<string, bool> FilesAt(params string[] paths)
+    {
+        var files = new HashSet<string>(paths, StringComparer.Ordinal);
+        return files.Contains;
     }
 
     /// <summary>An endpoint that takes connections and never answers, as a runtime suspended at startup does.</summary>

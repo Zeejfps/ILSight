@@ -181,7 +181,7 @@ public static class RunningProcesses
         {
             return NettraceRundown.Read(trace) switch
             {
-                RundownRead.Read read => new ModuleListing.Listed(ResolveModules(read.Modules)),
+                RundownRead.Read read => new ModuleListing.Listed(ResolveModules(read.Modules, IsFile)),
                 RundownRead.Corrupt corrupt => new ModuleListing.Unreadable(corrupt.Detail),
                 var other => throw new InvalidOperationException($"Unknown rundown result {other}."),
             };
@@ -189,8 +189,8 @@ public static class RunningProcesses
     }
 
     /// <summary>The modules a rundown reported, each once, with a file where one of its paths names a file
-    /// that is there, sorted by name.</summary>
-    internal static IReadOnlyList<RunningModule> ResolveModules(IReadOnlyList<RundownModule> modules)
+    /// that is there, as <paramref name="exists"/> tells of an absolute path, sorted by name.</summary>
+    internal static IReadOnlyList<RunningModule> ResolveModules(IReadOnlyList<RundownModule> modules, Func<string, bool> exists)
     {
         var result = new List<RunningModule>();
         var seenPaths = new HashSet<AssemblyPath>();
@@ -198,7 +198,7 @@ public static class RunningProcesses
 
         foreach (var module in modules)
         {
-            var path = FindExistingFile(module.IlPath) ?? FindExistingFile(module.NativePath);
+            var path = FindExistingFile(module.IlPath, exists) ?? FindExistingFile(module.NativePath, exists);
             if (path is not null)
             {
                 if (seenPaths.Add(path))
@@ -224,9 +224,16 @@ public static class RunningProcesses
     /// named as the runtime names its entry assembly, else what its command line runs. That is the DLL
     /// <c>dotnet</c> is given, the DLL beside an app host, or else the executable itself, as a single-file
     /// app is, which opens as a bundle. A relative path on the command line is relative to where the process
-    /// started, which isn't known, so it is passed over.
+    /// started, which isn't known, so it is passed over. Looks on disk for the files the command line names.
     /// </summary>
     public static AssemblyPath? FindEntryAssembly(RunningProcess process, IReadOnlyList<RunningModule> modules)
+    {
+        return FindEntryAssembly(process, modules, IsFile);
+    }
+
+    /// <summary><see cref="FindEntryAssembly(RunningProcess, IReadOnlyList{RunningModule})"/>, with
+    /// <paramref name="exists"/> telling whether a file is at an absolute path.</summary>
+    internal static AssemblyPath? FindEntryAssembly(RunningProcess process, IReadOnlyList<RunningModule> modules, Func<string, bool> exists)
     {
         if (process.Info is null)
         {
@@ -250,10 +257,10 @@ public static class RunningProcesses
                 }
             }
         }
-        return FindEntryAssembly(process.Info.CommandLine);
+        return FindEntryAssembly(process.Info.CommandLine, exists);
     }
 
-    private static AssemblyPath? FindEntryAssembly(string? commandLine)
+    private static AssemblyPath? FindEntryAssembly(string? commandLine, Func<string, bool> exists)
     {
         var tokens = SplitCommandLine(commandLine);
         if (tokens.Count == 0)
@@ -265,7 +272,7 @@ public static class RunningProcesses
 
         if (IsDll(executable))
         {
-            return FindExistingFile(executable);
+            return FindExistingFile(executable, exists);
         }
 
         // dotnet's own options come before the app, as in "dotnet exec --depsfile App.deps.json App.dll",
@@ -273,14 +280,14 @@ public static class RunningProcesses
         var firstDll = tokens.Skip(1).FirstOrDefault(IsDll);
         if (firstDll is not null)
         {
-            var dll = FindExistingFile(firstDll);
+            var dll = FindExistingFile(firstDll, exists);
             if (dll is not null)
             {
                 return dll;
             }
         }
 
-        return FindExistingFile(Path.ChangeExtension(executable, ".dll")) ?? FindExistingFile(executable);
+        return FindExistingFile(Path.ChangeExtension(executable, ".dll"), exists) ?? FindExistingFile(executable, exists);
     }
 
     private static bool IsDll(string path)
@@ -326,9 +333,9 @@ public static class RunningProcesses
         return tokens;
     }
 
-    /// <summary>The absolute path <paramref name="text"/> names, when a file is there; null for an empty,
-    /// relative or malformed path, or one this user can't see.</summary>
-    private static AssemblyPath? FindExistingFile(string text)
+    /// <summary>The absolute path <paramref name="text"/> names, when <paramref name="exists"/> says a file
+    /// is there; null for an empty, relative or malformed path, or one with no file.</summary>
+    private static AssemblyPath? FindExistingFile(string text, Func<string, bool> exists)
     {
         if (text.Length == 0)
         {
@@ -336,12 +343,18 @@ public static class RunningProcesses
         }
 
         var path = AssemblyPath.Parse(text);
-        if (path is null || !File.Exists(path.Text))
+        if (path is null || !exists(path.Text))
         {
             return null;
         }
 
         return path;
+    }
+
+    /// <summary>Whether a file is at <paramref name="path"/> that this user can see.</summary>
+    private static bool IsFile(string path)
+    {
+        return File.Exists(path);
     }
 
     private static string? FindNonBlank(string value)
