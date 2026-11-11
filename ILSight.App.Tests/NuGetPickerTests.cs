@@ -161,7 +161,7 @@ public sealed class NuGetPickerTests : IDisposable
 
         Assert.True(wait > 0);
         Assert.Contains(OtherIndexUrl, _fake.Requested);
-        Assert.Equal(new SavedNuGetSearch(OtherIndexUrl, false), NuGetPicking.GetKeptSearch(picker));
+        Assert.Equal(new SavedNuGetSearch(OtherIndexUrl, false), NuGetPicking.FindKeptSearch(picker));
     }
 
     [Fact]

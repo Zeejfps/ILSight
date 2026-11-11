@@ -72,7 +72,7 @@ public static class Bookmarks
     public static Bookmark? FindNext(BookmarkList list, Bookmark? from, int direction)
     {
         var count = list.Items.Count;
-        var start = FindStepStart(list, from, direction);
+        var start = GetStepStart(list, from, direction);
         for (var step = 1; step <= count; step++)
         {
             var index = ((start + Math.Sign(direction) * step) % count + count) % count;
@@ -88,10 +88,9 @@ public static class Bookmarks
 
     /// <summary>The row stepping starts from: <paramref name="from"/>'s, or just before the first or
     /// after the last.</summary>
-    private static int FindStepStart(BookmarkList list, Bookmark? from, int direction)
+    private static int GetStepStart(BookmarkList list, Bookmark? from, int direction)
     {
-        var index = FindRow(list, from);
-        if (index >= 0)
+        if (FindRow(list, from) is { } index)
         {
             return index;
         }
@@ -104,14 +103,20 @@ public static class Bookmarks
         return list.Items.Count;
     }
 
-    private static int FindRow(BookmarkList list, Bookmark? bookmark)
+    private static int? FindRow(BookmarkList list, Bookmark? bookmark)
     {
         if (bookmark is null)
         {
-            return -1;
+            return null;
         }
 
-        return list.Items.IndexOf(bookmark);
+        var index = list.Items.IndexOf(bookmark);
+        if (index < 0)
+        {
+            return null;
+        }
+
+        return index;
     }
 
     /// <summary>Whether a bookmark is enabled. Runs every frame the panel shows, so it goes through the
@@ -134,7 +139,7 @@ public static class Bookmarks
     {
         foreach (var bookmark in list.Items)
         {
-            if (Bookmarks.FindLine(bookmark, document, node) == line)
+            if (Bookmarks.GetLine(bookmark, document, node) == line)
             {
                 return bookmark;
             }
@@ -157,7 +162,7 @@ public static class Bookmarks
         marks.Lines.Clear();
         foreach (var bookmark in list.Items)
         {
-            var line = Bookmarks.FindLine(bookmark, document, node);
+            var line = Bookmarks.GetLine(bookmark, document, node);
             if (line >= 0)
             {
                 marks.Lines[line] = marks.Lines.GetValueOrDefault(line) || bookmark.Enabled;
@@ -186,7 +191,7 @@ public static class Bookmarks
 
     /// <summary>Replaces the list with the bookmarks in <paramref name="saved"/> that know their place.
     /// Returns how many were left out because one before them marks the same line.</summary>
-    public static int LoadBookmarks(BookmarkList list, IEnumerable<BookmarkRecord>? saved)
+    public static int RestoreBookmarks(BookmarkList list, IEnumerable<BookmarkRecord>? saved)
     {
         var bookmarks = (saved ?? []).Select(static r => r.Location is not null ? Bookmarks.CreateFromRecord(r, r.Location) : null)
             .OfType<Bookmark>();
@@ -471,10 +476,10 @@ public static class Bookmarks
 
     private static List<FoundBookmark> FindPlaces(AssemblyList assemblies, BrowseSession session, List<BookmarkRecord> records)
     {
-        return records.ConvertAll(r => FindPlace(assemblies, session, r));
+        return records.ConvertAll(r => GetPlace(assemblies, session, r));
     }
 
-    private static FoundBookmark FindPlace(AssemblyList assemblies, BrowseSession session, BookmarkRecord record)
+    private static FoundBookmark GetPlace(AssemblyList assemblies, BrowseSession session, BookmarkRecord record)
     {
         if (record.Location is not null)
         {
@@ -673,9 +678,9 @@ public static class Bookmarks
     }
 
     /// <summary>The line it marks in <paramref name="document"/>, shown for <paramref name="node"/>, or -1.</summary>
-    public static int FindLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
+    public static int GetLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
     {
-        return bookmark.Anchor is not null ? Documents.FindLine(document, bookmark.Anchor.Value)
+        return bookmark.Anchor is not null ? Documents.GetLine(document, bookmark.Anchor.Value)
         : bookmark.Language == document.Language && bookmark.Place.Equals(BrowseNodes.GetPath(node)) && bookmark.Line < document.Lines.Length ? bookmark.Line
         : -1;
     }

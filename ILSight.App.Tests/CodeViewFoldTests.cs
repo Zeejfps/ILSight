@@ -54,8 +54,8 @@ public sealed class CodeViewFoldTests
     {
         var view = Outline();
         var document = view.Document;
-        var first = document.Find("public int First()").Line;
-        var row = CodeFolding.FindRowOf(view.State.Folds, first);
+        var first = document.GetPosition("public int First()").Line;
+        var row = CodeFolding.GetRowOf(view.State.Folds, first);
 
         var (x, y) = view.ChevronOf(row);
         view.Frames.MovePointer(x, y).Frame();
@@ -84,7 +84,7 @@ public sealed class CodeViewFoldTests
     {
         var view = Outline();
         var document = view.Document;
-        var (line, column) = document.Find("builder.Append");
+        var (line, column) = document.GetPosition("builder.Append");
         var second = document.FoldIndexAt("public string Second()");
         view.Click(line, column);
 
@@ -129,7 +129,7 @@ public sealed class CodeViewFoldTests
         Pick(0, "Expand all");
         var none = Enumerable.Range(0, document.Folds.Length).All(f => !CodeViewWidget.IsCollapsed(view.State, f));
         var rowsExpanded = Rows(view).Count;
-        var third = document.Find("public int Third()").Line;
+        var third = document.GetPosition("public int Third()").Line;
         Pick(third, "Toggle fold");
 
         Assert.True(all);
@@ -144,9 +144,9 @@ public sealed class CodeViewFoldTests
     {
         var view = Outline();
         var document = view.Document;
-        var first = document.Find("public int First()").Line;
+        var first = document.GetPosition("public int First()").Line;
         var end = document.FoldAt("public int First()").EndLine + 2;
-        ClickChevron(view, CodeFolding.FindRowOf(view.State.Folds, first));
+        ClickChevron(view, CodeFolding.GetRowOf(view.State.Folds, first));
 
         view.MoveTo(first - 1, 0);
         view.Frames.Press().Frame();
@@ -173,7 +173,7 @@ public sealed class CodeViewFoldTests
 
         Assert.False(CodeViewWidget.IsCollapsed(view.State, second));
         Assert.Contains(Rows(view), r => r.Contains("builder.Append(\"needle\")"));
-        Assert.Equal(document.Find("\"needle\"").Line, view.State.Selection.Start.Line);
+        Assert.Equal(document.GetPosition("\"needle\"").Line, view.State.Selection.Start.Line);
     }
 
     [Fact]
@@ -187,7 +187,7 @@ public sealed class CodeViewFoldTests
         CodeViewWidget.SetCollapsed(view.State, inner, true);
         view.Run();
 
-        CodeViewWidget.RevealLine(view.State, document.Find("return 7;").Line);
+        CodeViewWidget.RevealLine(view.State, document.GetPosition("return 7;").Line);
         view.Run(2);
 
         Assert.False(CodeViewWidget.IsCollapsed(view.State, inner));
@@ -201,7 +201,7 @@ public sealed class CodeViewFoldTests
     {
         var view = Outline(height: 200f);
         var document = view.Document;
-        var target = document.Find("public string Second()").Line;
+        var target = document.GetPosition("public string Second()").Line;
         CodeViewWidget.RestorePosition(view.State, new CodeViewPosition(target, 0f, default, default));
         view.Run(2);
         var before = view.State.Position.TopLine;
@@ -241,7 +241,7 @@ public sealed class CodeViewFoldTests
         var anyAfterExpanding = folds.AnyCollapsed;
         CodeFolding.SetCollapsed(folds, 0, true);
         var collapsedRows = folds.RowCount;
-        var shownFor = CodeFolding.FindVisibleLine(folds, fold.EndLine);
+        var shownFor = CodeFolding.GetVisibleLine(folds, fold.EndLine);
         var revealed = CodeFolding.Reveal(folds, fold.EndLine);
 
         Assert.False(anyAfterExpanding);

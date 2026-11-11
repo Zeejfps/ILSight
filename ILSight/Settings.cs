@@ -19,24 +19,24 @@ public static class Settings
 
     /// <summary>The app state <paramref name="settings"/> describe, with the open list's documents
     /// reopened, what is saved recorded as saved, and the user's themes and icon themes read.</summary>
-    public static AppState LoadAppState(AppSettings settings, BrowseSession session)
+    public static AppState RestoreAppState(AppSettings settings, BrowseSession session)
     {
         var appState = CreateAppState(settings, session);
         var first = Tabs.AddNew(appState.Tabs);
         Tabs.MakeActive(appState.Tabs, first);
-        LoadLists(appState.Lists, settings.AssemblyLists, settings.ActiveAssemblyList);
-        var leftOutBookmarks = LoadBookmarks(appState.Bookmarks, settings.Bookmarks);
+        RestoreLists(appState.Lists, settings.AssemblyLists, settings.ActiveAssemblyList);
+        var leftOutBookmarks = RestoreBookmarks(appState.Bookmarks, settings.Bookmarks);
         Analysis.AddPending(appState.Analyzer, appState.Lists.ActiveAnalyses);
         ReopenDocuments(appState);
         appState.LastSaved = CaptureSavedSources(appState);
         ReportLeftOutBookmarks(appState, leftOutBookmarks);
-        LoadThemes(appState);
-        LoadIconThemes(appState);
+        ReadThemes(appState);
+        ReadIconThemes(appState);
         return appState;
     }
 
     /// <summary>The app state <paramref name="settings"/> describe, before anything is reopened or read
-    /// from disk; <see cref="LoadAppState"/> does that. The tooltips report to the error log rather than to
+    /// from disk; <see cref="RestoreAppState"/> does that. The tooltips report to the error log rather than to
     /// the app state, which they are part of.</summary>
     private static AppState CreateAppState(AppSettings settings, BrowseSession session)
     {

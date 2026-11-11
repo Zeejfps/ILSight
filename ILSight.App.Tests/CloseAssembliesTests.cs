@@ -70,7 +70,7 @@ public sealed class CloseAssembliesTests
         IncludeShown(shown, true);
 
         Assert.Equal([CorePath], shown.Select(static c => c.Assembly.FilePath.Text));
-        Assert.Equal(true, GetAllShownIncluded(shown));
+        Assert.Equal(true, CalculateAllShownIncluded(shown));
         Assert.Equal([AppStateDriver.FixturePath, CorePath], ListToClose(closer).Select(static a => a.FilePath.Text));
     }
 

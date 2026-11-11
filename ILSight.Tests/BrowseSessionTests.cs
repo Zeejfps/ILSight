@@ -17,8 +17,8 @@ public sealed class BrowseSessionTests : IDisposable
         var session = new BrowseSession();
         var root = BrowseSessions.EnsureRoot(session, new AssemblyList().Open(Trees.TestAssemblyPath));
 
-        var waits = Enumerable.Range(0, 8).Select(_ => BrowseSessions.LoadChildrenAsync(session, root)).ToArray();
-        var blocking = Enumerable.Range(0, 8).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.LoadChildren(session, root)).ToArray();
+        var waits = Enumerable.Range(0, 8).Select(_ => BrowseSessions.GetChildrenAsync(session, root)).ToArray();
+        var blocking = Enumerable.Range(0, 8).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.GetChildren(session, root)).ToArray();
         var waited = Task.WhenAll(waits).GetAwaiter().GetResult();
 
         var children = Assert.IsType<ChildrenState.Ready>(BrowseSessions.PeekChildren(session, root)).Children;
@@ -31,8 +31,8 @@ public sealed class BrowseSessionTests : IDisposable
         var session = new BrowseSession();
         var root = BrowseSessions.EnsureRoot(session, new AssemblyList().Open(Trees.TestAssemblyPath));
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => BrowseSessions.LoadChildrenAsync(session, root, new CancellationToken(canceled: true)));
-        var state = await BrowseSessions.LoadChildrenAsync(session, root);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => BrowseSessions.GetChildrenAsync(session, root, new CancellationToken(canceled: true)));
+        var state = await BrowseSessions.GetChildrenAsync(session, root);
 
         Assert.NotEmpty(Assert.IsType<ChildrenState.Ready>(state).Children);
     }
@@ -45,10 +45,10 @@ public sealed class BrowseSessionTests : IDisposable
         var resources = BrowseSessions.ListChildren(session, BrowseSessions.EnsureRoot(session, assembly)).Single(c => c.Subject is NodeSubject.Resources);
         var container = Assert.Single(BrowseSessions.ListChildren(session, resources));
 
-        var failed = Assert.IsType<ChildrenState.Failed>(BrowseSessions.LoadChildren(session, container));
+        var failed = Assert.IsType<ChildrenState.Failed>(BrowseSessions.GetChildren(session, container));
 
         Assert.IsType<InvalidDataException>(failed.Error);
-        Assert.Same(failed, BrowseSessions.LoadChildren(session, container));
+        Assert.Same(failed, BrowseSessions.GetChildren(session, container));
         Assert.True(BrowseSessions.HasChildren(session, container));
         Assert.Empty(BrowseSessions.ListChildren(session, container));
     }
@@ -71,11 +71,11 @@ public sealed class BrowseSessionTests : IDisposable
         var node = Trees.TestAssembly.Calculator();
 
         var path = BrowseNodes.GetPath(node);
-        var segment = BrowseNodes.GetSegment(node);
+        var segment = BrowseNodes.FindSegment(node);
 
         Assert.Same(path, node.PathMemo);
         Assert.Same(segment, node.SegmentMemo);
         Assert.Same(path, BrowseNodes.GetPath(node));
-        Assert.Same(segment, BrowseNodes.GetSegment(node));
+        Assert.Same(segment, BrowseNodes.FindSegment(node));
     }
 }

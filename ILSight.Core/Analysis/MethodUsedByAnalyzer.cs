@@ -40,7 +40,7 @@ internal static class MethodUsedByAnalyzer
 
         var users = AnalyzerHelpers.FindMembersWithCode(AnalyzerHelpers.GetScope(context, analyzed), 
             method => method.ParentModule is MetadataModule module
-                && AnalyzerHelpers.HasToken(AnalyzerHelpers.GetMethodBody(context, method), (opCode, token) => References(module, opCode, token)),
+                && AnalyzerHelpers.HasToken(AnalyzerHelpers.FindMethodBody(context, method), (opCode, token) => References(module, opCode, token)),
             context.CancellationToken);
         foreach (var user in users)
         {

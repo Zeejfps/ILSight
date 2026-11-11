@@ -198,7 +198,7 @@ internal static class DisplayOptionsPanelView
     private static void PickTheme(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen)
     {
         var labels = ThemeCatalogs.ListNames(themes, ui.State.Strings.Culture);
-        var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
+        var current = ThemeCatalogs.GetThemeIndex(themes, chosen);
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
         {
@@ -267,7 +267,7 @@ internal static class DisplayOptionsPanelView
     private static void PickIconTheme(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen)
     {
         var labels = ThemeCatalogs.ListNames(themes, ui.State.Strings.Culture);
-        var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
+        var current = ThemeCatalogs.GetThemeIndex(themes, chosen);
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
         {

@@ -93,7 +93,7 @@ public static class ProcessPicking
         }
 
         picker.AppliedFilter = picker.Filter;
-        var selected = GetSelectedProcess(picker);
+        var selected = FindSelectedProcess(picker);
         picker.Filtered.Clear();
         var filter = picker.Filter.Trim();
         foreach (var process in scanned.Processes)
@@ -134,7 +134,7 @@ public static class ProcessPicking
     }
 
     /// <summary>The process selected among those shown, or null.</summary>
-    public static RunningProcess? GetSelectedProcess(ProcessPicker picker)
+    public static RunningProcess? FindSelectedProcess(ProcessPicker picker)
     {
         var index = picker.ProcessSelection.Index;
         if (index < 0 || index >= picker.Filtered.Count)
@@ -149,8 +149,8 @@ public static class ProcessPicking
     /// listing of the one before is cancelled, and its result dropped.</summary>
     private static void FollowSelection(ProcessPicker picker)
     {
-        var selected = GetSelectedProcess(picker);
-        var shown = GetProcess(picker.Modules);
+        var selected = FindSelectedProcess(picker);
+        var shown = FindProcess(picker.Modules);
         if (selected?.Id == shown?.Id)
         {
             return;
@@ -163,7 +163,7 @@ public static class ProcessPicking
             return;
         }
         picker.Modules = new ModuleScan.Loading(selected);
-        Background.Start(picker.Work, nameof(LoadModulesAsync), LoadModulesAsync(picker, selected, picker.ModuleRequest, picker.ModuleWork.Token), picker.ReportError);
+        Background.Start(picker.Work, nameof(ScanModulesAsync), ScanModulesAsync(picker, selected, picker.ModuleRequest, picker.ModuleWork.Token), picker.ReportError);
     }
 
     private static void StopModules(ProcessPicker picker)
@@ -175,7 +175,7 @@ public static class ProcessPicking
         picker.ModuleSelection.Clear();
     }
 
-    private static async Task LoadModulesAsync(ProcessPicker picker, RunningProcess process, int request, CancellationToken cancellationToken)
+    private static async Task ScanModulesAsync(ProcessPicker picker, RunningProcess process, int request, CancellationToken cancellationToken)
     {
         var find = picker.FindModules;
         var outcome = await Background.Wait(Task.Run(() => ListModulesAsync(find, process, cancellationToken)));
@@ -234,7 +234,7 @@ public static class ProcessPicking
     }
 
     /// <summary>The process <paramref name="scan"/> is of, or null when none is selected.</summary>
-    public static RunningProcess? GetProcess(ModuleScan scan)
+    public static RunningProcess? FindProcess(ModuleScan scan)
     {
         return scan switch
         {
@@ -248,7 +248,7 @@ public static class ProcessPicking
     }
 
     /// <summary>The entry assembly found for the process <paramref name="scan"/> is of, or null.</summary>
-    public static AssemblyPath? GetEntryAssembly(ModuleScan scan)
+    public static AssemblyPath? FindEntryAssembly(ModuleScan scan)
     {
         return scan switch
         {
@@ -276,7 +276,7 @@ public static class ProcessPicking
     {
         if (picker.ModuleSelection.Count == 0)
         {
-            return GetEntryAssembly(picker.Modules) != null;
+            return FindEntryAssembly(picker.Modules) != null;
         }
 
         foreach (var module in GetModules(picker.Modules))
@@ -295,7 +295,7 @@ public static class ProcessPicking
     {
         if (picker.ModuleSelection.Count == 0)
         {
-            var entry = GetEntryAssembly(picker.Modules);
+            var entry = FindEntryAssembly(picker.Modules);
             return entry == null ? [] : [entry];
         }
         var paths = new List<AssemblyPath>();

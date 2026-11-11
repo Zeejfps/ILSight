@@ -31,7 +31,7 @@ public sealed class ReferenceReferencesTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        RuntimeReference(assembly).LoadChildren();
+        RuntimeReference(assembly).EnsureChildren();
 
         Assert.Equal([assembly], list.Listed);
     }

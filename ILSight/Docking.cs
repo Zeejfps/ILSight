@@ -63,7 +63,7 @@ public static class Docking
     /// open, opens an empty one.</summary>
     public static void CloseDocuments(AppState appState)
     {
-        var kept = FindTabToKeep(appState);
+        var kept = GetTabToKeep(appState);
         var others = appState.Tabs
             .Open.Where(t => t != kept)
             .ToList();
@@ -77,7 +77,7 @@ public static class Docking
         Tabs.MakeActive(appState.Tabs, kept);
     }
 
-    private static DocumentTab FindTabToKeep(AppState appState)
+    private static DocumentTab GetTabToKeep(AppState appState)
     {
         var active = appState.Tabs.Active;
         if (active is not null)
@@ -146,7 +146,7 @@ public static class Docking
     {
         if (!layout.Dock.Contains(DockPanels.DecompilerOptions))
         {
-            DockBeside(layout, DockPanels.DecompilerOptions, FindDocumentArea(layout, activeDocument), DockEdge.Right, ToolShare);
+            DockBeside(layout, DockPanels.DecompilerOptions, GetDocumentArea(layout, activeDocument), DockEdge.Right, ToolShare);
         }
 
         layout.Dock.Activate(DockPanels.DecompilerOptions);
@@ -172,7 +172,7 @@ public static class Docking
             layout.Dock.Dock(DockPanels.DisplayOptions, decompilerOptions, DockEdge.Center);
             return;
         }
-        DockBeside(layout, DockPanels.DisplayOptions, FindDocumentArea(layout, activeDocument), DockEdge.Right, ToolShare);
+        DockBeside(layout, DockPanels.DisplayOptions, GetDocumentArea(layout, activeDocument), DockEdge.Right, ToolShare);
     }
 
     /// <summary>Docks the bookmarks panel if it is not, and brings it to the front.</summary>
@@ -490,10 +490,10 @@ public static class Docking
 
     private static void DockBelowDocuments(MainLayout layout, string panel, string? activeDocument)
     {
-        DockBeside(layout, panel, FindDocumentArea(layout, activeDocument), DockEdge.Bottom, ToolShare);
+        DockBeside(layout, panel, GetDocumentArea(layout, activeDocument), DockEdge.Bottom, ToolShare);
     }
 
-    private static DockNode FindDocumentArea(MainLayout layout, string? activeDocument)
+    private static DockNode GetDocumentArea(MainLayout layout, string? activeDocument)
     {
         var group = FindDocumentGroup(layout, activeDocument);
         if (group is not null)

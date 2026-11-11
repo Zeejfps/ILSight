@@ -108,11 +108,11 @@ public sealed class SavedAssemblyListsTests
             new("Play", [FakePath("c.dll")]),
         ];
 
-        AssemblyLists.LoadLists(lists, records, "play");
+        AssemblyLists.RestoreLists(lists, records, "play");
         Assert.Equal(["Work", "Play"], lists.Names);
         Assert.Equal("Play", lists.Active);
 
-        AssemblyLists.LoadLists(lists, records, "Gone");
+        AssemblyLists.RestoreLists(lists, records, "Gone");
         Assert.Equal("Work", lists.Active);
         Assert.Equal([FakePath("a.dll")], lists.ActivePaths);
     }
@@ -643,7 +643,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.AtPath("delete")).Frame(2);
         Assert.True(app.Frames.Drew("Delete assembly list"));
         Assert.Equal(SavedAssemblyLists.DefaultName, Assert.IsType<ListsDialogMode.ConfirmingDelete>(app.Ui.ListsDialog.Mode).List);
-        Assert.Equal(Other, AssemblyLists.FindReplacement(app.AppState.Lists, SavedAssemblyLists.DefaultName));
+        Assert.Equal(Other, AssemblyLists.GetReplacement(app.AppState.Lists, SavedAssemblyLists.DefaultName));
         app.Frames.ClickOn(Selector.WithText("Delete list")).Frame(2);
         app.Settle(2);
 

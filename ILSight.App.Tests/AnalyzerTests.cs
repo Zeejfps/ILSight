@@ -128,7 +128,7 @@ public sealed class AnalyzerTests
     public void Ctrl_R_in_the_code_analyzes_the_reference_at_the_caret()
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Outline(), 1200f, frames: 2);
-        var (line, column) = view.Document.Find("return First();");
+        var (line, column) = view.Document.GetPosition("return First();");
 
         view.Click(line, column + "return First".Length);
         view.Key(Shortcuts.Analyze);
@@ -167,7 +167,7 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Outline"));
         var document = d.AppState.Tabs.Active!.Document;
-        var (line, column) = document.Find("return First();");
+        var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
         d.TakeViewCommands();
 
@@ -183,7 +183,7 @@ public sealed class AnalyzerTests
     {
         d.Show(d.Fixture(type));
         var document = d.AppState.Tabs.Active!.Document;
-        var (line, column) = document.Find(text);
+        var (line, column) = document.GetPosition(text);
         return Assert.IsType<CodeReference.Entity>(document.SpanAt(line, column + offset).Reference);
     }
 
@@ -273,7 +273,7 @@ public sealed class AnalyzerTests
         var assembly = d.AppState.Assemblies.Assemblies.Single();
         var outline = assembly.Root.Child(AppStateDriver.FixturesNamespace, "Outline");
         var document = outline.Decompile(DecompilationLanguage.CSharp);
-        var (line, column) = document.Find("return First();");
+        var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
         CloseAssembly(d.AppState, assembly);
         File.Delete(copy);

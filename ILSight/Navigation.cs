@@ -630,15 +630,15 @@ public static class Navigation
         Bookmark? target = null,
         int? row = null)
     {
-        var shownIn = FindOrOpenTab(appState, destination);
+        var shownIn = GetOrOpenTab(appState, destination);
         Tabs.MakeActive(appState.Tabs, shownIn);
-        LoadIntoTab(appState, shownIn, node, new Arrival(position, target, row));
+        DecompileIntoTab(appState, shownIn, node, new Arrival(position, target, row));
         appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
     }
 
     /// <summary>The tab <paramref name="destination"/> leads to now, brought to the front, else a new one
     /// opened; made the preview tab when it shows what tabs preview.</summary>
-    private static DocumentTab FindOrOpenTab(AppState appState, TabDestination destination)
+    private static DocumentTab GetOrOpenTab(AppState appState, TabDestination destination)
     {
         var tab = FindTab(appState, destination);
         if (tab is null)
@@ -733,7 +733,7 @@ public static class Navigation
     }
 
     /// <summary>The active tab while it shows nothing, brought to the front, else a new tab.</summary>
-    internal static DocumentTab FindOrOpenEmptyTab(AppState appState)
+    internal static DocumentTab GetOrOpenEmptyTab(AppState appState)
     {
         var empty = FindEmptyActiveTab(appState);
         if (empty is null)

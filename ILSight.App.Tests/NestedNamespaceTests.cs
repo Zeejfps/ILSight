@@ -56,7 +56,7 @@ public sealed class NestedNamespaceTests
     /// shown loading.</summary>
     private static IReadOnlyList<BrowseNode> ShownChildren(AppDriver app, BrowseNode node)
     {
-        node.LoadChildren();
+        node.EnsureChildren();
         return app.Ui.Tree.GetChildren(node).Nodes;
     }
 
@@ -91,8 +91,8 @@ public sealed class NestedNamespaceTests
         var fixtures = root.Child(AppStateDriver.FixturesNamespace);
         var vault = root.Child(AppStateDriver.FixturesNamespace + ".Vault");
         var door = root.Child(AppStateDriver.FixturesNamespace + ".Vault.Door");
-        fixtures.LoadChildren();
-        vault.LoadChildren();
+        fixtures.EnsureChildren();
+        vault.EnsureChildren();
         Trees.ShowApi(tree, ApiVisibility.PublicOnly);
 
         Assert.DoesNotContain(vault, tree.GetChildren(root).Nodes);
@@ -160,7 +160,7 @@ public sealed class NestedNamespaceTests
         var outline = app.Fixture("Outline");
         app.Show(outline, 2);
         var tab = app.AppState.Tabs.Active!;
-        ToggleBookmark(app.AppState, tab, tab.Document.Find("return First();").Line, Names.Bookmark);
+        ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
         app.Show(app.Fixture("Greeter"), 2);
         Nest(app, false);

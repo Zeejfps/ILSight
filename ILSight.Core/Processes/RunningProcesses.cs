@@ -154,12 +154,12 @@ public static class RunningProcesses
     }
 
     /// <summary>The modules process <paramref name="id"/> has loaded, as its runtime lists them as of now.</summary>
-    public static Task<ModuleListing> FindModulesAsync(ProcessId id, CancellationToken cancellationToken)
+    public static Task<ModuleListing> GetModulesAsync(ProcessId id, CancellationToken cancellationToken)
     {
-        return FindModulesAsync(id, DiagnosticsIpc.RundownBudget, cancellationToken);
+        return GetModulesAsync(id, DiagnosticsIpc.RundownBudget, cancellationToken);
     }
 
-    internal static async Task<ModuleListing> FindModulesAsync(ProcessId id, TimeSpan budget, CancellationToken cancellationToken)
+    internal static async Task<ModuleListing> GetModulesAsync(ProcessId id, TimeSpan budget, CancellationToken cancellationToken)
     {
         var endpoint = FindEndpoint(id);
         if (endpoint is null)
@@ -209,7 +209,7 @@ public static class RunningProcesses
                 continue;
             }
 
-            var name = module.AssemblyName ?? GetNonBlank(module.IlPath) ?? GetNonBlank(module.NativePath) ?? "(dynamic module)";
+            var name = module.AssemblyName ?? FindNonBlank(module.IlPath) ?? FindNonBlank(module.NativePath) ?? "(dynamic module)";
             if (seenNames.Add(name))
             {
                 result.Add(new RunningModule.InMemory(name));
@@ -339,7 +339,7 @@ public static class RunningProcesses
         return path;
     }
 
-    private static string? GetNonBlank(string value)
+    private static string? FindNonBlank(string value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }

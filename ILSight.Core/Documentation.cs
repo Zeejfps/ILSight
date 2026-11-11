@@ -399,7 +399,7 @@ internal static class Documentation
     {
         var signature = WriteSignature(entity, assembly);
         var sections = Read(entity);
-        return new CodeTooltip(signature, GetContainer(entity), sections);
+        return new CodeTooltip(signature, FindContainer(entity), sections);
     }
 
     private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly)
@@ -454,7 +454,7 @@ internal static class Documentation
             .ToList();
     }
 
-    private static CodeContainer? GetContainer(IEntity entity)
+    private static CodeContainer? FindContainer(IEntity entity)
     {
         var declaring = entity.DeclaringTypeDefinition;
         if (declaring is not null)

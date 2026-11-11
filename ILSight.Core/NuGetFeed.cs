@@ -107,7 +107,7 @@ public static class NuGetFeeds
     /// <exception cref="InvalidDataException">The feed describes no versions, or answered with something else.</exception>
     public static async Task<PackageVersionDetails> ReadDetailsAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken cancellationToken = default)
     {
-        var url = await FindDetailsUrlAsync(feed, id, version, cancellationToken).ConfigureAwait(false);
+        var url = await GetDetailsUrlAsync(feed, id, version, cancellationToken).ConfigureAwait(false);
         using var leaf = await ReadJsonAsync(feed, url, cancellationToken).ConfigureAwait(false);
         var registration = FeedJson.ReadRegistration(leaf.RootElement);
         if (registration.CatalogEntry is null)
@@ -118,7 +118,7 @@ public static class NuGetFeeds
         return await ReadCatalogEntryAsync(feed, registration.CatalogEntry.Value, registration.Published, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<WebUrl> FindDetailsUrlAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken cancellationToken)
+    private static async Task<WebUrl> GetDetailsUrlAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken cancellationToken)
     {
         if (version.DetailsUrl is not null)
         {
@@ -215,23 +215,23 @@ public static class NuGetFeeds
             return index;
         }
 
-        index = await FetchIndexAsync(feed, cancellationToken).ConfigureAwait(false);
+        index = await GetIndexAsync(feed, cancellationToken).ConfigureAwait(false);
         held.Value = index;
         return index;
     }
 
-    private static async Task<NuGetFeed.ServiceIndex> FetchIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
+    private static async Task<NuGetFeed.ServiceIndex> GetIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
     {
         using var document = await ReadJsonAsync(feed, feed.Source.Url, cancellationToken).ConfigureAwait(false);
         var resources = FeedJson.ReadResources(document.RootElement);
-        var search = FindResource(feed, resources, SearchType);
-        var folder = FindResource(feed, resources, PackageFolderType);
+        var search = GetResource(feed, resources, SearchType);
+        var folder = GetResource(feed, resources, PackageFolderType);
         var registrations = FindOptionalResource(resources, RegistrationsType);
         return new NuGetFeed.ServiceIndex(search, folder, registrations);
     }
 
     /// <summary>The URL of the first resource whose type is <paramref name="type"/>, or a version of it.</summary>
-    private static WebUrl FindResource(NuGetFeed feed, List<FeedResource> resources, string type)
+    private static WebUrl GetResource(NuGetFeed feed, List<FeedResource> resources, string type)
     {
         var url = FindOptionalResource(resources, type);
         if (url is null)
@@ -304,7 +304,7 @@ public static class NuGetFeeds
     /// disk, else one downloaded from <paramref name="feed"/> now.</summary>
     /// <exception cref="HttpRequestException">The feed could not be reached, or has no such package.</exception>
     /// <exception cref="IOException">The package could not be written.</exception>
-    public static async Task<string> FetchPackageAsync(PackageCache cache, NuGetFeed feed, PackageId id, PackageVersion version, CancellationToken cancellationToken = default)
+    public static async Task<string> GetPackageAsync(PackageCache cache, NuGetFeed feed, PackageId id, PackageVersion version, CancellationToken cancellationToken = default)
     {
         var found = FindPackage(cache, id, version);
         if (found is not null)
@@ -333,7 +333,7 @@ public static class NuGetFeeds
     /// pixels across.</summary>
     /// <exception cref="HttpRequestException">The picture could not be fetched.</exception>
     /// <exception cref="InvalidDataException">It is no picture, or too large a file.</exception>
-    public static async Task<ResourceImage> FetchIconAsync(PackageIcons icons, WebUrl url, int side, CancellationToken cancellationToken = default)
+    public static async Task<ResourceImage> GetIconAsync(PackageIcons icons, WebUrl url, int side, CancellationToken cancellationToken = default)
     {
         await icons.Fetches.WaitAsync(cancellationToken).ConfigureAwait(false);
         try

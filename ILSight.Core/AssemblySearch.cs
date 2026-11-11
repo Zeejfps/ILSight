@@ -27,7 +27,7 @@ public static class AssemblySearch
         SearchQuery query, CancellationToken cancellationToken = default)
     {
         var searched = assemblies.ToImmutableArray();
-        return Batches.Stream<SearchResult>((emit, token) =>
+        return Batches.StreamAsync<SearchResult>((emit, token) =>
         {
             if (query.IsEmpty)
             {
@@ -243,7 +243,7 @@ public static class AssemblySearch
         {
             var file = assembly.File;
             var reader = file.Metadata;
-            var literal = SearchQueries.GetLiteral(search.Query);
+            var literal = SearchQueries.FindLiteral(search.Query);
             foreach (var handle in reader.MethodDefinitions)
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
@@ -578,7 +578,7 @@ public static class AssemblySearch
         /// <summary>The name a node is matched by: a constructor's its type's, an entity's its own, else its label.</summary>
         private static string GetNodeName(BrowseNode node)
         {
-            var entity = BrowseNodes.GetEntity(node);
+            var entity = BrowseNodes.FindEntity(node);
             if (entity is null)
         {
             return node.Text;

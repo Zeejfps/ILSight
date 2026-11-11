@@ -354,7 +354,7 @@ public sealed class PackageCacheTests
         fake.Answer(FakeFeed.PackagesUrl + "tiny/1.0.0-beta/tiny.1.0.0-beta.nupkg", PackageBytes);
         var cache = new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") };
 
-        var path = await NuGetFeeds.FetchPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, PackageVersion.Parse("1.0.0-Beta+build.5")!);
+        var path = await NuGetFeeds.GetPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, PackageVersion.Parse("1.0.0-Beta+build.5")!);
 
         Assert.Equal(temp.PathOf(Path.Combine("downloads", "tiny", "1.0.0-beta", "tiny.1.0.0-beta.nupkg")), path);
         Assert.Equal(PackageBytes, File.ReadAllBytes(path));
@@ -369,7 +369,7 @@ public sealed class PackageCacheTests
         var fake = new FakeFeed();
         var cache = new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") };
 
-        var path = await NuGetFeeds.FetchPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, OneZero);
+        var path = await NuGetFeeds.GetPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, OneZero);
 
         Assert.Equal(restored, path);
         Assert.Empty(fake.Requested);
@@ -382,7 +382,7 @@ public sealed class PackageCacheTests
         var fake = new FakeFeed();
         var cache = new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") };
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => NuGetFeeds.FetchPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Gone, OneZero));
+        await Assert.ThrowsAsync<HttpRequestException>(() => NuGetFeeds.GetPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Gone, OneZero));
 
         Assert.Null(NuGetFeeds.FindPackage(cache, Gone, OneZero));
         Assert.False(File.Exists(temp.PathOf(Path.Combine("downloads", "gone", "1.0.0", "gone.1.0.0.nupkg.download"))));
@@ -463,7 +463,7 @@ public sealed class PackageIconsTests
         fake.Answer(IconUrl, """<svg xmlns="http://www.w3.org/2000/svg" width="256" height="128"><rect width="256" height="128" fill="red"/></svg>""");
         var icons = NuGetFeeds.CreateIcons(fake);
 
-        var icon = await NuGetFeeds.FetchIconAsync(icons, Icon, 64);
+        var icon = await NuGetFeeds.GetIconAsync(icons, Icon, 64);
 
         Assert.Equal(64, icon.Width);
         Assert.Equal(32, icon.Height);
@@ -476,7 +476,7 @@ public sealed class PackageIconsTests
         fake.Answer(IconUrl, "<html>not found</html>");
         var icons = NuGetFeeds.CreateIcons(fake);
 
-        await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.FetchIconAsync(icons, Icon, 64));
+        await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.GetIconAsync(icons, Icon, 64));
     }
 
     [Fact]

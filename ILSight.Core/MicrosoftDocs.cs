@@ -17,7 +17,7 @@ public static class MicrosoftDocs
             return FindNamespacePage(ns.Value);
         }
 
-        var entity = BrowseNodes.GetEntity(node);
+        var entity = BrowseNodes.FindEntity(node);
         if (entity is not null)
         {
             return FindPage(entity);

@@ -589,7 +589,7 @@ internal static class MetadataTables
     {
         var output = new PlainTextOutput();
         var metadata = file.Metadata;
-        var context = new MetadataGenericContext(FindDeclaringType(metadata, property), metadata);
+        var context = new MetadataGenericContext(GetDeclaringType(metadata, property), metadata);
         var signature = property.DecodeSignature(new DisassemblerSignatureTypeProvider(file, output), context);
         if (signature.Header.IsInstance)
         {
@@ -607,9 +607,9 @@ internal static class MetadataTables
 
     /// <summary>The type that declares <paramref name="property"/>, found through an accessor, so that its
     /// generic parameters are written by name; none for a property without accessors.</summary>
-    private static TypeDefinitionHandle FindDeclaringType(MetadataReader metadata, PropertyDefinition property)
+    private static TypeDefinitionHandle GetDeclaringType(MetadataReader metadata, PropertyDefinition property)
     {
-        var accessor = FindAccessor(property);
+        var accessor = GetAccessor(property);
         if (accessor.IsNil)
         {
             return default;
@@ -618,7 +618,7 @@ internal static class MetadataTables
         return metadata.GetMethodDefinition(accessor).GetDeclaringType();
     }
 
-    private static MethodDefinitionHandle FindAccessor(PropertyDefinition property)
+    private static MethodDefinitionHandle GetAccessor(PropertyDefinition property)
     {
         var accessors = property.GetAccessors();
         if (!accessors.Getter.IsNil)

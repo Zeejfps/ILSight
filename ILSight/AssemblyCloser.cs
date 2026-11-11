@@ -152,7 +152,7 @@ public static class AssemblyClosing
     }
 
     /// <summary>Whether every shown item in <paramref name="shown"/> is ticked, none is, or some are (null).</summary>
-    public static bool? GetAllShownIncluded(IReadOnlyList<CloseChoice> shown)
+    public static bool? CalculateAllShownIncluded(IReadOnlyList<CloseChoice> shown)
     {
         var count = 0;
         foreach (var choice in shown)

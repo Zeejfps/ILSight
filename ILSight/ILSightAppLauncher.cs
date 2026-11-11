@@ -14,7 +14,7 @@ public static class ILSightAppLauncher
     /// opens the app.</summary>
     public static void LaunchApp(LaunchConfig config, RunArguments arguments)
     {
-        var address = RunArgumentsRouting.FindAddress(config.SettingsPath);
+        var address = RunArgumentsRouting.GetAddress(config.SettingsPath);
 
         using var receiver = RunArgumentsRouting.ForwardOrReceive(address, arguments, config.NewInstance);
         if (receiver is null)
@@ -22,14 +22,14 @@ public static class ILSightAppLauncher
             return;
         }
 
-        var loadResult = SettingsJson.LoadSettings(config.SettingsPath);
+        var loadResult = SettingsJson.ReadSettingsFile(config.SettingsPath);
         var app = CreateApp(loadResult, arguments, receiver.Inbox);
         OpenWindow(app, loadResult, config);
     }
 
     private static ILSightApp CreateApp(SettingsLoadResult loadResult, RunArguments arguments, Channel<RunArguments> inbox)
     {
-        var appState = LoadAppState(loadResult, arguments);
+        var appState = RestoreAppState(loadResult, arguments);
         var uiState = AppFrames.CreateUiState(appState);
         return new ILSightApp(appState, uiState, arguments.Files, inbox);
     }
@@ -44,15 +44,15 @@ public static class ILSightAppLauncher
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, told of what was
     /// wrong with the settings, with <paramref name="arguments"/> followed. The screen is built over
     /// this; the files they name open once the app runs.</summary>
-    internal static AppState LoadAppState(SettingsLoadResult loadResult, RunArguments arguments)
+    internal static AppState RestoreAppState(SettingsLoadResult loadResult, RunArguments arguments)
     {
-        return LoadAppState(loadResult, arguments, new BrowseSession());
+        return RestoreAppState(loadResult, arguments, new BrowseSession());
     }
 
     /// <summary>The app state to start from over <paramref name="session"/>, which the tests share.</summary>
-    internal static AppState LoadAppState(SettingsLoadResult loadResult, RunArguments arguments, BrowseSession session)
+    internal static AppState RestoreAppState(SettingsLoadResult loadResult, RunArguments arguments, BrowseSession session)
     {
-        var appState = Settings.LoadAppState(loadResult.Settings, session);
+        var appState = Settings.RestoreAppState(loadResult.Settings, session);
         ReportSettingsProblem(appState, loadResult.Problem);
         ApplyStartupOptions(appState, arguments);
         return appState;

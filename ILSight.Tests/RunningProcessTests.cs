@@ -71,7 +71,7 @@ public sealed class RunningProcessTests
     [Fact]
     public async Task This_process_lists_the_assemblies_it_loaded_from_disk()
     {
-        var listing = await RunningProcesses.FindModulesAsync(Self, CancellationToken.None);
+        var listing = await RunningProcesses.GetModulesAsync(Self, CancellationToken.None);
 
         var modules = Assert.IsType<ModuleListing.Listed>(listing).Modules;
         var core = Assert.IsType<RunningModule.OnDisk>(Assert.Single(modules, m => m.Name == "ILSight.Core.dll"));
@@ -90,7 +90,7 @@ public sealed class RunningProcessTests
                 context.LoadFromStream(bytes);
             }
 
-            var listing = await RunningProcesses.FindModulesAsync(Self, CancellationToken.None);
+            var listing = await RunningProcesses.GetModulesAsync(Self, CancellationToken.None);
 
             var modules = Assert.IsType<ModuleListing.Listed>(listing).Modules;
             Assert.Contains(new RunningModule.InMemory("SampleApp"), modules);

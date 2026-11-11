@@ -94,18 +94,18 @@ internal static class DebugSymbolFiles
 
     /// <summary>The symbols for <paramref name="assembly"/>, or null when it has none or they cannot be
     /// read. A PDB beside it is looked for in <paramref name="package"/> when it was read out of one.</summary>
-    public static DebugSymbols? LoadSymbols(PEFile assembly, AssemblyPackage? package)
+    public static DebugSymbols? FindSymbols(PEFile assembly, AssemblyPackage? package)
     {
         try
         {
             var entries = assembly.Reader.ReadDebugDirectory();
-            var embedded = LoadEmbedded(assembly, entries);
+            var embedded = FindEmbedded(assembly, entries);
             if (embedded is not null)
             {
                 return embedded;
             }
 
-            return LoadBeside(assembly, package, entries);
+            return FindBeside(assembly, package, entries);
         }
         catch (Exception e) when (IsUnreadable(e))
         {
@@ -115,7 +115,7 @@ internal static class DebugSymbolFiles
 
     /// <summary>The symbols in the portable PDB at <paramref name="pdbPath"/>, picked for the assembly;
     /// null when it cannot be read.</summary>
-    public static DebugSymbols? LoadPicked(string pdbPath)
+    public static DebugSymbols? ReadPicked(string pdbPath)
     {
         try
         {
@@ -188,7 +188,7 @@ internal static class DebugSymbolFiles
         return PdbCheck.Matches;
     }
 
-    private static DebugSymbols? LoadEmbedded(PEFile assembly, ImmutableArray<DebugDirectoryEntry> entries)
+    private static DebugSymbols? FindEmbedded(PEFile assembly, ImmutableArray<DebugDirectoryEntry> entries)
     {
         foreach (var entry in entries)
         {
@@ -204,7 +204,7 @@ internal static class DebugSymbolFiles
         return null;
     }
 
-    private static DebugSymbols? LoadBeside(PEFile assembly, AssemblyPackage? package, ImmutableArray<DebugDirectoryEntry> entries)
+    private static DebugSymbols? FindBeside(PEFile assembly, AssemblyPackage? package, ImmutableArray<DebugDirectoryEntry> entries)
     {
         foreach (var entry in entries)
         {
@@ -360,7 +360,7 @@ internal static class DebugSymbolFiles
     public static bool TryGetName(DebugSymbols symbols, MethodDefinitionHandle method, int index, [MaybeNullWhen(false)] out string name)
     {
         name = null;
-        var handle = FindLocal(symbols, method, index);
+        var handle = GetLocal(symbols, method, index);
         if (handle.IsNil)
         {
             return false;
@@ -376,7 +376,7 @@ internal static class DebugSymbolFiles
     public static bool TryGetExtraTypeInfo(DebugSymbols symbols, MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
     {
         extraTypeInfo = default;
-        var local = FindLocal(symbols, method, index);
+        var local = GetLocal(symbols, method, index);
         if (local.IsNil)
         {
             return false;
@@ -403,7 +403,7 @@ internal static class DebugSymbolFiles
         return extraTypeInfo.DynamicFlags is not null;
     }
 
-    private static LocalVariableHandle FindLocal(DebugSymbols symbols, MethodDefinitionHandle method, int index)
+    private static LocalVariableHandle GetLocal(DebugSymbols symbols, MethodDefinitionHandle method, int index)
     {
         foreach (var handle in ListLocals(symbols, method))
         {

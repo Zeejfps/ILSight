@@ -129,12 +129,12 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
     private static CodeViewDriver HoverReference()
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), Height, frames: 2);
-        var (line, column) = FindReference(view.Document);
+        var (line, column) = GetReference(view.Document);
         view.MoveTo(line, column + 1);
         return view;
     }
 
-    private static (int Line, int Column) FindReference(DecompiledDocument document)
+    private static (int Line, int Column) GetReference(DecompiledDocument document)
     {
         for (var line = 0; line < document.Lines.Length; line++)
         {
@@ -189,7 +189,7 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), Height, frames: 2);
         view.Display = new DisplayOptions();
-        var (line, column) = view.Document.Find("{");
+        var (line, column) = view.Document.GetPosition("{");
         view.Click(line, column);
         return view;
     }

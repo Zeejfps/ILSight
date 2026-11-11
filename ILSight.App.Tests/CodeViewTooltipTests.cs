@@ -33,7 +33,7 @@ public sealed class CodeViewTooltipTests
 
     private static void RestOn(CodeViewDriver view, string text)
     {
-        var (line, column) = view.Document.Find(text);
+        var (line, column) = view.Document.GetPosition(text);
         view.MoveTo(line, column + 1);
     }
 

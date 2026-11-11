@@ -45,7 +45,7 @@ public sealed class GridSchema<TRow> : GridSchema
 /// <summary>Building a <see cref="GridSchema"/> a column at a time. A table's starts with its RID and Token.</summary>
 public static class GridSchemas
 {
-    private static IReadOnlyList<object> LoadRows<TRow>(Func<IEnumerable<TRow>> rows)
+    private static IReadOnlyList<object> ListRows<TRow>(Func<IEnumerable<TRow>> rows)
     {
         var loaded = new List<object>();
         foreach (var row in rows())
@@ -76,13 +76,13 @@ public static class GridSchemas
     /// <summary>A schema named <paramref name="key"/> of what <paramref name="rows"/> reads from <paramref name="file"/>.</summary>
     public static GridSchema<TRow> CreateGrid<TRow>(string key, MetadataFile file, Func<IEnumerable<TRow>> rows)
     {
-        return new GridSchema<TRow> { Key = key, Table = null, File = file, ReadRows = () => LoadRows(rows) };
+        return new GridSchema<TRow> { Key = key, Table = null, File = file, ReadRows = () => ListRows(rows) };
     }
 
     /// <summary>The schema of <paramref name="table"/> of <paramref name="file"/>, which <paramref name="rows"/> reads.</summary>
     public static GridSchema<TRow> CreateTable<TRow>(TableIndex table, MetadataFile file, Func<IEnumerable<TRow>> rows)
     {
-        var schema = new GridSchema<TRow> { Key = table.ToString(), Table = table, File = file, ReadRows = () => LoadRows(rows) };
+        var schema = new GridSchema<TRow> { Key = table.ToString(), Table = table, File = file, ReadRows = () => ListRows(rows) };
         AddColumn(schema, "RID", null, (_, rid) => rid, null);
         AddColumn(schema, "Token", "X8", (_, rid) => (int)table << 24 | rid, null);
         return schema;

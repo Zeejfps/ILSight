@@ -111,7 +111,7 @@ public sealed class PathIdentityTests : IDisposable
         var shape = Root(path).Child(Namespace, "Shape");
         File.Copy(Trees.PathsAfterPath, path, overwrite: true);
         var ns = Root(path).Child(Namespace);
-        ns.LoadChildren();
+        ns.EnsureChildren();
 
         var counterpart = BrowseSessions.FindLoadedChildLike(TestSession.Shared, ns, shape);
 

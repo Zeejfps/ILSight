@@ -185,7 +185,7 @@ public sealed class AutosaveTests : IDisposable
         var d = AppStateDriver.Opened(_temp.Settings());
         d.Show(d.Fixture("Outline"));
         var document = d.AppState.Tabs.Active!.Document;
-        var (line, column) = document.Find("return First();");
+        var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
 
         d.Analyze(reference);
@@ -314,7 +314,7 @@ public sealed class AutosaveTests : IDisposable
         app.Run(2);
         var root = (DockSplit)app.Ui.Layout.Root;
         var before = root.Ratio;
-        var divider = FindDivider(app, root);
+        var divider = GetDivider(app, root);
 
         app.Frames.Drag(new PointF(divider, 350f), new PointF(divider + 20f, 350f), new PointF(divider + 120f, 350f));
         app.Frames.Release().Frame(2);
@@ -327,7 +327,7 @@ public sealed class AutosaveTests : IDisposable
     }
 
     /// <summary>Where the pointer turns into the splitter's resize cursor, near where the root split's ratio puts it.</summary>
-    private static float FindDivider(AppDriver app, DockSplit root)
+    private static float GetDivider(AppDriver app, DockSplit root)
     {
         var guess = root.Ratio * app.Frames.Width;
         for (var x = guess - 40f; x < guess + 40f; x++)

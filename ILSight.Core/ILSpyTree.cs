@@ -106,7 +106,7 @@ public static class ILSpyTree
             return null;
         }
 
-        var assembly = Load(list, filePath);
+        var assembly = FindModule(list, filePath);
         if (assembly is null)
         {
             return null;
@@ -146,7 +146,7 @@ public static class ILSpyTree
             return null;
         }
 
-        var assembly = Load(list, filePath);
+        var assembly = FindModule(list, filePath);
         if (assembly is null)
         {
             return null;
@@ -174,7 +174,7 @@ public static class ILSpyTree
     public static ILSpyBookmarkInfo Describe(BrowseNode place, CodeAnchor? anchor)
     {
         var assembly = place.Assembly;
-        var entity = BrowseNodes.GetEntity(place);
+        var entity = BrowseNodes.FindEntity(place);
         var token = entity is null ? 0u : (uint)MetadataTokens.GetToken(entity.MetadataToken);
         if (anchor is not null && anchor.Value.FilePath.Equals(assembly.FilePath))
         {
@@ -188,7 +188,7 @@ public static class ILSpyTree
         {
             token = (uint)anchor.Value.Token;
         }
-        var location = BrowseNodes.GetEntity(place)?.FullName ?? NameOf(place);
+        var location = BrowseNodes.FindEntity(place)?.FullName ?? NameOf(place);
         return new ILSpyBookmarkInfo(assembly.FullName, assembly.FilePath.FileName, token, entity?.FullName ?? location ?? place.Text, location,
             PathOf(place));
     }
@@ -205,7 +205,7 @@ public static class ILSpyTree
         }
     }
 
-    private static LoadedModule? Load(AssemblyList list, AssemblyPath filePath)
+    private static LoadedModule? FindModule(AssemblyList list, AssemblyPath filePath)
     {
         try
         {

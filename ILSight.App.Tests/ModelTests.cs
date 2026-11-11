@@ -156,7 +156,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Saved_settings_load_back_and_leave_no_temporary_file()
     {
-        var settings = SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile)).Settings;
+        var settings = SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
         settings.AssemblyLists = [new AssemblyListRecord("Work", [FakePath("a.dll"), FakePath("b.dll")]), new AssemblyListRecord("Play", [FakePath("c.dll")])];
         settings.ActiveAssemblyList = "Play";
         settings.Language = DecompilationLanguage.IL;
@@ -165,7 +165,7 @@ public sealed class AppSettingsTests : IDisposable
 
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(settings));
 
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile));
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Equal(["Work", "Play"], loaded.AssemblyLists.Select(static l => l.Name));
         Assert.Equal([FakePath("a.dll"), FakePath("b.dll")], loaded.AssemblyLists[0].Assemblies);
@@ -182,7 +182,7 @@ public sealed class AppSettingsTests : IDisposable
     [InlineData("""{ "Decompiler": { } }""", CSharpVersion.CSharp14)]
     public void Decompiler_options_from_older_settings_files_load_with_defaults_for_what_they_lack(string json, CSharpVersion version)
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written(json)));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written(json)));
 
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Equal(DecompilerOptions.Default with { LanguageVersion = version }, loaded.Decompiler);
@@ -192,7 +192,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_decompiler_toggle_the_decompiler_lacks_is_reported_and_left_out()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Decompiler": { "Toggles": { "NoSuchToggle": true, "AlwaysUseBraces": false } } }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Decompiler": { "Toggles": { "NoSuchToggle": true, "AlwaysUseBraces": false } } }""")));
 
         Assert.Equal(["Decompiler"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.Equal(DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggles.FindToggle("AlwaysUseBraces")!, false), loaded.Decompiler);
@@ -202,7 +202,7 @@ public sealed class AppSettingsTests : IDisposable
     public void A_decompiler_toggle_saved_at_its_default_loads_as_not_set()
     {
         var braces = DecompilerToggles.FindToggle("AlwaysUseBraces")!;
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""{ "Decompiler": { "Toggles": { "AlwaysUseBraces": {{(braces.DefaultValue ? "true" : "false")}} } } }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""{ "Decompiler": { "Toggles": { "AlwaysUseBraces": {{(braces.DefaultValue ? "true" : "false")}} } } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.False(DecompilerToggles.IsChanged(loaded.Decompiler, braces));
@@ -212,16 +212,16 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Window_bounds_round_trip_and_open_the_window_where_it_was_left()
     {
-        var settings = SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile)).Settings;
+        var settings = SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
         settings.Window = new WindowBounds(-1200, 80, 1600, 1000, Maximized: true);
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(settings));
 
-        var loaded = SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile)).Settings;
+        var loaded = SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
         var config = loaded.Window!.Value.ApplyTo(new StartupConfig { WindowWidth = 1400, WindowHeight = 900, WindowTitle = "ILSight" });
 
         Assert.Equal(new WindowBounds(-1200, 80, 1600, 1000, true), loaded.Window);
         Assert.Equal((-1200, 80, 1600, 1000, true), (config.WindowX, config.WindowY, config.WindowWidth, config.WindowHeight, config.StartMaximized));
-        Assert.Null(SettingsJson.LoadSettings(FullFilePath.Of(_temp.PathOf("missing.json"))).Settings.Window);
+        Assert.Null(SettingsJson.ReadSettingsFile(FullFilePath.Of(_temp.PathOf("missing.json"))).Settings.Window);
     }
 
     [Theory]
@@ -230,7 +230,7 @@ public sealed class AppSettingsTests : IDisposable
     [InlineData(1200, 800, 1200, 800)]
     public void Saved_window_sizes_load_within_reason(int width, int height, int expectedWidth, int expectedHeight)
     {
-        var loaded = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""{ "Window": { "X": 5, "Y": 6, "Width": {{width}}, "Height": {{height}}, "Maximized": false } }"""))).Settings;
+        var loaded = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""{ "Window": { "X": 5, "Y": 6, "Width": {{width}}, "Height": {{height}}, "Maximized": false } }"""))).Settings;
 
         Assert.Equal(new WindowBounds(5, 6, expectedWidth, expectedHeight, false), loaded.Window);
     }
@@ -238,29 +238,29 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void The_export_window_reopens_where_it_was_left_in_the_last_run()
     {
-        var d = new AppStateDriver(SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile)).Settings);
+        var d = new AppStateDriver(SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings);
         d.Ui.ExportSetup.Window.Bounds = new WindowBounds(-900, 200, 700, 800, false);
         DialogWindows.Settle(d.Ui.ExportSetup.Window, held: false);
         d.NextFrame();
         SaveSettings(d.AppState);
 
-        var next = new AppStateDriver(SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile)).Settings);
+        var next = new AppStateDriver(SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings);
 
         Assert.Equal(new WindowBounds(-900, 200, 700, 800, false), next.Ui.ExportSetup.Window.Bounds);
-        Assert.Null(SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "ExportWindow": { "X": 5, "Y": 6, "Width": 0, "Height": 0, "Maximized": false } }"""))).Settings.ExportWindow);
+        Assert.Null(SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "ExportWindow": { "X": 5, "Y": 6, "Width": 0, "Height": 0, "Maximized": false } }"""))).Settings.ExportWindow);
     }
 
     [Fact]
     public void Window_bounds_without_a_size_load_as_none()
     {
-        Assert.Null(SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Window": { "X": 5, "Y": 6, "Width": 0, "Height": 0, "Maximized": false } }"""))).Settings.Window);
+        Assert.Null(SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Window": { "X": 5, "Y": 6, "Width": 0, "Height": 0, "Maximized": false } }"""))).Settings.Window);
         Assert.Null(SettingsJson.SanitizeWindow(default(WindowBounds)));
     }
 
     [Fact]
     public void Null_assembly_lists_load_as_none()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "AssemblyLists": null, "Theme": "Monokai" }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "AssemblyLists": null, "Theme": "Monokai" }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Empty(loaded.AssemblyLists);
@@ -270,7 +270,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Lists_missing_their_name_or_assemblies_load_without_them()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""{ "AssemblyLists": [ null, { "Name": null }, { "Name": "Work", "Assemblies": null }, { "Name": "Play", "Assemblies": [ " ", "a.dll", "{{AInJson}}" ] } ] }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""{ "AssemblyLists": [ null, { "Name": null }, { "Name": "Work", "Assemblies": null }, { "Name": "Play", "Assemblies": [ " ", "a.dll", "{{AInJson}}" ] } ] }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Equal(["Work", "Play"], loaded.AssemblyLists.Select(static l => l.Name));
@@ -281,7 +281,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void The_one_list_of_an_older_settings_file_becomes_the_default_list_and_is_saved_only_there()
     {
-        var loaded = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""{ "Assemblies": [ "{{AInJson}}", "", "{{BInJson}}" ] }"""))).Settings;
+        var loaded = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""{ "Assemblies": [ "{{AInJson}}", "", "{{BInJson}}" ] }"""))).Settings;
 
         var list = Assert.Single(loaded.AssemblyLists);
         Assert.Equal(SavedAssemblyLists.DefaultName, list.Name);
@@ -293,7 +293,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void The_analyses_of_an_older_settings_file_go_to_the_open_list_and_are_saved_only_there()
     {
-        var loaded = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""
+        var loaded = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""
             { "AssemblyLists": [ { "Name": "Work", "Assemblies": [] }, { "Name": "Play", "Assemblies": [] } ],
               "ActiveAssemblyList": "Play",
               "Analyzed": [ { "Kind": "Definition", "FilePath": "{{AInJson}}", "Token": 33554434 } ] }
@@ -311,7 +311,7 @@ public sealed class AppSettingsTests : IDisposable
     [InlineData(true, ApiVisibility.AllButCompilerGenerated)]
     public void The_non_public_switch_of_an_older_settings_file_becomes_its_visibility_and_is_saved_only_as_that(bool showNonPublic, ApiVisibility expected)
     {
-        var loaded = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""{ "ShowNonPublic": {{(showNonPublic ? "true" : "false")}} }"""))).Settings;
+        var loaded = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""{ "ShowNonPublic": {{(showNonPublic ? "true" : "false")}} }"""))).Settings;
 
         Assert.Equal(expected, loaded.ApiVisibility);
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(loaded));
@@ -321,9 +321,9 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void An_unreadable_file_falls_back_to_defaults_and_is_reported()
     {
-        var loadResult = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Assemblies": [ "a.dll", """)));
+        var loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Assemblies": [ "a.dll", """)));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = ILSightAppLauncher.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         Assert.Empty(loaded.AssemblyLists);
         Assert.IsType<SettingsProblem.NotJson>(problem);
@@ -335,9 +335,9 @@ public sealed class AppSettingsTests : IDisposable
     public void An_unreadable_file_is_copied_beside_it_before_the_settings_are_saved_over_it()
     {
         const string broken = """{ "Assemblies": [ "a.dll", """;
-        var loadResult = SettingsJson.LoadSettings(FullFilePath.Of(Written(broken)));
+        var loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written(broken)));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = ILSightAppLauncher.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(loaded));
 
@@ -356,7 +356,7 @@ public sealed class AppSettingsTests : IDisposable
         SettingsLoadResult loadResult;
         using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            loadResult = SettingsJson.LoadSettings(FullFilePath.Of(path));
+            loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(path));
         }
 
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(loadResult.Settings));
@@ -374,10 +374,10 @@ public sealed class AppSettingsTests : IDisposable
         SettingsLoadResult loadResult;
         using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            loadResult = SettingsJson.LoadSettings(FullFilePath.Of(path));
+            loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(path));
         }
 
-        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = ILSightAppLauncher.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
         SaveSettings(appState);
 
         Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotRead>(loadResult.Problem).Kept);
@@ -389,7 +389,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_number_where_the_settings_name_a_language_is_refused()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Locale": 42 }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Locale": 42 }""")));
 
         Assert.Equal(["Locale"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.Null(loaded.Locale);
@@ -402,9 +402,9 @@ public sealed class AppSettingsTests : IDisposable
             { "Theme": "light", "Language": "Klingon", "Window": "wide",
               "AssemblyLists": [ { "Name": "Work", "Assemblies": [ "{{AInJson}}" ] } ] }
             """;
-        var loadResult = SettingsJson.LoadSettings(FullFilePath.Of(Written(json)));
+        var loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written(json)));
         var (loaded, problem) = loadResult;
-        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = ILSightAppLauncher.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         var leftOut = Assert.IsType<SettingsProblem.ValuesLeftOut>(problem);
         Assert.Equal(["Language", "Window"], leftOut.Fields);
@@ -423,7 +423,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_list_or_tab_the_file_holds_wrong_leaves_out_that_one_alone()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""
             { "AssemblyLists": [
                 { "Name": "Broken", "Assemblies": 5 },
                 { "Name": "Work", "Assemblies": [ "{{AInJson}}" ], "Documents": { "Tabs": [
@@ -440,13 +440,13 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Display_options_round_trip_and_a_font_missing_its_file_is_left_out_alone()
     {
-        var settings = SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile)).Settings;
+        var settings = SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
         settings.Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, true, false, 1.25f, new CodeFont("Mono", "/mono.ttf", 1),
             TokenFormat.Hex, true, true, true, false);
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(settings));
 
-        Assert.Equal(settings.Display, SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile)).Settings.Display);
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Display": { "ShowLineNumbers": false, "Font": { "Family": "Mono", "Path": null } } }""")));
+        Assert.Equal(settings.Display, SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings.Display);
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Display": { "ShowLineNumbers": false, "Font": { "Family": "Mono", "Path": null } } }""")));
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Equal(DisplayOptions.Default with { ShowLineNumbers = false }, loaded.Display);
     }
@@ -456,7 +456,7 @@ public sealed class AppSettingsTests : IDisposable
     [InlineData("""{ "Display": { "FontSize": 1, "UiScale": 0.01 } }""", CodeFontSize.Min, 0.75f)]
     public void A_saved_font_size_out_of_range_and_a_ui_scale_not_offered_load_within_what_is(string json, float fontSize, float uiScale)
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written(json)));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written(json)));
 
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Equal(fontSize, loaded.Display!.FontSize?.Points);
@@ -466,7 +466,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_list_whose_documents_layout_is_missing_a_part_keeps_its_tabs_without_it_and_is_reported()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""
             { "AssemblyLists": [ { "Name": "Work", "Assemblies": [], "Documents": {
                 "Tabs": [ { "kind": "comparison", "Panel": "document-1", "LeftPath": "{{AInJson}}", "RightPath": "{{BInJson}}" } ],
                 "Layout": { "Root": { "kind": "group", "Panels": [ null ] } } } } ] }
@@ -481,7 +481,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Filters_and_bookmark_views_load_without_the_parts_they_hold_as_null()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""
             { "FlagsFilters": { "TypeDef/Attributes": { "Groups": { "Visibility": null, "Layout": [ 8 ] }, "Mode": "Any" }, "Gone": null },
               "Bookmarks": [ { "Name": "B", "FileName": "{{AInJson}}",
                 "ViewState": { "ExpandedFoldings": [ null, { "Start": 1, "End": 2 } ], "SelectedTreeNodePath": [ "{{AInJson}}", null ] } } ] }
@@ -498,7 +498,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Saved_values_missing_what_they_name_load_without_them()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""
             { "AssemblyLists": [ { "Name": "Work", "Assemblies": [ null, "{{AInJson}}" ],
                 "Analyzed": [ { "Kind": "Definition", "FilePath": null, "Token": 1 } ],
                 "Documents": { "Tabs": [
@@ -539,7 +539,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_file_holding_null_falls_back_to_defaults_and_is_reported()
     {
-        var (_, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("null")));
+        var (_, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("null")));
 
         Assert.IsType<SettingsProblem.Empty>(problem);
     }
@@ -554,7 +554,7 @@ public sealed class AppSettingsTests : IDisposable
     [InlineData("""{ "Layout": { "Windows": [ { "Root": null } ] } }""")]
     public void A_layout_missing_parts_is_left_out_for_the_panels_to_start_where_they_do(string json)
     {
-        var loadResult = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""{ "Theme": "light", {{json[1..]}}""")));
+        var loadResult = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""{ "Theme": "light", {{json[1..]}}""")));
         var (loaded, problem) = loadResult;
         var d = AppStateDriver.Started(loadResult, CommandLines.Parse([]).Arguments);
 
@@ -569,7 +569,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_layout_with_two_parts_under_one_id_is_left_out()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""
             { "Layout": { "Root": { "kind": "split", "Id": 1,
                 "First": { "kind": "group", "Id": 2, "Panels": [ "assemblies" ] },
                 "Second": { "kind": "group", "Id": 2, "Panels": [ "search" ] } } } }
@@ -582,7 +582,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_layout_leaving_out_its_root_has_an_empty_group_there()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Layout": { "NextId": 7 } }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { "NextId": 7 } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
         AssertEmptyGroup(loaded.Layout!.Root);
@@ -593,7 +593,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_layout_leaving_out_everything_is_an_empty_group_numbering_from_one()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Layout": { } }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
         AssertEmptyGroup(loaded.Layout!.Root);
@@ -604,7 +604,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_floating_window_leaving_out_its_root_has_an_empty_group_there()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Layout": { "Windows": [ { "Id": 4, "X": 10, "Width": 300 } ] } }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { "Windows": [ { "Id": 4, "X": 10, "Width": 300 } ] } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
         var window = Assert.Single(loaded.Layout!.Windows);
@@ -615,7 +615,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_split_leaving_out_its_first_part_has_an_empty_group_there()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""
             { "Layout": { "Root": { "kind": "split", "Id": 1, "Ratio": 0.25,
                 "Second": { "kind": "group", "Id": 2, "Panels": [ "search" ] } } } }
             """)));
@@ -630,7 +630,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_split_leaving_out_its_second_part_has_an_empty_group_there()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""
             { "Layout": { "Root": { "kind": "split", "Id": 1, "Ratio": 0.25,
                 "First": { "kind": "group", "Id": 2, "Panels": [ "search" ] } } } }
             """)));
@@ -644,7 +644,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_split_leaving_out_both_parts_has_two_empty_groups_which_do_not_count_as_one_id_twice()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Layout": { "Root": { "kind": "split", "Id": 1 } } }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { "Root": { "kind": "split", "Id": 1 } } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
         var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
@@ -655,7 +655,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_split_leaving_out_its_ratio_divides_the_space_evenly()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""
             { "Layout": { "Root": { "kind": "split", "Id": 1, "Direction": "Vertical",
                 "First": { "kind": "group", "Id": 2, "Panels": [ "tree" ] },
                 "Second": { "kind": "group", "Id": 3, "Panels": [ "search" ] } } } }
@@ -670,7 +670,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_group_leaving_out_its_panels_is_empty_and_keeps_what_else_it_holds()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Layout": { "Root": { "kind": "group", "Id": 3, "Active": "search" } } }""")));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { "Root": { "kind": "group", "Id": 3, "Active": "search" } } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
         var group = Assert.IsType<DockGroup>(loaded.Layout!.Root);
@@ -685,7 +685,7 @@ public sealed class AppSettingsTests : IDisposable
     [InlineData("""{ "Layout": { "Windows": [ { "Root": { "kind": "nothing" } } ] } }""")]
     public void A_layout_part_of_no_kind_there_is_leaves_out_the_layout(string json)
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written(json)));
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written(json)));
 
         Assert.Equal(["Layout"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.Null(loaded.Layout);
@@ -694,7 +694,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void A_tab_of_no_kind_at_all_leaves_out_that_one_alone()
     {
-        var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written($$"""
+        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(Written($$"""
             { "AssemblyLists": [ { "Name": "Work", "Assemblies": [], "Documents": { "Tabs": [
                 { "Panel": "document-1" },
                 { "kind": "comparison", "Panel": "document-2", "LeftPath": "{{AInJson}}", "RightPath": "{{BInJson}}" } ] } } ] }
@@ -715,7 +715,7 @@ public sealed class AppSettingsTests : IDisposable
     [Fact]
     public void Saving_replaces_the_whole_file()
     {
-        var settings = SettingsJson.LoadSettings(FullFilePath.Of(SettingsFile)).Settings;
+        var settings = SettingsJson.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
         settings.AssemblyLists = Enumerable.Range(0, 200).Select(i => new AssemblyListRecord($"list-{i}", [])).ToList();
         SettingsJson.SaveSettings(settings);
         settings.AssemblyLists = [new AssemblyListRecord("one", [])];

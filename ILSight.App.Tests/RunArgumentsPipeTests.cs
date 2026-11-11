@@ -34,7 +34,7 @@ public sealed class RunArgumentsPipeTests
     public void The_receiver_takes_the_arguments_a_later_run_sends()
     {
         using var temp = new TempDir();
-        var address = RunArgumentsRouting.FindAddress(FullFilePath.Of(temp.PathOf("settings.json")));
+        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
 
@@ -50,7 +50,7 @@ public sealed class RunArgumentsPipeTests
     public void A_later_run_is_refused_once_the_inbox_closes()
     {
         using var temp = new TempDir();
-        var address = RunArgumentsRouting.FindAddress(FullFilePath.Of(temp.PathOf("settings.json")));
+        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
         receiver.Inbox.Writer.TryComplete();
@@ -64,7 +64,7 @@ public sealed class RunArgumentsPipeTests
     public void A_run_with_no_one_listening_cannot_hand_over()
     {
         using var temp = new TempDir();
-        var address = RunArgumentsRouting.FindAddress(FullFilePath.Of(temp.PathOf("settings.json")));
+        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
 
         var handedOver = RunArgumentsPipe.TrySend(address, Arguments("a.dll"));
 
@@ -75,7 +75,7 @@ public sealed class RunArgumentsPipeTests
     public void Many_runs_starting_together_all_reach_the_receiver()
     {
         using var temp = new TempDir();
-        var address = RunArgumentsRouting.FindAddress(FullFilePath.Of(temp.PathOf("settings.json")));
+        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
 
@@ -90,7 +90,7 @@ public sealed class RunArgumentsPipeTests
     public void A_run_that_goes_away_partway_does_not_stop_the_receiver()
     {
         using var temp = new TempDir();
-        var address = RunArgumentsRouting.FindAddress(FullFilePath.Of(temp.PathOf("settings.json")));
+        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
         using (var gone = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly))
@@ -107,7 +107,7 @@ public sealed class RunArgumentsPipeTests
     public void Arguments_handed_to_the_open_window_open_their_files_show_their_member_and_bring_the_window_to_the_front()
     {
         using var temp = new TempDir();
-        var address = RunArgumentsRouting.FindAddress(FullFilePath.Of(temp.PathOf("settings.json")));
+        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         using var receiver = RunArgumentsPipe.TryClaim(address);
         Assert.NotNull(receiver);
         var app = new AppDriver(inbox: receiver.Inbox);

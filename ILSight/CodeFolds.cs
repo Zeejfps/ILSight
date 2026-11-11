@@ -148,7 +148,7 @@ internal static class CodeFolding
     /// any state or only <paramref name="collapsed"/> ones; null when there is none.</summary>
     public static int? FindInnermost(CodeFolds state, int line, bool? collapsed = null)
     {
-        line = FindVisibleLine(state, line);
+        line = GetVisibleLine(state, line);
         var folds = state.Document.Folds;
         int? found = null;
         for (var i = 0; i < folds.Length && folds[i].StartLine <= line; i++)
@@ -186,7 +186,7 @@ internal static class CodeFolding
     }
 
     /// <summary>The row <paramref name="line"/> is shown on: its own, or that of the fold hiding it.</summary>
-    public static CodeRow FindRowOf(CodeFolds state, int line)
+    public static CodeRow GetRowOf(CodeFolds state, int line)
     {
         if (state.IsIdentity)
         {
@@ -209,15 +209,15 @@ internal static class CodeFolding
         return new CodeRow(low);
     }
 
-    public static int FindVisibleLine(CodeFolds state, int line)
+    public static int GetVisibleLine(CodeFolds state, int line)
     {
-        return state.RowCount == 0 ? 0 : GetLineAt(state, FindRowOf(state, line));
+        return state.RowCount == 0 ? 0 : GetLineAt(state, GetRowOf(state, line));
     }
 
     /// <summary>The first line after the row <paramref name="line"/> is shown on.</summary>
-    public static int FindNextLine(CodeFolds state, int line)
+    public static int GetNextLine(CodeFolds state, int line)
     {
-        var next = new CodeRow(FindRowOf(state, line).Index + 1);
+        var next = new CodeRow(GetRowOf(state, line).Index + 1);
         return HasRow(state, next) ? GetLineAt(state, next) : state.Document.Lines.Length;
     }
 

@@ -25,7 +25,7 @@ public sealed class BackgroundTests
         var work = new BackgroundWork();
         var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        Background.Start(work, "failing", Fail(resume.Task), problem =>
+        Background.Start(work, "failing", FailAsync(resume.Task), problem =>
         {
             reported.Add(problem);
             done.SetResult();
@@ -39,7 +39,7 @@ public sealed class BackgroundTests
         Assert.Equal(Strings.En.ErrorUnexpected, ProblemTexts.Describe(Strings.En, problem).Title);
     }
 
-    private static async Task Fail(Task resume)
+    private static async Task FailAsync(Task resume)
     {
         await resume;
         throw new InvalidOperationException("after the await");

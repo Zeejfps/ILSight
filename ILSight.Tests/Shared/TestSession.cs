@@ -34,9 +34,9 @@ internal static class SessionQueries
 
         public ChildrenState ChildrenState => BrowseSessions.PeekChildren(TestSession.Shared, node);
 
-        public void LoadChildren()
+        public void EnsureChildren()
         {
-            BrowseSessions.LoadChildren(TestSession.Shared, node);
+            BrowseSessions.GetChildren(TestSession.Shared, node);
         }
 
         public IReadOnlyList<BrowseNode> InnerNamespaces => BrowseSessions.ListInnerNamespaces(TestSession.Shared, node);

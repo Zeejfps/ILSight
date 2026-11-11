@@ -74,7 +74,7 @@ internal static class DocumentsView
     {
         var lines = !tab.IsBusy && tab.Node is not null && tab.Document.Error is null ? ListMarkedLines(bookmarks, tab.Document, tab.Node) : null;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
-        var document = FindDocumentToShow(ui.State, view, tab);
+        var document = GetDocumentToShow(ui.State, view, tab);
         var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display);
         if (result.Intent is not null)
         {
@@ -132,7 +132,7 @@ internal static class DocumentsView
         }
     }
 
-    private static DecompiledDocument FindDocumentToShow(UiState screen, TabView view, DocumentTab tab)
+    private static DecompiledDocument GetDocumentToShow(UiState screen, TabView view, DocumentTab tab)
     {
         var content = tab.Content;
         if (content is TabContent.Report report)

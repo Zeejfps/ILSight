@@ -187,7 +187,7 @@ public static partial class ClassDiagrams
     /// open one, returned beside it.</summary>
     private static (string Id, IType? OpenGeneric) IdentifyType(DiagramNames naming, IType type)
     {
-        var openGeneric = GetOpenGeneric(type);
+        var openGeneric = FindOpenGeneric(type);
         var identified = openGeneric ?? type;
         if (naming.Ids.TryGetValue(identified, out var id))
         {
@@ -199,7 +199,7 @@ public static partial class ClassDiagrams
         return (created, openGeneric);
     }
 
-    private static IType? GetOpenGeneric(IType type)
+    private static IType? FindOpenGeneric(IType type)
     {
         if (type is not ParameterizedType generic)
         {
@@ -438,7 +438,7 @@ public static partial class ClassDiagrams
         var id = ClassDiagrams.GetId(diagram.Names, type);
         return new DiagramType
         {
-            Name = GetNameUnlessId(diagram, type, id),
+            Name = FindNameUnlessId(diagram, type, id),
             Body = WriteDefinition(id, PadMembers(values).TrimEnd(' ')),
             XmlDocs = ClassDiagrams.CollectDocs(diagram.Docs, type, fields),
         };
@@ -473,7 +473,7 @@ public static partial class ClassDiagrams
             .Concat(methods);
         return new DiagramType
         {
-            Name = GetNameUnlessId(diagram, type, id),
+            Name = FindNameUnlessId(diagram, type, id),
             Body = WriteDefinition(id, WriteBody(diagram, type, members)),
             HasOne = MapHasOne(diagram, members, type),
             HasMany = MapHasMany(diagram, members, type),
@@ -484,7 +484,7 @@ public static partial class ClassDiagrams
         };
     }
 
-    private static string? GetNameUnlessId(DiagramTypes diagram, IType type, string id)
+    private static string? FindNameUnlessId(DiagramTypes diagram, IType type, string id)
     {
         var name = ClassDiagrams.GetTypeName(diagram.Names, type);
         if (name == id)
@@ -637,7 +637,7 @@ public static partial class ClassDiagrams
     private static string WriteBody(DiagramTypes diagram, ITypeDefinition type, DiagramTypes.DeclaredMembers members)
     {
         var own = PadMembers(ListFlatMembers(diagram, members, type, ""));
-        var annotation = GetAnnotation(type);
+        var annotation = FindAnnotation(type);
         if (annotation is null)
         {
             return own.TrimEnd(' ');
@@ -648,7 +648,7 @@ public static partial class ClassDiagrams
 
     // See https://mermaid.js.org/syntax/classDiagram.html#annotations-on-classes; a static class is
     // abstract and sealed.
-    private static string? GetAnnotation(ITypeDefinition type)
+    private static string? FindAnnotation(ITypeDefinition type)
     {
         if (TypeFacts.IsInterface(type))
         {
@@ -872,7 +872,7 @@ public static partial class ClassDiagrams
 
     private static void AddDoc(IDocumentationProvider provider, Dictionary<string, string> found, string key, IEntity entity)
     {
-        var text = GetDocText(provider, entity);
+        var text = FindDocText(provider, entity);
         if (string.IsNullOrEmpty(text))
         {
             return;
@@ -881,7 +881,7 @@ public static partial class ClassDiagrams
         found[key] = text;
     }
 
-    private static string? GetDocText(IDocumentationProvider provider, IEntity entity)
+    private static string? FindDocText(IDocumentationProvider provider, IEntity entity)
     {
         var xml = ReadDocXml(provider, entity);
         if (xml is null)

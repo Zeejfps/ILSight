@@ -27,7 +27,7 @@ internal static class AssemblyListDeleteDialogView
                 ui.Text(t.ListsDeleteQuestion(name), wrap: true);
                 if (name == lists.Active)
                 {
-                    ui.Text(t.ListsDeleteReplacedBy(AssemblyLists.FindReplacement(lists, name)), color: theme.TextMuted, wrap: true);
+                    ui.Text(t.ListsDeleteReplacedBy(AssemblyLists.GetReplacement(lists, name)), color: theme.TextMuted, wrap: true);
                 }
 
                 using (ui.DialogActions())

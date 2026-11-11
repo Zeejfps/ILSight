@@ -167,7 +167,7 @@ public static partial class BrowseNodes
             .Cast<BrowseNode>();
         var members = ForwardedTypes.ListMembersOf(usage, type.Handle)
             .Select(h => CreateUsedMember(parent, type.Module, h, ResolveDeclared(module, h)))
-            .DistinctBy(n => BrowseNodes.GetSegment(n))
+            .DistinctBy(n => BrowseNodes.FindSegment(n))
             .OrderBy(n => n.Text, NaturalStringComparer.Instance);
         return nested
             .Concat(members)
@@ -307,7 +307,7 @@ public static partial class BrowseNodes
             return null;
         }
 
-        var shown = NodeDefinitions.FindMember(module.Module, FindEnclosingMethod(method, declaring));
+        var shown = NodeDefinitions.FindMember(module.Module, GetEnclosingMethod(method, declaring));
         if (shown is null)
         {
             return null;
@@ -351,7 +351,7 @@ public static partial class BrowseNodes
 
     /// <summary>The method <paramref name="method"/> is declared in when it is a local function and its type
     /// declares a method of that name, else <paramref name="method"/> itself.</summary>
-    private static IMethod FindEnclosingMethod(IMethod method, ITypeDefinition declaring)
+    private static IMethod GetEnclosingMethod(IMethod method, ITypeDefinition declaring)
     {
         var enclosing = FindEnclosingName(method.Name);
         if (enclosing is null)

@@ -160,7 +160,7 @@ internal static class AnalyzerHelpers
             }
             else
             {
-                var parent = GetParentEntity(ts, attribute);
+                var parent = FindParentEntity(ts, attribute);
                 if (parent is not null)
                 {
                     yield return parent;
@@ -187,7 +187,7 @@ internal static class AnalyzerHelpers
         }
     }
 
-    private static ISymbol? GetParentEntity(DecompilerTypeSystem ts, CustomAttribute customAttribute)
+    private static ISymbol? FindParentEntity(DecompilerTypeSystem ts, CustomAttribute customAttribute)
     {
         var metadata = ts.MainModule.MetadataFile.Metadata;
         switch (customAttribute.Parent.Kind)
@@ -224,7 +224,7 @@ internal static class AnalyzerHelpers
         return CreateScope(context.AssemblyList, entity);
     }
 
-    internal static MethodBodyBlock? GetMethodBody(AnalyzerContext context, IMethod method)
+    internal static MethodBodyBlock? FindMethodBody(AnalyzerContext context, IMethod method)
     {
         var module = method.ParentModule?.MetadataFile;
         if (!method.HasBody || method.MetadataToken.IsNil || module is null)

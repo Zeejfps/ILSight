@@ -9,7 +9,7 @@ public static class Decompilation
     /// <summary>Starts decompiling <paramref name="node"/> in <paramref name="tab"/>, or reading its grid,
     /// cancelling what was in flight, then commands the view to stand where <paramref name="arrival"/> says.
     /// When the tab already shows <paramref name="node"/> as the language and options would, only does the latter.</summary>
-    public static void LoadIntoTab(AppState appState, DocumentTab tab, BrowseNode node, Arrival arrival = default)
+    public static void DecompileIntoTab(AppState appState, DocumentTab tab, BrowseNode node, Arrival arrival = default)
     {
         if (Tabs.IsShowing(tab, node, appState.Language, appState.DecompilerOptions))
         {
@@ -17,17 +17,17 @@ public static class Decompilation
             return;
         }
         var load = Tabs.StartLoading(tab, node, appState.Language, appState.DecompilerOptions, arrival);
-        Load(appState, tab, node, load);
+        StartDecompiling(appState, tab, node, load);
     }
 
-    private static void Load(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
+    private static void StartDecompiling(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
     {
-        Background.Start(appState.Work, nameof(LoadAsync), LoadAsync(appState, tab, node, load), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(DecompileAsync), DecompileAsync(appState, tab, node, load), problem => Errors.Report(appState, problem));
     }
 
-    private static async Task LoadAsync(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
+    private static async Task DecompileAsync(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
     {
-        var loading = NodeContentLoader.LoadAsync(appState.Session, node, tab.Language, tab.Options, load.Token);
+        var loading = NodeContentLoader.GetContentAsync(appState.Session, node, tab.Language, tab.Options, load.Token);
         await Background.Wait(loading);
         FinishLoading(appState, tab, node, load, loading);
     }
@@ -92,7 +92,7 @@ public static class Decompilation
             RevealRow(appState, tab, arrival.Row);
             return;
         }
-        var line = FindLineToReveal(tab, arrival.Target);
+        var line = GetLineToReveal(tab, arrival.Target);
         if (line < 0)
         {
             return;
@@ -112,7 +112,7 @@ public static class Decompilation
     }
 
     /// <summary>The line <paramref name="target"/> marks, else the node's definition, or -1.</summary>
-    private static int FindLineToReveal(DocumentTab tab, Bookmark? target)
+    private static int GetLineToReveal(DocumentTab tab, Bookmark? target)
     {
         var node = tab.Node;
         if (node is null)
@@ -120,23 +120,23 @@ public static class Decompilation
             return -1;
         }
 
-        var marked = FindMarkedLine(tab, target, node);
+        var marked = GetMarkedLine(tab, target, node);
         if (marked >= 0)
         {
             return marked;
         }
 
-        return Documents.FindDefinitionLine(tab.Document, node);
+        return Documents.GetDefinitionLine(tab.Document, node);
     }
 
-    private static int FindMarkedLine(DocumentTab tab, Bookmark? target, BrowseNode node)
+    private static int GetMarkedLine(DocumentTab tab, Bookmark? target, BrowseNode node)
     {
         if (target is null)
         {
             return -1;
         }
 
-        return Bookmarks.FindLine(target, tab.Document, node);
+        return Bookmarks.GetLine(target, tab.Document, node);
     }
 
     /// <summary>Decompiles the node <paramref name="tab"/> shows again if it was shown in another language,
@@ -160,7 +160,7 @@ public static class Decompilation
         }
 
         var position = FindPositionToKeep(appState, tab);
-        LoadIntoTab(appState, tab, node, new Arrival(position));
+        DecompileIntoTab(appState, tab, node, new Arrival(position));
     }
 
     private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab)

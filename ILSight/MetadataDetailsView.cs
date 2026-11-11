@@ -29,7 +29,7 @@ internal static class MetadataDetailsView
 
         var theme = ui.Theme;
         var padding = theme.GapTight * 2;
-        switch (MetadataGrids.GetDetails(grid, row))
+        switch (MetadataGrids.FindDetails(grid, row))
         {
             case MetadataTextDetails text:
                 var size = MeasureText(texts, row, text.Text);
@@ -92,7 +92,7 @@ internal static class MetadataDetailsView
             Background = theme.Surface,
         });
         using var scope = ui.Id(row);
-        switch (MetadataGrids.GetDetails(grid, row))
+        switch (MetadataGrids.FindDetails(grid, row))
         {
             case MetadataTextDetails text:
                 Text(ui, grid, texts, row, text);
@@ -104,7 +104,7 @@ internal static class MetadataDetailsView
     }
 
     /// <summary><paramref name="row"/>'s <paramref name="text"/> as a document, made once.</summary>
-    private static DetailText FindText(DetailTexts texts, int row, string title, string text)
+    private static DetailText GetText(DetailTexts texts, int row, string title, string text)
     {
         if (texts.Texts.TryGetValue(row, out var shown))
         {
@@ -119,7 +119,7 @@ internal static class MetadataDetailsView
 
     private static void Text(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, MetadataTextDetails text)
     {
-        var shown = FindText(texts, row, grid.Title, text.Text);
+        var shown = GetText(texts, row, grid.Title, text.Text);
         CodeViewWidget.RenderCodeView(ui, "details", shown.Document, shown.View, gutter: false);
     }
 

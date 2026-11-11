@@ -21,7 +21,7 @@ internal static class CodeCaret
             var column = Math.Min(at.Column, text.Length);
             return at with { Column = byWord ? TextBoundaries.PrevWord(text, column, splitPunctuation: true) : TextBoundaries.Prev(text, column) };
         }
-        var row = CodeFolding.FindRowOf(folds, at.Line);
+        var row = CodeFolding.GetRowOf(folds, at.Line);
         if (row.Index <= 0)
         {
             return at;
@@ -41,7 +41,7 @@ internal static class CodeCaret
             return at with { Column = byWord ? TextBoundaries.NextWord(text, at.Column, splitPunctuation: true) : TextBoundaries.Next(text, at.Column) };
         }
 
-        var next = CodeFolding.FindNextLine(folds, at.Line);
+        var next = CodeFolding.GetNextLine(folds, at.Line);
         if (next >= document.Lines.Length)
         {
             return at;
@@ -60,7 +60,7 @@ internal static class CodeCaret
             return at;
         }
 
-        var target = CodeFolding.FindRowOf(folds, at.Line).Index + rows;
+        var target = CodeFolding.GetRowOf(folds, at.Line).Index + rows;
         if (target < 0)
         {
             return new TextPosition(CodeFolding.GetLineAt(folds, new CodeRow(0)), 0);

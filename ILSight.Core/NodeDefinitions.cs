@@ -233,7 +233,7 @@ public static class NodeDefinitions
         var n = node;
         while (n.Parent is not null)
         {
-            var segment = BrowseNodes.GetSegment(n) ?? throw new UnreachableException();
+            var segment = BrowseNodes.FindSegment(n) ?? throw new UnreachableException();
             steps.Add(new NodePathStep(segment, n.Text));
             if (segment.IsPackageEntry)
             {
@@ -265,7 +265,7 @@ public static class NodeDefinitions
     }
 
     /// <summary>The segment naming a node of <paramref name="subject"/>; null for the root of a tree.</summary>
-    internal static NodePathSegment? GetPathSegment(NodeSubject subject)
+    internal static NodePathSegment? FindPathSegment(NodeSubject subject)
     {
         return subject switch
         {

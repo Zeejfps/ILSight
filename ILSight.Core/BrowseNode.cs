@@ -27,7 +27,7 @@ public sealed class BrowseNode
     /// <summary>Where this node sits, once <see cref="BrowseNodes.GetPath"/> worked it out.</summary>
     internal NodePath? PathMemo;
 
-    /// <summary>What the node is among its siblings, once <see cref="BrowseNodes.GetSegment"/> worked it out.</summary>
+    /// <summary>What the node is among its siblings, once <see cref="BrowseNodes.FindSegment"/> worked it out.</summary>
     internal NodePathSegment? SegmentMemo;
 
     /// <summary>The label: a name, or for members an ILSpy-style signature such as <c>Add(T) : void</c>.</summary>

@@ -27,7 +27,7 @@ public sealed class BookmarkTests : IDisposable
         d.OpenFixtures();
         d.Show(d.Fixture("Outline"));
         var tab = d.AppState.Tabs.Active!;
-        return (d, tab, tab.Document.Find(text).Line);
+        return (d, tab, tab.Document.GetPosition(text).Line);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class BookmarkTests : IDisposable
     public void Stepping_goes_to_the_next_enabled_bookmark_and_asks_the_view_to_reveal_its_line()
     {
         var (d, tab, line) = OutlineAt("return First();", AppStateDriver.WithoutScreen());
-        var first = tab.Document.Find("foreach").Line;
+        var first = tab.Document.GetPosition("foreach").Line;
         ToggleBookmark(d.AppState, tab, first, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         var bookmarks = d.AppState.Bookmarks;
@@ -124,7 +124,7 @@ public sealed class BookmarkTests : IDisposable
     public void Next_and_previous_skip_disabled_bookmarks_and_wrap()
     {
         var (d, tab, line) = OutlineAt("return First();");
-        var first = tab.Document.Find("foreach").Line;
+        var first = tab.Document.GetPosition("foreach").Line;
         ToggleBookmark(d.AppState, tab, first, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         var bookmarks = d.AppState.Bookmarks;
@@ -291,8 +291,8 @@ public sealed class BookmarkTests : IDisposable
     {
         var app = new AppDriver(height: 500f);
         var (d, tab, line) = OutlineAt("return First();", app.Driver);
-        ToggleBookmark(d.AppState, tab, tab.Document.Find("foreach").Line, Names.Bookmark);
-        ToggleBookmark(d.AppState, tab, tab.Document.Find("needle").Line, Names.Bookmark);
+        ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark);
+        ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         OpenBookmarks(d.Ui);
         app.Run(3);
@@ -314,8 +314,8 @@ public sealed class BookmarkTests : IDisposable
     {
         var app = new AppDriver(height: 500f);
         var (d, tab, line) = OutlineAt("return First();", app.Driver);
-        ToggleBookmark(d.AppState, tab, tab.Document.Find("foreach").Line, Names.Bookmark);
-        ToggleBookmark(d.AppState, tab, tab.Document.Find("needle").Line, Names.Bookmark);
+        ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark);
+        ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         OpenBookmarks(d.Ui);
         app.Run(3);
@@ -435,7 +435,7 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, _) = OutlineAt("return First();");
         foreach (var text in lines)
         {
-            ToggleBookmark(d.AppState, tab, tab.Document.Find(text).Line, Names.Bookmark);
+            ToggleBookmark(d.AppState, tab, tab.Document.GetPosition(text).Line, Names.Bookmark);
         }
 
         ExportBookmarks(d.AppState, path);

@@ -36,17 +36,17 @@ public static class Background
     /// ending the process, so the work counted always ends without one.</summary>
     public static void Start(BackgroundWork work, string name, Task workflow, Action<AppProblem> reportError)
     {
-        work.Track(name, Report(workflow, reportError));
+        work.Track(name, ReportAsync(workflow, reportError));
     }
 
     /// <summary>As <see cref="Start"/>, for a workflow that runs as long as the app does, such as watching a
     /// folder, which nothing waiting for the UI to be ready could wait out, so it is not counted.</summary>
     public static void StartForever(Task workflow, Action<AppProblem> reportError)
     {
-        _ = Report(workflow, reportError);
+        _ = ReportAsync(workflow, reportError);
     }
 
-    private static async Task Report(Task workflow, Action<AppProblem> reportError)
+    private static async Task ReportAsync(Task workflow, Action<AppProblem> reportError)
     {
         try
         {
@@ -101,10 +101,10 @@ public readonly struct BackgroundWork<T>(Task<T> task)
                 return new Outcome<T>.Ok(task.Result);
             }
 
-            return new Outcome<T>.Failed(FindError());
+            return new Outcome<T>.Failed(GetError());
         }
 
-        private Exception FindError()
+        private Exception GetError()
         {
             if (task.Exception is null)
             {

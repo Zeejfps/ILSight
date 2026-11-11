@@ -326,7 +326,7 @@ public sealed class DecompilationTests
 
         Assert.Throws<OperationCanceledException>(() => assembly.Calculator().Decompile(DecompilationLanguage.CSharp, cancelled.Token));
         Assert.ThrowsAny<OperationCanceledException>(() =>
-            NodeContentLoader.LoadAsync(TestSession.Shared, assembly.Calculator(), DecompilationLanguage.IL, DecompilerOptions.Default, cancelled.Token).GetAwaiter().GetResult());
+            NodeContentLoader.GetContentAsync(TestSession.Shared, assembly.Calculator(), DecompilationLanguage.IL, DecompilerOptions.Default, cancelled.Token).GetAwaiter().GetResult());
     }
 
     [Fact]
@@ -338,7 +338,7 @@ public sealed class DecompilationTests
         var languages = new[] { DecompilationLanguage.CSharp, DecompilationLanguage.IL };
 
         var sequential = types.SelectMany(t => languages.Select(l => Documents.GetText(t.Decompile(l)))).ToArray();
-        var concurrent = (await Task.WhenAll(types.SelectMany(t => languages.Select(l => NodeContentLoader.LoadAsync(TestSession.Shared, t, l, DecompilerOptions.Default)))))
+        var concurrent = (await Task.WhenAll(types.SelectMany(t => languages.Select(l => NodeContentLoader.GetContentAsync(TestSession.Shared, t, l, DecompilerOptions.Default)))))
             .Select(c => Assert.IsType<DocumentContent>(c).Document).ToArray();
 
         Assert.Equal(sequential, concurrent.Select(d => Documents.GetText(d)));
@@ -406,7 +406,7 @@ public sealed class DecompilationTests
         while (pending.Count > 0)
         {
             var node = pending.Pop();
-            if (BrowseNodes.GetEntity(node) is null && !IsModule(node))
+            if (BrowseNodes.FindEntity(node) is null && !IsModule(node))
             {
                 nodes.Add(node);
             }

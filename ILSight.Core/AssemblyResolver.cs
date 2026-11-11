@@ -69,7 +69,7 @@ internal static class AssemblyResolving
     }
 
     /// <summary>The assembly <paramref name="reference"/> names: read from its file, when the list loads
-    /// references, as <see cref="LoadAssembly"/> finds it; else only one listed.</summary>
+    /// references, as <see cref="FindAssembly"/> finds it; else only one listed.</summary>
     public static LoadedModule? ResolveAssembly(AssemblyResolver resolver, IAssemblyReference reference)
     {
         if (!resolver.List.LoadsReferences)
@@ -77,7 +77,7 @@ internal static class AssemblyResolving
             return FindListed(resolver, reference);
         }
 
-        return LoadAssembly(resolver, reference);
+        return FindAssembly(resolver, reference);
     }
 
     /// <summary>The listed assembly <paramref name="reference"/> names, one as new as it asks for first.</summary>
@@ -94,7 +94,7 @@ internal static class AssemblyResolving
 
     /// <summary>The assembly <paramref name="reference"/> names, one read already as new as it asks for,
     /// else read from its file, else any read of its name; for loading it whatever the list's options.</summary>
-    public static LoadedModule? LoadAssembly(AssemblyResolver resolver, IAssemblyReference reference)
+    public static LoadedModule? FindAssembly(AssemblyResolver resolver, IAssemblyReference reference)
     {
         var known = AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: true);
         if (known is not null)

@@ -170,7 +170,7 @@ public static class SearchQueries
     /// <summary>The single term as a number or string literal, for <see cref="SearchKinds.Literals"/>:
     /// a <see cref="long"/> for integers (decimal or <c>0x</c> hex), a <see cref="float"/> with an
     /// <c>f</c> suffix, a <see cref="double"/> otherwise; null when the term is not a number.</summary>
-    public static object? GetLiteral(SearchQuery query)
+    public static object? FindLiteral(SearchQuery query)
     {
         if (query.Regex is not null || query.Terms.Count != 1)
         {

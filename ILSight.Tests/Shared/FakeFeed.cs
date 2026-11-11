@@ -62,7 +62,7 @@ internal sealed class FakeFeed : HttpMessageHandler
         Requested.Add(url);
         if (Holds)
         {
-            await HoldUntilCancelled(cancellationToken);
+            await HoldUntilCancelledAsync(cancellationToken);
         }
 
         var key = StripQuery(url);
@@ -74,7 +74,7 @@ internal sealed class FakeFeed : HttpMessageHandler
         return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
     }
 
-    private async Task HoldUntilCancelled(CancellationToken cancellationToken)
+    private async Task HoldUntilCancelledAsync(CancellationToken cancellationToken)
     {
         try
         {

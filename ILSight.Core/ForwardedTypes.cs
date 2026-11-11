@@ -145,7 +145,7 @@ internal static class ForwardedTypes
 
     private static void AddUsedMember(ReferenceUsage usage, MetadataReader metadata, MemberReferenceHandle handle)
     {
-        var type = FindUsedType(metadata, metadata.GetMemberReference(handle).Parent);
+        var type = GetUsedType(metadata, metadata.GetMemberReference(handle).Parent);
         if (type.IsNil)
         {
             return;
@@ -156,7 +156,7 @@ internal static class ForwardedTypes
 
     /// <summary>The type reference a member's <paramref name="parent"/> names: itself, or the generic
     /// type of a generic instance; nil for anything else.</summary>
-    private static EntityHandle FindUsedType(MetadataReader metadata, EntityHandle parent)
+    private static EntityHandle GetUsedType(MetadataReader metadata, EntityHandle parent)
     {
         if (parent.Kind == HandleKind.TypeReference)
         {
@@ -168,10 +168,10 @@ internal static class ForwardedTypes
             return default;
         }
 
-        return FindGenericType(metadata, (TypeSpecificationHandle)parent);
+        return GetGenericType(metadata, (TypeSpecificationHandle)parent);
     }
 
-    private static EntityHandle FindGenericType(MetadataReader metadata, TypeSpecificationHandle handle)
+    private static EntityHandle GetGenericType(MetadataReader metadata, TypeSpecificationHandle handle)
     {
         try
         {

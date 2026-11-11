@@ -223,7 +223,7 @@ public sealed class ExportDialogTests : IDisposable
 
         Assert.Equal(second, shown.Assembly);
         Assert.Equal([false, true], d.Ui.ExportSetup.Choices.Select(c => c.Included));
-        Assert.Equal(true, ExportDialogView.GetAllShownIncluded(picker));
+        Assert.Equal(true, ExportDialogView.CalculateAllShownIncluded(picker));
     }
 
     private static AppStateDriver OpenedThree()

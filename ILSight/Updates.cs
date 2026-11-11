@@ -104,7 +104,7 @@ public static class Updates
 
     /// <summary>Looks for a newer version and downloads it. Only one the user <paramref name="asked"/>
     /// for says when there is none or it failed: nobody is waiting on the one at startup.</summary>
-    public static async Task Check(AppUpdates updates, bool asked)
+    public static async Task CheckAsync(AppUpdates updates, bool asked)
     {
         if (!CanCheck(updates))
         {
@@ -123,10 +123,10 @@ public static class Updates
             updates.Status = asked ? new UpdateStatus.UpToDate() : new UpdateStatus.Idle();
             return;
         }
-        await Download(updates, ok.Value, asked);
+        await DownloadAsync(updates, ok.Value, asked);
     }
 
-    private static async Task Download(AppUpdates updates, UpdateInfo update, bool asked)
+    private static async Task DownloadAsync(AppUpdates updates, UpdateInfo update, bool asked)
     {
         updates.Status = new UpdateStatus.Downloading(GetVersion(update));
         var downloaded = await Background.Run(() =>
@@ -143,7 +143,7 @@ public static class Updates
     }
 
     /// <summary>Hands the update that is ready to the updater; true when the app is then to close.</summary>
-    public static async Task<bool> ApplyAfterExit(AppUpdates updates)
+    public static async Task<bool> ApplyAfterExitAsync(AppUpdates updates)
     {
         if (updates.Status is not UpdateStatus.Ready ready)
         {
@@ -182,7 +182,7 @@ public static class Updates
 
     private static void StartCheck(AppState appState, bool asked)
     {
-        Background.Start(appState.Work, nameof(Check), Check(appState.Updates, asked), problem => Errors.Report(appState, problem));
+        Background.Start(appState.Work, nameof(CheckAsync), CheckAsync(appState.Updates, asked), problem => Errors.Report(appState, problem));
     }
 
     public static void SetCheckAutomatically(AppState appState, bool check)
@@ -198,7 +198,7 @@ public static class Updates
 
     private static async Task RestartToUpdateAsync(AppState appState)
     {
-        if (await ApplyAfterExit(appState.Updates))
+        if (await ApplyAfterExitAsync(appState.Updates))
         {
             appState.ViewCommands.Enqueue(new ViewCommand.Quit());
         }

@@ -451,7 +451,7 @@ public static class Trees
     private static async Task ExpandAssemblyAsync(BrowseTree tree, BrowseNode root, int ticket)
     {
         tree.View.SetExpanded(root, true);
-        var built = await Background.Wait(BrowseSessions.LoadChildrenAsync(tree.Session, root));
+        var built = await Background.Wait(BrowseSessions.GetChildrenAsync(tree.Session, root));
         if (tree.Expansion.IsStale(ticket))
         {
             return;
@@ -564,7 +564,7 @@ public static class Trees
             NodeIcons.Icon(node, tree.IconColors, tree.Icons),
             NodeDefinitions.GetVisibility(node.Subject).IsPublicApi ? 0u : tree.Theme.TextMuted,
             Tooltip: NodeText.Tooltip(node),
-            Secondary: GetSecondary(tree, node),
+            Secondary: FindSecondary(tree, node),
             SecondaryBold: NodeText.PickedFramework(node),
             Spinning: IsReopening(tree, node));
     }
@@ -582,7 +582,7 @@ public static class Trees
 
     /// <summary>The node's metadata token when the tree shows tokens and it has one, else what
     /// <see cref="NodeText.Secondary"/> adds.</summary>
-    private static string? GetSecondary(BrowseTree tree, BrowseNode node)
+    private static string? FindSecondary(BrowseTree tree, BrowseNode node)
     {
         var token = NodeText.Token(node, tree.Tokens);
         if (token is not null)
@@ -654,7 +654,7 @@ public static class Trees
             return;
         }
 
-        await Background.Wait(BrowseSessions.LoadChildrenAsync(tree.Session, node));
+        await Background.Wait(BrowseSessions.GetChildrenAsync(tree.Session, node));
         tree.Building.Remove(node);
         tree.View.Refresh();
     }

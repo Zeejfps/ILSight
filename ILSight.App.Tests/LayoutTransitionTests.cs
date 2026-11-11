@@ -40,7 +40,7 @@ public sealed class LayoutTransitionTests
         Assert.True(Diagrams.FollowLayout(transition, layout));
 
         Assert.False(transition.IsMoving);
-        Assert.Equal(layout.Places[Car], Diagrams.GetCardPlace(transition, Car));
+        Assert.Equal(layout.Places[Car], Diagrams.FindCardPlace(transition, Car));
         Assert.False(Diagrams.FollowLayout(transition, layout));
     }
 
@@ -57,12 +57,12 @@ public sealed class LayoutTransitionTests
 
         Assert.True(transition.IsMoving);
         var expected = DiagramLayouts.Lerp(before.Places[Car], after.Places[Car], Ease.OutCubic(0.5f));
-        var drawn = Diagrams.GetCardPlace(transition, Car)!.Value;
+        var drawn = Diagrams.FindCardPlace(transition, Car)!.Value;
         Assert.Equal(expected.X, drawn.X, 0.01f);
         Assert.Equal(expected.Y, drawn.Y, 0.01f);
         Diagrams.AdvanceTransition(transition, Past);
         Assert.False(transition.IsMoving);
-        Assert.Equal(after.Places[Car], Diagrams.GetCardPlace(transition, Car));
+        Assert.Equal(after.Places[Car], Diagrams.FindCardPlace(transition, Car));
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class LayoutTransitionTests
         Diagrams.FollowLayout(transition, after);
         Diagrams.AdvanceTransition(transition, HalfWay);
 
-        Assert.Equal(after.Places[Car], Diagrams.GetCardPlace(transition, Car));
+        Assert.Equal(after.Places[Car], Diagrams.FindCardPlace(transition, Car));
     }
 
     [Fact]

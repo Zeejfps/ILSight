@@ -27,7 +27,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     private readonly AppState _appState;
     private readonly FilesToOpen _startupFiles;
     private readonly Channel<RunArguments> _inbox;
-    private readonly CodeFontFaces _codeFonts = new() { Bundled = LoadFont(MonoFonts.Code, MonoFontFile) };
+    private readonly CodeFontFaces _codeFonts = new() { Bundled = ReadFont(MonoFonts.Code, MonoFontFile) };
 
     internal ILSightApp(
         AppState appState,
@@ -43,7 +43,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     protected override void OnStartup(ImmediateGuiAppHost<UiState> host)
     {
         ShowAppIcon(host);
-        LoadAndRegisterFonts(host);
+        RegisterFonts(host);
         RegisterChosenCodeFont(host);
         RegisterChosenIconFonts(host);
         OpenStartupAssemblies(_appState, _startupFiles);
@@ -52,7 +52,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
         CheckOnStartup(_appState);
-        Background.StartForever(ApplyPendingArguments(), problem => Errors.Report(_appState, problem));
+        Background.StartForever(ApplyPendingArgumentsAsync(), problem => Errors.Report(_appState, problem));
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -85,10 +85,10 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         host.SetIcon(WindowIcon.FromPacked(packed));
     }
 
-    private void LoadAndRegisterFonts(ImmediateGuiAppHost<UiState> host)
+    private void RegisterFonts(ImmediateGuiAppHost<UiState> host)
     {
         host.RegisterFont(_codeFonts.Bundled);
-        host.RegisterFont(LoadFont(TextFonts.Italic, ItalicFontFile));
+        host.RegisterFont(ReadFont(TextFonts.Italic, ItalicFontFile));
     }
 
     /// <summary>Registers the chosen code font before the first frame, so code never shows in the
@@ -125,7 +125,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         _appState.Assemblies.Changed -= host.Invalidate;
     }
 
-    private static FontFace LoadFont(string family, string file)
+    private static FontFace ReadFont(string family, string file)
     {
         var data = EmbeddedAssets.LoadBytes(typeof(ILSightApp).Assembly, file);
         return new FontFace(family, data);
@@ -140,7 +140,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// <summary>Does what the arguments of later runs ask as they arrive, until this window closes,
     /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
     /// each one arriving wakes the app.</summary>
-    internal async Task ApplyPendingArguments()
+    internal async Task ApplyPendingArgumentsAsync()
     {
         await foreach (var arguments in _inbox.Reader.ReadAllAsync())
         {

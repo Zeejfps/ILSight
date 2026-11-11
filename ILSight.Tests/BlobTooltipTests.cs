@@ -13,7 +13,7 @@ public sealed class BlobTooltipTests
 
     private static string? TooltipText(MetadataGrid grid, int row, string column)
     {
-        return MetadataGrids.GetTooltip(grid, row, grid.Column(column))?.Text;
+        return MetadataGrids.FindTooltip(grid, row, grid.Column(column))?.Text;
     }
 
     private static List<string?> ListTooltipTexts(MetadataGrid grid, string column)

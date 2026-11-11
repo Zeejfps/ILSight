@@ -105,7 +105,7 @@ public static class MetadataGridWidget
             return new MetadataColumnFilter.ByText();
         }
 
-        return new MetadataColumnFilter.ByFlags { Flags = FindFilter(flags, state.Grid, column) };
+        return new MetadataColumnFilter.ByFlags { Flags = GetFilter(flags, state.Grid, column) };
     }
 
     private static bool IsFlagsColumn(MetadataGridState state, int column)
@@ -131,7 +131,7 @@ public static class MetadataGridWidget
     /// <summary>Selects <paramref name="row"/> where the new view shows it; nothing when it doesn't.</summary>
     private static void KeepSelected(MetadataGridState state, int row)
     {
-        var index = FindIndexOf(state, row);
+        var index = GetIndexOf(state, row);
         if (index < 0)
         {
             state.Rows.Clear();
@@ -193,7 +193,7 @@ public static class MetadataGridWidget
     /// with all its text selected, where the view shows the row.</summary>
     internal static void SelectCell(MetadataGridState state, int row, int column)
     {
-        var index = FindIndexOf(state, row);
+        var index = GetIndexOf(state, row);
         if (index < 0)
         {
             return;
@@ -282,7 +282,7 @@ public static class MetadataGridWidget
         return state.View[index];
     }
 
-    internal static int FindIndexOf(MetadataGridState state, int row)
+    internal static int GetIndexOf(MetadataGridState state, int row)
     {
         return Array.IndexOf(state.View, row);
     }
@@ -295,7 +295,7 @@ public static class MetadataGridWidget
     }
 
     /// <summary>The filter of <paramref name="column"/>, a column of flags, as last left.</summary>
-    public static FilterState FindFilter(MetadataFilters filters, MetadataGrid grid, int column)
+    public static FilterState GetFilter(MetadataFilters filters, MetadataGrid grid, int column)
     {
         var key = GetKey(grid, column);
         if (filters.States.TryGetValue(key, out var state))
@@ -375,7 +375,7 @@ public static class MetadataGridWidget
 
     private static void AddTallRow(MetadataGridState state, int row, float cells, float details)
     {
-        var index = FindIndexOf(state, row);
+        var index = GetIndexOf(state, row);
         if (index < 0)
         {
             return;
@@ -644,7 +644,7 @@ internal ref struct MetadataGridFrame
         }
 
         var theme = Ui.Theme;
-        var filter = MetadataGridWidget.FindFilter(Flags, Grid, State.FlagsColumn);
+        var filter = MetadataGridWidget.GetFilter(Flags, Grid, State.FlagsColumn);
         var width = FlagsFilterView.ContentWidth + theme.TooltipPaddingX * 2 + theme.ScrollBarHitWidth;
         var funnelId = MetadataGridWidget.GetFunnelId(ListId, State.FlagsColumn);
         using var flyout = Ui.Flyout(HashCode.Combine(ListId, FlyoutSalt), ref State.FlagsOpen, funnelId,
@@ -693,7 +693,7 @@ internal ref struct MetadataGridFrame
             }
             else if (Ui.IsPressedAt(Shortcuts.GoToToken, i))
             {
-                var target = MetadataGrids.GetLink(Grid, State.Selected, State.CurrentColumn);
+                var target = MetadataGrids.FindLink(Grid, State.Selected, State.CurrentColumn);
                 if (target is not null)
                 {
                     result = new MetadataGridResult(target, null, false);
@@ -773,7 +773,7 @@ internal ref struct MetadataGridFrame
     private void ArriveAtRevealed(TableBody body, float rowHeight, int row)
     {
         MetadataGridWidget.SelectCell(State, row, State.CurrentColumn);
-        var index = MetadataGridWidget.FindIndexOf(State, row);
+        var index = MetadataGridWidget.GetIndexOf(State, row);
         if (index < 0)
         {
             return;
@@ -857,7 +857,7 @@ internal ref struct MetadataGridFrame
         var theme = Ui.Theme;
         var column = Grid.Columns[c];
         var cellId = cells.CellAt(c).Id;
-        var target = column.IsToken ? MetadataGrids.GetLink(Grid, row, c) : null;
+        var target = column.IsToken ? MetadataGrids.FindLink(Grid, row, c) : null;
         var expanded = MetadataGridWidget.IsOpenAt(State, row, c);
         uint? color = theme.Text;
         UiIcon? link = null;
@@ -911,7 +911,7 @@ internal ref struct MetadataGridFrame
             return;
         }
 
-        var content = MetadataGrids.GetTooltip(Grid, row, column);
+        var content = MetadataGrids.FindTooltip(Grid, row, column);
         if (content == null)
         {
             return;
@@ -957,7 +957,7 @@ internal ref struct MetadataGridFrame
             Ui.ClipboardText = MetadataGridWidget.GetRowText(State, row);
         }
 
-        var target = column >= 0 ? MetadataGrids.GetLink(Grid, row, column) : null;
+        var target = column >= 0 ? MetadataGrids.FindLink(Grid, row, column) : null;
         var definition = MetadataGrids.FindDefinition(Grid, row);
         if (target is null && definition == null)
         {

@@ -47,22 +47,22 @@ public static class Theming
     }
 
     /// <summary>Reads the user's themes into the catalog and reports what is wrong in any theme.</summary>
-    public static void LoadThemes(AppState appState)
+    public static void ReadThemes(AppState appState)
     {
-        LoadUserThemes(appState, []);
+        RefreshUserThemes(appState, []);
     }
 
     /// <summary>Reads the user's themes again, reporting only what is newly wrong.</summary>
     public static void ReloadUserThemes(AppState appState)
     {
         var known = appState.Themes.Errors.ToList();
-        LoadUserThemes(appState, known);
+        RefreshUserThemes(appState, known);
     }
 
-    private static void LoadUserThemes(AppState appState, IReadOnlyList<ThemeError> known)
+    private static void RefreshUserThemes(AppState appState, IReadOnlyList<ThemeError> known)
     {
         var files = ReadUserThemes(appState.SettingsPlace.ThemesFolder);
-        ThemeCatalogs.LoadUserThemes(appState.Themes, files);
+        ThemeCatalogs.ReplaceUserThemes(appState.Themes, files);
         ReportNewErrors(appState, appState.Themes.Errors, known, ThemeKind.Color);
     }
 
@@ -134,7 +134,7 @@ public static class Theming
     /// the chosen one's file is missing. The choice is kept, so the theme comes back with its file.</summary>
     public static AppTheme ResolveTheme(AppState appState)
     {
-        return ThemeCatalogs.FindTheme(appState.Themes, appState.Theme);
+        return ThemeCatalogs.GetTheme(appState.Themes, appState.Theme);
     }
 
     /// <summary>The user's themes folder, made with the theme schema in it when missing, for the screen to
@@ -171,7 +171,7 @@ public static class Theming
             Build = static (themes, file, chain) => BuildChainTheme(themes, file, chain),
             FindFallbackId = static file => GetFallbackId(file),
         };
-        ThemeCatalogs.LoadUserThemes(catalog, []);
+        ThemeCatalogs.ReplaceUserThemes(catalog, []);
         return catalog;
     }
 
@@ -281,10 +281,10 @@ public static class Theming
         }
 
         var themes = appState.Themes;
-        var parent = ThemeCatalogs.FindShownId(themes, appState.Theme);
-        var id = FindFreeCustomId(parent, candidate => IsTaken(themes, folder, candidate));
+        var parent = ThemeCatalogs.GetShownId(themes, appState.Theme);
+        var id = GetFreeCustomId(parent, candidate => IsTaken(themes, folder, candidate));
         var path = Path.Combine(folder, id.Text + ThemeFile.Extension);
-        var text = ThemeDraft.Compose(nameOf(parent), parent, ThemeCatalogs.FindTheme(themes, parent));
+        var text = ThemeDraft.Compose(nameOf(parent), parent, ThemeCatalogs.GetTheme(themes, parent));
         if (!TryWriteNewFile(appState, path, text, ThemeKind.Color))
         {
             return null;
@@ -297,7 +297,7 @@ public static class Theming
 
     /// <summary><paramref name="parent"/> followed by <c>-custom</c>, numbered from 2 while
     /// <paramref name="isTaken"/> says a theme or a file already has that id.</summary>
-    internal static ThemeId<TFile> FindFreeCustomId<TFile>(ThemeId<TFile> parent, Func<ThemeId<TFile>, bool> isTaken)
+    internal static ThemeId<TFile> GetFreeCustomId<TFile>(ThemeId<TFile> parent, Func<ThemeId<TFile>, bool> isTaken)
         where TFile : IThemeFile<TFile>
     {
         var id = ThemeId<TFile>.Of(parent.Text + CustomSuffix);
@@ -317,7 +317,7 @@ public static class Theming
         where TContents : class
         where TTheme : class
     {
-        if (ThemeCatalogs.FindThemeIndex(themes, id) >= 0)
+        if (ThemeCatalogs.GetThemeIndex(themes, id) >= 0)
         {
             return true;
         }
@@ -368,7 +368,7 @@ public static class Theming
         var restartedSinceChange = false;
         while (true)
         {
-            var outcome = await Background.Wait(Theming.FindNextChange(folder.Watch));
+            var outcome = await Background.Wait(Theming.GetNextChangeAsync(folder.Watch));
             if (outcome is not Outcome<ThemeFolderEvent>.Ok { Value: var news })
             {
                 return;
@@ -1219,14 +1219,14 @@ public static class Theming
 
     /// <summary>Completes once the watched files changed or the watch was lost, at once when either is
     /// pending, or as stopped when watching stops first or is not running.</summary>
-    public static Task<ThemeFolderEvent> FindNextChange(ThemeFolderWatch watch)
+    public static Task<ThemeFolderEvent> GetNextChangeAsync(ThemeFolderWatch watch)
     {
         using var held = watch.Held.Enter();
         var shared = held.Value;
         var loss = shared.PendingLoss;
         if (loss is not null)
         {
-            return TakePendingLoss(shared, loss);
+            return TakePendingLossAsync(shared, loss);
         }
 
         if (shared.Watcher is null)
@@ -1236,20 +1236,20 @@ public static class Theming
 
         if (shared.IsChangePending)
         {
-            return TakePendingChange(shared);
+            return TakePendingChangeAsync(shared);
         }
 
         shared.Waiter ??= new TaskCompletionSource<ThemeFolderEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
         return shared.Waiter.Task;
     }
 
-    private static Task<ThemeFolderEvent> TakePendingLoss(ThemeFolderWatch.Shared shared, string loss)
+    private static Task<ThemeFolderEvent> TakePendingLossAsync(ThemeFolderWatch.Shared shared, string loss)
     {
         shared.PendingLoss = null;
         return Task.FromResult(new ThemeFolderEvent(ThemeFolderEventKind.Lost, loss));
     }
 
-    private static Task<ThemeFolderEvent> TakePendingChange(ThemeFolderWatch.Shared shared)
+    private static Task<ThemeFolderEvent> TakePendingChangeAsync(ThemeFolderWatch.Shared shared)
     {
         shared.IsChangePending = false;
         return Changed;

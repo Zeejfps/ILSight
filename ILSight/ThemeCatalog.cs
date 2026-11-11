@@ -46,7 +46,7 @@ public static class ThemeCatalogs
 
     /// <summary>Takes <paramref name="userThemes"/> in place of the user themes held before, and resolves
     /// every theme again. A user theme whose id is taken is left out.</summary>
-    public static void LoadUserThemes<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, IReadOnlyList<TFile> userThemes)
+    public static void ReplaceUserThemes<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, IReadOnlyList<TFile> userThemes)
         where TFile : class, IThemeFile<TFile, TContents>
         where TContents : class
         where TTheme : class
@@ -244,13 +244,13 @@ public static class ThemeCatalogs
         where TContents : class
         where TTheme : class
     {
-        var target = FindFallBack(catalog, file);
+        var target = GetFallBack(catalog, file);
         var theme = ResolveTheme(catalog, target);
         catalog.ShownIds[file.Id] = catalog.ShownIds[target];
         return theme;
     }
 
-    private static ThemeId<TFile> FindFallBack<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
+    private static ThemeId<TFile> GetFallBack<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, TFile file)
         where TFile : class, IThemeFile<TFile, TContents>
         where TContents : class
         where TTheme : class
@@ -325,7 +325,7 @@ public static class ThemeCatalogs
 
     /// <summary>The theme <paramref name="id"/> as resolved, or the built-in <see cref="ThemeCatalog{TFile, TContents, TTheme}.DefaultId"/> when
     /// there is none with that id.</summary>
-    public static TTheme FindTheme<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
+    public static TTheme GetTheme<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
         where TFile : class, IThemeFile<TFile, TContents>
         where TContents : class
         where TTheme : class
@@ -338,9 +338,9 @@ public static class ThemeCatalogs
         return catalog.Themes[catalog.DefaultId];
     }
 
-    /// <summary>The id of the theme <see cref="FindTheme"/> shows for <paramref name="id"/>: the id itself when
+    /// <summary>The id of the theme <see cref="GetTheme"/> shows for <paramref name="id"/>: the id itself when
     /// it resolves, else the theme it falls back to.</summary>
-    public static ThemeId<TFile> FindShownId<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
+    public static ThemeId<TFile> GetShownId<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
         where TFile : class, IThemeFile<TFile, TContents>
         where TContents : class
         where TTheme : class
@@ -363,7 +363,7 @@ public static class ThemeCatalogs
     }
 
     /// <summary>Where <paramref name="id"/> is in <see cref="ThemeCatalog{TFile, TContents, TTheme}.Ids"/>, or -1. Allocates nothing.</summary>
-    public static int FindThemeIndex<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
+    public static int GetThemeIndex<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeId<TFile> id)
         where TFile : class, IThemeFile<TFile, TContents>
         where TContents : class
         where TTheme : class

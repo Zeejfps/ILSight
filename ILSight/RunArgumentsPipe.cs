@@ -241,7 +241,7 @@ public static class RunArgumentsPipe
             }
             catch (Exception e) when (RunArgumentsPipe.IsBroken(e))
             {
-                await WaitForBrokenPipe(token);
+                await WaitForBrokenPipeAsync(token);
             }
         }
     }
@@ -276,7 +276,7 @@ public static class RunArgumentsPipe
     }
 
     /// <summary>Waits a moment after the server broke, so that one that stays broken is not retried in a tight loop.</summary>
-    private static async Task WaitForBrokenPipe(CancellationToken token)
+    private static async Task WaitForBrokenPipeAsync(CancellationToken token)
     {
         try
         {

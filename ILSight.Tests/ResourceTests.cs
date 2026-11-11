@@ -207,11 +207,11 @@ public sealed class ResourceTests
                 ("Poem", "roses\nviolets\nsugar", "System.String"),
             ],
             rows);
-        Assert.Equal("first line\nsecond line", MetadataGrids.GetTooltip(grid, 2, 1)!.Text);
+        Assert.Equal("first line\nsecond line", MetadataGrids.FindTooltip(grid, 2, 1)!.Text);
         Assert.Equal(("first line", 1), MetadataGrids.GetLines(grid, 2, 1));
         Assert.Equal(("Hello", 0), MetadataGrids.GetLines(grid, 1, 1));
         Assert.False(grid.HasDetails);
-        Assert.Null(MetadataGrids.GetTooltip(grid, 1, 1));
+        Assert.Null(MetadataGrids.FindTooltip(grid, 1, 1));
         Assert.Equal([("Notes.xml", false), ("Picture.png", true)], file.Children.Select(static c => (c.Text, c.IsImage)));
         Assert.Equal(Expected, Assert.IsType<ImageContent>(file.Child("Picture.png").Content()).Image.Rgba);
         Assert.Contains(("root", SpanKind.Keyword), file.Child("Notes.xml").Decompile(DecompilationLanguage.CSharp).SpansOf().Select(s => (s.Text, s.Span.Kind)));

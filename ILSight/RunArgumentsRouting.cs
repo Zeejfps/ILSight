@@ -12,7 +12,7 @@ public static class RunArgumentsRouting
 
     /// <summary>Where the runs with the settings at <paramref name="settingsPath"/> meet: the same for
     /// every spelling of the path the file system takes as one.</summary>
-    public static RunArgumentsAddress FindAddress(FullFilePath settingsPath)
+    public static RunArgumentsAddress GetAddress(FullFilePath settingsPath)
     {
         var path = settingsPath.Text;
         if (OperatingSystem.IsWindows())

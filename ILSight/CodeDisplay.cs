@@ -65,11 +65,11 @@ public static class CodeDisplay
     /// <summary><paramref name="display"/> with the offered interface scale nearest <paramref name="scale"/>.</summary>
     public static DisplayOptions SnapUiScale(DisplayOptions display, float scale)
     {
-        var nearest = FindNearestUiScale(scale);
+        var nearest = GetNearestUiScale(scale);
         return display with { UiScale = nearest };
     }
 
-    private static float FindNearestUiScale(float scale)
+    private static float GetNearestUiScale(float scale)
     {
         return DisplayOptions.UiScales
             .MinBy(s => MathF.Abs(s - scale));

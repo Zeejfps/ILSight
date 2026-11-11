@@ -388,7 +388,7 @@ public static class SavedDocuments
             return;
         }
         var position = FindSavedPosition(appState, waiting.Record);
-        LoadIntoTab(appState, tab, node, new Arrival(position));
+        DecompileIntoTab(appState, tab, node, new Arrival(position));
         RevealIfActive(appState, tab, node);
     }
 

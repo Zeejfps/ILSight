@@ -10,7 +10,7 @@ public sealed class SearchTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var results = await Collect(list.SearchAsync("calcul", SearchKinds.Types));
+        var results = await CollectAsync(list.SearchAsync("calcul", SearchKinds.Types));
 
         var calculator = Assert.Single(results);
         Assert.Same(assembly.Calculator(), calculator.Node);
@@ -24,8 +24,8 @@ public sealed class SearchTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var tryGet = await Collect(list.SearchAsync("TRYGET", SearchKinds.Members));
-        var area = await Collect(list.SearchAsync("Area", SearchKinds.Members));
+        var tryGet = await CollectAsync(list.SearchAsync("TRYGET", SearchKinds.Members));
+        var area = await CollectAsync(list.SearchAsync("Area", SearchKinds.Members));
 
         var hit = Assert.Single(tryGet);
         Assert.Same(assembly.Calculator().Child("TryGet(int, out T?) : bool"), hit.Node);
@@ -39,8 +39,8 @@ public sealed class SearchTests
     {
         var (list, _) = Trees.OpenTestAssembly();
 
-        var results = await Collect(list.SearchAsync("mode"));
-        var precise = await Collect(list.SearchAsync("precise"));
+        var results = await CollectAsync(list.SearchAsync("mode"));
+        var precise = await CollectAsync(list.SearchAsync("precise"));
 
         Assert.Contains(results, r => r.Node.Is(TypeShape.Enum) && r.Location == Trees.FixturesNamespace + ".Calculator<T>");
         Assert.Contains(precise, r => r.Node.Is(MemberShape.Constant) && r.Location == Trees.FixturesNamespace + ".Mode");
@@ -51,7 +51,7 @@ public sealed class SearchTests
     {
         var (list, _) = Trees.OpenTestAssembly();
 
-        Assert.Empty(await Collect(list.SearchAsync("  ")));
+        Assert.Empty(await CollectAsync(list.SearchAsync("  ")));
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class SearchTests
         _ = coreLib.Root.Children;
 
         var stopwatch = Stopwatch.StartNew();
-        var results = await Collect(list.SearchAsync("Dictionary"));
+        var results = await CollectAsync(list.SearchAsync("Dictionary"));
         stopwatch.Stop();
 
         Assert.Contains(results, r => r.Text == "Dictionary<TKey, TValue>" && r.Location == "System.Collections.Generic");
@@ -95,9 +95,9 @@ public sealed class SearchTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var types = await Collect(list.SearchAsync("t:Count"));
-        var properties = await Collect(list.SearchAsync("p:Count"));
-        var events = await Collect(list.SearchAsync("Changed", SearchKinds.Events));
+        var types = await CollectAsync(list.SearchAsync("t:Count"));
+        var properties = await CollectAsync(list.SearchAsync("p:Count"));
+        var events = await CollectAsync(list.SearchAsync("Changed", SearchKinds.Events));
 
         Assert.Empty(types);
         Assert.Contains(properties, r => r.Node == assembly.Calculator().Child("Count : int"));
@@ -110,8 +110,8 @@ public sealed class SearchTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var type = await Collect(list.SearchAsync("Fixtures.Calculator", SearchKinds.Types));
-        var method = await Collect(list.SearchAsync("Calculator.TryGet"));
+        var type = await CollectAsync(list.SearchAsync("Fixtures.Calculator", SearchKinds.Types));
+        var method = await CollectAsync(list.SearchAsync("Calculator.TryGet"));
 
         Assert.Equal(["Calculator<T>", "Mode"], type.Select(r => r.Text).Order());
         Assert.Contains(type, r => r.Node == assembly.Calculator());
@@ -124,11 +124,11 @@ public sealed class SearchTests
         var (list, assembly) = Trees.OpenTestAssembly();
         list.Open(Trees.CoreLibPath);
 
-        var type = await Collect(list.SearchAsync("t:=Calculator<T>"));
-        var other = await Collect(list.SearchAsync("t:=Calculator<U>"));
-        var nested = await Collect(list.SearchAsync("t:Calculator<T>.Mode"));
-        var method = await Collect(list.SearchAsync("md:=Empty<T>"));
-        var pair = await Collect(list.SearchAsync("t:\"=Dictionary<TKey, TValue>\""));
+        var type = await CollectAsync(list.SearchAsync("t:=Calculator<T>"));
+        var other = await CollectAsync(list.SearchAsync("t:=Calculator<U>"));
+        var nested = await CollectAsync(list.SearchAsync("t:Calculator<T>.Mode"));
+        var method = await CollectAsync(list.SearchAsync("md:=Empty<T>"));
+        var pair = await CollectAsync(list.SearchAsync("t:\"=Dictionary<TKey, TValue>\""));
 
         Assert.Same(assembly.Calculator(), Assert.Single(type).Node);
         Assert.Empty(other);
@@ -142,7 +142,7 @@ public sealed class SearchTests
     {
         var (list, _) = Trees.OpenTestAssembly();
 
-        var results = await Collect(list.SearchAsync("innamespace:Tests.Fixtures t:c"));
+        var results = await CollectAsync(list.SearchAsync("innamespace:Tests.Fixtures t:c"));
 
         var fittest = results.Where(r => r.Text is "Circle" or "Callback" or "Calculator<T>").OrderByDescending(r => r.Fitness).ToList();
         Assert.Equal(["Circle", "Callback", "Calculator<T>"], fittest.Select(r => r.Text));
@@ -154,10 +154,10 @@ public sealed class SearchTests
     {
         var (list, _) = Trees.OpenTestAssembly();
 
-        var excluded = await Collect(list.SearchAsync("t:Calc -Mode"));
-        var exact = await Collect(list.SearchAsync("t:=Size"));
-        var fuzzy = await Collect(list.SearchAsync("t:~clcltr"));
-        var regex = await Collect(list.SearchAsync("t:/^I.*e$/"));
+        var excluded = await CollectAsync(list.SearchAsync("t:Calc -Mode"));
+        var exact = await CollectAsync(list.SearchAsync("t:=Size"));
+        var fuzzy = await CollectAsync(list.SearchAsync("t:~clcltr"));
+        var regex = await CollectAsync(list.SearchAsync("t:/^I.*e$/"));
 
         Assert.Equal(["Calculator<T>"], excluded.Where(r => r.Location == Trees.FixturesNamespace).Select(r => r.Text));
         Assert.Equal(["Size"], exact.Where(r => r.Location == Trees.FixturesNamespace).Select(r => r.Text));
@@ -170,8 +170,8 @@ public sealed class SearchTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var number = await Collect(list.SearchAsync("c:42"));
-        var text = await Collect(list.SearchAsync("\"Total: \"", SearchKinds.Literals));
+        var number = await CollectAsync(list.SearchAsync("c:42"));
+        var text = await CollectAsync(list.SearchAsync("\"Total: \"", SearchKinds.Literals));
 
         var describe = assembly.Calculator().Child("Describe() : string");
         Assert.Contains(number, r => r.Node == assembly.Calculator().Child("Answer : int"));
@@ -185,7 +185,7 @@ public sealed class SearchTests
         var (list, assembly) = Trees.OpenTestAssembly();
         var token = typeof(Fixtures.Calculator<>).MetadataToken;
 
-        var results = await Collect(list.SearchAsync($"@{token:X8}"));
+        var results = await CollectAsync(list.SearchAsync($"@{token:X8}"));
 
         Assert.Same(assembly.Calculator(), Assert.Single(results).Node);
     }
@@ -195,10 +195,10 @@ public sealed class SearchTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var ns = await Collect(list.SearchAsync("n:Tests.Fixtures"));
-        var byName = await Collect(list.SearchAsync("a:ilsight.tests"));
-        var byPath = await Collect(list.SearchAsync("af:.dll"));
-        var resources = await Collect(list.SearchAsync("r:logo"));
+        var ns = await CollectAsync(list.SearchAsync("n:Tests.Fixtures"));
+        var byName = await CollectAsync(list.SearchAsync("a:ilsight.tests"));
+        var byPath = await CollectAsync(list.SearchAsync("af:.dll"));
+        var resources = await CollectAsync(list.SearchAsync("r:logo"));
 
         Assert.Same(assembly.Fixtures(), Assert.Single(ns).Node);
         Assert.Same(assembly.Root, Assert.Single(byName).Node);
@@ -211,7 +211,7 @@ public sealed class SearchTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var found = await Collect(list.SearchAsync("n:ILSight"));
+        var found = await CollectAsync(list.SearchAsync("n:ILSight"));
 
         Assert.Equal(["ILSight.Tests", Trees.FixturesNamespace], found.Select(r => r.Text).Order());
         Assert.DoesNotContain(assembly.Root.Child("ILSight"), found.Select(r => r.Node));
@@ -223,8 +223,8 @@ public sealed class SearchTests
         var (list, _) = Trees.OpenTestAssembly();
         list.Open(Trees.CoreLibPath);
 
-        var inTests = await Collect(list.SearchAsync("inassembly:ILSight.Tests t:Size"));
-        var inFixtures = await Collect(list.SearchAsync("innamespace:Tests.Fixtures Area"));
+        var inTests = await CollectAsync(list.SearchAsync("inassembly:ILSight.Tests t:Size"));
+        var inFixtures = await CollectAsync(list.SearchAsync("innamespace:Tests.Fixtures Area"));
 
         Assert.All(inTests, r => Assert.Equal("ILSight.Tests", r.Node.Assembly.Name));
         Assert.Contains(inTests, r => r.Text == "Size");
@@ -242,9 +242,9 @@ public sealed class SearchTests
         Assert.Equal("", query.InNamespace);
         Assert.Equal(["System.Foo:Bar"], SearchQueries.ParseQuery("System.Foo:Bar").Terms);
         Assert.True(SearchQueries.ParseQuery("inassembly:Core").IsEmpty);
-        Assert.Equal(255L, SearchQueries.GetLiteral(SearchQueries.ParseQuery("c:0xFF")));
-        Assert.Equal(1.5f, SearchQueries.GetLiteral(SearchQueries.ParseQuery("c:1.5f")));
-        Assert.Null(SearchQueries.GetLiteral(SearchQueries.ParseQuery("c:abc")));
+        Assert.Equal(255L, SearchQueries.FindLiteral(SearchQueries.ParseQuery("c:0xFF")));
+        Assert.Equal(1.5f, SearchQueries.FindLiteral(SearchQueries.ParseQuery("c:1.5f")));
+        Assert.Null(SearchQueries.FindLiteral(SearchQueries.ParseQuery("c:abc")));
     }
 
     [Fact]
@@ -252,7 +252,7 @@ public sealed class SearchTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var picked = await Collect(list.SearchAsync("Answer", SearchKinds.Fields | SearchKinds.Literals));
+        var picked = await CollectAsync(list.SearchAsync("Answer", SearchKinds.Fields | SearchKinds.Literals));
         var prefixed = SearchQueries.ParseQuery("t:Size p:Size", SearchKinds.All);
 
         Assert.Contains(picked, r => r.Node == assembly.Calculator().Child("Answer : int"));
@@ -268,7 +268,7 @@ public sealed class SearchTests
         Assert.Equal("innamespace:\"\" ", SearchQueries.AddScope("", "innamespace", ""));
     }
 
-    private static async Task<List<SearchResult>> Collect(IAsyncEnumerable<IReadOnlyList<SearchResult>> search)
+    private static async Task<List<SearchResult>> CollectAsync(IAsyncEnumerable<IReadOnlyList<SearchResult>> search)
     {
         var results = new List<SearchResult>();
         await foreach (var batch in search)

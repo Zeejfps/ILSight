@@ -179,7 +179,7 @@ public sealed class MetadataGridTests
     {
         var (app, _, grid) = ShowTable("TypeDef");
         var baseType = grid.Column("BaseType");
-        var row = Enumerable.Range(0, grid.RowCount).First(r => MetadataGrids.GetLink(grid, r, baseType) is not null);
+        var row = Enumerable.Range(0, grid.RowCount).First(r => MetadataGrids.FindLink(grid, r, baseType) is not null);
         var name = MetadataGrids.GetText(grid, row, grid.Column("Name"));
         var token = TextBeside(app, MetadataGrids.GetText(grid, row, baseType), name);
         app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);
@@ -294,7 +294,7 @@ public sealed class MetadataGridTests
         settings.FlagsFilters = MetadataGridWidget.ListSaved(app.Ui.MetadataFilters);
         SettingsJson.SaveSettings(settings);
         var saved = temp.Settings().FlagsFilters;
-        var restored = MetadataGridWidget.FindFilter(MetadataGridWidget.CreateFilters(saved), grid, attributes);
+        var restored = MetadataGridWidget.GetFilter(MetadataGridWidget.CreateFilters(saved), grid, attributes);
         Assert.Equal("Visibility = Public", FilterStatePresenter.Describe(restored));
     }
 

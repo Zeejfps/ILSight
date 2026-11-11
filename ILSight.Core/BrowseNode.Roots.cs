@@ -116,11 +116,11 @@ public static partial class BrowseNodes
     /// the same when another is picked.</summary>
     private static string GetModuleLabel(LoadedModule module)
     {
-        var details = new[] { module.Version?.ToString(), GetBuiltForName(module) }.OfType<string>().ToArray();
+        var details = new[] { module.Version?.ToString(), FindBuiltForName(module) }.OfType<string>().ToArray();
         return details.Length == 0 ? module.Name : $"{module.Name} ({string.Join(", ", details)})";
     }
 
-    private static string? GetBuiltForName(LoadedModule module)
+    private static string? FindBuiltForName(LoadedModule module)
     {
         if (module.DetectedTargetFramework is null)
         {

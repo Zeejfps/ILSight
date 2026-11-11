@@ -241,7 +241,7 @@ public static class Assemblies
     private static Reopened ReadAgain(AssemblyList assemblies, BrowseSession session, LoadedAssembly item, List<NodePath> places)
     {
         var fresh = AssemblyListing.ReadAgain(assemblies, item);
-        LoadAsLoaded(session, BrowseSessions.EnsureRoot(session, item), BrowseSessions.EnsureRoot(session, fresh));
+        EnsureChildrenAsLoaded(session, BrowseSessions.EnsureRoot(session, item), BrowseSessions.EnsureRoot(session, fresh));
         var placeNodes = places
             .Select(p => BrowseSessions.FindNode(session, fresh, p))
             .ToArray();
@@ -251,20 +251,20 @@ public static class Assemblies
     /// <summary>Loads the children of each node under <paramref name="fresh"/> whose counterpart under
     /// <paramref name="old"/> has them loaded, so that the tree can show the fresh nodes as it showed
     /// the old ones.</summary>
-    private static void LoadAsLoaded(BrowseSession session, BrowseNode old, BrowseNode fresh)
+    private static void EnsureChildrenAsLoaded(BrowseSession session, BrowseNode old, BrowseNode fresh)
     {
         if (BrowseSessions.PeekChildren(session, old) is not ChildrenState.Ready loaded)
         {
             return;
         }
 
-        BrowseSessions.LoadChildren(session, fresh);
+        BrowseSessions.GetChildren(session, fresh);
         foreach (var child in loaded.Children)
         {
             var counterpart = BrowseSessions.FindLoadedChildLike(session, fresh, child);
             if (counterpart is not null)
             {
-                LoadAsLoaded(session, child, counterpart);
+                EnsureChildrenAsLoaded(session, child, counterpart);
             }
         }
     }
@@ -406,12 +406,12 @@ public static class Assemblies
         List<NodePath> places, CancellationToken cancellationToken)
     {
         OpenFiles(assemblies, paths, cancellationToken);
-        var expandedNodes = LoadExpandedNodes(assemblies, session, expanded, cancellationToken);
+        var expandedNodes = GetExpandedNodes(assemblies, session, expanded, cancellationToken);
         var placeNodes = FindNodes(assemblies, session, places, cancellationToken);
         return new Reloaded(expandedNodes, placeNodes);
     }
 
-    private static List<BrowseNode> LoadExpandedNodes(AssemblyList assemblies, BrowseSession session, List<NodePath> expanded,
+    private static List<BrowseNode> GetExpandedNodes(AssemblyList assemblies, BrowseSession session, List<NodePath> expanded,
         CancellationToken cancellationToken)
     {
         var nodes = new List<BrowseNode>();
@@ -424,7 +424,7 @@ public static class Assemblies
                 continue;
             }
 
-            BrowseSessions.LoadChildren(session, node);
+            BrowseSessions.GetChildren(session, node);
             nodes.Add(node);
         }
         return nodes;
@@ -507,7 +507,7 @@ public static class Assemblies
             ReleaseGoneTab(appState, tab, reloading.Location);
             return false;
         }
-        LoadIntoTab(appState, tab, node, new Arrival(reloading.Position));
+        DecompileIntoTab(appState, tab, node, new Arrival(reloading.Position));
         return true;
     }
 

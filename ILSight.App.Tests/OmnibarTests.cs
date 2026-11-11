@@ -27,7 +27,7 @@ public sealed class OmnibarTests
     }
 
     /// <summary>The crumb reading <paramref name="label"/>, in whichever document's bar shows it.</summary>
-    private static SemanticNode FindCrumb(AppDriver app, string label)
+    private static SemanticNode GetCrumb(AppDriver app, string label)
     {
         return app.Frames.Snapshot().Nodes.Single(n => IsPart(n, "crumb") && n.SelfAndDescendants().Any(c => c.Label == label));
     }
@@ -46,13 +46,13 @@ public sealed class OmnibarTests
     /// <summary>Clicks the crumb reading <paramref name="label"/>.</summary>
     private static UiFrames ClickCrumb(AppDriver app, string label)
     {
-        return app.Frames.ClickOn(new Selector.ByPath(FindCrumb(app, label).Path!));
+        return app.Frames.ClickOn(new Selector.ByPath(GetCrumb(app, label).Path!));
     }
 
     /// <summary>Clicks the arrow after the crumb reading <paramref name="label"/>, which shares its depth.</summary>
     private static void ClickArrowAfter(AppDriver app, string label)
     {
-        var crumb = FindCrumb(app, label).Path!.Segments;
+        var crumb = GetCrumb(app, label).Path!.Segments;
         app.Frames.ClickOn(GetPath([.. crumb.Take(crumb.Count - 1), new TestSegment.Named("children")])).Frame(2);
     }
 
@@ -79,8 +79,8 @@ public sealed class OmnibarTests
             .ToList();
 
         Assert.Equal([FixturesAssembly, AppStateDriver.FixturesNamespace, "Greeter"], labels);
-        FindCrumb(app, FixturesAssembly);
-        FindCrumb(app, "Greeter");
+        GetCrumb(app, FixturesAssembly);
+        GetCrumb(app, "Greeter");
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public sealed class OmnibarTests
         Assert.Equal(DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!), searchedIn);
         Assert.Same(app.Fixture("Farewell"), app.AppState.Tabs.Active!.Node);
         Assert.False(omnibar.IsSearching);
-        FindCrumb(app, "Farewell");
+        GetCrumb(app, "Farewell");
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public sealed class OmnibarTests
         Assert.Same(omnibar.Search.Rows[1], second);
         Assert.False(omnibar.IsSearching);
         Assert.Same(app.Fixture("Greeter"), app.AppState.Tabs.Active!.Node);
-        FindCrumb(app, "Greeter");
+        GetCrumb(app, "Greeter");
     }
 
     [Fact]

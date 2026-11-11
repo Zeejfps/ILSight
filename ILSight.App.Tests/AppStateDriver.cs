@@ -174,7 +174,7 @@ internal static class TempSettings
 {
     public static AppSettings Settings(this TempDir temp)
     {
-        return SettingsJson.LoadSettings(FullFilePath.Of(temp.PathOf("settings.json"))).Settings;
+        return SettingsJson.ReadSettingsFile(FullFilePath.Of(temp.PathOf("settings.json"))).Settings;
     }
 }
 
@@ -183,7 +183,7 @@ internal static class Screens
     /// <summary>A screen over an app state with nothing open, for drawing a widget alone.</summary>
     public static UiState Blank()
     {
-        return AppFrames.CreateUiState(LoadAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared));
+        return AppFrames.CreateUiState(RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared));
     }
 }
 
@@ -215,7 +215,7 @@ internal sealed class AppStateDriver
     {
         Step = Pump;
         loadResult.Settings.Locale ??= Locale.En;
-        AppState = ILSightAppLauncher.LoadAppState(loadResult, arguments, TestSession.Shared);
+        AppState = ILSightAppLauncher.RestoreAppState(loadResult, arguments, TestSession.Shared);
         if (withScreen)
         {
             _ui = AppFrames.CreateUiState(AppState);
@@ -416,7 +416,7 @@ internal sealed class AppDriver
         // so one empty frame, which takes no time, fetches it.
         var ui = Frames.Run(0f, static ui => ui);
         Driver.WakeOnPost(ui.RequestFrame);
-        Background.StartForever(App.ApplyPendingArguments(), problem => Errors.Report(AppState, problem));
+        Background.StartForever(App.ApplyPendingArgumentsAsync(), problem => Errors.Report(AppState, problem));
         Frames.BeforeFrame = PumpAtFrameTime;
         Driver.Step = RunFramesInPlace;
     }

@@ -25,8 +25,8 @@ public sealed class CodeSelection : TextSelection<DecompiledDocument, TextPositi
 
     protected override (TextPosition Start, TextPosition End) BlockAt(DecompiledDocument document, TextPosition at)
     {
-        var first = new TextPosition(CodeFolding.FindVisibleLine(Folds, at.Line), 0);
-        var next = CodeFolding.FindNextLine(Folds, first.Line);
+        var first = new TextPosition(CodeFolding.GetVisibleLine(Folds, at.Line), 0);
+        var next = CodeFolding.GetNextLine(Folds, first.Line);
         if (next >= document.Lines.Length)
         {
             return (first, CodeText.End(document));
@@ -279,7 +279,7 @@ public static class CodeViewWidget
 
     public static void SetCollapsed(CodeViewState state, int fold, bool collapsed)
     {
-        var top = FindTopAnchor(state);
+        var top = GetTopAnchor(state);
         CodeFolding.SetCollapsed(state.Folds, fold, collapsed);
         KeepTop(state, top);
     }
@@ -345,7 +345,7 @@ public static class CodeViewWidget
 
     internal static void RevealFolds(CodeViewState state, int line)
     {
-        var top = FindTopAnchor(state);
+        var top = GetTopAnchor(state);
         if (CodeFolding.Reveal(state.Folds, line))
         {
             KeepTop(state, top);
@@ -354,12 +354,12 @@ public static class CodeViewWidget
 
     private static void SetAll(CodeViewState state, bool collapsed)
     {
-        var top = FindTopAnchor(state);
+        var top = GetTopAnchor(state);
         CodeFolding.SetAll(state.Folds, collapsed);
         KeepTop(state, top);
     }
 
-    private static (int Line, float Within) FindTopAnchor(CodeViewState state)
+    private static (int Line, float Within) GetTopAnchor(CodeViewState state)
     {
         var folds = state.Folds;
         if (state.RowHeight <= 0f || folds.RowCount == 0)
@@ -375,7 +375,7 @@ public static class CodeViewWidget
     {
         if (state.RowHeight > 0f)
         {
-            state.ScrollY = GetRowTop(CodeFolding.FindRowOf(state.Folds, top.Line), state.RowHeight) + top.Within;
+            state.ScrollY = GetRowTop(CodeFolding.GetRowOf(state.Folds, top.Line), state.RowHeight) + top.Within;
         }
     }
 
@@ -394,7 +394,7 @@ public static class CodeViewWidget
 
     /// <summary>Scans again when the document or query changed since <paramref name="state"/> last did; returns
     /// whether it did.</summary>
-    private static bool FindMatches(CodeViewState state, DecompiledDocument document, string query)
+    private static bool RescanMatches(CodeViewState state, DecompiledDocument document, string query)
     {
         var find = state.Find;
         if (ReferenceEquals(document, find.Document) && string.Equals(query, find.Query, StringComparison.Ordinal))
@@ -436,12 +436,12 @@ public static class CodeViewWidget
             return null;
         }
 
-        var index = FindMatchOnOrAfter(find, at);
+        var index = GetMatchOnOrAfter(find, at);
         return index < find.Matches.Count ? index : 0;
     }
 
     /// <summary>The index of the first match at or after <paramref name="at"/>, or the count.</summary>
-    private static int FindMatchOnOrAfter(CodeFindIndex find, TextPosition at)
+    private static int GetMatchOnOrAfter(CodeFindIndex find, TextPosition at)
     {
         int low = 0, high = find.Matches.Count;
         while (low < high)
@@ -964,7 +964,7 @@ public static class CodeViewWidget
 
         var span = document.Lines[at.Value.Line].Spans[at.Value.Span];
         var x = hovered.TextX - state.LaidOutScrollX + span.Start * advance;
-        var y = hovered.TextY + GetRowTop(CodeFolding.FindRowOf(state.Folds, at.Value.Line), rowHeight) - state.LaidOutScrollY;
+        var y = hovered.TextY + GetRowTop(CodeFolding.GetRowOf(state.Folds, at.Value.Line), rowHeight) - state.LaidOutScrollY;
         return new UiRect(x, y, span.Length * advance, rowHeight);
     }
 
@@ -1052,7 +1052,7 @@ public static class CodeViewWidget
                 state.Pending = null;
                 var top = Math.Clamp(restore.TopLine, 0, Math.Max(0, document.Lines.Length - 1));
                 RevealFolds(state, top);
-                state.ScrollY = GetRowTop(CodeFolding.FindRowOf(folds, top), rowHeight);
+                state.ScrollY = GetRowTop(CodeFolding.GetRowOf(folds, top), rowHeight);
                 state.ScrollX = restore.ScrollX;
                 state.Selection.Select(CodeText.Clamp(document, restore.Anchor), CodeText.Clamp(document, restore.Caret));
             }
@@ -1079,7 +1079,7 @@ public static class CodeViewWidget
             }
             var line = Math.Clamp(reveal.Line, 0, Math.Max(0, document.Lines.Length - 1));
             RevealFolds(state, line);
-            state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.FindRowOf(folds, line), rowHeight) - viewport / 3f);
+            state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.GetRowOf(folds, line), rowHeight) - viewport / 3f);
             state.Flash = new CodeFlash(line, ui.RealTime);
             state.Pending = null;
             ui.RequestUpdate();
@@ -1092,7 +1092,7 @@ public static class CodeViewWidget
                 return;
             }
             RevealFolds(state, match.Line);
-            var top = GetRowTop(CodeFolding.FindRowOf(folds, match.Line), rowHeight);
+            var top = GetRowTop(CodeFolding.GetRowOf(folds, match.Line), rowHeight);
             if (top < state.ScrollY || top + rowHeight > state.ScrollY + viewport)
             {
                 state.ScrollY = MathF.Max(0f, top - viewport / 3f);
@@ -1129,7 +1129,7 @@ public static class CodeViewWidget
     {
         var folds = state.Folds;
         var caret = state.Selection.Caret;
-        var row = CodeFolding.FindRowOf(folds, caret.Line);
+        var row = CodeFolding.GetRowOf(folds, caret.Line);
         var top = GetRowTop(row, rowHeight);
         if (top < state.ScrollY)
         {
@@ -1455,7 +1455,7 @@ public static class CodeViewWidget
 
             var submitted = ui.TextField("find", ref state.Query, t.FindPlaceholder, Sizing.Grow(AppLayout.FindMinWidth, AppLayout.FindWidth), clearable: true);
             var queryChanged = !string.Equals(state.Query, state.Find.Query, StringComparison.Ordinal);
-            if (FindMatches(state, document, state.Query))
+            if (RescanMatches(state, document, state.Query))
             {
                 state.CurrentMatch = queryChanged ? FindFirstMatch(state.Find, state.Selection.Start) : null;
                 ShowMatch(state);
@@ -1491,7 +1491,7 @@ public static class CodeViewWidget
 
     private static void Step(CodeViewState state, DecompiledDocument document, int direction)
     {
-        FindMatches(state, document, state.Query);
+        RescanMatches(state, document, state.Query);
         var count = state.Find.Matches.Count;
         if (count == 0)
         {
@@ -1509,7 +1509,7 @@ public static class CodeViewWidget
         }
         else
         {
-            state.CurrentMatch = (FindMatchOnOrAfter(state.Find, state.Selection.Caret) - 1 + count) % count;
+            state.CurrentMatch = (GetMatchOnOrAfter(state.Find, state.Selection.Caret) - 1 + count) % count;
         }
 
         ShowMatch(state);
@@ -1707,7 +1707,7 @@ public static class CodeViewWidget
 
         if (frame.MatchLength > 0)
         {
-            for (var m = FindFirstMatchOn(frame, index); m < frame.Matches.Count && frame.Matches[m].Line == index; m++)
+            for (var m = GetFirstMatchOn(frame, index); m < frame.Matches.Count && frame.Matches[m].Line == index; m++)
             {
                 if (m == frame.CurrentMatch)
                 {
@@ -1850,7 +1850,7 @@ public static class CodeViewWidget
         }
     }
 
-    private static int FindFirstMatchOn(CodeViewFrame frame, int line)
+    private static int GetFirstMatchOn(CodeViewFrame frame, int line)
     {
         int low = 0, high = frame.Matches.Count;
         while (low < high)

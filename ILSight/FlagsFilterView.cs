@@ -70,7 +70,7 @@ internal static class FlagsFilterView
             var first = 0;
             while (first < chips.Count)
             {
-                var end = FindRowEnd(ui, chips, first);
+                var end = GetRowEnd(ui, chips, first);
                 ChipRow(ui, filter, group, selection, chips, first, end, shift);
                 first = end;
             }
@@ -89,7 +89,7 @@ internal static class FlagsFilterView
         return chips;
     }
 
-    private static int FindRowEnd(Ui<UiState> ui, List<FilterChip> chips, int first)
+    private static int GetRowEnd(Ui<UiState> ui, List<FilterChip> chips, int first)
     {
         var gap = ui.Theme.GapTight;
         var end = first + 1;

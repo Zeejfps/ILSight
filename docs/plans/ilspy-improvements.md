@@ -7,10 +7,10 @@ Open issues found in `ILSight`, `ILSight.Core`, `ZGF.Gui.Immediate` and `ZGF.Gui
 
 1. **Closing an assembly breaks its dependents.** `AssemblyListing.CloseAssembly` (`ILSight.Core/AssemblyList.cs:155`)
    forgets it by path (`ForgetKnown`, `:172`), but dependents keep a type system over the old `MetadataFile`.
-   Analyzing or navigating through them makes `FindLoadedFrom` (`:530-541`) throw "was not loaded by list";
+   Analyzing or navigating through them makes `GetLoadedFrom` (`:530-541`) throw "was not loaded by list";
    `ResolveDefinition` (`:713`) re-reads the file by path and can apply old tokens to a changed file.
    Fix: index loaded assemblies by `MetadataFile` and track reverse references so closing invalidates
-   dependents. The same index removes the linear `FindKnown` (`:546`) / `FindLoadedFrom` scans.
+   dependents. The same index removes the linear `FindKnown` (`:546`) / `GetLoadedFrom` scans.
 2. **Reload doesn't own the tabs it releases.** `RefreshAssembliesAsync` (`ILSight/Assemblies.cs:323-335`)
    releases every tab first (`ReleaseShownTabs`, `:338`); if the reload is stopped, `FinishReload` (`:394`)
    returns early and tabs stay on "// Reloading…", and on failure (`:401`) only reopened saved tabs are settled.
@@ -109,7 +109,7 @@ Open issues found in `ILSight`, `ILSight.Core`, `ZGF.Gui.Immediate` and `ZGF.Gui
   `DocumentBuilder.cs:269`, `Analysis/Analyzers.cs:215`, `EntityText.cs:47`, `DecompilerOptions.cs:182`,
   `PEHeaderEntries.cs:153-173`, `RuntimeAssemblies.cs:137`, `ResourceImage.cs:256`, `MetadataTables.cs:264`,
   `GridSchema.cs:159`; `_ = parent.Children` in tests (`ModelTests.cs:128`, `AssemblyListTests.cs:340`,
-  `SearchTests.cs:62`) instead of `LoadChildren()`; `Metadata/FlagsSchema*.cs`, `FilterState.cs`,
+  `SearchTests.cs:62`) instead of `EnsureChildren()`; `Metadata/FlagsSchema*.cs`, `FilterState.cs`,
   `FilterStatePresenter.cs` may use another style and role suffixes (not re-checked).
 - `ZGF.Gui.Immediate*`: ~35 `is {` patterns, mostly `DockLayout.cs`, `UiDockSpace.cs:599-722`,
   `UiMenus.cs:330-706`, plus `UiWidgets.cs:60`, `LayoutTree.cs:253`, `ImmediateGuiAppHost.cs:422`;

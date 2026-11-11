@@ -67,7 +67,7 @@ internal static class CloseAssembliesDialogView
         }
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
         {
-            var all = GetAllShownIncluded(shown);
+            var all = CalculateAllShownIncluded(shown);
             if (ui.Checkbox(t.ExportSelectShown, ref all, id: "close-all", compact: true))
             {
                 IncludeShown(shown, all == true);

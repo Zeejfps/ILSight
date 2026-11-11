@@ -12,7 +12,7 @@ public sealed class CodeViewTests
     private static (CodeViewDriver View, int Line, int Column) GreeterAt(string text)
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), height: 1200f);
-        var (line, column) = view.Document.Find(text);
+        var (line, column) = view.Document.GetPosition(text);
         return (view, line, column);
     }
 

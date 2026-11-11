@@ -131,13 +131,13 @@ public sealed class NavigationTests
         var csharp = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
 
-        Assert.Contains("public void Add(T item)", csharp.Lines[Documents.FindDefinitionLine(csharp, calculator.Child("Add(T) : void"))].Text);
-        Assert.Contains("public int Count", csharp.Lines[Documents.FindDefinitionLine(csharp, calculator.Child("Count : int"))].Text);
-        Assert.Contains("Fast", csharp.Lines[Documents.FindDefinitionLine(csharp, calculator.Child("Mode").Child("Fast : Mode"))].Text);
-        Assert.Contains("public class Calculator<T>", csharp.Lines[Documents.FindDefinitionLine(csharp, calculator)].Text);
-        Assert.Contains(".method", il.Lines[Documents.FindDefinitionLine(il, calculator.Child("Describe() : string"))].Text);
-        Assert.Equal(-1, Documents.FindDefinitionLine(csharp, assembly.Fixtures().Child("Size")));
-        Assert.Equal(-1, Documents.FindDefinitionLine(csharp, assembly.Fixtures()));
+        Assert.Contains("public void Add(T item)", csharp.Lines[Documents.GetDefinitionLine(csharp, calculator.Child("Add(T) : void"))].Text);
+        Assert.Contains("public int Count", csharp.Lines[Documents.GetDefinitionLine(csharp, calculator.Child("Count : int"))].Text);
+        Assert.Contains("Fast", csharp.Lines[Documents.GetDefinitionLine(csharp, calculator.Child("Mode").Child("Fast : Mode"))].Text);
+        Assert.Contains("public class Calculator<T>", csharp.Lines[Documents.GetDefinitionLine(csharp, calculator)].Text);
+        Assert.Contains(".method", il.Lines[Documents.GetDefinitionLine(il, calculator.Child("Describe() : string"))].Text);
+        Assert.Equal(-1, Documents.GetDefinitionLine(csharp, assembly.Fixtures().Child("Size")));
+        Assert.Equal(-1, Documents.GetDefinitionLine(csharp, assembly.Fixtures()));
     }
 
     [Fact]
@@ -201,6 +201,6 @@ public sealed class NavigationTests
 
         Assert.Contains(add, uses);
         Assert.Contains(items, uses);
-        Assert.Contains(".method", document.Lines[Documents.FindDefinitionLine(document, add)].Text);
+        Assert.Contains(".method", document.Lines[Documents.GetDefinitionLine(document, add)].Text);
     }
 }

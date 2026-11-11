@@ -41,7 +41,7 @@ public static partial class BrowseNodes
     }
 
     /// <summary>The bytes of the resource the node stands for; null for a node of anything else.</summary>
-    internal static ResourceData? GetResourceData(BrowseNode node)
+    internal static ResourceData? FindResourceData(BrowseNode node)
     {
         return node.Subject switch
         {
@@ -190,9 +190,9 @@ public static partial class BrowseNodes
 
     /// <summary>What <paramref name="node"/> is among its siblings, as a path names it; null for the root of
     /// a tree. Worked out the first time, as <see cref="GetPath"/> is.</summary>
-    internal static NodePathSegment? GetSegment(BrowseNode node)
+    internal static NodePathSegment? FindSegment(BrowseNode node)
     {
-        return node.SegmentMemo ??= NodeDefinitions.GetPathSegment(node.Subject);
+        return node.SegmentMemo ??= NodeDefinitions.FindPathSegment(node.Subject);
     }
 
     /// <summary>The bytes of the resource <paramref name="node"/> stands for, as a saved copy holds them: for
@@ -210,7 +210,7 @@ public static partial class BrowseNodes
 
     private static ResourceData RequireResource(BrowseNode node)
     {
-        return GetResourceData(node) ?? throw new InvalidOperationException($"{node.Text} is no resource.");
+        return FindResourceData(node) ?? throw new InvalidOperationException($"{node.Text} is no resource.");
     }
 
     /// <summary>The node of <paramref name="type"/>, under <paramref name="parent"/>; null for a type with
@@ -240,7 +240,7 @@ public static partial class BrowseNodes
     }
 
     /// <summary>The type or member <paramref name="node"/> defines; null for a node of anything else.</summary>
-    internal static IEntity? GetEntity(BrowseNode? node)
+    internal static IEntity? FindEntity(BrowseNode? node)
     {
         if (node is null)
         {

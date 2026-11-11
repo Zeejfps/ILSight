@@ -52,7 +52,7 @@ internal static class TypeUsedByAnalyzer
                 found |= decoder.GetTypeFromEntity(metadata, metadata.GetInterfaceImplementation(ih).Interface);
             }
 
-            found |= FindUsesInGenericConstraints(metadata, td.GetGenericParameters(), decoder);
+            found |= IsUsedInGenericConstraints(metadata, td.GetGenericParameters(), decoder);
             if (found)
             {
                 yield return module.GetDefinition(h);
@@ -63,7 +63,7 @@ internal static class TypeUsedByAnalyzer
         {
             var md = metadata.GetMethodDefinition(h);
             var found = FindTypeDecoder.AnyInMethodSignature(md.DecodeSignature(decoder, default));
-            found |= FindUsesInGenericConstraints(metadata, md.GetGenericParameters(), decoder);
+            found |= IsUsedInGenericConstraints(metadata, md.GetGenericParameters(), decoder);
             if (found || ScanMethodBody(module.MetadataFile, h, decoder))
             {
                 var method = module.GetDefinition(h);
@@ -121,7 +121,7 @@ internal static class TypeUsedByAnalyzer
         };
     }
 
-    private static bool FindUsesInGenericConstraints(MetadataReader metadata, GenericParameterHandleCollection parameters, FindTypeDecoder decoder)
+    private static bool IsUsedInGenericConstraints(MetadataReader metadata, GenericParameterHandleCollection parameters, FindTypeDecoder decoder)
     {
         return parameters.Any(h => metadata.GetGenericParameter(h).GetConstraints()
             .Any(c => decoder.GetTypeFromEntity(metadata, metadata.GetGenericParameterConstraint(c).Type)));

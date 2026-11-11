@@ -160,7 +160,7 @@ public sealed class ProcessPickerTests
         Poll.Until(() => picker.AppliedFilter is null, posted.Run);
         ProcessPicking.UpdatePicker(picker);
 
-        Assert.Equal(Worker, ProcessPicking.GetSelectedProcess(picker));
+        Assert.Equal(Worker, ProcessPicking.FindSelectedProcess(picker));
         Assert.IsType<ModuleScan.Loaded>(picker.Modules);
     }
 
@@ -193,7 +193,7 @@ public sealed class ProcessPickerTests
             Work = new BackgroundWork(),
             ReportError = static problem => throw new InvalidOperationException(problem.ToString()),
             FindProcesses = RunningProcesses.FindProcessesAsync,
-            FindModules = RunningProcesses.FindModulesAsync,
+            FindModules = RunningProcesses.GetModulesAsync,
         };
         OpenAndScan(picker, posted);
         var self = Assert.Single(picker.Filtered, p => p.Id.Value == Environment.ProcessId);

@@ -174,7 +174,7 @@ public static class LoadedAssemblies
     internal static LoadedModule CreateModule(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place = null)
     {
         var name = GetModuleName(path, file);
-        var version = GetVersion(file);
+        var version = FindVersion(file);
         var detected = TryDetectTargetFramework(file);
         var picked = list.TargetFrameworks.Find(path);
         var targetFramework = picked ?? detected;
@@ -194,7 +194,7 @@ public static class LoadedAssemblies
             IsTargetFrameworkPicked = picked is not null,
             Resolver = resolver,
             TypeSystem = new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(file, resolver, Settings.Create())),
-            DebugSymbols = new Lazy<DebugSymbols?>(() => LoadDebugSymbols(list, path, file, place)),
+            DebugSymbols = new Lazy<DebugSymbols?>(() => FindDebugSymbols(list, path, file, place)),
             CanGeneratePdb = new Lazy<bool>(() => file is PEFile pe && DebugSymbolFiles.CanGenerateFor(pe)),
             ReferenceUsage = new Lazy<ReferenceUsage>(() => ForwardedTypes.ReadUsage(file.Metadata)),
         };
@@ -234,7 +234,7 @@ public static class LoadedAssemblies
             NameAndVersion = JoinNameAndVersion(name, null),
             Package = package,
         };
-        created.Assemblies = new Lazy<IReadOnlyList<LoadedModule>>(() => LoadAssemblies(created));
+        created.Assemblies = new Lazy<IReadOnlyList<LoadedModule>>(() => ListAssemblies(created));
         return created;
     }
 
@@ -276,7 +276,7 @@ public static class LoadedAssemblies
         return file.FullName;
     }
 
-    private static Version? GetVersion(MetadataFile file)
+    private static Version? FindVersion(MetadataFile file)
     {
         if (!file.Metadata.IsAssembly)
         {
@@ -316,7 +316,7 @@ public static class LoadedAssemblies
     }
 
     /// <summary>The symbols of the PDB the list picked for this assembly, else those it finds itself.</summary>
-    private static DebugSymbols? LoadDebugSymbols(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place)
+    private static DebugSymbols? FindDebugSymbols(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place)
     {
         if (file is not PEFile pe)
         {
@@ -326,10 +326,10 @@ public static class LoadedAssemblies
         var picked = list.Pdbs.Find(path);
         if (picked is null)
         {
-            return DebugSymbolFiles.LoadSymbols(pe, place?.Container.Package);
+            return DebugSymbolFiles.FindSymbols(pe, place?.Container.Package);
         }
 
-        return DebugSymbolFiles.LoadPicked(picked);
+        return DebugSymbolFiles.ReadPicked(picked);
     }
 
     /// <summary>Whether a PDB can be generated for <paramref name="module"/>, worked out the first time.</summary>
@@ -427,7 +427,7 @@ public static class LoadedAssemblies
 
     /// <summary>The entity whose node holds the node of <paramref name="handle"/>'s: a property or
     /// event for its accessor, else the declaring type; nil for a top-level type.</summary>
-    internal static EntityHandle FindOwner(MetadataModule main, EntityHandle handle)
+    internal static EntityHandle GetOwner(MetadataModule main, EntityHandle handle)
     {
         return main.ResolveEntity(handle) switch
         {
@@ -437,7 +437,7 @@ public static class LoadedAssemblies
         };
     }
 
-    private static IReadOnlyList<LoadedModule> LoadAssemblies(LoadedPackage package)
+    private static IReadOnlyList<LoadedModule> ListAssemblies(LoadedPackage package)
     {
         var assemblies = new List<LoadedModule>();
         foreach (var file in AssemblyPackages.ListFiles(package.Package))

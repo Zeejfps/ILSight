@@ -316,7 +316,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         var document = d.AppState.Tabs.Active!.Document;
-        var (line, column) = document.Find("Name;");
+        var (line, column) = document.GetPosition("Name;");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
         var farewell = d.Fixture("Farewell");
 
@@ -338,7 +338,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         var document = d.AppState.Tabs.Active!.Document;
-        var (line, column) = document.Find("Name;");
+        var (line, column) = document.GetPosition("Name;");
 
         Navigate(d.AppState, Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference), inNewTab: false);
         d.Settle();
@@ -364,7 +364,7 @@ public sealed class AppStateTests
 
         d.Show(d.Fixture("Greeter"));
         var reveal = Assert.IsType<PendingScroll.Reveal>(view.Pending);
-        Assert.Equal(Documents.FindDefinitionLine(tab.Document, tab.Node!), reveal.Line);
+        Assert.Equal(Documents.GetDefinitionLine(tab.Document, tab.Node!), reveal.Line);
     }
 
     [Fact]
@@ -383,7 +383,7 @@ public sealed class AppStateTests
         var selected = search.SelectedRow!.Node;
 
         var document = d.AppState.Tabs.Active!.Document;
-        var (line, column) = document.Find("Length");
+        var (line, column) = document.GetPosition("Length");
         Navigate(d.AppState, Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference), inNewTab: true);
         d.Settle();
         Assert.Equal(2, d.AppState.Assemblies.Assemblies.Count);
@@ -401,7 +401,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         var greeter = d.Fixture("Greeter");
         var document = greeter.Decompile(DecompilationLanguage.CSharp);
-        var (line, column) = document.Find("Length");
+        var (line, column) = document.GetPosition("Length");
         Assert.NotNull(d.AppState.Assemblies.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference)));
         var search = d.Ui.Search;
         search.Query = "IsLeapYear";
@@ -457,7 +457,7 @@ public sealed class AppStateTests
         {
             Work = new BackgroundWork(),
             ReportError = problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title),
-            Stream = (_, _, _, _) => streams.Dequeue().Stream(),
+            Stream = (_, _, _, _) => streams.Dequeue().StreamAsync(),
         };
         var assemblies = new AssemblyList();
         search.Query = "Greet";
@@ -483,7 +483,7 @@ public sealed class AppStateTests
     {
         private readonly TaskCompletionSource<IReadOnlyList<SearchResult>> _next = new();
 
-        public async IAsyncEnumerable<IReadOnlyList<SearchResult>> Stream()
+        public async IAsyncEnumerable<IReadOnlyList<SearchResult>> StreamAsync()
         {
             yield return await _next.Task;
         }
@@ -572,7 +572,7 @@ public sealed class NamespacePageTests
         var d = app.Driver;
         d.Show(d.Node(AppStateDriver.FixturesNamespace));
         var tab = d.AppState.Tabs.Active!;
-        var (line, column) = tab.Document.Find("Greeter");
+        var (line, column) = tab.Document.GetPosition("Greeter");
         var span = tab.Document.SpanAt(line, column);
         app.Run(3);
 

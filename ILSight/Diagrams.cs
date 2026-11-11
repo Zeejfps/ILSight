@@ -88,8 +88,8 @@ public static class Diagrams
         return view.Faces.GetValueOrDefault(type);
     }
 
-    /// <summary>The index of the row <paramref name="y"/> below the top of <paramref name="face"/> falls in, or -1.</summary>
-    public static int FindRowAt(CardFace face, float y)
+    /// <summary>The index of the row <paramref name="y"/> below the top of <paramref name="face"/> falls in, or null.</summary>
+    public static int? FindRowAt(CardFace face, float y)
     {
         for (var i = 0; i < face.Rows.Count; i++)
         {
@@ -98,7 +98,7 @@ public static class Diagrams
                 return i;
             }
         }
-        return -1;
+        return null;
     }
 
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is
@@ -143,7 +143,7 @@ public static class Diagrams
     public static void ShowInNewDiagram(AppState appState, CodeReference.Entity type, string title)
     {
         LeaveActiveTab(appState);
-        var tab = FindOrOpenEmptyTab(appState);
+        var tab = GetOrOpenEmptyTab(appState);
         var diagram = new TypeDiagram();
         Tabs.ShowDiagram(tab, title, diagram);
         Tabs.Keep(appState.Tabs, tab);
@@ -682,7 +682,7 @@ public static class Diagrams
 
     /// <summary>Where the top-left of the card of <paramref name="type"/> is drawn now; null when the
     /// layout does not place it.</summary>
-    public static PointF? GetCardPlace(LayoutTransition transition, CodeReference.Entity type)
+    public static PointF? FindCardPlace(LayoutTransition transition, CodeReference.Entity type)
     {
         if (transition.To is null)
         {

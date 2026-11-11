@@ -73,7 +73,7 @@ internal static class ExportDialogView
     }
 
     /// <summary>Whether every shown assembly is ticked, none is, or some are (null).</summary>
-    public static bool? GetAllShownIncluded(AssemblyPicker picker)
+    public static bool? CalculateAllShownIncluded(AssemblyPicker picker)
     {
         var shown = ListShown(picker);
         var count = shown.Count(static c => c.Included);
@@ -619,7 +619,7 @@ internal static class ExportDialogView
         var theme = ui.Theme;
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
         {
-            var all = GetAllShownIncluded(picker);
+            var all = CalculateAllShownIncluded(picker);
             if (ui.Checkbox(t.ExportSelectShown, ref all, id: "all", compact: true))
             {
                 IncludeShown(picker, all == true);

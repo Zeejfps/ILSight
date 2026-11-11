@@ -147,7 +147,7 @@ public static class AssemblyListing
         var generation = list.Generation;
         while (true)
         {
-            var assembly = LoadOrFail(list, path, generation);
+            var assembly = GetAssemblyOrFailure(list, path, generation);
             if (TryList(list, assembly, generation, cancellationToken))
             {
                 return assembly;
@@ -163,11 +163,11 @@ public static class AssemblyListing
 
     /// <summary>The assembly read from <paramref name="path"/>, or when it cannot be read, the failure
     /// listed for it, else a new one.</summary>
-    private static LoadedAssembly LoadOrFail(AssemblyList list, AssemblyPath path, int generation)
+    private static LoadedAssembly GetAssemblyOrFailure(AssemblyList list, AssemblyPath path, int generation)
     {
         try
         {
-            return Load(list, path, generation);
+            return GetAssembly(list, path, generation);
         }
         catch (AssemblyLoadException e)
         {
@@ -402,7 +402,7 @@ public static class AssemblyListing
         foreach (var reference in assembly.File.AssemblyReferences)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var found = AssemblyResolving.LoadAssembly(assembly.Resolver, reference);
+            var found = AssemblyResolving.FindAssembly(assembly.Resolver, reference);
             if (found is null)
             {
                 continue;
@@ -630,7 +630,7 @@ public static class AssemblyListing
     {
         try
         {
-            return Load(list, path, generation);
+            return GetAssembly(list, path, generation);
         }
         catch (AssemblyLoadException)
         {
@@ -641,10 +641,10 @@ public static class AssemblyListing
     /// <summary>The type system of the assembly loaded from <paramref name="module"/>.</summary>
     internal static DecompilerTypeSystem EnsureTypeSystemOf(AssemblyList list, MetadataFile module)
     {
-        return LoadedAssemblies.EnsureTypeSystem(FindLoadedFrom(list, module));
+        return LoadedAssemblies.EnsureTypeSystem(GetLoadedFrom(list, module));
     }
 
-    private static LoadedModule FindLoadedFrom(AssemblyList list, MetadataFile module)
+    private static LoadedModule GetLoadedFrom(AssemblyList list, MetadataFile module)
     {
         using (var held = list.State.Enter())
         {
@@ -700,7 +700,7 @@ public static class AssemblyListing
 
     /// <summary>The assembly at <paramref name="path"/>, read from the file unless it is loaded. One read
     /// for a <paramref name="generation"/> that a clear has ended is not kept.</summary>
-    private static LoadedAssembly Load(AssemblyList list, AssemblyPath path, int generation)
+    private static LoadedAssembly GetAssembly(AssemblyList list, AssemblyPath path, int generation)
     {
         using (var held = list.State.Enter())
         {
@@ -957,7 +957,7 @@ public static class AssemblyListing
             return LoadedAssemblies.CreateModule(list, path, ReadFile(list, path));
         }
 
-        var container = Load(list, inPackage.Value.Package, generation);
+        var container = GetAssembly(list, inPackage.Value.Package, generation);
         if (container is not LoadedPackage package)
         {
             throw new AssemblyLoadException(path, $"'{container.FilePath}' is not a package.");

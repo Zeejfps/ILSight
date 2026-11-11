@@ -467,7 +467,7 @@ internal static class SettingsJson
             return null;
         }
 
-        var location = GetLocation(file, json.Path, leaveOut);
+        var location = FindLocation(file, json.Path, leaveOut);
         if (location is null)
         {
             return null;
@@ -576,7 +576,7 @@ internal static class SettingsJson
     /// <summary>Where a tab or bookmark in the file at <paramref name="filePath"/> was, as
     /// <paramref name="path"/> says. Null when there is none, or when it cannot be read, which
     /// <paramref name="leaveOut"/> is told; never the root for a path that cannot be read.</summary>
-    private static NodePath? GetLocation(AssemblyPath filePath, SavedPathJson? path, Action leaveOut)
+    private static NodePath? FindLocation(AssemblyPath filePath, SavedPathJson? path, Action leaveOut)
     {
         if (path is null)
         {
@@ -677,7 +677,7 @@ internal static class SettingsJson
             return null;
         }
 
-        var location = GetLocation(path, json.Path, leaveOutPlace);
+        var location = FindLocation(path, json.Path, leaveOutPlace);
         return new BookmarkRecord(json.Name ?? "", json.Enabled, path, json.AssemblyFullName ?? "", json.ModuleName ?? path.FileName,
             json.Token, json.Kind, json.ILOffset, json.LineNumber, json.MemberName ?? "", json.LocationNodeName,
             json.ViewState is null ? null : Parse(json.ViewState), location, json.Language);
@@ -1062,7 +1062,7 @@ internal static class SettingsJson
 
     /// <summary>The settings in the file at <paramref name="path"/>, each value read on its own, so a
     /// value the file holds wrong leaves out only that one, for its default to stand in.</summary>
-    public static SettingsLoadResult LoadSettings(FullFilePath path)
+    public static SettingsLoadResult ReadSettingsFile(FullFilePath path)
     {
         var (settings, problem) = ReadSettings(path.Text);
         settings.FilePath = path;
@@ -1346,7 +1346,7 @@ internal static class SettingsJson
             lists.Add(new AssemblyListRecord(SavedAssemblyLists.DefaultName, new List<AssemblyPath>()));
         }
 
-        var index = FindActiveListIndex(lists, active);
+        var index = GetActiveListIndex(lists, active);
         var list = lists[index];
         var hasAnalyses = list.Analyzed is not null && list.Analyzed.Count > 0;
         if (hasAnalyses)
@@ -1358,7 +1358,7 @@ internal static class SettingsJson
     }
 
     /// <summary>Where the list <paramref name="active"/> names is, else the first.</summary>
-    private static int FindActiveListIndex(List<AssemblyListRecord> lists, string? active)
+    private static int GetActiveListIndex(List<AssemblyListRecord> lists, string? active)
     {
         if (active is null)
         {
@@ -1395,7 +1395,7 @@ internal static class SettingsJson
             return Theming.DarkId;
         }
 
-        var old = GetOldThemeId(saved);
+        var old = FindOldThemeId(saved);
         if (old is not null)
         {
             return ThemeId<ThemeFile>.Of(old);
@@ -1404,7 +1404,7 @@ internal static class SettingsJson
         return ThemeId<ThemeFile>.Parse(saved) ?? Theming.DarkId;
     }
 
-    private static string? GetOldThemeId(string name)
+    private static string? FindOldThemeId(string name)
     {
         return name switch
         {

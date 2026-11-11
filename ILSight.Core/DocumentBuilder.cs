@@ -257,7 +257,7 @@ internal static class DocumentWriting
     private static void AppendSourceSpan(DocumentBuilder builder, string text, DocumentSpan span, int from, int start, int end)
     {
         var first = Math.Max(span.Start, from);
-        var reference = GetLink(span.Reference);
+        var reference = FindLink(span.Reference);
         AppendPart(builder, text, first, Math.Min(span.End, start), SpanKind.Comment, null);
         AppendPart(builder, text, Math.Max(first, start), Math.Min(span.End, end), span.Kind, reference);
         AppendPart(builder, text, Math.Max(first, end), span.End, SpanKind.Comment, null);
@@ -274,7 +274,7 @@ internal static class DocumentWriting
     }
 
     /// <summary>The reference a copied span keeps: a type's or member's, not a local's or label's.</summary>
-    private static CodeReference? GetLink(CodeReference? reference)
+    private static CodeReference? FindLink(CodeReference? reference)
     {
         if (reference is CodeReference.Local or CodeReference.Label)
         {

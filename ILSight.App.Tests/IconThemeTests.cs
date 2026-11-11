@@ -57,7 +57,7 @@ public sealed class BuiltInIconThemeTests
     public void The_reference_icon_theme_loads_without_errors_and_draws_every_key_in_its_font()
     {
         var catalog = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
-        var reference = ThemeCatalogs.FindTheme(catalog, IconTheming.ReferenceId);
+        var reference = ThemeCatalogs.GetTheme(catalog, IconTheming.ReferenceId);
 
         Assert.Empty(BuiltInIconThemes.Errors);
         Assert.Empty(catalog.Errors);
@@ -111,10 +111,10 @@ public sealed class IconThemeLoadingTests
         return IconTheming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json), assets ?? new MemoryIconAssets());
     }
 
-    private static ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> Load(params IconThemeFile[] users)
+    private static ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> BuildCatalog(params IconThemeFile[] users)
     {
         var catalog = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
-        ThemeCatalogs.LoadUserThemes(catalog, users);
+        ThemeCatalogs.ReplaceUserThemes(catalog, users);
         return catalog;
     }
 
@@ -127,12 +127,12 @@ public sealed class IconThemeLoadingTests
     public void A_partial_theme_draws_its_own_keys_and_the_reference_themes_for_the_rest()
     {
         var assets = new MemoryIconAssets().With("mine.ttf", FontBytes);
-        var catalog = Load(User("mine", """
+        var catalog = BuildCatalog(User("mine", """
             { "fonts": { "m": "mine.ttf" },
               "icons": { "node.class": { "font": "m", "glyph": "E106" } } }
             """, assets));
 
-        var mine = ThemeCatalogs.FindTheme(catalog, Id("mine"));
+        var mine = ThemeCatalogs.GetTheme(catalog, Id("mine"));
 
         Assert.Empty(catalog.Errors);
         Assert.Equal(IconGlyph.FromFont(Glyph(List), "memory:mine.ttf"), mine.Icons.NodeClass);
@@ -144,9 +144,9 @@ public sealed class IconThemeLoadingTests
     [Fact]
     public void A_theme_draws_in_the_reference_themes_font_by_its_id()
     {
-        var catalog = Load(User("swap", """{ "icons": { "node.class": { "font": "lucide", "glyph": "E106" } } }"""));
+        var catalog = BuildCatalog(User("swap", """{ "icons": { "node.class": { "font": "lucide", "glyph": "E106" } } }"""));
 
-        var swap = ThemeCatalogs.FindTheme(catalog, Id("swap"));
+        var swap = ThemeCatalogs.GetTheme(catalog, Id("swap"));
 
         Assert.Empty(catalog.Errors);
         Assert.Equal(Reference("node.metadataDirectory"), swap.Icons.NodeClass);
@@ -158,7 +158,7 @@ public sealed class IconThemeLoadingTests
         var assets = new MemoryIconAssets()
             .With("a.ttf", FontBytes)
             .With("b.ttf", FontBytes);
-        var catalog = Load(
+        var catalog = BuildCatalog(
             User("parent", """
                 { "fonts": { "f": "a.ttf" },
                   "icons": { "node.class": { "font": "f", "glyph": "E106" }, "node.method": { "font": "f", "glyph": "E061" } } }
@@ -168,21 +168,21 @@ public sealed class IconThemeLoadingTests
                   "icons": { "node.method": { "font": "lucide", "glyph": "E061" } } }
                 """, assets));
 
-        var child = ThemeCatalogs.FindTheme(catalog, Id("child"));
+        var child = ThemeCatalogs.GetTheme(catalog, Id("child"));
 
         Assert.Empty(catalog.Errors);
         Assert.Equal(IconGlyph.FromFont(Glyph(List), "memory:b.ttf"), child.Icons.NodeClass);
         Assert.Equal(Reference("node.class"), child.Icons.NodeMethod);
-        Assert.Equal(IconGlyph.FromFont(Glyph(List), "memory:a.ttf"), ThemeCatalogs.FindTheme(catalog, Id("parent")).Icons.NodeClass);
+        Assert.Equal(IconGlyph.FromFont(Glyph(List), "memory:a.ttf"), ThemeCatalogs.GetTheme(catalog, Id("parent")).Icons.NodeClass);
     }
 
     [Fact]
     public void An_svg_icon_is_a_picture_whose_value_is_its_path()
     {
         var assets = new MemoryIconAssets().With("svg/class.svg", MemoryIconAssets.Picture);
-        var catalog = Load(User("pictures", """{ "icons": { "node.class": { "svg": "svg/class.svg" } } }""", assets));
+        var catalog = BuildCatalog(User("pictures", """{ "icons": { "node.class": { "svg": "svg/class.svg" } } }""", assets));
 
-        var theme = ThemeCatalogs.FindTheme(catalog, Id("pictures"));
+        var theme = ThemeCatalogs.GetTheme(catalog, Id("pictures"));
 
         Assert.Empty(catalog.Errors);
         Assert.NotNull(theme.Icons.NodeClass.Svg);
@@ -247,7 +247,7 @@ public sealed class IconThemeLoadingTests
     [Fact]
     public void An_icon_in_a_font_no_theme_declares_is_reported_where_it_is_written_and_drawn_as_beneath_it()
     {
-        var catalog = Load(User("orphan", """
+        var catalog = BuildCatalog(User("orphan", """
             {
               "icons": { "node.class": { "font": "nope", "glyph": "E106" } }
             }
@@ -256,13 +256,13 @@ public sealed class IconThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal((ThemeProblem.UnknownFont, 2, "icons.node.class", "nope"), (error.Problem, error.Line, error.Subject, error.Detail));
-        Assert.Equal(Reference("node.class"), ThemeCatalogs.FindTheme(catalog, Id("orphan")).Icons.NodeClass);
+        Assert.Equal(Reference("node.class"), ThemeCatalogs.GetTheme(catalog, Id("orphan")).Icons.NodeClass);
     }
 
     [Fact]
     public void An_icon_in_a_font_that_could_not_be_read_is_drawn_as_beneath_it_and_reported_once()
     {
-        var catalog = Load(User("broken", """
+        var catalog = BuildCatalog(User("broken", """
             { "fonts": { "f": "missing.ttf" },
               "icons": { "node.class": { "font": "f", "glyph": "E106" } } }
             """));
@@ -270,14 +270,14 @@ public sealed class IconThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal(ThemeProblem.AssetUnreadable, error.Problem);
-        Assert.Equal(Reference("node.class"), ThemeCatalogs.FindTheme(catalog, Id("broken")).Icons.NodeClass);
+        Assert.Equal(Reference("node.class"), ThemeCatalogs.GetTheme(catalog, Id("broken")).Icons.NodeClass);
     }
 
     [Fact]
     public void A_font_cut_short_is_reported_as_no_font_and_its_icons_are_drawn_as_beneath_them()
     {
         var assets = new MemoryIconAssets().With("cut.ttf", FontBytes.AsSpan(0, TruncatedLength).ToArray());
-        var catalog = Load(User("cut", """
+        var catalog = BuildCatalog(User("cut", """
             { "fonts": { "f": "cut.ttf" },
               "icons": { "node.class": { "font": "f", "glyph": "E106" } } }
             """, assets));
@@ -285,14 +285,14 @@ public sealed class IconThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal((ThemeProblem.NotAFont, 1, "fonts.f", "cut.ttf"), (error.Problem, error.Line, error.Subject, error.Detail));
-        Assert.Equal(Reference("node.class"), ThemeCatalogs.FindTheme(catalog, Id("cut")).Icons.NodeClass);
-        Assert.Equal(["lucide"], ThemeCatalogs.FindTheme(catalog, Id("cut")).Fonts.Select(f => f.Family));
+        Assert.Equal(Reference("node.class"), ThemeCatalogs.GetTheme(catalog, Id("cut")).Icons.NodeClass);
+        Assert.Equal(["lucide"], ThemeCatalogs.GetTheme(catalog, Id("cut")).Fonts.Select(f => f.Family));
     }
 
     [Fact]
     public void An_icon_whose_font_has_no_glyph_for_it_is_reported_and_drawn_as_beneath_it()
     {
-        var catalog = Load(User("tofu", """
+        var catalog = BuildCatalog(User("tofu", """
             {
               "icons": { "node.class": { "font": "lucide", "glyph": "41" },
                          "node.method": { "font": "lucide", "glyph": "E061" } }
@@ -302,8 +302,8 @@ public sealed class IconThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal((ThemeProblem.MissingGlyph, 2, "icons.node.class", "0041"), (error.Problem, error.Line, error.Subject, error.Detail));
-        Assert.Equal(Reference("node.class"), ThemeCatalogs.FindTheme(catalog, Id("tofu")).Icons.NodeClass);
-        Assert.Equal(IconGlyph.FromFont(Glyph(Box), "lucide"), ThemeCatalogs.FindTheme(catalog, Id("tofu")).Icons.NodeMethod);
+        Assert.Equal(Reference("node.class"), ThemeCatalogs.GetTheme(catalog, Id("tofu")).Icons.NodeClass);
+        Assert.Equal(IconGlyph.FromFont(Glyph(Box), "lucide"), ThemeCatalogs.GetTheme(catalog, Id("tofu")).Icons.NodeMethod);
     }
 
     [Fact]
@@ -327,7 +327,7 @@ public sealed class IconThemeLoadingTests
     [InlineData("Lucide")]
     public void A_user_icon_theme_with_the_reference_ones_id_is_reported_and_left_out(string id)
     {
-        var catalog = Load(User(id, """{ "icons": {} }"""));
+        var catalog = BuildCatalog(User(id, """{ "icons": {} }"""));
 
         var error = Assert.Single(catalog.Errors);
 
@@ -338,7 +338,7 @@ public sealed class IconThemeLoadingTests
     [Fact]
     public void Icon_themes_that_extend_each_other_in_a_circle_are_reported_and_fall_back_to_the_reference()
     {
-        var catalog = Load(
+        var catalog = BuildCatalog(
             User("a", """{ "extends": "b" }"""),
             User("b", """{ "extends": "a" }"""));
 
@@ -347,25 +347,25 @@ public sealed class IconThemeLoadingTests
             .Select(e => e.Detail);
 
         Assert.Equal(["a → b → a", "b → a → b"], cycles);
-        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("lucide")), ThemeCatalogs.FindTheme(catalog, Id("a")));
-        Assert.Equal("lucide", ThemeCatalogs.FindShownId(catalog, Id("b")).Text);
+        Assert.Same(ThemeCatalogs.GetTheme(catalog, Id("lucide")), ThemeCatalogs.GetTheme(catalog, Id("a")));
+        Assert.Equal("lucide", ThemeCatalogs.GetShownId(catalog, Id("b")).Text);
     }
 
     [Fact]
     public void An_icon_theme_extending_no_known_theme_is_reported_and_falls_back_to_the_reference()
     {
-        var catalog = Load(User("orphan", """{ "extends": "nope" }"""));
+        var catalog = BuildCatalog(User("orphan", """{ "extends": "nope" }"""));
 
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal((ThemeProblem.UnknownParent, "nope"), (error.Problem, error.Subject));
-        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("lucide")), ThemeCatalogs.FindTheme(catalog, Id("orphan")));
+        Assert.Same(ThemeCatalogs.GetTheme(catalog, Id("lucide")), ThemeCatalogs.GetTheme(catalog, Id("orphan")));
     }
 
     [Fact]
     public void An_unreadable_icon_theme_falls_back_to_the_theme_it_extends()
     {
-        var catalog = Load(
+        var catalog = BuildCatalog(
             User("base", """{ "icons": { "node.class": { "font": "lucide", "glyph": "E106" } } }"""),
             User("broken", """
                 { "extends": "base",
@@ -375,13 +375,13 @@ public sealed class IconThemeLoadingTests
         var error = Assert.Single(catalog.Errors);
 
         Assert.Equal((ThemeProblem.InvalidJson, 2), (error.Problem, error.Line));
-        Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("base")), ThemeCatalogs.FindTheme(catalog, Id("broken")));
+        Assert.Same(ThemeCatalogs.GetTheme(catalog, Id("base")), ThemeCatalogs.GetTheme(catalog, Id("broken")));
     }
 
     [Fact]
     public void A_name_per_language_falls_back_to_english()
     {
-        var catalog = Load(User("named", """{ "name": { "en": "Shapes", "de": "Formen" } }"""));
+        var catalog = BuildCatalog(User("named", """{ "name": { "en": "Shapes", "de": "Formen" } }"""));
 
         Assert.Equal(["Lucide", "Formen"], ThemeCatalogs.ListNames(catalog, CultureInfo.GetCultureInfo("de")));
         Assert.Equal("Shapes", ThemeCatalogs.GetThemeName(catalog, Id("named"), CultureInfo.GetCultureInfo("fr")));
@@ -445,7 +445,7 @@ public sealed class IconAssetFolderTests : IDisposable
         var settings = _temp.Settings();
         settings.Locale = Locale.En;
 
-        var appState = LoadAppState(settings, TestSession.Shared);
+        var appState = RestoreAppState(settings, TestSession.Shared);
 
         var error = Assert.Single(appState.Errors.Entries);
         Assert.Equal("Problems in the icon theme bad.json", error.Words().Title);
@@ -501,7 +501,7 @@ public sealed class UserIconThemeTests : IDisposable
     [Fact]
     public void The_icon_theme_is_lucide_by_default_and_a_chosen_one_is_saved()
     {
-        var appState = LoadAppState(Settings(), TestSession.Shared);
+        var appState = RestoreAppState(Settings(), TestSession.Shared);
         Assert.Equal("lucide", appState.IconTheme.Text);
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, ResolveIconTheme(appState).Icons.NodeClass);
 
@@ -516,7 +516,7 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var path = _temp.Write("settings.json", """{ "IconTheme": null }""");
 
-        Assert.Equal("lucide", SettingsJson.LoadSettings(FullFilePath.Of(path)).Settings.IconTheme.Text);
+        Assert.Equal("lucide", SettingsJson.ReadSettingsFile(FullFilePath.Of(path)).Settings.IconTheme.Text);
     }
 
     [Fact]
@@ -524,9 +524,9 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var settings = Settings();
         settings.IconTheme = Id("gone");
-        var appState = LoadAppState(settings, TestSession.Shared);
+        var appState = RestoreAppState(settings, TestSession.Shared);
 
-        Assert.Same(ThemeCatalogs.FindTheme(appState.IconThemes, Id("lucide")), ResolveIconTheme(appState));
+        Assert.Same(ThemeCatalogs.GetTheme(appState.IconThemes, Id("lucide")), ResolveIconTheme(appState));
         SaveSettings(appState);
         Assert.Equal("gone", Settings().IconTheme.Text);
     }
@@ -538,7 +538,7 @@ public sealed class UserIconThemeTests : IDisposable
         WriteIconTheme("shapes", """{ "name": "Shapes", "icons": { "node.class": { "svg": "svg/class.svg" } } }""");
         var settings = Settings();
         settings.IconTheme = Id("shapes");
-        var appState = LoadAppState(settings, TestSession.Shared);
+        var appState = RestoreAppState(settings, TestSession.Shared);
 
         Assert.Equal(["lucide", "shapes"], appState.IconThemes.Ids.Select(static i => i.Text));
         Assert.Equal("Shapes", ThemeCatalogs.ListNames(appState.IconThemes, CultureInfo.InvariantCulture).Last());
@@ -550,7 +550,7 @@ public sealed class UserIconThemeTests : IDisposable
     public void A_problem_in_an_icon_theme_is_reported_once_under_its_file_until_it_changes()
     {
         WriteIconTheme("escape", """{ "icons": { "node.class": { "svg": "../class.svg" } } }""");
-        var appState = LoadAppState(Settings(), TestSession.Shared);
+        var appState = RestoreAppState(Settings(), TestSession.Shared);
         var error = Assert.Single(appState.Errors.Entries);
 
         ReloadUserIconThemes(appState);
@@ -563,7 +563,7 @@ public sealed class UserIconThemeTests : IDisposable
     [Fact]
     public void The_icon_themes_folder_is_made_with_the_schema_and_a_readme_that_are_no_themes()
     {
-        var appState = LoadAppState(Settings(), TestSession.Shared);
+        var appState = RestoreAppState(Settings(), TestSession.Shared);
 
         var folder = PrepareIconThemesFolder(appState);
         ReloadUserIconThemes(appState);
@@ -578,7 +578,7 @@ public sealed class UserIconThemeTests : IDisposable
     [Fact]
     public void A_custom_icon_theme_extends_the_one_shown_lists_every_icon_and_is_switched_to()
     {
-        var appState = LoadAppState(Settings(), TestSession.Shared);
+        var appState = RestoreAppState(Settings(), TestSession.Shared);
 
         var path = CreateCustomIconTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.IconThemes, parent, Strings.En.Culture)));
 
@@ -608,9 +608,9 @@ public sealed class UserIconThemeTests : IDisposable
     {
         _temp.Write(ClassPicture, MemoryIconAssets.Picture);
         WriteIconTheme("shapes", """{ "icons": { "node.class": { "svg": "svg/class.svg" } } }""");
-        var appState = LoadAppState(Settings(), TestSession.Shared);
+        var appState = RestoreAppState(Settings(), TestSession.Shared);
         var catalog = appState.IconThemes;
-        var shapes = ThemeCatalogs.FindTheme(catalog, Id("shapes"));
+        var shapes = ThemeCatalogs.GetTheme(catalog, Id("shapes"));
         var lines = IconThemeDraft.Compose("Mine", Id("shapes"), shapes).Split('\n');
         var assets = IconAssetFolders.Open(_temp.PathOf("icon-themes"));
 
@@ -624,7 +624,7 @@ public sealed class UserIconThemeTests : IDisposable
             var edited = lines.ToArray();
             edited[i] = lines[i].Replace("// ", "");
             var file = IconTheming.ReadTheme(Id("mine"), "mine.json", Encoding.UTF8.GetBytes(string.Join('\n', edited)), assets);
-            ThemeCatalogs.LoadUserThemes(catalog, [IconTheming.ReadThemeFile(Id("shapes"), _temp.PathOf("icon-themes/shapes.json")), file]);
+            ThemeCatalogs.ReplaceUserThemes(catalog, [IconTheming.ReadThemeFile(Id("shapes"), _temp.PathOf("icon-themes/shapes.json")), file]);
             Assert.True(catalog.Errors.Count == 0, edited[i] + ": " + string.Join("; ", catalog.Errors));
         }
         Assert.Contains(lines, l => l.Trim() == "// \"node.class\": { \"svg\": \"svg/class.svg\" },");
@@ -633,7 +633,7 @@ public sealed class UserIconThemeTests : IDisposable
     [Fact]
     public void No_custom_icon_theme_is_made_while_the_settings_live_in_memory()
     {
-        var appState = LoadAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared);
+        var appState = RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared);
 
         Assert.Null(CreateCustomIconTheme(appState, parent => Strings.En.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.IconThemes, parent, Strings.En.Culture))));
         Assert.Null(PrepareIconThemesFolder(appState));

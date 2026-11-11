@@ -190,7 +190,7 @@ public sealed class NuGetPicker
     }
 
     /// <summary>How many times the feed searched or whether prereleases count changed, for the
-    /// settings to keep <see cref="GetKeptSearch"/> once it did.</summary>
+    /// settings to keep <see cref="NuGetPicking.FindKeptSearch"/> once it did.</summary>
     public int SearchChanges { get; set; }
 
     /// <summary>Whether the packages shown are what the feed, query and prerelease choice now ask for:
@@ -340,7 +340,7 @@ public static class NuGetPicking
     }
 
     /// <summary>The feed last searched and whether prereleases counted, for the settings to keep.</summary>
-    public static SavedNuGetSearch? GetKeptSearch(NuGetPicker picker)
+    public static SavedNuGetSearch? FindKeptSearch(NuGetPicker picker)
     {
         return picker.Kept;
     }
@@ -769,15 +769,15 @@ public static class NuGetPicking
         picker.IconCount++;
         icon = new PackageIcon { ImageId = IconImagePrefix + picker.IconCount };
         picker.Icons.Add(url, icon);
-        FetchIcon(picker, setup, url, icon);
+        DownloadIcon(picker, setup, url, icon);
         return icon;
     }
 
     /// <summary>Gives <paramref name="icon"/> its pixels once they are in; one that cannot be fetched
     /// keeps none, so its row keeps the stand-in.</summary>
-    private static void FetchIcon(NuGetPicker picker, NuGetSetup setup, WebUrl url, PackageIcon icon)
+    private static void DownloadIcon(NuGetPicker picker, NuGetSetup setup, WebUrl url, PackageIcon icon)
     {
-        Background.Start(picker.Work, nameof(FetchIconAsync), FetchIconAsync(picker, setup, url, icon), picker.ReportError);
+        Background.Start(picker.Work, nameof(DownloadIconAsync), DownloadIconAsync(picker, setup, url, icon), picker.ReportError);
     }
 
     private static void ShowIcon(PackageIcon icon, ResourceImage? pixels)
@@ -790,10 +790,10 @@ public static class NuGetPicking
         icon.Shown = new ShownIcon(icon.ImageId, pixels, ResourceImages.IsDarkOnClear(pixels));
     }
 
-    private static async Task FetchIconAsync(NuGetPicker picker, NuGetSetup setup, WebUrl url, PackageIcon icon)
+    private static async Task DownloadIconAsync(NuGetPicker picker, NuGetSetup setup, WebUrl url, PackageIcon icon)
     {
         var token = picker.Fetches.Token;
-        var fetched = await Background.Wait(NuGetFeeds.FetchIconAsync(setup.Icons, url, NuGetPicker.IconPixels, token));
+        var fetched = await Background.Wait(NuGetFeeds.GetIconAsync(setup.Icons, url, NuGetPicker.IconPixels, token));
         if (token.IsCancellationRequested)
         {
             return;
@@ -931,7 +931,7 @@ public static class NuGetPicking
         var name = $"{package.Id} {version}";
         var running = new DownloadState.Running(name, new CancellationTokenSource());
         picker.DownloadRun = running;
-        var fetched = await Background.Wait(NuGetFeeds.FetchPackageAsync(setup.Cache, shown.Search.Feed, package.Id, version, running.Cancel.Token));
+        var fetched = await Background.Wait(NuGetFeeds.GetPackageAsync(setup.Cache, shown.Search.Feed, package.Id, version, running.Cancel.Token));
         if (!ReferenceEquals(picker.DownloadRun, running))
         {
             return;

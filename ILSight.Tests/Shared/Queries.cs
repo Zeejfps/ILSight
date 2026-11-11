@@ -44,7 +44,7 @@ internal static class NodeQueries
 
     public static NodeContent Content(this BrowseNode node, DecompilationLanguage language = DecompilationLanguage.CSharp)
     {
-        return NodeContentLoader.LoadAsync(TestSession.Shared, node, language, DecompilerOptions.Default).GetAwaiter().GetResult();
+        return NodeContentLoader.GetContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default).GetAwaiter().GetResult();
     }
 
     public static DecompiledDocument Decompile(this BrowseNode node, DecompilationLanguage language, CancellationToken cancellationToken = default)
@@ -61,7 +61,7 @@ internal static class NodeQueries
 
 internal static class DocumentQueries
 {
-    public static (int Line, int Column) Find(this DecompiledDocument document, string text, int skip = 0)
+    public static (int Line, int Column) GetPosition(this DecompiledDocument document, string text, int skip = 0)
     {
         for (var i = 0; i < document.Lines.Length; i++)
         {
@@ -81,7 +81,7 @@ internal static class DocumentQueries
 
     public static int LineContaining(this DecompiledDocument document, string text)
     {
-        return document.Find(text).Line;
+        return document.GetPosition(text).Line;
     }
 
     /// <summary>The span over <paramref name="column"/> of line <paramref name="line"/>.</summary>

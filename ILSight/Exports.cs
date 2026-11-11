@@ -145,7 +145,7 @@ public static class Exports
         Func<ExportReport, T, ExportReport> complete)
     {
         appState.ViewCommands.Enqueue(new ViewCommand.OpenPanel(DockView.Exports));
-        var turn = await Exports.EnterQueue(appState.Export, job);
+        var turn = await Exports.EnterQueueAsync(appState.Export, job);
         if (turn is not ExportStart start)
         {
             return;
@@ -475,7 +475,7 @@ public static class Exports
 
     /// <summary>Queues <paramref name="job"/>, which has one part until it reports otherwise. The task
     /// completes when its turn comes: at once when nothing runs.</summary>
-    public static Task<ExportTurn> EnterQueue(ExportQueue queue, ExportJob job)
+    public static Task<ExportTurn> EnterQueueAsync(ExportQueue queue, ExportJob job)
     {
         queue.LastRun++;
         var started = new TaskCompletionSource<ExportTurn>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -512,13 +512,13 @@ public static class Exports
         }
 
         var shown = active.Shown;
-        var furthest = GetFurthest(shown.Progress.Fraction, progress.Fraction);
+        var furthest = FindFurthest(shown.Progress.Fraction, progress.Fraction);
         active.Shown = shown with { Progress = progress with { Fraction = furthest } };
     }
 
     /// <summary>The further of two fractions of one export: reports sent from several threads can
     /// arrive out of order, and the bar must not step back.</summary>
-    private static float? GetFurthest(float? shown, float? reported)
+    private static float? FindFurthest(float? shown, float? reported)
     {
         if (shown is null)
         {

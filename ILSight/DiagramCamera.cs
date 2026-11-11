@@ -96,12 +96,12 @@ public static class DiagramCameras
 
     public static void ZoomIn(DiagramCamera camera, UiRect view)
     {
-        ZoomAt(camera, FindCenter(view), view, ZoomStep);
+        ZoomAt(camera, GetCenter(view), view, ZoomStep);
     }
 
     public static void ZoomOut(DiagramCamera camera, UiRect view)
     {
-        ZoomAt(camera, FindCenter(view), view, 1f / ZoomStep);
+        ZoomAt(camera, GetCenter(view), view, 1f / ZoomStep);
     }
 
     /// <summary>Zooms out until a diagram <paramref name="width"/> by <paramref name="height"/> fits
@@ -133,7 +133,7 @@ public static class DiagramCameras
         return across && down;
     }
 
-    private static PointF FindCenter(UiRect view)
+    private static PointF GetCenter(UiRect view)
     {
         return new PointF(view.X + view.Width / 2, view.Y + view.Height / 2);
     }

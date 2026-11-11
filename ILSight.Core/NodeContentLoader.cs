@@ -28,10 +28,10 @@ public static class NodeContentLoader
     /// rows, read the first time and kept; for a resource named as a PNG, JPEG, BMP, GIF, ICO, CUR or
     /// SVG file its picture, or when that cannot be decoded the resource as a document with why first;
     /// else the node decompiled with <paramref name="options"/>, which only C# reads.</summary>
-    public static Task<NodeContent> LoadAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    public static Task<NodeContent> GetContentAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken = default)
     {
-        return Task.Run(() => Load(session, node, language, options, cancellationToken), cancellationToken);
+        return Task.Run(() => GetContent(session, node, language, options, cancellationToken), cancellationToken);
     }
 
     /// <summary>Decompiles <paramref name="node"/> with <paramref name="options"/>, which only C# reads.
@@ -43,7 +43,7 @@ public static class NodeContentLoader
         return NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken);
     }
 
-    /// <summary>Whether <see cref="LoadAsync"/> gives decompiled code, which changes with the language
+    /// <summary>Whether <see cref="GetContentAsync"/> gives decompiled code, which changes with the language
     /// and options, rather than a grid, a picture or why the file failed to load, which do not.</summary>
     public static bool DependsOnLanguage(BrowseNode node)
     {
@@ -85,7 +85,7 @@ public static class NodeContentLoader
     /// offered under: the node's name, made safe for a file name, with the language's extension.</summary>
     public static string SuggestCodeFileName(BrowseNode node, DecompilationLanguage language)
     {
-        var name = IsModule(node) ? node.Assembly.Name : BrowseNodes.GetEntity(node)?.Name ?? node.Text;
+        var name = IsModule(node) ? node.Assembly.Name : BrowseNodes.FindEntity(node)?.Name ?? node.Text;
         var extension = DecompilationLanguages.IsIL(language) ? ".il" : ".cs";
         return WholeProjectDecompiler.CleanUpFileName(name, extension);
     }
@@ -95,7 +95,7 @@ public static class NodeContentLoader
         return node.Subject is NodeSubject.Module;
     }
 
-    private static NodeContent Load(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    private static NodeContent GetContent(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken)
     {
         var grid = GridOf(node);
@@ -111,7 +111,7 @@ public static class NodeContentLoader
 
         try
         {
-            return LoadImage(session, node, language, options, cancellationToken);
+            return GetImage(session, node, language, options, cancellationToken);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
@@ -130,7 +130,7 @@ public static class NodeContentLoader
     }
 
     /// <summary>The picture, with the markup it is stored as when it is drawn from shapes.</summary>
-    private static ImageContent LoadImage(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    private static ImageContent GetImage(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken)
     {
         var image = ResourceImages.DecodeImage(BrowseNodes.ReadResource(node));
@@ -199,7 +199,7 @@ public static class NodeContentLoader
     /// <summary>A comment a resource, describing each that <paramref name="node"/> lists.</summary>
     private static SummaryInfo.Comments DescribeResources(BrowseSession session, BrowseNode node)
     {
-        return new SummaryInfo.Comments(BrowseSessions.ListChildren(session, node).Select(static c => BrowseNodes.GetResourceData(c)).OfType<ResourceData>().Select(static r => r.Description).ToList());
+        return new SummaryInfo.Comments(BrowseSessions.ListChildren(session, node).Select(static c => BrowseNodes.FindResourceData(c)).OfType<ResourceData>().Select(static r => r.Description).ToList());
     }
 
     /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists.</summary>
@@ -236,7 +236,7 @@ public static class NodeContentLoader
 
     private static string DescribePackageChild(BrowseNode child)
     {
-        var file = BrowseNodes.GetResourceData(child);
+        var file = BrowseNodes.FindResourceData(child);
         if (file is not null)
         {
             return file.Description;

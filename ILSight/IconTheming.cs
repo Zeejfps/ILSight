@@ -30,7 +30,7 @@ public static class IconTheming
             Build = static (themes, file, chain) => BuildChainTheme(themes, file, chain),
             FindFallbackId = static _ => IconTheming.ReferenceId,
         };
-        ThemeCatalogs.LoadUserThemes(catalog, []);
+        ThemeCatalogs.ReplaceUserThemes(catalog, []);
         return catalog;
     }
 
@@ -80,22 +80,22 @@ public static class IconTheming
     }
 
     /// <summary>Reads the user's icon themes into the catalog and reports what is wrong in any icon theme.</summary>
-    public static void LoadIconThemes(AppState appState)
+    public static void ReadIconThemes(AppState appState)
     {
-        LoadUserIconThemes(appState, []);
+        RefreshUserIconThemes(appState, []);
     }
 
     /// <summary>Reads the user's icon themes again, reporting only what is newly wrong.</summary>
     public static void ReloadUserIconThemes(AppState appState)
     {
         var known = appState.IconThemes.Errors.ToList();
-        LoadUserIconThemes(appState, known);
+        RefreshUserIconThemes(appState, known);
     }
 
-    private static void LoadUserIconThemes(AppState appState, IReadOnlyList<ThemeError> known)
+    private static void RefreshUserIconThemes(AppState appState, IReadOnlyList<ThemeError> known)
     {
         var files = ReadUserIconThemes(appState.SettingsPlace.IconThemesFolder);
-        ThemeCatalogs.LoadUserThemes(appState.IconThemes, files);
+        ThemeCatalogs.ReplaceUserThemes(appState.IconThemes, files);
         ReportNewErrors(appState, appState.IconThemes.Errors, known, ThemeKind.Icon);
     }
 
@@ -115,7 +115,7 @@ public static class IconTheming
     /// the chosen one's file is missing. The choice is kept, so the icon theme comes back with its file.</summary>
     public static IconTheme ResolveIconTheme(AppState appState)
     {
-        return ThemeCatalogs.FindTheme(appState.IconThemes, appState.IconTheme);
+        return ThemeCatalogs.GetTheme(appState.IconThemes, appState.IconTheme);
     }
 
     /// <summary>The user's icon themes folder, made with the icon theme schema in it when missing, for the
@@ -151,10 +151,10 @@ public static class IconTheming
         }
 
         var themes = appState.IconThemes;
-        var parent = ThemeCatalogs.FindShownId(themes, appState.IconTheme);
-        var id = FindFreeCustomId(parent, candidate => IsTaken(themes, folder, candidate));
+        var parent = ThemeCatalogs.GetShownId(themes, appState.IconTheme);
+        var id = GetFreeCustomId(parent, candidate => IsTaken(themes, folder, candidate));
         var path = Path.Combine(folder, id.Text + IconThemeFile.Extension);
-        var text = IconThemeDraft.Compose(nameOf(parent), parent, ThemeCatalogs.FindTheme(themes, parent));
+        var text = IconThemeDraft.Compose(nameOf(parent), parent, ThemeCatalogs.GetTheme(themes, parent));
         if (!TryWriteNewFile(appState, path, text, ThemeKind.Icon))
         {
             return null;

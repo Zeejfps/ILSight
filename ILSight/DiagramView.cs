@@ -78,7 +78,7 @@ internal static class DiagramView
         var icons = ui.State.Icons;
         var view = DocumentPanels.GetView(ui.State.Documents, tab).Diagram;
         var camera = view.Camera;
-        var area = FindCanvasRect(ui);
+        var area = GetCanvasRect(ui);
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
         {
             if (ui.IconButton("zoom-out", icons.ResourceZoomOut, t.ResourceZoomOut, camera.CanZoomOut))
@@ -112,7 +112,7 @@ internal static class DiagramView
     }
 
     /// <summary>Where the cards were drawn on the last frame.</summary>
-    private static UiRect FindCanvasRect(Ui<UiState> ui)
+    private static UiRect GetCanvasRect(Ui<UiState> ui)
     {
         ui.TryGetRect(ui.GetId(CanvasId), out var rect);
         return rect;
@@ -149,7 +149,7 @@ internal static class DiagramView
             BringIntoView(view, diagram, rect);
         }
 
-        var hit = FindHit(ui, view, diagram, i, hasRect, rect);
+        var hit = GetHit(ui, view, diagram, i, hasRect, rect);
         Scroll(ui, view, rect, i.Hovered);
         Press(view, i, hit);
         Pan(ui, view, i);
@@ -177,7 +177,7 @@ internal static class DiagramView
             return null;
         }
 
-        return Diagrams.GetCardPlace(view.Transition, selected);
+        return Diagrams.FindCardPlace(view.Transition, selected);
     }
 
     /// <summary>Moves toward the diagram's newest layout, drawing again until the move ends; a new layout
@@ -279,7 +279,7 @@ internal static class DiagramView
     }
 
     /// <summary>The card and row under the pointer, while it is over the cards or holds a press on them.</summary>
-    private static DiagramHit FindHit(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, Interaction i, bool hasRect, UiRect rect)
+    private static DiagramHit GetHit(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, Interaction i, bool hasRect, UiRect rect)
     {
         if (!hasRect)
         {
@@ -317,7 +317,7 @@ internal static class DiagramView
             return new DiagramHit.Nothing();
         }
 
-        var place = Diagrams.GetCardPlace(view.Transition, card.Type);
+        var place = Diagrams.FindCardPlace(view.Transition, card.Type);
         if (place is null)
         {
             return new DiagramHit.Nothing();
@@ -329,12 +329,12 @@ internal static class DiagramView
         }
 
         var row = FindRowAt(face, point.Y - place.Value.Y);
-        if (row < 0)
+        if (row is null)
         {
             return new DiagramHit.Card(face);
         }
 
-        return new DiagramHit.Row(face, row);
+        return new DiagramHit.Row(face, row.Value);
     }
 
     private static CardFace? FaceOf(DiagramHit hit)
@@ -650,7 +650,7 @@ internal static class DiagramView
                 continue;
             }
 
-            var place = Diagrams.GetCardPlace(view.Transition, card.Type);
+            var place = Diagrams.FindCardPlace(view.Transition, card.Type);
             if (place is null)
             {
                 continue;

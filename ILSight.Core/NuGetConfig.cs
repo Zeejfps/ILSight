@@ -75,7 +75,7 @@ public static class NuGetConfigs
     /// <summary>What a config that says nothing means: nuget.org, and the default packages folder.</summary>
     public static NuGetConfig CreateDefault()
     {
-        return new NuGetConfig([NuGetSource.NuGetOrg], FindGlobalPackagesFolder(null, "", ReadPackagesFolderVariable()));
+        return new NuGetConfig([NuGetSource.NuGetOrg], GetGlobalPackagesFolder(null, "", ReadPackagesFolderVariable()));
     }
 
     private static string? ReadPackagesFolderVariable()
@@ -104,7 +104,7 @@ public static class NuGetConfigs
     {
         var document = TryLoad(path);
         var sources = ListSources(document);
-        var folder = FindGlobalPackagesFolder(document, path, packagesFolder);
+        var folder = GetGlobalPackagesFolder(document, path, packagesFolder);
         return new NuGetConfig(sources, folder);
     }
 
@@ -199,7 +199,7 @@ public static class NuGetConfigs
     /// <summary>The folder restores put packages in: the one the environment names, else the config's,
     /// else <c>.nuget/packages</c> in the user's home folder. The environment's counts only as an absolute
     /// path, as NuGet takes no other, and is taken as it is, as NuGet expands no variables in it.</summary>
-    private static string FindGlobalPackagesFolder(XDocument? document, string configPath, string? fromEnvironment)
+    private static string GetGlobalPackagesFolder(XDocument? document, string configPath, string? fromEnvironment)
     {
         if (!string.IsNullOrEmpty(fromEnvironment) && Path.IsPathRooted(fromEnvironment))
         {

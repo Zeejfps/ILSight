@@ -198,7 +198,7 @@ public static class Analyzers
     public static IAsyncEnumerable<IReadOnlyList<AnalysisSymbol>> RunAsync(AssemblyList list, AnalysisSymbol symbol, AnalysisKind kind,
         CancellationToken cancellationToken = default)
     {
-        return Batches.Stream<AnalysisSymbol>((emit, token) =>
+        return Batches.StreamAsync<AnalysisSymbol>((emit, token) =>
         {
             var run = kind.Prepare(symbol.Symbol);
             if (run is null)

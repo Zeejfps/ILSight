@@ -23,9 +23,9 @@ public static class BuiltInThemes
 
     /// <summary>The default dark theme, whose code and icon colors the screen starts with until the app
     /// hands it the chosen theme.</summary>
-    public static AppTheme Dark { get; } = ThemeCatalogs.FindTheme(Catalog, Theming.DarkId);
+    public static AppTheme Dark { get; } = ThemeCatalogs.GetTheme(Catalog, Theming.DarkId);
 
-    public static AppTheme Light { get; } = ThemeCatalogs.FindTheme(Catalog, Theming.LightId);
+    public static AppTheme Light { get; } = ThemeCatalogs.GetTheme(Catalog, Theming.LightId);
 
     /// <summary>What was wrong in the built-in theme files; nothing, unless one was broken by an edit.</summary>
     public static IReadOnlyList<ThemeError> Errors => Catalog.Errors;

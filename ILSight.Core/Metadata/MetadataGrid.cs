@@ -98,7 +98,7 @@ public sealed class MetadataGrid
     /// column's flags filter is kept.</summary>
     public string Key => Schema.Key;
 
-    /// <summary>Whether the selected row shows its <see cref="MetadataGrid.GetDetails"/> under it, as a debug
+    /// <summary>Whether the selected row shows its <see cref="MetadataGrids.FindDetails"/> under it, as a debug
     /// information's decoded value does.</summary>
     public bool HasDetails => Schema.Details is not null;
 
@@ -135,7 +135,7 @@ public static class MetadataGrids
     {
         var text = grid.TextCells ??= new string?[grid.Rows.Count * grid.GridColumns.Count];
         var index = row * grid.GridColumns.Count + column;
-        return text[index] ??= FormatValue(GetValue(grid, row, column), grid.GridColumns[column].Format);
+        return text[index] ??= FormatValue(FindValue(grid, row, column), grid.GridColumns[column].Format);
     }
 
     /// <summary>The rows of <paramref name="order"/>, or of the table in its own order, that pass
@@ -163,7 +163,7 @@ public static class MetadataGrids
 
     /// <summary>What is shown under <paramref name="row"/> while it is selected; null when it has
     /// nothing.</summary>
-    public static MetadataRowDetails? GetDetails(MetadataGrid grid, int row)
+    public static MetadataRowDetails? FindDetails(MetadataGrid grid, int row)
     {
         var details = grid.Schema.Details;
         if (details is null)
@@ -215,7 +215,7 @@ public static class MetadataGrids
         var keys = new object?[grid.Rows.Count];
         for (var row = 0; row < keys.Length; row++)
         {
-            keys[row] = GetValue(grid, row, column);
+            keys[row] = FindValue(grid, row, column);
         }
 
         var order = Enumerable.Range(0, keys.Length).ToArray();
@@ -229,7 +229,7 @@ public static class MetadataGrids
     }
 
     /// <summary>What hovering a cell explains, or null when its column has nothing to say.</summary>
-    public static MetadataTooltip? GetTooltip(MetadataGrid grid, int row, int column)
+    public static MetadataTooltip? FindTooltip(MetadataGrid grid, int row, int column)
     {
         var info = grid.GridColumns[column];
         if (info.Column.Flags is null && info.Tooltip is null)
@@ -247,7 +247,7 @@ public static class MetadataGrids
         try
         {
             value = info.Column.Flags is not null
-                ? ExplainFlags(info.Column.Flags, GetValue(grid, row, column))
+                ? ExplainFlags(info.Column.Flags, FindValue(grid, row, column))
                 : info.Tooltip?.Invoke(grid.Rows[row], row + 1);
         }
         catch (Exception e) when (IsUnreadable(e))
@@ -267,7 +267,7 @@ public static class MetadataGrids
     /// <summary>The row a token cell points at, in the table of this metadata it names; null for a
     /// cell that is not a token, a nil token or a table this metadata lists no rows of. A row past
     /// the table's end, as the end of an empty member list is, leads to the last row.</summary>
-    public static MetadataAddress? GetLink(MetadataGrid grid, int row, int column)
+    public static MetadataAddress? FindLink(MetadataGrid grid, int row, int column)
     {
         if (!grid.GridColumns[column].Column.IsToken)
         {
@@ -280,14 +280,14 @@ public static class MetadataGrids
             return known;
         }
 
-        var result = FindLink(grid, row, column);
+        var result = FindLinkUncached(grid, row, column);
         grid.Links[index] = result;
         return result;
     }
 
-    private static MetadataAddress? FindLink(MetadataGrid grid, int row, int column)
+    private static MetadataAddress? FindLinkUncached(MetadataGrid grid, int row, int column)
     {
-        if (GetValue(grid, row, column) is not int token || (token & 0xFFFFFF) == 0)
+        if (FindValue(grid, row, column) is not int token || (token & 0xFFFFFF) == 0)
         {
             return null;
         }
@@ -346,7 +346,7 @@ public static class MetadataGrids
 
     private static bool MatchesCell(MetadataGrid grid, int row, int column, MetadataColumnFilter filter)
     {
-        var value = GetValue(grid, row, column);
+        var value = FindValue(grid, row, column);
         if (value is null)
         {
             return false;
@@ -468,7 +468,7 @@ public static class MetadataGrids
         };
     }
 
-    private static object? GetValue(MetadataGrid grid, int row, int column)
+    private static object? FindValue(MetadataGrid grid, int row, int column)
     {
         try
         {

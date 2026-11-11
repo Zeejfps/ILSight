@@ -97,7 +97,7 @@ public static class BrowseSessions
 
         var packageRoot = EnsureRoot(session, place.Container);
         var folder = FindFolderNode(session, packageRoot, place.File.Folder) ?? packageRoot;
-        LoadChildren(session, folder);
+        GetChildren(session, folder);
         return session.ModuleRoots.GetValue(module, m => BrowseNodes.CreateModuleRoot(m, folder));
     }
 
@@ -183,7 +183,7 @@ public static class BrowseSessions
     /// <summary>The children of <paramref name="node"/>, built on the thread pool when nobody asked for
     /// them yet. Every caller waits for the same build; cancelling a wait leaves the build running for
     /// the others. Ends <see cref="ChildrenState.Ready"/> or <see cref="ChildrenState.Failed"/>.</summary>
-    public static Task<ChildrenState> LoadChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken cancellationToken = default)
+    public static Task<ChildrenState> GetChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken cancellationToken = default)
     {
         var slot = EnsureSlot(session, node);
         Task<ChildrenState> load;
@@ -212,7 +212,7 @@ public static class BrowseSessions
     /// <summary>The children of <paramref name="node"/>, built on this thread when nobody asked for them
     /// yet, else waited for while another builds them. Blocks: call it off the UI thread. Ends
     /// <see cref="ChildrenState.Ready"/> or <see cref="ChildrenState.Failed"/>.</summary>
-    public static ChildrenState LoadChildren(BrowseSession session, BrowseNode node)
+    public static ChildrenState GetChildren(BrowseSession session, BrowseNode node)
     {
         var slot = EnsureSlot(session, node);
         TaskCompletionSource<ChildrenState>? building = null;
@@ -243,11 +243,11 @@ public static class BrowseSessions
         return load.GetAwaiter().GetResult();
     }
 
-    /// <summary>The children of <paramref name="node"/>, as <see cref="LoadChildren"/> builds them; none
+    /// <summary>The children of <paramref name="node"/>, as <see cref="GetChildren"/> builds them; none
     /// when they failed to build. Blocks: call it off the UI thread.</summary>
     public static IReadOnlyList<BrowseNode> ListChildren(BrowseSession session, BrowseNode node)
     {
-        if (LoadChildren(session, node) is ChildrenState.Ready ready)
+        if (GetChildren(session, node) is ChildrenState.Ready ready)
         {
             return ready.Children;
         }
@@ -278,7 +278,7 @@ public static class BrowseSessions
             return null;
         }
 
-        var segment = BrowseNodes.GetSegment(other);
+        var segment = BrowseNodes.FindSegment(other);
         if (segment is null)
         {
             return null;
@@ -294,7 +294,7 @@ public static class BrowseSessions
         BrowseNode? found = null;
         foreach (var child in children)
         {
-            if (!segment.Equals(BrowseNodes.GetSegment(child)))
+            if (!segment.Equals(BrowseNodes.FindSegment(child)))
             {
                 continue;
             }
@@ -457,7 +457,7 @@ public static class BrowseSessions
             return null;
         }
 
-        LoadChildren(session, parent);
+        GetChildren(session, parent);
         return index.GetValueOrDefault(handle);
     }
 
@@ -467,14 +467,14 @@ public static class BrowseSessions
     {
         if (handle.Kind != HandleKind.TypeDefinition)
         {
-            return FindNode(session, module, LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle));
+            return FindNode(session, module, LoadedAssemblies.GetOwner(LoadedAssemblies.EnsureMainModule(module), handle));
         }
 
         var metadata = module.File.Metadata;
         var type = metadata.GetTypeDefinition((TypeDefinitionHandle)handle);
         if (!type.GetDeclaringType().IsNil)
         {
-            return FindNode(session, module, LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle));
+            return FindNode(session, module, LoadedAssemblies.GetOwner(LoadedAssemblies.EnsureMainModule(module), handle));
         }
 
         return FindNamespace(session, module, metadata.GetString(type.Namespace));
@@ -484,7 +484,7 @@ public static class BrowseSessions
     /// as a compiler-generated member is held by the type it is generated in.</summary>
     internal static BrowseNode? FindOrAncestor(BrowseSession session, LoadedModule module, EntityHandle handle)
     {
-        for (; !handle.IsNil; handle = LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle))
+        for (; !handle.IsNil; handle = LoadedAssemblies.GetOwner(LoadedAssemblies.EnsureMainModule(module), handle))
         {
             var node = FindNode(session, module, handle);
             if (node is not null)
@@ -497,7 +497,7 @@ public static class BrowseSessions
 
     private static BrowseNode? FindNamespace(BrowseSession session, LoadedModule module, string name)
     {
-        LoadChildren(session, EnsureRoot(session, module));
+        GetChildren(session, EnsureRoot(session, module));
         return EnsureNamespaces(session, module).GetValueOrDefault(name);
     }
 
@@ -662,7 +662,7 @@ public static class BrowseSessions
     {
         for (var parent = node.Parent; parent is not null; parent = parent.Parent)
         {
-            if (GetMetadata(parent) is not null)
+            if (FindMetadata(parent) is not null)
             {
                 return parent;
             }
@@ -673,7 +673,7 @@ public static class BrowseSessions
     /// <summary>Whether <paramref name="node"/> is the folder of <paramref name="file"/>'s metadata.</summary>
     private static bool IsMetadataOf(BrowseNode node, ICSharpCode.Decompiler.Metadata.MetadataFile file)
     {
-        var metadata = GetMetadata(node);
+        var metadata = FindMetadata(node);
         if (metadata is null)
         {
             return false;
@@ -683,7 +683,7 @@ public static class BrowseSessions
     }
 
     /// <summary>The metadata <paramref name="node"/> is the folder of; null for a node of anything else.</summary>
-    private static MetadataFolderInfo? GetMetadata(BrowseNode node)
+    private static MetadataFolderInfo? FindMetadata(BrowseNode node)
     {
         if (node.Subject is not NodeSubject.Metadata metadata)
         {

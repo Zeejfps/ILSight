@@ -18,7 +18,7 @@ public static class Comparisons
     public static void CompareAssemblies(AppState appState, LoadedModule left, LoadedModule right, string title)
     {
         LeaveActiveTab(appState);
-        var tab = FindOrOpenEmptyTab(appState);
+        var tab = GetOrOpenEmptyTab(appState);
         var comparison = new AssemblyComparison { LeftPath = left.FilePath, RightPath = right.FilePath };
         Tabs.ShowComparison(tab, title, comparison);
         Tabs.Keep(appState.Tabs, tab);

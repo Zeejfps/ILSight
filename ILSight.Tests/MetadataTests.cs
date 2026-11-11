@@ -109,8 +109,8 @@ public sealed class MetadataTests
                     for (var column = 0; column < grid.Columns.Count; column++)
                     {
                         Assert.NotNull(MetadataGrids.GetText(grid, row, column));
-                        MetadataGrids.GetTooltip(grid, row, column);
-                        var link = MetadataGrids.GetLink(grid, row, column);
+                        MetadataGrids.FindTooltip(grid, row, column);
+                        var link = MetadataGrids.FindLink(grid, row, column);
                         if (link is not null)
                         {
                             var target = Assert.IsType<MetadataTarget>(BrowseSessions.FindMetadataRow(TestSession.Shared, node, link.Value));
@@ -153,7 +153,7 @@ public sealed class MetadataTests
     {
         var grid = TypeDefs();
 
-        var tooltip = MetadataGrids.GetTooltip(grid, grid.RowNamed("Calculator`1"), grid.Column("Attributes"))!;
+        var tooltip = MetadataGrids.FindTooltip(grid, grid.RowNamed("Calculator`1"), grid.Column("Attributes"))!;
 
         Assert.Equal(["Visibility", "Layout", "ClassSemantics", "StringFormat", "Flags"], tooltip.Groups.Select(g => g.Header));
         var visibility = tooltip.Groups[0];
@@ -193,7 +193,7 @@ public sealed class MetadataTests
         var grid = Grid(types);
         var row = grid.RowNamed("Calculator`1");
 
-        var link = Assert.IsType<MetadataAddress>(MetadataGrids.GetLink(grid, row, grid.Column("BaseType")));
+        var link = Assert.IsType<MetadataAddress>(MetadataGrids.FindLink(grid, row, grid.Column("BaseType")));
         var target = Assert.IsType<MetadataTarget>(BrowseSessions.FindMetadataRow(TestSession.Shared, types, link));
 
         Assert.Same(Table(assembly, "TypeRef"), target.Node);
@@ -392,12 +392,12 @@ public sealed class MetadataTests
         var coff = Grid(Metadata(assembly).Child("COFF Header"));
         var characteristics = Enumerable.Range(0, coff.RowCount).Single(r => MetadataGrids.GetText(coff, r, coff.Column("Member")) == "Characteristics");
 
-        var bits = Assert.Single(MetadataGrids.GetTooltip(coff, characteristics, coff.Column("Value"))!.Groups).Flags;
+        var bits = Assert.Single(MetadataGrids.FindTooltip(coff, characteristics, coff.Column("Value"))!.Groups).Flags;
 
         Assert.False(coff.HasDetails);
         Assert.Equal(16, bits.Count);
         Assert.Contains(new MetadataFlag("File is executable (0002)", true), bits);
-        Assert.Null(MetadataGrids.GetTooltip(coff, 0, coff.Column("Value")));
+        Assert.Null(MetadataGrids.FindTooltip(coff, 0, coff.Column("Value")));
         Assert.False(Grid(Table(assembly, "TypeDef")).HasDetails);
     }
 
@@ -410,7 +410,7 @@ public sealed class MetadataTests
         var kind = grid.Column("KindString");
 
         var options = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
-        var table = Assert.IsType<MetadataTableDetails>(MetadataGrids.GetDetails(grid, options));
+        var table = Assert.IsType<MetadataTableDetails>(MetadataGrids.FindDetails(grid, options));
 
         Assert.True(grid.HasDetails);
         Assert.Equal(["Name", "Value"], table.Headers);
@@ -505,10 +505,10 @@ public sealed class MetadataTests
         Assert.Equal(2, log.RowCount);
         Assert.Equal(type, Hex(log, 0, "Handle"));
         Assert.Equal((int)EditAndContinueOperation.AddMethod, Hex(log, 1, "FuncCode"));
-        Assert.Equal(nameof(EditAndContinueOperation.AddMethod), MetadataGrids.GetTooltip(log, 1, log.Column("FuncCode"))!.Text);
+        Assert.Equal(nameof(EditAndContinueOperation.AddMethod), MetadataGrids.FindTooltip(log, 1, log.Column("FuncCode"))!.Text);
         Assert.Equal(1, map.RowCount);
         Assert.Equal(type, Hex(map, 0, "Handle"));
-        Assert.Equal(new MetadataAddress(TableIndex.TypeDef, 0), MetadataGrids.GetLink(map, 0, map.Column("Handle")));
+        Assert.Equal(new MetadataAddress(TableIndex.TypeDef, 0), MetadataGrids.FindLink(map, 0, map.Column("Handle")));
         Assert.Equal(new MetadataTarget(Table(assembly, "TypeDef"), 0), BrowseSessions.FindMetadataRow(TestSession.Shared, Table(assembly, "EncMap"), new MetadataAddress(TableIndex.TypeDef, 0)));
     }
 
@@ -551,8 +551,8 @@ public sealed class MetadataTests
                 for (var column = 0; column < grid.Columns.Count; column++)
                 {
                     MetadataGrids.GetText(grid, row, column);
-                    MetadataGrids.GetTooltip(grid, row, column);
-                    MetadataGrids.GetLink(grid, row, column);
+                    MetadataGrids.FindTooltip(grid, row, column);
+                    MetadataGrids.FindLink(grid, row, column);
                 }
             }
         }

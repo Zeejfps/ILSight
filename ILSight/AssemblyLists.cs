@@ -159,12 +159,12 @@ public static class AssemblyLists
     public static void PickList(AssemblyListsDialog dialog, SavedAssemblyLists lists, string name)
     {
         var names = lists.Names;
-        var index = FindListIndex(names, name);
+        var index = GetListIndex(names, name);
         dialog.Selection.Select(index, names.Count);
         StopAsking(dialog);
     }
 
-    private static int FindListIndex(IReadOnlyList<string> names, string name)
+    private static int GetListIndex(IReadOnlyList<string> names, string name)
     {
         for (var i = 0; i < names.Count; i++)
         {
@@ -222,12 +222,12 @@ public static class AssemblyLists
 
     /// <summary>Takes the lists the settings kept, dropping nameless ones and repeated names, and
     /// opens the one named <paramref name="active"/>, else the first.</summary>
-    public static void LoadLists(SavedAssemblyLists lists, List<AssemblyListRecord> records, string? active)
+    public static void RestoreLists(SavedAssemblyLists lists, List<AssemblyListRecord> records, string? active)
     {
         lists.Lists.Clear();
         foreach (var record in records)
         {
-            LoadList(lists, record);
+            RestoreList(lists, record);
         }
 
         if (lists.Lists.Count == 0)
@@ -239,7 +239,7 @@ public static class AssemblyLists
         lists.Revision++;
     }
 
-    private static void LoadList(SavedAssemblyLists lists, AssemblyListRecord record)
+    private static void RestoreList(SavedAssemblyLists lists, AssemblyListRecord record)
     {
         var name = record.Name.Trim();
         if (name.Length == 0)
@@ -570,7 +570,7 @@ public static class AssemblyLists
             return;
         }
 
-        var replacement = FindReplacement(lists, list.Name);
+        var replacement = GetReplacement(lists, list.Name);
         lists.Lists.Remove(list);
         if (lists.Lists.Count == 0)
         {
@@ -579,7 +579,7 @@ public static class AssemblyLists
 
         if (list == lists.ActiveList)
         {
-            lists.ActiveList = FindRemainingList(lists, replacement);
+            lists.ActiveList = GetRemainingList(lists, replacement);
         }
 
         lists.Revision++;
@@ -587,7 +587,7 @@ public static class AssemblyLists
 
     /// <summary>The name of the list that opens when the open list named <paramref name="name"/> is
     /// deleted: the one after it, else the one before, else a new empty <see cref="SavedAssemblyLists.DefaultName"/>.</summary>
-    public static string FindReplacement(SavedAssemblyLists lists, string name)
+    public static string GetReplacement(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);
         if (list is null)
@@ -609,9 +609,9 @@ public static class AssemblyLists
         return SavedAssemblyLists.DefaultName;
     }
 
-    /// <summary>The list named <paramref name="name"/>, which <see cref="FindReplacement"/> named after the
+    /// <summary>The list named <paramref name="name"/>, which <see cref="GetReplacement"/> named after the
     /// list it replaces was removed: one of those left, or the empty one made when none was.</summary>
-    private static SavedAssemblyLists.SavedList FindRemainingList(SavedAssemblyLists lists, string name)
+    private static SavedAssemblyLists.SavedList GetRemainingList(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);
         if (list is null)
