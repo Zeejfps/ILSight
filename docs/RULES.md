@@ -1,0 +1,1283 @@
+# C# Coding Rules
+
+Rules for LLM agents writing C# that humans can understand. Each rule has been stress-tested against compiled scenarios;
+the evidence lives in `rules/<id>/README.md`.
+
+---
+
+## Scope: production code and tests
+
+| Code | Rules that apply |
+|------|------------------|
+| Production code | All rules. |
+| Tests and test helpers | **R002, R003, R005, R007, R008, R010** (except RL1001: test methods needn't take a token), and R009's ban on empty catches. These are what keep tests readable: no `!`, names that say what is tested, labelled test data, braces, honest states. **Not R001, R004 or R011.** A test is a composition root: it builds the code under test with real or fake infrastructure, may open databases, build DI containers, write output and catch exceptions directly. Fakes that implement a port are expected (they are the port's second adapter). |
+
+Test conventions:
+
+- **Names:** `<MethodUnderTest>_<Scenario>_<Expected>` (R003), e.g. `Withdraw_MoreThanBalance_ReturnsInsufficientFunds`.
+- **Assertions narrow.** Use assertion helpers the compiler understands, so a passing null check carries over (R002):
+  ```csharp
+  Assert.NotNull(account);         // xUnit: [NotNull]
+  account.Withdraw(20m);           // no `!` needed
+
+  public static void Assert([DoesNotReturnIf(false)] bool condition, string claim)   // our own helpers: annotate them
+  ```
+  Without `[DoesNotReturnIf(false)]`, `Check.Assert(order is not null, ...)` does not narrow `order`, and the next line
+  needs `!` or a second check.
+- **Test data uses object initializers** (R005), so every value in a fixture is labelled.
+- **Shared helpers live in one place** (a shared test project), not copied into each test project.
+
+## Enforcement
+
+The build checks what can be checked mechanically (`analyzers/`, wired in through `Directory.Build.props`):
+
+| Rule | Build-enforced | Still review / checklist |
+|------|----------------|--------------------------|
+| R002 | `!` (RL0201), `== null` (RL0202, except in expression trees, which can't contain `is`), nullable suppressions (RL0203) | where to narrow, what null means |
+| R003 | missing `Async` (RL0301), `Find*` not `T?` (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305) | whether a name is a verb; choosing the right pattern |
+| R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
+| R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status |
+| R004 | vague type names (RL0401) | classification; one-implementation interfaces (an analyzer can't see across projects) |
+| R005 | positional records with 2+ values (RL0501) | rules spanning several values |
+| R001 | direct time / randomness / I/O outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101) | everything else: ports, adapters, what counts as a decision |
+| R006 | – | all |
+| R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849) | parallel queries on one `DbContext`; moving async work out of sync-only callers |
+| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804) | which failures are expected; specific catches in decision code; log-and-rethrow |
+| R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
+
+To break a rule on purpose, suppress it with the reason written down:
+`#pragma warning disable RL0802 // Deliberate: demonstrates the discarded-result trap`, or on a member
+`[SuppressMessage("RuleLab.R001", "RL0101", Justification = "...")]`.
+
+Mark folders whose job is I/O (an Infrastructure project, startup wiring) with `rulelab.infrastructure = true` in
+`.editorconfig`, and test folders with `rulelab.test_code = true`.
+
+---
+
+## R001: A class declares its outside-world needs as a single port
+
+**Rule.** A class that makes decisions touches the outside world only through **one interface it declares itself**, received
+through its constructor. **Adapters** implement that interface using real infrastructure, and make no decisions.
+
+**Why.** Anyone reading the class, human or agent, sees in one place everything it can do to the outside world.
+Hidden side effects (`DateTime.Now`, `new HttpClient()`) become impossible to miss, and tests need exactly one fake.
+
+### What counts as external
+
+Goes through the port:
+
+- I/O: database, HTTP, file system, queues, email
+- Time: `DateTime.Now`, `DateTimeOffset.UtcNow`, `TimeProvider`
+- Randomness and identity: `Random`, `Guid.NewGuid()`
+- Environment and configuration reads
+- Logging
+- Shared mutable state: caches, static fields
+
+Does **not** go through the port; use it directly:
+
+- **Pure code**: calculations, mapping, value validation. Call it as a static method or `new` it up. Never inject it.
+- **Values**: records, DTOs, per-call input. Pass them as method parameters.
+
+### How
+
+1. Declare the port as a nested `public interface IPorts`. The constructor takes only that.
+
+   ```csharp
+   public sealed class ConfirmOrderHandler(ConfirmOrderHandler.IPorts ports)
+   {
+       public interface IPorts
+       {
+           DateTimeOffset Now { get; }
+           Task<Order?> FindOrderAsync(int orderId, CancellationToken ct);
+           Task SaveOrderAsync(Order order, CancellationToken ct);
+           Task<Customer?> FindCustomerAsync(int customerId, CancellationToken ct);
+           Task SendEmailAsync(string to, string subject, string body, CancellationToken ct);
+           void LogOrderConfirmed(int orderId);
+       }
+
+       public async Task<bool> HandleAsync(int orderId, CancellationToken ct)
+       {
+           if (await ports.FindOrderAsync(orderId, ct) is not Order.Pending pending) // missing, or not pending
+           {
+               return false;
+           }
+
+           await ports.SaveOrderAsync(pending.ToConfirmed(ports.Now), ct);
+           // ...
+           ports.LogOrderConfirmed(pending.Id);
+           return true;
+       }
+   }
+   ```
+
+   `Order` is a union (R008): `pending.ToConfirmed(now)` returns an `Order.Confirmed`, which can't exist without its
+   `ConfirmedAt`.
+
+2. **Name port members for what the class needs** (`FindOrderAsync`, `Now`, `LogOrderConfirmed`), not after infrastructure.
+   Port signatures must not expose infrastructure types (`DbContext`, `DbSet<T>`, `IQueryable<T>`, `HttpClient`, `ILogger`).
+3. **List only what this class uses.** If two classes need the same operation, each port declares it. Don't share wide interfaces.
+4. **Per-call data goes in method parameters**, never in a port-using class's constructor.
+   ```csharp
+   // ❌ new CsvImporter(stream, store, logger)
+   // ✅ importer.ImportAsync(stream, ct)
+   ```
+   (Types that *are* data, such as entities and value objects, receive it through `required init` properties. See R005.)
+5. **If the only dependency is the current time, take it as a parameter** and skip the port. The class becomes pure.
+   ```csharp
+   public static bool IsExpired(DateTimeOffset trialStartedAt, DateTimeOffset now)
+   {
+       return now - trialStartedAt > Length;
+   }
+   ```
+6. **When several port calls must share a scope or transaction, return a handle** instead of exposing scoping.
+   ```csharp
+   Task<IOutboxBatch> OpenBatchAsync(int maxMessages, CancellationToken ct); // IOutboxBatch : IAsyncDisposable
+   ```
+7. **A class with no external dependencies has no port and no dependency parameters.** Prefer this. Push logic into pure
+   code and keep the port-using class thin.
+
+### Adapters
+
+- Named `<Class>Adapter` when it serves one class's port. An adapter shared by several ports is named after the
+  infrastructure it wraps (`OrderInfrastructure`, `SqlOrderStore`).
+- Take concrete infrastructure in the constructor, as many parameters as needed.
+- **Translate only.** No branching on business data: if an adapter needs an `if` about orders, prices or customers,
+  that decision belongs in the class it serves. Branching that translates the infrastructure (a status code, a
+  provider exception, a wire format) belongs in the adapter.
+  Translating includes failures: a 404 becomes `null` from a `Find*` port member; anything the port has no answer for
+  propagates (R009).
+- Several ports may share one adapter when they use the same infrastructure. Register each port to the shared instance:
+
+  ```csharp
+  public sealed class ConfirmOrderHandlerAdapter(
+      IOrderRepository orders, ICustomerRepository customers, IEmailSender email,
+      TimeProvider time, ILogger<ConfirmOrderHandler> logger) : ConfirmOrderHandler.IPorts
+  {
+      public DateTimeOffset Now => time.GetUtcNow();
+
+      public Task<Order?> FindOrderAsync(int orderId, CancellationToken ct)
+      {
+          return orders.FindAsync(orderId, ct);
+      }
+
+      // ...
+
+      public void LogOrderConfirmed(int orderId)
+      {
+          logger.LogInformation("Order {OrderId} confirmed", orderId);
+      }
+  }
+
+  // Shared adapter for several ports:
+  services.AddScoped<OrderInfrastructure>();
+  services.AddScoped<ConfirmOrderHandler.IPorts>(sp => sp.GetRequiredService<OrderInfrastructure>());
+  services.AddScoped<CancelOrderHandler.IPorts>(sp => sp.GetRequiredService<OrderInfrastructure>());
+  ```
+
+### Exemptions
+
+| Kind | What to do instead |
+|------|--------------------|
+| Adapters | Take concrete infrastructure directly (see above). |
+| Decorators: a class that implements `X` and wraps an `X` | Take the wrapped `X` (and e.g. `IMemoryCache`) directly. |
+| Composition root: `Program.cs`, DI registration methods | Wire things up: no port needed (R001). Every other rule still applies. |
+| Classes the framework creates without DI: attributes, EF Core entities, `[JsonConverter]` types | Must have **no** external dependencies. Move logic that needs the outside world into a class that can take a port (e.g. a validator class instead of a validation attribute). |
+| Framework UI components: Blazor components, Razor pages, controllers | Keep them thin: inject the use-case handler (or framework services such as `NavigationManager`) through the constructor and delegate every decision to it. No port of their own. |
+
+### Framework notes
+
+- **ASP.NET Core middleware:** implement `IMiddleware` and register it in DI, so `next` arrives in `InvokeAsync`,
+  not the constructor. Don't use convention-based middleware.
+- **Singletons (`BackgroundService`, hosted services) that need scoped services:** register the adapter as a singleton,
+  inject `IServiceScopeFactory` into the adapter, and open the scope inside a returned handle (point 6).
+  Never inject a scoped adapter into a singleton. DI rejects it at startup with `ValidateScopes`.
+
+### Checklist
+
+- [ ] Constructor takes no dependencies, or exactly one: the class's own nested `IPorts`. (Entities and value objects use `required init` properties: R005.)
+- [ ] No `DateTime.Now`/`UtcNow`, `Guid.NewGuid()`, `Random`, `File`, `Environment`, `HttpClient` or `ILogger` in a class that makes decisions.
+- [ ] Port members are named after needs; no infrastructure types in their signatures.
+- [ ] Per-call data arrives through method parameters.
+- [ ] Pure collaborators are called directly, not injected.
+- [ ] Adapters contain no business branching.
+
+---
+
+## R002: Prove non-null; never assert it
+
+**Rule.** Never override the compiler's null analysis. Prove a value is non-null with a check the compiler can see,
+or let the type say it may be null.
+
+**Why.** The null-forgiving `!` doesn't check anything. It silences the compiler and moves the failure somewhere else:
+a null that leaks into data, or a `NullReferenceException` far from its cause. A visible check documents the assumption
+and fails at the source with a useful message.
+
+### Prerequisite
+
+```xml
+<Nullable>enable</Nullable>
+<WarningsAsErrors>nullable</WarningsAsErrors>
+```
+
+### How
+
+1. **Never use the null-forgiving operator**, in any form: `x!`, `x!.Member`, `= null!`, `= default!`, `value = default!`.
+   Never use `#nullable disable` or `#pragma warning disable` to get around nullable warnings.
+2. **Check with patterns**: `is null`, `is not null`, `is { } x`, `is not { } x`. Prefer them over `== null` / `!= null`.
+3. **Narrow into a local.** When checking a field or property, capture it with a pattern and use the local. The compiler
+   trusts a checked field even after an `await` or method call that may have reset it.
+   ```csharp
+   if (_connection is not { } connection)
+   {
+       throw new InvalidOperationException("Not connected.");
+   }
+   await LogQueryStartingAsync(sql, ct);
+   return await connection.RunAsync(sql, ct); // not _connection
+   ```
+4. **Decide what null means:**
+   - *Null would be a bug* (should exist, must be configured): throw at the source with a message that says what was expected.
+     ```csharp
+     var connectionString = configuration.GetConnectionString("Orders")
+         ?? throw new InvalidOperationException("Connection string 'Orders' is not configured.");
+     ArgumentNullException.ThrowIfNull(report);
+     ```
+   - *Null is a legitimate absence*: make the return type nullable and let the caller decide.
+     ```csharp
+     if (customer.Email is not { } email)
+     {
+         return null; // return type: WelcomeEmail?
+     }
+     ```
+   - Don't substitute a default (`?? ""`) just to silence the compiler. Only use one when the default is genuinely correct.
+5. **A property that would need `= null!` has three honest options.** Pick by what the value means:
+
+   | The value... | Declare it | Example |
+   |--------------|------------|---------|
+   | may legitimately be missing (inbound DTOs, optional data) | nullable, checked before use | `public string? Name { get; init; }` |
+   | must always be provided by whoever creates the object | `required` | `public required string Name { get; init; }` |
+   | has a real default that is correct when nothing is set | that default | `public int Retries { get; init; } = 3;` |
+
+   `= ""` (or any default) written only to make the warning go away is the same lie as `= null!` when an empty value
+   isn't actually valid.
+6. **Teach the compiler about your own APIs** instead of overriding it at every call site:
+
+   | Situation | Attribute |
+   |-----------|-----------|
+   | `bool TryGet(..., out T? value)` | `[NotNullWhen(true)] out T? value` |
+   | Generic `TryGet(..., out T value)` | `[MaybeNullWhen(false)] out T value` |
+   | Guard method that throws on null | `[NotNull]` on the parameter |
+   | Helper called from the constructor that initialises fields | `[MemberNotNull(nameof(_a), nameof(_b))]` |
+
+   A `bool` that says whether another property is set (`IsSuccess` / `IsValid` / `HasValue` + a nullable `Value`) is
+   a status with a field that must agree with it: make it a union (R008), not `[MemberNotNullWhen]`. The attribute tells
+   callers the two agree, but the compiler doesn't check that they do. R006's old `Validated<T>`, built that way,
+   reported `IsValid` with a null `Value` when no error had been added, and the dereference compiled with no warning.
+
+### Recipes for common `!` patterns
+
+| Instead of | Write |
+|------------|-------|
+| `xs.Where(x => x.P != null).Select(x => x.P!)` | `xs.Select(x => x.P).OfType<T>()` |
+| `xs.Where(x => x.P != null).Select(x => (x, x.P!))` | `foreach` with `if (x.P is not { } p) { continue; }` |
+| Inbound DTO (request body, webhook): `public string Name { get; set; } = null!;` | `public string? Name { get; init; }`, null-checked in its `To<Domain>()` conversion (R006) |
+| Response DTO / internal type: `public string Name { get; set; } = null!;` | `public required string Name { get; init; }` |
+| Options: `public string Host { get; set; } = null!;` | `[Required] public required string Host { get; init; }` and `.ValidateDataAnnotations().ValidateOnStart()`. The config binder ignores `required`. |
+| EF navigation: `public Customer Customer { get; set; } = null!;` | `public Customer? Customer { get; set; }`, or a `_customer` backing field whose getter throws "add `.Include(...)`" |
+| `typeof(X).GetMethod("M")!` | `typeof(X).GetMethod(nameof(X.M)) ?? throw new MissingMethodException(...)` |
+| `JsonSerializer.Deserialize<T>(json)!` | `... ?? throw new JsonException("...")` |
+| `Environment.GetEnvironmentVariable("X")!` | `... ?? throw new InvalidOperationException("Environment variable X is not set.")` |
+| Blazor `[Inject] public IFoo Foo { get; set; } = default!;` | Constructor injection: `class C(IFoo foo) : ComponentBase` |
+| Blazor `[Parameter, EditorRequired] public Order Order { get; set; } = default!;` | `Order?` + throw in `OnParametersSet` if null + `if (Order is not { } order) { return; }` where used |
+| `_buffer = null!;` in `Dispose` | `byte[]? _buffer` + `ObjectDisposedException.ThrowIf(_buffer is null, this);` |
+
+### Exemption
+
+- **Types that overload `==` to redefine null**, notably Unity's `UnityEngine.Object` (all `MonoBehaviour`s, `GameObject`s, ...):
+  use `== null` / `!= null` (or Unity's `if (obj)`). `is null`, `?.` and `??` bypass the overload and treat destroyed objects as alive.
+
+### Checklist
+
+- [ ] No `!` postfix anywhere, including `= null!` and `default!`.
+- [ ] No `#nullable disable` or nullable `#pragma` suppressions.
+- [ ] Null checks use `is null` / `is not null` / `is { } x` (except types that overload `==`).
+- [ ] Fields and properties are narrowed into a local before use.
+- [ ] Every "can't be null" is either a `?? throw` with a message, or a nullable type the caller handles.
+- [ ] Own `Try*` methods, guards and init helpers carry nullable attributes.
+
+---
+
+## R003: Method naming conventions
+
+**Rule.** Every method name follows one of the patterns below, and each pattern means exactly one thing.
+Choose the pattern that matches what the method does, so the reader can predict its contract from the name alone.
+
+**Why.** Call sites are read far more often than signatures, and locals use `var` (R007), so the return type isn't on the line. When `Find` always means
+"may return null", `With` always means "returns a copy" and `Async` always means "await me", every call site
+carries the method's contract.
+
+**Scope.** This catalogue governs framework-independent code: domain, application (use cases), ports and adapters'
+port members. Framework-facing code follows the framework's own naming instead (see "Framework-facing code" below).
+
+### Actions (the default)
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `<Verb><Thing>` | Does something. Use the most specific verb. | `ConfirmOrder`, `PlaceOrder`, `ImportCustomersAsync` |
+| `Save*` / `Send*` / `Publish*` / `Delete*` | Writes or side effects over I/O | `SaveOrderAsync(order, ct)`, `SendEmailAsync(...)` |
+| `Read*` | Reads raw content from a source the caller names (a stream, reader, file or connection). Looking a thing up by key is a lookup (below), not `Read*`. | `Csv.ReadRecords(reader)`, `ReadHeaderAsync(stream, ct)` |
+| `Calculate*` / `Build*` | Computes or assembles a result; no I/O | `CalculateDistance(a, b)`, `BuildCacheKey(city)` |
+| `Create*` | Constructs something new | `CreateId()`, `CreateGreeter(customer)` |
+
+### Lookups: the verb states what happens when it's missing
+
+| Pattern | Contract | Returns | Example |
+|---------|----------|---------|---------|
+| `Get*` | Must exist; throws with a message if not. On a collection: none found is an empty collection. | `T` | `GetCustomer(id)`, `GetCustomerAsync(id, ct)`, `GetAllCustomersAsync(ct)` |
+| `Find*` | Absence is normal | `T?` | `FindCustomer(id)`, `FindOrderAsync(id, ct)` |
+| `Get*OrDefault` | Absence returns a documented default (BCL: `GetValueOrDefault`) | `T` | `GetTaxRateOrDefault(country)` |
+| `Try*` | May fail; never throws for it | `bool` + `[NotNullWhen(true)] out T?` | `TryGetSession(token, out var session)` |
+
+The verb answers one question: what happens when the thing is missing. It doesn't say whether the lookup does I/O;
+`Async` and the `ports.` call already show that. So there is no separate I/O verb: don't use `Load*` or `Fetch*` (RL0305).
+
+### Questions
+
+| Pattern | Meaning | Returns | Example |
+|---------|---------|---------|---------|
+| `Is*` / `Has*` / `Can*` / `Should*` | Yes/no question with no side effects | `bool` | `IsExpired(trial, now)`, `HasRole(user, "admin")`, `CanShip(order)`, `ShouldRetry(attempt)` |
+
+An async question (`IsEmailRegisteredAsync`) may **read** over I/O, but never writes.
+
+### Values: return something new, don't act
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `To*` | Converts to another type or representation | `order.ToDto()`, `money.ToDecimal()` |
+| `As*` | A view or cast of the same data, no copy | `AsSpan()`, `AsReadOnly()` |
+| `From*` | Named constructor / factory on the type it creates | `Money.FromDecimal(9.99m)`, `DateRange.FromDates(start, end)` |
+| `With*` | Returns the object to keep using, with this value set: a **copy** on immutable types, the **same builder** on builders. Always use the return value. | `options.WithTimeout(TimeSpan.FromSeconds(5))`, `builder.WithTitle("Q3")` |
+| `Select*` / `Where*` / `OrderBy*` | LINQ-style extension over a sequence: returns a new sequence, like the LINQ operator it is named after | `staff.SelectNonNull(e => e.Manager)`, `invoices.WhereOverdue(today)` |
+
+For records, prefer the `with` expression over a `With*` method: `options with { Timeout = TimeSpan.FromSeconds(5) }`.
+
+### Unions (R008)
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `Match` | One handler parameter per case; returns the handler's result | `order.Match(pending: p => ..., confirmed: c => ..., cancelled: c => ...)` |
+| `Switch` | One `Action` per case; side effects only, returns nothing | `notification.Switch(email: e => ..., sms: s => ...)` |
+
+### Mutation
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| Property setter | Sets a value. **C# uses properties for this, not `Set*` methods.** | `order.Note = "gift"`, `new Options { Timeout = t }` |
+| `Add*` / `Remove*` / `Clear*` | Adds to or removes from a collection: one inside **this** object, or the store this object represents (a repository, a `DbSet`). Mutable only; never returns a copy. | `cart.AddItem(item)`, `builder.AddLine("...")`, `orders.AddAsync(order, ct)` |
+| `Set*Async` / `Set*(a, b)` | Only when it can't be a property: async, or needs extra arguments | `SetPasswordAsync(user, password, ct)` |
+
+### Builders
+
+This is about builder **objects**. A static method that computes a result is just a `Build*`/`Calculate*` action
+(`Invoicing.BuildInvoice(lines, country)`).
+
+Builders are **mutable**. `With*` sets a single value and returns `this`; `Add*` appends a repeatable item and returns `this`;
+`Build()` creates the result.
+
+```csharp
+var report = new ReportBuilder()
+    .WithTitle("Q3")
+    .AddLine("revenue up")
+    .AddLine("costs flat")
+    .Build();
+
+foreach (var line in lines)
+{
+    builder.AddLine(line); // works: the builder is mutable
+}
+```
+
+- **Don't make builders immutable.** Then `builder.AddLine(line);` in a loop compiles, gives no warning, and drops every line.
+- **Don't share one builder between two results.** Both results see every change; create a fresh builder for each.
+- **No builder needed?** If construction is just setting values, use properties and an object initializer:
+  `new Report { Title = "Q3", Lines = { "revenue up" } }`.
+
+### Events, messages, observation, guards
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `Raise*` | Raises an event | `RaiseOrderPlaced(order)` |
+| `Handle*` | Responds to something that arrived: an event, a message, or a use case's request. `HandleAsync` is the single public method of a use-case class (R004); the class name says which use case. | `HandleOrderPlaced(sender, e)`, `CancelOrderHandler.HandleAsync(orderId, ct)` |
+| `Log*` | Records that something happened (logging / metrics port members) | `LogOrderConfirmed(orderId)` |
+| `ThrowIf*` | Throws when the condition holds | `ThrowIfNull(value)`, `ThrowIfNegative(amount)` |
+| `Assert*` | Test code: throws unless the condition holds | `Check.Assert(account.Balance >= 0, "...")` |
+
+### Suffixes and tests
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `*Async` | Returns an awaitable (`Task`, `ValueTask`, `IAsyncEnumerable`). Always. | `SaveOrderAsync`, `FindOrderAsync` |
+| `<Method>_<Scenario>_<Expected>` | Test method | `Withdraw_MoreThanBalance_ReturnsInsufficientFunds` |
+
+### Rules for using the table
+
+1. **The name is a promise.** `Get` never returns null, `Find` never throws for absence, `Is*` has no side effects,
+   `To*` never mutates, `With*`'s return value is always used, `Add*`/`Remove*` never return a copy.
+2. **No noun-named methods.** Cheap, pure and parameterless → make it a property. Anything else → a verb from above.
+   ```csharp
+   // ❌ cart.Total()   Paths.DataDirectory()   Key(city)      Expired(trial, now)
+   // ✅ cart.Total     Paths.GetDataDirectory()  BuildCacheKey(city)  IsExpired(trial, now)
+   ```
+3. **Read the whole name, not just the first word.** `RoundTrip` starts with a verb but is a noun phrase.
+4. **Never give a copy-returning method a mutation verb.** `options.SetTimeout(x);` on an immutable type reads as a change,
+   compiles, and does nothing (the same trap as `ImmutableList<T>.Add`). Copies use `With*`.
+5. **Never drop `Async`.** An un-awaited `Task` inside a non-async method compiles with no warning; the suffix is the only
+   thing that makes `store.SaveOrderAsync(order, ct);` look wrong.
+
+### Properties
+
+This rule is about methods. Properties are nouns (`Total`, `TrackingNumber`) or `Is`/`Has`/`Can` adjectives (`IsPaid`).
+Don't give a property a name that reads like a method or LINQ operator (`Where`, `Select`, `Get`): `finding.Where` looks
+like a query at the call site.
+
+### Framework-facing code
+
+Framework-facing code uses the names its framework **requires or documents**. Everything else follows this catalogue.
+
+- **Framework-facing** means types the framework calls, or that derive from or implement framework types: controllers,
+  Razor pages, Blazor components, middleware, hosted services, endpoint handlers, `DbContext`s, Unity `MonoBehaviour`s,
+  plus overrides (`ToString`, `Equals`) and interface implementations. Examples: `OnGet` / `OnPostAsync` (Razor Pages
+  requires them), `OnParametersSet`, `InvokeAsync`, `Update`, controller actions named after HTTP verbs, an endpoint
+  `GetOrderAsync` that returns 404, `[GeneratedRegex]` partial members, and the `protected virtual On*` event raisers the
+  .NET design guidelines prescribe for unsealed public types.
+- **"Dictated" means required or documented by the framework**, not "common in projects that use it". A popular habit
+  (`OrderManager`, `*Helper`) is not a framework convention.
+- **Adapters are not framework-facing.** Their public members implement your port and follow this catalogue
+  (`FindOrderAsync`); only their *calls* into EF, `HttpClient` etc. use framework names.
+- **The exemption covers a thin shell.** Framework types delegate decisions to handlers (R001, R004). Logic that has
+  crept into a controller or component doesn't inherit the exemption; move it out.
+
+### Checklist
+
+- [ ] Every method name in framework-independent code matches a pattern above; framework-facing code uses the framework's required or documented names.
+- [ ] The method keeps the pattern's promise (`Get` throws, `Find` returns `T?`, `Add` mutates, `To` converts).
+- [ ] No noun-named methods that should be properties, and no `Set*` methods that should be property setters.
+- [ ] Builders are mutable: `With*` for values, `Add*` for repeatable items, `Build()` at the end.
+- [ ] Every awaitable-returning method ends in `Async`.
+
+---
+
+## R004: A type must earn its place
+
+**Rule.** Create a type only when it hides something (a decision, a piece of knowledge, or state that must stay valid)
+behind an interface that is smaller than what it hides. Add a seam (an interface) only where behaviour actually varies.
+
+**Why.** Every type is something a reader has to find, open and learn. Types that only forward calls, interfaces with
+one implementation, and classes named after nothing (`OrderManager`, `OrderUtils`) add reading without hiding anything.
+Knowledge split across many small classes means one change touches many files.
+
+### Step 1: classify what you're writing
+
+Work top to bottom and take the first match.
+
+| What you have | Make it | Example |
+|---------------|---------|---------|
+| Data with no rules | a `record` with `required init` properties (R005) | `new OrderLine { Sku = "A-1", Quantity = 2, UnitPrice = 50m }` |
+| A value with a rule (format, range) | a type that can't be built invalid: validation in the `init` accessor (R005), plus `Parse`/`TryParse` | `Email.Parse(raw)` |
+| State with distinct phases, each with its own data (status + fields that must agree) | a union: one type per state (R008) | `Order.Pending` → `pending.ToCancelled(now)` → `Order.Cancelled` |
+| State that changes under rules | a class: `required init` for the initial state, a private field that only its methods change (R005) | `account.Withdraw(amount)` |
+| A calculation or decision over data | a static method on a static class named for the concept | `Shipping.CalculateCost(order)`, `Csv.ReadRecords(reader)` |
+| Read → compute → write, with no decision between I/O calls | **no class**: do the I/O at the edge (endpoint, `Program`) and call pure code in between | `File.WriteAllText(output, PeopleCsv.ConvertToJson(File.ReadAllText(input)))` |
+| A use case whose decisions interleave with I/O | one class per use case, one public method, one port (R001) | `CancelOrderHandler.HandleAsync(orderId, ct)` |
+| A use case with no decisions (plain read or write) | **no class**: the endpoint calls data access directly | `await queries.FindSummaryAsync(id, ct)` |
+| Two or more real implementations chosen at runtime | an interface + one class per implementation | `IPaymentProvider` → `StripeProvider`, `PayPalProvider` |
+| Required by a framework | that type, kept thin; it calls one of the above | controller, middleware, Blazor component |
+| None of the above | **not a type**: a private method in the type that uses it | |
+
+### Step 2: check it
+
+| Test | Ask | If it fails |
+|------|-----|-------------|
+| Deletion | If I deleted this type and inlined it, would complexity reappear in its callers, or just disappear? | It only forwards: delete it. (Adapters are exempt; they are the seam.) |
+| Name | Can I name it after what it knows or does, without `Manager`, `Helper`, `Utils`, `Processor`, or `<Noun>Service`? Does the name say *what* it knows? `Rules`, `Logic`, `Common` and `Core` pass the suffix check but say nothing (`EmailFormat`, not `Rules`). | It doesn't know what it is. Move each member to the concept it's about. Generic helpers become extension methods grouped by the type they extend (`StringExtensions`). |
+| Order | Must callers call its methods in a set order (`Open` → `ReadHeader` → `ReadRows`)? | The steps are leaking. Expose the whole job as one call. |
+| Seam | Does this interface have two implementations that exist for a reason other than the interface itself? | Remove the interface. A test fake only counts when the decision can't be separated from the I/O (an R001 port). |
+| Rules | Can a caller put this type into an invalid state (public setters, `with`, an unchecked constructor)? | Move the rule inside the type. |
+
+### Step 3: granularity
+
+- **One use case per class, not one class per entity.** An `OrderService` holding every use case makes every test fake the union of all their dependencies.
+- **Knowledge shared by use cases lives on the type it's about.** Which status transitions are allowed belongs on `Order`, not repeated in each handler.
+- **Type count is not the goal.** Sorting a grab bag into well-named homes adds types; removing pass-through layers removes them. Both are right.
+
+### Testing follows the seams
+
+- Use-case classes: through their one public method, with a fake port.
+- Domain types and static calculations: directly, with no fakes.
+- Data access (adapters, queries): against a real or local database.
+- Never test private methods. Never add an interface only so something can be faked.
+
+### Checklist
+
+- [ ] Every new type matches a row in step 1.
+- [ ] No type only forwards calls (adapters excepted).
+- [ ] No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` names.
+- [ ] No interface with a single implementation, except R001 ports.
+- [ ] No methods that must be called in a set order.
+- [ ] No public setters or unchecked `init` accessors on types with rules.
+
+---
+
+## R005: Data goes in through `required init` properties
+
+**Rule.** Types that hold data (records, DTOs, entities, value objects) receive it through named `required init` properties
+in an object initializer, not through constructor parameters. Constructors are for dependencies (R001 ports) and for rules
+that span several values.
+
+**Why.** Every value is labelled at the call site. Positional arguments of the same type can be swapped silently: `new Transfer(checking, savings, 100m)`
+compiles and moves money the wrong way. Forgetting a `required` member is still a compile error. Derived types don't
+re-forward their base's parameters, and EF Core doesn't depend on constructor-parameter names.
+
+### How
+
+1. **Data:** `required init` properties, set by name.
+   ```csharp
+   public sealed record Transfer
+   {
+       public required string FromAccount { get; init; }
+       public required string ToAccount { get; init; }
+       public required decimal Amount { get; init; }
+   }
+
+   var transfer = new Transfer { FromAccount = savings, ToAccount = checking, Amount = 100m };
+   ```
+2. **Optional data:** a non-required `init` property with a default: `public int Retries { get; init; } = 3;`
+3. **A rule on one value:** validate in the `init` accessor (C# 14 `field`). This guards the object initializer, `with`, and JSON.
+   ```csharp
+   public required string Value
+   {
+       get;
+       init => field = IsValid(value) ? Normalize(value) : throw new FormatException($"'{value}' is not an email address.");
+   }
+   ```
+   Keep `Parse` / `TryParse` as the convenient entry points (R003), but never validate **only** there: a public `init`
+   can also be set by `new Email { Value = ... }` and by `email with { Value = ... }`, which skip `Parse` entirely.
+4. **State that changes after creation:** `required init` sets the initial value, and methods change a private field behind it.
+   ```csharp
+   private decimal _balance;
+
+   public required decimal Balance
+   {
+       get => _balance;
+       init => _balance = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(Balance));
+   }
+
+   public WithdrawResult Withdraw(decimal amount)   // not enough money is an expected outcome, not an exception (R009)
+   {
+       ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+       if (amount > _balance)
+       {
+           return new WithdrawResult.InsufficientFunds { Shortfall = amount - _balance };
+       }
+
+       _balance -= amount;
+       return new WithdrawResult.Succeeded { NewBalance = _balance };
+   }
+   ```
+   (`required` + `private set` doesn't compile (CS9032), and methods can't assign an `init` property (CS8852).) Works with EF Core.
+
+   If the initial value is optional, give the field a default and drop `required`; methods still own every change:
+   ```csharp
+   private decimal _creditLimit = 500m;
+
+   public decimal CreditLimit
+   {
+       get => _creditLimit;
+       init => _creditLimit = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(CreditLimit));
+   }
+   ```
+   (A status with fields that must agree with it is not this: it's a union, R008.)
+
+### Exception: a rule that spans several values
+
+`init` accessors run one at a time, in the order the caller wrote them, and C# has no hook that runs after the initializer.
+A rule such as "End ≥ Start" then depends on property order: `range with { Start = feb1, End = feb10 }` throws while
+`range with { End = feb10, Start = feb1 }` succeeds. For these types, check all values in one place, a constructor or a
+named factory, and don't make the properties publicly settable:
+
+```csharp
+public DateOnly Start { get; private init; }
+public DateOnly End { get; private init; }
+
+public static DateRange FromDates(DateOnly start, DateOnly end)
+{
+    if (end < start)
+    {
+        throw new ArgumentException($"End {end} is before Start {start}.");
+    }
+    return new DateRange { Start = start, End = end };
+}
+```
+
+### Exception: inbound boundary DTOs
+
+DTOs that receive outside data (request bodies, webhooks, messages) use **nullable, non-`required`** `init` properties.
+`required` makes the deserializer reject the payload before validation runs, so the caller only learns about one
+problem at a time. See R006.
+
+### More exceptions
+
+| Situation | Write | Why |
+|-----------|-------|-----|
+| Database-generated key | `public int Id { get; init; }`, **not** `required` | `required` forces callers to invent `Id = 0`; EF assigns the real key on save. |
+| Persistence row type (EF tracks it and you copy values onto it: R006, R008) | `{ get; set; }`; the key stays `init` | Copying onto the tracked row is its job, and an `init` property can't be assigned after creation (CS8852). Rows are database-shaped DTOs, not domain types. |
+| One-field wrapper | Positional is fine: `public sealed record OrderId(int Value);` | Nothing to swap, so the labelled form adds lines and buys nothing. |
+| Value with a rule where zero / empty is invalid | A `class` (or `record`), **not** a `struct` | `default(T)` and `new T[n]` skip `required` on a struct, producing an invalid value with no error. Structs are fine when zero is legitimate (`Money` = 0 cents). |
+
+### Watch out
+
+- **Configuration binding ignores `required`.** A missing key binds as `null`. Options classes need `[Required]` and
+  `.ValidateDataAnnotations().ValidateOnStart()` (R002).
+- **`where T : new()` rejects types with required members** (CS9040). Accept a `Func<T>` instead.
+- **A rule checked in an `init` accessor must keep holding.** Store a copy of a collection you were given
+  (`value.ToDictionary(...)`), or the caller can empty it after the check (R006's `Result<T>.Failure`).
+
+### Checklist
+
+- [ ] Data types have no constructor parameters; values are set by name through `required init`.
+- [ ] Inbound boundary DTOs are the exception: nullable, not `required` (R006).
+- [ ] Generated keys aren't `required`; persistence rows are settable; one-field wrappers may be positional.
+- [ ] No `struct` for a value whose zero / empty state is invalid.
+- [ ] A rule on a single value lives in its `init` accessor.
+- [ ] A rule spanning several values uses a constructor or named factory, and those properties aren't publicly settable.
+- [ ] Entities: `required init` for the initial state, a private field for changes.
+- [ ] Options classes are validated at startup.
+
+---
+
+## R006: Parse boundary data into the domain
+
+**Rule.** Data entering the system (HTTP requests, webhooks, messages, files) lands in a DTO shaped like the wire
+format, then goes through **one** step that validates it and converts it into domain types. Data leaving the system goes
+out through response DTOs. Domain types never meet a serializer.
+
+**Why.** Binding outside data straight into domain types caused every one of these in testing:
+- A body with three problems reported one, as an exception from deep inside a setter.
+- A client set `"isAdmin": true` on its own account (overposting).
+- A new status value from a payment provider crashed deserialization of the whole webhook.
+- A response leaked `PasswordHash` and then crashed on a navigation-property cycle.
+
+### Inbound
+
+1. **The DTO mirrors the wire.** Nullable `init` properties, not `required` (R005 exception). Serializer attributes
+   (`[JsonPropertyName("payment_id")]`) live here, never on domain types. It lists only what this endpoint accepts.
+   ```csharp
+   public sealed class CreateOrderRequest
+   {
+       public string? CustomerEmail { get; init; }
+       public List<OrderLineRequest>? Lines { get; init; }
+   }
+   ```
+2. **One step validates and converts.** Collect every error, keyed by field path, and narrow each value as you check it,
+   so the domain object is built from proven values. Never validate in one method and map in another: the mapper can't
+   see the validation and ends up needing `!` (R002). DataAnnotations (`[Required]`, `[EmailAddress]`) don't satisfy this
+   on their own for the same reason: they check but don't narrow, so the conversion still sees `string?`. Use them for
+   simple format checks if you like, but the conversion step must still narrow every value.
+   ```csharp
+   public static Result<NewOrder> ToNewOrder(this CreateOrderRequest request)
+   {
+       var errors = new ValidationErrors();
+
+       Email? email = null;
+       if (request.CustomerEmail is not { } rawEmail)
+       {
+           errors.Add("customerEmail", "Required.");
+       }
+       else if (!Email.TryParse(rawEmail, out email))
+       {
+           errors.Add("customerEmail", $"'{rawEmail}' is not an email address.");
+       }
+
+       // ...lines: errors.Add($"lines[{i}].quantity", "Must be greater than 0.");
+
+       if (errors.HasErrors || email is null)
+       {
+           return new Result<NewOrder>.Failure { Errors = errors.ToDictionary() };
+       }
+
+       return new Result<NewOrder>.Success { Value = new NewOrder { CustomerEmail = email, Lines = lines } };
+   }
+   ```
+3. **Return every error at once**, handling both outcomes through `Match`:
+   ```csharp
+   return await request.ToNewOrder().Match(
+       success: async newOrder =>
+       {
+           var placed = await placeOrder.HandleAsync(newOrder, ct);
+           return Results.Ok(placed.ToResponse());
+       },
+       failure: errors => Task.FromResult(Results.ValidationProblem(errors)));
+   ```
+   Both branches must return the same type, so a synchronous branch next to an async one is wrapped in `Task.FromResult`.
+4. **Values you don't control are decisions, not crashes.** Map open-ended strings (third-party statuses, enum names)
+   explicitly in the conversion step: report them as errors, or map them to an `Unknown` case on purpose.
+
+### Outbound
+
+5. **Response DTOs per endpoint**, with `required init` (R005), built by `ToResponse()`. Never serialize entities: they
+   leak fields, crash on navigation cycles, and tie the API contract to domain property names.
+6. **Read-only queries may project straight into the response DTO** (`db.Customers.Select(c => new CustomerResponse { ... })`); no domain type is needed.
+
+### Not a boundary
+
+- **Your own database through EF Core.** Map domain entities directly (R005). A separate row type adds two mappings, and
+  the obvious write-back (`db.Update(account.ToRow())`) silently wipes columns the domain type never loaded. Use row types
+  only for databases you don't own, and then copy changed values onto the tracked row.
+  **Exception: union domain types (R008).** EF can't change an entity's type, so a union is always persisted through a row
+  type: `row.ToOrder()` on load, `order.CopyTo(trackedRow)` on save.
+- **Calls between your own classes.**
+
+### Shared result type
+
+A union (R008): a successful result can't exist without its value, and a failed one can't exist without an error.
+
+```csharp
+public abstract record Result<T>
+    where T : notnull
+{
+    private Result()
+    {
+    }
+
+    public sealed record Success : Result<T>
+    {
+        public required T Value { get; init; }
+    }
+
+    public sealed record Failure : Result<T>
+    {
+        public required IReadOnlyDictionary<string, string[]> Errors
+        {
+            get;
+            init => field = value.Count > 0
+                ? value.ToDictionary(e => e.Key, e => e.Value.ToArray())   // a copy: the caller can't empty it afterwards
+                : throw new ArgumentException("A failed result needs at least one error.", nameof(Errors));
+        }
+    }
+
+    public TResult Match<TResult>(Func<T, TResult> success, Func<IReadOnlyDictionary<string, string[]>, TResult> failure)
+    {
+        return this switch
+        {
+            Success s => success(s.Value),
+            Failure f => failure(f.Errors),
+            _ => throw new UnreachableException($"Result<{typeof(T).Name}>.Match does not handle {GetType().Name}."),
+        };
+    }
+}
+```
+
+### Checklist
+
+- [ ] No request body, webhook or message is deserialized into a domain or entity type.
+- [ ] Inbound DTOs: nullable, not `required`, only the fields this endpoint accepts.
+- [ ] Validation and conversion happen in one `To<Domain>()` step returning `Result<T>` with every error.
+- [ ] Unknown external values are handled explicitly.
+- [ ] No entity is serialized into a response; responses use DTOs.
+- [ ] Your own EF-mapped database is not wrapped in row DTOs.
+
+---
+
+## R007: Braces and block bodies by default; the type appears where you create it
+
+**Rule.** Every `if` / `else` / `for` / `foreach` / `while` / `using` body has braces. Methods, constructors, operators
+and local functions have block bodies with explicit `return`s. Only property getters, accessors and lambdas may be
+one-liners. When creating an object, write its type. Declare locals with `var`.
+
+**Why.** Code changes. A one-line body that gains a second line needs braces added or a `=>` converted, and unbraced
+bodies hide bugs the compiler doesn't warn about. A guard extended with a misindented second line, and a dangling
+`else`, both compiled with zero warnings and produced wrong results. A spelled-out type tells the reader what is being
+built without looking up the method signature. For everything else the method name says what comes back (R003:
+`Find` → `T?`, `Get` → `T`, `Is*` → `bool`, `To*` → a conversion), so writing the type again on every local repeats it.
+
+### How
+
+```csharp
+// ❌
+public static AccountResponse ToResponse(this Account account) => new() { Id = account.Id, Balance = account.Balance };
+
+if (x is null) return 0;
+
+// ✅
+public static AccountResponse ToResponse(this Account account)
+{
+    return new AccountResponse { Id = account.Id, Balance = account.Balance };
+}
+
+if (x is null)
+{
+    return 0;
+}
+```
+
+Still fine as one-liners:
+
+```csharp
+public decimal Total => Lines.Sum(l => l.Quantity * l.UnitPrice);   // property getter
+public required string Value { get; init => field = Normalize(value); }   // accessors
+orders.Where(o => o.IsPaid).Select(o => o.Total);                   // lambdas
+```
+
+Target-typed `new()` is allowed only when the type is already written on the left of the same declaration:
+`private readonly List<string> _names = new();` (or prefer `= [];`).
+
+### Locals: `var`
+
+Declare locals with `var`, including `foreach` and `out var`. The type is still written wherever an object is created
+(`var transfer = new Transfer { ... }`); for a method result, the name carries the contract (R003).
+
+```csharp
+var account = await ports.FindAccountAsync(accountId, ct);     // Find: may be null, so check it
+if (account is null)
+{
+    return null;
+}
+
+var owner = await ports.GetCustomerAsync(account.OwnerId, ct); // Get: throws if missing
+var response = account.ToResponse();                            // To: a converted value
+```
+
+Write a type only when it must differ from what `var` would infer:
+
+```csharp
+Email? email = null;                       // no initializer type to infer from
+IReadOnlyList<OrderLine> lines = draft;    // deliberately the narrower interface
+```
+
+### Enforcement
+
+The build enforces braces and block bodies, and `dotnet format` fixes them. Put `rules/R007-braces/recommended.editorconfig`
+in the repo root and add `<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>` next to `TreatWarningsAsErrors`.
+Use `csharp_prefer_braces = true`, **not** `when_multiline`, because `when_multiline` misses the misindented-guard bug.
+Target-typed `new()` is flagged by RuleLab's RL0701. `var` is enforced with `csharp_style_var_* = true` and IDE0007
+as a warning; it only fires where `var` would infer the identical type, so the deliberate cases above stay legal.
+
+### Checklist
+
+- [ ] Every control-flow body has braces, including one-line guards.
+- [ ] Methods, constructors, operators and local functions use block bodies.
+- [ ] `=>` only on property getters, accessors and lambdas.
+- [ ] `new` is followed by the type, except in a declaration that already names it.
+- [ ] Locals use `var`; an explicit type only where it differs from the inferred one.
+
+---
+
+## R008: Make invalid states unrepresentable with unions
+
+**Rule.** When which data exists depends on which state (or kind) something is in, give each state its own type,
+holding exactly that state's data, all required. Don't use one type with a status field and nullable properties that
+must agree with it.
+
+**Why.** A status plus "must agree" fields lets a cancelled order with no cancellation time, a shipped order with no
+tracking number, or a failed result with no error exist. Code then needs null checks that "can't fail", and answers
+wrongly when they do. With one type per state, those combinations don't compile.
+
+### When to use a union
+
+| Use a union | Don't |
+|-------------|-------|
+| Fields that exist only in some states (`Status` + `CancelledAt?` + `TrackingNumber?`) | Fields that are optional independently of each other (`Phone?`, `Nickname?`): a union would need 2ⁿ cases and prevents nothing. Use nullable. |
+| A result that is one of several outcomes (success **or** error), including R006's `Result<T>`. Not a `bool IsSuccess` + `[MemberNotNullWhen]` (R002) | |
+| A message or event that is one of several kinds | |
+
+### How
+
+C# has no union type yet; use a closed hierarchy: an abstract record or abstract class with a private constructor, and sealed nested cases.
+
+```csharp
+public abstract record Order
+{
+    private Order()   // closed: only the nested cases can exist
+    {
+    }
+
+    public required int Id { get; init; }   // data every state has
+
+    public sealed record Pending : Order
+    {
+        public Confirmed ToConfirmed(DateTimeOffset now)
+        {
+            return new Confirmed { Id = Id, ConfirmedAt = now };
+        }
+
+        public Cancelled ToCancelled(DateTimeOffset now)
+        {
+            return new Cancelled { Id = Id, CancelledAt = now };
+        }
+    }
+
+    public sealed record Confirmed : Order
+    {
+        public required DateTimeOffset ConfirmedAt { get; init; }   // data only this state has
+    }
+
+    public sealed record Cancelled : Order
+    {
+        public required DateTimeOffset CancelledAt { get; init; }
+    }
+
+    public TResult Match<TResult>(Func<Pending, TResult> pending, Func<Confirmed, TResult> confirmed, Func<Cancelled, TResult> cancelled)
+    {
+        return this switch
+        {
+            Pending p => pending(p),
+            Confirmed c => confirmed(c),
+            Cancelled c => cancelled(c),
+            _ => throw new UnreachableException($"Order.Match does not handle {GetType().Name}."),
+        };
+    }
+
+    // Only when a caller needs side effects that differ per case (see "Using a union").
+    public void Switch(Action<Pending> pending, Action<Confirmed> confirmed, Action<Cancelled> cancelled)
+    {
+        switch (this)
+        {
+            case Pending p:
+                pending(p);
+                break;
+            case Confirmed c:
+                confirmed(c);
+                break;
+            case Cancelled c:
+                cancelled(c);
+                break;
+            default:
+                throw new UnreachableException($"Order.Switch does not handle {GetType().Name}.");
+        }
+    }
+}
+```
+
+1. **Closed:** private base constructor, sealed nested cases. A record or a class both work:
+   - A **class** union is closed by the compiler: outside code can't derive from it (CS0122).
+   - A **record** union also gets a protected copy constructor, which C# won't let you make private (CS8878), so
+     outside code can still add a case with `: base(source)`; its `Match` then throws at runtime. RL0806 makes that
+     a build error. Pick a record when you want value equality or `with`.
+2. **Data:** shared data on the base, state data on its case, all `required init` (R005).
+3. **Transitions** live only on the state they start from and return the next state. Name them `To<State>` (R003: returns a
+   new value), and always use the result: `pending.ToCancelled(now);` on its own compiles and does nothing. A transition
+   several states allow (cancelling a `Pending` or a `Confirmed` order) is an abstract `Try<Verb>` on the base that every
+   state answers: `order.TryCancel(now, out var cancelled)`. The rule stays on the type, and a new state can't skip it.
+4. **Exhaustiveness: give every union a `Match` method** (one handler parameter per case) and use it outside the union
+   instead of a `switch` (RL0801) or an `if` / `else if` chain over its cases (RL0803). C# can't prove a closed hierarchy
+   exhaustive, so a `switch` is forced to have a `_` arm, and a case added later falls into it at runtime; an `if` chain
+   silently skips it. Adding a case to `Match` breaks every call site at compile time.
+5. A single-case check is fine: `if (order is Order.Confirmed confirmed) { ... confirmed.ConfirmedAt ... }`.
+
+### Using a union
+
+Pick the first that fits:
+
+| The operation... | Use | Why |
+|------------------|-----|-----|
+| is the type's own knowledge, and every case has an answer (a label, an area, a rule) | an **abstract member** on the base, overridden in each case | A case added without it doesn't compile (CS0534), and callers need no handlers. |
+| belongs to another layer (a response DTO, persistence, an HTTP result) | **`Match`** at the call site | The domain union doesn't learn about DTOs, EF or ASP.NET. |
+| has an effect, but every case does the same kind of thing (fill the same columns, send one message) | **`Match`** returning that as one value, then act once | Each case must supply the whole value, so none can leave a part out. |
+| is an async side effect | **`Match`** with `Task` as the result | `TResult` can be `Task`; no extra method needed. |
+| is a synchronous side effect that really differs per case | **`Switch`** (one `Action` per case) | Adding a case breaks every call site, as with `Match`. |
+
+```csharp
+(row.Channel, row.Subject, row.Text) = notification.Match<(string Channel, string? Subject, string? Text)>(
+    email: e => (e.Channel, e.Subject, null),
+    sms: s => (s.Channel, null, s.Text));   // can't forget to clear Subject: the tuple needs every column
+```
+
+The same `CopyTo` written with `Switch` (`sms: s => { row.Channel = ...; row.Text = s.Text; }`) compiled and left a
+stale `Subject` on a row that changed from an email to an sms.
+
+### Persistence
+
+EF Core maps a **row type** (database-shaped, flat, nullable), never the union: EF can't change an entity's type, and
+mapping the union directly silently wrote a corrupt row (`Status = Pending` with a `CancelledAt`).
+
+The handler decides (R001's `ConfirmOrderHandler`); the adapter's port members do the row mechanics:
+
+```csharp
+public async Task<Order?> FindOrderAsync(int orderId, CancellationToken ct)
+{
+    var row = await db.Orders.SingleOrDefaultAsync(o => o.Id == orderId, ct);
+    return row?.ToOrder();   // a row whose columns match no state throws InvalidDataException
+}
+
+public async Task SaveOrderAsync(Order order, CancellationToken ct)
+{
+    var row = await db.Orders.SingleAsync(o => o.Id == order.Id, ct);
+    order.CopyTo(row);       // copy onto the TRACKED row, via Match; never db.Update(newRow)
+    await db.SaveChangesAsync(ct);
+}
+```
+
+### Boundaries
+
+An inbound DTO (R006) converts into a union case in its `To<Union>()` step; the union defines what is valid (a "shipped"
+update without a tracking number has no case to become). Response DTOs stay flat and are built through `Match`.
+
+### Checklist
+
+- [ ] No status/kind field paired with nullable fields that must agree with it.
+- [ ] Union base (abstract record or class) has a private constructor; cases are sealed and nested; nothing outside derives from it (RL0806).
+- [ ] Every union has a `Match`; code outside the union uses `Match`, not `switch` or an `if` / `else if` chain over cases.
+- [ ] Behaviour the type owns is an abstract member; effects that are the same kind for every case are a value returned from `Match`.
+- [ ] `Switch` only for synchronous side effects that differ per case.
+- [ ] Transitions are `To<State>` on the source state, and their result is used.
+- [ ] Persisted unions go through a row type with `ToX()` / `CopyTo(trackedRow)`.
+- [ ] Independent optional fields stay nullable.
+
+---
+
+## R009: Exceptions are for bugs; expected failures are results; catch only at the edge
+
+**Rule.** Throw only when the program is wrong: a broken invariant, a bad argument, a case that can't happen. A failure
+the caller should expect (not enough money, invalid input, not found) is a return value: a union of outcomes (R008).
+Catch exceptions only at the edge of the application.
+
+**Why.** A `catch` in the middle of the code can't tell the failure it meant from a bug that has the same type. In
+testing, catching `InvalidOperationException` for "insufficient funds" also caught a duplicate-account bug and reported
+it as insufficient funds; catching `HttpRequestException` for "not found" turned a CRM outage into a duplicate customer;
+a catch-all turned a missing price into a free order. And with no catch at the edge, one bad message stopped the whole host.
+
+### Three kinds of failure
+
+| Failure | Example | Do |
+|---------|---------|----|
+| A bug | null where R002 says it can't be, an argument out of range, an impossible case | throw, with a message that says what was expected |
+| An expected outcome the caller must handle | insufficient funds, invalid input, not found | return it: a union per operation, `Result<T>` (R006), `Find*` → `T?`, `Try*` |
+| An infrastructure failure | database down, HTTP 500, timeout | let it propagate to the edge |
+
+### Expected failures: a union per operation
+
+```csharp
+public abstract record WithdrawResult
+{
+    private WithdrawResult()
+    {
+    }
+
+    public sealed record Succeeded : WithdrawResult
+    {
+        public required decimal NewBalance { get; init; }
+    }
+
+    public sealed record InsufficientFunds : WithdrawResult
+    {
+        public required decimal Shortfall { get; init; }
+    }
+
+    // + Match (R008)
+}
+
+var message = account.Withdraw(amount).Match(
+    succeeded: s => $"New balance: {s.NewBalance}",
+    insufficientFunds: f => $"Insufficient funds: {f.Shortfall} short.");
+```
+
+- One case per outcome the caller handles differently, each with its own data. A failure case added later breaks every
+  `Match` that doesn't handle it.
+- Use the shared `Result<T>` (R006) when callers only need "it failed, and why", as with input validation.
+- **Never discard a result.** `account.Withdraw(500);` compiles, and the refusal goes unnoticed (RL0804).
+- Don't use a library result type (`ErrorOr<T>`, `OneOf`): its errors aren't cases the compiler makes callers handle,
+  and RuleLab's union checks don't see it.
+
+### Throwing
+
+| Situation | Throw |
+|-----------|-------|
+| A bad argument | `ArgumentException`, `ArgumentNullException`, `ArgumentOutOfRangeException` (or their `ThrowIf*` helpers) |
+| The object is in the wrong state for this call | `InvalidOperationException` (`ObjectDisposedException` after dispose) |
+| A case that can't happen | `UnreachableException` |
+| Data you read is corrupt | `InvalidDataException`, `JsonException`, `FormatException` |
+
+- Never throw `Exception`, `SystemException` or `ApplicationException` (CA2201): nobody can catch them specifically.
+- The message says what was expected, with the value: `$"No price loaded for SKU '{sku}'."`.
+- Create a custom exception type only when some code catches it specifically (R004: a type must earn its place).
+
+### Catching: only at the edge
+
+The edges are the HTTP exception handler or middleware (it turns exceptions into ProblemDetails), a background worker's
+loop (around one unit of work), `Main`, and tests.
+
+```csharp
+while (!stoppingToken.IsCancellationRequested)
+{
+    var message = await ports.ReceiveAsync(stoppingToken);
+    try
+    {
+        await HandleMessageAsync(message, stoppingToken);
+    }
+    catch (Exception ex) when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
+    {
+        ports.LogMessageFailed(message.Id, ex);                   // the edge logs it once, with the stack trace
+        await ports.DeadLetterAsync(message, ex, stoppingToken); // set it aside and carry on; shutdown is not a failure
+    }
+}
+```
+
+- **Decision code catches nothing**: handlers, domain types, calculations.
+- **Adapters translate** infrastructure outcomes into the port's contract (R001). Check a status where the API offers
+  one (HTTP 404 → `null` from `Find*`); otherwise catch the one specific exception that means it (a unique-key
+  violation → "already exists"). Everything else propagates.
+- **Never** write an empty catch (RL0901), `catch (Exception)` outside an edge (RL0902), or `throw ex;` (CA2200: it
+  restarts the stack trace; use `throw;`, or wrap with the original as the inner exception).
+- **Don't log and rethrow.** The edge logs it once, with the full stack trace.
+- **Shutdown is not a failure; a timeout is.** Let `OperationCanceledException` through only when your own token was
+  cancelled. An `HttpClient` timeout throws `TaskCanceledException` (an `OperationCanceledException`) with nobody
+  cancelling: treat it like any other failure, or one timeout stops the host.
+
+### Checklist
+
+- [ ] Exceptions are thrown only for bugs, with built-in types and a message that says what was expected.
+- [ ] Expected failures are returned: a union per operation, `Result<T>`, `Find*` → `T?`, or `Try*`.
+- [ ] No result union is discarded.
+- [ ] Decision code has no `try` / `catch`; adapters catch only the specific exception they translate.
+- [ ] Catch-alls exist only at the edge, around one unit of work, and let shutdown through (not timeouts).
+- [ ] No empty catch, no `throw ex;`, no log-and-rethrow.
+
+---
+
+## R010: Async all the way, with a cancellation token, and nothing fire-and-forget
+
+**Rule.** Code that calls async code is async itself and awaits it. Every async method takes a `CancellationToken` as
+its last parameter and passes it to every async call it makes. Every task is awaited by someone.
+
+**Why.** Each of these compiled cleanly and failed at runtime in testing: `.Result` on a thread with a synchronization
+context deadlocked; a report endpoint without a token kept querying for a client that had already left; a
+fire-and-forget email failed while the user was told "registered", and the exception went nowhere; two queries started
+together on one `DbContext` threw "a second operation was started on this context".
+
+### How
+
+1. **Async all the way.** Never block on async code: no `.Result`, `.Wait()` or `.GetAwaiter().GetResult()` (VSTHRD002).
+   If a caller can't be async (a validation attribute, a constructor), move the async work out of it (R001's
+   framework-instantiated types).
+2. **Take the token, pass it on.** `CancellationToken ct` is the last parameter of every async method (RL1001), including
+   port members, and every async call inside gets it (CA2016). In ASP.NET the endpoint's token is the request's: it
+   fires when the client goes away.
+   ```csharp
+   public async Task<string> GetReportAsync(ReportDatabase db, CancellationToken ct)
+   {
+       var count = await db.CountOrdersAsync(ct);
+       return $"{count} orders";
+   }
+   ```
+3. **Nothing fire-and-forget.** No `_ = SendEmailAsync(...)` (RL1002) and no un-awaited calls (VSTHRD110): a detached
+   task's failure reaches no one, so R009's "failures reach the edge" can't hold. If work must outlive the request, put
+   it on a queue (an outbox, R001 S09) and let a worker do it.
+4. **No `async void`** (VSTHRD100): its exceptions can't be caught by the caller. The one exception is an event handler,
+   which must be `async void`: it is an edge (R009), so wrap its body in a `try` / `catch` and suppress VSTHRD100 on it
+   with the reason.
+5. **One `DbContext`, one operation at a time.** Don't start two queries on the same context and `Task.WhenAll` them;
+   await each in turn. Real parallelism needs a context per query (`IDbContextFactory<T>`).
+6. **Don't write `ConfigureAwait(false)` in application code.** ASP.NET Core has no synchronization context, so it only
+   adds noise. Libraries shared with UI apps are the exception.
+
+### Checklist
+
+- [ ] No `.Result`, `.Wait()` or `.GetAwaiter().GetResult()` on a task.
+- [ ] Every async method takes `CancellationToken ct` last and passes it to every async call.
+- [ ] Every task is awaited: no `_ = ...Async(...)`, no `async void` except event handlers (with a `try` / `catch`).
+- [ ] No parallel queries on one `DbContext`.
+
+---
+
+## R011: One level of abstraction per method; calls only go down
+
+**Rule.** A method's name says *what* it does; its body says *how*, in the words of the level directly below, and
+every statement in the body is at that one level. Lower levels never call back up: code that knows *how* (parse,
+compute, format, store) doesn't depend on code that decides *why* (a use case, a policy, a notification). It returns
+what it found, and the caller decides. Running a delegate the caller passed in (`Match`, `Switch`, a predicate, a
+comparer) is not calling up: the lower level still knows nothing of the policy.
+
+**Why.** In testing, checkout computed its total inline between "charge" and "send receipt". The total had no name,
+so the cart page copied the arithmetic, and a bulk discount added to checkout never reached the cart: the cart said
+60.00 and the card was charged 54.00. A CSV parser that emailed partners about bad lines sent a rejection when an
+admin only previewed a file.
+
+### What a level is
+
+A level is a vocabulary, not a kind of statement:
+
+| Level | Its words | Example |
+|-------|-----------|---------|
+| A job | the steps of the job | `ports.ReserveAsync`, `ports.ChargeAsync`, `ports.SendReceiptAsync` |
+| A concept | the rules of one concept | `Pricing.CalculateTotal(lines, customer)`, `GiftNote.FindText(order)`, `order.TryCancel(...)` |
+| Mechanism | the language and its libraries | loops over indexes, arithmetic, `StringBuilder`, parsing strings, LINQ, SQL |
+
+### How
+
+1. **Write a method as its steps.** If a block needs a comment to say what it does, it's a step: give it that name, as
+   a method on the concept it's about (R004), not a private helper named after its caller.
+   ```csharp
+   public async Task<decimal> PlaceOrderAsync(IReadOnlyList<CartLine> lines, Customer customer, CancellationToken ct)
+   {
+       if (lines.Count == 0)
+       {
+           throw new ArgumentException("The cart is empty.", nameof(lines));   // a guard: a precondition, not a level change
+       }
+
+       var total = Pricing.CalculateTotal(lines, customer);                    // the cart page calls the same method
+       await ports.ChargeAsync(customer.Email, total, ct);
+       await ports.SendReceiptAsync(customer.Email, Receipt.Format(lines, total), ct);
+       return total;
+   }
+   ```
+2. **Control flow is fine at any level when it reads at that level.** The condition is a named question and each
+   branch or iteration is a step:
+   ```csharp
+   foreach (var line in order.Lines)
+   {
+       await ports.ReserveAsync(line.Sku, line.Quantity, ct);
+   }
+
+   if (GiftNote.FindText(order) is { } note)    // not: GiftMessage is { Length: > 0 } && Lines.Sum(l => ...) >= 50m
+   {
+       await ports.PrintGiftNoteAsync(order.Id, note, ct);
+   }
+   ```
+   - Don't move an `if` or a loop into a helper only to remove it (`PrintGiftNoteIfDueAsync`): the decision disappears
+     from the level it belongs to, and the helper fails R004's deletion test.
+   - Ask one question that returns what you need (`Find*` → `T?`, R003), not `Is*` and then a second call that can't
+     see the check (R002).
+   - Comparing one named value with a constant (`cancelled.RefundDue > 0`) is a question at this level. Arithmetic,
+     LINQ and indexing in a condition are not.
+3. **A leaf is one level too.** A method that is all mechanism (a parser's loop, a checksum) is fine as it is. Don't
+   split a loop that carries state from one iteration to the next into helpers sharing `ref` parameters: in testing
+   that version passed every example and broke on malformed input.
+4. **When extracted steps would share mutable state** (`ref` parameters, the same 4+ arguments to each), the missing
+   level is a value or a type, not more methods. Compute the intermediate value first (pages with their brought- and
+   carried-forward totals), then let each step read it.
+5. **Calls only go down.** A lower level returns what it found: a value, `T?`, or a result union (R009). It doesn't
+   send email, log business events, read configuration or call back into the use case. Adapters make no decisions (R001).
+   Handlers the caller supplies are fine: `notification.Switch(email: SendEmail, sms: SendSms)` is the caller's policy,
+   run by a union that doesn't know it.
+6. **Name database queries, not predicates.** EF can't see inside a C# method, so `Where(i => IsOverdue(i, today))`
+   compiles and throws "could not be translated" at runtime. Write an `IQueryable<T>` extension:
+   ```csharp
+   public static IQueryable<InvoiceRow> WhereOverdue(this IQueryable<InvoiceRow> invoices, DateOnly today)
+   {
+       return invoices.Where(i => i.PaidOn == null && i.DueDate < today);   // == null: expression trees can't use 'is'
+   }
+
+   var overdue = await db.Invoices.WhereOverdue(today).OrderBy(i => i.DueDate).ToListAsync(ct);
+   ```
+   Keep the extension to what its name says: `WhereOverdue` filters (R003); the caller orders and pages.
+
+Tests are exempt (Scope): a test sets up data, calls, and asserts in one method by design.
+
+### Checklist
+
+- [ ] Each method's body reads as one level: steps, or mechanism, not both.
+- [ ] Conditions between steps are named questions; loops between steps have a step as their body.
+- [ ] No helper exists only to hide an `if` or a loop around a single call.
+- [ ] Leaf algorithms aren't split into helpers that share `ref` state.
+- [ ] Lower-level code returns what it found; it never depends on a use case, a notification or a policy (caller-supplied
+      delegates excepted).
+- [ ] Database queries are named as `IQueryable` extensions, not C# methods inside the lambda.
