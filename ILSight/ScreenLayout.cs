@@ -111,7 +111,7 @@ public static class ScreenLayout
             OpenSearch(uiState);
             return;
         }
-        OmnibarView.StartSearch(uiState.Omnibar, panel);
+        uiState.Omnibar.StartSearch(panel);
     }
 
     /// <summary>Asks the user whether to reset the layout before <see cref="ResetLayout"/> does.</summary>

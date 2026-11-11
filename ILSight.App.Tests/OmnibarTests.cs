@@ -201,7 +201,7 @@ public sealed class OmnibarTests
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-1/search")).Frame(2);
 
-        Assert.True(OmnibarView.IsSearchingIn(app.Ui.Omnibar, DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!)));
+        Assert.True(app.Ui.Omnibar.IsSearchingIn(DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!)));
         Assert.True(app.Frames.WantsTextInput);
     }
 
@@ -234,5 +234,181 @@ public sealed class OmnibarTests
 
         Assert.False(app.Ui.Omnibar.IsSearching);
         Assert.True(view.Code.Folds.AnyCollapsed);
+    }
+
+    private const string Panel = "document-1";
+    private const string OtherPanel = "document-2";
+
+    /// <summary>The crumbs from the fixture assembly down to the fixture type <paramref name="type"/>, as a tab showing it has them.</summary>
+    private static IReadOnlyList<Crumb> CrumbsTo(AppStateDriver d, string type)
+    {
+        var breadcrumb = new Breadcrumb();
+        breadcrumb.Follow(d.Fixture(type), d.Ui.Tree);
+        return breadcrumb.Crumbs;
+    }
+
+    private static CrumbMenu OpenMenu(AppStateDriver d, BrowseNode? next)
+    {
+        var omnibar = d.Ui.Omnibar;
+        omnibar.OpenMenu(Panel, d.Node(AppStateDriver.FixturesNamespace), next);
+        return Assert.IsType<CrumbMenu>(omnibar.Menu);
+    }
+
+    [Fact]
+    public void StartSearch_WithAListOfChildrenOpen_SearchesInThatBarAndClosesTheList()
+    {
+        var d = AppStateDriver.Opened();
+        var omnibar = d.Ui.Omnibar;
+        OpenMenu(d, null);
+
+        omnibar.StartSearch(OtherPanel);
+
+        Assert.True(omnibar.IsSearchingIn(OtherPanel));
+        Assert.False(omnibar.IsSearchingIn(Panel));
+        Assert.Null(omnibar.Menu);
+    }
+
+    [Fact]
+    public void TryTakeFocus_AfterStartSearch_IsTrueOnceAndNeverAfterStopSearch()
+    {
+        var d = AppStateDriver.Opened();
+        var omnibar = d.Ui.Omnibar;
+
+        omnibar.StartSearch(Panel);
+        var first = omnibar.TryTakeFocus();
+        var second = omnibar.TryTakeFocus();
+        omnibar.StopSearch();
+
+        Assert.True(first);
+        Assert.False(second);
+        Assert.False(omnibar.IsSearching);
+        Assert.False(omnibar.TryTakeFocus());
+    }
+
+    [Fact]
+    public void ToggleMenu_TwiceOnOneCrumb_OpensItWithTheNextCrumbToSelectThenClosesIt()
+    {
+        var d = AppStateDriver.Opened();
+        var omnibar = d.Ui.Omnibar;
+        var crumbs = CrumbsTo(d, "Greeter");
+        var namespaceIndex = crumbs.Count - 2;
+
+        omnibar.ToggleMenu(Panel, crumbs, namespaceIndex);
+        var opened = omnibar.Menu;
+        omnibar.ToggleMenu(Panel, crumbs, namespaceIndex);
+
+        Assert.NotNull(opened);
+        Assert.Same(d.Node(AppStateDriver.FixturesNamespace), opened.Node);
+        Assert.Same(d.Fixture("Greeter"), opened.ToSelect);
+        Assert.Null(omnibar.Menu);
+    }
+
+    [Fact]
+    public void ToggleMenu_OnTheLastCrumb_OpensItWithNothingToSelect()
+    {
+        var d = AppStateDriver.Opened();
+        var omnibar = d.Ui.Omnibar;
+        var crumbs = CrumbsTo(d, "Greeter");
+
+        omnibar.ToggleMenu(Panel, crumbs, crumbs.Count - 1);
+
+        Assert.True(omnibar.IsMenuOpenAt(Panel, d.Fixture("Greeter")));
+        Assert.Null(omnibar.Menu?.ToSelect);
+    }
+
+    [Fact]
+    public void CloseMenuIn_AnotherPanel_LeavesTheListOpen()
+    {
+        var d = AppStateDriver.Opened();
+        var omnibar = d.Ui.Omnibar;
+        var menu = OpenMenu(d, null);
+
+        omnibar.CloseMenuIn(OtherPanel);
+        var afterOther = omnibar.Menu;
+        omnibar.CloseMenuIn(Panel);
+
+        Assert.Same(menu, afterOther);
+        Assert.Null(omnibar.Menu);
+    }
+
+    [Fact]
+    public void ListShown_HoldingTheNextCrumb_SelectsItOnce()
+    {
+        var d = AppStateDriver.Opened();
+        var children = new[] { d.Fixture("Farewell"), d.Fixture("Greeter") };
+        var menu = OpenMenu(d, d.Fixture("Greeter"));
+
+        var shown = menu.ListShown(children, d.Ui.Tree);
+
+        Assert.Equal(children, shown);
+        Assert.Same(d.Fixture("Greeter"), menu.Selection.Item);
+        Assert.Null(menu.ToSelect);
+    }
+
+    [Fact]
+    public void ListShown_WithAFilter_ListsTheChildrenHoldingItAndSelectsTheFirst()
+    {
+        var d = AppStateDriver.Opened();
+        var children = new[] { d.Fixture("Greeter"), d.Fixture("Farewell") };
+        var menu = OpenMenu(d, null);
+        menu.ListShown(children, d.Ui.Tree);
+
+        menu.Filter = "AREW";
+        var shown = menu.ListShown(children, d.Ui.Tree);
+
+        Assert.Equal([d.Fixture("Farewell")], shown);
+        Assert.Same(d.Fixture("Farewell"), menu.Selection.Item);
+    }
+
+    [Fact]
+    public void ListShown_SameChildrenAndFilter_GivesTheListAlreadyFiltered()
+    {
+        var d = AppStateDriver.Opened();
+        var children = new[] { d.Fixture("Greeter"), d.Fixture("Farewell") };
+        var menu = OpenMenu(d, null);
+
+        var first = menu.ListShown(children, d.Ui.Tree);
+        var again = menu.ListShown(children, d.Ui.Tree);
+
+        Assert.Same(first, again);
+    }
+
+    [Fact]
+    public void MoveSelection_PastTheLastChild_StaysWithinThoseListed()
+    {
+        var d = AppStateDriver.Opened();
+        var children = new[] { d.Fixture("Greeter"), d.Fixture("Farewell") };
+        var menu = OpenMenu(d, d.Fixture("Greeter"));
+        menu.ListShown(children, d.Ui.Tree);
+
+        menu.MoveSelection(1);
+        menu.MoveSelection(1);
+
+        Assert.Same(d.Fixture("Farewell"), menu.Selection.Item);
+    }
+
+    [Fact]
+    public void Follow_TheSameNodeAndTree_KeepsTheCrumbsBuilt()
+    {
+        var d = AppStateDriver.Opened();
+        var breadcrumb = new Breadcrumb();
+
+        breadcrumb.Follow(d.Fixture("Greeter"), d.Ui.Tree);
+        var first = breadcrumb.Crumbs;
+        breadcrumb.Follow(d.Fixture("Greeter"), d.Ui.Tree);
+
+        Assert.Same(first, breadcrumb.Crumbs);
+        Assert.Equal(["ILSight.App.Tests", AppStateDriver.FixturesNamespace, "Greeter"], first.Select(static c => c.Label));
+    }
+
+    [Fact]
+    public void Follow_NoNode_ListsNoCrumbs()
+    {
+        var d = AppStateDriver.Opened();
+        var breadcrumb = new Breadcrumb();
+
+        breadcrumb.Follow(null, d.Ui.Tree);
+
+        Assert.Empty(breadcrumb.Crumbs);
     }
 }

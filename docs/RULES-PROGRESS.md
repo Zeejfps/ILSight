@@ -86,3 +86,6 @@ An `ILSight.App.Tests` test also failed once during C1 (name not captured) and p
 | C10 resolver, symbols | R004 | `AssemblyResolver` and `DebugSymbols` (framework types) forwarded every member to a static class taking `this`; the bodies moved in. `AssemblyResolving` is gone; `DebugSymbolFiles` keeps the functions other code calls. | RL1001: 50; 1,710 tests |
 | A4 comparisons | R008, R004 | `AssemblyComparison`'s `Diff?` / `Failure?` (exclusive only by convention) are a `ComparisonResult` union (NotYet / Compared / Failed); its state is private, and `SwapSides` / `TakeInScope` bump `Version` themselves. 3 new tests. | – |
 | A12 export end | R008 | `ExportOutcome` plus `Written` / `Problems` lists that had to agree became an `ExportEnd` union (Finished / Cancelled / Failed); the if-chains in the report text and panel use `Match` (state-passing, no per-row allocation). 1 new frame-cost test. | – |
+| Z6 omnibar | R004 | ~200 lines of state logic moved out of `OmnibarView` onto `Omnibar`, `CrumbMenu` and `Breadcrumb` (search start/stop, focus, crumb menus, selection, the crumb-path memo); the view draws and calls them. 11 new direct tests. | 1,725 tests |
+
+The second intermittent test is `CloseAssembliesTests.Closing_takes_the_ticked_items_off_the_list_and_leaves_the_rest` (one extra path in the list; failed once, passed in 4 reruns).

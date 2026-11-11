@@ -58,7 +58,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         app.Show(app.Fixture("Greeter"), 2);
         app.Settle(5);
         var panel = DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!);
-        OmnibarView.OpenMenu(app.Ui.Omnibar, panel, app.Node(AppStateDriver.FixturesNamespace), app.Fixture("Greeter"));
+        app.Ui.Omnibar.OpenMenu(panel, app.Node(AppStateDriver.FixturesNamespace), app.Fixture("Greeter"));
         app.Settle(5);
 
         app.Frames.Canvas.Recording = false;
