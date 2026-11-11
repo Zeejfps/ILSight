@@ -16,8 +16,13 @@ public sealed class AppSettings
     public static FullFilePath DefaultPath { get; } = FullFilePath.Of(Path.Combine(Environment.CurrentDirectory,
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ILSight", "settings.json"));
 
-    /// <summary>Where <see cref="SettingsJson.SaveSettings"/> writes; null keeps the settings in memory only.</summary>
+    /// <summary>The settings file, with the user's themes and icon themes beside it; null keeps the settings
+    /// in memory only.</summary>
     public FullFilePath? FilePath { get; set; }
+
+    /// <summary>Whether <see cref="SettingsJson.SaveSettings"/> writes to <see cref="FilePath"/>; false when the
+    /// file there could be neither read whole nor copied aside, so writing over it would lose what it holds.</summary>
+    public bool CanSaveOverFile { get; set; } = true;
 
     /// <summary>The named assembly lists, the open one's as it was left.</summary>
     public List<AssemblyListRecord> AssemblyLists { get; set; } = new();

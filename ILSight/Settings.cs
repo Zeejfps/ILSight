@@ -47,7 +47,7 @@ public static class Settings
         {
             Work = work,
             Session = session,
-            SettingsPlace = new SettingsPlace(settings.FilePath),
+            SettingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile },
             View = ReadViewSettings(settings),
             Window = settings.Window,
             Assemblies = assemblies,
@@ -183,6 +183,7 @@ public static class Settings
         return new AppSettings
         {
             FilePath = appState.SettingsPlace.FilePath,
+            CanSaveOverFile = appState.SettingsPlace.CanSaveOverFile,
             AssemblyLists = AssemblyLists.SaveLists(appState.Lists),
             ActiveAssemblyList = appState.Lists.Active,
             Theme = appState.Theme,

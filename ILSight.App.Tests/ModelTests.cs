@@ -366,6 +366,27 @@ public sealed class AppSettingsTests : IDisposable
     }
 
     [Fact]
+    public void A_file_that_cannot_be_read_or_copied_keeps_the_themes_beside_it_and_is_named_in_the_error()
+    {
+        const string held = """{ "Theme": "light" }""";
+        var path = Written(held);
+        _temp.Write(Path.Combine("themes", "mine.json"), """{ "extends": "dark" }""");
+        SettingsLoadResult loadResult;
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            loadResult = SettingsJson.LoadSettings(FullFilePath.Of(path));
+        }
+
+        var appState = ILSightAppLauncher.LoadAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        SaveSettings(appState);
+
+        Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotRead>(loadResult.Problem).Kept);
+        Assert.Contains(ThemeId<ThemeFile>.Of("mine"), appState.Themes.Ids);
+        Assert.StartsWith(path + Environment.NewLine, Assert.Single(appState.Errors.Entries).Words().Details);
+        Assert.Equal(held, File.ReadAllText(path));
+    }
+
+    [Fact]
     public void A_number_where_the_settings_name_a_language_is_refused()
     {
         var (loaded, problem) = SettingsJson.LoadSettings(FullFilePath.Of(Written("""{ "Locale": 42 }""")));

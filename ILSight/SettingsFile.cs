@@ -1065,11 +1065,12 @@ internal static class SettingsJson
     public static SettingsLoadResult LoadSettings(FullFilePath path)
     {
         var (settings, problem) = ReadSettings(path.Text);
-        settings.FilePath = MaySaveOverFile(problem) ? path : null;
+        settings.FilePath = path;
+        settings.CanSaveOverFile = CanSaveOverFile(problem);
         return new SettingsLoadResult(settings, problem);
     }
 
-    private static bool MaySaveOverFile(SettingsProblem problem)
+    private static bool CanSaveOverFile(SettingsProblem problem)
     {
         return problem switch
         {
@@ -1433,10 +1434,11 @@ internal static class SettingsJson
     }
 
     /// <summary>Writes the settings to <see cref="AppSettings.FilePath"/>, replacing the file whole so a failed
-    /// write never leaves it truncated.</summary>
+    /// write never leaves it truncated; writes nothing while they are kept in memory only or may not be
+    /// saved over the file.</summary>
     public static SettingsWriteResult SaveSettings(AppSettings settings)
     {
-        if (settings.FilePath == null)
+        if (settings.FilePath is null || !settings.CanSaveOverFile)
         {
             return new SettingsWriteResult.Written();
         }
