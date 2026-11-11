@@ -1,7 +1,6 @@
 using ZGF.Desktop;
 using ILSight.Core;
 using ILSight.Core.Comparison;
-using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.Comparisons;
 using static ILSight.App.Tests.TestPaths;
@@ -27,7 +26,7 @@ public sealed class SavedComparisonTests : IDisposable
     private AppDriver Compared()
     {
         var app = new AppDriver(settings: _temp.Settings());
-        app.Start((a, ct) => OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], ct));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, Patience);
         app.Settle(2);
         var assemblies = app.AppState.Assemblies.Assemblies;

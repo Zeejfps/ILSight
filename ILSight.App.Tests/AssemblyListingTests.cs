@@ -3,7 +3,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
-using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.Docking;
 using static ILSight.Settings;
@@ -298,7 +297,7 @@ public sealed class AssemblyListingTests
         CreateAssemblyList(d.AppState, "New list");
         d.Start((a, ct) => SwitchAssemblyListAsync(a, "New list", ct));
         d.Settle();
-        d.Start((a, ct) => OpenAssemblyAsync(a, other, a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, other, ct));
         d.RunUntil(() => AssemblyListing.ListFilePaths(d.AppState.Assemblies).Contains(PathOf(other)));
         d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
         d.Settle();
@@ -313,7 +312,7 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Opened();
         d.AppState.Lists.Add(Other);
 
-        d.Start((a, ct) => OpenAssemblyAsync(a, typeof(AppState).Assembly.Location, a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, typeof(AppState).Assembly.Location, ct));
         d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
         d.Pump();
@@ -358,7 +357,7 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
-        d.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), ct));
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));

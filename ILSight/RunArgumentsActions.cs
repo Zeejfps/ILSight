@@ -68,7 +68,7 @@ public static class RunArgumentsActions
     {
         if (files.NavigateTo is null)
         {
-            return OpenAssembliesAsync(appState, files.Paths, appState.AssemblyPorts, ct);
+            return appState.AssemblyOpening.OpenAssembliesAsync(appState, files.Paths, ct);
         }
         return appState.OpenAndShowIdHandler.HandleAsync(appState, files.Paths, files.NavigateTo, ct);
     }

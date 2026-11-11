@@ -1,5 +1,4 @@
 using ILSight.Core;
-using static ILSight.Assemblies;
 using static ILSight.Bookmarks;
 using static ILSight.CodeDisplay;
 using static ILSight.Navigation;
@@ -186,7 +185,7 @@ public sealed class NestedNamespaceTests
         var before = app.Node("ILSight.App");
         app.Show(app.Fixture("Greeter"), 2);
 
-        app.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(app.Ui.Tree), a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, Trees.ListExpandedPaths(app.Ui.Tree), ct));
         app.Settle(1);
 
         var greeter = app.Fixture("Greeter");

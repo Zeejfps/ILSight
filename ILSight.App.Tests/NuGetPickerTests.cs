@@ -59,12 +59,12 @@ public sealed class NuGetPickerTests : IDisposable
     private NuGetSetup Setup()
     {
         var cache = new PackageCache { GlobalPackagesFolder = _temp.PathOf("global"), DownloadFolder = _temp.PathOf("downloads") };
-        return NuGetFeeds.CreateSetup([_fake.Source], cache, _fake);
+        return new NuGetSetup { Sources = [_fake.Source], Cache = cache };
     }
 
     private NuGetPicker OpenPicker(PostedActions posted, SavedNuGetSearch? saved = null)
     {
-        var ports = new NuGetBrowserAdapter(problem => _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title));
+        var ports = new NuGetBrowserAdapter(problem => _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), new NuGetClient(_fake));
         var picker = new NuGetPicker { Browser = new NuGetBrowser(ports) };
         NuGetPicking.RestoreSearch(picker, saved);
         NuGetPicking.UseSetup(picker, Setup());
@@ -460,7 +460,7 @@ public sealed class NuGetPickerTests : IDisposable
     [Fact]
     public void Enter_in_the_dialog_opens_the_package_and_closes_it()
     {
-        var app = new AppDriver();
+        var app = new AppDriver(nuGetRequests: _fake);
         _fake.Answer(FakeFeed.PackagesUrl + "fixtures/2.0.0/fixtures.2.0.0.nupkg", File.ReadAllBytes(WritePackage()));
         var picker = app.Ui.NuGetPicker;
         NuGetPicking.UseSetup(picker, Setup());
@@ -479,7 +479,7 @@ public sealed class NuGetPickerTests : IDisposable
     [Fact]
     public void The_details_offer_the_selected_package_s_versions_and_Open_downloads_the_one_picked()
     {
-        var app = new AppDriver();
+        var app = new AppDriver(nuGetRequests: _fake);
         _fake.Answer(FakeFeed.PackagesUrl + "fixtures/1.0.0/fixtures.1.0.0.nupkg", File.ReadAllBytes(WritePackage()));
         var picker = app.Ui.NuGetPicker;
         NuGetPicking.UseSetup(picker, Setup());
@@ -502,7 +502,7 @@ public sealed class NuGetPickerTests : IDisposable
     [Fact]
     public void The_dialog_lists_what_was_found_with_the_selected_package_s_description()
     {
-        var app = new AppDriver();
+        var app = new AppDriver(nuGetRequests: _fake);
         var picker = app.Ui.NuGetPicker;
         NuGetPicking.UseSetup(picker, Setup());
 
@@ -519,7 +519,7 @@ public sealed class NuGetPickerTests : IDisposable
     [Fact]
     public void Next_in_the_dialog_shows_the_next_page_of_how_many()
     {
-        var app = new AppDriver();
+        var app = new AppDriver(nuGetRequests: _fake);
         _fake.AnswerSearches(ThreePagesOfPackages);
         var picker = app.Ui.NuGetPicker;
         NuGetPicking.UseSetup(picker, Setup());
@@ -540,7 +540,7 @@ public sealed class NuGetPickerTests : IDisposable
     [Fact]
     public void A_package_s_icon_is_drawn_in_its_row_once_fetched_and_freed_when_the_dialog_closes()
     {
-        var app = new AppDriver();
+        var app = new AppDriver(nuGetRequests: _fake);
         _fake.AnswerSearches(PackageWithIcon);
         _fake.Answer(IconUrl, SquareSvg);
         var picker = app.Ui.NuGetPicker;
@@ -563,7 +563,7 @@ public sealed class NuGetPickerTests : IDisposable
     [Fact]
     public void A_package_with_no_icon_shows_the_stand_in()
     {
-        var app = new AppDriver();
+        var app = new AppDriver(nuGetRequests: _fake);
         var picker = app.Ui.NuGetPicker;
         NuGetPicking.UseSetup(picker, Setup());
 
@@ -578,7 +578,7 @@ public sealed class NuGetPickerTests : IDisposable
     [Fact]
     public void The_details_panel_shows_what_the_search_and_the_catalog_say_of_the_selected_package()
     {
-        var app = new AppDriver(width: 1200f, height: 800f);
+        var app = new AppDriver(width: 1200f, height: 800f, nuGetRequests: _fake);
         _fake.AnswerSearches(PackageWithDetails);
         _fake.Answer(DetailsUrl, """
             { "catalogEntry": { "licenseExpression": "MIT",

@@ -78,9 +78,14 @@ public sealed class AppState
     /// <summary>Goes back and forward through <see cref="History"/>.</summary>
     public required GoToHistoryEntryHandler GoToHistoryEntryHandler { get; init; }
 
-    /// <summary>What opening, closing and reloading the assemblies (<see cref="ILSight.Assemblies"/>) reaches the
-    /// files and the error reports through.</summary>
-    public required Assemblies.IPorts AssemblyPorts { get; init; }
+    /// <summary>Opens assemblies into the list: files picked or dropped, and the assemblies one references.</summary>
+    public required AssemblyOpening AssemblyOpening { get; init; }
+
+    /// <summary>Reads the assemblies of the list again, one with a PDB or target framework picked, or all of them.</summary>
+    public required AssemblyReloading AssemblyReloading { get; init; }
+
+    /// <summary>Opens a list's files as a reload does, as switching lists or starting the app does.</summary>
+    public required OpenAssembliesAsReloadHandler OpenAssembliesAsReloadHandler { get; init; }
 
     /// <summary>The newer version looked for, downloaded and offered, if any.</summary>
     public required AppUpdates Updates { get; set; }
@@ -137,7 +142,7 @@ public sealed class AppState
     /// <summary>True while a reference or a history entry is being found in the background.</summary>
     public bool IsResolving => Intent.IsResolving;
 
-    /// <summary>True while <see cref="ILSight.Assemblies.RefreshAssembliesAsync"/> reopens the assemblies.</summary>
+    /// <summary>True while <see cref="ILSight.AssemblyReloading.RefreshAssembliesAsync"/> reopens the assemblies.</summary>
     public bool IsReloading => Reload.IsRunning;
 
     /// <summary>True while a file of the list is read again, the list still holding it as it was.</summary>

@@ -4,7 +4,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.Assemblies;
 using static ILSight.Dialogs;
 using static ILSight.DocumentPanels;
 using static ILSight.Exports;
@@ -213,7 +212,7 @@ internal static class MainMenuView
             new(t.FileFilterAssembliesAndPackages, ["*.dll", "*.exe", "*.winmd", "*.wasm", "*.nupkg", "*.zip"]),
             new(t.FileFilterAll, ["*.*"]),
         ];
-        ui.PickFile(t.FileOpenTitle, null, filters, path => Commands.Start(screen, nameof(OpenAssemblyAsync), path, static (a, p, ct) => OpenAssemblyAsync(a, p, a.AssemblyPorts, ct)));
+        ui.PickFile(t.FileOpenTitle, null, filters, path => Commands.Start(screen, nameof(AssemblyOpening.OpenAssemblyAsync), path, static (a, p, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, p, ct)));
     }
 
     private static void FileMenu(Ui<UiState> ui, AppState appState)

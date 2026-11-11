@@ -352,13 +352,6 @@ public static class NuGetFeeds
         return bytes;
     }
 
-    /// <summary>The setup of the feeds of <paramref name="sources"/>, fetching into <paramref name="cache"/>, whose
-    /// requests <paramref name="handler"/> sends; the app's shared connections by default.</summary>
-    public static NuGetSetup CreateSetup(IReadOnlyList<NuGetSource> sources, PackageCache cache, HttpMessageHandler? handler = null)
-    {
-        return new NuGetSetup { Sources = sources, Cache = cache, Icons = NuGetFeeds.CreateIcons(handler), Handler = handler };
-    }
-
     /// <summary>The setup the user's NuGet.Config describes, downloading into the app's own folder.</summary>
     public static NuGetSetup ReadUserSetup()
     {
@@ -374,25 +367,12 @@ public static class NuGetFeeds
     private static NuGetSetup CreateSetupFromConfig(NuGetConfig config)
     {
         var cache = new PackageCache { GlobalPackagesFolder = config.GlobalPackagesFolder, DownloadFolder = PackageCache.UserDownloadFolder };
-        return NuGetFeeds.CreateSetup(config.Sources, cache);
+        return new NuGetSetup { Sources = config.Sources, Cache = cache };
     }
 
-    /// <summary>The feed at <paramref name="source"/>'s URL, made the first time it is asked for, named
-    /// as the config names it when the config lists it. Call it from one thread only.</summary>
-    public static NuGetFeed EnsureFeed(NuGetSetup setup, NuGetSource source)
-    {
-        if (setup.Feeds.TryGetValue(source.Url.Text, out var feed))
-        {
-            return feed;
-        }
-
-        var named = GetListedSource(setup, source);
-        feed = NuGetFeeds.CreateFeed(named, setup.Handler);
-        setup.Feeds.Add(source.Url.Text, feed);
-        return feed;
-    }
-
-    private static NuGetSource GetListedSource(NuGetSetup setup, NuGetSource source)
+    /// <summary>The source at <paramref name="source"/>'s URL, named as <paramref name="setup"/>'s config names
+    /// it when the config lists it; else <paramref name="source"/> itself.</summary>
+    public static NuGetSource GetListedSource(NuGetSetup setup, NuGetSource source)
     {
         var listed = setup.Sources.FirstOrDefault(s => string.Equals(s.Url.Text, source.Url.Text, StringComparison.OrdinalIgnoreCase));
         if (listed is null)

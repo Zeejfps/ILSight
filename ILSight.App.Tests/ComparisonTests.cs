@@ -2,7 +2,6 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.Core.Comparison;
-using static ILSight.Assemblies;
 using static ILSight.Comparisons;
 using static ILSight.Docking;
 using static ILSight.Navigation;
@@ -23,7 +22,7 @@ public sealed class ComparisonTests
     private static AppStateDriver OpenBoth()
     {
         var d = new AppStateDriver();
-        d.Start((a, ct) => OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         d.Settle();
         return d;
@@ -273,7 +272,7 @@ public sealed class ComparisonTests
     private static AppDriver OpenBothOnScreen()
     {
         var app = new AppDriver(width: 1400f);
-        app.Start((a, ct) => OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], ct));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, Patience);
         app.Settle(2);
         return app;

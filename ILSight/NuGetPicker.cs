@@ -155,16 +155,16 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
         /// <summary>What <paramref name="feed"/>'s catalog says of <paramref name="version"/> of package
         /// <paramref name="id"/>; a read that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken ct);
+        Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetSource feed, PackageId id, FeedVersion version, CancellationToken ct);
 
-        /// <summary>The icon at <paramref name="url"/>, <paramref name="side"/> pixels across, from where
-        /// <paramref name="icons"/> come from; one that cannot be fetched comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<ResourceImage>> DownloadIconAsync(PackageIcons icons, WebUrl url, int side, CancellationToken ct);
+        /// <summary>The icon at <paramref name="url"/>, <paramref name="side"/> pixels across; one that cannot be
+        /// fetched comes back as <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<ResourceImage>> DownloadIconAsync(WebUrl url, int side, CancellationToken ct);
 
         /// <summary>The file of <paramref name="version"/> of package <paramref name="id"/>, fetched from
         /// <paramref name="feed"/> into <paramref name="cache"/> unless it is there; a download that failed
         /// comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetFeed feed, PackageId id, PackageVersion version, CancellationToken ct);
+        Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetSource feed, PackageId id, PackageVersion version, CancellationToken ct);
     }
 
     /// <summary>How many pixels across a package's icon is fetched at, enough for its row on a screen
@@ -175,6 +175,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     private const string IconImagePrefix = "nuget-icon-";
 
     private readonly Dictionary<WebUrl, PackageIcon> _icons = [];
+    private readonly Dictionary<string, NuGetSource> _feeds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<DetailsKey, VersionDetails> _details = [];
     private readonly List<IconFetch> _iconsToFetch = [];
     private readonly List<DetailsFetch> _detailsToFetch = [];
@@ -451,6 +452,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     internal void UseSetup(NuGetSetup setup)
     {
         _setup = new SetupState.Ready(setup);
+        _feeds.Clear();
     }
 
     /// <summary>Takes in <paramref name="url"/>, picked rather than typed, and the query typed as settled, so
@@ -518,7 +520,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             DropResults();
             return null;
         }
-        var wanted = new FeedSearch(NuGetFeeds.EnsureFeed(setup, source), _typedQuery.Text, includePrerelease, RequestedPage);
+        var wanted = new FeedSearch(EnsureFeed(setup, source), _typedQuery.Text, includePrerelease, RequestedPage);
         if (IsNewSearch(wanted))
         {
             RequestedPage = 0;
@@ -537,6 +539,20 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             return null;
         }
         return wanted;
+    }
+
+    /// <summary>The feed at <paramref name="source"/>'s URL as it was first asked for with this setup, named as the
+    /// config names it when the config lists it, so the same URL typed in other letters is the same feed.</summary>
+    private NuGetSource EnsureFeed(NuGetSetup setup, NuGetSource source)
+    {
+        if (_feeds.TryGetValue(source.Url.Text, out var feed))
+        {
+            return feed;
+        }
+
+        feed = NuGetFeeds.GetListedSource(setup, source);
+        _feeds.Add(source.Url.Text, feed);
+        return feed;
     }
 
     /// <summary>The seconds left at <paramref name="now"/> before both the query and the feed typed settled,
@@ -682,8 +698,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             return null;
         }
 
-        var setup = FindReadySetup();
-        if (setup is null)
+        if (IsReadingSetup)
         {
             return null;
         }
@@ -696,7 +711,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         _iconCount++;
         icon = new PackageIcon { ImageId = IconImagePrefix + _iconCount };
         _icons.Add(url, icon);
-        _iconsToFetch.Add(new IconFetch { Icons = setup.Icons, Url = url, Icon = icon });
+        _iconsToFetch.Add(new IconFetch { Url = url, Icon = icon });
         return icon;
     }
 
@@ -717,7 +732,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         }
 
         var feed = _shown.Search.Feed;
-        var key = new DetailsKey(feed.Source.Url, package.Id, version);
+        var key = new DetailsKey(feed.Url, package.Id, version);
         if (_details.TryGetValue(key, out var details))
         {
             return details;
@@ -737,7 +752,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             return;
         }
 
-        _details.Remove(new DetailsKey(_shown.Search.Feed.Source.Url, package.Id, version));
+        _details.Remove(new DetailsKey(_shown.Search.Feed.Url, package.Id, version));
     }
 
     /// <summary>Fetches the icons and details asked for since it last ran, all at once, and returns once they
@@ -766,7 +781,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
     private async Task DownloadIconAsync(IconFetch fetch, CancellationToken ct)
     {
-        var fetched = await ports.DownloadIconAsync(fetch.Icons, fetch.Url, IconPixels, ct);
+        var fetched = await ports.DownloadIconAsync(fetch.Url, IconPixels, ct);
         if (ct.IsCancellationRequested)
         {
             return;
@@ -947,7 +962,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     /// <summary>Has the settings keep the feed searched and whether prereleases count, once either changed.</summary>
     private void KeepSearched(FeedSearch searched)
     {
-        var kept = new SavedNuGetSearch(searched.Feed.Source.Url.Text, searched.IncludePrerelease);
+        var kept = new SavedNuGetSearch(searched.Feed.Url.Text, searched.IncludePrerelease);
         if (kept == KeptSearch)
         {
             return;
@@ -980,12 +995,12 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             ClearShown();
         }
 
-        ports.ReportError(new AppProblem.NuGetSearchFailed(searched.Feed.Source.Name, error));
+        ports.ReportError(new AppProblem.NuGetSearchFailed(searched.Feed.Name, error));
         return new SearchRun.Failed(searched, error.Message);
     }
 
     /// <summary>What a search asked of which feed.</summary>
-    public sealed record FeedSearch(NuGetFeed Feed, string Query, bool IncludePrerelease, int Page);
+    public sealed record FeedSearch(NuGetSource Feed, string Query, bool IncludePrerelease, int Page);
 
     /// <summary>The page of packages shown, and the search that found it.</summary>
     private sealed record ShownPage(FeedSearch Search, FeedPage Found);
@@ -1041,8 +1056,6 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     /// <summary>An icon asked for, still to be fetched, and where from.</summary>
     private sealed record IconFetch
     {
-        public required PackageIcons Icons { get; init; }
-
         public required WebUrl Url { get; init; }
 
         public required PackageIcon Icon { get; init; }
@@ -1053,7 +1066,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     {
         public required DetailsKey Key { get; init; }
 
-        public required NuGetFeed Feed { get; init; }
+        public required NuGetSource Feed { get; init; }
 
         public required FeedVersion Version { get; init; }
 
@@ -1061,9 +1074,10 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     }
 }
 
-/// <summary>Reaches the NuGet feeds, the package cache and the user's NuGet.Config off the UI thread, and the
-/// app's error reports, for <see cref="NuGetBrowser"/>.</summary>
-public sealed class NuGetBrowserAdapter(Action<AppProblem> reportError) : NuGetBrowser.IPorts
+/// <summary>Reaches the NuGet feeds through <paramref name="client"/>, which keeps the feeds and icons it speaks
+/// to, the package cache and the user's NuGet.Config off the UI thread, and the app's error reports, for
+/// <see cref="NuGetBrowser"/>.</summary>
+public sealed class NuGetBrowserAdapter(Action<AppProblem> reportError, NuGetClient client) : NuGetBrowser.IPorts
 {
     public void ReportError(AppProblem problem)
     {
@@ -1086,25 +1100,25 @@ public sealed class NuGetBrowserAdapter(Action<AppProblem> reportError) : NuGetB
     /// <see cref="Outcome{T}.Failed"/>.</summary>
     public async Task<Outcome<FeedPage>> SearchAsync(FeedSearch search, CancellationToken ct)
     {
-        return await Background.Wait(NuGetFeeds.SearchAsync(search.Feed, search.Query, search.IncludePrerelease, search.Page, ct));
+        return await Background.Wait(NuGetFeeds.SearchAsync(client.EnsureFeed(search.Feed), search.Query, search.IncludePrerelease, search.Page, ct));
     }
 
     /// <inheritdoc cref="SearchAsync"/>
-    public async Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken ct)
+    public async Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetSource feed, PackageId id, FeedVersion version, CancellationToken ct)
     {
-        return await Background.Wait(NuGetFeeds.ReadDetailsAsync(feed, id, version, ct));
+        return await Background.Wait(NuGetFeeds.ReadDetailsAsync(client.EnsureFeed(feed), id, version, ct));
     }
 
     /// <inheritdoc cref="SearchAsync"/>
-    public async Task<Outcome<ResourceImage>> DownloadIconAsync(PackageIcons icons, WebUrl url, int side, CancellationToken ct)
+    public async Task<Outcome<ResourceImage>> DownloadIconAsync(WebUrl url, int side, CancellationToken ct)
     {
-        return await Background.Wait(NuGetFeeds.GetIconAsync(icons, url, side, ct));
+        return await Background.Wait(NuGetFeeds.GetIconAsync(client.Icons, url, side, ct));
     }
 
     /// <inheritdoc cref="SearchAsync"/>
-    public async Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetFeed feed, PackageId id, PackageVersion version, CancellationToken ct)
+    public async Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetSource feed, PackageId id, PackageVersion version, CancellationToken ct)
     {
-        return await Background.Wait(NuGetFeeds.GetPackageAsync(cache, feed, id, version, ct));
+        return await Background.Wait(NuGetFeeds.GetPackageAsync(cache, client.EnsureFeed(feed), id, version, ct));
     }
 }
 

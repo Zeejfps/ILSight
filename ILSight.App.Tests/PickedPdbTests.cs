@@ -17,7 +17,7 @@ public sealed class PickedPdbTests
         using var temp = new TempDir();
         var copy = CopyFixtureWithoutPdb(temp);
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
-        app.Start((a, ct) => OpenAssemblyAsync(a, copy, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, copy, ct));
         app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(copy)), Patience);
         app.Settle(2);
         Assert.Null(LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver)));
@@ -53,7 +53,7 @@ public sealed class PickedPdbTests
     {
         var d = AppStateDriver.Opened();
 
-        d.Start((a, ct) => UsePdbAsync(a, OpenAssemblyOf(d), OtherBuildPdb, a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a, OpenAssemblyOf(d), OtherBuildPdb, ct));
         d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
 
         var error = Assert.Single(d.AppState.Errors.Entries);
@@ -86,7 +86,7 @@ public sealed class PickedPdbTests
     private static AppStateDriver OpenedCopy(TempDir temp, string copy)
     {
         var d = new AppStateDriver(temp.Settings());
-        d.Start((a, ct) => OpenAssemblyAsync(a, copy, a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, copy, ct));
         d.RunUntil(() => AssemblyListing.IsListed(d.AppState.Assemblies, PathOf(copy)));
         d.Settle();
         return d;
@@ -94,7 +94,7 @@ public sealed class PickedPdbTests
 
     private static void Pick(AppStateDriver d, string pdb)
     {
-        d.Start((a, ct) => UsePdbAsync(a, OpenAssemblyOf(d), pdb, a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a, OpenAssemblyOf(d), pdb, ct));
         d.RunUntil(() => d.AppState.Assemblies.Pdbs.All.Count > 0);
         d.Settle();
     }

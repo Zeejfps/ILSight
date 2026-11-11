@@ -3,7 +3,6 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
-using static ILSight.Assemblies;
 using static ILSight.Exports;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.App.Tests.TestPaths;
@@ -31,7 +30,7 @@ public sealed class ExportTests : IDisposable
     private static AppStateDriver OpenedSample()
     {
         var d = new AppStateDriver();
-        d.Start((a, ct) => OpenAssemblyAsync(a, SampleAppPath, a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SampleAppPath, ct));
         d.RunUntil(() => AssemblyListing.IsListed(d.AppState.Assemblies, PathOf(SampleAppPath)));
         d.Settle();
         return d;
@@ -101,7 +100,7 @@ public sealed class ExportTests : IDisposable
     public void The_tree_menu_creates_a_diagram_in_a_folder_named_after_the_assembly_and_opens_it()
     {
         var app = new AppDriver();
-        app.Start((a, ct) => OpenAssemblyAsync(a, SampleAppPath, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SampleAppPath, ct));
         app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)), Patience);
         app.Settle(2);
         app.Frames.FilePicker.Answer = _temp.Path;
@@ -139,7 +138,7 @@ public sealed class ExportTests : IDisposable
     {
         var app = AppDriver.Opened();
         var sample = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
-        app.Start((a, ct) => OpenAssemblyAsync(a, sample, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, sample, ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.FilePath.Text == sample));
         var assembly = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == sample);
         var baml = assembly.Root.Child("Resources", "SampleApp.g.resources", "mainwindow.baml");

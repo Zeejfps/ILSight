@@ -3,7 +3,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.Assemblies;
 using static ILSight.DocumentPanels;
 
 namespace ILSight;
@@ -51,7 +50,7 @@ public static class MainView
             return;
         }
 
-        Commands.Start(ui.State, nameof(OpenDroppedFilesAsync), dropped, static (a, paths, ct) => OpenDroppedFilesAsync(a, paths, a.AssemblyPorts, ct));
+        Commands.Start(ui.State, nameof(AssemblyOpening.OpenDroppedFilesAsync), dropped, static (a, paths, ct) => a.AssemblyOpening.OpenDroppedFilesAsync(a, paths, ct));
     }
 
     private static void Panels(Ui<UiState> ui, AppState appState)

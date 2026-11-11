@@ -518,16 +518,34 @@ public sealed class NuGetSetupTests
     }
 
     [Fact]
-    public void A_feed_is_made_once_per_url_and_named_as_the_config_names_it()
+    public void A_client_makes_a_feed_once_per_url_whatever_its_letters()
+    {
+        var typed = NuGetSource.FromUrl("https://PKGS.test/v3/index.json");
+        var listed = NuGetSource.FromConfig("company", "https://pkgs.test/v3/index.json");
+        Assert.NotNull(typed);
+        Assert.NotNull(listed);
+        var client = new NuGetClient(new FakeFeed());
+
+        var feed = client.EnsureFeed(typed);
+
+        Assert.Same(feed, client.EnsureFeed(listed));
+        Assert.Same(typed, feed.Source);
+    }
+
+    [Fact]
+    public void A_source_the_config_lists_is_named_as_the_config_names_it()
     {
         using var temp = new TempDir();
-        var listed = NuGetSource.FromConfig("company", "https://pkgs.test/v3/index.json")!;
-        var setup = NuGetFeeds.CreateSetup([listed], new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") });
+        var typed = NuGetSource.FromUrl("https://PKGS.test/v3/index.json");
+        var listed = NuGetSource.FromConfig("company", "https://pkgs.test/v3/index.json");
+        var other = NuGetSource.FromUrl("https://other.test/v3/index.json");
+        Assert.NotNull(typed);
+        Assert.NotNull(listed);
+        Assert.NotNull(other);
+        var setup = new NuGetSetup { Sources = [listed], Cache = new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") } };
 
-        var feed = NuGetFeeds.EnsureFeed(setup, NuGetSource.FromUrl("https://PKGS.test/v3/index.json")!);
-
-        Assert.Same(feed, NuGetFeeds.EnsureFeed(setup, listed));
-        Assert.Equal("company", feed.Source.Name);
+        Assert.Same(listed, NuGetFeeds.GetListedSource(setup, typed));
+        Assert.Same(other, NuGetFeeds.GetListedSource(setup, other));
     }
 }
 

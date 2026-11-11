@@ -47,7 +47,7 @@ internal static class AppRoot
         var themes = Theming.CreateCatalog(BuiltInThemes.Files);
         var iconThemes = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
         var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
-        var assemblyPorts = new AssembliesAdapter(errors, assemblies, session);
+        var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session);
         var appState = new AppState
         {
             Work = work,
@@ -57,7 +57,9 @@ internal static class AppRoot
             ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),
             OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
             GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
-            AssemblyPorts = assemblyPorts,
+            AssemblyOpening = new AssemblyOpening(assemblyList),
+            AssemblyReloading = new AssemblyReloading(assemblyList),
+            OpenAssembliesAsReloadHandler = new OpenAssembliesAsReloadHandler(assemblyList),
             Opens = opens,
             Session = session,
             SettingsPlace = settingsPlace,
@@ -97,9 +99,12 @@ internal static class AppRoot
     /// <summary>The screen over <paramref name="appState"/>, restored from what its settings kept, with the
     /// active tab it starts with, the tabs reopened from the open list's documents docked where they were,
     /// and any other tab in the place of the documents. It takes the theme and strings with its first frame.</summary>
-    internal static UiState CreateScreen(AppState appState)
+    /// <param name="appState">The app state the screen shows.</param>
+    /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
+    internal static UiState CreateScreen(AppState appState, HttpMessageHandler? nuGetRequests = null)
     {
-        var uiState = CreateUiState(appState.View, appState.Work, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime);
+        var uiState = CreateUiState(appState.View, appState.Work, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime,
+            nuGetRequests);
         ScreenSettings.RestoreScreen(uiState, appState.View);
         AppFrames.FollowRestoredAppState(uiState, appState);
         return uiState;
@@ -112,7 +117,9 @@ internal static class AppRoot
     /// <param name="reportError">Tells the user that something done in the background failed.</param>
     /// <param name="session">The browse tree the tree and searches show nodes of.</param>
     /// <param name="runtime">What this machine has installed.</param>
-    private static UiState CreateUiState(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime)
+    /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
+    private static UiState CreateUiState(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime,
+        HttpMessageHandler? nuGetRequests)
     {
         var appCommands = new Queue<AppCommand>();
         var uiState = new UiState
@@ -125,7 +132,7 @@ internal static class AppRoot
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
             Runtime = runtime,
             Picker = new FrameworkPicker(new FrameworkPickerAdapter(reportError, runtime)),
-            NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser(new NuGetBrowserAdapter(reportError)) },
+            NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser(new NuGetBrowserAdapter(reportError, new NuGetClient(nuGetRequests))) },
             ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(new ProcessBrowserAdapter(reportError)) },
             Display = saved.Display ?? DisplayOptions.Default,
             Analyzer = new AnalyzerRows { AppCommands = appCommands },

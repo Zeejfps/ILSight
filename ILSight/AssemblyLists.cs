@@ -17,7 +17,7 @@ public static class AssemblyLists
         appState.Assemblies.Pdbs.Use(appState.Lists.ActivePdbs);
         appState.Assemblies.TargetFrameworks.Use(appState.Lists.ActiveFrameworks);
         var paths = appState.Lists.ActivePaths.ToList();
-        return OpenAssembliesAsReloadAsync(appState, paths, appState.AssemblyPorts, ct);
+        return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState, paths, ct);
     }
 
     /// <summary>Opens the list named <paramref name="name"/> as the app starts, in place of the one the

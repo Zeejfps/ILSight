@@ -4,7 +4,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
-using static ILSight.Assemblies;
 
 namespace ILSight;
 
@@ -56,7 +55,7 @@ internal static class NuGetPickerView
             return;
         }
 
-        Commands.Start(ui.State, nameof(OpenAssemblyAsync), path, static (a, p, ct) => OpenAssemblyAsync(a, p, a.AssemblyPorts, ct));
+        Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssemblyAsync), path, static (a, p, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, p, ct));
         Close(ui, picker);
     }
 

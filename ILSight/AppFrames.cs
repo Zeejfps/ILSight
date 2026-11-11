@@ -2,7 +2,6 @@ using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Processes;
-using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.CodeDisplay;
 using static ILSight.Decompilation;
@@ -127,7 +126,7 @@ internal static partial class AppFrames
     /// reloading. A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartRefreshing(AppState appState, List<NodePath> expanded)
     {
-        appState.Workflows.Start(nameof(RefreshAssembliesAsync), ct => RefreshAssembliesAsync(appState, expanded, appState.AssemblyPorts, ct));
+        appState.Workflows.Start(nameof(AssemblyReloading.RefreshAssembliesAsync), ct => appState.AssemblyReloading.RefreshAssembliesAsync(appState, expanded, ct));
     }
 
     /// <summary>Opens the error dialog on the newest error whenever one is reported.</summary>

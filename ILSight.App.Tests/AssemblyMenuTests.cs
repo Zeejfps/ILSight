@@ -1,6 +1,5 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using static ILSight.Assemblies;
 using static ILSight.Navigation;
 using static ILSight.App.Tests.TestPaths;
 
@@ -16,7 +15,7 @@ public sealed class AssemblyMenuTests
         using var temp = new TempDir();
         var missing = temp.PathOf("Missing.dll");
         var app = AppDriver.Opened();
-        app.Start((a, ct) => OpenAssembliesAsync(a, [PathOf(missing), PathOf(CoreLibPath)], a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(missing), PathOf(CoreLibPath)], ct));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 3, Patience);
         app.Settle(2);
 

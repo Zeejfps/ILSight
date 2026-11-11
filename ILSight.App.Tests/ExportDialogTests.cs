@@ -2,7 +2,6 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using static ILSight.Assemblies;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
@@ -28,7 +27,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppStateDriver OpenedTwo()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => OpenAssemblyAsync(a, SecondPath, a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SecondPath, ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         d.Settle();
         return d;
@@ -277,7 +276,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppStateDriver OpenedThree()
     {
         var d = OpenedTwo();
-        d.Start((a, ct) => OpenAssemblyAsync(a, typeof(FactAttribute).Assembly.Location, a.AssemblyPorts, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, typeof(FactAttribute).Assembly.Location, ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;
@@ -366,7 +365,7 @@ public sealed class ExportDialogTests : IDisposable
     public void The_main_page_shows_only_the_ticked_assemblies()
     {
         var app = AppDriver.Opened(height: 1400f);
-        app.Start((a, ct) => OpenAssemblyAsync(a, SecondPath, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SecondPath, ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         var second = app.AppState.Assemblies.Assemblies[1];
         app.Run(2);
@@ -432,7 +431,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppDriver WithTwoIncluded()
     {
         var app = AppDriver.Opened(height: 1400f);
-        app.Start((a, ct) => OpenAssemblyAsync(a, SecondPath, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SecondPath, ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.OpenExportSetup(null);
         Exports.IncludeAll(app.Ui.ExportSetup, true);
@@ -508,7 +507,7 @@ public sealed class ExportDialogTests : IDisposable
     public void Export_on_an_assembly_in_the_tree_opens_the_dialog_with_that_assembly_ticked()
     {
         var app = AppDriver.Opened();
-        app.Start((a, ct) => OpenAssemblyAsync(a, SecondPath, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SecondPath, ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.Settle(2);
         var second = app.AppState.Assemblies.Assemblies[1];

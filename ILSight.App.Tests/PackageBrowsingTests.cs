@@ -1,7 +1,6 @@
 using System.IO.Compression;
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.Assemblies;
 using static ILSight.Navigation;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
@@ -18,7 +17,7 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = new AppDriver();
 
-        app.Start((a, ct) => OpenAssemblyAsync(a, WritePackage(temp), a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, WritePackage(temp), ct));
         app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
 
@@ -142,7 +141,7 @@ public sealed class PackageBrowsingTests
     private static AppDriver OpenedPackage(TempDir temp)
     {
         var app = new AppDriver();
-        app.Start((a, ct) => OpenAssemblyAsync(a, WritePackage(temp), a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, WritePackage(temp), ct));
         app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
         return app;

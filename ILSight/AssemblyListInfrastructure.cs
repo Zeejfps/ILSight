@@ -3,8 +3,9 @@ using ILSight.Core;
 namespace ILSight;
 
 /// <summary>Reaches the app's error reports, the file system, and the open assemblies off the UI thread, for
-/// <see cref="Assemblies"/>.</summary>
-public sealed class AssembliesAdapter(ErrorLog errors, AssemblyList assemblies, BrowseSession session) : Assemblies.IPorts
+/// <see cref="AssemblyOpening"/>, <see cref="AssemblyReloading"/> and <see cref="OpenAssembliesAsReloadHandler"/>.</summary>
+public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session)
+    : AssemblyOpening.IPorts, AssemblyReloading.IPorts, OpenAssembliesAsReloadHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
@@ -38,13 +39,13 @@ public sealed class AssembliesAdapter(ErrorLog errors, AssemblyList assemblies, 
 
     /// <summary>Reads on the thread pool and comes back on the UI thread, with whatever the reading threw as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public async Task<Outcome<Assemblies.Reopened>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
+    public async Task<Outcome<AssemblyReloading.Reopened>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
         return await Background.Wait(Task.Run(() => ReadAgain(item, places), ct));
     }
 
     /// <inheritdoc cref="OpenFilesAsync"/>
-    public async Task<Outcome<Assemblies.Reloaded>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
+    public async Task<Outcome<AssemblyReloading.Reloaded>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
         IReadOnlyList<NodePath> places, CancellationToken stop, CancellationToken ct)
     {
         return await Background.Wait(Task.Run(() => ReopenFiles(paths, expanded, places, stop), ct));
@@ -62,14 +63,14 @@ public sealed class AssembliesAdapter(ErrorLog errors, AssemblyList assemblies, 
         return last;
     }
 
-    private Assemblies.Reopened ReadAgain(LoadedAssembly item, IReadOnlyList<NodePath> places)
+    private AssemblyReloading.Reopened ReadAgain(LoadedAssembly item, IReadOnlyList<NodePath> places)
     {
         var fresh = AssemblyListing.ReadAgain(assemblies, item);
         EnsureChildrenAsLoaded(BrowseSessions.EnsureRoot(session, item), BrowseSessions.EnsureRoot(session, fresh));
         var placeNodes = places
             .Select(p => BrowseSessions.FindNode(session, fresh, p))
             .ToArray();
-        return new Assemblies.Reopened { Item = fresh, Places = placeNodes };
+        return new AssemblyReloading.Reopened { Item = fresh, Places = placeNodes };
     }
 
     /// <summary>Loads the children of each node under <paramref name="fresh"/> whose counterpart under
@@ -94,13 +95,13 @@ public sealed class AssembliesAdapter(ErrorLog errors, AssemblyList assemblies, 
         }
     }
 
-    private Assemblies.Reloaded ReopenFiles(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
+    private AssemblyReloading.Reloaded ReopenFiles(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
         CancellationToken stop)
     {
         OpenFiles(paths, stop);
         var expandedNodes = GetExpandedNodes(expanded, stop);
         var placeNodes = FindNodes(places, stop);
-        return new Assemblies.Reloaded { Expanded = expandedNodes, Places = placeNodes };
+        return new AssemblyReloading.Reloaded { Expanded = expandedNodes, Places = placeNodes };
     }
 
     private List<BrowseNode> GetExpandedNodes(IReadOnlyList<NodePath> expanded, CancellationToken stop)

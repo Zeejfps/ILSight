@@ -60,17 +60,17 @@ public sealed class NuGetBrowserTests
             return Search(search);
         }
 
-        public Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken ct)
+        public Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetSource feed, PackageId id, FeedVersion version, CancellationToken ct)
         {
             return AnswerAsync(nameof(ReadDetailsAsync), Details, ct);
         }
 
-        public Task<Outcome<ResourceImage>> DownloadIconAsync(PackageIcons icons, WebUrl url, int side, CancellationToken ct)
+        public Task<Outcome<ResourceImage>> DownloadIconAsync(WebUrl url, int side, CancellationToken ct)
         {
             return AnswerAsync(nameof(DownloadIconAsync), Icon, ct);
         }
 
-        public Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetFeed feed, PackageId id, PackageVersion version, CancellationToken ct)
+        public Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetSource feed, PackageId id, PackageVersion version, CancellationToken ct)
         {
             return AnswerAsync(nameof(DownloadPackageAsync), Package, ct);
         }
@@ -93,7 +93,7 @@ public sealed class NuGetBrowserTests
     private static NuGetSetup Setup()
     {
         var cache = new PackageCache { GlobalPackagesFolder = Path.GetTempPath(), DownloadFolder = Path.GetTempPath() };
-        return NuGetFeeds.CreateSetup([Source()], cache);
+        return new NuGetSetup { Sources = [Source()], Cache = cache };
     }
 
     private static PackageVersion Version(string text)

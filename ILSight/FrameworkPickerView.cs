@@ -4,7 +4,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
-using static ILSight.Assemblies;
 
 namespace ILSight;
 
@@ -82,7 +81,7 @@ internal static class FrameworkPickerView
 
         if (open && picker.HasSelection)
         {
-            Commands.Start(ui.State, nameof(OpenAssembliesAsync), picker.ListSelected(), static (a, selected, ct) => OpenSelectedAsync(a, selected, ct));
+            Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssembliesAsync), picker.ListSelected(), static (a, selected, ct) => OpenSelectedAsync(a, selected, ct));
             close = true;
         }
         if (close)
@@ -100,7 +99,7 @@ internal static class FrameworkPickerView
     {
         var paths = selected
             .Select(a => a.FilePath);
-        return OpenAssembliesAsync(appState, paths, appState.AssemblyPorts, ct);
+        return appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, ct);
     }
 
     /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>

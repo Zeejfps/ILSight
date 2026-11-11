@@ -6,7 +6,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
 using ILSight.Core.Processes;
 using ILSight.Localization;
-using static ILSight.Assemblies;
 using static ILSight.ProcessPicking;
 
 namespace ILSight;
@@ -63,7 +62,7 @@ internal static class ProcessPickerView
 
         if (open && browser.CanOpen)
         {
-            Commands.Start(ui.State, nameof(OpenAssembliesAsync), browser.ListToOpen(), static (a, paths, ct) => OpenAssembliesAsync(a, paths, a.AssemblyPorts, ct));
+            Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssembliesAsync), browser.ListToOpen(), static (a, paths, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, paths, ct));
             close = true;
         }
         // Escape or the close button only clear IsOpen.

@@ -8,7 +8,6 @@ using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
 using ILSight.Localization;
 using static ILSight.Analysis;
-using static ILSight.Assemblies;
 using static ILSight.Navigation;
 using static ILSight.Settings;
 using static ILSight.App.Tests.TestPaths;
@@ -207,18 +206,21 @@ internal sealed class AppStateDriver
     private readonly PostedActions _posted = PostedActions.OfThisTest();
     private readonly UiState? _ui;
 
-    public AppStateDriver(AppSettings? settings = null) : this(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: true)
+    /// <param name="settings">The settings the app starts with.</param>
+    /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
+    public AppStateDriver(AppSettings? settings = null, HttpMessageHandler? nuGetRequests = null)
+        : this(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: true, nuGetRequests)
     {
     }
 
-    private AppStateDriver(SettingsLoadResult loadResult, RunArguments arguments, bool withScreen)
+    private AppStateDriver(SettingsLoadResult loadResult, RunArguments arguments, bool withScreen, HttpMessageHandler? nuGetRequests = null)
     {
         Step = Pump;
         loadResult.Settings.Locale ??= Locale.En;
         AppState = AppRoot.RestoreAppState(loadResult, arguments, TestSession.Shared);
         if (withScreen)
         {
-            _ui = AppRoot.CreateScreen(AppState);
+            _ui = AppRoot.CreateScreen(AppState, nuGetRequests);
         }
 
         RestoreAnalyses(AppState);
@@ -352,7 +354,7 @@ internal sealed class AppStateDriver
     /// <summary>Opens the fixture assembly and waits until its root shows.</summary>
     public LoadedModule OpenFixtures()
     {
-        Start((a, ct) => OpenAssemblyAsync(a, FixturePath, a.AssemblyPorts, ct));
+        Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, FixturePath, ct));
         RunUntil(() => AppState.Tabs.Active?.Node?.Icon == NodeIcon.Assembly);
         Settle();
         return Assert.IsType<LoadedModule>(AppState.Tabs.Active!.Node!.Assembly);
@@ -408,9 +410,10 @@ internal sealed class AppStateDriver
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
-    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null)
+    public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null,
+        HttpMessageHandler? nuGetRequests = null)
     {
-        Driver = new AppStateDriver(settings);
+        Driver = new AppStateDriver(settings, nuGetRequests);
         inbox ??= Channel.CreateUnbounded<RunArguments>();
         if (queuedArguments != null)
         {

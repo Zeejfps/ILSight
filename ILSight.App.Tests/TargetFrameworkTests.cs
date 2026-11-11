@@ -2,7 +2,6 @@ using System.IO.Compression;
 using ZGF.Gui;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.Settings;
 using static ILSight.App.Tests.TestPaths;
@@ -72,7 +71,7 @@ public sealed class TargetFrameworkTests
     public void Picking_a_framework_reopens_only_that_assembly_with_the_tree_as_it_was_on_every_frame()
     {
         var app = AppDriver.Opened(width: 1600f);
-        app.Start((a, ct) => OpenAssemblyAsync(a, SampleAppPath, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SampleAppPath, ct));
         app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)), Patience);
         var fixtures = FixturesOf(app.AppState);
         var sample = SampleOf(app.AppState);
@@ -88,7 +87,7 @@ public sealed class TargetFrameworkTests
         var before = Trees.ListExpandedPaths(tree);
         var shapes = new List<List<NodePath>>();
 
-        app.Start((a, ct) => SetTargetFrameworkAsync(a, fixtures, Net48, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a, fixtures, Net48, ct));
         Poll.Until(() => FixturesOf(app.AppState) != fixtures, RunFrame);
         RunFrame();
 
@@ -116,7 +115,7 @@ public sealed class TargetFrameworkTests
     {
         using var temp = new TempDir();
         var app = new AppDriver();
-        app.Start((a, ct) => OpenAssemblyAsync(a, WritePackage(temp), a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, WritePackage(temp), ct));
         app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
         var package = app.AppState.Assemblies.Listed[0].Root;
@@ -132,7 +131,7 @@ public sealed class TargetFrameworkTests
         app.Show(assembly.Child(AppStateDriver.FixturesNamespace, "Greeter"), 2);
         var before = Trees.ListExpandedPaths(tree);
 
-        app.Start((a, ct) => SetTargetFrameworkAsync(a, Assert.IsType<LoadedModule>(assembly.Assembly), Net48, a.AssemblyPorts, ct));
+        app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a, Assert.IsType<LoadedModule>(assembly.Assembly), Net48, ct));
         app.Settle(3);
 
         Assert.Equal(before, Trees.ListExpandedPaths(tree));
