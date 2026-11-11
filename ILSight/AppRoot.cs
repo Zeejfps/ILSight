@@ -116,7 +116,7 @@ internal static class AppRoot
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
             Runtime = runtime,
             Picker = new FrameworkPicker(new FrameworkPickerAdapter(reportError, runtime)),
-            NuGetPicker = new NuGetPicker { Work = work, ReportError = reportError },
+            NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser(new NuGetBrowserAdapter(reportError)) },
             ProcessPicker = new ProcessPicker
             {
                 Work = work,

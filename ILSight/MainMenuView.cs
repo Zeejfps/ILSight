@@ -232,7 +232,7 @@ internal static class MainMenuView
 
         if (ui.MenuItem(t.FileOpenFromNuget, id: "open-from-nuget", icon: new UiIcon(icons.FileOpenFromNuGet)))
         {
-            NuGetPicking.OpenPicker(ui.State.NuGetPicker);
+            NuGetPickerView.Open(ui.State);
         }
 
         if (ui.MenuItem(t.FileOpenFromProcess, id: "open-from-process", icon: new UiIcon(icons.FileOpenFromProcess)))

@@ -54,6 +54,38 @@ internal static partial class AppFrames
         ShowNewErrors(uiState, appState.Errors);
     }
 
+    /// <summary>Does what comes before the "open from NuGet" dialog draws: hands the package it downloaded over to
+    /// be opened, closing it; and while it is open, starts the search what was typed asks for, so that the dialog
+    /// draws it searching, or asks for a frame once what is being typed will have settled.</summary>
+    internal static void FollowNuGetPicker(Ui<UiState> ui, AppState appState)
+    {
+        var picker = ui.State.NuGetPicker;
+        NuGetPickerView.OpenDownloaded(ui, picker);
+        if (!picker.IsOpen)
+        {
+            return;
+        }
+
+        var now = ui.RealTime;
+        var search = NuGetPicking.UpdatePicker(picker, now);
+        if (search is not null)
+        {
+            StartSearching(appState, picker.Browser, search);
+        }
+
+        if (picker.Browser.IsSettling)
+        {
+            ui.RequestUpdateIn(picker.Browser.CalculateSecondsToSettle(now));
+        }
+    }
+
+    /// <summary>Starts <paramref name="search"/> now, before the frame draws. A method of its own, so that the
+    /// frames that start nothing allocate no closure.</summary>
+    private static void StartSearching(AppState appState, NuGetBrowser browser, NuGetBrowser.FeedSearch search)
+    {
+        appState.Workflows.Start(nameof(NuGetBrowser.SearchAsync), ct => browser.SearchAsync(search, ct));
+    }
+
     /// <summary>Reads the open assemblies again, as F5 does, when the options that apply as they are read changed.</summary>
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {

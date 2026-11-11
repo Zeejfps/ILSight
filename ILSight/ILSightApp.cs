@@ -58,6 +58,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     protected override void OnUpdate(Ui<UiState> ui)
     {
         StartFrame(ui.State, _appState);
+        FollowNuGetPicker(ui, _appState);
         MainView.Render(ui, _appState);
         FinishFrame(ui, _appState, _codeFonts);
     }

@@ -40,7 +40,7 @@ internal static class NuGetDetailsView
         };
         using (ui.Panel(frame))
         {
-            var package = picker.Selected;
+            var package = picker.Browser.Selected;
             if (package == null)
             {
                 NoSelection(ui);
@@ -67,7 +67,7 @@ internal static class NuGetDetailsView
         var theme = ui.Theme;
         using (ui.Id(package.Id.Text))
         {
-            var details = picker.Version != null ? NuGetPicking.EnsureDetails(picker, package, picker.Version) : null;
+            var details = picker.Browser.Version != null ? picker.Browser.EnsureDetails(package, picker.Browser.Version) : null;
             using (ui.Column(new Box { Width = Sizing.Grow(), Padding = theme.ShellPaddingX, Gap = theme.Gap }))
             {
                 Header(ui, picker, package);
@@ -146,7 +146,7 @@ internal static class NuGetDetailsView
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
             ui.Text(t.NugetVersion, new Box { Width = LabelWidth }, color: theme.TextMuted);
-            var choice = picker.Choice;
+            var choice = picker.Browser.Choice;
             if (choice is not null)
             {
                 VersionSelect(ui, picker, choice);
@@ -161,12 +161,12 @@ internal static class NuGetDetailsView
     {
         var t = ui.State.Strings;
         var width = Math.Clamp(ui.SelectButtonWidth(choice.Texts), VersionMinWidth, VersionMaxWidth);
-        var enabled = !picker.IsDownloading && picker.ShowsWhatWasAsked;
+        var enabled = !picker.Browser.IsDownloading && picker.Browser.ShowsWhatWasAsked;
         var version = choice.Picked;
         var selectWidth = Sizing.Fixed(width);
         if (ui.Select("version", ref version, choice.Versions, VersionLabel, selectWidth, t.NugetVersion, enabled))
         {
-            picker.PickVersion(version);
+            picker.Browser.PickVersion(version);
         }
     }
 
@@ -188,9 +188,9 @@ internal static class NuGetDetailsView
                 ui.Text(ui.State.Strings.NugetLoadingDetails, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
                 break;
             case VersionDetails.Failed:
-                if (ui.Button(ui.State.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Version != null)
+                if (ui.Button(ui.State.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Browser.Version != null)
                 {
-                    NuGetPicking.RetryDetails(picker, package, picker.Version);
+                    picker.Browser.RetryDetails(package, picker.Browser.Version);
                 }
 
                 break;
@@ -291,7 +291,7 @@ internal static class NuGetDetailsView
         var read = ReadOf(details);
         if (read == null)
         {
-            if (picker.Version != package.Version)
+            if (picker.Browser.Version != package.Version)
             {
                 return;
             }

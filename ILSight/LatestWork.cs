@@ -21,8 +21,15 @@ public sealed class LatestWork
     /// work is cancelled from the start and its result dropped too.</summary>
     public WorkTicket Start()
     {
+        return Start(CancellationToken.None);
+    }
+
+    /// <summary>As <see cref="Start()"/>, for work that also stops once <paramref name="ct"/> fires, such as a
+    /// workflow's token: the ticket's token fires with either.</summary>
+    public WorkTicket Start(CancellationToken ct)
+    {
         Cancel();
-        var ticket = new WorkTicket(CancellationTokenSource.CreateLinkedTokenSource(_open.Token));
+        var ticket = new WorkTicket(CancellationTokenSource.CreateLinkedTokenSource(_open.Token, ct));
         if (!IsClosed)
         {
             _current = ticket;
