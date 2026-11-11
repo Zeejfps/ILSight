@@ -163,7 +163,7 @@ public sealed class ComparisonTests
         CloseTab(d.AppState, tab);
         d.Settle();
 
-        Assert.True(comparison.IsClosed);
+        Assert.True(comparison.Work.IsClosed);
         Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
         Assert.False(d.AppState.IsComparing);
     }
@@ -319,7 +319,7 @@ public sealed class ComparisonTests
     public void ShowFailure_WhileComparing_DropsTheComparisonInFlightAndSaysWhy()
     {
         var comparison = NewComparison();
-        var ticket = comparison.StartComparing();
+        var ticket = comparison.Work.Start();
         var failure = new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll");
 
         comparison.ShowFailure(failure);
@@ -327,7 +327,7 @@ public sealed class ComparisonTests
         Assert.False(comparison.IsComparing);
         Assert.True(ticket.Token.IsCancellationRequested);
         Assert.Equal(new ComparisonResult.Failed { Failure = failure }, comparison.Result);
-        Assert.False(comparison.FinishComparing(ticket));
+        Assert.False(comparison.Work.TryFinish(ticket));
     }
 
     [Fact]

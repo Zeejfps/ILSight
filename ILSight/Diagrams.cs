@@ -457,9 +457,9 @@ public static class Diagrams
             return;
         }
 
-        var ticket = Diagrams.StartLayout(diagram);
+        var ticket = diagram.Work.Start();
         var laidOut = await Background.Run(() => DiagramLayouts.Arrange(measures, ticket.Token));
-        if (!Diagrams.FinishLayout(diagram, ticket))
+        if (!diagram.Work.TryFinish(ticket))
         {
             return;
         }
@@ -595,40 +595,10 @@ public static class Diagrams
         diagram.Reading--;
     }
 
-    /// <summary>Starts a layout, cancelling the one in flight.</summary>
-    public static LoadTicket StartLayout(TypeDiagram diagram)
-    {
-        diagram.LayoutWork?.Cancel();
-        var work = CancellationTokenSource.CreateLinkedTokenSource(diagram.Open.Token);
-        diagram.LayoutWork = work;
-        return new LoadTicket { Work = work };
-    }
-
-    /// <summary>Ends the layout <paramref name="ticket"/> was given for. False when another started since,
-    /// or the diagram was closed, and what it laid out should be dropped.</summary>
-    public static bool FinishLayout(TypeDiagram diagram, LoadTicket ticket)
-    {
-        ticket.Work.Dispose();
-        if (diagram.LayoutWork != ticket.Work)
-        {
-            return false;
-        }
-
-        diagram.LayoutWork = null;
-        return !diagram.IsClosed;
-    }
-
     /// <summary>Holds <paramref name="layout"/>, which the newest layout finished with.</summary>
     public static void ShowLayout(TypeDiagram diagram, TypeLayout layout)
     {
         diagram.Layout = layout;
-    }
-
-    /// <summary>Cancels what is in flight for the diagram, for good.</summary>
-    public static void CloseDiagram(TypeDiagram diagram)
-    {
-        diagram.Open.Cancel();
-        diagram.LayoutWork = null;
     }
 
     /// <summary>Starts moving to <paramref name="layout"/> when it is another than <see cref="LayoutTransition.Layout"/>;

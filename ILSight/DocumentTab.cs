@@ -6,12 +6,12 @@ using ILSight.Core.Resources;
 namespace ILSight;
 
 /// <summary>An open tab: where it points, the node found there, and what it shows of it, which arrives
-/// from the background. A load started for it cancels the one before, whose result is then dropped.
-/// Changed through <see cref="Tabs"/>, on the UI thread only.</summary>
+/// from the background. Changed through <see cref="Tabs"/>, on the UI thread only.</summary>
 public sealed class DocumentTab
 {
-    /// <summary>What cancels the load in flight, or null while there is none.</summary>
-    public CancellationTokenSource? Work;
+    /// <summary>The load of what the tab shows: one started cancels the one before, whose result is then
+    /// dropped; once the tab is closed, what is in flight is cancelled and its result dropped.</summary>
+    public LatestWork Work { get; } = new();
 
     /// <summary>Where the view is to stand once the load in flight arrives.</summary>
     public Arrival Arrival;
@@ -130,7 +130,7 @@ public sealed class DocumentTab
     /// card, or the comparison it shows swaps its sides or takes in more or less; it never counts down.</summary>
     public int Changes => PointedChanges + Tabs.CountContentChanges(this);
 
-    public bool IsBusy => Work is not null;
+    public bool IsBusy => Work.IsRunning;
 
     /// <summary>The name of what the tab shows: its node's, kept by what it shows while the node is away, or
     /// its diagram's or comparison's own; null for a new tab or a report.</summary>
@@ -151,13 +151,4 @@ public sealed class DocumentTab
 
     /// <summary>Changes whenever the tab is pointed somewhere, or loses its node.</summary>
     public int Version;
-}
-
-/// <summary>Given for one load of something shown, whether what a tab shows, a comparison or the layout of a
-/// diagram, to cancel it and to tell whether it was overtaken.</summary>
-public sealed class LoadTicket
-{
-    public required CancellationTokenSource Work { get; init; }
-
-    public CancellationToken Token => Work.Token;
 }

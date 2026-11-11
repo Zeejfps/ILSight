@@ -20,21 +20,21 @@ public static class Decompilation
         StartDecompiling(appState, tab, node, load);
     }
 
-    private static void StartDecompiling(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
+    private static void StartDecompiling(AppState appState, DocumentTab tab, BrowseNode node, WorkTicket load)
     {
         Background.Start(appState.Work, nameof(DecompileAsync), DecompileAsync(appState, tab, node, load), problem => Errors.Report(appState, problem));
     }
 
-    private static async Task DecompileAsync(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load)
+    private static async Task DecompileAsync(AppState appState, DocumentTab tab, BrowseNode node, WorkTicket load)
     {
         var loading = NodeContentLoader.GetContentAsync(appState.Session, node, tab.Language, tab.Options, load.Token);
         await Background.Wait(loading);
         FinishLoading(appState, tab, node, load, loading);
     }
 
-    private static void FinishLoading(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load, Task<NodeContent> loading)
+    private static void FinishLoading(AppState appState, DocumentTab tab, BrowseNode node, WorkTicket load, Task<NodeContent> loading)
     {
-        if (!Tabs.FinishLoading(tab, load))
+        if (!tab.Work.TryFinish(load))
         {
             return;
         }

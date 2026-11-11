@@ -4,10 +4,9 @@ using ILSight.Core.Diagrams;
 namespace ILSight;
 
 /// <summary>The types a diagram tab shows, as cards in the order added, the links among them, the
-/// assemblies of the types the user put on it, and where its newest layout put them. A layout started for
-/// it cancels the one before, whose result is then dropped; the layout it holds is the newest that
-/// finished, which may not place the cards added since. Once closed, what is in flight for it is
-/// cancelled and its results dropped. Mutated on the UI thread only.</summary>
+/// assemblies of the types the user put on it, and where its newest layout put them. The layout it holds
+/// is the newest that finished, which may not place the cards added since. Once closed, what is in flight
+/// for it is cancelled and its results dropped. Mutated on the UI thread only.</summary>
 public sealed class TypeDiagram
 {
     public readonly List<TypeCard> Cards = new();
@@ -18,8 +17,9 @@ public sealed class TypeDiagram
 
     /// <summary>The files of the diagram's own assemblies.</summary>
     public readonly HashSet<AssemblyPath> HomeAssemblies = new();
-    public readonly CancellationTokenSource Open = new();
-    public CancellationTokenSource? LayoutWork;
+    /// <summary>The diagram's work in the background: its layout, one started cancelling the one before, whose
+    /// result is then dropped; closing it closes the diagram, cancelling the reading of cards too.</summary>
+    public LatestWork Work { get; } = new();
     public int Reading;
 
     /// <summary>The newest layout that finished, or null before the first.</summary>
@@ -29,10 +29,10 @@ public sealed class TypeDiagram
     public int Version { get; set; }
 
     /// <summary>True while cards are read or laid out in the background.</summary>
-    public bool IsBusy => Reading > 0 || LayoutWork is not null;
+    public bool IsBusy => Reading > 0 || Work.IsRunning;
 
     /// <summary>Cancelled once the diagram is closed.</summary>
-    public CancellationToken Token => Open.Token;
+    public CancellationToken Token => Work.UntilClosed;
 
-    public bool IsClosed => Open.IsCancellationRequested;
+    public bool IsClosed => Work.IsClosed;
 }

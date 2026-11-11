@@ -79,9 +79,9 @@ public static class Comparisons
             return;
         }
         var scope = comparison.Scope;
-        var ticket = comparison.StartComparing();
+        var ticket = comparison.Work.Start();
         var compared = await Background.Run(() => ApiEntries.Compare(left, right, scope, ticket.Token));
-        if (!comparison.FinishComparing(ticket))
+        if (!comparison.Work.TryFinish(ticket))
         {
             return;
         }

@@ -5,13 +5,9 @@ using ILSight.Core.Comparison;
 namespace ILSight;
 
 /// <summary>The two assemblies a comparison tab compares, by file, on the left and on the right, what it takes in, and
-/// what the newest comparison of them that finished came to. A comparison started cancels the one
-/// before, whose result is then dropped; once closed, what is in flight is cancelled and its result
-/// dropped. Mutated on the UI thread only.</summary>
+/// what the newest comparison of them that finished came to. Mutated on the UI thread only.</summary>
 public sealed class AssemblyComparison
 {
-    public readonly CancellationTokenSource Open = new();
-    private CancellationTokenSource? _work;
     private AssemblyPath? _leftPath;
     private AssemblyPath? _rightPath;
 
@@ -34,10 +30,12 @@ public sealed class AssemblyComparison
     /// or why it failed.</summary>
     public ComparisonResult Result { get; private set; } = new ComparisonResult.NotYet();
 
-    /// <summary>True while a comparison runs in the background.</summary>
-    public bool IsComparing => _work is not null;
+    /// <summary>The comparison running in the background: one started cancels the one before, whose result is
+    /// then dropped; once the comparison is closed, what is in flight is cancelled and its result dropped.</summary>
+    public LatestWork Work { get; } = new();
 
-    public bool IsClosed => Open.IsCancellationRequested;
+    /// <summary>True while a comparison runs in the background.</summary>
+    public bool IsComparing => Work.IsRunning;
 
     /// <summary>Counts up whenever the sides are swapped or the comparison takes in more or less; it never counts down.</summary>
     public int Version { get; private set; }
@@ -56,30 +54,6 @@ public sealed class AssemblyComparison
         Version++;
     }
 
-    /// <summary>Starts a comparison, cancelling the one in flight, which is then dropped, until
-    /// <see cref="FinishComparing"/>.</summary>
-    public LoadTicket StartComparing()
-    {
-        _work?.Cancel();
-        var work = CancellationTokenSource.CreateLinkedTokenSource(Open.Token);
-        _work = work;
-        return new LoadTicket { Work = work };
-    }
-
-    /// <summary>Ends the comparison <paramref name="ticket"/> was given for. False when another started since,
-    /// or the comparison was closed, and what it brought should be dropped.</summary>
-    public bool FinishComparing(LoadTicket ticket)
-    {
-        ticket.Work.Dispose();
-        if (_work != ticket.Work)
-        {
-            return false;
-        }
-
-        _work = null;
-        return !IsClosed;
-    }
-
     public void ShowDiff(ApiDiff diff)
     {
         Result = new ComparisonResult.Compared { Diff = diff };
@@ -88,15 +62,8 @@ public sealed class AssemblyComparison
     /// <summary>Shows why the assemblies cannot be compared, cancelling the comparison in flight, if any.</summary>
     public void ShowFailure(ComparisonFailure failure)
     {
-        _work?.Cancel();
-        _work = null;
+        Work.Cancel();
         Result = new ComparisonResult.Failed { Failure = failure };
-    }
-
-    /// <summary>Closes the comparison for good, cancelling what is in flight.</summary>
-    public void Close()
-    {
-        Open.Cancel();
     }
 }
 

@@ -30,6 +30,7 @@ public static class Tabs
             return;
         }
 
+        tab.Work.Close();
         Tabs.Cancel(tab);
         tabs.ClosedChanges += tab.Changes;
         if (tab == tabs.Active)
@@ -166,31 +167,16 @@ public static class Tabs
     }
 
     /// <summary>Points the tab at <paramref name="node"/>, cancelling what was in flight, and shows it
-    /// loading until <see cref="FinishLoading"/>; keeps <paramref name="arrival"/> until then.</summary>
-    public static LoadTicket StartLoading(DocumentTab tab, BrowseNode node, DecompilationLanguage language, DecompilerOptions options, Arrival arrival)
+    /// loading until its <see cref="DocumentTab.Work"/> finishes; keeps <paramref name="arrival"/> until then.</summary>
+    public static WorkTicket StartLoading(DocumentTab tab, BrowseNode node, DecompilationLanguage language, DecompilerOptions options, Arrival arrival)
     {
         PointElsewhere(tab);
-        var work = new CancellationTokenSource();
-        tab.Work = work;
+        var load = tab.Work.Start();
         tab.Arrival = arrival;
         tab.Language = language;
         tab.Options = options;
         tab.Content = new TabContent.Loading(node);
-        return new LoadTicket { Work = work };
-    }
-
-    /// <summary>Ends the load <paramref name="load"/> was given for. False when the tab was pointed
-    /// elsewhere or cancelled since, and what the load brought should be dropped.</summary>
-    public static bool FinishLoading(DocumentTab tab, LoadTicket load)
-    {
-        load.Work.Dispose();
-        if (tab.Work != load.Work)
-        {
-            return false;
-        }
-
-        tab.Work = null;
-        return true;
+        return load;
     }
 
     /// <summary>Shows <paramref name="loaded"/>, which the finished load of the tab's node brought.</summary>
@@ -317,16 +303,15 @@ public static class Tabs
     /// layout, or its comparison, the diagram or comparison closed for good.</summary>
     public static void Cancel(DocumentTab tab)
     {
-        tab.Work?.Cancel();
-        tab.Work = null;
+        tab.Work.Cancel();
         if (tab.Diagram is not null)
         {
-            Diagrams.CloseDiagram(tab.Diagram);
+            tab.Diagram.Work.Close();
         }
 
         if (tab.Comparison is not null)
         {
-            tab.Comparison.Close();
+            tab.Comparison.Work.Close();
         }
     }
 }
