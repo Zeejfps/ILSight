@@ -125,7 +125,8 @@ internal static class SearchPanelView
         {
             var on = !all && (kinds & kind) != 0;
             var icon = NodeIcons.Icon(KindNode(kind), NodeAccessibility.None, palette, ui.State.Icons);
-            if (ui.MenuItem(KindLabel(t, kind), ref on, keepOpen: true, icon: icon))
+            var label = KindLabel(t, kind);
+            if (ui.MenuItem(label, ref on, keepOpen: true, icon: icon))
             {
                 kinds = Toggle(kinds, kind, all, on);
             }

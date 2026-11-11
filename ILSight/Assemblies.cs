@@ -253,7 +253,8 @@ public static class Assemblies
     /// the old ones.</summary>
     private static void EnsureChildrenAsLoaded(BrowseSession session, BrowseNode old, BrowseNode fresh)
     {
-        if (BrowseSessions.PeekChildren(session, old) is not ChildrenState.Ready loaded)
+        var oldChildren = BrowseSessions.PeekChildren(session, old);
+        if (oldChildren is not ChildrenState.Ready loaded)
         {
             return;
         }

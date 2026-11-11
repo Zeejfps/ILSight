@@ -67,7 +67,7 @@ public sealed class FoldingTests
             Assert.True(fold.StartLine > previous);
             Assert.True(fold.EndLine > fold.StartLine);
             Assert.True(fold.EndLine < document.Lines.Length);
-            while (open.Count > 0 && open.Peek().EndLine < fold.StartLine)
+            while (open.TryPeek(out var innermost) && innermost.EndLine < fold.StartLine)
             {
                 open.Pop();
             }

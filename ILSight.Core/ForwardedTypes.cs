@@ -135,7 +135,8 @@ internal static class ForwardedTypes
     /// <summary>Whether anything is used of, or forwarded to, the assembly <paramref name="reference"/> names.</summary>
     internal static bool UsesReference(ReferenceUsage usage, AssemblyReferenceHandle reference)
     {
-        if (ListTypesIn(usage, reference).Count > 0)
+        var types = ListTypesIn(usage, reference);
+        if (types.Count > 0)
         {
             return true;
         }
@@ -176,7 +177,8 @@ internal static class ForwardedTypes
         try
         {
             var reader = metadata.GetBlobReader(metadata.GetTypeSpecification(handle).Signature);
-            if (reader.ReadSignatureTypeCode() != SignatureTypeCode.GenericTypeInstance)
+            var typeCode = reader.ReadSignatureTypeCode();
+            if (typeCode != SignatureTypeCode.GenericTypeInstance)
             {
                 return default;
             }

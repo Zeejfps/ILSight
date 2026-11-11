@@ -439,7 +439,7 @@ internal static class DocumentWriting
         var open = new Stack<FoldRegion>();
         foreach (var region in regions)
         {
-            while (open.Count > 0 && open.Peek().EndLine < region.StartLine)
+            while (open.TryPeek(out var innermost) && innermost.EndLine < region.StartLine)
             {
                 open.Pop();
             }
@@ -449,7 +449,7 @@ internal static class DocumentWriting
                 continue;
             }
 
-            if (open.Count > 0 && region.EndLine > open.Peek().EndLine)
+            if (open.TryPeek(out var enclosing) && region.EndLine > enclosing.EndLine)
             {
                 continue;
             }

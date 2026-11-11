@@ -162,7 +162,8 @@ internal static class MetadataQueries
         var column = grid.Column("Name");
         for (var row = 0; row < grid.RowCount; row++)
         {
-            if (MetadataGrids.GetText(grid, row, column) == name)
+            var text = MetadataGrids.GetText(grid, row, column);
+            if (text == name)
             {
                 return row;
             }

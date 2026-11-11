@@ -541,10 +541,13 @@ public sealed class MetadataTests
 
         foreach (var node in Metadata(corelib).Child("Tables").Children.Concat(Metadata(corelib).Children.Where(c => c.Is(MetadataGridRole.Heap))))
         {
-            if (node.Content() is not GridContent { Grid: var grid })
+            var content = node.Content();
+            if (content is not GridContent gridContent)
             {
                 continue;
             }
+
+            var grid = gridContent.Grid;
 
             for (var row = 0; row < Math.Min(grid.RowCount, 50); row++)
             {

@@ -152,7 +152,8 @@ public static class Trees
             tree.View.SetExpanded(counterpart, true);
         }
 
-        if (BrowseSessions.PeekChildren(tree.Session, node) is not ChildrenState.Ready loaded)
+        var children = BrowseSessions.PeekChildren(tree.Session, node);
+        if (children is not ChildrenState.Ready loaded)
         {
             return;
         }
@@ -410,7 +411,8 @@ public static class Trees
                 }
 
                 paths.Add(BrowseNodes.GetPath(node));
-                if (BrowseSessions.PeekChildren(tree.Session, node) is ChildrenState.Ready loaded)
+                var children = BrowseSessions.PeekChildren(tree.Session, node);
+                if (children is ChildrenState.Ready loaded)
                 {
                     Collect(loaded.Children);
                 }
@@ -559,10 +561,11 @@ public static class Trees
 
     public static TreeRow GetRow(BrowseTree tree, BrowseNode node)
     {
+        var visibility = NodeDefinitions.GetVisibility(node.Subject);
         return new TreeRow(
             GetRowLabel(tree, node),
             NodeIcons.Icon(node, tree.IconColors, tree.Icons),
-            NodeDefinitions.GetVisibility(node.Subject).IsPublicApi ? 0u : tree.Theme.TextMuted,
+            visibility.IsPublicApi ? 0u : tree.Theme.TextMuted,
             Tooltip: NodeText.Tooltip(node),
             Secondary: FindSecondary(tree, node),
             SecondaryBold: NodeText.PickedFramework(node),
@@ -608,7 +611,8 @@ public static class Trees
                 continue;
             }
             var versions = nodes.Select(static n => n.Assembly.Version?.ToString() ?? "").ToArray();
-            if (versions.Distinct().Count() == nodes.Count)
+            var distinctVersions = versions.Distinct().Count();
+            if (distinctVersions == nodes.Count)
             {
                 for (var i = 0; i < nodes.Count; i++)
                 {
@@ -634,7 +638,8 @@ public static class Trees
         for (var depth = 1; depth <= deepest; depth++)
         {
             var hints = folders.Select(f => string.Join(Path.DirectorySeparatorChar, f[Math.Max(0, f.Length - depth)..])).ToArray();
-            if (hints.Distinct(StringComparer.OrdinalIgnoreCase).Count() == hints.Length)
+            var distinctHints = hints.Distinct(StringComparer.OrdinalIgnoreCase).Count();
+            if (distinctHints == hints.Length)
             {
                 return hints;
             }

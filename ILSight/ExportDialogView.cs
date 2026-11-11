@@ -336,7 +336,8 @@ internal static class ExportDialogView
     /// never in doubt.</summary>
     private static void PickOutWhileEditing(Ui<UiState> ui, ExportSetup setup, List<ExportChoice> chosen, ExportChoice choice)
     {
-        if (!ui.HasFocus(ui.GetId("name")))
+        var nameId = ui.GetId("name");
+        if (!ui.HasFocus(nameId))
         {
             return;
         }
@@ -671,7 +672,8 @@ internal static class ExportDialogView
         using (ui.Id(choice.Assembly.FilePath.Text))
         using (ui.Row(new Box { Gap = theme.Gap, Padding = new Spacing(theme.Gap, 0f) }))
         {
-            if (ui.Checkbox(choice.Assembly.Name, ref choice.Included, id: "include", width: Sizing.Grow(), compact: true))
+            var width = Sizing.Grow();
+            if (ui.Checkbox(choice.Assembly.Name, ref choice.Included, id: "include", width: width, compact: true))
             {
                 TickClicked(picker, shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
             }

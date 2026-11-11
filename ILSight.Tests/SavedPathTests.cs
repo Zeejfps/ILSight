@@ -130,7 +130,8 @@ public sealed class SavedPathTests : IDisposable
         while (queue.Count > 0)
         {
             var node = queue.Dequeue();
-            if (KindOf(node) == kind)
+            var nodeKind = KindOf(node);
+            if (nodeKind == kind)
             {
                 return node;
             }

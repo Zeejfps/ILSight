@@ -89,7 +89,8 @@ internal static class ILLexer
                 }
                 else
                 {
-                    kind = Keywords.GetAlternateLookup<ReadOnlySpan<char>>().Contains(word) ? SpanKind.Keyword : SpanKind.Plain;
+                    var keywords = Keywords.GetAlternateLookup<ReadOnlySpan<char>>();
+                    kind = keywords.Contains(word) ? SpanKind.Keyword : SpanKind.Plain;
                 }
             }
             else

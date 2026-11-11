@@ -238,8 +238,13 @@ public static class RunningProcesses
         {
             foreach (var module in modules)
             {
-                if (module is RunningModule.OnDisk onDisk
-                    && string.Equals(Path.GetFileNameWithoutExtension(onDisk.Name), entryName, StringComparison.OrdinalIgnoreCase))
+                if (module is not RunningModule.OnDisk onDisk)
+                {
+                    continue;
+                }
+
+                var name = Path.GetFileNameWithoutExtension(onDisk.Name);
+                if (string.Equals(name, entryName, StringComparison.OrdinalIgnoreCase))
                 {
                     return onDisk.Path;
                 }
@@ -404,8 +409,13 @@ public static class RunningProcesses
         foreach (var path in Directory.GetFiles(@"\\.\pipe\"))
         {
             var name = Path.GetFileName(path);
-            if (name.StartsWith(DiagnosticsIpc.TransportPrefix, StringComparison.Ordinal)
-                && int.TryParse(name.AsSpan(DiagnosticsIpc.TransportPrefix.Length), out var id))
+            if (!name.StartsWith(DiagnosticsIpc.TransportPrefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var digits = name.AsSpan(DiagnosticsIpc.TransportPrefix.Length);
+            if (int.TryParse(digits, out var id))
             {
                 ids.Add(id);
             }
@@ -437,7 +447,8 @@ public static class RunningProcesses
             var bestTime = DateTime.MinValue;
             foreach (var path in Directory.EnumerateFiles(Path.GetTempPath(), DiagnosticsIpc.TransportPrefix + id.Value + "-*"))
             {
-                if (ParseSocketProcessId(Path.GetFileName(path)) != id.Value)
+                var processId = ParseSocketProcessId(Path.GetFileName(path));
+                if (processId != id.Value)
                 {
                     continue;
                 }

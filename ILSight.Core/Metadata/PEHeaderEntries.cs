@@ -218,7 +218,11 @@ namespace ILSight.Core.Metadata
 				AddValue(columns, "Name", r => r.Name);
 				AddValue(columns, "RVA", r => r.Entry.RelativeVirtualAddress, "X8");
 				AddValue(columns, "Size", r => r.Entry.Size, "X8");
-				AddValue(columns, "Section", r => headers.GetContainingSectionIndex(r.Entry.RelativeVirtualAddress) is >= 0 and var index ? headers.SectionHeaders[index].Name : "");
+				AddValue(columns, "Section", r =>
+				{
+					var index = headers.GetContainingSectionIndex(r.Entry.RelativeVirtualAddress);
+					return index >= 0 ? headers.SectionHeaders[index].Name : "";
+				});
 			});
 		}
 

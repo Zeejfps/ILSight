@@ -293,12 +293,14 @@ public sealed class DiagramViewTests
         var start = line.Inputs.Start;
         var end = line.Inputs.End;
         var y = app.Frames.Height - start.Y;
-        if (Math.Abs(start.Y - end.Y) > Near)
+        var rise = Math.Abs(start.Y - end.Y);
+        if (rise > Near)
         {
             return false;
         }
 
-        if (Math.Abs(start.X - text.X) > Near)
+        var indent = Math.Abs(start.X - text.X);
+        if (indent > Near)
         {
             return false;
         }

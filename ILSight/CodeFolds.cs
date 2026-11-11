@@ -225,7 +225,8 @@ internal static class CodeFolding
     {
         var lines = document.Lines.Length;
         var folds = document.Folds;
-        if (Array.IndexOf(collapsed, true) < 0)
+        var firstCollapsed = Array.IndexOf(collapsed, true);
+        if (firstCollapsed < 0)
         {
             return new CodeFoldLayout { Document = document, Collapsed = [..collapsed], Rows = [], IsIdentity = true, RowCount = lines };
         }

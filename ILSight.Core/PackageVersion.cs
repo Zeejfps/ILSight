@@ -32,7 +32,8 @@ public sealed partial record PackageVersion
     /// <summary>The version <paramref name="text"/> spells; null when it is no version NuGet allows.</summary>
     public static PackageVersion? Parse(string text)
     {
-        if (!Pattern().IsMatch(text))
+        var pattern = Pattern();
+        if (!pattern.IsMatch(text))
         {
             return null;
         }

@@ -118,7 +118,8 @@ public static class ILSpyTree
             BrowseNode? next = null;
             foreach (var child in BrowseSessions.ListChildren(session, node))
             {
-                if (NameOf(child) != path[i])
+                var name = NameOf(child);
+                if (name != path[i])
                 {
                     continue;
                 }

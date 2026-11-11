@@ -217,7 +217,7 @@ public static class ResourceImages
             {
                 case ColorType.Grayscale:
                     r = g = b = Sample(src, at, depth);
-                    if (transparency is { Length: >= 2 } && Raw(src, at, wide) == BinaryPrimitives.ReadUInt16BigEndian(transparency))
+                    if (IsTransparentGray(src, at, wide, transparency))
                     {
                         a = 0;
                     }
@@ -231,10 +231,7 @@ public static class ResourceImages
                     r = Sample(src, at, depth);
                     g = Sample(src, at + (wide ? 2 : 1), depth);
                     b = Sample(src, at + (wide ? 4 : 2), depth);
-                    if (transparency is { Length: >= 6 }
-                        && Raw(src, at, wide) == BinaryPrimitives.ReadUInt16BigEndian(transparency)
-                        && Raw(src, at + (wide ? 2 : 1), wide) == BinaryPrimitives.ReadUInt16BigEndian(transparency.AsSpan(2))
-                        && Raw(src, at + (wide ? 4 : 2), wide) == BinaryPrimitives.ReadUInt16BigEndian(transparency.AsSpan(4)))
+                    if (IsTransparentColor(src, at, wide, transparency))
                     {
                         a = 0;
                     }
@@ -269,6 +266,34 @@ public static class ResourceImages
             rgba[i * 4 + 3] = a;
         }
         return new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = "PNG" };
+
+        // Whether the gray sample at src[at] is the one tRNS makes transparent.
+        static bool IsTransparentGray(byte[] src, int at, bool wide, byte[]? transparency)
+        {
+            if (transparency is null || transparency.Length < 2)
+            {
+                return false;
+            }
+
+            var gray = Raw(src, at, wide);
+            return gray == BinaryPrimitives.ReadUInt16BigEndian(transparency);
+        }
+
+        // Whether the RGB samples at src[at] are the color tRNS makes transparent.
+        static bool IsTransparentColor(byte[] src, int at, bool wide, byte[]? transparency)
+        {
+            if (transparency is null || transparency.Length < 6)
+            {
+                return false;
+            }
+
+            var red = Raw(src, at, wide);
+            var green = Raw(src, at + (wide ? 2 : 1), wide);
+            var blue = Raw(src, at + (wide ? 4 : 2), wide);
+            return red == BinaryPrimitives.ReadUInt16BigEndian(transparency)
+                && green == BinaryPrimitives.ReadUInt16BigEndian(transparency.AsSpan(2))
+                && blue == BinaryPrimitives.ReadUInt16BigEndian(transparency.AsSpan(4));
+        }
 
         static int Raw(byte[] src, int at, bool wide)
         {

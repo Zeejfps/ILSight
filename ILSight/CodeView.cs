@@ -1140,7 +1140,8 @@ public static class CodeViewWidget
             state.ScrollY = MathF.Max(0f, top + rowHeight - content.Height);
         }
 
-        if (CodeFolding.GetLineAt(folds, row) != caret.Line)
+        var rowLine = CodeFolding.GetLineAt(folds, row);
+        if (rowLine != caret.Line)
         {
             return;
         }
@@ -1471,17 +1472,20 @@ public static class CodeViewWidget
                 : ui.Memo("count", (state.CurrentMatch, count, t), static a => a.CurrentMatch is not null ? a.t.FindPosition(a.CurrentMatch.Value + 1, a.count) : a.t.FindMatches(a.count));
             ui.Text(label, new Box { Width = Sizing.Grow() }, color: count == 0 && state.Query.Length > 0 ? theme.Warning : theme.TextMuted,
                 size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
-            if (ui.IconButton("previous", ui.State.Icons.CodeFindPrevious, ui.Memo("previous-tip", t, static s => s.FindPrevious("Shift+F3")), count > 0))
+            var previousTip = ui.Memo("previous-tip", t, static s => s.FindPrevious("Shift+F3"));
+            if (ui.IconButton("previous", ui.State.Icons.CodeFindPrevious, previousTip, count > 0))
             {
                 Step(state, document, -1);
             }
 
-            if (ui.IconButton("next", ui.State.Icons.CodeFindNext, ui.Memo("next-tip", t, static s => s.FindNext("F3")), count > 0))
+            var nextTip = ui.Memo("next-tip", t, static s => s.FindNext("F3"));
+            if (ui.IconButton("next", ui.State.Icons.CodeFindNext, nextTip, count > 0))
             {
                 Step(state, document, 1);
             }
 
-            if (ui.IconButton("close", ui.State.Icons.CodeFindClose, ui.Memo("close-tip", t, static s => s.FindClose("Esc"))))
+            var closeTip = ui.Memo("close-tip", t, static s => s.FindClose("Esc"));
+            if (ui.IconButton("close", ui.State.Icons.CodeFindClose, closeTip))
             {
                 state.FindOpen = false;
                 ui.Focus(focusId, takesText: false);

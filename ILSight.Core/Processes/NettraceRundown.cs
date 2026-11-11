@@ -141,7 +141,8 @@ internal static class NettraceRundown
     private static void ReadStreamHeader(BinaryReader reader)
     {
         var magic = reader.ReadBytes(8);
-        if (magic.Length < 8 || Encoding.ASCII.GetString(magic) != "Nettrace")
+        var text = Encoding.ASCII.GetString(magic);
+        if (magic.Length < 8 || text != "Nettrace")
         {
             throw new InvalidDataException("The stream does not start with the Nettrace magic.");
         }

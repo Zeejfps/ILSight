@@ -149,7 +149,8 @@ internal static class NuGetDetailsView
             var width = Math.Clamp(ui.SelectButtonWidth(picker.VersionTexts), VersionMinWidth, VersionMaxWidth);
             var enabled = !picker.IsDownloading && picker.ShowsWhatWasAsked;
             var version = picker.Version;
-            if (version != null && ui.Select("version", ref version, picker.Versions, VersionLabel, Sizing.Fixed(width), t.NugetVersion, enabled))
+            var selectWidth = Sizing.Fixed(width);
+            if (version is not null && ui.Select("version", ref version, picker.Versions, VersionLabel, selectWidth, t.NugetVersion, enabled))
             {
                 picker.Version = version;
             }

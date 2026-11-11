@@ -43,14 +43,14 @@ internal static class ToolbarView
 
             using (Group(ui))
             {
-                if (ui.IconButton("open", ui.State.Icons.ToolbarOpen, ui.Memo("open-tip", t, static s => s.ToolbarOpen(Shortcuts.Open)),
-                        variant: ButtonVariant.Neutral))
+                var openTip = ui.Memo("open-tip", t, static s => s.ToolbarOpen(Shortcuts.Open));
+                if (ui.IconButton("open", ui.State.Icons.ToolbarOpen, openTip, variant: ButtonVariant.Neutral))
                 {
                     MainMenuView.OpenFile(ui);
                 }
 
-                if (ui.IconButton("search", ui.State.Icons.ToolbarSearch, ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search)),
-                        variant: ButtonVariant.Neutral))
+                var searchTip = ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search));
+                if (ui.IconButton("search", ui.State.Icons.ToolbarSearch, searchTip, variant: ButtonVariant.Neutral))
                 {
                     OpenSearch(ui.State);
                 }
@@ -90,7 +90,8 @@ internal static class ToolbarView
             using (Group(ui))
             {
                 var language = appState.Language;
-                if (ui.SegmentedControl("language", ref language, Languages(t)))
+                var languages = Languages(t);
+                if (ui.SegmentedControl("language", ref language, languages))
                 {
                     Commands.Later(ui.State, language, static (a, l) => SetLanguage(a, l));
                 }
@@ -108,8 +109,8 @@ internal static class ToolbarView
             // The gear is on its own at the far end, where settings usually are, and shows whatever the
             // language: display options apply to IL too.
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
-            if (ui.IconButton("display-options", ui.State.Icons.ToolbarDisplayOptions,
-                    ui.Memo("display-options-tip", t, static s => s.ToolbarDisplayOptions(Shortcuts.Settings)), variant: ButtonVariant.Neutral))
+            var displayOptionsTip = ui.Memo("display-options-tip", t, static s => s.ToolbarDisplayOptions(Shortcuts.Settings));
+            if (ui.IconButton("display-options", ui.State.Icons.ToolbarDisplayOptions, displayOptionsTip, variant: ButtonVariant.Neutral))
             {
                 OpenDisplayOptions(ui.State);
             }
@@ -220,7 +221,9 @@ internal static class ToolbarView
             using (ui.Id(i))
             {
                 var entry = entries[i];
-                if (ui.MenuItem(TextOf(entry), id: "entry", icon: IconOf(ui.State, entry)))
+                var text = TextOf(entry);
+                var icon = IconOf(ui.State, entry);
+                if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
                     Commands.Later(ui.State, i, static (a, index) => GoToHistoryEntry(a, index));
                     return;

@@ -27,7 +27,8 @@ public sealed record ThemeId<TFile>
             return null;
         }
 
-        if (text.IndexOfAny(NotInFileName) >= 0)
+        var invalidAt = text.IndexOfAny(NotInFileName);
+        if (invalidAt >= 0)
         {
             return null;
         }

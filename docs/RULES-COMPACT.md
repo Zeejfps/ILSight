@@ -229,3 +229,5 @@ Build: RL1201 (null check as a property pattern), RL1202 (a call that doesn't re
   `if (order is not Order.Pending pending)`.
 - Read-until-null loops read once at the top: `while (true) { var line = reader.ReadLine(); if (line is null) { break; } ... }`.
   Reading before the loop and at the end of the body breaks on the first `continue`.
+- Don't hoist a call above what guards it: `if (cache.IsLoaded && cache.FindPrice(sku) is ...)` becomes a guard
+  (`if (!cache.IsLoaded) { return ...; }`), then `var price = cache.FindPrice(sku);`. Hoisted blindly, it throws.

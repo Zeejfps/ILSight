@@ -37,7 +37,8 @@ public static partial class BrowseNodes
     private static BrowseNode[] ListReferenceContents(BrowseNode parent, AssemblyReferenceInfo reference)
     {
         var children = new List<BrowseNode>();
-        if (ForwardedTypes.UsesReference(LoadedAssemblies.EnsureReferenceUsage(reference.Module), reference.Reference.Handle))
+        var usage = LoadedAssemblies.EnsureReferenceUsage(reference.Module);
+        if (ForwardedTypes.UsesReference(usage, reference.Reference.Handle))
         {
             children.Add(Create(parent, new NodeSubject.ReferencedTypes { Reference = reference }));
         }
@@ -55,7 +56,8 @@ public static partial class BrowseNodes
     /// cannot be found or read.</summary>
     private static LoadedModule? ResolveReferenced(AssemblyReferenceInfo reference)
     {
-        if (AssemblyResolving.ResolveAssembly(reference.Module.Resolver, reference.Reference) is not LoadedModule referenced)
+        var resolved = AssemblyResolving.ResolveAssembly(reference.Module.Resolver, reference.Reference);
+        if (resolved is not LoadedModule referenced)
         {
             return null;
         }
@@ -147,7 +149,8 @@ public static partial class BrowseNodes
     private static bool UsesAnythingOf(TypeReferenceInfo type)
     {
         var usage = LoadedAssemblies.EnsureReferenceUsage(type.Module);
-        if (ForwardedTypes.ListTypesIn(usage, type.Handle).Count > 0)
+        var types = ForwardedTypes.ListTypesIn(usage, type.Handle);
+        if (types.Count > 0)
         {
             return true;
         }
@@ -196,7 +199,8 @@ public static partial class BrowseNodes
     private static IMember ResolveUsed(MetadataModule module, MemberReferenceHandle handle)
     {
         var reference = module.MetadataFile.Metadata.GetMemberReference(handle);
-        if (reference.GetKind() == MemberReferenceKind.Field)
+        var kind = reference.GetKind();
+        if (kind == MemberReferenceKind.Field)
         {
             return DecompilerFacts.ResolveMember(module, handle);
         }

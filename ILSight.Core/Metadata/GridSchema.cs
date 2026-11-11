@@ -141,7 +141,11 @@ public static class GridSchemas
     {
         var file = schema.File;
         AddColumn(schema, name, "X8", (r, _) => (int)table << 24 | get(r),
-            (r, _) => first(r) is { IsNil: false } handle ? Describe(file, handle) : empty, isToken: true);
+            (r, _) =>
+            {
+                var handle = first(r);
+                return handle.IsNil ? empty : Describe(file, handle);
+            }, isToken: true);
     }
 
     /// <summary>The offset of a blob in the #Blob heap.</summary>
@@ -185,7 +189,11 @@ public static class GridSchemas
     {
         var file = schema.File;
         AddValue(schema, name, r => MetadataTokens.GetHeapOffset(get(r)), "X8",
-            tooltip ?? (r => get(r) is { IsNil: false } handle ? file.Metadata.GetGuid(handle).ToString() : null));
+            tooltip ?? (r =>
+            {
+                var handle = get(r);
+                return handle.IsNil ? null : file.Metadata.GetGuid(handle).ToString();
+            }));
     }
 
     /// <summary>What is shown under a selected row.</summary>

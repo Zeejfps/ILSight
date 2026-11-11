@@ -332,7 +332,8 @@ internal static class NodeDecompiler
     /// the assembly's full name, and the type.</summary>
     private static void WriteHeader(LoadedModule assembly, DocumentBuilder output, IType type, ConversionFlags flags)
     {
-        if (LoadedAssemblies.EnsureMainModule(assembly).GetAssemblyAttributes().Any(static a => a.AttributeType.FullName == ReferenceAssemblyAttribute))
+        var attributes = LoadedAssemblies.EnsureMainModule(assembly).GetAssemblyAttributes();
+        if (attributes.Any(static a => a.AttributeType.FullName == ReferenceAssemblyAttribute))
         {
             WriteComment(output, ReferenceAssemblyWarning);
         }
@@ -673,8 +674,10 @@ internal static class NodeDecompiler
     private static void WriteResource(DocumentRequest.Resource resource, DocumentBuilder output)
     {
         var data = resource.Read();
-        if (ResourceText.Detect(resource.Title, data) is var (text, syntax))
+        var detected = ResourceText.Detect(resource.Title, data);
+        if (detected is not null)
         {
+            var (text, syntax) = detected.Value;
             var shown = ResourceText.IndentOneLine(text, syntax);
             ResourceText.Write(output, shown, syntax);
             output.WriteLine();

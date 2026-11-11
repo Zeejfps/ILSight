@@ -473,7 +473,15 @@ public static class SearchQueries
         var next = 0;
         foreach (var c in name)
         {
-            if (char.ToLowerInvariant(c) == char.ToLowerInvariant(letters[next]) && ++next == letters.Length)
+            var lower = char.ToLowerInvariant(c);
+            var wanted = char.ToLowerInvariant(letters[next]);
+            if (lower != wanted)
+            {
+                continue;
+            }
+
+            next++;
+            if (next == letters.Length)
             {
                 return true;
             }

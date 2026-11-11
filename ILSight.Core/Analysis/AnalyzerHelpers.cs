@@ -81,7 +81,8 @@ internal static class AnalyzerHelpers
         try
         {
             opCode = blob.DecodeOpCode();
-            if (opCode.GetOperandType() is OperandType.Field or OperandType.Method or OperandType.Sig or OperandType.Tok or OperandType.Type)
+            var operandType = opCode.GetOperandType();
+            if (operandType is OperandType.Field or OperandType.Method or OperandType.Sig or OperandType.Tok or OperandType.Type)
             {
                 token = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
             }
@@ -174,7 +175,8 @@ internal static class AnalyzerHelpers
 
         foreach (var h in metadata.MethodDefinitions)
         {
-            if (!metadata.GetMethodDefinition(h).GetParameters().Any(parameters.Contains))
+            var methodParameters = metadata.GetMethodDefinition(h).GetParameters();
+            if (!methodParameters.Any(parameters.Contains))
             {
                 continue;
             }
@@ -193,7 +195,8 @@ internal static class AnalyzerHelpers
         switch (customAttribute.Parent.Kind)
         {
             case HandleKind.MethodDefinition:
-                if (ts.MainModule.ResolveEntity(customAttribute.Parent) is not IMethod parent)
+                var entity = ts.MainModule.ResolveEntity(customAttribute.Parent);
+                if (entity is not IMethod parent)
                 {
                     return null;
                 }
@@ -326,7 +329,8 @@ internal static class AnalyzerHelpers
             }
             foreach (var member in type.Properties.Concat<IMember>(type.Events))
             {
-                if (Members.Accessors(member).Any(matches))
+                var accessors = Members.Accessors(member);
+                if (accessors.Any(matches))
                 {
                     yield return member;
                 }
@@ -385,7 +389,8 @@ internal static class AnalyzerHelpers
                 var found = false;
                 foreach (var reference in module.AssemblyReferences)
                 {
-                    if (AssemblyListing.FindKnown(scope.List, reference, exactOrNewer: true)?.File == current)
+                    var known = AssemblyListing.FindKnown(scope.List, reference, exactOrNewer: true);
+                    if (known?.File == current)
                     {
                         found = true;
                         break;
@@ -423,7 +428,8 @@ internal static class AnalyzerHelpers
                 continue;
             }
 
-            if (attribute.DecodeValue(provider).FixedArguments[0].Value is string name)
+            var value = attribute.DecodeValue(provider);
+            if (value.FixedArguments[0].Value is string name)
             {
                 friends.Add(name.Split(',')[0]);
             }

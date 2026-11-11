@@ -37,7 +37,8 @@ public sealed class NestedNamespaceTests
                 return false;
             }
 
-            if (!ShownChildren(app, parent).Contains(ns))
+            var shown = ShownChildren(app, parent);
+            if (!shown.Contains(ns))
             {
                 return false;
             }

@@ -136,7 +136,8 @@ public static class NodeText
     /// in hex. Null when the node has none or tokens are hidden.</summary>
     public static string? Token(BrowseNode node, TokenFormat format)
     {
-        if (NodeDefinitions.TokenOf(node.Subject) is null)
+        var token = NodeDefinitions.TokenOf(node.Subject);
+        if (token is null)
         {
             return null;
         }

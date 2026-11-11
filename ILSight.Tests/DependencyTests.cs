@@ -186,7 +186,8 @@ public sealed class DependencyTests
             while (il.RemainingBytes > 0)
             {
                 var opCode = il.DecodeOpCode();
-                if (opCode.GetOperandType() is OperandType.Field or OperandType.Method or OperandType.Tok or OperandType.Type)
+                var operandType = opCode.GetOperandType();
+                if (operandType is OperandType.Field or OperandType.Method or OperandType.Tok or OperandType.Type)
                 {
                     Add(uses, Types(MetadataTokenHelpers.EntityHandleOrNil(il.ReadInt32())));
                 }
@@ -239,7 +240,8 @@ public sealed class DependencyTests
                     return [method.GetDeclaringType(), .. Flatten(method.DecodeSignature(this, null))];
                 case HandleKind.MemberReference:
                     var member = _metadata.GetMemberReference((MemberReferenceHandle)handle);
-                    var signature = member.GetKind() == MemberReferenceKind.Field
+                    var memberKind = member.GetKind();
+                    var signature = memberKind == MemberReferenceKind.Field
                         ? member.DecodeFieldSignature(this, null)
                         : Flatten(member.DecodeMethodSignature(this, null));
                     return [.. Types(member.Parent), .. signature];

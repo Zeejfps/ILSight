@@ -157,7 +157,8 @@ internal static class DiagnosticsIpc
     {
         var header = new byte[HeaderSize];
         await stream.ReadExactlyAsync(header, cancellationToken).ConfigureAwait(false);
-        if (!header.AsSpan(0, Magic.Length).SequenceEqual(Magic))
+        var magic = header.AsSpan(0, Magic.Length);
+        if (!magic.SequenceEqual(Magic))
         {
             throw new IOException("A diagnostics IPC response does not start with the DOTNET_IPC_V1 magic.");
         }

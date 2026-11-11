@@ -406,7 +406,8 @@ public sealed class DecompilationTests
         while (pending.Count > 0)
         {
             var node = pending.Pop();
-            if (BrowseNodes.FindEntity(node) is null && !IsModule(node))
+            var entity = BrowseNodes.FindEntity(node);
+            if (entity is null && !IsModule(node))
             {
                 nodes.Add(node);
             }
@@ -431,7 +432,8 @@ public sealed class DecompilationTests
         var method = reader.MethodDefinitions.First(h => reader.GetString(reader.GetMethodDefinition(h).Name) == methodName);
         var attribute = reader.GetMethodDefinition(method).GetCustomAttributes().Single();
         var rowSize = reader.GetTableRowSize(TableIndex.CustomAttribute);
-        var blobIndexSize = reader.GetHeapSize(HeapIndex.Blob) < 0x10000 ? 2 : 4;
+        var blobHeapSize = reader.GetHeapSize(HeapIndex.Blob);
+        var blobIndexSize = blobHeapSize < 0x10000 ? 2 : 4;
         var offset = pe.PEHeaders.MetadataStartOffset + reader.GetTableMetadataOffset(TableIndex.CustomAttribute) +
                      rowSize * (MetadataTokens.GetRowNumber(attribute) - 1) + rowSize - blobIndexSize;
         image.AsSpan(offset, blobIndexSize).Fill(0xFF);

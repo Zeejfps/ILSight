@@ -155,7 +155,8 @@ public static class RunArgumentsPipe
     {
         var claimed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var receiver = StartReceiver(address, r => RunArgumentsPipe.ClaimAndServe(r, claimed));
-        if (claimed.Task.GetAwaiter().GetResult())
+        var isClaimed = claimed.Task.GetAwaiter().GetResult();
+        if (isClaimed)
         {
             return receiver;
         }

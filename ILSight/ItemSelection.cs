@@ -58,7 +58,8 @@ public static class ItemSelections
     public static void DropIfGone<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
     {
-        if (GetIndexIn(selection, items) >= 0)
+        var index = GetIndexIn(selection, items);
+        if (index >= 0)
         {
             return;
         }

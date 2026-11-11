@@ -247,7 +247,8 @@ public static class BrowseSessions
     /// when they failed to build. Blocks: call it off the UI thread.</summary>
     public static IReadOnlyList<BrowseNode> ListChildren(BrowseSession session, BrowseNode node)
     {
-        if (GetChildren(session, node) is ChildrenState.Ready ready)
+        var children = GetChildren(session, node);
+        if (children is ChildrenState.Ready ready)
         {
             return ready.Children;
         }
@@ -273,7 +274,8 @@ public static class BrowseSessions
     /// Null when there is none or more than one, or the children are not built yet; never blocks.</summary>
     public static BrowseNode? FindLoadedChildLike(BrowseSession session, BrowseNode parent, BrowseNode other)
     {
-        if (PeekChildren(session, parent) is not ChildrenState.Ready ready)
+        var children = PeekChildren(session, parent);
+        if (children is not ChildrenState.Ready ready)
         {
             return null;
         }
@@ -294,7 +296,8 @@ public static class BrowseSessions
         BrowseNode? found = null;
         foreach (var child in children)
         {
-            if (!segment.Equals(BrowseNodes.FindSegment(child)))
+            var childSegment = BrowseNodes.FindSegment(child);
+            if (!segment.Equals(childSegment))
             {
                 continue;
             }
@@ -472,7 +475,8 @@ public static class BrowseSessions
 
         var metadata = module.File.Metadata;
         var type = metadata.GetTypeDefinition((TypeDefinitionHandle)handle);
-        if (!type.GetDeclaringType().IsNil)
+        var declaringType = type.GetDeclaringType();
+        if (!declaringType.IsNil)
         {
             return FindNode(session, module, LoadedAssemblies.GetOwner(LoadedAssemblies.EnsureMainModule(module), handle));
         }
@@ -521,7 +525,13 @@ public static class BrowseSessions
         }
 
         var parent = node.Parent;
-        if (parent is null || PeekChildren(session, parent) is not ChildrenState.Ready siblings)
+        if (parent is null)
+        {
+            return [];
+        }
+
+        var parentChildren = PeekChildren(session, parent);
+        if (parentChildren is not ChildrenState.Ready siblings)
         {
             return [];
         }
@@ -560,7 +570,7 @@ public static class BrowseSessions
         var pending = new Queue<BrowseNode>(inner);
         foreach (var child in own)
         {
-            while (pending.Count > 0 && SortsBefore(pending.Peek(), child))
+            while (pending.TryPeek(out var next) && SortsBefore(next, child))
             {
                 result.Add(pending.Dequeue());
             }
@@ -662,7 +672,8 @@ public static class BrowseSessions
     {
         for (var parent = node.Parent; parent is not null; parent = parent.Parent)
         {
-            if (FindMetadata(parent) is not null)
+            var metadata = FindMetadata(parent);
+            if (metadata is not null)
             {
                 return parent;
             }

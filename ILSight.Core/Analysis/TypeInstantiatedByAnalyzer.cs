@@ -35,11 +35,21 @@ internal static class TypeInstantiatedByAnalyzer
 
         var found = token.Kind switch
         {
-            HandleKind.MethodDefinition or HandleKind.MemberReference =>
-                module.ResolveMethod(token, default) is { IsConstructor: true } constructor ? constructor.DeclaringTypeDefinition : null,
+            HandleKind.MethodDefinition or HandleKind.MemberReference => FindConstructedType(module, token),
             HandleKind.TypeDefinition or HandleKind.TypeReference => module.ResolveType(token, default)?.GetDefinition(),
             _ => null,
         };
         return found?.ParentModule is not null && AnalyzerHelpers.IsSame(found, type);
+    }
+
+    private static ITypeDefinition? FindConstructedType(MetadataModule module, EntityHandle token)
+    {
+        var method = module.ResolveMethod(token, default);
+        if (method is null || !method.IsConstructor)
+        {
+            return null;
+        }
+
+        return method.DeclaringTypeDefinition;
     }
 }

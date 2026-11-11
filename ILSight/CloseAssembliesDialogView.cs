@@ -35,10 +35,14 @@ internal static class CloseAssembliesDialogView
             }
         }
 
-        if (close && CountIncluded(closer) > 0)
+        if (close)
         {
-            Commands.Later(ui.State, ListToClose(closer), static (a, items) => CloseAssemblies(a, items));
-            cancel = true;
+            var included = CountIncluded(closer);
+            if (included > 0)
+            {
+                Commands.Later(ui.State, ListToClose(closer), static (a, items) => CloseAssemblies(a, items));
+                cancel = true;
+            }
         }
         // Escape or the close button only clear IsOpen.
         var dismissed = wasOpen && !closer.IsOpen;
@@ -147,7 +151,8 @@ internal static class CloseAssembliesDialogView
         using (ui.Id(assembly.FilePath.Text))
         using (ui.Row(new Box { Gap = theme.Gap, Padding = new Spacing(theme.Gap, 0f) }))
         {
-            if (ui.Checkbox(assembly.Name, ref choice.Included, id: "include", width: Sizing.Grow(), compact: true))
+            var width = Sizing.Grow();
+            if (ui.Checkbox(assembly.Name, ref choice.Included, id: "include", width: width, compact: true))
             {
                 TickClicked(closer, shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
             }

@@ -537,7 +537,8 @@ internal static class MetadataTables
     /// for a signature of another kind, or one that cannot be read.</summary>
     private static string? LocalsText(MetadataFile file, StandaloneSignature signature)
     {
-        if (signature.GetKind() != StandaloneSignatureKind.LocalVariables)
+        var kind = signature.GetKind();
+        if (kind != StandaloneSignatureKind.LocalVariables)
         {
             return null;
         }

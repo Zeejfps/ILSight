@@ -256,7 +256,8 @@ public static class NodeContentLoader
         var entries = new List<NamespaceEntry>();
         foreach (var child in BrowseSessions.ListChildren(session, ns))
         {
-            if (NodeDefinitions.GetVisibility(child.Subject).IsCompilerGenerated)
+            var visibility = NodeDefinitions.GetVisibility(child.Subject);
+            if (visibility.IsCompilerGenerated)
             {
                 continue;
             }

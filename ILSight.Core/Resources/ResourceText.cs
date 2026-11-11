@@ -83,7 +83,8 @@ internal static class ResourceText
                 return null;
             }
         }
-        return (text, SyntaxByExtension.TryGetValue(Path.GetExtension(name), out var syntax) ? syntax : Sniff(text));
+        var extension = Path.GetExtension(name);
+        return (text, SyntaxByExtension.TryGetValue(extension, out var syntax) ? syntax : Sniff(text));
     }
 
     /// <summary>XML by the leading angle bracket, JSON by parsing it; anything else is plain.</summary>

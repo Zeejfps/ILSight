@@ -95,8 +95,11 @@ internal static class Documentation
             if (section is not null)
             {
                 sections.Add(section);
+                continue;
             }
-            else if (KindOf(child) is null)
+
+            var kind = KindOf(child);
+            if (kind is null)
             {
                 AddInline(loose, child);
             }

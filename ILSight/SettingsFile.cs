@@ -1028,13 +1028,22 @@ internal static class SettingsJson
     /// A position off every monitor is the window system's to correct when the window opens.</summary>
     public static WindowBounds? SanitizeWindow(WindowBounds? bounds)
     {
-        return bounds is { Width: > 0, Height: > 0 } b
-                ? b with
-                {
-                    Width = Math.Clamp(b.Width, AppSettings.MinWindowWidth, AppSettings.MaxWindowSize),
-                    Height = Math.Clamp(b.Height, AppSettings.MinWindowHeight, AppSettings.MaxWindowSize),
-                }
-                : null;
+        if (bounds is null)
+        {
+            return null;
+        }
+
+        var b = bounds.Value;
+        if (b.Width <= 0 || b.Height <= 0)
+        {
+            return null;
+        }
+
+        return b with
+        {
+            Width = Math.Clamp(b.Width, AppSettings.MinWindowWidth, AppSettings.MaxWindowSize),
+            Height = Math.Clamp(b.Height, AppSettings.MinWindowHeight, AppSettings.MaxWindowSize),
+        };
     }
 
     /// <summary>A dialog's <paramref name="bounds"/> with its size kept within reason, or null when it

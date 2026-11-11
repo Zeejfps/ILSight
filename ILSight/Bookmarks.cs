@@ -90,9 +90,10 @@ public static class Bookmarks
     /// after the last.</summary>
     private static int GetStepStart(BookmarkList list, Bookmark? from, int direction)
     {
-        if (FindRow(list, from) is { } index)
+        var index = FindRow(list, from);
+        if (index is not null)
         {
-            return index;
+            return index.Value;
         }
 
         if (direction > 0)
@@ -139,7 +140,8 @@ public static class Bookmarks
     {
         foreach (var bookmark in list.Items)
         {
-            if (Bookmarks.GetLine(bookmark, document, node) == line)
+            var bookmarkLine = Bookmarks.GetLine(bookmark, document, node);
+            if (bookmarkLine == line)
             {
                 return bookmark;
             }
@@ -152,13 +154,14 @@ public static class Bookmarks
     public static IReadOnlyDictionary<int, bool> ListMarkedLines(BookmarkList list, DecompiledDocument document, BrowseNode node)
     {
         var marks = list.MarksByDocument.GetOrCreateValue(document);
-        if (marks.Revision == list.Revision && Equals(marks.Place, BrowseNodes.GetPath(node)))
+        var place = BrowseNodes.GetPath(node);
+        if (marks.Revision == list.Revision && Equals(marks.Place, place))
         {
             return marks.Lines;
         }
 
         marks.Revision = list.Revision;
-        marks.Place = BrowseNodes.GetPath(node);
+        marks.Place = place;
         marks.Lines.Clear();
         foreach (var bookmark in list.Items)
         {
@@ -681,8 +684,22 @@ public static class Bookmarks
     /// <summary>The line it marks in <paramref name="document"/>, shown for <paramref name="node"/>, or -1.</summary>
     public static int GetLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
     {
-        return bookmark.Anchor is not null ? Documents.GetLine(document, bookmark.Anchor.Value)
-        : bookmark.Language == document.Language && bookmark.Place.Equals(BrowseNodes.GetPath(node)) && bookmark.Line < document.Lines.Length ? bookmark.Line
-        : -1;
+        if (bookmark.Anchor is not null)
+        {
+            return Documents.GetLine(document, bookmark.Anchor.Value);
+        }
+
+        if (bookmark.Language != document.Language)
+        {
+            return -1;
+        }
+
+        var place = BrowseNodes.GetPath(node);
+        if (!bookmark.Place.Equals(place) || bookmark.Line >= document.Lines.Length)
+        {
+            return -1;
+        }
+
+        return bookmark.Line;
     }
 }

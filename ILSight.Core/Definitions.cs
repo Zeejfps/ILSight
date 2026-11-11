@@ -18,7 +18,12 @@ internal static class Definitions
                 IMember member => member.MemberDefinition,
                 _ => null,
             };
-        return definition is { ParentModule.MetadataFile: not null, MetadataToken.IsNil: false } ? definition : null;
+        if (definition is null || definition.ParentModule?.MetadataFile is null || definition.MetadataToken.IsNil)
+        {
+            return null;
+        }
+
+        return definition;
     }
 
     /// <summary>The type an exported type of <paramref name="module"/> names, found by its name among

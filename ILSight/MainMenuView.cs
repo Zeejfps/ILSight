@@ -412,7 +412,8 @@ internal static class MainMenuView
 
         foreach (var language in DecompilationLanguages.All)
         {
-            if (ui.MenuRadioItem(DecompilationLanguages.Label(language), current == language))
+            var label = DecompilationLanguages.Label(language);
+            if (ui.MenuRadioItem(label, current == language))
             {
                 Commands.Later(ui.State, language, static (a, l) => SetLanguage(a, l));
             }

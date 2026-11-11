@@ -11,7 +11,13 @@ internal static class AttributeAppliedToAnalyzer
 {
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
-        if (symbol is not ITypeDefinition type || !type.GetNonInterfaceBaseTypes().Any(t => t.IsKnownType(KnownTypeCode.Attribute)))
+        if (symbol is not ITypeDefinition type)
+        {
+            return null;
+        }
+
+        var baseTypes = type.GetNonInterfaceBaseTypes();
+        if (!baseTypes.Any(t => t.IsKnownType(KnownTypeCode.Attribute)))
         {
             return null;
         }

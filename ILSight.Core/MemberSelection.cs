@@ -81,7 +81,8 @@ internal static class MemberSelection
             switch (node)
             {
                 case ConstructorDeclaration cd:
-                    if (cd.GetSymbol() == ctor)
+                    var constructor = cd.GetSymbol();
+                    if (constructor == ctor)
                     {
                         kept = cd;
                     }
@@ -117,7 +118,13 @@ internal static class MemberSelection
         }
         foreach (var node in rootNode.Children)
         {
-            if (node is Comment && removed.Contains(node.GetSymbol()))
+            if (node is not Comment)
+            {
+                continue;
+            }
+
+            var symbol = node.GetSymbol();
+            if (removed.Contains(symbol))
             {
                 node.Remove();
             }
@@ -134,7 +141,13 @@ internal static class MemberSelection
     {
         foreach (var node in rootNode.Children)
         {
-            if (node is EntityDeclaration or Comment && node.GetSymbol() != field)
+            if (node is not (EntityDeclaration or Comment))
+            {
+                continue;
+            }
+
+            var symbol = node.GetSymbol();
+            if (symbol != field)
             {
                 node.Remove();
             }

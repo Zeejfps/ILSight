@@ -111,7 +111,8 @@ public static class AssemblySearch
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
                 var type = reader.GetTypeDefinition(typeHandle);
-                if (!IsInNamespace(search, ReadNamespace(reader, type)))
+                var namespaceName = ReadNamespace(reader, type);
+                if (!IsInNamespace(search, namespaceName))
             {
                 continue;
             }
@@ -248,7 +249,13 @@ public static class AssemblySearch
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
                 var method = reader.GetMethodDefinition(handle);
-                if (!method.HasBody() || !IsInNamespace(search, ReadNamespace(reader, reader.GetTypeDefinition(method.GetDeclaringType()))))
+                if (!method.HasBody())
+            {
+                continue;
+            }
+
+                var namespaceName = ReadNamespace(reader, reader.GetTypeDefinition(method.GetDeclaringType()));
+                if (!IsInNamespace(search, namespaceName))
             {
                 continue;
             }
@@ -277,14 +284,21 @@ public static class AssemblySearch
             }
 
             var constantHandle = field.GetDefaultValue();
-                if (constantHandle.IsNil || !IsInNamespace(search, ReadNamespace(reader, reader.GetTypeDefinition(field.GetDeclaringType()))))
+                if (constantHandle.IsNil)
+            {
+                continue;
+            }
+
+                var namespaceName = ReadNamespace(reader, reader.GetTypeDefinition(field.GetDeclaringType()));
+                if (!IsInNamespace(search, namespaceName))
             {
                 continue;
             }
 
             var constant = reader.GetConstant(constantHandle);
                 var blob = reader.GetBlobReader(constant.Value);
-                if (IsConstantMatch(search, blob.ReadConstant(constant.TypeCode), literal))
+                var value = blob.ReadConstant(constant.TypeCode);
+                if (IsConstantMatch(search, value, literal))
             {
                 AddResult(search, assembly, handle);
             }
@@ -538,7 +552,8 @@ public static class AssemblySearch
             return;
         }
 
-        if (NodeDefinitions.GetVisibility(node.Subject).IsCompilerGenerated)
+        var visibility = NodeDefinitions.GetVisibility(node.Subject);
+        if (visibility.IsCompilerGenerated)
         {
             return;
         }
@@ -576,8 +591,14 @@ public static class AssemblySearch
         /// when the compiler made it up, such as the type that holds a lambda's closure class.</summary>
         private static BrowseNode? FindSourceDeclaredAncestor(BrowseNode? node)
         {
-            while (node is not null && NodeDefinitions.GetVisibility(node.Subject).IsCompilerGenerated)
+            while (node is not null)
         {
+            var visibility = NodeDefinitions.GetVisibility(node.Subject);
+            if (!visibility.IsCompilerGenerated)
+            {
+                break;
+            }
+
             node = node.Parent;
         }
 

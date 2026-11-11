@@ -213,7 +213,8 @@ internal static class ExportsPanelView
         PointF? at = null;
         using (ui.Id(RowIdOf(run)))
         {
-            if (ui.TryGetRect(ui.GetId("row"), out var rect))
+            var rowId = ui.GetId("row");
+            if (ui.TryGetRect(rowId, out var rect))
             {
                 at = new PointF(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
             }

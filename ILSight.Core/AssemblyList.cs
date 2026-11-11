@@ -623,7 +623,8 @@ public static class AssemblyListing
 
     private static LoadedModule? TryLoadAssembly(AssemblyList list, AssemblyPath path, int generation)
     {
-        return TryLoad(list, path, generation) is LoadedModule module ? module : null;
+        var assembly = TryLoad(list, path, generation);
+        return assembly is LoadedModule module ? module : null;
     }
 
     internal static LoadedAssembly? TryLoad(AssemblyList list, AssemblyPath path, int generation)

@@ -32,7 +32,8 @@ public sealed class ILSpyTreeTests
 
         foreach (var node in assembly.Calculator().Children.Prepend(assembly.Calculator()))
         {
-            if (ILSpyTree.PathOf(node) is not { } path)
+            var path = ILSpyTree.PathOf(node);
+            if (path is null)
             {
                 continue;
             }

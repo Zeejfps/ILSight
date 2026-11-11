@@ -74,7 +74,13 @@ public static class RuntimeAssemblies
             foreach (var dir in Directory.EnumerateDirectories(frameworks))
             {
                 var version = ParseVersion(Path.GetFileName(dir));
-                if (version is not null && File.Exists(Path.Combine(dir, "System.Private.CoreLib.dll")))
+                if (version is null)
+                {
+                    continue;
+                }
+
+                var coreLib = Path.Combine(dir, "System.Private.CoreLib.dll");
+                if (File.Exists(coreLib))
                 {
                     versions.Add((dir, version));
                 }
@@ -91,7 +97,8 @@ public static class RuntimeAssemblies
     private static string RuntimeDirectory()
     {
         var running = Path.TrimEndingDirectorySeparator(RuntimeEnvironment.GetRuntimeDirectory());
-        if (File.Exists(Path.Combine(running, "System.Private.CoreLib.dll")))
+        var coreLib = Path.Combine(running, "System.Private.CoreLib.dll");
+        if (File.Exists(coreLib))
         {
             return running;
         }
@@ -101,7 +108,8 @@ public static class RuntimeAssemblies
 
     internal static IEnumerable<string> DotNetRoots()
     {
-        if (Environment.GetEnvironmentVariable("DOTNET_ROOT") is { Length: > 0 } root)
+        var root = Environment.GetEnvironmentVariable("DOTNET_ROOT");
+        if (!string.IsNullOrEmpty(root))
         {
             yield return root;
         }

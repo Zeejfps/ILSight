@@ -67,7 +67,8 @@ internal static class ProcessPickerView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var processListId = ui.GetId(ProcessListId);
-        if (ui.HasFocus(ui.GetId(FilterId)))
+        var filterId = ui.GetId(FilterId);
+        if (ui.HasFocus(filterId))
         {
             MoveSelectionFromFilter(ui, picker, processListId);
         }

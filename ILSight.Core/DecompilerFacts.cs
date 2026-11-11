@@ -89,7 +89,8 @@ internal static class DecompilerFacts
     /// knows to name a member.</summary>
     public static IMember ResolveMember(MetadataModule module, EntityHandle handle)
     {
-        if (module.ResolveEntity(handle) is not IMember member)
+        var entity = module.ResolveEntity(handle);
+        if (entity is not IMember member)
         {
             throw new UnreachableException($"The {handle.Kind} handle resolves to no member, though it names one.");
         }

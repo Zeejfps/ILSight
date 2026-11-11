@@ -317,7 +317,8 @@ public static class Theming
         where TContents : class
         where TTheme : class
     {
-        if (ThemeCatalogs.GetThemeIndex(themes, id) >= 0)
+        var index = ThemeCatalogs.GetThemeIndex(themes, id);
+        if (index >= 0)
         {
             return true;
         }
@@ -1305,7 +1306,8 @@ public static class Theming
     /// any other error the system has stopped telling, so the watch is lost.</summary>
     private static void OnError(ThemeFolderWatch watch, object sender, ErrorEventArgs e)
     {
-        if (e.GetException() is InternalBufferOverflowException)
+        var error = e.GetException();
+        if (error is InternalBufferOverflowException)
         {
             WaitForQuiet(watch);
             return;

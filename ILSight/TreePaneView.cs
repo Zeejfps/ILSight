@@ -92,15 +92,22 @@ internal static class TreePaneView
 
         var theme = ui.Theme;
         var room = rect.Width - 2f * theme.ShellPaddingX;
-        if (MeasureTools(theme, ToolCount) <= room)
+        var allWidth = MeasureTools(theme, ToolCount);
+        if (allWidth <= room)
         {
             return ToolCount;
         }
 
         var beside = room - theme.GapTight - theme.IconButtonSize;
         var shown = 0;
-        while (shown < ToolCount && MeasureTools(theme, shown + 1) <= beside)
+        while (shown < ToolCount)
         {
+            var width = MeasureTools(theme, shown + 1);
+            if (width > beside)
+            {
+                break;
+            }
+
             shown++;
         }
 
@@ -295,7 +302,8 @@ internal static class TreePaneView
 
     private static void AnalyzeOnShortcut(Ui<UiState> ui)
     {
-        if (!ui.HasFocus(ui.GetId(TreeId)))
+        var treeId = ui.GetId(TreeId);
+        if (!ui.HasFocus(treeId))
         {
             return;
         }
@@ -316,7 +324,8 @@ internal static class TreePaneView
 
     private static void CloseOnDelete(Ui<UiState> ui)
     {
-        if (!ui.HasFocus(ui.GetId(TreeId)))
+        var treeId = ui.GetId(TreeId);
+        if (!ui.HasFocus(treeId))
         {
             return;
         }
@@ -384,7 +393,8 @@ internal static class TreePaneView
     /// <summary>Goes where <paramref name="node"/> points when it stands for a reference, else opens it in a tab kept open.</summary>
     private static void Open(AppState appState, BrowseNode node)
     {
-        if (NodeDefinitions.GetActivation(node.Subject) is Activation.Navigate jump)
+        var activation = NodeDefinitions.GetActivation(node.Subject);
+        if (activation is Activation.Navigate jump)
         {
             GoTo(appState, jump.Target);
             return;
@@ -441,7 +451,8 @@ internal static class TreePaneView
         }
 
         DocsItem(ui, node);
-        if (Analyzers.Of(node) is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
+        var analysis = Analyzers.Of(node);
+        if (analysis is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
         {
             Commands.Later(ui.State, (screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));
         }
@@ -627,7 +638,8 @@ internal static class TreePaneView
             return;
         }
 
-        if (ui.MenuRadioItem(DetectedFrameworkLabel(t, assembly), !assembly.IsTargetFrameworkPicked, id: "detected"))
+        var detectedLabel = DetectedFrameworkLabel(t, assembly);
+        if (ui.MenuRadioItem(detectedLabel, !assembly.IsTargetFrameworkPicked, id: "detected"))
         {
             Commands.Later(ui.State, assembly, static (a, m) => SetTargetFramework(a, m, null));
         }

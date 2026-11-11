@@ -27,9 +27,13 @@ internal static class MethodUsedByAnalyzer
         }
 
         IMethod? baseMethod = null;
-        if (!analyzed.IsVirtual && InheritanceHelper.GetBaseMember(analyzed) is IMethod found)
+        if (!analyzed.IsVirtual)
         {
-            baseMethod = found;
+            var baseMember = InheritanceHelper.GetBaseMember(analyzed);
+            if (baseMember is IMethod found)
+            {
+                baseMethod = found;
+            }
         }
 
         var parent = ParentOf(analyzed);

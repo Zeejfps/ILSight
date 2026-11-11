@@ -229,7 +229,8 @@ public static class Documents
         }
 
         var statementLines = EnsureStatementLines(document);
-        if (!statementLines.TryGetValue(GetMethodAnchor(anchor), out var points))
+        var methodAnchor = GetMethodAnchor(anchor);
+        if (!statementLines.TryGetValue(methodAnchor, out var points))
         {
             return -1;
         }

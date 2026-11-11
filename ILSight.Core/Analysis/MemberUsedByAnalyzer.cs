@@ -12,7 +12,8 @@ internal static class MemberUsedByAnalyzer
             return null;
         }
 
-        if (!Members.Accessors(member).Any())
+        var accessors = Members.Accessors(member);
+        if (!accessors.Any())
         {
             return null;
         }

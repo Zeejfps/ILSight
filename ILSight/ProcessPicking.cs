@@ -120,7 +120,8 @@ public static class ProcessPicking
             return true;
         }
 
-        if (process.Id.ToString().Contains(filter, StringComparison.Ordinal))
+        var idText = process.Id.ToString();
+        if (idText.Contains(filter, StringComparison.Ordinal))
         {
             return true;
         }

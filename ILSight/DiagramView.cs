@@ -817,9 +817,13 @@ internal static class DiagramView
             Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandInterfaces(a, s.diagram, s.card));
         }
 
-        if (card.CanHaveDerived && ui.MenuItem(DerivedItemOf(ui, card), id: "add-derived"))
+        if (card.CanHaveDerived)
         {
-            Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandDerived(a, s.diagram, s.card));
+            var derivedItem = DerivedItemOf(ui, card);
+            if (ui.MenuItem(derivedItem, id: "add-derived"))
+            {
+                Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandDerived(a, s.diagram, s.card));
+            }
         }
 
         if (HasLinks(card, IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: HasMissingHeld(diagram, card), id: "add-held"))

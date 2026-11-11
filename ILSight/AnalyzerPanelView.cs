@@ -66,7 +66,8 @@ internal static class AnalyzerPanelView
         var rows = ui.State.Analyzer;
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box, toggleOnActivate: false);
-        if (ui.HasFocus(ui.GetId(TreeId)))
+        var treeId = ui.GetId(TreeId);
+        if (ui.HasFocus(treeId))
         {
             HandleKeys(ui, rows);
         }

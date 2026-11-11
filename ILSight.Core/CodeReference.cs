@@ -217,7 +217,8 @@ internal static class CodeReferences
 
     private static EntityKind GetMemberKind(MetadataReader metadata, MemberReferenceHandle handle)
     {
-        return metadata.GetMemberReference(handle).GetKind() == MemberReferenceKind.Field ? EntityKind.Field : EntityKind.Method;
+        var kind = metadata.GetMemberReference(handle).GetKind();
+        return kind == MemberReferenceKind.Field ? EntityKind.Field : EntityKind.Method;
     }
 
     public static EntityKind GetKind(SymbolKind kind)

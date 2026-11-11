@@ -321,7 +321,8 @@ public sealed class AppTests
 
     private static bool IsGroupMark(string text)
     {
-        if (text == Text(Icons.OptionsGroupUnfolded))
+        var unfolded = Text(Icons.OptionsGroupUnfolded);
+        if (text == unfolded)
         {
             return true;
         }

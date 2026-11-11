@@ -120,7 +120,8 @@ internal static class NuGetPickerView
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            if (ui.HasFocus(ui.GetId(QueryId)))
+            var queryId = ui.GetId(QueryId);
+            if (ui.HasFocus(queryId))
             {
                 MoveSelectionFromQuery(ui, picker);
             }
@@ -130,7 +131,8 @@ internal static class NuGetPickerView
                 ui.Focus(ui.GetId(QueryId));
             }
 
-            if (ui.TextField(QueryId, ref picker.Query, t.NugetQuery, Sizing.Grow(), ui.State.Icons.SearchField, clearable: true))
+            var queryWidth = Sizing.Grow();
+            if (ui.TextField(QueryId, ref picker.Query, t.NugetQuery, queryWidth, ui.State.Icons.SearchField, clearable: true))
             {
                 Submit(ui, picker);
             }
@@ -138,7 +140,8 @@ internal static class NuGetPickerView
             ui.Checkbox(t.NugetPrerelease, ref picker.IncludePrerelease, id: "nuget-prerelease");
             ui.Leaf(new Box { Width = theme.Gap });
             ui.Text(t.NugetSource, color: theme.TextMuted);
-            if (ui.TextField("nuget-feed", ref picker.FeedUrl, t.NugetFeed, Sizing.Fixed(AppLayout.NuGetFeedWidth)))
+            var feedWidth = Sizing.Fixed(AppLayout.NuGetFeedWidth);
+            if (ui.TextField("nuget-feed", ref picker.FeedUrl, t.NugetFeed, feedWidth))
             {
                 NuGetPicking.SearchNow(picker);
             }

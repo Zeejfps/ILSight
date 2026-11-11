@@ -235,7 +235,8 @@ public static class CodeDisplay
             return false;
         }
 
-        if (family.FindRegular() == null)
+        var regular = family.FindRegular();
+        if (regular is null)
         {
             return false;
         }

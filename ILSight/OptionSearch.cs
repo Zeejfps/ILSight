@@ -171,9 +171,13 @@ internal static class OptionSearch
     public static void Field(Ui<UiState> ui, ref string query)
     {
         var t = ui.State.Strings;
-        if (query.Length > 0 && ui.HasFocus(ui.GetId(FieldId)) && ui.Input.TakeKey(KeyboardKey.Escape))
+        if (query.Length > 0)
         {
-            query = "";
+            var fieldId = ui.GetId(FieldId);
+            if (ui.HasFocus(fieldId) && ui.Input.TakeKey(KeyboardKey.Escape))
+            {
+                query = "";
+            }
         }
 
         ui.TextField(FieldId, ref query, t.OptionsSearchPlaceholder, Sizing.Grow(), ui.State.Icons.OptionsSearch, clearable: true);

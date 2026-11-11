@@ -316,7 +316,8 @@ public static class Docking
             return;
         }
 
-        if (FindLeadGroup(split.First) is null)
+        var first = FindLeadGroup(split.First);
+        if (first is null)
         {
             DockRestArranged(layout, split.Second, lead);
             return;

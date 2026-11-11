@@ -364,7 +364,8 @@ internal static class OmnibarView
     /// <summary>Public API in the text color, the rest muted, as the tree shows them.</summary>
     private static uint CrumbColor(UiTheme theme, BrowseNode node)
     {
-        if (NodeDefinitions.GetVisibility(node.Subject).IsPublicApi)
+        var visibility = NodeDefinitions.GetVisibility(node.Subject);
+        if (visibility.IsPublicApi)
         {
             return theme.Text;
         }

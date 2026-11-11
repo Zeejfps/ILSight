@@ -73,7 +73,8 @@ internal static class TypeUsedByAnalyzer
 
         foreach (var h in metadata.FieldDefinitions)
         {
-            if (metadata.GetFieldDefinition(h).DecodeSignature(decoder, default))
+            var field = metadata.GetFieldDefinition(h);
+            if (field.DecodeSignature(decoder, default))
             {
                 yield return module.GetDefinition(h);
             }
@@ -81,7 +82,8 @@ internal static class TypeUsedByAnalyzer
 
         foreach (var h in metadata.PropertyDefinitions)
         {
-            if (FindTypeDecoder.AnyInMethodSignature(metadata.GetPropertyDefinition(h).DecodeSignature(decoder, default)))
+            var signature = metadata.GetPropertyDefinition(h).DecodeSignature(decoder, default);
+            if (FindTypeDecoder.AnyInMethodSignature(signature))
             {
                 yield return module.GetDefinition(h);
             }
@@ -89,7 +91,8 @@ internal static class TypeUsedByAnalyzer
 
         foreach (var h in metadata.EventDefinitions)
         {
-            if (decoder.GetTypeFromEntity(metadata, metadata.GetEventDefinition(h).Type))
+            var eventType = metadata.GetEventDefinition(h).Type;
+            if (decoder.GetTypeFromEntity(metadata, eventType))
             {
                 yield return module.GetDefinition(h);
             }
@@ -140,7 +143,8 @@ internal static class TypeUsedByAnalyzer
         {
             try
             {
-                if (UsedBySignature(metadata.GetStandaloneSignature(body.LocalSignature)))
+                var localSignature = metadata.GetStandaloneSignature(body.LocalSignature);
+                if (UsedBySignature(localSignature))
                 {
                     return true;
                 }

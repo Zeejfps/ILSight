@@ -22,7 +22,8 @@ public sealed partial record PackageId
     /// <summary>The id <paramref name="text"/> spells; null when it is no id NuGet allows.</summary>
     public static PackageId? Parse(string text)
     {
-        if (text.Length > MaxLength || !Pattern().IsMatch(text))
+        var pattern = Pattern();
+        if (text.Length > MaxLength || !pattern.IsMatch(text))
         {
             return null;
         }

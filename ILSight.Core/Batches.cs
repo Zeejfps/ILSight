@@ -31,8 +31,14 @@ internal static class Batches
 
         try
         {
-            while (await channel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+            while (true)
             {
+                var hasItems = await channel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false);
+                if (!hasItems)
+                {
+                    break;
+                }
+
                 var batch = new List<T>();
                 while (channel.Reader.TryRead(out var item))
                 {

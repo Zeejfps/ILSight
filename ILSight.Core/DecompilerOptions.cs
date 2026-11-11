@@ -174,7 +174,8 @@ public static class DecompilerToggles
                 continue;
             }
 
-            if (property.GetCustomAttribute<BrowsableAttribute>() is { Browsable: false })
+            var browsable = property.GetCustomAttribute<BrowsableAttribute>();
+            if (browsable is not null && !browsable.Browsable)
             {
                 continue;
             }
@@ -185,7 +186,8 @@ public static class DecompilerToggles
                 continue;
             }
 
-            if (property.GetValue(defaults) is not bool value)
+            var defaultValue = property.GetValue(defaults);
+            if (defaultValue is not bool value)
             {
                 throw new UnreachableException($"{property.Name}, a bool property, holds no bool.");
             }

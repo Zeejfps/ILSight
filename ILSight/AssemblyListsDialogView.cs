@@ -295,7 +295,7 @@ internal static class AssemblyListsDialogView
 
     private static string DescribeRenameProblem(Strings t, string newName)
     {
-        if (newName.Trim().Length == 0)
+        if (string.IsNullOrWhiteSpace(newName))
         {
             return t.ListsNameEmpty;
         }

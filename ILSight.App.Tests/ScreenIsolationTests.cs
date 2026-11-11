@@ -64,7 +64,8 @@ public sealed class ScreenIsolationTests : IDisposable
                 return next.Path;
             }
 
-            if (!next.Value.GetType().IsValueType && !seen.Add(next.Value))
+            var runtimeType = next.Value.GetType();
+            if (!runtimeType.IsValueType && !seen.Add(next.Value))
             {
                 continue;
             }
@@ -109,7 +110,8 @@ public sealed class ScreenIsolationTests : IDisposable
 
             yield break;
         }
-        if (!WalkedAssemblies.Contains(value.GetType().Assembly))
+        var assembly = value.GetType().Assembly;
+        if (!WalkedAssemblies.Contains(assembly))
         {
             yield break;
         }

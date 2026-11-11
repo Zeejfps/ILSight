@@ -142,7 +142,8 @@ internal static class DebugSymbolFiles
             }
 
             var provider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(image));
-            if (provider.GetMetadataReader().DebugMetadataHeader is null)
+            var pdbReader = provider.GetMetadataReader();
+            if (pdbReader.DebugMetadataHeader is null)
             {
                 return PdbCheck.Unreadable;
             }
@@ -407,7 +408,8 @@ internal static class DebugSymbolFiles
     {
         foreach (var handle in ListLocals(symbols, method))
         {
-            if (symbols.Metadata.GetLocalVariable(handle).Index == index)
+            var local = symbols.Metadata.GetLocalVariable(handle);
+            if (local.Index == index)
             {
                 return handle;
             }

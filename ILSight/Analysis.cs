@@ -133,7 +133,8 @@ public static class Analysis
             return;
         }
 
-        if (SavedAnalysisOf(root) is not null)
+        var saved = SavedAnalysisOf(root);
+        if (saved is not null)
         {
             tree.Revision++;
         }

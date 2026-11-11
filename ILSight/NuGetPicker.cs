@@ -548,7 +548,8 @@ public static class NuGetPicking
             picker.RequestedPage = 0;
             wanted = wanted with { Page = 0 };
         }
-        if (wanted == FindLastSearched(picker))
+        var lastSearched = FindLastSearched(picker);
+        if (wanted == lastSearched)
         {
             return 0;
         }
@@ -737,7 +738,8 @@ public static class NuGetPicking
 
     private static void ReportSearchFailure(NuGetPicker picker, FeedSearch searched, Exception error)
     {
-        if (!IsSamePackages(searched, FindShownSearch(picker)))
+        var shown = FindShownSearch(picker);
+        if (!IsSamePackages(searched, shown))
         {
             ClearShown(picker);
         }

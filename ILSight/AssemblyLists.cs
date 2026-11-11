@@ -166,9 +166,10 @@ public static class AssemblyLists
 
     private static int GetListIndex(IReadOnlyList<string> names, string name)
     {
+        var trimmed = name.Trim();
         for (var i = 0; i < names.Count; i++)
         {
-            if (string.Equals(names[i], name.Trim(), StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(names[i], trimmed, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }
@@ -247,7 +248,8 @@ public static class AssemblyLists
             return;
         }
 
-        if (FindList(lists, name) is not null)
+        var existing = FindList(lists, name);
+        if (existing is not null)
         {
             return;
         }
@@ -508,14 +510,21 @@ public static class AssemblyLists
 
     private static string MakeUniqueName(SavedAssemblyLists lists, string name)
     {
-        if (FindList(lists, name) is null)
+        var existing = FindList(lists, name);
+        if (existing is null)
         {
             return name;
         }
 
         var number = 2;
-        while (FindList(lists, $"{name} {number}") is not null)
+        while (true)
         {
+            var taken = FindList(lists, $"{name} {number}");
+            if (taken is null)
+            {
+                break;
+            }
+
             number++;
         }
 

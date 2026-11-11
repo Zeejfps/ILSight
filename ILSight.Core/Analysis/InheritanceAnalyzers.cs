@@ -27,21 +27,29 @@ internal static class InheritorsAnalyzer<T> where T : class, IMember
 
     private static IEnumerable<ISymbol> Analyze(bool overrides, T analyzed, AnalyzerContext context)
     {
-        if (analyzed.DeclaringTypeDefinition is not { ParentModule.MetadataFile: not null } declaring)
+        var declaring = analyzed.DeclaringTypeDefinition;
+        if (declaring is null || declaring.ParentModule?.MetadataFile is null)
         {
             yield break;
         }
 
         foreach (var type in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, analyzed), context.CancellationToken))
         {
-            if (!type.GetAllBaseTypeDefinitions().Any(t => AnalyzerHelpers.IsSame(t, declaring)))
+            var baseTypes = type.GetAllBaseTypeDefinitions();
+            if (!baseTypes.Any(t => AnalyzerHelpers.IsSame(t, declaring)))
             {
                 continue;
             }
 
             foreach (var member in type.Members.OfType<T>())
             {
-                if ((!overrides || member.IsOverride) && InheritanceHelper.GetBaseMembers(member, !overrides).Any(m => AnalyzerHelpers.IsSame(m, analyzed)))
+                if (overrides && !member.IsOverride)
+                {
+                    continue;
+                }
+
+                var baseMembers = InheritanceHelper.GetBaseMembers(member, !overrides);
+                if (baseMembers.Any(m => AnalyzerHelpers.IsSame(m, analyzed)))
                 {
                     yield return member;
                 }

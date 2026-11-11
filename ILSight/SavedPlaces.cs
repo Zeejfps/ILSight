@@ -179,7 +179,8 @@ public static class SavedPlaces
     /// text, a number among them.</summary>
     private static T? ParseName<T>(string name) where T : struct, Enum
     {
-        if (!Enum.GetNames<T>().Contains(name))
+        var names = Enum.GetNames<T>();
+        if (!names.Contains(name))
         {
             return null;
         }

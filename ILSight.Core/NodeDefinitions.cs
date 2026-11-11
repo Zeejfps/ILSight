@@ -217,7 +217,8 @@ public static class NodeDefinitions
     /// null for one that opens itself.</summary>
     internal static CodeReference.Navigable? FindTarget(NodeSubject subject)
     {
-        if (GetActivation(subject) is not Activation.Navigate navigate)
+        var activation = GetActivation(subject);
+        if (activation is not Activation.Navigate navigate)
         {
             return null;
         }

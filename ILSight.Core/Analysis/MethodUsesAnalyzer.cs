@@ -43,7 +43,8 @@ internal static class MethodUsesAnalyzer
         var types = new TypeDefinitionCollector();
         foreach (var (opCode, token) in AnalyzerHelpers.ListTokens(body))
         {
-            if (opCode.GetOperandType() == OperandType.Type)
+            var operandType = opCode.GetOperandType();
+            if (operandType == OperandType.Type)
             {
                 continue;
             }

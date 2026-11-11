@@ -65,7 +65,19 @@ internal sealed class CodeViewDriver
 
     private float FoldLeft => Origin + MarkColumn + GutterPadding + Digits * Cell + GutterPadding;
 
-    private int Digits => Display is { ShowLineNumbers: false } ? 0 : Math.Max(3, CodeTextDigits(Document.Lines.Length));
+    private int Digits
+    {
+        get
+        {
+            var display = Display;
+            if (display is not null && !display.ShowLineNumbers)
+            {
+                return 0;
+            }
+
+            return Math.Max(3, CodeTextDigits(Document.Lines.Length));
+        }
+    }
 
     public float TextLeft => FoldLeft + (Document.Folds.Length > 0 ? FoldColumn : 0f) + CodePadding;
 

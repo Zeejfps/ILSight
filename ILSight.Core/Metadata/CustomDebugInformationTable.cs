@@ -41,11 +41,28 @@ internal static class CustomDebugInformationTable
         AddValue(table, "Kind", r => MetadataTokens.GetHeapOffset(r.Kind), "X2");
         AddValue(table, "KindGUID", r => m.GetGuid(r.Kind), "D");
         AddValue(table, "KindString", r => KindString(m, r.Kind));
-        AddValue(table, "Info", r => !r.Kind.IsNil && m.GetGuid(r.Kind) == KnownGuids.EmbeddedSource ? EmbeddedSourceFormat(m, r.Value) : null);
+        AddValue(table, "Info", r => FindInfo(m, r));
         AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? "<nil>" : m.GetBlobReader(r.Value).ToHexString());
         AddValue(table, "ValueLength", r => m.GetBlobReader(r.Value).Length, "X8");
         SetDetails(table, r => Details(m, r));
         return table;
+    }
+
+    /// <summary>What the value of <paramref name="row"/> holds, for embedded source; null for any other kind.</summary>
+    private static string? FindInfo(MetadataReader metadata, CustomDebugInformation row)
+    {
+        if (row.Kind.IsNil)
+        {
+            return null;
+        }
+
+        var kind = metadata.GetGuid(row.Kind);
+        if (kind != KnownGuids.EmbeddedSource)
+        {
+            return null;
+        }
+
+        return EmbeddedSourceFormat(metadata, row.Value);
     }
 
     private static string KindString(MetadataReader metadata, GuidHandle kind)

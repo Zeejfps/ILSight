@@ -287,7 +287,8 @@ public static class MetadataGrids
 
     private static MetadataAddress? FindLinkUncached(MetadataGrid grid, int row, int column)
     {
-        if (FindValue(grid, row, column) is not int token || (token & 0xFFFFFF) == 0)
+        var value = FindValue(grid, row, column);
+        if (value is not int token || (token & 0xFFFFFF) == 0)
         {
             return null;
         }
@@ -516,7 +517,9 @@ public static class MetadataGrids
             return a is null ? b is null ? 0 : -1 : 1;
         }
 
-        if (a.GetType() == b.GetType() && a is IComparable comparable)
+        var aType = a.GetType();
+        var bType = b.GetType();
+        if (aType == bType && a is IComparable comparable)
         {
             return comparable.CompareTo(b);
         }

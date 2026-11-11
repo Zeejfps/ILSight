@@ -1342,9 +1342,21 @@ if (!string.IsNullOrEmpty(nickname)) { ... }       // narrows: [NotNullWhen(fals
    }
    ```
 5. **Type checks** on a local stay patterns: `if (order is Order.Shipped shipped)` names the case it wants (R008).
+6. **Don't hoist a call past what guards it.** In `if (cache.IsLoaded && cache.FindPrice(sku) is not null)` the call
+   runs only when the cache has loaded; moved above the `if`, it runs first and throws (in testing). The same goes for
+   a call that only a later `else if` needed. Check the guard first, then call, each on its own line:
+   ```csharp
+   if (!cache.IsLoaded)
+   {
+       return "unknown";
+   }
+
+   var price = cache.FindPrice(sku);
+   ```
 
 ### Checklist
 
 - [ ] No condition calls a method that returns something other than `bool`.
 - [ ] Null checks are `is null` / `is not null` (or `string.IsNullOrEmpty`), never `is { } x` or a property pattern on a nullable.
 - [ ] Read-until-null loops read once at the top of each pass.
+- [ ] No call was hoisted above the check that guarded it (`a && Call()`, a later `else if`).
