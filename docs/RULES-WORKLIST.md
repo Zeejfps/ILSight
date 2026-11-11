@@ -37,7 +37,7 @@ Done items are struck through with their commit.
 | ~~A13~~ (done) | R004 | `AnalyzerTree`, `Analysis` | `Revision` bumped by hand in 5 places → root operations on `AnalyzerTree`. | S–M / low |
 | ~~Z4~~ (done) | R004 | `ThemeCatalog`, `ThemeCatalogs` | Public collections that must agree; generic constraints repeated ~20 times → instance methods. | S / low |
 | Z10 | R004, R008 | `MetadataGridState`, `MetadataGridView` | ~30 state functions in the widget; bool + value pairs (`FlagsOpen` + `FlagsColumn`) → methods on the state, `int? FlagsFlyoutColumn`. | S–M / low–med (frame-cost tests) |
-| Z11 | R008 | `NuGetPicker` versions | `Version`, `Versions`, `VersionTexts` must agree; the view writes one directly → one `VersionChoice?`. | S / low |
+| ~~Z11~~ (done) | R008 | `NuGetPicker` versions | `Version`, `Versions`, `VersionTexts` must agree; the view writes one directly → one `VersionChoice?`. | S / low |
 | C8 | R004 | `BrowseSession`, `BrowseSessions` | Seven public `ConditionalWeakTable` fields → private, instance methods. | M / low |
 | C9 | R004 | `LoadedAssembly.Ensure*`, `LoadedPackage` | Five one-line forwarders; two-phase construction with a throwing placeholder → properties over private `Lazy`s, one-step construction. | S–M / low |
 | C10 | R004 | `AssemblyResolver` → `AssemblyResolving`, `DebugSymbols` → `DebugSymbolFiles` | Framework types forwarding every member to a static class → bodies move in. | S–M / low |

@@ -69,7 +69,7 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.OpenPicker(picker);
         NuGetPicking.UpdatePicker(picker, now: 10);
         Poll.Until(() => !picker.IsSearching, posted.Run);
-        NuGetPicking.FollowSelection(picker);
+        picker.FollowSelection();
         return picker;
     }
 
@@ -88,8 +88,54 @@ public sealed class NuGetPickerTests : IDisposable
         Assert.Equal("Fixtures", Assert.Single(picker.Results).Id.Text);
         Assert.Equal("Fixtures", picker.Selected!.Id.Text);
         Assert.Equal("2.0.0", picker.Version?.Text);
-        Assert.Equal(["2.0.0", "1.0.0"], picker.VersionTexts);
+        var choice = picker.Choice;
+        Assert.NotNull(choice);
+        Assert.Equal(["2.0.0", "1.0.0"], choice.Texts.ToArray());
         Assert.True(picker.CanOpen);
+    }
+
+    [Fact]
+    public void Picking_a_listed_version_keeps_the_versions_offered()
+    {
+        var posted = PostedActions.OfThisTest();
+        var picker = OpenPicker(posted);
+        var older = PackageVersion.Parse("1.0.0");
+        Assert.NotNull(older);
+
+        picker.PickVersion(older);
+
+        Assert.Equal("1.0.0", picker.Version?.Text);
+        var choice = picker.Choice;
+        Assert.NotNull(choice);
+        Assert.Equal("Fixtures", choice.Package.Id.Text);
+        Assert.Equal(["2.0.0", "1.0.0"], choice.Texts.ToArray());
+    }
+
+    [Fact]
+    public void Picking_a_version_the_package_does_not_list_throws_and_keeps_the_pick()
+    {
+        var posted = PostedActions.OfThisTest();
+        var picker = OpenPicker(posted);
+        var unlisted = PackageVersion.Parse("9.9.9");
+        Assert.NotNull(unlisted);
+
+        Assert.Throws<ArgumentException>(() => picker.PickVersion(unlisted));
+
+        Assert.Equal("2.0.0", picker.Version?.Text);
+    }
+
+    [Fact]
+    public void Following_no_selection_offers_no_versions()
+    {
+        var posted = PostedActions.OfThisTest();
+        var picker = OpenPicker(posted);
+
+        ItemSelections.Clear(picker.Selection);
+        picker.FollowSelection();
+
+        Assert.Null(picker.Choice);
+        Assert.Null(picker.Version);
+        Assert.False(picker.CanOpen);
     }
 
     [Fact]
@@ -342,7 +388,9 @@ public sealed class NuGetPickerTests : IDisposable
         _fake.Answer(FakeFeed.PackagesUrl + "fixtures/1.0.0/fixtures.1.0.0.nupkg", [1, 2, 3]);
         var picker = OpenPicker(posted);
 
-        picker.Version = PackageVersion.Parse("1.0.0");
+        var older = PackageVersion.Parse("1.0.0");
+        Assert.NotNull(older);
+        picker.PickVersion(older);
         NuGetPicking.DownloadPicked(picker);
         Poll.Until(() => !picker.IsDownloading, posted.Run);
 

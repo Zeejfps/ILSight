@@ -146,16 +146,27 @@ internal static class NuGetDetailsView
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
             ui.Text(t.NugetVersion, new Box { Width = LabelWidth }, color: theme.TextMuted);
-            var width = Math.Clamp(ui.SelectButtonWidth(picker.VersionTexts), VersionMinWidth, VersionMaxWidth);
-            var enabled = !picker.IsDownloading && picker.ShowsWhatWasAsked;
-            var version = picker.Version;
-            var selectWidth = Sizing.Fixed(width);
-            if (version is not null && ui.Select("version", ref version, picker.Versions, VersionLabel, selectWidth, t.NugetVersion, enabled))
+            var choice = picker.Choice;
+            if (choice is not null)
             {
-                picker.Version = version;
+                VersionSelect(ui, picker, choice);
             }
 
             DetailsStatus(ui, picker, package, details);
+        }
+    }
+
+    /// <summary>The button that picks the version to open from those <paramref name="choice"/> offers.</summary>
+    private static void VersionSelect(Ui<UiState> ui, NuGetPicker picker, VersionChoice choice)
+    {
+        var t = ui.State.Strings;
+        var width = Math.Clamp(ui.SelectButtonWidth(choice.Texts), VersionMinWidth, VersionMaxWidth);
+        var enabled = !picker.IsDownloading && picker.ShowsWhatWasAsked;
+        var version = choice.Picked;
+        var selectWidth = Sizing.Fixed(width);
+        if (ui.Select("version", ref version, choice.Versions, VersionLabel, selectWidth, t.NugetVersion, enabled))
+        {
+            picker.PickVersion(version);
         }
     }
 

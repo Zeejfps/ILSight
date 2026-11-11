@@ -37,7 +37,6 @@ public sealed class NuGetPicker
     public readonly TypedText TypedQuery = new();
     public readonly TypedText TypedUrl = new();
     public SavedNuGetSearch? Kept;
-    public FeedPackage? VersionsOf;
     public bool FocusQuery;
 
     public bool IsOpen;
@@ -52,8 +51,11 @@ public sealed class NuGetPicker
 
     public bool IncludePrerelease;
 
+    /// <summary>The versions of the selected package and the one picked; null while none is selected.</summary>
+    public VersionChoice? Choice { get; private set; }
+
     /// <summary>The version of the selected package to open; null while none is selected.</summary>
-    public PackageVersion? Version;
+    public PackageVersion? Version => Choice?.Picked;
 
     public ItemSelection<FeedPackage> Selection { get; } = new();
 
@@ -149,12 +151,6 @@ public sealed class NuGetPicker
             return ShownResults.Search.Query;
         }
     }
-
-    /// <summary>The versions of the selected package, newest first.</summary>
-    public PackageVersion[] Versions { get; set; } = [];
-
-    /// <summary>How <see cref="Versions"/> are written, in their order.</summary>
-    public string[] VersionTexts { get; set; } = [];
 
     public bool IsSearching => Run is SearchRun.Running;
 
@@ -257,6 +253,36 @@ public sealed class NuGetPicker
 
             return listed.Downloads;
         }
+    }
+
+    /// <summary>Offers the versions of the package selected, picking its latest, once another is selected.</summary>
+    public void FollowSelection()
+    {
+        var package = Selected;
+        var offered = Choice?.Package;
+        if (package == offered)
+        {
+            return;
+        }
+
+        if (package is null)
+        {
+            Choice = null;
+            return;
+        }
+        Choice = VersionChoice.FromPackage(package);
+    }
+
+    /// <summary>Picks <paramref name="version"/>, one of the versions <see cref="Choice"/> offers, to open.</summary>
+    public void PickVersion(PackageVersion version)
+    {
+        var choice = Choice;
+        if (choice is null)
+        {
+            throw new InvalidOperationException($"Version '{version}' was picked while no package is selected.");
+        }
+
+        Choice = choice.WithPicked(version);
     }
 
     /// <summary>What a search asked of which feed.</summary>
@@ -882,32 +908,6 @@ public static class NuGetPicking
             };
     }
 
-    /// <summary>Offers the versions of the package selected, picking its latest, once another is selected.</summary>
-    public static void FollowSelection(NuGetPicker picker)
-    {
-        var package = picker.Selected;
-        if (package == picker.VersionsOf)
-        {
-            return;
-        }
-
-        picker.VersionsOf = package;
-        if (package == null)
-        {
-            picker.Version = null;
-            picker.Versions = [];
-            picker.VersionTexts = [];
-            return;
-        }
-        picker.Version = package.Version;
-        picker.Versions = package.Versions
-            .Select(v => v.Version)
-            .ToArray();
-        picker.VersionTexts = picker.Versions
-            .Select(v => v.Text)
-            .ToArray();
-    }
-
     /// <summary>Fetches <see cref="Version"/> of the selected package, from the feed it was found in,
     /// into the cache, in the background, for <see cref="TakeDownloaded"/> to hand over.</summary>
     public static void DownloadPicked(NuGetPicker picker)
@@ -962,6 +962,57 @@ public static class NuGetPicking
 
         picker.DownloadRun = new DownloadState.None();
         return done.Path;
+    }
+}
+
+/// <summary>The versions a package lists to pick from, newest first, how each is written, and the one
+/// picked: the package's latest at first, then whichever of those listed the user picks.</summary>
+public sealed class VersionChoice
+{
+    private readonly PackageVersion[] _versions;
+    private readonly string[] _texts;
+
+    private VersionChoice(FeedPackage package, PackageVersion[] versions, string[] texts, PackageVersion picked)
+    {
+        Package = package;
+        _versions = versions;
+        _texts = texts;
+        Picked = picked;
+    }
+
+    /// <summary>The package the versions are of.</summary>
+    public FeedPackage Package { get; }
+
+    /// <summary>The version to open.</summary>
+    public PackageVersion Picked { get; }
+
+    /// <summary>The versions the package lists, newest first.</summary>
+    public ReadOnlySpan<PackageVersion> Versions => _versions;
+
+    /// <summary>How <see cref="Versions"/> are written, in their order.</summary>
+    public ReadOnlySpan<string> Texts => _texts;
+
+    /// <summary>The versions <paramref name="package"/> lists, its latest picked.</summary>
+    public static VersionChoice FromPackage(FeedPackage package)
+    {
+        var versions = package.Versions
+            .Select(static v => v.Version)
+            .ToArray();
+        var texts = versions
+            .Select(static v => v.Text)
+            .ToArray();
+        return new VersionChoice(package, versions, texts, package.Version);
+    }
+
+    /// <summary>The same versions with <paramref name="version"/>, which must be one of them, picked.</summary>
+    public VersionChoice WithPicked(PackageVersion version)
+    {
+        if (!_versions.Contains(version))
+        {
+            throw new ArgumentException($"Version '{version}' is not one {Package.Id} lists.", nameof(version));
+        }
+
+        return new VersionChoice(Package, _versions, _texts, version);
     }
 }
 

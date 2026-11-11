@@ -85,7 +85,7 @@ internal static class NuGetPickerView
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
         {
             open |= PackagesColumn(ui, picker);
-            NuGetPicking.FollowSelection(picker);
+            picker.FollowSelection();
             NuGetDetailsView.Render(ui, picker);
         }
         open |= Footer(ui, picker);
