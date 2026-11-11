@@ -602,7 +602,7 @@ internal static class TreePaneView
 
         if (ui.MenuItem(t.TreeCompareWith, id: "compare-with"))
         {
-            ComparisonPickerView.Open(ui.State.ComparisonPicker, assembly);
+            ui.State.ComparisonPicker.Open(assembly);
         }
 
         TargetFrameworkMenu(ui, assembly);

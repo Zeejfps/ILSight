@@ -27,8 +27,8 @@ public sealed class ComparisonPickerTests
     private static ComparisonPicker OpenPicker(AppStateDriver d, string path)
     {
         var picker = new ComparisonPicker();
-        ComparisonPickerView.Open(picker, Opened(d, path));
-        ComparisonPickerView.Update(picker, d.AppState.Assemblies);
+        picker.Open(Opened(d, path));
+        picker.Update(d.AppState.Assemblies);
         return picker;
     }
 
@@ -57,15 +57,15 @@ public sealed class ComparisonPickerTests
         var picker = OpenPicker(d, OlderPath);
 
         picker.Filter = "2.0";
-        ComparisonPickerView.Update(picker, d.AppState.Assemblies);
+        picker.Update(d.AppState.Assemblies);
         Assert.Equal([NewerPath], ShownPaths(picker));
 
         picker.Filter = "Newer";
-        ComparisonPickerView.Update(picker, d.AppState.Assemblies);
+        picker.Update(d.AppState.Assemblies);
         Assert.Equal([NewerPath], ShownPaths(picker));
 
         picker.Filter = "nothing like it";
-        ComparisonPickerView.Update(picker, d.AppState.Assemblies);
+        picker.Update(d.AppState.Assemblies);
         Assert.Empty(picker.Filtered);
         Assert.Null(picker.Selected);
     }
@@ -78,7 +78,7 @@ public sealed class ComparisonPickerTests
         ItemSelections.Select(picker.Selection, picker.Filtered[1], picker.Filtered);
 
         picker.Filter = "Tests";
-        ComparisonPickerView.Update(picker, d.AppState.Assemblies);
+        picker.Update(d.AppState.Assemblies);
 
         Assert.Equal(AppStateDriver.FixturePath, picker.Selected!.FilePath.Text);
     }
@@ -103,7 +103,7 @@ public sealed class ComparisonPickerTests
         var picker = OpenPicker(d, OlderPath);
 
         CloseAssembly(d.AppState, Opened(d, OlderPath));
-        ComparisonPickerView.Update(picker, d.AppState.Assemblies);
+        picker.Update(d.AppState.Assemblies);
 
         Assert.False(picker.IsOpen);
         Assert.Null(picker.Compared);

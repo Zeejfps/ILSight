@@ -27,7 +27,7 @@ public static class ScreenSettings
             Omnibar = new Omnibar { Search = Searches.CreateSearch(work, reportError, session) },
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
             Runtime = runtime,
-            Picker = new FrameworkPicker { Work = work, ReportError = reportError, ListAssemblies = () => RuntimeAssemblies.ListAssemblies(runtime) },
+            Picker = new FrameworkPicker(new FrameworkPickerAdapter(reportError, runtime)),
             NuGetPicker = new NuGetPicker { Work = work, ReportError = reportError },
             ProcessPicker = new ProcessPicker
             {

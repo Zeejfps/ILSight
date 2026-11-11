@@ -837,58 +837,115 @@ public sealed class DockPanelsTests
 
 public sealed class FrameworkPickerTests
 {
-    [Fact]
-    public void A_failed_scan_ends_loading_with_an_error_and_reports_it()
+    /// <summary>A runtime that has <see cref="Assemblies"/>, or fails to be scanned with <see cref="Failure"/>;
+    /// counts the scans and keeps the titles of the problems reported.</summary>
+    private sealed class FakeRuntime : FrameworkPicker.IPorts
     {
-        var posted = PostedActions.OfThisTest();
-        var reported = new List<string>();
-        var picker = new FrameworkPicker { Work = new BackgroundWork(), ReportError = problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), ListAssemblies = static () => throw new InvalidDataException("no runtime") };
+        public IReadOnlyList<RuntimeAssembly> Assemblies { get; init; } = [];
 
-        FrameworkPickerView.Open(picker);
-        Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
+        public Exception? Failure { get; set; }
 
-        Assert.Contains("no runtime", Assert.IsType<RuntimeScan.Failed>(picker.Scan).Error);
-        Assert.Single(reported);
+        public int Scans { get; private set; }
+
+        public List<string> Reported { get; } = [];
+
+        public void ReportError(AppProblem problem)
+        {
+            Reported.Add(ProblemTexts.Describe(Strings.En, problem).Title);
+        }
+
+        public Task<Outcome<IReadOnlyList<RuntimeAssembly>>> ListAssembliesAsync(CancellationToken ct)
+        {
+            Scans++;
+            var failure = Failure;
+            if (failure is not null)
+            {
+                return Task.FromResult<Outcome<IReadOnlyList<RuntimeAssembly>>>(new Outcome<IReadOnlyList<RuntimeAssembly>>.Failed(failure));
+            }
+
+            return Task.FromResult<Outcome<IReadOnlyList<RuntimeAssembly>>>(new Outcome<IReadOnlyList<RuntimeAssembly>>.Ok(Assemblies));
+        }
     }
 
     [Fact]
-    public void Filtering_keeps_only_the_picked_out_assemblies_still_shown()
+    public async Task A_failed_scan_ends_loading_with_an_error_and_reports_it()
     {
-        var posted = PostedActions.OfThisTest();
+        var runtime = new FakeRuntime { Failure = new InvalidDataException("no runtime") };
+        var picker = new FrameworkPicker(runtime);
+
+        await picker.OpenAsync(CancellationToken.None);
+
+        Assert.Contains("no runtime", Assert.IsType<RuntimeScan.Failed>(picker.Scan).Error);
+        Assert.Single(runtime.Reported);
+    }
+
+    [Fact]
+    public async Task Opening_again_scans_again_only_after_a_failed_scan()
+    {
+        var runtime = new FakeRuntime { Failure = new InvalidDataException("no runtime") };
+        var picker = new FrameworkPicker(runtime);
+        await picker.OpenAsync(CancellationToken.None);
+        picker.IsOpen = false;
+
+        runtime.Failure = null;
+        await picker.OpenAsync(CancellationToken.None);
+        await picker.OpenAsync(CancellationToken.None);
+
+        Assert.IsType<RuntimeScan.Scanned>(picker.Scan);
+        Assert.Equal(2, runtime.Scans);
+        Assert.Single(runtime.Reported);
+        Assert.True(picker.IsOpen);
+    }
+
+    [Fact]
+    public async Task The_filter_takes_focus_once_each_time_the_dialog_opens()
+    {
+        var picker = new FrameworkPicker(new FakeRuntime());
+
+        await picker.OpenAsync(CancellationToken.None);
+        var first = picker.TryTakeFilterFocus();
+        var second = picker.TryTakeFilterFocus();
+        await picker.OpenAsync(CancellationToken.None);
+
+        Assert.True(first);
+        Assert.False(second);
+        Assert.True(picker.TryTakeFilterFocus());
+    }
+
+    [Fact]
+    public async Task Filtering_keeps_only_the_picked_out_assemblies_still_shown()
+    {
         var assemblies = new[]
         {
             new RuntimeAssembly("System.Net.Http", "Microsoft.NETCore.App", FakePath("a.dll")),
             new RuntimeAssembly("System.Net.Sockets", "Microsoft.NETCore.App", FakePath("b.dll")),
             new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll")),
         };
-        var picker = new FrameworkPicker { Work = new BackgroundWork(), ReportError = static _ => { }, ListAssemblies = () => assemblies };
+        var picker = new FrameworkPicker(new FakeRuntime { Assemblies = assemblies });
         var list = new AssemblyList();
-        FrameworkPickerView.Open(picker);
-        Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
-        FrameworkPickerView.Update(picker, list);
+        await picker.OpenAsync(CancellationToken.None);
+        picker.Update(list);
 
         picker.Selection.SelectAll(picker.Filtered);
         picker.Filter = "Net";
-        FrameworkPickerView.Update(picker, list);
+        picker.Update(list);
 
-        Assert.Equal([assemblies[0], assemblies[1]], FrameworkPickerView.ListSelected(picker));
+        Assert.Equal([assemblies[0], assemblies[1]], picker.ListSelected());
     }
 
     [Fact]
-    public void Assemblies_already_open_are_not_offered()
+    public async Task Assemblies_already_open_are_not_offered()
     {
-        var posted = PostedActions.OfThisTest();
         var open = new RuntimeAssembly("Fixtures", "Microsoft.NETCore.App", PathOf(AppStateDriver.FixturePath));
         var other = new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll"));
-        var picker = new FrameworkPicker { Work = new BackgroundWork(), ReportError = static _ => { }, ListAssemblies = () => [open, other] };
+        var picker = new FrameworkPicker(new FakeRuntime { Assemblies = [open, other] });
         var list = new AssemblyList();
-        FrameworkPickerView.Open(picker);
-        Poll.Until(() => picker.Scan is not RuntimeScan.Scanning, posted.Run);
-        FrameworkPickerView.Update(picker, list);
+        await picker.OpenAsync(CancellationToken.None);
+        picker.Update(list);
         Assert.Equal([open, other], picker.Filtered);
 
         list.Open(AppStateDriver.FixturePath);
-        FrameworkPickerView.Update(picker, list);
+        picker.Update(list);
 
         Assert.Equal([other], picker.Filtered);
     }
