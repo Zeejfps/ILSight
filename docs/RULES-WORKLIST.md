@@ -24,7 +24,7 @@ Done items are struck through with their commit.
 | ~~C1~~ (done) | R008 | `ApiDiff`, `ApiEntries` | `ApiEntry.Change` / `HasChanges` stored beside the `Sides` / `Presence` that determine them → computed. | S / low; ApiDiffTests |
 | ~~A1~~ (done) | R004 | `ExportQueue`, `Exports` queue functions | Public queue state changed by static functions; callers pair Enter/Leave by hand → class with private state; `Enter` returns a turn that leaves itself. | S / low; ExportTests |
 | ~~C15~~ (done) | R004 | `NuGetFeed`, `AssemblyExport`, `NodeDecompiler` | Write-temp-then-move written three times → one `AtomicFile.Write`. | S / low |
-| Z12 | R004 | `SearchPanelView.Toggle` | The search-kind selection rule lives in a view, untestable → a concept method + test. | S / low |
+| ~~Z12~~ (done) | R004 | `SearchPanelView.Toggle` | The search-kind selection rule lives in a view, untestable → a concept method + test. | S / low |
 | C17 | R008 | `NodeContent`, `DocBlock`, `MetadataRowDetails` | Open `abstract record` hierarchies → closed (private constructor, nested cases, `Match`), so the union checks see them. | S / low |
 | A6 | R006 | `DockLayoutJson`, `SettingsFile` callers | Validation split across parse and callers; `NextId` never checked against used ids → one `ToLayout` step returning parsed / parts missing / ids repeated. | S / low; SettingsFormatTests, DockingTests |
 | C7 | R001, R011 | `RunningProcesses.ResolveModules`, `FindEntryAssembly`, `FindExistingFile` | `File.Exists` inside command-line heuristics → pass `exists` in, heuristics pure. | S / low; RunningProcessTests |

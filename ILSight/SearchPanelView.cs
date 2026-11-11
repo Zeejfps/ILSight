@@ -104,15 +104,13 @@ internal static class SearchPanelView
     }
 
     /// <summary>A check item for all kinds over one per kind, kept open so several can be flipped
-    /// in a row. While all is checked no kind is: checking a kind then picks it alone, and
-    /// unchecking the last one picked checks all again.</summary>
+    /// in a row; <see cref="SearchKindChoice"/> decides what each leaves picked.</summary>
     private static void KindsMenu(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
         var search = ui.State.Search;
-        var all = search.Kinds == SearchKinds.All;
         var kinds = search.Kinds;
-        var checkAll = all;
+        var checkAll = kinds == SearchKinds.All;
         var palette = ui.State.NodeIconPalette;
         var allIcon = new UiIcon(ui.State.Icons.SearchAllKinds, ui.Theme.TextMuted);
         if (ui.MenuItem(t.SearchModeAll, ref checkAll, keepOpen: true, icon: allIcon))
@@ -123,12 +121,12 @@ internal static class SearchPanelView
         ui.MenuSeparator();
         foreach (var kind in Kinds)
         {
-            var on = !all && (kinds & kind) != 0;
+            var on = SearchKindChoice.IsChecked(kinds, kind);
             var icon = NodeIcons.Icon(KindNode(kind), NodeAccessibility.None, palette, ui.State.Icons);
             var label = KindLabel(t, kind);
             if (ui.MenuItem(label, ref on, keepOpen: true, icon: icon))
             {
-                kinds = Toggle(kinds, kind, all, on);
+                kinds = SearchKindChoice.Toggle(kinds, kind, on);
             }
         }
         if (kinds == search.Kinds)
@@ -137,27 +135,6 @@ internal static class SearchPanelView
         }
 
         search.Kinds = kinds;
-    }
-
-    private static SearchKinds Toggle(SearchKinds kinds, SearchKinds kind, bool all, bool on)
-    {
-        if (all)
-        {
-            return kind;
-        }
-
-        if (on)
-        {
-            return kinds | kind;
-        }
-
-        var left = kinds & ~kind;
-        if (left == SearchKinds.None)
-        {
-            return SearchKinds.All;
-        }
-
-        return left;
     }
 
     private static void Field(Ui<UiState> ui)
