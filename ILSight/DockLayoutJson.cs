@@ -48,6 +48,37 @@ internal sealed class DockWindowJson
     public float Height { get; set; }
 }
 
+/// <summary>What a dock layout a settings file holds reads as.</summary>
+internal abstract record DockLayoutRead
+{
+    private DockLayoutRead()
+    {
+    }
+
+    /// <summary>The layout, with <see cref="DockLayout.NextId"/> above every id it uses.</summary>
+    public sealed record Parsed : DockLayoutRead
+    {
+        public required DockLayout Layout { get; init; }
+    }
+
+    /// <summary>A part of the layout is held as null.</summary>
+    public sealed record PartsMissing : DockLayoutRead;
+
+    /// <summary>Two of its nodes or windows have the same id, so they would move together.</summary>
+    public sealed record IdsRepeated : DockLayoutRead;
+
+    public TResult Match<TResult>(Func<Parsed, TResult> parsed, Func<PartsMissing, TResult> partsMissing, Func<IdsRepeated, TResult> idsRepeated)
+    {
+        return this switch
+        {
+            Parsed p => parsed(p),
+            PartsMissing m => partsMissing(m),
+            IdsRepeated r => idsRepeated(r),
+            _ => throw new UnreachableException($"DockLayoutRead.Match does not handle {GetType().Name}."),
+        };
+    }
+}
+
 /// <summary>Turns a dock layout into what a settings file holds, and back.</summary>
 internal static class DockJson
 {
@@ -61,8 +92,49 @@ internal static class DockJson
         };
     }
 
+    /// <summary>The layout <paramref name="json"/> holds, unless it is missing a part or repeats an id.
+    /// A <see cref="DockLayout.NextId"/> at or below an id the layout uses is raised above it, as the
+    /// dock space numbers new parts from it.</summary>
+    public static DockLayoutRead ToLayout(DockLayoutJson json)
+    {
+        var layout = Parse(json);
+        if (layout is null)
+        {
+            return new DockLayoutRead.PartsMissing();
+        }
+
+        if (layout.RepeatsAnId())
+        {
+            return new DockLayoutRead.IdsRepeated();
+        }
+
+        layout.NextId = Math.Max(layout.NextId, CalculateHighestId(layout) + 1);
+        return new DockLayoutRead.Parsed { Layout = layout };
+    }
+
+    /// <summary>The highest id of a node or window of <paramref name="layout"/>; 0 when none has one.</summary>
+    private static int CalculateHighestId(DockLayout layout)
+    {
+        var highest = CalculateHighestId(layout.Root);
+        foreach (var window in layout.Windows)
+        {
+            highest = Math.Max(highest, Math.Max(window.Id, CalculateHighestId(window.Root)));
+        }
+        return highest;
+    }
+
+    private static int CalculateHighestId(DockNode node)
+    {
+        if (node is not DockSplit split)
+        {
+            return node.Id;
+        }
+
+        return Math.Max(node.Id, Math.Max(CalculateHighestId(split.First), CalculateHighestId(split.Second)));
+    }
+
     /// <summary>The layout, or null when it is missing a part.</summary>
-    public static DockLayout? Parse(DockLayoutJson json)
+    private static DockLayout? Parse(DockLayoutJson json)
     {
         var root = Parse(json.Root);
         if (root is null || json.Windows is null)

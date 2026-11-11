@@ -411,10 +411,10 @@ internal static class SettingsJson
             return null;
         }
 
-        var layout = DockJson.Parse(json);
-        if (layout is not null && !layout.RepeatsAnId())
+        var read = DockJson.ToLayout(json);
+        if (read is DockLayoutRead.Parsed parsed)
         {
-            return layout;
+            return parsed.Layout;
         }
 
         LeaveOut(file, field);
@@ -1291,17 +1291,10 @@ internal static class SettingsJson
             return null;
         }
 
-        var layout = DockJson.Parse(saved);
-        if (layout is null)
-        {
-            problem = new SettingsProblem.LayoutPartsMissing();
-            return null;
-        }
-        if (layout.RepeatsAnId())
-        {
-            problem = new SettingsProblem.LayoutPartsRepeated();
-            return null;
-        }
+        (var layout, problem) = DockJson.ToLayout(saved).Match<(DockLayout?, SettingsProblem)>(
+            parsed: static parsed => (parsed.Layout, new SettingsProblem.None()),
+            partsMissing: static _ => (null, new SettingsProblem.LayoutPartsMissing()),
+            idsRepeated: static _ => (null, new SettingsProblem.LayoutPartsRepeated()));
         return layout;
     }
 
