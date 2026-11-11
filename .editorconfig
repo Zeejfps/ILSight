@@ -1,0 +1,73 @@
+root = true
+
+# Coding rules (docs/RULES.md) for the ILSight projects. ZGF (a submodule) keeps its own conventions, so every section
+# names the ILSight folders. Each rule is a warning while the code is brought in line with it, then an error.
+
+[{ILSight,ILSight.Core,ILSight.Tests,ILSight.App.Tests}/**.cs]
+
+# R007: braces and block bodies; one-liners only for getters, accessors and lambdas.
+csharp_prefer_braces = true:warning
+dotnet_diagnostic.IDE0011.severity = warning
+csharp_style_expression_bodied_methods = false:warning
+csharp_style_expression_bodied_constructors = false:warning
+csharp_style_expression_bodied_operators = false:warning
+csharp_style_expression_bodied_local_functions = false:warning
+dotnet_diagnostic.IDE0021.severity = warning
+dotnet_diagnostic.IDE0022.severity = warning
+dotnet_diagnostic.IDE0023.severity = warning
+dotnet_diagnostic.IDE0024.severity = warning
+dotnet_diagnostic.IDE0061.severity = warning
+csharp_style_expression_bodied_properties = true:silent
+csharp_style_expression_bodied_accessors = true:silent
+csharp_style_expression_bodied_indexers = true:silent
+csharp_style_expression_bodied_lambdas = true:silent
+csharp_style_implicit_object_creation_when_type_is_apparent = false:silent
+
+# R007: locals use `var` (IDE0007 only fires where `var` would infer the identical type).
+csharp_style_var_for_built_in_types = true:warning
+csharp_style_var_when_type_is_apparent = true:warning
+csharp_style_var_elsewhere = true:warning
+dotnet_diagnostic.IDE0007.severity = warning
+
+# R009: `throw ex;` (CA2200); throwing Exception / SystemException / ApplicationException (CA2201).
+dotnet_diagnostic.CA2200.severity = warning
+dotnet_diagnostic.CA2201.severity = warning
+
+# R010: pass the token you have (CA2016); call the async version inside async code (CA1849). VSTHRD200 duplicates
+# RL0301; VSTHRD003 is about Visual Studio's JoinableTaskFactory.
+dotnet_diagnostic.CA2016.severity = warning
+dotnet_diagnostic.CA1849.severity = warning
+dotnet_diagnostic.VSTHRD200.severity = none
+dotnet_diagnostic.VSTHRD003.severity = none
+
+# RuleLab checks: warnings until each rule is clean in this repo.
+dotnet_diagnostic.RL0101.severity = warning
+dotnet_diagnostic.RL0201.severity = warning
+dotnet_diagnostic.RL0202.severity = warning
+dotnet_diagnostic.RL0203.severity = warning
+dotnet_diagnostic.RL0301.severity = warning
+dotnet_diagnostic.RL0302.severity = warning
+dotnet_diagnostic.RL0303.severity = warning
+dotnet_diagnostic.RL0304.severity = warning
+dotnet_diagnostic.RL0305.severity = warning
+dotnet_diagnostic.RL0401.severity = warning
+dotnet_diagnostic.RL0501.severity = warning
+dotnet_diagnostic.RL0701.severity = warning
+dotnet_diagnostic.RL0702.severity = warning
+dotnet_diagnostic.RL0801.severity = warning
+dotnet_diagnostic.RL0802.severity = warning
+dotnet_diagnostic.RL0803.severity = warning
+dotnet_diagnostic.RL0804.severity = warning
+dotnet_diagnostic.RL0805.severity = warning
+dotnet_diagnostic.RL0806.severity = warning
+dotnet_diagnostic.RL0901.severity = warning
+dotnet_diagnostic.RL0902.severity = warning
+dotnet_diagnostic.RL1001.severity = warning
+dotnet_diagnostic.RL1002.severity = warning
+# R011's checks are suggestions while their precision is measured (RULES.md R011).
+dotnet_diagnostic.RL1101.severity = suggestion
+dotnet_diagnostic.RL1102.severity = suggestion
+
+# Test code (RULES.md Scope): R001, R004 and R011 checks skip it, and test methods needn't take a token.
+[{ILSight.Tests,ILSight.App.Tests}/**.cs]
+rulelab.test_code = true

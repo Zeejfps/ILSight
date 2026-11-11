@@ -6,6 +6,7 @@
 
     <ItemGroup>
         <PackageVersion Include="MinVer" Version="6.0.0" />
+        <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1" />
     </ItemGroup>
 
     <ItemGroup>

@@ -10,4 +10,16 @@
         <PackageReference Include="MinVer" PrivateAssets="all" />
     </ItemGroup>
 
+    <!-- Coding rules (docs/RULES.md): RuleLab's checks, Microsoft's threading analyzers (R010) and the .editorconfig
+         style rules (R007), on the ILSight projects only; ZGF has its own conventions. Severities: .editorconfig. -->
+    <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('ILSight'))">
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    </PropertyGroup>
+
+    <ItemGroup Condition="$(MSBuildProjectName.StartsWith('ILSight'))">
+        <Analyzer Include="$(MSBuildThisFileDirectory)build/RuleLab/RuleLab.Analyzers.dll" />
+        <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all"
+                          IncludeAssets="runtime; build; native; contentfiles; analyzers" />
+    </ItemGroup>
+
 </Project>
