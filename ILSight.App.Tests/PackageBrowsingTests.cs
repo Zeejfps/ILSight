@@ -18,7 +18,7 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = new AppDriver();
 
-        OpenAssembly(app.AppState, WritePackage(temp));
+        app.Start((a, ct) => OpenAssemblyAsync(a, WritePackage(temp), a.AssemblyPorts, ct));
         app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
 
@@ -47,7 +47,7 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
 
-        CloseAssembly(app.AppState, Greeter(app).Assembly);
+        AssemblyListing.CloseAssembly(app.AppState.Assemblies, Greeter(app).Assembly);
         app.Run(2);
 
         Assert.Empty(app.AppState.Assemblies.Listed);
@@ -142,7 +142,7 @@ public sealed class PackageBrowsingTests
     private static AppDriver OpenedPackage(TempDir temp)
     {
         var app = new AppDriver();
-        OpenAssembly(app.AppState, WritePackage(temp));
+        app.Start((a, ct) => OpenAssemblyAsync(a, WritePackage(temp), a.AssemblyPorts, ct));
         app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
         return app;

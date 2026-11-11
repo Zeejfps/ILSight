@@ -51,7 +51,7 @@ public static class MainView
             return;
         }
 
-        Commands.Later(ui.State, dropped, static (a, paths) => OpenDroppedFiles(a, paths));
+        Commands.Start(ui.State, nameof(OpenDroppedFilesAsync), dropped, static (a, paths, ct) => OpenDroppedFilesAsync(a, paths, a.AssemblyPorts, ct));
     }
 
     private static void Panels(Ui<UiState> ui, AppState appState)

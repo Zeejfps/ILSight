@@ -17,7 +17,7 @@ public sealed class PickedPdbTests
         using var temp = new TempDir();
         var copy = CopyFixtureWithoutPdb(temp);
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
-        OpenAssembly(app.AppState, copy);
+        app.Start((a, ct) => OpenAssemblyAsync(a, copy, a.AssemblyPorts, ct));
         app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(copy)), Patience);
         app.Settle(2);
         Assert.Null(LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver)));
@@ -41,7 +41,7 @@ public sealed class PickedPdbTests
         Pick(d, FixturePdb);
         SaveSettings(d.AppState);
         var next = new AppStateDriver(temp.Settings());
-        RestoreActiveAssemblyList(next.AppState);
+        next.Start(RestoreActiveAssemblyListAsync);
         next.Settle();
 
         Assert.Equal(FixturePdb, Assert.Single(temp.Settings().AssemblyLists).Pdbs![PathOf(copy)]);
@@ -53,7 +53,7 @@ public sealed class PickedPdbTests
     {
         var d = AppStateDriver.Opened();
 
-        UsePdb(d.AppState, OpenAssemblyOf(d), OtherBuildPdb);
+        d.Start((a, ct) => UsePdbAsync(a, OpenAssemblyOf(d), OtherBuildPdb, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
 
         var error = Assert.Single(d.AppState.Errors.Entries);
@@ -86,7 +86,7 @@ public sealed class PickedPdbTests
     private static AppStateDriver OpenedCopy(TempDir temp, string copy)
     {
         var d = new AppStateDriver(temp.Settings());
-        OpenAssembly(d.AppState, copy);
+        d.Start((a, ct) => OpenAssemblyAsync(a, copy, a.AssemblyPorts, ct));
         d.RunUntil(() => AssemblyListing.IsListed(d.AppState.Assemblies, PathOf(copy)));
         d.Settle();
         return d;
@@ -94,7 +94,7 @@ public sealed class PickedPdbTests
 
     private static void Pick(AppStateDriver d, string pdb)
     {
-        UsePdb(d.AppState, OpenAssemblyOf(d), pdb);
+        d.Start((a, ct) => UsePdbAsync(a, OpenAssemblyOf(d), pdb, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Assemblies.Pdbs.All.Count > 0);
         d.Settle();
     }

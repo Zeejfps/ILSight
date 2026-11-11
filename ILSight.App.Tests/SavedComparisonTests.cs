@@ -1,4 +1,5 @@
 using ZGF.Desktop;
+using ILSight.Core;
 using ILSight.Core.Comparison;
 using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
@@ -26,7 +27,7 @@ public sealed class SavedComparisonTests : IDisposable
     private AppDriver Compared()
     {
         var app = new AppDriver(settings: _temp.Settings());
-        OpenAssemblies(app.AppState, [PathOf(LeftPath), PathOf(RightPath)]);
+        app.Start((a, ct) => OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], a.AssemblyPorts, ct));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, Patience);
         app.Settle(2);
         var assemblies = app.AppState.Assemblies.Assemblies;
@@ -40,7 +41,7 @@ public sealed class SavedComparisonTests : IDisposable
     {
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
         var next = new AppDriver(settings: _temp.Settings());
-        RestoreActiveAssemblyList(next.AppState);
+        next.Start(RestoreActiveAssemblyListAsync);
         next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Compared, Patience);
         next.Settle(2);
         return next;
@@ -107,12 +108,12 @@ public sealed class SavedComparisonTests : IDisposable
     public void A_comparison_of_an_assembly_no_longer_open_comes_back_saying_so()
     {
         var app = Compared();
-        CloseAssembly(app.AppState, app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath));
+        AssemblyListing.CloseAssembly(app.AppState.Assemblies, app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath));
         app.Settle(2);
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
 
         var next = new AppDriver(settings: _temp.Settings());
-        RestoreActiveAssemblyList(next.AppState);
+        next.Start(RestoreActiveAssemblyListAsync);
         next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Failed, Patience);
 
         var failed = Assert.IsType<ComparisonResult.Failed>(FindComparison(next)?.Result);

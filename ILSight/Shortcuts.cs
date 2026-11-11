@@ -91,7 +91,7 @@ internal static class Shortcuts
         new(Settings, static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping: true),
         new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language)),
         new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs))),
-        new(ReloadAll, static (ui, _) => Commands.Later(ui.State, Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded) => RefreshAssemblies(a, expanded))),
+        new(ReloadAll, static (ui, _) => Commands.Start(ui.State, nameof(RefreshAssembliesAsync), Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded, ct) => RefreshAssembliesAsync(a, expanded, a.AssemblyPorts, ct))),
         new(CloseTab, static (ui, _) => CloseActiveTab(ui.State)),
         new(NextTab, static (ui, _) => CycleTab(ui.State, 1)),
         new(PreviousTab, static (ui, _) => CycleTab(ui.State, -1)),

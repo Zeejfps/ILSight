@@ -82,7 +82,7 @@ internal static class FrameworkPickerView
 
         if (open && picker.HasSelection)
         {
-            Commands.Later(ui.State, picker.ListSelected(), static (a, selected) => OpenSelected(a, selected));
+            Commands.Start(ui.State, nameof(OpenAssembliesAsync), picker.ListSelected(), static (a, selected, ct) => OpenSelectedAsync(a, selected, ct));
             close = true;
         }
         if (close)
@@ -96,11 +96,11 @@ internal static class FrameworkPickerView
         return $"{t.PickerCount(shown)} · {t.PickerSelected(selected)}";
     }
 
-    private static void OpenSelected(AppState appState, List<RuntimeAssembly> selected)
+    private static Task OpenSelectedAsync(AppState appState, List<RuntimeAssembly> selected, CancellationToken ct)
     {
         var paths = selected
             .Select(a => a.FilePath);
-        OpenAssemblies(appState, paths);
+        return OpenAssembliesAsync(appState, paths, appState.AssemblyPorts, ct);
     }
 
     /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>

@@ -175,7 +175,7 @@ internal static class ToolbarView
             return;
         }
 
-        Commands.Later(ui.State, name, static (a, list) => SwitchAssemblyList(a, list));
+        Commands.Start(ui.State, nameof(SwitchAssemblyListAsync), name, static (a, list, ct) => SwitchAssemblyListAsync(a, list, ct));
     }
 
     private static Segment<DecompilationLanguage>[] Languages(Strings t)

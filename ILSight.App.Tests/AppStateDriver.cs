@@ -352,7 +352,7 @@ internal sealed class AppStateDriver
     /// <summary>Opens the fixture assembly and waits until its root shows.</summary>
     public LoadedModule OpenFixtures()
     {
-        OpenAssembly(AppState, FixturePath);
+        Start((a, ct) => OpenAssemblyAsync(a, FixturePath, a.AssemblyPorts, ct));
         RunUntil(() => AppState.Tabs.Active?.Node?.Icon == NodeIcon.Assembly);
         Settle();
         return Assert.IsType<LoadedModule>(AppState.Tabs.Active!.Node!.Assembly);

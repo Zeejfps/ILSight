@@ -30,7 +30,7 @@ public static class RunArgumentsActions
 
     /// <summary>Does what the arguments a later run handed over ask of the open window: decompiles
     /// to their language, switches to their list, added when there is none, clears the list, then opens
-    /// their files and shows what they name.</summary>
+    /// their files and shows what they name. The list's assemblies open while the files do.</summary>
     public static Task ApplyArgumentsAsync(AppState appState, RunArguments arguments, CancellationToken ct)
     {
         ReportIgnored(appState, arguments);
@@ -39,9 +39,10 @@ public static class RunArgumentsActions
             appState.Language = arguments.Language.Value;
         }
 
+        var switching = Task.CompletedTask;
         if (arguments.AssemblyList is not null)
         {
-            OpenAssemblyListNamed(appState, arguments.AssemblyList);
+            switching = OpenAssemblyListNamedAsync(appState, arguments.AssemblyList, ct);
         }
 
         if (arguments.ClearList)
@@ -49,7 +50,8 @@ public static class RunArgumentsActions
             CloseAllAssemblies(appState);
         }
 
-        return OpenRequestedFilesAsync(appState, arguments.Files, ct);
+        var opening = OpenRequestedFilesAsync(appState, arguments.Files, ct);
+        return Task.WhenAll(switching, opening);
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)
@@ -66,8 +68,7 @@ public static class RunArgumentsActions
     {
         if (files.NavigateTo is null)
         {
-            OpenAssemblies(appState, files.Paths);
-            return Task.CompletedTask;
+            return OpenAssembliesAsync(appState, files.Paths, appState.AssemblyPorts, ct);
         }
         return appState.OpenAndShowIdHandler.HandleAsync(appState, files.Paths, files.NavigateTo, ct);
     }

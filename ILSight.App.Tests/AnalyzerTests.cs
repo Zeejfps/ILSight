@@ -267,7 +267,7 @@ public sealed class AnalyzerTests
         using var temp = new TempDir();
         var copy = temp.Write("Copy.dll", File.ReadAllBytes(AppStateDriver.FixturePath));
         var d = new AppStateDriver();
-        OpenAssembly(d.AppState, copy);
+        d.Start((a, ct) => OpenAssemblyAsync(a, copy, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 1);
         d.Settle();
         var assembly = d.AppState.Assemblies.Assemblies.Single();
@@ -275,7 +275,7 @@ public sealed class AnalyzerTests
         var document = outline.Decompile(DecompilationLanguage.CSharp);
         var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
-        CloseAssembly(d.AppState, assembly);
+        AssemblyListing.CloseAssembly(d.AppState.Assemblies, assembly);
         File.Delete(copy);
 
         d.Analyze(reference);

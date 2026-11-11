@@ -13,7 +13,7 @@ public sealed class ComparisonPickerTests
     private static AppStateDriver OpenThree()
     {
         var d = AppStateDriver.Opened();
-        OpenAssemblies(d.AppState, [PathOf(OlderPath), PathOf(NewerPath)]);
+        d.Start((a, ct) => OpenAssembliesAsync(a, [PathOf(OlderPath), PathOf(NewerPath)], a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;
@@ -102,7 +102,7 @@ public sealed class ComparisonPickerTests
         var d = OpenThree();
         var picker = OpenPicker(d, OlderPath);
 
-        CloseAssembly(d.AppState, Opened(d, OlderPath));
+        AssemblyListing.CloseAssembly(d.AppState.Assemblies, Opened(d, OlderPath));
         picker.Update(d.AppState.Assemblies);
 
         Assert.False(picker.IsOpen);

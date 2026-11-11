@@ -213,7 +213,7 @@ internal static class MainMenuView
             new(t.FileFilterAssembliesAndPackages, ["*.dll", "*.exe", "*.winmd", "*.wasm", "*.nupkg", "*.zip"]),
             new(t.FileFilterAll, ["*.*"]),
         ];
-        ui.PickFile(t.FileOpenTitle, null, filters, path => Commands.Later(screen, path, static (a, p) => OpenAssembly(a, p)));
+        ui.PickFile(t.FileOpenTitle, null, filters, path => Commands.Start(screen, nameof(OpenAssemblyAsync), path, static (a, p, ct) => OpenAssemblyAsync(a, p, a.AssemblyPorts, ct)));
     }
 
     private static void FileMenu(Ui<UiState> ui, AppState appState)

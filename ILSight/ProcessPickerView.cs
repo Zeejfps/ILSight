@@ -49,7 +49,7 @@ internal static class ProcessPickerView
 
         if (open && CanOpen(picker))
         {
-            Commands.Later(ui.State, ListToOpen(picker), static (a, paths) => OpenAssemblies(a, paths));
+            Commands.Start(ui.State, nameof(OpenAssembliesAsync), ListToOpen(picker), static (a, paths, ct) => OpenAssembliesAsync(a, paths, a.AssemblyPorts, ct));
             close = true;
         }
         // Escape or the close button only clear IsOpen.

@@ -39,7 +39,7 @@ internal static class AssemblyListDeleteDialogView
 
                     if (ui.Button(t.ListsDeleteConfirm, id: "delete-confirm", variant: ButtonVariant.Primary))
                     {
-                        Commands.Later(ui.State, (dialog, name), static (a, s) => Delete(s.dialog, a, s.name));
+                        Commands.Start(ui.State, nameof(DeleteAssemblyListAsync), (dialog, name), static (a, s, ct) => DeleteAsync(s.dialog, a, s.name, ct));
                     }
                 }
             }
@@ -52,9 +52,10 @@ internal static class AssemblyListDeleteDialogView
 
     /// <summary>Removes the list named <paramref name="name"/> and picks the open list, which takes its
     /// place when it was open.</summary>
-    private static void Delete(AssemblyListsDialog dialog, AppState appState, string name)
+    private static Task DeleteAsync(AssemblyListsDialog dialog, AppState appState, string name, CancellationToken ct)
     {
-        DeleteAssemblyList(appState, name);
+        var deleting = DeleteAssemblyListAsync(appState, name, ct);
         AssemblyLists.PickList(dialog, appState.Lists, appState.Lists.Active);
+        return deleting;
     }
 }

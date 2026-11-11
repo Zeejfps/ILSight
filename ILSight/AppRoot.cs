@@ -43,6 +43,7 @@ internal static class AppRoot
         var work = new BackgroundWork();
         var opens = new OpenRequests();
         var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
+        var assemblyPorts = new AssembliesAdapter(errors, assemblies, session);
         var appState = new AppState
         {
             Work = work,
@@ -52,6 +53,7 @@ internal static class AppRoot
             ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),
             OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
             GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
+            AssemblyPorts = assemblyPorts,
             Opens = opens,
             Session = session,
             SettingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile },

@@ -113,7 +113,7 @@ public sealed class AppStateTests
     {
         var d = new AppStateDriver();
 
-        OpenAssembly(d.AppState, AppStateDriver.FixturePath);
+        d.Start((a, ct) => OpenAssemblyAsync(a, AppStateDriver.FixturePath, a.AssemblyPorts, ct));
 
         Assert.Null(Assert.Single(d.AppState.Tabs.Open).Location);
         d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
@@ -188,7 +188,7 @@ public sealed class AppStateTests
         var d = new AppStateDriver();
         var missing = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.dll");
 
-        OpenAssembly(d.AppState, missing);
+        d.Start((a, ct) => OpenAssemblyAsync(a, missing, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
         d.Settle();
 
@@ -208,7 +208,7 @@ public sealed class AppStateTests
         d.Show(d.Fixture("Greeter"));
         var farewell = d.Fixture("Farewell");
 
-        RefreshAssemblies(d.AppState, []);
+        d.Start((a, ct) => RefreshAssembliesAsync(a, [], a.AssemblyPorts, ct));
         ShowNode(d.AppState, farewell);
         d.Settle();
 
@@ -224,7 +224,7 @@ public sealed class AppStateTests
         var expanded = new List<NodePath> { BrowseNodes.GetPath(d.Node()), BrowseNodes.GetPath(d.Node(AppStateDriver.FixturesNamespace)) };
         d.TakeViewCommands();
 
-        RefreshAssemblies(d.AppState, expanded);
+        d.Start((a, ct) => RefreshAssembliesAsync(a, expanded, a.AssemblyPorts, ct));
         d.Settle();
         var commands = d.TakeViewCommands();
 
@@ -241,8 +241,8 @@ public sealed class AppStateTests
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
 
-        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
-        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
+        d.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), a.AssemblyPorts, ct));
+        d.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), a.AssemblyPorts, ct));
         d.Settle();
 
         Assert.Equal(["Greeter", "Farewell"], d.AppState.Tabs.Open.Select(t => t.Node!.Text));
@@ -258,7 +258,7 @@ public sealed class AppStateTests
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.Ui.Tree.View.SetExpanded(d.Fixture("Greeter"), true);
 
-        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
+        d.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), a.AssemblyPorts, ct));
         d.Settle();
 
         var view = d.Ui.Tree.View;
@@ -277,7 +277,7 @@ public sealed class AppStateTests
         d.Show(before);
         d.Show(d.Fixture("Farewell"));
 
-        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
+        d.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), a.AssemblyPorts, ct));
         d.Settle();
         d.Start(GoBackAsync);
         d.Settle();
@@ -414,7 +414,7 @@ public sealed class AppStateTests
         Searches.Select(search, search.Rows.First(r => r.Node.Assembly == greeter.Assembly));
         var selected = search.SelectedRow!.Node;
 
-        CloseAssembly(d.AppState, d.AppState.Assemblies.Assemblies.Single(a => a.Name == "System.Private.CoreLib"));
+        AssemblyListing.CloseAssembly(d.AppState.Assemblies, d.AppState.Assemblies.Assemblies.Single(a => a.Name == "System.Private.CoreLib"));
         Searches.Update(search, d.AppState.Assemblies, 2, true);
         d.Settle();
 
@@ -521,7 +521,7 @@ public sealed class AppStateTests
     public void Results_streamed_in_many_batches_end_up_in_sort_order()
     {
         var d = AppStateDriver.Opened();
-        OpenAssembly(d.AppState, typeof(object).Assembly.Location);
+        d.Start((a, ct) => OpenAssemblyAsync(a, typeof(object).Assembly.Location, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         var search = d.Ui.Search;
         Searches.SortBy(search, SearchSort.Name);
@@ -545,14 +545,14 @@ public sealed class AppStateTests
         var d = new AppStateDriver();
         using var temp = new TempDir();
         var copy = temp.Copy(AppStateDriver.FixturePath, "fixture.dll");
-        OpenAssembly(d.AppState, copy);
+        d.Start((a, ct) => OpenAssemblyAsync(a, copy, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
         d.Settle();
         var greeter = d.AppState.Tabs.Active!.Node!.Child(AppStateDriver.FixturesNamespace, "Greeter");
         d.Show(greeter);
         File.Delete(copy);
 
-        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
+        d.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), a.AssemblyPorts, ct));
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Tabs.Open);

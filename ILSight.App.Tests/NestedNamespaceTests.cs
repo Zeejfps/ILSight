@@ -186,7 +186,7 @@ public sealed class NestedNamespaceTests
         var before = app.Node("ILSight.App");
         app.Show(app.Fixture("Greeter"), 2);
 
-        RefreshAssemblies(app.AppState, Trees.ListExpandedPaths(app.Ui.Tree));
+        app.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(app.Ui.Tree), a.AssemblyPorts, ct));
         app.Settle(1);
 
         var greeter = app.Fixture("Greeter");

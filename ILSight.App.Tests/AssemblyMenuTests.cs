@@ -16,7 +16,7 @@ public sealed class AssemblyMenuTests
         using var temp = new TempDir();
         var missing = temp.PathOf("Missing.dll");
         var app = AppDriver.Opened();
-        OpenAssemblies(app.AppState, [PathOf(missing), PathOf(CoreLibPath)]);
+        app.Start((a, ct) => OpenAssembliesAsync(a, [PathOf(missing), PathOf(CoreLibPath)], a.AssemblyPorts, ct));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 3, Patience);
         app.Settle(2);
 

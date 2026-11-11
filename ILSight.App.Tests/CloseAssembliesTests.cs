@@ -14,8 +14,8 @@ public sealed class CloseAssembliesTests
     private static AppStateDriver OpenedThree()
     {
         var d = AppStateDriver.Opened();
-        OpenAssembly(d.AppState, KeyboardPath);
-        OpenAssembly(d.AppState, CorePath);
+        d.Start((a, ct) => OpenAssemblyAsync(a, KeyboardPath, a.AssemblyPorts, ct));
+        d.Start((a, ct) => OpenAssemblyAsync(a, CorePath, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 3);
         d.Settle();
         return d;
@@ -113,7 +113,7 @@ public sealed class CloseAssembliesTests
         OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
         closer.Order[2].Included = true;
 
-        CloseAssemblies(d.AppState, ListToClose(closer));
+        CloseAssemblies(d.AppState.Assemblies, ListToClose(closer));
 
         Assert.Equal([AppStateDriver.FixturePath], ListedPaths(d));
     }
@@ -122,12 +122,12 @@ public sealed class CloseAssembliesTests
     public void A_list_changed_while_the_dialog_is_up_is_shown_with_the_ticks_kept()
     {
         var d = AppStateDriver.Opened();
-        OpenAssembly(d.AppState, KeyboardPath);
+        d.Start((a, ct) => OpenAssemblyAsync(a, KeyboardPath, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 2);
         var closer = d.Ui.Closer;
         OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
 
-        OpenAssembly(d.AppState, CorePath);
+        d.Start((a, ct) => OpenAssemblyAsync(a, CorePath, a.AssemblyPorts, ct));
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 3);
         Update(closer, d.AppState.Assemblies);
 
@@ -139,7 +139,7 @@ public sealed class CloseAssembliesTests
     public void The_trash_button_opens_the_dialog_and_its_close_button_closes_the_ticked_ones()
     {
         var app = AppDriver.Opened();
-        OpenAssembly(app.AppState, KeyboardPath);
+        app.Start((a, ct) => OpenAssemblyAsync(a, KeyboardPath, a.AssemblyPorts, ct));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
         app.Run(2);
 

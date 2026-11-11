@@ -12,12 +12,12 @@ public static class AssemblyLists
     /// <summary>Opens the open list's assemblies as the app starts, as a reload, so that the list is
     /// saved whole until they are all open, then shows what the tabs reopened from its documents showed.
     /// Files that are gone or fail to load stay listed as failed.</summary>
-    public static void RestoreActiveAssemblyList(AppState appState)
+    public static Task RestoreActiveAssemblyListAsync(AppState appState, CancellationToken ct)
     {
         appState.Assemblies.Pdbs.Use(appState.Lists.ActivePdbs);
         appState.Assemblies.TargetFrameworks.Use(appState.Lists.ActiveFrameworks);
         var paths = appState.Lists.ActivePaths.ToList();
-        OpenAssembliesAsReload(appState, paths);
+        return OpenAssembliesAsReloadAsync(appState, paths, appState.AssemblyPorts, ct);
     }
 
     /// <summary>Opens the list named <paramref name="name"/> as the app starts, in place of the one the
@@ -73,37 +73,40 @@ public static class AssemblyLists
     /// <summary>Opens the list named <paramref name="name"/> in place of the open one, with the
     /// analyses and documents it had. The assemblies, documents, history and analyses of the one before go, kept
     /// with it for when it opens again.</summary>
-    public static void SwitchAssemblyList(AppState appState, string name)
+    public static Task SwitchAssemblyListAsync(AppState appState, string name, CancellationToken ct)
     {
         RememberActiveAssemblyList(appState);
         if (!appState.Lists.TryActivate(name))
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        OpenActiveList(appState);
+        return OpenActiveListAsync(appState, ct);
     }
 
     /// <summary>Opens the list named <paramref name="name"/> in place of the open one, as
-    /// <see cref="SwitchAssemblyList"/> does, adding an empty one by that name when there is none.</summary>
-    public static void OpenAssemblyListNamed(AppState appState, string name)
+    /// <see cref="SwitchAssemblyListAsync"/> does, adding an empty one by that name when there is none.</summary>
+    public static Task OpenAssemblyListNamedAsync(AppState appState, string name, CancellationToken ct)
     {
         if (!appState.Lists.HasList(name))
         {
             appState.Lists.Add(name);
         }
 
-        SwitchAssemblyList(appState, name);
+        return SwitchAssemblyListAsync(appState, name, ct);
     }
 
-    private static void OpenActiveList(AppState appState)
+    /// <summary>Opens the active list's assemblies in place of the open ones, with its documents and analyses; the
+    /// analyses start being found while the assemblies open.</summary>
+    private static Task OpenActiveListAsync(AppState appState, CancellationToken ct)
     {
         CloseAllAssemblies(appState);
         ReopenDocuments(appState);
         appState.History.Clear();
-        RestoreActiveAssemblyList(appState);
+        var restoring = RestoreActiveAssemblyListAsync(appState, ct);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         RestoreAnalyses(appState);
+        return restoring;
     }
 
     /// <summary>Adds an empty list named <paramref name="name"/>, or numbered when that is taken,
@@ -130,15 +133,17 @@ public static class AssemblyLists
 
     /// <summary>Removes the list named <paramref name="name"/>. When it was open, the list that takes
     /// its place opens.</summary>
-    public static void DeleteAssemblyList(AppState appState, string name)
+    public static Task DeleteAssemblyListAsync(AppState appState, string name, CancellationToken ct)
     {
         var wasActive = string.Equals(name, appState.Lists.Active, StringComparison.OrdinalIgnoreCase);
         RememberActiveAssemblyList(appState);
         appState.Lists.Remove(name);
-        if (wasActive)
+        if (!wasActive)
         {
-            OpenActiveList(appState);
+            return Task.CompletedTask;
         }
+
+        return OpenActiveListAsync(appState, ct);
     }
 
     /// <summary>Opens the dialog with the open list of <paramref name="lists"/> picked.</summary>

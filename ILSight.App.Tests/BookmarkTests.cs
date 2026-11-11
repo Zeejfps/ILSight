@@ -270,7 +270,7 @@ public sealed class BookmarkTests : IDisposable
         var (app, d, _, _) = ShowBookmark();
         var bookmark = d.AppState.Bookmarks.Items[0];
         d.AppState.Lists.Add("Other");
-        SwitchAssemblyList(d.AppState, "Other");
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, "Other", ct));
         d.Settle();
         app.Run(2);
         var location = app.TextRect(bookmark.Location);

@@ -9,11 +9,47 @@ using static ILSight.Settings;
 
 namespace ILSight;
 
-/// <summary>Opening, closing and reloading the assemblies in the list.</summary>
+/// <summary>Opening, closing and reloading the assemblies in the list. The workflows return once what they started
+/// is done, and reach the files and the user's error reports through <see cref="IPorts"/>.</summary>
 public static class Assemblies
 {
-    /// <summary>Opens the files in the background, then shows the last one opened.</summary>
-    public static void OpenAssemblies(AppState appState, IEnumerable<AssemblyPath> paths)
+    public interface IPorts
+    {
+        /// <summary>Tells the user something went wrong.</summary>
+        void ReportError(AppProblem problem);
+
+        /// <summary>Whether there is a file, rather than a folder or nothing, at <paramref name="path"/>.</summary>
+        bool IsFile(string path);
+
+        /// <summary>Lists the files at <paramref name="paths"/> in the open list, in order, those that fail to load
+        /// as failed, and gives the last one listed, or null for none. Done without holding up the screen, and
+        /// stopped between files once <paramref name="stop"/> fires; what that threw comes back as
+        /// <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct);
+
+        /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found in the open list,
+        /// as <see cref="OpenFilesAsync"/> lists files.</summary>
+        Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct);
+
+        /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>, checked
+        /// without holding up the screen; a check that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<PdbCheck>> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct);
+
+        /// <summary>Reads the file of <paramref name="item"/> again, its nodes loaded as far as the item's are, and
+        /// finds the nodes at <paramref name="places"/> in it, without holding up the screen. The list keeps the
+        /// item until it is replaced. What that threw comes back as <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<Reopened>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct);
+
+        /// <summary>Lists the files at <paramref name="paths"/> in the open list, as <see cref="OpenFilesAsync"/>
+        /// does, then has the nodes at <paramref name="expanded"/> load their children and finds the nodes at
+        /// <paramref name="places"/>, stopping once <paramref name="stop"/> fires.</summary>
+        Task<Outcome<Reloaded>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
+            CancellationToken stop, CancellationToken ct);
+    }
+
+    /// <summary>Opens the files, then shows the last one opened, unless something else was asked for
+    /// meanwhile. Reports why opening failed, unless the opens were cancelled.</summary>
+    public static async Task OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, IPorts ports, CancellationToken ct)
     {
         var files = paths.ToArray();
         if (files.Length == 0)
@@ -21,24 +57,12 @@ public static class Assemblies
             return;
         }
 
-        OpenInBackground(appState, files);
-    }
-
-    private static void OpenInBackground(AppState appState, AssemblyPath[] files)
-    {
-        Background.Start(appState.Work, nameof(OpenInBackgroundAsync), OpenInBackgroundAsync(appState, files), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task OpenInBackgroundAsync(AppState appState, AssemblyPath[] files)
-    {
         var ticket = appState.Intent.Begin();
-        var token = appState.Opens.Token;
-        var assemblies = appState.Assemblies;
-        var opened = await Background.Run(() => OpenFiles(assemblies, files, token));
-        ShowOpened(appState, opened, ticket);
+        var opened = await ports.OpenFilesAsync(files, appState.Opens.Token, ct);
+        ShowOpened(appState, opened, ticket, ports);
     }
 
-    private static void ShowOpened(AppState appState, Outcome<LoadedAssembly?> outcome, int ticket)
+    private static void ShowOpened(AppState appState, Outcome<LoadedAssembly?> outcome, int ticket, IPorts ports)
     {
         switch (outcome)
         {
@@ -52,7 +76,7 @@ public static class Assemblies
             case Outcome<LoadedAssembly?>.Ok:
                 break;
             case Outcome<LoadedAssembly?>.Failed failed:
-                ReportOpenFailure(appState, failed.Error);
+                ReportOpenFailure(ports, failed.Error);
                 break;
             default:
                 throw new UnreachableException();
@@ -60,7 +84,7 @@ public static class Assemblies
     }
 
     /// <summary>Reports why opening failed, unless the opening was cancelled.</summary>
-    internal static void ReportOpenFailure(AppState appState, Exception error)
+    private static void ReportOpenFailure(IPorts ports, Exception error)
     {
         var problem = FindOpenProblem(error);
         if (problem is null)
@@ -68,7 +92,7 @@ public static class Assemblies
             return;
         }
 
-        Errors.Report(appState, problem);
+        ports.ReportError(problem);
     }
 
     /// <summary>What to tell the user about opening that failed with <paramref name="error"/>; null when the
@@ -85,67 +109,50 @@ public static class Assemblies
 
     /// <summary>Opens the file at <paramref name="path"/>, as a file dialog or a download names it; nothing
     /// when it is no absolute path.</summary>
-    public static void OpenAssembly(AppState appState, string path)
+    public static Task OpenAssemblyAsync(AppState appState, string path, IPorts ports, CancellationToken ct)
     {
-        OpenFilesAt(appState, [path]);
+        return OpenFilesAtAsync(appState, [path], ports, ct);
     }
 
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as
-    /// <see cref="OpenAssemblies"/> does; folders are left out.</summary>
-    public static void OpenDroppedFiles(AppState appState, IReadOnlyList<string> paths)
+    /// <see cref="OpenAssembliesAsync"/> does; folders are left out.</summary>
+    public static Task OpenDroppedFilesAsync(AppState appState, IReadOnlyList<string> paths, IPorts ports, CancellationToken ct)
     {
         var files = paths
-            .Where(File.Exists)
+            .Where(ports.IsFile)
             .ToList();
-        OpenFilesAt(appState, files);
+        return OpenFilesAtAsync(appState, files, ports, ct);
     }
 
-    private static void OpenFilesAt(AppState appState, IEnumerable<string> paths)
+    private static Task OpenFilesAtAsync(AppState appState, IEnumerable<string> paths, IPorts ports, CancellationToken ct)
     {
         var files = paths
             .Select(AssemblyPath.Parse)
             .OfType<AssemblyPath>();
-        OpenAssemblies(appState, files);
+        return OpenAssembliesAsync(appState, files, ports, ct);
     }
 
-    /// <summary>Opens, in the background, the assemblies <paramref name="assembly"/> references that
-    /// can be found.</summary>
-    public static void OpenDependencies(AppState appState, LoadedModule assembly)
+    /// <summary>Opens the assemblies <paramref name="assembly"/> references that can be found, cancelled with
+    /// <paramref name="opens"/> under way now. Reports why opening failed, unless they were cancelled.</summary>
+    public static async Task OpenDependenciesAsync(OpenRequests opens, LoadedModule assembly, IPorts ports, CancellationToken ct)
     {
-        Background.Start(appState.Work, nameof(OpenDependenciesAsync), OpenDependenciesAsync(appState, assembly), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task OpenDependenciesAsync(AppState appState, LoadedModule assembly)
-    {
-        var token = appState.Opens.Token;
-        var assemblies = appState.Assemblies;
-        var opened = await Background.Run(() => AssemblyListing.ListReferences(assemblies, assembly, token));
+        var opened = await ports.OpenReferencesAsync(assembly, opens.Token, ct);
         if (opened is Outcome<List<LoadedModule>>.Failed failed)
         {
-            ReportOpenFailure(appState, failed.Error);
+            ReportOpenFailure(ports, failed.Error);
         }
     }
 
-    /// <summary>Checks in the background that the PDB at <paramref name="pdbPath"/> can be read for
-    /// <paramref name="assembly"/>, then has the assembly read it in place of the one it finds itself,
-    /// kept with the list, and reopens the assembly to show it. Reports why when it cannot be read.</summary>
-    public static void UsePdb(AppState appState, LoadedModule assembly, string pdbPath)
+    /// <summary>Checks that the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>,
+    /// then has the assembly read it in place of the one it finds itself, kept with the list, and reopens the
+    /// assembly to show it. Reports why when it cannot be read.</summary>
+    public static async Task UsePdbAsync(AppState appState, LoadedModule assembly, string pdbPath, IPorts ports, CancellationToken ct)
     {
-        Background.Start(appState.Work, nameof(UsePdbAsync), UsePdbAsync(appState, assembly, pdbPath), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task UsePdbAsync(AppState appState, LoadedModule assembly, string pdbPath)
-    {
-        var checking = await Background.Run(() => LoadedAssemblies.CheckPdb(assembly, pdbPath));
-        var check = checking switch
-        {
-            Outcome<PdbCheck>.Ok ok => ok.Value,
-            Outcome<PdbCheck>.Failed => PdbCheck.Unreadable,
-            _ => throw new UnreachableException(),
-        };
+        var checking = await ports.CheckPdbAsync(assembly, pdbPath, ct);
+        var check = checking.Match(static ok => ok.Value, static _ => PdbCheck.Unreadable);
         if (check != PdbCheck.Matches)
         {
-            ReportUnreadablePdb(appState, assembly, pdbPath, check);
+            ports.ReportError(new AppProblem.PdbUnusable(pdbPath, assembly.Name, check));
             return;
         }
         if (!AssemblyListing.IsListed(appState.Assemblies, assembly))
@@ -154,32 +161,28 @@ public static class Assemblies
         }
 
         appState.Assemblies.Pdbs.Pick(assembly.FilePath, pdbPath);
-        ReopenAssembly(appState, assembly);
-    }
-
-    private static void ReportUnreadablePdb(AppState appState, LoadedAssembly assembly, string pdbPath, PdbCheck check)
-    {
-        Errors.Report(appState, new AppProblem.PdbUnusable(pdbPath, assembly.Name, check));
+        await ReopenAssemblyAsync(appState, assembly, ports, ct);
     }
 
     /// <summary>Resolves <paramref name="assembly"/>'s references against the framework
     /// <paramref name="framework"/> names, such as <c>.NETCoreApp,Version=v8.0</c>, or, when it is
     /// null, against the one the assembly was built for; kept with the list, and the assembly reopened
     /// to show it. Does nothing when that is the framework already in use.</summary>
-    public static void SetTargetFramework(AppState appState, LoadedModule assembly, TargetFrameworkId? framework)
+    public static Task SetTargetFrameworkAsync(AppState appState, LoadedModule assembly, TargetFrameworkId? framework, IPorts ports,
+        CancellationToken ct)
     {
         if (!AssemblyListing.IsListed(appState.Assemblies, assembly))
         {
-            return;
+            return Task.CompletedTask;
         }
 
         if (IsInUse(assembly, framework))
         {
-            return;
+            return Task.CompletedTask;
         }
 
         PickTargetFramework(appState.Assemblies.TargetFrameworks, assembly, framework);
-        ReopenAssembly(appState, assembly);
+        return ReopenAssemblyAsync(appState, assembly, ports, ct);
     }
 
     /// <summary>Whether <paramref name="framework"/>, null for the one the assembly was built for, is
@@ -204,24 +207,17 @@ public static class Assemblies
         frameworks.Pick(assembly.FilePath, framework);
     }
 
-    /// <summary>Reads the item of the list holding <paramref name="assembly"/> again in the background,
-    /// its nodes loaded as far as they were, then lists it where the item is and shows each tab's place
-    /// in it again. The other assemblies stay as they are.</summary>
-    private static void ReopenAssembly(AppState appState, LoadedAssembly assembly)
-    {
-        Background.Start(appState.Work, nameof(ReopenAssemblyAsync), ReopenAssemblyAsync(appState, assembly), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task ReopenAssemblyAsync(AppState appState, LoadedAssembly assembly)
+    /// <summary>Reads the item of the list holding <paramref name="assembly"/> again, its nodes loaded as far as
+    /// they were, then lists it where the item is and shows each tab's place in it again. The other assemblies
+    /// stay as they are.</summary>
+    private static async Task ReopenAssemblyAsync(AppState appState, LoadedAssembly assembly, IPorts ports, CancellationToken ct)
     {
         var item = assembly.ListedItem;
         var ticket = appState.Reopens.Start(item.FilePath);
         var tabs = ListTabsShowing(appState, item);
         var places = tabs.ConvertAll(t => t.Location);
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var reopened = await Background.Run(() => ReadAgain(assemblies, session, item, places));
-        FinishReopen(appState, item, reopened, ticket, tabs);
+        var reopened = await ports.ReadAgainAsync(item, places, ct);
+        FinishReopen(appState, item, reopened, ticket, tabs, ports);
     }
 
     private static List<ReloadingTab> ListTabsShowing(AppState appState, LoadedAssembly item)
@@ -240,8 +236,7 @@ public static class Assemblies
                 continue;
             }
 
-            var position = FindPositionToKeep(appState, tab);
-            showing.Add(new ReloadingTab(tab, location, tab.Version, position));
+            showing.Add(new ReloadingTab { Tab = tab, Location = location, Version = tab.Version, Position = FindPositionToKeep(appState, tab) });
         }
         return showing;
     }
@@ -251,39 +246,8 @@ public static class Assemblies
         return path.FilePath.Equals(item.FilePath);
     }
 
-    private static Reopened ReadAgain(AssemblyList assemblies, BrowseSession session, LoadedAssembly item, List<NodePath> places)
-    {
-        var fresh = AssemblyListing.ReadAgain(assemblies, item);
-        EnsureChildrenAsLoaded(session, BrowseSessions.EnsureRoot(session, item), BrowseSessions.EnsureRoot(session, fresh));
-        var placeNodes = places
-            .Select(p => BrowseSessions.FindNode(session, fresh, p))
-            .ToArray();
-        return new Reopened(fresh, placeNodes);
-    }
-
-    /// <summary>Loads the children of each node under <paramref name="fresh"/> whose counterpart under
-    /// <paramref name="old"/> has them loaded, so that the tree can show the fresh nodes as it showed
-    /// the old ones.</summary>
-    private static void EnsureChildrenAsLoaded(BrowseSession session, BrowseNode old, BrowseNode fresh)
-    {
-        var oldChildren = BrowseSessions.PeekChildren(session, old);
-        if (oldChildren is not ChildrenState.Ready loaded)
-        {
-            return;
-        }
-
-        BrowseSessions.GetChildren(session, fresh);
-        foreach (var child in loaded.Children)
-        {
-            var counterpart = BrowseSessions.FindLoadedChildLike(session, fresh, child);
-            if (counterpart is not null)
-            {
-                EnsureChildrenAsLoaded(session, child, counterpart);
-            }
-        }
-    }
-
-    private static void FinishReopen(AppState appState, LoadedAssembly item, Outcome<Reopened> outcome, int ticket, List<ReloadingTab> tabs)
+    private static void FinishReopen(AppState appState, LoadedAssembly item, Outcome<Reopened> outcome, int ticket, List<ReloadingTab> tabs,
+        IPorts ports)
     {
         if (!appState.Reopens.Finish(item.FilePath, ticket))
         {
@@ -294,17 +258,17 @@ public static class Assemblies
         switch (outcome)
         {
             case Outcome<Reopened>.Ok ok:
-                ShowReopened(appState, item, ok.Value, tabs);
+                ShowReopened(appState, item, ok.Value, tabs, ports);
                 break;
             case Outcome<Reopened>.Failed failed:
-                Errors.Report(appState, new AppProblem.AssemblyNotReloaded(item.Name, failed.Error));
+                ports.ReportError(new AppProblem.AssemblyNotReloaded(item.Name, failed.Error));
                 break;
             default:
                 throw new UnreachableException();
         }
     }
 
-    private static void ShowReopened(AppState appState, LoadedAssembly item, Reopened reopened, List<ReloadingTab> tabs)
+    private static void ShowReopened(AppState appState, LoadedAssembly item, Reopened reopened, List<ReloadingTab> tabs, IPorts ports)
     {
         if (!AssemblyListing.Replace(appState.Assemblies, item, reopened.Item))
         {
@@ -313,40 +277,29 @@ public static class Assemblies
 
         for (var i = 0; i < tabs.Count; i++)
         {
-            ShowAgain(appState, tabs[i], reopened.Places[i]);
+            ShowAgain(appState, tabs[i], reopened.Places[i], ports);
         }
     }
 
-    public static void CloseAssembly(AppState appState, LoadedAssembly assembly)
-    {
-        AssemblyListing.CloseAssembly(appState.Assemblies, assembly);
-    }
-
-    /// <summary>Takes <paramref name="items"/> off the list; one no longer on it is passed over.</summary>
-    public static void CloseAssemblies(AppState appState, IReadOnlyList<LoadedAssembly> items)
+    /// <summary>Takes <paramref name="items"/> off <paramref name="list"/>; one no longer on it is passed over.</summary>
+    public static void CloseAssemblies(AssemblyList list, IReadOnlyList<LoadedAssembly> items)
     {
         foreach (var item in items)
         {
-            AssemblyListing.CloseAssembly(appState.Assemblies, item);
+            AssemblyListing.CloseAssembly(list, item);
         }
     }
 
-    /// <summary>Takes the files that failed to load off the list.</summary>
-    public static void CloseFailedAssemblies(AppState appState)
+    /// <summary>Takes the files that failed to load off <paramref name="list"/>.</summary>
+    public static void CloseFailedAssemblies(AssemblyList list)
     {
-        var failed = appState.Assemblies.Listed
+        var failed = list.Listed
             .OfType<FailedAssembly>()
             .ToList();
         foreach (var assembly in failed)
         {
-            AssemblyListing.CloseAssembly(appState.Assemblies, assembly);
+            AssemblyListing.CloseAssembly(list, assembly);
         }
-    }
-
-    /// <summary>Orders the list by name, and assemblies of one name by version.</summary>
-    public static void SortAssemblies(AppState appState)
-    {
-        AssemblyListing.SortListed(appState.Assemblies);
     }
 
     /// <summary>Closes every assembly of the open list, stopping its reload; tabs still waiting for it to
@@ -368,15 +321,10 @@ public static class Assemblies
         appState.Analyzer.ClearRoots();
     }
 
-    /// <summary>Reloads every assembly of the open list from disk in the background, then commands the view
-    /// to expand the tree at <paramref name="expanded"/>, the paths of the nodes it had expanded, and
-    /// shows each tab's place again, decompiled from the fresh files.</summary>
-    public static void RefreshAssemblies(AppState appState, List<NodePath> expanded)
-    {
-        Background.Start(appState.Work, nameof(RefreshAssembliesAsync), RefreshAssembliesAsync(appState, expanded), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task RefreshAssembliesAsync(AppState appState, List<NodePath> expanded)
+    /// <summary>Reloads every assembly of the open list from disk, then commands the view to expand the tree at
+    /// <paramref name="expanded"/>, the paths of the nodes it had expanded, and shows each tab's place again,
+    /// decompiled from the fresh files.</summary>
+    public static async Task RefreshAssembliesAsync(AppState appState, IReadOnlyList<NodePath> expanded, IPorts ports, CancellationToken ct)
     {
         RememberOpenAssemblies(appState);
         var intent = appState.Intent.Begin();
@@ -387,10 +335,8 @@ public static class Assemblies
         var places = tabs.ConvertAll(t => t.Location);
         ClearAssemblies(appState);
 
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var reloaded = await Background.Run(() => ReopenFiles(assemblies, session, paths, expanded, places, ticket.Token));
-        FinishReload(appState, reloaded, ticket, intent, tabs);
+        var reloaded = await ports.ReopenFilesAsync(paths, expanded, places, ticket.Token, ct);
+        FinishReload(appState, reloaded, ticket, intent, tabs, ports);
     }
 
     private static List<ReloadingTab> ReleaseShownTabs(AppState appState)
@@ -406,7 +352,7 @@ public static class Assemblies
 
             var position = FindPositionToKeep(appState, tab);
             Tabs.ShowReloading(tab, location);
-            reloading.Add(new ReloadingTab(tab, location, tab.Version, position));
+            reloading.Add(new ReloadingTab { Tab = tab, Location = location, Version = tab.Version, Position = position });
         }
         return reloading;
     }
@@ -416,46 +362,8 @@ public static class Assemblies
         return Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
     }
 
-    private static Reloaded ReopenFiles(AssemblyList assemblies, BrowseSession session, IReadOnlyList<AssemblyPath> paths, List<NodePath> expanded,
-        List<NodePath> places, CancellationToken cancellationToken)
-    {
-        OpenFiles(assemblies, paths, cancellationToken);
-        var expandedNodes = GetExpandedNodes(assemblies, session, expanded, cancellationToken);
-        var placeNodes = FindNodes(assemblies, session, places, cancellationToken);
-        return new Reloaded(expandedNodes, placeNodes);
-    }
-
-    private static List<BrowseNode> GetExpandedNodes(AssemblyList assemblies, BrowseSession session, List<NodePath> expanded,
-        CancellationToken cancellationToken)
-    {
-        var nodes = new List<BrowseNode>();
-        foreach (var path in expanded)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var node = NodeLookup.Find(assemblies, session, path);
-            if (node is null)
-            {
-                continue;
-            }
-
-            BrowseSessions.GetChildren(session, node);
-            nodes.Add(node);
-        }
-        return nodes;
-    }
-
-    private static BrowseNode?[] FindNodes(AssemblyList assemblies, BrowseSession session, List<NodePath> places, CancellationToken cancellationToken)
-    {
-        var found = new BrowseNode?[places.Count];
-        for (var i = 0; i < found.Length; i++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            found[i] = NodeLookup.Find(assemblies, session, places[i]);
-        }
-        return found;
-    }
-
-    private static void FinishReload(AppState appState, Outcome<Reloaded> outcome, ReloadTicket ticket, int intent, List<ReloadingTab> tabs)
+    private static void FinishReload(AppState appState, Outcome<Reloaded> outcome, ReloadTicket ticket, int intent, List<ReloadingTab> tabs,
+        IPorts ports)
     {
         if (!appState.Reload.Finish(ticket))
         {
@@ -465,32 +373,32 @@ public static class Assemblies
         switch (outcome)
         {
             case Outcome<Reloaded>.Ok ok:
-                ShowReloaded(appState, ok.Value, intent, tabs);
+                ShowReloaded(appState, ok.Value, intent, tabs, ports);
                 break;
             case Outcome<Reloaded>.Failed failed:
                 ShowReopenedDocuments(appState);
-                Errors.Report(appState, new AppProblem.AssembliesNotReloaded(failed.Error));
+                ports.ReportError(new AppProblem.AssembliesNotReloaded(failed.Error));
                 break;
             default:
                 throw new UnreachableException();
         }
     }
 
-    private static void ShowReloaded(AppState appState, Reloaded reloaded, int intent, List<ReloadingTab> tabs)
+    private static void ShowReloaded(AppState appState, Reloaded reloaded, int intent, List<ReloadingTab> tabs, IPorts ports)
     {
         appState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes(reloaded.Expanded));
         for (var i = 0; i < tabs.Count; i++)
         {
-            ReshowTab(appState, tabs[i], reloaded.Places[i], intent);
+            ReshowTab(appState, tabs[i], reloaded.Places[i], intent, ports);
         }
 
         ShowReopenedDocuments(appState);
         SaveSettings(appState);
     }
 
-    private static void ReshowTab(AppState appState, ReloadingTab reloading, BrowseNode? node, int intent)
+    private static void ReshowTab(AppState appState, ReloadingTab reloading, BrowseNode? node, int intent, IPorts ports)
     {
-        if (!ShowAgain(appState, reloading, node))
+        if (!ShowAgain(appState, reloading, node, ports))
         {
             return;
         }
@@ -503,7 +411,7 @@ public static class Assemblies
 
     /// <summary>Shows <paramref name="node"/>, the tab's place found again, in the tab, or that its place
     /// is gone, unless the tab was closed or shows something else now. True when it shows the node.</summary>
-    private static bool ShowAgain(AppState appState, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node)
+    private static bool ShowAgain(AppState appState, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node, IPorts ports)
     {
         var tab = reloading.Tab;
         if (!Tabs.IsOpen(appState.Tabs, tab))
@@ -518,35 +426,29 @@ public static class Assemblies
 
         if (node is null)
         {
-            ReleaseGoneTab(appState, tab, reloading.Location);
+            ReleaseGoneTab(tab, reloading.Location, ports);
             return false;
         }
         DecompileIntoTab(appState, tab, node, new Arrival(reloading.Position));
         return true;
     }
 
-    private static void ReleaseGoneTab(AppState appState, DocumentTab tab, NodePath location)
+    private static void ReleaseGoneTab(DocumentTab tab, NodePath location, IPorts ports)
     {
         Tabs.ShowGone(tab, location);
-        Errors.Report(appState, new AppProblem.GoneAfterReload(location));
+        ports.ReportError(new AppProblem.GoneAfterReload(location));
     }
 
-    /// <summary>Opens <paramref name="paths"/> in the background as a reload does, so that another
-    /// reload or clearing the list stops it, and the settings are saved once it is done.</summary>
-    internal static void OpenAssembliesAsReload(AppState appState, List<AssemblyPath> paths)
-    {
-        Background.Start(appState.Work, nameof(OpenAssembliesAsReloadAsync), OpenAssembliesAsReloadAsync(appState, paths), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task OpenAssembliesAsReloadAsync(AppState appState, List<AssemblyPath> paths)
+    /// <summary>Opens <paramref name="paths"/> as a reload does, so that another reload or clearing the list
+    /// stops it, and the settings are saved once it is done.</summary>
+    internal static async Task OpenAssembliesAsReloadAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, IPorts ports, CancellationToken ct)
     {
         var ticket = appState.Reload.Start();
-        var assemblies = appState.Assemblies;
-        var opened = await Background.Run(() => OpenFiles(assemblies, paths, ticket.Token));
-        FinishOpeningAsReload(appState, opened, ticket);
+        var opened = await ports.OpenFilesAsync(paths, ticket.Token, ct);
+        FinishOpeningAsReload(appState, opened, ticket, ports);
     }
 
-    private static void FinishOpeningAsReload(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket)
+    private static void FinishOpeningAsReload(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket, IPorts ports)
     {
         if (!appState.Reload.Finish(ticket))
         {
@@ -560,28 +462,40 @@ public static class Assemblies
                 SaveSettings(appState);
                 break;
             case Outcome<LoadedAssembly?>.Failed failed:
-                Errors.Report(appState, new AppProblem.OpenFailed(failed.Error));
+                ports.ReportError(new AppProblem.OpenFailed(failed.Error));
                 break;
             default:
                 throw new UnreachableException();
         }
     }
 
-    /// <summary>Lists the files, those that fail to load as failed, and returns the last.</summary>
-    private static LoadedAssembly? OpenFiles(AssemblyList assemblies, IEnumerable<AssemblyPath> paths, CancellationToken cancellationToken)
+    /// <summary>The nodes a reload found again: those the tree had expanded, with their children loaded, and
+    /// each tab's place, null where it is gone, in the order the places were asked for.</summary>
+    public sealed record Reloaded
     {
-        LoadedAssembly? last = null;
-        foreach (var path in paths)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            last = AssemblyListing.Open(assemblies, path, cancellationToken);
-        }
-        return last;
+        public required List<BrowseNode> Expanded { get; init; }
+
+        public required BrowseNode?[] Places { get; init; }
     }
 
-    private sealed record Reloaded(List<BrowseNode> Expanded, BrowseNode?[] Places);
+    /// <summary>A file of the list read again: the item to list in place of the one before, and each tab's place
+    /// in it, null where it is gone, in the order the places were asked for.</summary>
+    public sealed record Reopened
+    {
+        public required LoadedAssembly Item { get; init; }
 
-    private sealed record Reopened(LoadedAssembly Item, BrowseNode?[] Places);
+        public required BrowseNode?[] Places { get; init; }
+    }
 
-    private sealed record ReloadingTab(DocumentTab Tab, NodePath Location, int Version, ViewPosition? Position);
+    /// <summary>A tab whose place is being found again, as it was when that started.</summary>
+    private sealed record ReloadingTab
+    {
+        public required DocumentTab Tab { get; init; }
+
+        public required NodePath Location { get; init; }
+
+        public required int Version { get; init; }
+
+        public required ViewPosition? Position { get; init; }
+    }
 }

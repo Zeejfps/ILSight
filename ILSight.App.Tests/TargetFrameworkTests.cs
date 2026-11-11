@@ -72,7 +72,7 @@ public sealed class TargetFrameworkTests
     public void Picking_a_framework_reopens_only_that_assembly_with_the_tree_as_it_was_on_every_frame()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenAssembly(app.AppState, SampleAppPath);
+        app.Start((a, ct) => OpenAssemblyAsync(a, SampleAppPath, a.AssemblyPorts, ct));
         app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)), Patience);
         var fixtures = FixturesOf(app.AppState);
         var sample = SampleOf(app.AppState);
@@ -88,7 +88,7 @@ public sealed class TargetFrameworkTests
         var before = Trees.ListExpandedPaths(tree);
         var shapes = new List<List<NodePath>>();
 
-        SetTargetFramework(app.AppState, fixtures, Net48);
+        app.Start((a, ct) => SetTargetFrameworkAsync(a, fixtures, Net48, a.AssemblyPorts, ct));
         Poll.Until(() => FixturesOf(app.AppState) != fixtures, RunFrame);
         RunFrame();
 
@@ -116,7 +116,7 @@ public sealed class TargetFrameworkTests
     {
         using var temp = new TempDir();
         var app = new AppDriver();
-        OpenAssembly(app.AppState, WritePackage(temp));
+        app.Start((a, ct) => OpenAssemblyAsync(a, WritePackage(temp), a.AssemblyPorts, ct));
         app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
         var package = app.AppState.Assemblies.Listed[0].Root;
@@ -132,7 +132,7 @@ public sealed class TargetFrameworkTests
         app.Show(assembly.Child(AppStateDriver.FixturesNamespace, "Greeter"), 2);
         var before = Trees.ListExpandedPaths(tree);
 
-        SetTargetFramework(app.AppState, Assert.IsType<LoadedModule>(assembly.Assembly), Net48);
+        app.Start((a, ct) => SetTargetFrameworkAsync(a, Assert.IsType<LoadedModule>(assembly.Assembly), Net48, a.AssemblyPorts, ct));
         app.Settle(3);
 
         Assert.Equal(before, Trees.ListExpandedPaths(tree));
@@ -161,7 +161,7 @@ public sealed class TargetFrameworkTests
         ];
         var d = new AppStateDriver(settings);
 
-        RestoreActiveAssemblyList(d.AppState);
+        d.Start(RestoreActiveAssemblyListAsync);
         d.Settle();
 
         Assert.Equal(Net48, FixturesOf(d.AppState).TargetFramework);
@@ -179,7 +179,7 @@ public sealed class TargetFrameworkTests
         ];
         var d = new AppStateDriver(settings);
 
-        RestoreActiveAssemblyList(d.AppState);
+        d.Start(RestoreActiveAssemblyListAsync);
         d.Settle();
 
         var assembly = FixturesOf(d.AppState);

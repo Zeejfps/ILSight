@@ -173,7 +173,7 @@ internal static class TreePaneView
             case 4:
                 if (DrawTool(ui, inMenu, "sort-list", icons.AssembliesSortList, t.TreeSortList, any))
                 {
-                    Commands.Later(ui.State, static a => SortAssemblies(a));
+                    Commands.Later(ui.State, static a => AssemblyListing.SortListed(a.Assemblies));
                 }
 
                 return;
@@ -182,7 +182,7 @@ internal static class TreePaneView
                 var label = inMenu ? t.TreeReloadAll : ui.Memo("reload-all-tip", t, static s => s.TreeReloadAllTip(Shortcuts.ReloadAll));
                 if (DrawTool(ui, inMenu, "reload-all", icons.AssembliesReloadAll, label, any, Shortcuts.ReloadAll))
                     {
-                        Commands.Later(ui.State, Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
+                        Commands.Start(ui.State, nameof(RefreshAssembliesAsync), Trees.ListExpandedPaths(tree), static (a, expanded, ct) => RefreshAssembliesAsync(a, expanded, a.AssemblyPorts, ct));
                     }
 
                     return;
@@ -197,7 +197,7 @@ internal static class TreePaneView
             case 8:
                 if (DrawTool(ui, inMenu, "close-failed", icons.AssembliesCloseFailed, t.TreeCloseFailed, AssemblyListing.AnyFailedToLoad(assemblies)))
                 {
-                    Commands.Later(ui.State, static a => CloseFailedAssemblies(a));
+                    Commands.Later(ui.State, static a => CloseFailedAssemblies(a.Assemblies));
                 }
 
                 return;
@@ -341,7 +341,7 @@ internal static class TreePaneView
             return;
         }
 
-        Commands.Later(ui.State, picked.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
+        Commands.Later(ui.State, picked.Assembly, static (a, assembly) => AssemblyListing.CloseAssembly(a.Assemblies, assembly));
     }
 
     private static void Respond(Ui<UiState> ui, TreeViewResult<BrowseNode> result)
@@ -505,7 +505,7 @@ internal static class TreePaneView
             ui.MenuSeparator();
             if (ui.MenuItem(t.TreeCloseAssembly, id: "close-assembly"))
             {
-                Commands.Later(ui.State, node.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
+                Commands.Later(ui.State, node.Assembly, static (a, assembly) => AssemblyListing.CloseAssembly(a.Assemblies, assembly));
             }
         }
     }
@@ -609,7 +609,7 @@ internal static class TreePaneView
         TargetFrameworkMenu(ui, assembly);
         if (ui.MenuItem(t.TreeLoadDependencies, id: "load-dependencies"))
         {
-            Commands.Later(ui.State, assembly, static (a, m) => OpenDependencies(a, m));
+            Commands.Start(ui.State, nameof(OpenDependenciesAsync), assembly, static (a, m, ct) => OpenDependenciesAsync(a.Opens, m, a.AssemblyPorts, ct));
         }
     }
 
@@ -642,7 +642,7 @@ internal static class TreePaneView
         var detectedLabel = DetectedFrameworkLabel(t, assembly);
         if (ui.MenuRadioItem(detectedLabel, !assembly.IsTargetFrameworkPicked, id: "detected"))
         {
-            Commands.Later(ui.State, assembly, static (a, m) => SetTargetFramework(a, m, null));
+            Commands.Start(ui.State, nameof(SetTargetFrameworkAsync), assembly, static (a, m, ct) => SetTargetFrameworkAsync(a, m, null, a.AssemblyPorts, ct));
         }
 
         ui.MenuSeparator();
@@ -650,7 +650,7 @@ internal static class TreePaneView
         {
             if (ui.MenuRadioItem(framework.Moniker, IsPicked(assembly, framework), id: framework.Text))
             {
-                Commands.Later(ui.State, (assembly, framework), static (a, s) => SetTargetFramework(a, s.assembly, s.framework));
+                Commands.Start(ui.State, nameof(SetTargetFrameworkAsync), (assembly, framework), static (a, s, ct) => SetTargetFrameworkAsync(a, s.assembly, s.framework, a.AssemblyPorts, ct));
             }
         }
     }
@@ -682,7 +682,7 @@ internal static class TreePaneView
         var screen = ui.State;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"]), new FileFilter(t.FileFilterAll, ["*.*"])];
         var title = t.TreeSelectPdbTitle(assembly.Name);
-        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.Later(screen, (assembly, path), static (a, s) => UsePdb(a, s.assembly, s.path)));
+        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.Start(screen, nameof(UsePdbAsync), (assembly, path), static (a, s, ct) => UsePdbAsync(a, s.assembly, s.path, a.AssemblyPorts, ct)));
     }
 
     /// <summary>The folder the assembly's file is in; null for one read out of a package, whose path runs through it.</summary>

@@ -170,7 +170,7 @@ public sealed class AssemblyListingTests
         settings.AssemblyLists = [new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath), PathOf(other)])];
         var d = new AppStateDriver(settings);
 
-        RestoreActiveAssemblyList(d.AppState);
+        d.Start(RestoreActiveAssemblyListAsync);
         SaveSettings(d.AppState);
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
@@ -187,7 +187,7 @@ public sealed class AssemblyListingTests
         settings.AssemblyLists = [new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(gone), PathOf(AppStateDriver.FixturePath)])];
         var d = new AppStateDriver(settings);
 
-        RestoreActiveAssemblyList(d.AppState);
+        d.Start(RestoreActiveAssemblyListAsync);
         d.Settle();
         SaveSettings(d.AppState);
 
@@ -207,7 +207,7 @@ public sealed class AssemblyListingTests
         var d = new AppStateDriver(temp.Settings());
         d.AppState.Lists.Add(Other);
 
-        SwitchAssemblyList(d.AppState, Other);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
         SaveSettings(d.AppState);
 
@@ -224,10 +224,10 @@ public sealed class AssemblyListingTests
         d.Analyze(d.Fixture("Greeter"));
         d.AppState.Lists.Add(Other);
 
-        SwitchAssemblyList(d.AppState, Other);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
         var inOther = d.AppState.Analyzer.Roots.Count;
-        SwitchAssemblyList(d.AppState, SavedAssemblyLists.DefaultName);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
         d.Settle();
 
         Assert.Equal(0, inOther);
@@ -241,7 +241,7 @@ public sealed class AssemblyListingTests
         d.Analyze(d.Fixture("Greeter"));
         var copy = DuplicateAssemblyList(d.AppState, SavedAssemblyLists.DefaultName, "Copy");
 
-        SwitchAssemblyList(d.AppState, copy);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, copy, ct));
         d.Settle();
 
         Assert.NotEqual(SavedAssemblyLists.DefaultName, copy);
@@ -257,14 +257,14 @@ public sealed class AssemblyListingTests
         d.Show(d.Fixture("Farewell"), inNewTab: true);
         d.AppState.Lists.Add(Other);
 
-        SwitchAssemblyList(d.AppState, Other);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
 
         Assert.Empty(d.AppState.Assemblies.Assemblies);
         Assert.Null(Assert.Single(d.AppState.Tabs.Open).Location);
         Assert.Empty(d.AppState.History.Entries);
 
-        SwitchAssemblyList(d.AppState, SavedAssemblyLists.DefaultName);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
@@ -280,7 +280,7 @@ public sealed class AssemblyListingTests
             CloseTab(d.AppState, tab);
         }
 
-        SwitchAssemblyList(d.AppState, Other);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
 
         var empty = Assert.Single(d.AppState.Tabs.Open);
@@ -296,11 +296,11 @@ public sealed class AssemblyListingTests
         var other = typeof(AppState).Assembly.Location;
 
         CreateAssemblyList(d.AppState, "New list");
-        SwitchAssemblyList(d.AppState, "New list");
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, "New list", ct));
         d.Settle();
-        OpenAssembly(d.AppState, other);
+        d.Start((a, ct) => OpenAssemblyAsync(a, other, a.AssemblyPorts, ct));
         d.RunUntil(() => AssemblyListing.ListFilePaths(d.AppState.Assemblies).Contains(PathOf(other)));
-        SwitchAssemblyList(d.AppState, SavedAssemblyLists.DefaultName);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
@@ -313,8 +313,8 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Opened();
         d.AppState.Lists.Add(Other);
 
-        OpenAssembly(d.AppState, typeof(AppState).Assembly.Location);
-        SwitchAssemblyList(d.AppState, Other);
+        d.Start((a, ct) => OpenAssemblyAsync(a, typeof(AppState).Assembly.Location, a.AssemblyPorts, ct));
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
         d.Pump();
 
@@ -329,7 +329,7 @@ public sealed class AssemblyListingTests
         d.AppState.Lists.Add(Other);
         var opening = d.AppState.Opens.Token;
 
-        SwitchAssemblyList(d.AppState, Other);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
 
         Assert.True(opening.IsCancellationRequested);
         Assert.False(d.AppState.Opens.Token.IsCancellationRequested);
@@ -342,7 +342,7 @@ public sealed class AssemblyListingTests
         CreateAssemblyList(d.AppState, "New list");
         d.Settle();
 
-        DeleteAssemblyList(d.AppState, "New list");
+        d.Start((a, ct) => DeleteAssemblyListAsync(a, "New list", ct));
         d.Settle();
 
         Assert.Equal(SavedAssemblyLists.DefaultName, d.AppState.Lists.Active);
@@ -354,11 +354,11 @@ public sealed class AssemblyListingTests
     {
         var d = AppStateDriver.Opened();
         d.AppState.Lists.Add(Other);
-        SwitchAssemblyList(d.AppState, Other);
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
 
-        SwitchAssemblyList(d.AppState, SavedAssemblyLists.DefaultName);
-        RefreshAssemblies(d.AppState, Trees.ListExpandedPaths(d.Ui.Tree));
+        d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
+        d.Start((a, ct) => RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), a.AssemblyPorts, ct));
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));

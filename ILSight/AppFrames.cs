@@ -62,7 +62,14 @@ internal static partial class AppFrames
             return;
         }
 
-        RefreshAssemblies(appState, Trees.ListExpandedPaths(uiState.Tree));
+        StartRefreshing(appState, Trees.ListExpandedPaths(uiState.Tree));
+    }
+
+    /// <summary>Starts reading the open assemblies again now, before the frame draws, so that it draws them
+    /// reloading. A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartRefreshing(AppState appState, List<NodePath> expanded)
+    {
+        appState.Workflows.Start(nameof(RefreshAssembliesAsync), ct => RefreshAssembliesAsync(appState, expanded, appState.AssemblyPorts, ct));
     }
 
     /// <summary>Opens the error dialog on the newest error whenever one is reported.</summary>
@@ -272,11 +279,12 @@ internal static partial class AppFrames
         ui.RequestUpdate();
     }
 
-    /// <summary>Opens the active list, then <paramref name="files"/>, once the app is running.</summary>
+    /// <summary>Opens the active list, then <paramref name="files"/> while it opens, once the app is running.</summary>
     internal static Task OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
     {
-        RestoreActiveAssemblyList(appState);
-        return OpenRequestedFilesAsync(appState, files, ct);
+        var restoring = RestoreActiveAssemblyListAsync(appState, ct);
+        var opening = OpenRequestedFilesAsync(appState, files, ct);
+        return Task.WhenAll(restoring, opening);
     }
 
     private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)

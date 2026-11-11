@@ -47,7 +47,7 @@ internal static class NuGetPickerView
             return;
         }
 
-        Commands.Later(ui.State, path, static (a, p) => OpenAssembly(a, p));
+        Commands.Start(ui.State, nameof(OpenAssemblyAsync), path, static (a, p, ct) => OpenAssemblyAsync(a, p, a.AssemblyPorts, ct));
         Close(ui, picker);
     }
 
