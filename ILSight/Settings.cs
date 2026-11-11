@@ -67,7 +67,7 @@ public static class Settings
 
     private static Locale ChooseLocale(AppSettings settings)
     {
-        if (settings.Locale != null)
+        if (settings.Locale is not null)
         {
             return settings.Locale.Value;
         }

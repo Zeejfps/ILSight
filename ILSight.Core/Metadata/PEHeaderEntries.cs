@@ -42,7 +42,7 @@ namespace ILSight.Core.Metadata
 				AddValue(columns, "Member", e => e.Member);
 				AddValue(columns, "Offset", e => e.Offset);
 				AddValue(columns, "Size", e => e.Size);
-				AddValue(columns, "Value", e => e.Value, tooltip: e => e.Flags == null ? null : FilterStatePresenter.Explain(e.Flags, Convert.ToUInt32(e.Value)));
+				AddValue(columns, "Value", e => e.Value, tooltip: e => e.Flags is null ? null : FilterStatePresenter.Explain(e.Flags, Convert.ToUInt32(e.Value)));
 				AddValue(columns, "Meaning", e => e.Meaning);
 			});
 		}

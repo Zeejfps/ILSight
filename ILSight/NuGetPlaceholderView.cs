@@ -32,7 +32,7 @@ internal static class NuGetPlaceholderView
                 return;
             }
             var error = picker.SearchError;
-            if (error != null)
+            if (error is not null)
             {
                 SearchFailed(ui, picker, error);
                 return;

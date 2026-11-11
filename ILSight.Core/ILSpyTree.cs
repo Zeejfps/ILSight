@@ -65,10 +65,10 @@ public static class ILSpyTree
     public static IReadOnlyList<string>? PathOf(BrowseNode node)
     {
         var path = new List<string>();
-        for (var n = node; n != null; n = n.Parent)
+        for (var n = node; n is not null; n = n.Parent)
         {
             var name = NameOf(n);
-            if (name == null)
+            if (name is null)
             {
                 return null;
             }
@@ -87,10 +87,10 @@ public static class ILSpyTree
     public static BrowseNode? Locate(AssemblyList list, BrowseSession session, AssemblyPath filePath, IReadOnlyList<string>? treePath, uint token,
         string memberName)
     {
-        if (treePath != null && treePath.Count > 0)
+        if (treePath is not null && treePath.Count > 0)
         {
             var found = Find(list, session, treePath);
-            if (found != null)
+            if (found is not null)
             {
                 return found;
             }
@@ -101,13 +101,13 @@ public static class ILSpyTree
     private static BrowseNode? Find(AssemblyList list, BrowseSession session, IReadOnlyList<string> path)
     {
         var filePath = AssemblyPath.Parse(path[0]);
-        if (filePath == null)
+        if (filePath is null)
         {
             return null;
         }
 
         var assembly = Load(list, filePath);
-        if (assembly == null)
+        if (assembly is null)
         {
             return null;
         }
@@ -126,7 +126,7 @@ public static class ILSpyTree
                 next = child;
                 break;
             }
-            if (next == null)
+            if (next is null)
             {
                 return null;
             }
@@ -147,13 +147,13 @@ public static class ILSpyTree
         }
 
         var assembly = Load(list, filePath);
-        if (assembly == null)
+        if (assembly is null)
         {
             return null;
         }
 
         var entity = Resolve(assembly, (int)token);
-        if (entity == null || entity.FullName != memberName)
+        if (entity is null || entity.FullName != memberName)
         {
             return null;
         }
@@ -176,7 +176,7 @@ public static class ILSpyTree
         var assembly = place.Assembly;
         var entity = BrowseNodes.GetEntity(place);
         var token = entity is null ? 0u : (uint)MetadataTokens.GetToken(entity.MetadataToken);
-        if (anchor != null && anchor.Value.FilePath.Equals(assembly.FilePath))
+        if (anchor is not null && anchor.Value.FilePath.Equals(assembly.FilePath))
         {
             token = (uint)anchor.Value.Token;
             if (assembly is LoadedModule module)
@@ -184,7 +184,7 @@ public static class ILSpyTree
                 entity = Resolve(module, anchor.Value.Token) ?? entity;
             }
         }
-        else if (anchor != null)
+        else if (anchor is not null)
         {
             token = (uint)anchor.Value.Token;
         }

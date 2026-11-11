@@ -699,7 +699,7 @@ internal static class MetadataTables
         yield return "MetadataKind: " + metadata.MetadataKind;
         yield return "MetadataVersion: " + metadata.MetadataVersion;
         var header = metadata.DebugMetadataHeader;
-        if (header != null)
+        if (header is not null)
         {
             yield return "";
             yield return "Header:";

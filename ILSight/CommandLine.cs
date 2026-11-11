@@ -36,12 +36,12 @@ public static class CommandLines
     public static List<string> ListArguments(RunArguments arguments)
     {
         var args = new List<string>();
-        if (arguments.Language != null)
+        if (arguments.Language is not null)
         {
             args.Add(LanguageOption + arguments.Language.Value);
         }
 
-        if (arguments.AssemblyList != null)
+        if (arguments.AssemblyList is not null)
         {
             args.Add(ListOption + arguments.AssemblyList);
         }
@@ -51,7 +51,7 @@ public static class CommandLines
             args.Add(ClearListFlag);
         }
 
-        if (arguments.Files.NavigateTo != null)
+        if (arguments.Files.NavigateTo is not null)
         {
             args.Add(NavigateToOption + arguments.Files.NavigateTo);
         }
@@ -118,7 +118,7 @@ public static class CommandLines
     private static void ReadSettingsPath(Reader reader, string arg)
     {
         var name = ReadName(arg.Substring(SettingsOption.Length));
-        if (name == null)
+        if (name is null)
         {
             reader.Ignored.Add(arg);
             return;
@@ -135,7 +135,7 @@ public static class CommandLines
     private static void ReadLanguage(Reader reader, string arg)
     {
         var language = ParseLanguage(arg.Substring(LanguageOption.Length));
-        if (language == null)
+        if (language is null)
         {
             reader.Ignored.Add(arg);
             return;
@@ -146,7 +146,7 @@ public static class CommandLines
     private static void ReadAssemblyList(Reader reader, string arg)
     {
         var name = ReadName(arg.Substring(ListOption.Length));
-        if (name == null)
+        if (name is null)
         {
             reader.Ignored.Add(arg);
             return;
@@ -157,7 +157,7 @@ public static class CommandLines
     private static void ReadNavigateTo(Reader reader, string arg)
     {
         var id = ReadName(arg.Substring(NavigateToOption.Length));
-        if (id == null)
+        if (id is null)
         {
             reader.Ignored.Add(arg);
             return;

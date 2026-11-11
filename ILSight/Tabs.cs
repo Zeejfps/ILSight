@@ -57,7 +57,7 @@ public static class Tabs
         }
 
         tabs.LastWorkedIn.Set(tab);
-        if (tab.Diagram != null)
+        if (tab.Diagram is not null)
         {
             tabs.LastDiagram = tab;
         }
@@ -93,7 +93,7 @@ public static class Tabs
     /// <summary><paramref name="tab"/> if it is still open, else null.</summary>
     public static DocumentTab? KeepIfOpen(DocumentTabs tabs, DocumentTab? tab)
     {
-        if (tab == null)
+        if (tab is null)
         {
             return null;
         }
@@ -117,13 +117,13 @@ public static class Tabs
     internal static int CountContentChanges(DocumentTab tab)
     {
         var diagram = tab.Diagram;
-        if (diagram != null)
+        if (diagram is not null)
         {
             return diagram.Version;
         }
 
         var comparison = tab.Comparison;
-        if (comparison != null)
+        if (comparison is not null)
         {
             return comparison.Version;
         }
@@ -322,12 +322,12 @@ public static class Tabs
     {
         tab.Work?.Cancel();
         tab.Work = null;
-        if (tab.Diagram != null)
+        if (tab.Diagram is not null)
         {
             Diagrams.CloseDiagram(tab.Diagram);
         }
 
-        if (tab.Comparison != null)
+        if (tab.Comparison is not null)
         {
             Comparisons.CloseComparison(tab.Comparison);
         }

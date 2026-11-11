@@ -30,7 +30,7 @@ internal static class Members
     /// event of an accessor, and the types it is declared in.</summary>
     public static bool IsOrSitsInCompilerGenerated(IEntity entity)
     {
-        for (var holder = entity; holder != null; holder = HolderOf(holder))
+        for (var holder = entity; holder is not null; holder = HolderOf(holder))
         {
             if (IsCompilerGenerated(holder))
             {
@@ -42,7 +42,7 @@ internal static class Members
 
     private static IEntity? HolderOf(IEntity entity)
     {
-        if (entity is IMethod method && method.IsAccessor && method.AccessorOwner != null)
+        if (entity is IMethod method && method.IsAccessor && method.AccessorOwner is not null)
         {
             return method.AccessorOwner;
         }
@@ -53,7 +53,7 @@ internal static class Members
     public static bool IsCompilerGenerated(IEntity entity)
     {
         var file = entity.ParentModule?.MetadataFile;
-        return file != null && CSharpDecompiler.MemberIsHidden(file, entity.MetadataToken, Settings);
+        return file is not null && CSharpDecompiler.MemberIsHidden(file, entity.MetadataToken, Settings);
     }
 
     /// <summary>The accessors of a property or event, in ILSpy's order; none for other entities.</summary>

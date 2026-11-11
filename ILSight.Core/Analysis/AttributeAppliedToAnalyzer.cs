@@ -62,7 +62,7 @@ internal static class AttributeAppliedToAnalyzer
         }
 
         var entity = ts.MainModule.ResolveEntity(parent);
-        if (entity == null)
+        if (entity is null)
         {
             return [];
         }
@@ -78,7 +78,7 @@ internal static class AttributeAppliedToAnalyzer
         }
 
         var definition = attribute.AttributeType.GetDefinition();
-        if (definition == null)
+        if (definition is null)
         {
             return true;
         }
@@ -94,7 +94,7 @@ internal static class AttributeAppliedToAnalyzer
         }
 
         var entity = ts.MainModule.ResolveEntity(parent);
-        if (entity is IMethod method && method.AccessorOwner != null)
+        if (entity is IMethod method && method.AccessorOwner is not null)
         {
             return method.AccessorOwner;
         }

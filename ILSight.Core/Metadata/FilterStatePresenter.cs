@@ -178,7 +178,7 @@ namespace ILSight.Core.Metadata
             foreach (var group in state.Schema.MutexGroups)
 			{
 				var allowed = state.Groups.GetValueOrDefault(group.Name);
-				if (allowed != null && !allowed.Contains(value & group.Mask))
+				if (allowed is not null && !allowed.Contains(value & group.Mask))
                 {
                     return false;
                 }
@@ -211,7 +211,7 @@ namespace ILSight.Core.Metadata
 			var groups = new Dictionary<string, uint[]>();
 			foreach (var (name, values) in state.Groups)
 			{
-				if (values != null)
+				if (values is not null)
                 {
                     groups[name] = values.Order().ToArray();
                 }

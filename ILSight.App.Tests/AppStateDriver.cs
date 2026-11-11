@@ -39,7 +39,7 @@ internal sealed class PostedActions
     public static PostedActions OfThisTest()
     {
         var existing = _ofThisTest;
-        if (existing != null && SynchronizationContext.Current == existing._context)
+        if (existing is not null && SynchronizationContext.Current == existing._context)
         {
             return existing;
         }
@@ -279,7 +279,7 @@ internal sealed class AppStateDriver
     public void Pump()
     {
         _posted.Run();
-        if (_ui != null)
+        if (_ui is not null)
         {
             NextFrame();
         }
@@ -310,7 +310,7 @@ internal sealed class AppStateDriver
     /// <summary>Has what is picked and followed shown in the active tab, as the display option does.</summary>
     public void TurnOffPreviewTabs()
     {
-        if (_ui != null)
+        if (_ui is not null)
         {
             _ui.Display = _ui.Display with { PreviewTabs = false };
         }
@@ -332,7 +332,7 @@ internal sealed class AppStateDriver
 
     private bool IsSearching()
     {
-        if (_ui == null)
+        if (_ui is null)
         {
             return false;
         }
@@ -585,7 +585,7 @@ internal sealed class AppDriver
     {
         var top = StatusBarTop;
         var (drawn, rect) = Frames.TextRects().LastOrDefault(t => t.Text == text && t.Rect.Y >= top);
-        if (drawn == null)
+        if (drawn is null)
         {
             throw new InvalidOperationException($"'{text}' was not drawn in the status bar.");
         }

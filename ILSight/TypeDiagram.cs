@@ -29,7 +29,7 @@ public sealed class TypeDiagram
     public int Version { get; set; }
 
     /// <summary>True while cards are read or laid out in the background.</summary>
-    public bool IsBusy => Reading > 0 || LayoutWork != null;
+    public bool IsBusy => Reading > 0 || LayoutWork is not null;
 
     /// <summary>Cancelled once the diagram is closed.</summary>
     public CancellationToken Token => Open.Token;

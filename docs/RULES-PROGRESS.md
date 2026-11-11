@@ -54,3 +54,6 @@ Counts per check, after removing duplicates; tests are `ILSight.Tests` and `ILSi
 | Commit | Rule | What changed | Checks after |
 |---|---|---|---|
 | R007 braces | R007 | `dotnet format` added braces to 3,701 bodies and turned 562 `=>` methods, constructors, operators and local functions into block bodies; 6 locals to `var` by hand. Braces, block bodies and `var` are now errors. | IDE0011/21-24/61/0007: 0 |
+| R002 `is null` | R002 | 1,076 `== null` / `!= null` rewritten as `is null` / `is not null` from the analyzer's exact spans (the analyzer already skips types that overload `==` and EF expression trees). RL0202 is now an error. | RL0202: 0 |
+
+An `ILSight.Tests` test failed once in 7 runs right after this change and never again (not reproduced in 6 reruns). The change is deterministic, so this is an intermittent test; worth finding if it recurs.

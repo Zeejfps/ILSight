@@ -103,12 +103,12 @@ public static class Navigation
     /// only in the same; else null.</summary>
     public static ViewPosition? KeepPosition(ViewPosition? position, DecompilationLanguage shownIn, DecompilationLanguage language)
     {
-        if (position == null)
+        if (position is null)
         {
             return null;
         }
 
-        if (position.Value.Grid != null)
+        if (position.Value.Grid is not null)
         {
             return position;
         }
@@ -136,7 +136,7 @@ public static class Navigation
     public static void PreviewNode(AppState appState, BrowseNode node)
     {
         var showing = FindTabShowing(appState, node);
-        if (showing == null)
+        if (showing is null)
         {
             ShowNode(appState, node);
             return;
@@ -149,7 +149,7 @@ public static class Navigation
     private static DocumentTab? FindTabShowing(AppState appState, BrowseNode node)
     {
         var active = appState.Tabs.Active;
-        if (active != null && active.Node == node)
+        if (active is not null && active.Node == node)
         {
             return active;
         }
@@ -180,7 +180,7 @@ public static class Navigation
     private static void KeepActiveTabOpen(AppState appState)
     {
         var active = appState.Tabs.Active;
-        if (active == null)
+        if (active is null)
         {
             return;
         }
@@ -205,7 +205,7 @@ public static class Navigation
         }
 
         var preview = appState.Tabs.Preview;
-        if (preview != null)
+        if (preview is not null)
         {
             Tabs.Keep(appState.Tabs, preview);
         }
@@ -229,7 +229,7 @@ public static class Navigation
         var found = await Background.Run(() => OpenAndFindId(assemblies, session, paths, idString, token));
         switch (found)
         {
-            case Outcome<BrowseNode>.Ok ok when ok.Value != null:
+            case Outcome<BrowseNode>.Ok ok when ok.Value is not null:
                 if (!appState.Intent.IsStale(ticket))
                 {
                     ShowNode(appState, ok.Value);
@@ -312,7 +312,7 @@ public static class Navigation
     {
         switch (found)
         {
-            case Outcome<BrowseNode?>.Ok ok when ok.Value != null:
+            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
                 LeaveActiveTab(appState);
                 ShowNodeIn(appState, destination, ok.Value);
                 RecordPlace(appState.History, ok.Value, appState.Language);
@@ -341,7 +341,7 @@ public static class Navigation
     public static void ShowMetadataLink(AppState appState, BrowseNode grid, MetadataAddress address, bool inNewTab)
     {
         var target = BrowseSessions.FindMetadataRow(appState.Session, grid, address);
-        if (target == null)
+        if (target is null)
         {
             return;
         }
@@ -377,7 +377,7 @@ public static class Navigation
     {
         switch (found)
         {
-            case Outcome<MetadataTarget?>.Ok ok when ok.Value != null:
+            case Outcome<MetadataTarget?>.Ok ok when ok.Value is not null:
                 ShowRowIn(appState, destination, ok.Value.Value);
                 break;
             case Outcome<MetadataTarget?>.Ok:
@@ -409,7 +409,7 @@ public static class Navigation
     {
         var assemblies = appState.Assemblies;
         var found = await Background.Run(() => AssemblyListing.FindApiReferencePage(assemblies, reference));
-        if (found is Outcome<string>.Ok ok && ok.Value != null)
+        if (found is Outcome<string>.Ok ok && ok.Value is not null)
         {
             appState.ViewCommands.Enqueue(new ViewCommand.OpenWebPage(ok.Value));
         }
@@ -489,7 +489,7 @@ public static class Navigation
         var place = entry.Place;
         var position = KeepPosition(entry.Position, entry.Language, appState.Language);
         var shown = FindShownNode(appState, FindTab(appState, destination), place);
-        if (shown != null)
+        if (shown is not null)
         {
             ShowNodeIn(appState, destination, shown, position);
             return;
@@ -509,13 +509,13 @@ public static class Navigation
 
     private static BrowseNode? FindShownNode(AppState appState, DocumentTab? tab, NodePath place)
     {
-        if (tab == null)
+        if (tab is null)
         {
             return null;
         }
 
         var node = tab.Node;
-        if (node == null)
+        if (node is null)
         {
             return null;
         }
@@ -538,7 +538,7 @@ public static class Navigation
     {
         switch (found)
         {
-            case Outcome<BrowseNode?>.Ok ok when ok.Value != null:
+            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
                 ShowNodeIn(appState, destination, ok.Value, position);
                 break;
             case Outcome<BrowseNode?>.Ok:
@@ -563,7 +563,7 @@ public static class Navigation
     {
         appState.Intent.Begin();
         var tab = FindTabShowing(appState, diagram);
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }
@@ -594,13 +594,13 @@ public static class Navigation
     internal static void LeaveActiveTab(AppState appState)
     {
         var tab = appState.Tabs.Active;
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }
 
         var position = tab.Position;
-        if (position == null)
+        if (position is null)
         {
             return;
         }
@@ -641,7 +641,7 @@ public static class Navigation
     private static DocumentTab FindOrOpenTab(AppState appState, TabDestination destination)
     {
         var tab = FindTab(appState, destination);
-        if (tab == null)
+        if (tab is null)
         {
             tab = OpenNewTab(appState);
         }
@@ -679,7 +679,7 @@ public static class Navigation
     private static DocumentTab? FindOriginToReplace(AppState appState, DocumentTab? origin)
     {
         var open = Tabs.KeepIfOpen(appState.Tabs, origin);
-        if (open == null)
+        if (open is null)
         {
             return null;
         }
@@ -697,7 +697,7 @@ public static class Navigation
     private static DocumentTab? FindPreviewTab(AppState appState)
     {
         var empty = FindEmptyActiveTab(appState);
-        if (empty != null)
+        if (empty is not null)
         {
             return empty;
         }
@@ -709,7 +709,7 @@ public static class Navigation
     internal static DocumentTab? FindEmptyActiveTab(AppState appState)
     {
         var active = appState.Tabs.Active;
-        if (active == null)
+        if (active is null)
         {
             return null;
         }
@@ -736,7 +736,7 @@ public static class Navigation
     internal static DocumentTab FindOrOpenEmptyTab(AppState appState)
     {
         var empty = FindEmptyActiveTab(appState);
-        if (empty == null)
+        if (empty is null)
         {
             return OpenNewTab(appState);
         }

@@ -35,7 +35,7 @@ internal static class ResourceNodes
     public static string Describe(MetadataResource resource)
     {
         var length = resource.TryGetLength();
-        var size = length != null ? $", {length} bytes" : "";
+        var size = length is not null ? $", {length} bytes" : "";
         return $"{resource.Name} ({resource.ResourceType}{size})";
     }
 

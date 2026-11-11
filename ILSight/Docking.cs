@@ -51,7 +51,7 @@ public static class Docking
     private static void ForgetDiagramOf(AppState appState, DocumentTab tab)
     {
         var diagram = tab.Diagram;
-        if (diagram == null)
+        if (diagram is null)
         {
             return;
         }
@@ -80,7 +80,7 @@ public static class Docking
     private static DocumentTab FindTabToKeep(AppState appState)
     {
         var active = appState.Tabs.Active;
-        if (active != null)
+        if (active is not null)
         {
             return active;
         }
@@ -122,7 +122,7 @@ public static class Docking
     private static void DockAnalyzer(MainLayout layout, string? activeDocument)
     {
         var beside = FindSearchOrBookmarksGroup(layout);
-        if (beside != null)
+        if (beside is not null)
         {
             layout.Dock.Dock(DockPanels.Analyzer, beside, DockEdge.Center);
             return;
@@ -133,7 +133,7 @@ public static class Docking
     private static DockGroup? FindSearchOrBookmarksGroup(MainLayout layout)
     {
         var search = layout.Dock.GroupOf(DockPanels.Search);
-        if (search != null)
+        if (search is not null)
         {
             return search;
         }
@@ -167,7 +167,7 @@ public static class Docking
     private static void DockDisplayOptions(MainLayout layout, string? activeDocument)
     {
         var decompilerOptions = layout.Dock.GroupOf(DockPanels.DecompilerOptions);
-        if (decompilerOptions != null)
+        if (decompilerOptions is not null)
         {
             layout.Dock.Dock(DockPanels.DisplayOptions, decompilerOptions, DockEdge.Center);
             return;
@@ -189,7 +189,7 @@ public static class Docking
     private static void DockBookmarks(MainLayout layout, string? activeDocument)
     {
         var search = layout.Dock.GroupOf(DockPanels.Search);
-        if (search != null)
+        if (search is not null)
         {
             layout.Dock.Dock(DockPanels.Bookmarks, search, DockEdge.Center);
             return;
@@ -212,7 +212,7 @@ public static class Docking
     private static void DockExports(MainLayout layout, string? activeDocument)
     {
         var beside = FindToolGroup(layout);
-        if (beside != null)
+        if (beside is not null)
         {
             layout.Dock.Dock(DockPanels.Exports, beside, DockEdge.Center);
             return;
@@ -223,7 +223,7 @@ public static class Docking
     private static DockGroup? FindToolGroup(MainLayout layout)
     {
         var group = FindSearchOrBookmarksGroup(layout);
-        if (group != null)
+        if (group is not null)
         {
             return group;
         }
@@ -259,7 +259,7 @@ public static class Docking
     public static void DockDocument(MainLayout layout, string panel, string? activeDocument)
     {
         var group = FindDocumentGroup(layout, activeDocument);
-        if (group != null)
+        if (group is not null)
         {
             layout.Dock.Dock(panel, group, DockEdge.Center);
             return;
@@ -292,13 +292,13 @@ public static class Docking
     private static void DockArranged(MainLayout layout, DockNode node, DockGroup? target, DockEdge edge, float share)
     {
         var lead = FindLeadGroup(node);
-        if (lead == null)
+        if (lead is null)
         {
             return;
         }
 
         var docked = DockGroupArranged(layout, lead, target, edge, share);
-        if (docked == null)
+        if (docked is null)
         {
             return;
         }
@@ -316,20 +316,20 @@ public static class Docking
             return;
         }
 
-        if (FindLeadGroup(split.First) == null)
+        if (FindLeadGroup(split.First) is null)
         {
             DockRestArranged(layout, split.Second, lead);
             return;
         }
         var second = FindLeadGroup(split.Second);
-        if (second == null)
+        if (second is null)
         {
             DockRestArranged(layout, split.First, lead);
             return;
         }
         var secondDocked = DockGroupArranged(layout, second, lead, GetEdgeAfter(split.Direction), 1f - split.Ratio);
         DockRestArranged(layout, split.First, lead);
-        if (secondDocked != null)
+        if (secondDocked is not null)
         {
             DockRestArranged(layout, split.Second, secondDocked);
         }
@@ -349,7 +349,7 @@ public static class Docking
         }
 
         var first = FindLeadGroup(split.First);
-        if (first != null)
+        if (first is not null)
         {
             return first;
         }
@@ -367,7 +367,7 @@ public static class Docking
         var first = group.Panels[0];
         DockFirstArranged(layout, first, target, edge, share);
         var docked = layout.Dock.GroupOf(first);
-        if (docked == null)
+        if (docked is null)
         {
             return null;
         }
@@ -391,7 +391,7 @@ public static class Docking
             return;
         }
 
-        if (target == null)
+        if (target is null)
         {
             DockBeside(layout, panel, layout.Dock.Root, DockEdge.Right, DocumentShare);
             return;
@@ -401,7 +401,7 @@ public static class Docking
 
     private static void BringToFront(MainLayout layout, string? panel)
     {
-        if (panel == null)
+        if (panel is null)
         {
             return;
         }
@@ -477,7 +477,7 @@ public static class Docking
         var first = documents[0];
         DockBeside(layout, first, layout.Dock.Root, DockEdge.Right, DocumentShare);
         var group = layout.Dock.GroupOf(first);
-        if (group == null)
+        if (group is null)
         {
             throw new UnreachableException($"{first}, just docked, is in no group.");
         }
@@ -496,7 +496,7 @@ public static class Docking
     private static DockNode FindDocumentArea(MainLayout layout, string? activeDocument)
     {
         var group = FindDocumentGroup(layout, activeDocument);
-        if (group != null)
+        if (group is not null)
         {
             return group;
         }
@@ -508,7 +508,7 @@ public static class Docking
     private static DockGroup? FindDocumentGroup(MainLayout layout, string? activeDocument)
     {
         var active = FindActiveGroup(layout, activeDocument);
-        if (active != null)
+        if (active is not null)
         {
             return active;
         }
@@ -525,7 +525,7 @@ public static class Docking
 
     private static DockGroup? FindActiveGroup(MainLayout layout, string? activeDocument)
     {
-        if (activeDocument == null)
+        if (activeDocument is null)
         {
             return null;
         }
@@ -538,7 +538,7 @@ public static class Docking
     private static void DockBeside(MainLayout layout, string panel, DockNode target, DockEdge edge, float share)
     {
         var root = layout.Dock.Root as DockGroup;
-        if (root != null && root.Panels.Count == 0)
+        if (root is not null && root.Panels.Count == 0)
         {
             layout.Dock.Dock(panel, root, DockEdge.Center);
             return;

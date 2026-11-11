@@ -39,7 +39,7 @@ public sealed class Guarded<T>
         {
             get
             {
-                if (_owner == null)
+                if (_owner is null)
                 {
                     throw new InvalidOperationException("The lock is not held.");
                 }
@@ -51,7 +51,7 @@ public sealed class Guarded<T>
         public void Dispose()
         {
             var owner = _owner;
-            if (owner == null)
+            if (owner is null)
             {
                 return;
             }
@@ -117,7 +117,7 @@ public sealed class Guarded<T, TSnapshot> where TSnapshot : class
         public void Dispose()
         {
             var owner = _owner;
-            if (owner == null)
+            if (owner is null)
             {
                 return;
             }
@@ -128,7 +128,7 @@ public sealed class Guarded<T, TSnapshot> where TSnapshot : class
 
         private readonly Guarded<T, TSnapshot> GetOwner()
         {
-            if (_owner == null)
+            if (_owner is null)
             {
                 throw new InvalidOperationException("The lock is not held.");
             }

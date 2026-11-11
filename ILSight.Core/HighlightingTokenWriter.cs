@@ -29,7 +29,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
             }
 
             var function = instruction.Parent.Ancestors.OfType<ILFunction>().FirstOrDefault();
-            if (function != null && function.Kind == ILFunctionKind.TopLevelFunction && function.Method != null)
+            if (function is not null && function.Kind == ILFunctionKind.TopLevelFunction && function.Method is not null)
             {
                 DocumentWriting.MarkStatement(_builder, function.Method, instruction.StartILOffset);
             }
@@ -182,7 +182,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
             return SpanKind.Type;
         }
 
-        for (var ancestor = node; ancestor != null; ancestor = ancestor.Parent)
+        for (var ancestor = node; ancestor is not null; ancestor = ancestor.Parent)
         {
             if (ancestor is UsingDeclaration or NamespaceDeclaration)
             {

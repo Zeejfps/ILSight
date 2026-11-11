@@ -58,7 +58,7 @@ internal static class DocumentsView
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters);
-        if (picked.Target != null && tab.Node != null)
+        if (picked.Target is not null && tab.Node is not null)
         {
             Commands.Later(ui.State, (node: tab.Node, target: picked.Target.Value, picked.InNewTab), static (a, s) => ShowMetadataLink(a, s.node, s.target, s.InNewTab));
         }
@@ -72,11 +72,11 @@ internal static class DocumentsView
     /// <summary>The tab's document in the code view, with its bookmarks, or the note saying why it has none.</summary>
     public static void RenderCode(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
-        var lines = !tab.IsBusy && tab.Node != null && tab.Document.Error == null ? ListMarkedLines(bookmarks, tab.Document, tab.Node) : null;
+        var lines = !tab.IsBusy && tab.Node is not null && tab.Document.Error is null ? ListMarkedLines(bookmarks, tab.Document, tab.Node) : null;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var document = FindDocumentToShow(ui.State, view, tab);
         var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display);
-        if (result.Intent != null)
+        if (result.Intent is not null)
         {
             Act(ui, tab, result.Intent);
         }
@@ -185,13 +185,13 @@ internal static class DocumentsView
     /// <summary>The tab's icon: its node's as the tree shows it, a diagram's, else a page.</summary>
     private static UiIcon IconOf(UiState screen, DocumentTab tab)
     {
-        if (tab.Diagram != null)
+        if (tab.Diagram is not null)
         {
             return new UiIcon(screen.Icons.TabDiagram);
         }
 
         var node = tab.Node;
-        if (node == null)
+        if (node is null)
         {
             return new UiIcon(screen.Icons.TabPage);
         }
@@ -208,7 +208,7 @@ internal static class DocumentsView
         }
 
         var node = tab.Node;
-        if (node == null)
+        if (node is null)
         {
             return tab.Title ?? screen.Strings.DocumentNewTab;
         }

@@ -50,7 +50,7 @@ public static class IconAssetFolders
     private static IconAsset ReadInside(string root, string path)
     {
         var full = Resolve(root, path);
-        if (full == null)
+        if (full is null)
         {
             return IconTheming.CreateFailedAsset(ThemeProblem.AssetOutsideFolder, path);
         }

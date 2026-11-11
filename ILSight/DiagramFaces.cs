@@ -81,7 +81,7 @@ internal static class DiagramFaces
     {
         AddRow(stack, new CardRow(new CardRowContent.Name(NodeIcons.Of(card.Shape), card.Accessibility, card.Type), stack.RowHeight + NameRowExtra, Padding, card.Name));
         var stereotype = StereotypeOf(card.Stereotype);
-        if (stereotype == null)
+        if (stereotype is null)
         {
             return;
         }
@@ -190,7 +190,7 @@ internal static class DiagramFaces
     private static MeasuredLink MeasureLink(Ui<UiState> ui, TypeLink link)
     {
         var label = LabelOf(link);
-        if (label == null)
+        if (label is null)
         {
             return new MeasuredLink(link, 0f, 0f);
         }
@@ -211,7 +211,7 @@ internal static class DiagramFaces
     /// when it holds many; null for a link that holds nothing.</summary>
     public static string? LabelOf(TypeLink link)
     {
-        if (link.Label == null)
+        if (link.Label is null)
         {
             return null;
         }

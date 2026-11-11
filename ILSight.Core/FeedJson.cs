@@ -20,7 +20,7 @@ internal static class FeedJson
     public static FeedPage ReadPage(JsonElement root)
     {
         var page = Read(root, FeedJsonContext.Default.SearchPageJson, "a page of a search");
-        if (page.Data == null)
+        if (page.Data is null)
         {
             throw new InvalidDataException("A page of a search holds no list named data.");
         }
@@ -55,7 +55,7 @@ internal static class FeedJson
     public static List<FeedResource> ReadResources(JsonElement root)
     {
         var index = Read(root, FeedJsonContext.Default.ServiceIndexJson, "a service index");
-        if (index.Resources == null)
+        if (index.Resources is null)
         {
             throw new InvalidDataException("A service index holds no list named resources.");
         }
@@ -112,7 +112,7 @@ internal static class FeedJson
     {
         var id = PackageId.Parse(json.Id ?? "");
         var version = PackageVersion.Parse(json.Version ?? "");
-        if (id == null || version == null)
+        if (id is null || version is null)
         {
             return null;
         }
@@ -150,19 +150,19 @@ internal static class FeedJson
     /// <summary>Names a feed gives as one string or as a list of them, joined by commas.</summary>
     private static string JoinNames(TextListJson? names)
     {
-        return names == null ? "" : string.Join(", ", names.Items.Where(static n => n.Length > 0));
+        return names is null ? "" : string.Join(", ", names.Items.Where(static n => n.Length > 0));
     }
 
     /// <summary>Words a feed gives as a list of them or as one string, split on spaces.</summary>
     private static List<string> SplitWords(TextListJson? words)
     {
-        return words == null ? [] : words.Items.SelectMany(static w => w.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToList();
+        return words is null ? [] : words.Items.SelectMany(static w => w.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToList();
     }
 
     private static FeedVersion? Parse(VersionJson json)
     {
         var version = PackageVersion.Parse(json.Version ?? "");
-        if (version == null)
+        if (version is null)
         {
             return null;
         }
@@ -179,7 +179,7 @@ internal static class FeedJson
             WebUrl.Parse(json.ProjectUrl),
             json.PackageSize ?? 0,
             (json.DependencyGroups ?? []).OfType<DependencyGroupJson>().Select(static g => Parse(g)).ToList(),
-            json.Deprecation == null ? null : Parse(json.Deprecation),
+            json.Deprecation is null ? null : Parse(json.Deprecation),
             (json.Vulnerabilities ?? []).OfType<VulnerabilityJson>().Select(static v => Parse(v)).ToList());
     }
 
@@ -193,7 +193,7 @@ internal static class FeedJson
     private static PackageDeprecation Parse(DeprecationJson json)
     {
         return new PackageDeprecation(
-            json.Reasons == null ? [] : json.Reasons.Items.Where(static r => r.Length > 0).ToList(),
+            json.Reasons is null ? [] : json.Reasons.Items.Where(static r => r.Length > 0).ToList(),
             json.Message ?? "",
             json.AlternatePackage?.Id ?? "");
     }
@@ -206,7 +206,7 @@ internal static class FeedJson
     /// <summary>The severity; 0 for anything but a whole number that fits an int, or its digits.</summary>
     private static int ParseSeverity(JsonElement? severity)
     {
-        if (severity == null)
+        if (severity is null)
         {
             return 0;
         }
@@ -228,7 +228,7 @@ internal static class FeedJson
 
     private static FeedResource Parse(ResourceJson json)
     {
-        return new FeedResource(json.Type == null ? [] : json.Type.Items, WebUrl.Parse(json.Id));
+        return new FeedResource(json.Type is null ? [] : json.Type.Items, WebUrl.Parse(json.Id));
     }
 }
 

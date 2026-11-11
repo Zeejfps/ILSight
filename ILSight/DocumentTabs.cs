@@ -35,12 +35,12 @@ public sealed class DocumentTabs
     {
         get
         {
-            if (LastDiagram == null)
+            if (LastDiagram is null)
             {
                 return null;
             }
 
-            if (LastDiagram.Diagram == null)
+            if (LastDiagram.Diagram is null)
             {
                 return null;
             }

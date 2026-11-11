@@ -30,7 +30,7 @@ public static class MatchingBrackets
     private static BracketPair? Match(DecompiledDocument document, TextPosition caret)
     {
         var after = MatchAt(document, caret);
-        if (after != null)
+        if (after is not null)
         {
             return after;
         }
@@ -72,7 +72,7 @@ public static class MatchingBrackets
 
         var line = document.Lines[at.Line];
         var span = CodeText.SpanAt(line.Spans, at.Column);
-        if (span == null)
+        if (span is null)
         {
             return '\0';
         }

@@ -271,12 +271,12 @@ internal static class SettingsJson
             settings.Language,
             Write(settings.Decompiler),
             settings.FoldedOptionGroups,
-            settings.Display == null ? null : Write(settings.Display),
+            settings.Display is null ? null : Write(settings.Display),
             settings.Locale,
             settings.ApiVisibility,
             settings.CheckForUpdates,
             settings.SearchKinds,
-            settings.Layout == null ? null : DockJson.Write(settings.Layout),
+            settings.Layout is null ? null : DockJson.Write(settings.Layout),
             settings.Bookmarks.ConvertAll(Write),
             settings.BookmarkColumns,
             settings.SearchColumns,
@@ -284,7 +284,7 @@ internal static class SettingsJson
             WriteFilters(settings.FlagsFilters),
             WriteWindow(settings.Window),
             WriteWindow(settings.ExportWindow),
-            settings.NuGet == null ? null : Write(settings.NuGet),
+            settings.NuGet is null ? null : Write(settings.NuGet),
             WriteWindow(settings.NuGetWindow),
             WriteWindow(settings.ProcessWindow),
             settings.ProcessColumns,
@@ -294,7 +294,7 @@ internal static class SettingsJson
 
     private static Dictionary<string, SavedFilterStateJson?>? WriteFilters(Dictionary<string, SavedFilterState>? filters)
     {
-        if (filters == null)
+        if (filters is null)
         {
             return null;
         }
@@ -310,7 +310,7 @@ internal static class SettingsJson
 
     private static WindowBoundsJson? WriteWindow(WindowBounds? bounds)
     {
-        if (bounds == null)
+        if (bounds is null)
         {
             return null;
         }
@@ -326,20 +326,20 @@ internal static class SettingsJson
             list.Analyzed?.Select(static CodeAnchorJson? (a) => Write(a)).ToList(),
             WritePicks(list.Pdbs),
             WritePicks(list.Frameworks),
-            list.Documents == null ? null : Write(list.Documents));
+            list.Documents is null ? null : Write(list.Documents));
     }
 
     /// <summary>The list, without blank paths and picks or documents missing what they show; null
     /// without a name. A document that is not one at all leaves out <paramref name="field"/>.</summary>
     public static AssemblyListRecord? Parse(AssemblyListJson json, SettingsReader file, string field)
     {
-        if (json.Name == null)
+        if (json.Name is null)
         {
             return null;
         }
 
         return new AssemblyListRecord(json.Name, ListPaths(json.Assemblies), ListAnchors(json.Analyzed),
-            ParsePicks(json.Pdbs), ParsePicks(json.Frameworks), json.Documents == null ? null : Parse(json.Documents, file, field));
+            ParsePicks(json.Pdbs), ParsePicks(json.Frameworks), json.Documents is null ? null : Parse(json.Documents, file, field));
     }
 
     private static Dictionary<string, string?>? WritePicks(Dictionary<AssemblyPath, string>? picks)
@@ -349,7 +349,7 @@ internal static class SettingsJson
 
     private static Dictionary<AssemblyPath, string>? ParsePicks(Dictionary<string, string?>? picks)
     {
-        if (picks == null)
+        if (picks is null)
         {
             return null;
         }
@@ -370,7 +370,7 @@ internal static class SettingsJson
     {
         var json = AppSettingsJson.Default.DocumentJson;
         var tabs = documents.Tabs.ConvertAll(t => JsonSerializer.SerializeToElement(Write(t), json));
-        var layout = documents.Layout == null ? null : DockJson.Write(documents.Layout);
+        var layout = documents.Layout is null ? null : DockJson.Write(documents.Layout);
         return new DocumentsJson(tabs, documents.Active, documents.Preview, layout);
     }
 
@@ -379,7 +379,7 @@ internal static class SettingsJson
     /// a part or giving two parts one id, leaves out <paramref name="field"/>.</summary>
     private static DocumentsRecord? Parse(DocumentsJson json, SettingsReader file, string field)
     {
-        if (json.Tabs == null)
+        if (json.Tabs is null)
         {
             return null;
         }
@@ -396,7 +396,7 @@ internal static class SettingsJson
     private static DocumentRecord? ParseTab(JsonElement tab, SettingsReader file, string field)
     {
         var json = Parse(file, tab, AppSettingsJson.Default.DocumentJson, field);
-        if (json == null)
+        if (json is null)
         {
             return null;
         }
@@ -406,13 +406,13 @@ internal static class SettingsJson
 
     private static DockLayout? ParseLayout(DockLayoutJson? json, SettingsReader file, string field)
     {
-        if (json == null)
+        if (json is null)
         {
             return null;
         }
 
         var layout = DockJson.Parse(json);
-        if (layout != null && !layout.RepeatsAnId())
+        if (layout is not null && !layout.RepeatsAnId())
         {
             return layout;
         }
@@ -450,13 +450,13 @@ internal static class SettingsJson
         var grid = node.View?.Grid;
         return new NodeDocumentJson(node.Panel, node.Title, node.Location.FilePath.Text,
             Write(node.Location), node.Language,
-            code == null ? null : Write(code.Value),
-            grid == null ? null : Write(grid.Value));
+            code is null ? null : Write(code.Value),
+            grid is null ? null : Write(grid.Value));
     }
 
     private static DocumentRecord? Parse(NodeDocumentJson json, Action leaveOut)
     {
-        if (json.Panel == null || json.FilePath == null)
+        if (json.Panel is null || json.FilePath is null)
         {
             return null;
         }
@@ -468,7 +468,7 @@ internal static class SettingsJson
         }
 
         var location = GetLocation(file, json.Path, leaveOut);
-        if (location == null)
+        if (location is null)
         {
             return null;
         }
@@ -479,12 +479,12 @@ internal static class SettingsJson
     /// <summary>The view's place as the file keeps it: a code view's, else a grid's, else none.</summary>
     private static ViewPosition? ParseView(CodeViewPositionJson? code, GridPositionJson? grid)
     {
-        if (code != null)
+        if (code is not null)
         {
             return ViewPosition.OfCode(Parse(code.Value));
         }
 
-        if (grid != null)
+        if (grid is not null)
         {
             return ViewPosition.OfGrid(Parse(grid.Value));
         }
@@ -498,20 +498,20 @@ internal static class SettingsJson
             diagram.Panel,
             diagram.Title,
             diagram.Types.Select(static TypeAnchorJson? (t) => Write(t)).ToList(),
-            diagram.HomeAssemblies == null ? null : WritePaths(diagram.HomeAssemblies),
-            diagram.View == null ? null : Write(diagram.View));
+            diagram.HomeAssemblies is null ? null : WritePaths(diagram.HomeAssemblies),
+            diagram.View is null ? null : Write(diagram.View));
     }
 
     private static DocumentRecord? Parse(DiagramDocumentJson json)
     {
-        if (json.Panel == null || json.Types == null)
+        if (json.Panel is null || json.Types is null)
         {
             return null;
         }
 
         var types = json.Types.OfType<TypeAnchorJson>().Select(static t => Parse(t)).OfType<TypeAnchor>().ToList();
-        var homes = json.HomeAssemblies == null ? null : ListPaths(json.HomeAssemblies);
-        return new DiagramDocumentRecord(json.Panel, json.Title, types, homes, json.View == null ? null : Parse(json.View));
+        var homes = json.HomeAssemblies is null ? null : ListPaths(json.HomeAssemblies);
+        return new DiagramDocumentRecord(json.Panel, json.Title, types, homes, json.View is null ? null : Parse(json.View));
     }
 
     private static ComparisonDocumentJson Write(ComparisonDocumentRecord comparison)
@@ -522,12 +522,12 @@ internal static class SettingsJson
             comparison.LeftPath.Text,
             comparison.RightPath.Text,
             comparison.Scope,
-            comparison.View == null ? null : new ComparisonViewJson(comparison.View.OnlyDifferences));
+            comparison.View is null ? null : new ComparisonViewJson(comparison.View.OnlyDifferences));
     }
 
     private static DocumentRecord? Parse(ComparisonDocumentJson json)
     {
-        if (json.Panel == null || json.LeftPath == null || json.RightPath == null)
+        if (json.Panel is null || json.LeftPath is null || json.RightPath is null)
         {
             return null;
         }
@@ -539,7 +539,7 @@ internal static class SettingsJson
             return null;
         }
 
-        return new ComparisonDocumentRecord(json.Panel, json.Title, left, right, json.Scope, json.View == null ? null : Parse(json.View));
+        return new ComparisonDocumentRecord(json.Panel, json.Title, left, right, json.Scope, json.View is null ? null : Parse(json.View));
     }
 
     private static List<string?> WritePaths(List<AssemblyPath> paths)
@@ -550,7 +550,7 @@ internal static class SettingsJson
     /// <summary>The absolute paths among <paramref name="paths"/>; none when there are none.</summary>
     public static List<AssemblyPath> ListPaths(List<string?>? paths)
     {
-        if (paths == null)
+        if (paths is null)
         {
             return new List<AssemblyPath>();
         }
@@ -565,7 +565,7 @@ internal static class SettingsJson
     /// <summary>The symbols in <paramref name="anchors"/> that name a file; none when there are none.</summary>
     public static List<CodeAnchor> ListAnchors(List<CodeAnchorJson?>? anchors)
     {
-        if (anchors == null)
+        if (anchors is null)
         {
             return new List<CodeAnchor>();
         }
@@ -578,13 +578,13 @@ internal static class SettingsJson
     /// <paramref name="leaveOut"/> is told; never the root for a path that cannot be read.</summary>
     private static NodePath? GetLocation(AssemblyPath filePath, SavedPathJson? path, Action leaveOut)
     {
-        if (path == null)
+        if (path is null)
         {
             return null;
         }
 
         var location = Parse(path, filePath);
-        if (location == null)
+        if (location is null)
         {
             leaveOut();
         }
@@ -603,7 +603,7 @@ internal static class SettingsJson
     /// cannot be read.</summary>
     private static NodePath? Parse(SavedPathJson json, AssemblyPath filePath)
     {
-        if (json.Version != SavedPathJson.CurrentVersion || json.Steps == null)
+        if (json.Version != SavedPathJson.CurrentVersion || json.Steps is null)
         {
             return null;
         }
@@ -611,13 +611,13 @@ internal static class SettingsJson
         var steps = new List<NodePathStep>(json.Steps.Count);
         foreach (var saved in json.Steps)
         {
-            if (saved == null)
+            if (saved is null)
             {
                 return null;
             }
 
             var step = Parse(saved);
-            if (step == null)
+            if (step is null)
             {
                 return null;
             }
@@ -629,7 +629,7 @@ internal static class SettingsJson
 
     private static NodePathStep? Parse(SavedPathStepJson json)
     {
-        if (json.Step == null || json.Label == null)
+        if (json.Step is null || json.Label is null)
         {
             return null;
         }
@@ -657,16 +657,16 @@ internal static class SettingsJson
             bookmark.LineNumber,
             bookmark.MemberName,
             bookmark.LocationNodeName,
-            bookmark.ViewState == null ? null : Write(bookmark.ViewState),
+            bookmark.ViewState is null ? null : Write(bookmark.ViewState),
             bookmark.Language,
-            bookmark.Location == null ? null : Write(bookmark.Location));
+            bookmark.Location is null ? null : Write(bookmark.Location));
     }
 
     /// <summary>The bookmark, with what the file lacks filled in; null without the absolute path of an
     /// assembly file. A place that cannot be read is no place, and <paramref name="leaveOutPlace"/> is told.</summary>
     public static BookmarkRecord? Parse(BookmarkJson json, Action leaveOutPlace)
     {
-        if (json.FileName == null)
+        if (json.FileName is null)
         {
             return null;
         }
@@ -680,7 +680,7 @@ internal static class SettingsJson
         var location = GetLocation(path, json.Path, leaveOutPlace);
         return new BookmarkRecord(json.Name ?? "", json.Enabled, path, json.AssemblyFullName ?? "", json.ModuleName ?? path.FileName,
             json.Token, json.Kind, json.ILOffset, json.LineNumber, json.MemberName ?? "", json.LocationNodeName,
-            json.ViewState == null ? null : Parse(json.ViewState), location, json.Language);
+            json.ViewState is null ? null : Parse(json.ViewState), location, json.Language);
     }
 
     private static BookmarkViewStateJson Write(BookmarkViewState view)
@@ -692,8 +692,8 @@ internal static class SettingsJson
             view.HorizontalOffset,
             view.FoldingChecksum,
             view.ExpandedFoldings?.Select(static BookmarkFoldingRangeJson? (f) => Write(f)).ToList(),
-            view.RenderedLayoutSettings == null ? null : Write(view.RenderedLayoutSettings),
-            view.SelectedTreeNodePath == null ? null : new List<string?>(view.SelectedTreeNodePath));
+            view.RenderedLayoutSettings is null ? null : Write(view.RenderedLayoutSettings),
+            view.SelectedTreeNodePath is null ? null : new List<string?>(view.SelectedTreeNodePath));
     }
 
     /// <summary>The view state, without missing foldings; a tree path missing a step is no path.</summary>
@@ -701,12 +701,12 @@ internal static class SettingsJson
     {
         var foldings = json.ExpandedFoldings?.OfType<BookmarkFoldingRangeJson>().Select(static f => Parse(f)).ToList();
         return new BookmarkViewState(json.Version, json.CaretOffset, json.VerticalOffset, json.HorizontalOffset, json.FoldingChecksum, foldings,
-            json.RenderedLayoutSettings == null ? null : Parse(json.RenderedLayoutSettings), ParseTreePath(json.SelectedTreeNodePath));
+            json.RenderedLayoutSettings is null ? null : Parse(json.RenderedLayoutSettings), ParseTreePath(json.SelectedTreeNodePath));
     }
 
     private static List<string>? ParseTreePath(List<string?>? path)
     {
-        if (path == null)
+        if (path is null)
         {
             return null;
         }
@@ -763,7 +763,7 @@ internal static class SettingsJson
 
     private static CodeAnchor? Parse(CodeAnchorJson json)
     {
-        if (json.FilePath == null)
+        if (json.FilePath is null)
         {
             return null;
         }
@@ -819,7 +819,7 @@ internal static class SettingsJson
 
     private static TypeAnchor? Parse(TypeAnchorJson json)
     {
-        if (json.AssemblyPath == null || json.FullName == null)
+        if (json.AssemblyPath is null || json.FullName is null)
         {
             return null;
         }
@@ -857,23 +857,23 @@ internal static class SettingsJson
 
     internal static CardFold? Parse(CardFoldJson json)
     {
-        if (json.Card == null)
+        if (json.Card is null)
         {
             return null;
         }
 
         var card = Parse(json.Card);
-        if (card == null)
+        if (card is null)
         {
             return null;
         }
 
-        if (json.Section != null && json.InheritedFrom == null)
+        if (json.Section is not null && json.InheritedFrom is null)
         {
             return new CardFold.Own(card.Value, json.Section.Value);
         }
 
-        if (json.Section == null && json.InheritedFrom != null)
+        if (json.Section is null && json.InheritedFrom is not null)
         {
             return new CardFold.Inherited(card.Value, json.InheritedFrom);
         }
@@ -888,7 +888,7 @@ internal static class SettingsJson
 
     public static SavedNuGetSearch? Parse(NuGetSearchJson json)
     {
-        if (json.FeedUrl == null)
+        if (json.FeedUrl is null)
         {
             return null;
         }
@@ -906,7 +906,7 @@ internal static class SettingsJson
             options.HighlightUsagesAtCaret,
             options.ShowOmnibar,
             options.UiScale,
-            options.Font == null ? null : Write(options.Font),
+            options.Font is null ? null : Write(options.Font),
             options.TreeTokens,
             options.ShowEmptyMetadataTables,
             options.NestedNamespaces,
@@ -925,14 +925,14 @@ internal static class SettingsJson
             json.HighlightUsagesAtCaret ?? d.HighlightUsagesAtCaret,
             json.ShowOmnibar ?? d.ShowOmnibar,
             json.UiScale ?? d.UiScale,
-            json.Font == null ? null : Parse(json.Font),
+            json.Font is null ? null : Parse(json.Font),
             json.TreeTokens ?? d.TreeTokens,
             json.ShowEmptyMetadataTables ?? d.ShowEmptyMetadataTables,
             json.NestedNamespaces ?? d.NestedNamespaces,
             json.SystemTitleBar ?? d.SystemTitleBar,
             json.PreviewTabs ?? d.PreviewTabs);
         var scaled = CodeDisplay.SnapUiScale(options, options.UiScale);
-        if (json.FontSize == null)
+        if (json.FontSize is null)
         {
             return scaled;
         }
@@ -947,7 +947,7 @@ internal static class SettingsJson
 
     private static CodeFont? Parse(CodeFontJson json)
     {
-        if (json.Family == null || json.Path == null)
+        if (json.Family is null || json.Path is null)
         {
             return null;
         }
@@ -965,7 +965,7 @@ internal static class SettingsJson
     public static DecompilerOptions Parse(DecompilerOptionsJson json, Action leaveOut)
     {
         var options = DecompilerOptions.Default with { LanguageVersion = json.LanguageVersion ?? DecompilerOptions.Default.LanguageVersion };
-        if (json.Toggles == null)
+        if (json.Toggles is null)
         {
             return options;
         }
@@ -973,7 +973,7 @@ internal static class SettingsJson
         foreach (var (name, value) in json.Toggles)
         {
             var toggle = DecompilerToggles.FindToggle(name);
-            if (toggle == null)
+            if (toggle is null)
             {
                 leaveOut();
                 continue;
@@ -1006,7 +1006,7 @@ internal static class SettingsJson
 
     private static Dictionary<string, uint[]>? ParseGroups(Dictionary<string, uint[]?>? groups)
     {
-        if (groups == null)
+        if (groups is null)
         {
             return null;
         }
@@ -1014,7 +1014,7 @@ internal static class SettingsJson
         var kept = new Dictionary<string, uint[]>();
         foreach (var (group, values) in groups)
         {
-            if (values != null)
+            if (values is not null)
             {
                 kept.Add(group, values);
             }
@@ -1041,7 +1041,7 @@ internal static class SettingsJson
     /// has none. A dialog keeps its own smallest size, so only the largest is enforced here.</summary>
     public static WindowBounds? SanitizeDialogWindow(WindowBounds? bounds)
     {
-        if (bounds == null)
+        if (bounds is null)
         {
             return null;
         }
@@ -1100,7 +1100,7 @@ internal static class SettingsJson
         {
             return new SettingsLoadResult(new AppSettings(), new SettingsProblem.NotRead(e.Message, KeepUnreadable(path)));
         }
-        if (fields == null)
+        if (fields is null)
         {
             return new SettingsLoadResult(new AppSettings(), new SettingsProblem.Empty());
         }
@@ -1182,7 +1182,7 @@ internal static class SettingsJson
     {
         const string field = nameof(SettingsFile.Decompiler);
         var saved = SettingsJson.Read(file, field, AppSettingsJson.Default.DecompilerOptionsJson);
-        if (saved == null)
+        if (saved is null)
         {
             return DecompilerOptions.Default;
         }
@@ -1193,7 +1193,7 @@ internal static class SettingsJson
     private static DisplayOptions? ReadDisplay(SettingsReader file)
     {
         var saved = SettingsJson.Read(file, nameof(SettingsFile.Display), AppSettingsJson.Default.DisplayOptionsJson);
-        if (saved == null)
+        if (saved is null)
         {
             return null;
         }
@@ -1204,7 +1204,7 @@ internal static class SettingsJson
     private static WindowBounds? ReadWindow(SettingsReader file, string field)
     {
         var saved = SettingsJson.Read(file, field, AppSettingsJson.Default.WindowBoundsJson);
-        if (saved == null)
+        if (saved is null)
         {
             return null;
         }
@@ -1215,7 +1215,7 @@ internal static class SettingsJson
     private static SavedNuGetSearch? ReadNuGet(SettingsReader file)
     {
         var saved = SettingsJson.Read(file, nameof(SettingsFile.NuGet), AppSettingsJson.Default.NuGetSearchJson);
-        if (saved == null)
+        if (saved is null)
         {
             return null;
         }
@@ -1236,7 +1236,7 @@ internal static class SettingsJson
     private static AssemblyListRecord? ParseAssemblyList(SettingsReader file, JsonElement list, string field)
     {
         var saved = SettingsJson.Parse(file, list, AppSettingsJson.Default.AssemblyListJson, field);
-        if (saved == null)
+        if (saved is null)
         {
             return null;
         }
@@ -1257,7 +1257,7 @@ internal static class SettingsJson
     private static BookmarkRecord? ParseBookmark(SettingsReader file, JsonElement bookmark, string field)
     {
         var saved = SettingsJson.Parse(file, bookmark, AppSettingsJson.Default.BookmarkJson, field);
-        if (saved == null)
+        if (saved is null)
         {
             return null;
         }
@@ -1276,13 +1276,13 @@ internal static class SettingsJson
     {
         problem = new SettingsProblem.None();
         var saved = SettingsJson.Read(file, nameof(SettingsFile.Layout), AppSettingsJson.Default.DockLayoutJson);
-        if (saved == null)
+        if (saved is null)
         {
             return null;
         }
 
         var layout = DockJson.Parse(saved);
-        if (layout == null)
+        if (layout is null)
         {
             problem = new SettingsProblem.LayoutPartsMissing();
             return null;
@@ -1299,7 +1299,7 @@ internal static class SettingsJson
     private static Dictionary<string, SavedFilterState>? ReadFlagsFilters(SettingsReader file)
     {
         var saved = SettingsJson.Read(file, nameof(SettingsFile.FlagsFilters), AppSettingsJson.Default.DictionaryStringSavedFilterStateJson);
-        if (saved == null)
+        if (saved is null)
         {
             return null;
         }
@@ -1307,7 +1307,7 @@ internal static class SettingsJson
         var filters = new Dictionary<string, SavedFilterState>();
         foreach (var (key, filter) in saved)
         {
-            if (filter != null)
+            if (filter is not null)
             {
                 filters.Add(key, SettingsJson.Parse(filter));
             }
@@ -1319,7 +1319,7 @@ internal static class SettingsJson
     /// the file has named lists too.</summary>
     private static void MoveUnnamedListIntoDefault(List<AssemblyListRecord> lists, List<string?>? unnamed)
     {
-        if (unnamed == null)
+        if (unnamed is null)
         {
             return;
         }
@@ -1335,7 +1335,7 @@ internal static class SettingsJson
     /// <summary>Gives the analyses saved before each list kept its own to the open list, unless it has some.</summary>
     private static void MoveAnalysesIntoActiveList(List<AssemblyListRecord> lists, string? active, List<CodeAnchorJson?>? analyzed)
     {
-        if (analyzed == null)
+        if (analyzed is null)
         {
             return;
         }
@@ -1347,7 +1347,7 @@ internal static class SettingsJson
 
         var index = FindActiveListIndex(lists, active);
         var list = lists[index];
-        var hasAnalyses = list.Analyzed != null && list.Analyzed.Count > 0;
+        var hasAnalyses = list.Analyzed is not null && list.Analyzed.Count > 0;
         if (hasAnalyses)
         {
             return;
@@ -1359,7 +1359,7 @@ internal static class SettingsJson
     /// <summary>Where the list <paramref name="active"/> names is, else the first.</summary>
     private static int FindActiveListIndex(List<AssemblyListRecord> lists, string? active)
     {
-        if (active == null)
+        if (active is null)
         {
             return 0;
         }
@@ -1389,13 +1389,13 @@ internal static class SettingsJson
     /// were files or as the id of its file; the default theme for none or one that is no id.</summary>
     private static ThemeId<ThemeFile> GetThemeId(string? saved)
     {
-        if (saved == null)
+        if (saved is null)
         {
             return Theming.DarkId;
         }
 
         var old = GetOldThemeId(saved);
-        if (old != null)
+        if (old is not null)
         {
             return ThemeId<ThemeFile>.Of(old);
         }
@@ -1424,7 +1424,7 @@ internal static class SettingsJson
     /// one that is no id.</summary>
     private static ThemeId<IconThemeFile> GetIconThemeId(string? saved)
     {
-        if (saved == null)
+        if (saved is null)
         {
             return IconTheming.ReferenceId;
         }

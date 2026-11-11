@@ -47,12 +47,12 @@ internal static class OptionSearch
                 continue;
             }
 
-            if (second != null && Contains(compare, second, word))
+            if (second is not null && Contains(compare, second, word))
             {
                 continue;
             }
 
-            if (third != null && Contains(compare, third, word))
+            if (third is not null && Contains(compare, third, word))
             {
                 continue;
             }

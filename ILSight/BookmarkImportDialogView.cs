@@ -12,7 +12,7 @@ internal static class BookmarkImportDialogView
     public static void Render(Ui<UiState> ui, BookmarkImports imports)
     {
         var import = imports.Asking;
-        if (import == null)
+        if (import is null)
         {
             return;
         }

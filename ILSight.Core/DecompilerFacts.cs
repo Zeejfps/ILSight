@@ -14,7 +14,7 @@ internal static class DecompilerFacts
     public static IModule GetModule(IEntity entity)
     {
         var module = entity.ParentModule;
-        if (module == null)
+        if (module is null)
         {
             throw new UnreachableException($"{entity} belongs to no module, though every entity of a loaded assembly does.");
         }
@@ -38,7 +38,7 @@ internal static class DecompilerFacts
     public static MetadataFile GetMetadataFile(IEntity entity)
     {
         var file = entity.ParentModule?.MetadataFile;
-        if (file == null)
+        if (file is null)
         {
             throw new UnreachableException($"{entity} was read from no file, though every entity of a loaded assembly was.");
         }
@@ -51,7 +51,7 @@ internal static class DecompilerFacts
     public static ITypeDefinition GetDeclaringTypeDefinition(IEntity member)
     {
         var declaring = member.DeclaringTypeDefinition;
-        if (declaring == null)
+        if (declaring is null)
         {
             throw new UnreachableException($"{member} has no type declaring it, though every member has.");
         }
@@ -102,7 +102,7 @@ internal static class DecompilerFacts
     public static PEHeader GetPEHeader(PEHeaders headers)
     {
         var header = headers.PEHeader;
-        if (header == null)
+        if (header is null)
         {
             throw new UnreachableException("A portable executable that was loaded has no optional header, which only object files go without.");
         }

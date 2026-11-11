@@ -43,7 +43,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static DocumentTab GridTab(AppDriver app)
     {
-        return app.AppState.Tabs.Open.Single(t => t.Grid != null);
+        return app.AppState.Tabs.Open.Single(t => t.Grid is not null);
     }
 
     /// <summary>An app showing the TypeDef table with Greeter's row selected, saved on exit; the row.</summary>
@@ -303,7 +303,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var settings = _temp.Settings();
         var documents = Assert.Single(settings.AssemblyLists).Documents;
         Assert.NotNull(documents);
-        var saved = documents.Tabs.OfType<NodeDocumentRecord>().Single(t => t.View?.Grid != null);
+        var saved = documents.Tabs.OfType<NodeDocumentRecord>().Single(t => t.View?.Grid is not null);
         var older = saved with { View = ViewPosition.OfCode(new CodeViewPosition(row, 0f, default, new TextPosition(row, 1))) };
         documents.Tabs[documents.Tabs.IndexOf(saved)] = older;
 

@@ -31,7 +31,7 @@ public static class RunArgumentsRouting
     public static RunArgumentsReceiver? ForwardOrReceive(RunArgumentsAddress address, RunArguments arguments, bool newInstance)
     {
         var receiver = RunArgumentsPipe.TryClaim(address);
-        if (receiver != null)
+        if (receiver is not null)
         {
             return receiver;
         }

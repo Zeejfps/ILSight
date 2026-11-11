@@ -22,7 +22,7 @@ public static class Exports
     /// whose bytes are saved.</summary>
     public static bool CanSaveCode([NotNullWhen(true)] BrowseNode? node)
     {
-        if (node == null)
+        if (node is null)
         {
             return false;
         }
@@ -123,7 +123,7 @@ public static class Exports
     private static string FolderOf(string path)
     {
         var folder = Path.GetDirectoryName(path);
-        if (folder == null)
+        if (folder is null)
         {
             throw new UnreachableException($"'{path}', which a save dialog gave, names no file in a folder.");
         }
@@ -382,7 +382,7 @@ public static class Exports
     {
         var runs = new List<ExportRun>();
         var running = queue.Running;
-        if (running != null)
+        if (running is not null)
         {
             runs.Add(running.Export.Run);
         }
@@ -411,13 +411,13 @@ public static class Exports
     public static string? FindExportFolder(ExportQueue queue, List<ExportReport> finished, ExportRun run)
     {
         var report = FindFinishedExport(finished, run);
-        if (report != null)
+        if (report is not null)
         {
             return report.Folder;
         }
 
         var queued = FindQueuedExport(queue, run);
-        if (queued == null)
+        if (queued is null)
         {
             return null;
         }
@@ -428,7 +428,7 @@ public static class Exports
     private static QueuedExport? FindQueuedExport(ExportQueue queue, ExportRun run)
     {
         var running = queue.Running;
-        if (running != null && running.Export.Run == run)
+        if (running is not null && running.Export.Run == run)
         {
             return running.Export;
         }
@@ -441,7 +441,7 @@ public static class Exports
     public static void ActivateExport(AppState appState, ExportRun run)
     {
         var finished = FindFinishedExport(appState.FinishedExports, run);
-        if (finished == null)
+        if (finished is null)
         {
             return;
         }
@@ -454,7 +454,7 @@ public static class Exports
     public static void RemoveExport(AppState appState, ExportRun run)
     {
         var finished = FindFinishedExport(appState.FinishedExports, run);
-        if (finished != null)
+        if (finished is not null)
         {
             RemoveFinishedExport(appState, finished);
             return;
@@ -506,7 +506,7 @@ public static class Exports
     private static void TakeProgress(ExportQueue queue, ExportRun run, ExportProgress progress)
     {
         var active = FindActiveExport(queue, run);
-        if (active == null)
+        if (active is null)
         {
             return;
         }
@@ -520,12 +520,12 @@ public static class Exports
     /// arrive out of order, and the bar must not step back.</summary>
     private static float? GetFurthest(float? shown, float? reported)
     {
-        if (shown == null)
+        if (shown is null)
         {
             return reported;
         }
 
-        if (reported == null)
+        if (reported is null)
         {
             return shown;
         }
@@ -536,7 +536,7 @@ public static class Exports
     /// <summary>Asks the running export to stop; the waiting ones still get their turn.</summary>
     public static void CancelRunning(ExportQueue queue)
     {
-        if (queue.ActiveExport == null)
+        if (queue.ActiveExport is null)
         {
             return;
         }
@@ -564,7 +564,7 @@ public static class Exports
     public static void LeaveQueue(ExportQueue queue, ExportStart start)
     {
         var active = FindActiveExport(queue, start.Run);
-        if (active == null)
+        if (active is null)
         {
             return;
         }
@@ -582,7 +582,7 @@ public static class Exports
     /// <summary>The running export's state when <paramref name="run"/> is the running one; null otherwise.</summary>
     private static ExportQueue.Active? FindActiveExport(ExportQueue queue, ExportRun run)
     {
-        if (queue.ActiveExport == null)
+        if (queue.ActiveExport is null)
         {
             return null;
         }
@@ -788,7 +788,7 @@ public static class Exports
         }
 
         var clash = setup.Clash;
-        if (clash != null)
+        if (clash is not null)
         {
             return new ExportBlocker.Clash(clash);
         }
@@ -803,7 +803,7 @@ public static class Exports
 
     public static bool CanExport(ExportSetup setup)
     {
-        return FindBlocker(setup) == null;
+        return FindBlocker(setup) is null;
     }
 
     /// <summary>What each project is written with besides its code.</summary>

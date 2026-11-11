@@ -6,7 +6,7 @@ public sealed class ILSpyTreeTests
 {
     private static NodePath? PathOf(BrowseNode? node)
     {
-        return node == null ? null : BrowseNodes.GetPath(node);
+        return node is null ? null : BrowseNodes.GetPath(node);
     }
 
     [Fact]

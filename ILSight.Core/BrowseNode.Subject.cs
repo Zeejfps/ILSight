@@ -218,7 +218,7 @@ public static partial class BrowseNodes
     internal static BrowseNode? CreateForType(LoadedModule module, BrowseNode parent, ITypeDefinition type)
     {
         var definition = NodeDefinitions.FindType(module, type);
-        if (definition == null)
+        if (definition is null)
         {
             return null;
         }
@@ -231,7 +231,7 @@ public static partial class BrowseNodes
     internal static BrowseNode? CreateForMember(LoadedModule module, BrowseNode parent, IMember member)
     {
         var definition = NodeDefinitions.FindMember(module, member);
-        if (definition == null)
+        if (definition is null)
         {
             return null;
         }
@@ -242,7 +242,7 @@ public static partial class BrowseNodes
     /// <summary>The type or member <paramref name="node"/> defines; null for a node of anything else.</summary>
     internal static IEntity? GetEntity(BrowseNode? node)
     {
-        if (node == null)
+        if (node is null)
         {
             return null;
         }
@@ -253,7 +253,7 @@ public static partial class BrowseNodes
     /// <summary>Whether <paramref name="node"/> defines a member, under which only its accessors sit.</summary>
     internal static bool IsMember(BrowseNode? node)
     {
-        if (node == null)
+        if (node is null)
         {
             return false;
         }
@@ -263,7 +263,7 @@ public static partial class BrowseNodes
 
     private static void AddIfListed(List<BrowseNode> nodes, BrowseNode? node)
     {
-        if (node != null)
+        if (node is not null)
         {
             nodes.Add(node);
         }

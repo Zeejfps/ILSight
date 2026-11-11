@@ -64,7 +64,7 @@ public sealed class ExportQueue
     public Active? ActiveExport;
     public int LastRun;
 
-    public bool IsRunning => ActiveExport != null;
+    public bool IsRunning => ActiveExport is not null;
 
     /// <summary>The running export, or null when none runs.</summary>
     public RunningExport? Running => ActiveExport?.Shown;

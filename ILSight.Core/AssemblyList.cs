@@ -222,7 +222,7 @@ public static class AssemblyListing
     private static void ForgetReadOutOf(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly package)
     {
         var read = byPath
-            .Where(k => k.Value is LoadedModule module && module.Place != null && module.Place.Container == package)
+            .Where(k => k.Value is LoadedModule module && module.Place is not null && module.Place.Container == package)
             .Select(k => k.Key)
             .ToList();
         foreach (var path in read)
@@ -403,7 +403,7 @@ public static class AssemblyListing
         {
             cancellationToken.ThrowIfCancellationRequested();
             var found = AssemblyResolving.LoadAssembly(assembly.Resolver, reference);
-            if (found == null)
+            if (found is null)
             {
                 continue;
             }
@@ -449,7 +449,7 @@ public static class AssemblyListing
             case CodeReference.Entity entity:
                 return ResolveDefinition(list, owner, entity.Handle, generation);
             case CodeReference.Assembly assembly:
-                if (assembly.Referenced == null)
+                if (assembly.Referenced is null)
                 {
                     return (owner, EntityHandle.AssemblyDefinition);
                 }
@@ -684,7 +684,7 @@ public static class AssemblyListing
                     continue;
                 }
 
-                if (exactOrNewer && reference.Version != null && assembly.Version != null && assembly.Version < reference.Version)
+                if (exactOrNewer && reference.Version is not null && assembly.Version is not null && assembly.Version < reference.Version)
                 {
                     continue;
                 }
@@ -739,7 +739,7 @@ public static class AssemblyListing
     /// listed, so that listing never reads files while holding the lock.</summary>
     internal static bool TryList(AssemblyList list, LoadedAssembly assembly, int generation, CancellationToken cancellationToken = default)
     {
-        if (assembly is LoadedModule module && module.Place != null)
+        if (assembly is LoadedModule module && module.Place is not null)
         {
             return TryList(list, module.Place.Container, generation, cancellationToken);
         }
@@ -799,13 +799,13 @@ public static class AssemblyListing
         using (var held = list.State.Enter())
         {
             var known = FindReadOutOf(held.Value, package, path);
-            if (known != null)
+            if (known is not null)
             {
                 return known;
             }
         }
         var read = TryReadOutOfPackage(list, package, path, file.FullName);
-        if (read == null)
+        if (read is null)
         {
             return null;
         }
@@ -818,7 +818,7 @@ public static class AssemblyListing
             }
 
             var known = FindReadOutOf(held.Value, package, path);
-            if (known != null)
+            if (known is not null)
             {
                 return known;
             }
@@ -835,7 +835,7 @@ public static class AssemblyListing
             return null;
         }
 
-        if (known is not LoadedModule module || module.Place == null)
+        if (known is not LoadedModule module || module.Place is null)
         {
             return null;
         }
@@ -885,7 +885,7 @@ public static class AssemblyListing
         }
 
         var failure = FindFailure(held.Snapshot.Listed, assembly.FilePath);
-        return failure == null || failure == assembly;
+        return failure is null || failure == assembly;
     }
 
     /// <summary>The list with <paramref name="assembly"/> where the failure listed for its path was,
@@ -893,7 +893,7 @@ public static class AssemblyListing
     private static ImmutableArray<LoadedAssembly> ListInPlaceOfFailure(ImmutableArray<LoadedAssembly> listed, LoadedAssembly assembly)
     {
         var failure = FindFailure(listed, assembly.FilePath);
-        if (failure == null)
+        if (failure is null)
         {
             return listed.Add(assembly);
         }
@@ -933,7 +933,7 @@ public static class AssemblyListing
         }
 
         var definition = Definitions.Resolve(LoadedAssemblies.EnsureMainModule(owner), handle);
-        if (definition == null)
+        if (definition is null)
         {
             return (null, default);
         }
@@ -952,7 +952,7 @@ public static class AssemblyListing
         }
 
         var inPackage = AssemblyPackages.SplitPath(path);
-        if (inPackage == null)
+        if (inPackage is null)
         {
             return LoadedAssemblies.CreateModule(list, path, ReadFile(list, path));
         }
@@ -977,7 +977,7 @@ public static class AssemblyListing
         catch (AssemblyLoadException)
         {
             var read = ReadWebCilOrPackage(list, path);
-            if (read == null)
+            if (read is null)
             {
                 throw;
             }
@@ -989,13 +989,13 @@ public static class AssemblyListing
     private static LoadedAssembly? ReadWebCilOrPackage(AssemblyList list, AssemblyPath path)
     {
         var module = ReadWebCil(list, path);
-        if (module != null)
+        if (module is not null)
         {
             return LoadedAssemblies.CreateModule(list, path, module);
         }
 
         var package = ReadPackage(path);
-        if (package == null)
+        if (package is null)
         {
             return null;
         }
@@ -1033,7 +1033,7 @@ public static class AssemblyListing
     {
         var package = container.Package;
         var file = AssemblyPackages.FindFile(package, fullName);
-        if (file == null)
+        if (file is null)
         {
             throw new AssemblyLoadException(path, $"'{container.FilePath}' holds no '{fullName}'.");
         }

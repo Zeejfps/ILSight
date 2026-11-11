@@ -185,7 +185,7 @@ internal static class DisplayOptionsPanelView
     {
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
         PickTheme(ui, themes, chosen);
-        if (settingsPlace.ThemesFolder == null)
+        if (settingsPlace.ThemesFolder is null)
         {
             return;
         }
@@ -221,7 +221,7 @@ internal static class DisplayOptionsPanelView
     private static void CustomizeTheme(UiState screen, AppState appState, Strings t)
     {
         var file = CreateCustomTheme(appState, parent => t.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.Themes, parent, t.Culture)));
-        if (file != null)
+        if (file is not null)
         {
             screen.FilesToOpen.Enqueue(file);
         }
@@ -254,7 +254,7 @@ internal static class DisplayOptionsPanelView
     {
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
         PickIconTheme(ui, themes, chosen);
-        if (settingsPlace.IconThemesFolder == null)
+        if (settingsPlace.IconThemesFolder is null)
         {
             return;
         }
@@ -290,7 +290,7 @@ internal static class DisplayOptionsPanelView
     private static void CustomizeIconTheme(UiState screen, AppState appState, Strings t)
     {
         var file = CreateCustomIconTheme(appState, parent => t.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.IconThemes, parent, t.Culture)));
-        if (file != null)
+        if (file is not null)
         {
             screen.FilesToOpen.Enqueue(file);
         }
@@ -309,7 +309,7 @@ internal static class DisplayOptionsPanelView
 
     private static void OpenFolder(UiState screen, string? folder)
     {
-        if (folder != null)
+        if (folder is not null)
         {
             screen.FoldersToOpen.Enqueue(folder);
         }
@@ -424,7 +424,7 @@ internal static class DisplayOptionsPanelView
     private static string? ItemIdAt<TItem>(IReadOnlyList<TItem>? itemIds, int index)
         where TItem : notnull
     {
-        if (itemIds == null)
+        if (itemIds is null)
         {
             return null;
         }
@@ -459,7 +459,7 @@ internal static class DisplayOptionsPanelView
         if (font)
         {
             NextRow(ui, ref rows);
-            using (OptionRow(ui, t.DisplayOptionsFont, null, display.Font != null))
+            using (OptionRow(ui, t.DisplayOptionsFont, null, display.Font is not null))
             {
                 FontPicker(ui);
             }
@@ -467,7 +467,7 @@ internal static class DisplayOptionsPanelView
         if (fontSize)
         {
             NextRow(ui, ref rows);
-            using (OptionRow(ui, t.DisplayOptionsFontSize, hint, display.FontSize != null))
+            using (OptionRow(ui, t.DisplayOptionsFontSize, hint, display.FontSize is not null))
             {
                 FontSizeStepper(ui);
             }
@@ -806,7 +806,7 @@ internal static class DisplayOptionsPanelView
             var query = ui.State.DisplayOptionsQuery;
             var mark = OptionSearch.GetMarkBackground(ui);
             var titleRuns = OptionSearch.EnsureMarkedRuns(ui, query, title, ui.StyleText(bold: changed));
-            if (titleRuns != null)
+            if (titleRuns is not null)
             {
                 using (ui.Box(new Box { Width = Sizing.Grow(), Clip = true }))
                 {
@@ -817,7 +817,7 @@ internal static class DisplayOptionsPanelView
             {
                 ui.Text(title, new Box { Width = Sizing.Grow() }, bold: changed, overflow: TextOverflow.Ellipsis);
             }
-            if (description != null)
+            if (description is not null)
             {
                 Description(ui, description, query, mark);
             }
@@ -832,7 +832,7 @@ internal static class DisplayOptionsPanelView
         var theme = ui.Theme;
         var box = new Box { Width = Sizing.Percent(WholeWidth) };
         var runs = OptionSearch.EnsureMarkedRuns(ui, query, description, ui.StyleText(theme.TextMuted, theme.FontSizeSmall), part: 1);
-        if (runs != null)
+        if (runs is not null)
         {
             ui.RichText(runs, box, markBackground: mark);
         }

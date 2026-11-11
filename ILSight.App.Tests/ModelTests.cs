@@ -27,7 +27,7 @@ public sealed class BrowseTreeTests
         var loading = Assert.IsType<TreeRow>(first.PlaceholderRow);
         Assert.Equal("Loading…", loading.Label);
         Assert.True(loading.Spinning);
-        d.RunUntil(() => tree.GetChildren(root).PlaceholderRow == null);
+        d.RunUntil(() => tree.GetChildren(root).PlaceholderRow is null);
         Assert.Contains(tree.GetChildren(root).Nodes, c => c.Text == AppStateDriver.FixturesNamespace);
     }
 

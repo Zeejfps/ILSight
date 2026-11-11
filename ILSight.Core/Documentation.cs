@@ -28,7 +28,7 @@ internal static class Documentation
     public static IReadOnlyList<DocSection> Read(IEntity entity)
     {
         var root = Parse(Find(entity));
-        if (root == null)
+        if (root is null)
         {
             return [];
         }
@@ -40,7 +40,7 @@ internal static class Documentation
     private static string? Find(IEntity entity)
     {
         var file = entity.ParentModule?.MetadataFile;
-        if (file == null)
+        if (file is null)
         {
             return null;
         }
@@ -75,7 +75,7 @@ internal static class Documentation
     private static IEntity? FindCref(string cref, IEntity entity)
     {
         var module = entity.ParentModule;
-        if (module == null)
+        if (module is null)
         {
             return null;
         }
@@ -92,11 +92,11 @@ internal static class Documentation
         foreach (var child in documentation.Children)
         {
             var section = ReadSection(child);
-            if (section != null)
+            if (section is not null)
             {
                 sections.Add(section);
             }
-            else if (KindOf(child) == null)
+            else if (KindOf(child) is null)
             {
                 AddInline(loose, child);
             }
@@ -131,7 +131,7 @@ internal static class Documentation
     private static DocSection? ReadSection(XmlDocumentationElement element)
     {
         var kind = KindOf(element);
-        if (kind == null)
+        if (kind is null)
         {
             return null;
         }
@@ -149,7 +149,7 @@ internal static class Documentation
         }
 
         var name = element.GetAttribute("name");
-        if (name == null)
+        if (name is null)
         {
             return null;
         }
@@ -162,7 +162,7 @@ internal static class Documentation
     private static DocRun? ExceptionLabel(XmlDocumentationElement element)
     {
         var cref = element.GetAttribute("cref");
-        if (cref == null)
+        if (cref is null)
         {
             return null;
         }
@@ -178,7 +178,7 @@ internal static class Documentation
 
     private static bool HasContent(DocSection section)
     {
-        return section.Blocks.Count > 0 || section.Label != null;
+        return section.Blocks.Count > 0 || section.Label is not null;
     }
 
     private static void AddChildren(DocText text, XmlDocumentationElement element)
@@ -237,13 +237,13 @@ internal static class Documentation
     private static void AddSee(DocText text, XmlDocumentationElement element)
     {
         var langword = element.GetAttribute("langword");
-        if (langword != null)
+        if (langword is not null)
         {
             Documentation.AddRun(text, langword, DocStyle.Code);
             return;
         }
         var cref = CrefRun(element, element.TextContent);
-        if (cref != null)
+        if (cref is not null)
         {
             Documentation.AddRun(text, cref.Value.Text, cref.Value.Style, cref.Value.Reference);
             return;
@@ -261,7 +261,7 @@ internal static class Documentation
     private static string AttributeText(XmlDocumentationElement element, string name)
     {
         var value = element.GetAttribute(name);
-        if (value == null)
+        if (value is null)
         {
             return "";
         }
@@ -274,7 +274,7 @@ internal static class Documentation
     private static DocRun? CrefRun(XmlDocumentationElement element, string shown)
     {
         var cref = element.GetAttribute("cref");
-        if (cref == null)
+        if (cref is null)
         {
             return null;
         }
@@ -286,7 +286,7 @@ internal static class Documentation
             name = ShortName(entity, cref);
         }
 
-        var reference = entity != null ? CodeReferences.Find(entity) : null;
+        var reference = entity is not null ? CodeReferences.Find(entity) : null;
         return new DocRun(name, DocStyle.Reference, reference);
     }
 
@@ -297,7 +297,7 @@ internal static class Documentation
             return TypeNames.ConvertSymbol(type);
         }
 
-        if (entity != null)
+        if (entity is not null)
         {
             return MemberNames.ConvertSymbol(entity);
         }
@@ -457,7 +457,7 @@ internal static class Documentation
     private static CodeContainer? GetContainer(IEntity entity)
     {
         var declaring = entity.DeclaringTypeDefinition;
-        if (declaring != null)
+        if (declaring is not null)
         {
             return new CodeContainer(GetKeyword(declaring), EntityText.FullName(declaring), false);
         }
@@ -537,7 +537,7 @@ internal static class Documentation
     public static void AddList(DocText doc, DocList list)
     {
         BreakParagraph(doc);
-        if (list.Items.Count > 0 || list.Header != null)
+        if (list.Items.Count > 0 || list.Header is not null)
         {
             doc.Blocks.Add(list);
         }

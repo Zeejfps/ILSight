@@ -35,7 +35,7 @@ internal static class FieldAccessAnalyzer
 
     private static bool Accesses(FieldAccessKind kind, IMethod method, IField field, AnalyzerContext context)
     {
-        if (method.MetadataToken.IsNil || method.ParentModule is not MetadataModule module || module.MetadataFile == null)
+        if (method.MetadataToken.IsNil || method.ParentModule is not MetadataModule module || module.MetadataFile is null)
         {
             return false;
         }

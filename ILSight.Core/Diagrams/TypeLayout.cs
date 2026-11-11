@@ -127,7 +127,7 @@ public static class DiagramLayouts
         foreach (var link in links)
         {
             var edge = CreateEdge(nodes, link);
-            if (edge == null)
+            if (edge is null)
             {
                 continue;
             }
@@ -231,7 +231,7 @@ public static class DiagramLayouts
         foreach (var edge in edges)
         {
             var route = RouteOf(edge, origin);
-            if (route != null)
+            if (route is not null)
             {
                 routes.Add(route);
             }
@@ -242,7 +242,7 @@ public static class DiagramLayouts
     private static LinkRoute? RouteOf(Edge edge, MsaglPoint origin)
     {
         var curve = edge.Curve;
-        if (curve == null)
+        if (curve is null)
         {
             return null;
         }
@@ -261,7 +261,7 @@ public static class DiagramLayouts
     private static PointF? SourceTipOf(Edge edge, MsaglPoint origin)
     {
         var diamond = edge.EdgeGeometry.SourceArrowhead;
-        if (diamond == null)
+        if (diamond is null)
         {
             return null;
         }
@@ -271,7 +271,7 @@ public static class DiagramLayouts
 
     private static PointF? LabelCenterOf(Edge edge, MsaglPoint origin)
     {
-        if (edge.Label == null)
+        if (edge.Label is null)
         {
             return null;
         }

@@ -92,7 +92,7 @@ public static partial class BrowseNodes
         foreach (var derived in DerivedTypes.Find(module.List, type, CancellationToken.None))
         {
             var info = NodeDefinitions.FindDerivedType(module, derived);
-            if (info != null)
+            if (info is not null)
             {
                 result.Add(Create(parent, new NodeSubject.DerivedType { Value = info }));
             }

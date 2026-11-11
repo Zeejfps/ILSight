@@ -84,7 +84,7 @@ internal static class AssemblyResolving
     private static LoadedModule? FindListed(AssemblyResolver resolver, IAssemblyReference reference)
     {
         var exact = AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: true, listedOnly: true);
-        if (exact != null)
+        if (exact is not null)
         {
             return exact;
         }
@@ -97,14 +97,14 @@ internal static class AssemblyResolving
     public static LoadedModule? LoadAssembly(AssemblyResolver resolver, IAssemblyReference reference)
     {
         var known = AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: true);
-        if (known != null)
+        if (known is not null)
         {
             return known;
         }
 
         var path = FindAssemblyFile(resolver, reference);
-        var loaded = path != null ? AssemblyListing.TryLoadAssembly(resolver.List, path) : null;
-        if (loaded != null)
+        var loaded = path is not null ? AssemblyListing.TryLoadAssembly(resolver.List, path) : null;
+        if (loaded is not null)
         {
             return loaded;
         }
@@ -117,7 +117,7 @@ internal static class AssemblyResolving
         foreach (var directory in ListNearbyDirectories(resolver))
         {
             var found = FindIn(resolver, directory, reference.Name);
-            if (found != null)
+            if (found is not null)
             {
                 return found;
             }
@@ -125,7 +125,7 @@ internal static class AssemblyResolving
         if (FrameworkIds.RunsOnCore(resolver.TargetFramework))
         {
             var runtime = FindInRuntime(resolver, reference.Name);
-            if (runtime != null)
+            if (runtime is not null)
             {
                 return runtime;
             }
@@ -133,8 +133,8 @@ internal static class AssemblyResolving
         try
         {
             var fallback = resolver.Fallback.Value.FindAssemblyFile(reference);
-            var found = fallback == null ? null : AssemblyPath.Parse(fallback);
-            if (found != null)
+            var found = fallback is null ? null : AssemblyPath.Parse(fallback);
+            if (found is not null)
             {
                 return found;
             }
@@ -155,7 +155,7 @@ internal static class AssemblyResolving
         try
         {
             var found = RuntimeAssemblies.Find(resolver.List.Runtime, name);
-            if (found == null)
+            if (found is null)
             {
                 return null;
             }
@@ -173,13 +173,13 @@ internal static class AssemblyResolving
     private static IEnumerable<string> ListNearbyDirectories(AssemblyResolver resolver)
     {
         var directory = Path.GetDirectoryName(resolver.MainPath);
-        if (directory == null)
+        if (directory is null)
         {
             yield break;
         }
 
         yield return directory;
-        if (resolver.Package == null)
+        if (resolver.Package is null)
         {
             yield break;
         }
@@ -187,7 +187,7 @@ internal static class AssemblyResolving
         while (directory.Length > resolver.Package.FilePath.Text.Length)
         {
             directory = Path.GetDirectoryName(directory);
-            if (directory == null)
+            if (directory is null)
             {
                 yield break;
             }
@@ -201,7 +201,7 @@ internal static class AssemblyResolving
         foreach (var extension in Extensions)
         {
             var candidate = AssemblyPath.Parse(Path.Combine(directory, name + extension));
-            if (candidate != null && FileExists(resolver, candidate))
+            if (candidate is not null && FileExists(resolver, candidate))
             {
                 return candidate;
             }
@@ -217,12 +217,12 @@ internal static class AssemblyResolving
             return true;
         }
 
-        if (resolver.Package == null)
+        if (resolver.Package is null)
         {
             return false;
         }
 
-        return AssemblyPackages.FindFileAt(resolver.Package, path) != null;
+        return AssemblyPackages.FindFileAt(resolver.Package, path) is not null;
     }
 
     public static MetadataFile? ResolveModule(AssemblyResolver resolver, MetadataFile mainModule, string moduleName)
@@ -234,7 +234,7 @@ internal static class AssemblyResolving
         }
 
         var path = AssemblyPath.Parse(Path.Combine(directory, moduleName));
-        if (path == null)
+        if (path is null)
         {
             return null;
         }

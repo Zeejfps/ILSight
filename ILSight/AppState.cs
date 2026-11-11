@@ -146,7 +146,7 @@ public sealed class AppState
             foreach (var tab in Tabs.Open)
             {
                 var diagram = tab.Diagram;
-                if (diagram != null && diagram.IsBusy)
+                if (diagram is not null && diagram.IsBusy)
                 {
                     return true;
                 }
@@ -163,7 +163,7 @@ public sealed class AppState
             foreach (var tab in Tabs.Open)
             {
                 var comparison = tab.Comparison;
-                if (comparison != null && comparison.IsComparing)
+                if (comparison is not null && comparison.IsComparing)
                 {
                     return true;
                 }

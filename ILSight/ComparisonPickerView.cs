@@ -55,7 +55,7 @@ internal static class ComparisonPickerView
     public static void Update(ComparisonPicker picker, AssemblyList assemblies)
     {
         var compared = picker.Compared;
-        if (compared == null)
+        if (compared is null)
         {
             return;
         }
@@ -140,7 +140,7 @@ internal static class ComparisonPickerView
             return;
         }
         var index = 0;
-        if (selected != null)
+        if (selected is not null)
         {
             index = Math.Max(0, picker.Filtered.IndexOf(selected));
         }
@@ -157,7 +157,7 @@ internal static class ComparisonPickerView
         }
 
         var compared = picker.Compared;
-        if (compared == null)
+        if (compared is null)
         {
             return;
         }
@@ -201,7 +201,7 @@ internal static class ComparisonPickerView
             {
                 ui.Spacer();
                 close |= ui.Button(t.PickerCancel, id: "compare-picker-cancel");
-                compare |= ui.Button(t.ComparePickerCompare, enabled: picker.Selected != null, id: "compare-picker-compare", variant: ButtonVariant.Primary);
+                compare |= ui.Button(t.ComparePickerCompare, enabled: picker.Selected is not null, id: "compare-picker-compare", variant: ButtonVariant.Primary);
             }
         }
         if (compare)
@@ -287,7 +287,7 @@ internal static class ComparisonPickerView
     private static void FrameworkText(Ui<UiState> ui, LoadedModule assembly)
     {
         var moniker = assembly.FrameworkMoniker;
-        if (moniker == null)
+        if (moniker is null)
         {
             return;
         }
@@ -299,7 +299,7 @@ internal static class ComparisonPickerView
     private static bool CompareWithSelected(UiState screen, ComparisonPicker picker, LoadedModule compared, Strings t)
     {
         var other = picker.Selected;
-        if (other == null)
+        if (other is null)
         {
             return false;
         }

@@ -65,7 +65,7 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (ShownResults == null)
+            if (ShownResults is null)
             {
                 return [];
             }
@@ -79,7 +79,7 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (ShownResults == null)
+            if (ShownResults is null)
             {
                 return 0;
             }
@@ -101,7 +101,7 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (ShownResults == null)
+            if (ShownResults is null)
             {
                 return 0;
             }
@@ -123,7 +123,7 @@ public sealed class NuGetPicker
         get
         {
             var setup = NuGetPicking.FindReadySetup(this);
-            if (setup == null)
+            if (setup is null)
             {
                 return [];
             }
@@ -142,7 +142,7 @@ public sealed class NuGetPicker
     {
         get
         {
-            if (ShownResults == null)
+            if (ShownResults is null)
             {
                 return "";
             }
@@ -206,7 +206,7 @@ public sealed class NuGetPicker
             }
 
             var searched = NuGetPicking.FindLastSearched(this);
-            if (searched == null)
+            if (searched is null)
             {
                 return true;
             }
@@ -324,7 +324,7 @@ public static class NuGetPicking
     /// <summary>Searches the feed and counts prereleases as the settings kept them.</summary>
     public static void RestoreSearch(NuGetPicker picker, SavedNuGetSearch? saved)
     {
-        if (saved == null)
+        if (saved is null)
         {
             return;
         }
@@ -531,7 +531,7 @@ public static class NuGetPicking
         NoteTyping(picker, now);
         picker.IsSettling = false;
         var setup = FindReadySetup(picker);
-        if (setup == null)
+        if (setup is null)
         {
             return 0;
         }
@@ -606,7 +606,7 @@ public static class NuGetPicking
 
     internal static FeedSearch? FindShownSearch(NuGetPicker picker)
     {
-        if (picker.ShownResults == null)
+        if (picker.ShownResults is null)
         {
             return null;
         }
@@ -618,7 +618,7 @@ public static class NuGetPicking
     private static FeedSearch? FindLastAsked(NuGetPicker picker)
     {
         var searched = FindLastSearched(picker);
-        if (searched != null)
+        if (searched is not null)
         {
             return searched;
         }
@@ -631,7 +631,7 @@ public static class NuGetPicking
     private static bool IsNewSearch(NuGetPicker picker, FeedSearch wanted)
     {
         var last = FindLastAsked(picker);
-        if (last == null)
+        if (last is null)
         {
             return false;
         }
@@ -641,7 +641,7 @@ public static class NuGetPicking
 
     internal static bool IsSamePackages(FeedSearch a, FeedSearch? b)
     {
-        if (b == null)
+        if (b is null)
         {
             return false;
         }
@@ -662,7 +662,7 @@ public static class NuGetPicking
     private static bool IsOnlyTypingChanged(NuGetPicker picker, FeedSearch wanted)
     {
         var last = FindLastAsked(picker);
-        if (last == null)
+        if (last is null)
         {
             return false;
         }
@@ -756,7 +756,7 @@ public static class NuGetPicking
         }
 
         var setup = FindReadySetup(picker);
-        if (setup == null)
+        if (setup is null)
         {
             return null;
         }
@@ -782,7 +782,7 @@ public static class NuGetPicking
 
     private static void ShowIcon(PackageIcon icon, ResourceImage? pixels)
     {
-        if (pixels == null)
+        if (pixels is null)
         {
             return;
         }
@@ -810,7 +810,7 @@ public static class NuGetPicking
     /// the package lists no such version.</summary>
     public static VersionDetails? EnsureDetails(NuGetPicker picker, FeedPackage package, PackageVersion version)
     {
-        if (picker.ShownResults == null)
+        if (picker.ShownResults is null)
         {
             return null;
         }
@@ -837,7 +837,7 @@ public static class NuGetPicking
     /// <summary>Reads the details of <paramref name="version"/> of <paramref name="package"/> again, after they failed.</summary>
     public static void RetryDetails(NuGetPicker picker, FeedPackage package, PackageVersion version)
     {
-        if (picker.ShownResults == null)
+        if (picker.ShownResults is null)
         {
             return;
         }
@@ -923,7 +923,7 @@ public static class NuGetPicking
         var package = picker.Selected;
         var setup = FindReadySetup(picker);
         var shown = picker.ShownResults;
-        if (!picker.CanOpen || version == null || package == null || setup == null || shown == null)
+        if (!picker.CanOpen || version == null || package == null || setup is null || shown is null)
         {
             return;
         }

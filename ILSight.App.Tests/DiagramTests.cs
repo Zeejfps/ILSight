@@ -31,7 +31,7 @@ public sealed class DiagramTests
     private static List<DocumentTab> ListDiagramTabs(AppStateDriver d)
     {
         return d.AppState.Tabs
-            .Open.Where(static t => t.Diagram != null)
+            .Open.Where(static t => t.Diagram is not null)
             .ToList();
     }
 

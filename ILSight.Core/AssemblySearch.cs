@@ -57,7 +57,7 @@ public static class AssemblySearch
 
         private static void SearchAssembly(Search search, LoadedModule assembly)
         {
-            if (search.Query.InAssembly != null && !IsInAssembly(assembly, search.Query.InAssembly))
+            if (search.Query.InAssembly is not null && !IsInAssembly(assembly, search.Query.InAssembly))
         {
             return;
         }
@@ -95,7 +95,7 @@ public static class AssemblySearch
 
         private static bool IsInNamespace(Search search, string ns)
     {
-        return search.Query.InNamespace == null || (search.Query.InNamespace.Length == 0 ? ns.Length == 0 : ns.Contains(search.Query.InNamespace, StringComparison.OrdinalIgnoreCase));
+        return search.Query.InNamespace is null || (search.Query.InNamespace.Length == 0 ? ns.Length == 0 : ns.Contains(search.Query.InNamespace, StringComparison.OrdinalIgnoreCase));
     }
 
         private static void ScanEntities(Search search, LoadedModule assembly)
@@ -471,7 +471,7 @@ public static class AssemblySearch
         private static void AddResult(Search search, LoadedModule assembly, EntityHandle handle)
         {
             var node = FindNode(search, assembly, handle);
-            if (node == null)
+            if (node is null)
         {
             return;
         }
@@ -499,7 +499,7 @@ public static class AssemblySearch
                 return;
             }
             node = FindSourceDeclaredAncestor(node);
-            if (node != null && BrowseNodes.IsMember(node.Parent))
+            if (node is not null && BrowseNodes.IsMember(node.Parent))
         {
             node = node.Parent;
         }
@@ -514,7 +514,7 @@ public static class AssemblySearch
         /// when the compiler made it up, such as the type that holds a lambda's closure class.</summary>
         private static BrowseNode? FindSourceDeclaredAncestor(BrowseNode? node)
         {
-            while (node != null && NodeDefinitions.GetVisibility(node.Subject).IsCompilerGenerated)
+            while (node is not null && NodeDefinitions.GetVisibility(node.Subject).IsCompilerGenerated)
         {
             node = node.Parent;
         }
@@ -537,14 +537,14 @@ public static class AssemblySearch
         private static void AddResult(Search search, BrowseNode node)
         {
             var ns = node.Parent;
-            while (ns != null && !IsNamespace(ns))
+            while (ns is not null && !IsNamespace(ns))
         {
             ns = ns.Parent;
         }
 
         var name = ns?.Text ?? "";
             var type = node.Parent;
-            if (type != null && type.Subject is NodeSubject.TypeDefinition)
+            if (type is not null && type.Subject is NodeSubject.TypeDefinition)
         {
             AddResult(search, node, name.Length == 0 ? type.Text : $"{name}.{type.Text}");
         }
@@ -579,12 +579,12 @@ public static class AssemblySearch
         private static string GetNodeName(BrowseNode node)
         {
             var entity = BrowseNodes.GetEntity(node);
-            if (entity == null)
+            if (entity is null)
         {
             return node.Text;
         }
 
-        if (entity is IMethod method && method.IsConstructor && method.DeclaringTypeDefinition != null)
+        if (entity is IMethod method && method.IsConstructor && method.DeclaringTypeDefinition is not null)
         {
             return method.DeclaringTypeDefinition.Name;
         }

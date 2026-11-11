@@ -46,7 +46,7 @@ public sealed class BrowseNode
         get
         {
             var root = this;
-            while (root.Parent != null)
+            while (root.Parent is not null)
             {
                 root = root.Parent;
             }

@@ -153,7 +153,7 @@ internal static class CloseAssembliesDialogView
             }
 
             ui.Tooltip(ui.GetId("include"), assembly.FilePath.Text, TooltipAnchor.Pointer);
-            if (assembly.Version != null)
+            if (assembly.Version is not null)
             {
                 ui.Text(assembly.Version.ToString(), color: theme.TextMuted, size: theme.FontSizeSmall);
             }

@@ -121,13 +121,13 @@ public static class MainView
     private static DockTab Tab(UiState screen, AppState appState, Strings t, string panel)
     {
         var view = DockPanels.ViewOf(panel);
-        if (view != null)
+        if (view is not null)
         {
             return DockPanels.Tab(t, screen.Icons, view.Value);
         }
 
         var tab = DocumentPanels.FindTab(screen.Documents, panel);
-        if (tab != null)
+        if (tab is not null)
         {
             return DocumentsView.Tab(screen, appState.Tabs, tab);
         }
@@ -138,7 +138,7 @@ public static class MainView
     private static void Panel(Ui<UiState> ui, AppState appState, string panel)
     {
         var view = DockPanels.ViewOf(panel);
-        if (view == null)
+        if (view is null)
         {
             Document(ui, appState, panel);
             return;
@@ -179,7 +179,7 @@ public static class MainView
     private static void Document(Ui<UiState> ui, AppState appState, string panel)
     {
         var tab = DocumentPanels.FindTab(ui.State.Documents, panel);
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }

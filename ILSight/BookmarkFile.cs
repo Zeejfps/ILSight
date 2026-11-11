@@ -101,7 +101,7 @@ public static class BookmarkFile
         try
         {
             var file = JsonSerializer.Deserialize(File.ReadAllText(path), AppSettingsJson.Default.BookmarkFileJson);
-            if (file?.Bookmarks != null)
+            if (file?.Bookmarks is not null)
             {
                 error = null;
                 return ReadEach(file.Bookmarks);
@@ -126,13 +126,13 @@ public static class BookmarkFile
             {
                 var entry = $"#{i + 1}";
                 var saved = bookmarks[i].Deserialize(AppSettingsJson.Default.BookmarkJson);
-                if (saved == null)
+                if (saved is null)
                 {
                     continue;
                 }
 
                 var bookmark = SettingsJson.Parse(saved, () => unreadable.Add($"{entry}: the place it was made in cannot be read."));
-                if (bookmark != null)
+                if (bookmark is not null)
                 {
                     read.Add(bookmark);
                 }

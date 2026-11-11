@@ -75,7 +75,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         foreach (var (function, list) in points)
         {
             var method = function.MoveNextMethod ?? function.Method;
-            if (method != null && method.MetadataToken == handle)
+            if (method is not null && method.MetadataToken == handle)
             {
                 return list;
             }
@@ -105,7 +105,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     {
         WriteFailureAt(output, offset);
         var csharp = _csharp;
-        if (csharp == null)
+        if (csharp is null)
         {
             return;
         }
@@ -124,7 +124,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
 
     private void WriteFailureAt(ITextOutput output, int offset)
     {
-        if (_failure == null)
+        if (_failure is null)
         {
             return;
         }

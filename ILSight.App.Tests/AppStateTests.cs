@@ -116,7 +116,7 @@ public sealed class AppStateTests
         OpenAssembly(d.AppState, AppStateDriver.FixturePath);
 
         Assert.Null(Assert.Single(d.AppState.Tabs.Open).Location);
-        d.RunUntil(() => d.AppState.Tabs.Active?.Node != null);
+        d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
         Assert.Equal(NodeIcon.Assembly, d.AppState.Tabs.Active!.Node!.Icon);
     }
 
@@ -189,7 +189,7 @@ public sealed class AppStateTests
         var missing = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.dll");
 
         OpenAssembly(d.AppState, missing);
-        d.RunUntil(() => d.AppState.Tabs.Active?.Node != null);
+        d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
         d.Settle();
 
         var failed = Assert.Single(d.AppState.Assemblies.Listed);
@@ -544,7 +544,7 @@ public sealed class AppStateTests
         using var temp = new TempDir();
         var copy = temp.Copy(AppStateDriver.FixturePath, "fixture.dll");
         OpenAssembly(d.AppState, copy);
-        d.RunUntil(() => d.AppState.Tabs.Active?.Node != null);
+        d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
         d.Settle();
         var greeter = d.AppState.Tabs.Active!.Node!.Child(AppStateDriver.FixturesNamespace, "Greeter");
         d.Show(greeter);

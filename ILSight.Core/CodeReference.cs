@@ -75,7 +75,7 @@ public abstract class CodeReference : IEquatable<CodeReference>
         {
             get
             {
-                if (Referenced == null)
+                if (Referenced is null)
                 {
                     return EntityHandle.AssemblyDefinition;
                 }
@@ -188,7 +188,7 @@ internal static class CodeReferences
     public static CodeReference.Entity? Find(IEntity entity, string? name = null)
     {
         var file = entity.ParentModule?.MetadataFile;
-        if (file == null || entity.MetadataToken.IsNil)
+        if (file is null || entity.MetadataToken.IsNil)
         {
             return null;
         }

@@ -29,7 +29,7 @@ public sealed class DocumentTab
     {
         TabContent.Reloading reloading => reloading.Location,
         TabContent.Gone gone => gone.Location,
-        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node == null ? null : BrowseNodes.GetPath(Node),
+        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node is null ? null : BrowseNodes.GetPath(Node),
         TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison or TabContent.Reopening => null,
         _ => throw new UnreachableException(),
     };
@@ -83,12 +83,12 @@ public sealed class DocumentTab
     {
         get
         {
-            if (Diagram != null)
+            if (Diagram is not null)
             {
                 return false;
             }
 
-            return Comparison == null;
+            return Comparison is null;
         }
     }
 
@@ -102,7 +102,7 @@ public sealed class DocumentTab
                 return null;
             }
 
-            if (Node == null)
+            if (Node is null)
             {
                 return null;
             }
@@ -130,13 +130,13 @@ public sealed class DocumentTab
     /// card, or the comparison it shows swaps its sides or takes in more or less; it never counts down.</summary>
     public int Changes => PointedChanges + Tabs.CountContentChanges(this);
 
-    public bool IsBusy => Work != null;
+    public bool IsBusy => Work is not null;
 
     /// <summary>The name of what the tab shows: its node's, kept by what it shows while the node is away, or
     /// its diagram's or comparison's own; null for a new tab or a report.</summary>
     public string? Title => Content switch
     {
-        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node == null ? null : NodeText.Name(Node),
+        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node is null ? null : NodeText.Name(Node),
         TabContent.Diagram diagram => diagram.Title,
         TabContent.Comparison comparison => comparison.Title,
         TabContent.Reloading reloading => reloading.Title,
@@ -147,7 +147,7 @@ public sealed class DocumentTab
     };
 
     /// <summary>The full identity of what the tab shows, or null for a new tab.</summary>
-    public string? Tooltip => Node != null ? NodeText.Tooltip(Node) : Title;
+    public string? Tooltip => Node is not null ? NodeText.Tooltip(Node) : Title;
 
     /// <summary>Changes whenever the tab is pointed somewhere, or loses its node.</summary>
     public int Version;

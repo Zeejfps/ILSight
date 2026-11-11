@@ -15,7 +15,7 @@ public sealed class ResourceImage
 
     /// <summary>Whether it is drawn from shapes, so stays sharp at any size, and is stored as
     /// markup that can be shown instead.</summary>
-    public bool IsVector => Shapes != null;
+    public bool IsVector => Shapes is not null;
 
     public required int Width { get; init; }
 
@@ -34,7 +34,7 @@ public static class ResourceImages
     /// when it has them, so it stays sharp; else this picture, to be stretched.</summary>
     public static ResourceImage DrawAt(ResourceImage image, float scale)
     {
-        if (image.Shapes == null)
+        if (image.Shapes is null)
         {
             return image;
         }
@@ -54,7 +54,7 @@ public static class ResourceImages
         }
 
         var scale = (float)side / longest;
-        if (image.Shapes != null)
+        if (image.Shapes is not null)
         {
             return DrawAt(image, scale);
         }
@@ -248,13 +248,13 @@ public static class ResourceImages
                     break;
                 case ColorType.IndexedColor:
                     var index = src[at];
-                    if (palette == null || index * 3 + 2 >= palette.Length)
+                    if (palette is null || index * 3 + 2 >= palette.Length)
                     {
                         throw new InvalidDataException("A palette index is out of range.");
                     }
 
                     (r, g, b) = (palette[index * 3], palette[index * 3 + 1], palette[index * 3 + 2]);
-                    if (transparency != null && index < transparency.Length)
+                    if (transparency is not null && index < transparency.Length)
                     {
                         a = transparency[index];
                     }

@@ -110,7 +110,7 @@ internal static class ExportDialogView
     {
         var anchor = picker.Anchor;
         picker.Anchor = clicked;
-        if (!extend || anchor == null)
+        if (!extend || anchor is null)
         {
             return;
         }
@@ -358,7 +358,7 @@ internal static class ExportDialogView
     {
         var theme = ui.Theme;
         var version = choice.Assembly.Version;
-        if (version == null)
+        if (version is null)
         {
             return;
         }
@@ -478,7 +478,7 @@ internal static class ExportDialogView
     {
         var t = ui.State.Strings;
         var toggle = DecompilerToggles.FindToggle(name);
-        if (toggle == null)
+        if (toggle is null)
         {
             return;
         }
@@ -678,7 +678,7 @@ internal static class ExportDialogView
 
             ui.Tooltip(ui.GetId("include"), choice.Assembly.FilePath.Text, TooltipAnchor.Pointer);
             var version = choice.Assembly.Version;
-            if (version != null)
+            if (version is not null)
             {
                 Caption(ui, version.ToString());
             }

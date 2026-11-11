@@ -16,7 +16,7 @@ public sealed record WebUrl
     /// <summary>The URL <paramref name="text"/> holds; null unless it is an absolute HTTP or HTTPS URL.</summary>
     public static WebUrl? Parse(string? text)
     {
-        if (text == null)
+        if (text is null)
         {
             return null;
         }

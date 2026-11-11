@@ -74,7 +74,7 @@ internal static class CodeTooltipView
     {
         var id = ui.GetId(RuntimeHelpers.GetHashCode(runs));
         var click = ui.RichText(runs, codeBackground: layout.CodeBackground, id: id);
-        if (click.Link != null)
+        if (click.Link is not null)
         {
             layout.Clicked = click;
         }
@@ -158,7 +158,7 @@ internal static class CodeTooltipView
     {
         using (ui.Column(new Box { Gap = HeadingGap }))
         {
-            if (group.Heading != null)
+            if (group.Heading is not null)
             {
                 Text(ui, layout, group.Heading);
             }
@@ -181,7 +181,7 @@ internal static class CodeTooltipView
         var widest = 0f;
         foreach (var entry in entries)
         {
-            if (entry.Label != null)
+            if (entry.Label is not null)
             {
                 widest = MathF.Max(widest, ui.MeasureRuns(entry.Label));
             }
@@ -193,10 +193,10 @@ internal static class CodeTooltipView
     {
         switch (shape)
         {
-            case EntryShape.Column when entry.Label != null:
+            case EntryShape.Column when entry.Label is not null:
                 RenderColumnEntry(ui, layout, entry.Label, entry.Blocks, labelWidth);
                 break;
-            case EntryShape.Stacked when entry.Label != null:
+            case EntryShape.Stacked when entry.Label is not null:
                 RenderStackedEntry(ui, layout, entry.Label, entry.Blocks);
                 break;
             default:
@@ -551,7 +551,7 @@ internal static class CodeTooltipView
     private static IReadOnlyList<RichTextRun>? HeadingRuns(TooltipStyles styles, Strings t, DocSectionKind kind)
     {
         var heading = HeadingOf(t, kind);
-        if (heading == null)
+        if (heading is null)
         {
             return null;
         }
@@ -600,7 +600,7 @@ internal static class CodeTooltipView
     /// <summary>A parameter or type parameter by its name in code, an exception by its type.</summary>
     private static IReadOnlyList<RichTextRun>? LabelRuns(TooltipStyles styles, DocSection section)
     {
-        if (section.Label == null)
+        if (section.Label is null)
         {
             return null;
         }

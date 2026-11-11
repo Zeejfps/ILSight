@@ -123,7 +123,7 @@ public static class ThemeCatalogs
         catalog.Resolving.Add(id);
         var file = catalog.Files[id];
         var theme = BuildChain(catalog, file);
-        if (theme != null)
+        if (theme is not null)
         {
             catalog.ShownIds[id] = id;
         }
@@ -143,7 +143,7 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         var chain = ListThemeChain(catalog, file);
-        if (chain == null)
+        if (chain is null)
         {
             return null;
         }
@@ -159,7 +159,7 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         var files = ListThemeChainFiles(catalog, file);
-        if (files == null)
+        if (files is null)
         {
             return null;
         }
@@ -168,7 +168,7 @@ public static class ThemeCatalogs
         foreach (var link in files)
         {
             var contents = link.Contents;
-            if (contents == null)
+            if (contents is null)
             {
                 return null;
             }
@@ -188,10 +188,10 @@ public static class ThemeCatalogs
         var chain = new List<TFile> { file };
         var extends = file.Extends;
         var current = file;
-        while (extends != null)
+        while (extends is not null)
         {
             var parent = FindParent(catalog, current, extends, chain);
-            if (parent == null)
+            if (parent is null)
             {
                 return null;
             }
@@ -256,7 +256,7 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         var extends = file.Extends;
-        if (extends != null && CanFallBackTo(catalog, extends.Id))
+        if (extends is not null && CanFallBackTo(catalog, extends.Id))
         {
             return extends.Id;
         }
@@ -291,7 +291,7 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         var contents = catalog.Files[id].Contents;
-        if (contents == null)
+        if (contents is null)
         {
             throw new InvalidOperationException($"The built-in theme '{id}' cannot be read.");
         }

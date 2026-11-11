@@ -59,7 +59,7 @@ internal static class AssemblyListsDialogView
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
         var picked = AssemblyLists.FindPickedList(dialog, lists);
-        var any = picked != null;
+        var any = picked is not null;
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
             if (ui.Button(t.ListsNew, id: "new", icon: new UiIcon(ui.State.Icons.ListsNew)))
@@ -68,17 +68,17 @@ internal static class AssemblyListsDialogView
             }
 
             ui.Spacer();
-            if (ui.IconButton("duplicate", ui.State.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked != null)
+            if (ui.IconButton("duplicate", ui.State.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked is not null)
             {
                 Commands.Later(ui.State, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
             }
 
-            if (ui.IconButton("rename", ui.State.Icons.ListsRename, t.ListsRename, any) && picked != null)
+            if (ui.IconButton("rename", ui.State.Icons.ListsRename, t.ListsRename, any) && picked is not null)
             {
                 AssemblyLists.StartRenaming(dialog, picked);
             }
 
-            if (ui.IconButton("delete", ui.State.Icons.ListsDelete, t.ListsDelete, any) && picked != null)
+            if (ui.IconButton("delete", ui.State.Icons.ListsDelete, t.ListsDelete, any) && picked is not null)
             {
                 AssemblyLists.StartConfirmingDelete(dialog, picked);
             }
@@ -234,7 +234,7 @@ internal static class AssemblyListsDialogView
         }
 
         var picked = AssemblyLists.FindPickedList(dialog, lists);
-        if (picked == null)
+        if (picked is null)
         {
             return;
         }
@@ -312,7 +312,7 @@ internal static class AssemblyListsDialogView
         }
 
         var picked = AssemblyLists.FindPickedList(ui.State.ListsDialog, lists);
-        if (picked == null)
+        if (picked is null)
         {
             return;
         }

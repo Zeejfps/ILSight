@@ -47,7 +47,7 @@ public static class NodeContentLoader
     /// and options, rather than a grid, a picture or why the file failed to load, which do not.</summary>
     public static bool DependsOnLanguage(BrowseNode node)
     {
-        return GridOf(node) == null && !IsFailedFile(node) && !IsImage(node);
+        return GridOf(node) is null && !IsFailedFile(node) && !IsImage(node);
     }
 
     private static bool IsFailedFile(BrowseNode node)
@@ -99,7 +99,7 @@ public static class NodeContentLoader
         CancellationToken cancellationToken)
     {
         var grid = GridOf(node);
-        if (grid != null)
+        if (grid is not null)
         {
             return new GridContent(grid);
         }
@@ -237,7 +237,7 @@ public static class NodeContentLoader
     private static string DescribePackageChild(BrowseNode child)
     {
         var file = BrowseNodes.GetResourceData(child);
-        if (file != null)
+        if (file is not null)
         {
             return file.Description;
         }

@@ -24,7 +24,7 @@ internal static class StatusBarView
         }))
         {
             var selected = appState.Tabs.Active?.Node;
-            ui.Text(ui.Memo("status-node", selected, static n => n == null ? "" : BrowseNodes.GetFullName(n)), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
+            ui.Text(ui.Memo("status-node", selected, static n => n is null ? "" : BrowseNodes.GetFullName(n)), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
                 size: size, overflow: TextOverflow.Ellipsis);
 
             using (ui.Row(new Box { Width = Sizing.Fit(), Height = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
@@ -40,7 +40,7 @@ internal static class StatusBarView
                     Dot(ui);
                 }
                 var activity = DescribeActivity(appState, t);
-                if (activity != null)
+                if (activity is not null)
                 {
                     ui.Text(activity, color: theme.AccentText, size: size);
                     Dot(ui);
@@ -84,7 +84,7 @@ internal static class StatusBarView
 
     private static bool IsDecompiling(DocumentTab? tab)
     {
-        return tab != null && tab.IsBusy;
+        return tab is not null && tab.IsBusy;
     }
 
     private static void Dot(Ui<UiState> ui)

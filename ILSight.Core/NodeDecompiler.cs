@@ -60,7 +60,7 @@ internal static class NodeDecompiler
         }
 
         var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request) };
-        if (note != null)
+        if (note is not null)
         {
             WriteComment(builder, note);
         }
@@ -85,7 +85,7 @@ internal static class NodeDecompiler
         var error = failure.Assembly.Error;
         var builder = new DocumentBuilder { Language = language };
         WriteComment(builder, error.Message);
-        if (error.InnerException != null)
+        if (error.InnerException is not null)
         {
             builder.Write(error.InnerException.ToString(), SpanKind.Comment);
         }
@@ -237,7 +237,7 @@ internal static class NodeDecompiler
         var module = request.Definition.Module;
         var member = request.Definition.Symbol;
         var declaring = member.DeclaringTypeDefinition;
-        if (declaring == null)
+        if (declaring is null)
         {
             WriteSyntaxTree(module, output, settings, d => d.Decompile(request.Definition.Handle), cancellationToken);
             return;
@@ -422,7 +422,7 @@ internal static class NodeDecompiler
         WriteComment(output, assembly.FilePath.Text);
         WriteComment(output, assembly.FullName);
         var corHeader = file.CorHeader;
-        if (file.Metadata.IsAssembly && corHeader != null)
+        if (file.Metadata.IsAssembly && corHeader is not null)
         {
             var entryPoint = corHeader.EntryPointTokenOrRelativeVirtualAddress;
             if (entryPoint != 0 && (corHeader.Flags & CorFlags.NativeEntryPoint) == 0)
@@ -430,12 +430,12 @@ internal static class NodeDecompiler
                 WriteEntryPoint(assembly, MetadataTokens.EntityHandle(entryPoint), output);
             }
         }
-        if (assembly.PEFile != null)
+        if (assembly.PEFile is not null)
         {
             WriteComment(output, $"Architecture: {ArchitectureOf(assembly.PEFile.Reader.PEHeaders)}");
         }
 
-        if (assembly.TargetFramework != null)
+        if (assembly.TargetFramework is not null)
         {
             WriteComment(output, $"Target framework: {assembly.TargetFramework.Text}");
         }
@@ -451,7 +451,7 @@ internal static class NodeDecompiler
         }
 
         var method = LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(handle);
-        if (method == null)
+        if (method is null)
         {
             return;
         }

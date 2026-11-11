@@ -17,7 +17,7 @@ public static class NamespaceNames
     /// <summary><paramref name="name"/> and the names of the namespaces it nests in, the name first.</summary>
     internal static IEnumerable<string> AndEnclosing(string name)
     {
-        for (var enclosing = name; enclosing != null; enclosing = EnclosingName(enclosing))
+        for (var enclosing = name; enclosing is not null; enclosing = EnclosingName(enclosing))
         {
             yield return enclosing;
         }

@@ -40,7 +40,7 @@ public sealed record FullFilePath
         }
 
         var folder = Path.GetDirectoryName(full);
-        if (folder == null)
+        if (folder is null)
         {
             return null;
         }
@@ -53,7 +53,7 @@ public sealed record FullFilePath
     public static FullFilePath Of(string text)
     {
         var path = Parse(text);
-        if (path == null)
+        if (path is null)
         {
             throw new ArgumentException($"'{text}' is no absolute path of a file.", nameof(text));
         }

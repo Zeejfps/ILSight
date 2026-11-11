@@ -136,7 +136,7 @@ public static class NodeText
     /// in hex. Null when the node has none or tokens are hidden.</summary>
     public static string? Token(BrowseNode node, TokenFormat format)
     {
-        if (NodeDefinitions.TokenOf(node.Subject) == null)
+        if (NodeDefinitions.TokenOf(node.Subject) is null)
         {
             return null;
         }
@@ -180,7 +180,7 @@ public static class NodeText
             return string.Join(Separator, new[] { version, assembly.FrameworkMoniker }.OfType<string>());
         }
 
-        if (version == null)
+        if (version is null)
         {
             return "";
         }
@@ -202,7 +202,7 @@ public static class NodeText
 
         var name = BrowseNodes.GetFullName(node);
         var accessibility = Accessibility(NodeDefinitions.GetVisibility(node.Subject).Accessibility);
-        return accessibility != null ? $"{name}\n{accessibility}" : name;
+        return accessibility is not null ? $"{name}\n{accessibility}" : name;
     }
 
     private static string? Accessibility(NodeAccessibility accessibility)

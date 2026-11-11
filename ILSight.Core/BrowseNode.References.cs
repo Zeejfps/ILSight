@@ -43,7 +43,7 @@ public static partial class BrowseNodes
         }
 
         var referenced = ResolveReferenced(reference);
-        if (referenced != null)
+        if (referenced is not null)
         {
             children.AddRange(ListAssemblyReferences(referenced, parent));
         }
@@ -185,7 +185,7 @@ public static partial class BrowseNodes
     private static IMember ResolveDeclared(MetadataModule module, MemberReferenceHandle handle)
     {
         var declared = ResolveUsed(module, handle).MemberDefinition;
-        if (declared is IMethod method && method.AccessorOwner != null)
+        if (declared is IMethod method && method.AccessorOwner is not null)
         {
             return method.AccessorOwner;
         }
@@ -283,7 +283,7 @@ public static partial class BrowseNodes
         foreach (var handle in module.Imports)
         {
             var import = CreateImport(typeSystem.GetDefinition(handle), module);
-            if (import != null)
+            if (import is not null)
             {
                 imports.Add(import);
             }
@@ -302,13 +302,13 @@ public static partial class BrowseNodes
     private static ImportedMethodInfo? CreateImport(IMethod method, ModuleReferenceInfo module)
     {
         var declaring = method.DeclaringTypeDefinition;
-        if (declaring == null)
+        if (declaring is null)
         {
             return null;
         }
 
         var shown = NodeDefinitions.FindMember(module.Module, FindEnclosingMethod(method, declaring));
-        if (shown == null)
+        if (shown is null)
         {
             return null;
         }
@@ -322,7 +322,7 @@ public static partial class BrowseNodes
     {
         var label = EntityText.Label(method);
         var enclosing = FindEnclosingName(method.Name);
-        if (enclosing == null)
+        if (enclosing is null)
         {
             return label;
         }
@@ -354,13 +354,13 @@ public static partial class BrowseNodes
     private static IMethod FindEnclosingMethod(IMethod method, ITypeDefinition declaring)
     {
         var enclosing = FindEnclosingName(method.Name);
-        if (enclosing == null)
+        if (enclosing is null)
         {
             return method;
         }
 
         var declared = declaring.Methods.FirstOrDefault(m => m.Name == enclosing);
-        if (declared == null)
+        if (declared is null)
         {
             return method;
         }

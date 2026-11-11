@@ -58,7 +58,7 @@ public static partial class BrowseNodes
         {
             var rows = file.Metadata.GetTableRowCount(index);
             var schema = rows == 0 ? null : MetadataTables.Create(index, file);
-            if (schema == null)
+            if (schema is null)
             {
                 result.Add(CreatePart(parent, MetadataTables.CreateRowCountPart(folder.Module, file, index, rows)));
             }
@@ -97,7 +97,7 @@ public static partial class BrowseNodes
                         continue;
                     case DebugDirectoryEntryType.EmbeddedPortablePdb:
                         var symbols = FindEmbeddedSymbols(module);
-                        if (symbols != null)
+                        if (symbols is not null)
                         {
                             result.Add(CreateMetadataFolder(module, parent, symbols.File, symbols.Title));
                         }
@@ -117,7 +117,7 @@ public static partial class BrowseNodes
     private static DebugSymbols? FindEmbeddedSymbols(LoadedModule module)
     {
         var symbols = LoadedAssemblies.EnsureDebugSymbols(module);
-        if (symbols == null)
+        if (symbols is null)
         {
             return null;
         }

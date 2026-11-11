@@ -46,7 +46,7 @@ public static class ItemSelections
     public static void Reveal<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
     {
-        if (selection.Item == null)
+        if (selection.Item is null)
         {
             return;
         }
@@ -102,7 +102,7 @@ public static class ItemSelections
     public static int FindIndexIn<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
     {
-        if (selection.Item == null)
+        if (selection.Item is null)
         {
             return -1;
         }

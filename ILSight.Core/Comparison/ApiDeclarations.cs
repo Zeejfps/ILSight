@@ -123,7 +123,7 @@ internal static class ApiDeclarations
     private static List<string> ListUnderlyingType(ITypeDefinition type)
     {
         var underlying = type.EnumUnderlyingType;
-        if (underlying == null || underlying.IsKnownType(KnownTypeCode.Int32))
+        if (underlying is null || underlying.IsKnownType(KnownTypeCode.Int32))
         {
             return [];
         }
@@ -175,12 +175,12 @@ internal static class ApiDeclarations
     {
         var text = new StringBuilder(Convert(property, MemberFlags));
         text.Append(" { ");
-        if (property.Getter != null)
+        if (property.Getter is not null)
         {
             AppendAccessor(text, property, property.Getter, GetKeyword);
         }
 
-        if (property.Setter != null)
+        if (property.Setter is not null)
         {
             AppendAccessor(text, property, property.Setter, SetterKeyword(property.Setter));
         }

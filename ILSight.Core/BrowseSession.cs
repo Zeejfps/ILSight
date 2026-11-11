@@ -78,7 +78,7 @@ public static class BrowseSessions
 
     internal static BrowseNode EnsureRoot(BrowseSession session, LoadedModule module)
     {
-        if (module.Place == null)
+        if (module.Place is null)
         {
             return session.ModuleRoots.GetValue(module, static m => BrowseNodes.CreateModuleRoot(m, null));
         }
@@ -133,7 +133,7 @@ public static class BrowseSessions
                     break;
                 }
             }
-            if (next == null)
+            if (next is null)
             {
                 return null;
             }
@@ -235,7 +235,7 @@ public static class BrowseSessions
                     throw new UnreachableException();
             }
         }
-        if (building != null)
+        if (building is not null)
         {
             return FinishBuilding(session, node, slot, building);
         }
@@ -279,7 +279,7 @@ public static class BrowseSessions
         }
 
         var segment = BrowseNodes.GetSegment(other);
-        if (segment == null)
+        if (segment is null)
         {
             return null;
         }
@@ -299,7 +299,7 @@ public static class BrowseSessions
                 continue;
             }
 
-            if (found != null)
+            if (found is not null)
             {
                 return null;
             }
@@ -428,7 +428,7 @@ public static class BrowseSessions
         }
 
         var holder = FindFolderNode(session, packageRoot, PackageFolders.FolderOf(path));
-        if (holder == null)
+        if (holder is null)
         {
             return null;
         }
@@ -487,7 +487,7 @@ public static class BrowseSessions
         for (; !handle.IsNil; handle = LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle))
         {
             var node = FindNode(session, module, handle);
-            if (node != null)
+            if (node is not null)
             {
                 return node;
             }
@@ -521,7 +521,7 @@ public static class BrowseSessions
         }
 
         var parent = node.Parent;
-        if (parent == null || PeekChildren(session, parent) is not ChildrenState.Ready siblings)
+        if (parent is null || PeekChildren(session, parent) is not ChildrenState.Ready siblings)
         {
             return [];
         }
@@ -546,7 +546,7 @@ public static class BrowseSessions
     {
         return node.Subject switch
         {
-            NodeSubject.Module => children.Where(static c => c.EnclosingNamespace == null).ToArray(),
+            NodeSubject.Module => children.Where(static c => c.EnclosingNamespace is null).ToArray(),
             NodeSubject.Namespace => Interleave(ListInnerNamespaces(session, node), children),
             _ => children,
         };
@@ -603,7 +603,7 @@ public static class BrowseSessions
         }
 
         var entity = LoadedAssemblies.FindDefinedEntity(LoadedAssemblies.EnsureMainModule(module), idString);
-        if (entity == null)
+        if (entity is null)
         {
             return null;
         }
@@ -622,13 +622,13 @@ public static class BrowseSessions
 
         var metadata = ListChildren(session, EnsureRoot(session, module))
             .FirstOrDefault(f => IsMetadataOf(f, module.File));
-        if (metadata == null)
+        if (metadata is null)
         {
             return null;
         }
 
         var table = FindTable(session, metadata, index);
-        if (table == null)
+        if (table is null)
         {
             return null;
         }
@@ -643,13 +643,13 @@ public static class BrowseSessions
     public static MetadataTarget? FindMetadataRow(BrowseSession session, BrowseNode grid, MetadataAddress address)
     {
         var folder = FindMetadataFolder(grid);
-        if (folder == null)
+        if (folder is null)
         {
             return null;
         }
 
         var table = FindTable(session, folder, address.Table);
-        if (table == null)
+        if (table is null)
         {
             return null;
         }
@@ -660,9 +660,9 @@ public static class BrowseSessions
     /// <summary>The "Metadata" folder <paramref name="node"/> belongs to.</summary>
     private static BrowseNode? FindMetadataFolder(BrowseNode node)
     {
-        for (var parent = node.Parent; parent != null; parent = parent.Parent)
+        for (var parent = node.Parent; parent is not null; parent = parent.Parent)
         {
-            if (GetMetadata(parent) != null)
+            if (GetMetadata(parent) is not null)
             {
                 return parent;
             }
@@ -674,7 +674,7 @@ public static class BrowseSessions
     private static bool IsMetadataOf(BrowseNode node, ICSharpCode.Decompiler.Metadata.MetadataFile file)
     {
         var metadata = GetMetadata(node);
-        if (metadata == null)
+        if (metadata is null)
         {
             return false;
         }
@@ -698,7 +698,7 @@ public static class BrowseSessions
     private static BrowseNode? FindTable(BrowseSession session, BrowseNode folder, TableIndex table)
     {
         var tables = ListChildren(session, folder).FirstOrDefault(static c => c.Subject is NodeSubject.MetadataTables);
-        if (tables == null)
+        if (tables is null)
         {
             return null;
         }

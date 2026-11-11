@@ -27,7 +27,7 @@ public sealed record NuGetSource
     public static NuGetSource? FromUrl(string url)
     {
         var web = WebUrl.Parse(url);
-        if (web == null)
+        if (web is null)
         {
             return null;
         }
@@ -40,7 +40,7 @@ public sealed record NuGetSource
     public static NuGetSource? FromConfig(string name, string url)
     {
         var web = WebUrl.Parse(url);
-        if (web == null)
+        if (web is null)
         {
             return null;
         }
@@ -124,7 +124,7 @@ public static class NuGetConfigs
     private static List<NuGetSource> ListSources(XDocument? document)
     {
         var sources = new List<NuGetSource>();
-        if (document == null)
+        if (document is null)
         {
             sources.Add(NuGetSource.NuGetOrg);
             return sources;
@@ -183,7 +183,7 @@ public static class NuGetConfigs
         }
 
         var source = NuGetSource.FromConfig(name, (string?)entry.Attribute("value") ?? "");
-        if (source == null)
+        if (source is null)
         {
             return;
         }
@@ -224,7 +224,7 @@ public static class NuGetConfigs
 
     private static string? FindConfigValue(XDocument? document, string key)
     {
-        if (document == null)
+        if (document is null)
         {
             return null;
         }
@@ -237,7 +237,7 @@ public static class NuGetConfigs
     private static IEnumerable<XElement> ListSection(XDocument document, string name)
     {
         var section = document.Root?.Element(name);
-        if (section == null)
+        if (section is null)
         {
             return [];
         }

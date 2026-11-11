@@ -68,7 +68,7 @@ public sealed class AnalysisSymbol
             }
 
             var file = entity.ParentModule?.MetadataFile;
-            if (file == null)
+            if (file is null)
             {
                 return null;
             }
@@ -166,13 +166,13 @@ public static class Analyzers
         try
         {
             var assembly = AssemblyListing.TryLoadAssembly(list, definition.FilePath);
-            if (assembly == null)
+            if (assembly is null)
             {
                 return null;
             }
 
             var entity = LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
-            return entity != null ? Describe(entity) : null;
+            return entity is not null ? Describe(entity) : null;
         }
         catch (Exception e) when (e is ArgumentException or BadImageFormatException or InvalidOperationException or IOException)
         {
@@ -183,7 +183,7 @@ public static class Analyzers
     /// <summary>The analyses that apply to <paramref name="symbol"/>, in ILSpy's order.</summary>
     public static IReadOnlyList<AnalysisKind> KindsFor(AnalysisSymbol symbol)
     {
-        return Kinds.Where(k => k.Prepare(symbol.Symbol) != null).OrderBy(static k => k.Order).ToArray();
+        return Kinds.Where(k => k.Prepare(symbol.Symbol) is not null).OrderBy(static k => k.Order).ToArray();
     }
 
     /// <summary>The accessors of a property or event, which ILSpy analyzes on their own.</summary>
@@ -201,7 +201,7 @@ public static class Analyzers
         return Batches.Stream<AnalysisSymbol>((emit, token) =>
         {
             var run = kind.Prepare(symbol.Symbol);
-            if (run == null)
+            if (run is null)
             {
                 throw new ArgumentException($"The analysis {kind.Name} does not apply to {symbol.Label}.", nameof(kind));
             }
@@ -228,7 +228,7 @@ public static class Analyzers
             case IEntity entity:
                 return DescribeEntity(entity);
             case IModule module:
-                return new AnalysisSymbol { Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName, Location = module.MetadataFile?.FileName ?? "", Reference = module.MetadataFile != null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null };
+                return new AnalysisSymbol { Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName, Location = module.MetadataFile?.FileName ?? "", Reference = module.MetadataFile is not null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null };
             default:
                 return null;
         }
@@ -242,9 +242,9 @@ public static class Analyzers
     private static string Where(IEntity entity)
     {
         var outer = entity.DeclaringTypeDefinition;
-        var container = outer != null ? EntityText.FullName(outer) : entity is ITypeDefinition type ? type.Namespace : "";
+        var container = outer is not null ? EntityText.FullName(outer) : entity is ITypeDefinition type ? type.Namespace : "";
         var assembly = entity.ParentModule?.AssemblyName;
-        if (assembly == null)
+        if (assembly is null)
         {
             return container;
         }

@@ -76,7 +76,7 @@ public readonly struct BackgroundWork<T>(Task<T> task)
         public void OnCompleted(Action continuation)
         {
             var ui = SynchronizationContext.Current;
-            if (ui == null)
+            if (ui is null)
             {
                 task.ContinueWith(_ => continuation(), TaskScheduler.Default);
                 return;
@@ -106,7 +106,7 @@ public readonly struct BackgroundWork<T>(Task<T> task)
 
         private Exception FindError()
         {
-            if (task.Exception == null)
+            if (task.Exception is null)
             {
                 return new OperationCanceledException();
             }

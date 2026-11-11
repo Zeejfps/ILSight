@@ -24,7 +24,7 @@ public static class CodeDisplay
     /// <summary>The size code is drawn at in <paramref name="theme"/>.</summary>
     public static float GetFontSize(DisplayOptions display, UiTheme theme)
     {
-        if (display.FontSize == null)
+        if (display.FontSize is null)
         {
             return theme.MonoFontSize;
         }
@@ -146,7 +146,7 @@ public static class CodeDisplay
     /// cannot be read.</summary>
     internal static FontFace? EnsureFace(CodeFontFaces faces, CodeFont? font)
     {
-        if (font == null)
+        if (font is null)
         {
             return faces.Bundled;
         }
@@ -157,7 +157,7 @@ public static class CodeDisplay
         }
 
         var data = ReadFontFile(font.Path);
-        if (data == null)
+        if (data is null)
         {
             return null;
         }
@@ -213,7 +213,7 @@ public static class CodeDisplay
     /// <summary>The name <paramref name="font"/> is offered by: the bundled font's when it is null.</summary>
     public static string GetFontName(CodeFont? font)
     {
-        if (font == null)
+        if (font is null)
         {
             return CodeFontChoices.BundledName;
         }

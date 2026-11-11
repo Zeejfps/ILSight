@@ -165,7 +165,7 @@ internal static class ResourceText
     private static string IndentXml(XDocument document)
     {
         var builder = new StringBuilder();
-        if (document.Declaration != null)
+        if (document.Declaration is not null)
         {
             builder.Append(document.Declaration).Append(NewLine);
         }

@@ -12,7 +12,7 @@ public sealed class BackgroundTests
         const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
         var asyncVoid = typeof(Background).Assembly.GetTypes()
             .SelectMany(t => t.GetMethods(all))
-            .Where(m => m.ReturnType == typeof(void) && m.GetCustomAttribute<AsyncStateMachineAttribute>() != null)
+            .Where(m => m.ReturnType == typeof(void) && m.GetCustomAttribute<AsyncStateMachineAttribute>() is not null)
             .Select(m => $"{m.DeclaringType!.FullName}.{m.Name}")
             .ToList();
         Assert.Empty(asyncVoid);

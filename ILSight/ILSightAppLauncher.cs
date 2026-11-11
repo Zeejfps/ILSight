@@ -17,7 +17,7 @@ public static class ILSightAppLauncher
         var address = RunArgumentsRouting.FindAddress(config.SettingsPath);
 
         using var receiver = RunArgumentsRouting.ForwardOrReceive(address, arguments, config.NewInstance);
-        if (receiver == null)
+        if (receiver is null)
         {
             return;
         }
@@ -68,7 +68,7 @@ public static class ILSightAppLauncher
             WindowHeight = 900,
             WindowTitle = "ILSight",
         };
-        if (window == null)
+        if (window is null)
         {
             return config;
         }

@@ -97,7 +97,7 @@ public static class Trees
 
     private static void FollowSelection(BrowseTree tree, BrowseNode gone, BrowseNode? replacement)
     {
-        if (replacement == null)
+        if (replacement is null)
         {
             return;
         }
@@ -113,7 +113,7 @@ public static class Trees
         }
 
         var counterpart = FindCounterpart(tree, selected, replacement);
-        if (counterpart != null)
+        if (counterpart is not null)
         {
             tree.View.Select(counterpart, scrollIntoView: false);
         }
@@ -123,13 +123,13 @@ public static class Trees
     /// in place of <paramref name="node"/>'s root, found through children already loaded.</summary>
     private static BrowseNode? FindCounterpart(BrowseTree tree, BrowseNode node, BrowseNode root)
     {
-        if (node.Parent == null)
+        if (node.Parent is null)
         {
             return root;
         }
 
         var parent = FindCounterpart(tree, node.Parent, root);
-        if (parent == null)
+        if (parent is null)
         {
             return null;
         }
@@ -147,7 +147,7 @@ public static class Trees
         }
 
         tree.View.SetExpanded(node, false);
-        if (counterpart != null)
+        if (counterpart is not null)
         {
             tree.View.SetExpanded(counterpart, true);
         }
@@ -165,7 +165,7 @@ public static class Trees
 
     private static BrowseNode? FindChildLike(BrowseTree tree, BrowseNode? parent, BrowseNode child)
     {
-        if (parent == null)
+        if (parent is null)
         {
             return null;
         }
@@ -207,7 +207,7 @@ public static class Trees
 
     private static bool IsNested(BrowseTree tree, BrowseNode node)
     {
-        return tree.NestsNamespaces && node.EnclosingNamespace != null;
+        return tree.NestsNamespaces && node.EnclosingNamespace is not null;
     }
 
     public static void ShowApi(BrowseTree tree, ApiVisibility visibility)
@@ -307,7 +307,7 @@ public static class Trees
     public static List<BrowseNode> ListPathTo(BrowseTree tree, BrowseNode node)
     {
         var path = new List<BrowseNode>();
-        for (var n = node; n != null; n = FindShownParent(tree, n))
+        for (var n = node; n is not null; n = FindShownParent(tree, n))
         {
             path.Add(n);
         }
@@ -577,7 +577,7 @@ public static class Trees
             return false;
         }
 
-        return node.Parent == null && tree.Reopening.Contains(node.Assembly.FilePath);
+        return node.Parent is null && tree.Reopening.Contains(node.Assembly.FilePath);
     }
 
     /// <summary>The node's metadata token when the tree shows tokens and it has one, else what
@@ -585,7 +585,7 @@ public static class Trees
     private static string? GetSecondary(BrowseTree tree, BrowseNode node)
     {
         var token = NodeText.Token(node, tree.Tokens);
-        if (token != null)
+        if (token is not null)
         {
             return token;
         }

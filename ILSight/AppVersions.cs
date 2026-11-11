@@ -24,13 +24,13 @@ internal static class AppVersions
     private static string GetVersion(Assembly assembly)
     {
         var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-        if (informational != null)
+        if (informational is not null)
         {
             return WithoutCommit(informational.InformationalVersion);
         }
 
         var version = assembly.GetName().Version;
-        if (version == null)
+        if (version is null)
         {
             return "";
         }

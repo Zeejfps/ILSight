@@ -50,7 +50,7 @@ public static class GridSchemas
         var loaded = new List<object>();
         foreach (var row in rows())
         {
-            if (row == null)
+            if (row is null)
             {
                 throw new UnreachableException("A grid's rows are the rows of a metadata table or heap, which are never null.");
             }
@@ -99,7 +99,7 @@ public static class GridSchemas
     public static void AddValue<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchema<TRow> schema, string name, Func<TRow, T> get, string? format = null,
         Func<TRow, object?>? tooltip = null)
     {
-        AddColumn(schema, name, format, (r, _) => get(r), tooltip == null ? null : (r, _) => tooltip(r));
+        AddColumn(schema, name, format, (r, _) => get(r), tooltip is null ? null : (r, _) => tooltip(r));
     }
 
     /// <summary>Where each row of <paramref name="table"/>, which <paramref name="schema"/> lists, starts in the file.</summary>
@@ -132,7 +132,7 @@ public static class GridSchemas
     {
         var file = schema.File;
         AddColumn(schema, name, "X8", (r, _) => MetadataTokens.GetToken(get(r)),
-            tooltip == null ? (r, _) => Describe(file, get(r)) : (r, _) => tooltip(r), isToken: true);
+            tooltip is null ? (r, _) => Describe(file, get(r)) : (r, _) => tooltip(r), isToken: true);
     }
 
     /// <summary>The start of a run of rows of <paramref name="table"/>, as a token, explained by the
@@ -161,7 +161,7 @@ public static class GridSchemas
     private static string? ExplainSignature<TRow>(MetadataFile file, TRow row, EntityHandle handle, Func<TRow, string?>? decode)
     {
         var decoded = Decode(row, decode);
-        if (decoded != null)
+        if (decoded is not null)
         {
             return decoded;
         }
@@ -171,7 +171,7 @@ public static class GridSchemas
 
     private static string? Decode<TRow>(TRow row, Func<TRow, string?>? decode)
     {
-        if (decode == null)
+        if (decode is null)
         {
             return null;
         }
@@ -202,7 +202,7 @@ public static class GridSchemas
         var flags = FlagsSchemaInferer.IsFlags(typeof(T)) ? FlagsSchemaInferer.For(typeof(T)) : null;
         schema.Columns.Add(new GridColumn(new MetadataColumn(name, isToken, numeric, flags), format,
             (r, rid) => value(GetRow<TRow>(r), rid),
-            tooltip == null ? null : (r, rid) => tooltip(GetRow<TRow>(r), rid)));
+            tooltip is null ? null : (r, rid) => tooltip(GetRow<TRow>(r), rid)));
     }
 
     /// <summary>

@@ -53,7 +53,7 @@ public sealed class RunArgumentsTests
         var d = new AppStateDriver();
 
         OpenRequestedFiles(d.AppState, CommandLines.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Arguments.Files);
-        d.RunUntil(() => d.AppState.Tabs.Active?.Node != null);
+        d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
         d.Settle();
 
         Assert.Equal("Greet(int) : string", d.AppState.Tabs.Active!.Node!.Text);

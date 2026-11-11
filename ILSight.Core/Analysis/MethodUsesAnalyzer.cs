@@ -21,7 +21,7 @@ internal static class MethodUsesAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(IMethod method, AnalyzerContext context)
     {
-        if (method.ParentModule?.MetadataFile == null)
+        if (method.ParentModule?.MetadataFile is null)
         {
             throw new InvalidOperationException("Should never happen.");
         }
@@ -35,7 +35,7 @@ internal static class MethodUsesAnalyzer
     private static IEnumerable<IEntity> ScanMethod(MetadataModule module, MethodDefinitionHandle handle)
     {
         var body = AnalyzerHelpers.ReadBody(module.MetadataFile, handle);
-        if (body == null)
+        if (body is null)
         {
             yield break;
         }

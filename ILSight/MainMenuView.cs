@@ -22,7 +22,7 @@ internal static class MainMenuView
     /// where the platform allows, unless the system's title bar was chosen, and else in a bar of their own.</summary>
     public static void Render(Ui<UiState> ui, AppState appState)
     {
-        if (ui.SystemMenus != null)
+        if (ui.SystemMenus is not null)
         {
             RenderSystemMenuBar(ui, appState);
         }

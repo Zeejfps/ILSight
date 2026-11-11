@@ -31,7 +31,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.Settle(2);
         var assemblies = app.AppState.Assemblies.Assemblies;
         CompareAssemblies(app.AppState, assemblies[0], assemblies[1], Names.Comparison(assemblies[0]));
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff is not null, Patience);
         app.Settle(2);
         return app;
     }
@@ -41,7 +41,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
         var next = new AppDriver(settings: _temp.Settings());
         RestoreActiveAssemblyList(next.AppState);
-        next.Frames.WaitUntil(() => FindComparison(next)?.Diff != null, Patience);
+        next.Frames.WaitUntil(() => FindComparison(next)?.Diff is not null, Patience);
         next.Settle(2);
         return next;
     }
@@ -50,7 +50,7 @@ public sealed class SavedComparisonTests : IDisposable
     {
         return app.AppState.Tabs
             .Open.Select(static t => t.Comparison)
-            .FirstOrDefault(static c => c != null);
+            .FirstOrDefault(static c => c is not null);
     }
 
     private ComparisonDocumentRecord ReadSavedComparison()
@@ -75,7 +75,7 @@ public sealed class SavedComparisonTests : IDisposable
 
         var next = Restart(app);
 
-        var restored = next.AppState.Tabs.Open.Single(t => t.Comparison != null);
+        var restored = next.AppState.Tabs.Open.Single(t => t.Comparison is not null);
         var reopened = restored.Comparison!;
         Assert.Equal("ApiDiffSample API diff", restored.Title);
         Assert.Equal(panel, DocumentPanels.GetPanel(next.Ui.Documents, restored));

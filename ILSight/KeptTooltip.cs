@@ -31,7 +31,7 @@ internal static class KeptTooltips
     /// <summary>The tooltip kept for <paramref name="shownPart"/>, or null.</summary>
     public static CodeTooltip? Find(KeptTooltip kept, int shownPart)
     {
-        if (kept.Kept == null)
+        if (kept.Kept is null)
         {
             return null;
         }

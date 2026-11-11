@@ -180,7 +180,7 @@ public static class DecompilerToggles
             }
 
             var category = property.GetCustomAttribute<CategoryAttribute>()?.Category;
-            if (category == null)
+            if (category is null)
             {
                 continue;
             }
@@ -191,7 +191,7 @@ public static class DecompilerToggles
             }
 
             var group = FindGroup(category);
-            if (group != null)
+            if (group is not null)
             {
                 toggles.Add(new DecompilerToggle { Name = property.Name, Group = group, DefaultValue = value });
             }
@@ -204,7 +204,7 @@ public static class DecompilerToggles
     private static DecompilerToggleGroup? FindGroup(string category)
     {
         var version = FindIntroduced(category);
-        if (version != null)
+        if (version is not null)
         {
             return new DecompilerToggleGroup.Language(version.Value);
         }

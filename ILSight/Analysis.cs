@@ -21,7 +21,7 @@ public static class Analysis
     public static AnalyzerSymbolNode AddRoot(AnalyzerTree tree, AnalysisSymbol symbol)
     {
         var existing = FindRoot(tree, symbol);
-        if (existing != null)
+        if (existing is not null)
         {
             return existing;
         }
@@ -55,7 +55,7 @@ public static class Analysis
     {
         var root = new AnalyzerPendingNode { SavedAs = savedAs };
         tree.Roots.Add(root);
-        if (savedAs != null)
+        if (savedAs is not null)
         {
             tree.Revision++;
         }
@@ -84,7 +84,7 @@ public static class Analysis
                 continue;
             }
 
-            if (pending.SavedAs == null)
+            if (pending.SavedAs is null)
             {
                 continue;
             }
@@ -106,7 +106,7 @@ public static class Analysis
         }
 
         var existing = FindRoot(tree, symbol);
-        if (existing != null)
+        if (existing is not null)
         {
             RemoveRoot(tree, pending);
             return existing;
@@ -133,7 +133,7 @@ public static class Analysis
             return;
         }
 
-        if (SavedAnalysisOf(root) != null)
+        if (SavedAnalysisOf(root) is not null)
         {
             tree.Revision++;
         }
@@ -148,7 +148,7 @@ public static class Analysis
         foreach (var root in tree.Roots)
         {
             var anchor = SavedAnalysisOf(root);
-            if (anchor != null)
+            if (anchor is not null)
             {
                 saved.Add(anchor.Value);
             }
@@ -170,7 +170,7 @@ public static class Analysis
     /// <summary>The children of <paramref name="symbol"/>, listed the first time they are asked for.</summary>
     public static List<AnalyzerNode> EnsureChildren(AnalyzerSymbolNode symbol)
     {
-        if (symbol.Children == null)
+        if (symbol.Children is null)
         {
             symbol.Children = ListChildren(symbol);
         }
@@ -216,7 +216,7 @@ public static class Analysis
 
     private static void CancelAll(List<AnalyzerNode>? nodes)
     {
-        if (nodes == null)
+        if (nodes is null)
         {
             return;
         }
@@ -322,7 +322,7 @@ public static class Analysis
     public static AnalyzerSymbolNode? AddToAnalyzer(AppState appState, BrowseNode node)
     {
         var symbol = Analyzers.Of(node);
-        if (symbol == null)
+        if (symbol is null)
         {
             return null;
         }
@@ -374,7 +374,7 @@ public static class Analysis
 
         switch (found)
         {
-            case Outcome<BrowseNode>.Ok ok when ok.Value != null:
+            case Outcome<BrowseNode>.Ok ok when ok.Value is not null:
                 AnalyzeFound(appState, root, ok.Value);
                 break;
             case Outcome<BrowseNode>.Ok:
@@ -393,7 +393,7 @@ public static class Analysis
     private static void AnalyzeFound(AppState appState, AnalyzerPendingNode root, BrowseNode node)
     {
         var symbol = Analyzers.Of(node);
-        if (symbol == null)
+        if (symbol is null)
         {
             RemoveRoot(appState.Analyzer, root);
             return;
@@ -406,7 +406,7 @@ public static class Analysis
     private static void ResolveAnalysis(AppState appState, AnalyzerPendingNode root, AnalysisSymbol symbol)
     {
         var shown = ResolveRoot(appState.Analyzer, root, symbol);
-        if (shown == null)
+        if (shown is null)
         {
             return;
         }
@@ -483,7 +483,7 @@ public static class Analysis
 
     private static void AnalyzeAgain(AppState appState, AnalyzerPendingNode root, AnalysisSymbol? symbol)
     {
-        if (symbol == null)
+        if (symbol is null)
         {
             RemoveRoot(appState.Analyzer, root);
             return;
@@ -705,7 +705,7 @@ public static class Analysis
 
     private static TreeRow CreateMessageRow(AnalyzerRows rows, AnalyzerMessageNode message)
     {
-        if (message.Error == null)
+        if (message.Error is null)
         {
             return CreateLoadingRow(rows);
         }

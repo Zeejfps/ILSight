@@ -65,7 +65,7 @@ public static class DockPanels
     /// <summary>Whether <paramref name="panel"/> is one of these views rather than a document.</summary>
     public static bool IsView(string panel)
     {
-        return ViewOf(panel) != null;
+        return ViewOf(panel) is not null;
     }
 
     public static DockTab Tab(Strings t, AppIcons icons, DockView view)
@@ -120,7 +120,7 @@ public static class DockPanels
 
     private static DockLayout CopyOrStart(DockLayout? saved)
     {
-        if (saved == null)
+        if (saved is null)
         {
             return new DockLayout { Root = DockLayout.Group(Assemblies) };
         }
@@ -169,7 +169,7 @@ public static class DockPanels
 
     private static bool HasActiveView(DockGroup group)
     {
-        return group.Active != null && IsView(group.Active);
+        return group.Active is not null && IsView(group.Active);
     }
 
     /// <summary>Renames the panels of <paramref name="layout"/> that <paramref name="names"/> maps to new names.</summary>
@@ -188,7 +188,7 @@ public static class DockPanels
             group.Panels[i] = NewNameOf(group.Panels[i], names);
         }
 
-        if (group.Active != null)
+        if (group.Active is not null)
         {
             group.Active = NewNameOf(group.Active, names);
         }

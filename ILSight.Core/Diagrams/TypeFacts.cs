@@ -46,7 +46,7 @@ internal static class TypeFacts
         }
 
         var baseMember = InheritanceHelper.GetBaseMember(method);
-        if (baseMember == null)
+        if (baseMember is null)
         {
             return false;
         }

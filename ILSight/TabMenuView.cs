@@ -14,13 +14,13 @@ internal static class TabMenuView
     /// <summary>Opens the menu on the tab right-clicked, when it is a document's.</summary>
     public static void OpenOnRightClick(Ui<UiState> ui, DockTabMenu? request)
     {
-        if (request == null)
+        if (request is null)
         {
             return;
         }
 
         var tab = DocumentPanels.FindTab(ui.State.Documents, request.Value.Panel);
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }
@@ -32,13 +32,13 @@ internal static class TabMenuView
     /// <summary>Keeps the tab double-clicked open, when it is a document's.</summary>
     public static void KeepOpenOnDoubleClick(Ui<UiState> ui, string? panel)
     {
-        if (panel == null)
+        if (panel is null)
         {
             return;
         }
 
         var tab = DocumentPanels.FindTab(ui.State.Documents, panel);
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }
@@ -55,7 +55,7 @@ internal static class TabMenuView
         }
 
         var tab = ui.State.TabMenuTarget;
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }

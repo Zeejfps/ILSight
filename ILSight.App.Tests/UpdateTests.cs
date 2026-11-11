@@ -38,7 +38,7 @@ public sealed class UpdateTests : IDisposable
                 throw new HttpRequestException("Offline");
             }
 
-            if (newest == null)
+            if (newest is null)
             {
                 return null;
             }

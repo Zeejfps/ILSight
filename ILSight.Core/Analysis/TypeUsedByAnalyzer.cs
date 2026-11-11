@@ -130,7 +130,7 @@ internal static class TypeUsedByAnalyzer
     private static bool ScanMethodBody(MetadataFile module, MethodDefinitionHandle handle, FindTypeDecoder decoder)
     {
         var body = AnalyzerHelpers.ReadBody(module, handle);
-        if (body == null)
+        if (body is null)
         {
             return false;
         }

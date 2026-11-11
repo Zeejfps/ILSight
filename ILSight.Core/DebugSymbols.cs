@@ -100,7 +100,7 @@ internal static class DebugSymbolFiles
         {
             var entries = assembly.Reader.ReadDebugDirectory();
             var embedded = LoadEmbedded(assembly, entries);
-            if (embedded != null)
+            if (embedded is not null)
             {
                 return embedded;
             }
@@ -142,7 +142,7 @@ internal static class DebugSymbolFiles
             }
 
             var provider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(image));
-            if (provider.GetMetadataReader().DebugMetadataHeader == null)
+            if (provider.GetMetadataReader().DebugMetadataHeader is null)
             {
                 return PdbCheck.Unreadable;
             }
@@ -215,7 +215,7 @@ internal static class DebugSymbolFiles
 
             var codeView = assembly.Reader.ReadCodeViewDebugDirectoryData(entry);
             var pdb = ReadBeside(assembly.FileName, codeView.Path, package);
-            if (pdb == null)
+            if (pdb is null)
             {
                 continue;
             }
@@ -239,14 +239,14 @@ internal static class DebugSymbolFiles
         var folder = Path.GetDirectoryName(assemblyPath) ?? "";
         var named = Path.Combine(folder, Path.GetFileName(codeViewPath));
         var image = TryReadFile(named, package);
-        if (image != null)
+        if (image is not null)
         {
             return new PdbImage(named, image);
         }
 
         var sibling = Path.ChangeExtension(assemblyPath, DebugSymbols.PdbExtension);
         image = TryReadFile(sibling, package);
-        if (image != null)
+        if (image is not null)
         {
             return new PdbImage(sibling, image);
         }
@@ -258,19 +258,19 @@ internal static class DebugSymbolFiles
     /// when there is one, where the path runs through it. Null when there is no such file.</summary>
     private static byte[]? TryReadFile(string path, AssemblyPackage? package)
     {
-        if (package == null)
+        if (package is null)
         {
             return TryReadFromDisk(path);
         }
 
         var inPackage = AssemblyPath.Parse(path);
-        if (inPackage == null)
+        if (inPackage is null)
         {
             return null;
         }
 
         var file = AssemblyPackages.FindFileAt(package, inPackage);
-        if (file == null)
+        if (file is null)
         {
             return null;
         }
@@ -291,7 +291,7 @@ internal static class DebugSymbolFiles
     private static bool IsBuiltWith(MetadataReaderProvider provider, CodeViewDebugDirectoryData codeView, DebugDirectoryEntry entry)
     {
         var header = provider.GetMetadataReader().DebugMetadataHeader;
-        if (header == null)
+        if (header is null)
         {
             return false;
         }
@@ -395,12 +395,12 @@ internal static class DebugSymbolFiles
                 extraTypeInfo.DynamicFlags = ReadDynamicFlags(symbols, information.Value);
             }
         }
-        if (extraTypeInfo.TupleElementNames != null)
+        if (extraTypeInfo.TupleElementNames is not null)
         {
             return true;
         }
 
-        return extraTypeInfo.DynamicFlags != null;
+        return extraTypeInfo.DynamicFlags is not null;
     }
 
     private static LocalVariableHandle FindLocal(DebugSymbols symbols, MethodDefinitionHandle method, int index)

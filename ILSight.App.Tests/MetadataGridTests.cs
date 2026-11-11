@@ -179,7 +179,7 @@ public sealed class MetadataGridTests
     {
         var (app, _, grid) = ShowTable("TypeDef");
         var baseType = grid.Column("BaseType");
-        var row = Enumerable.Range(0, grid.RowCount).First(r => MetadataGrids.GetLink(grid, r, baseType) != null);
+        var row = Enumerable.Range(0, grid.RowCount).First(r => MetadataGrids.GetLink(grid, r, baseType) is not null);
         var name = MetadataGrids.GetText(grid, row, grid.Column("Name"));
         var token = TextBeside(app, MetadataGrids.GetText(grid, row, baseType), name);
         app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);

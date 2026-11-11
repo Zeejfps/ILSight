@@ -95,7 +95,7 @@ public static class AssemblyExport
 
     private static (PartProgress? Project, PartProgress? Pdb) SplitForPdb(PartProgress? part, bool pdb)
     {
-        if (part == null)
+        if (part is null)
         {
             return (null, null);
         }
@@ -137,7 +137,7 @@ public static class AssemblyExport
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
         var failure = TryGeneratePdb(project.Assembly, options, folder, embedSources, progress, cancellationToken);
-        if (failure != null)
+        if (failure is not null)
         {
             return project with { Pdb = new ProjectPdb.Failed(failure) };
         }
@@ -268,7 +268,7 @@ public static class AssemblyExport
 
     private static PEFile PortableExecutableOf(LoadedModule assembly)
     {
-        if (assembly.PEFile == null)
+        if (assembly.PEFile is null)
         {
             throw new InvalidOperationException($"'{assembly.FilePath}' is no portable executable, so no PDB can map its IL.");
         }
@@ -289,7 +289,7 @@ public static class AssemblyExport
             var assembly = assemblies[i];
             var part = Part(progress, assembly, i, bounds);
             var failure = TryGeneratePdb(assembly, options, folder, embedSources: true, part, cancellationToken);
-            if (failure != null)
+            if (failure is not null)
             {
                 failures.Add(failure);
             }
@@ -347,7 +347,7 @@ public static class AssemblyExport
     /// the decompiler's progress within it.</summary>
     private static PartProgress? Part(IProgress<ExportProgress>? progress, LoadedModule assembly, int index, float[] bounds)
     {
-        if (progress == null)
+        if (progress is null)
         {
             return null;
         }

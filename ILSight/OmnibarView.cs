@@ -49,7 +49,7 @@ internal static class OmnibarView
     public static bool IsMenuOpenAt(Omnibar omnibar, string panel, BrowseNode node)
     {
         var menu = omnibar.Menu;
-        if (menu == null)
+        if (menu is null)
         {
             return false;
         }
@@ -73,7 +73,7 @@ internal static class OmnibarView
     private static bool TakeFocus(Omnibar omnibar)
     {
         var searching = omnibar.Searching;
-        if (searching == null || !searching.IsFocusPending)
+        if (searching is null || !searching.IsFocusPending)
         {
             return false;
         }
@@ -157,7 +157,7 @@ internal static class OmnibarView
     /// <summary>Selects the crumb after this one once the children built hold it.</summary>
     private static void SelectWaitingChild(CrumbMenu menu)
     {
-        if (menu.ToSelect == null)
+        if (menu.ToSelect is null)
         {
             return;
         }
@@ -179,7 +179,7 @@ internal static class OmnibarView
             return;
         }
 
-        if (menu.Selection.Item != null)
+        if (menu.Selection.Item is not null)
         {
             return;
         }
@@ -206,7 +206,7 @@ internal static class OmnibarView
 
     private static Crumb[] ListCrumbs(BrowseNode? node, BrowseTree tree)
     {
-        if (node == null)
+        if (node is null)
         {
             return [];
         }
@@ -491,7 +491,7 @@ internal static class OmnibarView
     {
         var omnibar = ui.State.Omnibar;
         var menu = omnibar.Menu;
-        if (menu == null)
+        if (menu is null)
         {
             return;
         }
@@ -530,7 +530,7 @@ internal static class OmnibarView
         }
 
         var node = picked.Node;
-        if (node == null)
+        if (node is null)
         {
             return;
         }
@@ -601,7 +601,7 @@ internal static class OmnibarView
             for (var i = list.First; i < list.End; i++)
             {
                 var row = ChildRow(ui, list, shown[i], i);
-                if (row.Node != null)
+                if (row.Node is not null)
                 {
                     picked = row;
                 }

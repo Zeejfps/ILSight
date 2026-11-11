@@ -148,7 +148,7 @@ internal static class ExportReportText
     {
         text.Append(Indent).AppendLine(Headline(t, kind, problem));
         var details = DetailsOf(problem);
-        if (details != null)
+        if (details is not null)
         {
             WriteDetails(text, details);
         }

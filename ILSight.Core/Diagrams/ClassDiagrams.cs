@@ -108,7 +108,7 @@ public static partial class ClassDiagrams
     {
         var resource = ResourcePrefix + name;
         var stream = typeof(ClassDiagrams).Assembly.GetManifestResourceStream(resource);
-        if (stream == null)
+        if (stream is null)
         {
             throw new FileNotFoundException("The diagrammer's resource is missing.", resource);
         }
@@ -272,7 +272,7 @@ public static partial class ClassDiagrams
         }
 
         var definition = type.GetDefinition();
-        if (definition == null)
+        if (definition is null)
         {
             return type.Name;
         }
@@ -282,7 +282,7 @@ public static partial class ClassDiagrams
             return GetKeyword(definition.KnownTypeCode, type);
         }
 
-        if (type.DeclaringType != null)
+        if (type.DeclaringType is not null)
         {
             return type.DeclaringType.Name + '+' + type.Name;
         }
@@ -293,7 +293,7 @@ public static partial class ClassDiagrams
     private static string GetKeyword(KnownTypeCode code, IType type)
     {
         var keyword = KnownTypeReference.GetCSharpNameByTypeCode(code);
-        if (keyword == null)
+        if (keyword is null)
         {
             return type.Name;
         }
@@ -309,12 +309,12 @@ public static partial class ClassDiagrams
         var (id, openGeneric) = IdentifyType(naming, type);
         var referred = openGeneric ?? type;
         RecordOutside(naming, id, referred);
-        if (propertyName != null)
+        if (propertyName is not null)
         {
             return new DiagramReference(id, propertyName);
         }
 
-        if (openGeneric == null)
+        if (openGeneric is null)
         {
             return new DiagramReference(id, null);
         }
@@ -365,7 +365,7 @@ public static partial class ClassDiagrams
         }
 
         var implemented = method.ExplicitlyImplementedInterfaceMembers.FirstOrDefault();
-        if (implemented == null)
+        if (implemented is null)
         {
             return method.Name;
         }
@@ -638,7 +638,7 @@ public static partial class ClassDiagrams
     {
         var own = PadMembers(ListFlatMembers(diagram, members, type, ""));
         var annotation = GetAnnotation(type);
-        if (annotation == null)
+        if (annotation is null)
         {
             return own.TrimEnd(' ');
         }
@@ -787,7 +787,7 @@ public static partial class ClassDiagrams
     private static Dictionary<string, string?>? MapBaseType(DiagramTypes diagram, ITypeDefinition type)
     {
         var baseType = type.DirectBaseTypes.FirstOrDefault(IsBaseClass);
-        if (baseType == null)
+        if (baseType is null)
         {
             return null;
         }
@@ -850,7 +850,7 @@ public static partial class ClassDiagrams
     internal static Dictionary<string, string>? CollectDocs(DiagramDocs docs, ITypeDefinition type, IEnumerable<IMember> members)
     {
         var provider = docs.Provider;
-        if (provider == null)
+        if (provider is null)
         {
             return null;
         }
@@ -884,7 +884,7 @@ public static partial class ClassDiagrams
     private static string? GetDocText(IDocumentationProvider provider, IEntity entity)
     {
         var xml = ReadDocXml(provider, entity);
-        if (xml == null)
+        if (xml is null)
         {
             return null;
         }

@@ -30,7 +30,7 @@ internal static class ComparisonView
 
         Summary(ui, comparison);
         var hint = FindHint(ui, comparison, rows);
-        if (hint != null)
+        if (hint is not null)
         {
             DocumentsView.Hint(ui, hint);
             return;
@@ -116,7 +116,7 @@ internal static class ComparisonView
     private static void Summary(Ui<UiState> ui, AssemblyComparison comparison)
     {
         var diff = comparison.Diff;
-        if (diff == null)
+        if (diff is null)
         {
             return;
         }
@@ -143,12 +143,12 @@ internal static class ComparisonView
     {
         var t = ui.State.Strings;
         var failure = comparison.Failure;
-        if (failure != null)
+        if (failure is not null)
         {
             return ui.Memo("comparison-failure", (failure, t), static a => DescribeFailure(a.t, a.failure));
         }
 
-        if (comparison.Diff == null)
+        if (comparison.Diff is null)
         {
             return t.ComparisonComparing;
         }
@@ -180,7 +180,7 @@ internal static class ComparisonView
             Commands.Later(ui.State, result.Node, static (a, n) => Open(a, n, inNewTab: false));
         }
 
-        if (result.ContextMenuRequested && result.Node != null)
+        if (result.ContextMenuRequested && result.Node is not null)
         {
             ui.OpenContextMenu(MenuId, result.ContextMenuAt);
         }
@@ -189,7 +189,7 @@ internal static class ComparisonView
     /// <summary>Opens the code of <paramref name="entry"/> in the right assembly, else in the left.</summary>
     private static void Open(AppState appState, ApiEntry? entry, bool inNewTab)
     {
-        if (entry == null)
+        if (entry is null)
         {
             return;
         }
@@ -247,7 +247,7 @@ internal static class ComparisonView
         }
 
         var entry = rows.View.Selected;
-        if (entry == null)
+        if (entry is null)
         {
             return;
         }

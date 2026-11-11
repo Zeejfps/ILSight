@@ -62,7 +62,7 @@ internal static class ErrorDialogView
     private static DecompiledDocument GetSelectedDocument(ErrorDialog dialog, Strings t)
     {
         var error = dialog.SelectedError;
-        if (error == null)
+        if (error is null)
         {
             return DecompiledDocument.Empty;
         }
@@ -117,7 +117,7 @@ internal static class ErrorDialogView
         }
 
         var selected = shown.SelectedError;
-        if (selected != null)
+        if (selected is not null)
         {
             using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
             {
@@ -133,7 +133,7 @@ internal static class ErrorDialogView
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
         {
-            if (ui.Button(t.ErrorsCopy, id: "error-copy") && selected != null)
+            if (ui.Button(t.ErrorsCopy, id: "error-copy") && selected is not null)
             {
                 ui.ClipboardText = GetText(shown, selected, t).FullText;
             }

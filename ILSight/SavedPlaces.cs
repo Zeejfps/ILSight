@@ -90,7 +90,7 @@ public static class SavedPlaces
     private static NodePathSegment.Folder? ParseFolder(string text)
     {
         var role = ParseName<NodeFolder>(text);
-        if (role == null)
+        if (role is null)
         {
             return null;
         }
@@ -101,7 +101,7 @@ public static class SavedPlaces
     private static NodePathSegment.Metadata? ParseMetadata(string text)
     {
         var which = ParseName<MetadataSource>(text);
-        if (which == null)
+        if (which is null)
         {
             return null;
         }
@@ -138,7 +138,7 @@ public static class SavedPlaces
     private static MetadataPartKey.Header? ParseHeader(string text)
     {
         var which = ParseName<PEHeaderKind>(text);
-        if (which == null)
+        if (which is null)
         {
             return null;
         }
@@ -149,7 +149,7 @@ public static class SavedPlaces
     private static MetadataPartKey.Table? ParseTable(string text)
     {
         var table = ParseName<TableIndex>(text);
-        if (table == null)
+        if (table is null)
         {
             return null;
         }

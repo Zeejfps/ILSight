@@ -96,7 +96,7 @@ public static class AssemblyPackages
     public static AssemblyPackage? TryRead(AssemblyPath path)
     {
         var zip = TryReadZip(path);
-        if (zip != null)
+        if (zip is not null)
         {
             return zip;
         }
@@ -162,7 +162,7 @@ public static class AssemblyPackages
     private static AssemblyPackage? TryReadBundle(AssemblyPath path)
     {
         var entries = BundleContents.TryReadManifest(path.Text);
-        if (entries == null)
+        if (entries is null)
         {
             return null;
         }
@@ -341,7 +341,7 @@ public static class AssemblyPackages
             cancellationToken.ThrowIfCancellationRequested();
             progress?.Report(new ExportProgress(folder.Name, 1, 1, (float)i / files.Count));
             var failure = TryExtract(package, files[i], folder, root, written);
-            if (failure != null)
+            if (failure is not null)
             {
                 failures.Add(failure);
             }
@@ -354,7 +354,7 @@ public static class AssemblyPackages
         try
         {
             var path = FindTargetPath(file, folder, root);
-            if (path == null)
+            if (path is null)
             {
                 return new ExtractFailure.OutsideFolder(file);
             }
@@ -375,7 +375,7 @@ public static class AssemblyPackages
     {
         var relative = GetRelativePath(folder, file).Replace(Separator, Path.DirectorySeparatorChar);
         var path = FullFilePath.Parse(Path.GetFullPath(Path.Combine(root, relative)));
-        if (path == null)
+        if (path is null)
         {
             return null;
         }
@@ -458,7 +458,7 @@ public static class AssemblyPackages
     internal static (AssemblyPath Package, string FullName)? SplitPath(AssemblyPath path)
     {
         var folder = Path.GetDirectoryName(path.Text);
-        while (folder != null)
+        while (folder is not null)
         {
             if (File.Exists(folder))
             {

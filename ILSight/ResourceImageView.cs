@@ -25,7 +25,7 @@ internal static class ResourceImageView
         var theme = ui.Theme;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var image = shown.Image;
-        var hasSource = shown.Source != null;
+        var hasSource = shown.Source is not null;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = theme.PaneBackground });
         Toolbar(ui, tab, view.Picture, image, hasSource);
         ui.Separator();
@@ -56,7 +56,7 @@ internal static class ResourceImageView
             }
 
             var node = tab.Node;
-            if (node != null && node.HasResource && ui.Button(t.ResourceExport, id: "export", icon: new UiIcon(ui.State.Icons.ResourceExport)))
+            if (node is not null && node.HasResource && ui.Button(t.ResourceExport, id: "export", icon: new UiIcon(ui.State.Icons.ResourceExport)))
             {
                 PickExport(ui, node);
             }

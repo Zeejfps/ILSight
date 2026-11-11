@@ -49,7 +49,7 @@ public static class AssemblyClosing
         closer.Order.Clear();
         closer.ListedVersion = -1;
         Update(closer, assemblies);
-        if (picked == null)
+        if (picked is null)
         {
             return;
         }
@@ -102,7 +102,7 @@ public static class AssemblyClosing
             closer.Order.Add(new CloseChoice { Assembly = item, Included = ticked.Contains(item.FilePath) });
         }
 
-        if (closer.Anchor != null && !closer.Order.Contains(closer.Anchor))
+        if (closer.Anchor is not null && !closer.Order.Contains(closer.Anchor))
         {
             closer.Anchor = null;
         }
@@ -194,7 +194,7 @@ public static class AssemblyClosing
     {
         var anchor = closer.Anchor;
         closer.Anchor = clicked;
-        if (!extend || anchor == null)
+        if (!extend || anchor is null)
         {
             return;
         }

@@ -46,13 +46,13 @@ public sealed class DiagramViewTests
         }
 
         var tab = app.AppState.Tabs.Active;
-        if (tab == null)
+        if (tab is null)
         {
             return false;
         }
 
         var diagram = tab.Diagram;
-        if (diagram == null)
+        if (diagram is null)
         {
             return false;
         }
@@ -103,7 +103,7 @@ public sealed class DiagramViewTests
     private static List<DocumentTab> ListDiagramTabs(AppDriver app)
     {
         return app.AppState.Tabs
-            .Open.Where(static t => t.Diagram != null)
+            .Open.Where(static t => t.Diagram is not null)
             .ToList();
     }
 

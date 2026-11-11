@@ -88,7 +88,7 @@ public static class MetadataGridWidget
     internal static MetadataColumnFilter EnsureColumnFilter(MetadataGridState state, int column, MetadataFilters flags)
     {
         var filter = state.Filters[column];
-        if (filter != null)
+        if (filter is not null)
         {
             return filter;
         }
@@ -290,7 +290,7 @@ public static class MetadataGridWidget
     /// <summary>Filters starting from a copy of <paramref name="saved"/>, what the settings kept.</summary>
     public static MetadataFilters CreateFilters(Dictionary<string, SavedFilterState>? saved)
     {
-        var copied = saved != null ? new Dictionary<string, SavedFilterState>(saved) : new Dictionary<string, SavedFilterState>();
+        var copied = saved is not null ? new Dictionary<string, SavedFilterState>(saved) : new Dictionary<string, SavedFilterState>();
         return new MetadataFilters { Saved = copied };
     }
 
@@ -569,7 +569,7 @@ internal ref struct MetadataGridFrame
 
         Rows(table, columns);
         var picked = Menu();
-        if (picked != null)
+        if (picked is not null)
         {
             _result = picked.Value;
         }
@@ -694,7 +694,7 @@ internal ref struct MetadataGridFrame
             else if (Ui.IsPressedAt(Shortcuts.GoToToken, i))
             {
                 var target = MetadataGrids.GetLink(Grid, State.Selected, State.CurrentColumn);
-                if (target != null)
+                if (target is not null)
                 {
                     result = new MetadataGridResult(target, null, false);
                 }
@@ -740,7 +740,7 @@ internal ref struct MetadataGridFrame
         }
 
         var pending = State.Pending;
-        if (pending == null)
+        if (pending is null)
         {
             return;
         }
@@ -764,7 +764,7 @@ internal ref struct MetadataGridFrame
         State.Scroll.X = restore.ScrollX;
         body.ScrollTo(restore.TopRow * rowHeight);
         var row = restore.Row;
-        if (row != null)
+        if (row is not null)
         {
             MetadataGridWidget.SelectCell(State, row.Value, restore.Column ?? MetadataGridState.None);
         }
@@ -861,7 +861,7 @@ internal ref struct MetadataGridFrame
         var expanded = MetadataGridWidget.IsOpenAt(State, row, c);
         uint? color = theme.Text;
         UiIcon? link = null;
-        if (target != null)
+        if (target is not null)
         {
             color = null;
             link = new UiIcon(Ui.State.Icons.LinkToken);
@@ -959,13 +959,13 @@ internal ref struct MetadataGridFrame
 
         var target = column >= 0 ? MetadataGrids.GetLink(Grid, row, column) : null;
         var definition = MetadataGrids.FindDefinition(Grid, row);
-        if (target == null && definition == null)
+        if (target is null && definition == null)
         {
             return null;
         }
 
         Ui.MenuSeparator();
-        if (target != null && Ui.MenuItem(Strings.MetadataGoToToken, Shortcuts.GoToToken, id: "go-to-token"))
+        if (target is not null && Ui.MenuItem(Strings.MetadataGoToToken, Shortcuts.GoToToken, id: "go-to-token"))
         {
             result = new MetadataGridResult(target, null, false);
         }

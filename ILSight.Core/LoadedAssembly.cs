@@ -37,7 +37,7 @@ public abstract class LoadedAssembly
     {
         get
         {
-            if (this is LoadedModule module && module.Place != null)
+            if (this is LoadedModule module && module.Place is not null)
             {
                 return module.Place.Container;
             }
@@ -113,7 +113,7 @@ public sealed class LoadedModule : LoadedAssembly
     {
         get
         {
-            if (TargetFramework == null)
+            if (TargetFramework is null)
             {
                 return null;
             }
@@ -128,7 +128,7 @@ public sealed class LoadedModule : LoadedAssembly
     {
         get
         {
-            if (TargetFramework == null)
+            if (TargetFramework is null)
             {
                 return null;
             }
@@ -139,7 +139,7 @@ public sealed class LoadedModule : LoadedAssembly
 
     /// <summary>Whether a PDB can be picked for this assembly: one that loaded with PE headers, which
     /// a WebCIL module lacks.</summary>
-    public bool CanPickPdb => PEFile != null;
+    public bool CanPickPdb => PEFile is not null;
 }
 
 /// <summary>A file of the list that could not be read as a .NET assembly, kept listed to show why. It
@@ -191,7 +191,7 @@ public static class LoadedAssemblies
             Place = place,
             DetectedTargetFramework = detected,
             TargetFramework = targetFramework,
-            IsTargetFrameworkPicked = picked != null,
+            IsTargetFrameworkPicked = picked is not null,
             Resolver = resolver,
             TypeSystem = new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(file, resolver, Settings.Create())),
             DebugSymbols = new Lazy<DebugSymbols?>(() => LoadDebugSymbols(list, path, file, place)),
@@ -240,7 +240,7 @@ public static class LoadedAssemblies
 
     private static string JoinNameAndVersion(string name, Version? version)
     {
-        if (version == null)
+        if (version is null)
         {
             return name;
         }
@@ -301,7 +301,7 @@ public static class LoadedAssemblies
     /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for this assembly. Reads the file.</summary>
     public static PdbCheck CheckPdb(LoadedModule module, string pdbPath)
     {
-        if (module.PEFile == null)
+        if (module.PEFile is null)
         {
             return PdbCheck.Unreadable;
         }
@@ -324,7 +324,7 @@ public static class LoadedAssemblies
         }
 
         var picked = list.Pdbs.Find(path);
-        if (picked == null)
+        if (picked is null)
         {
             return DebugSymbolFiles.LoadSymbols(pe, place?.Container.Package);
         }
@@ -400,7 +400,7 @@ public static class LoadedAssemblies
     internal static IEntity? FindDefinedEntity(MetadataModule main, string idString)
     {
         var entity = FindEntity(main, idString);
-        if (entity == null)
+        if (entity is null)
         {
             return null;
         }
@@ -431,8 +431,8 @@ public static class LoadedAssemblies
     {
         return main.ResolveEntity(handle) switch
         {
-            IMethod { IsAccessor: true } method when method.AccessorOwner != null => method.AccessorOwner.MetadataToken,
-            IEntity entity when entity.DeclaringTypeDefinition != null => entity.DeclaringTypeDefinition.MetadataToken,
+            IMethod { IsAccessor: true } method when method.AccessorOwner is not null => method.AccessorOwner.MetadataToken,
+            IEntity entity when entity.DeclaringTypeDefinition is not null => entity.DeclaringTypeDefinition.MetadataToken,
             _ => default,
         };
     }
@@ -448,7 +448,7 @@ public static class LoadedAssemblies
             }
 
             var assembly = AssemblyListing.TryLoadOutOf(package.List, package, file);
-            if (assembly != null)
+            if (assembly is not null)
             {
                 assemblies.Add(assembly);
             }

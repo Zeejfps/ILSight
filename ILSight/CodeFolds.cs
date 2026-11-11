@@ -118,7 +118,7 @@ internal static class CodeFolding
                 opened[i] = false;
             }
         }
-        if (opened == null)
+        if (opened is null)
         {
             return false;
         }
@@ -136,7 +136,7 @@ internal static class CodeFolding
         }
 
         var fold = Documents.FindFoldStartingAt(state.Document, line);
-        if (fold == null)
+        if (fold is null)
         {
             return null;
         }
@@ -153,7 +153,7 @@ internal static class CodeFolding
         int? found = null;
         for (var i = 0; i < folds.Length && folds[i].StartLine <= line; i++)
         {
-            if (line <= folds[i].EndLine && (collapsed == null || state.Collapsed[i] == collapsed))
+            if (line <= folds[i].EndLine && (collapsed is null || state.Collapsed[i] == collapsed))
             {
                 found = i;
             }

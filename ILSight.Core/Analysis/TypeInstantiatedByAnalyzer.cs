@@ -40,6 +40,6 @@ internal static class TypeInstantiatedByAnalyzer
             HandleKind.TypeDefinition or HandleKind.TypeReference => module.ResolveType(token, default)?.GetDefinition(),
             _ => null,
         };
-        return found?.ParentModule != null && AnalyzerHelpers.IsSame(found, type);
+        return found?.ParentModule is not null && AnalyzerHelpers.IsSame(found, type);
     }
 }

@@ -125,7 +125,7 @@ public static class ProcessPicking
             return true;
         }
 
-        if (process.Info == null || process.Info.EntryAssemblyName == null)
+        if (process.Info == null || process.Info.EntryAssemblyName is null)
         {
             return false;
         }

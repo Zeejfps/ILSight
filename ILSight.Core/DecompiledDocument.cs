@@ -252,7 +252,7 @@ public static class Documents
     private static Dictionary<CodeAnchor, int> EnsureDefinitionLines(DecompiledDocument document)
     {
         var kept = Volatile.Read(ref document.DefinitionLines);
-        if (kept != null)
+        if (kept is not null)
         {
             return kept;
         }
@@ -269,7 +269,7 @@ public static class Documents
     private static Dictionary<CodeAnchor, (int Offset, int Line)[]> EnsureStatementLines(DecompiledDocument document)
     {
         var kept = Volatile.Read(ref document.StatementLines);
-        if (kept != null)
+        if (kept is not null)
         {
             return kept;
         }

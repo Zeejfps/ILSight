@@ -267,7 +267,7 @@ public sealed class NuGetPickerTests : IDisposable
         NuGetPicking.ShowNextPage(picker);
         NuGetPicking.UpdatePicker(picker, now: 20);
         Poll.Until(() => !picker.IsSearching, posted.Run);
-        var shownAfterFailure = (picker.Page, picker.Results.Count, picker.SearchError != null);
+        var shownAfterFailure = (picker.Page, picker.Results.Count, picker.SearchError is not null);
         _fake.AnswerSearches(ThreePagesOfPackages);
         NuGetPicking.RetrySearch(picker);
         NuGetPicking.UpdatePicker(picker, now: 21);

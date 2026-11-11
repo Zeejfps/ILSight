@@ -45,7 +45,7 @@ public sealed record AssemblyPath
     public static AssemblyPath Of(string text)
     {
         var path = Parse(text);
-        if (path == null)
+        if (path is null)
         {
             throw new ArgumentException($"'{text}' is no absolute path.", nameof(text));
         }

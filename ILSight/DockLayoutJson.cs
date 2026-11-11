@@ -65,7 +65,7 @@ internal static class DockJson
     public static DockLayout? Parse(DockLayoutJson json)
     {
         var root = Parse(json.Root);
-        if (root == null || json.Windows == null)
+        if (root is null || json.Windows is null)
         {
             return null;
         }
@@ -73,13 +73,13 @@ internal static class DockJson
         var windows = new List<DockWindow>(json.Windows.Count);
         foreach (var window in json.Windows)
         {
-            if (window == null)
+            if (window is null)
             {
                 return null;
             }
 
             var parsed = Parse(window);
-            if (parsed == null)
+            if (parsed is null)
             {
                 return null;
             }
@@ -102,7 +102,7 @@ internal static class DockJson
     /// <summary>The node, or null when it is held as null or is missing a part.</summary>
     private static DockNode? Parse(DockNodeJson? json)
     {
-        if (json == null)
+        if (json is null)
         {
             return null;
         }
@@ -130,13 +130,13 @@ internal static class DockJson
     private static DockNode? Parse(DockSplitJson json)
     {
         var first = Parse(json.First);
-        if (first == null)
+        if (first is null)
         {
             return null;
         }
 
         var second = Parse(json.Second);
-        if (second == null)
+        if (second is null)
         {
             return null;
         }
@@ -151,7 +151,7 @@ internal static class DockJson
 
     private static DockNode? Parse(DockGroupJson json)
     {
-        if (json.Panels == null)
+        if (json.Panels is null)
         {
             return null;
         }
@@ -181,7 +181,7 @@ internal static class DockJson
     private static DockWindow? Parse(DockWindowJson json)
     {
         var root = Parse(json.Root);
-        if (root == null)
+        if (root is null)
         {
             return null;
         }

@@ -49,7 +49,7 @@ internal static class AnalyzerPanelView
             }
 
             ui.Separator(theme.IconSize);
-            if (ui.IconButton("remove", ui.State.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root != null) && root != null)
+            if (ui.IconButton("remove", ui.State.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root is not null) && root is not null)
             {
                 Commands.Later(ui.State, root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
             }
@@ -106,7 +106,7 @@ internal static class AnalyzerPanelView
     private static void RemoveSelectedAnalysis(UiState screen, AnalyzerRows rows)
     {
         var root = Analysis.FindSelectedRoot(rows);
-        if (root != null)
+        if (root is not null)
         {
             Commands.Later(screen, root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
         }
@@ -186,7 +186,7 @@ internal static class AnalyzerPanelView
     public static void Analyze(UiState screen, AppState appState, BrowseNode node)
     {
         var root = AddToAnalyzer(appState, node);
-        if (root == null)
+        if (root is null)
         {
             return;
         }

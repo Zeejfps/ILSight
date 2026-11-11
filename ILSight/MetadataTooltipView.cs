@@ -10,7 +10,7 @@ internal static class MetadataTooltipView
     public static void Render(Ui<UiState> ui, MetadataTooltip content)
     {
         var theme = ui.Theme;
-        if (content.Text != null)
+        if (content.Text is not null)
         {
             ui.Text(content.Text, color: theme.Text, size: theme.FontSizeSmall, wrap: true);
             return;

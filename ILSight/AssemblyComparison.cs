@@ -25,7 +25,7 @@ public sealed class AssemblyComparison
     public ComparisonFailure? Failure { get; set; }
 
     /// <summary>True while a comparison runs in the background.</summary>
-    public bool IsComparing => Work != null;
+    public bool IsComparing => Work is not null;
 
     public bool IsClosed => Open.IsCancellationRequested;
 

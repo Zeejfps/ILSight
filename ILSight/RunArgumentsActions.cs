@@ -14,12 +14,12 @@ public static class RunArgumentsActions
     public static void ApplyStartupOptions(AppState appState, RunArguments arguments)
     {
         ReportIgnored(appState, arguments);
-        if (arguments.Language != null)
+        if (arguments.Language is not null)
         {
             SetLanguage(appState, arguments.Language.Value);
         }
 
-        if (arguments.AssemblyList != null)
+        if (arguments.AssemblyList is not null)
         {
             StartWithAssemblyList(appState, arguments.AssemblyList);
         }
@@ -36,12 +36,12 @@ public static class RunArgumentsActions
     public static void ApplyArguments(AppState appState, RunArguments arguments)
     {
         ReportIgnored(appState, arguments);
-        if (arguments.Language != null)
+        if (arguments.Language is not null)
         {
             SetLanguage(appState, arguments.Language.Value);
         }
 
-        if (arguments.AssemblyList != null)
+        if (arguments.AssemblyList is not null)
         {
             OpenAssemblyListNamed(appState, arguments.AssemblyList);
         }
@@ -66,7 +66,7 @@ public static class RunArgumentsActions
     /// ask to navigate to, or else the last file opened.</summary>
     public static void OpenRequestedFiles(AppState appState, FilesToOpen files)
     {
-        if (files.NavigateTo == null)
+        if (files.NavigateTo is null)
         {
             OpenAssemblies(appState, files.Paths);
             return;

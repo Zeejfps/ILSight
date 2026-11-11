@@ -118,7 +118,7 @@ public static class Updates
             updates.Status = FailedTo(asked);
             return;
         }
-        if (ok.Value == null)
+        if (ok.Value is null)
         {
             updates.Status = asked ? new UpdateStatus.UpToDate() : new UpdateStatus.Idle();
             return;

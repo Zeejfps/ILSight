@@ -54,7 +54,7 @@ public static partial class BrowseNodes
     private static BrowseNode CreateFileNode(BrowseNode parent, LoadedPackage package, PackageFile file)
     {
         var assembly = PackageContents.IsAssemblyName(file.Name) ? LoadedAssemblies.FindAssembly(package.Package, LoadedAssemblies.EnsureAssemblies(package), file) : null;
-        if (assembly == null)
+        if (assembly is null)
         {
             return Create(parent, new NodeSubject.PackageFile { Value = new PackageFileInfo { Package = package, File = file } });
         }

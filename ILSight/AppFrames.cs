@@ -106,7 +106,7 @@ internal static partial class AppFrames
     private static void KeepTabPosition(UiState uiState, DocumentTab tab)
     {
         var position = DocumentPanels.FindViewPosition(uiState.Documents, tab);
-        if (position == null)
+        if (position is null)
         {
             return;
         }
@@ -117,7 +117,7 @@ internal static partial class AppFrames
     private static void KeepChangedViewSettings(UiState uiState, AppState appState)
     {
         var view = TakeChangedViewSettings(uiState);
-        if (view == null)
+        if (view is null)
         {
             return;
         }

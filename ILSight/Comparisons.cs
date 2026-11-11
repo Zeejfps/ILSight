@@ -67,13 +67,13 @@ public static class Comparisons
     private static async Task CompareAsync(AppState appState, AssemblyComparison comparison)
     {
         var left = FindOpen(appState, comparison.LeftPath);
-        if (left == null)
+        if (left is null)
         {
             ShowClosed(appState, comparison, comparison.LeftPath);
             return;
         }
         var right = FindOpen(appState, comparison.RightPath);
-        if (right == null)
+        if (right is null)
         {
             ShowClosed(appState, comparison, comparison.RightPath);
             return;
@@ -255,7 +255,7 @@ public static class Comparisons
 
     private static IReadOnlyList<ApiEntry> ListNamespaces(ComparisonRows rows)
     {
-        if (rows.ShownDiff == null)
+        if (rows.ShownDiff is null)
         {
             return [];
         }

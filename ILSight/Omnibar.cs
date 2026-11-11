@@ -21,7 +21,7 @@ public sealed class Omnibar
     /// <summary>The children of a crumb, open under it, or null while no list is open.</summary>
     public CrumbMenu? Menu { get; set; }
 
-    public bool IsSearching => Searching != null;
+    public bool IsSearching => Searching is not null;
 
     /// <summary>How many matches are suggested.</summary>
     public int SuggestionCount => Math.Min(Search.Rows.Count, MaxSuggestions);

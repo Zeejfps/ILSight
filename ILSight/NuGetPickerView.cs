@@ -42,7 +42,7 @@ internal static class NuGetPickerView
     private static void OpenDownloaded(Ui<UiState> ui, NuGetPicker picker)
     {
         var path = NuGetPicking.TakeDownloaded(picker);
-        if (path == null)
+        if (path is null)
         {
             return;
         }
@@ -243,7 +243,7 @@ internal static class NuGetPickerView
                 NuGetPlaceholderView.Render(ui, picker);
                 return false;
             }
-            if (picker.SearchError != null)
+            if (picker.SearchError is not null)
             {
                 NuGetPlaceholderView.PageFailed(ui, picker);
             }
@@ -302,7 +302,7 @@ internal static class NuGetPickerView
     internal static void DrawIcon(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, float side)
     {
         var icon = ShownIconOf(picker, package);
-        if (icon == null)
+        if (icon is null)
         {
             StandIn(ui, side);
             return;
@@ -326,7 +326,7 @@ internal static class NuGetPickerView
     private static ShownIcon? ShownIconOf(NuGetPicker picker, FeedPackage package)
     {
         var icon = NuGetPicking.EnsureIcon(picker, package);
-        if (icon == null)
+        if (icon is null)
         {
             return null;
         }

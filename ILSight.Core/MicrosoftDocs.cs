@@ -18,7 +18,7 @@ public static class MicrosoftDocs
         }
 
         var entity = BrowseNodes.GetEntity(node);
-        if (entity != null)
+        if (entity is not null)
         {
             return FindPage(entity);
         }
@@ -36,7 +36,7 @@ public static class MicrosoftDocs
         }
 
         var name = FindPageName(entity);
-        if (name == null)
+        if (name is null)
         {
             return null;
         }
@@ -92,7 +92,7 @@ public static class MicrosoftDocs
     private static string? MemberPageName(IMember member)
     {
         var declaring = member.DeclaringTypeDefinition;
-        if (declaring == null)
+        if (declaring is null)
         {
             return null;
         }

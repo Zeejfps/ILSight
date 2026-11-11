@@ -25,7 +25,7 @@ public static partial class BrowseNodes
         var file = module.File;
         var result = new List<BrowseNode> { CreateMetadataFolder(module, parent, file, "Metadata") };
         var symbols = LoadedAssemblies.EnsureDebugSymbols(module);
-        if (symbols != null)
+        if (symbols is not null)
         {
             result.Add(CreateMetadataFolder(module, parent, symbols.File, symbols.Title));
         }
@@ -78,7 +78,7 @@ public static partial class BrowseNodes
     private static BrowseNode? FindEnclosing(Dictionary<string, BrowseNode> namespaces, string name)
     {
         var enclosing = NamespaceNames.EnclosingName(name);
-        if (enclosing == null)
+        if (enclosing is null)
         {
             return null;
         }
@@ -94,7 +94,7 @@ public static partial class BrowseNodes
         foreach (var type in ns.Types)
         {
             var node = CreateForType(ns.Module, parent, type);
-            if (node != null)
+            if (node is not null)
             {
                 children.Add((type.Name, type.TypeParameterCount, node));
             }
@@ -122,7 +122,7 @@ public static partial class BrowseNodes
 
     private static string? GetBuiltForName(LoadedModule module)
     {
-        if (module.DetectedTargetFramework == null)
+        if (module.DetectedTargetFramework is null)
         {
             return null;
         }

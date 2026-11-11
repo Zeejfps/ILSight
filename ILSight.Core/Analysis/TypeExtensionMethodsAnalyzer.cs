@@ -19,7 +19,7 @@ internal static class TypeExtensionMethodsAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition analyzed, AnalyzerContext context)
     {
-        if (analyzed.ParentModule?.MetadataFile == null)
+        if (analyzed.ParentModule?.MetadataFile is null)
         {
             yield break;
         }
@@ -39,7 +39,7 @@ internal static class TypeExtensionMethodsAnalyzer
                 }
 
                 var extended = method.Parameters[0].Type.GetDefinition();
-                if (extended != null && AnalyzerHelpers.IsSame(extended, analyzed))
+                if (extended is not null && AnalyzerHelpers.IsSame(extended, analyzed))
                 {
                     yield return method;
                 }

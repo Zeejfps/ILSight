@@ -114,7 +114,7 @@ public static class RunningProcesses
         var found = new List<RunningProcess>();
         foreach (var process in processes)
         {
-            if (process != null)
+            if (process is not null)
             {
                 found.Add(process);
             }
@@ -129,13 +129,13 @@ public static class RunningProcesses
     internal static async Task<RunningProcess?> DescribeAsync(ProcessId id, TimeSpan budget, CancellationToken cancellationToken)
     {
         var name = FindProcessName(id);
-        if (name == null)
+        if (name is null)
         {
             return null; // exited since the scan
         }
 
         var endpoint = FindEndpoint(id);
-        if (endpoint == null)
+        if (endpoint is null)
         {
             return null; // its socket went with it
         }
@@ -162,7 +162,7 @@ public static class RunningProcesses
     internal static async Task<ModuleListing> FindModulesAsync(ProcessId id, TimeSpan budget, CancellationToken cancellationToken)
     {
         var endpoint = FindEndpoint(id);
-        if (endpoint == null)
+        if (endpoint is null)
         {
             return new ModuleListing.Unreachable($"Process {id} has no diagnostics endpoint.");
         }
@@ -199,7 +199,7 @@ public static class RunningProcesses
         foreach (var module in modules)
         {
             var path = FindExistingFile(module.IlPath) ?? FindExistingFile(module.NativePath);
-            if (path != null)
+            if (path is not null)
             {
                 if (seenPaths.Add(path))
                 {
@@ -228,13 +228,13 @@ public static class RunningProcesses
     /// </summary>
     public static AssemblyPath? FindEntryAssembly(RunningProcess process, IReadOnlyList<RunningModule> modules)
     {
-        if (process.Info == null)
+        if (process.Info is null)
         {
             return null;
         }
 
         var entryName = process.Info.EntryAssemblyName;
-        if (entryName != null)
+        if (entryName is not null)
         {
             foreach (var module in modules)
             {
@@ -266,10 +266,10 @@ public static class RunningProcesses
         // dotnet's own options come before the app, as in "dotnet exec --depsfile App.deps.json App.dll",
         // and the app's arguments after it, so the first DLL named is the app.
         var firstDll = tokens.Skip(1).FirstOrDefault(IsDll);
-        if (firstDll != null)
+        if (firstDll is not null)
         {
             var dll = FindExistingFile(firstDll);
-            if (dll != null)
+            if (dll is not null)
             {
                 return dll;
             }
@@ -331,7 +331,7 @@ public static class RunningProcesses
         }
 
         var path = AssemblyPath.Parse(text);
-        if (path == null || !File.Exists(path.Text))
+        if (path is null || !File.Exists(path.Text))
         {
             return null;
         }
@@ -389,7 +389,7 @@ public static class RunningProcesses
         }
 
         var socket = FindSocketPath(id);
-        if (socket == null)
+        if (socket is null)
         {
             return null;
         }
@@ -420,7 +420,7 @@ public static class RunningProcesses
         foreach (var path in Directory.EnumerateFiles(Path.GetTempPath(), DiagnosticsIpc.TransportPrefix + "*"))
         {
             var id = ParseSocketProcessId(Path.GetFileName(path));
-            if (id != null && IsAlive(id.Value))
+            if (id is not null && IsAlive(id.Value))
             {
                 ids.Add(id.Value);
             }
@@ -443,7 +443,7 @@ public static class RunningProcesses
                 }
 
                 var writeTime = File.GetLastWriteTimeUtc(path);
-                if (best == null || writeTime > bestTime)
+                if (best is null || writeTime > bestTime)
                 {
                     best = path;
                     bestTime = writeTime;

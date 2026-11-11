@@ -117,11 +117,11 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         return marked switch
         {
             "reference" => frame.Highlight != null,
-            "chevron" => frame.HoverFold != null,
-            "chip" => frame.HoverChip != null,
-            "mark" => frame.HoverMark != null,
-            "find" => frame.MatchLength > 0 && frame.CurrentMatch != null,
-            "brackets" => frame.Brackets != null,
+            "chevron" => frame.HoverFold is not null,
+            "chip" => frame.HoverChip is not null,
+            "mark" => frame.HoverMark is not null,
+            "find" => frame.MatchLength > 0 && frame.CurrentMatch is not null,
+            "brackets" => frame.Brackets is not null,
             _ => throw new UnreachableException(),
         };
     }

@@ -100,7 +100,7 @@ public sealed class MetadataGrid
 
     /// <summary>Whether the selected row shows its <see cref="MetadataGrid.GetDetails"/> under it, as a debug
     /// information's decoded value does.</summary>
-    public bool HasDetails => Schema.Details != null;
+    public bool HasDetails => Schema.Details is not null;
 
     /// <summary>What the grid lists, as its node is labelled.</summary>
     public required string Title { get; init; }
@@ -147,7 +147,7 @@ public static class MetadataGrids
         for (var c = 0; c < columns; c++)
         {
             var filter = filters[c];
-            if (filter != null && filter.IsActive)
+            if (filter is not null && filter.IsActive)
             {
                 active.Add((c, filter));
             }
@@ -166,7 +166,7 @@ public static class MetadataGrids
     public static MetadataRowDetails? GetDetails(MetadataGrid grid, int row)
     {
         var details = grid.Schema.Details;
-        if (details == null)
+        if (details is null)
         {
             return null;
         }
@@ -196,7 +196,7 @@ public static class MetadataGrids
         var lines = grid.LineCells ??= new (string, int)?[grid.Rows.Count * grid.GridColumns.Count];
         var index = row * grid.GridColumns.Count + column;
         var known = lines[index];
-        if (known != null)
+        if (known is not null)
         {
             return known.Value;
         }
@@ -232,7 +232,7 @@ public static class MetadataGrids
     public static MetadataTooltip? GetTooltip(MetadataGrid grid, int row, int column)
     {
         var info = grid.GridColumns[column];
-        if (info.Column.Flags == null && info.Tooltip == null)
+        if (info.Column.Flags is null && info.Tooltip is null)
         {
             return null;
         }
@@ -246,7 +246,7 @@ public static class MetadataGrids
         object? value;
         try
         {
-            value = info.Column.Flags != null
+            value = info.Column.Flags is not null
                 ? ExplainFlags(info.Column.Flags, GetValue(grid, row, column))
                 : info.Tooltip?.Invoke(grid.Rows[row], row + 1);
         }
@@ -311,7 +311,7 @@ public static class MetadataGrids
             return known;
         }
 
-        var listed = Enum.IsDefined(table) && grid.File.Metadata.GetTableRowCount(table) > 0 && MetadataTables.Create(table, grid.File) != null;
+        var listed = Enum.IsDefined(table) && grid.File.Metadata.GetTableRowCount(table) > 0 && MetadataTables.Create(table, grid.File) is not null;
         grid.Listed[table] = listed;
         return listed;
     }
@@ -320,7 +320,7 @@ public static class MetadataGrids
     /// that table.</summary>
     public static int GetRow(MetadataGrid grid, int token)
     {
-        return grid.Schema.Table != null && (int)grid.Schema.Table == token >>> 24 ? (token & 0xFFFFFF) - 1 : -1;
+        return grid.Schema.Table is not null && (int)grid.Schema.Table == token >>> 24 ? (token & 0xFFFFFF) - 1 : -1;
     }
 
     /// <summary>
@@ -331,7 +331,7 @@ public static class MetadataGrids
     public static CodeReference.Navigable? FindDefinition(MetadataGrid grid, int row)
     {
         var file = grid.File;
-        if (!ReferenceEquals(file, grid.Module.File) || grid.Schema.Table == null)
+        if (!ReferenceEquals(file, grid.Module.File) || grid.Schema.Table is null)
         {
             return null;
         }
@@ -368,7 +368,7 @@ public static class MetadataGrids
         }
 
         var pattern = FindPattern(text);
-        if (pattern != null)
+        if (pattern is not null)
         {
             return pattern.IsMatch(value.ToString() ?? "");
         }
@@ -376,7 +376,7 @@ public static class MetadataGrids
         if (grid.GridColumns[column].Column.IsNumeric)
         {
             var compared = Compare(value, text);
-            if (compared != null)
+            if (compared is not null)
             {
                 return compared.Value;
             }
@@ -387,7 +387,7 @@ public static class MetadataGrids
     /// <summary>What the flags set in <paramref name="cell"/> mean; null for an empty cell.</summary>
     private static MetadataTooltip? ExplainFlags(FlagsSchema flags, object? cell)
     {
-        if (cell == null)
+        if (cell is null)
         {
             return null;
         }
@@ -436,7 +436,7 @@ public static class MetadataGrids
             [('>' or '<' or '='), ..] => (text[..1], text[1..].Trim()),
             _ => (null, text),
         };
-        if (op == null)
+        if (op is null)
         {
             return null;
         }

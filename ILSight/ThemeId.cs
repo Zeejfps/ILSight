@@ -39,7 +39,7 @@ public sealed record ThemeId<TFile>
     public static ThemeId<TFile> Of(string text)
     {
         var id = Parse(text);
-        if (id == null)
+        if (id is null)
         {
             throw new ArgumentException($"'{text}' is no theme id.", nameof(text));
         }

@@ -106,7 +106,7 @@ public static class Bookmarks
 
     private static int FindRow(BookmarkList list, Bookmark? bookmark)
     {
-        if (bookmark == null)
+        if (bookmark is null)
         {
             return -1;
         }
@@ -188,7 +188,7 @@ public static class Bookmarks
     /// Returns how many were left out because one before them marks the same line.</summary>
     public static int LoadBookmarks(BookmarkList list, IEnumerable<BookmarkRecord>? saved)
     {
-        var bookmarks = (saved ?? []).Select(static r => r.Location != null ? Bookmarks.CreateFromRecord(r, r.Location) : null)
+        var bookmarks = (saved ?? []).Select(static r => r.Location is not null ? Bookmarks.CreateFromRecord(r, r.Location) : null)
             .OfType<Bookmark>();
         return Import(list, bookmarks, BookmarkImportMode.Replace);
     }
@@ -270,7 +270,7 @@ public static class Bookmarks
     /// <summary>Forgets the rename of a bookmark that is gone, as importing in its place drops it.</summary>
     public static void FollowList(BookmarksPanel panel, IReadOnlyList<Bookmark> bookmarks)
     {
-        if (panel.Renaming == null)
+        if (panel.Renaming is null)
         {
             return;
         }
@@ -305,7 +305,7 @@ public static class Bookmarks
     public static BookmarkToggle ToggleBookmark(AppState appState, DocumentTab tab, int line, Func<int, string> nameOf)
     {
         var node = tab.Node;
-        if (node == null)
+        if (node is null)
         {
             return new BookmarkToggle.Unchanged();
         }
@@ -316,7 +316,7 @@ public static class Bookmarks
         }
 
         var existing = FindAt(appState.Bookmarks, tab.Document, node, line);
-        if (existing != null)
+        if (existing is not null)
         {
             return RemoveBookmark(appState, existing);
         }
@@ -337,7 +337,7 @@ public static class Bookmarks
             return false;
         }
 
-        if (tab.Document.Error != null)
+        if (tab.Document.Error is not null)
         {
             return false;
         }
@@ -389,7 +389,7 @@ public static class Bookmarks
     {
         switch (found)
         {
-            case Outcome<BrowseNode?>.Ok ok when ok.Value != null:
+            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
                 Resolve(appState.Bookmarks, bookmark, ok.Value);
                 LeaveActiveTab(appState);
                 ShowNodeIn(appState, destination, ok.Value, target: bookmark);
@@ -416,7 +416,7 @@ public static class Bookmarks
     public static Bookmark? StepBookmark(AppState appState, Bookmark? from, int direction)
     {
         var bookmark = FindNext(appState.Bookmarks, from, direction);
-        if (bookmark == null)
+        if (bookmark is null)
         {
             return null;
         }
@@ -429,7 +429,7 @@ public static class Bookmarks
     {
         var records = ListRecords(appState.Bookmarks);
         var error = BookmarkFile.Write(path, records);
-        if (error == null)
+        if (error is null)
         {
             return;
         }
@@ -450,7 +450,7 @@ public static class Bookmarks
     {
         var file = Path.GetFileName(path);
         var read = BookmarkFile.Read(path, out var error);
-        if (read == null)
+        if (read is null)
         {
             Errors.Report(appState, new AppProblem.BookmarksNotImported(file, error ?? ""));
             return;
@@ -476,14 +476,14 @@ public static class Bookmarks
 
     private static FoundBookmark FindPlace(AssemblyList assemblies, BrowseSession session, BookmarkRecord record)
     {
-        if (record.Location != null)
+        if (record.Location is not null)
         {
             return new FoundBookmark(record, record.Location);
         }
 
         var treePath = record.ViewState?.SelectedTreeNodePath;
         var node = ILSpyTree.Locate(assemblies, session, record.FileName, treePath, record.Token, record.MemberName);
-        if (node == null)
+        if (node is null)
         {
             return new FoundBookmark(record, null);
         }
@@ -528,7 +528,7 @@ public static class Bookmarks
 
     private static void ReportLostBookmarks(AppState appState, List<FoundBookmark> found, string file)
     {
-        var lost = found.FindAll(f => f.Place == null);
+        var lost = found.FindAll(f => f.Place is null);
         if (lost.Count == 0)
         {
             return;
@@ -554,7 +554,7 @@ public static class Bookmarks
             return;
         }
 
-        if (mode == null)
+        if (mode is null)
         {
             return;
         }
@@ -592,7 +592,7 @@ public static class Bookmarks
     /// <summary>The bookmark of <paramref name="found"/>, or null when its place wasn't found.</summary>
     private static Bookmark? CreateBookmark(FoundBookmark found)
     {
-        if (found.Place == null)
+        if (found.Place is null)
         {
             return null;
         }
@@ -655,7 +655,7 @@ public static class Bookmarks
             CodeAnchorKind.Statement => BookmarkKind.Body,
             _ => BookmarkKind.Line,
         },
-        bookmark.Anchor != null && bookmark.Anchor.Value.Kind == CodeAnchorKind.Statement ? bookmark.Anchor.Value.ILOffset : 0,
+        bookmark.Anchor is not null && bookmark.Anchor.Value.Kind == CodeAnchorKind.Statement ? bookmark.Anchor.Value.ILOffset : 0,
         bookmark.Line + 1,
         bookmark.ILSpy.MemberName,
         bookmark.ILSpy.LocationNodeName,
@@ -668,14 +668,14 @@ public static class Bookmarks
     /// without, the same line of the same place in the same language.</summary>
     public static bool MarkSameLine(Bookmark bookmark, Bookmark other)
     {
-        return bookmark.Anchor != null ? other.Anchor == bookmark.Anchor
-        : other.Anchor == null && bookmark.Language == other.Language && bookmark.Line == other.Line && bookmark.Place.Equals(other.Place);
+        return bookmark.Anchor is not null ? other.Anchor == bookmark.Anchor
+        : other.Anchor is null && bookmark.Language == other.Language && bookmark.Line == other.Line && bookmark.Place.Equals(other.Place);
     }
 
     /// <summary>The line it marks in <paramref name="document"/>, shown for <paramref name="node"/>, or -1.</summary>
     public static int FindLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
     {
-        return bookmark.Anchor != null ? Documents.FindLine(document, bookmark.Anchor.Value)
+        return bookmark.Anchor is not null ? Documents.FindLine(document, bookmark.Anchor.Value)
         : bookmark.Language == document.Language && bookmark.Place.Equals(BrowseNodes.GetPath(node)) && bookmark.Line < document.Lines.Length ? bookmark.Line
         : -1;
     }

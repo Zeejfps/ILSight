@@ -125,7 +125,7 @@ public sealed class PresentationTests
         var list = new AssemblyList();
         var assembly = list.Open(AppStateDriver.FixturePath);
         var greeter = assembly.Root.Child(AppStateDriver.FixturesNamespace, "Greeter");
-        var member = greeter.Children.First(c => c.Token != null);
+        var member = greeter.Children.First(c => c.Token is not null);
         var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
         Trees.SyncRoots(tree, list);
         var identity = tree.Row(assembly.Root).Secondary;

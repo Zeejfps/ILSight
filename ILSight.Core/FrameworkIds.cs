@@ -33,7 +33,7 @@ public sealed record TargetFrameworkId
     /// <summary>The id <paramref name="text"/> writes, or null when it is not one.</summary>
     public static TargetFrameworkId? Parse(string? text)
     {
-        if (text == null)
+        if (text is null)
         {
             return null;
         }
@@ -125,6 +125,6 @@ public static class FrameworkIds
     /// runtime is: one built for .NET Core or .NET Standard, or for a framework not known.</summary>
     internal static bool RunsOnCore(TargetFrameworkId? id)
     {
-        return id == null || id.IsCoreOrStandard;
+        return id is null || id.IsCoreOrStandard;
     }
 }

@@ -342,7 +342,7 @@ public sealed class DecompilationTests
             .Select(c => Assert.IsType<DocumentContent>(c).Document).ToArray();
 
         Assert.Equal(sequential, concurrent.Select(d => Documents.GetText(d)));
-        Assert.DoesNotContain(concurrent, d => d.Error != null);
+        Assert.DoesNotContain(concurrent, d => d.Error is not null);
     }
 
     [Fact]
@@ -380,7 +380,7 @@ public sealed class DecompilationTests
 
         var failed = ListSummarized(roots)
             .SelectMany(static n => new[] { DecompilationLanguage.CSharp, DecompilationLanguage.IL }.Select(l => (Node: n, Document: n.Decompile(l))))
-            .Where(static d => d.Document.Error != null)
+            .Where(static d => d.Document.Error is not null)
             .Select(static d => $"{d.Node.GetType().Name} {d.Node.Text}")
             .ToList();
 
@@ -406,7 +406,7 @@ public sealed class DecompilationTests
         while (pending.Count > 0)
         {
             var node = pending.Pop();
-            if (BrowseNodes.GetEntity(node) == null && !IsModule(node))
+            if (BrowseNodes.GetEntity(node) is null && !IsModule(node))
             {
                 nodes.Add(node);
             }

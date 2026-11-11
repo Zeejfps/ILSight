@@ -11,7 +11,7 @@ internal static class MethodUsedByAnalyzer
 {
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
-        if (symbol is not IMethod method || (!method.IsVirtual && method.ParentModule == null))
+        if (symbol is not IMethod method || (!method.IsVirtual && method.ParentModule is null))
         {
             return null;
         }
@@ -21,7 +21,7 @@ internal static class MethodUsedByAnalyzer
 
     internal static IEnumerable<ISymbol> Analyze(IMethod analyzed, AnalyzerContext context)
     {
-        if (analyzed.ParentModule?.MetadataFile == null || analyzed.DeclaringTypeDefinition?.MetadataToken.IsNil != false)
+        if (analyzed.ParentModule?.MetadataFile is null || analyzed.DeclaringTypeDefinition?.MetadataToken.IsNil != false)
         {
             yield break;
         }
@@ -62,13 +62,13 @@ internal static class MethodUsedByAnalyzer
             }
 
             if (!AnalyzerHelpers.IsPossibleReferenceTo(token, module.MetadataFile, analyzed)
-                && (baseMethod == null || !AnalyzerHelpers.IsPossibleReferenceTo(token, module.MetadataFile, baseMethod)))
+                && (baseMethod is null || !AnalyzerHelpers.IsPossibleReferenceTo(token, module.MetadataFile, baseMethod)))
             {
                 return false;
             }
 
             var member = (module.ResolveEntity(token) as IMember)?.MemberDefinition;
-            return member != null && (opCode == ILOpCode.Callvirt && baseMethod != null && AnalyzerHelpers.IsSame(member, baseMethod) || AnalyzerHelpers.IsSame(member, analyzed));
+            return member is not null && (opCode == ILOpCode.Callvirt && baseMethod is not null && AnalyzerHelpers.IsSame(member, baseMethod) || AnalyzerHelpers.IsSame(member, analyzed));
         }
     }
 }

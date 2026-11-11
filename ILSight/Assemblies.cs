@@ -42,7 +42,7 @@ public static class Assemblies
     {
         switch (outcome)
         {
-            case Outcome<LoadedAssembly?>.Ok ok when ok.Value != null:
+            case Outcome<LoadedAssembly?>.Ok ok when ok.Value is not null:
                 if (!appState.Intent.IsStale(ticket))
                 {
                     ShowNode(appState, BrowseSessions.EnsureRoot(appState.Session, ok.Value));
@@ -217,7 +217,7 @@ public static class Assemblies
         foreach (var tab in appState.Tabs.Open)
         {
             var location = tab.Location;
-            if (location == null)
+            if (location is null)
             {
                 continue;
             }
@@ -262,7 +262,7 @@ public static class Assemblies
         foreach (var child in loaded.Children)
         {
             var counterpart = BrowseSessions.FindLoadedChildLike(session, fresh, child);
-            if (counterpart != null)
+            if (counterpart is not null)
             {
                 LoadAsLoaded(session, child, counterpart);
             }
@@ -385,7 +385,7 @@ public static class Assemblies
         foreach (var tab in appState.Tabs.Open)
         {
             var location = tab.Location;
-            if (location == null)
+            if (location is null)
             {
                 continue;
             }
@@ -419,7 +419,7 @@ public static class Assemblies
         {
             cancellationToken.ThrowIfCancellationRequested();
             var node = NodeLookup.Find(assemblies, session, path);
-            if (node == null)
+            if (node is null)
             {
                 continue;
             }
@@ -502,7 +502,7 @@ public static class Assemblies
             return false;
         }
 
-        if (node == null)
+        if (node is null)
         {
             ReleaseGoneTab(appState, tab, reloading.Location);
             return false;

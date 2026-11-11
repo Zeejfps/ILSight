@@ -35,7 +35,7 @@ internal static class ShownChanges
     public static bool TakeDecompilation(UiState uiState, DecompilationLanguage language, DecompilerOptions options)
     {
         var shown = uiState.ShownDecompilation;
-        if (shown != null && language == shown.Value.Language && ReferenceEquals(options, shown.Value.Options))
+        if (shown is not null && language == shown.Value.Language && ReferenceEquals(options, shown.Value.Options))
         {
             return false;
         }
@@ -48,7 +48,7 @@ internal static class ShownChanges
     public static bool TakeIcons(UiState uiState, AppIcons icons, IReadOnlyList<FontFace> fonts)
     {
         var shown = uiState.ShownIcons;
-        if (shown != null && ReferenceEquals(icons, shown.Value.Icons))
+        if (shown is not null && ReferenceEquals(icons, shown.Value.Icons))
         {
             return false;
         }

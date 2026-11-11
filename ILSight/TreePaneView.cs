@@ -138,7 +138,7 @@ internal static class TreePaneView
             case 0:
             {
                 var opened = FindOpenedNode(tabs);
-                if (DrawTool(ui, inMenu, "select-opened", icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened != null) && opened != null)
+                if (DrawTool(ui, inMenu, "select-opened", icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened is not null) && opened is not null)
                     {
                         SelectOpenedNode(ui, assemblies, opened);
                     }
@@ -239,7 +239,7 @@ internal static class TreePaneView
     private static BrowseNode? FindOpenedNode(DocumentTabs tabs)
     {
         var tab = tabs.Active;
-        if (tab == null)
+        if (tab is null)
         {
             return null;
         }
@@ -265,7 +265,7 @@ internal static class TreePaneView
     private static BrowseNode? FindPickedAssembly(BrowseTree tree)
     {
         var node = tree.View.Selected;
-        if (node == null)
+        if (node is null)
         {
             return null;
         }
@@ -282,7 +282,7 @@ internal static class TreePaneView
     /// of a package is not one.</summary>
     private static bool IsListedRoot(BrowseNode node)
     {
-        return node.Parent == null;
+        return node.Parent is null;
     }
 
     private static void EmptyHint(Ui<UiState> ui)
@@ -306,7 +306,7 @@ internal static class TreePaneView
         }
 
         var picked = ui.State.Tree.View.Selected;
-        if (picked == null)
+        if (picked is null)
         {
             return;
         }
@@ -322,7 +322,7 @@ internal static class TreePaneView
         }
 
         var picked = FindPickedAssembly(ui.State.Tree);
-        if (picked == null)
+        if (picked is null)
         {
             return;
         }
@@ -338,7 +338,7 @@ internal static class TreePaneView
     private static void Respond(Ui<UiState> ui, TreeViewResult<BrowseNode> result)
     {
         var node = result.Node;
-        if (node == null)
+        if (node is null)
         {
             return;
         }
@@ -407,7 +407,7 @@ internal static class TreePaneView
         }
 
         var node = ui.State.MenuTarget;
-        if (node == null)
+        if (node is null)
         {
             return;
         }
@@ -441,7 +441,7 @@ internal static class TreePaneView
         }
 
         DocsItem(ui, node);
-        if (Analyzers.Of(node) != null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
+        if (Analyzers.Of(node) is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
         {
             Commands.Later(ui.State, (screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));
         }
@@ -520,7 +520,7 @@ internal static class TreePaneView
     {
         var t = ui.State.Strings;
         var page = MicrosoftDocs.FindPage(node);
-        if (page == null)
+        if (page is null)
         {
             return;
         }

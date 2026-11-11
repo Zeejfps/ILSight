@@ -51,7 +51,7 @@ public sealed class AsyncGuarded<T>
         public void Dispose()
         {
             var owner = _owner;
-            if (owner == null)
+            if (owner is null)
             {
                 return;
             }
@@ -62,7 +62,7 @@ public sealed class AsyncGuarded<T>
 
         private AsyncGuarded<T> GetOwner()
         {
-            if (_owner == null)
+            if (_owner is null)
             {
                 throw new InvalidOperationException("The gate is not held.");
             }

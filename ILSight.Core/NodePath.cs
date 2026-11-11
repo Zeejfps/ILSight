@@ -112,7 +112,7 @@ public sealed class NodePath : IEquatable<NodePath>
             return true;
         }
 
-        if (other == null)
+        if (other is null)
         {
             return false;
         }

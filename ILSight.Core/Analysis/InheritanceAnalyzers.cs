@@ -96,7 +96,7 @@ internal static class MemberOverridesAnalyzer
             }
 
             var baseMember = InheritanceHelper.GetBaseMember(member);
-            if (baseMember == null)
+            if (baseMember is null)
             {
                 break;
             }

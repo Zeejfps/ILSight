@@ -101,7 +101,7 @@ public static class IconTheming
 
     private static List<IconThemeFile> ReadUserIconThemes(string? folder)
     {
-        if (folder == null)
+        if (folder is null)
         {
             return new List<IconThemeFile>();
         }
@@ -123,13 +123,13 @@ public static class IconTheming
     public static string? PrepareIconThemesFolder(AppState appState)
     {
         var folder = appState.SettingsPlace.IconThemesFolder;
-        if (folder == null)
+        if (folder is null)
         {
             return null;
         }
 
         var error = CreateThemeFolder(folder, SchemaFileName, BuiltInIconThemes.ReadSchema(), BuiltInIconThemes.ReadGuide());
-        if (error == null)
+        if (error is null)
         {
             return folder;
         }
@@ -145,7 +145,7 @@ public static class IconTheming
     public static string? CreateCustomIconTheme(AppState appState, Func<ThemeId<IconThemeFile>, string> nameOf)
     {
         var folder = PrepareIconThemesFolder(appState);
-        if (folder == null)
+        if (folder is null)
         {
             return null;
         }
@@ -199,7 +199,7 @@ public static class IconTheming
         var folder = FullFilePath.Of(Path.GetFullPath(path)).Folder;
         var theme = CreateFile(id, path, IconAssetFolders.Open(folder));
         var json = Theming.ReadJsonBytes(theme.Json, path);
-        if (json != null)
+        if (json is not null)
         {
             Theming.ReadJson(theme.Json, json, (ref Utf8JsonReader r, string k, int l) => ReadThemeKey(theme, ref r, k, l));
         }
@@ -256,7 +256,7 @@ public static class IconTheming
     private static void ReadThemeName(IconThemeFile theme, ref Utf8JsonReader reader, int line)
     {
         var name = Theming.ReadJsonName(theme.Json, ref reader, line, theme.Id.Text);
-        if (name != null)
+        if (name is not null)
         {
             theme.Name = name;
         }
@@ -265,13 +265,13 @@ public static class IconTheming
     private static void ReadExtends(IconThemeFile theme, ref Utf8JsonReader reader, int line)
     {
         var parent = Theming.ReadJsonString(theme.Json, ref reader, ThemeJson.ExtendsKey, line);
-        if (parent == null)
+        if (parent is null)
         {
             return;
         }
 
         var id = ThemeId<IconThemeFile>.Parse(parent);
-        if (id == null)
+        if (id is null)
         {
             Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownParent, parent);
             return;
@@ -290,7 +290,7 @@ public static class IconTheming
         {
             var key = FontsKey + "." + id;
             var path = Theming.ReadJsonString(theme.Json, ref reader, key, idLine);
-            if (path == null)
+            if (path is null)
             {
                 continue;
             }
@@ -304,14 +304,14 @@ public static class IconTheming
     private static IconFont ReadFont(IconThemeFile theme, string key, string id, string path, int line)
     {
         var bytes = ReadAsset(theme, key, path, line);
-        if (bytes == null)
+        if (bytes is null)
         {
             return new IconFont.Broken(path);
         }
 
         var face = new FontFace(theme.Assets.GetFamily(id, path), bytes);
         var characters = face.ReadCharacters();
-        if (characters == null)
+        if (characters is null)
         {
             Theming.AddJsonError(theme.Json, line, ThemeProblem.NotAFont, key, path);
             return new IconFont.Broken(path);
@@ -352,7 +352,7 @@ public static class IconTheming
 
         var written = ReadIconFields(theme, ref reader, subject);
         var value = MakeValue(theme, subject, written, line);
-        if (value != null)
+        if (value is not null)
         {
             theme.Icons[key] = value;
         }
@@ -387,12 +387,12 @@ public static class IconTheming
     private static IconValue? MakeValue(IconThemeFile theme, string subject, IconThemeFile.IconFields fields, int line)
     {
         var (font, glyph, svg) = fields;
-        if (svg != null && font == null && glyph == null)
+        if (svg is not null && font is null && glyph is null)
         {
             return ReadPicture(theme, subject, svg, line);
         }
 
-        if (svg == null && font != null && glyph != null)
+        if (svg is null && font is not null && glyph is not null)
         {
             return MakeGlyph(theme, subject, font, glyph, line);
         }
@@ -404,7 +404,7 @@ public static class IconTheming
     private static IconValue? MakeGlyph(IconThemeFile theme, string subject, string font, string glyph, int line)
     {
         var codepoint = ParseCodepoint(glyph);
-        if (codepoint == null)
+        if (codepoint is null)
         {
             Theming.AddJsonError(theme.Json, line, ThemeProblem.NotACodepoint, subject, glyph);
             return null;
@@ -441,7 +441,7 @@ public static class IconTheming
     private static IconValue? ReadPicture(IconThemeFile theme, string subject, string path, int line)
     {
         var bytes = ReadAsset(theme, subject, path, line);
-        if (bytes == null)
+        if (bytes is null)
         {
             return null;
         }
@@ -470,7 +470,7 @@ public static class IconTheming
     private static byte[]? ReadAsset(IconThemeFile theme, string subject, string path, int line)
     {
         var asset = theme.Assets.Read(path);
-        if (asset.Bytes == null)
+        if (asset.Bytes is null)
         {
             Theming.AddJsonError(theme.Json, line, asset.Problem, subject, asset.Detail);
         }

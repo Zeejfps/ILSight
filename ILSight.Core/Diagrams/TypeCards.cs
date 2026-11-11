@@ -12,7 +12,7 @@ public static class TypeCards
     public static TypeCard? Read(AssemblyList list, CodeReference.Entity type)
     {
         var definition = AssemblyListing.FindTypeDefinition(list, type);
-        if (definition == null)
+        if (definition is null)
         {
             return null;
         }
@@ -26,13 +26,13 @@ public static class TypeCards
     public static List<TypeCard> ReadWithNeighbours(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
         var definition = AssemblyListing.FindTypeDefinition(list, type);
-        if (definition == null)
+        if (definition is null)
         {
             return [];
         }
 
         var card = Read(definition);
-        if (card == null)
+        if (card is null)
         {
             return [];
         }
@@ -42,7 +42,7 @@ public static class TypeCards
         {
             cancellationToken.ThrowIfCancellationRequested();
             var read = Read(neighbour);
-            if (read != null)
+            if (read is not null)
             {
                 cards.Add(read);
             }
@@ -55,7 +55,7 @@ public static class TypeCards
     public static TypeCard? Read(AssemblyList list, TypeAnchor anchor)
     {
         var definition = AssemblyListing.FindTypeDefinition(list, anchor);
-        if (definition == null)
+        if (definition is null)
         {
             return null;
         }
@@ -68,7 +68,7 @@ public static class TypeCards
     public static List<TypeCard> ReadDerived(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
         var definition = AssemblyListing.FindTypeDefinition(list, type);
-        if (definition == null)
+        if (definition is null)
         {
             return [];
         }
@@ -211,7 +211,7 @@ public static class TypeCards
     private static InheritedGroup ReadInheritedFrom(IType ancestor)
     {
         var definition = ancestor.GetDefinition();
-        if (definition == null)
+        if (definition is null)
         {
             return new InheritedGroup(EntityText.ShortTypeName(ancestor), null, []);
         }
@@ -300,7 +300,7 @@ public static class TypeCards
         foreach (var baseType in type.DirectBaseTypes)
         {
             var definition = baseType.GetDefinition();
-            if (definition == null)
+            if (definition is null)
             {
                 continue;
             }
@@ -345,7 +345,7 @@ public static class TypeCards
             }
 
             var held = FindHeld(property);
-            if (held != null)
+            if (held is not null)
             {
                 relations.Add(held.Value);
             }
@@ -374,7 +374,7 @@ public static class TypeCards
     private static Relation? HeldRelation(IType type, TypeLinkKind kind, string label)
     {
         var definition = type.GetDefinition();
-        if (definition == null)
+        if (definition is null)
         {
             return null;
         }

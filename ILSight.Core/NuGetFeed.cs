@@ -57,7 +57,7 @@ public static class NuGetFeeds
     /// <summary>A client sending through <paramref name="handler"/>, or the app's shared one.</summary>
     internal static HttpClient GetClient(HttpMessageHandler? handler)
     {
-        if (handler == null)
+        if (handler is null)
         {
             return NuGetFeed.Shared.Value;
         }
@@ -110,7 +110,7 @@ public static class NuGetFeeds
         var url = await FindDetailsUrlAsync(feed, id, version, cancellationToken).ConfigureAwait(false);
         using var leaf = await ReadJsonAsync(feed, url, cancellationToken).ConfigureAwait(false);
         var registration = FeedJson.ReadRegistration(leaf.RootElement);
-        if (registration.CatalogEntry == null)
+        if (registration.CatalogEntry is null)
         {
             throw new InvalidDataException($"{url} names no catalog entry.");
         }
@@ -120,13 +120,13 @@ public static class NuGetFeeds
 
     private static async Task<WebUrl> FindDetailsUrlAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken cancellationToken)
     {
-        if (version.DetailsUrl != null)
+        if (version.DetailsUrl is not null)
         {
             return version.DetailsUrl;
         }
 
         var index = await EnsureIndexAsync(feed, cancellationToken).ConfigureAwait(false);
-        if (index.Registrations == null)
+        if (index.Registrations is null)
         {
             throw new InvalidDataException($"The service index of {feed.Source.Url} names no {RegistrationsType}.");
         }
@@ -143,7 +143,7 @@ public static class NuGetFeeds
         }
 
         var url = entry.ValueKind == JsonValueKind.String ? WebUrl.Parse(entry.GetString()) : null;
-        if (url == null)
+        if (url is null)
         {
             throw new InvalidDataException("A catalog entry is neither inline nor a web URL.");
         }
@@ -185,7 +185,7 @@ public static class NuGetFeeds
     {
         var temporary = path + ".download";
         var folder = Path.GetDirectoryName(path);
-        if (folder == null)
+        if (folder is null)
         {
             throw new ArgumentException($"'{path}' names no file in a folder.", nameof(path));
         }
@@ -210,7 +210,7 @@ public static class NuGetFeeds
     {
         using var held = await feed.Index.EnterAsync(cancellationToken).ConfigureAwait(false);
         var index = held.Value;
-        if (index != null)
+        if (index is not null)
         {
             return index;
         }
@@ -234,7 +234,7 @@ public static class NuGetFeeds
     private static WebUrl FindResource(NuGetFeed feed, List<FeedResource> resources, string type)
     {
         var url = FindOptionalResource(resources, type);
-        if (url == null)
+        if (url is null)
         {
             throw new InvalidDataException($"The service index of {feed.Source.Url} names no {type}.");
         }
@@ -307,7 +307,7 @@ public static class NuGetFeeds
     public static async Task<string> FetchPackageAsync(PackageCache cache, NuGetFeed feed, PackageId id, PackageVersion version, CancellationToken cancellationToken = default)
     {
         var found = FindPackage(cache, id, version);
-        if (found != null)
+        if (found is not null)
         {
             return found;
         }
@@ -408,7 +408,7 @@ public static class NuGetFeeds
     private static NuGetSource GetListedSource(NuGetSetup setup, NuGetSource source)
     {
         var listed = setup.Sources.FirstOrDefault(s => string.Equals(s.Url.Text, source.Url.Text, StringComparison.OrdinalIgnoreCase));
-        if (listed == null)
+        if (listed is null)
         {
             return source;
         }

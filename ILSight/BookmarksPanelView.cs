@@ -42,7 +42,7 @@ internal static class BookmarksPanelView
         table.Header(HeaderTexts.GetValue(t, static t => ListHeaders(t)));
         var removed = List(ui, bookmarks, assemblies, table);
         Menu(ui);
-        if (removed != null)
+        if (removed is not null)
         {
             Commands.Later(ui.State, (panel, removed), static (a, s) => Remove(s.panel, a.Bookmarks, s.removed));
         }
@@ -53,10 +53,10 @@ internal static class BookmarksPanelView
     {
         var panel = ui.State.BookmarksPanel;
         var palette = ui.State.CodeViewPalette;
-        var renaming = panel.Renaming != null;
+        var renaming = panel.Renaming is not null;
         Bookmark? removed = null;
         var selected = panel.Selected;
-        if (table.Focused && !renaming && selected != null && ui.Input.TakeKey(KeyboardKey.F2))
+        if (table.Focused && !renaming && selected is not null && ui.Input.TakeKey(KeyboardKey.F2))
         {
             RenameInPlace(panel, selected);
         }
@@ -83,12 +83,12 @@ internal static class BookmarksPanelView
     {
         var panel = ui.State.BookmarksPanel;
         var selected = panel.Selected;
-        if (selected == null)
+        if (selected is null)
         {
             return;
         }
 
-        if (body.Activated && panel.Renaming == null)
+        if (body.Activated && panel.Renaming is null)
         {
             Commands.Later(ui.State, selected, static (a, b) => GoToBookmark(a, b));
         }
@@ -142,7 +142,7 @@ internal static class BookmarksPanelView
             }
 
             ui.Separator(theme.IconSize);
-            if (ui.IconButton("delete", ui.State.Icons.BookmarksDelete, t.BookmarksDelete, selected != null) && selected != null)
+            if (ui.IconButton("delete", ui.State.Icons.BookmarksDelete, t.BookmarksDelete, selected is not null) && selected is not null)
             {
                 Commands.Later(ui.State, (panel, selected), static (a, s) => Remove(s.panel, a.Bookmarks, s.selected));
             }
@@ -364,7 +364,7 @@ internal static class BookmarksPanelView
 
         var panel = ui.State.BookmarksPanel;
         var bookmark = panel.Selected;
-        if (bookmark == null)
+        if (bookmark is null)
         {
             return;
         }
@@ -409,7 +409,7 @@ internal static class BookmarksPanelView
         foreach (var stroke in ui.Input.Keys)
         {
             var bookmark = panel.Selected;
-            if (bookmark == null)
+            if (bookmark is null)
             {
                 break;
             }
@@ -449,7 +449,7 @@ internal static class BookmarksPanelView
     internal static void Step(BookmarksPanel panel, AppState appState, int direction)
     {
         var bookmark = StepBookmark(appState, panel.Selected, direction);
-        if (bookmark == null)
+        if (bookmark is null)
         {
             return;
         }
@@ -468,7 +468,7 @@ internal static class BookmarksPanelView
     private static void CommitRename(UiState screen, BookmarksPanel panel)
     {
         var bookmark = EndRename(panel);
-        if (bookmark == null)
+        if (bookmark is null)
         {
             return;
         }

@@ -101,7 +101,7 @@ public static class ScreenLayout
     public static void SearchInOmnibar(UiState uiState)
     {
         var panel = FindActivePanel(uiState);
-        if (panel == null)
+        if (panel is null)
         {
             OpenSearch(uiState);
             return;

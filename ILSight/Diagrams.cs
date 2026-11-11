@@ -55,7 +55,7 @@ public static class Diagrams
     public static void RestoreView(DiagramViewState view, DiagramViewRecord saved)
     {
         DiagramCameras.Restore(view.Camera, new PointF(saved.X, saved.Y), saved.Zoom);
-        if (saved.Folds != null)
+        if (saved.Folds is not null)
         {
             RestoreFolds(view, saved.Folds);
         }
@@ -107,7 +107,7 @@ public static class Diagrams
     public static void ShowInDiagram(AppState appState, CodeReference.Entity type, string newTitle)
     {
         var tab = appState.Tabs.Diagram;
-        if (tab == null || tab.Content is not TabContent.Diagram shown)
+        if (tab is null || tab.Content is not TabContent.Diagram shown)
         {
             ShowInNewDiagram(appState, type, newTitle);
             return;
@@ -129,7 +129,7 @@ public static class Diagrams
     public static void OpenFromDiagram(AppState appState, TypeDiagram diagram, CodeReference.Entity target, bool inNewTab)
     {
         var tab = FindTabShowing(appState, diagram);
-        if (tab == null || tab.Content is not TabContent.Diagram shown)
+        if (tab is null || tab.Content is not TabContent.Diagram shown)
         {
             return;
         }
@@ -392,7 +392,7 @@ public static class Diagrams
 
     private static void TakeHomes(TypeDiagram diagram, List<AssemblyPath>? assemblies)
     {
-        if (assemblies == null)
+        if (assemblies is null)
         {
             return;
         }
@@ -650,7 +650,7 @@ public static class Diagrams
     private static Dictionary<TypeLink, LinkRoute> ListRoutesByLink(TypeLayout? layout)
     {
         var routes = new Dictionary<TypeLink, LinkRoute>();
-        if (layout == null)
+        if (layout is null)
         {
             return routes;
         }
@@ -667,7 +667,7 @@ public static class Diagrams
     /// nothing to move from.</summary>
     private static float GetTransitionStart(TypeLayout? from)
     {
-        if (from == null)
+        if (from is null)
         {
             return LayoutTransition.Seconds;
         }
@@ -684,7 +684,7 @@ public static class Diagrams
     /// layout does not place it.</summary>
     public static PointF? GetCardPlace(LayoutTransition transition, CodeReference.Entity type)
     {
-        if (transition.To == null)
+        if (transition.To is null)
         {
             return null;
         }
@@ -695,7 +695,7 @@ public static class Diagrams
         }
 
         var from = FindOldCardPlace(transition, type);
-        if (from == null)
+        if (from is null)
         {
             return to;
         }
@@ -710,7 +710,7 @@ public static class Diagrams
             return null;
         }
 
-        if (transition.From == null)
+        if (transition.From is null)
         {
             return null;
         }
@@ -791,12 +791,12 @@ public static class Diagrams
     /// to when it had none, and none when it moves to none.</summary>
     private static PointF? BlendPoints(PointF? from, PointF? to, float t)
     {
-        if (from == null)
+        if (from is null)
         {
             return to;
         }
 
-        if (to == null)
+        if (to is null)
         {
             return null;
         }

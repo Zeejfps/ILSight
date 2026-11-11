@@ -247,7 +247,7 @@ public static class AssemblyLists
             return;
         }
 
-        if (FindList(lists, name) != null)
+        if (FindList(lists, name) is not null)
         {
             return;
         }
@@ -275,7 +275,7 @@ public static class AssemblyLists
 
     private static void CopyPicks<T>(IReadOnlyDictionary<AssemblyPath, T>? picks, Dictionary<AssemblyPath, T> into)
     {
-        if (picks == null)
+        if (picks is null)
         {
             return;
         }
@@ -290,7 +290,7 @@ public static class AssemblyLists
     /// leaving out one that is not a framework id.</summary>
     private static void ReadFrameworks(IReadOnlyDictionary<AssemblyPath, string>? saved, Dictionary<AssemblyPath, TargetFrameworkId> into)
     {
-        if (saved == null)
+        if (saved is null)
         {
             return;
         }
@@ -347,14 +347,14 @@ public static class AssemblyLists
 
     public static bool HasList(SavedAssemblyLists lists, string name)
     {
-        return FindList(lists, name) != null;
+        return FindList(lists, name) is not null;
     }
 
     /// <summary>The file paths of the assemblies in the list named <paramref name="name"/>; none when there is no such list.</summary>
     public static IReadOnlyList<AssemblyPath> GetPaths(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);
-        if (list == null)
+        if (list is null)
         {
             return [];
         }
@@ -366,7 +366,7 @@ public static class AssemblyLists
     public static bool ActivateList(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);
-        if (list == null)
+        if (list is null)
         {
             return false;
         }
@@ -471,7 +471,7 @@ public static class AssemblyLists
     {
         var copy = new SavedAssemblyLists.SavedList { Name = name, Paths = GetPaths(lists, source).ToList(), Analyzed = GetAnalyses(lists, source).ToList() };
         var original = FindList(lists, source);
-        if (original != null)
+        if (original is not null)
         {
             CopyPicksOf(original, copy);
         }
@@ -488,7 +488,7 @@ public static class AssemblyLists
     private static IReadOnlyList<CodeAnchor> GetAnalyses(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);
-        if (list == null)
+        if (list is null)
         {
             return [];
         }
@@ -508,13 +508,13 @@ public static class AssemblyLists
 
     private static string MakeUniqueName(SavedAssemblyLists lists, string name)
     {
-        if (FindList(lists, name) == null)
+        if (FindList(lists, name) is null)
         {
             return name;
         }
 
         var number = 2;
-        while (FindList(lists, $"{name} {number}") != null)
+        while (FindList(lists, $"{name} {number}") is not null)
         {
             number++;
         }
@@ -533,7 +533,7 @@ public static class AssemblyLists
         }
 
         var holder = FindList(lists, trimmed);
-        if (holder == null)
+        if (holder is null)
         {
             return true;
         }
@@ -550,7 +550,7 @@ public static class AssemblyLists
         }
 
         var list = FindList(lists, name);
-        if (list == null)
+        if (list is null)
         {
             return false;
         }
@@ -565,7 +565,7 @@ public static class AssemblyLists
     public static void DeleteList(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);
-        if (list == null)
+        if (list is null)
         {
             return;
         }
@@ -590,7 +590,7 @@ public static class AssemblyLists
     public static string FindReplacement(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);
-        if (list == null)
+        if (list is null)
         {
             return lists.Active;
         }
@@ -614,7 +614,7 @@ public static class AssemblyLists
     private static SavedAssemblyLists.SavedList FindRemainingList(SavedAssemblyLists lists, string name)
     {
         var list = FindList(lists, name);
-        if (list == null)
+        if (list is null)
         {
             throw new UnreachableException($"No list named {name} is left, though the list that takes a deleted one's place always is.");
         }
@@ -624,7 +624,7 @@ public static class AssemblyLists
 
     private static SavedAssemblyLists.SavedList? FindList(SavedAssemblyLists lists, string? name)
     {
-        if (name == null)
+        if (name is null)
         {
             return null;
         }

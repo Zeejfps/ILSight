@@ -33,7 +33,7 @@ internal sealed class BamlProjectDecompiler(
         var typeSystem = new BamlDecompilerTypeSystem(assembly.File, assembly.Resolver);
         var result = Baml.Decompile(typeSystem, baml, cancellationToken);
         var codeBehind = FindCodeBehind(typeSystem, result);
-        if (codeBehind == null)
+        if (codeBehind is null)
         {
             return SaveXaml(result, Baml.XamlName(fileName), PageItem);
         }
@@ -46,7 +46,7 @@ internal sealed class BamlProjectDecompiler(
 
     private static ITypeDefinition? FindCodeBehind(BamlDecompilerTypeSystem typeSystem, BamlDecompilationResult result)
     {
-        if (result.TypeName == null)
+        if (result.TypeName is null)
         {
             return null;
         }

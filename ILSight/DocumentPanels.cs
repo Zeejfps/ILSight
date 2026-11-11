@@ -32,7 +32,7 @@ public static class DocumentPanels
     /// <summary>The panel <paramref name="tab"/> is docked as, or null when there is no tab or it has no view.</summary>
     public static string? FindPanel(DocumentViews documents, DocumentTab? tab)
     {
-        if (tab == null)
+        if (tab is null)
         {
             return null;
         }
@@ -191,16 +191,16 @@ public static class DocumentPanels
     public static void RestoreView(DocumentViews documents, DocumentTab tab, ViewPosition position)
     {
         var view = documents.Views.GetValueOrDefault(tab);
-        if (view == null)
+        if (view is null)
         {
             return;
         }
 
         var shown = tab.Grid;
-        if (shown == null)
+        if (shown is null)
         {
             var code = position.Code;
-            if (code != null)
+            if (code is not null)
             {
                 CodeViewWidget.RestorePosition(view.Code, code.Value);
             }
@@ -208,7 +208,7 @@ public static class DocumentPanels
             return;
         }
         var grid = position.Grid;
-        if (grid != null)
+        if (grid is not null)
         {
             MetadataGridWidget.RestorePosition(GetGridState(view, shown), grid.Value);
         }
@@ -219,7 +219,7 @@ public static class DocumentPanels
     public static void RestoreDiagramView(DocumentViews documents, DocumentTab tab, DiagramViewRecord saved)
     {
         var view = documents.Views.GetValueOrDefault(tab);
-        if (view == null)
+        if (view is null)
         {
             return;
         }
@@ -232,7 +232,7 @@ public static class DocumentPanels
     public static void RestoreComparisonView(DocumentViews documents, DocumentTab tab, ComparisonViewRecord saved)
     {
         var view = documents.Views.GetValueOrDefault(tab);
-        if (view == null)
+        if (view is null)
         {
             return;
         }
@@ -244,7 +244,7 @@ public static class DocumentPanels
     public static void RevealLine(DocumentViews documents, DocumentTab tab, int line)
     {
         var view = documents.Views.GetValueOrDefault(tab);
-        if (view == null)
+        if (view is null)
         {
             return;
         }
@@ -261,13 +261,13 @@ public static class DocumentPanels
     public static void RevealRow(DocumentViews documents, DocumentTab tab, int row)
     {
         var view = documents.Views.GetValueOrDefault(tab);
-        if (view == null)
+        if (view is null)
         {
             return;
         }
 
         var grid = tab.Grid;
-        if (grid == null || row >= grid.RowCount)
+        if (grid is null || row >= grid.RowCount)
         {
             return;
         }
@@ -280,7 +280,7 @@ public static class DocumentPanels
     public static void FocusCard(DocumentViews documents, DocumentTab tab, CodeReference.Entity type)
     {
         var view = documents.Views.GetValueOrDefault(tab);
-        if (view == null)
+        if (view is null)
         {
             return;
         }
@@ -311,7 +311,7 @@ public static class DocumentPanels
     public static MetadataGridState GetGridState(TabView view, MetadataGrid grid)
     {
         var shown = view.Grid;
-        if (shown != null && ReferenceEquals(shown.Grid, grid))
+        if (shown is not null && ReferenceEquals(shown.Grid, grid))
         {
             return shown;
         }
@@ -325,7 +325,7 @@ public static class DocumentPanels
     public static ViewPosition GetPosition(TabView view, DocumentTab tab)
     {
         var grid = tab.Grid;
-        if (grid != null)
+        if (grid is not null)
         {
             return ViewPosition.OfGrid(GetGridState(view, grid).Position);
         }
@@ -378,7 +378,7 @@ public static class DocumentPanels
         }
 
         var view = diagram.View;
-        if (view == null)
+        if (view is null)
         {
             return;
         }
@@ -394,7 +394,7 @@ public static class DocumentPanels
         }
 
         var view = comparison.View;
-        if (view == null)
+        if (view is null)
         {
             return;
         }
@@ -422,7 +422,7 @@ public static class DocumentPanels
     /// <paramref name="undocked"/> alone; one group of them when there is no layout.</summary>
     private static DockLayout ArrangeUndocked(List<string> undocked, Dictionary<string, string> panels, DockLayout? layout)
     {
-        if (layout == null)
+        if (layout is null)
         {
             return ArrangeInOneGroup(undocked);
         }
@@ -443,7 +443,7 @@ public static class DocumentPanels
     internal static void ActivateActivePanel(UiState uiState)
     {
         var panel = FindActivePanel(uiState);
-        if (panel == null)
+        if (panel is null)
         {
             return;
         }
@@ -520,7 +520,7 @@ public static class DocumentPanels
     private static void CloseTabOf(UiState uiState, string panel)
     {
         var tab = DocumentPanels.FindTab(uiState.Documents, panel);
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }
@@ -533,12 +533,12 @@ public static class DocumentPanels
     public static void FocusNextTab(UiState uiState)
     {
         var next = DocumentPanels.FindTab(uiState.Documents, uiState.Layout.Focused);
-        if (next == null)
+        if (next is null)
         {
             next = FindFrontTab(uiState);
         }
 
-        if (next == null)
+        if (next is null)
         {
             return;
         }
@@ -552,7 +552,7 @@ public static class DocumentPanels
     {
         var layout = uiState.Layout;
         var docked = FindFrontTab(uiState, layout.Root);
-        if (docked != null)
+        if (docked is not null)
         {
             return docked;
         }
@@ -560,7 +560,7 @@ public static class DocumentPanels
         foreach (var window in layout.Windows)
         {
             var floating = FindFrontTab(uiState, window.Root);
-            if (floating != null)
+            if (floating is not null)
             {
                 return floating;
             }
@@ -581,7 +581,7 @@ public static class DocumentPanels
         }
 
         var first = FindFrontTab(uiState, split.First);
-        if (first != null)
+        if (first is not null)
         {
             return first;
         }
@@ -599,7 +599,7 @@ public static class DocumentPanels
     /// the tabs or the layout changed since the last try found none.</summary>
     public static void FocusNextTabIfNone(UiState uiState, DocumentTabs tabs)
     {
-        if (tabs.Active != null)
+        if (tabs.Active is not null)
         {
             return;
         }
@@ -647,7 +647,7 @@ public static class DocumentPanels
     {
         FollowActiveTab(uiState, active);
         var tab = DocumentPanels.FindTab(uiState.Documents, uiState.Layout.Focused);
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }
@@ -670,14 +670,14 @@ public static class DocumentPanels
     public static void CycleTab(UiState uiState, int by)
     {
         var active = uiState.ActiveTab;
-        if (active == null)
+        if (active is null)
         {
             return;
         }
 
         var activePanel = DocumentPanels.GetPanel(uiState.Documents, active);
         var group = uiState.Layout.GroupOf(activePanel);
-        if (group == null)
+        if (group is null)
         {
             return;
         }
@@ -691,7 +691,7 @@ public static class DocumentPanels
         var index = panels.IndexOf(activePanel);
         var next = panels[WrapIndex(index + by, panels.Count)];
         var tab = DocumentPanels.FindTab(uiState.Documents, next);
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }
@@ -701,7 +701,7 @@ public static class DocumentPanels
 
     private static bool IsTabPanel(UiState uiState, string panel)
     {
-        return DocumentPanels.FindTab(uiState.Documents, panel) != null;
+        return DocumentPanels.FindTab(uiState.Documents, panel) is not null;
     }
 
     private static int WrapIndex(int index, int count)
@@ -718,7 +718,7 @@ public static class DocumentPanels
     public static void CloseActiveTab(UiState uiState)
     {
         var tab = uiState.ActiveTab;
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }
@@ -783,7 +783,7 @@ public static class DocumentPanels
     {
         var tabs = new List<DocumentTab>();
         var group = uiState.Layout.GroupOf(DocumentPanels.GetPanel(uiState.Documents, tab));
-        if (group == null)
+        if (group is null)
         {
             return tabs;
         }
@@ -806,7 +806,7 @@ public static class DocumentPanels
     private static void AddTabOf(UiState uiState, List<DocumentTab> tabs, string? panel)
     {
         var tab = DocumentPanels.FindTab(uiState.Documents, panel);
-        if (tab == null)
+        if (tab is null)
         {
             return;
         }

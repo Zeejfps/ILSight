@@ -68,7 +68,7 @@ public static class Theming
 
     private static List<ThemeFile> ReadUserThemes(string? folder)
     {
-        if (folder == null)
+        if (folder is null)
         {
             return new List<ThemeFile>();
         }
@@ -88,7 +88,7 @@ public static class Theming
         foreach (var path in ListFiles(folder, pattern, schemaFileName))
         {
             var id = ThemeId<TFile>.Parse(Path.GetFileNameWithoutExtension(path));
-            if (id != null)
+            if (id is not null)
             {
                 files.Add((id, path));
             }
@@ -142,13 +142,13 @@ public static class Theming
     public static string? PrepareThemesFolder(AppState appState)
     {
         var folder = appState.SettingsPlace.ThemesFolder;
-        if (folder == null)
+        if (folder is null)
         {
             return null;
         }
 
         var error = CreateThemeFolder(folder, SchemaFileName, BuiltInThemes.ReadSchema(), BuiltInThemes.ReadGuide());
-        if (error == null)
+        if (error is null)
         {
             return folder;
         }
@@ -181,7 +181,7 @@ public static class Theming
     {
         var root = chain[0].File;
         var implicitBase = FindImplicitBase(catalog, root);
-        if (implicitBase == null)
+        if (implicitBase is null)
         {
             return null;
         }
@@ -203,7 +203,7 @@ public static class Theming
     /// other, builds on: the one of its type. Null after reporting that it has no type.</summary>
     private static ThemeContents? FindImplicitBase(ThemeCatalog<ThemeFile, ThemeContents, AppTheme> catalog, ThemeFile root)
     {
-        if (root.Type == null)
+        if (root.Type is null)
         {
             ThemeCatalogs.AddCatalogError(catalog, new ThemeError(root.File, 0, ThemeProblem.NoType));
             return null;
@@ -275,7 +275,7 @@ public static class Theming
     public static string? CreateCustomTheme(AppState appState, Func<ThemeId<ThemeFile>, string> nameOf)
     {
         var folder = PrepareThemesFolder(appState);
-        if (folder == null)
+        if (folder is null)
         {
             return null;
         }
@@ -395,13 +395,13 @@ public static class Theming
     private static bool StartWatching(AppState appState, WatchedThemeFolder folder)
     {
         var path = folder.Prepare(appState);
-        if (path == null)
+        if (path is null)
         {
             return false;
         }
 
         var error = Theming.StartWatch(folder.Watch, path);
-        if (error == null)
+        if (error is null)
         {
             return true;
         }
@@ -595,7 +595,7 @@ public static class Theming
             TakeTopIcon(merged, key, layers, glyphs, values, errors);
         }
 
-        if (fallback == null)
+        if (fallback is null)
         {
             return CreateIconTheme(new IconSet(glyphs), ListFaces(merged, null), values);
         }
@@ -622,7 +622,7 @@ public static class Theming
         {
             var value = layers[i];
             var glyph = MakeGlyph(merged, key, value, errors);
-            if (glyph == null)
+            if (glyph is null)
             {
                 continue;
             }
@@ -675,7 +675,7 @@ public static class Theming
             .OfType<IconFont.Loaded>()
             .Select(static f => f.Face)
             .ToList();
-        if (fallback == null)
+        if (fallback is null)
         {
             return faces;
         }
@@ -787,7 +787,7 @@ public static class Theming
 
         line = GetLine(json, reader);
         var name = reader.GetString();
-        if (name == null)
+        if (name is null)
         {
             AddJsonError(json, line, ThemeProblem.InvalidJson, detail: "A key is null.");
         }
@@ -807,7 +807,7 @@ public static class Theming
         if (reader.TokenType == JsonTokenType.String)
         {
             var plain = reader.GetString();
-            if (plain == null)
+            if (plain is null)
             {
                 AddJsonError(json, line, ThemeProblem.InvalidName);
                 return null;
@@ -833,7 +833,7 @@ public static class Theming
         {
             var key = ThemeJson.NameKey + "." + tag;
             var name = ReadJsonString(json, ref reader, key, line);
-            if (name == null)
+            if (name is null)
             {
                 continue;
             }
@@ -921,7 +921,7 @@ public static class Theming
     {
         var theme = CreateFile(id, path);
         var json = Theming.ReadJsonBytes(theme.Json, path);
-        if (json != null)
+        if (json is not null)
         {
             Theming.ReadJson(theme.Json, json, (ref Utf8JsonReader r, string k, int l) => ReadThemeKey(theme, ref r, k, l));
         }
@@ -987,7 +987,7 @@ public static class Theming
     private static void ReadThemeName(ThemeFile theme, ref Utf8JsonReader reader, int line)
     {
         var name = Theming.ReadJsonName(theme.Json, ref reader, line, theme.Id.Text);
-        if (name != null)
+        if (name is not null)
         {
             theme.Name = name;
         }
@@ -996,13 +996,13 @@ public static class Theming
     private static void ReadType(ThemeFile theme, ref Utf8JsonReader reader, int line)
     {
         var type = Theming.ReadJsonString(theme.Json, ref reader, TypeKey, line);
-        if (type == null)
+        if (type is null)
         {
             return;
         }
 
         theme.Type = ParseThemeType(type);
-        if (theme.Type == null)
+        if (theme.Type is null)
         {
             Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownType, type);
         }
@@ -1021,13 +1021,13 @@ public static class Theming
     private static void ReadExtends(ThemeFile theme, ref Utf8JsonReader reader, int line)
     {
         var parent = Theming.ReadJsonString(theme.Json, ref reader, ThemeJson.ExtendsKey, line);
-        if (parent == null)
+        if (parent is null)
         {
             return;
         }
 
         var id = ThemeId<ThemeFile>.Parse(parent);
-        if (id == null)
+        if (id is null)
         {
             Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownParent, parent);
             return;
@@ -1047,7 +1047,7 @@ public static class Theming
         {
             var key = PaletteKey + "." + name;
             var color = Theming.ReadJsonString(theme.Json, ref reader, key, nameLine);
-            if (color == null)
+            if (color is null)
             {
                 continue;
             }
@@ -1084,7 +1084,7 @@ public static class Theming
             return;
         }
         var text = Theming.ReadJsonString(theme.Json, ref reader, key, line);
-        if (text == null)
+        if (text is null)
         {
             return;
         }
@@ -1169,7 +1169,7 @@ public static class Theming
             shared.RemovalWatcher = removalWatcher;
         }
         watcher.EnableRaisingEvents = true;
-        if (removalWatcher != null)
+        if (removalWatcher is not null)
         {
             removalWatcher.EnableRaisingEvents = true;
         }
@@ -1182,7 +1182,7 @@ public static class Theming
     {
         var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(watcher.Path));
         var parent = Path.GetDirectoryName(folder);
-        if (parent == null)
+        if (parent is null)
         {
             return null;
         }
@@ -1224,12 +1224,12 @@ public static class Theming
         using var held = watch.Held.Enter();
         var shared = held.Value;
         var loss = shared.PendingLoss;
-        if (loss != null)
+        if (loss is not null)
         {
             return TakePendingLoss(shared, loss);
         }
 
-        if (shared.Watcher == null)
+        if (shared.Watcher is null)
         {
             return Stopped;
         }
@@ -1288,7 +1288,7 @@ public static class Theming
             shared.Quiet = null;
             shared.Waiter = null;
             shared.IsChangePending = false;
-            shared.PendingLoss = waiter == null ? loss : null;
+            shared.PendingLoss = waiter is null ? loss : null;
         }
         watcher?.Dispose();
         removalWatcher?.Dispose();
@@ -1336,7 +1336,7 @@ public static class Theming
 
     private static bool IsWatchReplaced(ThemeFolderWatch.Shared shared, FileSystemWatcher? lost)
     {
-        if (lost == null)
+        if (lost is null)
         {
             return false;
         }
@@ -1357,14 +1357,14 @@ public static class Theming
         using (var held = watch.Held.Enter())
         {
             var shared = held.Value;
-            if (shared.Watcher == null)
+            if (shared.Watcher is null)
             {
                 return;
             }
 
             waiter = shared.Waiter;
             shared.Waiter = null;
-            if (waiter == null)
+            if (waiter is null)
             {
                 shared.IsChangePending = true;
             }

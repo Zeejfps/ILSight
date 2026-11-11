@@ -288,7 +288,7 @@ internal static class NuGetDetailsView
             LinkFact(ui, "license", t.NugetFactLicense, TextOf(package.LicenseUrl), package.LicenseUrl);
             return;
         }
-        if (read.Published != null)
+        if (read.Published is not null)
         {
             Fact(ui, t.NugetFactPublished, PublishedText(ui, read.Published.Value));
         }

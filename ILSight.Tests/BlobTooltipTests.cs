@@ -40,8 +40,8 @@ public sealed class BlobTooltipTests
     {
         var signatures = ListTooltipTexts(Grid("StandAloneSig"), "Signature");
 
-        Assert.Contains(signatures, s => s != null && s.StartsWith("[0] ", StringComparison.Ordinal));
-        Assert.DoesNotContain(signatures, s => s != null && s.Contains("/* signature", StringComparison.Ordinal));
+        Assert.Contains(signatures, s => s is not null && s.StartsWith("[0] ", StringComparison.Ordinal));
+        Assert.DoesNotContain(signatures, s => s is not null && s.Contains("/* signature", StringComparison.Ordinal));
     }
 
     [Fact]

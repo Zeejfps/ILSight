@@ -308,7 +308,7 @@ internal static class DocumentWriting
     public static void WriteReference(DocumentBuilder builder, IType type, string text, bool isDefinition = false)
     {
         var definition = type.GetDefinition();
-        var reference = definition != null ? CodeReferences.Find(definition, text) : null;
+        var reference = definition is not null ? CodeReferences.Find(definition, text) : null;
         WriteReferenceSpan(builder, text, builder.Kind ?? SpanKind.Type, reference, isDefinition);
     }
 
@@ -597,7 +597,7 @@ internal static class DocumentWriting
         if (handle.Kind is HandleKind.TypeReference or HandleKind.TypeSpecification or HandleKind.MemberReference or HandleKind.MethodSpecification)
         {
             var definition = ResolveDefinition(builder, metadata, (EntityHandle)handle);
-            if (definition != null)
+            if (definition is not null)
             {
                 return CodeReferences.Find(definition, text);
             }

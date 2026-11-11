@@ -20,7 +20,7 @@ public static class NodeDefinitions
     internal static BaseTypeInfo CreateBaseType(LoadedModule module, IType type)
     {
         var definition = type.GetDefinition();
-        if (definition == null)
+        if (definition is null)
         {
             return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Unresolved(), Visibility = NodeVisibility.Open };
         }
@@ -231,7 +231,7 @@ public static class NodeDefinitions
     {
         var steps = new List<NodePathStep>();
         var n = node;
-        while (n.Parent != null)
+        while (n.Parent is not null)
         {
             var segment = BrowseNodes.GetSegment(n) ?? throw new UnreachableException();
             steps.Add(new NodePathStep(segment, n.Text));
@@ -291,7 +291,7 @@ public static class NodeDefinitions
             NodeSubject.MetadataTable table => new NodePathSegment.MetadataPart(table.Value.Key),
             NodeSubject.Package package => package.Value.IsRoot ? null : new NodePathSegment.PackageFolder(package.Value.Folder.FullName),
             NodeSubject.PackageFile file => new NodePathSegment.PackageFile(file.Value.File.FullName),
-            NodeSubject.Module module => module.Value.Place == null ? null : new NodePathSegment.EmbeddedModule(module.Value.Place.File.FullName),
+            NodeSubject.Module module => module.Value.Place is null ? null : new NodePathSegment.EmbeddedModule(module.Value.Place.File.FullName),
             NodeSubject.Namespace ns => new NodePathSegment.Namespace(ns.Value.Name),
             NodeSubject.FailedAssembly => null,
             _ => throw new UnreachableException(),

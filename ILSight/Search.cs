@@ -95,7 +95,7 @@ public static class Searches
         }
 
         var searched = search.LastSearched;
-        if (searched == null || IsQueryChanged(search, searched))
+        if (searched is null || IsQueryChanged(search, searched))
         {
             return RestartWhenSettled(search, assemblies, now, searched);
         }
@@ -127,7 +127,7 @@ public static class Searches
     private static double RestartWhenSettled(Search search, AssemblyList assemblies, double now, Search.Searched? searched)
     {
         var remaining = DebounceSeconds - (now - search.TypedAt);
-        if (remaining > 0 && searched != null && search.Kinds == searched.Kinds)
+        if (remaining > 0 && searched is not null && search.Kinds == searched.Kinds)
         {
             return remaining;
         }

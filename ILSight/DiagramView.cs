@@ -121,7 +121,7 @@ internal static class DiagramView
     private static void FitToView(DiagramViewState view, UiRect area)
     {
         var layout = view.Transition.Layout;
-        if (layout == null)
+        if (layout is null)
         {
             return;
         }
@@ -200,13 +200,13 @@ internal static class DiagramView
     /// that it stays where it is on the screen while the others move around it.</summary>
     private static void HoldSelectedCard(DiagramViewState view, PointF? before)
     {
-        if (before == null)
+        if (before is null)
         {
             return;
         }
 
         var after = FindSelectedPlace(view);
-        if (after == null)
+        if (after is null)
         {
             return;
         }
@@ -220,7 +220,7 @@ internal static class DiagramView
     private static void BringIntoView(DiagramViewState view, TypeDiagram diagram, UiRect rect)
     {
         var layout = view.Transition.Layout;
-        if (layout == null)
+        if (layout is null)
         {
             return;
         }
@@ -265,7 +265,7 @@ internal static class DiagramView
         }
 
         var face = FindFace(view, type);
-        if (face == null)
+        if (face is null)
         {
             return;
         }
@@ -312,13 +312,13 @@ internal static class DiagramView
     private static DiagramHit HitCard(DiagramViewState view, TypeCard card, PointF point)
     {
         var face = FindFace(view, card.Type);
-        if (face == null)
+        if (face is null)
         {
             return new DiagramHit.Nothing();
         }
 
         var place = Diagrams.GetCardPlace(view.Transition, card.Type);
-        if (place == null)
+        if (place is null)
         {
             return new DiagramHit.Nothing();
         }
@@ -418,7 +418,7 @@ internal static class DiagramView
 
     private static void OpenCode(UiState screen, TypeDiagram diagram, CardRow? row, bool inNewTab)
     {
-        if (row == null)
+        if (row is null)
         {
             return;
         }
@@ -515,7 +515,7 @@ internal static class DiagramView
     private static void OpenMenu(Ui<UiState> ui, DiagramViewState view, DiagramHit hit)
     {
         var face = FaceOf(hit);
-        if (face == null)
+        if (face is null)
         {
             return;
         }
@@ -530,14 +530,14 @@ internal static class DiagramView
     private static void Pick(DiagramViewState view, DiagramHit hit)
     {
         var face = FaceOf(hit);
-        if (face == null)
+        if (face is null)
         {
             view.Selected = null;
             return;
         }
         view.Selected = face.Card.Type;
         var row = RowOf(hit);
-        if (row == null)
+        if (row is null)
         {
             return;
         }
@@ -559,7 +559,7 @@ internal static class DiagramView
         }
 
         var row = RowOf(hit);
-        if (row == null)
+        if (row is null)
         {
             return;
         }
@@ -599,7 +599,7 @@ internal static class DiagramView
     {
         frame.Links.Clear();
         var layout = view.Transition.Layout;
-        if (layout == null)
+        if (layout is null)
         {
             return;
         }
@@ -629,7 +629,7 @@ internal static class DiagramView
     {
         var shape = Diagrams.ShapeRoute(view.Transition, route);
         var label = DiagramFaces.LabelOf(route.Link);
-        if (label == null)
+        if (label is null)
         {
             return new DrawnLink(route.Link.Kind, shape, null, 0f, 0f);
         }
@@ -645,13 +645,13 @@ internal static class DiagramView
         foreach (var card in diagram.Cards)
         {
             var face = FindFace(view, card.Type);
-            if (face == null)
+            if (face is null)
             {
                 continue;
             }
 
             var place = Diagrams.GetCardPlace(view.Transition, card.Type);
-            if (place == null)
+            if (place is null)
             {
                 continue;
             }
@@ -714,7 +714,7 @@ internal static class DiagramView
         }
 
         var row = RowOf(hit);
-        if (row == null)
+        if (row is null)
         {
             return null;
         }
@@ -921,7 +921,7 @@ internal static class DiagramView
     /// <summary>A hollow diamond on the card of a type holding the other, where the route leaves room for one.</summary>
     private static void PaintDiamond(UiPainter p, DiagramFrame frame, LinkRoute route, uint color, float stroke)
     {
-        if (route.SourceTip == null)
+        if (route.SourceTip is null)
         {
             return;
         }
@@ -956,13 +956,13 @@ internal static class DiagramView
     /// <summary>The label of a link as a tag bordered in its color.</summary>
     private static void PaintLabel(UiPainter p, DiagramFrame frame, DrawnLink link, uint color)
     {
-        if (link.Label == null)
+        if (link.Label is null)
         {
             return;
         }
 
         var center = link.Route.LabelCenter;
-        if (center == null)
+        if (center is null)
         {
             return;
         }
@@ -1078,7 +1078,7 @@ internal static class DiagramView
         var box = new UiRect(left, row.Y + (row.Height - size) / 2, size, size);
         p.Glyph(box, NodeIcons.Glyph(kind, frame.Icons), NodeIcons.GetColor(frame.Palette, kind), size);
         var overlay = NodeIcons.Overlay(accessibility, frame.Icons);
-        if (overlay == null)
+        if (overlay is null)
         {
             return;
         }

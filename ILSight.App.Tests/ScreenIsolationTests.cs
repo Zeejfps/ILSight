@@ -114,7 +114,7 @@ public sealed class ScreenIsolationTests : IDisposable
             yield break;
         }
 
-        for (var type = value.GetType(); type != null; type = type.BaseType)
+        for (var type = value.GetType(); type is not null; type = type.BaseType)
         {
             foreach (var field in type.GetFields(InstanceFields))
             {
@@ -124,7 +124,7 @@ public sealed class ScreenIsolationTests : IDisposable
                 }
 
                 var held = field.GetValue(value);
-                if (held != null)
+                if (held is not null)
                 {
                     yield return (held, $"{path}.{field.Name}");
                 }
@@ -143,7 +143,7 @@ public sealed class ScreenIsolationTests : IDisposable
         for (var i = 0; i < array.Length; i++)
         {
             var held = array.GetValue(i);
-            if (held != null)
+            if (held is not null)
             {
                 yield return (held, $"{path}[{i}]");
             }

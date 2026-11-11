@@ -35,7 +35,7 @@ public sealed class OmnibarTests
     private static bool IsPart(SemanticNode node, string name)
     {
         var path = node.Path;
-        if (path == null)
+        if (path is null)
         {
             return false;
         }

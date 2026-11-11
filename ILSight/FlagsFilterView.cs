@@ -132,12 +132,12 @@ internal static class FlagsFilterView
 
     private static bool IsOn(FilterChip chip, ImmutableHashSet<uint>? selection)
     {
-        if (selection == null)
+        if (selection is null)
         {
             return true;
         }
 
-        if (chip.Value == null)
+        if (chip.Value is null)
         {
             return false;
         }
@@ -185,7 +185,7 @@ internal static class FlagsFilterView
     /// "any", which an empty or full selection also is.</summary>
     private static ImmutableHashSet<uint>? Pick(MutexGroup group, ImmutableHashSet<uint>? selection, uint? value, bool shift)
     {
-        if (value == null)
+        if (value is null)
         {
             return null;
         }

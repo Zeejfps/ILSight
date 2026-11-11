@@ -45,7 +45,7 @@ public static class Decompilation
         }
 
         var error = loading.Exception?.GetBaseException();
-        if (error != null)
+        if (error is not null)
         {
             Tabs.ShowFailed(tab, error.Message);
         }
@@ -56,7 +56,7 @@ public static class Decompilation
 
         var arrival = Tabs.TakeArrival(tab);
         var failure = error ?? tab.Document.Error;
-        if (failure != null)
+        if (failure is not null)
         {
             ReportFailure(appState, node, failure);
             Arrive(appState, tab, new Arrival());
@@ -82,12 +82,12 @@ public static class Decompilation
     private static void Arrive(AppState appState, DocumentTab tab, Arrival arrival)
     {
         var position = arrival.Position;
-        if (position != null)
+        if (position is not null)
         {
             appState.ViewCommands.Enqueue(new ViewCommand.RestoreView(tab, position.Value));
             return;
         }
-        if (tab.Grid != null)
+        if (tab.Grid is not null)
         {
             RevealRow(appState, tab, arrival.Row);
             return;
@@ -103,7 +103,7 @@ public static class Decompilation
 
     private static void RevealRow(AppState appState, DocumentTab tab, int? row)
     {
-        if (row == null)
+        if (row is null)
         {
             return;
         }
@@ -115,7 +115,7 @@ public static class Decompilation
     private static int FindLineToReveal(DocumentTab tab, Bookmark? target)
     {
         var node = tab.Node;
-        if (node == null)
+        if (node is null)
         {
             return -1;
         }
@@ -131,7 +131,7 @@ public static class Decompilation
 
     private static int FindMarkedLine(DocumentTab tab, Bookmark? target, BrowseNode node)
     {
-        if (target == null)
+        if (target is null)
         {
             return -1;
         }
@@ -144,7 +144,7 @@ public static class Decompilation
     public static void DecompileAgainIfOutdated(AppState appState, DocumentTab tab)
     {
         var node = tab.Node;
-        if (node == null)
+        if (node is null)
         {
             return;
         }

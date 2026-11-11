@@ -16,7 +16,7 @@ public static class NodeLookup
         try
         {
             var item = AssemblyListing.OpenListed(list, path.FilePath);
-            if (item == null)
+            if (item is null)
             {
                 return null;
             }
@@ -35,7 +35,7 @@ public static class NodeLookup
     public static BrowseNode? FindListed(AssemblyList list, BrowseSession session, NodePath path)
     {
         var item = AssemblyListing.FindListedLoaded(list, path.FilePath);
-        if (item == null)
+        if (item is null)
         {
             return null;
         }
@@ -107,7 +107,7 @@ public static class NodeLookup
         foreach (var assembly in assemblies)
         {
             var node = FindById(session, idString, assembly);
-            if (node != null)
+            if (node is not null)
             {
                 return node;
             }

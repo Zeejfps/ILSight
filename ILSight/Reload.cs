@@ -10,7 +10,7 @@ public sealed class Reload
 
     public CancellationTokenSource? Work { get; set; }
 
-    public bool IsRunning => Work != null;
+    public bool IsRunning => Work is not null;
 }
 
 /// <summary>Keeping track of what is being read from disk, so that what was overtaken is ignored.</summary>

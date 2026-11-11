@@ -137,7 +137,7 @@ internal static class ExportsPanelView
     {
         var stroke = ui.Input.Keys[index];
         var selected = ui.State.SelectedExport;
-        if (selected != null && ActOnSelected(ui, queue, finished, rows, selected, stroke, index))
+        if (selected is not null && ActOnSelected(ui, queue, finished, rows, selected, stroke, index))
         {
             return;
         }
@@ -175,7 +175,7 @@ internal static class ExportsPanelView
     private static void MoveSelection(Ui<UiState> ui, Rows rows, List<ExportRun> runs, KeyStroke stroke)
     {
         var selected = ui.State.SelectedExport;
-        var index = selected == null ? -1 : runs.IndexOf(selected);
+        var index = selected is null ? -1 : runs.IndexOf(selected);
         var before = index;
         UiWidgets.ApplyListKey(stroke, ref index, runs.Count, PageRows);
         if (index == before || index < 0)
@@ -200,7 +200,7 @@ internal static class ExportsPanelView
     private static void CopyFolder(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
     {
         var folder = FindExportFolder(queue, finished, run);
-        if (folder == null)
+        if (folder is null)
         {
             return;
         }
@@ -269,7 +269,7 @@ internal static class ExportsPanelView
     private static void Running(Ui<UiState> ui, ExportQueue export, Rows rows)
     {
         var running = export.Running;
-        if (running == null)
+        if (running is null)
         {
             return;
         }
@@ -290,7 +290,7 @@ internal static class ExportsPanelView
                     Percent(ui, at.Fraction);
                     CancelAction(ui, rows, running.IsCancelling);
                 }
-                var preparing = at.Fraction == null;
+                var preparing = at.Fraction is null;
                 var detail = ui.Memo("detail", (queued.Job.Kind, at.Name, at.Part, at.Parts, preparing, running.IsCancelling, t),
                     static a => DescribeRunning(a.t, a.Kind, a.Name, a.Part, a.Parts, a.preparing, a.IsCancelling));
                 Detail(ui, detail);
@@ -360,7 +360,7 @@ internal static class ExportsPanelView
         var theme = ui.Theme;
         using (ui.Row(new Box { Width = Sizing.Grow(), Padding = new Spacing(NameIndent(theme), theme.GapTight, 0f, 0f) }))
         {
-            if (fraction != null)
+            if (fraction is not null)
             {
                 ui.ProgressBar(fraction.Value);
             }
@@ -373,7 +373,7 @@ internal static class ExportsPanelView
 
     private static string FormatPercent(float? fraction)
     {
-        if (fraction == null)
+        if (fraction is null)
         {
             return "";
         }
@@ -402,7 +402,7 @@ internal static class ExportsPanelView
 
             ahead++;
         }
-        if (withdrawn != null)
+        if (withdrawn is not null)
         {
             Commands.Later(ui.State, withdrawn, static (a, run) => Exports.WithdrawExport(a.Export, run));
         }
@@ -480,7 +480,7 @@ internal static class ExportsPanelView
                 removed = reports[i];
             }
         }
-        if (removed != null)
+        if (removed is not null)
         {
             Commands.Later(ui.State, removed, static (a, report) => RemoveFinishedExport(a, report));
         }
@@ -668,13 +668,13 @@ internal static class ExportsPanelView
         }
 
         var run = ui.State.ExportMenuTarget;
-        if (run == null)
+        if (run is null)
         {
             return;
         }
 
         var report = FindFinishedExport(finished, run);
-        if (report != null)
+        if (report is not null)
         {
             FinishedMenu(ui, report);
         }
@@ -713,7 +713,7 @@ internal static class ExportsPanelView
     {
         var t = ui.State.Strings;
         var folder = FindExportFolder(queue, finished, run);
-        if (folder == null)
+        if (folder is null)
         {
             return;
         }
@@ -725,7 +725,7 @@ internal static class ExportsPanelView
 
         ui.MenuSeparator();
         var running = queue.Running;
-        if (running != null && running.Export.Run == run)
+        if (running is not null && running.Export.Run == run)
         {
             if (ui.MenuItem(t.ExportsCancel, enabled: !running.IsCancelling, id: "cancel"))
             {

@@ -74,7 +74,7 @@ public static class RuntimeAssemblies
             foreach (var dir in Directory.EnumerateDirectories(frameworks))
             {
                 var version = ParseVersion(Path.GetFileName(dir));
-                if (version != null && File.Exists(Path.Combine(dir, "System.Private.CoreLib.dll")))
+                if (version is not null && File.Exists(Path.Combine(dir, "System.Private.CoreLib.dll")))
                 {
                     versions.Add((dir, version));
                 }
@@ -117,7 +117,7 @@ public static class RuntimeAssemblies
 
             var target = candidate.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? candidate.FullName;
             var resolved = Path.GetDirectoryName(target);
-            if (resolved != null)
+            if (resolved is not null)
             {
                 yield return resolved;
             }
@@ -204,7 +204,7 @@ public static class RuntimeAssemblies
                 }
 
                 var path = AssemblyPath.Parse(file);
-            if (path == null)
+            if (path is null)
                 {
                     continue;
                 }

@@ -16,7 +16,7 @@ internal static class ExportStatusView
     public static bool Render(Ui<UiState> ui, ExportQueue export)
     {
         var running = export.Running;
-        if (running == null)
+        if (running is null)
         {
             return false;
         }
@@ -54,7 +54,7 @@ internal static class ExportStatusView
                 static a => Describe(a.t, a.Name, a.Part, a.Parts, a.cancelling));
             ui.Text(text, color: theme.AccentText, size: theme.FontSizeSmall);
             var fraction = progress.Fraction;
-            if (fraction != null)
+            if (fraction is not null)
             {
                 ui.ProgressBar(fraction.Value, Sizing.Fixed(BarWidth));
             }

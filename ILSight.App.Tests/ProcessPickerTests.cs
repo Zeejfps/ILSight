@@ -157,7 +157,7 @@ public sealed class ProcessPickerTests
 
         processes.RemoveAt(0);
         ProcessPicking.Refresh(picker);
-        Poll.Until(() => picker.AppliedFilter == null, posted.Run);
+        Poll.Until(() => picker.AppliedFilter is null, posted.Run);
         ProcessPicking.UpdatePicker(picker);
 
         Assert.Equal(Worker, ProcessPicking.GetSelectedProcess(picker));

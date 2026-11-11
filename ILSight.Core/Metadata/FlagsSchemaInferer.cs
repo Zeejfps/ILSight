@@ -165,7 +165,7 @@ namespace ILSight.Core.Metadata
 
                 values.Sort(static (a, b) => a.Value.CompareTo(b.Value));
 				var zeroName = zeroNames.GetValueOrDefault(mask) ?? unclaimedZero;
-				values.Insert(0, zeroName != null
+				values.Insert(0, zeroName is not null
 					? new MutexValue($"{ValueName(zeroName, maskName)} (0000)", 0)
 					: new MutexValue("(none)", 0));
 				groups.Add(new MutexGroup(GroupName(maskName), mask, values));

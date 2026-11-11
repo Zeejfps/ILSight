@@ -29,7 +29,7 @@ internal static class NodeQueries
         }
 
         var child = named.SingleOrDefault();
-        if (child == null)
+        if (child is null)
         {
             throw new InvalidOperationException($"'{node.Text}' has no child '{text}': {string.Join(", ", node.Children.Select(c => c.Text))}");
         }
@@ -129,7 +129,7 @@ internal static class DocumentQueries
     {
         var line = document.LineContaining(text);
         var index = Documents.FindFoldStartingAt(document, line);
-        if (index == null)
+        if (index is null)
         {
             throw new InvalidOperationException($"No fold starts at '{text}'");
         }

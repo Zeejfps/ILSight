@@ -60,7 +60,7 @@ internal static class AnalyzerHelpers
     /// a token it cannot resolve is not a match.</summary>
     public static bool HasToken(MethodBodyBlock? body, Func<ILOpCode, EntityHandle, bool> match)
     {
-        return body != null && ListTokens(body).Any(t => Matches(match, t.OpCode, t.Token));
+        return body is not null && ListTokens(body).Any(t => Matches(match, t.OpCode, t.Token));
     }
 
     private static bool Matches(Func<ILOpCode, EntityHandle, bool> match, ILOpCode opCode, EntityHandle token)
@@ -161,7 +161,7 @@ internal static class AnalyzerHelpers
             else
             {
                 var parent = GetParentEntity(ts, attribute);
-                if (parent != null)
+                if (parent is not null)
                 {
                     yield return parent;
                 }
@@ -180,7 +180,7 @@ internal static class AnalyzerHelpers
             }
 
             var method = ts.MainModule.ResolveMethod(h, default);
-            if (method != null)
+            if (method is not null)
             {
                 yield return method.IsAccessor ? method.AccessorOwner : method;
             }
@@ -227,7 +227,7 @@ internal static class AnalyzerHelpers
     internal static MethodBodyBlock? GetMethodBody(AnalyzerContext context, IMethod method)
     {
         var module = method.ParentModule?.MetadataFile;
-        if (!method.HasBody || method.MetadataToken.IsNil || module == null)
+        if (!method.HasBody || method.MetadataToken.IsNil || module is null)
         {
             return null;
         }
@@ -241,7 +241,7 @@ internal static class AnalyzerHelpers
     {
         var file = DecompilerFacts.GetMetadataFile(entity);
         var mapping = context.Mapping;
-        if (mapping == null || mapping.Value.File != file || mapping.Value.Handle != entity.MetadataToken)
+        if (mapping is null || mapping.Value.File != file || mapping.Value.Handle != entity.MetadataToken)
         {
             mapping = (file, entity.MetadataToken, CSharpDecompiler.GetCodeMappingInfo(file, entity.MetadataToken));
             context.Mapping = mapping;
@@ -312,7 +312,7 @@ internal static class AnalyzerHelpers
     {
         foreach (var type in GetTypesInScope(scope, ct))
         {
-            if (type.ParentModule?.MetadataFile == null)
+            if (type.ParentModule?.MetadataFile is null)
             {
                 continue;
             }
@@ -349,7 +349,7 @@ internal static class AnalyzerHelpers
         }
         var previous = start;
         var current = start;
-        while (current != null && !accessibility.LessThanOrEqual(Accessibility.Private))
+        while (current is not null && !accessibility.LessThanOrEqual(Accessibility.Private))
         {
             accessibility = accessibility.Intersect(current.Accessibility);
             previous = current;
@@ -535,7 +535,7 @@ internal static class AnalyzerHelpers
 
     internal static TokenSearchResult GetTypeFromSerializedName(FindTypeInAttributeDecoder decoder, string name)
     {
-        if (name == null)
+        if (name is null)
         {
             return TokenSearchResult.NoResult;
         }
@@ -553,14 +553,14 @@ internal static class AnalyzerHelpers
     private static TokenSearchResult GetResultFromResolvedType(FindTypeInAttributeDecoder decoder, IType type)
     {
         var definition = type.GetDefinition();
-        if (definition == null)
+        if (definition is null)
         {
             return TokenSearchResult.NoResult;
         }
 
         var result = TokenSearchResult.NoResult;
         var underlyingType = definition.EnumUnderlyingType?.GetDefinition();
-        if (underlyingType != null)
+        if (underlyingType is not null)
         {
             result = (TokenSearchResult)underlyingType.KnownTypeCode.ToPrimitiveTypeCode();
         }

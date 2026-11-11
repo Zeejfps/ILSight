@@ -185,7 +185,7 @@ internal static class AboutDialogView
     private static void LicensesButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
-        if (ShippedLicenses == null)
+        if (ShippedLicenses is null)
         {
             return;
         }

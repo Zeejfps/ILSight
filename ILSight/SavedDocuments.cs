@@ -63,7 +63,7 @@ public static class SavedDocuments
     {
         appState.Reopened.Tabs.Clear();
         var saved = appState.Lists.ActiveDocuments;
-        if (saved == null)
+        if (saved is null)
         {
             CloseDocuments(appState);
             return;
@@ -112,7 +112,7 @@ public static class SavedDocuments
     private static void MakeSavedActive(AppState appState, List<ReopenedTab> reopened, string? panel)
     {
         var active = FindReopened(reopened, panel);
-        if (active == null)
+        if (active is null)
         {
             active = reopened[0];
         }
@@ -123,7 +123,7 @@ public static class SavedDocuments
     private static void MakeSavedPreview(AppState appState, List<ReopenedTab> reopened, string? panel)
     {
         var preview = FindReopened(reopened, panel);
-        if (preview == null)
+        if (preview is null)
         {
             return;
         }
@@ -133,7 +133,7 @@ public static class SavedDocuments
 
     private static ReopenedTab? FindReopened(List<ReopenedTab> reopened, string? panel)
     {
-        if (panel == null)
+        if (panel is null)
         {
             return null;
         }
@@ -166,18 +166,18 @@ public static class SavedDocuments
     {
         var panel = FindTabPanel(appState, tab);
         var waiting = FindWaiting(appState.Reopened, tab);
-        if (waiting != null)
+        if (waiting is not null)
         {
             return new SavedTab(tab, KeepWaiting(waiting, panel));
         }
 
-        if (panel == null)
+        if (panel is null)
         {
             return null;
         }
 
         var record = SaveShown(tab, panel);
-        if (record == null)
+        if (record is null)
         {
             return null;
         }
@@ -201,7 +201,7 @@ public static class SavedDocuments
     /// screen docked it.</summary>
     private static DocumentRecord KeepWaiting(DocumentRecord waiting, TabPanel? panel)
     {
-        if (panel == null)
+        if (panel is null)
         {
             return waiting;
         }
@@ -214,19 +214,19 @@ public static class SavedDocuments
     private static DocumentRecord? SaveShown(DocumentTab tab, TabPanel panel)
     {
         var diagram = tab.Diagram;
-        if (diagram != null)
+        if (diagram is not null)
         {
             return SaveDiagram(tab, diagram, panel);
         }
 
         var comparison = tab.Comparison;
-        if (comparison != null)
+        if (comparison is not null)
         {
             return SaveComparison(tab, comparison, panel);
         }
 
         var location = tab.Location;
-        if (location == null)
+        if (location is null)
         {
             return null;
         }
@@ -254,7 +254,7 @@ public static class SavedDocuments
     private static string? FindSavedPanel(List<SavedTab> saved, DocumentTab? tab)
     {
         var found = saved.Find(s => s.Tab == tab);
-        if (found == null)
+        if (found is null)
         {
             return null;
         }
@@ -266,7 +266,7 @@ public static class SavedDocuments
     /// as they are arranged in it; null when there is no layout.</summary>
     private static DockLayout? ArrangeSaved(DockLayout? layout, List<DocumentRecord> records)
     {
-        if (layout == null)
+        if (layout is null)
         {
             return null;
         }
@@ -358,7 +358,7 @@ public static class SavedDocuments
 
     private static BrowseNode? FindNode(AssemblyList list, BrowseSession session, NodePath? place)
     {
-        if (place == null)
+        if (place is null)
         {
             return null;
         }
@@ -382,7 +382,7 @@ public static class SavedDocuments
             return;
         }
 
-        if (node == null)
+        if (node is null)
         {
             Tabs.ShowGone(tab, waiting.Record.Location);
             return;

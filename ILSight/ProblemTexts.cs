@@ -84,7 +84,7 @@ public static class ProblemTexts
 
     private static string Failure(Exception? error, string fallback)
     {
-        if (error == null)
+        if (error is null)
         {
             return fallback;
         }

@@ -105,7 +105,7 @@ internal static class DiagnosticsIpc
 
     public static void WriteString(BinaryWriter writer, string? value)
     {
-        if (value == null)
+        if (value is null)
         {
             writer.Write(0u);
             return;
@@ -187,13 +187,13 @@ internal static class DiagnosticsIpc
     public static async Task<ProcessInfo> QueryProcessInfoAsync(DiagnosticsEndpoint endpoint, TimeSpan budget, CancellationToken cancellationToken)
     {
         var info = await QueryProcessInfoAsync(endpoint, ProcessInfo2CommandId, budget, cancellationToken).ConfigureAwait(false);
-        if (info != null)
+        if (info is not null)
         {
             return info;
         }
 
         info = await QueryProcessInfoAsync(endpoint, ProcessInfoCommandId, budget, cancellationToken).ConfigureAwait(false);
-        if (info == null)
+        if (info is null)
         {
             throw new IOException("The runtime refused to say what process it is.");
         }
@@ -251,13 +251,13 @@ internal static class DiagnosticsIpc
     public static async Task<MemoryStream> CollectRundownAsync(DiagnosticsEndpoint endpoint, TimeSpan budget, CancellationToken cancellationToken)
     {
         var trace = await CollectAsync(endpoint, CollectTracing4CommandId, budget, cancellationToken).ConfigureAwait(false);
-        if (trace != null)
+        if (trace is not null)
         {
             return trace;
         }
 
         trace = await CollectAsync(endpoint, CollectTracing2CommandId, budget, cancellationToken).ConfigureAwait(false);
-        if (trace == null)
+        if (trace is null)
         {
             throw new IOException("The runtime refused to start a session.");
         }

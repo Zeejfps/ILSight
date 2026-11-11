@@ -207,7 +207,7 @@ public sealed class ComparisonTests
         PickCompareWith(app);
 
         app.Frames.ClickOn(Selector.AtPath("compare-picker-compare")).Frame();
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff is not null, Patience);
         app.Settle(2);
 
         Assert.False(app.Ui.ComparisonPicker.IsOpen);
@@ -252,7 +252,7 @@ public sealed class ComparisonTests
     {
         var app = OpenBothOnScreen();
         CompareAssemblies(app.AppState, Opened(app.Driver, LeftPath), Opened(app.Driver, RightPath), Names.Comparison(Opened(app.Driver, LeftPath)));
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff != null, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Diff is not null, Patience);
         app.Settle(2);
         return app;
     }

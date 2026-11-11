@@ -40,7 +40,7 @@ public sealed class ApiDiffTests
     private static ApiEntry Named(IReadOnlyList<ApiEntry> entries, string text)
     {
         var found = entries.FirstOrDefault(e => e.Text == text);
-        if (found == null)
+        if (found is null)
         {
             throw new InvalidOperationException($"No entry '{text}' among: {string.Join(", ", entries.Select(e => e.Text))}");
         }

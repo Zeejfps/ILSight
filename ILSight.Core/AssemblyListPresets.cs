@@ -27,7 +27,7 @@ public static class AssemblyListPresets
     {
         var presets = new List<AssemblyListPreset>();
         var root = FindDotNetRoot();
-        if (root != null)
+        if (root is not null)
         {
             presets.AddRange(FindRuntimePresets(root));
         }
@@ -97,14 +97,14 @@ public static class AssemblyListPresets
         foreach (var directory in Directory.EnumerateDirectories(frameworkDirectory))
         {
             var version = ReadVersion(directory);
-            if (version == null)
+            if (version is null)
             {
                 continue;
             }
 
             var feature = (version.Number.Major, version.Number.Minor);
             var kept = newest.GetValueOrDefault(feature);
-            if (kept == null || version.Number > kept.Number)
+            if (kept is null || version.Number > kept.Number)
             {
                 newest[feature] = version;
             }
@@ -194,7 +194,7 @@ public static class AssemblyListPresets
         {
             var reference = AssemblyNameReference.Parse(fullName);
             var path = UniversalAssemblyResolver.GetAssemblyInGac(reference);
-            if (path != null)
+            if (path is not null)
             {
                 paths.Add(path);
             }

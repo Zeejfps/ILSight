@@ -111,7 +111,7 @@ public sealed class MetadataTests
                         Assert.NotNull(MetadataGrids.GetText(grid, row, column));
                         MetadataGrids.GetTooltip(grid, row, column);
                         var link = MetadataGrids.GetLink(grid, row, column);
-                        if (link != null)
+                        if (link is not null)
                         {
                             var target = Assert.IsType<MetadataTarget>(BrowseSessions.FindMetadataRow(TestSession.Shared, node, link.Value));
                             Assert.InRange(target.Row, 0, Grid(target.Node).RowCount - 1);
