@@ -45,7 +45,7 @@ Done items are struck through with their commit.
 | ~~A4~~ (done) | R008, R004 | `AssemblyComparison`, `Comparisons` | `Diff?` / `Failure?` exclusive by convention; public setters; `Version` bumped by hand → `ComparisonResult` union, private setters. | S / low |
 | A5 | R004 | `Comparisons`, `Diagrams`, `Tabs` | "Newest work wins" (cancel, link, dispose, is-current, is-closed) copied three times, already drifting → one `LatestWork`. | S–M / low–med |
 | Z7 | R004, R008 | `Navigation` resolve protocol | `Intent.Begin → ... → StopResolving` copied 4 times; `Ok(null)` means not found → one `ResolveAsync` returning `Found / Missing / Failed / Stale`. | S–M / low–med |
-| A12 | R008 | `ExportReport`, `ExportReportText`, `ExportsPanelView` | `ExportOutcome` enum + lists that must agree → `ExportEnd` union. | M / low–med |
+| ~~A12~~ (done) | R008 | `ExportReport`, `ExportReportText`, `ExportsPanelView` | `ExportOutcome` enum + lists that must agree → `ExportEnd` union. | M / low–med |
 | A10 | R001, R004 | `Exports.FindBlocker` and file checks | "Can we export?" does file I/O through memo fields → pure decision, file checks at the edge. | S–M / low |
 | A11 | R001 | `FrameworkPicker`, its view, `ComparisonPickerView` | Workflow and filtering in views; three I/O delegates → a port and methods; views only draw. | S–M / low |
 | Z6 | R004 | `OmnibarView`, `Omnibar` | ~200 lines of state logic in the view → methods on `Omnibar` / `CrumbMenu`. | S / low |

@@ -167,7 +167,8 @@ public static class Exports
     /// with nothing written yet.</summary>
     private static ExportReport ReportFinished(ExportRun run, ExportJob job, TimeSpan elapsed)
     {
-        return new ExportReport(run, job, ExportOutcome.Finished, [], [], elapsed, Directory.Exists(job.Folder));
+        var finished = new ExportEnd.Finished { Written = [], Problems = [] };
+        return new ExportReport(run, job, finished, elapsed, Directory.Exists(job.Folder));
     }
 
     /// <summary>The report of the export <paramref name="run"/> of <paramref name="job"/> that ended
@@ -178,17 +179,24 @@ public static class Exports
         var folderExists = Directory.Exists(job.Folder);
         if (error is OperationCanceledException)
         {
-            return new ExportReport(run, job, ExportOutcome.Cancelled, [], [], elapsed, folderExists);
+            return new ExportReport(run, job, new ExportEnd.Cancelled(), elapsed, folderExists);
         }
 
-        var problem = new ExportProblem.Failed(subject, error);
-        return new ExportReport(run, job, ExportOutcome.Failed, [], [problem], elapsed, folderExists);
+        var failed = new ExportEnd.Failed { Subject = subject, Error = error };
+        return new ExportReport(run, job, failed, elapsed, folderExists);
     }
 
     /// <summary><paramref name="report"/> listing <paramref name="written"/>.</summary>
     private static ExportReport ReportWritten(ExportReport report, params string[] written)
     {
-        return report with { Written = written };
+        return ReportFinished(report, written, []);
+    }
+
+    /// <summary><paramref name="report"/> of a finished export, listing <paramref name="written"/> and
+    /// <paramref name="problems"/>.</summary>
+    private static ExportReport ReportFinished(ExportReport report, IReadOnlyList<string> written, IReadOnlyList<ExportProblem> problems)
+    {
+        return report with { End = new ExportEnd.Finished { Written = written, Problems = problems } };
     }
 
     /// <summary>Decompiles <paramref name="assembly"/> into a C# project whose file is
@@ -227,7 +235,7 @@ public static class Exports
             .Select(static ExportProblem (e) => new ExportProblem.NotDecompiled(e))
             .Concat(pdbProblems)
             .ToList();
-        return report with { Written = written, Problems = problems };
+        return ReportFinished(report, written, problems);
     }
 
     /// <summary>Decompiles each of <paramref name="projects"/> into a C# project in a folder of its own
@@ -325,7 +333,7 @@ public static class Exports
             .Select(a => Path.Combine(folder, LoadedAssemblies.GetPdbFileName(a)))
             .ToList();
         var problems = failures.ConvertAll(ProblemOf);
-        return report with { Written = written, Problems = problems };
+        return ReportFinished(report, written, problems);
     }
 
     private static ExportProblem ProblemOf(PdbFailure failure)
@@ -355,7 +363,7 @@ public static class Exports
         var problems = extracted.Failures
             .Select(ProblemOf)
             .ToList();
-        return report with { Written = extracted.Written, Problems = problems };
+        return ReportFinished(report, extracted.Written, problems);
     }
 
     private static ExportProblem ProblemOf(ExtractFailure failure)

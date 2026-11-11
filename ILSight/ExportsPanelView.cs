@@ -599,12 +599,8 @@ internal static class ExportsPanelView
 
     private static bool OpensFolderFirst(ExportReport report)
     {
-        if (report.Outcome != ExportOutcome.Finished)
-        {
-            return false;
-        }
-
-        if (report.HasProblems)
+        var isClean = report.End.Match(static finished => !finished.HasProblems, static _ => false, static _ => false);
+        if (!isClean)
         {
             return false;
         }
@@ -614,14 +610,17 @@ internal static class ExportsPanelView
 
     private static IconGlyph OutcomeIcon(AppIcons icons, ExportReport report)
     {
-        if (report.HasProblems)
+        return report.End.Match(icons,
+            static (i, finished) => FinishedIcon(i, finished),
+            static (i, _) => i.ExportCancelled,
+            static (i, _) => i.ExportProblems);
+    }
+
+    private static IconGlyph FinishedIcon(AppIcons icons, ExportEnd.Finished finished)
+    {
+        if (finished.HasProblems)
         {
             return icons.ExportProblems;
-        }
-
-        if (report.Outcome == ExportOutcome.Cancelled)
-        {
-            return icons.ExportCancelled;
         }
 
         return icons.ExportDone;
@@ -629,34 +628,31 @@ internal static class ExportsPanelView
 
     private static uint OutcomeColor(UiTheme theme, ExportReport report)
     {
-        if (report.Outcome == ExportOutcome.Failed)
-        {
-            return theme.Danger;
-        }
-
-        if (report.HasProblems)
-        {
-            return theme.Warning;
-        }
-
-        if (report.Outcome == ExportOutcome.Cancelled)
-        {
-            return theme.TextMuted;
-        }
-
-        return theme.Success;
+        return report.End.Match(theme,
+            static (th, finished) => FinishedColor(th, finished, clean: th.Success),
+            static (th, _) => th.TextMuted,
+            static (th, _) => th.Danger);
     }
 
     /// <summary>The color of the line about how the export ended: the outcome's own when something
     /// went wrong, so the problem reads as well as the icon shows it; muted otherwise.</summary>
     private static uint OutcomeTextColor(UiTheme theme, ExportReport report)
     {
-        if (report.HasProblems)
+        return report.End.Match(theme,
+            static (th, finished) => FinishedColor(th, finished, clean: th.TextMuted),
+            static (th, _) => th.TextMuted,
+            static (th, _) => th.Danger);
+    }
+
+    /// <summary>The color of a finished export: a warning's when it has problems, else <paramref name="clean"/>.</summary>
+    private static uint FinishedColor(UiTheme theme, ExportEnd.Finished finished, uint clean)
+    {
+        if (finished.HasProblems)
         {
-            return OutcomeColor(theme, report);
+            return theme.Warning;
         }
 
-        return theme.TextMuted;
+        return clean;
     }
 
     /// <summary>The menu of the export it was opened on, with what can be done to it where it is.</summary>

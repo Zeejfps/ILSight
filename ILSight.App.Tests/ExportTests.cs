@@ -114,7 +114,7 @@ public sealed class ExportTests : IDisposable
         var report = Assert.Single(app.AppState.FinishedExports);
         Assert.Equal(["Choose the folder for the diagram"], app.Frames.FilePicker.Titles);
         Assert.Equal(ExportKind.Diagram, report.Job.Kind);
-        Assert.Equal([page], report.Written);
+        Assert.Equal([page], Assert.IsType<ExportEnd.Finished>(report.End).Written);
         Assert.Equal([page], app.Frames.OpenedFiles);
         Assert.Contains("class Counter", File.ReadAllText(page));
         Assert.Empty(app.AppState.Errors.Entries);
@@ -333,11 +333,11 @@ public sealed class ExportTests : IDisposable
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
-        Assert.Equal(ExportOutcome.Finished, report.Outcome);
+        var finished = Assert.IsType<ExportEnd.Finished>(report.End);
         Assert.Equal("Greeter", report.Name);
         Assert.Equal(_temp.Path, report.Folder);
-        Assert.Equal([path], report.Written);
-        Assert.Empty(report.Problems);
+        Assert.Equal([path], finished.Written);
+        Assert.Empty(finished.Problems);
     }
 
     [Fact]
@@ -350,8 +350,7 @@ public sealed class ExportTests : IDisposable
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
-        Assert.Equal(ExportOutcome.Cancelled, report.Outcome);
-        Assert.Empty(report.Written);
+        Assert.IsType<ExportEnd.Cancelled>(report.End);
     }
 
     [Fact]
@@ -364,10 +363,9 @@ public sealed class ExportTests : IDisposable
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
-        Assert.Equal(ExportOutcome.Failed, report.Outcome);
-        var problem = Assert.Single(report.Problems);
-        Assert.Equal("Cannot save the code of Greeter", ExportReportText.Headline(Strings.En, report.Job.Kind, problem));
-        Assert.Contains("DirectoryNotFoundException", ExportReportText.DetailsOf(problem));
+        var failed = Assert.IsType<ExportEnd.Failed>(report.End);
+        Assert.Equal("Cannot save the code of Greeter", ExportReportText.Headline(Strings.En, report.Job.Kind, failed));
+        Assert.Contains("DirectoryNotFoundException", ExportReportText.DetailsOf(failed));
         Assert.Empty(d.AppState.Errors.Entries);
     }
 

@@ -73,7 +73,7 @@ public sealed class ExportsPanelTests : IDisposable
 
         var tab = app.AppState.Tabs.Active!;
         var shown = Assert.IsType<TabContent.Report>(tab.Content);
-        Assert.Equal(path, Assert.Single(shown.Export.Written));
+        Assert.Equal(path, Assert.Single(Assert.IsType<ExportEnd.Finished>(shown.Export.End).Written));
         Assert.Equal("Export report", DocumentsView.Tab(app.Ui, app.AppState.Tabs, tab).Title);
         var text = Documents.GetText(ExportReportText.Write(Strings.En, [shown.Export]));
         Assert.Contains("    " + path, text);
@@ -170,6 +170,41 @@ public sealed class ExportsPanelTests : IDisposable
         Assert.True(app.Frames.Drew("Show report"));
         Assert.False(app.Frames.Drew("Open folder"));
         Assert.True(app.Frames.Drew("C# file · Failed"));
+    }
+
+    /// <summary>The least any object takes on a 64-bit runtime: a row that allocated anything each frame would
+    /// add at least this to what a frame allocates.</summary>
+    private const long SmallestAllocation = 24;
+
+    /// <summary>Drawing a finished export's row, whichever way it ended, allocates nothing: four more rows,
+    /// finished and failed, add less to a frame than one allocation each would. The panel allocates a little
+    /// per frame of its own once anything finished, which this leaves out.</summary>
+    [Fact]
+    public void Render_MoreFinishedAndFailedExportsListed_AllocatesNothingPerRow()
+    {
+        var app = AppDriver.Opened(height: TallWindow);
+        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        app.Settle(2);
+        var withOne = MeasureFrames(app);
+
+        SaveCode(app.AppState, app.Fixture("Farewell"), _temp.PathOf(Path.Combine("missing", "Farewell.cs")));
+        SaveCode(app.AppState, app.Fixture("Farewell"), _temp.PathOf("Farewell.cs"));
+        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf(Path.Combine("missing", "Greeter.cs")));
+        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter2.cs"));
+        app.Settle(2);
+        var withFive = MeasureFrames(app);
+
+        Assert.Equal(5, app.AppState.FinishedExports.Count);
+        Assert.True(app.Ui.Layout.Contains(DockPanels.Exports));
+        Assert.True(withFive - withOne < 4 * SmallestAllocation, $"{withOne} B/frame with one row, {withFive} with five");
+    }
+
+    /// <summary>What a frame of <paramref name="app"/> allocates once warmed up.</summary>
+    private static long MeasureFrames(AppDriver app)
+    {
+        app.Frames.Canvas.Recording = false;
+        app.Run(120);
+        return SteadyAllocations.PerFrame(600, _ => app.Run());
     }
 
     [Fact]

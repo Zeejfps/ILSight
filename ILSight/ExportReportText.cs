@@ -32,23 +32,21 @@ internal static class ExportReportText
     /// with how many problems, and how long it took.</summary>
     public static string DescribeOutcome(Strings t, ExportReport report)
     {
-        if (report.Outcome == ExportOutcome.Cancelled)
-        {
-            return t.ExportsCancelled;
-        }
+        return report.End.Match((t, report.Elapsed),
+            static (s, finished) => DescribeFinished(s.t, finished, s.Elapsed),
+            static (s, _) => s.t.ExportsCancelled,
+            static (s, _) => s.t.ExportsFailed);
+    }
 
-        if (report.Outcome == ExportOutcome.Failed)
-        {
-            return t.ExportsFailed;
-        }
-
-        var duration = FormatDuration(t, report.Elapsed);
-        if (report.Problems.Count == 0)
+    private static string DescribeFinished(Strings t, ExportEnd.Finished finished, TimeSpan elapsed)
+    {
+        var duration = FormatDuration(t, elapsed);
+        if (!finished.HasProblems)
         {
             return t.ExportsFinishedIn(duration);
         }
 
-        var problems = t.ExportProblemCount(report.Problems.Count);
+        var problems = t.ExportProblemCount(finished.Problems.Count);
         return $"{t.ExportsFinishedWith(problems)} · {duration}";
     }
 
@@ -71,23 +69,21 @@ internal static class ExportReportText
 
     private static string Summarize(Strings t, ExportReport report)
     {
-        if (report.Outcome == ExportOutcome.Cancelled)
-        {
-            return t.ExportSummaryCancelled(report.Name);
-        }
+        return report.End.Match((t, report.Name),
+            static (s, finished) => SummarizeFinished(s.t, s.Name, finished),
+            static (s, _) => s.t.ExportSummaryCancelled(s.Name),
+            static (s, _) => s.t.ExportSummaryFailed(s.Name));
+    }
 
-        if (report.Outcome == ExportOutcome.Failed)
-        {
-            return t.ExportSummaryFailed(report.Name);
-        }
-
-        var summary = t.ExportSummaryFinished(report.Name);
-        if (report.Problems.Count == 0)
+    private static string SummarizeFinished(Strings t, string name, ExportEnd.Finished finished)
+    {
+        var summary = t.ExportSummaryFinished(name);
+        if (!finished.HasProblems)
         {
             return summary;
         }
 
-        return $"{summary} · {t.ExportProblemCount(report.Problems.Count)}";
+        return $"{summary} · {t.ExportProblemCount(finished.Problems.Count)}";
     }
 
     /// <summary>Each of <paramref name="reports"/> in full: its summary, kind, folder and time, then
@@ -110,8 +106,27 @@ internal static class ExportReportText
         text.AppendLine(report.Folder);
         text.AppendLine(t.ExportTook(FormatDuration(t, report.Elapsed)));
         text.AppendLine();
-        WriteWritten(text, t, report.Written);
-        WriteProblems(text, t, report.Job.Kind, report.Problems);
+        report.End.Switch((text, t, kind: report.Job.Kind),
+            static (s, finished) => WriteFinished(s.text, s.t, s.kind, finished),
+            static (_, _) =>
+            {
+            },
+            static (s, failed) => WriteFailure(s.text, s.t, s.kind, failed));
+    }
+
+    private static void WriteFinished(StringBuilder text, Strings t, ExportKind kind, ExportEnd.Finished finished)
+    {
+        WriteWritten(text, t, finished.Written);
+        WriteProblems(text, t, kind, finished.Problems);
+    }
+
+    /// <summary>Why the export failed, under the problems' heading, as a problem of a finished one would be.</summary>
+    private static void WriteFailure(StringBuilder text, Strings t, ExportKind kind, ExportEnd.Failed failed)
+    {
+        text.AppendLine(t.ExportProblemsHeading);
+        text.Append(Indent).AppendLine(Headline(t, kind, failed));
+        WriteDetails(text, DetailsOf(failed));
+        text.AppendLine();
     }
 
     private static void WriteWritten(StringBuilder text, Strings t, IReadOnlyList<string> written)
@@ -161,7 +176,6 @@ internal static class ExportReportText
     {
         return problem switch
         {
-            ExportProblem.Failed failed => FailureOf(t, kind, failed.Subject),
             ExportProblem.NotDecompiled part => part.Error.Message,
             ExportProblem.NoPdbEntry pdb => t.ErrorNoPdbEntry(pdb.Assembly),
             ExportProblem.PdbNotWritten pdb => $"{pdb.Assembly}: {pdb.Error.Message}",
@@ -176,7 +190,6 @@ internal static class ExportReportText
     {
         return problem switch
         {
-            ExportProblem.Failed failed => failed.Error.ToString(),
             ExportProblem.NotDecompiled part => part.Error.Details,
             ExportProblem.NoPdbEntry => null,
             ExportProblem.PdbNotWritten pdb => pdb.Error.Details,
@@ -184,6 +197,18 @@ internal static class ExportReportText
             ExportProblem.FileNotWritten file => file.Error.Details,
             _ => throw new UnreachableException(),
         };
+    }
+
+    /// <summary>The failure <paramref name="failed"/> of an export of <paramref name="kind"/> in a line.</summary>
+    public static string Headline(Strings t, ExportKind kind, ExportEnd.Failed failed)
+    {
+        return FailureOf(t, kind, failed.Subject);
+    }
+
+    /// <summary>The full error under <paramref name="failed"/>'s headline.</summary>
+    public static string DetailsOf(ExportEnd.Failed failed)
+    {
+        return failed.Error.ToString();
     }
 
     private static string FailureOf(Strings t, ExportKind kind, string subject)
