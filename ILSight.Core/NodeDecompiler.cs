@@ -552,7 +552,7 @@ internal static class NodeDecompiler
                 break;
             case SummaryInfo.AssemblyReference reference:
                 WriteComment(output, reference.Reference.FullName);
-                var path = AssemblyResolving.FindAssemblyFile(reference.Module.Resolver, reference.Reference);
+                var path = reference.Module.Resolver.FindAssemblyFile(reference.Reference);
                 WriteComment(output, path is null ? "Not found" : $"Resolves to {path}");
                 break;
             case SummaryInfo.Used used:

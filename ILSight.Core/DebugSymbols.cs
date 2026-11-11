@@ -33,10 +33,10 @@ public enum PdbCheck
 /// assembly read out of one. The decompiler takes local names from it, and the tree shows its
 /// metadata beside the assembly's.
 /// </summary>
-/// <remarks>The decompiler's IDebugInfoProvider demands the methods here, which forward to <see cref="DebugSymbolFiles"/>.</remarks>
 public sealed class DebugSymbols : IDebugInfoProvider
 {
     internal const string PdbExtension = ".pdb";
+    private const int BitsPerByte = 8;
 
     /// <summary>The PDB's own metadata.</summary>
     public required MetadataFile File { get; init; }
@@ -54,28 +54,163 @@ public sealed class DebugSymbols : IDebugInfoProvider
 
     public IList<SequencePoint> GetSequencePoints(MethodDefinitionHandle method)
     {
-        return DebugSymbolFiles.GetSequencePoints(this, method);
+        var points = new List<SequencePoint>();
+        var debugInformation = Metadata.GetMethodDebugInformation(method);
+        foreach (var point in debugInformation.GetSequencePoints())
+        {
+            points.Add(ToSequencePoint(point));
+        }
+
+        return points;
+    }
+
+    private SequencePoint ToSequencePoint(System.Reflection.Metadata.SequencePoint point)
+    {
+        return new SequencePoint
+        {
+            Offset = point.Offset,
+            StartLine = point.StartLine,
+            StartColumn = point.StartColumn,
+            EndLine = point.EndLine,
+            EndColumn = point.EndColumn,
+            DocumentUrl = GetDocumentName(point.Document),
+        };
+    }
+
+    private string GetDocumentName(DocumentHandle handle)
+    {
+        if (handle.IsNil)
+        {
+            return "";
+        }
+
+        var document = Metadata.GetDocument(handle);
+        return Metadata.GetString(document.Name);
     }
 
     public IList<Variable> GetVariables(MethodDefinitionHandle method)
     {
-        return DebugSymbolFiles.GetVariables(this, method);
+        var variables = new List<Variable>();
+        foreach (var handle in ListLocals(method))
+        {
+            var local = Metadata.GetLocalVariable(handle);
+            variables.Add(new Variable(local.Index, Metadata.GetString(local.Name)));
+        }
+        return variables;
     }
 
     public bool TryGetName(MethodDefinitionHandle method, int index, [MaybeNullWhen(false)] out string name)
     {
-        return DebugSymbolFiles.TryGetName(this, method, index, out name);
+        name = null;
+        var handle = GetLocal(method, index);
+        if (handle.IsNil)
+        {
+            return false;
+        }
+
+        var local = Metadata.GetLocalVariable(handle);
+        name = Metadata.GetString(local.Name);
+        return true;
     }
 
     /// <summary>The tuple element names and <c>dynamic</c> flags the compiler recorded for local
     /// <paramref name="index"/>, which its signature cannot carry.</summary>
     public bool TryGetExtraTypeInfo(MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
     {
-        return DebugSymbolFiles.TryGetExtraTypeInfo(this, method, index, out extraTypeInfo);
+        extraTypeInfo = default;
+        var local = GetLocal(method, index);
+        if (local.IsNil)
+        {
+            return false;
+        }
+
+        foreach (var handle in Metadata.GetCustomDebugInformation(local))
+        {
+            var information = Metadata.GetCustomDebugInformation(handle);
+            var kind = Metadata.GetGuid(information.Kind);
+            if (kind == KnownGuids.TupleElementNames)
+            {
+                extraTypeInfo.TupleElementNames = ReadTupleElementNames(information.Value);
+            }
+            else if (kind == KnownGuids.DynamicLocalVariables)
+            {
+                extraTypeInfo.DynamicFlags = ReadDynamicFlags(information.Value);
+            }
+        }
+        if (extraTypeInfo.TupleElementNames is not null)
+        {
+            return true;
+        }
+
+        return extraTypeInfo.DynamicFlags is not null;
+    }
+
+    private LocalVariableHandle GetLocal(MethodDefinitionHandle method, int index)
+    {
+        foreach (var handle in ListLocals(method))
+        {
+            var local = Metadata.GetLocalVariable(handle);
+            if (local.Index == index)
+            {
+                return handle;
+            }
+        }
+        return default;
+    }
+
+    private IEnumerable<LocalVariableHandle> ListLocals(MethodDefinitionHandle method)
+    {
+        foreach (var scopeHandle in Metadata.GetLocalScopes(method))
+        {
+            var scope = Metadata.GetLocalScope(scopeHandle);
+            foreach (var local in scope.GetLocalVariables())
+            {
+                yield return local;
+            }
+        }
+    }
+
+    private string?[] ReadTupleElementNames(BlobHandle blob)
+    {
+        var reader = Metadata.GetBlobReader(blob);
+        var names = new List<string?>();
+        while (reader.RemainingBytes > 0)
+        {
+            names.Add(ReadTupleElementName(ref reader));
+        }
+
+        return names.ToArray();
+    }
+
+    /// <summary>A null-terminated UTF-8 name; null for an element left unnamed.</summary>
+    private static string? ReadTupleElementName(ref BlobReader reader)
+    {
+        var length = reader.IndexOf(0);
+        var name = reader.ReadUTF8(length);
+        reader.ReadByte();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        return name;
+    }
+
+    /// <summary>One flag per bit, lowest bit of each byte first.</summary>
+    private bool[] ReadDynamicFlags(BlobHandle blob)
+    {
+        var bytes = Metadata.GetBlobBytes(blob);
+        var flags = new bool[bytes.Length * BitsPerByte];
+        for (var i = 0; i < flags.Length; i++)
+        {
+            var bit = 1 << (i % BitsPerByte);
+            flags[i] = (bytes[i / BitsPerByte] & bit) != 0;
+        }
+        return flags;
     }
 }
 
-/// <summary>Finding the portable PDB of an assembly, and reading the names and lines it holds.</summary>
+/// <summary>Finding the portable PDB of an assembly, and checking one picked for it.</summary>
 internal static class DebugSymbolFiles
 {
     private const string EmbeddedTitle = "Debug Metadata (Embedded)";
@@ -83,7 +218,6 @@ internal static class DebugSymbolFiles
     private const string EmbeddedDescription = "Embedded in this assembly";
     private const string BesideDescription = "Loaded from portable PDB: ";
     private const string WindowsPdbSignature = "Microsoft C/C++ MSF 7.00";
-    private const int BitsPerByte = 8;
 
     /// <summary>Whether a portable PDB can be generated for <paramref name="file"/>: only when its debug
     /// directory names a PDB, which the generated one must match.</summary>
@@ -309,162 +443,5 @@ internal static class DebugSymbolFiles
     private static bool IsUnreadable(Exception e)
     {
         return e is BadImageFormatException or IOException or UnauthorizedAccessException or InvalidOperationException or InvalidDataException;
-    }
-
-    public static IList<SequencePoint> GetSequencePoints(DebugSymbols symbols, MethodDefinitionHandle method)
-    {
-        var points = new List<SequencePoint>();
-        var debugInformation = symbols.Metadata.GetMethodDebugInformation(method);
-        foreach (var point in debugInformation.GetSequencePoints())
-        {
-            points.Add(ToSequencePoint(symbols, point));
-        }
-
-        return points;
-    }
-
-    private static SequencePoint ToSequencePoint(DebugSymbols symbols, System.Reflection.Metadata.SequencePoint point)
-    {
-        return new SequencePoint
-        {
-            Offset = point.Offset,
-            StartLine = point.StartLine,
-            StartColumn = point.StartColumn,
-            EndLine = point.EndLine,
-            EndColumn = point.EndColumn,
-            DocumentUrl = GetDocumentName(symbols, point.Document),
-        };
-    }
-
-    private static string GetDocumentName(DebugSymbols symbols, DocumentHandle handle)
-    {
-        if (handle.IsNil)
-        {
-            return "";
-        }
-
-        var document = symbols.Metadata.GetDocument(handle);
-        return symbols.Metadata.GetString(document.Name);
-    }
-
-    public static IList<Variable> GetVariables(DebugSymbols symbols, MethodDefinitionHandle method)
-    {
-        var variables = new List<Variable>();
-        foreach (var handle in ListLocals(symbols, method))
-        {
-            var local = symbols.Metadata.GetLocalVariable(handle);
-            variables.Add(new Variable(local.Index, symbols.Metadata.GetString(local.Name)));
-        }
-        return variables;
-    }
-
-    public static bool TryGetName(DebugSymbols symbols, MethodDefinitionHandle method, int index, [MaybeNullWhen(false)] out string name)
-    {
-        name = null;
-        var handle = GetLocal(symbols, method, index);
-        if (handle.IsNil)
-        {
-            return false;
-        }
-
-        var local = symbols.Metadata.GetLocalVariable(handle);
-        name = symbols.Metadata.GetString(local.Name);
-        return true;
-    }
-
-    /// <summary>The tuple element names and <c>dynamic</c> flags the compiler recorded for local
-    /// <paramref name="index"/>, which its signature cannot carry.</summary>
-    public static bool TryGetExtraTypeInfo(DebugSymbols symbols, MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
-    {
-        extraTypeInfo = default;
-        var local = GetLocal(symbols, method, index);
-        if (local.IsNil)
-        {
-            return false;
-        }
-
-        foreach (var handle in symbols.Metadata.GetCustomDebugInformation(local))
-        {
-            var information = symbols.Metadata.GetCustomDebugInformation(handle);
-            var kind = symbols.Metadata.GetGuid(information.Kind);
-            if (kind == KnownGuids.TupleElementNames)
-            {
-                extraTypeInfo.TupleElementNames = ReadTupleElementNames(symbols, information.Value);
-            }
-            else if (kind == KnownGuids.DynamicLocalVariables)
-            {
-                extraTypeInfo.DynamicFlags = ReadDynamicFlags(symbols, information.Value);
-            }
-        }
-        if (extraTypeInfo.TupleElementNames is not null)
-        {
-            return true;
-        }
-
-        return extraTypeInfo.DynamicFlags is not null;
-    }
-
-    private static LocalVariableHandle GetLocal(DebugSymbols symbols, MethodDefinitionHandle method, int index)
-    {
-        foreach (var handle in ListLocals(symbols, method))
-        {
-            var local = symbols.Metadata.GetLocalVariable(handle);
-            if (local.Index == index)
-            {
-                return handle;
-            }
-        }
-        return default;
-    }
-
-    private static IEnumerable<LocalVariableHandle> ListLocals(DebugSymbols symbols, MethodDefinitionHandle method)
-    {
-        foreach (var scopeHandle in symbols.Metadata.GetLocalScopes(method))
-        {
-            var scope = symbols.Metadata.GetLocalScope(scopeHandle);
-            foreach (var local in scope.GetLocalVariables())
-            {
-                yield return local;
-            }
-        }
-    }
-
-    private static string?[] ReadTupleElementNames(DebugSymbols symbols, BlobHandle blob)
-    {
-        var reader = symbols.Metadata.GetBlobReader(blob);
-        var names = new List<string?>();
-        while (reader.RemainingBytes > 0)
-        {
-            names.Add(ReadTupleElementName(ref reader));
-        }
-
-        return names.ToArray();
-    }
-
-    /// <summary>A null-terminated UTF-8 name; null for an element left unnamed.</summary>
-    private static string? ReadTupleElementName(ref BlobReader reader)
-    {
-        var length = reader.IndexOf(0);
-        var name = reader.ReadUTF8(length);
-        reader.ReadByte();
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return null;
-        }
-
-        return name;
-    }
-
-    /// <summary>One flag per bit, lowest bit of each byte first.</summary>
-    private static bool[] ReadDynamicFlags(DebugSymbols symbols, BlobHandle blob)
-    {
-        var bytes = symbols.Metadata.GetBlobBytes(blob);
-        var flags = new bool[bytes.Length * BitsPerByte];
-        for (var i = 0; i < flags.Length; i++)
-        {
-            var bit = 1 << (i % BitsPerByte);
-            flags[i] = (bytes[i / BitsPerByte] & bit) != 0;
-        }
-        return flags;
     }
 }

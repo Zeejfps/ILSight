@@ -178,7 +178,7 @@ public static class LoadedAssemblies
         var detected = TryDetectTargetFramework(file);
         var picked = list.TargetFrameworks.Find(path);
         var targetFramework = picked ?? detected;
-        var resolver = AssemblyResolving.CreateResolver(list, path, targetFramework, place?.Container.Package);
+        var resolver = AssemblyResolver.Create(list, path, targetFramework, place?.Container.Package);
         return new LoadedModule
         {
             List = list,

@@ -56,7 +56,7 @@ public static partial class BrowseNodes
     /// cannot be found or read.</summary>
     private static LoadedModule? ResolveReferenced(AssemblyReferenceInfo reference)
     {
-        var resolved = AssemblyResolving.ResolveAssembly(reference.Module.Resolver, reference.Reference);
+        var resolved = reference.Module.Resolver.ResolveAssembly(reference.Reference);
         if (resolved is not LoadedModule referenced)
         {
             return null;

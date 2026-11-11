@@ -40,7 +40,7 @@ Done items are struck through with their commit.
 | ~~Z11~~ (done) | R008 | `NuGetPicker` versions | `Version`, `Versions`, `VersionTexts` must agree; the view writes one directly → one `VersionChoice?`. | S / low |
 | C8 | R004 | `BrowseSession`, `BrowseSessions` | Seven public `ConditionalWeakTable` fields → private, instance methods. | M / low |
 | C9 | R004 | `LoadedAssembly.Ensure*`, `LoadedPackage` | Five one-line forwarders; two-phase construction with a throwing placeholder → properties over private `Lazy`s, one-step construction. | S–M / low |
-| C10 | R004 | `AssemblyResolver` → `AssemblyResolving`, `DebugSymbols` → `DebugSymbolFiles` | Framework types forwarding every member to a static class → bodies move in. | S–M / low |
+| ~~C10~~ (done) | R004 | `AssemblyResolver` → `AssemblyResolving`, `DebugSymbols` → `DebugSymbolFiles` | Framework types forwarding every member to a static class → bodies move in. | S–M / low |
 | C13 | R004 | `MetadataGrid`, `NuGetSetup.Feeds`, `DecompiledDocument.StatementLines`, ... | Memo caches as public mutable fields → private, memoising methods on the owner. | M / low |
 | A4 | R008, R004 | `AssemblyComparison`, `Comparisons` | `Diff?` / `Failure?` exclusive by convention; public setters; `Version` bumped by hand → `ComparisonResult` union, private setters. | S / low |
 | A5 | R004 | `Comparisons`, `Diagrams`, `Tabs` | "Newest work wins" (cancel, link, dispose, is-current, is-closed) copied three times, already drifting → one `LatestWork`. | S–M / low–med |
