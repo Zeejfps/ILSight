@@ -5,7 +5,7 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
 
 - **The build checks the mechanical parts.** A `RLxxxx` error says what to do: fix it, don't suppress it. Breaking a
   rule on purpose: `#pragma warning disable RLxxxx // reason`. This file is the judgment the build can't make.
-- **Tests** follow R002, R003, R005, R007, R008, R010 (test methods needn't take a token) and R009's ban on empty
+- **Tests** follow R002, R003, R005, R007, R008, R010, R012 (test methods needn't take a token) and R009's ban on empty
   catches; not the others. Name tests `Method_Scenario_Expected`; assertion helpers carry `[DoesNotReturnIf(false)]`
   so they narrow nulls.
 
@@ -29,7 +29,7 @@ Build: RL0101 (time, randomness, I/O used directly).
 
 Build: RL0201 (`!`), RL0202 (`== null`), RL0203 (nullable suppressions).
 
-- Narrow a field into a local and use the local: `if (_connection is not { } connection) { throw ...; }`.
+- Narrow a field into a local: `var connection = _connection; if (connection is null) { throw ...; }`, then use `connection`.
 - Decide what null means. A bug: `?? throw new InvalidOperationException("Connection string 'Orders' is not configured.")`.
   A real absence: return `T?`. Never `?? ""` just to silence the compiler.
 - A property that would need `= null!` is either nullable (may be missing), `required` (always provided), or has a
@@ -199,7 +199,8 @@ Build: suggestions only, RL1101 (a loop doing low-level work between steps), RL1
 - `if` and `foreach` are fine at any level when the condition is a named question and each branch or iteration is a
   step. Comparing one value with a constant counts as a named question.
   ```csharp
-  if (GiftNote.FindText(order) is { } note)   // not: GiftMessage is { Length: > 0 } && Lines.Sum(l => ...) >= 50m
+  var note = GiftNote.FindText(order);        // not: if (GiftMessage is { Length: > 0 } && Lines.Sum(l => ...) >= 50m)
+  if (note is not null)
   {
       await ports.PrintGiftNoteAsync(order.Id, note, ct);
   }
@@ -210,3 +211,21 @@ Build: suggestions only, RL1101 (a loop doing low-level work between steps), RL1
   config. Running delegates the caller passes in (`Match`, comparers) is fine.
 - Name a database query as an `IQueryable<T>` extension that does only what its name says
   (`db.Invoices.WhereOverdue(today).OrderBy(...)`), never a C# method inside the lambda: EF throws at runtime.
+
+## R012: Conditions ask; they don't fetch. Null checks say null
+
+Build: RL1201 (null check as a property pattern), RL1202 (a call that doesn't return `bool` in a condition).
+
+- A condition (`if`, `while`, `do`, `?:`) reads locals, fields and properties and calls only `bool` methods
+  (`IsExpired(...)`, `TryGetValue(..., out var v)`, `await IsTakenAsync(...)`). Any other call goes into a local first,
+  including one in a bool method's arguments.
+- Null checks say `is null` / `is not null`, never `is { } x`, `is not { } x` or `is { Length: > 0 }` on a nullable:
+  ```csharp
+  var index = FindRow(list, from);    // not: if (FindRow(list, from) is { } index)
+  if (index is not null)              // an int?: use index.Value inside
+  {
+  ```
+- Strings: `if (!string.IsNullOrEmpty(nickname))` (it narrows). Type checks on a local stay patterns:
+  `if (order is not Order.Pending pending)`.
+- Read-until-null loops read once at the top: `while (true) { var line = reader.ReadLine(); if (line is null) { break; } ... }`.
+  Reading before the loop and at the end of the body breaks on the first `continue`.

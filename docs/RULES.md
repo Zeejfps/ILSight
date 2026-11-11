@@ -10,7 +10,7 @@ the evidence lives in `rules/<id>/README.md`.
 | Code | Rules that apply |
 |------|------------------|
 | Production code | All rules. |
-| Tests and test helpers | **R002, R003, R005, R007, R008, R010** (except RL1001: test methods needn't take a token), and R009's ban on empty catches. These are what keep tests readable: no `!`, names that say what is tested, labelled test data, braces, honest states. **Not R001, R004 or R011.** A test is a composition root: it builds the code under test with real or fake infrastructure, may open databases, build DI containers, write output and catch exceptions directly. Fakes that implement a port are expected (they are the port's second adapter). |
+| Tests and test helpers | **R002, R003, R005, R007, R008, R010, R012** (except RL1001: test methods needn't take a token), and R009's ban on empty catches. These are what keep tests readable: no `!`, names that say what is tested, labelled test data, braces, honest states. **Not R001, R004 or R011.** A test is a composition root: it builds the code under test with real or fake infrastructure, may open databases, build DI containers, write output and catch exceptions directly. Fakes that implement a port are expected (they are the port's second adapter). |
 
 Test conventions:
 
@@ -44,6 +44,7 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849) | parallel queries on one `DbContext`; moving async work out of sync-only callers |
 | R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804) | which failures are expected; specific catches in decision code; log-and-rethrow |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
+| R012 | null checks written as property patterns (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
 
 To break a rule on purpose, suppress it with the reason written down:
 `#pragma warning disable RL0802 // Deliberate: demonstrates the discarded-result trap`, or on a member
@@ -97,7 +98,8 @@ Does **not** go through the port; use it directly:
 
        public async Task<bool> HandleAsync(int orderId, CancellationToken ct)
        {
-           if (await ports.FindOrderAsync(orderId, ct) is not Order.Pending pending) // missing, or not pending
+           var order = await ports.FindOrderAsync(orderId, ct);
+           if (order is not Order.Pending pending) // missing, or not pending
            {
                return false;
            }
@@ -223,11 +225,12 @@ and fails at the source with a useful message.
 
 1. **Never use the null-forgiving operator**, in any form: `x!`, `x!.Member`, `= null!`, `= default!`, `value = default!`.
    Never use `#nullable disable` or `#pragma warning disable` to get around nullable warnings.
-2. **Check with patterns**: `is null`, `is not null`, `is { } x`, `is not { } x`. Prefer them over `== null` / `!= null`.
-3. **Narrow into a local.** When checking a field or property, capture it with a pattern and use the local. The compiler
-   trusts a checked field even after an `await` or method call that may have reset it.
+2. **Check with `is null` / `is not null`**, not `== null` / `!= null`, and not a property pattern (`is { } x`): R012.
+3. **Narrow into a local.** When checking a field or property, copy it into a local, check the local, and use the
+   local. The compiler trusts a checked field even after an `await` or method call that may have reset it.
    ```csharp
-   if (_connection is not { } connection)
+   var connection = _connection;
+   if (connection is null)
    {
        throw new InvalidOperationException("Not connected.");
    }
@@ -243,7 +246,8 @@ and fails at the source with a useful message.
      ```
    - *Null is a legitimate absence*: make the return type nullable and let the caller decide.
      ```csharp
-     if (customer.Email is not { } email)
+     var email = customer.Email;
+     if (email is null)
      {
          return null; // return type: WelcomeEmail?
      }
@@ -278,7 +282,7 @@ and fails at the source with a useful message.
 | Instead of | Write |
 |------------|-------|
 | `xs.Where(x => x.P != null).Select(x => x.P!)` | `xs.Select(x => x.P).OfType<T>()` |
-| `xs.Where(x => x.P != null).Select(x => (x, x.P!))` | `foreach` with `if (x.P is not { } p) { continue; }` |
+| `xs.Where(x => x.P != null).Select(x => (x, x.P!))` | `foreach` with `var p = x.P; if (p is null) { continue; }` |
 | Inbound DTO (request body, webhook): `public string Name { get; set; } = null!;` | `public string? Name { get; init; }`, null-checked in its `To<Domain>()` conversion (R006) |
 | Response DTO / internal type: `public string Name { get; set; } = null!;` | `public required string Name { get; init; }` |
 | Options: `public string Host { get; set; } = null!;` | `[Required] public required string Host { get; init; }` and `.ValidateDataAnnotations().ValidateOnStart()`. The config binder ignores `required`. |
@@ -287,7 +291,7 @@ and fails at the source with a useful message.
 | `JsonSerializer.Deserialize<T>(json)!` | `... ?? throw new JsonException("...")` |
 | `Environment.GetEnvironmentVariable("X")!` | `... ?? throw new InvalidOperationException("Environment variable X is not set.")` |
 | Blazor `[Inject] public IFoo Foo { get; set; } = default!;` | Constructor injection: `class C(IFoo foo) : ComponentBase` |
-| Blazor `[Parameter, EditorRequired] public Order Order { get; set; } = default!;` | `Order?` + throw in `OnParametersSet` if null + `if (Order is not { } order) { return; }` where used |
+| Blazor `[Parameter, EditorRequired] public Order Order { get; set; } = default!;` | `Order?` + throw in `OnParametersSet` if null + `var order = Order; if (order is null) { return; }` where used |
 | `_buffer = null!;` in `Dispose` | `byte[]? _buffer` + `ObjectDisposedException.ThrowIf(_buffer is null, this);` |
 
 ### Exemption
@@ -299,7 +303,7 @@ and fails at the source with a useful message.
 
 - [ ] No `!` postfix anywhere, including `= null!` and `default!`.
 - [ ] No `#nullable disable` or nullable `#pragma` suppressions.
-- [ ] Null checks use `is null` / `is not null` / `is { } x` (except types that overload `==`).
+- [ ] Null checks use `is null` / `is not null` (except types that overload `==`), never a property pattern (R012).
 - [ ] Fields and properties are narrowed into a local before use.
 - [ ] Every "can't be null" is either a `?? throw` with a message, or a nullable type the caller handles.
 - [ ] Own `Try*` methods, guards and init helpers carry nullable attributes.
@@ -688,7 +692,8 @@ out through response DTOs. Domain types never meet a serializer.
        var errors = new ValidationErrors();
 
        Email? email = null;
-       if (request.CustomerEmail is not { } rawEmail)
+       var rawEmail = request.CustomerEmail;
+       if (rawEmail is null)
        {
            errors.Add("customerEmail", "Required.");
        }
@@ -1237,7 +1242,8 @@ A level is a vocabulary, not a kind of statement:
        await ports.ReserveAsync(line.Sku, line.Quantity, ct);
    }
 
-   if (GiftNote.FindText(order) is { } note)    // not: GiftMessage is { Length: > 0 } && Lines.Sum(l => ...) >= 50m
+   var note = GiftNote.FindText(order);         // not: if (GiftMessage is { Length: > 0 } && Lines.Sum(l => ...) >= 50m)
+   if (note is not null)
    {
        await ports.PrintGiftNoteAsync(order.Id, note, ct);
    }
@@ -1245,7 +1251,7 @@ A level is a vocabulary, not a kind of statement:
    - Don't move an `if` or a loop into a helper only to remove it (`PrintGiftNoteIfDueAsync`): the decision disappears
      from the level it belongs to, and the helper fails R004's deletion test.
    - Ask one question that returns what you need (`Find*` → `T?`, R003), not `Is*` and then a second call that can't
-     see the check (R002).
+     see the check (R002). Put its answer in a local before the `if` (R012).
    - Comparing one named value with a constant (`cancelled.RefundDue > 0`) is a question at this level. Arithmetic,
      LINQ and indexing in a condition are not.
 3. **A leaf is one level too.** A method that is all mechanism (a parser's loop, a checksum) is fine as it is. Don't
@@ -1281,3 +1287,64 @@ Tests are exempt (Scope): a test sets up data, calls, and asserts in one method 
 - [ ] Lower-level code returns what it found; it never depends on a use case, a notification or a policy (caller-supplied
       delegates excepted).
 - [ ] Database queries are named as `IQueryable` extensions, not C# methods inside the lambda.
+
+---
+
+## R012: Conditions ask; they don't fetch. Null checks say null
+
+**Rule.** An `if`, `while` or `do` condition, or the condition of `?:`, only asks a question: it reads locals, fields
+and properties, and calls only methods that return `bool`. Anything else it needs goes into a local on the line before.
+A null check says `is null` or `is not null`; it is never hidden in a property pattern (`is { } x`, `is not { } x`,
+`is { Length: > 0 } x` on a value that may be null).
+
+**Why.** `if (FindRow(list, from) is { } index)` does three things in one condition: a lookup, a null check, and a
+declaration. "Null" appears nowhere, the lookup's result can't be seen in a debugger before the branch, and the empty
+braces are a property pattern most readers have to decode. Written as `var index = FindRow(list, from);` and
+`if (index is not null)`, each line does one thing.
+
+### How
+
+```csharp
+// ❌
+if (FindRow(list, from) is { } index) { ... }
+if (await ports.FindOrderAsync(orderId, ct) is not Order.Pending pending) { ... }
+if (customer.Nickname is { Length: > 0 } nickname) { ... }
+
+// ✅
+var index = FindRow(list, from);
+if (index is not null) { ... }                     // an int?: use index.Value inside
+
+var order = await ports.FindOrderAsync(orderId, ct);
+if (order is not Order.Pending pending) { ... }    // a type check on a local: fine
+
+var nickname = customer.Nickname;
+if (!string.IsNullOrEmpty(nickname)) { ... }       // narrows: [NotNullWhen(false)]
+```
+
+1. **Calls that answer yes or no stay in the condition:** `IsExpired(trial, now)`, `dict.TryGetValue(key, out var v)`,
+   `await IsEmailTakenAsync(email, ct)`. Any other call moves out, including one in a bool method's arguments
+   (`var timeout = TimeSpan.FromSeconds(2); if (task.Wait(timeout))`). Calls inside a lambda in the condition are fine.
+2. **Fields:** copy into a local, check the local, use the local (R002's narrowing).
+3. **Nullable value types** (`int?`): `is not null` proves there is a value but doesn't change the type, so use
+   `index.Value` after the check. Without `.Value` an `int` assignment doesn't compile (CS0266).
+4. **Loops that read until null:** read once, at the top of each pass. Reading before the loop and again at the end of
+   the body breaks on the first `continue`, which skips the second read: in testing the loop never ended.
+   ```csharp
+   while (true)
+   {
+       var line = reader.ReadLine();
+       if (line is null)
+       {
+           break;
+       }
+
+       // ...
+   }
+   ```
+5. **Type checks** on a local stay patterns: `if (order is Order.Shipped shipped)` names the case it wants (R008).
+
+### Checklist
+
+- [ ] No condition calls a method that returns something other than `bool`.
+- [ ] Null checks are `is null` / `is not null` (or `string.IsNullOrEmpty`), never `is { } x` or a property pattern on a nullable.
+- [ ] Read-until-null loops read once at the top of each pass.
