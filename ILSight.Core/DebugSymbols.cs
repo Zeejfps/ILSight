@@ -102,13 +102,13 @@ public sealed class DebugSymbols : IDebugInfoProvider
     public bool TryGetName(MethodDefinitionHandle method, int index, [MaybeNullWhen(false)] out string name)
     {
         name = null;
-        var handle = GetLocal(method, index);
-        if (handle.IsNil)
+        var handle = FindLocal(method, index);
+        if (handle is null)
         {
             return false;
         }
 
-        var local = Metadata.GetLocalVariable(handle);
+        var local = Metadata.GetLocalVariable(handle.Value);
         name = Metadata.GetString(local.Name);
         return true;
     }
@@ -118,13 +118,13 @@ public sealed class DebugSymbols : IDebugInfoProvider
     public bool TryGetExtraTypeInfo(MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
     {
         extraTypeInfo = default;
-        var local = GetLocal(method, index);
-        if (local.IsNil)
+        var local = FindLocal(method, index);
+        if (local is null)
         {
             return false;
         }
 
-        foreach (var handle in Metadata.GetCustomDebugInformation(local))
+        foreach (var handle in Metadata.GetCustomDebugInformation(local.Value))
         {
             var information = Metadata.GetCustomDebugInformation(handle);
             var kind = Metadata.GetGuid(information.Kind);
@@ -145,7 +145,8 @@ public sealed class DebugSymbols : IDebugInfoProvider
         return extraTypeInfo.DynamicFlags is not null;
     }
 
-    private LocalVariableHandle GetLocal(MethodDefinitionHandle method, int index)
+    /// <summary>The local of <paramref name="method"/> at <paramref name="index"/>; null when the PDB names none there.</summary>
+    private LocalVariableHandle? FindLocal(MethodDefinitionHandle method, int index)
     {
         foreach (var handle in ListLocals(method))
         {
@@ -155,7 +156,7 @@ public sealed class DebugSymbols : IDebugInfoProvider
                 return handle;
             }
         }
-        return default;
+        return null;
     }
 
     private IEnumerable<LocalVariableHandle> ListLocals(MethodDefinitionHandle method)

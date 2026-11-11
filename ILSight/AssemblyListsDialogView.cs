@@ -192,7 +192,7 @@ internal static class AssemblyListsDialogView
     /// elsewhere, dropped on Escape; the list takes the focus back unless it moved elsewhere.</summary>
     private static void NameBox(Ui<UiState> ui, ListsDialogMode.Renaming renaming, int listId)
     {
-        var begin = TakeFocus(renaming);
+        var begin = TryTakeFocus(renaming);
         var result = ui.InlineEdit(NameId, ref renaming.NewName, begin, Sizing.Grow());
         if (result == InlineEditResult.Editing)
         {
@@ -208,7 +208,7 @@ internal static class AssemblyListsDialogView
     }
 
     /// <summary>True once: the name box should take focus with the whole name selected.</summary>
-    private static bool TakeFocus(ListsDialogMode.Renaming renaming)
+    private static bool TryTakeFocus(ListsDialogMode.Renaming renaming)
     {
         var focus = renaming.IsFocusPending;
         renaming.IsFocusPending = false;

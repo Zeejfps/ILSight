@@ -8,7 +8,7 @@ namespace ILSight;
 internal static class ShownChanges
 {
     /// <summary>A newly chosen font is registered once.</summary>
-    public static bool TakeCodeFont(UiState uiState, CodeFont? font)
+    public static bool TryTakeCodeFont(UiState uiState, CodeFont? font)
     {
         if (font == uiState.ShownCodeFont)
         {
@@ -19,7 +19,7 @@ internal static class ShownChanges
         return true;
     }
 
-    public static bool TakeListGeneration(UiState uiState, int generation)
+    public static bool TryTakeListGeneration(UiState uiState, int generation)
     {
         if (generation == uiState.ShownListGeneration)
         {
@@ -32,7 +32,7 @@ internal static class ShownChanges
 
     /// <summary>By reference for the options: a record's equality would take new options with the same
     /// values as no change, and a tab would keep what was decompiled with the old ones.</summary>
-    public static bool TakeDecompilation(UiState uiState, DecompilationLanguage language, DecompilerOptions options)
+    public static bool TryTakeDecompilation(UiState uiState, DecompilationLanguage language, DecompilerOptions options)
     {
         var shown = uiState.ShownDecompilation;
         if (shown is not null && language == shown.Value.Language && ReferenceEquals(options, shown.Value.Options))
@@ -45,7 +45,7 @@ internal static class ShownChanges
     }
 
     /// <summary>By reference: reloaded icons are new ones, even with the same values.</summary>
-    public static bool TakeIcons(UiState uiState, AppIcons icons, IReadOnlyList<FontFace> fonts)
+    public static bool TryTakeIcons(UiState uiState, AppIcons icons, IReadOnlyList<FontFace> fonts)
     {
         var shown = uiState.ShownIcons;
         if (shown is not null && ReferenceEquals(icons, shown.Value.Icons))

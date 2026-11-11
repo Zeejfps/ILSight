@@ -26,7 +26,7 @@ public sealed class Reopens
 
     /// <summary>Ends the reopen of the file at <paramref name="path"/> given <paramref name="ticket"/>.
     /// False when another reopen of it started since, and its result should be ignored.</summary>
-    public bool Finish(AssemblyPath path, int ticket)
+    public bool TryFinish(AssemblyPath path, int ticket)
     {
         if (!_current.TryGetValue(path, out var counting))
         {

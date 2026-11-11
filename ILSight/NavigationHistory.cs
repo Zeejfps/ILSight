@@ -111,14 +111,14 @@ public sealed class NavigationHistory
             return;
         }
 
-        _entries.ReplaceCurrent(node with { Language = language, Position = position });
+        _entries.TryReplaceCurrent(node with { Language = language, Position = position });
     }
 
     /// <summary>Makes the entry at <paramref name="index"/> current, keeping every entry on either side.
     /// Null when there is no entry there.</summary>
     public HistoryEntry? MoveToEntry(int index)
     {
-        if (!_entries.MoveTo(index))
+        if (!_entries.TryMoveTo(index))
         {
             return null;
         }

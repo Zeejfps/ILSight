@@ -147,7 +147,7 @@ internal static class DecompilerOptionsPanelView
             ui.Icon(new UiIcon(mark, theme.TextMuted));
             var all = State(section, options);
             var title = Title(t, section);
-            var bold = Changed(section, options);
+            var bold = HasChangedToggle(section, options);
             var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.DecompilerOptionsQuery, title, ui.StyleText(allowed ? null : theme.TextDisabled, bold: bold));
             var flipped = runs is not null
                 ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui), ref all, "all", allowed, Sizing.Grow())
@@ -236,7 +236,7 @@ internal static class DecompilerOptionsPanelView
     }
 
     /// <summary>Whether any toggle in <paramref name="section"/> is set away from its default.</summary>
-    private static bool Changed(Section section, DecompilerOptions options)
+    private static bool HasChangedToggle(Section section, DecompilerOptions options)
     {
         foreach (var toggle in section.Toggles)
         {

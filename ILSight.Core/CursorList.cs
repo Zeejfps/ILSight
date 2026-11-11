@@ -77,7 +77,7 @@ public sealed class CursorList<T> : IReadOnlyList<T> where T : class
 
     /// <summary>Makes the item at <paramref name="index"/> current; false, changing nothing, when there is
     /// none there or it is current already.</summary>
-    public bool MoveTo(int index)
+    public bool TryMoveTo(int index)
     {
         if (index < 0 || index >= _items.Count || index == CurrentIndex)
         {
@@ -91,7 +91,7 @@ public sealed class CursorList<T> : IReadOnlyList<T> where T : class
 
     /// <summary>Puts <paramref name="item"/> in the place of the current item; false, changing nothing, when
     /// there is none.</summary>
-    public bool ReplaceCurrent(T item)
+    public bool TryReplaceCurrent(T item)
     {
         if (CurrentIndex < 0)
         {

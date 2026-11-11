@@ -225,7 +225,7 @@ public sealed class AnalyzerTree
     /// <summary>Removes <paramref name="root"/>, cancelling the analyses running under it.</summary>
     public void RemoveRoot(AnalyzerNode root)
     {
-        if (!_roots.Remove(root))
+        if (!_roots.TryRemove(root))
         {
             return;
         }

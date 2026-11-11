@@ -28,7 +28,7 @@ public sealed class Reload
 
     /// <summary>Ends the reload <paramref name="ticket"/> was given for. False when another reload
     /// started or it was stopped since, and its result should be ignored.</summary>
-    public bool Finish(ReloadTicket ticket)
+    public bool TryFinish(ReloadTicket ticket)
     {
         ticket.Work.Dispose();
         if (ticket.Id != _current)

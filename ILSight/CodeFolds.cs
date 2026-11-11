@@ -101,7 +101,7 @@ internal static class CodeFolding
     }
 
     /// <summary>Expands every fold that hides <paramref name="line"/>; returns whether any did.</summary>
-    public static bool Reveal(CodeFolds state, int line)
+    public static bool TryReveal(CodeFolds state, int line)
     {
         if (state.IsIdentity)
         {

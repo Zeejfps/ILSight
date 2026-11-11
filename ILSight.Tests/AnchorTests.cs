@@ -13,11 +13,11 @@ public sealed class AnchorTests
         var anchor = Documents.FindAnchorAt(type, line)!.Value;
         var method = Trees.TestAssembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
-        var ilLine = Documents.GetLine(il, anchor);
+        var ilLine = Assert.NotNull(Documents.FindLine(il, anchor));
 
         Assert.Equal(CodeAnchorKind.Statement, anchor.Kind);
-        Assert.Equal(line, Documents.GetLine(type, anchor));
-        Assert.Contains("Changed?.Invoke", method.Lines[Documents.GetLine(method, anchor)].Text);
+        Assert.Equal(line, Documents.FindLine(type, anchor));
+        Assert.Contains("Changed?.Invoke", method.Lines[Assert.NotNull(Documents.FindLine(method, anchor))].Text);
         Assert.StartsWith($"IL_{anchor.ILOffset:x4}", il.Lines[ilLine].Text.TrimStart());
         Assert.Equal(anchor, Documents.FindAnchorAt(il, ilLine));
     }
@@ -32,8 +32,8 @@ public sealed class AnchorTests
         var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
 
         Assert.Equal(CodeAnchorKind.Definition, anchor.Kind);
-        Assert.Equal(line, Documents.GetLine(type, anchor));
-        Assert.Equal(Documents.GetDefinitionLine(il, Trees.TestAssembly.Calculator().Child("Add(T) : void")), Documents.GetLine(il, anchor));
+        Assert.Equal(line, Documents.FindLine(type, anchor));
+        Assert.Equal(Documents.FindDefinitionLine(il, Trees.TestAssembly.Calculator().Child("Add(T) : void")), Documents.FindLine(il, anchor));
     }
 
     [CaseInsensitivePathsTheory]
@@ -49,7 +49,7 @@ public sealed class AnchorTests
 
         Assert.Equal(anchor, upper);
         Assert.Equal(anchor.GetHashCode(), upper.GetHashCode());
-        Assert.Equal(line, Documents.GetLine(type, upper));
+        Assert.Equal(line, Documents.FindLine(type, upper));
     }
 
     [CaseInsensitivePathsFact]
@@ -79,8 +79,8 @@ public sealed class AnchorTests
         for (var round = 0; round < 20; round++)
         {
             var fresh = Trees.TestAssembly.Calculator().Decompile(DecompilationLanguage.CSharp);
-            var found = new int[64];
-            Parallel.For(0, found.Length, i => found[i] = Documents.GetLine(fresh, anchors[i % anchors.Length]));
+            var found = new int?[64];
+            Parallel.For(0, found.Length, i => found[i] = Documents.FindLine(fresh, anchors[i % anchors.Length]));
 
             Assert.All(Enumerable.Range(0, found.Length), i => Assert.Equal(lines[i % lines.Length], found[i]));
         }

@@ -99,7 +99,7 @@ public static class Exports
         var options = appState.DecompilerOptions;
         var session = appState.Session;
         var job = new ExportJob(node.Text, CodeKindOf(language), FolderOf(path));
-        RunExport(appState, job, node.Text, s => SaveCodeFile(session, node, language, options, path, s.Token), (r, _) => ReportWritten(r, path));
+        RunExport(appState, job, node.Text, s => SaveCodeFile(session, node, language, options, path, s.Token), (r, written) => ReportWritten(r, written));
     }
 
     private static ExportKind CodeKindOf(DecompilationLanguage language)
@@ -112,11 +112,12 @@ public static class Exports
         return ExportKind.ILFile;
     }
 
-    private static bool SaveCodeFile(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    /// <summary>Writes the code of <paramref name="node"/> to <paramref name="path"/>; returns the path written.</summary>
+    private static string SaveCodeFile(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         string path, CancellationToken cancellationToken)
     {
         NodeContentLoader.SaveCode(session, node, language, options, path, cancellationToken);
-        return true;
+        return path;
     }
 
     /// <summary>The folder of <paramref name="path"/>, which a save dialog gave, and so names a file in one.</summary>
@@ -282,13 +283,14 @@ public static class Exports
     {
         var options = appState.DecompilerOptions;
         var job = new ExportJob(assembly.Name, ExportKind.Pdb, FolderOf(path));
-        RunExport(appState, job, assembly.Name, s => GeneratePdbFile(assembly, options, path, s), (r, _) => ReportWritten(r, path));
+        RunExport(appState, job, assembly.Name, s => GeneratePdbFile(assembly, options, path, s), (r, written) => ReportWritten(r, written));
     }
 
-    private static bool GeneratePdbFile(LoadedModule assembly, DecompilerOptions options, string path, ExportStart start)
+    /// <summary>Writes the PDB of <paramref name="assembly"/> to <paramref name="path"/>; returns the path written.</summary>
+    private static string GeneratePdbFile(LoadedModule assembly, DecompilerOptions options, string path, ExportStart start)
     {
         AssemblyExport.GeneratePdb(assembly, options, path, start.Progress, start.Token);
-        return true;
+        return path;
     }
 
     /// <summary>Writes the HTML class diagrammer of <paramref name="assembly"/> into a folder of its

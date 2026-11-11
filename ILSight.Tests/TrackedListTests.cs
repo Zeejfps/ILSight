@@ -36,7 +36,7 @@ public sealed class TrackedListTests
         list.RemoveAt(0);
         Assert.Equal(5, list.Revision);
 
-        Assert.True(list.Remove("b"));
+        Assert.True(list.TryRemove("b"));
         Assert.Equal(6, list.Revision);
 
         list.Clear();
@@ -50,7 +50,7 @@ public sealed class TrackedListTests
         var revision = list.Revision;
 
         list[0] = "a";
-        Assert.False(list.Remove("gone"));
+        Assert.False(list.TryRemove("gone"));
         _ = list.Contains("a");
         _ = list.IndexOf("a");
         _ = list[0];

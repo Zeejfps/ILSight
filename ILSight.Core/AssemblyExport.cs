@@ -284,7 +284,7 @@ public static class AssemblyExport
     private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerOptions options, string folder, bool embedSources,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
-        if (!LoadedAssemblies.EnsureCanGeneratePdb(assembly))
+        if (!LoadedAssemblies.CanGeneratePdb(assembly))
         {
             return new PdbFailure.NoDebugEntry(assembly);
         }

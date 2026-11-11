@@ -142,7 +142,7 @@ internal static class SearchPanelView
         var t = ui.State.Strings;
         var search = ui.State.Search;
         var fieldId = ui.GetId("search");
-        if (Searches.TakeFocus(search))
+        if (Searches.TryTakeFocus(search))
         {
             ui.Focus(fieldId);
         }

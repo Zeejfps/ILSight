@@ -361,11 +361,16 @@ public static class MetadataGrids
         return listed;
     }
 
-    /// <summary>The row of <paramref name="token"/>'s table it is, or -1 when this does not list
+    /// <summary>The row of <paramref name="token"/>'s table it is; null when this does not list
     /// that table.</summary>
-    public static int GetRow(MetadataGrid grid, int token)
+    public static int? FindRow(MetadataGrid grid, int token)
     {
-        return grid.Schema.Table is not null && (int)grid.Schema.Table == token >>> 24 ? (token & 0xFFFFFF) - 1 : -1;
+        if (grid.Schema.Table is null || (int)grid.Schema.Table != token >>> 24)
+        {
+            return null;
+        }
+
+        return (token & 0xFFFFFF) - 1;
     }
 
     /// <summary>

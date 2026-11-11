@@ -14,7 +14,7 @@ public sealed class LoadOptionsTests
     private static (AssemblyList List, LoadedModule Assembly) OpenWith(DecompilerOptions options)
     {
         var list = new AssemblyList();
-        AssemblyListing.UseLoadOptions(list, options);
+        AssemblyListing.TryChangeLoadOptions(list, options);
         return (list, list.OpenModule(Trees.TestAssemblyPath));
     }
 
@@ -38,9 +38,9 @@ public sealed class LoadOptionsTests
         var list = new AssemblyList();
         var off = Off(DecompilerToggle.AutoLoadAssemblyReferences);
 
-        var unchanged = AssemblyListing.UseLoadOptions(list, DecompilerOptions.Default);
-        var changed = AssemblyListing.UseLoadOptions(list, off);
-        var again = AssemblyListing.UseLoadOptions(list, off);
+        var unchanged = AssemblyListing.TryChangeLoadOptions(list, DecompilerOptions.Default);
+        var changed = AssemblyListing.TryChangeLoadOptions(list, off);
+        var again = AssemblyListing.TryChangeLoadOptions(list, off);
 
         Assert.False(unchanged);
         Assert.True(changed);
@@ -52,7 +52,7 @@ public sealed class LoadOptionsTests
     {
         var list = new AssemblyList();
         var generation = list.Generation;
-        AssemblyListing.UseLoadOptions(list, Off(DecompilerToggle.ApplyWindowsRuntimeProjections));
+        AssemblyListing.TryChangeLoadOptions(list, Off(DecompilerToggle.ApplyWindowsRuntimeProjections));
 
         var readBefore = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath), generation);
         var opened = list.OpenModule(Trees.TestAssemblyPath);
@@ -67,7 +67,7 @@ public sealed class LoadOptionsTests
         var list = new AssemblyList();
         var generation = list.Generation;
 
-        AssemblyListing.UseLoadOptions(list, DecompilerOptions.Default);
+        AssemblyListing.TryChangeLoadOptions(list, DecompilerOptions.Default);
 
         Assert.Equal(generation, list.Generation);
     }

@@ -45,7 +45,7 @@ public static class SavedDocuments
 
     /// <summary>Stops <paramref name="reopened"/> waiting. False when it waited no more, as when its tab
     /// was pointed elsewhere or another reopening took its place, and what it found should be dropped.</summary>
-    public static bool FinishWaiting(ReopenedTabs tabs, ReopenedTab reopened)
+    public static bool TryFinishWaiting(ReopenedTabs tabs, ReopenedTab reopened)
     {
         if (!tabs.Tabs.Remove(reopened))
         {
@@ -371,7 +371,7 @@ public static class SavedDocuments
     /// was pointed elsewhere or closed meanwhile.</summary>
     private static void ShowReopenedNode(AppState appState, WaitingNode waiting, BrowseNode? node)
     {
-        if (!FinishWaiting(appState.Reopened, waiting.Reopened))
+        if (!TryFinishWaiting(appState.Reopened, waiting.Reopened))
         {
             return;
         }

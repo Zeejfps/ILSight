@@ -22,7 +22,7 @@ public static class ItemSelections
         where T : class
     {
         selection.Item = item;
-        selection.Rows.Select(GetIndexIn(selection, items), items.Count, reveal);
+        SelectRow(selection, items, reveal);
     }
 
     public static void Clear<T>(ItemSelection<T> selection)
@@ -58,8 +58,8 @@ public static class ItemSelections
     public static void DropIfGone<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
     {
-        var index = GetIndexIn(selection, items);
-        if (index >= 0)
+        var index = FindIndexIn(selection, items);
+        if (index is not null)
         {
             return;
         }
@@ -73,7 +73,22 @@ public static class ItemSelections
         where T : class
     {
         DropIfGone(selection, items);
-        selection.Rows.Select(GetIndexIn(selection, items), items.Count, reveal: false);
+        SelectRow(selection, items, reveal: false);
+    }
+
+    /// <summary>Gives <see cref="ItemSelection{T}.Rows"/> the selected item's row in <paramref name="items"/>,
+    /// or no row when it is not one of them.</summary>
+    private static void SelectRow<T>(ItemSelection<T> selection, IReadOnlyList<T> items, bool reveal)
+        where T : class
+    {
+        var index = FindIndexIn(selection, items);
+        if (index is null)
+        {
+            selection.Rows.Clear();
+            return;
+        }
+
+        selection.Rows.Select(index.Value, items.Count, reveal);
     }
 
     /// <summary>Selects the item at the row the list widget left <see cref="ItemSelection{T}.Rows"/> at.</summary>
@@ -99,13 +114,14 @@ public static class ItemSelections
         return items[index];
     }
 
-    /// <summary>The selected item's row in <paramref name="items"/>, or -1.</summary>
-    public static int GetIndexIn<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
+    /// <summary>The selected item's row in <paramref name="items"/>; null when nothing is selected or the
+    /// item is not one of them.</summary>
+    public static int? FindIndexIn<T>(ItemSelection<T> selection, IReadOnlyList<T> items)
         where T : class
     {
         if (selection.Item is null)
         {
-            return -1;
+            return null;
         }
 
         for (var i = 0; i < items.Count; i++)
@@ -115,6 +131,6 @@ public static class ItemSelections
                 return i;
             }
         }
-        return -1;
+        return null;
     }
 }

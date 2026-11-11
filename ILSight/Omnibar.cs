@@ -38,18 +38,18 @@ public sealed class Omnibar
     {
         get
         {
-            var index = ItemSelections.GetIndexIn(Search.Selection, Search.Rows);
-            if (index < 0)
+            var index = ItemSelections.FindIndexIn(Search.Selection, Search.Rows);
+            if (index is null)
             {
                 return null;
             }
 
-            if (index >= SuggestionCount)
+            if (index.Value >= SuggestionCount)
             {
                 return null;
             }
 
-            return Search.Rows[index];
+            return Search.Rows[index.Value];
         }
     }
 
@@ -113,8 +113,13 @@ public sealed class Omnibar
         }
 
         Searches.Move(Search, by);
-        var index = ItemSelections.GetIndexIn(Search.Selection, Search.Rows);
-        if (index < SuggestionCount)
+        var index = ItemSelections.FindIndexIn(Search.Selection, Search.Rows);
+        if (index is null)
+        {
+            return;
+        }
+
+        if (index.Value < SuggestionCount)
         {
             return;
         }

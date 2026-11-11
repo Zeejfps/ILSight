@@ -30,7 +30,7 @@ public static class Comparisons
     /// and compares its assemblies again, now that the open list's assemblies are listed.</summary>
     internal static void ReopenComparison(AppState appState, ReopenedTab reopened, ComparisonDocumentRecord saved)
     {
-        if (!SavedDocuments.FinishWaiting(appState.Reopened, reopened))
+        if (!SavedDocuments.TryFinishWaiting(appState.Reopened, reopened))
         {
             return;
         }

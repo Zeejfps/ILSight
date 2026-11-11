@@ -356,7 +356,7 @@ public sealed class ThemeLoadingTests
         var catalog = BuildCatalog();
 
         Assert.Same(catalog.GetTheme(Id("dracula")), catalog.GetTheme(Id("Dracula")));
-        Assert.Equal(catalog.GetThemeIndex(Id("dracula")), catalog.GetThemeIndex(Id("DRACULA")));
+        Assert.Equal(catalog.FindThemeIndex(Id("dracula")), catalog.FindThemeIndex(Id("DRACULA")));
     }
 
     [Fact]
@@ -376,7 +376,7 @@ public sealed class ThemeLoadingTests
         var catalog = BuildCatalog();
 
         Assert.Same(catalog.GetTheme(Id("dark")), catalog.GetTheme(Id("gone")));
-        Assert.Equal(-1, catalog.GetThemeIndex(Id("gone")));
+        Assert.Null(catalog.FindThemeIndex(Id("gone")));
     }
 
     [Fact]

@@ -140,7 +140,7 @@ public static class Bookmarks
         var name = appState.Bookmarks.CreateName(nameOf);
         var info = ILSpyTree.Describe(node, anchor);
         var bookmark = Bookmarks.CreateAt(node, tab.Language, line, anchor, name, info);
-        appState.Bookmarks.Add(bookmark);
+        appState.Bookmarks.TryAdd(bookmark);
         return new BookmarkToggle.Added(bookmark);
     }
 
@@ -437,29 +437,30 @@ public static class Bookmarks
 
     /// <summary>Whether <paramref name="other"/> marks the same line: the same anchor, or for one
     /// without, the same line of the same place in the same language.</summary>
-    public static bool MarkSameLine(Bookmark bookmark, Bookmark other)
+    public static bool MarksSameLine(Bookmark bookmark, Bookmark other)
     {
         return bookmark.Anchor is not null ? other.Anchor == bookmark.Anchor
         : other.Anchor is null && bookmark.Language == other.Language && bookmark.Line == other.Line && bookmark.Place.Equals(other.Place);
     }
 
-    /// <summary>The line it marks in <paramref name="document"/>, shown for <paramref name="node"/>, or -1.</summary>
-    public static int GetLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
+    /// <summary>The line it marks in <paramref name="document"/>, shown for <paramref name="node"/>; null
+    /// when it marks none there.</summary>
+    public static int? FindLine(Bookmark bookmark, DecompiledDocument document, BrowseNode node)
     {
         if (bookmark.Anchor is not null)
         {
-            return Documents.GetLine(document, bookmark.Anchor.Value);
+            return Documents.FindLine(document, bookmark.Anchor.Value);
         }
 
         if (bookmark.Language != document.Language)
         {
-            return -1;
+            return null;
         }
 
         var place = BrowseNodes.GetPath(node);
         if (!bookmark.Place.Equals(place) || bookmark.Line >= document.Lines.Length)
         {
-            return -1;
+            return null;
         }
 
         return bookmark.Line;

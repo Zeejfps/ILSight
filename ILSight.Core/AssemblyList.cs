@@ -183,7 +183,7 @@ public static class AssemblyListing
         var item = assembly.ListedItem;
         using (var held = list.State.Enter())
         {
-            if (item is not FailedAssembly && !ForgetKnown(held.Value, item))
+            if (item is not FailedAssembly && !TryForgetKnown(held.Value, item))
             {
                 return;
             }
@@ -203,7 +203,7 @@ public static class AssemblyListing
         list.ChangedHandlers?.Invoke();
     }
 
-    private static bool ForgetKnown(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly assembly)
+    private static bool TryForgetKnown(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly assembly)
     {
         if (!byPath.TryGetValue(assembly.FilePath, out var known))
         {
@@ -263,7 +263,7 @@ public static class AssemblyListing
     /// references load their assemblies, and whether Windows Runtime metadata is projected. Returns true
     /// when they changed, so that the open assemblies must be read again to follow them. A change ends the
     /// <see cref="AssemblyList.Generation"/>, as a clear does, so that no assembly read with the options before is kept.</summary>
-    public static bool UseLoadOptions(AssemblyList list, DecompilerOptions options)
+    public static bool TryChangeLoadOptions(AssemblyList list, DecompilerOptions options)
     {
         var loadsReferences = DecompilerToggles.IsOn(options, DecompilerToggle.AutoLoadAssemblyReferences);
         var readerOptions = ChooseReaderOptions(options);
@@ -315,7 +315,7 @@ public static class AssemblyListing
 
     /// <summary>Reads the item of the list holding <paramref name="assembly"/> again from its file: the
     /// assembly, or the package it was read out of with the assemblies in it, each taking what is picked
-    /// for it now. It is not listed until <see cref="Replace"/> puts it in the item's place. Reads the
+    /// for it now. It is not listed until <see cref="TryReplace"/> puts it in the item's place. Reads the
     /// file: call it off the UI thread.</summary>
     /// <exception cref="AssemblyLoadException">The file can no longer be read.</exception>
     public static LoadedAssembly ReadAgain(AssemblyList list, LoadedAssembly assembly)
@@ -333,7 +333,7 @@ public static class AssemblyListing
     /// <paramref name="item"/>, where the item is, and forgets the item and the assemblies read out of
     /// it. Nodes already handed out stay valid. False, leaving the list as it is, when the item is no
     /// longer listed.</summary>
-    public static bool Replace(AssemblyList list, LoadedAssembly item, LoadedAssembly fresh)
+    public static bool TryReplace(AssemblyList list, LoadedAssembly item, LoadedAssembly fresh)
     {
         using (var held = list.State.Enter())
         {
@@ -343,7 +343,7 @@ public static class AssemblyListing
                 return false;
             }
 
-            if (!ForgetKnown(held.Value, item))
+            if (!TryForgetKnown(held.Value, item))
             {
                 return false;
             }

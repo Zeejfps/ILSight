@@ -70,7 +70,7 @@ internal static class AppRoot
             Updates = new AppUpdates(new AppUpdatesAdapter()),
             IsUpdateCheckAutomatic = settings.CheckForUpdates,
         };
-        AssemblyListing.UseLoadOptions(assemblies, settings.Decompiler);
+        AssemblyListing.TryChangeLoadOptions(assemblies, settings.Decompiler);
         return appState;
     }
 

@@ -516,8 +516,8 @@ public sealed class AppTests
             .MaxBy(r => r.X);
         var assembliesTab = app.TextRect("Assemblies");
 
-        Assert.True(DrewIconBefore(app, Icons.PanelAssemblies, assembliesTab));
-        Assert.True(DrewIconBefore(app, NodeIcons.Glyph(NodeIcons.Of(shown.Node!.Subject), Icons), documentTab));
+        Assert.True(WasIconDrawnBefore(app, Icons.PanelAssemblies, assembliesTab));
+        Assert.True(WasIconDrawnBefore(app, NodeIcons.Glyph(NodeIcons.Of(shown.Node!.Subject), Icons), documentTab));
     }
 
     [Fact]
@@ -532,12 +532,12 @@ public sealed class AppTests
         app.Run(2);
 
         var analyzer = app.LastTextRect("Analyzer");
-        Assert.True(DrewIconBefore(app, Icons.PanelAnalyzer, analyzer));
-        Assert.True(DrewIconBefore(app, Icons.PanelDisplayOptions, app.LastTextRect("Display options")));
+        Assert.True(WasIconDrawnBefore(app, Icons.PanelAnalyzer, analyzer));
+        Assert.True(WasIconDrawnBefore(app, Icons.PanelDisplayOptions, app.LastTextRect("Display options")));
         Assert.Equal(analyzer.X, app.LastTextRect("Display options").X, 0.01f);
     }
 
-    private static bool DrewIconBefore(AppDriver app, IconGlyph icon, UiRect title)
+    private static bool WasIconDrawnBefore(AppDriver app, IconGlyph icon, UiRect title)
     {
         var glyph = Text(icon);
         return app.Frames.TextRects()

@@ -13,7 +13,7 @@ public sealed class OptionSearchTests
 
     /// <summary>Whether a line of the last frame reads <paramref name="text"/>: the texts drawn at one height
     /// joined from left to right, as a marked label is drawn in pieces.</summary>
-    private static bool DrewLine(AppDriver app, string text)
+    private static bool WasLineDrawn(AppDriver app, string text)
     {
         return app.Frames.TextRects()
             .GroupBy(t => MathF.Round(t.Rect.Y))
@@ -97,7 +97,7 @@ public sealed class OptionSearchTests
         app.Run();
 
         Assert.NotEmpty(Marks(app));
-        Assert.True(DrewLine(app, "switch expressions"));
+        Assert.True(WasLineDrawn(app, "switch expressions"));
     }
 
     private static bool IsMatch(string query, string first, string? second = null, string? third = null)
@@ -181,8 +181,8 @@ public sealed class OptionSearchTests
         app.Ui.DisplayOptionsQuery = "line";
         app.Run();
 
-        Assert.True(DrewLine(app, "Line numbers"));
-        Assert.True(DrewLine(app, "Highlight current line"));
+        Assert.True(WasLineDrawn(app, "Line numbers"));
+        Assert.True(WasLineDrawn(app, "Highlight current line"));
         Assert.False(app.Frames.Drew("UI scale"));
         Assert.False(app.Frames.Drew("TREE"));
         Assert.False(app.Frames.Drew("Reset to defaults"));

@@ -25,7 +25,7 @@ public static class Tabs
     /// <summary>Cancels the tab's work and closes it. The tab stops being active if it was.</summary>
     public static void Remove(DocumentTabs tabs, DocumentTab tab)
     {
-        if (!tabs.Open.Remove(tab))
+        if (!tabs.Open.TryRemove(tab))
         {
             return;
         }
@@ -35,12 +35,12 @@ public static class Tabs
         tabs.ClosedChanges += tab.Changes;
         if (tab == tabs.Active)
         {
-            tabs.LastWorkedIn.Set(null);
+            tabs.LastWorkedIn.TrySet(null);
         }
 
         if (tab == tabs.Preview)
         {
-            tabs.Previewing.Set(null);
+            tabs.Previewing.TrySet(null);
         }
 
         if (tab == tabs.LastDiagram)
@@ -57,7 +57,7 @@ public static class Tabs
             throw new InvalidOperationException("Only an open tab can be active.");
         }
 
-        tabs.LastWorkedIn.Set(tab);
+        tabs.LastWorkedIn.TrySet(tab);
         if (tab.Diagram is not null)
         {
             tabs.LastDiagram = tab;
@@ -72,7 +72,7 @@ public static class Tabs
             throw new InvalidOperationException("Only an open tab can be the preview tab.");
         }
 
-        tabs.Previewing.Set(tab);
+        tabs.Previewing.TrySet(tab);
     }
 
     /// <summary>Keeps <paramref name="tab"/> open: it is no longer the preview tab, if it was.</summary>
@@ -83,7 +83,7 @@ public static class Tabs
             return;
         }
 
-        tabs.Previewing.Set(null);
+        tabs.Previewing.TrySet(null);
     }
 
     public static bool IsOpen(DocumentTabs tabs, DocumentTab tab)

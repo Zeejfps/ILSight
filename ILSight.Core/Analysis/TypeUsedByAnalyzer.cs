@@ -64,7 +64,7 @@ internal static class TypeUsedByAnalyzer
             var md = metadata.GetMethodDefinition(h);
             var found = FindTypeDecoder.AnyInMethodSignature(md.DecodeSignature(decoder, default));
             found |= IsUsedInGenericConstraints(metadata, md.GetGenericParameters(), decoder);
-            if (found || ScanMethodBody(module.MetadataFile, h, decoder))
+            if (found || IsUsedInMethodBody(module.MetadataFile, h, decoder))
             {
                 var method = module.GetDefinition(h);
                 yield return method.AccessorOwner ?? method;
@@ -110,16 +110,16 @@ internal static class TypeUsedByAnalyzer
                 return false;
             }
             return AnalyzerHelpers.IsCustomAttributeOfType(attribute.Constructor, metadata, decoder)
-                || value.FixedArguments.Any(a => Found(a.Value)) || value.NamedArguments.Any(a => Found(a.Value));
+                || value.FixedArguments.Any(a => IsFound(a.Value)) || value.NamedArguments.Any(a => IsFound(a.Value));
         }
     }
 
-    private static bool Found(object? value)
+    private static bool IsFound(object? value)
     {
         return value switch
         {
             TokenSearchResult result => (result & TokenSearchResult.Found) != 0,
-            ImmutableArray<CustomAttributeTypedArgument<IType>> array => array.Any(element => Found(element.Value)),
+            ImmutableArray<CustomAttributeTypedArgument<IType>> array => array.Any(element => IsFound(element.Value)),
             _ => false,
         };
     }
@@ -130,7 +130,7 @@ internal static class TypeUsedByAnalyzer
             .Any(c => decoder.GetTypeFromEntity(metadata, metadata.GetGenericParameterConstraint(c).Type)));
     }
 
-    private static bool ScanMethodBody(MetadataFile module, MethodDefinitionHandle handle, FindTypeDecoder decoder)
+    private static bool IsUsedInMethodBody(MetadataFile module, MethodDefinitionHandle handle, FindTypeDecoder decoder)
     {
         var body = AnalyzerHelpers.ReadBody(module, handle);
         if (body is null)
@@ -144,7 +144,7 @@ internal static class TypeUsedByAnalyzer
             try
             {
                 var localSignature = metadata.GetStandaloneSignature(body.LocalSignature);
-                if (UsedBySignature(localSignature))
+                if (IsUsedBySignature(localSignature))
                 {
                     return true;
                 }
@@ -153,9 +153,9 @@ internal static class TypeUsedByAnalyzer
             {
             }
         }
-        return AnalyzerHelpers.HasToken(body, (_, token) => UsedByMember(token));
+        return AnalyzerHelpers.HasToken(body, (_, token) => IsUsedByMember(token));
 
-        bool UsedByMember(EntityHandle member)
+        bool IsUsedByMember(EntityHandle member)
         {
             if (member.IsNil)
             {
@@ -172,13 +172,13 @@ internal static class TypeUsedByAnalyzer
                     return decoder.GetTypeFromDefinition(metadata, (TypeDefinitionHandle)member, 0);
                 case HandleKind.FieldDefinition:
                     var fd = metadata.GetFieldDefinition((FieldDefinitionHandle)member);
-                    return UsedByMember(fd.GetDeclaringType()) || fd.DecodeSignature(decoder, default);
+                    return IsUsedByMember(fd.GetDeclaringType()) || fd.DecodeSignature(decoder, default);
                 case HandleKind.MethodDefinition:
                     var md = metadata.GetMethodDefinition((MethodDefinitionHandle)member);
-                    return UsedByMember(md.GetDeclaringType()) || FindTypeDecoder.AnyInMethodSignature(md.DecodeSignature(decoder, default));
+                    return IsUsedByMember(md.GetDeclaringType()) || FindTypeDecoder.AnyInMethodSignature(md.DecodeSignature(decoder, default));
                 case HandleKind.MemberReference:
                     var mr = metadata.GetMemberReference((MemberReferenceHandle)member);
-                    return UsedByMember(mr.Parent) || mr.GetKind() switch
+                    return IsUsedByMember(mr.Parent) || mr.GetKind() switch
                     {
                         MemberReferenceKind.Method => FindTypeDecoder.AnyInMethodSignature(mr.DecodeMethodSignature(decoder, default)),
                         MemberReferenceKind.Field => mr.DecodeFieldSignature(decoder, default),
@@ -186,15 +186,15 @@ internal static class TypeUsedByAnalyzer
                     };
                 case HandleKind.MethodSpecification:
                     var ms = metadata.GetMethodSpecification((MethodSpecificationHandle)member);
-                    return UsedByMember(ms.Method) || ms.DecodeSignature(decoder, default).Any(static t => t);
+                    return IsUsedByMember(ms.Method) || ms.DecodeSignature(decoder, default).Any(static t => t);
                 case HandleKind.StandaloneSignature:
-                    return UsedBySignature(metadata.GetStandaloneSignature((StandaloneSignatureHandle)member));
+                    return IsUsedBySignature(metadata.GetStandaloneSignature((StandaloneSignatureHandle)member));
                 default:
                     return false;
             }
         }
 
-        bool UsedBySignature(StandaloneSignature signature)
+        bool IsUsedBySignature(StandaloneSignature signature)
         {
             return signature.GetKind() switch
             {

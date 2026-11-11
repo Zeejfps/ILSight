@@ -164,12 +164,21 @@ public static class AssemblyLists
     public static void PickList(AssemblyListsDialog dialog, SavedAssemblyLists lists, string name)
     {
         var names = lists.Names;
-        var index = GetListIndex(names, name);
-        dialog.Selection.Select(index, names.Count);
+        var index = FindListIndex(names, name);
+        if (index is null)
+        {
+            dialog.Selection.Clear();
+        }
+        else
+        {
+            dialog.Selection.Select(index.Value, names.Count);
+        }
+
         StopAsking(dialog);
     }
 
-    private static int GetListIndex(IReadOnlyList<string> names, string name)
+    /// <summary>The row of the list named <paramref name="name"/>, ignoring case and surrounding spaces; null when there is none.</summary>
+    private static int? FindListIndex(IReadOnlyList<string> names, string name)
     {
         var trimmed = name.Trim();
         for (var i = 0; i < names.Count; i++)
@@ -179,7 +188,7 @@ public static class AssemblyLists
                 return i;
             }
         }
-        return -1;
+        return null;
     }
 
     /// <summary>The name of the picked list, or null.</summary>

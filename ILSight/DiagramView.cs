@@ -184,7 +184,7 @@ internal static class DiagramView
     /// is of the diagram as it was last measured.</summary>
     private static void FollowLayout(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
-        if (Diagrams.FollowLayout(view.Transition, diagram.Layout))
+        if (Diagrams.TryFollowLayout(view.Transition, diagram.Layout))
         {
             view.LaidOutVersion = view.MeasuredVersion;
         }

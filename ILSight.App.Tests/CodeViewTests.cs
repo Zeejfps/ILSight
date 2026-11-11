@@ -60,22 +60,22 @@ public sealed class CodeViewTests
     public void Tab_reaches_the_code_view_with_a_focus_ring_that_a_click_does_not_show()
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(20));
-        static bool Ring(CodeViewDriver v)
+        static bool HasFocusRing(CodeViewDriver v)
         {
             return v.Frames.Canvas.Rects.Any(r => r.Inputs.Style.BorderColor.Top.Value == UiTheme.Dark.FocusRing);
         }
 
-        Assert.False(Ring(view));
+        Assert.False(HasFocusRing(view));
 
         view.Key(KeyboardKey.Tab).Frame();
-        Assert.True(Ring(view));
+        Assert.True(HasFocusRing(view));
         view.Key(Shortcuts.SelectAll);
         view.Key(Shortcuts.Copy);
         Assert.StartsWith("line 0", view.Frames.Clipboard.Text);
 
         view.Click(2, 1);
         view.Run();
-        Assert.False(Ring(view));
+        Assert.False(HasFocusRing(view));
     }
 
     [Fact]

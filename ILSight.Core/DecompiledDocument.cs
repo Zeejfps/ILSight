@@ -111,10 +111,10 @@ public sealed class DecompiledDocument
 
     public required IReadOnlyDictionary<int, CodeAnchor> Statements { get; init; }
 
-    /// <summary>The line of each definition by its anchor, filled by <see cref="Documents.GetLine"/> the first time it is asked for.</summary>
+    /// <summary>The line of each definition by its anchor, filled by <see cref="Documents.FindLine"/> the first time it is asked for.</summary>
     internal Dictionary<CodeAnchor, int>? DefinitionLines;
 
-    /// <summary>The statements of each method by its anchor, filled by <see cref="Documents.GetLine"/> the first time it is asked for.</summary>
+    /// <summary>The statements of each method by its anchor, filled by <see cref="Documents.FindLine"/> the first time it is asked for.</summary>
     public Dictionary<CodeAnchor, (int Offset, int Line)[]>? StatementLines;
 
     /// <summary>A document with no lines.</summary>
@@ -175,23 +175,28 @@ public static class Documents
         return DocumentWriting.BuildDocument(builder, title);
     }
 
-    /// <summary>The index of the line that defines <paramref name="reference"/>, or -1.</summary>
-    public static int GetDefinitionLine(DecompiledDocument document, CodeReference.Navigable reference)
+    /// <summary>The index of the line that defines <paramref name="reference"/>; null when this document does not define it.</summary>
+    public static int? FindDefinitionLine(DecompiledDocument document, CodeReference.Navigable reference)
     {
-        return document.Definitions.GetValueOrDefault(reference, -1);
+        if (document.Definitions.TryGetValue(reference, out var line))
+        {
+            return line;
+        }
+
+        return null;
     }
 
-    /// <summary>The index of the line that defines the entity <paramref name="node"/> stands for, or -1
+    /// <summary>The index of the line that defines the entity <paramref name="node"/> stands for; null
     /// if it has none or this document does not define it.</summary>
-    public static int GetDefinitionLine(DecompiledDocument document, BrowseNode node)
+    public static int? FindDefinitionLine(DecompiledDocument document, BrowseNode node)
     {
         var reference = NodeDefinitions.ReferenceOf(node.Subject);
         if (reference == null)
         {
-            return -1;
+            return null;
         }
 
-        return GetDefinitionLine(document, reference);
+        return FindDefinitionLine(document, reference);
     }
 
     /// <summary>What names <paramref name="line"/> so it can be found again: the statement starting on
@@ -218,21 +223,27 @@ public static class Documents
         return null;
     }
 
-    /// <summary>The line <paramref name="anchor"/> names in this document, or -1 if it shows no such
+    /// <summary>The line <paramref name="anchor"/> names in this document; null if it shows no such
     /// line. A statement no longer starting a line of its own finds the last one before it in its
     /// method, or the method's first.</summary>
-    public static int GetLine(DecompiledDocument document, CodeAnchor anchor)
+    public static int? FindLine(DecompiledDocument document, CodeAnchor anchor)
     {
         if (anchor.Kind == CodeAnchorKind.Definition)
         {
-            return EnsureDefinitionLines(document).GetValueOrDefault(anchor, -1);
+            var definitionLines = EnsureDefinitionLines(document);
+            if (definitionLines.TryGetValue(anchor, out var definitionLine))
+            {
+                return definitionLine;
+            }
+
+            return null;
         }
 
         var statementLines = EnsureStatementLines(document);
         var methodAnchor = GetMethodAnchor(anchor);
         if (!statementLines.TryGetValue(methodAnchor, out var points))
         {
-            return -1;
+            return null;
         }
 
         var found = points[0].Line;

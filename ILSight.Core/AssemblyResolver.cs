@@ -58,7 +58,7 @@ public sealed class AssemblyResolver : IAssemblyResolver
             return null;
         }
 
-        return FileExists(path) ? AssemblyListing.TryLoadAssembly(List, path)?.File : null;
+        return Exists(path) ? AssemblyListing.TryLoadAssembly(List, path)?.File : null;
     }
 
     public Task<MetadataFile?> ResolveAsync(IAssemblyReference reference)
@@ -204,7 +204,7 @@ public sealed class AssemblyResolver : IAssemblyResolver
         foreach (var extension in Extensions)
         {
             var candidate = AssemblyPath.Parse(Path.Combine(directory, name + extension));
-            if (candidate is not null && FileExists(candidate))
+            if (candidate is not null && Exists(candidate))
             {
                 return candidate;
             }
@@ -213,7 +213,7 @@ public sealed class AssemblyResolver : IAssemblyResolver
     }
 
     /// <summary>Whether there is a file at <paramref name="path"/>, on disk or in the main assembly's package.</summary>
-    private bool FileExists(AssemblyPath path)
+    private bool Exists(AssemblyPath path)
     {
         if (File.Exists(path.Text))
         {

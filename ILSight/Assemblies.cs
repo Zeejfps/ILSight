@@ -249,7 +249,7 @@ public static class Assemblies
     private static void FinishReopen(AppState appState, LoadedAssembly item, Outcome<Reopened> outcome, int ticket, List<ReloadingTab> tabs,
         IPorts ports)
     {
-        if (!appState.Reopens.Finish(item.FilePath, ticket))
+        if (!appState.Reopens.TryFinish(item.FilePath, ticket))
         {
             return;
         }
@@ -270,14 +270,14 @@ public static class Assemblies
 
     private static void ShowReopened(AppState appState, LoadedAssembly item, Reopened reopened, List<ReloadingTab> tabs, IPorts ports)
     {
-        if (!AssemblyListing.Replace(appState.Assemblies, item, reopened.Item))
+        if (!AssemblyListing.TryReplace(appState.Assemblies, item, reopened.Item))
         {
             return;
         }
 
         for (var i = 0; i < tabs.Count; i++)
         {
-            ShowAgain(appState, tabs[i], reopened.Places[i], ports);
+            TryShowAgain(appState, tabs[i], reopened.Places[i], ports);
         }
     }
 
@@ -365,7 +365,7 @@ public static class Assemblies
     private static void FinishReload(AppState appState, Outcome<Reloaded> outcome, ReloadTicket ticket, int intent, List<ReloadingTab> tabs,
         IPorts ports)
     {
-        if (!appState.Reload.Finish(ticket))
+        if (!appState.Reload.TryFinish(ticket))
         {
             return;
         }
@@ -398,7 +398,7 @@ public static class Assemblies
 
     private static void ReshowTab(AppState appState, ReloadingTab reloading, BrowseNode? node, int intent, IPorts ports)
     {
-        if (!ShowAgain(appState, reloading, node, ports))
+        if (!TryShowAgain(appState, reloading, node, ports))
         {
             return;
         }
@@ -411,7 +411,7 @@ public static class Assemblies
 
     /// <summary>Shows <paramref name="node"/>, the tab's place found again, in the tab, or that its place
     /// is gone, unless the tab was closed or shows something else now. True when it shows the node.</summary>
-    private static bool ShowAgain(AppState appState, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node, IPorts ports)
+    private static bool TryShowAgain(AppState appState, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node, IPorts ports)
     {
         var tab = reloading.Tab;
         if (!Tabs.IsOpen(appState.Tabs, tab))
@@ -450,7 +450,7 @@ public static class Assemblies
 
     private static void FinishOpeningAsReload(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket, IPorts ports)
     {
-        if (!appState.Reload.Finish(ticket))
+        if (!appState.Reload.TryFinish(ticket))
         {
             return;
         }

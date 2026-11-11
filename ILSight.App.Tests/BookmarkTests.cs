@@ -147,7 +147,7 @@ public sealed class BookmarkTests : IDisposable
         var bookmarks = d.AppState.Bookmarks;
         var twin = bookmarks.Items[0];
 
-        var added = bookmarks.Add(twin);
+        var added = bookmarks.TryAdd(twin);
 
         Assert.False(added);
         Assert.Single(bookmarks.Items);

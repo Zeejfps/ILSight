@@ -365,7 +365,7 @@ public sealed class AppStateTests
 
         d.Show(d.Fixture("Greeter"));
         var reveal = Assert.IsType<PendingScroll.Reveal>(view.Pending);
-        Assert.Equal(Documents.GetDefinitionLine(tab.Document, tab.Node!), reveal.Line);
+        Assert.Equal(Documents.FindDefinitionLine(tab.Document, tab.Node!), reveal.Line);
     }
 
     [Fact]
@@ -444,7 +444,7 @@ public sealed class AppStateTests
 
         OnPanelClosed(d.Ui, DockPanels.Search);
 
-        Assert.False(Searches.TakeFocus(d.Ui.Search));
+        Assert.False(Searches.TryTakeFocus(d.Ui.Search));
     }
 
     [Fact]

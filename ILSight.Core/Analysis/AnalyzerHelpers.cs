@@ -401,12 +401,12 @@ internal static class AnalyzerHelpers
                     continue;
                 }
 
-                if (ModuleReferencesScopeType(module.Metadata, scopeName, scope.TypeScope.Namespace))
+                if (ReferencesScopeType(module.Metadata, scopeName, scope.TypeScope.Namespace))
                 {
                     yield return module;
                 }
 
-                if (ModuleForwardsScopeType(module.Metadata, scopeName, scope.TypeScope.Namespace))
+                if (ForwardsScopeType(module.Metadata, scopeName, scope.TypeScope.Namespace))
                 {
                     toWalk.Push(module);
                 }
@@ -447,7 +447,7 @@ internal static class AnalyzerHelpers
                 continue;
             }
 
-            if (ModuleReferencesScopeType(assembly.File.Metadata, typeScope.Name, typeScope.Namespace))
+            if (ReferencesScopeType(assembly.File.Metadata, typeScope.Name, typeScope.Namespace))
             {
                 yield return assembly.File;
             }
@@ -472,7 +472,7 @@ internal static class AnalyzerHelpers
             && metadata.StringComparer.Equals(name, "InternalsVisibleToAttribute");
     }
 
-    private static bool ModuleReferencesScopeType(MetadataReader metadata, string typeScopeName, string typeScopeNamespace)
+    private static bool ReferencesScopeType(MetadataReader metadata, string typeScopeName, string typeScopeNamespace)
     {
         foreach (var handle in metadata.TypeReferences)
         {
@@ -485,7 +485,7 @@ internal static class AnalyzerHelpers
         return false;
     }
 
-    private static bool ModuleForwardsScopeType(MetadataReader metadata, string typeScopeName, string typeScopeNamespace)
+    private static bool ForwardsScopeType(MetadataReader metadata, string typeScopeName, string typeScopeNamespace)
     {
         foreach (var handle in metadata.ExportedTypes)
         {

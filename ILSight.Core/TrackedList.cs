@@ -44,7 +44,7 @@ public sealed class TrackedList<T> : IReadOnlyList<T>
     }
 
     /// <summary>Removes <paramref name="item"/>; returns whether it was there.</summary>
-    public bool Remove(T item)
+    public bool TryRemove(T item)
     {
         if (!_items.Remove(item))
         {

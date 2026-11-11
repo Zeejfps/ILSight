@@ -38,7 +38,7 @@ public sealed class CursorListTests
     public void Adding_drops_what_was_after_the_current_item()
     {
         var list = Holding("a", "b", "c");
-        list.MoveTo(0);
+        list.TryMoveTo(0);
 
         list.Add("d");
 
@@ -68,7 +68,7 @@ public sealed class CursorListTests
         var list = Holding("a", "b");
         var revision = list.Revision;
 
-        Assert.False(list.MoveTo(index));
+        Assert.False(list.TryMoveTo(index));
 
         Assert.Equal(1, list.CurrentIndex);
         Assert.Equal(revision, list.Revision);
@@ -80,7 +80,7 @@ public sealed class CursorListTests
         var list = Holding("a", "b");
         var revision = list.Revision;
 
-        Assert.False(list.MoveTo(1));
+        Assert.False(list.TryMoveTo(1));
 
         Assert.Equal(revision, list.Revision);
     }
@@ -91,7 +91,7 @@ public sealed class CursorListTests
         var list = Holding("a", "b");
         var revision = list.Revision;
 
-        Assert.True(list.MoveTo(0));
+        Assert.True(list.TryMoveTo(0));
 
         Assert.Equal("a", list.Current);
         Assert.True(list.Revision > revision);
@@ -101,7 +101,7 @@ public sealed class CursorListTests
     public void Removing_the_current_item_makes_the_one_before_it_current()
     {
         var list = Holding("a", "b", "c");
-        list.MoveTo(1);
+        list.TryMoveTo(1);
 
         list.RemoveAt(1);
 
@@ -112,7 +112,7 @@ public sealed class CursorListTests
     public void Removing_the_first_while_it_is_current_makes_the_first_left_current()
     {
         var list = Holding("a", "b");
-        list.MoveTo(0);
+        list.TryMoveTo(0);
 
         list.RemoveAt(0);
 
@@ -124,7 +124,7 @@ public sealed class CursorListTests
     public void Removing_after_or_before_the_current_item_keeps_it_current()
     {
         var list = Holding("a", "b", "c");
-        list.MoveTo(1);
+        list.TryMoveTo(1);
 
         list.RemoveAt(2);
         Assert.Equal("b", list.Current);
@@ -165,7 +165,7 @@ public sealed class CursorListTests
         var list = Holding("a", "b");
         var revision = list.Revision;
 
-        Assert.True(list.ReplaceCurrent("c"));
+        Assert.True(list.TryReplaceCurrent("c"));
 
         Assert.Equal(["a", "c"], list);
         Assert.Equal(1, list.CurrentIndex);
@@ -177,7 +177,7 @@ public sealed class CursorListTests
     {
         var list = new CursorList<string>(2);
 
-        Assert.False(list.ReplaceCurrent("a"));
+        Assert.False(list.TryReplaceCurrent("a"));
 
         Assert.Empty(list);
     }
@@ -205,7 +205,7 @@ public sealed class CursorListTests
                     list.RemoveAt(random.Next(list.Count));
                     break;
                 case 3:
-                    list.MoveTo(random.Next(-1, list.Count + 1));
+                    list.TryMoveTo(random.Next(-1, list.Count + 1));
                     break;
                 case 4 when random.Next(20) == 0:
                     list.Clear();

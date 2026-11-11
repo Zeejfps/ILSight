@@ -37,11 +37,11 @@ public sealed class LayoutTransitionTests
         var layout = Arrange(80f);
         var transition = new LayoutTransition();
 
-        Assert.True(Diagrams.FollowLayout(transition, layout));
+        Assert.True(Diagrams.TryFollowLayout(transition, layout));
 
         Assert.False(transition.IsMoving);
         Assert.Equal(layout.Places[Car], Diagrams.FindCardPlace(transition, Car));
-        Assert.False(Diagrams.FollowLayout(transition, layout));
+        Assert.False(Diagrams.TryFollowLayout(transition, layout));
     }
 
     [Fact]
@@ -50,9 +50,9 @@ public sealed class LayoutTransitionTests
         var before = Arrange(80f);
         var after = Arrange(300f);
         var transition = new LayoutTransition();
-        Diagrams.FollowLayout(transition, before);
+        Diagrams.TryFollowLayout(transition, before);
 
-        Diagrams.FollowLayout(transition, after);
+        Diagrams.TryFollowLayout(transition, after);
         Diagrams.AdvanceTransition(transition, HalfWay);
 
         Assert.True(transition.IsMoving);
@@ -69,10 +69,10 @@ public sealed class LayoutTransitionTests
     public void A_card_the_old_layout_lacked_appears_in_its_new_place()
     {
         var transition = new LayoutTransition();
-        Diagrams.FollowLayout(transition, Arrange(80f, withCar: false));
+        Diagrams.TryFollowLayout(transition, Arrange(80f, withCar: false));
         var after = Arrange(80f);
 
-        Diagrams.FollowLayout(transition, after);
+        Diagrams.TryFollowLayout(transition, after);
         Diagrams.AdvanceTransition(transition, HalfWay);
 
         Assert.Equal(after.Places[Car], Diagrams.FindCardPlace(transition, Car));
@@ -84,8 +84,8 @@ public sealed class LayoutTransitionTests
         var before = Arrange(80f);
         var after = Arrange(300f);
         var transition = new LayoutTransition();
-        Diagrams.FollowLayout(transition, before);
-        Diagrams.FollowLayout(transition, after);
+        Diagrams.TryFollowLayout(transition, before);
+        Diagrams.TryFollowLayout(transition, after);
         var route = after.Routes.Single();
         var old = before.Routes.Single();
 

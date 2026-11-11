@@ -61,7 +61,7 @@ internal static class CloseAssembliesDialogView
         var shown = ListShown(closer);
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
-            if (TakeFilterFocus(closer))
+            if (TryTakeFilterFocus(closer))
             {
                 ui.Focus(ui.GetId(FilterId));
             }

@@ -199,7 +199,7 @@ public sealed class MetadataTests
         Assert.Same(Table(assembly, "TypeRef"), target.Node);
         var typeRefs = Grid(target.Node);
         Assert.Equal("Object", MetadataGrids.GetText(typeRefs, target.Row, typeRefs.Column("Name")));
-        Assert.Equal(target.Row, MetadataGrids.GetRow(typeRefs, Convert.ToInt32(MetadataGrids.GetText(grid, row, grid.Column("BaseType")), 16)));
+        Assert.Equal(target.Row, MetadataGrids.FindRow(typeRefs, Convert.ToInt32(MetadataGrids.GetText(grid, row, grid.Column("BaseType")), 16)));
     }
 
     [Fact]

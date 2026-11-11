@@ -146,18 +146,18 @@ internal static class ForwardedTypes
 
     private static void AddUsedMember(ReferenceUsage usage, MetadataReader metadata, MemberReferenceHandle handle)
     {
-        var type = GetUsedType(metadata, metadata.GetMemberReference(handle).Parent);
-        if (type.IsNil)
+        var type = FindUsedType(metadata, metadata.GetMemberReference(handle).Parent);
+        if (type is null)
         {
             return;
         }
 
-        AddToList(usage.UsedMembers, type, handle);
+        AddToList(usage.UsedMembers, type.Value, handle);
     }
 
     /// <summary>The type reference a member's <paramref name="parent"/> names: itself, or the generic
-    /// type of a generic instance; nil for anything else.</summary>
-    private static EntityHandle GetUsedType(MetadataReader metadata, EntityHandle parent)
+    /// type of a generic instance; null for anything else.</summary>
+    private static EntityHandle? FindUsedType(MetadataReader metadata, EntityHandle parent)
     {
         if (parent.Kind == HandleKind.TypeReference)
         {
@@ -166,13 +166,15 @@ internal static class ForwardedTypes
 
         if (parent.Kind != HandleKind.TypeSpecification)
         {
-            return default;
+            return null;
         }
 
-        return GetGenericType(metadata, (TypeSpecificationHandle)parent);
+        return FindGenericType(metadata, (TypeSpecificationHandle)parent);
     }
 
-    private static EntityHandle GetGenericType(MetadataReader metadata, TypeSpecificationHandle handle)
+    /// <summary>The type reference of the generic type <paramref name="handle"/> instantiates; null when it
+    /// is no generic instance of a referenced type, or its signature is unreadable.</summary>
+    private static EntityHandle? FindGenericType(MetadataReader metadata, TypeSpecificationHandle handle)
     {
         try
         {
@@ -180,21 +182,21 @@ internal static class ForwardedTypes
             var typeCode = reader.ReadSignatureTypeCode();
             if (typeCode != SignatureTypeCode.GenericTypeInstance)
             {
-                return default;
+                return null;
             }
 
             SkipClassOrValueType(ref reader);
             var type = reader.ReadTypeHandle();
             if (type.Kind != HandleKind.TypeReference)
             {
-                return default;
+                return null;
             }
 
             return type;
         }
         catch (BadImageFormatException)
         {
-            return default;
+            return null;
         }
     }
 

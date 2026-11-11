@@ -184,7 +184,7 @@ public sealed class ExportTests : IDisposable
         var assembly = Trees.TestAssembly;
         var path = _temp.PathOf("Tests.pdb");
 
-        Assert.True(LoadedAssemblies.EnsureCanGeneratePdb(assembly));
+        Assert.True(LoadedAssemblies.CanGeneratePdb(assembly));
         AssemblyExport.GeneratePdb(assembly, DecompilerOptions.Default, path);
 
         using var stream = File.OpenRead(path);

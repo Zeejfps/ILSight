@@ -478,7 +478,7 @@ public static class DocumentPanels
 
         var panel = DocumentPanels.CreatePanel(uiState.Documents);
         DocumentPanels.AddView(uiState.Documents, tab, panel);
-        if (DockPanels.PlaceDocument(uiState.Layout, panel, p => IsTabPanel(uiState, p)))
+        if (DockPanels.TryPlaceDocument(uiState.Layout, panel, p => IsTabPanel(uiState, p)))
         {
             return;
         }

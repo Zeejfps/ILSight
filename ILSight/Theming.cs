@@ -316,8 +316,8 @@ public static class Theming
         where TContents : class
         where TTheme : class
     {
-        var index = themes.GetThemeIndex(id);
-        if (index >= 0)
+        var index = themes.FindThemeIndex(id);
+        if (index is not null)
         {
             return true;
         }
@@ -360,7 +360,7 @@ public static class Theming
 
     private static async Task WatchThemeFolderAsync(AppState appState, WatchedThemeFolder folder)
     {
-        if (!StartWatching(appState, folder))
+        if (!TryStartWatching(appState, folder))
         {
             return;
         }
@@ -380,7 +380,7 @@ public static class Theming
             }
 
             var isLost = news.Kind == ThemeFolderEventKind.Lost;
-            if (isLost && !RestartWatching(appState, folder, news.Reason, restartedSinceChange))
+            if (isLost && !TryRestartWatching(appState, folder, news.Reason, restartedSinceChange))
             {
                 return;
             }
@@ -392,7 +392,7 @@ public static class Theming
 
     /// <summary>Makes the folder and watches it; false when there is none to watch, or after reporting
     /// why it cannot be made or watched.</summary>
-    private static bool StartWatching(AppState appState, WatchedThemeFolder folder)
+    private static bool TryStartWatching(AppState appState, WatchedThemeFolder folder)
     {
         var path = folder.Prepare(appState);
         if (path is null)
@@ -413,11 +413,11 @@ public static class Theming
     /// <summary>Watches the folder again after the watch was lost, as when the folder was removed. Once
     /// it was restarted with no change seen since, it gives up rather than lose it again and again, and
     /// reports <paramref name="reason"/>.</summary>
-    private static bool RestartWatching(AppState appState, WatchedThemeFolder folder, string reason, bool restartedSinceChange)
+    private static bool TryRestartWatching(AppState appState, WatchedThemeFolder folder, string reason, bool restartedSinceChange)
     {
         if (!restartedSinceChange)
         {
-            return StartWatching(appState, folder);
+            return TryStartWatching(appState, folder);
         }
 
         ReportUnwatched(appState, folder, reason);
@@ -765,7 +765,7 @@ public static class Theming
             MarkJsonUnreadable(json, GetLine(json, reader), ThemeProblem.RootNotAnObject);
             return;
         }
-        while (ReadJsonKey(json, ref reader, out var key, out var line))
+        while (TryReadJsonKey(json, ref reader, out var key, out var line))
         {
             readKey(ref reader, key, line);
         }
@@ -775,7 +775,7 @@ public static class Theming
 
     /// <summary>Moves past the next key of the object the reader is in, onto its value. False at the
     /// object's end.</summary>
-    internal static bool ReadJsonKey(ThemeJson json, ref Utf8JsonReader reader, out string key, out int line)
+    internal static bool TryReadJsonKey(ThemeJson json, ref Utf8JsonReader reader, out string key, out int line)
     {
         reader.Read();
         key = "";
@@ -829,7 +829,7 @@ public static class Theming
     private static Dictionary<string, string> ReadNamesByTag(ThemeJson json, ref Utf8JsonReader reader)
     {
         var byTag = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        while (ReadJsonKey(json, ref reader, out var tag, out var line))
+        while (TryReadJsonKey(json, ref reader, out var tag, out var line))
         {
             var key = ThemeJson.NameKey + "." + tag;
             var name = ReadJsonString(json, ref reader, key, line);
@@ -1043,7 +1043,7 @@ public static class Theming
             return;
         }
 
-        while (Theming.ReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
+        while (Theming.TryReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
         {
             var key = PaletteKey + "." + name;
             var color = Theming.ReadJsonString(theme.Json, ref reader, key, nameLine);
@@ -1069,7 +1069,7 @@ public static class Theming
             return;
         }
 
-        while (Theming.ReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
+        while (Theming.TryReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
         {
             ReadColor(theme, ref reader, section, name, nameLine, colors, keys);
         }

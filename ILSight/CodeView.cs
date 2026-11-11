@@ -346,7 +346,7 @@ public static class CodeViewWidget
     internal static void RevealFolds(CodeViewState state, int line)
     {
         var top = GetTopAnchor(state);
-        if (CodeFolding.Reveal(state.Folds, line))
+        if (CodeFolding.TryReveal(state.Folds, line))
         {
             KeepTop(state, top);
         }
@@ -394,7 +394,7 @@ public static class CodeViewWidget
 
     /// <summary>Scans again when the document or query changed since <paramref name="state"/> last did; returns
     /// whether it did.</summary>
-    private static bool RescanMatches(CodeViewState state, DecompiledDocument document, string query)
+    private static bool TryRescanMatches(CodeViewState state, DecompiledDocument document, string query)
     {
         var find = state.Find;
         if (ReferenceEquals(document, find.Document) && string.Equals(query, find.Query, StringComparison.Ordinal))
@@ -1456,7 +1456,7 @@ public static class CodeViewWidget
 
             var submitted = ui.TextField("find", ref state.Query, t.FindPlaceholder, Sizing.Grow(AppLayout.FindMinWidth, AppLayout.FindWidth), clearable: true);
             var queryChanged = !string.Equals(state.Query, state.Find.Query, StringComparison.Ordinal);
-            if (RescanMatches(state, document, state.Query))
+            if (TryRescanMatches(state, document, state.Query))
             {
                 state.CurrentMatch = queryChanged ? FindFirstMatch(state.Find, state.Selection.Start) : null;
                 ShowMatch(state);
@@ -1495,7 +1495,7 @@ public static class CodeViewWidget
 
     private static void Step(CodeViewState state, DecompiledDocument document, int direction)
     {
-        RescanMatches(state, document, state.Query);
+        TryRescanMatches(state, document, state.Query);
         var count = state.Find.Matches.Count;
         if (count == 0)
         {

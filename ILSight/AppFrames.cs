@@ -115,7 +115,7 @@ internal static partial class AppFrames
     /// <summary>Reads the open assemblies again, as F5 does, when the options that apply as they are read changed.</summary>
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {
-        if (!AssemblyListing.UseLoadOptions(appState.Assemblies, appState.DecompilerOptions))
+        if (!AssemblyListing.TryChangeLoadOptions(appState.Assemblies, appState.DecompilerOptions))
         {
             return;
         }
@@ -139,7 +139,7 @@ internal static partial class AppFrames
     private static void FollowDecompilation(UiState uiState, AppState appState)
     {
         var language = appState.Language;
-        if (!ShownChanges.TakeDecompilation(uiState, language, appState.DecompilerOptions))
+        if (!ShownChanges.TryTakeDecompilation(uiState, language, appState.DecompilerOptions))
         {
             return;
         }
@@ -260,7 +260,7 @@ internal static partial class AppFrames
     private static void FollowIconTheme(Ui<UiState> ui)
     {
         var before = ui.State.ShownIcons?.Fonts ?? [];
-        if (!ShownChanges.TakeIcons(ui.State, ui.State.Icons, ui.State.IconFonts))
+        if (!ShownChanges.TryTakeIcons(ui.State, ui.State.Icons, ui.State.IconFonts))
         {
             return;
         }
@@ -299,7 +299,7 @@ internal static partial class AppFrames
     internal static FontFace? TakeCodeFontFace(UiState uiState, CodeFontFaces codeFonts)
     {
         var chosen = uiState.Display.Font;
-        if (!ShownChanges.TakeCodeFont(uiState, chosen))
+        if (!ShownChanges.TryTakeCodeFont(uiState, chosen))
         {
             return null;
         }
@@ -311,7 +311,7 @@ internal static partial class AppFrames
         }
 
         SetCodeFont(uiState, null);
-        ShownChanges.TakeCodeFont(uiState, null);
+        ShownChanges.TryTakeCodeFont(uiState, null);
         return codeFonts.Bundled;
     }
 

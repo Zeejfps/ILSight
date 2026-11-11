@@ -242,7 +242,7 @@ public sealed class CodeViewFoldTests
         CodeFolding.SetCollapsed(folds, 0, true);
         var collapsedRows = folds.RowCount;
         var shownFor = CodeFolding.GetVisibleLine(folds, fold.EndLine);
-        var revealed = CodeFolding.Reveal(folds, fold.EndLine);
+        var revealed = CodeFolding.TryReveal(folds, fold.EndLine);
 
         Assert.False(anyAfterExpanding);
         Assert.Equal(document.Lines.Length, allRows);
@@ -280,7 +280,7 @@ public sealed class CodeViewFoldTests
         CodeFolding.SetCollapsed(folds, 0, true);
         var before = folds.Layout;
 
-        var revealed = CodeFolding.Reveal(folds, document.Folds[0].StartLine);
+        var revealed = CodeFolding.TryReveal(folds, document.Folds[0].StartLine);
 
         Assert.False(revealed);
         Assert.Same(before, folds.Layout);

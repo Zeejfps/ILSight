@@ -56,7 +56,7 @@ public sealed class PresentationTests
         var original = list.Open(AppStateDriver.FixturePath);
         var duplicate = list.Open(copy);
         var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
-        Trees.SyncRoots(tree, list);
+        Trees.TrySyncRoots(tree, list);
 
         var first = tree.Row(original.Root);
         var second = tree.Row(duplicate.Root);
@@ -77,7 +77,7 @@ public sealed class PresentationTests
         var list = new AssemblyList();
         var assembly = list.Open(AppStateDriver.FixturePath);
         var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
-        Trees.SyncRoots(tree, list);
+        Trees.TrySyncRoots(tree, list);
 
         Assert.Equal(assembly.Name, tree.Row(assembly.Root).Label);
     }
@@ -88,7 +88,7 @@ public sealed class PresentationTests
         var list = new AssemblyList();
         var assembly = list.Open(AppStateDriver.FixturePath);
         var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
-        Trees.SyncRoots(tree, list);
+        Trees.TrySyncRoots(tree, list);
 
         var row = tree.Row(assembly.Root);
 
@@ -127,7 +127,7 @@ public sealed class PresentationTests
         var greeter = assembly.Root.Child(AppStateDriver.FixturesNamespace, "Greeter");
         var member = greeter.Children.First(c => c.Token is not null);
         var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
-        Trees.SyncRoots(tree, list);
+        Trees.TrySyncRoots(tree, list);
         var identity = tree.Row(assembly.Root).Secondary;
 
         Assert.Null(tree.Row(greeter).Secondary);

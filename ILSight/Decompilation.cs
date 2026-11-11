@@ -92,13 +92,13 @@ public static class Decompilation
             RevealRow(appState, tab, arrival.Row);
             return;
         }
-        var line = GetLineToReveal(tab, arrival.Target);
-        if (line < 0)
+        var line = FindLineToReveal(tab, arrival.Target);
+        if (line is null)
         {
             return;
         }
 
-        appState.ViewCommands.Enqueue(new ViewCommand.RevealLine(tab, line));
+        appState.ViewCommands.Enqueue(new ViewCommand.RevealLine(tab, line.Value));
     }
 
     private static void RevealRow(AppState appState, DocumentTab tab, int? row)
@@ -111,32 +111,32 @@ public static class Decompilation
         appState.ViewCommands.Enqueue(new ViewCommand.RevealRow(tab, row.Value));
     }
 
-    /// <summary>The line <paramref name="target"/> marks, else the node's definition, or -1.</summary>
-    private static int GetLineToReveal(DocumentTab tab, Bookmark? target)
+    /// <summary>The line <paramref name="target"/> marks, else the node's definition; null when there is neither.</summary>
+    private static int? FindLineToReveal(DocumentTab tab, Bookmark? target)
     {
         var node = tab.Node;
         if (node is null)
         {
-            return -1;
+            return null;
         }
 
-        var marked = GetMarkedLine(tab, target, node);
-        if (marked >= 0)
+        var marked = FindMarkedLine(tab, target, node);
+        if (marked is not null)
         {
             return marked;
         }
 
-        return Documents.GetDefinitionLine(tab.Document, node);
+        return Documents.FindDefinitionLine(tab.Document, node);
     }
 
-    private static int GetMarkedLine(DocumentTab tab, Bookmark? target, BrowseNode node)
+    private static int? FindMarkedLine(DocumentTab tab, Bookmark? target, BrowseNode node)
     {
         if (target is null)
         {
-            return -1;
+            return null;
         }
 
-        return Bookmarks.GetLine(target, tab.Document, node);
+        return Bookmarks.FindLine(target, tab.Document, node);
     }
 
     /// <summary>Decompiles the node <paramref name="tab"/> shows again if it was shown in another language,

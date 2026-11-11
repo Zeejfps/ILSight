@@ -305,8 +305,8 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
         return ThemeNames.GetName(_files[id].Name, culture);
     }
 
-    /// <summary>Where <paramref name="id"/> is in <see cref="Ids"/>, or -1. Allocates nothing.</summary>
-    public int GetThemeIndex(ThemeId<TFile> id)
+    /// <summary>Where <paramref name="id"/> is in <see cref="Ids"/>; null when it is not there. Allocates nothing.</summary>
+    public int? FindThemeIndex(ThemeId<TFile> id)
     {
         for (var i = 0; i < _ids.Count; i++)
         {
@@ -315,7 +315,7 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
                 return i;
             }
         }
-        return -1;
+        return null;
     }
 
     /// <summary>Every theme's name in <paramref name="culture"/>'s language, in the order of

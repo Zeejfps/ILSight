@@ -28,7 +28,7 @@ public static class RunArgumentsPipe
     {
         try
         {
-            return Task.Run(() => SendAsync(address, arguments)).GetAwaiter().GetResult();
+            return Task.Run(() => TrySendAsync(address, arguments)).GetAwaiter().GetResult();
         }
         catch (Exception e) when (IsBroken(e))
         {
@@ -36,7 +36,7 @@ public static class RunArgumentsPipe
         }
     }
 
-    private static async Task<bool> SendAsync(RunArgumentsAddress address, RunArguments arguments)
+    private static async Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments)
     {
         using var timeout = new CancellationTokenSource(HandOverTimeout);
         var token = timeout.Token;

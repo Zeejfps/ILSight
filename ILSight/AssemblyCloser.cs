@@ -71,7 +71,7 @@ public static class AssemblyClosing
     }
 
     /// <summary>True once after <see cref="OpenCloser"/>: the filter box should take focus.</summary>
-    public static bool TakeFilterFocus(AssemblyCloser closer)
+    public static bool TryTakeFilterFocus(AssemblyCloser closer)
     {
         var focus = closer.FocusFilter;
         closer.FocusFilter = false;

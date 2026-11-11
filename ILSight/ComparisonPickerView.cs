@@ -71,7 +71,7 @@ internal static class ComparisonPickerView
         }
         if (compare)
         {
-            close |= CompareWithSelected(ui.State, picker, compared, t);
+            close |= TryCompareWithSelected(ui.State, picker, compared, t);
         }
 
         if (close)
@@ -161,7 +161,7 @@ internal static class ComparisonPickerView
     }
 
     /// <summary>Compares the assembly to compare with the one selected, if any; true when it did.</summary>
-    private static bool CompareWithSelected(UiState screen, ComparisonPicker picker, LoadedModule compared, Strings t)
+    private static bool TryCompareWithSelected(UiState screen, ComparisonPicker picker, LoadedModule compared, Strings t)
     {
         var other = picker.Selected;
         if (other is null)

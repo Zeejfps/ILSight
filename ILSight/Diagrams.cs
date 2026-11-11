@@ -33,7 +33,7 @@ public static class Diagrams
     /// <summary>Shows members hidden from other assemblies on every card when <paramref name="shows"/>.</summary>
     public static void ShowHiddenMembers(DiagramViewState view, bool shows)
     {
-        view.HiddenMembersFilter.Set(shows);
+        view.HiddenMembersFilter.TrySet(shows);
     }
 
     /// <summary>Selects the card of <paramref name="type"/> and brings it into view once it is laid out.</summary>
@@ -60,7 +60,7 @@ public static class Diagrams
             RestoreFolds(view, saved.Folds);
         }
 
-        view.HiddenMembersFilter.Set(saved.ShowsHiddenMembers);
+        view.HiddenMembersFilter.TrySet(saved.ShowsHiddenMembers);
         view.IsFitPending = false;
     }
 
@@ -368,7 +368,7 @@ public static class Diagrams
         var types = saved.Types;
         var read = await Background.Run(() => ReadCards(assemblies, types));
         Diagrams.FinishReading(diagram);
-        if (!SavedDocuments.FinishWaiting(appState.Reopened, reading))
+        if (!SavedDocuments.TryFinishWaiting(appState.Reopened, reading))
         {
             return;
         }
@@ -604,7 +604,7 @@ public static class Diagrams
 
     /// <summary>Starts moving to <paramref name="layout"/> when it is another than <see cref="LayoutTransition.Layout"/>;
     /// the first layout is drawn at once. True when it was another.</summary>
-    public static bool FollowLayout(LayoutTransition transition, TypeLayout? layout)
+    public static bool TryFollowLayout(LayoutTransition transition, TypeLayout? layout)
     {
         if (ReferenceEquals(layout, transition.To))
         {

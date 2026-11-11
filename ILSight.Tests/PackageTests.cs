@@ -113,7 +113,7 @@ public sealed class PackageTests
         var old = list.Assemblies.ToList();
 
         var fresh = AssemblyListing.ReadAgain(list, old[1]);
-        var replaced = AssemblyListing.Replace(list, package, fresh);
+        var replaced = AssemblyListing.TryReplace(list, package, fresh);
 
         Assert.True(replaced);
         Assert.Equal([fresh], list.Listed);

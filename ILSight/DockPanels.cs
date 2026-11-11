@@ -136,7 +136,7 @@ public static class DockPanels
     /// <summary>Puts <paramref name="document"/> in the place of the first document panel of
     /// <paramref name="layout"/> that <paramref name="isShown"/> rejects, in front of its group unless a
     /// view is, so the views docked around the documents stay where they were. False when there is none.</summary>
-    public static bool PlaceDocument(DockLayout layout, string document, Func<string, bool> isShown)
+    public static bool TryPlaceDocument(DockLayout layout, string document, Func<string, bool> isShown)
     {
         foreach (var group in layout.AllGroups())
         {

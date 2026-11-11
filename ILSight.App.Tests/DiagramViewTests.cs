@@ -124,7 +124,7 @@ public sealed class DiagramViewTests
             .ToList();
     }
 
-    private static bool DrewOnDiagram(AppDriver app, string text)
+    private static bool WasDrawnOnDiagram(AppDriver app, string text)
     {
         return ListDiagramTexts(app).Any(t => t.Text == text);
     }
@@ -164,12 +164,12 @@ public sealed class DiagramViewTests
         var app = PickFromTree("Vehicle", "Show in diagram");
 
         Assert.True(app.Frames.Drew(VehicleDiagram));
-        Assert.True(DrewOnDiagram(app, "Car"));
-        Assert.True(DrewOnDiagram(app, "Bike"));
-        Assert.True(DrewOnDiagram(app, "Garage"));
-        Assert.True(DrewOnDiagram(app, "«abstract»"));
-        Assert.True(DrewOnDiagram(app, "Wheels : int"));
-        Assert.True(DrewOnDiagram(app, "Vehicles *"));
+        Assert.True(WasDrawnOnDiagram(app, "Car"));
+        Assert.True(WasDrawnOnDiagram(app, "Bike"));
+        Assert.True(WasDrawnOnDiagram(app, "Garage"));
+        Assert.True(WasDrawnOnDiagram(app, "«abstract»"));
+        Assert.True(WasDrawnOnDiagram(app, "Wheels : int"));
+        Assert.True(WasDrawnOnDiagram(app, "Vehicles *"));
         Assert.True(app.Frames.Canvas.CubicBeziers.Count >= 4);
     }
 
@@ -184,7 +184,7 @@ public sealed class DiagramViewTests
         app.PickFromTreeMenu("Greeter", "Show in diagram");
         SettleDiagram(app);
         Assert.Single(ListDiagramTabs(app));
-        Assert.True(DrewOnDiagram(app, "Greeter"));
+        Assert.True(WasDrawnOnDiagram(app, "Greeter"));
 
         app.PickFromTreeMenu("Counter", "Show in new diagram");
         SettleDiagram(app);
@@ -330,7 +330,7 @@ public sealed class DiagramViewTests
     {
         var app = PickFromTree("Car", "Show in diagram");
         var vehicle = CardText(app, "Vehicle");
-        Assert.False(DrewOnDiagram(app, "Vehicles *"));
+        Assert.False(WasDrawnOnDiagram(app, "Vehicles *"));
 
         PickFromCardMenu(app, "Vehicle", "Add the types its properties hold");
 
@@ -339,18 +339,18 @@ public sealed class DiagramViewTests
         Assert.Equal(vehicle.X, moved.X, Near);
         Assert.Equal(vehicle.Y, moved.Y, Near);
         app.Frames.ClickOn(Selector.WithText("Fit to view")).Frame();
-        Assert.True(DrewOnDiagram(app, "Vehicles *"));
+        Assert.True(WasDrawnOnDiagram(app, "Vehicles *"));
     }
 
     [Fact]
     public void A_card_s_menu_takes_it_off_the_diagram()
     {
         var app = PickFromTree("Car", "Show in diagram");
-        Assert.True(DrewOnDiagram(app, "IDriven"));
+        Assert.True(WasDrawnOnDiagram(app, "IDriven"));
 
         PickFromCardMenu(app, "IDriven", "Remove from diagram");
 
-        Assert.False(DrewOnDiagram(app, "IDriven"));
+        Assert.False(WasDrawnOnDiagram(app, "IDriven"));
         Assert.Equal(2, DiagramTab(app).Diagram!.Cards.Count);
     }
 
@@ -362,11 +362,11 @@ public sealed class DiagramViewTests
 
         app.Frames.Click(fields);
         SettleDiagram(app);
-        Assert.False(DrewOnDiagram(app, "Plate : string"));
+        Assert.False(WasDrawnOnDiagram(app, "Plate : string"));
 
         app.Frames.Click(fields);
         SettleDiagram(app);
-        Assert.True(DrewOnDiagram(app, "Plate : string"));
+        Assert.True(WasDrawnOnDiagram(app, "Plate : string"));
     }
 
     [Fact]

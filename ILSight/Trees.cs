@@ -20,14 +20,14 @@ public static class Trees
     {
         ForgetClearedList(uiState, assemblies);
         Trees.ShowApi(uiState.Tree, visibility);
-        Trees.SyncRoots(uiState.Tree, assemblies);
+        Trees.TrySyncRoots(uiState.Tree, assemblies);
         Trees.ShowReopening(uiState.Tree, reopening);
         Analysis.FollowTree(uiState.Analyzer, analyzer);
     }
 
     private static void ForgetClearedList(UiState uiState, AssemblyList assemblies)
     {
-        if (!ShownChanges.TakeListGeneration(uiState, assemblies.Generation))
+        if (!ShownChanges.TryTakeListGeneration(uiState, assemblies.Generation))
         {
             return;
         }
@@ -37,7 +37,7 @@ public static class Trees
     }
 
     /// <summary>Rebuilds the roots when the assembly list changed. Returns true when it did.</summary>
-    public static bool SyncRoots(BrowseTree tree, AssemblyList assemblies)
+    public static bool TrySyncRoots(BrowseTree tree, AssemblyList assemblies)
     {
         var version = assemblies.Version;
         if (version == tree.RootsVersion)

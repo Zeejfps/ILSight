@@ -101,7 +101,7 @@ public sealed class BookmarkList
 
     /// <summary>Adds <paramref name="bookmark"/>, unless a bookmark marks its line already; returns
     /// whether it was added.</summary>
-    public bool Add(Bookmark bookmark)
+    public bool TryAdd(Bookmark bookmark)
     {
         if (IsMarked(bookmark))
         {
@@ -114,7 +114,7 @@ public sealed class BookmarkList
 
     private bool IsMarked(Bookmark bookmark)
     {
-        return _items.Any(other => Bookmarks.MarkSameLine(bookmark, other));
+        return _items.Any(other => Bookmarks.MarksSameLine(bookmark, other));
     }
 
     /// <summary>Removes <paramref name="bookmark"/>; returns the row it was in, or -1 when it was not listed.</summary>
@@ -271,7 +271,7 @@ public sealed class BookmarkList
     {
         foreach (var bookmark in _items)
         {
-            var bookmarkLine = Bookmarks.GetLine(bookmark, document, node);
+            var bookmarkLine = Bookmarks.FindLine(bookmark, document, node);
             if (bookmarkLine == line)
             {
                 return bookmark;
@@ -296,10 +296,10 @@ public sealed class BookmarkList
         marks.Lines.Clear();
         foreach (var bookmark in _items)
         {
-            var line = Bookmarks.GetLine(bookmark, document, node);
-            if (line >= 0)
+            var line = Bookmarks.FindLine(bookmark, document, node);
+            if (line is not null)
             {
-                marks.Lines[line] = marks.Lines.GetValueOrDefault(line) || bookmark.Enabled;
+                marks.Lines[line.Value] = marks.Lines.GetValueOrDefault(line.Value) || bookmark.Enabled;
             }
         }
         return marks.Lines;

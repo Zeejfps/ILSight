@@ -305,7 +305,7 @@ public static class Searches
     }
 
     /// <summary>True once after a focus was asked for, unless cleared since: the box should take focus.</summary>
-    public static bool TakeFocus(Search search)
+    public static bool TryTakeFocus(Search search)
     {
         var focus = search.IsFocusPending;
         search.IsFocusPending = false;

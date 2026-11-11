@@ -184,7 +184,7 @@ public static class CodeDisplay
     }
 
     /// <summary>True the first time only: the installed fonts should be listed.</summary>
-    public static bool TakeListingRequest(CodeFontChoices choices)
+    public static bool TryTakeListingRequest(CodeFontChoices choices)
     {
         if (choices.ListingAsked)
         {

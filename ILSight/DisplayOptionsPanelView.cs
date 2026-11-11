@@ -94,7 +94,7 @@ internal static class DisplayOptionsPanelView
     private static void ListInstalledFontsOnce(Ui<UiState> ui)
     {
         var screen = ui.State;
-        if (!CodeDisplay.TakeListingRequest(screen.CodeFonts))
+        if (!CodeDisplay.TryTakeListingRequest(screen.CodeFonts))
         {
             return;
         }
@@ -197,7 +197,7 @@ internal static class DisplayOptionsPanelView
     private static void PickTheme(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen)
     {
         var labels = themes.ListNames(ui.State.Strings.Culture);
-        var current = themes.GetThemeIndex(chosen);
+        var current = themes.FindThemeIndex(chosen) ?? NothingPicked;
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
         {
@@ -266,7 +266,7 @@ internal static class DisplayOptionsPanelView
     private static void PickIconTheme(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen)
     {
         var labels = themes.ListNames(ui.State.Strings.Culture);
-        var current = themes.GetThemeIndex(chosen);
+        var current = themes.FindThemeIndex(chosen) ?? NothingPicked;
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
         {

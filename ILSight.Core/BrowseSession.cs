@@ -470,7 +470,7 @@ public static class BrowseSessions
     {
         if (handle.Kind != HandleKind.TypeDefinition)
         {
-            return FindNode(session, module, LoadedAssemblies.GetOwner(LoadedAssemblies.EnsureMainModule(module), handle));
+            return FindOwnerNode(session, module, handle);
         }
 
         var metadata = module.File.Metadata;
@@ -478,7 +478,7 @@ public static class BrowseSessions
         var declaringType = type.GetDeclaringType();
         if (!declaringType.IsNil)
         {
-            return FindNode(session, module, LoadedAssemblies.GetOwner(LoadedAssemblies.EnsureMainModule(module), handle));
+            return FindOwnerNode(session, module, handle);
         }
 
         return FindNamespace(session, module, metadata.GetString(type.Namespace));
@@ -488,15 +488,35 @@ public static class BrowseSessions
     /// as a compiler-generated member is held by the type it is generated in.</summary>
     internal static BrowseNode? FindOrAncestor(BrowseSession session, LoadedModule module, EntityHandle handle)
     {
-        for (; !handle.IsNil; handle = LoadedAssemblies.GetOwner(LoadedAssemblies.EnsureMainModule(module), handle))
+        if (handle.IsNil)
         {
-            var node = FindNode(session, module, handle);
+            return null;
+        }
+
+        EntityHandle? current = handle;
+        while (current is not null)
+        {
+            var node = FindNode(session, module, current.Value);
             if (node is not null)
             {
                 return node;
             }
+
+            current = LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), current.Value);
         }
         return null;
+    }
+
+    /// <summary>The node of the entity that holds <paramref name="handle"/>'s; null when none holds it or it has no node.</summary>
+    private static BrowseNode? FindOwnerNode(BrowseSession session, LoadedModule module, EntityHandle handle)
+    {
+        var owner = LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle);
+        if (owner is null)
+        {
+            return null;
+        }
+
+        return FindNode(session, module, owner.Value);
     }
 
     private static BrowseNode? FindNamespace(BrowseSession session, LoadedModule module, string name)

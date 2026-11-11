@@ -285,7 +285,7 @@ public static class IconTheming
             return;
         }
 
-        while (Theming.ReadJsonKey(theme.Json, ref reader, out var id, out var idLine))
+        while (Theming.TryReadJsonKey(theme.Json, ref reader, out var id, out var idLine))
         {
             var key = FontsKey + "." + id;
             var path = Theming.ReadJsonString(theme.Json, ref reader, key, idLine);
@@ -325,7 +325,7 @@ public static class IconTheming
             return;
         }
 
-        while (Theming.ReadJsonKey(theme.Json, ref reader, out var key, out var keyLine))
+        while (Theming.TryReadJsonKey(theme.Json, ref reader, out var key, out var keyLine))
         {
             ReadIcon(theme, ref reader, key, keyLine);
         }
@@ -360,7 +360,7 @@ public static class IconTheming
     private static IconThemeFile.IconFields ReadIconFields(IconThemeFile theme, ref Utf8JsonReader reader, string subject)
     {
         var fields = new IconThemeFile.IconFields();
-        while (Theming.ReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
+        while (Theming.TryReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
         {
             var key = subject + "." + name;
             switch (name)

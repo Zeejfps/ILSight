@@ -333,7 +333,7 @@ public static class LoadedAssemblies
     }
 
     /// <summary>Whether a PDB can be generated for <paramref name="module"/>, worked out the first time.</summary>
-    public static bool EnsureCanGeneratePdb(LoadedModule module)
+    public static bool CanGeneratePdb(LoadedModule module)
     {
         return module.CanGeneratePdb.Value;
     }
@@ -426,14 +426,14 @@ public static class LoadedAssemblies
     }
 
     /// <summary>The entity whose node holds the node of <paramref name="handle"/>'s: a property or
-    /// event for its accessor, else the declaring type; nil for a top-level type.</summary>
-    internal static EntityHandle GetOwner(MetadataModule main, EntityHandle handle)
+    /// event for its accessor, else the declaring type; null for a top-level type.</summary>
+    internal static EntityHandle? FindOwner(MetadataModule main, EntityHandle handle)
     {
         return main.ResolveEntity(handle) switch
         {
             IMethod { IsAccessor: true } method when method.AccessorOwner is not null => method.AccessorOwner.MetadataToken,
             IEntity entity when entity.DeclaringTypeDefinition is not null => entity.DeclaringTypeDefinition.MetadataToken,
-            _ => default,
+            _ => null,
         };
     }
 

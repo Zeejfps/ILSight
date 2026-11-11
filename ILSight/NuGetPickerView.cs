@@ -203,7 +203,8 @@ internal static class NuGetPickerView
     private static void MoveSelection(NuGetPicker picker, KeyStroke stroke, IReadOnlyList<FeedPackage> results, int page)
     {
         var selection = picker.Browser.Selection;
-        var index = ItemSelections.GetIndexIn(selection, results);
+        // ApplyListKey takes -1 for "nothing selected".
+        var index = ItemSelections.FindIndexIn(selection, results) ?? -1;
         if (!UiWidgets.ApplyListKey(stroke, ref index, results.Count, page))
         {
             return;

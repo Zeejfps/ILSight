@@ -28,7 +28,7 @@ public sealed class AssemblyListTests
 
         var fresh = AssemblyListing.ReadAgain(list, first);
         var listedWhileRead = list.Listed.ToList();
-        var replaced = AssemblyListing.Replace(list, first, fresh);
+        var replaced = AssemblyListing.TryReplace(list, first, fresh);
 
         Assert.Equal([first, second], listedWhileRead);
         Assert.True(replaced);
@@ -45,7 +45,7 @@ public sealed class AssemblyListTests
         var fresh = AssemblyListing.ReadAgain(list, assembly);
         AssemblyListing.CloseAssembly(list, assembly);
 
-        Assert.False(AssemblyListing.Replace(list, assembly, fresh));
+        Assert.False(AssemblyListing.TryReplace(list, assembly, fresh));
         Assert.Empty(list.Listed);
     }
 

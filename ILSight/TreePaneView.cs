@@ -617,7 +617,7 @@ internal static class TreePaneView
     private static void PdbItems(Ui<UiState> ui, LoadedModule assembly)
     {
         var t = ui.State.Strings;
-        if (ui.MenuItem(t.TreeGeneratePdb, enabled: LoadedAssemblies.EnsureCanGeneratePdb(assembly), id: "generate-pdb", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
+        if (ui.MenuItem(t.TreeGeneratePdb, enabled: LoadedAssemblies.CanGeneratePdb(assembly), id: "generate-pdb", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
         {
             SaveDialogs.PickPdbFile(ui, assembly);
         }
