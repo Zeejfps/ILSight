@@ -385,7 +385,7 @@ public sealed class PackageCacheTests
         await Assert.ThrowsAsync<HttpRequestException>(() => NuGetFeeds.GetPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Gone, OneZero));
 
         Assert.Null(NuGetFeeds.FindPackage(cache, Gone, OneZero));
-        Assert.False(File.Exists(temp.PathOf(Path.Combine("downloads", "gone", "1.0.0", "gone.1.0.0.nupkg.download"))));
+        Assert.False(File.Exists(temp.PathOf(Path.Combine("downloads", "gone", "1.0.0", "gone.1.0.0.nupkg.tmp"))));
     }
 }
 

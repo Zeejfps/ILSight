@@ -162,7 +162,8 @@ public static class NuGetFeeds
         var url = GetPackageUrl(index.PackageFolder, id, version);
         using var response = await feed.Client.GetAsync(url.Uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
-        await WriteWholeFileAsync(response, path, cancellationToken).ConfigureAwait(false);
+        CreateFolderOf(path);
+        await AtomicFile.WriteAsync(path, response.Content.CopyToAsync, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Where the feed serves a package file: <c>{folder}/{id}/{version}/{id}.{version}.nupkg</c>,
@@ -181,9 +182,8 @@ public static class NuGetFeeds
         return WebUrl.Parse(text) ?? throw new InvalidDataException($"{text} is no web URL.");
     }
 
-    private static async Task WriteWholeFileAsync(HttpResponseMessage response, string path, CancellationToken cancellationToken)
+    private static void CreateFolderOf(string path)
     {
-        var temporary = path + ".download";
         var folder = Path.GetDirectoryName(path);
         if (folder is null)
         {
@@ -191,19 +191,6 @@ public static class NuGetFeeds
         }
 
         Directory.CreateDirectory(folder);
-        try
-        {
-            await using (var file = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                await response.Content.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
-            }
-
-            File.Move(temporary, path, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(temporary);
-        }
     }
 
     private static async Task<NuGetFeed.ServiceIndex> EnsureIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)

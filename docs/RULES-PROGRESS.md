@@ -69,3 +69,4 @@ An `ILSight.Tests` test failed once in 7 runs right after this change and never 
 
 An `ILSight.App.Tests` test also failed once during C1 (name not captured) and passed in 5 reruns: a second intermittent test to identify.
 | C16 one-impl interface | R004 | `IOnOffChoice` (one implementation) deleted; `OnOffChanges` works on `DecompilerToggle` directly. | – |
+| C15 atomic writes | R004 | Write-temp-then-move, copied three times (NuGet download, PDB export, decompiled code), is one `AtomicFile.Write` / `WriteAsync`. The NuGet temp file is now `.tmp`; temp files are opened exclusively. 6 new tests. (`BookmarkFile` and `SettingsFile` have the same pattern, not yet moved.) | RL0101: 72 |

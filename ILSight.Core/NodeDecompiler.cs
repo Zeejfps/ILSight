@@ -114,40 +114,31 @@ internal static class NodeDecompiler
     public static void SaveCode(CodeExport export, DecompilationLanguage language, DecompilerOptions options, string path,
         CancellationToken cancellationToken)
     {
-        var temporary = path + ".tmp";
-        try
-        {
-            WriteCode(export, language, options, temporary, cancellationToken);
-            File.Move(temporary, path, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(temporary);
-        }
+        AtomicFile.Write(path, stream => WriteCode(export, language, options, stream, cancellationToken));
     }
 
-    private static void WriteCode(CodeExport export, DecompilationLanguage language, DecompilerOptions options, string path,
+    private static void WriteCode(CodeExport export, DecompilationLanguage language, DecompilerOptions options, Stream stream,
         CancellationToken cancellationToken)
     {
+        using var writer = new StreamWriter(stream);
         switch (export)
         {
             case CodeExport.WholeModule or CodeExport.Namespace:
-                WriteWholeCode(export, language, options, path, cancellationToken);
+                WriteWholeCode(export, language, options, writer, cancellationToken);
                 break;
             case CodeExport.Document document:
                 var written = DecompileOrThrow(document.Request, language, options, cancellationToken);
-                File.WriteAllText(path, Documents.GetText(written));
+                writer.Write(Documents.GetText(written));
                 break;
             default:
                 throw new UnreachableException();
         }
     }
 
-    private static void WriteWholeCode(CodeExport export, DecompilationLanguage language, DecompilerOptions options, string path,
+    private static void WriteWholeCode(CodeExport export, DecompilationLanguage language, DecompilerOptions options, TextWriter writer,
         CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
-        using var writer = new StreamWriter(path);
         var output = new PlainTextOutput(writer) { IndentationString = settings.CSharpFormattingOptions.IndentationString };
         if (language == DecompilationLanguage.CSharp)
         {

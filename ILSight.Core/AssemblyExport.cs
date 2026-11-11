@@ -244,26 +244,10 @@ public static class AssemblyExport
     private static void GeneratePdb(LoadedModule assembly, DecompilerOptions options, string path, bool embedSources,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
-        var temporary = path + ".tmp";
-        try
-        {
-            WritePdb(assembly, options, temporary, embedSources, progress, cancellationToken);
-            File.Move(temporary, path, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(temporary);
-        }
-    }
-
-    private static void WritePdb(LoadedModule assembly, DecompilerOptions options, string path, bool embedSources,
-        IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
-    {
         var settings = Settings.Create(options);
         var decompiler = NodeDecompiler.CreateCSharpDecompiler(assembly, settings, cancellationToken);
-        using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         var writer = new PortablePdbWriter { Progress = progress, EmbedSourceFiles = embedSources };
-        writer.WritePdb(PortableExecutableOf(assembly), decompiler, settings, stream);
+        AtomicFile.Write(path, stream => writer.WritePdb(PortableExecutableOf(assembly), decompiler, settings, stream));
     }
 
     private static PEFile PortableExecutableOf(LoadedModule assembly)
