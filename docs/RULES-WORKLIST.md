@@ -30,7 +30,7 @@ Done items are struck through with their commit.
 | ~~C7~~ (done) | R001, R011 | `RunningProcesses.ResolveModules`, `FindEntryAssembly`, `FindExistingFile` | `File.Exists` inside command-line heuristics → pass `exists` in, heuristics pure. | S / low; RunningProcessTests |
 | ~~C14~~ (done) | R001, R011 | `NuGetConfig` home folder / env expansion | Env reads inside the parse → a `NuGetEnvironment` value built at the edge. | S / low; NuGetTests |
 | ~~Z18~~ (done) | R004 | `Search`, `NuGetPicker` debounce | Debounce logic copied twice → a `TypedText` value. | S / low |
-| Z3 | R004 | `Reload`, `Reopens`, `OpenRequests`, `Reloads` | Public setters, rules in a grab-bag `Reloads` → methods on each type. | S / low |
+| ~~Z3~~ (done) | R004 | `Reload`, `Reopens`, `OpenRequests`, `Reloads` | Public setters, rules in a grab-bag `Reloads` → methods on each type. | S / low |
 | Z5 | R004 | `Navigation` history ops, `NavigationHistory` | History operations mutate public `Entries` from outside → methods on `NavigationHistory`. | S / low |
 | A8 | R004 | `BookmarkList`, `Bookmarks` | "No two bookmarks mark the same line" holds only by convention (public `Items`, setters skip `NoteChange`) → operations on `BookmarkList`, private state. | S–M / low |
 | A9, Z17 | R004 | `SavedAssemblyLists`, `AssemblyLists` | Documented invariants (unique non-empty names, one list open, `Revision`) breakable from anywhere → methods on `SavedAssemblyLists`. | M / low |
@@ -80,6 +80,9 @@ Done items are struck through with their commit.
   `ThemeCatalogs.GetThemeIndex`; a nil handle from `GetLocal`, `GetUsedType`, `GetGenericType`, `GetOwner`,
   `GetDeclaringType`, `GetAccessor`; a default rect from `DiagramView.GetCanvasRect`. Each should return `T?` (`Find*`)
   or be `Get*OrDefault`; several feed selection APIs where -1 means none.
+
+- **R003 bool methods:** `Reload.Finish(ticket)` and `Reopens.Finish(path, ticket)` return `bool` (whether the work was
+  still current); R003 would name them `TryFinish`. RL0304 only checks the other direction, so the build doesn't see it.
 
 ## Where the rules don't fit this code (feeds back into RULES.md)
 

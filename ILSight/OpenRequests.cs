@@ -4,8 +4,15 @@ namespace ILSight;
 /// keeps what they open out of the list that comes next.</summary>
 public sealed class OpenRequests
 {
-    public CancellationTokenSource Work { get; set; } = new();
+    private CancellationTokenSource _work = new();
 
-    /// <summary>The token of the opens starting now, cancelled by the next <see cref="Reloads.CancelOpens"/>.</summary>
-    public CancellationToken Token => Work.Token;
+    /// <summary>The token of the opens starting now, cancelled by the next <see cref="Cancel"/>.</summary>
+    public CancellationToken Token => _work.Token;
+
+    /// <summary>Cancels the opens under way, and starts over for the ones to come.</summary>
+    public void Cancel()
+    {
+        _work.Cancel();
+        _work = new CancellationTokenSource();
+    }
 }

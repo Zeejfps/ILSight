@@ -202,7 +202,7 @@ public static class Assemblies
     private static async Task ReopenAssemblyAsync(AppState appState, LoadedAssembly assembly)
     {
         var item = assembly.ListedItem;
-        var ticket = Reloads.StartReopen(appState.Reopens, item.FilePath);
+        var ticket = appState.Reopens.Start(item.FilePath);
         var tabs = ListTabsShowing(appState, item);
         var places = tabs.ConvertAll(t => t.Location);
         var assemblies = appState.Assemblies;
@@ -272,7 +272,7 @@ public static class Assemblies
 
     private static void FinishReopen(AppState appState, LoadedAssembly item, Outcome<Reopened> outcome, int ticket, List<ReloadingTab> tabs)
     {
-        if (!Reloads.FinishReopen(appState.Reopens, item.FilePath, ticket))
+        if (!appState.Reopens.Finish(item.FilePath, ticket))
         {
             return;
         }
@@ -341,8 +341,8 @@ public static class Assemblies
     public static void CloseAllAssemblies(AppState appState)
     {
         appState.Intent.Begin();
-        Reloads.CancelOpens(appState.Opens);
-        Reloads.Stop(appState.Reload);
+        appState.Opens.Cancel();
+        appState.Reload.Stop();
         ClearAssemblies(appState);
         appState.Assemblies.Pdbs.ForgetAll();
         appState.Assemblies.TargetFrameworks.ForgetAll();
@@ -367,7 +367,7 @@ public static class Assemblies
     {
         RememberOpenAssemblies(appState);
         var intent = appState.Intent.Begin();
-        var ticket = Reloads.Start(appState.Reload);
+        var ticket = appState.Reload.Start();
 
         var paths = appState.Lists.ActivePaths.ToList();
         var tabs = ReleaseShownTabs(appState);
@@ -444,7 +444,7 @@ public static class Assemblies
 
     private static void FinishReload(AppState appState, Outcome<Reloaded> outcome, ReloadTicket ticket, int intent, List<ReloadingTab> tabs)
     {
-        if (!Reloads.Finish(appState.Reload, ticket))
+        if (!appState.Reload.Finish(ticket))
         {
             return;
         }
@@ -527,7 +527,7 @@ public static class Assemblies
 
     private static async Task OpenAssembliesAsReloadAsync(AppState appState, List<AssemblyPath> paths)
     {
-        var ticket = Reloads.Start(appState.Reload);
+        var ticket = appState.Reload.Start();
         var assemblies = appState.Assemblies;
         var opened = await Background.Run(() => OpenFiles(assemblies, paths, ticket.Token));
         FinishOpeningAsReload(appState, opened, ticket);
@@ -535,7 +535,7 @@ public static class Assemblies
 
     private static void FinishOpeningAsReload(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket)
     {
-        if (!Reloads.Finish(appState.Reload, ticket))
+        if (!appState.Reload.Finish(ticket))
         {
             return;
         }

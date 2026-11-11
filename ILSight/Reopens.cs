@@ -7,12 +7,38 @@ namespace ILSight;
 public sealed class Reopens
 {
     /// <summary>The ticket of the reopen that counts, by the file it is of.</summary>
-    public Dictionary<AssemblyPath, int> Current { get; } = new();
+    private readonly Dictionary<AssemblyPath, int> _current = new();
 
-    public int Last { get; set; }
+    private int _last;
 
-    public bool IsRunning => Current.Count > 0;
+    public bool IsRunning => _current.Count > 0;
 
     /// <summary>The paths of the files being reopened.</summary>
-    public IReadOnlyCollection<AssemblyPath> Files => Current.Keys;
+    public IReadOnlyCollection<AssemblyPath> Files => _current.Keys;
+
+    /// <summary>Starts a reopen of the file at <paramref name="path"/> and returns its ticket.</summary>
+    public int Start(AssemblyPath path)
+    {
+        _last++;
+        _current[path] = _last;
+        return _last;
+    }
+
+    /// <summary>Ends the reopen of the file at <paramref name="path"/> given <paramref name="ticket"/>.
+    /// False when another reopen of it started since, and its result should be ignored.</summary>
+    public bool Finish(AssemblyPath path, int ticket)
+    {
+        if (!_current.TryGetValue(path, out var counting))
+        {
+            return false;
+        }
+
+        if (counting != ticket)
+        {
+            return false;
+        }
+
+        _current.Remove(path);
+        return true;
+    }
 }
