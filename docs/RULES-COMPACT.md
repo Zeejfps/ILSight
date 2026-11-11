@@ -7,26 +7,39 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
   rule on purpose: `#pragma warning disable RLxxxx // reason`. This file is the judgment the build can't make.
 - **Edges** are where the framework hands control to the app: `Main` / the composition root, a UI's command
   dispatcher, an HTTP endpoint or middleware, a worker loop, an `async void` event handler, tests. Only edges start
-  work (and create its token), catch everything (R009) and wire adapters (R001). Mark their files
-  `rulelab.infrastructure = true`.
+  work (and create its token), catch everything (R009) and build and wire use cases and adapters (R001's composition
+  root). Mark their files `rulelab.infrastructure = true`.
 - **Tests** follow R002, R003, R005, R007, R008, R010, R012 (test methods needn't take a token) and R009's ban on empty
   catches; not the others. Name tests `Method_Scenario_Expected`; assertion helpers carry `[DoesNotReturnIf(false)]`
   so they narrow nulls.
 
 ## R001: A decision-making class reaches the outside world through one port
 
-Build: RL0101 (time, randomness, I/O used directly).
+Build: RL0101 (time, randomness, I/O, listed services used directly); suggestion while measured: RL0102 (a use case
+or adapter constructed outside the composition root).
 
 - A class that makes decisions touches I/O, time, randomness, configuration, logging and shared state only through a
   nested `public interface IPorts` it declares itself, taken as its **only** constructor parameter.
+- Code written as functions takes its port as a parameter: `UpdateAsync(Feed feed, FeedUpdate.IPorts ports, ct)`.
+  The port is an interface, not a record of functions (the build checks none of a delegate's name or token). Take
+  the parts of the application state the function uses, not the whole state (unless it works on all of it).
 - Name port members for what the class needs (`FindOrderAsync`, `Now`, `LogOrderConfirmed`). No `DbContext`,
   `IQueryable`, `HttpClient` or `ILogger` in their signatures. Each class lists only what it uses.
-- The codebase's own static services that do effects or hold shared state (a job runner like `Background.Start`, an
-  error log like `Errors.Report`, a static cache) are dependencies too: through the port, called by the adapter. List
+- The codebase's own services that do effects or hold shared state (a job runner like `Background.Start`, an
+  error log like `Errors.Report`, a cache) are dependencies too: through the port, called by the adapter. List
   them as `rulelab.ambient_types` in `.editorconfig`. Built-in primitives (`Task.Run`, `await`, `CancellationToken`)
   are used directly.
+- **Where an effect comes from doesn't change whose it is:** a static, a method on an object passed in
+  (`state.Intent.ResolveAsync(...)`), or a delegate handed in to do part of the job. Put it on the port. Reading and
+  writing plain data on an object passed in, and calling its pure methods (`bookmarks.IsMarked(name)`), is not an
+  effect: do it directly.
 - Pure code (calculations, mapping, validation) is called directly, never injected. Per-call data goes in method
-  parameters. If the only dependency is the time, take `now` as a parameter and have no port.
+  parameters. If a calculation's only dependency is the time, take `now` as a parameter and have no port; a shared
+  service that stamps the time (an error log) is a port member and reads its own clock.
+- **The composition root** (`Program.cs`, DI registration, or `AppRoot.Build` without a container) builds the state,
+  use cases and adapters and chooses the adapters. It's an edge file; tests build the app through it with fakes.
+  Without DI it builds each use case once, onto the object the edges already receive. Ordinary code never constructs
+  a use case or an adapter.
 - **Adapters** (`<Class>Adapter`) implement the port with real infrastructure. No branching on business data; branching
   that translates the infrastructure (a 404 → `null`, a unique-key violation → "already exists") belongs there.
 - No port needed: adapters, decorators, the composition root (other rules still apply). Framework-created types
@@ -75,7 +88,7 @@ Build: RL0301 (`Async`), RL0302 (`Find*` not `T?`), RL0303 (`Get*` returns `T?`)
 
 ## R004: A type must earn its place
 
-Build: RL0401 (vague names).
+Build: RL0401 (vague names); suggestion while measured: RL0403 (a public field or collection the type changes itself).
 
 Take the first match:
 
@@ -90,12 +103,22 @@ Take the first match:
 | a use case whose decisions interleave with I/O | one class, one public `HandleAsync`, one port (R001) |
 | a use case with no decisions | **no class**: the endpoint calls data access |
 | 2+ implementations chosen at runtime | an interface |
+| state a framework binds or sets | framework-facing data: public as it requires, no rules |
 | required by a framework | that type, kept thin, calling one of the above |
 | anything else | a private method |
 
 - Delete a type that only forwards. No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` / `Rules` /
   `Logic` / `Common` / `Core`. Callers mustn't have to call methods in a set order: expose the whole job. No interface
-  without two real implementations (R001 ports excepted). No public setters on types with rules.
+  without two real implementations (R001 ports excepted). No public setters, public mutable fields or collections on
+  types with rules.
+- **Framework-facing state** (fields a widget binds by `ref`, properties a binder or ORM sets, members a framework calls
+  in its order) is public and settable, as the framework requires. A type is either framework-facing data (public, no
+  rules) or owns its rules (private state changed only by its methods, collections read-only); never both. When one
+  object needs both, the part with rules is its own type, held by the framework-facing one:
+  `picker.Filter` / `picker.IsOpen` (bound by `ref`) beside `picker.Choice` (private list, `Offer`, `Choose`).
+  A public `List<T>` or `readonly Dictionary` on a type with rules is a leak.
+- A framework's protocol (`ShowIn` before the widget, `TakeFrom` after) isn't your set order: expose exactly those
+  members and make the second take what the first returns (`var shown = choice.ShowIn(rows); ... choice.TakeFrom(rows, shown);`).
 - One use case per class; knowledge shared by use cases lives on the type it's about. Test through public methods;
   never add an interface only to fake it.
 
@@ -108,7 +131,10 @@ Build: RL0501 (positional records with 2+ values).
 - A rule on one value lives in its `init` accessor (`init => field = ... : throw ...`), so `with` and JSON can't skip
   it; `Parse` is only a convenience. Keep the rule holding: copy collections you're given.
 - Changing state: `required init` sets the initial value of a private field; methods change it.
-- A rule across values (End ≥ Start): a constructor or `From*` factory, with `private init` properties.
+- Data with a rule: checked where it comes in, then held in private fields only its methods change, collections
+  read-only. One value: its `init` accessor. Across values (End ≥ Start): a constructor or `From*` factory, with
+  `private init` properties. Such a type is a class (a record only if nothing changes): `with` re-runs `init` and the
+  copy shares the private fields. `required` + `private set` is CS9032, and not needed.
 - Exceptions: inbound DTOs are nullable and not `required` (R006); database-generated keys aren't `required`; EF row
   types use `{ get; set; }`; a one-field wrapper may be positional; no `struct` when zero is invalid; options classes
   need `[Required]` + `ValidateOnStart()` (binding ignores `required`); `where T : new()` → take a `Func<T>`.

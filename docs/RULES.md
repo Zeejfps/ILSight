@@ -35,11 +35,16 @@ background-worker loop, an `async void` event handler, and tests. Edges are few,
 
 - **start work** that outlives the call that asked for it (R010), and create the `CancellationToken` it runs on;
 - **catch** everything a unit of work can throw, log it once, and carry on (R009);
-- **wire** adapters to the classes that use them, and reach infrastructure directly (R001).
+- **build and wire** the application's use cases and adapters (the composition root: R001), and reach infrastructure
+  directly (R001).
 
-Everything else is ordinary code: it gets its token as a parameter, lets unexpected exceptions through, and reaches the
-world through its port. Mark edge files in `.editorconfig` (`rulelab.infrastructure = true`) so the checks can tell
-them apart.
+Everything else is ordinary code: it gets its token as a parameter, lets unexpected exceptions through, reaches the
+world through its port, and never constructs a use case or an adapter. Mark edge files in `.editorconfig`
+(`rulelab.infrastructure = true`) so the checks can tell them apart.
+
+The framework also meets the app through **state it reads or writes directly**: fields a widget binds by `ref`,
+properties a serializer or binder sets, members it calls in its own order. That state is shaped as the framework
+requires and kept apart from state with rules: see R004 "Framework-facing state".
 
 ## Enforcement
 
@@ -51,9 +56,9 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R003 | missing `Async` (RL0301), `Find*` not `T?` (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305) | whether a name is a verb; choosing the right pattern |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
 | R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status |
-| R004 | vague type names (RL0401) | classification; one-implementation interfaces (an analyzer can't see across projects) |
+| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
-| R001 | direct time / randomness / I/O, and the codebase's own static services listed in `rulelab.ambient_types`, outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101) | everything else: ports, adapters, what counts as a decision |
+| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101); suggestion while measured: a use case or adapter constructed outside the composition root (RL0102) | an effect reached through an unlisted method of an object passed in; whether a record of functions is standing in for a port; whether a function takes the whole state; ports, adapters, what counts as a decision |
 | R006 | – | all |
 | R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849) | parallel queries on one `DbContext`; moving async work out of sync-only callers |
 | R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804) | which failures are expected; specific catches in decision code; log-and-rethrow |
@@ -72,7 +77,8 @@ Mark folders whose job is I/O (an Infrastructure project, startup wiring) with `
 ## R001: A class declares its outside-world needs as a single port
 
 **Rule.** A class that makes decisions touches the outside world only through **one interface it declares itself**, received
-through its constructor. **Adapters** implement that interface using real infrastructure, and make no decisions.
+through its constructor (in code written as functions, as a parameter: point 8). **Adapters** implement that interface
+using real infrastructure, and make no decisions. Only the composition root builds use cases and adapters.
 
 **Why.** Anyone reading the class, human or agent, sees in one place everything it can do to the outside world.
 Hidden side effects (`DateTime.Now`, `new HttpClient()`) become impossible to miss, and tests need exactly one fake.
@@ -87,12 +93,13 @@ Goes through the port:
 - Environment and configuration reads
 - Logging
 - Shared mutable state: caches, static fields
-- **The codebase's own static services** that do any of the above or hold shared state: a static job runner that
+- **The codebase's own services** that do any of the above or hold shared state: a static job runner that
   counts running work and moves it off the UI thread (`Background.Start`), a static error log (`Errors.Report`), a
-  static cache. Being written in-house doesn't make them part of the class: every caller and every test shares their
-  state, so in testing a test that passed alone failed after another test's failure (R001 S12). The adapter calls them.
-  List them in `.editorconfig` as `rulelab.ambient_types = MyApp.Background, MyApp.Errors` and RL0101 reports their
-  use like `DateTime.Now`'s.
+  static cache, or the same kind of object hanging off the application state. Being written in-house doesn't make them
+  part of the class: every caller and every test shares their state, so in testing a test that passed alone failed
+  after another test's failure (R001 S12). The adapter calls them. List them in `.editorconfig` as
+  `rulelab.ambient_types = MyApp.Background, MyApp.Errors` and RL0101 reports every use of them like `DateTime.Now`'s,
+  static or through an object passed in.
 
 Does **not** go through the port; use it directly:
 
@@ -101,6 +108,25 @@ Does **not** go through the port; use it directly:
 
 - **Pure code**: calculations, mapping, value validation. Call it as a static method or `new` it up. Never inject it.
 - **Values**: records, DTOs, per-call input. Pass them as method parameters.
+
+**Where an effect comes from doesn't change whose it is.** An effect the code causes (I/O, time, randomness, logging,
+a job runner or other shared state such as an error log) is its dependency however it's reached: a static, a method on
+an object passed in, or a delegate it was handed to do part of its job. Put it on the port. Reading and writing plain
+data on an object passed in is not an effect, and neither is calling its pure methods (`bookmarks.IsMarked(name)`):
+use them directly. A handler the caller passes for its own policy (`Match` handlers, a comparer) is the caller's (R011).
+
+```csharp
+// ❌ the port is faked, the lookup isn't: it reads assemblies from disk on another thread
+var fullName = await state.Intent.ResolveAsync(() => TypeLookup.FindType(state.Workspace, assembly, name), ct);
+
+// ✅ the effect on the port; the data the handler uses passed in
+var fullName = await ports.FindTypeAsync(assembly, name, ct);
+navigation.IsShownBookmarked = bookmarks.IsMarked(fullName);
+```
+
+In testing, the first handler's test failed without assembly files on disk although its port was faked; with the lookup
+on the port, the test chose the answer and when it arrived. Over-applied, it hurts: with the pure bookmark question on
+the port too, the test ran the fake's copy of the rule, which disagreed with the real one (R001 S13).
 
 ### How
 
@@ -154,12 +180,30 @@ Does **not** go through the port; use it directly:
        return now - trialStartedAt > Length;
    }
    ```
+   This is for a calculation whose only need is the time. A shared service that stamps the time (an error log with
+   dozens of callers) is a port member like any other: the service or its adapter reads the clock, and callers never
+   pass `now` (S13).
 6. **When several port calls must share a scope or transaction, return a handle** instead of exposing scoping.
    ```csharp
    Task<IOutboxBatch> OpenBatchAsync(int maxMessages, CancellationToken ct); // IOutboxBatch : IAsyncDisposable
    ```
 7. **A class with no external dependencies has no port and no dependency parameters.** Prefer this. Push logic into pure
    code and keep the port-using class thin.
+8. **Code written as functions takes its port as a parameter.** The static class declares `IPorts`; the function takes
+   the data it changes, then the port, then the token. It's the same seam as a constructor's port (S14: an identical fake,
+   the same results).
+   ```csharp
+   public static async Task<bool> UpdateAsync(Feed feed, FeedUpdate.IPorts ports, CancellationToken ct)
+
+   await FeedUpdate.UpdateAsync(state.Feed, feedPorts, ct);   // at the edge; the composition root built feedPorts
+   ```
+   - **The port is an interface, not a record of functions.** A record of delegates fakes in 5 lines instead of 16 and
+     needs no adapter class, but the build checks none of it: members that fail RL0301, RL1001 and RL0303 on an
+     interface pass silently as delegates, and their parameters lose their names (S14).
+   - **The whole application state is not a port.** Take the parts the function reads or changes (`state.Feed`), and
+     its effects through its port. Given the whole state, a test had to build all 5 services on it to exercise the 2
+     the function uses, and the signature didn't say which (S14). A function that works on the whole state (saving a
+     session) takes it.
 
 ### Adapters
 
@@ -199,13 +243,47 @@ Does **not** go through the port; use it directly:
   services.AddScoped<CancelOrderHandler.IPorts>(sp => sp.GetRequiredService<OrderInfrastructure>());
   ```
 
+### The composition root
+
+The code that builds the application's long-lived objects (its state, use cases and adapters) and chooses the adapters
+is the **composition root**: `Program.cs` and DI registration, or without a DI container a function such as
+`AppRoot.Build`. It is an edge (see Edges): it lives in an edge file (`rulelab.infrastructure`), and tests build the
+application through the same code, swapping adapters for fakes.
+
+- **Ordinary code never constructs a use case or an adapter.** It is handed what it calls.
+- **Without a DI container,** the root builds each use case once and hands it to the edges that call it, on the object
+  those edges already receive (`state.GoToType`). Only edges receive that object; they pass ordinary code the parts it
+  uses (point 8).
+
+```csharp
+public static class AppRoot                                    // an edge file
+{
+    public static AppState BuildForDesktop(string folder)       // production chooses the real adapters
+    {
+        var errors = new ErrorLog();
+        return Build(errors, new AssemblyFolderAdapter(folder, errors));
+    }
+
+    public static AppState Build(ErrorLog errors, GoToTypeHandler.IPorts goToType)   // tests call this with fakes
+    {
+        return new AppState { Errors = errors, GoToType = new GoToTypeHandler(goToType) };
+    }
+}
+```
+
+In testing, a feature that built its own use case on first use
+(`state.Peek ??= new GoToTypeHandler(new AssemblyFolderAdapter(...))`) ignored the test's fake and needed files on disk,
+and its adapter kept a cache of its own: after an assembly changed on disk, the "Go to type" dialog found `Shop.Order`
+and Ctrl+click on the same name reported it missing (S15). RL0102 suggests where a use case or adapter is constructed
+outside the composition root.
+
 ### Exemptions
 
 | Kind | What to do instead |
 |------|--------------------|
 | Adapters | Take concrete infrastructure directly (see above). |
 | Decorators: a class that implements `X` and wraps an `X` | Take the wrapped `X` (and e.g. `IMemoryCache`) directly. |
-| Composition root: `Program.cs`, DI registration methods | Wire things up: no port needed (R001). Every other rule still applies. |
+| Composition root: `Program.cs`, DI registration methods, `AppRoot` | Build and wire (see The composition root): no port needed. Every other rule still applies. |
 | Classes the framework creates without DI: attributes, EF Core entities, `[JsonConverter]` types | Must have **no** external dependencies. Move logic that needs the outside world into a class that can take a port (e.g. a validator class instead of a validation attribute). |
 | Framework UI components: Blazor components, Razor pages, controllers | Keep them thin: inject the use-case handler (or framework services such as `NavigationManager`) through the constructor and delegate every decision to it. No port of their own. |
 
@@ -219,9 +297,11 @@ Does **not** go through the port; use it directly:
 
 ### Checklist
 
-- [ ] Constructor takes no dependencies, or exactly one: the class's own nested `IPorts`. (Entities and value objects use `required init` properties: R005.)
+- [ ] Constructor takes no dependencies, or exactly one: the class's own nested `IPorts`. (Entities and value objects use `required init` properties: R005.) A function takes its static class's `IPorts` as a parameter, not a record of functions or the whole state.
+- [ ] Effects reached through an object passed in (a method that reads the disk, runs work, reports an error) are on the port; plain data and pure methods on it are used directly.
+- [ ] Only the composition root, in an edge file, constructs use cases and adapters; tests build the application through it.
 - [ ] No `DateTime.Now`/`UtcNow`, `Guid.NewGuid()`, `Random`, `File`, `Environment`, `HttpClient` or `ILogger` in a class that makes decisions.
-- [ ] No call to the codebase's own static services (job runners, error logs, static caches) in a class that makes decisions; they are listed in `rulelab.ambient_types`.
+- [ ] No call to the codebase's own services (job runners, error logs, caches), static or through an object passed in, in a class that makes decisions; they are listed in `rulelab.ambient_types`.
 - [ ] Port members are named after needs; no infrastructure types in their signatures.
 - [ ] Per-call data arrives through method parameters.
 - [ ] Pure collaborators are called directly, not injected.
@@ -515,9 +595,10 @@ Work top to bottom and take the first match.
 | State that changes under rules | a class: `required init` for the initial state, a private field that only its methods change (R005) | `account.Withdraw(amount)` |
 | A calculation or decision over data | a static method on a static class named for the concept | `Shipping.CalculateCost(order)`, `Csv.ReadRecords(reader)` |
 | Read → compute → write, with no decision between I/O calls | **no class**: do the I/O at the edge (endpoint, `Program`) and call pure code in between | `File.WriteAllText(output, PeopleCsv.ConvertToJson(File.ReadAllText(input)))` |
-| A use case whose decisions interleave with I/O | one class per use case, one public method, one port (R001) | `CancelOrderHandler.HandleAsync(orderId, ct)` |
+| A use case whose decisions interleave with I/O | one class per use case, one public method, one port (R001); in code written as functions, a static function taking its port as a parameter (R001 point 8) | `CancelOrderHandler.HandleAsync(orderId, ct)` |
 | A use case with no decisions (plain read or write) | **no class**: the endpoint calls data access directly | `await queries.FindSummaryAsync(id, ct)` |
 | Two or more real implementations chosen at runtime | an interface + one class per implementation | `IPaymentProvider` → `StripeProvider`, `PayPalProvider` |
+| State a framework reads or writes directly (fields a widget binds by `ref`, properties a binder sets) | framework-facing data: public as the framework requires, no rules; state with rules is a type it holds (see Framework-facing state) | `picker.Filter`, `picker.IsOpen` + `picker.Choice` |
 | Required by a framework | that type, kept thin; it calls one of the above | controller, middleware, Blazor component |
 | None of the above | **not a type**: a private method in the type that uses it | |
 
@@ -527,15 +608,69 @@ Work top to bottom and take the first match.
 |------|-----|-------------|
 | Deletion | If I deleted this type and inlined it, would complexity reappear in its callers, or just disappear? | It only forwards: delete it. (Adapters are exempt; they are the seam.) |
 | Name | Can I name it after what it knows or does, without `Manager`, `Helper`, `Utils`, `Processor`, or `<Noun>Service`? Does the name say *what* it knows? `Rules`, `Logic`, `Common` and `Core` pass the suffix check but say nothing (`EmailFormat`, not `Rules`). | It doesn't know what it is. Move each member to the concept it's about. Generic helpers become extension methods grouped by the type they extend (`StringExtensions`). |
-| Order | Must callers call its methods in a set order (`Open` → `ReadHeader` → `ReadRows`)? | The steps are leaking. Expose the whole job as one call. |
+| Order | Must callers call its methods in a set order (`Open` → `ReadHeader` → `ReadRows`)? | The steps are leaking. Expose the whole job as one call. (A framework's protocol is not your order: see Framework-facing state.) |
 | Seam | Does this interface have two implementations that exist for a reason other than the interface itself? | Remove the interface. A test fake only counts when the decision can't be separated from the I/O (an R001 port). |
-| Rules | Can a caller put this type into an invalid state (public setters, `with`, an unchecked constructor)? | Move the rule inside the type. |
+| Rules | Can a caller put this type into an invalid state (public setters, a public mutable field or collection, `with`, an unchecked constructor)? | Move the rule inside the type. If a framework needs those members public, the rule goes into its own type (Framework-facing state). |
 
 ### Step 3: granularity
 
 - **One use case per class, not one class per entity.** An `OrderService` holding every use case makes every test fake the union of all their dependencies.
 - **Knowledge shared by use cases lives on the type it's about.** Which status transitions are allowed belongs on `Order`, not repeated in each handler.
 - **Type count is not the goal.** Sorting a grab bag into well-named homes adds types; removing pass-through layers removes them. Both are right.
+
+### Framework-facing state
+
+State a framework reads or writes directly is shaped as the framework requires: fields a widget binds by `ref`
+(`ui.TextField(ref picker.Filter)`, `ui.WindowDialog(ref picker.IsOpen, ...)`), properties a serializer, binder or ORM
+sets, members a framework calls in its own order. They are public and settable because the framework says so. A
+property or a private field can't be bound by `ref` (CS0206, CS0122), and a `ref`-returning property over a private
+field compiles but lets every caller assign through it, so it guards nothing (S10).
+
+**Keep it apart from state with rules. A type is either framework-facing data (public members, no rules) or owns its
+rules (private state changed only by its methods, collections exposed read-only); never both.** When one object needs
+both, the part with rules is its own type, held by the framework-facing one:
+
+```csharp
+public sealed class AssemblyPicker                     // framework-facing data: the widgets bind these
+{
+    public string Filter = "";                         // ui.TextField(ref picker.Filter)
+    public bool IsOpen;                                // ui.WindowDialog(ref picker.IsOpen, ...)
+
+    public AssemblyChoice Choice { get; } = new();     // the part with a rule, as a type of its own
+}
+
+public sealed class AssemblyChoice                     // owns its rule: Selected is always one of Offered
+{
+    private readonly List<string> _offered = [];
+    private string? _selected;
+
+    public IReadOnlyList<string> Offered => _offered;
+    public string? Selected => _selected;
+
+    // Offer(assemblies) drops the selection when it is no longer offered; Choose(assembly) refuses one that isn't.
+}
+```
+
+- **A public mutable collection or field** (`public List<T>`, a `public readonly Dictionary<,>` whose contents anyone
+  can change) is framework-facing data or a leak; on a type with rules it's a leak. In testing, a view hid a row by
+  removing it through the picker's public `List`, and the selection was left naming an assembly that was no longer
+  offered (S09). RL0403 suggests where a type changes such a member in its own methods.
+- **Framework-facing data may have methods** that read its fields and call the type with the rules
+  (`picker.Update(assemblies)` filters by `Filter` and calls `Choice.Offer`), but it keeps no rule about its own
+  public members.
+- **A framework's protocol is not a set order of yours** (step 2's Order test). When the framework needs a step before
+  it reads and one after it writes (`ShowIn` gives a list widget the selected item's row; `TakeFrom` reads back the
+  row it picked), the type with the rule exposes exactly those members, and **the second takes what the first
+  returns**, so it can't be called without the first. Every other member works in any order.
+  ```csharp
+  var shown = choice.ShowIn(rows);                     // returns the row it gave the widget
+  using (var list = ui.SelectableList(listId, choice.Offered.Count, rows)) { ... }
+  choice.TakeFrom(rows, shown);                        // needs `shown`: can't run without ShowIn first
+  ```
+  In testing, a key handler that skipped `ShowIn` moved from a stale row and selected the wrong item. With the members
+  on the rule-owning type but no data between them, the invariant held and the same mistake still compiled and still
+  picked the wrong item (S11). Wrapping both steps and the widget into one call (`choice.Show(rows, r => ...)`, the
+  Order test's usual answer) can't be misordered either, but allocates a closure every frame (S11).
 
 ### Testing follows the seams
 
@@ -550,8 +685,9 @@ Work top to bottom and take the first match.
 - [ ] No type only forwards calls (adapters excepted).
 - [ ] No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` names.
 - [ ] No interface with a single implementation, except R001 ports.
-- [ ] No methods that must be called in a set order.
-- [ ] No public setters or unchecked `init` accessors on types with rules.
+- [ ] No methods that must be called in a set order. A framework's protocol: exactly its members, the second taking what the first returns.
+- [ ] No public setters, public mutable fields or collections, or unchecked `init` accessors on types with rules.
+- [ ] State a framework binds or sets is public as it requires, on a type with no rules; the part with rules is a type it holds.
 
 ---
 
@@ -559,7 +695,7 @@ Work top to bottom and take the first match.
 
 **Rule.** Types that hold data (records, DTOs, entities, value objects) receive it through named `required init` properties
 in an object initializer, not through constructor parameters. Constructors are for dependencies (R001 ports) and for rules
-that span several values.
+that span several values (see "Data with rules").
 
 **Why.** Every value is labelled at the call site. Positional arguments of the same type can be swapped silently: `new Transfer(checking, savings, 100m)`
 compiles and moves money the wrong way. Forgetting a `required` member is still a compile error. Derived types don't
@@ -625,12 +761,31 @@ re-forward their base's parameters, and EF Core doesn't depend on constructor-pa
    ```
    (A status with fields that must agree with it is not this: it's a union, R008.)
 
-### Exception: a rule that spans several values
+### Data with rules: checked where it comes in, then private
 
-`init` accessors run one at a time, in the order the caller wrote them, and C# has no hook that runs after the initializer.
-A rule such as "End ≥ Start" then depends on property order: `range with { Start = feb1, End = feb10 }` throws while
-`range with { End = feb10, Start = feb1 }` succeeds. For these types, check all values in one place, a constructor or a
-named factory, and don't make the properties publicly settable:
+A type that keeps a rule about data its callers give it (no two bookmarks on one line, End ≥ Start, a non-empty name)
+holds that data in private fields that only its methods change, exposes collections read-only, and checks the data in
+the one place it comes in that sees the whole rule. (A type is either this or framework-facing data with no rules:
+R004 "Framework-facing state".)
+
+| The rule is about... | The data comes in through | Example |
+|----------------------|---------------------------|---------|
+| one value | its `init` accessor, writing a private field (points 3 and 4) | `Email.Value`, `Account.Balance`, a bookmark list with no two on one line |
+| several values together | a constructor or a `From*` factory; the properties `private init` | `DateRange.FromDates(start, end)` (below) |
+
+- **It is a class**, unless nothing about it changes after creation. On a record, `with` runs the `init` accessors
+  again after creation and copies private fields. In testing, a `with { }` copy of a record bookmark list shared the
+  original's private list, so adding to the copy changed the original without moving its `Revision`; `with { Items =
+  ... }` replaced the bookmarks without any method counting the change (S10). A factory doesn't fix that on a record
+  (`with { }` still copies the private list); a class has no `with`.
+- **`required` can't be combined with a non-public setter** (CS9032, S04), and doesn't need to be: on a class the
+  `init` accessor runs only in the initializer that creates the object, writes the private field, and the methods
+  change it after that (S10).
+
+**Several values.** `init` accessors run one at a time, in the order the caller wrote them, and C# has no hook that runs
+after the initializer. A rule such as "End ≥ Start" then depends on property order: `range with { Start = feb1, End =
+feb10 }` throws while `range with { End = feb10, Start = feb1 }` succeeds. For these types, check all values in one
+place, a constructor or a named factory, and don't make the properties publicly settable:
 
 ```csharp
 public DateOnly Start { get; private init; }
@@ -678,6 +833,8 @@ problem at a time. See R006.
 - [ ] A rule on a single value lives in its `init` accessor.
 - [ ] A rule spanning several values uses a constructor or named factory, and those properties aren't publicly settable.
 - [ ] Entities: `required init` for the initial state, a private field for changes.
+- [ ] A type that keeps a rule about its data is a class (a record only if nothing changes after creation); the data
+      sits in private fields its methods change, collections exposed read-only.
 - [ ] Options classes are validated at startup.
 
 ---
@@ -917,6 +1074,10 @@ wrongly when they do. With one type per state, those combinations don't compile.
 | Fields that exist only in some states (`Status` + `CancelledAt?` + `TrackingNumber?`) | Fields that are optional independently of each other (`Phone?`, `Nickname?`): a union would need 2ⁿ cases and prevents nothing. Use nullable. |
 | A result that is one of several outcomes (success **or** error), including R006's `Result<T>`. Not a `bool IsSuccess` + `[MemberNotNullWhen]` (R002) | |
 | A message or event that is one of several kinds | |
+
+A field a framework writes (each dialog's `ref bool IsOpen`) is framework-facing state (R004), not a status for this
+rule to fold into a union: one union of every open dialog can't be bound by `ref`. Data a dialog keeps that depends on
+its phase is a union inside the type that owns its rules, held beside the bool.
 
 ### How
 
