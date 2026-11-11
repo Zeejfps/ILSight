@@ -85,5 +85,5 @@ rulelab.test_code = true
 # Edges (RULES.md "Edges"): where the framework hands control to the app. Only these start work, catch everything and
 # wire adapters: the workflow runner, the command dispatcher, the app the framework drives, the launcher, and the
 # composition root (AppRoot).
-[{ILSight/WorkflowRunner.cs,ILSight/AppCommand.cs,ILSight/ILSightApp.cs,ILSight/ILSightAppLauncher.cs,ILSight/AppRoot.cs}]
+[{ILSight/WorkflowRunner.cs,ILSight/AppCommand.cs,ILSight/ILSightApp.cs,ILSight/ILSightAppLauncher.cs,ILSight/AppRoot.cs,ILSight/AppFrames.cs,ILSight/AppFrames.Commands.cs}]
 rulelab.infrastructure = true
