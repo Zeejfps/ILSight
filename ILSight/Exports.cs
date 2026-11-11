@@ -145,7 +145,7 @@ public static class Exports
         Func<ExportReport, T, ExportReport> complete)
     {
         appState.ViewCommands.Enqueue(new ViewCommand.OpenPanel(DockView.Exports));
-        var turn = await Exports.EnterQueueAsync(appState.Export, job);
+        var turn = await appState.Export.EnterAsync(job);
         if (turn is not ExportStart start)
         {
             return;
@@ -153,7 +153,7 @@ public static class Exports
 
         var clock = Stopwatch.StartNew();
         var outcome = await Background.Run(() => work(start));
-        Exports.LeaveQueue(appState.Export, start);
+        start.EndTurn();
         var report = outcome switch
         {
             Outcome<T>.Ok ok => complete(ReportFinished(start.Run, job, clock.Elapsed), ok.Value),
@@ -459,7 +459,7 @@ public static class Exports
             RemoveFinishedExport(appState, finished);
             return;
         }
-        Exports.WithdrawExport(appState.Export, run);
+        appState.Export.Withdraw(run);
     }
 
     /// <summary>Takes <paramref name="report"/> off the list of finished exports.</summary>
@@ -471,128 +471,6 @@ public static class Exports
     public static void ClearFinishedExports(AppState appState)
     {
         appState.FinishedExports.Clear();
-    }
-
-    /// <summary>Queues <paramref name="job"/>, which has one part until it reports otherwise. The task
-    /// completes when its turn comes: at once when nothing runs.</summary>
-    public static Task<ExportTurn> EnterQueueAsync(ExportQueue queue, ExportJob job)
-    {
-        queue.LastRun++;
-        var started = new TaskCompletionSource<ExportTurn>(TaskCreationOptions.RunContinuationsAsynchronously);
-        queue.Turns.Add(new ExportQueue.Turn(new QueuedExport(new ExportRun(queue.LastRun), job), started));
-        if (!queue.IsRunning)
-        {
-            StartNextExport(queue);
-        }
-
-        return started.Task;
-    }
-
-    private static void StartNextExport(ExportQueue queue)
-    {
-        var turn = queue.Turns[0];
-        queue.Turns.RemoveAt(0);
-        var export = turn.Export;
-        var active = new ExportQueue.Active { Shown = new RunningExport(export, new ExportProgress(export.Job.Name, 1, 1, null), false) };
-        queue.ActiveExport = active;
-        turn.Started.SetResult(new ExportStart(export.Run, active.Cancel.Token, CreateProgress(queue, export.Run)));
-    }
-
-    private static Progress<ExportProgress> CreateProgress(ExportQueue queue, ExportRun run)
-    {
-        return new Progress<ExportProgress>(p => TakeProgress(queue, run, p));
-    }
-
-    private static void TakeProgress(ExportQueue queue, ExportRun run, ExportProgress progress)
-    {
-        var active = FindActiveExport(queue, run);
-        if (active is null)
-        {
-            return;
-        }
-
-        var shown = active.Shown;
-        var furthest = FindFurthest(shown.Progress.Fraction, progress.Fraction);
-        active.Shown = shown with { Progress = progress with { Fraction = furthest } };
-    }
-
-    /// <summary>The further of two fractions of one export: reports sent from several threads can
-    /// arrive out of order, and the bar must not step back.</summary>
-    private static float? FindFurthest(float? shown, float? reported)
-    {
-        if (shown is null)
-        {
-            return reported;
-        }
-
-        if (reported is null)
-        {
-            return shown;
-        }
-
-        return Math.Max(shown.Value, reported.Value);
-    }
-
-    /// <summary>Asks the running export to stop; the waiting ones still get their turn.</summary>
-    public static void CancelRunning(ExportQueue queue)
-    {
-        if (queue.ActiveExport is null)
-        {
-            return;
-        }
-
-        queue.ActiveExport.Shown = queue.ActiveExport.Shown with { IsCancelling = true };
-        queue.ActiveExport.Cancel.Cancel();
-    }
-
-    /// <summary>Takes the waiting export <paramref name="run"/> out of the queue.</summary>
-    public static void WithdrawExport(ExportQueue queue, ExportRun run)
-    {
-        var index = queue.Turns.FindIndex(t => t.Export.Run == run);
-        if (index < 0)
-        {
-            return;
-        }
-
-        var turn = queue.Turns[index];
-        queue.Turns.RemoveAt(index);
-        turn.Started.SetResult(new ExportWithdrawn());
-    }
-
-    /// <summary>Ends the turn of the export <paramref name="start"/> began, when it is the running
-    /// one, and starts the next.</summary>
-    public static void LeaveQueue(ExportQueue queue, ExportStart start)
-    {
-        var active = FindActiveExport(queue, start.Run);
-        if (active is null)
-        {
-            return;
-        }
-
-        active.Cancel.Dispose();
-        queue.ActiveExport = null;
-        if (queue.Turns.Count == 0)
-        {
-            return;
-        }
-
-        StartNextExport(queue);
-    }
-
-    /// <summary>The running export's state when <paramref name="run"/> is the running one; null otherwise.</summary>
-    private static ExportQueue.Active? FindActiveExport(ExportQueue queue, ExportRun run)
-    {
-        if (queue.ActiveExport is null)
-        {
-            return null;
-        }
-
-        if (queue.ActiveExport.Shown.Export.Run != run)
-        {
-            return null;
-        }
-
-        return queue.ActiveExport;
     }
 
     private const string DefaultSolutionName = "Solution";

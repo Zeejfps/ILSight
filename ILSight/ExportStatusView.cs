@@ -35,7 +35,7 @@ internal static class ExportStatusView
 
         if (!running.IsCancelling && IconButton(ui, "cancel-export", ui.State.Icons.ExportCancel, t.StatusCancelExport))
         {
-            Commands.Later(ui.State, static a => Exports.CancelRunning(a.Export));
+            Commands.Later(ui.State, static a => a.Export.CancelRunning());
         }
     }
 

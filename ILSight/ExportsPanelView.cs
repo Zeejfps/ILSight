@@ -311,14 +311,14 @@ internal static class ExportsPanelView
         {
             if (ui.IconButton("cancel", ui.State.Icons.ExportCancel, t.ExportsCancelTooltip, enabled))
             {
-                Commands.Later(ui.State, static a => Exports.CancelRunning(a.Export));
+                Commands.Later(ui.State, static a => a.Export.CancelRunning());
             }
 
             return;
         }
         if (ui.Button(t.ExportsCancel, enabled: enabled, id: "cancel", variant: ButtonVariant.Ghost))
         {
-            Commands.Later(ui.State, static a => Exports.CancelRunning(a.Export));
+            Commands.Later(ui.State, static a => a.Export.CancelRunning());
         }
 
         ui.Tooltip(ui.GetId("cancel"), t.ExportsCancelTooltip);
@@ -405,7 +405,7 @@ internal static class ExportsPanelView
         }
         if (withdrawn is not null)
         {
-            Commands.Later(ui.State, withdrawn, static (a, run) => Exports.WithdrawExport(a.Export, run));
+            Commands.Later(ui.State, withdrawn, static (a, run) => a.Export.Withdraw(run));
         }
     }
 
@@ -730,14 +730,14 @@ internal static class ExportsPanelView
         {
             if (ui.MenuItem(t.ExportsCancel, enabled: !running.IsCancelling, id: "cancel"))
             {
-                Commands.Later(ui.State, static a => Exports.CancelRunning(a.Export));
+                Commands.Later(ui.State, static a => a.Export.CancelRunning());
             }
 
             return;
         }
         if (ui.MenuItem(t.ExportsWithdraw, Shortcuts.Delete, id: "withdraw"))
         {
-            Commands.Later(ui.State, run, static (a, r) => Exports.WithdrawExport(a.Export, r));
+            Commands.Later(ui.State, run, static (a, r) => a.Export.Withdraw(r));
         }
     }
 
