@@ -514,7 +514,43 @@ public sealed class BookmarkTests : IDisposable
 
         Assert.Single(d.AppState.Bookmarks.Items);
         Assert.Null(d.AppState.Imports.Asking);
-        Assert.Equal("Cannot import bookmarks from other.json", Assert.Single(d.AppState.Errors.Entries).Words().Title);
+        var words = Assert.Single(d.AppState.Errors.Entries).Words();
+        Assert.Equal("Cannot import bookmarks from other.json", words.Title);
+        Assert.Equal($"{path}{Environment.NewLine}Not a bookmarks file.", words.Details);
+    }
+
+    [Fact]
+    public void Read_JsonWithoutABookmarksList_IsNotABookmarksFile()
+    {
+        var path = _temp.Write("other.json", "{ \"assemblies\": [] }");
+
+        Assert.IsType<BookmarksRead.NotBookmarksFile>(BookmarkFile.Read(path));
+    }
+
+    [Fact]
+    public void Read_FileThatIsNotJson_FailsNamingTheFile()
+    {
+        var path = _temp.Write("broken.json", "not json");
+
+        var failed = Assert.IsType<BookmarksRead.Failed>(BookmarkFile.Read(path));
+
+        Assert.StartsWith(path + Environment.NewLine, failed.Reason);
+    }
+
+    [Fact]
+    public void A_file_that_cannot_be_read_is_reported_with_why_and_changes_nothing()
+    {
+        Directory.CreateDirectory(_temp.Path);
+        var path = _temp.PathOf("missing.json");
+        var d = new AppStateDriver();
+
+        ImportBookmarks(d.AppState, path);
+        d.Settle();
+
+        Assert.Empty(d.AppState.Bookmarks.Items);
+        var words = Assert.Single(d.AppState.Errors.Entries).Words();
+        Assert.Equal("Cannot import bookmarks from missing.json", words.Title);
+        Assert.StartsWith(path + Environment.NewLine, words.Details);
     }
 
     [Fact]
@@ -671,6 +707,34 @@ public sealed class BookmarkTests : IDisposable
         var words = Assert.Single(d.AppState.Errors.Entries).Words();
         Assert.Equal("Some bookmarks in ILSpy.Bookmarks.json could not be read and were left out", words.Title);
         Assert.StartsWith("#1: ", words.Details);
+    }
+
+    [Fact]
+    public void Read_EntryThatIsNotABookmark_LeavesItOutByItsPosition()
+    {
+        var path = ILSpyFile(Record("Kept", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline") + "," +
+                             """{ "Name": "Broken", "Token": "not a number" }""");
+
+        var read = Assert.IsType<BookmarksRead.Read>(BookmarkFile.Read(path));
+
+        Assert.Equal("Kept", Assert.Single(read.Bookmarks).Name);
+        Assert.Equal(2, Assert.IsType<BookmarkEntryProblem.NotABookmark>(Assert.Single(read.Problems)).Entry);
+    }
+
+    [Fact]
+    public void A_bookmark_whose_saved_place_cannot_be_read_is_placed_as_ILSpy_places_it_and_reported_by_its_position()
+    {
+        var unreadablePlace = """{ "Path": { "Version": 99, "Steps": [] }, """ + Record("Placed", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline")[1..];
+        var path = ILSpyFile(unreadablePlace);
+        var d = new AppStateDriver();
+
+        ImportBookmarks(d.AppState, path);
+        d.Settle();
+
+        Assert.Equal("Placed", Assert.Single(d.AppState.Bookmarks.Items).Name);
+        var words = Assert.Single(d.AppState.Errors.Entries).Words();
+        Assert.Equal("Some bookmarks in ILSpy.Bookmarks.json could not be read and were left out", words.Title);
+        Assert.Equal("#1: the place it was made in cannot be read.", words.Details);
     }
 
     [Fact]

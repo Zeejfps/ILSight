@@ -697,6 +697,8 @@
   "error.import_bookmarks": "无法从 {file} 导入书签",
   "error.bookmarks_not_found": "{file} 中的部分书签未找到，已略过",
   "error.bookmarks_unreadable": "{file} 中的部分书签无法读取，已略过",
+  "error.not_bookmarks_file": "这不是书签文件。",
+  "error.bookmark_place_unreadable": "#{entry}：无法读取创建它的位置。",
   "error.theme": "主题 {file} 有问题",
   "error.themes_folder": "无法创建主题文件夹",
   "error.custom_theme": "无法写入自定义主题",

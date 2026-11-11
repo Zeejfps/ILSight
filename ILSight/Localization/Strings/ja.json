@@ -697,6 +697,8 @@
   "error.import_bookmarks": "{file} からブックマークをインポートできません",
   "error.bookmarks_not_found": "{file} の一部のブックマークが見つからなかったため、除外しました",
   "error.bookmarks_unreadable": "{file} の一部のブックマークを読み込めなかったため、除外しました",
+  "error.not_bookmarks_file": "ブックマークファイルではありません。",
+  "error.bookmark_place_unreadable": "#{entry}: 作成された場所を読み込めません。",
   "error.theme": "テーマ {file} に問題があります",
   "error.themes_folder": "テーマ フォルダーを作成できません",
   "error.custom_theme": "カスタム テーマを書き込めません",

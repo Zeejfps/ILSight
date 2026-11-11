@@ -55,7 +55,8 @@ public static class ProblemTexts
             AppProblem.BookmarkGone p => (t.ErrorGoToBookmark(p.Bookmark), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
             AppProblem.BookmarksNotExported p => (t.ErrorExportBookmarks, p.Reason),
             AppProblem.BookmarksNotImported p => (t.ErrorImportBookmarks(p.File), p.Reason),
-            AppProblem.ImportedBookmarksUnreadable p => (t.ErrorBookmarksUnreadable(p.File), string.Join(Environment.NewLine, p.Reasons)),
+            AppProblem.NotBookmarksFile p => (t.ErrorImportBookmarks(Path.GetFileName(p.Path)), $"{p.Path}{Environment.NewLine}{t.ErrorNotBookmarksFile}"),
+            AppProblem.ImportedBookmarksUnreadable p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems)),
             AppProblem.ImportedBookmarksLost p => (t.ErrorBookmarksNotFound(p.File), string.Join(Environment.NewLine, p.Lost)),
             AppProblem.BookmarksLeftOut p => (t.ErrorDuplicateBookmarks(p.Count), ""),
             AppProblem.ComparisonFailed p => (t.ErrorCompare(p.Left, p.Right), p.Error.ToString()),
@@ -90,6 +91,18 @@ public static class ProblemTexts
         }
 
         return error.ToString();
+    }
+
+    private static string DescribeEntryProblems(Strings t, IReadOnlyList<BookmarkEntryProblem> problems)
+    {
+        return string.Join(Environment.NewLine, problems.Select(p => DescribeEntryProblem(t, p)));
+    }
+
+    private static string DescribeEntryProblem(Strings t, BookmarkEntryProblem problem)
+    {
+        return problem.Match(
+            placeUnreadable: p => t.ErrorBookmarkPlaceUnreadable(p.Entry),
+            notABookmark: n => $"#{n.Entry}: {n.Detail}");
     }
 
     private static string DescribePdbCheck(Strings t, PdbCheck check, string name)

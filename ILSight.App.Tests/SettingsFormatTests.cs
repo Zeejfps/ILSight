@@ -88,7 +88,7 @@ public sealed class SettingsFormatTests : IDisposable
         var path = _temp.PathOf(BookmarksFixture);
         Directory.CreateDirectory(_temp.Path);
 
-        Assert.Null(BookmarkFile.Write(path, ExpectedBookmarks()));
+        Assert.IsType<BookmarksWriteResult.Written>(BookmarkFile.Write(path, ExpectedBookmarks()));
 
         AssertSameJson(Fixture(BookmarksFixture), File.ReadAllText(path));
     }
@@ -98,10 +98,9 @@ public sealed class SettingsFormatTests : IDisposable
     {
         var path = _temp.Write(BookmarksFixture, Fixture(BookmarksFixture));
 
-        var read = BookmarkFile.Read(path, out var error);
-        Assert.Null(error);
-        Assert.Empty(read!.Unreadable);
-        Assert.Null(BookmarkFile.Write(path, read.Bookmarks));
+        var read = Assert.IsType<BookmarksRead.Read>(BookmarkFile.Read(path));
+        Assert.Empty(read.Problems);
+        Assert.IsType<BookmarksWriteResult.Written>(BookmarkFile.Write(path, read.Bookmarks));
 
         AssertSameJson(Fixture(BookmarksFixture), File.ReadAllText(path));
     }

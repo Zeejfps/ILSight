@@ -18,7 +18,7 @@ Done items are struck through with their commit.
 | ID | Rule | Where | Change | Size / risk |
 |---|---|---|---|---|
 | ~~Z1~~ (done) | R008, R001 | `SettingsFile.LoadSettings`, `SettingsPlace`, `Settings` | **Bug:** `FilePath = MaySaveOverFile(problem) ? path : null` makes one nullable mean both "in memory" and "don't overwrite the bad file"; when the bad file can't be copied aside, theme folders derive as null and user themes vanish, and the error has no path. Hold the path and the may-write decision separately. | S–M / low–med; add a test for `SettingsKept.NotSaved` first |
-| A3 | R008, R009 | `BookmarkFile.Read/Write`, `Bookmarks` callers | `Read(path, out string? error)` / `string? Write(...)` → a result union; entry problems become typed cases `ProblemTexts` translates (today hard-coded English). | S / low; BookmarkTests |
+| ~~A3~~ (done) | R008, R009 | `BookmarkFile.Read/Write`, `Bookmarks` callers | `Read(path, out string? error)` / `string? Write(...)` → a result union; entry problems become typed cases `ProblemTexts` translates (today hard-coded English). | S / low; BookmarkTests |
 | C2 | R008 | `SearchQueries.FindLiteral`, `AssemblySearch` | `object?` literal with `null` meaning "string" → `SearchLiteral` union. An invalid `/regex/` silently finds nothing → record `InvalidRegex(message)` so the UI can say why. | S / low; SearchTests |
 | C16 | R004 | `OnOffChanges.IOnOffChoice` | Interface with one implementation → use `DecompilerToggle` directly. | S / low |
 | C1 | R008 | `ApiDiff`, `ApiEntries` | `ApiEntry.Change` / `HasChanges` stored beside the `Sides` / `Presence` that determine them → computed. | S / low; ApiDiffTests |

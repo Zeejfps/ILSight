@@ -697,6 +697,8 @@
   "error.import_bookmarks": "Не удаётся импортировать закладки из {file}",
   "error.bookmarks_not_found": "Некоторые закладки из {file} не найдены и пропущены",
   "error.bookmarks_unreadable": "Некоторые закладки из {file} не удалось прочитать, и они пропущены",
+  "error.not_bookmarks_file": "Это не файл закладок.",
+  "error.bookmark_place_unreadable": "#{entry}: не удаётся прочитать место, где она была создана.",
   "error.theme": "Ошибки в теме {file}",
   "error.themes_folder": "Не удаётся создать папку тем",
   "error.custom_theme": "Не удаётся записать свою тему",

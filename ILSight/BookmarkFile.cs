@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using ILSight.Core;
 
@@ -70,19 +71,19 @@ public static class BookmarkFile
     public const string SuggestedName = "ILSight.Bookmarks.json";
 
     /// <summary>Writes <paramref name="bookmarks"/> to <paramref name="path"/>, replacing the file
-    /// whole. Returns why it failed, or null.</summary>
-    public static string? Write(string path, List<BookmarkRecord> bookmarks)
+    /// whole.</summary>
+    public static BookmarksWriteResult Write(string path, List<BookmarkRecord> bookmarks)
     {
         var temporary = path + ".tmp";
         try
         {
             File.WriteAllText(temporary, JsonSerializer.Serialize(FileOf(bookmarks), AppSettingsJson.Default.BookmarkFileJson));
             File.Move(temporary, path, overwrite: true);
-            return null;
+            return new BookmarksWriteResult.Written();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return $"{path}{Environment.NewLine}{e.Message}";
+            return new BookmarksWriteResult.Failed { Reason = $"{path}{Environment.NewLine}{e.Message}" };
         }
     }
 
@@ -95,43 +96,41 @@ public static class BookmarkFile
 
     /// <summary>The bookmarks in the file at <paramref name="path"/> that name an assembly file, as
     /// ILSpy keeps them, each read on its own, so one that is not a bookmark at all is left out alone,
-    /// with why; null with why when the file cannot be read.</summary>
-    public static BookmarksRead? Read(string path, out string? error)
+    /// with what was wrong with it.</summary>
+    public static BookmarksRead Read(string path)
     {
         try
         {
             var file = JsonSerializer.Deserialize(File.ReadAllText(path), AppSettingsJson.Default.BookmarkFileJson);
-            if (file?.Bookmarks is not null)
+            if (file?.Bookmarks is null)
             {
-                error = null;
-                return ReadEach(file.Bookmarks);
+                return new BookmarksRead.NotBookmarksFile();
             }
-            error = $"{path}{Environment.NewLine}Not a bookmarks file.";
-            return null;
+
+            return ReadEach(file.Bookmarks);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
         {
-            error = $"{path}{Environment.NewLine}{e.Message}";
-            return null;
+            return new BookmarksRead.Failed { Reason = $"{path}{Environment.NewLine}{e.Message}" };
         }
     }
 
-    private static BookmarksRead ReadEach(List<JsonElement> bookmarks)
+    private static BookmarksRead.Read ReadEach(List<JsonElement> bookmarks)
     {
         var read = new List<BookmarkRecord>();
-        var unreadable = new List<string>();
+        var problems = new List<BookmarkEntryProblem>();
         for (var i = 0; i < bookmarks.Count; i++)
         {
+            var entry = i + 1;
             try
             {
-                var entry = $"#{i + 1}";
                 var saved = bookmarks[i].Deserialize(AppSettingsJson.Default.BookmarkJson);
                 if (saved is null)
                 {
                     continue;
                 }
 
-                var bookmark = SettingsJson.Parse(saved, () => unreadable.Add($"{entry}: the place it was made in cannot be read."));
+                var bookmark = SettingsJson.Parse(saved, () => problems.Add(new BookmarkEntryProblem.PlaceUnreadable { Entry = entry }));
                 if (bookmark is not null)
                 {
                     read.Add(bookmark);
@@ -139,13 +138,105 @@ public static class BookmarkFile
             }
             catch (Exception e) when (e is JsonException or NotSupportedException)
             {
-                unreadable.Add($"#{i + 1}: {e.Message}");
+                problems.Add(new BookmarkEntryProblem.NotABookmark { Entry = entry, Detail = e.Message });
             }
         }
-        return new BookmarksRead(read, unreadable);
+        return new BookmarksRead.Read { Bookmarks = read, Problems = problems };
     }
 }
 
-/// <summary>What reading a bookmarks file gave: the bookmarks naming an assembly file, and for each
-/// entry that is not a bookmark at all, its position from 1 and why.</summary>
-public sealed record BookmarksRead(List<BookmarkRecord> Bookmarks, IReadOnlyList<string> Unreadable);
+/// <summary>What reading a bookmarks file gave.</summary>
+public abstract record BookmarksRead
+{
+    private BookmarksRead()
+    {
+    }
+
+    /// <summary>The file was read: the bookmarks in it that name an assembly file, and what was wrong
+    /// with the entries left out, or whose place in this app's tree was.</summary>
+    public sealed record Read : BookmarksRead
+    {
+        public required List<BookmarkRecord> Bookmarks { get; init; }
+
+        public required IReadOnlyList<BookmarkEntryProblem> Problems { get; init; }
+    }
+
+    /// <summary>The file is JSON, but holds no list of bookmarks.</summary>
+    public sealed record NotBookmarksFile : BookmarksRead;
+
+    /// <summary>The file could not be read, or is not JSON. <see cref="Reason"/> names the file and says
+    /// why, as the system or the JSON reader said it.</summary>
+    public sealed record Failed : BookmarksRead
+    {
+        public required string Reason { get; init; }
+    }
+
+    public TResult Match<TResult>(Func<Read, TResult> read, Func<NotBookmarksFile, TResult> notBookmarksFile, Func<Failed, TResult> failed)
+    {
+        return this switch
+        {
+            Read r => read(r),
+            NotBookmarksFile n => notBookmarksFile(n),
+            Failed f => failed(f),
+            _ => throw new UnreachableException($"BookmarksRead.Match does not handle {GetType().Name}."),
+        };
+    }
+}
+
+/// <summary>What was wrong with one entry of a bookmarks file, for the screen to tell in the chosen
+/// language. <see cref="Entry"/> is the entry's position in the file, from 1.</summary>
+public abstract record BookmarkEntryProblem
+{
+    private BookmarkEntryProblem()
+    {
+    }
+
+    public required int Entry { get; init; }
+
+    /// <summary>The entry is a bookmark, but the place in this app's tree it was made in cannot be read,
+    /// so the bookmark is placed as ILSpy places it.</summary>
+    public sealed record PlaceUnreadable : BookmarkEntryProblem;
+
+    /// <summary>The entry is not a bookmark at all, so it was left out. <see cref="Detail"/> is as the
+    /// JSON reader said it.</summary>
+    public sealed record NotABookmark : BookmarkEntryProblem
+    {
+        public required string Detail { get; init; }
+    }
+
+    public TResult Match<TResult>(Func<PlaceUnreadable, TResult> placeUnreadable, Func<NotABookmark, TResult> notABookmark)
+    {
+        return this switch
+        {
+            PlaceUnreadable p => placeUnreadable(p),
+            NotABookmark n => notABookmark(n),
+            _ => throw new UnreachableException($"BookmarkEntryProblem.Match does not handle {GetType().Name}."),
+        };
+    }
+}
+
+/// <summary>What writing a bookmarks file did.</summary>
+public abstract record BookmarksWriteResult
+{
+    private BookmarksWriteResult()
+    {
+    }
+
+    public sealed record Written : BookmarksWriteResult;
+
+    /// <summary><see cref="Reason"/> names the file and says why, as the system said it.</summary>
+    public sealed record Failed : BookmarksWriteResult
+    {
+        public required string Reason { get; init; }
+    }
+
+    public TResult Match<TResult>(Func<Written, TResult> written, Func<Failed, TResult> failed)
+    {
+        return this switch
+        {
+            Written w => written(w),
+            Failed f => failed(f),
+            _ => throw new UnreachableException($"BookmarksWriteResult.Match does not handle {GetType().Name}."),
+        };
+    }
+}

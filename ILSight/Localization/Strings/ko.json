@@ -697,6 +697,8 @@
   "error.import_bookmarks": "{file}에서 책갈피를 가져올 수 없습니다",
   "error.bookmarks_not_found": "{file}의 일부 책갈피를 찾지 못해 제외했습니다",
   "error.bookmarks_unreadable": "{file}의 일부 책갈피를 읽을 수 없어 제외했습니다",
+  "error.not_bookmarks_file": "책갈피 파일이 아닙니다.",
+  "error.bookmark_place_unreadable": "#{entry}: 만든 위치를 읽을 수 없습니다.",
   "error.theme": "테마 {file}에 문제가 있습니다",
   "error.themes_folder": "테마 폴더를 만들 수 없습니다",
   "error.custom_theme": "사용자 지정 테마를 쓸 수 없습니다",

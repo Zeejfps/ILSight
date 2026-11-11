@@ -433,13 +433,11 @@ public static class Bookmarks
     public static void ExportBookmarks(AppState appState, string path)
     {
         var records = ListRecords(appState.Bookmarks);
-        var error = BookmarkFile.Write(path, records);
-        if (error is null)
+        var written = BookmarkFile.Write(path, records);
+        if (written is BookmarksWriteResult.Failed failed)
         {
-            return;
+            Errors.Report(appState, new AppProblem.BookmarksNotExported(failed.Reason));
         }
-
-        Errors.Report(appState, new AppProblem.BookmarksNotExported(error));
     }
 
     /// <summary>Reads the bookmarks in the file at <paramref name="path"/> — this app's or the real
@@ -454,18 +452,21 @@ public static class Bookmarks
     private static async Task ImportBookmarksAsync(AppState appState, string path)
     {
         var file = Path.GetFileName(path);
-        var read = BookmarkFile.Read(path, out var error);
-        if (read is null)
+        var read = BookmarkFile.Read(path);
+        var problem = read.Match<AppProblem?>(
+            read: r => r.Problems.Count == 0 ? null : new AppProblem.ImportedBookmarksUnreadable(file, r.Problems),
+            notBookmarksFile: _ => new AppProblem.NotBookmarksFile(path),
+            failed: f => new AppProblem.BookmarksNotImported(file, f.Reason));
+        if (problem is not null)
         {
-            Errors.Report(appState, new AppProblem.BookmarksNotImported(file, error ?? ""));
+            Errors.Report(appState, problem);
+        }
+        if (read is not BookmarksRead.Read bookmarksRead)
+        {
             return;
         }
-        if (read.Unreadable.Count > 0)
-        {
-            Errors.Report(appState, new AppProblem.ImportedBookmarksUnreadable(file, read.Unreadable));
-        }
 
-        var records = read.Bookmarks;
+        var records = bookmarksRead.Bookmarks;
         appState.Imports.Finding++;
         var assemblies = appState.Assemblies;
         var session = appState.Session;
