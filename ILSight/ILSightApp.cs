@@ -73,6 +73,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     protected override void OnShutdown(ImmediateGuiAppHost<UiState> host)
     {
         _inbox.Writer.TryComplete();
+        _appState.Workflows.CancelAll();
         StopRedrawingOnAssemblyChanges(host);
         StopWatchingUserThemes(_appState);
         StopWatchingUserIconThemes(_appState);

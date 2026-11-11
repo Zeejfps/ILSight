@@ -227,7 +227,7 @@ internal static class MainMenuView
 
         if (ui.MenuItem(t.FileOpenFromFramework, id: "open-from-framework", icon: new UiIcon(icons.FileOpenFromFramework)))
         {
-            FrameworkPickerView.Open(appState, ui.State.Picker);
+            FrameworkPickerView.Open(ui.State);
         }
 
         if (ui.MenuItem(t.FileOpenFromNuget, id: "open-from-nuget", icon: new UiIcon(icons.FileOpenFromNuGet)))

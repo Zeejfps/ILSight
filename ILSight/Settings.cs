@@ -46,6 +46,7 @@ public static class Settings
         var appState = new AppState
         {
             Work = work,
+            Workflows = new WorkflowRunner(work, errors),
             Session = session,
             SettingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile },
             View = ReadViewSettings(settings),

@@ -39,13 +39,19 @@ public sealed class FrameworkPicker(FrameworkPicker.IPorts ports)
         return Selection.InOrder(Filtered);
     }
 
-    /// <summary>Opens the dialog at once; scans the runtime the first time it opens, and again after a scan
-    /// failed, ending when the scan does.</summary>
-    public async Task OpenAsync(CancellationToken ct)
+    /// <summary>Opens the dialog, its filter taking focus. Until <see cref="ScanAsync"/> has scanned the runtime, it
+    /// says it is scanning.</summary>
+    public void Open()
     {
         IsOpen = true;
         _focusFilter = true;
         _appliedFilter = null;
+    }
+
+    /// <summary>Scans the runtime for the assemblies to offer, unless it was scanned or is being scanned: the
+    /// first time the dialog opens, and again after a scan failed.</summary>
+    public async Task ScanAsync(CancellationToken ct)
+    {
         if (Scan is RuntimeScan.Scanned or RuntimeScan.Scanning)
         {
             return;
@@ -63,7 +69,7 @@ public sealed class FrameworkPicker(FrameworkPicker.IPorts ports)
         return new RuntimeScan.Failed(failed.Error.ToString());
     }
 
-    /// <summary>True once after <see cref="OpenAsync"/>: the filter box should take focus.</summary>
+    /// <summary>True once after <see cref="Open"/>: the filter box should take focus.</summary>
     public bool TryTakeFilterFocus()
     {
         var focus = _focusFilter;

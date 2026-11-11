@@ -10,11 +10,13 @@ namespace ILSight;
 
 internal static class FrameworkPickerView
 {
-    /// <summary>Opens <paramref name="picker"/>, its scan counted in the app's background work until it ends, and
-    /// anything unexpected it ends with reported.</summary>
-    public static void Open(AppState appState, FrameworkPicker picker)
+    /// <summary>Opens the picker, drawn from this frame on, and asks for the runtime to be scanned for it once the
+    /// frame is drawn.</summary>
+    public static void Open(UiState uiState)
     {
-        Background.Start(appState.Work, nameof(FrameworkPicker.OpenAsync), picker.OpenAsync(CancellationToken.None), problem => Errors.Report(appState, problem));
+        var picker = uiState.Picker;
+        picker.Open();
+        Commands.Start(uiState, nameof(FrameworkPicker.ScanAsync), picker, static (_, p, ct) => p.ScanAsync(ct));
     }
 
     public static void Render(Ui<UiState> ui, AssemblyList assemblies)

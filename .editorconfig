@@ -77,3 +77,8 @@ dotnet_diagnostic.RL1102.severity = suggestion
 # Test code (RULES.md Scope): R001, R004 and R011 checks skip it, and test methods needn't take a token.
 [{ILSight.Tests,ILSight.App.Tests}/**.cs]
 rulelab.test_code = true
+
+# The edge where the workflows the screen asks for are started (R009, R010): it catches and reports what they end
+# with, and counts them as background work.
+[ILSight/WorkflowRunner.cs]
+rulelab.infrastructure = true

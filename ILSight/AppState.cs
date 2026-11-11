@@ -60,6 +60,10 @@ public sealed class AppState
     /// for the UI to be ready waits for it.</summary>
     public required BackgroundWork Work { get; init; }
 
+    /// <summary>Starts the workflows the screen asks for, counted in <see cref="Work"/>, and cancels them as the
+    /// app shuts down.</summary>
+    public required WorkflowRunner Workflows { get; init; }
+
     /// <summary>The newer version looked for, downloaded and offered, if any.</summary>
     public required AppUpdates Updates { get; set; }
     public DocumentTabs Tabs { get; } = new();

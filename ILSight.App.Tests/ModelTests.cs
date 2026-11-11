@@ -873,7 +873,8 @@ public sealed class FrameworkPickerTests
         var runtime = new FakeRuntime { Failure = new InvalidDataException("no runtime") };
         var picker = new FrameworkPicker(runtime);
 
-        await picker.OpenAsync(CancellationToken.None);
+        picker.Open();
+        await picker.ScanAsync(CancellationToken.None);
 
         Assert.Contains("no runtime", Assert.IsType<RuntimeScan.Failed>(picker.Scan).Error);
         Assert.Single(runtime.Reported);
@@ -884,12 +885,15 @@ public sealed class FrameworkPickerTests
     {
         var runtime = new FakeRuntime { Failure = new InvalidDataException("no runtime") };
         var picker = new FrameworkPicker(runtime);
-        await picker.OpenAsync(CancellationToken.None);
+        picker.Open();
+        await picker.ScanAsync(CancellationToken.None);
         picker.IsOpen = false;
 
         runtime.Failure = null;
-        await picker.OpenAsync(CancellationToken.None);
-        await picker.OpenAsync(CancellationToken.None);
+        picker.Open();
+        await picker.ScanAsync(CancellationToken.None);
+        picker.Open();
+        await picker.ScanAsync(CancellationToken.None);
 
         Assert.IsType<RuntimeScan.Scanned>(picker.Scan);
         Assert.Equal(2, runtime.Scans);
@@ -902,10 +906,12 @@ public sealed class FrameworkPickerTests
     {
         var picker = new FrameworkPicker(new FakeRuntime());
 
-        await picker.OpenAsync(CancellationToken.None);
+        picker.Open();
+        await picker.ScanAsync(CancellationToken.None);
         var first = picker.TryTakeFilterFocus();
         var second = picker.TryTakeFilterFocus();
-        await picker.OpenAsync(CancellationToken.None);
+        picker.Open();
+        await picker.ScanAsync(CancellationToken.None);
 
         Assert.True(first);
         Assert.False(second);
@@ -923,7 +929,8 @@ public sealed class FrameworkPickerTests
         };
         var picker = new FrameworkPicker(new FakeRuntime { Assemblies = assemblies });
         var list = new AssemblyList();
-        await picker.OpenAsync(CancellationToken.None);
+        picker.Open();
+        await picker.ScanAsync(CancellationToken.None);
         picker.Update(list);
 
         picker.Selection.SelectAll(picker.Filtered);
@@ -940,7 +947,8 @@ public sealed class FrameworkPickerTests
         var other = new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll"));
         var picker = new FrameworkPicker(new FakeRuntime { Assemblies = [open, other] });
         var list = new AssemblyList();
-        await picker.OpenAsync(CancellationToken.None);
+        picker.Open();
+        await picker.ScanAsync(CancellationToken.None);
         picker.Update(list);
         Assert.Equal([open, other], picker.Filtered);
 
@@ -948,6 +956,23 @@ public sealed class FrameworkPickerTests
         picker.Update(list);
 
         Assert.Equal([other], picker.Filtered);
+    }
+
+    [Fact]
+    public void OpenFromFramework_PickedFromTheFileMenu_ShowsTheDialogThatFrameThenScansInTheBackground()
+    {
+        var app = new AppDriver();
+        app.Settle();
+
+        app.Frames.ClickOn(Selector.WithText(Strings.En.MenuFile));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, Strings.En.FileOpenFromFramework));
+        var shownThatFrame = app.Frames.Drew(Strings.En.PickerTitle);
+        app.Settle();
+
+        Assert.True(shownThatFrame);
+        Assert.True(app.Ui.Picker.IsOpen);
+        Assert.IsType<RuntimeScan.Scanned>(app.Ui.Picker.Scan);
+        Assert.Empty(app.AppState.Errors.Entries);
     }
 
     [Fact]
