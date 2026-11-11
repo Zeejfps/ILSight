@@ -37,7 +37,9 @@ internal static class ComparisonPickerView
     private static void LetGo(ComparisonPicker picker)
     {
         if (picker.Dialog is ComparisonDialog.Open open)
+        {
             picker.Dialog = new ComparisonDialog.Going(open.Compared);
+        }
     }
 
     /// <summary>True once after <see cref="Open"/>: the filter box should take focus.</summary>
@@ -54,7 +56,10 @@ internal static class ComparisonPickerView
     {
         var compared = picker.Compared;
         if (compared == null)
+        {
             return;
+        }
+
         RefreshCandidates(picker, assemblies, compared);
         ApplyFilter(picker);
     }
@@ -62,7 +67,10 @@ internal static class ComparisonPickerView
     private static void RefreshCandidates(ComparisonPicker picker, AssemblyList assemblies, LoadedModule compared)
     {
         if (assemblies.Version == picker.ListedVersion)
+        {
             return;
+        }
+
         picker.ListedVersion = assemblies.Version;
         var open = assemblies.Assemblies;
         if (!open.Contains(compared))
@@ -86,9 +94,15 @@ internal static class ComparisonPickerView
     private static void ApplyFilter(ComparisonPicker picker)
     {
         if (!picker.IsOpen)
+        {
             return;
+        }
+
         if (picker.Filter == picker.AppliedFilter)
+        {
             return;
+        }
+
         picker.AppliedFilter = picker.Filter;
         var selected = picker.Selected;
         picker.Filtered.Clear();
@@ -96,7 +110,9 @@ internal static class ComparisonPickerView
         foreach (var candidate in picker.Candidates)
         {
             if (Matches(candidate, filter))
+            {
                 picker.Filtered.Add(candidate);
+            }
         }
         SelectAgain(picker, selected);
     }
@@ -104,9 +120,15 @@ internal static class ComparisonPickerView
     private static bool Matches(LoadedModule assembly, string filter)
     {
         if (filter.Length == 0)
+        {
             return true;
+        }
+
         if (assembly.NameAndVersion.Contains(filter, StringComparison.OrdinalIgnoreCase))
+        {
             return true;
+        }
+
         return assembly.FilePath.Text.Contains(filter, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -119,7 +141,10 @@ internal static class ComparisonPickerView
         }
         var index = 0;
         if (selected != null)
+        {
             index = Math.Max(0, picker.Filtered.IndexOf(selected));
+        }
+
         ItemSelections.Select(picker.Selection, picker.Filtered[index], picker.Filtered);
     }
 
@@ -127,10 +152,16 @@ internal static class ComparisonPickerView
     {
         var picker = ui.State.ComparisonPicker;
         if (picker.IsOpen)
+        {
             Update(picker, assemblies);
+        }
+
         var compared = picker.Compared;
         if (compared == null)
+        {
             return;
+        }
+
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var compare = false;
@@ -140,17 +171,32 @@ internal static class ComparisonPickerView
         using (var dialog = ui.Dialog(DialogId, t.ComparePickerTitle(compared.NameAndVersion), ref isOpen, card))
         {
             if (!isOpen)
+            {
                 LetGo(picker);
+            }
+
             if (!dialog.IsOpen)
+            {
                 return;
+            }
+
             var listId = ui.GetId(ListId);
             if (!ui.HasFocus(listId))
+            {
                 MoveSelectionFromFilter(ui, picker, listId);
+            }
+
             if (TakeFilterFocus(picker))
+            {
                 ui.Focus(ui.GetId(FilterId));
+            }
+
             compare |= ui.TextField(FilterId, ref picker.Filter, t.ComparePickerFilter, clearable: true);
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
+            {
                 compare |= ListOrHint(ui, picker, listId);
+            }
+
             using (ui.Row(new Box { Gap = theme.GapTight }))
             {
                 ui.Spacer();
@@ -159,9 +205,14 @@ internal static class ComparisonPickerView
             }
         }
         if (compare)
+        {
             close |= CompareWithSelected(ui.State, picker, compared, t);
+        }
+
         if (close)
+        {
             Close(picker);
+        }
     }
 
     /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>
@@ -173,10 +224,16 @@ internal static class ComparisonPickerView
         {
             var movesCaret = stroke.Key is KeyboardKey.Home or KeyboardKey.End;
             if (movesCaret)
+            {
                 continue;
+            }
+
             var index = picker.Selection.Rows.Index;
             if (!UiWidgets.ApplyListKey(stroke, ref index, count, page))
+            {
                 continue;
+            }
+
             picker.Selection.Rows.Select(index, count);
             ItemSelections.TakeFrom(picker.Selection, picker.Filtered);
         }
@@ -186,7 +243,10 @@ internal static class ComparisonPickerView
     private static bool ListOrHint(Ui<UiState> ui, ComparisonPicker picker, int listId)
     {
         if (picker.Filtered.Count > 0)
+        {
             return Rows(ui, picker, listId);
+        }
+
         var theme = ui.Theme;
         ui.Text(ui.State.Strings.ComparePickerNone, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
         return false;
@@ -199,7 +259,10 @@ internal static class ComparisonPickerView
         using (var list = ui.SelectableList(listId, picker.Filtered.Count, picker.Selection.Rows))
         {
             for (var i = list.First; i < list.End; i++)
+            {
                 Row(ui, list, i, picker.Filtered[i]);
+            }
+
             activated = list.Activated;
         }
         ItemSelections.TakeFrom(picker.Selection, picker.Filtered);
@@ -225,7 +288,10 @@ internal static class ComparisonPickerView
     {
         var moniker = assembly.FrameworkMoniker;
         if (moniker == null)
+        {
             return;
+        }
+
         ui.Text(moniker, color: ui.Theme.TextMuted, size: ui.Theme.FontSizeSmall);
     }
 
@@ -234,7 +300,10 @@ internal static class ComparisonPickerView
     {
         var other = picker.Selected;
         if (other == null)
+        {
             return false;
+        }
+
         Commands.Later(screen, (compared, other, title: t.ComparisonTitle(compared.Name)), static (a, s) => CompareAssemblies(a, s.compared, s.other, s.title));
         return true;
     }

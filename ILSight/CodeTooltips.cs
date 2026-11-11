@@ -32,7 +32,10 @@ public static class TooltipLookups
     {
         ForgetIfStale(tooltips);
         if (tooltips.Found.TryGetValue(reference, out tooltip))
+        {
             return true;
+        }
+
         LookUp(tooltips, reference);
         return false;
     }
@@ -40,7 +43,10 @@ public static class TooltipLookups
     private static void ForgetIfStale(CodeTooltips tooltips)
     {
         if (tooltips.Version == tooltips.Assemblies.Version)
+        {
             return;
+        }
+
         tooltips.Version = tooltips.Assemblies.Version;
         tooltips.Found.Clear();
         tooltips.Pending.Clear();
@@ -54,11 +60,17 @@ public static class TooltipLookups
     private static async Task LookUpAsync(CodeTooltips tooltips, CodeReference.Entity reference)
     {
         if (!tooltips.Pending.Add(reference))
+        {
             return;
+        }
+
         var version = tooltips.Version;
         var outcome = await Background.Run(() => AssemblyListing.DescribeReference(tooltips.Assemblies, reference));
         if (version != tooltips.Version)
+        {
             return;
+        }
+
         tooltips.Pending.Remove(reference);
         tooltips.Found[reference] = outcome switch
         {

@@ -51,7 +51,10 @@ public static class GridSchemas
         foreach (var row in rows())
         {
             if (row == null)
+            {
                 throw new UnreachableException("A grid's rows are the rows of a metadata table or heap, which are never null.");
+            }
+
             loaded.Add(row);
         }
         return loaded;
@@ -63,7 +66,10 @@ public static class GridSchemas
     private static TRow GetRow<TRow>(object row)
     {
         if (row is not TRow typed)
+        {
             throw new UnreachableException($"A {row.GetType().Name} row was handed to a schema of {typeof(TRow).Name} rows, though a grid hands each row only to the schema that read it.");
+        }
+
         return typed;
     }
 
@@ -156,14 +162,20 @@ public static class GridSchemas
     {
         var decoded = Decode(row, decode);
         if (decoded != null)
+        {
             return decoded;
+        }
+
         return Describe(file, handle);
     }
 
     private static string? Decode<TRow>(TRow row, Func<TRow, string?>? decode)
     {
         if (decode == null)
+        {
             return null;
+        }
+
         return decode(row);
     }
 
@@ -200,7 +212,10 @@ public static class GridSchemas
     public static string? Describe(MetadataFile module, EntityHandle handle)
     {
         if (handle.IsNil)
+        {
             return null;
+        }
+
         ITextOutput output = new PlainTextOutput();
         var context = new MetadataGenericContext(default(TypeDefinitionHandle), module.Metadata);
         var metadata = module.Metadata;

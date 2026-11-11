@@ -23,7 +23,10 @@ public sealed class BookmarkImports
         get
         {
             if (Waiting.Count == 0)
+            {
                 return null;
+            }
+
             return Waiting[0];
         }
     }

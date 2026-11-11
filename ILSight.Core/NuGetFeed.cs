@@ -58,7 +58,10 @@ public static class NuGetFeeds
     internal static HttpClient GetClient(HttpMessageHandler? handler)
     {
         if (handler == null)
+        {
             return NuGetFeed.Shared.Value;
+        }
+
         return CreateClient(handler);
     }
 
@@ -108,17 +111,26 @@ public static class NuGetFeeds
         using var leaf = await ReadJsonAsync(feed, url, cancellationToken).ConfigureAwait(false);
         var registration = FeedJson.ReadRegistration(leaf.RootElement);
         if (registration.CatalogEntry == null)
+        {
             throw new InvalidDataException($"{url} names no catalog entry.");
+        }
+
         return await ReadCatalogEntryAsync(feed, registration.CatalogEntry.Value, registration.Published, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<WebUrl> FindDetailsUrlAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken cancellationToken)
     {
         if (version.DetailsUrl != null)
+        {
             return version.DetailsUrl;
+        }
+
         var index = await EnsureIndexAsync(feed, cancellationToken).ConfigureAwait(false);
         if (index.Registrations == null)
+        {
             throw new InvalidDataException($"The service index of {feed.Source.Url} names no {RegistrationsType}.");
+        }
+
         return ParseDerivedUrl($"{index.Registrations.Text.TrimEnd('/')}/{id.Lower}/{version.Version.Filed}.json");
     }
 
@@ -126,10 +138,16 @@ public static class NuGetFeeds
     private static async Task<PackageVersionDetails> ReadCatalogEntryAsync(NuGetFeed feed, JsonElement entry, DateTimeOffset? listedAt, CancellationToken cancellationToken)
     {
         if (entry.ValueKind == JsonValueKind.Object)
+        {
             return FeedJson.ReadDetails(entry, listedAt);
+        }
+
         var url = entry.ValueKind == JsonValueKind.String ? WebUrl.Parse(entry.GetString()) : null;
         if (url == null)
+        {
             throw new InvalidDataException("A catalog entry is neither inline nor a web URL.");
+        }
+
         using var catalog = await ReadJsonAsync(feed, url, cancellationToken).ConfigureAwait(false);
         return FeedJson.ReadDetails(catalog.RootElement, listedAt);
     }
@@ -168,12 +186,18 @@ public static class NuGetFeeds
         var temporary = path + ".download";
         var folder = Path.GetDirectoryName(path);
         if (folder == null)
+        {
             throw new ArgumentException($"'{path}' names no file in a folder.", nameof(path));
+        }
+
         Directory.CreateDirectory(folder);
         try
         {
             await using (var file = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
                 await response.Content.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
+            }
+
             File.Move(temporary, path, overwrite: true);
         }
         finally
@@ -187,7 +211,10 @@ public static class NuGetFeeds
         using var held = await feed.Index.EnterAsync(cancellationToken).ConfigureAwait(false);
         var index = held.Value;
         if (index != null)
+        {
             return index;
+        }
+
         index = await FetchIndexAsync(feed, cancellationToken).ConfigureAwait(false);
         held.Value = index;
         return index;
@@ -208,7 +235,10 @@ public static class NuGetFeeds
     {
         var url = FindOptionalResource(resources, type);
         if (url == null)
+        {
             throw new InvalidDataException($"The service index of {feed.Source.Url} names no {type}.");
+        }
+
         return url;
     }
 
@@ -219,7 +249,9 @@ public static class NuGetFeeds
         foreach (var resource in resources)
         {
             if (resource.Types.Any(t => IsOfType(t, type)))
+            {
                 return resource.Url;
+            }
         }
         return null;
     }
@@ -227,7 +259,10 @@ public static class NuGetFeeds
     private static bool IsOfType(string found, string type)
     {
         if (found == type)
+        {
             return true;
+        }
+
         return found.StartsWith(type + "/", StringComparison.Ordinal);
     }
 
@@ -252,10 +287,16 @@ public static class NuGetFeeds
     {
         var restored = GetPackagePath(cache.GlobalPackagesFolder, id, version);
         if (File.Exists(restored))
+        {
             return restored;
+        }
+
         var downloaded = GetPackagePath(cache.DownloadFolder, id, version);
         if (File.Exists(downloaded))
+        {
             return downloaded;
+        }
+
         return null;
     }
 
@@ -267,7 +308,10 @@ public static class NuGetFeeds
     {
         var found = FindPackage(cache, id, version);
         if (found != null)
+        {
             return found;
+        }
+
         var path = GetPackagePath(cache.DownloadFolder, id, version);
         await NuGetFeeds.DownloadAsync(feed, id, version, path, cancellationToken).ConfigureAwait(false);
         return path;
@@ -308,10 +352,16 @@ public static class NuGetFeeds
         using var response = await icons.Client.GetAsync(url.Uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength > MaxBytes)
+        {
             throw new InvalidDataException($"The icon at {url} is larger than {MaxBytes} bytes.");
+        }
+
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
         if (bytes.Length > MaxBytes)
+        {
             throw new InvalidDataException($"The icon at {url} is larger than {MaxBytes} bytes.");
+        }
+
         return bytes;
     }
 
@@ -345,7 +395,10 @@ public static class NuGetFeeds
     public static NuGetFeed EnsureFeed(NuGetSetup setup, NuGetSource source)
     {
         if (setup.Feeds.TryGetValue(source.Url.Text, out var feed))
+        {
             return feed;
+        }
+
         var named = GetListedSource(setup, source);
         feed = NuGetFeeds.CreateFeed(named, setup.Handler);
         setup.Feeds.Add(source.Url.Text, feed);
@@ -356,7 +409,10 @@ public static class NuGetFeeds
     {
         var listed = setup.Sources.FirstOrDefault(s => string.Equals(s.Url.Text, source.Url.Text, StringComparison.OrdinalIgnoreCase));
         if (listed == null)
+        {
             return source;
+        }
+
         return listed;
     }
 }

@@ -29,7 +29,9 @@ public sealed class BoundedList<T> : IReadOnlyList<T>
         _items.Add(item);
         Added++;
         if (_items.Count > Capacity)
+        {
             _items.RemoveAt(0);
+        }
     }
 
     public void Clear()

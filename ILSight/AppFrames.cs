@@ -59,7 +59,10 @@ internal static partial class AppFrames
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {
         if (!AssemblyListing.UseLoadOptions(appState.Assemblies, appState.DecompilerOptions))
+        {
             return;
+        }
+
         RefreshAssemblies(appState, Trees.ListExpandedPaths(uiState.Tree));
     }
 
@@ -73,9 +76,14 @@ internal static partial class AppFrames
     {
         var language = appState.Language;
         if (!ShownChanges.TakeDecompilation(uiState, language, appState.DecompilerOptions))
+        {
             return;
+        }
+
         foreach (var tab in ListFrontTabs(uiState))
+        {
             DecompileAgainIfOutdated(appState, tab);
+        }
     }
 
     /// <summary>Keeps what the screen changed while it drew: the tabs keep where their views stand, and the
@@ -90,14 +98,19 @@ internal static partial class AppFrames
     private static void KeepTabPositions(UiState uiState, DocumentTabs tabs)
     {
         for (var i = 0; i < tabs.Open.Count; i++)
+        {
             KeepTabPosition(uiState, tabs.Open[i]);
+        }
     }
 
     private static void KeepTabPosition(UiState uiState, DocumentTab tab)
     {
         var position = DocumentPanels.FindViewPosition(uiState.Documents, tab);
         if (position == null)
+        {
             return;
+        }
+
         Tabs.KeepPosition(tab, position.Value);
     }
 
@@ -105,7 +118,10 @@ internal static partial class AppFrames
     {
         var view = TakeChangedViewSettings(uiState);
         if (view == null)
+        {
             return;
+        }
+
         KeepViewSettings(appState, view);
     }
 
@@ -132,7 +148,10 @@ internal static partial class AppFrames
     private static void BringToFrontIfAsked(Ui<UiState> ui)
     {
         if (!ui.State.FrontAsked)
+        {
             return;
+        }
+
         ui.State.FrontAsked = false;
         ui.BringWindowToFront();
     }
@@ -140,41 +159,58 @@ internal static partial class AppFrames
     private static void QuitIfAsked(Ui<UiState> ui)
     {
         if (ui.State.QuitAsked)
+        {
             ui.Quit();
+        }
     }
 
     private static void OpenAskedWebPages(Ui<UiState> ui)
     {
         var pages = ui.State.WebPagesToOpen;
         while (pages.TryDequeue(out var url))
+        {
             ui.OpenUrl(url);
+        }
     }
 
     private static void OpenAskedFolders(Ui<UiState> ui)
     {
         var folders = ui.State.FoldersToOpen;
         while (folders.TryDequeue(out var path))
+        {
             ui.OpenFolder(path);
+        }
     }
 
     private static void OpenAskedFiles(Ui<UiState> ui)
     {
         var files = ui.State.FilesToOpen;
         while (files.TryDequeue(out var path))
+        {
             ui.OpenFile(path);
+        }
     }
 
     /// <summary>When the icons changed, lets go of the fonts they no longer draw in, registers those they
     /// are drawn in, and lets go of the pictures of the icons they replace.</summary>
     private static void FollowIconTheme(Ui<UiState> ui)
     {
-        IReadOnlyList<FontFace> before = ui.State.ShownIcons?.Fonts ?? [];
+        var before = ui.State.ShownIcons?.Fonts ?? [];
         if (!ShownChanges.TakeIcons(ui.State, ui.State.Icons, ui.State.IconFonts))
+        {
             return;
+        }
+
         foreach (var family in ShownChanges.ListDroppedFamilies(before, ui.State.IconFonts))
+        {
             ui.UnregisterFont(family);
+        }
+
         foreach (var font in ui.State.IconFonts)
+        {
             ui.RegisterFont(font);
+        }
+
         ui.ReleaseUndrawnIconImages();
     }
 
@@ -187,7 +223,10 @@ internal static partial class AppFrames
     {
         var face = TakeCodeFontFace(ui.State, codeFonts);
         if (face == null)
+        {
             return;
+        }
+
         ui.RegisterFont(face);
     }
 
@@ -197,10 +236,16 @@ internal static partial class AppFrames
     {
         var chosen = uiState.Display.Font;
         if (!ShownChanges.TakeCodeFont(uiState, chosen))
+        {
             return null;
+        }
+
         var face = CodeDisplay.EnsureFace(codeFonts, chosen);
         if (face != null)
+        {
             return face;
+        }
+
         SetCodeFont(uiState, null);
         ShownChanges.TakeCodeFont(uiState, null);
         return codeFonts.Bundled;
@@ -210,7 +255,10 @@ internal static partial class AppFrames
     private static void RunAppCommandsAndRedraw(Ui<UiState> ui, AppState appState)
     {
         if (ui.State.AppCommands.Count == 0)
+        {
             return;
+        }
+
         RunAppCommands(ui.State, appState);
         ui.RequestUpdate();
     }
@@ -218,7 +266,10 @@ internal static partial class AppFrames
     private static void RequestUpdateIfViewCommandsPending(Ui<UiState> ui, AppState appState)
     {
         if (appState.ViewCommands.Count == 0)
+        {
             return;
+        }
+
         ui.RequestUpdate();
     }
 

@@ -16,7 +16,10 @@ public static class RunArgumentsRouting
     {
         var path = settingsPath.Text;
         if (OperatingSystem.IsWindows())
+        {
             path = path.ToUpperInvariant();
+        }
+
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(path));
         return new RunArgumentsAddress(NamePrefix + Convert.ToHexString(hash, 0, HashBytes));
     }
@@ -29,12 +32,21 @@ public static class RunArgumentsRouting
     {
         var receiver = RunArgumentsPipe.TryClaim(address);
         if (receiver != null)
+        {
             return receiver;
+        }
+
         if (newInstance)
+        {
             return RunArgumentsPipe.StandBy(address);
+        }
+
         var handedOver = RunArgumentsPipe.TrySend(address, arguments);
         if (handedOver)
+        {
             return null;
+        }
+
         return RunArgumentsPipe.StandBy(address);
     }
 }

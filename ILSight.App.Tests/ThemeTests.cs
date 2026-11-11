@@ -18,7 +18,10 @@ public sealed class BuiltInThemeTests
         {
             var ids = new TheoryData<string>();
             foreach (var file in BuiltInThemes.Files)
+            {
                 ids.Add(file.Id.Text);
+            }
+
             return ids;
         }
     }
@@ -70,9 +73,15 @@ public sealed class BuiltInThemeTests
         var theme = Resolve(id);
 
         foreach (var kind in Enum.GetValues<SpanKind>())
+        {
             Assert.NotEqual(0u, theme.Code[kind]);
+        }
+
         foreach (var kind in Enum.GetValues<NodeIcon>())
+        {
             Assert.NotEqual(0u, NodeIcons.GetColor(theme.Icons, kind));
+        }
+
         Assert.NotEqual(0u, theme.Icons.Restricted);
         Assert.NotEqual(0u, theme.Code.CurrentLine);
         Assert.NotEqual(0u, theme.Code.Bookmark);
@@ -97,7 +106,10 @@ public sealed class BuiltInThemeTests
         return ThemeCatalogs.FindTheme(Theming.CreateCatalog(BuiltInThemes.Files), ThemeId<ThemeFile>.Of(id));
     }
 
-    private static ThemeType? TypeOf(string id) => BuiltInThemes.Files.Single(f => f.Id.Text == id).Type;
+    private static ThemeType? TypeOf(string id)
+    {
+        return BuiltInThemes.Files.Single(f => f.Id.Text == id).Type;
+    }
 
     private static float Contrast(uint a, uint b)
     {
@@ -113,7 +125,10 @@ public sealed class ThemeLoadingTests
         "text": "#F0F0F0", "textMuted": "#B0B0B0", "accent": "#3070F0", "onAccent": "#FFFFFF"
         """;
 
-    private static ThemeId<ThemeFile> Id(string text) => ThemeId<ThemeFile>.Of(text);
+    private static ThemeId<ThemeFile> Id(string text)
+    {
+        return ThemeId<ThemeFile>.Of(text);
+    }
 
     private static ThemeFile User(string id, string json)
     {
@@ -239,7 +254,9 @@ public sealed class ThemeLoadingTests
         Assert.Equal("bad.json", error.File);
         Assert.Equal(1, error.Line);
         if (file.Contents != null)
+        {
             Assert.Empty(file.Contents.Ui);
+        }
     }
 
     [Fact]
@@ -392,11 +409,20 @@ public sealed class UserThemeTests : IDisposable
 {
     private readonly TempDir _temp = new();
 
-    private static ThemeId<ThemeFile> Id(string text) => ThemeId<ThemeFile>.Of(text);
+    private static ThemeId<ThemeFile> Id(string text)
+    {
+        return ThemeId<ThemeFile>.Of(text);
+    }
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
-    private string WriteTheme(string id, string json) => _temp.Write(Path.Combine("themes", id + ".json"), json);
+    private string WriteTheme(string id, string json)
+    {
+        return _temp.Write(Path.Combine("themes", id + ".json"), json);
+    }
 
     private AppSettings Settings()
     {
@@ -518,11 +544,20 @@ public sealed class UserThemeTests : IDisposable
         Assert.Equal(CountKeys(), CountCommentedColors(text));
     }
 
-    private static int CountKeys() => UiTheme.ColorKeys.Count + CodeViewPalette.ColorKeys.Count + NodeIconPalette.ColorKeys.Count;
+    private static int CountKeys()
+    {
+        return UiTheme.ColorKeys.Count + CodeViewPalette.ColorKeys.Count + NodeIconPalette.ColorKeys.Count;
+    }
 
-    private static int CountCommentedColors(string text) => text.Split('\n').Count(IsCommentedColor);
+    private static int CountCommentedColors(string text)
+    {
+        return text.Split('\n').Count(IsCommentedColor);
+    }
 
-    private static bool IsCommentedColor(string line) => line.TrimStart().StartsWith("// \"", StringComparison.Ordinal);
+    private static bool IsCommentedColor(string line)
+    {
+        return line.TrimStart().StartsWith("// \"", StringComparison.Ordinal);
+    }
 
     [Theory]
     [InlineData("dark")]
@@ -535,7 +570,10 @@ public sealed class UserThemeTests : IDisposable
         for (var i = 0; i < lines.Length; i++)
         {
             if (!IsCommentedColor(lines[i]))
+            {
                 continue;
+            }
+
             var edited = lines.ToArray();
             edited[i] = lines[i].Replace("// ", "");
             var file = Theming.ReadTheme(Id("mine"), "mine.json", Encoding.UTF8.GetBytes(string.Join('\n', edited)));
@@ -751,7 +789,10 @@ public sealed class ThemeSchemaTests
         using var stream = new MemoryStream();
         var options = new JsonWriterOptions { Indented = true, NewLine = "\n", Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         using (var writer = new Utf8JsonWriter(stream, options))
+        {
             WriteSchema(writer);
+        }
+
         return Encoding.UTF8.GetString(stream.ToArray()) + "\n";
     }
 
@@ -841,7 +882,10 @@ public sealed class ThemeSchemaTests
         w.WriteBoolean("additionalProperties", false);
         w.WriteStartObject("properties");
         foreach (var key in keys)
+        {
             WriteColorKey(w, key);
+        }
+
         w.WriteEndObject();
         w.WriteEndObject();
     }
@@ -850,7 +894,10 @@ public sealed class ThemeSchemaTests
     {
         w.WriteStartObject(key.Key);
         if (key.Description.Length > 0)
+        {
             w.WriteString("description", key.Description);
+        }
+
         w.WriteString("$ref", "#/definitions/color");
         w.WriteEndObject();
     }

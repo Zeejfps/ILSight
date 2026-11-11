@@ -9,13 +9,25 @@ public sealed class CodeTooltipTests
         return AssemblyListing.DescribeReference(list, node.Definition)!;
     }
 
-    private static DocSection Section(CodeTooltip tooltip, DocSectionKind kind) => tooltip.Sections.Single(s => s.Kind == kind);
+    private static DocSection Section(CodeTooltip tooltip, DocSectionKind kind)
+    {
+        return tooltip.Sections.Single(s => s.Kind == kind);
+    }
 
-    private static string TextOf(DocBlock block) => TextOf(Assert.IsType<DocParagraph>(block).Runs);
+    private static string TextOf(DocBlock block)
+    {
+        return TextOf(Assert.IsType<DocParagraph>(block).Runs);
+    }
 
-    private static string TextOf(IReadOnlyList<DocRun> runs) => string.Concat(runs.Select(r => r.Text));
+    private static string TextOf(IReadOnlyList<DocRun> runs)
+    {
+        return string.Concat(runs.Select(r => r.Text));
+    }
 
-    private static DocRun RunOf(DocBlock block, string text) => Assert.IsType<DocParagraph>(block).Runs.Single(r => r.Text == text);
+    private static DocRun RunOf(DocBlock block, string text)
+    {
+        return Assert.IsType<DocParagraph>(block).Runs.Single(r => r.Text == text);
+    }
 
     /// <summary>The signature's text from each parameter's start to the next one's, the last to the end.</summary>
     private static List<string> ParameterTexts(CodeSignature signature)

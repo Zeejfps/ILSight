@@ -29,30 +29,46 @@ public static class NodeContentLoader
     /// SVG file its picture, or when that cannot be decoded the resource as a document with why first;
     /// else the node decompiled with <paramref name="options"/>, which only C# reads.</summary>
     public static Task<NodeContent> LoadAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken cancellationToken = default) =>
-        Task.Run(() => Load(session, node, language, options, cancellationToken), cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        return Task.Run(() => Load(session, node, language, options, cancellationToken), cancellationToken);
+    }
 
     /// <summary>Decompiles <paramref name="node"/> with <paramref name="options"/>, which only C# reads.
     /// Throws <see cref="OperationCanceledException"/> when cancelled; any other failure becomes a
     /// document describing it.</summary>
     public static DecompiledDocument Decompile(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken cancellationToken = default) =>
-        NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        return NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken);
+    }
 
     /// <summary>Whether <see cref="LoadAsync"/> gives decompiled code, which changes with the language
     /// and options, rather than a grid, a picture or why the file failed to load, which do not.</summary>
-    public static bool DependsOnLanguage(BrowseNode node) => GridOf(node) == null && !IsFailedFile(node) && !IsImage(node);
+    public static bool DependsOnLanguage(BrowseNode node)
+    {
+        return GridOf(node) == null && !IsFailedFile(node) && !IsImage(node);
+    }
 
-    private static bool IsFailedFile(BrowseNode node) => node.Subject is NodeSubject.FailedAssembly;
+    private static bool IsFailedFile(BrowseNode node)
+    {
+        return node.Subject is NodeSubject.FailedAssembly;
+    }
 
     /// <summary>The grid <paramref name="node"/> shows: a metadata header, directory, table or heap's, or a
     /// <c>.resources</c> file's entries; null for a node that shows none.</summary>
     private static MetadataGrid? GridOf(BrowseNode node)
     {
         if (node.Subject is NodeSubject.MetadataTable table)
+        {
             return MetadataTables.EnsureGrid(table.Value);
+        }
+
         if (node.Subject is NodeSubject.ResourceContainer container)
+        {
             return ResourceNodes.EnsureGrid(container.Value);
+        }
+
         return null;
     }
 
@@ -60,8 +76,10 @@ public static class NodeContentLoader
     /// <paramref name="path"/>: for an assembly its whole module, for a namespace all its types, else
     /// what the node shows. Throws when decompiling or writing fails.</summary>
     public static void SaveCode(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options, string path,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default)
+    {
         NodeDecompiler.SaveCode(ExportOf(session, node), language, options, path, cancellationToken);
+    }
 
     /// <summary>The name a file of <paramref name="node"/>'s code in <paramref name="language"/> is
     /// offered under: the node's name, made safe for a file name, with the language's extension.</summary>
@@ -72,16 +90,25 @@ public static class NodeContentLoader
         return WholeProjectDecompiler.CleanUpFileName(name, extension);
     }
 
-    private static bool IsModule(BrowseNode node) => node.Subject is NodeSubject.Module;
+    private static bool IsModule(BrowseNode node)
+    {
+        return node.Subject is NodeSubject.Module;
+    }
 
     private static NodeContent Load(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken)
     {
         var grid = GridOf(node);
         if (grid != null)
+        {
             return new GridContent(grid);
+        }
+
         if (!IsImage(node))
+        {
             return new DocumentContent(Decompile(session, node, language, options, cancellationToken));
+        }
+
         try
         {
             return LoadImage(session, node, language, options, cancellationToken);
@@ -92,12 +119,15 @@ public static class NodeContentLoader
         }
     }
 
-    private static bool IsImage(BrowseNode node) => node.Subject switch
+    private static bool IsImage(BrowseNode node)
     {
-        NodeSubject.ResourceEntry entry => entry.Value.IsImage,
-        NodeSubject.PackageFile file => file.Value.IsImage,
-        _ => false,
-    };
+        return node.Subject switch
+        {
+            NodeSubject.ResourceEntry entry => entry.Value.IsImage,
+            NodeSubject.PackageFile file => file.Value.IsImage,
+            _ => false,
+        };
+    }
 
     /// <summary>The picture, with the markup it is stored as when it is drawn from shapes.</summary>
     private static ImageContent LoadImage(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
@@ -105,17 +135,23 @@ public static class NodeContentLoader
     {
         var image = ResourceImages.DecodeImage(BrowseNodes.ReadResource(node));
         if (!image.IsVector)
+        {
             return new ImageContent(image);
+        }
+
         var source = Decompile(session, node, language, options, cancellationToken);
         return new ImageContent(image, source);
     }
 
-    private static CodeExport ExportOf(BrowseSession session, BrowseNode node) => node.Subject switch
+    private static CodeExport ExportOf(BrowseSession session, BrowseNode node)
     {
-        NodeSubject.Module module => new CodeExport.WholeModule(module.Value),
-        NodeSubject.Namespace ns => new CodeExport.Namespace(ns.Value.Module, ns.Value.Name, ns.Value.Types),
-        _ => new CodeExport.Document(RequestOf(session, node)),
-    };
+        return node.Subject switch
+        {
+            NodeSubject.Module module => new CodeExport.WholeModule(module.Value),
+            NodeSubject.Namespace ns => new CodeExport.Namespace(ns.Value.Module, ns.Value.Name, ns.Value.Types),
+            _ => new CodeExport.Document(RequestOf(session, node)),
+        };
+    }
 
     private static DocumentRequest RequestOf(BrowseSession session, BrowseNode node)
     {
@@ -202,9 +238,15 @@ public static class NodeContentLoader
     {
         var file = BrowseNodes.GetResourceData(child);
         if (file != null)
+        {
             return file.Description;
+        }
+
         if (child.Subject is NodeSubject.Package)
+        {
             return child.Text + "/";
+        }
+
         return child.Text;
     }
 
@@ -214,11 +256,20 @@ public static class NodeContentLoader
         var entries = new List<NamespaceEntry>();
         foreach (var child in BrowseSessions.ListChildren(session, ns))
         {
-            if (NodeDefinitions.GetVisibility(child.Subject).IsCompilerGenerated) continue;
+            if (NodeDefinitions.GetVisibility(child.Subject).IsCompilerGenerated)
+            {
+                continue;
+            }
+
             if (child.Subject is NodeSubject.TypeDefinition type)
+            {
                 entries.Add(new NamespaceEntry.Declared(type.Definition.Symbol, child.Text, type.Definition.Reference));
+            }
+
             if (child.Subject is NodeSubject.ForwardedType forwarded)
+            {
                 entries.Add(new NamespaceEntry.Forwarded(ForwardedLineOf(child, forwarded)));
+            }
         }
         return entries;
     }
@@ -247,11 +298,14 @@ public static class NodeContentLoader
         return new(forwarded.Value.Label, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination);
     }
 
-    private static SpanKind UsedMemberSpan(IMember member) => member switch
+    private static SpanKind UsedMemberSpan(IMember member)
     {
-        IField => SpanKind.Field,
-        IProperty => SpanKind.Property,
-        IEvent => SpanKind.Event,
-        _ => SpanKind.Method,
-    };
+        return member switch
+        {
+            IField => SpanKind.Field,
+            IProperty => SpanKind.Property,
+            IEvent => SpanKind.Event,
+            _ => SpanKind.Method,
+        };
+    }
 }

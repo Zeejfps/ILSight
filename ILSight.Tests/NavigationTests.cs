@@ -6,8 +6,10 @@ namespace ILSight.Tests;
 
 public sealed class NavigationTests
 {
-    private static MetadataTableInfo TableOf(BrowseNode node) =>
-        Assert.IsType<NodeSubject.MetadataTable>(node.Subject).Value;
+    private static MetadataTableInfo TableOf(BrowseNode node)
+    {
+        return Assert.IsType<NodeSubject.MetadataTable>(node.Subject).Value;
+    }
 
     [Theory]
     [InlineData("N:ILSight.Tests.Fixtures", "ILSight.Tests.Fixtures")]

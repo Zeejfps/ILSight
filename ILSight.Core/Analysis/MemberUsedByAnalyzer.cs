@@ -8,9 +8,15 @@ internal static class MemberUsedByAnalyzer
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not IMember member || member is not (IProperty or IEvent))
+        {
             return null;
+        }
+
         if (!Members.Accessors(member).Any())
+        {
             return null;
+        }
+
         return context => Analyze(member, context);
     }
 

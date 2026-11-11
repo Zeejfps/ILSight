@@ -15,7 +15,11 @@ internal static class MetadataHeaps
     {
         var m = file.Metadata;
 
-        IEnumerable<StringHandle> Strings() => Walk(MetadataTokens.StringHandle(0), m.GetNextHandle, static h => h.IsNil);
+        IEnumerable<StringHandle> Strings()
+        {
+            return Walk(MetadataTokens.StringHandle(0), m.GetNextHandle, static h => h.IsNil);
+        }
+
         yield return ($"String Heap ({Strings().Count()})", AddColumns(CreateGrid<StringHandle>("String Heap", file, Strings), columns =>
         {
             AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
@@ -23,7 +27,11 @@ internal static class MetadataHeaps
             AddValue(columns, "Value", h => m.GetString(h));
         }));
 
-        IEnumerable<UserStringHandle> UserStrings() => Walk(MetadataTokens.UserStringHandle(0), m.GetNextHandle, static h => h.IsNil);
+        IEnumerable<UserStringHandle> UserStrings()
+        {
+            return Walk(MetadataTokens.UserStringHandle(0), m.GetNextHandle, static h => h.IsNil);
+        }
+
         yield return ($"UserString Heap ({UserStrings().Count()})", AddColumns(CreateGrid<UserStringHandle>("UserString Heap", file, UserStrings), columns =>
         {
             AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
@@ -31,7 +39,11 @@ internal static class MetadataHeaps
             AddValue(columns, "Value", h => m.GetUserString(h));
         }));
 
-        IEnumerable<GuidHandle> Guids() => Enumerable.Range(1, m.GetHeapSize(HeapIndex.Guid) >> 4).Select(MetadataTokens.GuidHandle);
+        IEnumerable<GuidHandle> Guids()
+        {
+            return Enumerable.Range(1, m.GetHeapSize(HeapIndex.Guid) >> 4).Select(MetadataTokens.GuidHandle);
+        }
+
         yield return ($"Guid Heap ({Guids().Count()})", AddColumns(CreateGrid<GuidHandle>("Guid Heap", file, Guids), columns =>
         {
             AddValue(columns, "Index", h => m.GetHeapOffset(h));
@@ -39,7 +51,11 @@ internal static class MetadataHeaps
             AddValue(columns, "Value", h => m.GetGuid(h).ToString());
         }));
 
-        IEnumerable<BlobHandle> Blobs() => Walk(MetadataTokens.BlobHandle(0), m.GetNextHandle, static h => h.IsNil);
+        IEnumerable<BlobHandle> Blobs()
+        {
+            return Walk(MetadataTokens.BlobHandle(0), m.GetNextHandle, static h => h.IsNil);
+        }
+
         yield return ($"Blob Heap ({Blobs().Count()})", AddColumns(CreateGrid<BlobHandle>("Blob Heap", file, Blobs), columns =>
         {
             AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");

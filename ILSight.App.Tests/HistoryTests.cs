@@ -14,7 +14,10 @@ public sealed class HistoryTests
         return app;
     }
 
-    private static void Show(AppDriver app, string type) => app.Show(app.Fixture(type), 4);
+    private static void Show(AppDriver app, string type)
+    {
+        app.Show(app.Fixture(type), 4);
+    }
 
     private static CodeViewPosition ScrollTo(AppDriver app, int topLine, TextPosition anchor, TextPosition caret)
     {

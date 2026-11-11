@@ -15,7 +15,10 @@ public static class Navigation
     {
         var place = BrowseNodes.GetPath(node);
         if (IsCurrentPlace(history, place))
+        {
             return;
+        }
+
         AddEntry(history, new HistoryEntry.Node(place, NodeIcons.Of(node.Subject), NodeDefinitions.GetVisibility(node.Subject).Accessibility, language, null));
     }
 
@@ -23,7 +26,10 @@ public static class Navigation
     public static bool IsCurrentPlace(NavigationHistory history, NodePath? place)
     {
         if (history.Current is not HistoryEntry.Node node)
+        {
             return false;
+        }
+
         return node.Place.Equals(place);
     }
 
@@ -32,7 +38,10 @@ public static class Navigation
     public static void RecordDiagram(NavigationHistory history, TypeDiagram diagram, string title)
     {
         if (history.Current is HistoryEntry.Diagram current && current.Shown == diagram)
+        {
             return;
+        }
+
         AddEntry(history, new HistoryEntry.Diagram(diagram, title));
     }
 
@@ -54,9 +63,15 @@ public static class Navigation
         for (var i = history.Entries.Count - 1; i >= 0; i--)
         {
             if (history.Entries[i] is not HistoryEntry.Diagram entry)
+            {
                 continue;
+            }
+
             if (entry.Shown != diagram)
+            {
                 continue;
+            }
+
             history.Entries.RemoveAt(i);
         }
     }
@@ -65,7 +80,10 @@ public static class Navigation
     private static void LeaveEntry(NavigationHistory history, DecompilationLanguage language, ViewPosition position)
     {
         if (history.Current is not HistoryEntry.Node node)
+        {
             return;
+        }
+
         history.Entries.ReplaceCurrent(node with { Language = language, Position = position });
     }
 
@@ -73,7 +91,10 @@ public static class Navigation
     private static HistoryEntry? MoveToEntry(NavigationHistory history, int index)
     {
         if (!history.Entries.MoveTo(index))
+        {
             return null;
+        }
+
         return history.Entries[index];
     }
 
@@ -83,11 +104,20 @@ public static class Navigation
     public static ViewPosition? KeepPosition(ViewPosition? position, DecompilationLanguage shownIn, DecompilationLanguage language)
     {
         if (position == null)
+        {
             return null;
+        }
+
         if (position.Value.Grid != null)
+        {
             return position;
+        }
+
         if (shownIn != language)
+        {
             return null;
+        }
+
         return position;
     }
 
@@ -120,11 +150,16 @@ public static class Navigation
     {
         var active = appState.Tabs.Active;
         if (active != null && active.Node == node)
+        {
             return active;
+        }
+
         foreach (var tab in appState.Tabs.Open)
         {
             if (tab.Node == node)
+            {
                 return tab;
+            }
         }
         return null;
     }
@@ -146,7 +181,10 @@ public static class Navigation
     {
         var active = appState.Tabs.Active;
         if (active == null)
+        {
             return;
+        }
+
         KeepTabOpen(appState, active);
     }
 
@@ -162,10 +200,15 @@ public static class Navigation
     {
         appState.PreviewTabs = on;
         if (on)
+        {
             return;
+        }
+
         var preview = appState.Tabs.Preview;
         if (preview != null)
+        {
             Tabs.Keep(appState.Tabs, preview);
+        }
     }
 
     /// <summary>Opens the files at <paramref name="paths"/> in the background, then shows the namespace,
@@ -188,11 +231,17 @@ public static class Navigation
         {
             case Outcome<BrowseNode>.Ok ok when ok.Value != null:
                 if (!appState.Intent.IsStale(ticket))
+                {
                     ShowNode(appState, ok.Value);
+                }
+
                 break;
             case Outcome<BrowseNode>.Ok:
                 if (!appState.Intent.IsStale(ticket))
+                {
                     ReportMissingId(appState, idString);
+                }
+
                 break;
             case Outcome<BrowseNode>.Failed failed:
                 ReportOpenFailure(appState, failed.Error);
@@ -207,7 +256,10 @@ public static class Navigation
     {
         var opened = new List<LoadedAssembly>();
         foreach (var path in paths)
+        {
             opened.Add(AssemblyListing.Open(assemblies, path, token));
+        }
+
         var scope = ListIdScope(assemblies, opened);
         return NodeLookup.FindById(session, idString, scope);
     }
@@ -218,7 +270,10 @@ public static class Navigation
     {
         var open = assemblies.Assemblies;
         if (opened.Count == 0)
+        {
             return open.ToList();
+        }
+
         return open
             .Where(a => opened.Contains(a.ListedItem))
             .ToList();
@@ -245,7 +300,10 @@ public static class Navigation
         var session = appState.Session;
         var found = await Background.Run(() => NodeLookup.Find(assemblies, session, reference));
         if (appState.Intent.IsStale(ticket))
+        {
             return;
+        }
+
         appState.Intent.StopResolving();
         ShowResolved(appState, reference, found, destination);
     }
@@ -284,7 +342,10 @@ public static class Navigation
     {
         var target = BrowseSessions.FindMetadataRow(appState.Session, grid, address);
         if (target == null)
+        {
             return;
+        }
+
         ShowMetadataTarget(appState, target.Value, inNewTab);
     }
 
@@ -304,7 +365,10 @@ public static class Navigation
         var session = appState.Session;
         var found = await Background.Run(() => NodeLookup.FindMetadataRow(assemblies, session, reference));
         if (appState.Intent.IsStale(ticket))
+        {
             return;
+        }
+
         appState.Intent.StopResolving();
         ShowResolvedRow(appState, reference, found, destination);
     }
@@ -346,9 +410,13 @@ public static class Navigation
         var assemblies = appState.Assemblies;
         var found = await Background.Run(() => AssemblyListing.FindApiReferencePage(assemblies, reference));
         if (found is Outcome<string>.Ok ok && ok.Value != null)
+        {
             appState.ViewCommands.Enqueue(new ViewCommand.OpenWebPage(ok.Value));
+        }
         else
+        {
             ReportNoApiReferencePage(appState, reference);
+        }
     }
 
     private static void ReportNoApiReferencePage(AppState appState, CodeReference reference)
@@ -358,17 +426,29 @@ public static class Navigation
 
     /// <summary>Goes where a node points: what a reference, a forwarded type, an imported method, or a base
     /// or derived type leads to.</summary>
-    public static void GoTo(AppState appState, CodeReference.Navigable target) => Navigate(appState, target, inNewTab: false);
+    public static void GoTo(AppState appState, CodeReference.Navigable target)
+    {
+        Navigate(appState, target, inNewTab: false);
+    }
 
-    public static void GoBack(AppState appState) => GoToHistoryEntry(appState, appState.History.CurrentIndex - 1);
+    public static void GoBack(AppState appState)
+    {
+        GoToHistoryEntry(appState, appState.History.CurrentIndex - 1);
+    }
 
-    public static void GoForward(AppState appState) => GoToHistoryEntry(appState, appState.History.CurrentIndex + 1);
+    public static void GoForward(AppState appState)
+    {
+        GoToHistoryEntry(appState, appState.History.CurrentIndex + 1);
+    }
 
     /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward.</summary>
     public static void GoToHistoryEntry(AppState appState, int index)
     {
         if (!CanGoTo(appState, index))
+        {
             return;
+        }
+
         LeaveActiveTab(appState);
         var entry = MoveToEntry(appState.History, index);
         switch (entry)
@@ -385,9 +465,15 @@ public static class Navigation
     private static bool CanGoTo(AppState appState, int index)
     {
         if (index < 0)
+        {
             return false;
+        }
+
         if (index >= appState.History.Entries.Count)
+        {
             return false;
+        }
+
         return index != appState.History.CurrentIndex;
     }
 
@@ -413,7 +499,10 @@ public static class Navigation
         var session = appState.Session;
         var found = await Background.Run(() => NodeLookup.Find(assemblies, session, place));
         if (appState.Intent.IsStale(ticket))
+        {
             return;
+        }
+
         appState.Intent.StopResolving();
         ShowHistoryPlace(appState, place, position, found, destination);
     }
@@ -421,14 +510,26 @@ public static class Navigation
     private static BrowseNode? FindShownNode(AppState appState, DocumentTab? tab, NodePath place)
     {
         if (tab == null)
+        {
             return null;
+        }
+
         var node = tab.Node;
         if (node == null)
+        {
             return null;
+        }
+
         if (!place.Equals(tab.Location))
+        {
             return null;
+        }
+
         if (!AssemblyListing.IsListed(appState.Assemblies, node.Root.Assembly))
+        {
             return null;
+        }
+
         return node;
     }
 
@@ -463,7 +564,10 @@ public static class Navigation
         appState.Intent.Begin();
         var tab = FindTabShowing(appState, diagram);
         if (tab == null)
+        {
             return;
+        }
+
         Tabs.MakeActive(appState.Tabs, tab);
         appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
@@ -473,7 +577,9 @@ public static class Navigation
         foreach (var tab in appState.Tabs.Open)
         {
             if (tab.Diagram == diagram)
+            {
                 return tab;
+            }
         }
         return null;
     }
@@ -489,18 +595,30 @@ public static class Navigation
     {
         var tab = appState.Tabs.Active;
         if (tab == null)
+        {
             return;
+        }
+
         var position = tab.Position;
         if (position == null)
+        {
             return;
+        }
+
         if (!IsCurrentPlace(appState.History, tab.Location))
+        {
             return;
+        }
+
         LeaveEntry(appState.History, tab.Language, position.Value);
     }
 
     /// <summary>Where what is asked for now from the active tab will show, in a new tab when
     /// <paramref name="inNewTab"/>.</summary>
-    internal static TabDestination ChooseDestination(AppState appState, bool inNewTab) => new(appState.Tabs.Active, inNewTab);
+    internal static TabDestination ChooseDestination(AppState appState, bool inNewTab)
+    {
+        return new(appState.Tabs.Active, inNewTab);
+    }
 
     /// <summary>Shows <paramref name="node"/> in the tab <paramref name="destination"/> leads to now, makes
     /// that tab active, and commands the view to bring it to the front and reveal the node in the tree.</summary>
@@ -524,11 +642,19 @@ public static class Navigation
     {
         var tab = FindTab(appState, destination);
         if (tab == null)
+        {
             tab = OpenNewTab(appState);
+        }
         else
+        {
             appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
+        }
+
         if (IsPreviewed(appState, destination))
+        {
             Tabs.MakePreview(appState.Tabs, tab);
+        }
+
         return tab;
     }
 
@@ -536,9 +662,15 @@ public static class Navigation
     private static DocumentTab? FindTab(AppState appState, TabDestination destination)
     {
         if (destination.InNewTab)
+        {
             return null;
+        }
+
         if (appState.PreviewTabs)
+        {
             return FindPreviewTab(appState);
+        }
+
         return FindOriginToReplace(appState, destination.Origin);
     }
 
@@ -548,9 +680,15 @@ public static class Navigation
     {
         var open = Tabs.KeepIfOpen(appState.Tabs, origin);
         if (open == null)
+        {
             return null;
+        }
+
         if (!open.IsReplaceable)
+        {
             return null;
+        }
+
         return open;
     }
 
@@ -560,7 +698,10 @@ public static class Navigation
     {
         var empty = FindEmptyActiveTab(appState);
         if (empty != null)
+        {
             return empty;
+        }
+
         return appState.Tabs.Preview;
     }
 
@@ -569,16 +710,25 @@ public static class Navigation
     {
         var active = appState.Tabs.Active;
         if (active == null)
+        {
             return null;
+        }
+
         if (active.Content is not TabContent.Empty)
+        {
             return null;
+        }
+
         return active;
     }
 
     private static bool IsPreviewed(AppState appState, TabDestination destination)
     {
         if (destination.InNewTab)
+        {
             return false;
+        }
+
         return appState.PreviewTabs;
     }
 
@@ -587,7 +737,10 @@ public static class Navigation
     {
         var empty = FindEmptyActiveTab(appState);
         if (empty == null)
+        {
             return OpenNewTab(appState);
+        }
+
         appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(empty, Beside: null));
         return empty;
     }

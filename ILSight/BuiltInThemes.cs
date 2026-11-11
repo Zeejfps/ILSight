@@ -31,10 +31,16 @@ public static class BuiltInThemes
     public static IReadOnlyList<ThemeError> Errors => Catalog.Errors;
 
     /// <summary>The JSON schema theme files name in <c>$schema</c>, for editors to complete and check their keys.</summary>
-    public static string ReadSchema() => EmbeddedAssets.LoadString(Resources, SchemaResource);
+    public static string ReadSchema()
+    {
+        return EmbeddedAssets.LoadString(Resources, SchemaResource);
+    }
 
     /// <summary>The README the themes folder holds, on how to write a theme.</summary>
-    public static string ReadGuide() => EmbeddedAssets.LoadString(Resources, GuideResource);
+    public static string ReadGuide()
+    {
+        return EmbeddedAssets.LoadString(Resources, GuideResource);
+    }
 
     private static List<ThemeFile> ReadFiles()
     {
@@ -46,7 +52,10 @@ public static class BuiltInThemes
             .ToList();
     }
 
-    private static bool IsThemeResource(string name) => name.StartsWith(ResourcePrefix, StringComparison.Ordinal);
+    private static bool IsThemeResource(string name)
+    {
+        return name.StartsWith(ResourcePrefix, StringComparison.Ordinal);
+    }
 
     private static ThemeFile ReadFile(string resource)
     {
@@ -58,11 +67,20 @@ public static class BuiltInThemes
     private static int RankOf(ThemeFile file)
     {
         if (file.Id.Equals(Theming.DarkId))
+        {
             return DarkRank;
+        }
+
         if (file.Id.Equals(Theming.LightId))
+        {
             return LightRank;
+        }
+
         if (file.Type == ThemeType.Light)
+        {
             return OtherLightRank;
+        }
+
         return OtherDarkRank;
     }
 }

@@ -23,7 +23,10 @@ public static class CommandLines
     {
         var reader = new Reader();
         foreach (var arg in args)
+        {
             Read(reader, arg);
+        }
+
         return Finish(reader);
     }
 
@@ -34,15 +37,30 @@ public static class CommandLines
     {
         var args = new List<string>();
         if (arguments.Language != null)
+        {
             args.Add(LanguageOption + arguments.Language.Value);
+        }
+
         if (arguments.AssemblyList != null)
+        {
             args.Add(ListOption + arguments.AssemblyList);
+        }
+
         if (arguments.ClearList)
+        {
             args.Add(ClearListFlag);
+        }
+
         if (arguments.Files.NavigateTo != null)
+        {
             args.Add(NavigateToOption + arguments.Files.NavigateTo);
+        }
+
         foreach (var path in arguments.Files.Paths)
+        {
             args.Add(path.Text);
+        }
+
         args.AddRange(arguments.Ignored);
         return args;
     }
@@ -58,23 +76,41 @@ public static class CommandLines
     private static void Read(Reader reader, string arg)
     {
         if (arg.StartsWith(SettingsOption, StringComparison.Ordinal))
+        {
             ReadSettingsPath(reader, arg);
+        }
         else if (arg == OpenGlFlag)
+        {
             reader.RenderBackend = RenderBackendKind.OpenGl;
+        }
         else if (arg == NewInstanceFlag)
+        {
             reader.NewInstance = true;
+        }
         else if (arg.StartsWith(LanguageOption, StringComparison.Ordinal))
+        {
             ReadLanguage(reader, arg);
+        }
         else if (arg.StartsWith(ListOption, StringComparison.Ordinal))
+        {
             ReadAssemblyList(reader, arg);
+        }
         else if (arg == ClearListFlag)
+        {
             reader.ClearList = true;
+        }
         else if (arg.StartsWith(NavigateToOption, StringComparison.Ordinal))
+        {
             ReadNavigateTo(reader, arg);
+        }
         else if (arg.StartsWith(FlagPrefix, StringComparison.Ordinal))
+        {
             reader.Ignored.Add(arg);
+        }
         else
+        {
             AddAssemblyPath(reader, arg);
+        }
     }
 
     /// <summary>Takes <paramref name="arg"/>'s value as the settings file, made absolute from this process's
@@ -161,7 +197,10 @@ public static class CommandLines
     {
         var trimmed = name.Trim();
         if (trimmed.Length == 0)
+        {
             return null;
+        }
+
         return trimmed;
     }
 

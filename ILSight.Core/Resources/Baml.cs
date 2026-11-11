@@ -8,10 +8,16 @@ internal static class Baml
     private const string Extension = ".baml";
     public const string XamlExtension = ".xaml";
 
-    public static bool IsBamlName(string name) => name.EndsWith(Extension, StringComparison.OrdinalIgnoreCase);
+    public static bool IsBamlName(string name)
+    {
+        return name.EndsWith(Extension, StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary><paramref name="name"/> with the extension of the XAML it decompiles to.</summary>
-    public static string XamlName(string name) => Path.ChangeExtension(name, XamlExtension);
+    public static string XamlName(string name)
+    {
+        return Path.ChangeExtension(name, XamlExtension);
+    }
 
     /// <summary>The BAML in <paramref name="data"/> as XAML, its types resolved against
     /// <paramref name="typeSystem"/>.</summary>

@@ -9,7 +9,10 @@ public sealed partial record PackageId
 {
     private const int MaxLength = 100;
 
-    private PackageId(string text) => Text = text;
+    private PackageId(string text)
+    {
+        Text = text;
+    }
 
     public string Text { get; }
 
@@ -20,11 +23,17 @@ public sealed partial record PackageId
     public static PackageId? Parse(string text)
     {
         if (text.Length > MaxLength || !Pattern().IsMatch(text))
+        {
             return null;
+        }
+
         return new PackageId(text);
     }
 
-    public override string ToString() => Text;
+    public override string ToString()
+    {
+        return Text;
+    }
 
     [GeneratedRegex(@"^\w+([_.-]\w+)*\z")]
     private static partial Regex Pattern();

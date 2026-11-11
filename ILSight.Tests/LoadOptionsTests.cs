@@ -18,7 +18,10 @@ public sealed class LoadOptionsTests
         return (list, list.OpenModule(Trees.TestAssemblyPath));
     }
 
-    private static BrowseNode RuntimeReference(LoadedAssembly assembly) => assembly.Root.Child("References", "System.Runtime");
+    private static BrowseNode RuntimeReference(LoadedAssembly assembly)
+    {
+        return assembly.Root.Child("References", "System.Runtime");
+    }
 
     [Fact]
     public void The_options_that_apply_as_assemblies_are_read_are_offered_among_the_other_decompiler_options()

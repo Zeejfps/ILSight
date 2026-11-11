@@ -22,12 +22,18 @@ internal static class AboutDialogView
     {
         var screen = ui.State;
         if (!screen.IsAboutOpen)
+        {
             return;
+        }
+
         var t = screen.Strings;
         var box = new Box { Width = Sizing.Grow(0f, AppLayout.AboutDialogWidth) };
         using var dialog = ui.Dialog("about", t.AboutTitle, ref screen.IsAboutOpen, box);
         if (!dialog.IsOpen)
+        {
             return;
+        }
+
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.DialogGap }))
         {
             Identity(ui, appState.Updates);
@@ -75,12 +81,17 @@ internal static class AboutDialogView
         {
             var label = ui.Memo("about-restart", (t, Version: GetVersion(ready.Update)), static a => a.t.AboutRestartToUpdate(a.Version));
             if (ui.Button(label, id: "about-updates"))
+            {
                 Commands.Later(ui.State, static a => RestartToUpdate(a));
+            }
+
             return;
         }
         var text = ButtonText(ui, updates.Status);
         if (ui.Button(text, enabled: CanCheck(updates), id: "about-updates", variant: ButtonVariant.Neutral))
+        {
             Commands.Later(ui.State, static a => CheckForUpdates(a));
+        }
     }
 
     private static string ButtonText(Ui<UiState> ui, UpdateStatus status)
@@ -104,9 +115,13 @@ internal static class AboutDialogView
     {
         var t = ui.State.Strings;
         if (status is UpdateStatus.UpToDate)
+        {
             ui.Text(t.AboutUpToDate, color: ui.Theme.TextMuted, wrap: true);
+        }
         else if (status is UpdateStatus.Failed)
+        {
             ui.Text(t.AboutUpdateFailed, color: ui.Theme.Danger, wrap: true);
+        }
     }
 
     private static void CheckAutomatically(Ui<UiState> ui, AppUpdates updates)
@@ -114,7 +129,9 @@ internal static class AboutDialogView
         var t = ui.State.Strings;
         var check = updates.CheckAutomatically;
         if (ui.Checkbox(t.AboutCheckAutomatically, ref check, id: "about-check-automatically", compact: true))
+        {
             Commands.Later(ui.State, check, static (a, on) => SetCheckAutomatically(a, on));
+        }
     }
 
     /// <summary>A small row for each version, its name in a column as wide as the widest name.</summary>
@@ -158,7 +175,9 @@ internal static class AboutDialogView
             LicensesButton(ui);
             ui.Spacer();
             if (ui.Button(t.AboutClose, id: "about-close", variant: ButtonVariant.Neutral))
+            {
                 CloseAbout(ui.State);
+            }
         }
     }
 
@@ -167,17 +186,25 @@ internal static class AboutDialogView
     {
         var t = ui.State.Strings;
         if (ShippedLicenses == null)
+        {
             return;
+        }
+
         var icon = new UiIcon(ui.State.Icons.AboutOpenLicensesFolder);
         if (ui.Button(t.AboutLicenses, id: "about-licenses", variant: ButtonVariant.Neutral, icon: icon))
+        {
             ui.OpenFolder(ShippedLicenses);
+        }
     }
 
     private static string? FindShippedLicenses()
     {
         var folder = Path.Combine(AppContext.BaseDirectory, LicensesFolder);
         if (!Directory.Exists(folder))
+        {
             return null;
+        }
+
         return folder;
     }
 }

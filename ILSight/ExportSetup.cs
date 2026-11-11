@@ -93,9 +93,15 @@ public sealed class ExportSetup
         {
             var count = IncludedCount;
             if (count == 0)
+            {
                 return false;
+            }
+
             if (count == Choices.Count)
+            {
                 return true;
+            }
+
             return null;
         }
     }
@@ -115,10 +121,15 @@ public sealed class ExportSetup
             foreach (var choice in Choices)
             {
                 if (!choice.Included)
+                {
                     continue;
+                }
+
                 var name = AssemblyExport.CleanProjectName(choice.Name);
                 if (!names.Add(name))
+                {
                     return choice;
+                }
             }
             return null;
         }

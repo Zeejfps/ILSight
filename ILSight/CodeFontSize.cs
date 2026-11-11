@@ -19,7 +19,10 @@ public readonly record struct CodeFontSize
     public static CodeFontSize Clamp(float points)
     {
         if (float.IsNaN(points))
+        {
             return default;
+        }
+
         return new CodeFontSize(Math.Clamp(points, Min, Max));
     }
 }

@@ -26,17 +26,29 @@ public static partial class BrowseNodes
         var result = new List<BrowseNode> { CreateMetadataFolder(module, parent, file, "Metadata") };
         var symbols = LoadedAssemblies.EnsureDebugSymbols(module);
         if (symbols != null)
+        {
             result.Add(CreateMetadataFolder(module, parent, symbols.File, symbols.Title));
+        }
+
         result.Add(Create(parent, new NodeSubject.References { Owner = module }));
         if (!file.Resources.IsEmpty)
+        {
             result.Add(Create(parent, new NodeSubject.Resources { Owner = module }));
+        }
 
         var byNamespace = new Dictionary<string, List<ITypeDefinition>>(StringComparer.Ordinal);
         foreach (var type in LoadedAssemblies.EnsureMainModule(module).TopLevelTypeDefinitions)
         {
-            if (Members.IsMissing(type)) continue;
+            if (Members.IsMissing(type))
+            {
+                continue;
+            }
+
             if (!byNamespace.TryGetValue(type.Namespace, out var types))
+            {
                 byNamespace.Add(type.Namespace, types = new List<ITypeDefinition>());
+            }
+
             types.Add(type);
         }
         var forwardedByNamespace = ForwardedTypes.ListByNamespace(file.Metadata);
@@ -67,7 +79,10 @@ public static partial class BrowseNodes
     {
         var enclosing = NamespaceNames.EnclosingName(name);
         if (enclosing == null)
+        {
             return null;
+        }
+
         return namespaces[enclosing];
     }
 
@@ -80,10 +95,15 @@ public static partial class BrowseNodes
         {
             var node = CreateForType(ns.Module, parent, type);
             if (node != null)
+            {
                 children.Add((type.Name, type.TypeParameterCount, node));
+            }
         }
         foreach (var forwarded in ns.Forwarded)
+        {
             children.Add((forwarded.SortName, forwarded.Arity, Create(parent, new NodeSubject.ForwardedType { Value = forwarded })));
+        }
+
         return children
             .OrderBy(static c => c.Name, NaturalStringComparer.Instance)
             .ThenBy(static c => c.Arity)
@@ -103,7 +123,10 @@ public static partial class BrowseNodes
     private static string? GetBuiltForName(LoadedModule module)
     {
         if (module.DetectedTargetFramework == null)
+        {
             return null;
+        }
+
         return module.DetectedTargetFramework.Readable;
     }
 }

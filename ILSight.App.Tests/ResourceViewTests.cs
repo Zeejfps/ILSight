@@ -53,8 +53,10 @@ public sealed class ResourceViewTests
         return (drawn.Inputs.Position.Width, drawn.Inputs.Position.Height);
     }
 
-    private static (int Width, int Height) UploadedSize(AppDriver app, DocumentTab tab) =>
-        (app.Frames.Canvas.GetImageWidth(ImageOf(app, tab)), app.Frames.Canvas.GetImageHeight(ImageOf(app, tab)));
+    private static (int Width, int Height) UploadedSize(AppDriver app, DocumentTab tab)
+    {
+        return (app.Frames.Canvas.GetImageWidth(ImageOf(app, tab)), app.Frames.Canvas.GetImageHeight(ImageOf(app, tab)));
+    }
 
     [Fact]
     public void Zoom_buttons_draw_the_picture_larger_and_back_at_its_own_size()
@@ -168,7 +170,10 @@ public sealed class ResourceViewTests
         Assert.Equal(first.Y, more.Y, 4f);
     }
 
-    private static void Click(AppDriver app, UiRect at) => app.Frames.Wait(1).Click(at).Frame(2);
+    private static void Click(AppDriver app, UiRect at)
+    {
+        app.Frames.Wait(1).Click(at).Frame(2);
+    }
 
     [Fact]
     public void Clicking_a_multi_line_string_grows_its_cell_to_show_every_line_as_the_cell_shows_its_first()

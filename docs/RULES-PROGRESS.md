@@ -8,12 +8,12 @@ Rules: [RULES-COMPACT.md](RULES-COMPACT.md) (agents), [RULES.md](RULES.md) (full
 1. **Baseline** (below): every check on, as warnings, so the build stays green while the code changes.
 2. **Survey** what the build can't check (R001 ports, R004 types, R006 boundaries, R008 union candidates, R011 levels)
    into a work list of one-commit items.
-3. **Fix, one item per commit**, gated by a clean build and all 1,661 tests. Mechanical rules first, then structural.
+3. **Fix, one item per commit**, gated by a clean build and all 1,654 tests. Mechanical rules first, then structural.
 4. **Promote** each rule to an error in `.editorconfig` once the code follows it, so it can't come back.
 
 ## Baseline (2026-11-11, branch `coding_rules`, before any refactoring)
 
-Counts per check, after removing duplicates; tests are `ILSight.Tests` and `ILSight.App.Tests`. All 1,661 tests pass.
+Counts per check, after removing duplicates; tests are `ILSight.Tests` and `ILSight.App.Tests`. All 1,661 tests pass (1,654 after the old rules' 7 architecture tests were removed).
 
 | Check | What | Total | ILSight | App.Tests | Core | Tests |
 |---|---|---|---|---|---|---|
@@ -53,3 +53,4 @@ Counts per check, after removing duplicates; tests are `ILSight.Tests` and `ILSi
 
 | Commit | Rule | What changed | Checks after |
 |---|---|---|---|
+| R007 braces | R007 | `dotnet format` added braces to 3,701 bodies and turned 562 `=>` methods, constructors, operators and local functions into block bodies; 6 locals to `var` by hand. Braces, block bodies and `var` are now errors. | IDE0011/21-24/61/0007: 0 |

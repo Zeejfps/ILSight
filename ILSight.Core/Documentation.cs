@@ -29,7 +29,10 @@ internal static class Documentation
     {
         var root = Parse(Find(entity));
         if (root == null)
+        {
             return [];
+        }
+
         var documentation = new XmlDocumentationElement(root, entity, cref => FindCref(cref, entity));
         return ReadSections(documentation);
     }
@@ -38,7 +41,10 @@ internal static class Documentation
     {
         var file = entity.ParentModule?.MetadataFile;
         if (file == null)
+        {
             return null;
+        }
+
         try
         {
             return XmlDocLoader.LoadDocumentation(file)?.GetDocumentation(entity);
@@ -52,7 +58,10 @@ internal static class Documentation
     private static XElement? Parse(string? xml)
     {
         if (string.IsNullOrWhiteSpace(xml))
+        {
             return null;
+        }
+
         try
         {
             return XElement.Parse("<doc>" + xml + "</doc>", LoadOptions.PreserveWhitespace);
@@ -67,7 +76,10 @@ internal static class Documentation
     {
         var module = entity.ParentModule;
         if (module == null)
+        {
             return null;
+        }
+
         return IdStringProvider.FindEntity(cref, new SimpleTypeResolveContext(module));
     }
 
@@ -81,20 +93,28 @@ internal static class Documentation
         {
             var section = ReadSection(child);
             if (section != null)
+            {
                 sections.Add(section);
+            }
             else if (KindOf(child) == null)
+            {
                 AddInline(loose, child);
+            }
         }
         if (!loose.IsEmpty && !sections.Any(IsSummary))
+        {
             sections.Add(new DocSection(DocSectionKind.Summary, null, Documentation.FinishBlocks(loose)));
+        }
+
         return sections
             .Where(HasContent)
             .OrderBy(s => s.Kind)
             .ToList();
     }
 
-    private static DocSectionKind? KindOf(XmlDocumentationElement element) =>
-        element.Name switch
+    private static DocSectionKind? KindOf(XmlDocumentationElement element)
+    {
+        return element.Name switch
         {
             "summary" => DocSectionKind.Summary,
             "typeparam" => DocSectionKind.TypeParameter,
@@ -106,12 +126,16 @@ internal static class Documentation
             "example" => DocSectionKind.Example,
             _ => null,
         };
+    }
 
     private static DocSection? ReadSection(XmlDocumentationElement element)
     {
         var kind = KindOf(element);
         if (kind == null)
+        {
             return null;
+        }
+
         var text = new DocText();
         AddChildren(text, element);
         return new DocSection(kind.Value, LabelOf(element, kind.Value), Documentation.FinishBlocks(text));
@@ -120,10 +144,16 @@ internal static class Documentation
     private static DocRun? LabelOf(XmlDocumentationElement element, DocSectionKind kind)
     {
         if (kind == DocSectionKind.Exception)
+        {
             return ExceptionLabel(element);
+        }
+
         var name = element.GetAttribute("name");
         if (name == null)
+        {
             return null;
+        }
+
         return new DocRun(name, DocStyle.Code);
     }
 
@@ -133,19 +163,30 @@ internal static class Documentation
     {
         var cref = element.GetAttribute("cref");
         if (cref == null)
+        {
             return null;
+        }
+
         var name = ShortName(element.ReferencedEntity, cref);
         return CrefRun(element, name);
     }
 
-    private static bool IsSummary(DocSection section) => section.Kind == DocSectionKind.Summary;
+    private static bool IsSummary(DocSection section)
+    {
+        return section.Kind == DocSectionKind.Summary;
+    }
 
-    private static bool HasContent(DocSection section) => section.Blocks.Count > 0 || section.Label != null;
+    private static bool HasContent(DocSection section)
+    {
+        return section.Blocks.Count > 0 || section.Label != null;
+    }
 
     private static void AddChildren(DocText text, XmlDocumentationElement element)
     {
         foreach (var child in element.Children)
+        {
             AddInline(text, child);
+        }
     }
 
     private static void AddInline(DocText text, XmlDocumentationElement element)
@@ -209,7 +250,10 @@ internal static class Documentation
         }
         var shown = element.TextContent;
         if (shown.Length == 0)
+        {
             shown = AttributeText(element, "href");
+        }
+
         Documentation.AddRun(text, shown, DocStyle.Plain);
     }
 
@@ -218,7 +262,10 @@ internal static class Documentation
     {
         var value = element.GetAttribute(name);
         if (value == null)
+        {
             return "";
+        }
+
         return value;
     }
 
@@ -228,11 +275,17 @@ internal static class Documentation
     {
         var cref = element.GetAttribute("cref");
         if (cref == null)
+        {
             return null;
+        }
+
         var entity = element.ReferencedEntity;
         var name = shown;
         if (name.Length == 0)
+        {
             name = ShortName(entity, cref);
+        }
+
         var reference = entity != null ? CodeReferences.Find(entity) : null;
         return new DocRun(name, DocStyle.Reference, reference);
     }
@@ -240,9 +293,15 @@ internal static class Documentation
     private static string ShortName(IEntity? entity, string cref)
     {
         if (entity is ITypeDefinition type)
+        {
             return TypeNames.ConvertSymbol(type);
+        }
+
         if (entity != null)
+        {
             return MemberNames.ConvertSymbol(entity);
+        }
+
         return ShortNameOf(cref);
     }
 
@@ -254,7 +313,10 @@ internal static class Documentation
         var name = StripPrefix(cref);
         var parameters = name.IndexOf('(');
         if (parameters >= 0)
+        {
             name = name.Substring(0, parameters);
+        }
+
         var parts = name.Split('.');
         var kept = isType ? 1 : 2;
         var shown = parts.Skip(Math.Max(0, parts.Length - kept));
@@ -264,7 +326,10 @@ internal static class Documentation
     private static string StripPrefix(string cref)
     {
         if (cref.Length > 2 && cref[1] == ':')
+        {
             return cref.Substring(2);
+        }
+
         return cref;
     }
 
@@ -272,7 +337,10 @@ internal static class Documentation
     {
         var tick = name.IndexOf('`');
         if (tick < 0)
+        {
             return name;
+        }
+
         return name.Substring(0, tick);
     }
 
@@ -283,20 +351,26 @@ internal static class Documentation
         foreach (var child in list.Children)
         {
             if (child.Name == "listheader")
+            {
                 header = ReadListItem(child);
+            }
             else if (child.Name == "item")
+            {
                 items.Add(ReadListItem(child));
+            }
         }
         Documentation.AddList(text, new DocList(ListKindOf(list), header, items));
     }
 
-    private static DocListKind ListKindOf(XmlDocumentationElement list) =>
-        list.GetAttribute("type") switch
+    private static DocListKind ListKindOf(XmlDocumentationElement list)
+    {
+        return list.GetAttribute("type") switch
         {
             "number" => DocListKind.Number,
             "table" => DocListKind.Table,
             _ => DocListKind.Bullet,
         };
+    }
 
     /// <summary>An item's <c>term</c> and <c>description</c>; text outside them describes it too.</summary>
     private static DocListItem ReadListItem(XmlDocumentationElement item)
@@ -306,11 +380,17 @@ internal static class Documentation
         foreach (var part in item.Children)
         {
             if (part.Name == "term")
+            {
                 AddChildren(term, part);
+            }
             else if (part.Name == "description")
+            {
                 AddChildren(description, part);
+            }
             else
+            {
                 AddInline(description, part);
+            }
         }
         return new DocListItem(Documentation.FinishInline(term), Documentation.FinishInline(description));
     }
@@ -350,7 +430,10 @@ internal static class Documentation
         var declaration = builder.ConvertEntity(entity);
         var constraints = declaration.Children.OfType<Constraint>().ToList();
         if (constraints.Count == 0)
+        {
             return [];
+        }
+
         var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly };
         TokenWriter writer = new TextTokenWriter(output, settings);
         writer = TokenWriter.InsertRequiredSpaces(writer);
@@ -375,9 +458,15 @@ internal static class Documentation
     {
         var declaring = entity.DeclaringTypeDefinition;
         if (declaring != null)
+        {
             return new CodeContainer(GetKeyword(declaring), EntityText.FullName(declaring), false);
+        }
+
         if (entity.Namespace.Length == 0)
+        {
             return null;
+        }
+
         return new CodeContainer(NamespaceKeyword, entity.Namespace, true);
     }
 
@@ -402,7 +491,10 @@ internal static class Documentation
         public override void StartNode(AstNode node)
         {
             if (IsDeclaredParameter(node))
+            {
                 Starts.Add(output.Column);
+            }
+
             base.StartNode(node);
         }
 
@@ -416,9 +508,15 @@ internal static class Documentation
     {
         var collapsed = CollapseWhitespace(text);
         if (EndsWithSpace(doc) && collapsed.StartsWith(' '))
+        {
             collapsed = collapsed.Substring(1);
+        }
+
         if (collapsed.Length == 0)
+        {
             return;
+        }
+
         doc.Runs.Add(new DocRun(collapsed, style, reference));
     }
 
@@ -429,7 +527,10 @@ internal static class Documentation
         BreakParagraph(doc);
         var lines = Dedent(code);
         if (lines.Length == 0)
+        {
             return;
+        }
+
         doc.Blocks.Add(new DocCode(lines));
     }
 
@@ -437,7 +538,9 @@ internal static class Documentation
     {
         BreakParagraph(doc);
         if (list.Items.Count > 0 || list.Header != null)
+        {
             doc.Blocks.Add(list);
+        }
     }
 
     /// <summary>Ends the open paragraph.</summary>
@@ -445,7 +548,10 @@ internal static class Documentation
     {
         TrimParagraphEnds(doc);
         if (doc.Runs.Count > 0)
+        {
             doc.Blocks.Add(new DocParagraph(doc.Runs));
+        }
+
         doc.Runs = new List<DocRun>();
     }
 
@@ -463,9 +569,15 @@ internal static class Documentation
         foreach (var block in FinishBlocks(doc))
         {
             if (block is not DocParagraph paragraph)
+            {
                 continue;
+            }
+
             if (joined.Count > 0)
+            {
                 joined.Add(new DocRun(" ", DocStyle.Plain));
+            }
+
             joined.AddRange(paragraph.Runs);
         }
         return joined;
@@ -474,14 +586,20 @@ internal static class Documentation
     private static bool EndsWithSpace(DocText doc)
     {
         if (doc.Runs.Count == 0)
+        {
             return true;
+        }
+
         return doc.Runs[^1].Text.EndsWith(' ');
     }
 
     private static void TrimParagraphEnds(DocText doc)
     {
         if (doc.Runs.Count == 0)
+        {
             return;
+        }
+
         var last = doc.Runs[^1];
         doc.Runs[^1] = last with { Text = last.Text.TrimEnd() };
         doc.Runs.RemoveAll(static r => r.Text.Length == 0);
@@ -499,12 +617,18 @@ internal static class Documentation
                 continue;
             }
             if (inSpace)
+            {
                 collapsed.Append(' ');
+            }
+
             inSpace = false;
             collapsed.Append(c);
         }
         if (inSpace)
+        {
             collapsed.Append(' ');
+        }
+
         return collapsed.ToString();
     }
 
@@ -515,9 +639,15 @@ internal static class Documentation
     {
         var lines = code.Replace("\r\n", "\n").Split('\n').ToList();
         while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[0]))
+        {
             lines.RemoveAt(0);
+        }
+
         while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+        {
             lines.RemoveAt(lines.Count - 1);
+        }
+
         var indent = CommonIndent(lines.Skip(1));
         var dedented = lines
             .Select(l => RemoveIndent(l, indent))
@@ -531,12 +661,18 @@ internal static class Documentation
         foreach (var line in lines)
         {
             if (string.IsNullOrWhiteSpace(line))
+            {
                 continue;
+            }
+
             var leading = line.Length - line.TrimStart().Length;
             indent = Math.Min(indent, leading);
         }
         if (indent == int.MaxValue)
+        {
             return 0;
+        }
+
         return indent;
     }
 
@@ -544,7 +680,10 @@ internal static class Documentation
     {
         var leading = line.Length - line.TrimStart().Length;
         if (leading < indent)
+        {
             return line.TrimStart();
+        }
+
         return line.Substring(indent);
     }
 }

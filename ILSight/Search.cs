@@ -90,19 +90,31 @@ public static class Searches
     {
         NoteTyping(search, now);
         if (!shown)
+        {
             return 0;
+        }
+
         var searched = search.LastSearched;
         if (searched == null || IsQueryChanged(search, searched))
+        {
             return RestartWhenSettled(search, assemblies, now, searched);
+        }
+
         if (assemblies.Version != searched.Version)
+        {
             Extend(search, assemblies, searched);
+        }
+
         return 0;
     }
 
     private static void NoteTyping(Search search, double now)
     {
         if (search.Query == search.Typed)
+        {
             return;
+        }
+
         search.Typed = search.Query;
         search.TypedAt = now;
     }
@@ -116,7 +128,10 @@ public static class Searches
     {
         var remaining = DebounceSeconds - (now - search.TypedAt);
         if (remaining > 0 && searched != null && search.Kinds == searched.Kinds)
+        {
             return remaining;
+        }
+
         Restart(search, assemblies);
         return 0;
     }
@@ -137,7 +152,10 @@ public static class Searches
     private static void CancelRuns(Search search)
     {
         foreach (var run in search.Runs)
+        {
             run.Cancel();
+        }
+
         search.Runs.Clear();
     }
 
@@ -149,14 +167,19 @@ public static class Searches
         DropClosed(search, listed);
         var added = MarkSearched(search, listed);
         if (added.Count > 0)
+        {
             Start(search, assemblies, searched, added);
+        }
     }
 
     private static void DropClosed(Search search, IReadOnlyList<LoadedModule> listed)
     {
         var closed = search.SearchedAssemblies.RemoveWhere(a => !listed.Contains(a));
         if (closed == 0)
+        {
             return;
+        }
+
         search.Rows.RemoveAll(r => !search.SearchedAssemblies.Contains(r.Node.Assembly));
         ItemSelections.DropIfGone(search.Selection, search.Rows);
     }
@@ -167,7 +190,9 @@ public static class Searches
         foreach (var assembly in listed)
         {
             if (search.SearchedAssemblies.Add(assembly))
+            {
                 added.Add(assembly);
+            }
         }
         return added;
     }
@@ -176,7 +201,10 @@ public static class Searches
     {
         var query = SearchQueries.ParseQuery(searched.Query, searched.Kinds);
         if (query.IsEmpty)
+        {
             return;
+        }
+
         var work = new CancellationTokenSource();
         search.Runs.Add(work);
         var batches = search.Stream(assemblies, query, within, work.Token);
@@ -188,7 +216,9 @@ public static class Searches
         try
         {
             await foreach (var batch in batches)
+            {
                 Deliver(search, batch, work);
+            }
         }
         catch (OperationCanceledException) when (work.IsCancellationRequested)
         {
@@ -210,14 +240,20 @@ public static class Searches
     private static void ReportFailure(Search search, CancellationTokenSource work, Exception error)
     {
         if (!IsCurrent(search, work))
+        {
             return;
+        }
+
         search.ReportError(new AppProblem.SearchFailed(error));
     }
 
     private static void Deliver(Search search, IReadOnlyList<SearchResult> batch, CancellationTokenSource work)
     {
         if (!IsCurrent(search, work))
+        {
             return;
+        }
+
         var arrived = SortArrived(search, batch);
         MergeIntoRows(search, arrived);
     }
@@ -291,7 +327,10 @@ public static class Searches
     private static string CreateScopedQuery(Search search, BrowseNode node)
     {
         if (node.Subject is NodeSubject.Namespace)
+        {
             return SearchQueries.AddScope(search.Query, NamespaceScope, BrowseNodes.GetFullName(node));
+        }
+
         return SearchQueries.AddScope(search.Query, AssemblyScope, node.Assembly.Name);
     }
 
@@ -300,7 +339,10 @@ public static class Searches
     public static void SortBy(Search search, SearchSort sort)
     {
         if (search.Sort == sort && search.Descending)
+        {
             sort = SearchSort.Relevance;
+        }
+
         search.Descending = search.Sort == sort && sort != SearchSort.Relevance;
         search.Sort = sort;
         search.Rows.Sort((a, b) => Compare(search, a, b));
@@ -343,7 +385,10 @@ public static class Searches
     {
         var fit = b.Fitness.CompareTo(a.Fitness);
         if (fit != 0)
+        {
             return fit;
+        }
+
         return CompareByName(a, b);
     }
 
@@ -356,10 +401,16 @@ public static class Searches
     {
         var order = StringComparer.OrdinalIgnoreCase.Compare(a1, b1);
         if (order != 0)
+        {
             return order;
+        }
+
         order = StringComparer.OrdinalIgnoreCase.Compare(a2, b2);
         if (order != 0)
+        {
             return order;
+        }
+
         return StringComparer.OrdinalIgnoreCase.Compare(a3, b3);
     }
 }

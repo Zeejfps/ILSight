@@ -24,7 +24,10 @@ internal static class SteadyAllocations
     {
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < frames; i++)
+        {
             frame(i);
+        }
+
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         return allocated / frames;
     }

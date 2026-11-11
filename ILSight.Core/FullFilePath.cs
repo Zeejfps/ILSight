@@ -21,7 +21,10 @@ public sealed record FullFilePath
     public static FullFilePath? Parse(string text)
     {
         if (!Path.IsPathFullyQualified(text))
+        {
             return null;
+        }
+
         string full;
         try
         {
@@ -32,10 +35,16 @@ public sealed record FullFilePath
             return null;
         }
         if (Path.EndsInDirectorySeparator(full))
+        {
             return null;
+        }
+
         var folder = Path.GetDirectoryName(full);
         if (folder == null)
+        {
             return null;
+        }
+
         return new FullFilePath(full, folder);
     }
 
@@ -45,7 +54,10 @@ public sealed record FullFilePath
     {
         var path = Parse(text);
         if (path == null)
+        {
             throw new ArgumentException($"'{text}' is no absolute path of a file.", nameof(text));
+        }
+
         return path;
     }
 

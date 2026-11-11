@@ -23,7 +23,10 @@ public sealed record ExportJob(string Name, ExportKind Kind, string Folder);
 /// queue as the export enters it, numbered from 1 in the order they entered.</summary>
 public sealed record ExportRun
 {
-    internal ExportRun(int number) => Number = number;
+    internal ExportRun(int number)
+    {
+        Number = number;
+    }
 
     internal int Number { get; }
 }

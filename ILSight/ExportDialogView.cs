@@ -44,7 +44,9 @@ internal static class ExportDialogView
         foreach (var choice in picker.Order)
         {
             if (IsShown(picker, choice))
+            {
                 shown.Add(choice);
+            }
         }
         return shown;
     }
@@ -52,12 +54,21 @@ internal static class ExportDialogView
     private static bool IsShown(AssemblyPicker picker, ExportChoice choice)
     {
         if (picker.SelectedOnly && !choice.Included)
+        {
             return false;
+        }
+
         var filter = picker.Filter.Trim();
         if (filter.Length == 0)
+        {
             return true;
+        }
+
         if (choice.Assembly.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+        {
             return true;
+        }
+
         return choice.Assembly.FilePath.Text.Contains(filter, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -67,9 +78,15 @@ internal static class ExportDialogView
         var shown = ListShown(picker);
         var count = shown.Count(static c => c.Included);
         if (count == 0)
+        {
             return false;
+        }
+
         if (count == shown.Count)
+        {
             return true;
+        }
+
         return null;
     }
 
@@ -78,7 +95,9 @@ internal static class ExportDialogView
     public static void IncludeShown(AssemblyPicker picker, bool all)
     {
         foreach (var choice in ListShown(picker))
+        {
             choice.Included = all;
+        }
     }
 
     /// <summary>Follows a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
@@ -92,13 +111,21 @@ internal static class ExportDialogView
         var anchor = picker.Anchor;
         picker.Anchor = clicked;
         if (!extend || anchor == null)
+        {
             return;
+        }
+
         var from = IndexOf(shown, anchor);
         var to = IndexOf(shown, clicked);
         if (from < 0 || to < 0)
+        {
             return;
+        }
+
         for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
+        {
             shown[i].Included = clicked.Included;
+        }
     }
 
     /// <summary>Where <paramref name="choice"/> is in <paramref name="shown"/>, by identity, or -1.</summary>
@@ -107,7 +134,9 @@ internal static class ExportDialogView
         for (var i = 0; i < shown.Count; i++)
         {
             if (shown[i] == choice)
+            {
                 return i;
+            }
         }
         return -1;
     }
@@ -142,7 +171,10 @@ internal static class ExportDialogView
             closeOnEscape: !choosing))
         {
             if (!dialog.IsOpen)
+            {
                 return;
+            }
+
             if (choosing)
             {
                 ChoosePage(ui, setup);
@@ -193,15 +225,18 @@ internal static class ExportDialogView
     }
 
     /// <summary>A bordered list on the field color, its rows clipped to its rounded corners.</summary>
-    private static Box ListFrame(UiTheme theme) => new()
+    private static Box ListFrame(UiTheme theme)
     {
-        Gap = 0f,
-        Background = theme.Field,
-        BorderColor = theme.Border,
-        BorderWidth = theme.BorderWidth,
-        Radius = theme.RadiusSmall,
-        Clip = true,
-    };
+        return new()
+        {
+            Gap = 0f,
+            Background = theme.Field,
+            BorderColor = theme.Border,
+            BorderWidth = theme.BorderWidth,
+            Radius = theme.RadiusSmall,
+            Clip = true,
+        };
+    }
 
     /// <summary>The ticked assemblies as a table of their project names, its columns resized by
     /// dragging their borders and its rows picked out to remove together, over a strip that adds and
@@ -218,9 +253,14 @@ internal static class ExportDialogView
             using (ui.Column(ListFrame(theme)))
             {
                 if (chosen.Count == 0)
+                {
                     NoneChosen(ui);
+                }
                 else
+                {
                     ChosenTable(ui, chosen);
+                }
+
                 ui.Separator();
                 TableStrip(ui, setup);
             }
@@ -249,10 +289,14 @@ internal static class ExportDialogView
             removeRequested = rows.RemoveRequested;
             var clashing = setup.ClashingChoice;
             for (var i = 0; i < chosen.Count; i++)
+            {
                 ChosenRow(ui, rows, i, setup, chosen, clashing);
+            }
         }
         if (removeRequested)
+        {
             Exports.RemoveSelectedRows(setup);
+        }
     }
 
     /// <summary>An assembly being exported: its name, its version, then its project's name, edited
@@ -264,16 +308,24 @@ internal static class ExportDialogView
         var choice = chosen[index];
         using var row = rows.Row(index);
         using (row.Cell(AssemblyColumn))
+        {
             AssemblyName(ui, choice);
+        }
+
         using (row.Cell(VersionColumn))
+        {
             VersionText(ui, choice);
+        }
+
         using (row.Cell(ProjectNameColumn))
         {
             using (ui.Column(new Box { Width = Sizing.Grow(), Gap = 0f }))
             {
                 ui.TextField("name", ref choice.Name, t.ExportProjectName, Sizing.Grow(), look: FieldLook.Cell);
                 if (choice == clashing)
+                {
                     ClashNote(ui, choice);
+                }
             }
         }
         ui.Tooltip(row.Id, choice.Assembly.FilePath.Text, TooltipAnchor.Pointer);
@@ -285,9 +337,15 @@ internal static class ExportDialogView
     private static void PickOutWhileEditing(Ui<UiState> ui, ExportSetup setup, List<ExportChoice> chosen, ExportChoice choice)
     {
         if (!ui.HasFocus(ui.GetId("name")))
+        {
             return;
+        }
+
         if (setup.RowSelection.IsOnly(choice))
+        {
             return;
+        }
+
         setup.RowSelection.Select(choice, SelectionChange.Replace, chosen);
     }
 
@@ -301,7 +359,10 @@ internal static class ExportDialogView
         var theme = ui.Theme;
         var version = choice.Assembly.Version;
         if (version == null)
+        {
             return;
+        }
+
         ui.Text(version.ToString(), new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
     }
 
@@ -322,10 +383,16 @@ internal static class ExportDialogView
         using (ui.Row(new Box { Gap = theme.GapTight, Padding = new Spacing(theme.GapTight, theme.GapTight, theme.Gap, theme.GapTight) }))
         {
             if (ui.IconButton("add", ui.State.Icons.ExportAdd, t.ExportAdd))
+            {
                 Exports.ChooseAssemblies(setup);
+            }
+
             var anyPicked = setup.RowSelection.Count > 0;
             if (ui.IconButton("remove-selected", ui.State.Icons.ExportRemovePicked, t.ExportRemoveSelected, enabled: anyPicked))
+            {
                 Exports.RemoveSelectedRows(setup);
+            }
+
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
             SelectedCount(ui, setup);
         }
@@ -350,10 +417,15 @@ internal static class ExportDialogView
             {
                 ui.TextField("folder", ref setup.Folder, t.ExportFolderPlaceholder, Sizing.Grow());
                 if (ui.Button(t.ExportBrowse, id: "browse"))
+                {
                     ui.PickFolder(t.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
+                }
             }
             if (Exports.CheckFolderHoldsFiles(setup))
+            {
                 ui.Text(t.ExportFolderWarning, color: theme.Warning, size: theme.FontSizeSmall, wrap: true);
+            }
+
             SolutionName(ui, setup);
         }
     }
@@ -361,7 +433,10 @@ internal static class ExportDialogView
     private static void SolutionName(Ui<UiState> ui, ExportSetup setup)
     {
         if (!setup.IsSolution)
+        {
             return;
+        }
+
         var t = ui.State.Strings;
         var placeholder = ui.Memo("export-solution-default", setup.Folder, static f => Exports.GetDefaultSolutionName(f));
         Caption(ui, t.ExportSolution);
@@ -404,11 +479,16 @@ internal static class ExportDialogView
         var t = ui.State.Strings;
         var toggle = DecompilerToggles.FindToggle(name);
         if (toggle == null)
+        {
             return;
+        }
+
         var label = DecompilerOptionLabels.Label(t, name) ?? name;
         var on = DecompilerToggles.IsOn(options, toggle);
         if (ui.Checkbox(label, ref on, id: name, compact: true))
+        {
             Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
+        }
     }
 
     /// <summary>What is written besides the code: the strong-name key to sign with, and PDBs.</summary>
@@ -432,10 +512,14 @@ internal static class ExportDialogView
         {
             ui.TextField("key-file", ref setup.StrongNameKeyFile, t.ExportKeyFileNone, Sizing.Grow());
             if (ui.Button(t.ExportBrowse, id: "browse-key"))
+            {
                 ui.PickFile(t.ExportChooseKeyTitle, null, [new FileFilter(t.FileFilterSnk, ["*.snk"])], path => setup.StrongNameKeyFile = path);
+            }
         }
         if (Exports.CheckKeyFileMissing(setup))
+        {
             ui.Text(t.ExportKeyFileMissing, color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
+        }
     }
 
     /// <summary>Whether to write PDBs, and only once they are written, whether they embed the sources.</summary>
@@ -445,9 +529,14 @@ internal static class ExportDialogView
         var theme = ui.Theme;
         ui.Checkbox(t.ExportGeneratePdb, ref setup.GeneratePdb, id: "pdb", compact: true);
         if (!setup.GeneratePdb)
+        {
             return;
+        }
+
         using (ui.Row(new Box { Padding = new Spacing(theme.CheckboxSize + theme.Gap, 0f, 0f, 0f) }))
+        {
             ui.Checkbox(t.ExportEmbedSources, ref setup.EmbedSourcesInPdb, id: "embed", compact: true);
+        }
     }
 
     /// <summary>What stops the export, if anything, beside the buttons, set off from the body by a rule.</summary>
@@ -463,9 +552,14 @@ internal static class ExportDialogView
             var color = IsMistake(blocker) ? theme.Danger : theme.TextMuted;
             ui.Text(BlockerText(t, blocker), color: color, size: theme.FontSizeSmall, wrap: true);
             if (ui.Button(t.ExportCancel, id: "export-cancel", variant: ButtonVariant.Ghost))
+            {
                 Exports.CloseExportSetup(setup);
+            }
+
             if (ui.Button(t.ExportConfirm, enabled: Exports.CanExport(setup), id: "export-start", variant: ButtonVariant.Primary))
+            {
                 Commands.Later(ui.State, setup, static (a, s) => Start(s, a));
+            }
         }
     }
 
@@ -495,7 +589,10 @@ internal static class ExportDialogView
     {
         var theme = ui.Theme;
         if (ui.Input.TakeKey(KeyboardKey.Escape))
+        {
             Exports.FinishChoosing(setup);
+        }
+
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = theme.Gap }))
         {
             FilterRow(ui, setup.Picker);
@@ -524,7 +621,9 @@ internal static class ExportDialogView
         {
             var all = GetAllShownIncluded(picker);
             if (ui.Checkbox(t.ExportSelectShown, ref all, id: "all", compact: true))
+            {
                 IncludeShown(picker, all == true);
+            }
         }
     }
 
@@ -542,7 +641,9 @@ internal static class ExportDialogView
             using (ui.Scroll("export-choices", new Box { Height = Sizing.Grow(), Padding = new Spacing(0f, theme.GapTight) }))
             {
                 foreach (var choice in shown)
+                {
                     PickRow(ui, picker, shown, choice);
+                }
             }
         }
     }
@@ -556,7 +657,9 @@ internal static class ExportDialogView
         {
             ui.Text(t.ExportNoMatch, color: theme.TextMuted);
             if (ui.Button(t.ExportClearFilter, id: "clear-filter", variant: ButtonVariant.Ghost))
+            {
                 ClearFilter(picker);
+            }
         }
     }
 
@@ -569,11 +672,16 @@ internal static class ExportDialogView
         using (ui.Row(new Box { Gap = theme.Gap, Padding = new Spacing(theme.Gap, 0f) }))
         {
             if (ui.Checkbox(choice.Assembly.Name, ref choice.Included, id: "include", width: Sizing.Grow(), compact: true))
+            {
                 TickClicked(picker, shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
+            }
+
             ui.Tooltip(ui.GetId("include"), choice.Assembly.FilePath.Text, TooltipAnchor.Pointer);
             var version = choice.Assembly.Version;
             if (version != null)
+            {
                 Caption(ui, version.ToString());
+            }
         }
     }
 
@@ -588,7 +696,9 @@ internal static class ExportDialogView
             SelectedCount(ui, setup);
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
             if (ui.Button(t.ExportDone, id: "done", variant: ButtonVariant.Primary))
+            {
                 Exports.FinishChoosing(setup);
+            }
         }
     }
 
@@ -596,7 +706,10 @@ internal static class ExportDialogView
     internal static void Start(ExportSetup setup, AppState appState)
     {
         if (!Exports.CanExport(setup))
+        {
             return;
+        }
+
         Exports.CloseExportSetup(setup);
         StartExport(appState, Exports.CreateRequest(setup));
     }

@@ -31,7 +31,10 @@ public static class Comparisons
     internal static void ReopenComparison(AppState appState, ReopenedTab reopened, ComparisonDocumentRecord saved)
     {
         if (!SavedDocuments.FinishWaiting(appState.Reopened, reopened))
+        {
             return;
+        }
+
         var comparison = new AssemblyComparison { LeftPath = saved.LeftPath, RightPath = saved.RightPath };
         Comparisons.TakeInScope(comparison, saved.Scope);
         var title = saved.Title ?? string.Empty;
@@ -79,7 +82,10 @@ public static class Comparisons
         var ticket = Comparisons.StartComparing(comparison);
         var compared = await Background.Run(() => ApiEntries.Compare(left, right, scope, ticket.Token));
         if (!Comparisons.FinishComparing(comparison, ticket))
+        {
             return;
+        }
+
         switch (compared)
         {
             case Outcome<ApiDiff>.Ok ok:
@@ -99,7 +105,9 @@ public static class Comparisons
         foreach (var assembly in appState.Assemblies.Assemblies)
         {
             if (assembly.FilePath.Equals(filePath))
+            {
                 return assembly;
+            }
         }
         return null;
     }
@@ -145,7 +153,10 @@ public static class Comparisons
     {
         ticket.Work.Dispose();
         if (comparison.Work != ticket.Work)
+        {
             return false;
+        }
+
         comparison.Work = null;
         return !comparison.IsClosed;
     }
@@ -176,7 +187,10 @@ public static class Comparisons
     public static void SetRowStyle(ComparisonRows rows, UiTheme theme, NodeIconPalette iconColors, AppIcons icons, Strings strings)
     {
         if (IsStyledAs(rows, theme, iconColors, icons, strings))
+        {
             return;
+        }
+
         rows.Theme = theme;
         rows.IconColors = iconColors;
         rows.Icons = icons;
@@ -188,7 +202,10 @@ public static class Comparisons
     {
         var isStyled = theme == rows.Theme && iconColors == rows.IconColors;
         if (!isStyled)
+        {
             return false;
+        }
+
         return icons == rows.Icons && strings == rows.Strings;
     }
 
@@ -196,7 +213,10 @@ public static class Comparisons
     public static void FollowDiff(ComparisonRows rows, ApiDiff? diff)
     {
         if (diff == rows.ShownDiff)
+        {
             return;
+        }
+
         rows.ShownDiff = diff;
         rows.Rows.Clear();
         ListRoots(rows);
@@ -207,7 +227,10 @@ public static class Comparisons
     public static void ShowOnlyDifferences(ComparisonRows rows, bool only)
     {
         if (only == rows.OnlyDifferences)
+        {
             return;
+        }
+
         rows.OnlyDifferences = only;
         rows.Changes++;
         ListRoots(rows);
@@ -233,7 +256,10 @@ public static class Comparisons
     private static IReadOnlyList<ApiEntry> ListNamespaces(ComparisonRows rows)
     {
         if (rows.ShownDiff == null)
+        {
             return [];
+        }
+
         return rows.ShownDiff.Namespaces;
     }
 
@@ -242,7 +268,9 @@ public static class Comparisons
         foreach (var root in rows.Roots)
         {
             if (root.HasChanges)
+            {
                 rows.View.SetExpanded(root, true);
+            }
         }
         rows.View.Refresh();
     }
@@ -250,17 +278,25 @@ public static class Comparisons
     public static void ExpandAllRows(ComparisonRows rows)
     {
         foreach (var root in rows.Roots)
+        {
             ExpandWithChildren(rows, root);
+        }
+
         rows.View.Refresh();
     }
 
     private static void ExpandWithChildren(ComparisonRows rows, ApiEntry entry)
     {
         if (!HasChildren(rows, entry))
+        {
             return;
+        }
+
         rows.View.SetExpanded(entry, true);
         foreach (var child in ListChildren(rows, entry))
+        {
             ExpandWithChildren(rows, child);
+        }
     }
 
     public static void CollapseAllRows(ComparisonRows rows)
@@ -271,7 +307,10 @@ public static class Comparisons
     public static bool HasChildren(ComparisonRows rows, ApiEntry entry)
     {
         if (!rows.OnlyDifferences)
+        {
             return entry.Children.Count > 0;
+        }
+
         return HoldsChanges(entry);
     }
 
@@ -281,7 +320,9 @@ public static class Comparisons
         foreach (var child in entry.Children)
         {
             if (child.HasChanges)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -294,7 +335,10 @@ public static class Comparisons
     private static IReadOnlyList<ApiEntry> ListShown(ComparisonRows rows, IReadOnlyList<ApiEntry> entries)
     {
         if (!rows.OnlyDifferences)
+        {
             return entries;
+        }
+
         return entries
             .Where(static e => e.HasChanges)
             .ToList();
@@ -310,7 +354,10 @@ public static class Comparisons
     public static TreeRow GetRow(ComparisonRows rows, ApiEntry entry)
     {
         if (rows.Rows.TryGetValue(entry, out var row))
+        {
             return row;
+        }
+
         row = CreateRow(rows, entry);
         rows.Rows.Add(entry, row);
         return row;
@@ -341,7 +388,10 @@ public static class Comparisons
     private static uint GetUnchangedColor(ComparisonRows rows, ApiEntry entry)
     {
         if (entry.HasChanges)
+        {
             return 0;
+        }
+
         return rows.Theme.TextMuted;
     }
 
@@ -371,7 +421,10 @@ public static class Comparisons
     private static string DescribeDeclarations(ComparisonRows rows, ApiSides.Both sides)
     {
         if (sides.Left.Declaration == sides.Right.Declaration)
+        {
             return sides.Right.Declaration;
+        }
+
         var left = rows.Strings.ComparisonLeftDeclaration(sides.Left.Declaration);
         var right = rows.Strings.ComparisonRightDeclaration(sides.Right.Declaration);
         return left + Environment.NewLine + right;

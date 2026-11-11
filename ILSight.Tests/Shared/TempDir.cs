@@ -6,7 +6,10 @@ internal sealed class TempDir : IDisposable
 {
     public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"ilsight-{Guid.NewGuid():N}");
 
-    public string PathOf(string name) => System.IO.Path.Combine(Path, name);
+    public string PathOf(string name)
+    {
+        return System.IO.Path.Combine(Path, name);
+    }
 
     public string Write(string name, string text)
     {
@@ -34,7 +37,9 @@ internal sealed class TempDir : IDisposable
         try
         {
             if (Directory.Exists(Path))
+            {
                 Directory.Delete(Path, recursive: true);
+            }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

@@ -86,7 +86,9 @@ public sealed class RunningProcessTests
         try
         {
             using (var bytes = new MemoryStream(await File.ReadAllBytesAsync(Trees.SampleAppPath)))
+            {
                 context.LoadFromStream(bytes);
+            }
 
             var listing = await RunningProcesses.FindModulesAsync(Self, CancellationToken.None);
 
@@ -245,7 +247,10 @@ public sealed class RunningProcessTests
             BeginObject(writer, block, version: 2);
             writer.Write(claimedSize ?? content.Length);
             while (buffer.Position % 4 != 0)
+            {
                 writer.Write((byte)0);
+            }
+
             writer.Write(content);
             writer.Write((byte)6);
             writer.Write((byte)1);
@@ -340,7 +345,10 @@ public sealed class RunningProcessTests
         public ValueTask DisposeAsync()
         {
             if (accept.IsCompletedSuccessfully)
+            {
                 accept.Result.Dispose();
+            }
+
             listener.Dispose();
             return ValueTask.CompletedTask;
         }

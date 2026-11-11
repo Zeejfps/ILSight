@@ -50,11 +50,20 @@ internal static class SessionQueries
         /// <summary>What the part of metadata the node stands for lists; fails the test when it stands for none.</summary>
         public MetadataGridRole MetadataRole => Assert.IsType<NodeSubject.MetadataTable>(node.Subject).Value.Role;
 
-        public bool Is(TypeShape shape) => node.Subject is NodeSubject.TypeDefinition type && type.Definition.Shape == shape;
+        public bool Is(TypeShape shape)
+        {
+            return node.Subject is NodeSubject.TypeDefinition type && type.Definition.Shape == shape;
+        }
 
-        public bool Is(MemberShape shape) => node.Subject is NodeSubject.MemberDefinition member && member.Definition.Shape == shape;
+        public bool Is(MemberShape shape)
+        {
+            return node.Subject is NodeSubject.MemberDefinition member && member.Definition.Shape == shape;
+        }
 
-        public bool Is(MetadataGridRole role) => node.Subject is NodeSubject.MetadataTable table && table.Value.Role == role;
+        public bool Is(MetadataGridRole role)
+        {
+            return node.Subject is NodeSubject.MetadataTable table && table.Value.Role == role;
+        }
 
         /// <summary>Whether the node is a resource or a package's file shown as a picture.</summary>
         public bool IsImage => node.Subject switch
@@ -82,26 +91,46 @@ internal static class SessionQueries
 
     extension(AssemblyList list)
     {
-        public BrowseNode? FindNode(NodePath path) => NodeLookup.Find(list, TestSession.Shared, path);
+        public BrowseNode? FindNode(NodePath path)
+        {
+            return NodeLookup.Find(list, TestSession.Shared, path);
+        }
 
-        public BrowseNode? FindNode(CodeReference.Navigable reference) => NodeLookup.Find(list, TestSession.Shared, reference);
+        public BrowseNode? FindNode(CodeReference.Navigable reference)
+        {
+            return NodeLookup.Find(list, TestSession.Shared, reference);
+        }
 
-        public BrowseNode? FindListedNode(NodePath path) => NodeLookup.FindListed(list, TestSession.Shared, path);
+        public BrowseNode? FindListedNode(NodePath path)
+        {
+            return NodeLookup.FindListed(list, TestSession.Shared, path);
+        }
 
-        public BrowseNode? FindNodeById(string idString, IEnumerable<LoadedModule> assemblies) =>
-            NodeLookup.FindById(TestSession.Shared, idString, assemblies);
+        public BrowseNode? FindNodeById(string idString, IEnumerable<LoadedModule> assemblies)
+        {
+            return NodeLookup.FindById(TestSession.Shared, idString, assemblies);
+        }
 
-        public MetadataTarget? FindMetadataRow(CodeReference.Navigable reference) => NodeLookup.FindMetadataRow(list, TestSession.Shared, reference);
+        public MetadataTarget? FindMetadataRow(CodeReference.Navigable reference)
+        {
+            return NodeLookup.FindMetadataRow(list, TestSession.Shared, reference);
+        }
 
-        public IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default) =>
-            AssemblySearch.SearchAsync(TestSession.Shared, list.Assemblies, query, cancellationToken);
+        public IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default)
+        {
+            return AssemblySearch.SearchAsync(TestSession.Shared, list.Assemblies, query, cancellationToken);
+        }
 
         public IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(SearchQuery query, IEnumerable<LoadedModule> assemblies,
-            CancellationToken cancellationToken = default) =>
-            AssemblySearch.SearchAsync(TestSession.Shared, assemblies, query, cancellationToken);
+            CancellationToken cancellationToken = default)
+        {
+            return AssemblySearch.SearchAsync(TestSession.Shared, assemblies, query, cancellationToken);
+        }
 
         public IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(string text, SearchKinds kinds = SearchKinds.TypesAndMembers,
-            CancellationToken cancellationToken = default) =>
-            AssemblySearch.SearchAsync(TestSession.Shared, list.Assemblies, SearchQueries.ParseQuery(text, kinds), cancellationToken);
+            CancellationToken cancellationToken = default)
+        {
+            return AssemblySearch.SearchAsync(TestSession.Shared, list.Assemblies, SearchQueries.ParseQuery(text, kinds), cancellationToken);
+        }
     }
 }

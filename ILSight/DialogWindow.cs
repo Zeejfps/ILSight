@@ -31,9 +31,15 @@ public static class DialogWindows
     public static void Settle(DialogWindow window, bool held)
     {
         if (held)
+        {
             return;
+        }
+
         if (window.Bounds == window.Resting)
+        {
             return;
+        }
+
         window.Resting = window.Bounds;
         window.Changes++;
     }

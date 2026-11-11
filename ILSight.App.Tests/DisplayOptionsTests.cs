@@ -545,14 +545,25 @@ public sealed class DisplayOptionsTests
             .ToList();
     }
 
-    private static UiRect ControlAround(List<UiRect> controls, UiRect text) => controls.Single(r => Contains(r, text));
+    private static UiRect ControlAround(List<UiRect> controls, UiRect text)
+    {
+        return controls.Single(r => Contains(r, text));
+    }
 
-    private static bool Contains(UiRect outer, UiRect inner) =>
-        inner.X >= outer.X && inner.X + inner.Width <= outer.X + outer.Width && Math.Abs(CentreY(inner) - CentreY(outer)) < outer.Height / 2;
+    private static bool Contains(UiRect outer, UiRect inner)
+    {
+        return inner.X >= outer.X && inner.X + inner.Width <= outer.X + outer.Width && Math.Abs(CentreY(inner) - CentreY(outer)) < outer.Height / 2;
+    }
 
-    private static float CentreY(UiRect rect) => rect.Y + rect.Height / 2;
+    private static float CentreY(UiRect rect)
+    {
+        return rect.Y + rect.Height / 2;
+    }
 
-    private static bool IsDrawn(AppDriver app, string text) => app.Frames.TextRects().Any(t => t.Text == text);
+    private static bool IsDrawn(AppDriver app, string text)
+    {
+        return app.Frames.TextRects().Any(t => t.Text == text);
+    }
 
     private static List<UiRect> TwinRects(AppDriver app)
     {
@@ -697,17 +708,23 @@ public sealed class DisplayOptionsTests
         Assert.Equal(app.Ui.Theme.MonoFontSize + 1f, preview.Inputs.Style.FontSize.Value);
     }
 
-    private static bool IsBold(AppDriver app, string text) =>
-        app.Frames.Canvas.Texts.Single(t => t.Inputs.Text == text).Inputs.Style.FontWeight.Value == FontWeight.Bold;
+    private static bool IsBold(AppDriver app, string text)
+    {
+        return app.Frames.Canvas.Texts.Single(t => t.Inputs.Text == text).Inputs.Style.FontWeight.Value == FontWeight.Bold;
+    }
 }
 
 public sealed class MatchingBracketsTests
 {
-    private static BracketPair? Find(DecompiledDocument document, int line, int column) =>
-        MatchingBrackets.Find(new CodeViewState(), document, new TextPosition(line, column));
+    private static BracketPair? Find(DecompiledDocument document, int line, int column)
+    {
+        return MatchingBrackets.Find(new CodeViewState(), document, new TextPosition(line, column));
+    }
 
-    private static BracketPair Pair(int openLine, int openColumn, int closeLine, int closeColumn) =>
-        new(new TextPosition(openLine, openColumn), new TextPosition(closeLine, closeColumn));
+    private static BracketPair Pair(int openLine, int openColumn, int closeLine, int closeColumn)
+    {
+        return new(new TextPosition(openLine, openColumn), new TextPosition(closeLine, closeColumn));
+    }
 
     [Theory]
     [InlineData(1, 1, 6)]

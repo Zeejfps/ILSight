@@ -60,7 +60,11 @@ public sealed class CodeViewTests
     public void Tab_reaches_the_code_view_with_a_focus_ring_that_a_click_does_not_show()
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(20));
-        static bool Ring(CodeViewDriver v) => v.Frames.Canvas.Rects.Any(r => r.Inputs.Style.BorderColor.Top.Value == UiTheme.Dark.FocusRing);
+        static bool Ring(CodeViewDriver v)
+        {
+            return v.Frames.Canvas.Rects.Any(r => r.Inputs.Style.BorderColor.Top.Value == UiTheme.Dark.FocusRing);
+        }
+
         Assert.False(Ring(view));
 
         view.Key(KeyboardKey.Tab).Frame();
@@ -187,7 +191,10 @@ public sealed class CodeViewTests
         Assert.Null(view.Frames.Clipboard.Html);
     }
 
-    private static string Hex(uint color) => "#" + (color & 0xFFFFFF).ToString("x6");
+    private static string Hex(uint color)
+    {
+        return "#" + (color & 0xFFFFFF).ToString("x6");
+    }
 
     [Fact]
     public void Shift_click_extends_and_ctrl_a_selects_everything()
@@ -398,7 +405,10 @@ public sealed class CodeViewTests
         {
             var before = at == 0 || !char.IsLetterOrDigit(line[at - 1]);
             var after = at + word.Length == line.Length || !char.IsLetterOrDigit(line[at + word.Length]);
-            if (before && after) count++;
+            if (before && after)
+            {
+                count++;
+            }
         }
         return count;
     }

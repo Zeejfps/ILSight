@@ -10,16 +10,30 @@ namespace ILSight.Tests;
 
 public sealed class MetadataTests
 {
-    private static BrowseNode Metadata(LoadedAssembly assembly) => assembly.Root.Child("Metadata");
+    private static BrowseNode Metadata(LoadedAssembly assembly)
+    {
+        return assembly.Root.Child("Metadata");
+    }
 
-    private static MetadataFolderInfo FolderOf(BrowseNode node) =>
-        Assert.IsType<NodeSubject.Metadata>(node.Subject).Value;
+    private static MetadataFolderInfo FolderOf(BrowseNode node)
+    {
+        return Assert.IsType<NodeSubject.Metadata>(node.Subject).Value;
+    }
 
-    private static BrowseNode Table(LoadedAssembly assembly, string name) => Metadata(assembly).Child("Tables").Table(name);
+    private static BrowseNode Table(LoadedAssembly assembly, string name)
+    {
+        return Metadata(assembly).Child("Tables").Table(name);
+    }
 
-    private static MetadataGrid Grid(BrowseNode node) => Assert.IsType<GridContent>(node.Content()).Grid;
+    private static MetadataGrid Grid(BrowseNode node)
+    {
+        return Assert.IsType<GridContent>(node.Content()).Grid;
+    }
 
-    private static MetadataGrid TypeDefs() => Grid(Table(Trees.TestAssembly, "TypeDef"));
+    private static MetadataGrid TypeDefs()
+    {
+        return Grid(Table(Trees.TestAssembly, "TypeDef"));
+    }
 
     [Fact]
     public void An_assembly_lists_its_metadata_and_its_portable_pdb_first()
@@ -78,7 +92,9 @@ public sealed class MetadataTests
         var grids = 0;
 
         foreach (var root in assembly.Root.Children.Where(c => c.Subject is NodeSubject.Metadata))
+        {
             grids += Sweep(root);
+        }
 
         Assert.True(grids > 20, $"{grids} grids");
 
@@ -110,7 +126,10 @@ public sealed class MetadataTests
                 Assert.Null(Assert.IsType<DocumentContent>(content).Document.Error);
             }
             foreach (var child in node.Children)
+            {
                 count += Sweep(child);
+            }
+
             return count;
         }
     }
@@ -258,7 +277,9 @@ public sealed class MetadataTests
     public void The_patterns_typed_into_a_filter_are_kept_only_up_to_a_limit()
     {
         for (var pattern = 0; pattern < MetadataGrid.MaxPatterns * 3; pattern++)
+        {
             Assert.NotNull(MetadataGrids.FindPattern($"/limit{pattern}/"));
+        }
 
         Assert.InRange(MetadataGrid.CachedPatterns, 1, MetadataGrid.MaxPatterns);
         Assert.Matches(MetadataGrids.FindPattern("/^limit0$/")!, "LIMIT0");
@@ -407,7 +428,10 @@ public sealed class MetadataTests
         return Convert.ToInt32(MetadataGrids.GetText(grid, row, grid.Column(column)), 16);
     }
 
-    private static int Token(EntityHandle handle) => MetadataTokens.GetToken(handle);
+    private static int Token(EntityHandle handle)
+    {
+        return MetadataTokens.GetToken(handle);
+    }
 
     [Fact]
     public void CoreLibs_relationship_tables_hold_the_rows_the_metadata_reader_decodes()
@@ -517,7 +541,11 @@ public sealed class MetadataTests
 
         foreach (var node in Metadata(corelib).Child("Tables").Children.Concat(Metadata(corelib).Children.Where(c => c.Is(MetadataGridRole.Heap))))
         {
-            if (node.Content() is not GridContent { Grid: var grid }) continue;
+            if (node.Content() is not GridContent { Grid: var grid })
+            {
+                continue;
+            }
+
             for (var row = 0; row < Math.Min(grid.RowCount, 50); row++)
             {
                 for (var column = 0; column < grid.Columns.Count; column++)

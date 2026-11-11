@@ -22,7 +22,10 @@ public sealed class TrackedList<T> : IReadOnlyList<T>
         set
         {
             if (EqualityComparer<T>.Default.Equals(_items[index], value))
+            {
                 return;
+            }
+
             _items[index] = value;
             Revision++;
         }
@@ -44,7 +47,10 @@ public sealed class TrackedList<T> : IReadOnlyList<T>
     public bool Remove(T item)
     {
         if (!_items.Remove(item))
+        {
             return false;
+        }
+
         Revision++;
         return true;
     }
@@ -52,7 +58,10 @@ public sealed class TrackedList<T> : IReadOnlyList<T>
     public void Clear()
     {
         if (_items.Count == 0)
+        {
             return;
+        }
+
         _items.Clear();
         Revision++;
     }

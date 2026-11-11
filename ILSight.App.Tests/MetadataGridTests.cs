@@ -13,7 +13,10 @@ namespace ILSight.App.Tests;
 
 public sealed class MetadataGridTests
 {
-    private static BrowseNode Table(AppDriver app, string name) => app.Node("Metadata", "Tables").Table(name);
+    private static BrowseNode Table(AppDriver app, string name)
+    {
+        return app.Node("Metadata", "Tables").Table(name);
+    }
 
     private static (AppDriver App, DocumentTab Tab, MetadataGrid Grid) ShowTable(string name, int frames = 3)
     {

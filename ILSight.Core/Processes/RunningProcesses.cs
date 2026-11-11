@@ -10,7 +10,10 @@ namespace ILSight.Core.Processes;
 /// <summary>The id the operating system gives a process.</summary>
 public readonly record struct ProcessId(int Value)
 {
-    public override string ToString() => Value.ToString();
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
 }
 
 /// <summary>What a runtime says of itself over its diagnostics endpoint. A runtime older than .NET 6 names
@@ -86,9 +89,13 @@ public static class RunningProcesses
         try
         {
             if (OperatingSystem.IsWindows())
+            {
                 ScanPipes(ids);
+            }
             else
+            {
                 ScanSockets(ids);
+            }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -108,7 +115,9 @@ public static class RunningProcesses
         foreach (var process in processes)
         {
             if (process != null)
+            {
                 found.Add(process);
+            }
         }
         return found
             .OrderBy(static p => p.Name, StringComparer.CurrentCultureIgnoreCase)
@@ -121,10 +130,16 @@ public static class RunningProcesses
     {
         var name = FindProcessName(id);
         if (name == null)
+        {
             return null; // exited since the scan
+        }
+
         var endpoint = FindEndpoint(id);
         if (endpoint == null)
+        {
             return null; // its socket went with it
+        }
+
         try
         {
             var info = await DiagnosticsIpc.QueryProcessInfoAsync(endpoint, budget, cancellationToken).ConfigureAwait(false);
@@ -148,7 +163,9 @@ public static class RunningProcesses
     {
         var endpoint = FindEndpoint(id);
         if (endpoint == null)
+        {
             return new ModuleListing.Unreachable($"Process {id} has no diagnostics endpoint.");
+        }
 
         MemoryStream trace;
         try
@@ -185,13 +202,18 @@ public static class RunningProcesses
             if (path != null)
             {
                 if (seenPaths.Add(path))
+                {
                     result.Add(new RunningModule.OnDisk(path.FileName, path));
+                }
+
                 continue;
             }
 
             var name = module.AssemblyName ?? GetNonBlank(module.IlPath) ?? GetNonBlank(module.NativePath) ?? "(dynamic module)";
             if (seenNames.Add(name))
+            {
                 result.Add(new RunningModule.InMemory(name));
+            }
         }
 
         return result.OrderBy(static m => m.Name, StringComparer.OrdinalIgnoreCase).ToList();
@@ -207,7 +229,10 @@ public static class RunningProcesses
     public static AssemblyPath? FindEntryAssembly(RunningProcess process, IReadOnlyList<RunningModule> modules)
     {
         if (process.Info == null)
+        {
             return null;
+        }
+
         var entryName = process.Info.EntryAssemblyName;
         if (entryName != null)
         {
@@ -215,7 +240,9 @@ public static class RunningProcesses
             {
                 if (module is RunningModule.OnDisk onDisk
                     && string.Equals(Path.GetFileNameWithoutExtension(onDisk.Name), entryName, StringComparison.OrdinalIgnoreCase))
+                {
                     return onDisk.Path;
+                }
             }
         }
         return FindEntryAssembly(process.Info.CommandLine);
@@ -225,11 +252,16 @@ public static class RunningProcesses
     {
         var tokens = SplitCommandLine(commandLine);
         if (tokens.Count == 0)
+        {
             return null;
+        }
+
         var executable = tokens[0];
 
         if (IsDll(executable))
+        {
             return FindExistingFile(executable);
+        }
 
         // dotnet's own options come before the app, as in "dotnet exec --depsfile App.deps.json App.dll",
         // and the app's arguments after it, so the first DLL named is the app.
@@ -238,7 +270,9 @@ public static class RunningProcesses
         {
             var dll = FindExistingFile(firstDll);
             if (dll != null)
+            {
                 return dll;
+            }
         }
 
         return FindExistingFile(Path.ChangeExtension(executable, ".dll")) ?? FindExistingFile(executable);
@@ -254,7 +288,10 @@ public static class RunningProcesses
     {
         var tokens = new List<string>();
         if (string.IsNullOrWhiteSpace(commandLine))
+        {
             return tokens;
+        }
+
         var token = new StringBuilder();
         var quoted = false;
         foreach (var c in commandLine)
@@ -277,7 +314,10 @@ public static class RunningProcesses
             }
         }
         if (token.Length > 0)
+        {
             tokens.Add(token.ToString());
+        }
+
         return tokens;
     }
 
@@ -286,10 +326,16 @@ public static class RunningProcesses
     private static AssemblyPath? FindExistingFile(string text)
     {
         if (text.Length == 0)
+        {
             return null;
+        }
+
         var path = AssemblyPath.Parse(text);
         if (path == null || !File.Exists(path.Text))
+        {
             return null;
+        }
+
         return path;
     }
 
@@ -338,10 +384,16 @@ public static class RunningProcesses
     internal static DiagnosticsEndpoint? FindEndpoint(ProcessId id)
     {
         if (OperatingSystem.IsWindows())
+        {
             return new DiagnosticsEndpoint.NamedPipe(DiagnosticsIpc.TransportPrefix + id.Value);
+        }
+
         var socket = FindSocketPath(id);
         if (socket == null)
+        {
             return null;
+        }
+
         return new DiagnosticsEndpoint.UnixSocket(socket);
     }
 
@@ -354,7 +406,9 @@ public static class RunningProcesses
             var name = Path.GetFileName(path);
             if (name.StartsWith(DiagnosticsIpc.TransportPrefix, StringComparison.Ordinal)
                 && int.TryParse(name.AsSpan(DiagnosticsIpc.TransportPrefix.Length), out var id))
+            {
                 ids.Add(id);
+            }
         }
     }
 
@@ -367,7 +421,9 @@ public static class RunningProcesses
         {
             var id = ParseSocketProcessId(Path.GetFileName(path));
             if (id != null && IsAlive(id.Value))
+            {
                 ids.Add(id.Value);
+            }
         }
     }
 
@@ -382,7 +438,10 @@ public static class RunningProcesses
             foreach (var path in Directory.EnumerateFiles(Path.GetTempPath(), DiagnosticsIpc.TransportPrefix + id.Value + "-*"))
             {
                 if (ParseSocketProcessId(Path.GetFileName(path)) != id.Value)
+                {
                     continue;
+                }
+
                 var writeTime = File.GetLastWriteTimeUtc(path);
                 if (best == null || writeTime > bestTime)
                 {
@@ -403,11 +462,17 @@ public static class RunningProcesses
     internal static int? ParseSocketProcessId(string fileName)
     {
         if (!fileName.StartsWith(DiagnosticsIpc.TransportPrefix, StringComparison.Ordinal) || !fileName.EndsWith("-socket", StringComparison.Ordinal))
+        {
             return null;
+        }
+
         var rest = fileName.AsSpan(DiagnosticsIpc.TransportPrefix.Length);
         var dash = rest.IndexOf('-');
         if (dash <= 0 || !int.TryParse(rest[..dash], out var id))
+        {
             return null;
+        }
+
         return id;
     }
 }

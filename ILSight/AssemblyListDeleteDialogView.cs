@@ -14,7 +14,10 @@ internal static class AssemblyListDeleteDialogView
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
         if (dialog.Mode is not ListsDialogMode.ConfirmingDelete deleting)
+        {
             return;
+        }
+
         var name = deleting.List;
         var open = true;
         using (var scope = ui.Dialog("assembly-list-delete", t.ListsDeleteTitle, ref open, closeButton: false))
@@ -23,18 +26,28 @@ internal static class AssemblyListDeleteDialogView
             {
                 ui.Text(t.ListsDeleteQuestion(name), wrap: true);
                 if (name == lists.Active)
+                {
                     ui.Text(t.ListsDeleteReplacedBy(AssemblyLists.FindReplacement(lists, name)), color: theme.TextMuted, wrap: true);
+                }
+
                 using (ui.DialogActions())
                 {
                     if (ui.Button(t.ListsCancel, id: "delete-cancel", variant: ButtonVariant.Ghost))
+                    {
                         AssemblyLists.StopAsking(dialog);
+                    }
+
                     if (ui.Button(t.ListsDeleteConfirm, id: "delete-confirm", variant: ButtonVariant.Primary))
+                    {
                         Commands.Later(ui.State, (dialog, name), static (a, s) => Delete(s.dialog, a, s.name));
+                    }
                 }
             }
         }
         if (!open)
+        {
             AssemblyLists.StopAsking(dialog);
+        }
     }
 
     /// <summary>Removes the list named <paramref name="name"/> and picks the open list, which takes its

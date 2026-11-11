@@ -25,10 +25,16 @@ internal static class AppVersions
     {
         var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
         if (informational != null)
+        {
             return WithoutCommit(informational.InformationalVersion);
+        }
+
         var version = assembly.GetName().Version;
         if (version == null)
+        {
             return "";
+        }
+
         return version.ToString();
     }
 
@@ -37,7 +43,10 @@ internal static class AppVersions
     {
         var plus = version.IndexOf(BuildSeparator);
         if (plus < 0)
+        {
             return version;
+        }
+
         return version.Substring(0, plus);
     }
 }

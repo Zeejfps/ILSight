@@ -13,20 +13,29 @@ namespace ILSight.Core.Metadata
 	/// directories and the debug directory.</summary>
 	internal static class PEHeaderEntries
 	{
-		/// <summary>The 64-byte legacy DOS header sitting at offset 0 of every PE file.</summary>
-		public static GridSchema Dos(PEFile module) => Header("DOS Header", module, () => DosEntries(module));
+        /// <summary>The 64-byte legacy DOS header sitting at offset 0 of every PE file.</summary>
+        public static GridSchema Dos(PEFile module)
+        {
+            return Header("DOS Header", module, () => DosEntries(module));
+        }
 
-		/// <summary>COFF (Common Object File Format) header — 20 bytes describing target machine, section
-		/// count, link timestamp, and file-level characteristics. The Characteristics field is a
-		/// 16-bit flags word whose bits its value's tooltip breaks out.</summary>
-		public static GridSchema Coff(PEFile module) => Header("COFF Header", module, () => CoffEntries(module));
+        /// <summary>COFF (Common Object File Format) header — 20 bytes describing target machine, section
+        /// count, link timestamp, and file-level characteristics. The Characteristics field is a
+        /// 16-bit flags word whose bits its value's tooltip breaks out.</summary>
+        public static GridSchema Coff(PEFile module)
+        {
+            return Header("COFF Header", module, () => CoffEntries(module));
+        }
 
-		/// <summary>PE Optional Header — image base, sizes, alignments, subsystem. Field widths flex
-		/// between PE32 and PE32+ (Image Base / Stack &amp; Heap reserves go from 4 → 8 bytes,
-		/// Base Of Data drops out on PE32+).</summary>
-		public static GridSchema Optional(PEFile module) => Header("Optional Header", module, () => OptionalEntries(module));
+        /// <summary>PE Optional Header — image base, sizes, alignments, subsystem. Field widths flex
+        /// between PE32 and PE32+ (Image Base / Stack &amp; Heap reserves go from 4 → 8 bytes,
+        /// Base Of Data drops out on PE32+).</summary>
+        public static GridSchema Optional(PEFile module)
+        {
+            return Header("Optional Header", module, () => OptionalEntries(module));
+        }
 
-		static GridSchema<Entry> Header(string key, PEFile module, Func<IEnumerable<Entry>> rows)
+        static GridSchema<Entry> Header(string key, PEFile module, Func<IEnumerable<Entry>> rows)
 		{
 		    return AddColumns(CreateGrid<Entry>(key, module, rows), columns =>
 			{
@@ -76,10 +85,12 @@ namespace ILSight.Core.Metadata
 			"Image is Terminal Server aware",
 		]);
 
-		static FlagsSchema Bits(Type type, string[] meanings) =>
-			new(type, [], meanings.Select(static (m, i) => new IndependentFlag(m, 1u << i)).ToArray());
+        static FlagsSchema Bits(Type type, string[] meanings)
+        {
+            return new(type, [], meanings.Select(static (m, i) => new IndependentFlag(m, 1u << i)).ToArray());
+        }
 
-		static List<Entry> DosEntries(PEFile module)
+        static List<Entry> DosEntries(PEFile module)
 		{
 			var reader = module.Reader.GetEntireImage().GetReader(0, 64);
 			var entries = new List<Entry>(31) {
@@ -139,7 +150,7 @@ namespace ILSight.Core.Metadata
 			var headers = module.Reader.PEHeaders;
 			var reader = module.Reader.GetEntireImage().GetReader(headers.PEHeaderStartOffset, 128);
 			var header = DecompilerFacts.GetPEHeader(headers);
-			bool isPE32Plus = header.Magic == PEMagic.PE32Plus;
+			var isPE32Plus = header.Magic == PEMagic.PE32Plus;
 
 			var entries = new List<Entry>();
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Magic", header.Magic.ToString()));
@@ -165,7 +176,7 @@ namespace ILSight.Core.Metadata
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Header Size", "Combined size of MS-DOS Header, PE Header, PE Optional Header and padding; shall be a multiple of the file alignment."));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "File Checksum", ""));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Subsystem", header.Subsystem.ToString()));
-			ushort dllCharacteristics = reader.ReadUInt16();
+			var dllCharacteristics = reader.ReadUInt16();
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset - 2, dllCharacteristics, 2, "DLL Characteristics", header.DllCharacteristics.ToString(), DllCharacteristicsBits));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Stack Reserve Size", ""));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Stack Commit Size", ""));

@@ -8,7 +8,10 @@ public sealed class TrackedListTests
     {
         var list = new TrackedList<string>();
         foreach (var item in items)
+        {
             list.Add(item);
+        }
+
         return list;
     }
 
@@ -99,7 +102,9 @@ public sealed class TrackedListTests
         var before = GC.GetAllocatedBytesForCurrentThread();
         var total = 0;
         foreach (var item in list)
+        {
             total += item;
+        }
 
         Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
         Assert.Equal(1, total);

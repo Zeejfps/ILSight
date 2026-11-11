@@ -39,14 +39,25 @@ internal static class AnalyzerPanelView
         using (ui.PaneToolbar())
         {
             if (ui.IconButton("collapse", ui.State.Icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
+            {
                 Analysis.CollapseAllRows(rows);
+            }
+
             if (ui.IconButton("expand", ui.State.Icons.AnalyzerExpandAll, t.CodeExpandAll, any))
+            {
                 Analysis.ExpandAllRows(rows);
+            }
+
             ui.Separator(theme.IconSize);
             if (ui.IconButton("remove", ui.State.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root != null) && root != null)
+            {
                 Commands.Later(ui.State, root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
+            }
+
             if (ui.IconButton("clear", ui.State.Icons.AnalyzerRemoveAll, t.AnalyzerRemoveAll, any))
+            {
                 Commands.Later(ui.State, static a => Analysis.ClearRoots(a.Analyzer));
+            }
         }
     }
 
@@ -56,41 +67,64 @@ internal static class AnalyzerPanelView
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box, toggleOnActivate: false);
         if (ui.HasFocus(ui.GetId(TreeId)))
+        {
             HandleKeys(ui, rows);
+        }
+
         if (result.Activated)
+        {
             Commands.Later(ui.State, result.Node, static (a, n) => GoTo(a, n));
+        }
+
         if (result.ContextMenuRequested && result.Node is AnalyzerSymbolNode)
+        {
             ui.OpenContextMenu(MenuId, result.ContextMenuAt);
+        }
     }
 
     private static void HandleKeys(Ui<UiState> ui, AnalyzerRows rows)
     {
         if (ui.IsPressed(Shortcuts.Analyze))
+        {
             AnalyzeSelected(ui.State, rows);
+        }
+
         if (ui.IsPressed(Shortcuts.Delete))
+        {
             RemoveSelectedAnalysis(ui.State, rows);
+        }
     }
 
     private static void AnalyzeSelected(UiState screen, AnalyzerRows rows)
     {
         if (rows.View.Selected is AnalyzerSymbolNode picked)
+        {
             Commands.Later(screen, (rows, symbol: picked.Symbol), static (a, s) => Analyze(s.rows, a, s.symbol));
+        }
     }
 
     private static void RemoveSelectedAnalysis(UiState screen, AnalyzerRows rows)
     {
         var root = Analysis.FindSelectedRoot(rows);
         if (root != null)
+        {
             Commands.Later(screen, root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
+        }
     }
 
     private static void GoTo(AppState appState, AnalyzerNode? node)
     {
         if (node is not AnalyzerSymbolNode symbol)
+        {
             return;
+        }
+
         var reference = symbol.Symbol.Reference;
         if (reference == null)
+        {
             return;
+        }
+
         Navigate(appState, reference, inNewTab: false);
     }
 
@@ -100,29 +134,51 @@ internal static class AnalyzerPanelView
         var rows = ui.State.Analyzer;
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         if (rows.View.Selected is not AnalyzerSymbolNode node)
+        {
             return;
+        }
+
         var isRoot = Analysis.HasRoot(analyzer, node);
         var target = node.Symbol.Reference;
         if (target != null)
+        {
             GoToItems(ui, target);
+        }
+
         if (!isRoot && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
+        {
             Commands.Later(ui.State, (rows, symbol: node.Symbol), static (a, s) => Analyze(s.rows, a, s.symbol));
+        }
+
         ui.MenuSeparator();
         if (isRoot && ui.MenuItem(t.AnalyzerRemove, id: "remove"))
+        {
             Commands.Later(ui.State, node, static (a, n) => Analysis.RemoveRoot(a.Analyzer, n));
+        }
+
         if (ui.MenuItem(t.AnalyzerClear, id: "clear"))
+        {
             Commands.Later(ui.State, static a => Analysis.ClearRoots(a.Analyzer));
+        }
     }
 
     private static void GoToItems(Ui<UiState> ui, CodeReference.Navigable target)
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.AnalyzerGoTo, Shortcuts.Enter, id: "go-to"))
+        {
             Commands.Later(ui.State, target, static (a, r) => Navigate(a, r, inNewTab: false));
+        }
+
         if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
+        {
             Commands.Later(ui.State, target, static (a, r) => Navigate(a, r, inNewTab: true));
+        }
     }
 
     /// <summary>Analyzes the type or member <paramref name="node"/> stands for in the analyzer, which
@@ -131,7 +187,10 @@ internal static class AnalyzerPanelView
     {
         var root = AddToAnalyzer(appState, node);
         if (root == null)
+        {
             return;
+        }
+
         OpenAnalyzer(screen);
         Analysis.ShowRoot(screen.Analyzer, root);
     }

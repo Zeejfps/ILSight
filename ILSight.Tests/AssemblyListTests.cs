@@ -203,8 +203,11 @@ public sealed class AssemblyListTests
     {
         using var temp = new TempDir();
         var root = temp.Path;
-        string Runtime(string version) =>
-            Path.GetDirectoryName(temp.Write(Path.Combine("shared", "Microsoft.NETCore.App", version, "System.Private.CoreLib.dll"), ""))!;
+        string Runtime(string version)
+        {
+            return Path.GetDirectoryName(temp.Write(Path.Combine("shared", "Microsoft.NETCore.App", version, "System.Private.CoreLib.dll"), ""))!;
+        }
+
         Runtime("9.0.11");
         var newest = Runtime("10.0.2");
         Runtime("10.0.1");
@@ -224,7 +227,10 @@ public sealed class AssemblyListTests
             var directory = temp.PathOf(Path.Combine("shared", framework, version));
             Directory.CreateDirectory(directory);
             foreach (var file in files)
+            {
                 temp.Write(Path.Combine(directory, file), "");
+            }
+
             return directory;
         }
         Install("Microsoft.NETCore.App", "9.0.3", "System.Runtime.dll");
@@ -320,7 +326,10 @@ public sealed class AssemblyListTests
         });
 
         for (var round = 0; round < 30; round++)
+        {
             AssemblyListing.CloseAssembly(list, list.Open(Trees.TestAssemblyPath));
+        }
+
         stop.Cancel();
 
         await reader;
@@ -343,7 +352,9 @@ public sealed class AssemblyListTests
 
         Assert.Equal(3, list.Assemblies.Count);
         foreach (var group in opened.GroupBy(a => a.FilePath))
+        {
             Assert.All(group, a => Assert.Same(group.First(), a));
+        }
     }
 
     [Fact]

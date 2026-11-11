@@ -101,7 +101,10 @@ public static class DecompilerToggles
     public static bool Allows(DecompilerOptions options, DecompilerToggle toggle)
     {
         if (toggle.Group is not DecompilerToggleGroup.Language language)
+        {
             return true;
+        }
+
         return language.IntroducedIn <= options.LanguageVersion;
     }
 
@@ -110,7 +113,10 @@ public static class DecompilerToggles
     public static bool ProducesSameCode(DecompilerOptions options, DecompilerOptions other, DecompilationLanguage language)
     {
         if (DecompilationLanguages.ShowsCSharp(language))
+        {
             return LeaveOutProjectExport(options).Equals(LeaveOutProjectExport(other));
+        }
+
         var symbols = DecompilerToggle.UseDebugSymbols;
         return IsOn(options, symbols) == IsOn(other, symbols);
     }
@@ -146,7 +152,9 @@ public static class DecompilerToggles
         foreach (var (toggle, value) in options.Changes)
         {
             if (Allows(options, toggle))
+            {
                 ApplyToggle(toggle, settings, value);
+            }
         }
     }
 
@@ -161,15 +169,32 @@ public static class DecompilerToggles
         var toggles = new List<DecompilerToggle>();
         foreach (var property in typeof(DecompilerSettings).GetProperties())
         {
-            if (property.PropertyType != typeof(bool) || !property.CanWrite) continue;
-            if (property.GetCustomAttribute<BrowsableAttribute>() is { Browsable: false }) continue;
+            if (property.PropertyType != typeof(bool) || !property.CanWrite)
+            {
+                continue;
+            }
+
+            if (property.GetCustomAttribute<BrowsableAttribute>() is { Browsable: false })
+            {
+                continue;
+            }
+
             var category = property.GetCustomAttribute<CategoryAttribute>()?.Category;
-            if (category == null) continue;
+            if (category == null)
+            {
+                continue;
+            }
+
             if (property.GetValue(defaults) is not bool value)
+            {
                 throw new UnreachableException($"{property.Name}, a bool property, holds no bool.");
+            }
+
             var group = FindGroup(category);
             if (group != null)
+            {
                 toggles.Add(new DecompilerToggle { Name = property.Name, Group = group, DefaultValue = value });
+            }
         }
         return toggles;
     }
@@ -180,7 +205,10 @@ public static class DecompilerToggles
     {
         var version = FindIntroduced(category);
         if (version != null)
+        {
             return new DecompilerToggleGroup.Language(version.Value);
+        }
+
         return category switch
         {
             "DecompilerSettings.Other" => new DecompilerToggleGroup.Other(),
@@ -193,10 +221,18 @@ public static class DecompilerToggles
     /// <summary>The version a category such as <c>C# 7.3 / VS 2017.7</c> names.</summary>
     private static CSharpVersion? FindIntroduced(string category)
     {
-        if (!category.StartsWith("C# ", StringComparison.Ordinal)) return null;
+        if (!category.StartsWith("C# ", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
         var end = category.IndexOf(' ', 3);
         var parts = category[3..(end < 0 ? category.Length : end)].Split('.');
-        if (!int.TryParse(parts[0], out var major)) return null;
+        if (!int.TryParse(parts[0], out var major))
+        {
+            return null;
+        }
+
         var minor = parts.Length > 1 && int.TryParse(parts[1], out var m) ? m : 0;
         var value = major >= 8 ? major * 100 + minor : minor == 0 ? major : major * 100 + minor;
         return Enum.IsDefined(typeof(CSharpVersion), value) ? (CSharpVersion)value : null;
@@ -224,17 +260,31 @@ public sealed record DecompilerOptions
     public bool Equals(DecompilerOptions? other)
     {
         if (ReferenceEquals(this, other))
+        {
             return true;
+        }
+
         if (other is null)
+        {
             return false;
+        }
+
         if (LanguageVersion != other.LanguageVersion)
+        {
             return false;
+        }
+
         if (Changes.Count != other.Changes.Count)
+        {
             return false;
+        }
+
         foreach (var (toggle, value) in Changes)
         {
             if (!other.Changes.TryGetValue(toggle, out var otherValue) || otherValue != value)
+            {
                 return false;
+            }
         }
         return true;
     }

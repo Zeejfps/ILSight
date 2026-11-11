@@ -8,7 +8,10 @@ public sealed class ReferenceReferencesTests
     private const string CoreLib = "System.Private.CoreLib";
 
     /// <summary>The test assembly's reference to System.Runtime.</summary>
-    private static BrowseNode RuntimeReference(LoadedAssembly assembly) => assembly.Root.Child("References", Runtime);
+    private static BrowseNode RuntimeReference(LoadedAssembly assembly)
+    {
+        return assembly.Root.Child("References", Runtime);
+    }
 
     [Fact]
     public void A_reference_lists_the_references_of_the_assembly_it_resolves_to_after_the_types_used_from_it()

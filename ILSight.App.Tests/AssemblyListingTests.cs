@@ -250,7 +250,9 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Opened();
         AssemblyLists.AddList(d.AppState.Lists, Other);
         foreach (var tab in d.AppState.Tabs.Open.ToList())
+        {
             CloseTab(d.AppState, tab);
+        }
 
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();

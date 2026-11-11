@@ -44,7 +44,9 @@ public sealed class AppTests
         var first = new DateTime(2026, 1, 2, 3, 4, 5);
 
         for (var i = 0; i < 51; i++)
+        {
             ErrorDialogView.AddError(errors, new AppProblem.ResourceNotSaved($"{i}.dll", "details"), first.AddSeconds(i));
+        }
 
         Assert.Equal(50, errors.Entries.Count);
         Assert.Equal(51, errors.Revision);
@@ -320,7 +322,10 @@ public sealed class AppTests
     private static bool IsGroupMark(string text)
     {
         if (text == Text(Icons.OptionsGroupUnfolded))
+        {
             return true;
+        }
+
         return text == Text(Icons.OptionsGroupFolded);
     }
 
@@ -367,8 +372,10 @@ public sealed class AppTests
         Assert.False(IsBold(app, "C# 8.0 / VS 2019"));
     }
 
-    private static bool IsBold(AppDriver app, string text) =>
-        app.Frames.Canvas.Texts.Single(t => t.Inputs.Text == text).Inputs.Style.FontWeight.Value == FontWeight.Bold;
+    private static bool IsBold(AppDriver app, string text)
+    {
+        return app.Frames.Canvas.Texts.Single(t => t.Inputs.Text == text).Inputs.Style.FontWeight.Value == FontWeight.Bold;
+    }
 
     private static void FoldOptionGroupsBut(AppDriver app, string open)
     {
@@ -431,7 +438,10 @@ public sealed class AppTests
 
         app.Frames.ClickOn(Selector.WithText("Types and members")).Frame();
         foreach (var kind in new[] { "Types", "Fields", "Properties", "Events" })
+        {
             app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, kind)).Frame();
+        }
+
         Assert.True(app.Frames.Drew("Namespaces"));
         var events = app.LastTextRect("Events");
         var icon = app.LastTextRect(Icons.NodeEvent);

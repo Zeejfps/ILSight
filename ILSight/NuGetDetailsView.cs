@@ -55,7 +55,9 @@ internal static class NuGetDetailsView
         var theme = ui.Theme;
         var box = new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Padding = theme.ShellPaddingX, AlignX = Align.Center, AlignY = Align.Center };
         using (ui.Column(box))
+        {
             ui.Text(ui.State.Strings.NugetNoSelection, color: theme.TextMuted, wrap: true, align: Align.Center);
+        }
     }
 
     /// <summary>The package's identity and the version to open, kept in place over the rest, which
@@ -73,7 +75,9 @@ internal static class NuGetDetailsView
             }
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = theme.SeparatorWidth, Background = theme.Separator });
             using (ui.Scroll("nuget-details", new Box { Height = Sizing.Grow() }))
+            {
                 Body(ui, picker, package, details);
+            }
         }
     }
 
@@ -85,7 +89,10 @@ internal static class NuGetDetailsView
         {
             Warnings(ui, details);
             if (package.Description.Length > 0)
+            {
                 ui.Text(package.Description, wrap: true);
+            }
+
             Facts(ui, picker, package, details);
             Dependencies(ui, details);
         }
@@ -102,15 +109,22 @@ internal static class NuGetDetailsView
             {
                 ui.Text(package.Id.Text, size: theme.FontSize * TitleScale, bold: true, wrap: true);
                 if (package.Authors.Length > 0)
+                {
                     ui.Text(AuthorsText(ui, package), color: theme.TextMuted, wrap: true);
+                }
+
                 if (package.Verified)
+                {
                     Verified(ui);
+                }
             }
         }
     }
 
-    private static string AuthorsText(Ui<UiState> ui, FeedPackage package) =>
-        ui.Memo("authors", (package.Authors, ui.State.Strings), static a => a.Strings.NugetAuthors(a.Authors));
+    private static string AuthorsText(Ui<UiState> ui, FeedPackage package)
+    {
+        return ui.Memo("authors", (package.Authors, ui.State.Strings), static a => a.Strings.NugetAuthors(a.Authors));
+    }
 
     private static void Verified(Ui<UiState> ui)
     {
@@ -136,12 +150,18 @@ internal static class NuGetDetailsView
             var enabled = !picker.IsDownloading && picker.ShowsWhatWasAsked;
             var version = picker.Version;
             if (version != null && ui.Select("version", ref version, picker.Versions, VersionLabel, Sizing.Fixed(width), t.NugetVersion, enabled))
+            {
                 picker.Version = version;
+            }
+
             DetailsStatus(ui, picker, package, details);
         }
     }
 
-    private static string VersionLabel(PackageVersion version) => version.Text;
+    private static string VersionLabel(PackageVersion version)
+    {
+        return version.Text;
+    }
 
     private static void DetailsStatus(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
@@ -157,7 +177,10 @@ internal static class NuGetDetailsView
                 break;
             case VersionDetails.Failed:
                 if (ui.Button(ui.State.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Version != null)
+                {
                     NuGetPicking.RetryDetails(picker, package, picker.Version);
+                }
+
                 break;
             default:
                 throw new UnreachableException();
@@ -175,11 +198,19 @@ internal static class NuGetDetailsView
         }
         var read = ReadOf(details);
         if (read == null)
+        {
             return;
+        }
+
         if (read.Deprecation != null)
+        {
             Deprecation(ui, read.Deprecation);
+        }
+
         if (read.Vulnerabilities.Count > 0)
+        {
             NuGetPlaceholderView.Warning(ui, ui.State.Strings.NugetVulnerable(read.Vulnerabilities.Count));
+        }
     }
 
     private static void DetailsFailed(Ui<UiState> ui, string error)
@@ -195,9 +226,14 @@ internal static class NuGetDetailsView
         var theme = ui.Theme;
         NuGetPlaceholderView.Warning(ui, t.NugetDeprecated);
         if (deprecation.Message.Length > 0)
+        {
             ui.Text(deprecation.Message, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
+        }
+
         if (deprecation.AlternatePackage.Length > 0)
+        {
             ui.Text(t.NugetUseInstead(deprecation.AlternatePackage), color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
+        }
     }
 
     /// <summary>The facts the search gave, then those the catalog gives for the version picked, once read.</summary>
@@ -207,20 +243,32 @@ internal static class NuGetDetailsView
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.GapTight }))
         {
             if (package.TotalDownloads > 0)
+            {
                 Fact(ui, t.NugetFactDownloads, DownloadsText(ui, package.TotalDownloads));
+            }
+
             if (package.Owners.Length > 0)
+            {
                 Fact(ui, t.NugetFactOwners, package.Owners);
+            }
+
             CatalogFacts(ui, picker, package, details);
             if (package.Tags.Count > 0)
+            {
                 Fact(ui, t.NugetFactTags, TagsText(ui, package.Tags));
+            }
         }
     }
 
-    private static string DownloadsText(Ui<UiState> ui, long downloads) =>
-        ui.Memo("downloads", (downloads, ui.State.Strings.Culture), static a => a.downloads.ToString("N0", a.Culture));
+    private static string DownloadsText(Ui<UiState> ui, long downloads)
+    {
+        return ui.Memo("downloads", (downloads, ui.State.Strings.Culture), static a => a.downloads.ToString("N0", a.Culture));
+    }
 
-    private static string TagsText(Ui<UiState> ui, IReadOnlyList<string> tags) =>
-        ui.Memo("tags", tags, static list => string.Join(", ", list));
+    private static string TagsText(Ui<UiState> ui, IReadOnlyList<string> tags)
+    {
+        return ui.Memo("tags", tags, static list => string.Join(", ", list));
+    }
 
     /// <summary>When the version picked was published, its license, project page and size. Until the
     /// catalog is read, the license and project the search gave, which are the latest version's, show
@@ -232,41 +280,62 @@ internal static class NuGetDetailsView
         if (read == null)
         {
             if (picker.Version != package.Version)
+            {
                 return;
+            }
+
             LinkFact(ui, "project", t.NugetFactProject, TextOf(package.ProjectUrl), package.ProjectUrl);
             LinkFact(ui, "license", t.NugetFactLicense, TextOf(package.LicenseUrl), package.LicenseUrl);
             return;
         }
         if (read.Published != null)
+        {
             Fact(ui, t.NugetFactPublished, PublishedText(ui, read.Published.Value));
+        }
+
         LinkFact(ui, "license", t.NugetFactLicense, LicenseText(read), read.LicenseUrl);
         LinkFact(ui, "project", t.NugetFactProject, TextOf(read.ProjectUrl), read.ProjectUrl);
         if (read.PackageSize > 0)
+        {
             Fact(ui, t.NugetFactSize, SizeText(ui, read.PackageSize));
+        }
     }
 
-    private static string PublishedText(Ui<UiState> ui, DateTimeOffset published) =>
-        ui.Memo("published", (published, ui.State.Strings.Culture), static a => FormatDate(a.published, a.Culture));
+    private static string PublishedText(Ui<UiState> ui, DateTimeOffset published)
+    {
+        return ui.Memo("published", (published, ui.State.Strings.Culture), static a => FormatDate(a.published, a.Culture));
+    }
 
-    private static string SizeText(Ui<UiState> ui, long bytes) =>
-        ui.Memo("size", (bytes, ui.State.Strings.Culture), static a => FormatSize(a.bytes, a.Culture));
+    private static string SizeText(Ui<UiState> ui, long bytes)
+    {
+        return ui.Memo("size", (bytes, ui.State.Strings.Culture), static a => FormatSize(a.bytes, a.Culture));
+    }
 
     /// <summary>The details read; null while they load, could not be read, or none are asked for.</summary>
     private static PackageVersionDetails? ReadOf(VersionDetails? details)
     {
         if (details is not VersionDetails.Read read)
+        {
             return null;
+        }
+
         return read.Details;
     }
 
-    private static string FormatDate(DateTimeOffset date, CultureInfo culture) => date.ToLocalTime().ToString("d", culture);
+    private static string FormatDate(DateTimeOffset date, CultureInfo culture)
+    {
+        return date.ToLocalTime().ToString("d", culture);
+    }
 
     /// <summary>The size in kilobytes, or megabytes once it reaches one.</summary>
     private static string FormatSize(long bytes, CultureInfo culture)
     {
         var kilobytes = bytes / Kilobyte;
         if (kilobytes < Kilobyte)
+        {
             return string.Format(culture, "{0:N1} KB", kilobytes);
+        }
+
         return string.Format(culture, "{0:N1} MB", kilobytes / Kilobyte);
     }
 
@@ -274,11 +343,17 @@ internal static class NuGetDetailsView
     private static string LicenseText(PackageVersionDetails details)
     {
         if (details.License.Length > 0)
+        {
             return details.License;
+        }
+
         return TextOf(details.LicenseUrl);
     }
 
-    private static string TextOf(WebUrl? url) => url == null ? "" : url.Text;
+    private static string TextOf(WebUrl? url)
+    {
+        return url == null ? "" : url.Text;
+    }
 
     private static void Fact(Ui<UiState> ui, string label, string value)
     {
@@ -294,7 +369,10 @@ internal static class NuGetDetailsView
     private static void LinkFact(Ui<UiState> ui, string id, string label, string text, WebUrl? url)
     {
         if (text.Length == 0)
+        {
             return;
+        }
+
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Start }))
         {
@@ -317,7 +395,9 @@ internal static class NuGetDetailsView
         var runs = LinkRunsOf(ui, id, text, url.Text, style);
         var click = ui.RichText(runs, new Box { Width = Sizing.Grow() }, id: ui.GetId(id));
         if (click.Link is string target)
+        {
             ui.OpenUrl(target);
+        }
     }
 
     /// <summary>The runs of a link, kept while its text, URL and style stay the same, as rich text asks.</summary>
@@ -325,7 +405,10 @@ internal static class NuGetDetailsView
     {
         var kept = ui.GetState<LinkRuns>(ui.GetId(id + "-runs"));
         if (kept.Runs.Count == 0 || kept.Text != text || kept.Url != url || kept.Style != style)
+        {
             KeepRuns(kept, text, url, style);
+        }
+
         return kept.Runs;
     }
 
@@ -352,7 +435,10 @@ internal static class NuGetDetailsView
         var theme = ui.Theme;
         var read = ReadOf(details);
         if (read == null)
+        {
             return;
+        }
+
         ui.Text(t.NugetDependencies, bold: true);
         if (read.DependencyGroups.Count == 0)
         {
@@ -360,7 +446,9 @@ internal static class NuGetDetailsView
             return;
         }
         for (var i = 0; i < read.DependencyGroups.Count; i++)
+        {
             Group(ui, read.DependencyGroups[i], i);
+        }
     }
 
     /// <summary>A framework's name, then each package it depends on with the versions it takes.</summary>
@@ -374,9 +462,14 @@ internal static class NuGetDetailsView
         {
             ui.Text(framework, color: theme.TextMuted, size: theme.FontSizeSmall, bold: true);
             if (group.Dependencies.Count == 0)
+            {
                 ui.Text(t.NugetNoDependencies, color: theme.TextMuted, size: theme.FontSizeSmall);
+            }
+
             foreach (var dependency in group.Dependencies)
+            {
                 Dependency(ui, dependency);
+            }
         }
     }
 

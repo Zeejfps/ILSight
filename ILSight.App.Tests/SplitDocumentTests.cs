@@ -45,13 +45,22 @@ public sealed class SplitDocumentTests
     private static DockSplit? FindSplitHolding(DockNode node, string panel)
     {
         if (node is not DockSplit split)
+        {
             return null;
+        }
+
         if (IsGroupOf(split.First, panel) || IsGroupOf(split.Second, panel))
+        {
             return split;
+        }
+
         return FindSplitHolding(split.First, panel) ?? FindSplitHolding(split.Second, panel);
     }
 
-    private static bool IsGroupOf(DockNode node, string panel) => node is DockGroup group && group.Panels.SequenceEqual([panel]);
+    private static bool IsGroupOf(DockNode node, string panel)
+    {
+        return node is DockGroup group && group.Panels.SequenceEqual([panel]);
+    }
 
     [Fact]
     public void The_first_tab_of_a_run_takes_a_panel_no_saved_document_was_docked_as()

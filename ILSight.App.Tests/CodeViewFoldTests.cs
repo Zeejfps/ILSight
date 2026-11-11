@@ -7,18 +7,25 @@ namespace ILSight.App.Tests;
 
 public sealed class CodeViewFoldTests
 {
-    private static CodeViewDriver Outline(float height = 1200f) => CodeViewDriver.Showing(CodeViewDriver.Outline(), height, frames: 2);
+    private static CodeViewDriver Outline(float height = 1200f)
+    {
+        return CodeViewDriver.Showing(CodeViewDriver.Outline(), height, frames: 2);
+    }
 
-    private static List<string> Numbers(CodeViewDriver view) =>
-        view.Frames.Canvas.GlyphRuns.Where(r => r.Origin.X < view.TextLeft - 0.5f && char.IsDigit(r.Text[0]))
+    private static List<string> Numbers(CodeViewDriver view)
+    {
+        return view.Frames.Canvas.GlyphRuns.Where(r => r.Origin.X < view.TextLeft - 0.5f && char.IsDigit(r.Text[0]))
             .OrderByDescending(r => r.Origin.Y).Select(r => r.Text).ToList();
+    }
 
-    private static List<string> Rows(CodeViewDriver view) =>
-        view.Frames.Canvas.GlyphRuns
+    private static List<string> Rows(CodeViewDriver view)
+    {
+        return view.Frames.Canvas.GlyphRuns
             .Select(r => (r.Text, r.Origin.X, Top: view.RowTop(r.Origin.Y)))
             .Where(r => r.X >= view.TextLeft - 0.5f && r.Top >= CodeViewDriver.Origin - 0.5f)
             .GroupBy(r => r.Top).OrderBy(g => g.Key)
             .Select(g => string.Concat(g.OrderBy(r => r.X).Select(r => r.Text))).ToList();
+    }
 
     private static void ClickChevron(CodeViewDriver view, CodeRow row)
     {

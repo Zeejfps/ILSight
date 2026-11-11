@@ -112,7 +112,10 @@ internal static class DiagnosticsIpc
         }
         writer.Write((uint)(value.Length + 1));
         foreach (var c in value)
+        {
             writer.Write((ushort)c);
+        }
+
         writer.Write((ushort)0);
     }
 
@@ -123,15 +126,27 @@ internal static class DiagnosticsIpc
     {
         var length = reader.ReadUInt32();
         if (length == 0)
+        {
             return null;
+        }
+
         if (length > MaxStringLength)
+        {
             throw new IOException($"A diagnostics IPC string claims {length} chars.");
+        }
+
         var chars = new char[length];
         for (var i = 0; i < chars.Length; i++)
+        {
             chars[i] = (char)reader.ReadUInt16();
+        }
+
         var end = chars.Length;
         if (chars[end - 1] == '\0')
+        {
             end--;
+        }
+
         return new string(chars, 0, end);
     }
 
@@ -143,16 +158,24 @@ internal static class DiagnosticsIpc
         var header = new byte[HeaderSize];
         await stream.ReadExactlyAsync(header, cancellationToken).ConfigureAwait(false);
         if (!header.AsSpan(0, Magic.Length).SequenceEqual(Magic))
+        {
             throw new IOException("A diagnostics IPC response does not start with the DOTNET_IPC_V1 magic.");
+        }
 
         var size = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(14));
         if (size < HeaderSize)
+        {
             throw new IOException($"A diagnostics IPC response claims an impossible size of {size} bytes.");
+        }
+
         var payload = new byte[size - HeaderSize];
         await stream.ReadExactlyAsync(payload, cancellationToken).ConfigureAwait(false);
 
         if (header[16] == ServerCommandSet && header[17] == ServerOkCommandId)
+        {
             return new IpcResponse.Ok(payload);
+        }
+
         return new IpcResponse.Rejected(payload.Length >= 4 ? BinaryPrimitives.ReadInt32LittleEndian(payload) : 0);
     }
 
@@ -165,10 +188,16 @@ internal static class DiagnosticsIpc
     {
         var info = await QueryProcessInfoAsync(endpoint, ProcessInfo2CommandId, budget, cancellationToken).ConfigureAwait(false);
         if (info != null)
+        {
             return info;
+        }
+
         info = await QueryProcessInfoAsync(endpoint, ProcessInfoCommandId, budget, cancellationToken).ConfigureAwait(false);
         if (info == null)
+        {
             throw new IOException("The runtime refused to say what process it is.");
+        }
+
         return info;
     }
 
@@ -183,7 +212,9 @@ internal static class DiagnosticsIpc
                 await stream.WriteAsync(EncodeRequest(ProcessCommandSet, commandId, ReadOnlySpan<byte>.Empty), token).ConfigureAwait(false);
                 var response = await ReadResponseAsync(stream, token).ConfigureAwait(false);
                 if (response is not IpcResponse.Ok ok)
+                {
                     return null;
+                }
 
                 using var reader = new BinaryReader(new MemoryStream(ok.Payload));
                 reader.ReadInt64(); // the process id, which the caller knows
@@ -221,10 +252,16 @@ internal static class DiagnosticsIpc
     {
         var trace = await CollectAsync(endpoint, CollectTracing4CommandId, budget, cancellationToken).ConfigureAwait(false);
         if (trace != null)
+        {
             return trace;
+        }
+
         trace = await CollectAsync(endpoint, CollectTracing2CommandId, budget, cancellationToken).ConfigureAwait(false);
         if (trace == null)
+        {
             throw new IOException("The runtime refused to start a session.");
+        }
+
         return trace;
     }
 
@@ -239,9 +276,15 @@ internal static class DiagnosticsIpc
                 await session.WriteAsync(EncodeRequest(EventPipeCommandSet, commandId, EncodeCollectTracing(commandId)), token).ConfigureAwait(false);
                 var response = await ReadResponseAsync(session, token).ConfigureAwait(false);
                 if (response is not IpcResponse.Ok ok)
+                {
                     return null;
+                }
+
                 if (ok.Payload.Length < sizeof(ulong))
+                {
                     throw new IOException("The runtime did not give the session's id.");
+                }
+
                 var sessionId = BinaryPrimitives.ReadUInt64LittleEndian(ok.Payload);
 
                 // The runtime writes the rundown into this same connection as the session stops, so it is read
@@ -296,7 +339,9 @@ internal static class DiagnosticsIpc
             await stream.WriteAsync(EncodeRequest(EventPipeCommandSet, StopTracingCommandId, payload), cancellationToken).ConfigureAwait(false);
             var response = await ReadResponseAsync(stream, cancellationToken).ConfigureAwait(false);
             if (response is IpcResponse.Rejected rejected)
+            {
                 throw new IOException($"The runtime refused to stop the session (error 0x{rejected.HResult:X8}).");
+            }
         }
     }
 
@@ -360,8 +405,10 @@ internal static class DiagnosticsIpc
                 finally
                 {
                     if (!connected)
-                        await pipe.DisposeAsync().ConfigureAwait(false);
-                }
+                        {
+                            await pipe.DisposeAsync().ConfigureAwait(false);
+                        }
+                    }
             }
             case DiagnosticsEndpoint.UnixSocket socketEndpoint:
             {
@@ -377,8 +424,10 @@ internal static class DiagnosticsIpc
                 finally
                 {
                     if (!connected)
-                        socket.Dispose();
-                }
+                        {
+                            socket.Dispose();
+                        }
+                    }
             }
             default:
                 throw new InvalidOperationException($"Unknown endpoint {endpoint}.");

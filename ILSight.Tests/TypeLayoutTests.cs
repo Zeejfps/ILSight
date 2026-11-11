@@ -9,7 +9,10 @@ public sealed class TypeLayoutTests
     private const string ZooNamespace = Trees.FixturesNamespace;
     private const float Near = 1.5f;
 
-    private static CodeReference.Entity Zoo(string type) => Trees.TestAssembly.Root.Child(ZooNamespace, type).Definition;
+    private static CodeReference.Entity Zoo(string type)
+    {
+        return Trees.TestAssembly.Root.Child(ZooNamespace, type).Definition;
+    }
 
     private static readonly CodeReference.Entity Animal = Zoo("Animal");
     private static readonly CodeReference.Entity Lion = Zoo("Lion");
@@ -78,7 +81,9 @@ public sealed class TypeLayoutTests
         for (var i = 0; i < boxes.Count; i++)
         {
             for (var j = i + 1; j < boxes.Count; j++)
+            {
                 Assert.False(boxes[i].Intersects(boxes[j]));
+            }
         }
         Assert.Equal(0f, boxes.Min(static b => b.Left), 0.01f);
         Assert.Equal(0f, boxes.Min(static b => b.Bottom), 0.01f);

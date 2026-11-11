@@ -16,9 +16,15 @@ public static partial class BrowseNodes
         var package = folder.Package;
         var children = new List<BrowseNode>();
         foreach (var child in folder.Folder.Folders)
+        {
             children.Add(Create(parent, new NodeSubject.Package { Value = CreateMergedFolder(package, child) }));
+        }
+
         foreach (var file in folder.Folder.Files)
+        {
             children.Add(CreateFileNode(parent, package, file));
+        }
+
         return children.ToArray();
     }
 
@@ -38,7 +44,10 @@ public static partial class BrowseNodes
     private static bool HoldsOnlyOneFolder(PackageFolder folder)
     {
         if (folder.Files.Count != 0)
+        {
             return false;
+        }
+
         return folder.Folders.Count == 1;
     }
 
@@ -46,7 +55,10 @@ public static partial class BrowseNodes
     {
         var assembly = PackageContents.IsAssemblyName(file.Name) ? LoadedAssemblies.FindAssembly(package.Package, LoadedAssemblies.EnsureAssemblies(package), file) : null;
         if (assembly == null)
+        {
             return Create(parent, new NodeSubject.PackageFile { Value = new PackageFileInfo { Package = package, File = file } });
+        }
+
         return CreateModuleRoot(assembly, parent);
     }
 }

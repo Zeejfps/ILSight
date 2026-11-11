@@ -20,21 +20,30 @@ public static class Preferences
     public static void SetLocale(AppState appState, Locale locale)
     {
         if (locale == appState.Locale)
+        {
             return;
+        }
+
         appState.Locale = locale;
     }
 
     public static void SetApiVisibility(AppState appState, ApiVisibility visibility)
     {
         if (visibility == appState.ApiVisibility)
+        {
             return;
+        }
+
         appState.ApiVisibility = visibility;
     }
 
     public static void SetLanguage(AppState appState, DecompilationLanguage language)
     {
         if (language == appState.Language)
+        {
             return;
+        }
+
         appState.Language = language;
     }
 
@@ -67,7 +76,10 @@ public static class Preferences
     private static void SetDecompilerOptions(AppState appState, DecompilerOptions options)
     {
         if (options == appState.DecompilerOptions)
+        {
             return;
+        }
+
         appState.DecompilerOptions = options;
     }
 }

@@ -8,7 +8,10 @@ public sealed class CursorListTests
     {
         var list = new CursorList<string>(10);
         foreach (var item in items)
+        {
             list.Add(item);
+        }
+
         return list;
     }
 

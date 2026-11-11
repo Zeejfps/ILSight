@@ -38,7 +38,10 @@ public abstract class LoadedAssembly
         get
         {
             if (this is LoadedModule module && module.Place != null)
+            {
                 return module.Place.Container;
+            }
+
             return this;
         }
     }
@@ -56,7 +59,10 @@ public abstract class LoadedAssembly
 
     public required AssemblyList List { get; init; }
 
-    public override string ToString() => FullName;
+    public override string ToString()
+    {
+        return FullName;
+    }
 }
 
 /// <summary>An assembly or WebCIL module that was read: a file on disk, or, when <see cref="Place"/>
@@ -108,7 +114,10 @@ public sealed class LoadedModule : LoadedAssembly
         get
         {
             if (TargetFramework == null)
+            {
                 return null;
+            }
+
             return TargetFramework.Readable;
         }
     }
@@ -120,7 +129,10 @@ public sealed class LoadedModule : LoadedAssembly
         get
         {
             if (TargetFramework == null)
+            {
                 return null;
+            }
+
             return TargetFramework.Moniker;
         }
     }
@@ -229,7 +241,10 @@ public static class LoadedAssemblies
     private static string JoinNameAndVersion(string name, Version? version)
     {
         if (version == null)
+        {
             return name;
+        }
+
         return $"{name} ({version})";
     }
 
@@ -243,7 +258,10 @@ public static class LoadedAssemblies
     private static string GetModuleName(AssemblyPath path, MetadataFile file)
     {
         if (!file.Metadata.IsAssembly)
+        {
             return GetFileName(path);
+        }
+
         var metadata = file.Metadata;
         return metadata.GetString(metadata.GetAssemblyDefinition().Name);
     }
@@ -251,14 +269,20 @@ public static class LoadedAssemblies
     private static string GetFullName(MetadataFile file)
     {
         if (!file.Metadata.IsAssembly)
+        {
             return file.Name;
+        }
+
         return file.FullName;
     }
 
     private static Version? GetVersion(MetadataFile file)
     {
         if (!file.Metadata.IsAssembly)
+        {
             return null;
+        }
+
         return file.Metadata.GetAssemblyDefinition().Version;
     }
 
@@ -278,7 +302,10 @@ public static class LoadedAssemblies
     public static PdbCheck CheckPdb(LoadedModule module, string pdbPath)
     {
         if (module.PEFile == null)
+        {
             return PdbCheck.Unreadable;
+        }
+
         return DebugSymbolFiles.CheckPdb(module.PEFile, pdbPath);
     }
 
@@ -292,10 +319,16 @@ public static class LoadedAssemblies
     private static DebugSymbols? LoadDebugSymbols(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place)
     {
         if (file is not PEFile pe)
+        {
             return null;
+        }
+
         var picked = list.Pdbs.Find(path);
         if (picked == null)
+        {
             return DebugSymbolFiles.LoadSymbols(pe, place?.Container.Package);
+        }
+
         return DebugSymbolFiles.LoadPicked(picked);
     }
 
@@ -328,7 +361,11 @@ public static class LoadedAssemblies
     internal static DecompilerTypeSystem EnsureTypeSystemFor(LoadedModule module, DecompilerSettings settings)
     {
         var options = DecompilerTypeSystem.GetOptions(settings);
-        if (options == DefaultTypeSystemOptions) return EnsureTypeSystem(module);
+        if (options == DefaultTypeSystemOptions)
+        {
+            return EnsureTypeSystem(module);
+        }
+
         return module.TypeSystems.GetOrAdd(options, static (o, m) => new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(m.File, m.Resolver, o)), module).Value;
     }
 
@@ -364,9 +401,15 @@ public static class LoadedAssemblies
     {
         var entity = FindEntity(main, idString);
         if (entity == null)
+        {
             return null;
+        }
+
         if (!ReferenceEquals(entity.ParentModule, main))
+        {
             return null;
+        }
+
         return entity;
     }
 
@@ -400,10 +443,15 @@ public static class LoadedAssemblies
         foreach (var file in AssemblyPackages.ListFiles(package.Package))
         {
             if (!PackageContents.IsAssemblyName(file.Name))
+            {
                 continue;
+            }
+
             var assembly = AssemblyListing.TryLoadOutOf(package.List, package, file);
             if (assembly != null)
+            {
                 assemblies.Add(assembly);
+            }
         }
         return assemblies;
     }
@@ -416,7 +464,9 @@ public static class LoadedAssemblies
         foreach (var assembly in assemblies)
         {
             if (assembly.FilePath.Equals(path))
+            {
                 return assembly;
+            }
         }
         return null;
     }

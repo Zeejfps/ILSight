@@ -97,7 +97,10 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     {
         var face = TakeCodeFontFace(UiState, _codeFonts);
         if (face == null)
+        {
             return;
+        }
+
         host.RegisterFont(face);
     }
 
@@ -107,9 +110,14 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     {
         ApplyIconTheme(UiState, ResolveIconTheme(_appState));
         if (!ShownChanges.TakeIcons(UiState, UiState.Icons, UiState.IconFonts))
+        {
             return;
+        }
+
         foreach (var font in UiState.IconFonts)
+        {
             host.RegisterFont(font);
+        }
     }
 
     private void StopRedrawingOnAssemblyChanges(ImmediateGuiAppHost<UiState> host)

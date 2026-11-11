@@ -84,7 +84,10 @@ public sealed class DocumentTab
         get
         {
             if (Diagram != null)
+            {
                 return false;
+            }
+
             return Comparison == null;
         }
     }
@@ -95,9 +98,15 @@ public sealed class DocumentTab
         get
         {
             if (IsBusy)
+            {
                 return null;
+            }
+
             if (Node == null)
+            {
                 return null;
+            }
+
             return ViewPosition;
         }
     }
@@ -109,7 +118,10 @@ public sealed class DocumentTab
         get
         {
             if (IsBusy)
+            {
                 return Arrival.Position;
+            }
+
             return Position;
         }
     }

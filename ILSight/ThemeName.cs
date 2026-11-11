@@ -19,7 +19,10 @@ public abstract record ThemeName
         {
             var tags = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var (tag, name) in byTag)
+            {
                 tags.TryAdd(tag, name);
+            }
+
             ByTag = tags;
             Fallback = fallback;
         }
@@ -48,11 +51,20 @@ public static class ThemeNames
     private static string GetName(ThemeName.PerLanguage name, CultureInfo culture)
     {
         if (name.ByTag.TryGetValue(culture.Name, out var named))
+        {
             return named;
+        }
+
         if (name.ByTag.TryGetValue(FallbackTag, out var english))
+        {
             return english;
+        }
+
         foreach (var first in name.ByTag.Values)
+        {
             return first;
+        }
+
         return name.Fallback;
     }
 }

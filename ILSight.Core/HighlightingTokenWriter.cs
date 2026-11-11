@@ -23,10 +23,16 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         base.StartNode(node);
         foreach (var instruction in node.Annotations.OfType<ILInstruction>())
         {
-            if (instruction.ILRangeIsEmpty || instruction.Parent is null || instruction is BlockContainer or Block) continue;
+            if (instruction.ILRangeIsEmpty || instruction.Parent is null || instruction is BlockContainer or Block)
+            {
+                continue;
+            }
+
             var function = instruction.Parent.Ancestors.OfType<ILFunction>().FirstOrDefault();
             if (function != null && function.Kind == ILFunctionKind.TopLevelFunction && function.Method != null)
+            {
                 DocumentWriting.MarkStatement(_builder, function.Method, instruction.StartILOffset);
+            }
         }
     }
 
@@ -54,12 +60,15 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         base.WritePrimitiveValue(value, format);
     }
 
-    private static SpanKind KindOfValue(object? value) => value switch
+    private static SpanKind KindOfValue(object? value)
     {
-        null or bool => SpanKind.Keyword,
-        string or char => SpanKind.String,
-        _ => SpanKind.Number,
-    };
+        return value switch
+        {
+            null or bool => SpanKind.Keyword,
+            string or char => SpanKind.String,
+            _ => SpanKind.Number,
+        };
+    }
 
     public override void WriteInterpolatedText(string text)
     {
@@ -73,7 +82,10 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         base.WriteToken(token);
     }
 
-    private SpanKind KindOfToken(string token) => IsStringDelimiter(token) ? SpanKind.String : SpanKind.Plain;
+    private SpanKind KindOfToken(string token)
+    {
+        return IsStringDelimiter(token) ? SpanKind.String : SpanKind.Plain;
+    }
 
     public override void WriteComment(CommentType commentType, string content)
     {
@@ -109,14 +121,27 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         }
     }
 
-    private bool IsStringDelimiter(string token) =>
-        token.StartsWith('$') || (token == "\"" && _nodes.TryPeek(out var node) && node is InterpolatedStringExpression);
+    private bool IsStringDelimiter(string token)
+    {
+        return token.StartsWith('$') || (token == "\"" && _nodes.TryPeek(out var node) && node is InterpolatedStringExpression);
+    }
 
     private SpanKind? Classify(Identifier identifier)
     {
-        if (!_nodes.TryPeek(out var node)) return null;
-        if (node is Identifier) node = node.Parent;
-        if (node is null) return null;
+        if (!_nodes.TryPeek(out var node))
+        {
+            return null;
+        }
+
+        if (node is Identifier)
+        {
+            node = node.Parent;
+        }
+
+        if (node is null)
+        {
+            return null;
+        }
 
         switch (node.GetSymbol())
         {
@@ -153,12 +178,21 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         }
 
         if (IsConstrainedTypeParameter(node))
+        {
             return SpanKind.Type;
+        }
 
         for (var ancestor = node; ancestor != null; ancestor = ancestor.Parent)
         {
-            if (ancestor is UsingDeclaration or NamespaceDeclaration) return SpanKind.Namespace;
-            if (ancestor is EntityDeclaration or Statement) break;
+            if (ancestor is UsingDeclaration or NamespaceDeclaration)
+            {
+                return SpanKind.Namespace;
+            }
+
+            if (ancestor is EntityDeclaration or Statement)
+            {
+                break;
+            }
         }
 
         return node switch
@@ -175,7 +209,10 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
     private static bool IsConstrainedTypeParameter(AstNode node)
     {
         if (node.Parent is not Constraint constraint)
+        {
             return false;
+        }
+
         return constraint.TypeParameter == node;
     }
 }

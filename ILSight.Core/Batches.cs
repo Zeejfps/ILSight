@@ -35,10 +35,15 @@ internal static class Batches
             {
                 var batch = new List<T>();
                 while (channel.Reader.TryRead(out var item))
+                {
                     batch.Add(item);
+                }
+
                 yield return batch;
                 if (!channel.Reader.Completion.IsCompleted)
+                {
                     await Task.Delay(Interval, cancellationToken).ConfigureAwait(false);
+                }
             }
         }
         finally

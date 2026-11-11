@@ -46,7 +46,9 @@ internal static class SearchPanelView
         var tooltip = ui.Memo("search-kinds-tip", (kinds, t), static a => Description(a.t, a.kinds));
         using var menu = ui.SelectButton("search-kinds", summary, width, tooltip);
         if (menu.IsOpen)
+        {
             KindsMenu(ui);
+        }
     }
 
     private static string Summary(Strings t, SearchKinds kinds)
@@ -62,7 +64,10 @@ internal static class SearchPanelView
         }
         var picked = ListPicked(kinds);
         if (picked.Length == 1)
+        {
             return KindLabel(t, picked[0]);
+        }
+
         return t.SearchKindsCount(picked.Length);
     }
 
@@ -80,14 +85,20 @@ internal static class SearchPanelView
             t.SearchKindsAll, t.SearchModeTypesAndMembers, t.SearchModeMembers, t.SearchKindsCount(Kinds.Length),
         };
         foreach (var kind in Kinds)
+        {
             summaries.Add(KindLabel(t, kind));
+        }
+
         return summaries.ToArray();
     }
 
     private static string Description(Strings t, SearchKinds kinds)
     {
         if (kinds == SearchKinds.All)
+        {
             return $"{t.SearchMode}: {t.SearchKindsAll}";
+        }
+
         var labels = ListPicked(kinds).Select(k => KindLabel(t, k));
         return $"{t.SearchMode}:\n{string.Join("\n", labels)}";
     }
@@ -105,29 +116,46 @@ internal static class SearchPanelView
         var palette = ui.State.NodeIconPalette;
         var allIcon = new UiIcon(ui.State.Icons.SearchAllKinds, ui.Theme.TextMuted);
         if (ui.MenuItem(t.SearchModeAll, ref checkAll, keepOpen: true, icon: allIcon))
+        {
             kinds = SearchKinds.All;
+        }
+
         ui.MenuSeparator();
         foreach (var kind in Kinds)
         {
             var on = !all && (kinds & kind) != 0;
             var icon = NodeIcons.Icon(KindNode(kind), NodeAccessibility.None, palette, ui.State.Icons);
             if (ui.MenuItem(KindLabel(t, kind), ref on, keepOpen: true, icon: icon))
+            {
                 kinds = Toggle(kinds, kind, all, on);
+            }
         }
         if (kinds == search.Kinds)
+        {
             return;
+        }
+
         search.Kinds = kinds;
     }
 
     private static SearchKinds Toggle(SearchKinds kinds, SearchKinds kind, bool all, bool on)
     {
         if (all)
+        {
             return kind;
+        }
+
         if (on)
+        {
             return kinds | kind;
+        }
+
         var left = kinds & ~kind;
         if (left == SearchKinds.None)
+        {
             return SearchKinds.All;
+        }
+
         return left;
     }
 
@@ -137,27 +165,41 @@ internal static class SearchPanelView
         var search = ui.State.Search;
         var fieldId = ui.GetId("search");
         if (Searches.TakeFocus(search))
+        {
             ui.Focus(fieldId);
+        }
+
         var width = Sizing.Grow(AppLayout.SearchMinWidth, AppLayout.SearchWidth);
         var submitted = ui.TextField("search", ref search.Query, t.SearchField, width, ui.State.Icons.SearchField, clearable: true);
         ui.Tooltip(fieldId, ui.Memo("search-syntax", t, static s => s.SearchSyntaxTooltip(Shortcuts.Search.Label)));
         if (!ui.HasFocus(fieldId))
+        {
             return;
+        }
+
         if (submitted)
         {
             var row = PickSelected(search);
             if (row != null)
+            {
                 Commands.Later(ui.State, row.Node, static (a, node) => ShowNode(a, node));
+            }
+
             return;
         }
         if (ui.Input.IsKeyPressed(KeyboardKey.DownArrow) && search.Rows.Count > 0)
+        {
             ui.Focus(ResultsId, takesText: false);
+        }
     }
 
     private static SearchResult? PickSelected(Search search)
     {
         if (search.SelectedRow == null)
+        {
             Searches.Move(search, 1);
+        }
+
         return search.SelectedRow;
     }
 
@@ -172,7 +214,10 @@ internal static class SearchPanelView
     private static string CountText(Strings t, int count, bool isBusy)
     {
         if (isBusy)
+        {
             return t.SearchResultsSoFar(count);
+        }
+
         return t.SearchResults(count);
     }
 
@@ -186,20 +231,26 @@ internal static class SearchPanelView
         var table = ui.Table(ResultsId, ui.State.SearchColumns, search.Selection.Rows);
         var clicked = table.Header(headers, sort);
         if (clicked >= 0)
+        {
             Searches.SortBy(search, SortOf(clicked));
+        }
+
         ResultRows(ui, table);
     }
 
     private const int NoColumn = -1;
 
-    private static int ColumnOf(SearchSort sort) => sort switch
+    private static int ColumnOf(SearchSort sort)
     {
-        SearchSort.Relevance => NoColumn,
-        SearchSort.Name => 0,
-        SearchSort.Location => 1,
-        SearchSort.Assembly => 2,
-        _ => throw new UnreachableException(),
-    };
+        return sort switch
+        {
+            SearchSort.Relevance => NoColumn,
+            SearchSort.Name => 0,
+            SearchSort.Location => 1,
+            SearchSort.Assembly => 2,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     private static UiIcon SortIcon(AppIcons icons, Search search)
     {
@@ -207,13 +258,16 @@ internal static class SearchPanelView
         return new UiIcon(glyph);
     }
 
-    private static SearchSort SortOf(int column) => column switch
+    private static SearchSort SortOf(int column)
     {
-        0 => SearchSort.Name,
-        1 => SearchSort.Location,
-        2 => SearchSort.Assembly,
-        _ => throw new UnreachableException(),
-    };
+        return column switch
+        {
+            0 => SearchSort.Name,
+            1 => SearchSort.Location,
+            2 => SearchSort.Assembly,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     private static void ResultRows(Ui<UiState> ui, TableFrame table)
     {
@@ -221,11 +275,16 @@ internal static class SearchPanelView
         using var body = table.Body(search.Rows.Count);
         ItemSelections.TakeFrom(search.Selection, search.Rows);
         for (var i = body.First; i < body.End; i++)
+        {
             ResultRow(ui, body, i);
+        }
+
         ItemSelections.TakeFrom(search.Selection, search.Rows);
         var selected = search.SelectedRow;
         if (body.Activated && selected != null)
+        {
             Commands.Later(ui.State, (node: selected.Node, inNewTab: body.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
+        }
     }
 
     private static void ResultRow(Ui<UiState> ui, TableBody body, int index)
@@ -237,7 +296,10 @@ internal static class SearchPanelView
         using (row)
         {
             if (row.Interaction.Clicked)
+            {
                 Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n));
+            }
+
             NameCell(ui, row, result);
             row.TextCell(1, result.Location, theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
             row.TextCell(2, NodeText.AssemblyLabel(node.Assembly), theme.TextMuted);
@@ -257,33 +319,39 @@ internal static class SearchPanelView
         }
     }
 
-    private static string KindLabel(Strings t, SearchKinds kind) => kind switch
+    private static string KindLabel(Strings t, SearchKinds kind)
     {
-        SearchKinds.Types => t.SearchModeTypes,
-        SearchKinds.Methods => t.SearchModeMethods,
-        SearchKinds.Fields => t.SearchModeFields,
-        SearchKinds.Properties => t.SearchModeProperties,
-        SearchKinds.Events => t.SearchModeEvents,
-        SearchKinds.Literals => t.SearchModeLiterals,
-        SearchKinds.Tokens => t.SearchModeToken,
-        SearchKinds.Resources => t.SearchModeResources,
-        SearchKinds.Assemblies => t.SearchModeAssemblies,
-        SearchKinds.Namespaces => t.SearchModeNamespaces,
-        _ => throw new UnreachableException(),
-    };
+        return kind switch
+        {
+            SearchKinds.Types => t.SearchModeTypes,
+            SearchKinds.Methods => t.SearchModeMethods,
+            SearchKinds.Fields => t.SearchModeFields,
+            SearchKinds.Properties => t.SearchModeProperties,
+            SearchKinds.Events => t.SearchModeEvents,
+            SearchKinds.Literals => t.SearchModeLiterals,
+            SearchKinds.Tokens => t.SearchModeToken,
+            SearchKinds.Resources => t.SearchModeResources,
+            SearchKinds.Assemblies => t.SearchModeAssemblies,
+            SearchKinds.Namespaces => t.SearchModeNamespaces,
+            _ => throw new UnreachableException(),
+        };
+    }
 
-    private static NodeIcon KindNode(SearchKinds kind) => kind switch
+    private static NodeIcon KindNode(SearchKinds kind)
     {
-        SearchKinds.Types => NodeIcon.Class,
-        SearchKinds.Methods => NodeIcon.Method,
-        SearchKinds.Fields => NodeIcon.Field,
-        SearchKinds.Properties => NodeIcon.Property,
-        SearchKinds.Events => NodeIcon.Event,
-        SearchKinds.Literals => NodeIcon.Constant,
-        SearchKinds.Tokens => NodeIcon.MetadataTable,
-        SearchKinds.Resources => NodeIcon.Resource,
-        SearchKinds.Assemblies => NodeIcon.Assembly,
-        SearchKinds.Namespaces => NodeIcon.Namespace,
-        _ => throw new UnreachableException(),
-    };
+        return kind switch
+        {
+            SearchKinds.Types => NodeIcon.Class,
+            SearchKinds.Methods => NodeIcon.Method,
+            SearchKinds.Fields => NodeIcon.Field,
+            SearchKinds.Properties => NodeIcon.Property,
+            SearchKinds.Events => NodeIcon.Event,
+            SearchKinds.Literals => NodeIcon.Constant,
+            SearchKinds.Tokens => NodeIcon.MetadataTable,
+            SearchKinds.Resources => NodeIcon.Resource,
+            SearchKinds.Assemblies => NodeIcon.Assembly,
+            SearchKinds.Namespaces => NodeIcon.Namespace,
+            _ => throw new UnreachableException(),
+        };
+    }
 }

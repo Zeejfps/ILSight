@@ -17,7 +17,10 @@ public static class Assemblies
     {
         var files = paths.ToArray();
         if (files.Length == 0)
+        {
             return;
+        }
+
         OpenInBackground(appState, files);
     }
 
@@ -41,7 +44,10 @@ public static class Assemblies
         {
             case Outcome<LoadedAssembly?>.Ok ok when ok.Value != null:
                 if (!appState.Intent.IsStale(ticket))
+                {
                     ShowNode(appState, BrowseSessions.EnsureRoot(appState.Session, ok.Value));
+                }
+
                 break;
             case Outcome<LoadedAssembly?>.Ok:
                 break;
@@ -57,13 +63,19 @@ public static class Assemblies
     internal static void ReportOpenFailure(AppState appState, Exception error)
     {
         if (error is OperationCanceledException)
+        {
             return;
+        }
+
         Errors.Report(appState, new AppProblem.OpenFailed(error));
     }
 
     /// <summary>Opens the file at <paramref name="path"/>, as a file dialog or a download names it; nothing
     /// when it is no absolute path.</summary>
-    public static void OpenAssembly(AppState appState, string path) => OpenFilesAt(appState, [path]);
+    public static void OpenAssembly(AppState appState, string path)
+    {
+        OpenFilesAt(appState, [path]);
+    }
 
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as
     /// <see cref="OpenAssemblies"/> does; folders are left out.</summary>
@@ -96,7 +108,9 @@ public static class Assemblies
         var assemblies = appState.Assemblies;
         var opened = await Background.Run(() => AssemblyListing.ListReferences(assemblies, assembly, token));
         if (opened is Outcome<List<LoadedModule>>.Failed failed)
+        {
             ReportOpenFailure(appState, failed.Error);
+        }
     }
 
     /// <summary>Checks in the background that the PDB at <paramref name="pdbPath"/> can be read for
@@ -122,7 +136,10 @@ public static class Assemblies
             return;
         }
         if (!AssemblyListing.IsListed(appState.Assemblies, assembly))
+        {
             return;
+        }
+
         appState.Assemblies.Pdbs.Pick(assembly.FilePath, pdbPath);
         ReopenAssembly(appState, assembly);
     }
@@ -139,9 +156,15 @@ public static class Assemblies
     public static void SetTargetFramework(AppState appState, LoadedModule assembly, TargetFrameworkId? framework)
     {
         if (!AssemblyListing.IsListed(appState.Assemblies, assembly))
+        {
             return;
+        }
+
         if (IsInUse(assembly, framework))
+        {
             return;
+        }
+
         PickTargetFramework(appState.Assemblies.TargetFrameworks, assembly, framework);
         ReopenAssembly(appState, assembly);
     }
@@ -151,7 +174,10 @@ public static class Assemblies
     private static bool IsInUse(LoadedModule assembly, TargetFrameworkId? framework)
     {
         if (!assembly.IsTargetFrameworkPicked)
+        {
             return framework == null;
+        }
+
         return assembly.TargetFramework == framework;
     }
 
@@ -192,9 +218,15 @@ public static class Assemblies
         {
             var location = tab.Location;
             if (location == null)
+            {
                 continue;
+            }
+
             if (!IsPathOf(item, location))
+            {
                 continue;
+            }
+
             var position = FindPositionToKeep(appState, tab);
             showing.Add(new ReloadingTab(tab, location, tab.Version, position));
         }
@@ -222,20 +254,28 @@ public static class Assemblies
     private static void LoadAsLoaded(BrowseSession session, BrowseNode old, BrowseNode fresh)
     {
         if (BrowseSessions.PeekChildren(session, old) is not ChildrenState.Ready loaded)
+        {
             return;
+        }
+
         BrowseSessions.LoadChildren(session, fresh);
         foreach (var child in loaded.Children)
         {
             var counterpart = BrowseSessions.FindLoadedChildLike(session, fresh, child);
             if (counterpart != null)
+            {
                 LoadAsLoaded(session, child, counterpart);
+            }
         }
     }
 
     private static void FinishReopen(AppState appState, LoadedAssembly item, Outcome<Reopened> outcome, int ticket, List<ReloadingTab> tabs)
     {
         if (!Reloads.FinishReopen(appState.Reopens, item.FilePath, ticket))
+        {
             return;
+        }
+
         SaveSettings(appState);
         switch (outcome)
         {
@@ -253,9 +293,14 @@ public static class Assemblies
     private static void ShowReopened(AppState appState, LoadedAssembly item, Reopened reopened, List<ReloadingTab> tabs)
     {
         if (!AssemblyListing.Replace(appState.Assemblies, item, reopened.Item))
+        {
             return;
+        }
+
         for (var i = 0; i < tabs.Count; i++)
+        {
             ShowAgain(appState, tabs[i], reopened.Places[i]);
+        }
     }
 
     public static void CloseAssembly(AppState appState, LoadedAssembly assembly)
@@ -267,7 +312,9 @@ public static class Assemblies
     public static void CloseAssemblies(AppState appState, IReadOnlyList<LoadedAssembly> items)
     {
         foreach (var item in items)
+        {
             AssemblyListing.CloseAssembly(appState.Assemblies, item);
+        }
     }
 
     /// <summary>Takes the files that failed to load off the list.</summary>
@@ -277,7 +324,9 @@ public static class Assemblies
             .OfType<FailedAssembly>()
             .ToList();
         foreach (var assembly in failed)
+        {
             AssemblyListing.CloseAssembly(appState.Assemblies, assembly);
+        }
     }
 
     /// <summary>Orders the list by name, and assemblies of one name by version.</summary>
@@ -337,7 +386,10 @@ public static class Assemblies
         {
             var location = tab.Location;
             if (location == null)
+            {
                 continue;
+            }
+
             var position = FindPositionToKeep(appState, tab);
             Tabs.ShowReloading(tab, location);
             reloading.Add(new ReloadingTab(tab, location, tab.Version, position));
@@ -345,8 +397,10 @@ public static class Assemblies
         return reloading;
     }
 
-    private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab) =>
-        Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
+    private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab)
+    {
+        return Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
+    }
 
     private static Reloaded ReopenFiles(AssemblyList assemblies, BrowseSession session, IReadOnlyList<AssemblyPath> paths, List<NodePath> expanded,
         List<NodePath> places, CancellationToken cancellationToken)
@@ -366,7 +420,10 @@ public static class Assemblies
             cancellationToken.ThrowIfCancellationRequested();
             var node = NodeLookup.Find(assemblies, session, path);
             if (node == null)
+            {
                 continue;
+            }
+
             BrowseSessions.LoadChildren(session, node);
             nodes.Add(node);
         }
@@ -387,7 +444,10 @@ public static class Assemblies
     private static void FinishReload(AppState appState, Outcome<Reloaded> outcome, ReloadTicket ticket, int intent, List<ReloadingTab> tabs)
     {
         if (!Reloads.Finish(appState.Reload, ticket))
+        {
             return;
+        }
+
         switch (outcome)
         {
             case Outcome<Reloaded>.Ok ok:
@@ -406,7 +466,10 @@ public static class Assemblies
     {
         appState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes(reloaded.Expanded));
         for (var i = 0; i < tabs.Count; i++)
+        {
             ReshowTab(appState, tabs[i], reloaded.Places[i], intent);
+        }
+
         ShowReopenedDocuments(appState);
         SaveSettings(appState);
     }
@@ -414,9 +477,14 @@ public static class Assemblies
     private static void ReshowTab(AppState appState, ReloadingTab reloading, BrowseNode? node, int intent)
     {
         if (!ShowAgain(appState, reloading, node))
+        {
             return;
+        }
+
         if (reloading.Tab == appState.Tabs.Active && appState.Intent.IsCurrent(intent))
+        {
             appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
+        }
     }
 
     /// <summary>Shows <paramref name="node"/>, the tab's place found again, in the tab, or that its place
@@ -425,9 +493,15 @@ public static class Assemblies
     {
         var tab = reloading.Tab;
         if (!Tabs.IsOpen(appState.Tabs, tab))
+        {
             return false;
+        }
+
         if (tab.Version != reloading.Version)
+        {
             return false;
+        }
+
         if (node == null)
         {
             ReleaseGoneTab(appState, tab, reloading.Location);
@@ -461,7 +535,10 @@ public static class Assemblies
     private static void FinishOpeningAsReload(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket)
     {
         if (!Reloads.Finish(appState.Reload, ticket))
+        {
             return;
+        }
+
         ShowReopenedDocuments(appState);
         switch (outcome)
         {

@@ -21,10 +21,16 @@ public static class NodeDefinitions
     {
         var definition = type.GetDefinition();
         if (definition == null)
+        {
             return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Unresolved(), Visibility = NodeVisibility.Open };
+        }
+
         var reference = CodeReferences.Find(definition);
         if (reference == null)
+        {
             return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Unaddressed(definition), Visibility = NodeVisibility.Open };
+        }
+
         return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Navigable(definition, reference), Visibility = GetReferencedVisibility(definition) };
     }
 
@@ -63,7 +69,10 @@ public static class NodeDefinitions
     {
         var reference = CodeReferences.Find(type);
         if (reference == null)
+        {
             return null;
+        }
+
         return new DerivedTypeInfo { Module = module, Symbol = type, Reference = reference, Visibility = GetReferencedVisibility(type) };
     }
 
@@ -72,10 +81,16 @@ public static class NodeDefinitions
     internal static DefinedType? FindType(LoadedModule module, ITypeDefinition type)
     {
         if (type.MetadataToken.Kind != HandleKind.TypeDefinition)
+        {
             return null;
+        }
+
         var reference = CodeReferences.Find(type);
         if (reference == null)
+        {
             return null;
+        }
+
         return new DefinedType { Module = module, Symbol = type, Handle = (TypeDefinitionHandle)type.MetadataToken, Reference = reference, Visibility = GetDefinitionVisibility(type) };
     }
 
@@ -85,24 +100,30 @@ public static class NodeDefinitions
     {
         var reference = CodeReferences.Find(member);
         if (reference == null)
+        {
             return null;
+        }
+
         return new DefinedMember { Module = module, Symbol = member, Reference = reference, Visibility = GetDefinitionVisibility(member) };
     }
 
     /// <summary>A reference to the type or member a node of <paramref name="subject"/> defines, as documents
     /// point at it; null for a node that defines none.</summary>
-    public static CodeReference.Entity? ReferenceOf(NodeSubject subject) => subject switch
+    public static CodeReference.Entity? ReferenceOf(NodeSubject subject)
     {
-        NodeSubject.TypeDefinition type => type.Definition.Reference,
-        NodeSubject.MemberDefinition member => member.Definition.Reference,
-        NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
-            or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
-            or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
-            or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables
-            or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace
-            or NodeSubject.FailedAssembly => null,
-        _ => throw new UnreachableException(),
-    };
+        return subject switch
+        {
+            NodeSubject.TypeDefinition type => type.Definition.Reference,
+            NodeSubject.MemberDefinition member => member.Definition.Reference,
+            NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
+                or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
+                or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
+                or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables
+                or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace
+                or NodeSubject.FailedAssembly => null,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     /// <summary>The metadata token of the type or member a node of <paramref name="subject"/> defines;
     /// null for a node that defines none.</summary>
@@ -110,7 +131,10 @@ public static class NodeDefinitions
     {
         var reference = ReferenceOf(subject);
         if (reference == null)
+        {
             return null;
+        }
+
         return MetadataTokens.GetToken(reference.Handle);
     }
 
@@ -194,7 +218,10 @@ public static class NodeDefinitions
     internal static CodeReference.Navigable? FindTarget(NodeSubject subject)
     {
         if (GetActivation(subject) is not Activation.Navigate navigate)
+        {
             return null;
+        }
+
         return navigate.Target;
     }
 
@@ -230,7 +257,10 @@ public static class NodeDefinitions
     internal static string DescribePath(NodePath path)
     {
         if (path.Steps.Length == 0)
+        {
             return path.FilePath.Text;
+        }
+
         return $"{path.FilePath}: {string.Join(" › ", path.Steps.Select(static s => s.Label))}";
     }
 
@@ -284,11 +314,20 @@ public static class NodeDefinitions
         id.Append(IdStringProvider.GetTypeName(member.DeclaringType)).Append('.');
         id.Append(member.Name.Replace('.', '#').Replace('<', '{').Replace('>', '}'));
         if (member is IMethod method && method.TypeParameters.Count > 0)
+        {
             id.Append("``").Append(method.TypeParameters.Count);
+        }
+
         if (member is IParameterizedMember parameterized && parameterized.Parameters.Count > 0)
+        {
             id.Append('(').AppendJoin(',', parameterized.Parameters.Select(static p => IdStringProvider.GetTypeName(p.Type))).Append(')');
+        }
+
         if (member.SymbolKind == SymbolKind.Operator && member.Name is "op_Implicit" or "op_Explicit")
+        {
             id.Append('~').Append(IdStringProvider.GetTypeName(member.ReturnType));
+        }
+
         return id.ToString();
     }
 }

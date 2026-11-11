@@ -488,7 +488,10 @@ public sealed class AppStateTests
             yield return await _next.Task;
         }
 
-        public void Fail() => _next.SetException(new InvalidOperationException("The search broke."));
+        public void Fail()
+        {
+            _next.SetException(new InvalidOperationException("The search broke."));
+        }
     }
 
     [Fact]

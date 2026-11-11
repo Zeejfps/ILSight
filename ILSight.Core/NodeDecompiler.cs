@@ -55,15 +55,26 @@ internal static class NodeDecompiler
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
+        {
             return DescribeLoadError(failure, language);
+        }
+
         var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request) };
         if (note != null)
+        {
             WriteComment(builder, note);
+        }
+
         var settings = Settings.Create(options);
         if (language == DecompilationLanguage.CSharp)
+        {
             WriteCSharp(request, builder, settings, cancellationToken);
+        }
         else
+        {
             WriteIL(request, builder, language, settings, cancellationToken);
+        }
+
         cancellationToken.ThrowIfCancellationRequested();
         return DocumentWriting.BuildDocument(builder, request.Title);
     }
@@ -75,22 +86,28 @@ internal static class NodeDecompiler
         var builder = new DocumentBuilder { Language = language };
         WriteComment(builder, error.Message);
         if (error.InnerException != null)
+        {
             builder.Write(error.InnerException.ToString(), SpanKind.Comment);
+        }
+
         return DocumentWriting.BuildFailure(builder, failure.Title, error);
     }
 
     /// <summary>The module the document of <paramref name="request"/> is read from; null for a package's.</summary>
-    private static LoadedModule? ModuleOf(DocumentRequest request) => request switch
+    private static LoadedModule? ModuleOf(DocumentRequest request)
     {
-        DocumentRequest.ModulePreview preview => preview.Module,
-        DocumentRequest.Type type => type.Definition.Module,
-        DocumentRequest.Member member => member.Definition.Module,
-        DocumentRequest.Summary summary => summary.Module,
-        DocumentRequest.Resource resource => resource.Module,
-        DocumentRequest.Baml baml => baml.Module,
-        DocumentRequest.Failure => null,
-        _ => throw new UnreachableException(),
-    };
+        return request switch
+        {
+            DocumentRequest.ModulePreview preview => preview.Module,
+            DocumentRequest.Type type => type.Definition.Module,
+            DocumentRequest.Member member => member.Definition.Module,
+            DocumentRequest.Summary summary => summary.Module,
+            DocumentRequest.Resource resource => resource.Module,
+            DocumentRequest.Baml baml => baml.Module,
+            DocumentRequest.Failure => null,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     /// <summary>Writes the code <paramref name="export"/> names to the file at <paramref name="path"/>.
     /// Throws when decompiling fails. The file is replaced only once the code is whole.</summary>
@@ -133,9 +150,13 @@ internal static class NodeDecompiler
         using var writer = new StreamWriter(path);
         var output = new PlainTextOutput(writer) { IndentationString = settings.CSharpFormattingOptions.IndentationString };
         if (language == DecompilationLanguage.CSharp)
+        {
             WriteWholeCSharp(export, output, settings, cancellationToken);
+        }
         else
+        {
             WriteWholeIL(export, output, language, settings, cancellationToken);
+        }
     }
 
     private static void WriteWholeCSharp(CodeExport export, ITextOutput output, DecompilerSettings settings, CancellationToken cancellationToken)
@@ -162,7 +183,10 @@ internal static class NodeDecompiler
                 var disassembler = CreateDisassembler(whole.Module, output, language, settings, cancellationToken);
                 disassembler.WriteAssemblyReferences(file.Metadata);
                 if (file.Metadata.IsAssembly)
+                {
                     disassembler.WriteAssemblyHeader(file);
+                }
+
                 output.WriteLine();
                 disassembler.WriteModuleHeader(file);
                 output.WriteLine();
@@ -234,7 +258,10 @@ internal static class NodeDecompiler
                 output.WriteLine();
                 disassembler.WriteAssemblyReferences(file.Metadata);
                 if (file.Metadata.IsAssembly)
+                {
                     disassembler.WriteAssemblyHeader(file);
+                }
+
                 output.WriteLine();
                 disassembler.WriteModuleHeader(file);
                 break;
@@ -294,7 +321,10 @@ internal static class NodeDecompiler
         DecompilerSettings settings, CancellationToken cancellationToken)
     {
         if (language == DecompilationLanguage.ILWithCSharp)
+        {
             return new MethodBodyWithCSharp(output, assembly, settings, cancellationToken);
+        }
+
         return new MethodBodyDisassembler(output, cancellationToken);
     }
 
@@ -303,7 +333,10 @@ internal static class NodeDecompiler
     private static void WriteHeader(LoadedModule assembly, DocumentBuilder output, IType type, ConversionFlags flags)
     {
         if (LoadedAssemblies.EnsureMainModule(assembly).GetAssemblyAttributes().Any(static a => a.AttributeType.FullName == ReferenceAssemblyAttribute))
+        {
             WriteComment(output, ReferenceAssemblyWarning);
+        }
+
         WriteComment(output, assembly.FullName);
         var ambience = new CSharpAmbience { ConversionFlags = ConversionFlags.ShowTypeParameterList | ConversionFlags.PlaceReturnTypeAfterParameterList | flags };
         WriteComment(output, type is ITypeDefinition definition ? ambience.ConvertSymbol(definition) : ambience.ConvertType(type));
@@ -376,7 +409,10 @@ internal static class NodeDecompiler
     internal static IDebugInfoProvider? DebugSymbolsFor(LoadedModule assembly, DecompilerSettings settings)
     {
         if (!settings.UseDebugSymbols)
+        {
             return null;
+        }
+
         return LoadedAssemblies.EnsureDebugSymbols(assembly);
     }
 
@@ -395,22 +431,37 @@ internal static class NodeDecompiler
             }
         }
         if (assembly.PEFile != null)
+        {
             WriteComment(output, $"Architecture: {ArchitectureOf(assembly.PEFile.Reader.PEHeaders)}");
+        }
+
         if (assembly.TargetFramework != null)
+        {
             WriteComment(output, $"Target framework: {assembly.TargetFramework.Text}");
+        }
+
         output.WriteLine();
     }
 
     private static void WriteEntryPoint(LoadedModule assembly, EntityHandle handle, DocumentBuilder output)
     {
         if (handle.Kind != HandleKind.MethodDefinition)
+        {
             return;
+        }
+
         var method = LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(handle);
         if (method == null)
+        {
             return;
+        }
+
         var reference = CodeReferences.Find(method);
         if (reference == null)
+        {
             return;
+        }
+
         output.Write("// Entry point: ", SpanKind.Comment);
         output.Write(EntityText.FullName(method), SpanKind.Method, reference);
         output.WriteLine();
@@ -421,9 +472,15 @@ internal static class NodeDecompiler
         var machine = headers.CoffHeader.Machine;
         var flags = headers.CorHeader?.Flags ?? 0;
         if (machine != Machine.I386 || (flags & CorFlags.ILOnly) == 0)
+        {
             return machine.ToString();
+        }
+
         if ((flags & CorFlags.Requires32Bit) == 0)
+        {
             return "AnyCPU (64-bit preferred)";
+        }
+
         return (flags & CorFlags.Prefers32Bit) != 0 ? "AnyCPU (32-bit preferred)" : "x86";
     }
 
@@ -454,9 +511,13 @@ internal static class NodeDecompiler
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     if (line.Length == 0)
+                    {
                         output.WriteLine();
+                    }
                     else
+                    {
                         WriteComment(output, line);
+                    }
                 }
                 break;
             case SummaryInfo.Namespace ns:
@@ -478,9 +539,15 @@ internal static class NodeDecompiler
                 break;
             case SummaryInfo.References references:
                 foreach (var assembly in references.Assemblies)
+                {
                     WriteReferenceLine(output, assembly);
+                }
+
                 foreach (var module in references.Modules)
+                {
                     WriteComment(output, module);
+                }
+
                 break;
             case SummaryInfo.ModuleReference module:
                 WriteComment(output, module.Name);
@@ -501,11 +568,17 @@ internal static class NodeDecompiler
                 break;
             case SummaryInfo.Types types:
                 foreach (var type in types.Entries)
+                {
                     WriteLink(output, type, SpanKind.Type);
+                }
+
                 break;
             case SummaryInfo.Error error:
                 foreach (var line in error.Exception.ToString().Split('\n'))
+                {
                     WriteComment(output, line.TrimEnd('\r'));
+                }
+
                 break;
             default:
                 throw new UnreachableException();
@@ -563,7 +636,10 @@ internal static class NodeDecompiler
         output.WriteLine();
     }
 
-    private static string ForwardedToText(string? destination) => $"Forwarded to {destination}";
+    private static string ForwardedToText(string? destination)
+    {
+        return $"Forwarded to {destination}";
+    }
 
     private static void WriteTypeDeclaration(DocumentBuilder output, NamespaceEntry.Declared type)
     {
@@ -608,7 +684,9 @@ internal static class NodeDecompiler
         output.WriteLine();
         WriteHexDump(data.AsSpan(0, Math.Min(data.Length, MaxResourceBytes)), output);
         if (data.Length > MaxResourceBytes)
+        {
             WriteComment(output, $"Truncated after {MaxResourceBytes} bytes.");
+        }
     }
 
     private static void WriteHexDump(ReadOnlySpan<byte> bytes, DocumentBuilder output)
@@ -621,11 +699,17 @@ internal static class NodeDecompiler
             output.Write("  ");
             line.Clear();
             for (var i = 0; i < 16; i++)
+            {
                 line.Append(i < row.Length ? row[i].ToString("X2") + " " : "   ");
+            }
+
             output.Write(line.ToString(), SpanKind.Number);
             line.Clear();
             foreach (var b in row)
+            {
                 line.Append(b is >= 0x20 and < 0x7F ? (char)b : '.');
+            }
+
             output.Write(" " + line, SpanKind.String);
             output.WriteLine();
         }
@@ -642,7 +726,10 @@ internal static class NodeDecompiler
     private static string DescribeModule(bool containsMetadata)
     {
         if (containsMetadata)
+        {
             return "A module of this assembly, holding metadata";
+        }
+
         return "A native library, or a module holding no metadata";
     }
 
@@ -650,10 +737,15 @@ internal static class NodeDecompiler
     private static void WriteImports(DocumentBuilder output, IReadOnlyList<SummaryLink> imports)
     {
         if (imports.Count == 0)
+        {
             return;
+        }
+
         output.WriteLine();
         foreach (var import in imports)
+        {
             WriteLink(output, import, SpanKind.Method);
+        }
     }
 
     private static void WriteLink(DocumentBuilder output, SummaryLink link, SpanKind kind)

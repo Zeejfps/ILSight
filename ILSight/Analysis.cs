@@ -22,7 +22,10 @@ public static class Analysis
     {
         var existing = FindRoot(tree, symbol);
         if (existing != null)
+        {
             return existing;
+        }
+
         var root = new AnalyzerSymbolNode { Symbol = symbol };
         tree.Roots.Add(root);
         tree.Revision++;
@@ -32,11 +35,16 @@ public static class Analysis
     private static AnalyzerSymbolNode? FindRoot(AnalyzerTree tree, AnalysisSymbol symbol)
     {
         if (symbol.Reference == null)
+        {
             return null;
+        }
+
         foreach (var root in tree.Roots)
         {
             if (root is AnalyzerSymbolNode found && Equals(found.Symbol.Reference, symbol.Reference))
+            {
                 return found;
+            }
         }
         return null;
     }
@@ -48,7 +56,10 @@ public static class Analysis
         var root = new AnalyzerPendingNode { SavedAs = savedAs };
         tree.Roots.Add(root);
         if (savedAs != null)
+        {
             tree.Revision++;
+        }
+
         return root;
     }
 
@@ -56,7 +67,9 @@ public static class Analysis
     public static void AddPending(AnalyzerTree tree, IReadOnlyList<CodeAnchor> analyzed)
     {
         foreach (var anchor in analyzed)
+        {
             AddPending(tree, anchor);
+        }
     }
 
     /// <summary>The roots restored from the saved analyses that are still waiting for their symbols, each
@@ -67,9 +80,15 @@ public static class Analysis
         foreach (var root in tree.Roots)
         {
             if (root is not AnalyzerPendingNode pending)
+            {
                 continue;
+            }
+
             if (pending.SavedAs == null)
+            {
                 continue;
+            }
+
             restoring.Add((pending, pending.SavedAs.Value));
         }
         return restoring;
@@ -82,7 +101,10 @@ public static class Analysis
     {
         var index = tree.Roots.IndexOf(pending);
         if (index < 0)
+        {
             return null;
+        }
+
         var existing = FindRoot(tree, symbol);
         if (existing != null)
         {
@@ -92,7 +114,10 @@ public static class Analysis
         var root = new AnalyzerSymbolNode { Symbol = symbol };
         tree.Roots[index] = root;
         if (symbol.Definition != pending.SavedAs)
+        {
             tree.Revision++;
+        }
+
         return root;
     }
 
@@ -103,9 +128,16 @@ public static class Analysis
 
     public static void RemoveRoot(AnalyzerTree tree, AnalyzerNode root)
     {
-        if (!tree.Roots.Remove(root)) return;
+        if (!tree.Roots.Remove(root))
+        {
+            return;
+        }
+
         if (SavedAnalysisOf(root) != null)
+        {
             tree.Revision++;
+        }
+
         CancelNode(root);
     }
 
@@ -117,7 +149,9 @@ public static class Analysis
         {
             var anchor = SavedAnalysisOf(root);
             if (anchor != null)
+            {
                 saved.Add(anchor.Value);
+            }
         }
         return saved;
     }
@@ -125,7 +159,10 @@ public static class Analysis
     public static void ClearRoots(AnalyzerTree tree)
     {
         foreach (var root in tree.Roots)
+        {
             CancelNode(root);
+        }
+
         tree.Roots.Clear();
         tree.Revision++;
     }
@@ -134,7 +171,10 @@ public static class Analysis
     public static List<AnalyzerNode> EnsureChildren(AnalyzerSymbolNode symbol)
     {
         if (symbol.Children == null)
+        {
             symbol.Children = ListChildren(symbol);
+        }
+
         return symbol.Children;
     }
 
@@ -142,9 +182,15 @@ public static class Analysis
     {
         var children = new List<AnalyzerNode>();
         foreach (var accessor in Analyzers.AccessorsOf(symbol.Symbol))
+        {
             children.Add(new AnalyzerSymbolNode { Symbol = accessor });
+        }
+
         foreach (var kind in Analyzers.KindsFor(symbol.Symbol))
+        {
             children.Add(new AnalyzerKindNode { Subject = symbol.Symbol, Kind = kind });
+        }
+
         return children;
     }
 
@@ -171,15 +217,23 @@ public static class Analysis
     private static void CancelAll(List<AnalyzerNode>? nodes)
     {
         if (nodes == null)
+        {
             return;
+        }
+
         foreach (var node in nodes)
+        {
             CancelNode(node);
+        }
     }
 
     private static void CancelRun(AnalyzerKindNode kind)
     {
         if (kind.Run is not AnalyzerRun.Running running)
+        {
             return;
+        }
+
         kind.Run = new AnalyzerRun.Stopped();
         running.Work.Cancel();
     }
@@ -190,7 +244,10 @@ public static class Analysis
     internal static void StartAnalysisOnce(BackgroundWork backgroundWork, AnalyzerKindNode kind, AssemblyList assemblies, Action changed, Action<Exception> failed, Action<AppProblem> reportError)
     {
         if (kind.HasStarted)
+        {
             return;
+        }
+
         var work = new CancellationTokenSource();
         kind.Run = new AnalyzerRun.Running(work);
         Background.Start(backgroundWork, nameof(RunKindAsync), RunKindAsync(kind, work, assemblies, changed, failed), reportError);
@@ -202,7 +259,10 @@ public static class Analysis
         try
         {
             await foreach (var batch in Analyzers.RunAsync(assemblies, kind.Subject, kind.Kind, token))
+            {
                 Deliver(kind, work, CreateNodes(batch), changed);
+            }
+
             Finish(kind, work, [], changed);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -225,7 +285,10 @@ public static class Analysis
     private static void Deliver(AnalyzerKindNode kind, CancellationTokenSource work, List<AnalyzerNode> found, Action changed)
     {
         if (kind.Work != work)
+        {
             return;
+        }
+
         kind.Found.AddRange(found);
         changed();
     }
@@ -233,7 +296,10 @@ public static class Analysis
     private static void Finish(AnalyzerKindNode kind, CancellationTokenSource work, List<AnalyzerNode> found, Action changed)
     {
         if (kind.Work != work)
+        {
             return;
+        }
+
         kind.Found.AddRange(found);
         kind.Run = new AnalyzerRun.Done();
         work.Dispose();
@@ -257,7 +323,10 @@ public static class Analysis
     {
         var symbol = Analyzers.Of(node);
         if (symbol == null)
+        {
             return null;
+        }
+
         return AddToAnalyzer(appState, symbol);
     }
 
@@ -299,7 +368,10 @@ public static class Analysis
         var session = appState.Session;
         var found = await Background.Run(() => NodeLookup.Find(assemblies, session, reference));
         if (!HasRoot(appState.Analyzer, root))
+        {
             return;
+        }
+
         switch (found)
         {
             case Outcome<BrowseNode>.Ok ok when ok.Value != null:
@@ -335,7 +407,10 @@ public static class Analysis
     {
         var shown = ResolveRoot(appState.Analyzer, root, symbol);
         if (shown == null)
+        {
             return;
+        }
+
         appState.ViewCommands.Enqueue(new ViewCommand.ShowAnalysis(shown));
     }
 
@@ -352,14 +427,20 @@ public static class Analysis
     {
         var pending = ListRestoring(appState.Analyzer);
         if (pending.Count == 0)
+        {
             return;
+        }
+
         var restoring = pending.ConvertAll(static r => r.Root);
         var analyzed = pending.ConvertAll(static r => r.SavedAs);
         var assemblies = appState.Assemblies;
         var generation = assemblies.Generation;
         var found = await Background.Run(() => FindAnalyzed(assemblies, analyzed));
         if (WasListCleared(appState, generation))
+        {
             return;
+        }
+
         switch (found)
         {
             case Outcome<List<AnalysisSymbol?>>.Ok ok:
@@ -374,7 +455,10 @@ public static class Analysis
         }
     }
 
-    private static bool WasListCleared(AppState appState, int generation) => appState.Assemblies.Generation != generation;
+    private static bool WasListCleared(AppState appState, int generation)
+    {
+        return appState.Assemblies.Generation != generation;
+    }
 
     private static List<AnalysisSymbol?> FindAnalyzed(AssemblyList assemblies, List<CodeAnchor> analyzed)
     {
@@ -384,13 +468,17 @@ public static class Analysis
     private static void AnalyzeAgain(AppState appState, List<AnalyzerPendingNode> restoring, List<AnalysisSymbol?> found)
     {
         for (var i = 0; i < restoring.Count; i++)
+        {
             AnalyzeAgain(appState, restoring[i], found[i]);
+        }
     }
 
     private static void RemoveRoots(AppState appState, List<AnalyzerPendingNode> restoring)
     {
         foreach (var root in restoring)
+        {
             RemoveRoot(appState.Analyzer, root);
+        }
     }
 
     private static void AnalyzeAgain(AppState appState, AnalyzerPendingNode root, AnalysisSymbol? symbol)
@@ -424,7 +512,10 @@ public static class Analysis
     private static void FollowRoots(AnalyzerRows rows, AnalyzerTree analyzer)
     {
         if (analyzer.Changes == rows.SeenChanges)
+        {
             return;
+        }
+
         rows.SeenChanges = analyzer.Changes;
         rows.View.Refresh();
         DropSelectionOfRemovedRoot(rows, analyzer);
@@ -433,16 +524,25 @@ public static class Analysis
     private static void DropSelectionOfRemovedRoot(AnalyzerRows rows, AnalyzerTree analyzer)
     {
         if (!rows.View.TryGetSelectedRoot(out var root))
+        {
             return;
+        }
+
         if (Analysis.HasRoot(analyzer, root))
+        {
             return;
+        }
+
         rows.View.ClearSelection();
     }
 
     private static void FollowFindings(AnalyzerRows rows, AnalyzerTree analyzer)
     {
         if (analyzer.Findings == rows.SeenFindings)
+        {
             return;
+        }
+
         rows.SeenFindings = analyzer.Findings;
         rows.View.Refresh();
     }
@@ -459,7 +559,10 @@ public static class Analysis
     public static AnalyzerNode? FindSelectedRoot(AnalyzerRows rows)
     {
         if (!rows.View.TryGetSelectedRoot(out var root))
+        {
             return null;
+        }
+
         return root;
     }
 
@@ -469,7 +572,9 @@ public static class Analysis
         foreach (var root in rows.Roots)
         {
             if (root is AnalyzerSymbolNode symbol)
+            {
                 ExpandWithAnalyses(rows, symbol);
+            }
         }
     }
 
@@ -479,9 +584,13 @@ public static class Analysis
         foreach (var child in Analysis.EnsureChildren(symbol))
         {
             if (child is AnalyzerSymbolNode accessor)
+            {
                 ExpandWithAnalyses(rows, accessor);
+            }
             else
+            {
                 rows.View.SetExpanded(child, true);
+            }
         }
     }
 
@@ -521,16 +630,25 @@ public static class Analysis
     private static void AskToRun(AnalyzerRows rows, AnalyzerKindNode kind)
     {
         if (kind.HasStarted)
+        {
             return;
+        }
+
         if (!rows.Asked.Add(kind))
+        {
             return;
+        }
+
         rows.AppCommands.Enqueue(Commands.Create(kind, static (a, k) => Analysis.RunAnalysis(a, k)));
     }
 
     private static IReadOnlyList<AnalyzerNode> ListResults(AnalyzerRows rows, AnalyzerKindNode kind)
     {
         if (kind.IsDone)
+        {
             return kind.Found;
+        }
+
         var results = new List<AnalyzerNode>(kind.Found);
         results.Add(rows.Loading);
         return results;
@@ -578,14 +696,20 @@ public static class Analysis
     {
         var header = AnalyzerText.Header(rows.Strings, kind.Kind);
         if (!kind.IsDone)
+        {
             return header;
+        }
+
         return $"{header} ({kind.Found.Count})";
     }
 
     private static TreeRow CreateMessageRow(AnalyzerRows rows, AnalyzerMessageNode message)
     {
         if (message.Error == null)
+        {
             return CreateLoadingRow(rows);
+        }
+
         var icon = new UiIcon(rows.Icons.StatusError, rows.Theme.Danger);
         return new TreeRow(message.Error, icon, rows.Theme.Danger);
     }

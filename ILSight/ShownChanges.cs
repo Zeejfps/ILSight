@@ -11,7 +11,10 @@ internal static class ShownChanges
     public static bool TakeCodeFont(UiState uiState, CodeFont? font)
     {
         if (font == uiState.ShownCodeFont)
+        {
             return false;
+        }
+
         uiState.ShownCodeFont = font;
         return true;
     }
@@ -19,7 +22,10 @@ internal static class ShownChanges
     public static bool TakeListGeneration(UiState uiState, int generation)
     {
         if (generation == uiState.ShownListGeneration)
+        {
             return false;
+        }
+
         uiState.ShownListGeneration = generation;
         return true;
     }
@@ -30,7 +36,10 @@ internal static class ShownChanges
     {
         var shown = uiState.ShownDecompilation;
         if (shown != null && language == shown.Value.Language && ReferenceEquals(options, shown.Value.Options))
+        {
             return false;
+        }
+
         uiState.ShownDecompilation = (language, options);
         return true;
     }
@@ -40,7 +49,10 @@ internal static class ShownChanges
     {
         var shown = uiState.ShownIcons;
         if (shown != null && ReferenceEquals(icons, shown.Value.Icons))
+        {
             return false;
+        }
+
         uiState.ShownIcons = (icons, fonts);
         return true;
     }

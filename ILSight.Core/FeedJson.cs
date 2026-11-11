@@ -21,7 +21,10 @@ internal static class FeedJson
     {
         var page = Read(root, FeedJsonContext.Default.SearchPageJson, "a page of a search");
         if (page.Data == null)
+        {
             throw new InvalidDataException("A page of a search holds no list named data.");
+        }
+
         var packages = page.Data
             .Select(static p => TryRead(p, FeedJsonContext.Default.PackageJson))
             .OfType<PackageJson>()
@@ -53,7 +56,10 @@ internal static class FeedJson
     {
         var index = Read(root, FeedJsonContext.Default.ServiceIndexJson, "a service index");
         if (index.Resources == null)
+        {
             throw new InvalidDataException("A service index holds no list named resources.");
+        }
+
         return index.Resources
             .Select(static r => TryRead(r, FeedJsonContext.Default.ResourceJson))
             .OfType<ResourceJson>()
@@ -65,9 +71,15 @@ internal static class FeedJson
     public static DateTimeOffset? ReadDate(string? text)
     {
         if (!DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var date))
+        {
             return null;
+        }
+
         if (date.Year <= UnlistedYear)
+        {
             return null;
+        }
+
         return date;
     }
 
@@ -101,7 +113,10 @@ internal static class FeedJson
         var id = PackageId.Parse(json.Id ?? "");
         var version = PackageVersion.Parse(json.Version ?? "");
         if (id == null || version == null)
+        {
             return null;
+        }
+
         return new FeedPackage(id, version, json.Description ?? "", JoinNames(json.Authors), WebUrl.Parse(json.IconUrl), ListVersions(json.Versions, version))
         {
             TotalDownloads = json.TotalDownloads ?? 0,
@@ -125,7 +140,10 @@ internal static class FeedJson
             .Reverse()
             .ToList();
         if (versions.Count == 0)
+        {
             versions.Add(new FeedVersion(latest, 0, null));
+        }
+
         return versions;
     }
 
@@ -145,7 +163,10 @@ internal static class FeedJson
     {
         var version = PackageVersion.Parse(json.Version ?? "");
         if (version == null)
+        {
             return null;
+        }
+
         return new FeedVersion(version, json.Downloads ?? 0, WebUrl.Parse(json.Id));
     }
 
@@ -186,12 +207,21 @@ internal static class FeedJson
     private static int ParseSeverity(JsonElement? severity)
     {
         if (severity == null)
+        {
             return 0;
+        }
+
         var value = severity.Value;
         if (value.ValueKind == JsonValueKind.Number)
+        {
             return value.TryGetInt32(out var number) ? number : 0;
+        }
+
         if (value.ValueKind != JsonValueKind.String)
+        {
             return 0;
+        }
+
         int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed);
         return parsed;
     }
@@ -263,16 +293,26 @@ internal sealed class TextListConverter : JsonConverter<TextListJson>
     public override TextListJson Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.String)
+        {
             return new TextListJson([reader.GetString() ?? ""]);
+        }
+
         if (reader.TokenType != JsonTokenType.StartArray)
+        {
             throw new JsonException("Expected a string or a list of them.");
+        }
+
         var items = new List<string>();
         while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
         {
             if (reader.TokenType == JsonTokenType.String)
+            {
                 items.Add(reader.GetString() ?? "");
+            }
             else
+            {
                 reader.Skip();
+            }
         }
         return new TextListJson(items);
     }
@@ -281,7 +321,10 @@ internal sealed class TextListConverter : JsonConverter<TextListJson>
     {
         writer.WriteStartArray();
         foreach (var item in value.Items)
+        {
             writer.WriteStringValue(item);
+        }
+
         writer.WriteEndArray();
     }
 }

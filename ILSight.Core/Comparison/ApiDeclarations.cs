@@ -53,7 +53,10 @@ internal static class ApiDeclarations
         foreach (var attribute in entity.GetAttributes())
         {
             if (!NotableAttributes.Contains(attribute.AttributeType.FullName))
+            {
                 continue;
+            }
+
             text.Append(WriteAttribute(attribute));
             text.Append(' ');
         }
@@ -65,26 +68,34 @@ internal static class ApiDeclarations
         var name = attribute.AttributeType.Name;
         var shortName = name.Substring(0, name.Length - AttributeSuffix.Length);
         if (attribute.FixedArguments.Length == 0)
+        {
             return $"[{shortName}]";
+        }
+
         var arguments = attribute.FixedArguments.Select(static a => WriteValue(a.Value));
         return $"[{shortName}({string.Join(", ", arguments)})]";
     }
 
-    private static string Declare(IEntity entity) =>
-        entity switch
+    private static string Declare(IEntity entity)
+    {
+        return entity switch
         {
             ITypeDefinition type => DeclareType(type),
             IField field => DeclareField(field),
             IProperty property => DeclareProperty(property),
             _ => Convert(entity, MemberFlags),
         };
+    }
 
     private static string DeclareType(ITypeDefinition type)
     {
         var declaration = Convert(type, TypeFlags);
         var bases = ListBases(type);
         if (bases.Count == 0)
+        {
             return declaration;
+        }
+
         return declaration + " : " + string.Join(", ", bases);
     }
 
@@ -93,7 +104,10 @@ internal static class ApiDeclarations
     private static List<string> ListBases(ITypeDefinition type)
     {
         if (type.Kind == TypeKind.Enum)
+        {
             return ListUnderlyingType(type);
+        }
+
         var classes = type.DirectBaseTypes
             .Where(IsDeclaredBaseClass)
             .Select(EntityText.TypeName);
@@ -110,7 +124,10 @@ internal static class ApiDeclarations
     {
         var underlying = type.EnumUnderlyingType;
         if (underlying == null || underlying.IsKnownType(KnownTypeCode.Int32))
+        {
             return [];
+        }
+
         return [EntityText.TypeName(underlying)];
     }
 
@@ -119,13 +136,25 @@ internal static class ApiDeclarations
     private static bool IsDeclaredBaseClass(IType type)
     {
         if (type.Kind == TypeKind.Interface)
+        {
             return false;
+        }
+
         if (type.IsKnownType(KnownTypeCode.Object))
+        {
             return false;
+        }
+
         if (type.IsKnownType(KnownTypeCode.ValueType))
+        {
             return false;
+        }
+
         if (type.IsKnownType(KnownTypeCode.Enum))
+        {
             return false;
+        }
+
         return !type.IsKnownType(KnownTypeCode.MulticastDelegate);
     }
 
@@ -133,7 +162,10 @@ internal static class ApiDeclarations
     {
         var declaration = Convert(field, MemberFlags);
         if (!field.IsConst)
+        {
             return declaration;
+        }
+
         var value = field.GetConstantValue();
         return declaration + " = " + WriteValue(value);
     }
@@ -144,9 +176,15 @@ internal static class ApiDeclarations
         var text = new StringBuilder(Convert(property, MemberFlags));
         text.Append(" { ");
         if (property.Getter != null)
+        {
             AppendAccessor(text, property, property.Getter, GetKeyword);
+        }
+
         if (property.Setter != null)
+        {
             AppendAccessor(text, property, property.Setter, SetterKeyword(property.Setter));
+        }
+
         text.Append('}');
         return text.ToString();
     }
@@ -154,7 +192,10 @@ internal static class ApiDeclarations
     private static string SetterKeyword(IMethod setter)
     {
         if (setter.IsInitOnly)
+        {
             return InitKeyword;
+        }
+
         return SetKeyword;
     }
 
@@ -169,8 +210,9 @@ internal static class ApiDeclarations
         text.Append("; ");
     }
 
-    private static string WriteAccessibility(Accessibility accessibility) =>
-        accessibility switch
+    private static string WriteAccessibility(Accessibility accessibility)
+    {
+        return accessibility switch
         {
             Accessibility.Public => "public",
             Accessibility.Protected => "protected",
@@ -179,9 +221,11 @@ internal static class ApiDeclarations
             Accessibility.ProtectedAndInternal => "private protected",
             _ => "private",
         };
+    }
 
-    private static string WriteValue(object? value) =>
-        value switch
+    private static string WriteValue(object? value)
+    {
+        return value switch
         {
             null => NullText,
             string text => $"\"{text}\"",
@@ -190,6 +234,7 @@ internal static class ApiDeclarations
             IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
             _ => value.ToString() ?? NullText,
         };
+    }
 
     private static string Convert(IEntity entity, ConversionFlags flags)
     {

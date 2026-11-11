@@ -33,7 +33,10 @@ internal static class TreePaneView
         Toolbar(ui, tabs, assemblies);
         ui.Separator();
         if (tree.Roots.Length == 0)
+        {
             EmptyHint(ui);
+        }
+
         var result = ui.TreeView(TreeId, tree.Roots, tree, tree.View, new Box { Padding = new Spacing(0f, theme.GapTight) });
         AnalyzeOnShortcut(ui);
         CloseOnDelete(ui);
@@ -51,14 +54,25 @@ internal static class TreePaneView
         using (ui.PaneToolbar(toolbarId, new Box { Width = Sizing.Grow(), Clip = true }))
         {
             for (var i = 0; i < shown; i++)
+            {
                 Tool(ui, tabs, assemblies, i, shown, inMenu: false);
+            }
+
             if (shown == ToolCount)
+            {
                 return;
+            }
+
             using var menu = ui.DropdownButton("more", ui.State.Strings.TreeMoreActions, glyph: ui.State.Icons.AssembliesMoreActions);
             if (!menu.IsOpen)
+            {
                 return;
+            }
+
             for (var i = shown; i < ToolCount; i++)
+            {
                 Tool(ui, tabs, assemblies, i, shown, inMenu: true);
+            }
         }
     }
 
@@ -72,15 +86,24 @@ internal static class TreePaneView
     private static int CountShownTools(Ui ui, int toolbarId)
     {
         if (!ui.TryGetRect(toolbarId, out var rect))
+        {
             return ToolCount;
+        }
+
         var theme = ui.Theme;
         var room = rect.Width - 2f * theme.ShellPaddingX;
         if (MeasureTools(theme, ToolCount) <= room)
+        {
             return ToolCount;
+        }
+
         var beside = room - theme.GapTight - theme.IconButtonSize;
         var shown = 0;
         while (shown < ToolCount && MeasureTools(theme, shown + 1) <= beside)
+        {
             shown++;
+        }
+
         return shown;
     }
 
@@ -92,7 +115,10 @@ internal static class TreePaneView
         for (var i = 0; i < count; i++)
         {
             if (i > 0)
+            {
                 width += theme.GapTight;
+            }
+
             width += IsToolSeparator(i) ? theme.SeparatorWidth : theme.IconButtonSize;
         }
         return width;
@@ -113,16 +139,25 @@ internal static class TreePaneView
             {
                 var opened = FindOpenedNode(tabs);
                 if (DrawTool(ui, inMenu, "select-opened", icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened != null) && opened != null)
-                    SelectOpenedNode(ui, assemblies, opened);
-                return;
+                    {
+                        SelectOpenedNode(ui, assemblies, opened);
+                    }
+
+                    return;
             }
             case 1:
                 if (DrawTool(ui, inMenu, "collapse", icons.AssembliesCollapseAll, t.CodeCollapseAll, any))
+                {
                     Trees.CollapseTree(tree);
+                }
+
                 return;
             case 2:
                 if (DrawTool(ui, inMenu, "expand", icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
+                {
                     Trees.ExpandNamespaces(tree);
+                }
+
                 return;
             case 3:
             case 6:
@@ -130,26 +165,41 @@ internal static class TreePaneView
                 return;
             case 4:
                 if (DrawTool(ui, inMenu, "sort-list", icons.AssembliesSortList, t.TreeSortList, any))
+                {
                     Commands.Later(ui.State, static a => SortAssemblies(a));
+                }
+
                 return;
             case 5:
             {
                 var label = inMenu ? t.TreeReloadAll : ui.Memo("reload-all-tip", t, static s => s.TreeReloadAllTip(Shortcuts.ReloadAll));
                 if (DrawTool(ui, inMenu, "reload-all", icons.AssembliesReloadAll, label, any, Shortcuts.ReloadAll))
-                    Commands.Later(ui.State, Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
-                return;
+                    {
+                        Commands.Later(ui.State, Trees.ListExpandedPaths(tree), static (a, expanded) => RefreshAssemblies(a, expanded));
+                    }
+
+                    return;
             }
             case 7:
                 if (DrawTool(ui, inMenu, "close-assembly", icons.AssembliesCloseAssembly, t.TreeCloseAssemblies, any))
+                {
                     AssemblyClosing.OpenCloser(ui.State.Closer, assemblies, tree.View.Selected?.Assembly);
+                }
+
                 return;
             case 8:
                 if (DrawTool(ui, inMenu, "close-failed", icons.AssembliesCloseFailed, t.TreeCloseFailed, AssemblyListing.AnyFailedToLoad(assemblies)))
+                {
                     Commands.Later(ui.State, static a => CloseFailedAssemblies(a));
+                }
+
                 return;
             case 9:
                 if (DrawTool(ui, inMenu, "clear-list", icons.AssembliesClearList, t.TreeClearList, any))
+                {
                     Commands.Later(ui.State, static a => CloseAllAssemblies(a));
+                }
+
                 return;
             default:
                 throw new ArgumentOutOfRangeException(nameof(index), index, "The assemblies panel has no such tool.");
@@ -161,7 +211,10 @@ internal static class TreePaneView
     private static bool DrawTool(Ui ui, bool inMenu, string id, IconGlyph glyph, string label, bool enabled, Shortcut? shortcut = null)
     {
         if (inMenu)
+        {
             return ui.MenuItem(label, shortcut, enabled, id: id, icon: new UiIcon(glyph));
+        }
+
         return ui.IconButton(id, glyph, label, enabled);
     }
 
@@ -170,11 +223,16 @@ internal static class TreePaneView
         if (inMenu)
         {
             if (index > shown)
+            {
                 ui.MenuSeparator();
+            }
+
             return;
         }
         if (index + 1 < shown)
+        {
             ui.Separator(ui.Theme.IconSize);
+        }
     }
 
     /// <summary>The node the active tab shows, or null when it shows none.</summary>
@@ -182,7 +240,10 @@ internal static class TreePaneView
     {
         var tab = tabs.Active;
         if (tab == null)
+        {
             return null;
+        }
+
         return tab.Node;
     }
 
@@ -191,7 +252,10 @@ internal static class TreePaneView
     private static void SelectOpenedNode(Ui<UiState> ui, AssemblyList assemblies, BrowseNode node)
     {
         if (!AssemblyListing.IsListed(assemblies, node.Root.Assembly))
+        {
             return;
+        }
+
         Trees.RevealNode(ui.State.Tree, node);
         ui.Focus(ui.GetId(TreeId), takesText: false);
     }
@@ -202,9 +266,15 @@ internal static class TreePaneView
     {
         var node = tree.View.Selected;
         if (node == null)
+        {
             return null;
+        }
+
         if (!IsListedRoot(node))
+        {
             return null;
+        }
+
         return node;
     }
 
@@ -226,24 +296,42 @@ internal static class TreePaneView
     private static void AnalyzeOnShortcut(Ui<UiState> ui)
     {
         if (!ui.HasFocus(ui.GetId(TreeId)))
+        {
             return;
+        }
+
         if (!ui.IsPressed(Shortcuts.Analyze))
+        {
             return;
+        }
+
         var picked = ui.State.Tree.View.Selected;
         if (picked == null)
+        {
             return;
+        }
+
         Commands.Later(ui.State, (screen: ui.State, picked), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.picked));
     }
 
     private static void CloseOnDelete(Ui<UiState> ui)
     {
         if (!ui.HasFocus(ui.GetId(TreeId)))
+        {
             return;
+        }
+
         var picked = FindPickedAssembly(ui.State.Tree);
         if (picked == null)
+        {
             return;
+        }
+
         if (!ui.IsPressed(Shortcuts.Delete))
+        {
             return;
+        }
+
         Commands.Later(ui.State, picked.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
     }
 
@@ -251,20 +339,34 @@ internal static class TreePaneView
     {
         var node = result.Node;
         if (node == null)
+        {
             return;
+        }
+
         if (IsPicked(result))
+        {
             Commands.Later(ui.State, node, static (a, n) => Preview(a, n));
+        }
+
         if (result.Activated)
+        {
             Commands.Later(ui.State, node, static (a, n) => Open(a, n));
+        }
+
         if (result.ContextMenuRequested)
+        {
             OpenContextMenu(ui, node, result.ContextMenuAt);
+        }
     }
 
     /// <summary>Whether the user picked the node, rather than pressed it for its menu.</summary>
     private static bool IsPicked(TreeViewResult<BrowseNode> result)
     {
         if (!result.SelectionChanged)
+        {
             return false;
+        }
+
         return !result.ContextMenuRequested;
     }
 
@@ -272,7 +374,10 @@ internal static class TreePaneView
     private static void Preview(AppState appState, BrowseNode node)
     {
         if (!appState.PreviewTabs)
+        {
             return;
+        }
+
         PreviewNode(appState, node);
     }
 
@@ -297,10 +402,16 @@ internal static class TreePaneView
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         var node = ui.State.MenuTarget;
         if (node == null)
+        {
             return;
+        }
+
         NodeMenu(ui, assemblies, language, node);
     }
 
@@ -310,39 +421,80 @@ internal static class TreePaneView
         var jump = NodeDefinitions.GetActivation(node.Subject) as Activation.Navigate;
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
+        {
             Commands.Later(ui.State, node, static (a, n) => OpenNode(a, n));
+        }
+
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
+        {
             Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
+        }
+
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))
+        {
             Commands.Later(ui.State, jump.Target, static (a, target) => GoTo(a, target));
+        }
+
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))
+        {
             ui.ClipboardText = BrowseNodes.GetFullName(node);
+        }
+
         DocsItem(ui, node);
         if (Analyzers.Of(node) != null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
+        {
             Commands.Later(ui.State, (screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));
+        }
+
         var definition = NodeDefinitions.ReferenceOf(node.Subject);
         if (definition != null && ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
+        {
             Commands.Later(ui.State, definition, static (a, d) => ShowInMetadata(a, d, inNewTab: false));
+        }
+
         if (node.Subject is NodeSubject.TypeDefinition type)
+        {
             DiagramItems(ui, type.Definition.Reference);
+        }
+
         if (node.HasResource && ui.MenuItem(t.ResourceExport, id: "export-resource", icon: new UiIcon(ui.State.Icons.ResourceExport)))
+        {
             ResourceImageView.PickExport(ui, node);
+        }
+
         ExtractItems(ui, node);
         if (OffersSaveCode(node) && ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, id: "save-code", icon: new UiIcon(ui.State.Icons.FileSaveCode)))
+        {
             SaveDialogs.PickCodeFile(ui, language, node);
+        }
+
         if (node.Subject is NodeSubject.Module module)
+        {
             AssemblyItems(ui, assemblies, module.Value);
+        }
+
         if (node.Subject is NodeSubject.Module && ui.MenuItem(t.TreeScopeSearchToAssembly, id: "scope-search"))
+        {
             ScopeSearch(ui.State, node);
+        }
+
         if (node.Subject is NodeSubject.Namespace && ui.MenuItem(t.TreeScopeSearchToNamespace, id: "scope-search"))
+        {
             ScopeSearch(ui.State, node);
+        }
+
         if (IsListedRoot(node) && ui.MenuItem(t.TreeOpenContainingFolder, id: "open-containing-folder", icon: new UiIcon(ui.State.Icons.AssembliesOpenContainingFolder)))
+        {
             ui.RevealFile(node.Assembly.FilePath.Text);
+        }
+
         if (IsListedRoot(node))
         {
             ui.MenuSeparator();
             if (ui.MenuItem(t.TreeCloseAssembly, id: "close-assembly"))
+            {
                 Commands.Later(ui.State, node.Assembly, static (a, assembly) => CloseAssembly(a, assembly));
+            }
         }
     }
 
@@ -352,9 +504,14 @@ internal static class TreePaneView
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeShowInDiagram, id: "show-in-diagram"))
+        {
             Commands.Later(ui.State, (type, title: t.DiagramTitle(type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));
+        }
+
         if (ui.MenuItem(t.TreeShowInNewDiagram, id: "show-in-new-diagram"))
+        {
             Commands.Later(ui.State, (type, title: t.DiagramTitle(type.Name)), static (a, s) => ShowInNewDiagram(a, s.type, s.title));
+        }
     }
 
     /// <summary>The item that opens the .NET API reference page of a namespace, or of a public type or
@@ -364,9 +521,14 @@ internal static class TreePaneView
         var t = ui.State.Strings;
         var page = MicrosoftDocs.FindPage(node);
         if (page == null)
+        {
             return;
+        }
+
         if (ui.MenuItem(t.TreeShowInApiReference, id: "show-in-api-reference", icon: new UiIcon(ui.State.Icons.LinkApiReference)))
+        {
             ui.OpenUrl(page);
+        }
     }
 
     /// <summary>The items that write files out of a package: the file of an assembly read out of one,
@@ -376,10 +538,15 @@ internal static class TreePaneView
         var t = ui.State.Strings;
         var file = PackedAssemblyOf(node);
         if (file != null && ui.MenuItem(t.TreeExtractFile, id: "extract-file", icon: new UiIcon(ui.State.Icons.AssembliesExtract)))
+        {
             SaveDialogs.PickPackageFile(ui, file);
+        }
+
         var folder = node.FolderInPackage;
         if (folder != null && ui.MenuItem(t.TreeExtractAll, id: "extract-all", icon: new UiIcon(ui.State.Icons.AssembliesExtract)))
+        {
             SaveDialogs.PickExtractFolder(ui, node.Text, folder);
+        }
     }
 
     /// <summary>Where the assembly is read from, when <paramref name="node"/> is the root of one read
@@ -387,7 +554,10 @@ internal static class TreePaneView
     private static PackagePlace? PackedAssemblyOf(BrowseNode node)
     {
         if (node.Subject is not NodeSubject.Module module)
+        {
             return null;
+        }
+
         return module.Value.Place;
     }
 
@@ -396,7 +566,10 @@ internal static class TreePaneView
     private static bool OffersSaveCode(BrowseNode node)
     {
         if (node.HasResource)
+        {
             return false;
+        }
+
         return NodeContentLoader.DependsOnLanguage(node);
     }
 
@@ -406,15 +579,26 @@ internal static class TreePaneView
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.FileExport, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
+        {
             Exports.OpenExportSetup(ui.State.ExportSetup, assemblies.Assemblies, assembly);
+        }
+
         PdbItems(ui, assembly);
         if (ui.MenuItem(t.TreeCreateDiagram, id: "create-diagram"))
+        {
             SaveDialogs.PickDiagramFolder(ui, assembly);
+        }
+
         if (ui.MenuItem(t.TreeCompareWith, id: "compare-with"))
+        {
             ComparisonPickerView.Open(ui.State.ComparisonPicker, assembly);
+        }
+
         TargetFrameworkMenu(ui, assembly);
         if (ui.MenuItem(t.TreeLoadDependencies, id: "load-dependencies"))
+        {
             Commands.Later(ui.State, assembly, static (a, m) => OpenDependencies(a, m));
+        }
     }
 
     /// <summary>Generating a portable PDB for the assembly, and picking the PDB it reads.</summary>
@@ -422,9 +606,14 @@ internal static class TreePaneView
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeGeneratePdb, enabled: LoadedAssemblies.EnsureCanGeneratePdb(assembly), id: "generate-pdb", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
+        {
             SaveDialogs.PickPdbFile(ui, assembly);
+        }
+
         if (assembly.CanPickPdb && ui.MenuItem(t.TreeSelectPdb, id: "select-pdb"))
+        {
             PickPdbToRead(ui, assembly);
+        }
     }
 
     /// <summary>The submenu of the framework the assembly's references are resolved against: the one it
@@ -434,28 +623,42 @@ internal static class TreePaneView
         var t = ui.State.Strings;
         using var menu = ui.SubMenu(t.TreeTargetFramework, id: "target-framework");
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         if (ui.MenuRadioItem(DetectedFrameworkLabel(t, assembly), !assembly.IsTargetFrameworkPicked, id: "detected"))
+        {
             Commands.Later(ui.State, assembly, static (a, m) => SetTargetFramework(a, m, null));
+        }
+
         ui.MenuSeparator();
         foreach (var framework in FrameworkIds.Common)
         {
             if (ui.MenuRadioItem(framework.Moniker, IsPicked(assembly, framework), id: framework.Text))
+            {
                 Commands.Later(ui.State, (assembly, framework), static (a, s) => SetTargetFramework(a, s.assembly, s.framework));
+            }
         }
     }
 
     private static string DetectedFrameworkLabel(Strings t, LoadedModule assembly)
     {
         if (assembly.DetectedTargetFramework == null)
+        {
             return t.TreeTargetFrameworkNone;
+        }
+
         return t.TreeTargetFrameworkDetected(assembly.DetectedTargetFramework.Moniker);
     }
 
     private static bool IsPicked(LoadedModule assembly, TargetFrameworkId framework)
     {
         if (!assembly.IsTargetFrameworkPicked)
+        {
             return false;
+        }
+
         return assembly.TargetFramework == framework;
     }
 
@@ -474,7 +677,10 @@ internal static class TreePaneView
     {
         var folder = Path.GetDirectoryName(assembly.FilePath.Text);
         if (!Directory.Exists(folder))
+        {
             return null;
+        }
+
         return folder;
     }
 }

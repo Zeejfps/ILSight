@@ -99,7 +99,9 @@ public sealed class AnalyzerTree
             foreach (var root in Roots)
             {
                 if (root is AnalyzerPendingNode)
+                {
                     return true;
+                }
             }
             return false;
         }

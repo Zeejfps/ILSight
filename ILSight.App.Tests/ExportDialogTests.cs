@@ -20,7 +20,10 @@ public sealed class ExportDialogTests : IDisposable
         Directory.CreateDirectory(_temp.Path);
     }
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private static AppStateDriver OpenedTwo()
     {
@@ -31,7 +34,10 @@ public sealed class ExportDialogTests : IDisposable
         return d;
     }
 
-    private static LoadedModule Fixtures(AppStateDriver d) => Assert.IsType<LoadedModule>(d.Node().Assembly);
+    private static LoadedModule Fixtures(AppStateDriver d)
+    {
+        return Assert.IsType<LoadedModule>(d.Node().Assembly);
+    }
 
     [Fact]
     public void The_dialog_opens_with_the_picked_assembly_ticked()
@@ -170,7 +176,9 @@ public sealed class ExportDialogTests : IDisposable
 
         Assert.True(File.Exists(_temp.PathOf("Both.sln")));
         foreach (var choice in setup.Choices)
+        {
             Assert.True(File.Exists(_temp.PathOf(Path.Combine(choice.Name, choice.Name + ".csproj"))));
+        }
     }
 
     [Fact]

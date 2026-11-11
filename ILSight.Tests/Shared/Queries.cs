@@ -9,7 +9,10 @@ internal static class NodeQueries
     public static BrowseNode Child(this BrowseNode node, params ReadOnlySpan<string> path)
     {
         foreach (var text in path)
+        {
             node = ChildNamed(node, text);
+        }
+
         return node;
     }
 
@@ -21,24 +24,39 @@ internal static class NodeQueries
             .Where(c => c.Text == text)
             .ToList();
         if (named.Count > 1)
+        {
             named = named.FindAll(IsSourceDeclared);
+        }
+
         var child = named.SingleOrDefault();
         if (child == null)
+        {
             throw new InvalidOperationException($"'{node.Text}' has no child '{text}': {string.Join(", ", node.Children.Select(c => c.Text))}");
+        }
+
         return child;
     }
 
-    private static bool IsSourceDeclared(BrowseNode node) => !node.IsCompilerGenerated;
+    private static bool IsSourceDeclared(BrowseNode node)
+    {
+        return !node.IsCompilerGenerated;
+    }
 
-    public static NodeContent Content(this BrowseNode node, DecompilationLanguage language = DecompilationLanguage.CSharp) =>
-        NodeContentLoader.LoadAsync(TestSession.Shared, node, language, DecompilerOptions.Default).GetAwaiter().GetResult();
+    public static NodeContent Content(this BrowseNode node, DecompilationLanguage language = DecompilationLanguage.CSharp)
+    {
+        return NodeContentLoader.LoadAsync(TestSession.Shared, node, language, DecompilerOptions.Default).GetAwaiter().GetResult();
+    }
 
-    public static DecompiledDocument Decompile(this BrowseNode node, DecompilationLanguage language, CancellationToken cancellationToken = default) =>
-        NodeContentLoader.Decompile(TestSession.Shared, node, language, DecompilerOptions.Default, cancellationToken);
+    public static DecompiledDocument Decompile(this BrowseNode node, DecompilationLanguage language, CancellationToken cancellationToken = default)
+    {
+        return NodeContentLoader.Decompile(TestSession.Shared, node, language, DecompilerOptions.Default, cancellationToken);
+    }
 
     public static DecompiledDocument Decompile(this BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken cancellationToken = default) =>
-        NodeContentLoader.Decompile(TestSession.Shared, node, language, options, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        return NodeContentLoader.Decompile(TestSession.Shared, node, language, options, cancellationToken);
+    }
 }
 
 internal static class DocumentQueries
@@ -48,20 +66,33 @@ internal static class DocumentQueries
         for (var i = 0; i < document.Lines.Length; i++)
         {
             var at = document.Lines[i].Text.IndexOf(text, StringComparison.Ordinal);
-            if (at < 0) continue;
-            if (skip-- == 0) return (i, at);
+            if (at < 0)
+            {
+                continue;
+            }
+
+            if (skip-- == 0)
+            {
+                return (i, at);
+            }
         }
         throw new InvalidOperationException($"'{text}' is not in the document:\n{Documents.GetText(document)}");
     }
 
-    public static int LineContaining(this DecompiledDocument document, string text) => document.Find(text).Line;
+    public static int LineContaining(this DecompiledDocument document, string text)
+    {
+        return document.Find(text).Line;
+    }
 
     /// <summary>The span over <paramref name="column"/> of line <paramref name="line"/>.</summary>
     public static DocumentSpan SpanAt(this DecompiledDocument document, int line, int column)
     {
         foreach (var span in document.Lines[line].Spans)
         {
-            if (span.Start <= column && column < span.End) return span;
+            if (span.Start <= column && column < span.End)
+            {
+                return span;
+            }
         }
         throw new InvalidOperationException("No span there.");
     }
@@ -72,7 +103,10 @@ internal static class DocumentQueries
         var start = line.Text.IndexOf(token, StringComparison.Ordinal);
         foreach (var span in line.Spans)
         {
-            if (span.Start == start && span.Length == token.Length) return span;
+            if (span.Start == start && span.Length == token.Length)
+            {
+                return span;
+            }
         }
         throw new InvalidOperationException($"No span '{token}' in '{line.Text}'");
     }
@@ -84,7 +118,9 @@ internal static class DocumentQueries
             var text = line.Text;
             var spans = line.Spans.ToArray();
             foreach (var span in spans)
+            {
                 yield return (text.Substring(span.Start, span.Length), span);
+            }
         }
     }
 
@@ -94,17 +130,26 @@ internal static class DocumentQueries
         var line = document.LineContaining(text);
         var index = Documents.FindFoldStartingAt(document, line);
         if (index == null)
+        {
             throw new InvalidOperationException($"No fold starts at '{text}'");
+        }
+
         return index.Value;
     }
 
-    public static FoldRegion FoldAt(this DecompiledDocument document, string text) => document.Folds[document.FoldIndexAt(text)];
+    public static FoldRegion FoldAt(this DecompiledDocument document, string text)
+    {
+        return document.Folds[document.FoldIndexAt(text)];
+    }
 }
 
 internal static class MetadataQueries
 {
     /// <summary>The table named <paramref name="name"/> in a metadata tables folder.</summary>
-    public static BrowseNode Table(this BrowseNode tables, string name) => tables.Children.Single(c => c.Text.Split(' ')[1] == name);
+    public static BrowseNode Table(this BrowseNode tables, string name)
+    {
+        return tables.Children.Single(c => c.Text.Split(' ')[1] == name);
+    }
 
     public static int Column(this MetadataGrid grid, string name)
     {
@@ -117,7 +162,10 @@ internal static class MetadataQueries
         var column = grid.Column("Name");
         for (var row = 0; row < grid.RowCount; row++)
         {
-            if (MetadataGrids.GetText(grid, row, column) == name) return row;
+            if (MetadataGrids.GetText(grid, row, column) == name)
+            {
+                return row;
+            }
         }
         throw new InvalidOperationException($"No row named {name}");
     }

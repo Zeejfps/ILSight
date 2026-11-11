@@ -56,7 +56,11 @@ internal static class ResourceText
     /// control character other than tab, line feed, carriage return or form feed makes it binary.</summary>
     public static (string Text, ResourceSyntax Syntax)? Detect(string name, byte[] data)
     {
-        if (data.Length == 0 || data.Length > MaxLength) return null;
+        if (data.Length == 0 || data.Length > MaxLength)
+        {
+            return null;
+        }
+
         string text;
         try
         {
@@ -67,11 +71,17 @@ internal static class ResourceText
         {
             return null;
         }
-        if (text.Length == 0) return null;
+        if (text.Length == 0)
+        {
+            return null;
+        }
+
         foreach (var c in text)
         {
             if (c == '�' || c == '\u007F' || c < ' ' && c is not ('\t' or '\n' or '\r' or '\f'))
+            {
                 return null;
+            }
         }
         return (text, SyntaxByExtension.TryGetValue(Path.GetExtension(name), out var syntax) ? syntax : Sniff(text));
     }
@@ -80,8 +90,16 @@ internal static class ResourceText
     private static ResourceSyntax Sniff(string text)
     {
         var trimmed = text.AsSpan().TrimStart();
-        if (trimmed.IsEmpty) return ResourceSyntax.Plain;
-        if (trimmed[0] == '<') return ResourceSyntax.Xml;
+        if (trimmed.IsEmpty)
+        {
+            return ResourceSyntax.Plain;
+        }
+
+        if (trimmed[0] == '<')
+        {
+            return ResourceSyntax.Xml;
+        }
+
         if (trimmed[0] is '{' or '[')
         {
             try
@@ -109,15 +127,27 @@ internal static class ResourceText
     public static string IndentOneLine(string text, ResourceSyntax syntax)
     {
         if (IsMultiline(text))
+        {
             return text;
+        }
+
         if (syntax == ResourceSyntax.Xml)
+        {
             return TryIndentXml(text) ?? text;
+        }
+
         if (syntax == ResourceSyntax.Json)
+        {
             return TryIndentJson(text) ?? text;
+        }
+
         return text;
     }
 
-    private static bool IsMultiline(string text) => text.Trim().Contains(NewLine);
+    private static bool IsMultiline(string text)
+    {
+        return text.Trim().Contains(NewLine);
+    }
 
     private static string? TryIndentXml(string text)
     {
@@ -136,7 +166,10 @@ internal static class ResourceText
     {
         var builder = new StringBuilder();
         if (document.Declaration != null)
+        {
             builder.Append(document.Declaration).Append(NewLine);
+        }
+
         var settings = new XmlWriterSettings
         {
             Indent = true,
@@ -145,7 +178,10 @@ internal static class ResourceText
             OmitXmlDeclaration = true,
         };
         using (var writer = XmlWriter.Create(builder, settings))
+        {
             document.Save(writer);
+        }
+
         return builder.ToString();
     }
 
@@ -174,7 +210,10 @@ internal static class ResourceText
         };
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream, options))
+        {
             document.WriteTo(writer);
+        }
+
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 
@@ -204,7 +243,11 @@ internal static class ResourceText
             if (text[i] != '<')
             {
                 var next = text.IndexOf('<', i);
-                if (next < 0) next = text.Length;
+                if (next < 0)
+                {
+                    next = text.Length;
+                }
+
                 output.Write(text[i..next], SpanKind.Plain);
                 i = next;
                 continue;
@@ -227,10 +270,18 @@ internal static class ResourceText
 
             var start = i;
             i++;
-            if (i < text.Length && text[i] == '/') i++;
+            if (i < text.Length && text[i] == '/')
+            {
+                i++;
+            }
+
             output.Write(text[start..i], SpanKind.Plain);
             start = i;
-            while (i < text.Length && !char.IsWhiteSpace(text[i]) && text[i] is not ('>' or '/')) i++;
+            while (i < text.Length && !char.IsWhiteSpace(text[i]) && text[i] is not ('>' or '/'))
+            {
+                i++;
+            }
+
             output.Write(text[start..i], SpanKind.Keyword);
             while (i < text.Length && text[i] != '>')
             {
@@ -245,13 +296,21 @@ internal static class ResourceText
                 else if (char.IsWhiteSpace(c) || c is '=' or '/')
                 {
                     start = i;
-                    while (i < text.Length && (char.IsWhiteSpace(text[i]) || text[i] is '=' or '/')) i++;
+                    while (i < text.Length && (char.IsWhiteSpace(text[i]) || text[i] is '=' or '/'))
+                    {
+                        i++;
+                    }
+
                     output.Write(text[start..i], SpanKind.Plain);
                 }
                 else
                 {
                     start = i;
-                    while (i < text.Length && !char.IsWhiteSpace(text[i]) && text[i] is not ('=' or '>' or '/' or '"' or '\'')) i++;
+                    while (i < text.Length && !char.IsWhiteSpace(text[i]) && text[i] is not ('=' or '>' or '/' or '"' or '\''))
+                    {
+                        i++;
+                    }
+
                     output.Write(text[start..i], SpanKind.Field);
                 }
             }
@@ -262,7 +321,10 @@ internal static class ResourceText
             }
         }
 
-        static bool Starts(string text, int at, string token) => string.CompareOrdinal(text, at, token, 0, token.Length) == 0;
+        static bool Starts(string text, int at, string token)
+        {
+            return string.CompareOrdinal(text, at, token, 0, token.Length) == 0;
+        }
 
         static int Through(DocumentBuilder output, string text, int at, string end, SpanKind kind)
         {
@@ -286,27 +348,46 @@ internal static class ResourceText
             {
                 i++;
                 while (i < text.Length && text[i] != '"')
+                {
                     i += text[i] == '\\' ? 2 : 1;
+                }
+
                 i = Math.Min(text.Length, i + 1);
                 var after = i;
-                while (after < text.Length && char.IsWhiteSpace(text[after])) after++;
+                while (after < text.Length && char.IsWhiteSpace(text[after]))
+                {
+                    after++;
+                }
+
                 output.Write(text[start..i], after < text.Length && text[after] == ':' ? SpanKind.Field : SpanKind.String);
             }
             else if (c == '-' || char.IsAsciiDigit(c))
             {
                 i++;
-                while (i < text.Length && (char.IsAsciiDigit(text[i]) || text[i] is '.' or 'e' or 'E' or '+' or '-')) i++;
+                while (i < text.Length && (char.IsAsciiDigit(text[i]) || text[i] is '.' or 'e' or 'E' or '+' or '-'))
+                {
+                    i++;
+                }
+
                 output.Write(text[start..i], SpanKind.Number);
             }
             else if (char.IsAsciiLetter(c))
             {
-                while (i < text.Length && char.IsAsciiLetter(text[i])) i++;
+                while (i < text.Length && char.IsAsciiLetter(text[i]))
+                {
+                    i++;
+                }
+
                 var word = text[start..i];
                 output.Write(word, word is "true" or "false" or "null" ? SpanKind.Keyword : SpanKind.Plain);
             }
             else
             {
-                while (i < text.Length && text[i] is not ('"' or '-') && !char.IsAsciiDigit(text[i]) && !char.IsAsciiLetter(text[i])) i++;
+                while (i < text.Length && text[i] is not ('"' or '-') && !char.IsAsciiDigit(text[i]) && !char.IsAsciiLetter(text[i]))
+                {
+                    i++;
+                }
+
                 output.Write(text[start..i], SpanKind.Plain);
             }
         }

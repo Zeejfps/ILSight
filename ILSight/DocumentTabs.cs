@@ -36,9 +36,15 @@ public sealed class DocumentTabs
         get
         {
             if (LastDiagram == null)
+            {
                 return null;
+            }
+
             if (LastDiagram.Diagram == null)
+            {
                 return null;
+            }
+
             return LastDiagram;
         }
     }
@@ -52,7 +58,10 @@ public sealed class DocumentTabs
         {
             var changes = Open.Revision + LastWorkedIn.Changes + Previewing.Changes + ClosedChanges;
             foreach (var tab in Open)
+            {
                 changes += tab.Changes;
+            }
+
             return changes;
         }
     }

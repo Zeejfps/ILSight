@@ -15,11 +15,19 @@ public static class RunArgumentsActions
     {
         ReportIgnored(appState, arguments);
         if (arguments.Language != null)
+        {
             SetLanguage(appState, arguments.Language.Value);
+        }
+
         if (arguments.AssemblyList != null)
+        {
             StartWithAssemblyList(appState, arguments.AssemblyList);
+        }
+
         if (arguments.ClearList)
+        {
             EmptyActiveAssemblyList(appState);
+        }
     }
 
     /// <summary>Does what the arguments a later run handed over ask of the open window: decompiles
@@ -29,18 +37,29 @@ public static class RunArgumentsActions
     {
         ReportIgnored(appState, arguments);
         if (arguments.Language != null)
+        {
             SetLanguage(appState, arguments.Language.Value);
+        }
+
         if (arguments.AssemblyList != null)
+        {
             OpenAssemblyListNamed(appState, arguments.AssemblyList);
+        }
+
         if (arguments.ClearList)
+        {
             CloseAllAssemblies(appState);
+        }
+
         OpenRequestedFiles(appState, arguments.Files);
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)
     {
         if (arguments.Ignored.Count > 0)
+        {
             Errors.Report(appState, new AppProblem.ArgumentsIgnored(arguments.Ignored.ToList()));
+        }
     }
 
     /// <summary>Opens <paramref name="files"/>, then shows the namespace, type or member they

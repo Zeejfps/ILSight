@@ -23,7 +23,10 @@ internal static class AnalyzerHelpers
     {
         var definition = module.Metadata.GetMethodDefinition(handle);
         if (!definition.HasBody())
+        {
             return null;
+        }
+
         try
         {
             return module.GetMethodBody(definition.RelativeVirtualAddress);
@@ -42,9 +45,14 @@ internal static class AnalyzerHelpers
         while (blob.RemainingBytes > 0)
         {
             if (!TryReadToken(ref blob, out var opCode, out var token))
+            {
                 yield break;
+            }
+
             if (!token.IsNil)
+            {
                 yield return (opCode, token);
+            }
         }
     }
 
@@ -74,9 +82,14 @@ internal static class AnalyzerHelpers
         {
             opCode = blob.DecodeOpCode();
             if (opCode.GetOperandType() is OperandType.Field or OperandType.Method or OperandType.Sig or OperandType.Tok or OperandType.Type)
+            {
                 token = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
+            }
             else
+            {
                 blob.SkipOperand(opCode);
+            }
+
             return true;
         }
         catch (BadImageFormatException)
@@ -101,7 +114,10 @@ internal static class AnalyzerHelpers
     public static bool IsPossibleReferenceTo(EntityHandle member, MetadataFile module, IMethod analyzedMethod)
     {
         if (member.IsNil)
+        {
             return false;
+        }
+
         var metadata = module.Metadata;
         switch (member.Kind)
         {
@@ -118,8 +134,10 @@ internal static class AnalyzerHelpers
         }
     }
 
-    public static bool IsCustomAttributeOfType(EntityHandle customAttributeCtor, MetadataReader metadata, FindTypeDecoder decoder) =>
-        decoder.GetTypeFromEntity(metadata, customAttributeCtor.GetDeclaringType(metadata));
+    public static bool IsCustomAttributeOfType(EntityHandle customAttributeCtor, MetadataReader metadata, FindTypeDecoder decoder)
+    {
+        return decoder.GetTypeFromEntity(metadata, customAttributeCtor.GetDeclaringType(metadata));
+    }
 
     /// <summary>What carries each attribute of <paramref name="ts"/>'s module that
     /// <paramref name="matches"/> accepts, in attribute order, then the method, or the property or
@@ -132,25 +150,40 @@ internal static class AnalyzerHelpers
         {
             var attribute = metadata.GetCustomAttribute(h);
             if (!matches(attribute))
+            {
                 continue;
+            }
+
             if (attribute.Parent.Kind == HandleKind.Parameter)
+            {
                 parameters.Add((ParameterHandle)attribute.Parent);
+            }
             else
             {
                 var parent = GetParentEntity(ts, attribute);
                 if (parent != null)
+                {
                     yield return parent;
+                }
             }
         }
         if (parameters.Count == 0)
+        {
             yield break;
+        }
+
         foreach (var h in metadata.MethodDefinitions)
         {
             if (!metadata.GetMethodDefinition(h).GetParameters().Any(parameters.Contains))
+            {
                 continue;
+            }
+
             var method = ts.MainModule.ResolveMethod(h, default);
             if (method != null)
+            {
                 yield return method.IsAccessor ? method.AccessorOwner : method;
+            }
         }
     }
 
@@ -161,7 +194,10 @@ internal static class AnalyzerHelpers
         {
             case HandleKind.MethodDefinition:
                 if (ts.MainModule.ResolveEntity(customAttribute.Parent) is not IMethod parent)
+                {
                     return null;
+                }
+
                 return parent.AccessorOwner ?? parent;
             case HandleKind.FieldDefinition:
             case HandleKind.PropertyDefinition:
@@ -192,7 +228,10 @@ internal static class AnalyzerHelpers
     {
         var module = method.ParentModule?.MetadataFile;
         if (!method.HasBody || method.MetadataToken.IsNil || module == null)
+        {
             return null;
+        }
+
         return AnalyzerHelpers.ReadBody(module, DecompilerFacts.GetMethodHandle(method));
     }
 
@@ -229,9 +268,15 @@ internal static class AnalyzerHelpers
     internal static IEnumerable<MetadataFile> GetModulesInScope(AnalyzerScope scope, CancellationToken ct)
     {
         if (scope.IsLocal)
+        {
             return [DecompilerFacts.GetMetadataFile(scope.TypeScope)];
+        }
+
         if (scope.EffectiveAccessibility.LessThanOrEqual(Accessibility.Internal))
+        {
             return GetModuleAndAnyFriends(scope, scope.TypeScope, ct);
+        }
+
         return GetReferencingModules(scope, DecompilerFacts.GetMetadataFile(scope.TypeScope), ct);
     }
 
@@ -245,14 +290,18 @@ internal static class AnalyzerHelpers
         if (scope.IsLocal)
         {
             foreach (var type in TreeTraversal.PreOrder(scope.TypeScope, static t => t.NestedTypes))
+            {
                 yield return type;
+            }
         }
         else
         {
             foreach (var module in GetModulesInScope(scope, ct))
             {
                 foreach (var type in GetTypeSystem(scope, module).MainModule.TypeDefinitions)
+                {
                     yield return type;
+                }
             }
         }
     }
@@ -264,16 +313,23 @@ internal static class AnalyzerHelpers
         foreach (var type in GetTypesInScope(scope, ct))
         {
             if (type.ParentModule?.MetadataFile == null)
+            {
                 continue;
+            }
+
             foreach (var method in type.GetMembers(static m => m is IMethod, MemberDefinitions).OfType<IMethod>())
             {
                 if (matches(method))
+                {
                     yield return method;
+                }
             }
             foreach (var member in type.Properties.Concat<IMember>(type.Events))
             {
                 if (Members.Accessors(member).Any(matches))
+                {
                     yield return member;
+                }
             }
         }
     }
@@ -292,7 +348,7 @@ internal static class AnalyzerHelpers
             start = DecompilerFacts.GetDeclaringTypeDefinition(input);
         }
         var previous = start;
-        ITypeDefinition? current = start;
+        var current = start;
         while (current != null && !accessibility.LessThanOrEqual(Accessibility.Private))
         {
             accessibility = accessibility.Intersect(current.Accessibility);
@@ -307,7 +363,10 @@ internal static class AnalyzerHelpers
         yield return self;
         var scopeName = scope.TypeScope.Name;
         if (scope.TypeScope.TypeParameterCount > 0)
+        {
             scopeName += "`" + scope.TypeScope.TypeParameterCount;
+        }
+
         var toWalk = new Stack<MetadataFile>();
         var checkedFiles = new HashSet<MetadataFile> { self };
         toWalk.Push(self);
@@ -318,7 +377,11 @@ internal static class AnalyzerHelpers
             {
                 ct.ThrowIfCancellationRequested();
                 var module = assembly.File;
-                if (!module.IsAssembly || checkedFiles.Contains(module)) continue;
+                if (!module.IsAssembly || checkedFiles.Contains(module))
+                {
+                    continue;
+                }
+
                 var found = false;
                 foreach (var reference in module.AssemblyReferences)
                 {
@@ -328,11 +391,20 @@ internal static class AnalyzerHelpers
                         break;
                     }
                 }
-                if (!found || !checkedFiles.Add(module)) continue;
+                if (!found || !checkedFiles.Add(module))
+                {
+                    continue;
+                }
+
                 if (ModuleReferencesScopeType(module.Metadata, scopeName, scope.TypeScope.Namespace))
+                {
                     yield return module;
+                }
+
                 if (ModuleForwardsScopeType(module.Metadata, scopeName, scope.TypeScope.Namespace))
+                {
                     toWalk.Push(module);
+                }
             }
         } while (toWalk.Count > 0);
     }
@@ -346,17 +418,33 @@ internal static class AnalyzerHelpers
         foreach (var handle in self.Metadata.CustomAttributes)
         {
             var attribute = self.Metadata.GetCustomAttribute(handle);
-            if (!IsInternalsVisibleTo(self.Metadata, attribute)) continue;
+            if (!IsInternalsVisibleTo(self.Metadata, attribute))
+            {
+                continue;
+            }
+
             if (attribute.DecodeValue(provider).FixedArguments[0].Value is string name)
+            {
                 friends.Add(name.Split(',')[0]);
+            }
         }
-        if (friends.Count == 0) yield break;
+        if (friends.Count == 0)
+        {
+            yield break;
+        }
+
         foreach (var assembly in scope.Assemblies)
         {
             ct.ThrowIfCancellationRequested();
-            if (!friends.Contains(assembly.Name) || assembly.File.IsMetadataOnly) continue;
+            if (!friends.Contains(assembly.Name) || assembly.File.IsMetadataOnly)
+            {
+                continue;
+            }
+
             if (ModuleReferencesScopeType(assembly.File.Metadata, typeScope.Name, typeScope.Namespace))
+            {
                 yield return assembly.File;
+            }
         }
     }
 
@@ -384,7 +472,9 @@ internal static class AnalyzerHelpers
         {
             var typeRef = metadata.GetTypeReference(handle);
             if (metadata.StringComparer.Equals(typeRef.Name, typeScopeName) && metadata.StringComparer.Equals(typeRef.Namespace, typeScopeNamespace))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -396,7 +486,9 @@ internal static class AnalyzerHelpers
             var exported = metadata.GetExportedType(handle);
             if (exported.IsForwarder && metadata.StringComparer.Equals(exported.Name, typeScopeName)
                 && metadata.StringComparer.Equals(exported.Namespace, typeScopeNamespace))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -420,11 +512,19 @@ internal static class AnalyzerHelpers
     {
         var result = TokenSearchResult.NoResult;
         if (handle.IsEnum(reader, out var underlyingType))
+        {
             result = (TokenSearchResult)underlyingType;
+        }
         else if (((EntityHandle)handle).IsKnownType(reader, KnownTypeCode.Type))
+        {
             result = TokenSearchResult.SystemType;
+        }
+
         if (decoder.Handle == handle && reader == decoder.DeclaringModule.Metadata)
+        {
             result |= TokenSearchResult.Found;
+        }
+
         return result;
     }
 
@@ -436,7 +536,10 @@ internal static class AnalyzerHelpers
     internal static TokenSearchResult GetTypeFromSerializedName(FindTypeInAttributeDecoder decoder, string name)
     {
         if (name == null)
+        {
             return TokenSearchResult.NoResult;
+        }
+
         try
         {
             return GetResultFromResolvedType(decoder, ReflectionHelper.ParseReflectionName(name, new SimpleTypeResolveContext(decoder.CurrentModule)));
@@ -451,15 +554,26 @@ internal static class AnalyzerHelpers
     {
         var definition = type.GetDefinition();
         if (definition == null)
+        {
             return TokenSearchResult.NoResult;
+        }
+
         var result = TokenSearchResult.NoResult;
         var underlyingType = definition.EnumUnderlyingType?.GetDefinition();
         if (underlyingType != null)
+        {
             result = (TokenSearchResult)underlyingType.KnownTypeCode.ToPrimitiveTypeCode();
+        }
         else if (definition.KnownTypeCode == KnownTypeCode.Type)
+        {
             result = TokenSearchResult.SystemType;
+        }
+
         if (definition.MetadataToken == decoder.Handle && definition.ParentModule?.MetadataFile == decoder.DeclaringModule)
+        {
             result |= TokenSearchResult.Found;
+        }
+
         return result;
     }
 
@@ -467,7 +581,10 @@ internal static class AnalyzerHelpers
     {
         var typeCode = type & TokenSearchResult.TypeCodeMask;
         if (typeCode == 0 || typeCode == TokenSearchResult.SystemType)
+        {
             throw new EnumUnderlyingTypeResolveException();
+        }
+
         return (PrimitiveTypeCode)typeCode;
     }
 

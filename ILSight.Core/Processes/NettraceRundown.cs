@@ -98,16 +98,24 @@ internal static class NettraceRundown
         {
             var tag = reader.ReadByte();
             if (tag == TagNullReference)
+            {
                 break; // the end of the object stream
+            }
+
             if (tag != TagBeginObject && tag != TagBeginPrivateObject)
+            {
                 throw new InvalidDataException($"Unexpected FastSerialization tag 0x{tag:X2} in the nettrace stream.");
+            }
 
             var typeName = ReadTypeName(reader, out var version);
             switch (typeName)
             {
                 case "Trace":
                     if (version > MaxSupportedTraceVersion)
+                    {
                         throw new InvalidDataException($"Nettrace version {version} is newer than this reads.");
+                    }
+
                     SkipTraceObject(reader);
                     break;
                 case "MetadataBlock":
@@ -134,11 +142,15 @@ internal static class NettraceRundown
     {
         var magic = reader.ReadBytes(8);
         if (magic.Length < 8 || Encoding.ASCII.GetString(magic) != "Nettrace")
+        {
             throw new InvalidDataException("The stream does not start with the Nettrace magic.");
+        }
 
         var serializer = ReadLengthPrefixedAsciiString(reader);
         if (!serializer.StartsWith("!FastSerialization", StringComparison.Ordinal))
+        {
             throw new InvalidDataException($"Unexpected nettrace serializer '{serializer}'.");
+        }
     }
 
     /// <summary>The name of the type of the object begun. The type is an object itself: a begin tag, a null
@@ -158,10 +170,16 @@ internal static class NettraceRundown
     {
         var length = reader.ReadInt32();
         if (length is < 0 or > MaxNameLength)
+        {
             throw new InvalidDataException($"Implausible nettrace string length {length}.");
+        }
+
         var bytes = reader.ReadBytes(length);
         if (bytes.Length < length)
+        {
             throw new EndOfStreamException("The nettrace stream ends inside a string.");
+        }
+
         return Encoding.ASCII.GetString(bytes);
     }
 
@@ -169,14 +187,18 @@ internal static class NettraceRundown
     {
         var tag = reader.ReadByte();
         if (tag != expected)
+        {
             throw new InvalidDataException($"Expected FastSerialization tag 0x{expected:X2}, found 0x{tag:X2}.");
+        }
     }
 
     private static void ExpectTag(BinaryReader reader, byte expected, byte alternative)
     {
         var tag = reader.ReadByte();
         if (tag != expected && tag != alternative)
+        {
             throw new InvalidDataException($"Expected FastSerialization tag 0x{expected:X2}, found 0x{tag:X2}.");
+        }
     }
 
     /// <summary>Steps over the trace object: the sync time in UTC (8 shorts), the sync time and frequency of
@@ -201,20 +223,32 @@ internal static class NettraceRundown
         while (reader.BaseStream.Position < blockEnd)
         {
             if (compressed)
+            {
                 ReadCompressedEventHeader(reader, ref metadataId, ref payloadSize);
+            }
             else
+            {
                 ReadUncompressedEventHeader(reader, out metadataId, out payloadSize);
+            }
 
             if (payloadSize < 0)
+            {
                 throw new InvalidDataException($"Implausible nettrace payload size {payloadSize}.");
+            }
+
             var payloadEnd = reader.BaseStream.Position + payloadSize;
             if (payloadEnd > blockEnd)
+            {
                 throw new InvalidDataException("A nettrace event's payload runs past the end of its block.");
+            }
+
             onEvent(reader, metadataId, payloadEnd);
             SeekTo(reader, payloadEnd);
 
             if (!compressed)
+            {
                 AlignTo4(reader);
+            }
         }
         SeekTo(reader, blockEnd);
     }
@@ -233,11 +267,17 @@ internal static class NettraceRundown
     {
         var blockSize = reader.ReadInt32();
         if (blockSize < 0)
+        {
             throw new InvalidDataException($"Implausible nettrace block size {blockSize}.");
+        }
+
         AlignTo4(reader);
         var blockEnd = reader.BaseStream.Position + blockSize;
         if (blockEnd > reader.BaseStream.Length)
+        {
             throw new EndOfStreamException("The nettrace stream ends inside a block.");
+        }
+
         return blockEnd;
     }
 
@@ -253,9 +293,14 @@ internal static class NettraceRundown
         reader.ReadInt64(); // the latest timestamp
         const int readHeaderBytes = sizeof(short) * 2 + sizeof(long) * 2;
         if (headerSize > readHeaderBytes)
+        {
             Skip(reader, headerSize - readHeaderBytes);
+        }
+
         if (reader.BaseStream.Position > blockEnd)
+        {
             throw new InvalidDataException("A nettrace block's header runs past the end of the block.");
+        }
 
         compressed = (flags & 1) != 0;
         return blockEnd;
@@ -265,7 +310,9 @@ internal static class NettraceRundown
     {
         var padding = (4 - reader.BaseStream.Position % 4) % 4;
         if (padding != 0)
+        {
             Skip(reader, padding);
+        }
     }
 
     /// <summary>Moves past <paramref name="count"/> bytes, which must be there: a seek alone would go past the
@@ -278,7 +325,10 @@ internal static class NettraceRundown
     private static void SeekTo(BinaryReader reader, long position)
     {
         if (position > reader.BaseStream.Length)
+        {
             throw new EndOfStreamException("The nettrace stream ends inside an object.");
+        }
+
         reader.BaseStream.Seek(position, SeekOrigin.Begin);
     }
 
@@ -286,7 +336,10 @@ internal static class NettraceRundown
     {
         var flags = reader.ReadByte();
         if ((flags & CompressedFlagMetadataId) != 0)
+        {
             metadataId = checked((int)ReadVarUInt(reader));
+        }
+
         if ((flags & CompressedFlagCaptureThreadAndSequence) != 0)
         {
             ReadVarUInt(reader); // the change in sequence number
@@ -294,16 +347,30 @@ internal static class NettraceRundown
             ReadVarUInt(reader); // the capturing processor
         }
         if ((flags & CompressedFlagThreadId) != 0)
+        {
             ReadVarUInt(reader);
+        }
+
         if ((flags & CompressedFlagStackId) != 0)
+        {
             ReadVarUInt(reader);
+        }
+
         ReadVarUInt(reader); // the change in timestamp
         if ((flags & CompressedFlagActivityId) != 0)
+        {
             Skip(reader, 16);
+        }
+
         if ((flags & CompressedFlagRelatedActivityId) != 0)
+        {
             Skip(reader, 16);
+        }
+
         if ((flags & CompressedFlagDataLength) != 0)
+        {
             payloadSize = checked((int)ReadVarUInt(reader));
+        }
     }
 
     private static void ReadUncompressedEventHeader(BinaryReader reader, out int metadataId, out int payloadSize)
@@ -329,10 +396,15 @@ internal static class NettraceRundown
             var b = reader.ReadByte();
             value |= (ulong)(b & 0x7F) << shift;
             if ((b & 0x80) == 0)
+            {
                 return value;
+            }
+
             shift += 7;
             if (shift > 63)
+            {
                 throw new InvalidDataException("A malformed variable-length integer in the nettrace stream.");
+            }
         }
     }
 
@@ -341,7 +413,10 @@ internal static class NettraceRundown
     private static void ReadMetadataEvent(BinaryReader reader, int metadataId, long payloadEnd, Reading reading)
     {
         if (metadataId != 0)
+        {
             return; // only the metadata records themselves matter here
+        }
+
         var id = reader.ReadInt32();
         var providerName = ReadUtf16NullTerminated(reader, payloadEnd);
         var eventId = reader.ReadInt32();
@@ -354,7 +429,9 @@ internal static class NettraceRundown
     private static void ReadEvent(BinaryReader reader, int metadataId, long payloadEnd, Reading reading)
     {
         if (!reading.Metadata.TryGetValue(metadataId, out var meta))
+        {
             return;
+        }
 
         // ModuleLoad, ModuleDCStart and ModuleDCStop share a layout; DomainModule* and ModuleRange*, named
         // alike, carry other fields and are left alone.
@@ -373,7 +450,10 @@ internal static class NettraceRundown
             var assemblyId = reader.ReadInt64();
             reader.ReadInt64(); // the app domain
             if (meta.Version >= 1)
+            {
                 reader.ReadInt64(); // the binding
+            }
+
             reader.ReadInt32(); // the assembly's flags
             var fullName = ReadUtf16NullTerminated(reader, payloadEnd);
             if (fullName.Length > 0)
@@ -415,7 +495,10 @@ internal static class NettraceRundown
         {
             var c = reader.ReadUInt16();
             if (c == 0)
+            {
                 return builder.ToString();
+            }
+
             builder.Append((char)c);
         }
         throw new InvalidDataException("A nettrace event's payload ends inside a string.");

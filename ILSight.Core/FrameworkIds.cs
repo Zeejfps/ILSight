@@ -34,17 +34,29 @@ public sealed record TargetFrameworkId
     public static TargetFrameworkId? Parse(string? text)
     {
         if (text == null)
+        {
             return null;
+        }
+
         var at = text.IndexOf(VersionMark, StringComparison.Ordinal);
         if (at <= 0)
+        {
             return null;
+        }
+
         var version = text[(at + VersionMark.Length)..];
         if (version.Length == 0 || !char.IsAsciiDigit(version[0]))
+        {
             return null;
+        }
+
         return new TargetFrameworkId(text, text[..at], version);
     }
 
-    internal static TargetFrameworkId Of(string name, string version) => new(name + VersionMark + version, name, version);
+    internal static TargetFrameworkId Of(string name, string version)
+    {
+        return new(name + VersionMark + version, name, version);
+    }
 
     /// <summary>The id as ILSpy shows it, e.g. <c>.NETCoreApp, v10.0</c>.</summary>
     public string Readable => Text.Replace(VersionKey, ReadableVersionKey);
@@ -63,13 +75,19 @@ public sealed record TargetFrameworkId
     /// or .NET Standard.</summary>
     internal bool IsCoreOrStandard => Name is CoreApp or Standard;
 
-    public override string ToString() => Text;
+    public override string ToString()
+    {
+        return Text;
+    }
 
     /// <summary>A .NET Core version's moniker: <c>net</c> from .NET 5 on, <c>netcoreapp</c> before.</summary>
     private static string CoreAppMoniker(string version)
     {
         if (System.Version.TryParse(version, out var parsed) && parsed.Major >= FirstNetMajor)
+        {
             return $"net{version}";
+        }
+
         return $"netcoreapp{version}";
     }
 }
@@ -105,5 +123,8 @@ public static class FrameworkIds
 
     /// <summary>Whether an assembly built for <paramref name="id"/> runs on .NET Core, as the running
     /// runtime is: one built for .NET Core or .NET Standard, or for a framework not known.</summary>
-    internal static bool RunsOnCore(TargetFrameworkId? id) => id == null || id.IsCoreOrStandard;
+    internal static bool RunsOnCore(TargetFrameworkId? id)
+    {
+        return id == null || id.IsCoreOrStandard;
+    }
 }

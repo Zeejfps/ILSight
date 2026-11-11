@@ -16,9 +16,15 @@ internal static class KeptTooltips
     public static void Keep(KeptTooltip kept, CodeTooltip? tooltip, int part, int shownPart)
     {
         if (tooltip == null)
+        {
             return;
+        }
+
         if (shownPart != 0 && shownPart != part)
+        {
             return;
+        }
+
         kept.Kept = (tooltip, part);
     }
 
@@ -26,10 +32,16 @@ internal static class KeptTooltips
     public static CodeTooltip? Find(KeptTooltip kept, int shownPart)
     {
         if (kept.Kept == null)
+        {
             return null;
+        }
+
         var (tooltip, part) = kept.Kept.Value;
         if (part != shownPart)
+        {
             return null;
+        }
+
         return tooltip;
     }
 

@@ -18,16 +18,22 @@ internal static class MetadataTooltipView
         using (ui.Column(new Box { Gap = theme.GapTight }))
         {
             foreach (var group in content.Groups)
+            {
                 Group(ui, group);
+            }
         }
     }
 
     private static void Group(Ui<UiState> ui, MetadataFlagGroup group)
     {
         if (group.IsChoice)
+        {
             Choice(ui, group);
+        }
         else
+        {
             Flags(ui, group);
+        }
     }
 
     private static void Choice(Ui<UiState> ui, MetadataFlagGroup group)
@@ -37,7 +43,9 @@ internal static class MetadataTooltipView
         {
             Header(ui, group);
             if (group.Flags.Count > 0)
+            {
                 ui.Text(group.Flags[0].Name, color: theme.Text, size: theme.FontSizeSmall);
+            }
         }
     }
 
@@ -47,14 +55,19 @@ internal static class MetadataTooltipView
         {
             Header(ui, group);
             foreach (var flag in group.Flags)
+            {
                 Flag(ui, flag);
+            }
         }
     }
 
     private static void Header(Ui<UiState> ui, MetadataFlagGroup group)
     {
         if (string.IsNullOrEmpty(group.Header))
+        {
             return;
+        }
+
         var theme = ui.Theme;
         ui.Text(group.Header, color: theme.Text, size: theme.FontSizeSmall, bold: true);
     }

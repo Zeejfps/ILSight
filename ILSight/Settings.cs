@@ -68,7 +68,10 @@ public static class Settings
     private static Locale ChooseLocale(AppSettings settings)
     {
         if (settings.Locale != null)
+        {
             return settings.Locale.Value;
+        }
+
         return Locales.For(CultureInfo.CurrentUICulture);
     }
 
@@ -77,7 +80,10 @@ public static class Settings
     public static string? FindFolderBeside(FullFilePath? settingsFile, string name)
     {
         if (settingsFile == null)
+        {
             return null;
+        }
+
         return Path.Combine(settingsFile.Folder, name);
     }
 
@@ -87,13 +93,22 @@ public static class Settings
     public static Saving SaveSettingsIfChanged(AppState appState, double now)
     {
         if (appState.IsReloading)
+        {
             return Unchanged;
+        }
+
         var sources = CaptureSavedSources(appState);
         if (sources == appState.LastSaved)
+        {
             return Unchanged;
+        }
+
         var wait = AdvanceRetry(appState, now);
         if (wait > 0)
+        {
             return new Saving.Waiting(wait);
+        }
+
         return SaveSettings(appState) switch
         {
             SettingsWriteResult.Written => new Saving.Saved(),
@@ -124,7 +139,10 @@ public static class Settings
     public static void ReportSettingsProblem(AppState appState, SettingsProblem problem)
     {
         if (problem is SettingsProblem.None)
+        {
             return;
+        }
+
         Errors.Report(appState, new AppProblem.SettingsUnreadable(appState.SettingsPlace.FilePath?.Text, problem));
     }
 
@@ -216,7 +234,10 @@ public static class Settings
         var wasFailing = appState.SaveRetry is not SaveRetry.Clear;
         appState.SaveRetry = new SaveRetry.Failed();
         if (wasFailing)
+        {
             return;
+        }
+
         Errors.Report(appState, new AppProblem.SettingsNotSaved(error));
     }
 

@@ -6,17 +6,17 @@ root = true
 [{ILSight,ILSight.Core,ILSight.Tests,ILSight.App.Tests}/**.cs]
 
 # R007: braces and block bodies; one-liners only for getters, accessors and lambdas.
-csharp_prefer_braces = true:warning
-dotnet_diagnostic.IDE0011.severity = warning
-csharp_style_expression_bodied_methods = false:warning
-csharp_style_expression_bodied_constructors = false:warning
-csharp_style_expression_bodied_operators = false:warning
-csharp_style_expression_bodied_local_functions = false:warning
-dotnet_diagnostic.IDE0021.severity = warning
-dotnet_diagnostic.IDE0022.severity = warning
-dotnet_diagnostic.IDE0023.severity = warning
-dotnet_diagnostic.IDE0024.severity = warning
-dotnet_diagnostic.IDE0061.severity = warning
+csharp_prefer_braces = true:error
+dotnet_diagnostic.IDE0011.severity = error
+csharp_style_expression_bodied_methods = false:error
+csharp_style_expression_bodied_constructors = false:error
+csharp_style_expression_bodied_operators = false:error
+csharp_style_expression_bodied_local_functions = false:error
+dotnet_diagnostic.IDE0021.severity = error
+dotnet_diagnostic.IDE0022.severity = error
+dotnet_diagnostic.IDE0023.severity = error
+dotnet_diagnostic.IDE0024.severity = error
+dotnet_diagnostic.IDE0061.severity = error
 csharp_style_expression_bodied_properties = true:silent
 csharp_style_expression_bodied_accessors = true:silent
 csharp_style_expression_bodied_indexers = true:silent
@@ -24,10 +24,10 @@ csharp_style_expression_bodied_lambdas = true:silent
 csharp_style_implicit_object_creation_when_type_is_apparent = false:silent
 
 # R007: locals use `var` (IDE0007 only fires where `var` would infer the identical type).
-csharp_style_var_for_built_in_types = true:warning
-csharp_style_var_when_type_is_apparent = true:warning
-csharp_style_var_elsewhere = true:warning
-dotnet_diagnostic.IDE0007.severity = warning
+csharp_style_var_for_built_in_types = true:error
+csharp_style_var_when_type_is_apparent = true:error
+csharp_style_var_elsewhere = true:error
+dotnet_diagnostic.IDE0007.severity = error
 
 # R009: `throw ex;` (CA2200); throwing Exception / SystemException / ApplicationException (CA2201).
 dotnet_diagnostic.CA2200.severity = warning

@@ -27,7 +27,10 @@ public sealed class ScreenIsolationTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     [Fact]
     public void The_app_state_reaches_no_object_of_the_screen_over_it()
@@ -57,11 +60,19 @@ public sealed class ScreenIsolationTests : IDisposable
         while (queue.TryDequeue(out var next))
         {
             if (IsOfScreen(next.Value, screen))
+            {
                 return next.Path;
+            }
+
             if (!next.Value.GetType().IsValueType && !seen.Add(next.Value))
+            {
                 continue;
+            }
+
             foreach (var reference in ListReferences(next.Value, next.Path))
+            {
                 queue.Enqueue(reference);
+            }
         }
         return null;
     }
@@ -69,34 +80,54 @@ public sealed class ScreenIsolationTests : IDisposable
     private static bool IsOfScreen(object value, UiState screen)
     {
         if (ReferenceEquals(value, screen.Layout))
+        {
             return true;
+        }
+
         var type = value.GetType();
         if (type.IsGenericType)
+        {
             type = type.GetGenericTypeDefinition();
+        }
+
         return ScreenTypes.Contains(type);
     }
 
     private static IEnumerable<(object Value, string Path)> ListReferences(object value, string path)
     {
         if (IsOpaque(value))
+        {
             yield break;
+        }
+
         if (value is Array array)
         {
             foreach (var element in ListElements(array, path))
+            {
                 yield return element;
+            }
+
             yield break;
         }
         if (!WalkedAssemblies.Contains(value.GetType().Assembly))
+        {
             yield break;
+        }
+
         for (var type = value.GetType(); type != null; type = type.BaseType)
         {
             foreach (var field in type.GetFields(InstanceFields))
             {
                 if (field.FieldType.IsPrimitive || field.FieldType.IsPointer)
+                {
                     continue;
+                }
+
                 var held = field.GetValue(value);
                 if (held != null)
+                {
                     yield return (held, $"{path}.{field.Name}");
+                }
             }
         }
     }
@@ -105,25 +136,42 @@ public sealed class ScreenIsolationTests : IDisposable
     {
         var element = array.GetType().GetElementType()!;
         if (element.IsPrimitive || element.IsEnum || element == typeof(string))
+        {
             yield break;
+        }
+
         for (var i = 0; i < array.Length; i++)
         {
             var held = array.GetValue(i);
             if (held != null)
+            {
                 yield return (held, $"{path}[{i}]");
+            }
         }
     }
 
     private static bool IsOpaque(object value)
     {
         if (value is string)
+        {
             return true;
+        }
+
         if (value is MemberInfo)
+        {
             return true;
+        }
+
         if (value is Assembly)
+        {
             return true;
+        }
+
         if (value is Module)
+        {
             return true;
+        }
+
         return value is Thread;
     }
 }

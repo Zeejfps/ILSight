@@ -49,7 +49,10 @@ internal sealed class DocumentBuilder : ITextOutput
         {
             var column = Line.Length;
             if (!LineStarted)
+            {
                 column = IndentLevel * IndentationString.Length;
+            }
+
             return new TextLocation(Lines.Count + 1, column + 1);
         }
     }
@@ -148,11 +151,17 @@ internal static class DocumentWriting
     private static DecompiledDocument BuildDocument(DocumentBuilder builder, string title, Exception? error)
     {
         if (builder.Line.Length > 0 || builder.LineFirstSpan < builder.Spans.Count || builder.Lines.Count == 0)
+        {
             WriteLine(builder);
+        }
+
         var spans = builder.Spans.ToImmutableArray();
         var lines = ImmutableArray.CreateBuilder<DocumentLine>(builder.Lines.Count);
         foreach (var (text, first, count) in builder.Lines)
+        {
             lines.Add(new DocumentLine { Text = text, DocumentSpans = spans, FirstSpan = first, SpanCount = count });
+        }
+
         var built = lines.MoveToImmutable();
         return new DecompiledDocument { Title = title, Language = builder.Language, Error = error, Lines = built, Definitions = builder.Definitions, Statements = ListStatements(builder), Folds = ListFoldRegions(builder, built) };
     }
@@ -166,7 +175,11 @@ internal static class DocumentWriting
             var end = newline < 0 ? text.Length : newline;
             var segmentEnd = end > start && text[end - 1] == '\r' ? end - 1 : end;
             Append(builder, text.AsSpan(start, segmentEnd - start), kind, reference, isDefinition);
-            if (newline < 0) return;
+            if (newline < 0)
+            {
+                return;
+            }
+
             WriteLine(builder);
             start = newline + 1;
         }
@@ -185,9 +198,13 @@ internal static class DocumentWriting
     public static void Write(DocumentBuilder builder, char ch)
     {
         if (ch == '\n')
+        {
             WriteLine(builder);
+        }
         else if (ch != '\r')
+        {
             Append(builder, new ReadOnlySpan<char>(in ch), builder.Kind ?? SpanKind.Plain, null, false);
+        }
     }
 
     public static void Write(DocumentBuilder builder, string text)
@@ -198,7 +215,10 @@ internal static class DocumentWriting
     public static void WriteLine(DocumentBuilder builder)
     {
         if (IsUnlexedIL(builder))
+        {
             LexILLine(builder);
+        }
+
         builder.Lines.Add((builder.Line.ToString(), builder.LineFirstSpan, builder.Spans.Count - builder.LineFirstSpan));
         builder.Line.Clear();
         builder.LineFirstSpan = builder.Spans.Count;
@@ -209,7 +229,10 @@ internal static class DocumentWriting
     private static bool IsUnlexedIL(DocumentBuilder builder)
     {
         if (builder.LineClassified)
+        {
             return false;
+        }
+
         return DecompilationLanguages.IsIL(builder.Language);
     }
 
@@ -221,7 +244,10 @@ internal static class DocumentWriting
     {
         Append(builder, SourceLinePrefix, SpanKind.Comment, null, false);
         foreach (var span in line.Spans)
+        {
             AppendSourceSpan(builder, line.Text, span, from, start, end);
+        }
+
         builder.LineClassified = true;
         WriteLine(builder);
     }
@@ -240,7 +266,10 @@ internal static class DocumentWriting
     private static void AppendPart(DocumentBuilder builder, string text, int from, int to, SpanKind kind, CodeReference? reference)
     {
         if (to <= from)
+        {
             return;
+        }
+
         Append(builder, text.AsSpan(from, to - from), kind, reference, false);
     }
 
@@ -248,7 +277,10 @@ internal static class DocumentWriting
     private static CodeReference? GetLink(CodeReference? reference)
     {
         if (reference is CodeReference.Local or CodeReference.Label)
+        {
             return null;
+        }
+
         return reference;
     }
 
@@ -258,7 +290,10 @@ internal static class DocumentWriting
         if (omitSuffix)
         {
             var lastDot = name.LastIndexOf('.');
-            if (lastDot > 0) name = name[..(lastDot + 1)];
+            if (lastDot > 0)
+            {
+                name = name[..(lastDot + 1)];
+            }
         }
         Write(builder, name, SpanKind.ILOpcode);
     }
@@ -295,10 +330,16 @@ internal static class DocumentWriting
             _ => SpanKind.Local,
         };
         if (isDefinition && reference is int offset && builder.Scope != null && builder.Scope.Kind == EntityKind.Method)
+        {
             MarkStatement(builder, builder.Scope, offset);
+        }
+
         var scope = reference is ILVariable ? null : builder.Scope;
         if (!builder.LocalKeys.TryGetValue(reference, out var key))
+        {
             builder.LocalKeys.Add(reference, key = builder.LocalKeys.Count);
+        }
+
         CodeReference local = reference is int ? new CodeReference.Label { Name = text, Key = key, Scope = scope } : new CodeReference.Local { Name = text, Key = key, Scope = scope };
         Write(builder, text, builder.Kind ?? spanKind, local, isDefinition);
     }
@@ -309,13 +350,19 @@ internal static class DocumentWriting
     {
         var reference = CodeReferences.Find(method);
         if (reference != null)
+        {
             MarkStatement(builder, reference, ilOffset);
+        }
     }
 
     private static void MarkStatement(DocumentBuilder builder, CodeReference.Entity method, int ilOffset)
     {
         var line = builder.Lines.Count;
-        if (builder.MarkedStatements.TryGetValue(line, out var marked) && (marked.Method != method || marked.Offset <= ilOffset)) return;
+        if (builder.MarkedStatements.TryGetValue(line, out var marked) && (marked.Method != method || marked.Offset <= ilOffset))
+        {
+            return;
+        }
+
         builder.MarkedStatements[line] = (method, ilOffset);
     }
 
@@ -323,7 +370,10 @@ internal static class DocumentWriting
     {
         var anchors = new Dictionary<int, CodeAnchor>(builder.MarkedStatements.Count);
         foreach (var (line, (method, offset)) in builder.MarkedStatements)
+        {
             anchors[line] = new CodeAnchor(CodeAnchorKind.Statement, method.FilePath, MetadataTokens.GetToken(method.Handle), offset);
+        }
+
         return anchors;
     }
 
@@ -339,27 +389,44 @@ internal static class DocumentWriting
     public static void MarkFoldEnd(DocumentBuilder builder)
     {
         if (builder.OpenFolds.TryPop(out var start))
+        {
             builder.Folds.Add((start, builder.LineStarted ? builder.Lines.Count : builder.Lines.Count - 1));
+        }
     }
 
     private static ImmutableArray<FoldRegion> ListFoldRegions(DocumentBuilder builder, ImmutableArray<DocumentLine> lines)
     {
-        if (builder.Folds.Count == 0) return ImmutableArray<FoldRegion>.Empty;
+        if (builder.Folds.Count == 0)
+        {
+            return ImmutableArray<FoldRegion>.Empty;
+        }
+
         var regions = new List<FoldRegion>(builder.Folds.Count);
         foreach (var (start, endLine) in builder.Folds)
         {
-            if (endLine <= start.Line - 1 || endLine >= lines.Length) continue;
+            if (endLine <= start.Line - 1 || endLine >= lines.Length)
+            {
+                continue;
+            }
+
             var closes = lines[endLine].Text.AsSpan().TrimStart().StartsWith("}");
             var opening = FirstCharFrom(lines, start.Line, start.Column, endLine, out var openingLine);
             var ownLine = lines[start.Line].Text.AsSpan(0, Math.Min(start.Column, lines[start.Line].Text.Length)).IsWhiteSpace();
             if (opening != '{' && closes)
+            {
                 openingLine = BodyAfterSignature(lines, start.Line, endLine);
+            }
+
             var brace = closes && openingLine >= 0;
             var header = !brace ? start.Line
                 : openingLine > start.Line ? openingLine - 1
                 : ownLine && start.Line > 0 ? start.Line - 1
                 : start.Line;
-            if (endLine <= header) continue;
+            if (endLine <= header)
+            {
+                continue;
+            }
+
             var text = HasOwnText(start, lines[header]) ? start.Text
                 : !brace ? "…"
                 : openingLine > header ? "{ … }"
@@ -373,9 +440,20 @@ internal static class DocumentWriting
         foreach (var region in regions)
         {
             while (open.Count > 0 && open.Peek().EndLine < region.StartLine)
+            {
                 open.Pop();
-            if (nested.Count > 0 && nested[^1].StartLine == region.StartLine) continue;
-            if (open.Count > 0 && region.EndLine > open.Peek().EndLine) continue;
+            }
+
+            if (nested.Count > 0 && nested[^1].StartLine == region.StartLine)
+            {
+                continue;
+            }
+
+            if (open.Count > 0 && region.EndLine > open.Peek().EndLine)
+            {
+                continue;
+            }
+
             nested.Add(region);
             open.Push(region);
         }
@@ -387,7 +465,10 @@ internal static class DocumentWriting
     private static bool HasOwnText(OpenFold start, DocumentLine header)
     {
         if (start.Text == DefaultFoldText)
+        {
             return false;
+        }
+
         return start.Text.Trim() != header.Text.Trim();
     }
 
@@ -396,7 +477,10 @@ internal static class DocumentWriting
         for (var line = start + 1; line < endLine && line <= start + MaxSignatureLines; line++)
         {
             var text = lines[line].Text.AsSpan().Trim();
-            if (text.StartsWith("{")) return text.Length == 1 ? line : -1;
+            if (text.StartsWith("{"))
+            {
+                return text.Length == 1 ? line : -1;
+            }
         }
         return -1;
     }
@@ -408,7 +492,10 @@ internal static class DocumentWriting
             var text = lines[foundLine].Text;
             for (var i = column; i < text.Length; i++)
             {
-                if (!char.IsWhiteSpace(text[i])) return text[i];
+                if (!char.IsWhiteSpace(text[i]))
+                {
+                    return text[i];
+                }
             }
         }
         foundLine = -1;
@@ -418,27 +505,43 @@ internal static class DocumentWriting
     private static void WriteReferenceSpan(DocumentBuilder builder, string text, SpanKind kind, CodeReference? reference, bool isDefinition)
     {
         if (isDefinition && reference is CodeReference.Entity entity && entity.Kind == EntityKind.Method)
+        {
             builder.Scope = entity;
+        }
+
         Write(builder, text, kind, reference, isDefinition);
     }
 
     private static void Append(DocumentBuilder builder, ReadOnlySpan<char> text, SpanKind kind, CodeReference? reference, bool isDefinition)
     {
-        if (text.IsEmpty) return;
+        if (text.IsEmpty)
+        {
+            return;
+        }
+
         if (!builder.LineStarted)
         {
             builder.LineStarted = true;
             for (var i = 0; i < builder.IndentLevel; i++)
+            {
                 AppendSpan(builder, builder.IndentationString, SpanKind.Plain, null, false);
+            }
         }
         if (isDefinition && reference is CodeReference.Navigable navigable)
+        {
             builder.Definitions.TryAdd(navigable, builder.Lines.Count);
+        }
+
         AppendSpan(builder, text, kind, reference, isDefinition);
     }
 
     private static void AppendSpan(DocumentBuilder builder, ReadOnlySpan<char> text, SpanKind kind, CodeReference? reference, bool isDefinition)
     {
-        if (text.IsEmpty) return;
+        if (text.IsEmpty)
+        {
+            return;
+        }
+
         var start = builder.Line.Length;
         builder.Line.Append(text);
         if (reference is null && !isDefinition && builder.Spans.Count > builder.LineFirstSpan)
@@ -458,8 +561,14 @@ internal static class DocumentWriting
         var count = builder.Spans.Count - builder.LineFirstSpan;
         var any = false;
         for (var i = 0; i < count && !any; i++)
+        {
             any = builder.Spans[builder.LineFirstSpan + i] is { Kind: SpanKind.Plain, Reference: null };
-        if (!any) return;
+        }
+
+        if (!any)
+        {
+            return;
+        }
 
         builder.Lexed.Clear();
         var text = builder.Line.ToString();
@@ -480,19 +589,29 @@ internal static class DocumentWriting
 
     private static CodeReference.Navigable? FindReference(DocumentBuilder builder, MetadataFile metadata, Handle handle, string text)
     {
-        if (handle.IsNil) return null;
+        if (handle.IsNil)
+        {
+            return null;
+        }
+
         if (handle.Kind is HandleKind.TypeReference or HandleKind.TypeSpecification or HandleKind.MemberReference or HandleKind.MethodSpecification)
         {
             var definition = ResolveDefinition(builder, metadata, (EntityHandle)handle);
             if (definition != null)
+            {
                 return CodeReferences.Find(definition, text);
+            }
         }
         return CodeReferences.Find(metadata.Metadata, handle, text, AssemblyPath.Of(metadata.FileName));
     }
 
     private static IEntity? ResolveDefinition(DocumentBuilder builder, MetadataFile metadata, EntityHandle handle)
     {
-        if (builder.Assembly is null || !ReferenceEquals(metadata, builder.Assembly.File)) return null;
+        if (builder.Assembly is null || !ReferenceEquals(metadata, builder.Assembly.File))
+        {
+            return null;
+        }
+
         try
         {
             return Definitions.Resolve(LoadedAssemblies.EnsureMainModule(builder.Assembly), handle);

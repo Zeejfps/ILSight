@@ -12,7 +12,10 @@ public sealed class ExportTests : IDisposable
         Directory.CreateDirectory(_temp.Path);
     }
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     /// <summary>Every report, in the order they came, from whichever thread sent them.</summary>
     private sealed class RecordedProgress : IProgress<ExportProgress>
@@ -24,14 +27,18 @@ public sealed class ExportTests : IDisposable
             get
             {
                 lock (_reports)
+                {
                     return _reports.ToList();
+                }
             }
         }
 
         public void Report(ExportProgress value)
         {
             lock (_reports)
+            {
                 _reports.Add(value);
+            }
         }
     }
 

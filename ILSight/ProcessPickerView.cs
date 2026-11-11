@@ -31,7 +31,9 @@ internal static class ProcessPickerView
         var picker = ui.State.ProcessPicker;
         var wasOpen = picker.IsOpen;
         if (wasOpen)
+        {
             UpdatePicker(picker);
+        }
 
         var open = false;
         var close = false;
@@ -40,7 +42,9 @@ internal static class ProcessPickerView
             minWidth: AppLayout.ProcessDialogMinWidth, minHeight: AppLayout.ProcessDialogMinHeight))
         {
             if (dialog.IsOpen)
+            {
                 Content(ui, picker, ref open, ref close);
+            }
         }
 
         if (open && CanOpen(picker))
@@ -51,7 +55,10 @@ internal static class ProcessPickerView
         // Escape or the close button only clear IsOpen.
         var dismissed = wasOpen && !picker.IsOpen;
         if (close || dismissed)
+        {
             ClosePicker(picker);
+        }
+
         DialogWindows.Settle(picker.Window, ui.Input.IsDown(PointerButton.Left));
     }
 
@@ -61,17 +68,28 @@ internal static class ProcessPickerView
         var theme = ui.Theme;
         var processListId = ui.GetId(ProcessListId);
         if (ui.HasFocus(ui.GetId(FilterId)))
+        {
             MoveSelectionFromFilter(ui, picker, processListId);
+        }
+
         if (TakeFilterFocus(picker))
+        {
             ui.Focus(ui.GetId(FilterId));
+        }
+
         open |= ui.TextField(FilterId, ref picker.Filter, t.ProcessPickerFilter, clearable: true);
 
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
         {
             using (Pane(ui, ProcessPaneShare))
+            {
                 open |= Processes(ui, picker, processListId);
+            }
+
             using (Pane(ui, 1f - ProcessPaneShare))
+            {
                 open |= Modules(ui, picker);
+            }
         }
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -81,14 +99,19 @@ internal static class ProcessPickerView
             ui.Text(summary, color: theme.TextMuted, size: theme.FontSizeSmall);
             ui.Spacer();
             if (ui.Button(t.ProcessPickerRefresh, enabled: picker.Scan is not ProcessScan.Scanning, id: "process-refresh"))
+            {
                 Refresh(picker);
+            }
+
             close |= ui.Button(t.PickerCancel, id: "process-cancel");
             open |= ui.Button(t.PickerOpen, enabled: CanOpen(picker), id: "process-open", variant: ButtonVariant.Primary);
         }
     }
 
-    private static string Summary(Strings t, int processes, int modules, int selected) =>
-        $"{t.ProcessPickerCount(processes)} · {t.PickerCount(modules)} · {t.PickerSelected(selected)}";
+    private static string Summary(Strings t, int processes, int modules, int selected)
+    {
+        return $"{t.ProcessPickerCount(processes)} · {t.PickerCount(modules)} · {t.PickerSelected(selected)}";
+    }
 
     /// <summary>A pane taking <paramref name="share"/> of the row, whatever its rows hold, so that neither
     /// pane changes width as rows scroll into view.</summary>
@@ -109,10 +132,15 @@ internal static class ProcessPickerView
         foreach (var stroke in ui.Input.Keys)
         {
             if (stroke.Key is KeyboardKey.Home or KeyboardKey.End)
+            {
                 continue;
+            }
+
             var index = picker.ProcessSelection.Index;
             if (UiWidgets.ApplyListKey(stroke, ref index, picker.Filtered.Count, page))
+            {
                 picker.ProcessSelection.Select(index, picker.Filtered.Count);
+            }
         }
     }
 

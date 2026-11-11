@@ -41,20 +41,38 @@ public sealed class DiagramViewTests
     private static bool IsLaidOut(AppDriver app)
     {
         if (app.AppState.IsDiagramming)
+        {
             return false;
+        }
+
         var tab = app.AppState.Tabs.Active;
         if (tab == null)
+        {
             return false;
+        }
+
         var diagram = tab.Diagram;
         if (diagram == null)
+        {
             return false;
+        }
+
         if (!DocumentPanels.HasView(app.Ui.Documents, tab))
+        {
             return false;
+        }
+
         var view = ViewOf(app, tab);
         if (view.LaidOutVersion != diagram.Version)
+        {
             return false;
+        }
+
         if (view.IsFitPending)
+        {
             return false;
+        }
+
         return !view.Transition.IsMoving;
     }
 
@@ -89,7 +107,10 @@ public sealed class DiagramViewTests
             .ToList();
     }
 
-    private static DocumentTab DiagramTab(AppDriver app) => ListDiagramTabs(app).Single();
+    private static DocumentTab DiagramTab(AppDriver app)
+    {
+        return ListDiagramTabs(app).Single();
+    }
 
     /// <summary>The texts drawn below the diagram's toolbar and right of where it starts: the diagram's,
     /// not the tree's.</summary>
@@ -103,10 +124,16 @@ public sealed class DiagramViewTests
             .ToList();
     }
 
-    private static bool DrewOnDiagram(AppDriver app, string text) => ListDiagramTexts(app).Any(t => t.Text == text);
+    private static bool DrewOnDiagram(AppDriver app, string text)
+    {
+        return ListDiagramTexts(app).Any(t => t.Text == text);
+    }
 
     /// <summary>Where <paramref name="text"/> was last drawn on the diagram.</summary>
-    private static UiRect CardText(AppDriver app, string text) => ListDiagramTexts(app).Last(t => t.Text == text).Rect;
+    private static UiRect CardText(AppDriver app, string text)
+    {
+        return ListDiagramTexts(app).Last(t => t.Text == text).Rect;
+    }
 
     private static void RightClick(AppDriver app, UiRect rect)
     {
@@ -120,7 +147,10 @@ public sealed class DiagramViewTests
         SettleDiagram(app);
     }
 
-    private static PointF CenterOf(UiRect rect) => new(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+    private static PointF CenterOf(UiRect rect)
+    {
+        return new(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+    }
 
     /// <summary>Clicks a little in from the left of the text drawn in <paramref name="rect"/>.</summary>
     private static void ClickAt(AppDriver app, UiRect rect)
@@ -264,11 +294,20 @@ public sealed class DiagramViewTests
         var end = line.Inputs.End;
         var y = app.Frames.Height - start.Y;
         if (Math.Abs(start.Y - end.Y) > Near)
+        {
             return false;
+        }
+
         if (Math.Abs(start.X - text.X) > Near)
+        {
             return false;
+        }
+
         if (end.X - start.X < text.Height)
+        {
             return false;
+        }
+
         return y > text.Y && y <= text.Bottom;
     }
 
@@ -348,7 +387,10 @@ public sealed class DiagramViewTests
     private static bool IsHiddenMember(CardRow row)
     {
         if (row.Content is not CardRowContent.Member member)
+        {
             return false;
+        }
+
         return member.Accessibility is NodeAccessibility.Private or NodeAccessibility.Internal;
     }
 

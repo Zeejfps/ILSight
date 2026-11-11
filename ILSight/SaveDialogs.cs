@@ -16,7 +16,10 @@ internal static class SaveDialogs
     {
         var node = tabs.Active?.Node;
         if (!CanSaveCode(node))
+        {
             return;
+        }
+
         if (node.HasResource)
         {
             ResourceImageView.PickExport(ui, node);
@@ -38,7 +41,10 @@ internal static class SaveDialogs
     private static FileFilter[] CodeFilters(Strings t, DecompilationLanguage language)
     {
         if (language == DecompilationLanguage.CSharp)
+        {
             return [new FileFilter(t.FileFilterCsharp, ["*.cs"]), new FileFilter(t.FileFilterAll, ["*.*"])];
+        }
+
         return [new FileFilter(t.FileFilterIl, ["*.il"]), new FileFilter(t.FileFilterAll, ["*.*"])];
     }
 

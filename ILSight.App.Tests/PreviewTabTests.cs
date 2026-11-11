@@ -37,7 +37,10 @@ public sealed class PreviewTabTests
     {
         var family = text.Inputs.Style.FontFamily;
         if (!family.IsSet)
+        {
             return false;
+        }
+
         return family.Value == TextFonts.Italic;
     }
 

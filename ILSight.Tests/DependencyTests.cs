@@ -89,7 +89,10 @@ public sealed class DependencyTests
         Assert.Contains(NameOf(typeof(LoadedModule)), Graph.Value.Uses(NameOf(typeof(NodeDecompiler))));
     }
 
-    private static string NameOf(Type type) => type.FullName!;
+    private static string NameOf(Type type)
+    {
+        return type.FullName!;
+    }
 
     /// <summary>For each top-level type of an assembly, the other top-level types of it that it names.</summary>
     private sealed class CoreGraph
@@ -114,7 +117,10 @@ public sealed class DependencyTests
             var metadata = pe.GetMetadataReader();
             var scan = new Scan(pe, metadata);
             foreach (var handle in metadata.TypeDefinitions)
+            {
                 scan.Type(handle);
+            }
+
             return new CoreGraph(scan.Uses);
         }
     }
@@ -139,13 +145,24 @@ public sealed class DependencyTests
             var type = _metadata.GetTypeDefinition(handle);
             Add(uses, Types(type.BaseType));
             foreach (var implementation in type.GetInterfaceImplementations())
+            {
                 Add(uses, Types(_metadata.GetInterfaceImplementation(implementation).Interface));
+            }
+
             foreach (var field in type.GetFields())
+            {
                 Add(uses, _metadata.GetFieldDefinition(field).DecodeSignature(this, null));
+            }
+
             foreach (var property in type.GetProperties())
+            {
                 Add(uses, Flatten(_metadata.GetPropertyDefinition(property).DecodeSignature(this, null)));
+            }
+
             foreach (var method in type.GetMethods())
+            {
                 Method(uses, method);
+            }
         }
 
         private void Method(HashSet<string> uses, MethodDefinitionHandle handle)
@@ -153,21 +170,30 @@ public sealed class DependencyTests
             var method = _metadata.GetMethodDefinition(handle);
             Add(uses, Flatten(method.DecodeSignature(this, null)));
             if (method.RelativeVirtualAddress == 0)
+            {
                 return;
+            }
+
             var body = _pe.GetMethodBody(method.RelativeVirtualAddress);
             if (!body.LocalSignature.IsNil)
             {
                 foreach (var local in _metadata.GetStandaloneSignature(body.LocalSignature).DecodeLocalSignature(this, null))
+                {
                     Add(uses, local);
+                }
             }
             var il = body.GetILReader();
             while (il.RemainingBytes > 0)
             {
                 var opCode = il.DecodeOpCode();
                 if (opCode.GetOperandType() is OperandType.Field or OperandType.Method or OperandType.Tok or OperandType.Type)
+                {
                     Add(uses, Types(MetadataTokenHelpers.EntityHandleOrNil(il.ReadInt32())));
+                }
                 else
+                {
                     il.SkipOperand(opCode);
+                }
             }
         }
 
@@ -185,7 +211,9 @@ public sealed class DependencyTests
         private void Add(HashSet<string> uses, ImmutableArray<TypeDefinitionHandle> types)
         {
             foreach (var type in types)
+            {
                 uses.Add(NameOf(Outermost(type)));
+            }
         }
 
         /// <summary>The types of this assembly <paramref name="handle"/> names: a type, a member's type and
@@ -193,7 +221,10 @@ public sealed class DependencyTests
         private ImmutableArray<TypeDefinitionHandle> Types(EntityHandle handle)
         {
             if (handle.IsNil)
+            {
                 return [];
+            }
+
             switch (handle.Kind)
             {
                 case HandleKind.TypeDefinition:
@@ -220,8 +251,10 @@ public sealed class DependencyTests
             }
         }
 
-        private static ImmutableArray<TypeDefinitionHandle> Flatten(MethodSignature<ImmutableArray<TypeDefinitionHandle>> signature) =>
-            [.. signature.ReturnType, .. signature.ParameterTypes.SelectMany(static p => p)];
+        private static ImmutableArray<TypeDefinitionHandle> Flatten(MethodSignature<ImmutableArray<TypeDefinitionHandle>> signature)
+        {
+            return [.. signature.ReturnType, .. signature.ParameterTypes.SelectMany(static p => p)];
+        }
 
         private TypeDefinitionHandle Outermost(TypeDefinitionHandle handle)
         {
@@ -229,7 +262,10 @@ public sealed class DependencyTests
             {
                 var declaring = _metadata.GetTypeDefinition(handle).GetDeclaringType();
                 if (declaring.IsNil)
+                {
                     return handle;
+                }
+
                 handle = declaring;
             }
         }
@@ -242,36 +278,77 @@ public sealed class DependencyTests
             return ns.Length == 0 ? name : $"{ns}.{name}";
         }
 
-        public ImmutableArray<TypeDefinitionHandle> GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind) => [handle];
+        public ImmutableArray<TypeDefinitionHandle> GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+        {
+            return [handle];
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind) => [];
+        public ImmutableArray<TypeDefinitionHandle> GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+        {
+            return [];
+        }
 
         public ImmutableArray<TypeDefinitionHandle> GetTypeFromSpecification(MetadataReader reader, object? context, TypeSpecificationHandle handle,
-            byte rawTypeKind) => Types(handle);
+            byte rawTypeKind)
+        {
+            return Types(handle);
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetPrimitiveType(PrimitiveTypeCode typeCode) => [];
+        public ImmutableArray<TypeDefinitionHandle> GetPrimitiveType(PrimitiveTypeCode typeCode)
+        {
+            return [];
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetSZArrayType(ImmutableArray<TypeDefinitionHandle> elementType) => elementType;
+        public ImmutableArray<TypeDefinitionHandle> GetSZArrayType(ImmutableArray<TypeDefinitionHandle> elementType)
+        {
+            return elementType;
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetArrayType(ImmutableArray<TypeDefinitionHandle> elementType, ArrayShape shape) => elementType;
+        public ImmutableArray<TypeDefinitionHandle> GetArrayType(ImmutableArray<TypeDefinitionHandle> elementType, ArrayShape shape)
+        {
+            return elementType;
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetByReferenceType(ImmutableArray<TypeDefinitionHandle> elementType) => elementType;
+        public ImmutableArray<TypeDefinitionHandle> GetByReferenceType(ImmutableArray<TypeDefinitionHandle> elementType)
+        {
+            return elementType;
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetPointerType(ImmutableArray<TypeDefinitionHandle> elementType) => elementType;
+        public ImmutableArray<TypeDefinitionHandle> GetPointerType(ImmutableArray<TypeDefinitionHandle> elementType)
+        {
+            return elementType;
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetPinnedType(ImmutableArray<TypeDefinitionHandle> elementType) => elementType;
+        public ImmutableArray<TypeDefinitionHandle> GetPinnedType(ImmutableArray<TypeDefinitionHandle> elementType)
+        {
+            return elementType;
+        }
 
         public ImmutableArray<TypeDefinitionHandle> GetGenericInstantiation(ImmutableArray<TypeDefinitionHandle> genericType,
-            ImmutableArray<ImmutableArray<TypeDefinitionHandle>> typeArguments) =>
-            [.. genericType, .. typeArguments.SelectMany(static a => a)];
+            ImmutableArray<ImmutableArray<TypeDefinitionHandle>> typeArguments)
+        {
+            return [.. genericType, .. typeArguments.SelectMany(static a => a)];
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetGenericMethodParameter(object? context, int index) => [];
+        public ImmutableArray<TypeDefinitionHandle> GetGenericMethodParameter(object? context, int index)
+        {
+            return [];
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetGenericTypeParameter(object? context, int index) => [];
+        public ImmutableArray<TypeDefinitionHandle> GetGenericTypeParameter(object? context, int index)
+        {
+            return [];
+        }
 
-        public ImmutableArray<TypeDefinitionHandle> GetFunctionPointerType(MethodSignature<ImmutableArray<TypeDefinitionHandle>> signature) => Flatten(signature);
+        public ImmutableArray<TypeDefinitionHandle> GetFunctionPointerType(MethodSignature<ImmutableArray<TypeDefinitionHandle>> signature)
+        {
+            return Flatten(signature);
+        }
 
         public ImmutableArray<TypeDefinitionHandle> GetModifiedType(ImmutableArray<TypeDefinitionHandle> modifier, ImmutableArray<TypeDefinitionHandle> unmodifiedType,
-            bool isRequired) => unmodifiedType;
+            bool isRequired)
+        {
+            return unmodifiedType;
+        }
     }
 }

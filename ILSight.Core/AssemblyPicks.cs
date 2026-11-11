@@ -23,7 +23,9 @@ public sealed class AssemblyPicks<T> where T : class
     public void Pick(AssemblyPath assemblyPath, T value)
     {
         lock (_gate)
+        {
             Volatile.Write(ref _picks, _picks.SetItem(assemblyPath, value));
+        }
     }
 
     /// <summary>Has the assembly at <paramref name="assemblyPath"/> find for itself again what it was
@@ -31,7 +33,9 @@ public sealed class AssemblyPicks<T> where T : class
     public void Forget(AssemblyPath assemblyPath)
     {
         lock (_gate)
+        {
             Volatile.Write(ref _picks, _picks.Remove(assemblyPath));
+        }
     }
 
     /// <summary>Has the assembly at <paramref name="assemblyPath"/> find for itself again what it was
@@ -43,7 +47,10 @@ public sealed class AssemblyPicks<T> where T : class
         {
             var picks = _picks.Remove(assemblyPath);
             if (andUnder)
+            {
                 picks = picks.RemoveRange(picks.Keys.Where(path => path.IsUnder(assemblyPath)));
+            }
+
             Volatile.Write(ref _picks, picks);
         }
     }
@@ -53,14 +60,18 @@ public sealed class AssemblyPicks<T> where T : class
     {
         var taken = ImmutableDictionary.CreateRange(picks);
         lock (_gate)
+        {
             Volatile.Write(ref _picks, taken);
+        }
     }
 
     /// <summary>Forgets every pick, as when the list is closed for good.</summary>
     public void ForgetAll()
     {
         lock (_gate)
+        {
             Volatile.Write(ref _picks, None);
+        }
     }
 
     /// <summary>What was picked for the assembly at <paramref name="assemblyPath"/>, or null.</summary>

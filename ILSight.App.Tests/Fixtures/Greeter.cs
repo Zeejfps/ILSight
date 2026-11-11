@@ -8,9 +8,15 @@ public class Greeter
     {
         var text = "";
         for (var i = 0; i < times; i++)
+        {
             text += Name;
+        }
+
         return text;
     }
 
-    public int Twice() => Greet(2).Length;
+    public int Twice()
+    {
+        return Greet(2).Length;
+    }
 }

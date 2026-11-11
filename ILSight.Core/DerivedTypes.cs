@@ -10,7 +10,10 @@ internal static class DerivedTypes
 {
     /// <summary>Whether anything can derive from <paramref name="type"/>: a class that is not sealed, or
     /// an interface.</summary>
-    public static bool CanHave(ITypeDefinition type) => !type.IsSealed && type.Kind is TypeKind.Class or TypeKind.Interface;
+    public static bool CanHave(ITypeDefinition type)
+    {
+        return !type.IsSealed && type.Kind is TypeKind.Class or TypeKind.Interface;
+    }
 
     public static List<ITypeDefinition> Find(AssemblyList list, ITypeDefinition type, CancellationToken cancellationToken)
     {
@@ -20,7 +23,9 @@ internal static class DerivedTypes
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (NamesAsBase(candidate, type))
+            {
                 found.Add(candidate);
+            }
         }
         return found;
     }
@@ -38,7 +43,9 @@ internal static class DerivedTypes
         foreach (var baseType in candidate.DirectBaseTypes)
         {
             if (IsNamedAs(baseType, type))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -46,7 +53,10 @@ internal static class DerivedTypes
     private static bool IsNamedAs(IType baseType, ITypeDefinition type)
     {
         if (baseType.FullName != type.FullName)
+        {
             return false;
+        }
+
         return baseType.TypeParameterCount == type.TypeParameterCount;
     }
 }

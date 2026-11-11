@@ -127,10 +127,15 @@ public static class BookmarkFile
                 var entry = $"#{i + 1}";
                 var saved = bookmarks[i].Deserialize(AppSettingsJson.Default.BookmarkJson);
                 if (saved == null)
+                {
                     continue;
+                }
+
                 var bookmark = SettingsJson.Parse(saved, () => unreadable.Add($"{entry}: the place it was made in cannot be read."));
                 if (bookmark != null)
+                {
                     read.Add(bookmark);
+                }
             }
             catch (Exception e) when (e is JsonException or NotSupportedException)
             {

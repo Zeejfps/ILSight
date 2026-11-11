@@ -16,7 +16,9 @@ internal static partial class AppFrames
     {
         var commands = appState.ViewCommands;
         while (commands.TryDequeue(out var command))
+        {
             Run(command, uiState, appState);
+        }
     }
 
     private static void Run(ViewCommand command, UiState uiState, AppState appState)
@@ -68,7 +70,10 @@ internal static partial class AppFrames
     private static void ShowTabIfOpen(UiState uiState, AppState appState, DocumentTab tab, DocumentTab? beside)
     {
         if (!Tabs.IsOpen(appState.Tabs, tab))
+        {
             return;
+        }
+
         ShowTab(uiState, tab, beside);
     }
 
@@ -84,7 +89,10 @@ internal static partial class AppFrames
     private static void RevealIfListed(UiState uiState, AppState appState, BrowseNode node)
     {
         if (!AssemblyListing.IsListed(appState.Assemblies, node.Root.Assembly))
+        {
             return;
+        }
+
         Trees.RevealNode(uiState.Tree, node);
     }
 
@@ -100,35 +108,50 @@ internal static partial class AppFrames
     private static void ShowAnalysis(UiState uiState, AppState appState, AnalyzerSymbolNode root)
     {
         if (!Analysis.HasRoot(appState.Analyzer, root))
+        {
             return;
+        }
+
         Analysis.ShowRoot(uiState.Analyzer, root);
     }
 
     private static void RestoreView(UiState uiState, AppState appState, DocumentTab tab, ViewPosition position)
     {
         if (!Tabs.IsOpen(appState.Tabs, tab))
+        {
             return;
+        }
+
         DocumentPanels.RestoreView(uiState.Documents, tab, position);
     }
 
     private static void RevealLine(UiState uiState, AppState appState, DocumentTab tab, int line)
     {
         if (!Tabs.IsOpen(appState.Tabs, tab))
+        {
             return;
+        }
+
         DocumentPanels.RevealLine(uiState.Documents, tab, line);
     }
 
     private static void RevealRow(UiState uiState, AppState appState, DocumentTab tab, int row)
     {
         if (!Tabs.IsOpen(appState.Tabs, tab))
+        {
             return;
+        }
+
         DocumentPanels.RevealRow(uiState.Documents, tab, row);
     }
 
     private static void FocusCard(UiState uiState, AppState appState, DocumentTab tab, CodeReference.Entity type)
     {
         if (!Tabs.IsOpen(appState.Tabs, tab))
+        {
             return;
+        }
+
         DocumentPanels.FocusCard(uiState.Documents, tab, type);
     }
 
@@ -137,7 +160,9 @@ internal static partial class AppFrames
     {
         var commands = uiState.AppCommands;
         while (commands.TryDequeue(out var command))
+        {
             command(appState);
+        }
     }
 
     /// <summary>Opens an empty tab shown in <paramref name="panel"/>, unless the panel was closed meanwhile,
@@ -145,19 +170,27 @@ internal static partial class AppFrames
     internal static void OpenTabIn(UiState uiState, AppState appState, string panel, bool focus)
     {
         if (!uiState.Layout.Contains(panel))
+        {
             return;
+        }
+
         var tab = OpenEmptyTab(appState);
         DocumentPanels.AddView(uiState.Documents, tab, panel);
         var becomesActive = focus || uiState.Layout.Focused == panel;
         if (becomesActive)
+        {
             FocusTab(appState, tab);
+        }
     }
 
     internal static void CloseTabAndFocusNext(UiState uiState, AppState appState, DocumentTab tab)
     {
         var wasActive = CloseTab(appState, tab);
         if (!wasActive)
+        {
             return;
+        }
+
         FocusNextTab(uiState);
     }
 }

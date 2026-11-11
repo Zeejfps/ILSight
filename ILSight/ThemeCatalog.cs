@@ -54,11 +54,19 @@ public static class ThemeCatalogs
         catalog.Revision++;
         ClearCatalog(catalog);
         foreach (var file in catalog.BuiltIns)
+        {
             AddThemeFile(catalog, file);
+        }
+
         foreach (var file in userThemes)
+        {
             AddUserThemeFile(catalog, file);
+        }
+
         foreach (var id in catalog.Ids)
+        {
             ResolveTheme(catalog, id);
+        }
     }
 
     private static void ClearCatalog<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog)
@@ -95,7 +103,9 @@ public static class ThemeCatalogs
         catalog.Files[file.Id] = file;
         catalog.Ids.Add(file.Id);
         foreach (var error in file.Errors)
+        {
             AddCatalogError(catalog, error);
+        }
     }
 
     /// <summary>The theme <paramref name="id"/>, which must be one of <see cref="ThemeCatalog{TFile, TContents, TTheme}.Ids"/>, resolved the
@@ -106,14 +116,22 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         if (catalog.Themes.TryGetValue(id, out var resolved))
+        {
             return resolved;
+        }
+
         catalog.Resolving.Add(id);
         var file = catalog.Files[id];
         var theme = BuildChain(catalog, file);
         if (theme != null)
+        {
             catalog.ShownIds[id] = id;
+        }
         else
+        {
             theme = FallBackFrom(catalog, file);
+        }
+
         catalog.Resolving.Remove(id);
         catalog.Themes[id] = theme;
         return theme;
@@ -126,7 +144,10 @@ public static class ThemeCatalogs
     {
         var chain = ListThemeChain(catalog, file);
         if (chain == null)
+        {
             return null;
+        }
+
         return catalog.Build(catalog, file, chain);
     }
 
@@ -139,13 +160,19 @@ public static class ThemeCatalogs
     {
         var files = ListThemeChainFiles(catalog, file);
         if (files == null)
+        {
             return null;
+        }
+
         var chain = new List<(TFile, TContents)>(files.Count);
         foreach (var link in files)
         {
             var contents = link.Contents;
             if (contents == null)
+            {
                 return null;
+            }
+
             chain.Add((link, contents));
         }
         return chain;
@@ -165,7 +192,10 @@ public static class ThemeCatalogs
         {
             var parent = FindParent(catalog, current, extends, chain);
             if (parent == null)
+            {
                 return null;
+            }
+
             chain.Insert(0, parent);
             current = parent;
             extends = parent.Extends;
@@ -227,10 +257,16 @@ public static class ThemeCatalogs
     {
         var extends = file.Extends;
         if (extends != null && CanFallBackTo(catalog, extends.Id))
+        {
             return extends.Id;
+        }
+
         var builtIn = catalog.FindFallbackId(file);
         if (catalog.Resolving.Contains(builtIn))
+        {
             throw new InvalidOperationException($"The built-in theme '{builtIn}' cannot be resolved.");
+        }
+
         return builtIn;
     }
 
@@ -240,7 +276,10 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         if (!catalog.Files.ContainsKey(parent))
+        {
             return false;
+        }
+
         return !catalog.Resolving.Contains(parent);
     }
 
@@ -253,7 +292,10 @@ public static class ThemeCatalogs
     {
         var contents = catalog.Files[id].Contents;
         if (contents == null)
+        {
             throw new InvalidOperationException($"The built-in theme '{id}' cannot be read.");
+        }
+
         return contents;
     }
 
@@ -263,7 +305,9 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         foreach (var error in errors)
+        {
             AddCatalogError(catalog, error);
+        }
     }
 
     public static void AddCatalogError<TFile, TContents, TTheme>(ThemeCatalog<TFile, TContents, TTheme> catalog, ThemeError error)
@@ -272,7 +316,10 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         if (catalog.Errors.Contains(error))
+        {
             return;
+        }
+
         catalog.Errors.Add(error);
     }
 
@@ -284,7 +331,10 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         if (catalog.Themes.TryGetValue(id, out var theme))
+        {
             return theme;
+        }
+
         return catalog.Themes[catalog.DefaultId];
     }
 
@@ -296,7 +346,10 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         if (catalog.ShownIds.TryGetValue(id, out var shown))
+        {
             return shown;
+        }
+
         return catalog.ShownIds[catalog.DefaultId];
     }
 
@@ -318,7 +371,9 @@ public static class ThemeCatalogs
         for (var i = 0; i < catalog.Ids.Count; i++)
         {
             if (catalog.Ids[i].Equals(id))
+            {
                 return i;
+            }
         }
         return -1;
     }
@@ -331,7 +386,10 @@ public static class ThemeCatalogs
         where TTheme : class
     {
         if (culture.Equals(catalog.NamesCulture))
+        {
             return catalog.Names;
+        }
+
         catalog.Names = catalog.Ids
             .Select(id => ThemeNames.GetName(catalog.Files[id].Name, culture))
             .ToArray();

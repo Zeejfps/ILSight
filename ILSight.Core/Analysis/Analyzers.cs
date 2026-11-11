@@ -63,15 +63,24 @@ public sealed class AnalysisSymbol
         get
         {
             if (Symbol is not IEntity entity || entity.MetadataToken.IsNil)
+            {
                 return null;
+            }
+
             var file = entity.ParentModule?.MetadataFile;
             if (file == null)
+            {
                 return null;
+            }
+
             return new CodeAnchor(CodeAnchorKind.Definition, AssemblyPath.Of(file.FileName), MetadataTokens.GetToken(entity.MetadataToken));
         }
     }
 
-    public override string ToString() => Label;
+    public override string ToString()
+    {
+        return Label;
+    }
 }
 
 /// <summary>
@@ -157,7 +166,11 @@ public static class Analyzers
         try
         {
             var assembly = AssemblyListing.TryLoadAssembly(list, definition.FilePath);
-            if (assembly == null) return null;
+            if (assembly == null)
+            {
+                return null;
+            }
+
             var entity = LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
             return entity != null ? Describe(entity) : null;
         }
@@ -168,33 +181,45 @@ public static class Analyzers
     }
 
     /// <summary>The analyses that apply to <paramref name="symbol"/>, in ILSpy's order.</summary>
-    public static IReadOnlyList<AnalysisKind> KindsFor(AnalysisSymbol symbol) =>
-        Kinds.Where(k => k.Prepare(symbol.Symbol) != null).OrderBy(static k => k.Order).ToArray();
+    public static IReadOnlyList<AnalysisKind> KindsFor(AnalysisSymbol symbol)
+    {
+        return Kinds.Where(k => k.Prepare(symbol.Symbol) != null).OrderBy(static k => k.Order).ToArray();
+    }
 
     /// <summary>The accessors of a property or event, which ILSpy analyzes on their own.</summary>
-    public static IReadOnlyList<AnalysisSymbol> AccessorsOf(AnalysisSymbol symbol) =>
-        symbol.Symbol is IEntity entity ? Members.Accessors(entity).Select(static m => DescribeEntity(m)).ToArray() : [];
+    public static IReadOnlyList<AnalysisSymbol> AccessorsOf(AnalysisSymbol symbol)
+    {
+        return symbol.Symbol is IEntity entity ? Members.Accessors(entity).Select(static m => DescribeEntity(m)).ToArray() : [];
+    }
 
     /// <summary>Runs <paramref name="kind"/> on <paramref name="symbol"/> over the open assemblies on
     /// the thread pool, yielding results in batches as they are found. Results come sorted when the
     /// analysis asks for it, after all are found.</summary>
     public static IAsyncEnumerable<IReadOnlyList<AnalysisSymbol>> RunAsync(AssemblyList list, AnalysisSymbol symbol, AnalysisKind kind,
-        CancellationToken cancellationToken = default) =>
-        Batches.Stream<AnalysisSymbol>((emit, token) =>
+        CancellationToken cancellationToken = default)
+    {
+        return Batches.Stream<AnalysisSymbol>((emit, token) =>
         {
             var run = kind.Prepare(symbol.Symbol);
             if (run == null)
+            {
                 throw new ArgumentException($"The analysis {kind.Name} does not apply to {symbol.Label}.", nameof(kind));
+            }
+
             var found = run(new AnalyzerContext { AssemblyList = list, CancellationToken = token })
-                .Select(Describe).OfType<AnalysisSymbol>();
+                            .Select(Describe).OfType<AnalysisSymbol>();
             if (kind.SortsResults)
+            {
                 found = found.OrderBy(static s => s.Label, StringComparer.OrdinalIgnoreCase);
+            }
+
             foreach (var result in found)
             {
                 token.ThrowIfCancellationRequested();
                 emit(result);
             }
         }, cancellationToken);
+    }
 
     private static AnalysisSymbol? Describe(ISymbol symbol)
     {
@@ -220,7 +245,10 @@ public static class Analyzers
         var container = outer != null ? EntityText.FullName(outer) : entity is ITypeDefinition type ? type.Namespace : "";
         var assembly = entity.ParentModule?.AssemblyName;
         if (assembly == null)
+        {
             return container;
+        }
+
         return container.Length == 0 ? assembly : $"{container} ({assembly})";
     }
 }

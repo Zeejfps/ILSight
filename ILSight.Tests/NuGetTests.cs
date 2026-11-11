@@ -618,11 +618,14 @@ public sealed class NuGetConfigTests
         Assert.Equal(temp.PathOf("restored"), config.GlobalPackagesFolder);
     }
 
-    private static string WriteConfigNamingRestored(TempDir temp) => temp.Write("NuGet.Config", """
+    private static string WriteConfigNamingRestored(TempDir temp)
+    {
+        return temp.Write("NuGet.Config", """
         <configuration>
           <config>
             <add key="globalPackagesFolder" value="restored" />
           </config>
         </configuration>
         """);
+    }
 }

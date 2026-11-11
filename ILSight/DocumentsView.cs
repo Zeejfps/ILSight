@@ -59,9 +59,14 @@ internal static class DocumentsView
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters);
         if (picked.Target != null && tab.Node != null)
+        {
             Commands.Later(ui.State, (node: tab.Node, target: picked.Target.Value, picked.InNewTab), static (a, s) => ShowMetadataLink(a, s.node, s.target, s.InNewTab));
+        }
+
         if (picked.Definition != null)
+        {
             Commands.Later(ui.State, (definition: picked.Definition, picked.InNewTab), static (a, s) => Navigate(a, s.definition, s.InNewTab));
+        }
     }
 
     /// <summary>The tab's document in the code view, with its bookmarks, or the note saying why it has none.</summary>
@@ -72,7 +77,10 @@ internal static class DocumentsView
         var document = FindDocumentToShow(ui.State, view, tab);
         var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display);
         if (result.Intent != null)
+        {
             Act(ui, tab, result.Intent);
+        }
+
         Zoom(ui.State, result.Zoom);
     }
 
@@ -128,15 +136,23 @@ internal static class DocumentsView
     {
         var content = tab.Content;
         if (content is TabContent.Report report)
+        {
             return ShownReports.GetDocument(view.Report, report.Export, screen.Strings);
+        }
+
         if (!IsNote(content))
+        {
             return tab.Document;
+        }
+
         return TabPlaceholders.GetDocument(view.Placeholder, content, screen.Strings);
     }
 
     /// <summary>Whether <paramref name="content"/> is shown as a note saying why there is no code.</summary>
-    private static bool IsNote(TabContent content) =>
-        content is TabContent.Loading or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone;
+    private static bool IsNote(TabContent content)
+    {
+        return content is TabContent.Loading or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone;
+    }
 
     /// <summary>Toggles the bookmark on <paramref name="line"/>, selecting the one made, or passing the
     /// selection of the one removed on.</summary>
@@ -159,7 +175,10 @@ internal static class DocumentsView
     private static string? TitleFontOf(DocumentTabs tabs, DocumentTab tab)
     {
         if (tab != tabs.Preview)
+        {
             return null;
+        }
+
         return TextFonts.Italic;
     }
 
@@ -167,10 +186,16 @@ internal static class DocumentsView
     private static UiIcon IconOf(UiState screen, DocumentTab tab)
     {
         if (tab.Diagram != null)
+        {
             return new UiIcon(screen.Icons.TabDiagram);
+        }
+
         var node = tab.Node;
         if (node == null)
+        {
             return new UiIcon(screen.Icons.TabPage);
+        }
+
         return NodeIcons.Icon(node, screen.NodeIconPalette, screen.Icons);
     }
 
@@ -178,10 +203,16 @@ internal static class DocumentsView
     private static string TitleOf(UiState screen, DocumentTab tab)
     {
         if (tab.Content is TabContent.Report)
+        {
             return screen.Strings.ExportReportTitle;
+        }
+
         var node = tab.Node;
         if (node == null)
+        {
             return tab.Title ?? screen.Strings.DocumentNewTab;
+        }
+
         return Trees.GetLabel(screen.Tree, node);
     }
 
@@ -190,6 +221,8 @@ internal static class DocumentsView
     {
         var theme = ui.Theme;
         using (ui.Column(new Box { Height = Sizing.Grow(), Padding = theme.ShellPaddingX, AlignX = Align.Center, AlignY = Align.Center, Background = theme.PaneBackground }))
+        {
             ui.Text(text, color: theme.TextMuted, wrap: true, align: Align.Center);
+        }
     }
 }

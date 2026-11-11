@@ -12,9 +12,15 @@ public sealed class PathIdentityTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
-    private static BrowseNode Root(string path) => new AssemblyList().Open(path).Root;
+    private static BrowseNode Root(string path)
+    {
+        return new AssemblyList().Open(path).Root;
+    }
 
     [Fact]
     public void Overloads_told_apart_only_by_the_namespace_of_a_parameter_type_are_each_found_again()
@@ -172,7 +178,10 @@ public sealed class PathIdentityTests : IDisposable
         using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
         archive.CreateEntryFromFile(Trees.PathsBeforePath, "lib/net10.0/PathsSample.dll");
         if (!withNotes)
+        {
             return;
+        }
+
         using var notes = new StreamWriter(archive.CreateEntry("lib/notes.txt").Open());
         notes.Write("Notes");
     }

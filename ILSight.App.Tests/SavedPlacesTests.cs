@@ -12,7 +12,10 @@ public sealed class SavedPlacesTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private const string GreeterPath = $$"""
         { "Version": 1, "Steps": [
@@ -39,20 +42,26 @@ public sealed class SavedPlacesTests : IDisposable
     }
 
     /// <summary>Settings listing the fixtures, with one tab whose place the file holds as <paramref name="place"/>.</summary>
-    private static string WithTab(string place) => $$"""
+    private static string WithTab(string place)
+    {
+        return $$"""
         { "ActiveAssemblyList": "Default",
           "AssemblyLists": [ { "Name": "Default", "Assemblies": [ "{{FixturePath}}" ],
             "Documents": { "Active": "document-1", "Tabs": [
               { "kind": "node", "Panel": "document-1", "Title": "Saved", "FilePath": "{{FixturePath}}", {{place}}, "Language": "CSharp" } ] } } ] }
         """;
+    }
 
     /// <summary>Settings listing the fixtures, with one bookmark whose place the file holds as <paramref name="place"/>.</summary>
-    private static string WithBookmark(string place) => $$"""
+    private static string WithBookmark(string place)
+    {
+        return $$"""
         { "ActiveAssemblyList": "Default",
           "AssemblyLists": [ { "Name": "Default", "Assemblies": [ "{{FixturePath}}" ] } ],
           "Bookmarks": [ { "Name": "Saved", "Enabled": true, "FileName": "{{FixturePath}}", "Kind": "Line", "LineNumber": 1,
             {{place}}, "Language": "CSharp" } ] }
         """;
+    }
 
     /// <summary>The settings file as <paramref name="d"/> saves it now.</summary>
     private JsonElement Saved(AppStateDriver d)
@@ -62,8 +71,10 @@ public sealed class SavedPlacesTests : IDisposable
         return json.RootElement.Clone();
     }
 
-    private static string[] StepsOf(JsonElement path) =>
-        path.GetProperty("Steps").EnumerateArray().Select(static s => s.GetProperty("Step").GetString()!).ToArray();
+    private static string[] StepsOf(JsonElement path)
+    {
+        return path.GetProperty("Steps").EnumerateArray().Select(static s => s.GetProperty("Step").GetString()!).ToArray();
+    }
 
     [Fact]
     public void A_tab_saved_with_a_versioned_path_shows_its_node_again()

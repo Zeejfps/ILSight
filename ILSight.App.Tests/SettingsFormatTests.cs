@@ -25,7 +25,10 @@ public sealed class SettingsFormatTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     [Fact]
     public void Settings_with_every_field_set_are_written_as_the_fixture()
@@ -105,9 +108,11 @@ public sealed class SettingsFormatTests : IDisposable
 
     /// <summary>The fixture file <paramref name="name"/>, its paths as this OS writes them: the files hold
     /// them as Windows does, and on any other OS those are no absolute paths.</summary>
-    private static string Fixture(string name) =>
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Settings", name))
+    private static string Fixture(string name)
+    {
+        return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Settings", name))
             .Replace(FixtureFolderInFile, JsonEncodedText.Encode(Rooted("Fixture/")).Value);
+    }
 
     private static void AssertSameJson(string expected, string actual)
     {

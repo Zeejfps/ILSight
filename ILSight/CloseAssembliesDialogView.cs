@@ -18,7 +18,9 @@ internal static class CloseAssembliesDialogView
         var closer = ui.State.Closer;
         var wasOpen = closer.IsOpen;
         if (wasOpen)
+        {
             Update(closer, assemblies);
+        }
 
         var t = ui.State.Strings;
         var close = false;
@@ -28,7 +30,9 @@ internal static class CloseAssembliesDialogView
             minWidth: AppLayout.CloseDialogMinWidth, minHeight: AppLayout.CloseDialogMinHeight))
         {
             if (dialog.IsOpen)
+            {
                 Content(ui, closer, ref close, ref cancel);
+            }
         }
 
         if (close && CountIncluded(closer) > 0)
@@ -39,7 +43,10 @@ internal static class CloseAssembliesDialogView
         // Escape or the close button only clear IsOpen.
         var dismissed = wasOpen && !closer.IsOpen;
         if (cancel || dismissed)
+        {
             CloseCloser(closer);
+        }
+
         DialogWindows.Settle(closer.Window, ui.Input.IsDown(PointerButton.Left));
     }
 
@@ -51,7 +58,10 @@ internal static class CloseAssembliesDialogView
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
             if (TakeFilterFocus(closer))
+            {
                 ui.Focus(ui.GetId(FilterId));
+            }
+
             close |= ui.TextField(FilterId, ref closer.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Icons.ExportFilter, clearable: true);
             ui.Checkbox(t.ExportSelectedOnly, ref closer.SelectedOnly, id: "close-selected-only");
         }
@@ -59,14 +69,20 @@ internal static class CloseAssembliesDialogView
         {
             var all = GetAllShownIncluded(shown);
             if (ui.Checkbox(t.ExportSelectShown, ref all, id: "close-all", compact: true))
+            {
                 IncludeShown(shown, all == true);
+            }
         }
         using (ui.Column(ListFrame(theme)))
         {
             if (shown.Count == 0)
+            {
                 NoMatch(ui, closer);
+            }
             else
+            {
                 Rows(ui, closer, shown);
+            }
         }
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -81,16 +97,19 @@ internal static class CloseAssembliesDialogView
     }
 
     /// <summary>A bordered list on the field color that fills the dialog, its rows clipped to its corners.</summary>
-    private static Box ListFrame(UiTheme theme) => new()
+    private static Box ListFrame(UiTheme theme)
     {
-        Height = Sizing.Grow(),
-        Gap = 0f,
-        Background = theme.Field,
-        BorderColor = theme.Border,
-        BorderWidth = theme.BorderWidth,
-        Radius = theme.RadiusSmall,
-        Clip = true,
-    };
+        return new()
+        {
+            Height = Sizing.Grow(),
+            Gap = 0f,
+            Background = theme.Field,
+            BorderColor = theme.Border,
+            BorderWidth = theme.BorderWidth,
+            Radius = theme.RadiusSmall,
+            Clip = true,
+        };
+    }
 
     /// <summary>Says that the filter hides every item, with a way to clear it.</summary>
     private static void NoMatch(Ui<UiState> ui, AssemblyCloser closer)
@@ -101,7 +120,9 @@ internal static class CloseAssembliesDialogView
         {
             ui.Text(t.ExportNoMatch, color: theme.TextMuted);
             if (ui.Button(t.ExportClearFilter, id: "close-clear-filter", variant: ButtonVariant.Ghost))
+            {
                 ClearFilter(closer);
+            }
         }
     }
 
@@ -111,7 +132,9 @@ internal static class CloseAssembliesDialogView
         using (ui.Scroll("close-choices", new Box { Height = Sizing.Grow(), Padding = new Spacing(0f, theme.GapTight) }))
         {
             foreach (var choice in shown)
+            {
                 Row(ui, closer, shown, choice);
+            }
         }
     }
 
@@ -125,10 +148,15 @@ internal static class CloseAssembliesDialogView
         using (ui.Row(new Box { Gap = theme.Gap, Padding = new Spacing(theme.Gap, 0f) }))
         {
             if (ui.Checkbox(assembly.Name, ref choice.Included, id: "include", width: Sizing.Grow(), compact: true))
+            {
                 TickClicked(closer, shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
+            }
+
             ui.Tooltip(ui.GetId("include"), assembly.FilePath.Text, TooltipAnchor.Pointer);
             if (assembly.Version != null)
+            {
                 ui.Text(assembly.Version.ToString(), color: theme.TextMuted, size: theme.FontSizeSmall);
+            }
         }
     }
 }

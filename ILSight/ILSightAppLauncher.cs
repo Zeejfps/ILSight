@@ -18,7 +18,9 @@ public static class ILSightAppLauncher
 
         using var receiver = RunArgumentsRouting.ForwardOrReceive(address, arguments, config.NewInstance);
         if (receiver == null)
+        {
             return;
+        }
 
         var loadResult = SettingsJson.LoadSettings(config.SettingsPath);
         var app = CreateApp(loadResult, arguments, receiver.Inbox);
@@ -67,7 +69,10 @@ public static class ILSightAppLauncher
             WindowTitle = "ILSight",
         };
         if (window == null)
+        {
             return config;
+        }
+
         return window.Value.ApplyTo(config);
     }
 }

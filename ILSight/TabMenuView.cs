@@ -15,10 +15,16 @@ internal static class TabMenuView
     public static void OpenOnRightClick(Ui<UiState> ui, DockTabMenu? request)
     {
         if (request == null)
+        {
             return;
+        }
+
         var tab = DocumentPanels.FindTab(ui.State.Documents, request.Value.Panel);
         if (tab == null)
+        {
             return;
+        }
+
         ui.State.TabMenuTarget = tab;
         ui.OpenContextMenu(MenuId, request.Value.At);
     }
@@ -27,10 +33,16 @@ internal static class TabMenuView
     public static void KeepOpenOnDoubleClick(Ui<UiState> ui, string? panel)
     {
         if (panel == null)
+        {
             return;
+        }
+
         var tab = DocumentPanels.FindTab(ui.State.Documents, panel);
         if (tab == null)
+        {
             return;
+        }
+
         Commands.Later(ui.State, tab, static (a, kept) => KeepTabOpen(a, kept));
     }
 
@@ -38,12 +50,21 @@ internal static class TabMenuView
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         var tab = ui.State.TabMenuTarget;
         if (tab == null)
+        {
             return;
+        }
+
         if (!DocumentPanels.HasView(ui.State.Documents, tab))
+        {
             return;
+        }
+
         TabMenu(ui, tabs, tab);
     }
 
@@ -55,25 +76,45 @@ internal static class TabMenuView
         var index = group.IndexOf(tab);
         KeepOpenItem(ui, tabs, tab);
         if (ui.MenuItem(t.TabClose, Shortcuts.CloseTab, id: "close"))
+        {
             CloseTab(screen, tab);
+        }
+
         if (ui.MenuItem(t.TabCloseOthers, enabled: group.Count > 1, id: "close-others"))
+        {
             CloseOtherTabs(screen, tab);
+        }
+
         if (ui.MenuItem(t.TabCloseAll, id: "close-all"))
+        {
             CloseTabsInGroup(screen, tab);
+        }
+
         ui.MenuSeparator();
         if (ui.MenuItem(t.TabCloseLeft, enabled: index > 0, id: "close-left"))
+        {
             CloseTabsLeftOf(screen, tab);
+        }
+
         if (ui.MenuItem(t.TabCloseRight, enabled: index < group.Count - 1, id: "close-right"))
+        {
             CloseTabsRightOf(screen, tab);
+        }
     }
 
     /// <summary>The item keeping the tab open, with a separator after it, while it is the preview tab.</summary>
     private static void KeepOpenItem(Ui<UiState> ui, DocumentTabs tabs, DocumentTab tab)
     {
         if (tab != tabs.Preview)
+        {
             return;
+        }
+
         if (ui.MenuItem(ui.State.Strings.TabKeepOpen, id: "keep-open"))
+        {
             Commands.Later(ui.State, tab, static (a, kept) => KeepTabOpen(a, kept));
+        }
+
         ui.MenuSeparator();
     }
 }

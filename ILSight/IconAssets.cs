@@ -51,23 +51,34 @@ public static class IconAssetFolders
     {
         var full = Resolve(root, path);
         if (full == null)
+        {
             return IconTheming.CreateFailedAsset(ThemeProblem.AssetOutsideFolder, path);
+        }
+
         return new IconAsset(File.ReadAllBytes(full));
     }
 
     /// <summary>True for what reading a file can throw, a path with characters no path may hold included.</summary>
-    private static bool IsReadFailure(Exception e) =>
-        e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException;
+    private static bool IsReadFailure(Exception e)
+    {
+        return e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException;
+    }
 
     /// <summary>The full path of <paramref name="path"/> inside the folder; null when it is absolute or
     /// leaves the folder.</summary>
     private static string? Resolve(string root, string path)
     {
         if (Path.IsPathRooted(path))
+        {
             return null;
+        }
+
         var full = Path.GetFullPath(Path.Combine(root, path));
         if (!IsInside(root, full))
+        {
             return null;
+        }
+
         return full;
     }
 
@@ -75,9 +86,15 @@ public static class IconAssetFolders
     {
         var relative = Path.GetRelativePath(root, full);
         if (Path.IsPathRooted(relative))
+        {
             return false;
+        }
+
         if (relative == ParentFolder)
+        {
             return false;
+        }
+
         return !relative.StartsWith(ParentFolder + Path.DirectorySeparatorChar, StringComparison.Ordinal);
     }
 }

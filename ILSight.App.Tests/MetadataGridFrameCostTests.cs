@@ -27,7 +27,10 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
 
         frames.Canvas.Recording = false;
         for (var i = 0; i < WarmUpFrames; i++)
+        {
             Frame(frames, scrolling, i);
+        }
+
         var allocated = SteadyAllocations.PerFrame(MeasuredFrames, i => Frame(frames, scrolling, i));
 
         output.WriteLine($"{(scrolling ? "scrolling" : "static")}: {allocated:N0} B/frame allocated");
@@ -47,7 +50,10 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
         state.Open[(1, 2)] = 4;
 
         for (var i = 0; i < WarmUpFrames; i++)
+        {
             MetadataGridWidget.MeasureTallRows(state, 20f, 0f);
+        }
+
         var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => MetadataGridWidget.MeasureTallRows(state, 20f, 0f));
 
         output.WriteLine($"{allocated:N0} B/frame allocated");
@@ -73,7 +79,10 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     private static void Frame(UiFrames frames, bool scrolling, int frame)
     {
         if (scrolling)
+        {
             frames.Wheel(SweepDirection(frame));
+        }
+
         frames.Frame();
     }
 

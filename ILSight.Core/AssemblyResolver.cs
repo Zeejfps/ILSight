@@ -23,7 +23,10 @@ public sealed class AssemblyResolver : IAssemblyResolver
         return AssemblyResolving.Resolve(this, reference);
     }
 
-    public IDisposable? BeginSnapshot() => null;
+    public IDisposable? BeginSnapshot()
+    {
+        return null;
+    }
 
     public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
     {
@@ -70,7 +73,10 @@ internal static class AssemblyResolving
     public static LoadedModule? ResolveAssembly(AssemblyResolver resolver, IAssemblyReference reference)
     {
         if (!resolver.List.LoadsReferences)
+        {
             return FindListed(resolver, reference);
+        }
+
         return LoadAssembly(resolver, reference);
     }
 
@@ -79,7 +85,10 @@ internal static class AssemblyResolving
     {
         var exact = AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: true, listedOnly: true);
         if (exact != null)
+        {
             return exact;
+        }
+
         return AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: false, listedOnly: true);
     }
 
@@ -88,10 +97,18 @@ internal static class AssemblyResolving
     public static LoadedModule? LoadAssembly(AssemblyResolver resolver, IAssemblyReference reference)
     {
         var known = AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: true);
-        if (known != null) return known;
+        if (known != null)
+        {
+            return known;
+        }
+
         var path = FindAssemblyFile(resolver, reference);
         var loaded = path != null ? AssemblyListing.TryLoadAssembly(resolver.List, path) : null;
-        if (loaded != null) return loaded;
+        if (loaded != null)
+        {
+            return loaded;
+        }
+
         return AssemblyListing.FindKnown(resolver.List, reference, exactOrNewer: false);
     }
 
@@ -101,20 +118,26 @@ internal static class AssemblyResolving
         {
             var found = FindIn(resolver, directory, reference.Name);
             if (found != null)
+            {
                 return found;
+            }
         }
         if (FrameworkIds.RunsOnCore(resolver.TargetFramework))
         {
             var runtime = FindInRuntime(resolver, reference.Name);
             if (runtime != null)
+            {
                 return runtime;
+            }
         }
         try
         {
             var fallback = resolver.Fallback.Value.FindAssemblyFile(reference);
             var found = fallback == null ? null : AssemblyPath.Parse(fallback);
             if (found != null)
+            {
                 return found;
+            }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or BadImageFormatException or InvalidOperationException)
         {
@@ -133,7 +156,10 @@ internal static class AssemblyResolving
         {
             var found = RuntimeAssemblies.Find(resolver.List.Runtime, name);
             if (found == null)
+            {
                 return null;
+            }
+
             return AssemblyPath.Parse(found);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -148,15 +174,24 @@ internal static class AssemblyResolving
     {
         var directory = Path.GetDirectoryName(resolver.MainPath);
         if (directory == null)
+        {
             yield break;
+        }
+
         yield return directory;
         if (resolver.Package == null)
+        {
             yield break;
+        }
+
         while (directory.Length > resolver.Package.FilePath.Text.Length)
         {
             directory = Path.GetDirectoryName(directory);
             if (directory == null)
+            {
                 yield break;
+            }
+
             yield return directory;
         }
     }
@@ -167,7 +202,9 @@ internal static class AssemblyResolving
         {
             var candidate = AssemblyPath.Parse(Path.Combine(directory, name + extension));
             if (candidate != null && FileExists(resolver, candidate))
+            {
                 return candidate;
+            }
         }
         return null;
     }
@@ -176,18 +213,32 @@ internal static class AssemblyResolving
     private static bool FileExists(AssemblyResolver resolver, AssemblyPath path)
     {
         if (File.Exists(path.Text))
+        {
             return true;
+        }
+
         if (resolver.Package == null)
+        {
             return false;
+        }
+
         return AssemblyPackages.FindFileAt(resolver.Package, path) != null;
     }
 
     public static MetadataFile? ResolveModule(AssemblyResolver resolver, MetadataFile mainModule, string moduleName)
     {
         var directory = Path.GetDirectoryName(mainModule.FileName);
-        if (directory is null) return null;
+        if (directory is null)
+        {
+            return null;
+        }
+
         var path = AssemblyPath.Parse(Path.Combine(directory, moduleName));
-        if (path == null) return null;
+        if (path == null)
+        {
+            return null;
+        }
+
         return FileExists(resolver, path) ? AssemblyListing.TryLoadAssembly(resolver.List, path)?.File : null;
     }
 

@@ -23,9 +23,15 @@ public static class Exports
     public static bool CanSaveCode([NotNullWhen(true)] BrowseNode? node)
     {
         if (node == null)
+        {
             return false;
+        }
+
         if (node.HasResource)
+        {
             return true;
+        }
+
         return NodeContentLoader.DependsOnLanguage(node);
     }
 
@@ -60,9 +66,15 @@ public static class Exports
     private static bool IsFileError(Exception e)
     {
         if (e is IOException)
+        {
             return true;
+        }
+
         if (e is UnauthorizedAccessException)
+        {
             return true;
+        }
+
         return e is InvalidDataException;
     }
 
@@ -93,7 +105,10 @@ public static class Exports
     private static ExportKind CodeKindOf(DecompilationLanguage language)
     {
         if (language == DecompilationLanguage.CSharp)
+        {
             return ExportKind.CSharpFile;
+        }
+
         return ExportKind.ILFile;
     }
 
@@ -109,7 +124,10 @@ public static class Exports
     {
         var folder = Path.GetDirectoryName(path);
         if (folder == null)
+        {
             throw new UnreachableException($"'{path}', which a save dialog gave, names no file in a folder.");
+        }
+
         return folder;
     }
 
@@ -118,8 +136,10 @@ public static class Exports
     /// ended, exporting <paramref name="subject"/> as a failure tells, and lets <paramref name="complete"/>
     /// add what a finished one wrote. One taken out of the queue leaves nothing behind.</summary>
     private static void RunExport<T>(AppState appState, ExportJob job, string subject, Func<ExportStart, T> work,
-        Func<ExportReport, T, ExportReport> complete) =>
+        Func<ExportReport, T, ExportReport> complete)
+    {
         Background.Start(appState.Work, nameof(RunExportAsync), RunExportAsync(appState, job, subject, work, complete), problem => Errors.Report(appState, problem));
+    }
 
     private static async Task RunExportAsync<T>(AppState appState, ExportJob job, string subject, Func<ExportStart, T> work,
         Func<ExportReport, T, ExportReport> complete)
@@ -127,7 +147,10 @@ public static class Exports
         appState.ViewCommands.Enqueue(new ViewCommand.OpenPanel(DockView.Exports));
         var turn = await Exports.EnterQueue(appState.Export, job);
         if (turn is not ExportStart start)
+        {
             return;
+        }
+
         var clock = Stopwatch.StartNew();
         var outcome = await Background.Run(() => work(start));
         Exports.LeaveQueue(appState.Export, start);
@@ -154,7 +177,10 @@ public static class Exports
     {
         var folderExists = Directory.Exists(job.Folder);
         if (error is OperationCanceledException)
+        {
             return new ExportReport(run, job, ExportOutcome.Cancelled, [], [], elapsed, folderExists);
+        }
+
         var problem = new ExportProblem.Failed(subject, error);
         return new ExportReport(run, job, ExportOutcome.Failed, [], [problem], elapsed, folderExists);
     }
@@ -218,7 +244,10 @@ public static class Exports
     public static LoadedModule? FindActiveAssembly(DocumentTabs tabs)
     {
         if (tabs.Active?.Node?.Assembly is not LoadedModule assembly)
+        {
             return null;
+        }
+
         return assembly;
     }
 
@@ -299,13 +328,15 @@ public static class Exports
         return report with { Written = written, Problems = problems };
     }
 
-    private static ExportProblem ProblemOf(PdbFailure failure) =>
-        failure switch
+    private static ExportProblem ProblemOf(PdbFailure failure)
+    {
+        return failure switch
         {
             PdbFailure.NoDebugEntry f => new ExportProblem.NoPdbEntry(f.Assembly.Name),
             PdbFailure.NotWritten f => new ExportProblem.PdbNotWritten(f.Assembly.Name, f.Error),
             _ => throw new UnreachableException(),
         };
+    }
 
     /// <summary>Writes every file in the folder of a package <paramref name="place"/> stands for, shown as
     /// <paramref name="name"/>, into <paramref name="folder"/>, at its path from that folder. Files that
@@ -327,13 +358,15 @@ public static class Exports
         return report with { Written = extracted.Written, Problems = problems };
     }
 
-    private static ExportProblem ProblemOf(ExtractFailure failure) =>
-        failure switch
+    private static ExportProblem ProblemOf(ExtractFailure failure)
+    {
+        return failure switch
         {
             ExtractFailure.OutsideFolder f => new ExportProblem.OutsideFolder(f.File.FullName),
             ExtractFailure.NotWritten f => new ExportProblem.FileNotWritten(f.File.FullName, f.Error),
             _ => throw new UnreachableException(),
         };
+    }
 
     /// <summary>Shows the report of <paramref name="report"/> in a new tab.</summary>
     public static void ShowExportReport(AppState appState, ExportReport report)
@@ -350,16 +383,28 @@ public static class Exports
         var runs = new List<ExportRun>();
         var running = queue.Running;
         if (running != null)
+        {
             runs.Add(running.Export.Run);
+        }
+
         foreach (var waiting in queue.Waiting)
+        {
             runs.Add(waiting.Run);
+        }
+
         for (var i = finished.Count - 1; i >= 0; i--)
+        {
             runs.Add(finished[i].Run);
+        }
+
         return runs;
     }
 
     /// <summary>The finished export <paramref name="run"/>, or null when it has not finished or is gone.</summary>
-    public static ExportReport? FindFinishedExport(List<ExportReport> finished, ExportRun run) => finished.Find(r => r.Run == run);
+    public static ExportReport? FindFinishedExport(List<ExportReport> finished, ExportRun run)
+    {
+        return finished.Find(r => r.Run == run);
+    }
 
     /// <summary>The folder the export <paramref name="run"/> writes into, wherever it is in the
     /// queue, or null when it is gone.</summary>
@@ -367,10 +412,16 @@ public static class Exports
     {
         var report = FindFinishedExport(finished, run);
         if (report != null)
+        {
             return report.Folder;
+        }
+
         var queued = FindQueuedExport(queue, run);
         if (queued == null)
+        {
             return null;
+        }
+
         return queued.Job.Folder;
     }
 
@@ -378,7 +429,10 @@ public static class Exports
     {
         var running = queue.Running;
         if (running != null && running.Export.Run == run)
+        {
             return running.Export;
+        }
+
         return queue.Waiting.FirstOrDefault(q => q.Run == run);
     }
 
@@ -388,7 +442,10 @@ public static class Exports
     {
         var finished = FindFinishedExport(appState.FinishedExports, run);
         if (finished == null)
+        {
             return;
+        }
+
         ShowExportReport(appState, finished);
     }
 
@@ -406,9 +463,15 @@ public static class Exports
     }
 
     /// <summary>Takes <paramref name="report"/> off the list of finished exports.</summary>
-    public static void RemoveFinishedExport(AppState appState, ExportReport report) => appState.FinishedExports.Remove(report);
+    public static void RemoveFinishedExport(AppState appState, ExportReport report)
+    {
+        appState.FinishedExports.Remove(report);
+    }
 
-    public static void ClearFinishedExports(AppState appState) => appState.FinishedExports.Clear();
+    public static void ClearFinishedExports(AppState appState)
+    {
+        appState.FinishedExports.Clear();
+    }
 
     /// <summary>Queues <paramref name="job"/>, which has one part until it reports otherwise. The task
     /// completes when its turn comes: at once when nothing runs.</summary>
@@ -418,7 +481,10 @@ public static class Exports
         var started = new TaskCompletionSource<ExportTurn>(TaskCreationOptions.RunContinuationsAsynchronously);
         queue.Turns.Add(new ExportQueue.Turn(new QueuedExport(new ExportRun(queue.LastRun), job), started));
         if (!queue.IsRunning)
+        {
             StartNextExport(queue);
+        }
+
         return started.Task;
     }
 
@@ -441,7 +507,10 @@ public static class Exports
     {
         var active = FindActiveExport(queue, run);
         if (active == null)
+        {
             return;
+        }
+
         var shown = active.Shown;
         var furthest = GetFurthest(shown.Progress.Fraction, progress.Fraction);
         active.Shown = shown with { Progress = progress with { Fraction = furthest } };
@@ -452,9 +521,15 @@ public static class Exports
     private static float? GetFurthest(float? shown, float? reported)
     {
         if (shown == null)
+        {
             return reported;
+        }
+
         if (reported == null)
+        {
             return shown;
+        }
+
         return Math.Max(shown.Value, reported.Value);
     }
 
@@ -462,7 +537,10 @@ public static class Exports
     public static void CancelRunning(ExportQueue queue)
     {
         if (queue.ActiveExport == null)
+        {
             return;
+        }
+
         queue.ActiveExport.Shown = queue.ActiveExport.Shown with { IsCancelling = true };
         queue.ActiveExport.Cancel.Cancel();
     }
@@ -472,7 +550,10 @@ public static class Exports
     {
         var index = queue.Turns.FindIndex(t => t.Export.Run == run);
         if (index < 0)
+        {
             return;
+        }
+
         var turn = queue.Turns[index];
         queue.Turns.RemoveAt(index);
         turn.Started.SetResult(new ExportWithdrawn());
@@ -484,11 +565,17 @@ public static class Exports
     {
         var active = FindActiveExport(queue, start.Run);
         if (active == null)
+        {
             return;
+        }
+
         active.Cancel.Dispose();
         queue.ActiveExport = null;
         if (queue.Turns.Count == 0)
+        {
             return;
+        }
+
         StartNextExport(queue);
     }
 
@@ -496,9 +583,15 @@ public static class Exports
     private static ExportQueue.Active? FindActiveExport(ExportQueue queue, ExportRun run)
     {
         if (queue.ActiveExport == null)
+        {
             return null;
+        }
+
         if (queue.ActiveExport.Shown.Export.Run != run)
+        {
             return null;
+        }
+
         return queue.ActiveExport;
     }
 
@@ -510,25 +603,38 @@ public static class Exports
     public static void OpenExportSetup(ExportSetup setup, IReadOnlyList<LoadedModule> assemblies, LoadedModule? picked)
     {
         if (assemblies.Count == 0)
+        {
             return;
+        }
+
         setup.Choices.Clear();
         foreach (var project in AssemblyExport.NameProjects(assemblies))
+        {
             setup.Choices.Add(new ExportChoice { Assembly = project.Assembly, Name = project.Name });
+        }
+
         TickFirstChoice(setup, picked);
         setup.RowSelection.Clear();
         setup.SolutionName = "";
         setup.IsOpen = true;
         setup.Page = ExportPage.Main;
         if (setup.IncludedCount == 0)
+        {
             ChooseAssemblies(setup);
+        }
     }
 
     private static void TickFirstChoice(ExportSetup setup, LoadedModule? picked)
     {
         foreach (var choice in setup.Choices)
+        {
             choice.Included = choice.Assembly == picked;
+        }
+
         if (setup.Choices.Count == 1)
+        {
             setup.Choices[0].Included = true;
+        }
     }
 
     public static void CloseExportSetup(ExportSetup setup)
@@ -556,10 +662,16 @@ public static class Exports
         var order = ListIncludedChoices(setup);
         var removed = setup.RowSelection.InOrder(order);
         if (removed.Count == 0)
+        {
             return;
+        }
+
         var at = order.IndexOf(removed[0]);
         foreach (var choice in removed)
+        {
             choice.Included = false;
+        }
+
         setup.RowSelection.SelectAt(at, ListIncludedChoices(setup));
     }
 
@@ -575,14 +687,19 @@ public static class Exports
     public static void IncludeAll(ExportSetup setup, bool all)
     {
         foreach (var choice in setup.Choices)
+        {
             choice.Included = all;
+        }
     }
 
     public static string GetSolutionNameOrDefault(ExportSetup setup)
     {
         var typed = setup.SolutionName.Trim();
         if (typed.Length > 0)
+        {
             return typed;
+        }
+
         return GetDefaultSolutionName(setup.Folder);
     }
 
@@ -592,7 +709,10 @@ public static class Exports
         var trimmed = folder.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var name = Path.GetFileName(trimmed);
         if (string.IsNullOrEmpty(name))
+        {
             return DefaultSolutionName;
+        }
+
         return name;
     }
 
@@ -601,7 +721,10 @@ public static class Exports
     public static bool CheckFolderHoldsFiles(ExportSetup setup)
     {
         if (setup.FolderCheck.TryGet(setup.Folder, out var holdsFiles))
+        {
             return holdsFiles;
+        }
+
         holdsFiles = HoldsFiles(setup.Folder.Trim());
         setup.FolderCheck = new(setup.Folder, holdsFiles);
         return holdsFiles;
@@ -610,9 +733,15 @@ public static class Exports
     private static bool HoldsFiles(string folder)
     {
         if (!Path.IsPathFullyQualified(folder))
+        {
             return false;
+        }
+
         if (!Directory.Exists(folder))
+        {
             return false;
+        }
+
         return Directory.EnumerateFileSystemEntries(folder).Any();
     }
 
@@ -620,7 +749,10 @@ public static class Exports
     public static bool CheckKeyFileMissing(ExportSetup setup)
     {
         if (setup.KeyFileCheck.TryGet(setup.StrongNameKeyFile, out var isMissing))
+        {
             return isMissing;
+        }
+
         isMissing = IsFileMissing(setup.StrongNameKeyFile.Trim());
         setup.KeyFileCheck = new(setup.StrongNameKeyFile, isMissing);
         return isMissing;
@@ -629,7 +761,10 @@ public static class Exports
     private static bool IsFileMissing(string file)
     {
         if (file.Length == 0)
+        {
             return false;
+        }
+
         return !File.Exists(file);
     }
 
@@ -638,16 +773,31 @@ public static class Exports
     public static ExportBlocker? FindBlocker(ExportSetup setup)
     {
         if (setup.IncludedCount == 0)
+        {
             return new ExportBlocker.NoAssembly();
+        }
+
         if (!setup.HasFolder)
+        {
             return new ExportBlocker.NoFolder();
+        }
+
         if (setup.HasNamelessProject)
+        {
             return new ExportBlocker.NamelessProject();
+        }
+
         var clash = setup.Clash;
         if (clash != null)
+        {
             return new ExportBlocker.Clash(clash);
+        }
+
         if (CheckKeyFileMissing(setup))
+        {
             return new ExportBlocker.KeyFileMissing();
+        }
+
         return null;
     }
 

@@ -13,10 +13,16 @@ public static class MicrosoftDocs
     public static string? FindPage(BrowseNode node)
     {
         if (node.Subject is NodeSubject.Namespace ns)
+        {
             return FindNamespacePage(ns.Value);
+        }
+
         var entity = BrowseNodes.GetEntity(node);
         if (entity != null)
+        {
             return FindPage(entity);
+        }
+
         return null;
     }
 
@@ -25,30 +31,51 @@ public static class MicrosoftDocs
     internal static string? FindPage(IEntity entity)
     {
         if (!EntityText.IsPublicApi(entity))
+        {
             return null;
+        }
+
         var name = FindPageName(entity);
         if (name == null)
+        {
             return null;
+        }
+
         return PageAt(name);
     }
 
     private static string? FindNamespacePage(NamespaceInfo ns)
     {
         if (!ns.IsPublicApi)
+        {
             return null;
+        }
+
         if (ns.Name.Length == 0)
+        {
             return null;
+        }
+
         return PageAt(ns.Name);
     }
 
-    private static string PageAt(string name) => ApiReference + name.ToLowerInvariant();
+    private static string PageAt(string name)
+    {
+        return ApiReference + name.ToLowerInvariant();
+    }
 
     private static string? FindPageName(IEntity entity)
     {
         if (entity is ITypeDefinition type)
+        {
             return TypePageName(type);
+        }
+
         if (entity is IMember member)
+        {
             return MemberPageName(member);
+        }
+
         return null;
     }
 
@@ -66,7 +93,10 @@ public static class MicrosoftDocs
     {
         var declaring = member.DeclaringTypeDefinition;
         if (declaring == null)
+        {
             return null;
+        }
+
         var name = member.Name.Replace('.', '-');
         return TypePageName(declaring) + "." + name;
     }

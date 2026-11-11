@@ -104,7 +104,10 @@ public sealed class BundleTests
         Assert.IsType<FailedAssembly>(failed);
     }
 
-    private static PackageFolder FolderOf(BrowseNode node) => Assert.IsType<PackageFolderPlace>(node.FolderInPackage).Folder;
+    private static PackageFolder FolderOf(BrowseNode node)
+    {
+        return Assert.IsType<PackageFolderPlace>(node.FolderInPackage).Folder;
+    }
 
     internal static string WriteBundle(TempDir temp)
     {
@@ -127,7 +130,10 @@ public sealed class BundleTests
         writer.Write(Signature);
         var entries = new List<(long Offset, long Size, long CompressedSize, string Path)>();
         foreach (var file in files)
+        {
             entries.Add(WriteFile(writer, file));
+        }
+
         var manifestOffset = stream.Position;
         WriteManifest(writer, entries);
         stream.Position = offsetSlot;
@@ -150,7 +156,10 @@ public sealed class BundleTests
     {
         using var compressed = new MemoryStream();
         using (var deflate = new DeflateStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
+        {
             deflate.Write(data);
+        }
+
         return compressed.ToArray();
     }
 

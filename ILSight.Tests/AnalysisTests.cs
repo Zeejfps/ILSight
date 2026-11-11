@@ -11,9 +11,11 @@ public sealed class AnalysisTests
         return (list, assembly.Calculator().Child(label));
     }
 
-    private static List<AnalysisSymbol> Run(AssemblyList list, BrowseNode node, string header) =>
-        Analyzers.RunAsync(list, Analyzers.Of(node)!, Analyzers.KindsFor(Analyzers.Of(node)!).Single(k => Analyzers.GetHeader(k) == header))
+    private static List<AnalysisSymbol> Run(AssemblyList list, BrowseNode node, string header)
+    {
+        return Analyzers.RunAsync(list, Analyzers.Of(node)!, Analyzers.KindsFor(Analyzers.Of(node)!).Single(k => Analyzers.GetHeader(k) == header))
             .ToBlockingEnumerable().SelectMany(static b => b).ToList();
+    }
 
     [Fact]
     public void A_method_offers_ILSpys_analyses_in_its_order()

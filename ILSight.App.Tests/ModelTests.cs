@@ -143,9 +143,15 @@ public sealed class AppSettingsTests : IDisposable
 
     private string SettingsFile => _temp.PathOf("settings.json");
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
-    private string Written(string json) => _temp.Write("settings.json", json);
+    private string Written(string json)
+    {
+        return _temp.Write("settings.json", json);
+    }
 
     [Fact]
     public void Saved_settings_load_back_and_leave_no_temporary_file()
@@ -349,7 +355,9 @@ public sealed class AppSettingsTests : IDisposable
         var path = Written(held);
         SettingsLoadResult loadResult;
         using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
             loadResult = SettingsJson.LoadSettings(FullFilePath.Of(path));
+        }
 
         Assert.IsType<SettingsWriteResult.Written>(SettingsJson.SaveSettings(loadResult.Settings));
 

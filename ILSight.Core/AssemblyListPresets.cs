@@ -28,7 +28,10 @@ public static class AssemblyListPresets
         var presets = new List<AssemblyListPreset>();
         var root = FindDotNetRoot();
         if (root != null)
+        {
             presets.AddRange(FindRuntimePresets(root));
+        }
+
         presets.AddRange(FindGacPresets());
         return presets.ToImmutableArray();
     }
@@ -39,7 +42,10 @@ public static class AssemblyListPresets
             .FirstOrDefault(HasSharedFrameworks);
     }
 
-    private static bool HasSharedFrameworks(string root) => Directory.Exists(Path.Combine(root, SharedDirectoryName));
+    private static bool HasSharedFrameworks(string root)
+    {
+        return Directory.Exists(Path.Combine(root, SharedDirectoryName));
+    }
 
     /// <summary>A preset per shared framework under <paramref name="dotnetRoot"/> and feature version,
     /// of its newest patch, newest first. Versions holding no assemblies are left out.</summary>
@@ -47,12 +53,18 @@ public static class AssemblyListPresets
     {
         var presets = new List<AssemblyListPreset>();
         if (!HasSharedFrameworks(dotnetRoot))
+        {
             return presets;
+        }
+
         var frameworks = Directory.EnumerateDirectories(Path.Combine(dotnetRoot, SharedDirectoryName))
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToList();
         foreach (var framework in frameworks)
+        {
             presets.AddRange(FindFrameworkPresets(framework));
+        }
+
         return presets;
     }
 
@@ -61,12 +73,18 @@ public static class AssemblyListPresets
         var presets = new List<AssemblyListPreset>();
         var framework = Path.GetFileName(frameworkDirectory);
         if (framework.EndsWith(ReferencePackSuffix, StringComparison.OrdinalIgnoreCase))
+        {
             return presets;
+        }
+
         foreach (var version in ListNewestPatches(frameworkDirectory))
         {
             var paths = ListFrameworkAssemblies(version.Directory);
             if (paths.Count == 0)
+            {
                 continue;
+            }
+
             presets.Add(new AssemblyListPreset($"{framework} {version.Label}", PathsOf(paths)));
         }
         return presets;
@@ -80,11 +98,16 @@ public static class AssemblyListPresets
         {
             var version = ReadVersion(directory);
             if (version == null)
+            {
                 continue;
+            }
+
             var feature = (version.Number.Major, version.Number.Minor);
             var kept = newest.GetValueOrDefault(feature);
             if (kept == null || version.Number > kept.Number)
+            {
                 newest[feature] = version;
+            }
         }
         return newest.Values
             .OrderByDescending(v => v.Number)
@@ -97,7 +120,10 @@ public static class AssemblyListPresets
         var label = Path.GetFileName(directory);
         var release = label.Split('-')[0];
         if (!Version.TryParse(release, out var number))
+        {
             return null;
+        }
+
         return new InstalledVersion(directory, label, number);
     }
 
@@ -123,11 +149,20 @@ public static class AssemblyListPresets
     {
         var name = Path.GetFileName(path);
         if (name.EndsWith(NativeHelperSuffix, StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
+
         if (name.Contains(NativeLibraryInfix, StringComparison.Ordinal))
+        {
             return false;
+        }
+
         if (LowerCaseAssemblies.Contains(name))
+        {
             return true;
+        }
+
         return char.IsUpper(name[0]);
     }
 
@@ -135,12 +170,18 @@ public static class AssemblyListPresets
     {
         var presets = new List<AssemblyListPreset>();
         if (!OperatingSystem.IsWindows())
+        {
             return presets;
+        }
+
         foreach (var (name, fullNames) in GacLists)
         {
             var paths = ResolveInGac(fullNames);
             if (paths.Count == 0)
+            {
                 continue;
+            }
+
             presets.Add(new AssemblyListPreset(name, PathsOf(paths)));
         }
         return presets;
@@ -154,7 +195,9 @@ public static class AssemblyListPresets
             var reference = AssemblyNameReference.Parse(fullName);
             var path = UniversalAssemblyResolver.GetAssemblyInGac(reference);
             if (path != null)
+            {
                 paths.Add(path);
+            }
         }
         return paths;
     }

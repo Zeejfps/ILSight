@@ -35,14 +35,25 @@ public static class Decompilation
     private static void FinishLoading(AppState appState, DocumentTab tab, BrowseNode node, LoadTicket load, Task<NodeContent> loading)
     {
         if (!Tabs.FinishLoading(tab, load))
+        {
             return;
+        }
+
         if (loading.IsCanceled)
+        {
             return;
+        }
+
         var error = loading.Exception?.GetBaseException();
         if (error != null)
+        {
             Tabs.ShowFailed(tab, error.Message);
+        }
         else
+        {
             Tabs.ShowLoaded(tab, loading.Result);
+        }
+
         var arrival = Tabs.TakeArrival(tab);
         var failure = error ?? tab.Document.Error;
         if (failure != null)
@@ -59,7 +70,10 @@ public static class Decompilation
     private static void ReportFailure(AppState appState, BrowseNode node, Exception error)
     {
         if (node.Assembly is FailedAssembly)
+        {
             return;
+        }
+
         Errors.Report(appState, new AppProblem.DecompilationFailed(BrowseNodes.GetFullName(node), error));
     }
 
@@ -80,14 +94,20 @@ public static class Decompilation
         }
         var line = FindLineToReveal(tab, arrival.Target);
         if (line < 0)
+        {
             return;
+        }
+
         appState.ViewCommands.Enqueue(new ViewCommand.RevealLine(tab, line));
     }
 
     private static void RevealRow(AppState appState, DocumentTab tab, int? row)
     {
         if (row == null)
+        {
             return;
+        }
+
         appState.ViewCommands.Enqueue(new ViewCommand.RevealRow(tab, row.Value));
     }
 
@@ -96,17 +116,26 @@ public static class Decompilation
     {
         var node = tab.Node;
         if (node == null)
+        {
             return -1;
+        }
+
         var marked = FindMarkedLine(tab, target, node);
         if (marked >= 0)
+        {
             return marked;
+        }
+
         return Documents.FindDefinitionLine(tab.Document, node);
     }
 
     private static int FindMarkedLine(DocumentTab tab, Bookmark? target, BrowseNode node)
     {
         if (target == null)
+        {
             return -1;
+        }
+
         return Bookmarks.FindLine(target, tab.Document, node);
     }
 
@@ -116,15 +145,26 @@ public static class Decompilation
     {
         var node = tab.Node;
         if (node == null)
+        {
             return;
+        }
+
         if (!NodeContentLoader.DependsOnLanguage(node))
+        {
             return;
+        }
+
         if (Tabs.IsCurrent(tab, appState.Language, appState.DecompilerOptions))
+        {
             return;
+        }
+
         var position = FindPositionToKeep(appState, tab);
         LoadIntoTab(appState, tab, node, new Arrival(position));
     }
 
-    private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab) =>
-        Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
+    private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab)
+    {
+        return Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
+    }
 }

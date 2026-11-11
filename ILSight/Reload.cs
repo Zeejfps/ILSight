@@ -37,7 +37,10 @@ public static class Reloads
     {
         ticket.Work.Dispose();
         if (ticket.Id != reload.Current)
+        {
             return false;
+        }
+
         reload.Work = null;
         return true;
     }
@@ -55,9 +58,15 @@ public static class Reloads
     public static bool FinishReopen(Reopens reopens, AssemblyPath path, int ticket)
     {
         if (!reopens.Current.TryGetValue(path, out var current))
+        {
             return false;
+        }
+
         if (current != ticket)
+        {
             return false;
+        }
+
         reopens.Current.Remove(path);
         return true;
     }

@@ -6,7 +6,10 @@ public sealed class NavigationHistoryTests
     {
         var history = new NavigationHistory();
         foreach (var diagram in diagrams)
+        {
             Navigation.RecordDiagram(history, diagram, "diagram");
+        }
+
         return history;
     }
 

@@ -23,9 +23,12 @@ namespace ILSight.Core.Metadata
 				.Select(g => new MetadataFlagGroup(g.Name, true, [new MetadataFlag(GetLabel(g, value & g.Mask), true)]))
 				.ToList();
 			if (schema.IndependentFlags.Count > 0)
-				groups.Add(new MetadataFlagGroup(groups.Count > 0 ? "Flags" : null, false,
+            {
+                groups.Add(new MetadataFlagGroup(groups.Count > 0 ? "Flags" : null, false,
 					schema.IndependentFlags.Select(f => new MetadataFlag($"{f.Name} ({f.Bit:X4})", (value & f.Bit) != 0)).ToArray()));
-			return new MetadataTooltip(null, groups);
+            }
+
+            return new MetadataTooltip(null, groups);
 		}
 
 		private static string GetLabel(MutexGroup group, uint value)
@@ -36,13 +39,19 @@ namespace ILSight.Core.Metadata
 		public static string Describe(FilterState state)
 		{
 			if (state.IsEmpty)
-				return "(any)";
-			var clauses = new System.Collections.Generic.List<string>();
+            {
+                return "(any)";
+            }
+
+            var clauses = new System.Collections.Generic.List<string>();
 			foreach (var group in state.Schema.MutexGroups)
 			{
 				if (!state.Groups.TryGetValue(group.Name, out var sel) || sel is null)
-					continue;
-				if (sel.IsEmpty)
+                {
+                    continue;
+                }
+
+                if (sel.IsEmpty)
 				{
 					clauses.Add($"{group.Name} ∈ ∅");
 					continue;
@@ -71,8 +80,11 @@ namespace ILSight.Core.Metadata
 					: $"({string.Join(joiner, requiredFlags)})");
 			}
 			foreach (var name in excludedFlags)
-				clauses.Add($"¬{name}");
-			return string.Join(" ∧ ", clauses);
+            {
+                clauses.Add($"¬{name}");
+            }
+
+            return string.Join(" ∧ ", clauses);
 		}
 
 		static string StripHexSuffix(string label)
@@ -80,10 +92,13 @@ namespace ILSight.Core.Metadata
 			// MutexValue labels carry a "(XXXX)" hex suffix from the inferer for disambiguation
 			// in the dropdown; the predicate summary reads better without it ("Public" vs
 			// "Public (0001)"). Strip the trailing parenthesised group, keep the name.
-			int idx = label.LastIndexOf(' ');
+			var idx = label.LastIndexOf(' ');
 			if (idx <= 0)
-				return label;
-			var rest = label.AsSpan(idx + 1);
+            {
+                return label;
+            }
+
+            var rest = label.AsSpan(idx + 1);
 			return rest.Length > 2 && rest[0] == '(' && rest[^1] == ')'
 				? label[..idx]
 				: label;
@@ -94,17 +109,26 @@ namespace ILSight.Core.Metadata
 			ArgumentNullException.ThrowIfNull(schema);
 			var state = new FilterState { Schema = schema };
 			foreach (var group in schema.MutexGroups)
-				state.Groups[group.Name] = null;
-			foreach (var flag in schema.IndependentFlags)
-				state.Flags[flag.Name] = TriState.DontCare;
-			return state;
+            {
+                state.Groups[group.Name] = null;
+            }
+
+            foreach (var flag in schema.IndependentFlags)
+            {
+                state.Flags[flag.Name] = TriState.DontCare;
+            }
+
+            return state;
 		}
 
 		public static void SetIndependentMode(FilterState state, MatchMode mode)
 		{
 			if (state.Mode == mode)
-				return;
-			state.Mode = mode;
+            {
+                return;
+            }
+
+            state.Mode = mode;
 			state.Revision++;
 		}
 
@@ -124,10 +148,16 @@ namespace ILSight.Core.Metadata
 		public static void ClearFilter(FilterState state)
 		{
 			foreach (var key in state.Groups.Keys.ToArray())
-				state.Groups[key] = null;
-			foreach (var key in state.Flags.Keys.ToArray())
-				state.Flags[key] = TriState.DontCare;
-			state.Mode = MatchMode.All;
+            {
+                state.Groups[key] = null;
+            }
+
+            foreach (var key in state.Flags.Keys.ToArray())
+            {
+                state.Flags[key] = TriState.DontCare;
+            }
+
+            state.Mode = MatchMode.All;
 			state.Revision++;
 		}
 
@@ -136,15 +166,23 @@ namespace ILSight.Core.Metadata
 		public static bool MatchesFilter(FilterState state, uint value)
 		{
 			if (state.CompiledRevision != state.Revision)
-				CompileFilter(state);
-			if ((value & state.ExcludedMask) != 0)
-				return false;
-			foreach (var group in state.Schema.MutexGroups)
+            {
+                CompileFilter(state);
+            }
+
+            if ((value & state.ExcludedMask) != 0)
+            {
+                return false;
+            }
+
+            foreach (var group in state.Schema.MutexGroups)
 			{
 				var allowed = state.Groups.GetValueOrDefault(group.Name);
 				if (allowed != null && !allowed.Contains(value & group.Mask))
-					return false;
-			}
+                {
+                    return false;
+                }
+            }
 			return state.RequiredMask == 0
 				|| (state.Mode == MatchMode.All ? (value & state.RequiredMask) == state.RequiredMask : (value & state.RequiredMask) != 0);
 		}
@@ -156,10 +194,14 @@ namespace ILSight.Core.Metadata
 			{
 				var wanted = state.Flags.GetValueOrDefault(flag.Name);
 				if (wanted == TriState.Required)
-					state.RequiredMask |= flag.Bit;
-				else if (wanted == TriState.Excluded)
-					state.ExcludedMask |= flag.Bit;
-			}
+                {
+                    state.RequiredMask |= flag.Bit;
+                }
+                else if (wanted == TriState.Excluded)
+                {
+                    state.ExcludedMask |= flag.Bit;
+                }
+            }
 			state.CompiledRevision = state.Revision;
 		}
 
@@ -170,8 +212,10 @@ namespace ILSight.Core.Metadata
 			foreach (var (name, values) in state.Groups)
 			{
 				if (values != null)
-					groups[name] = values.Order().ToArray();
-			}
+                {
+                    groups[name] = values.Order().ToArray();
+                }
+            }
 			return groups;
 		}
 
@@ -192,13 +236,17 @@ namespace ILSight.Core.Metadata
 			foreach (var (group, values) in saved.Groups ?? new())
 			{
 				if (state.Groups.ContainsKey(group))
-					state.Groups[group] = values.ToImmutableHashSet();
-			}
+                {
+                    state.Groups[group] = values.ToImmutableHashSet();
+                }
+            }
 			foreach (var (flag, wanted) in saved.Flags ?? new())
 			{
 				if (state.Flags.ContainsKey(flag))
-					state.Flags[flag] = wanted;
-			}
+                {
+                    state.Flags[flag] = wanted;
+                }
+            }
 			state.Mode = saved.Mode;
 			state.Revision++;
 		}

@@ -59,7 +59,10 @@ public static class BrowseSessions
     public static BrowseNode EnsureRoot(BrowseSession session, LoadedAssembly assembly)
     {
         if (assembly is LoadedModule module)
+        {
             return EnsureRoot(session, module);
+        }
+
         return session.OtherRoots.GetValue(assembly, static a => CreateRoot(a));
     }
 
@@ -76,7 +79,10 @@ public static class BrowseSessions
     internal static BrowseNode EnsureRoot(BrowseSession session, LoadedModule module)
     {
         if (module.Place == null)
+        {
             return session.ModuleRoots.GetValue(module, static m => BrowseNodes.CreateModuleRoot(m, null));
+        }
+
         return EnsureRootInPackage(session, module, module.Place);
     }
 
@@ -85,7 +91,10 @@ public static class BrowseSessions
     private static BrowseNode EnsureRootInPackage(BrowseSession session, LoadedModule module, PackagePlace place)
     {
         if (session.ModuleRoots.TryGetValue(module, out var placed))
+        {
             return placed;
+        }
+
         var packageRoot = EnsureRoot(session, place.Container);
         var folder = FindFolderNode(session, packageRoot, place.File.Folder) ?? packageRoot;
         LoadChildren(session, folder);
@@ -98,7 +107,10 @@ public static class BrowseSessions
     private static BrowseNode? FindFolderNode(BrowseSession session, BrowseNode packageRoot, string folder)
     {
         if (folder.Length == 0)
+        {
             return packageRoot;
+        }
+
         var node = packageRoot;
         while (true)
         {
@@ -106,9 +118,15 @@ public static class BrowseSessions
             foreach (var child in ListChildren(session, node))
             {
                 if (child.Subject is not NodeSubject.Package package)
+                {
                     continue;
+                }
+
                 if (PackageFolders.ShowsFolder(package.Value, folder))
+                {
                     return child;
+                }
+
                 if (PackageFolders.IsWithin(folder, package.Value.Folder.FullName))
                 {
                     next = child;
@@ -116,7 +134,10 @@ public static class BrowseSessions
                 }
             }
             if (next == null)
+            {
                 return null;
+            }
+
             node = next;
         }
     }
@@ -125,7 +146,10 @@ public static class BrowseSessions
     public static ChildrenState PeekChildren(BrowseSession session, BrowseNode node)
     {
         if (!session.Children.TryGetValue(node, out var slot))
+        {
             return ChildrenState.NotLoaded;
+        }
+
         using var held = slot.Enter();
         return held.Value;
     }
@@ -137,9 +161,15 @@ public static class BrowseSessions
     {
         var state = PeekChildren(session, node);
         if (state is not ChildrenState.Ready ready)
+        {
             return state;
+        }
+
         if (session.Nested.TryGetValue(node, out var nested))
+        {
             return new ChildrenState.Ready(nested);
+        }
+
         return new ChildrenState.Ready(AddNested(session, node, ready.Children));
     }
 
@@ -206,7 +236,10 @@ public static class BrowseSessions
             }
         }
         if (building != null)
+        {
             return FinishBuilding(session, node, slot, building);
+        }
+
         return load.GetAwaiter().GetResult();
     }
 
@@ -215,7 +248,10 @@ public static class BrowseSessions
     public static IReadOnlyList<BrowseNode> ListChildren(BrowseSession session, BrowseNode node)
     {
         if (LoadChildren(session, node) is ChildrenState.Ready ready)
+        {
             return ready.Children;
+        }
+
         return [];
     }
 
@@ -238,10 +274,16 @@ public static class BrowseSessions
     public static BrowseNode? FindLoadedChildLike(BrowseSession session, BrowseNode parent, BrowseNode other)
     {
         if (PeekChildren(session, parent) is not ChildrenState.Ready ready)
+        {
             return null;
+        }
+
         var segment = BrowseNodes.GetSegment(other);
         if (segment == null)
+        {
             return null;
+        }
+
         return FindChild(ready.Children, segment);
     }
 
@@ -253,9 +295,15 @@ public static class BrowseSessions
         foreach (var child in children)
         {
             if (!segment.Equals(BrowseNodes.GetSegment(child)))
+            {
                 continue;
+            }
+
             if (found != null)
+            {
                 return null;
+            }
+
             found = child;
         }
         return found;
@@ -271,7 +319,10 @@ public static class BrowseSessions
     {
         var state = BuildChildren(session, node);
         using (var held = slot.Enter())
+        {
             held.Value = state;
+        }
+
         building.SetResult(state);
         return state;
     }
@@ -288,20 +339,34 @@ public static class BrowseSessions
             return new ChildrenState.Failed(e);
         }
         foreach (var child in built)
+        {
             Register(session, child);
+        }
+
         return new ChildrenState.Ready(built);
     }
 
     private static void Register(BrowseSession session, BrowseNode node)
     {
         if (node.Subject is NodeSubject.TypeDefinition type)
+        {
             EnsureIndex(session, type.Definition.Module).TryAdd(type.Definition.Handle, node);
+        }
+
         if (node.Subject is NodeSubject.MemberDefinition member)
+        {
             EnsureIndex(session, member.Definition.Module).TryAdd(member.Definition.Handle, node);
+        }
+
         if (node.Subject is NodeSubject.Module module)
+        {
             session.ModuleRoots.TryAdd(module.Value, node);
+        }
+
         if (node.Subject is NodeSubject.Namespace ns)
+        {
             EnsureNamespaces(session, ns.Value.Module).TryAdd(ns.Value.Name, node);
+        }
     }
 
     private static ConcurrentDictionary<EntityHandle, BrowseNode> EnsureIndex(BrowseSession session, LoadedModule module)
@@ -315,7 +380,10 @@ public static class BrowseSessions
     public static BrowseNode? FindNode(BrowseSession session, LoadedAssembly item, NodePath path)
     {
         if (!path.FilePath.Equals(item.FilePath))
+        {
             return null;
+        }
+
         return FollowSteps(session, EnsureRoot(session, item), path.Steps);
     }
 
@@ -329,7 +397,10 @@ public static class BrowseSessions
             var segment = step.Segment;
             var next = segment.IsPackageEntry ? FindInPackage(session, node, segment) : FindChild(ListChildren(session, node), segment);
             if (next is null)
+            {
                 return null;
+            }
+
             node = next;
         }
         return node;
@@ -340,7 +411,10 @@ public static class BrowseSessions
     private static BrowseNode? FindInPackage(BrowseSession session, BrowseNode packageRoot, NodePathSegment segment)
     {
         if (packageRoot.Subject is not NodeSubject.Package package || !package.Value.IsRoot)
+        {
             return null;
+        }
+
         var path = segment switch
         {
             NodePathSegment.PackageFolder folder => folder.Path,
@@ -349,10 +423,16 @@ public static class BrowseSessions
             _ => throw new UnreachableException(),
         };
         if (segment is NodePathSegment.PackageFolder)
+        {
             return FindFolderNode(session, packageRoot, path);
+        }
+
         var holder = FindFolderNode(session, packageRoot, PackageFolders.FolderOf(path));
         if (holder == null)
+        {
             return null;
+        }
+
         return FindChild(ListChildren(session, holder), segment);
     }
 
@@ -361,13 +441,22 @@ public static class BrowseSessions
     internal static BrowseNode? FindNode(BrowseSession session, LoadedModule module, EntityHandle handle)
     {
         if (handle.IsNil)
+        {
             return null;
+        }
+
         var index = EnsureIndex(session, module);
         if (index.TryGetValue(handle, out var node))
+        {
             return node;
+        }
+
         var parent = FindParent(session, module, handle);
         if (parent is null)
+        {
             return null;
+        }
+
         LoadChildren(session, parent);
         return index.GetValueOrDefault(handle);
     }
@@ -377,11 +466,17 @@ public static class BrowseSessions
     private static BrowseNode? FindParent(BrowseSession session, LoadedModule module, EntityHandle handle)
     {
         if (handle.Kind != HandleKind.TypeDefinition)
+        {
             return FindNode(session, module, LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle));
+        }
+
         var metadata = module.File.Metadata;
         var type = metadata.GetTypeDefinition((TypeDefinitionHandle)handle);
         if (!type.GetDeclaringType().IsNil)
+        {
             return FindNode(session, module, LoadedAssemblies.FindOwner(LoadedAssemblies.EnsureMainModule(module), handle));
+        }
+
         return FindNamespace(session, module, metadata.GetString(type.Namespace));
     }
 
@@ -393,7 +488,9 @@ public static class BrowseSessions
         {
             var node = FindNode(session, module, handle);
             if (node != null)
+            {
                 return node;
+            }
         }
         return null;
     }
@@ -414,12 +511,21 @@ public static class BrowseSessions
     public static IReadOnlyList<BrowseNode> ListInnerNamespaces(BrowseSession session, BrowseNode node)
     {
         if (session.Inner.TryGetValue(node, out var known))
+        {
             return known;
+        }
+
         if (node.Subject is not NodeSubject.Namespace)
+        {
             return [];
+        }
+
         var parent = node.Parent;
         if (parent == null || PeekChildren(session, parent) is not ChildrenState.Ready siblings)
+        {
             return [];
+        }
+
         return AddInnerNamespaces(session, node, siblings.Children);
     }
 
@@ -455,7 +561,10 @@ public static class BrowseSessions
         foreach (var child in own)
         {
             while (pending.Count > 0 && SortsBefore(pending.Peek(), child))
+            {
                 result.Add(pending.Dequeue());
+            }
+
             result.Add(child);
         }
         result.AddRange(pending);
@@ -489,10 +598,16 @@ public static class BrowseSessions
     internal static BrowseNode? FindById(BrowseSession session, LoadedModule module, string idString)
     {
         if (idString.StartsWith(NamespaceIdPrefix, StringComparison.Ordinal))
+        {
             return FindNamespace(session, module, idString.Substring(NamespaceIdPrefix.Length));
+        }
+
         var entity = LoadedAssemblies.FindDefinedEntity(LoadedAssemblies.EnsureMainModule(module), idString);
         if (entity == null)
+        {
             return null;
+        }
+
         return FindOrAncestor(session, module, entity.MetadataToken);
     }
 
@@ -501,14 +616,23 @@ public static class BrowseSessions
     internal static MetadataTarget? FindMetadataRow(BrowseSession session, LoadedModule module, EntityHandle handle)
     {
         if (!MetadataTokens.TryGetTableIndex(handle.Kind, out var index))
+        {
             return null;
+        }
+
         var metadata = ListChildren(session, EnsureRoot(session, module))
             .FirstOrDefault(f => IsMetadataOf(f, module.File));
         if (metadata == null)
+        {
             return null;
+        }
+
         var table = FindTable(session, metadata, index);
         if (table == null)
+        {
             return null;
+        }
+
         var row = MetadataTokens.GetRowNumber(handle) - 1;
         return new MetadataTarget(table, row);
     }
@@ -520,10 +644,16 @@ public static class BrowseSessions
     {
         var folder = FindMetadataFolder(grid);
         if (folder == null)
+        {
             return null;
+        }
+
         var table = FindTable(session, folder, address.Table);
         if (table == null)
+        {
             return null;
+        }
+
         return new MetadataTarget(table, address.Row);
     }
 
@@ -533,7 +663,9 @@ public static class BrowseSessions
         for (var parent = node.Parent; parent != null; parent = parent.Parent)
         {
             if (GetMetadata(parent) != null)
+            {
                 return parent;
+            }
         }
         return null;
     }
@@ -543,7 +675,10 @@ public static class BrowseSessions
     {
         var metadata = GetMetadata(node);
         if (metadata == null)
+        {
             return false;
+        }
+
         return ReferenceEquals(metadata.File, file);
     }
 
@@ -551,7 +686,10 @@ public static class BrowseSessions
     private static MetadataFolderInfo? GetMetadata(BrowseNode node)
     {
         if (node.Subject is not NodeSubject.Metadata metadata)
+        {
             return null;
+        }
+
         return metadata.Value;
     }
 
@@ -561,7 +699,10 @@ public static class BrowseSessions
     {
         var tables = ListChildren(session, folder).FirstOrDefault(static c => c.Subject is NodeSubject.MetadataTables);
         if (tables == null)
+        {
             return null;
+        }
+
         return ListChildren(session, tables).FirstOrDefault(c => c.Subject is NodeSubject.MetadataTable part
             && part.Value.ListedTable == table);
     }

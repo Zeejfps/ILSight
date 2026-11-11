@@ -25,18 +25,30 @@ internal sealed class MemoryIconAssets
         return this;
     }
 
-    public MemoryIconAssets With(string path, string text) => With(path, Encoding.UTF8.GetBytes(text));
+    public MemoryIconAssets With(string path, string text)
+    {
+        return With(path, Encoding.UTF8.GetBytes(text));
+    }
 
-    public static implicit operator IconAssets(MemoryIconAssets assets) => new(assets.Read, assets.GetFamily);
+    public static implicit operator IconAssets(MemoryIconAssets assets)
+    {
+        return new(assets.Read, assets.GetFamily);
+    }
 
     public IconAsset Read(string path)
     {
         if (_files.TryGetValue(path, out var bytes))
+        {
             return new IconAsset(bytes);
+        }
+
         return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
     }
 
-    public string GetFamily(string fontId, string path) => "memory:" + path;
+    public string GetFamily(string fontId, string path)
+    {
+        return "memory:" + path;
+    }
 }
 
 public sealed class BuiltInIconThemeTests
@@ -84,9 +96,15 @@ public sealed class IconThemeLoadingTests
 
     private static readonly byte[] FontBytes = BuiltInIconThemes.Reference.Fonts[0].Data;
 
-    private static string Glyph(int codepoint) => char.ConvertFromUtf32(codepoint);
+    private static string Glyph(int codepoint)
+    {
+        return char.ConvertFromUtf32(codepoint);
+    }
 
-    private static ThemeId<IconThemeFile> Id(string text) => ThemeId<IconThemeFile>.Of(text);
+    private static ThemeId<IconThemeFile> Id(string text)
+    {
+        return ThemeId<IconThemeFile>.Of(text);
+    }
 
     private static IconThemeFile User(string id, string json, MemoryIconAssets? assets = null)
     {
@@ -100,7 +118,10 @@ public sealed class IconThemeLoadingTests
         return catalog;
     }
 
-    private static IconGlyph Reference(string key) => BuiltInIconThemes.Reference.Set.Find(key);
+    private static IconGlyph Reference(string key)
+    {
+        return BuiltInIconThemes.Reference.Set.Find(key);
+    }
 
     [Fact]
     public void A_partial_theme_draws_its_own_keys_and_the_reference_themes_for_the_rest()
@@ -371,7 +392,10 @@ public sealed class IconAssetFolderTests : IDisposable
 {
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     /// <summary>Paths that lead out of the folder; a drive's path only on Windows, since elsewhere
     /// <c>C:</c> is the name of a folder inside it.</summary>
@@ -379,7 +403,10 @@ public sealed class IconAssetFolderTests : IDisposable
     {
         var paths = new TheoryData<string> { "../outside.svg", "svg/../../outside.svg", "/outside.svg" };
         if (OperatingSystem.IsWindows())
+        {
             paths.Add("C:/outside.svg");
+        }
+
         return paths;
     }
 
@@ -444,11 +471,20 @@ public sealed class UserIconThemeTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    private static ThemeId<IconThemeFile> Id(string text) => ThemeId<IconThemeFile>.Of(text);
+    private static ThemeId<IconThemeFile> Id(string text)
+    {
+        return ThemeId<IconThemeFile>.Of(text);
+    }
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
-    private string WriteIconTheme(string id, string json) => _temp.Write(Path.Combine("icon-themes", id + ".json"), json);
+    private string WriteIconTheme(string id, string json)
+    {
+        return _temp.Write(Path.Combine("icon-themes", id + ".json"), json);
+    }
 
     private AppSettings Settings()
     {
@@ -457,7 +493,10 @@ public sealed class UserIconThemeTests : IDisposable
         return settings;
     }
 
-    private static byte[] LucideFont() => BuiltInIconThemes.Reference.Fonts[0].Data;
+    private static byte[] LucideFont()
+    {
+        return BuiltInIconThemes.Reference.Fonts[0].Data;
+    }
 
     [Fact]
     public void The_icon_theme_is_lucide_by_default_and_a_chosen_one_is_saved()
@@ -554,9 +593,15 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.Equal(AppIcons.Keys.Count, CountCommentedIcons(text));
     }
 
-    private static int CountCommentedIcons(string text) => text.Split('\n').Count(IsCommentedIcon);
+    private static int CountCommentedIcons(string text)
+    {
+        return text.Split('\n').Count(IsCommentedIcon);
+    }
 
-    private static bool IsCommentedIcon(string line) => line.TrimStart().StartsWith("// \"", StringComparison.Ordinal);
+    private static bool IsCommentedIcon(string line)
+    {
+        return line.TrimStart().StartsWith("// \"", StringComparison.Ordinal);
+    }
 
     [Fact]
     public void Each_icon_of_a_custom_icon_theme_can_be_uncommented_alone_and_a_picture_keeps_its_path()
@@ -572,7 +617,10 @@ public sealed class UserIconThemeTests : IDisposable
         for (var i = 0; i < lines.Length; i++)
         {
             if (!IsCommentedIcon(lines[i]))
+            {
                 continue;
+            }
+
             var edited = lines.ToArray();
             edited[i] = lines[i].Replace("// ", "");
             var file = IconTheming.ReadTheme(Id("mine"), "mine.json", Encoding.UTF8.GetBytes(string.Join('\n', edited)), assets);
@@ -716,7 +764,10 @@ public sealed class IconThemeSchemaTests
         using var stream = new MemoryStream();
         var options = new JsonWriterOptions { Indented = true, NewLine = "\n", Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         using (var writer = new Utf8JsonWriter(stream, options))
+        {
             WriteSchema(writer);
+        }
+
         return Encoding.UTF8.GetString(stream.ToArray()) + "\n";
     }
 
@@ -784,7 +835,10 @@ public sealed class IconThemeSchemaTests
         w.WriteBoolean("additionalProperties", false);
         w.WriteStartObject("properties");
         foreach (var key in AppIcons.Keys)
+        {
             WriteIconKey(w, key);
+        }
+
         w.WriteEndObject();
         w.WriteEndObject();
     }

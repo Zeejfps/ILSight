@@ -22,7 +22,10 @@ public sealed class ExportTests : IDisposable
         Directory.CreateDirectory(_temp.Path);
     }
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     /// <summary>A driver that has opened the small sample app, for what works through a whole assembly,
     /// which would take long on the fixtures, the whole test assembly.</summary>
@@ -35,7 +38,10 @@ public sealed class ExportTests : IDisposable
         return d;
     }
 
-    private static LoadedModule SampleOf(AppStateDriver d) => Assert.Single(d.AppState.Assemblies.Assemblies);
+    private static LoadedModule SampleOf(AppStateDriver d)
+    {
+        return Assert.Single(d.AppState.Assemblies.Assemblies);
+    }
 
     [Fact]
     public void Saving_code_writes_the_node_in_the_current_language()

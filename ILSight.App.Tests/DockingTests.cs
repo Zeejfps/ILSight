@@ -148,14 +148,20 @@ public sealed class LayoutPersistenceTests : IDisposable
 {
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
-
-    private static DockSplit? ParentOf(DockNode node, DockNode target) => node switch
+    public void Dispose()
     {
-        DockSplit split when split.First == target || split.Second == target => split,
-        DockSplit split => ParentOf(split.First, target) ?? ParentOf(split.Second, target),
-        _ => null,
-    };
+        _temp.Dispose();
+    }
+
+    private static DockSplit? ParentOf(DockNode node, DockNode target)
+    {
+        return node switch
+        {
+            DockSplit split when split.First == target || split.Second == target => split,
+            DockSplit split => ParentOf(split.First, target) ?? ParentOf(split.Second, target),
+            _ => null,
+        };
+    }
 
     [Fact]
     public void Views_docked_below_the_documents_are_still_below_them_after_a_restart()

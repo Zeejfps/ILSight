@@ -16,15 +16,24 @@ public abstract class Animal
 
     public abstract void Speak();
 
-    public virtual string Describe() => Name + _age;
+    public virtual string Describe()
+    {
+        return Name + _age;
+    }
 
-    public override string ToString() => Name;
+    public override string ToString()
+    {
+        return Name;
+    }
 
     internal void Mark()
     {
     }
 
-    public static Animal? Loudest() => null;
+    public static Animal? Loudest()
+    {
+        return null;
+    }
 }
 
 public class Lion : Animal, IFeeds
@@ -55,7 +64,10 @@ public class Keeper
 
     public event Action? Fed;
 
-    public void Feed() => Fed?.Invoke();
+    public void Feed()
+    {
+        Fed?.Invoke();
+    }
 }
 
 public struct Enclosure

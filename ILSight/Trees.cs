@@ -28,7 +28,10 @@ public static class Trees
     private static void ForgetClearedList(UiState uiState, AssemblyList assemblies)
     {
         if (!ShownChanges.TakeListGeneration(uiState, assemblies.Generation))
+        {
             return;
+        }
+
         Trees.ForgetTree(uiState.Tree);
         uiState.MenuTarget = null;
     }
@@ -37,12 +40,19 @@ public static class Trees
     public static bool SyncRoots(BrowseTree tree, AssemblyList assemblies)
     {
         var version = assemblies.Version;
-        if (version == tree.RootsVersion) return false;
+        if (version == tree.RootsVersion)
+        {
+            return false;
+        }
+
         tree.RootsVersion = version;
         var listed = assemblies.Listed;
         var roots = new BrowseNode[listed.Count];
         for (var i = 0; i < roots.Length; i++)
+        {
             roots[i] = BrowseSessions.EnsureRoot(tree.Session, listed[i]);
+        }
+
         FollowGoneRoots(tree, roots);
         tree.Roots = roots;
         tree.RootLabels = ListRootLabels(roots);
@@ -55,12 +65,18 @@ public static class Trees
     private static void FollowGoneRoots(BrowseTree tree, BrowseNode[] roots)
     {
         if (tree.Roots.Length == 0)
+        {
             return;
+        }
+
         var kept = new HashSet<BrowseNode>(roots, ReferenceEqualityComparer.Instance);
         foreach (var root in tree.Roots)
         {
             if (kept.Contains(root))
+            {
                 continue;
+            }
+
             var replacement = FindRootOfFile(roots, root.Assembly.FilePath);
             FollowSelection(tree, root, replacement);
             FollowExpansion(tree, root, replacement);
@@ -72,7 +88,9 @@ public static class Trees
         foreach (var root in roots)
         {
             if (root.Assembly.FilePath.Equals(filePath))
+            {
                 return root;
+            }
         }
         return null;
     }
@@ -80,14 +98,25 @@ public static class Trees
     private static void FollowSelection(BrowseTree tree, BrowseNode gone, BrowseNode? replacement)
     {
         if (replacement == null)
+        {
             return;
+        }
+
         if (!tree.View.TryGetSelected(out var selected))
+        {
             return;
+        }
+
         if (selected.Root != gone)
+        {
             return;
+        }
+
         var counterpart = FindCounterpart(tree, selected, replacement);
         if (counterpart != null)
+        {
             tree.View.Select(counterpart, scrollIntoView: false);
+        }
     }
 
     /// <summary>The node standing where <paramref name="node"/> does, under <paramref name="root"/>
@@ -95,10 +124,16 @@ public static class Trees
     private static BrowseNode? FindCounterpart(BrowseTree tree, BrowseNode node, BrowseNode root)
     {
         if (node.Parent == null)
+        {
             return root;
+        }
+
         var parent = FindCounterpart(tree, node.Parent, root);
         if (parent == null)
+        {
             return null;
+        }
+
         return BrowseSessions.FindLoadedChildLike(tree.Session, parent, node);
     }
 
@@ -107,20 +142,34 @@ public static class Trees
     private static void FollowExpansion(BrowseTree tree, BrowseNode node, BrowseNode? counterpart)
     {
         if (!tree.View.IsExpanded(node))
+        {
             return;
+        }
+
         tree.View.SetExpanded(node, false);
         if (counterpart != null)
+        {
             tree.View.SetExpanded(counterpart, true);
+        }
+
         if (BrowseSessions.PeekChildren(tree.Session, node) is not ChildrenState.Ready loaded)
+        {
             return;
+        }
+
         foreach (var child in loaded.Children)
+        {
             FollowExpansion(tree, child, FindChildLike(tree, counterpart, child));
+        }
     }
 
     private static BrowseNode? FindChildLike(BrowseTree tree, BrowseNode? parent, BrowseNode child)
     {
         if (parent == null)
+        {
             return null;
+        }
+
         return BrowseSessions.FindLoadedChildLike(tree.Session, parent, child);
     }
 
@@ -137,7 +186,10 @@ public static class Trees
     public static string GetRowLabel(BrowseTree tree, BrowseNode node)
     {
         if (IsNested(tree, node))
+        {
             return NodeText.NestedName(node);
+        }
+
         return node.Subject is NodeSubject.Module && tree.RootLabels.TryGetValue(node, out var label) ? label.Row : NodeText.Name(node);
     }
 
@@ -146,7 +198,10 @@ public static class Trees
     public static string GetKey(BrowseTree tree, BrowseNode node)
     {
         if (node.Subject is NodeSubject.Module)
+        {
             return GetLabel(tree, node);
+        }
+
         return GetRowLabel(tree, node);
     }
 
@@ -157,7 +212,11 @@ public static class Trees
 
     public static void ShowApi(BrowseTree tree, ApiVisibility visibility)
     {
-        if (visibility == tree.Visibility) return;
+        if (visibility == tree.Visibility)
+        {
+            return;
+        }
+
         tree.Visibility = visibility;
         tree.ShownChildren.Clear();
         tree.View.Refresh();
@@ -166,7 +225,11 @@ public static class Trees
     /// <summary>Lists the metadata tables with no rows among the others, or leaves them out.</summary>
     public static void ShowEmptyTables(BrowseTree tree, bool show)
     {
-        if (show == tree.ShowsEmptyTables) return;
+        if (show == tree.ShowsEmptyTables)
+        {
+            return;
+        }
+
         tree.ShowsEmptyTables = show;
         tree.ShownChildren.Clear();
         tree.View.Refresh();
@@ -176,7 +239,11 @@ public static class Trees
     /// under their assembly, keeping the selected node in view.</summary>
     public static void NestNamespaces(BrowseTree tree, bool nest)
     {
-        if (nest == tree.NestsNamespaces) return;
+        if (nest == tree.NestsNamespaces)
+        {
+            return;
+        }
+
         tree.NestsNamespaces = nest;
         tree.Revision++;
         tree.ShownChildren.Clear();
@@ -187,7 +254,10 @@ public static class Trees
     private static void RevealSelected(BrowseTree tree)
     {
         if (!tree.View.TryGetSelected(out var selected))
+        {
             return;
+        }
+
         RevealNode(tree, selected);
     }
 
@@ -225,7 +295,10 @@ public static class Trees
         var path = ListPathTo(tree, node);
         var hidden = path.FindIndex(n => IsHidden(tree, n));
         if (hidden > 0)
+        {
             path.RemoveRange(hidden, path.Count - hidden);
+        }
+
         return path;
     }
 
@@ -235,7 +308,10 @@ public static class Trees
     {
         var path = new List<BrowseNode>();
         for (var n = node; n != null; n = FindShownParent(tree, n))
+        {
             path.Add(n);
+        }
+
         path.Reverse();
         return path;
     }
@@ -245,14 +321,25 @@ public static class Trees
     private static BrowseNode? FindShownParent(BrowseTree tree, BrowseNode node)
     {
         if (IsNested(tree, node))
+        {
             return node.EnclosingNamespace;
+        }
+
         return node.Parent;
     }
 
     private static bool IsHidden(BrowseTree tree, BrowseNode node)
     {
-        if (node.Subject is NodeSubject.MetadataTable table && table.Value.IsEmptyTable) return !tree.ShowsEmptyTables;
-        if (node.Subject is NodeSubject.Namespace ns) return IsNamespaceHidden(tree, node, ns.Value);
+        if (node.Subject is NodeSubject.MetadataTable table && table.Value.IsEmptyTable)
+        {
+            return !tree.ShowsEmptyTables;
+        }
+
+        if (node.Subject is NodeSubject.Namespace ns)
+        {
+            return IsNamespaceHidden(tree, node, ns.Value);
+        }
+
         return IsApiHidden(tree, node);
     }
 
@@ -261,8 +348,16 @@ public static class Trees
     private static bool IsNamespaceHidden(BrowseTree tree, BrowseNode node, NamespaceInfo ns)
     {
         var ownHidden = ns.IsEnclosingOnly || IsApiHidden(tree, node);
-        if (!ownHidden) return false;
-        if (!tree.NestsNamespaces) return true;
+        if (!ownHidden)
+        {
+            return false;
+        }
+
+        if (!tree.NestsNamespaces)
+        {
+            return true;
+        }
+
         return AreInnerNamespacesHidden(tree, node);
     }
 
@@ -274,15 +369,26 @@ public static class Trees
     private static bool IsInnerNamespaceHidden(BrowseTree tree, BrowseNode node)
     {
         if (node.Subject is not NodeSubject.Namespace ns)
+        {
             throw new UnreachableException();
+        }
+
         return IsNamespaceHidden(tree, node, ns.Value);
     }
 
     private static bool IsApiHidden(BrowseTree tree, BrowseNode node)
     {
-        if (tree.Visibility == ApiVisibility.All) return false;
+        if (tree.Visibility == ApiVisibility.All)
+        {
+            return false;
+        }
+
         var visibility = NodeDefinitions.GetVisibility(node.Subject);
-        if (visibility.IsCompilerGenerated) return true;
+        if (visibility.IsCompilerGenerated)
+        {
+            return true;
+        }
+
         return tree.Visibility == ApiVisibility.PublicOnly && !visibility.IsPublicApi;
     }
 
@@ -298,10 +404,16 @@ public static class Trees
         {
             foreach (var node in nodes)
             {
-                if (!tree.View.IsExpanded(node)) continue;
+                if (!tree.View.IsExpanded(node))
+                {
+                    continue;
+                }
+
                 paths.Add(BrowseNodes.GetPath(node));
                 if (BrowseSessions.PeekChildren(tree.Session, node) is ChildrenState.Ready loaded)
+                {
                     Collect(loaded.Children);
+                }
             }
         }
     }
@@ -311,7 +423,10 @@ public static class Trees
     public static void ExpandNodes(BrowseTree tree, IEnumerable<BrowseNode> nodes)
     {
         foreach (var node in nodes)
+        {
             tree.View.SetExpanded(node, true);
+        }
+
         tree.View.Refresh();
     }
 
@@ -321,7 +436,10 @@ public static class Trees
     {
         var ticket = tree.Expansion.Begin();
         foreach (var root in tree.Roots)
+        {
             ExpandAssembly(tree, root, ticket);
+        }
+
         tree.View.Refresh();
     }
 
@@ -335,20 +453,34 @@ public static class Trees
         tree.View.SetExpanded(root, true);
         var built = await Background.Wait(BrowseSessions.LoadChildrenAsync(tree.Session, root));
         if (tree.Expansion.IsStale(ticket))
+        {
             return;
+        }
+
         if (built is not Outcome<ChildrenState>.Ok ok)
+        {
             return;
+        }
+
         if (ok.Value is not ChildrenState.Ready loaded)
+        {
             return;
+        }
+
         foreach (var child in loaded.Children)
+        {
             ExpandIfNamespace(tree, child);
+        }
+
         tree.View.Refresh();
     }
 
     private static void ExpandIfNamespace(BrowseTree tree, BrowseNode node)
     {
         if (node.Subject is NodeSubject.Namespace)
+        {
             tree.View.SetExpanded(node, true);
+        }
     }
 
     public static void CollapseTree(BrowseTree tree)
@@ -366,7 +498,11 @@ public static class Trees
 
     public static bool HasChildren(BrowseTree tree, BrowseNode node)
     {
-        if (!tree.NestsNamespaces) return BrowseSessions.HasChildren(tree.Session, node);
+        if (!tree.NestsNamespaces)
+        {
+            return BrowseSessions.HasChildren(tree.Session, node);
+        }
+
         return BrowseSessions.HasChildren(tree.Session, node) || BrowseSessions.ListInnerNamespaces(tree.Session, node).Count > 0;
     }
 
@@ -392,7 +528,11 @@ public static class Trees
 
     private static BrowseNode[] EnsureShownChildren(BrowseTree tree, BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
-        if (tree.ShownChildren.TryGetValue(node, out var cached)) return cached;
+        if (tree.ShownChildren.TryGetValue(node, out var cached))
+        {
+            return cached;
+        }
+
         return ListShownChildren(tree, node, children);
     }
 
@@ -433,7 +573,10 @@ public static class Trees
     private static bool IsReopening(BrowseTree tree, BrowseNode node)
     {
         if (tree.Reopening.Count == 0)
+        {
             return false;
+        }
+
         return node.Parent == null && tree.Reopening.Contains(node.Assembly.FilePath);
     }
 
@@ -443,7 +586,10 @@ public static class Trees
     {
         var token = NodeText.Token(node, tree.Tokens);
         if (token != null)
+        {
             return token;
+        }
+
         return NodeText.Secondary(node);
     }
 
@@ -465,7 +611,10 @@ public static class Trees
             if (versions.Distinct().Count() == nodes.Count)
             {
                 for (var i = 0; i < nodes.Count; i++)
+                {
                     labels[nodes[i]] = new RootLabel(nodes[i].Assembly.NameAndVersion, nodes[i].Assembly.Name);
+                }
+
                 continue;
             }
             var hints = ListFolderHints(nodes);
@@ -486,7 +635,9 @@ public static class Trees
         {
             var hints = folders.Select(f => string.Join(Path.DirectorySeparatorChar, f[Math.Max(0, f.Length - depth)..])).ToArray();
             if (hints.Distinct(StringComparer.OrdinalIgnoreCase).Count() == hints.Length)
+            {
                 return hints;
+            }
         }
         return nodes.Select(static n => n.Assembly.FilePath.Text).ToArray();
     }
@@ -498,7 +649,11 @@ public static class Trees
 
     private static async Task BuildChildrenAsync(BrowseTree tree, BrowseNode node)
     {
-        if (!tree.Building.Add(node)) return;
+        if (!tree.Building.Add(node))
+        {
+            return;
+        }
+
         await Background.Wait(BrowseSessions.LoadChildrenAsync(tree.Session, node));
         tree.Building.Remove(node);
         tree.View.Refresh();

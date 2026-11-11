@@ -56,7 +56,10 @@ public static class Diagrams
     {
         DiagramCameras.Restore(view.Camera, new PointF(saved.X, saved.Y), saved.Zoom);
         if (saved.Folds != null)
+        {
             RestoreFolds(view, saved.Folds);
+        }
+
         view.HiddenMembersFilter.Set(saved.ShowsHiddenMembers);
         view.IsFitPending = false;
     }
@@ -72,7 +75,10 @@ public static class Diagrams
     {
         view.Faces.Clear();
         foreach (var face in faces)
+        {
             view.Faces[face.Card.Type] = face;
+        }
+
         view.MeasuredFor = key;
     }
 
@@ -88,7 +94,9 @@ public static class Diagrams
         for (var i = 0; i < face.Rows.Count; i++)
         {
             if (y >= face.Rows[i].Top && y < face.Rows[i].Bottom)
+            {
                 return i;
+            }
         }
         return -1;
     }
@@ -122,7 +130,10 @@ public static class Diagrams
     {
         var tab = FindTabShowing(appState, diagram);
         if (tab == null || tab.Content is not TabContent.Diagram shown)
+        {
             return;
+        }
+
         RecordDiagram(appState.History, shown.Types, shown.Title);
         Navigate(appState, target, inNewTab);
     }
@@ -157,7 +168,10 @@ public static class Diagrams
         var read = await Background.Run(() => TypeCards.ReadWithNeighbours(assemblies, type, token));
         Diagrams.FinishReading(diagram);
         if (diagram.IsClosed)
+        {
             return;
+        }
+
         switch (read)
         {
             case Outcome<List<TypeCard>>.Ok ok:
@@ -209,22 +223,40 @@ public static class Diagrams
 
     /// <summary>Whether <paramref name="card"/> derives from or extends a type <paramref name="diagram"/>
     /// does not show.</summary>
-    public static bool HasMissingBases(TypeDiagram diagram, TypeCard card) => ListMissing(diagram, card, IsBaseLink).Count > 0;
+    public static bool HasMissingBases(TypeDiagram diagram, TypeCard card)
+    {
+        return ListMissing(diagram, card, IsBaseLink).Count > 0;
+    }
 
     /// <summary>Whether <paramref name="card"/> implements an interface <paramref name="diagram"/> does not show.</summary>
-    public static bool HasMissingInterfaces(TypeDiagram diagram, TypeCard card) => ListMissing(diagram, card, IsInterfaceLink).Count > 0;
+    public static bool HasMissingInterfaces(TypeDiagram diagram, TypeCard card)
+    {
+        return ListMissing(diagram, card, IsInterfaceLink).Count > 0;
+    }
 
     /// <summary>Whether <paramref name="card"/>'s properties hold a type <paramref name="diagram"/> does not show.</summary>
-    public static bool HasMissingHeld(TypeDiagram diagram, TypeCard card) => ListMissing(diagram, card, IsHeldLink).Count > 0;
+    public static bool HasMissingHeld(TypeDiagram diagram, TypeCard card)
+    {
+        return ListMissing(diagram, card, IsHeldLink).Count > 0;
+    }
 
     /// <summary>Whether <paramref name="link"/> leads to a type derived from or extended.</summary>
-    public static bool IsBaseLink(TypeLink link) => link.Kind == TypeLinkKind.Inherits;
+    public static bool IsBaseLink(TypeLink link)
+    {
+        return link.Kind == TypeLinkKind.Inherits;
+    }
 
     /// <summary>Whether <paramref name="link"/> leads to an interface implemented.</summary>
-    public static bool IsInterfaceLink(TypeLink link) => link.Kind == TypeLinkKind.Implements;
+    public static bool IsInterfaceLink(TypeLink link)
+    {
+        return link.Kind == TypeLinkKind.Implements;
+    }
 
     /// <summary>Whether <paramref name="link"/> leads to a type held in a property.</summary>
-    public static bool IsHeldLink(TypeLink link) => link.Kind is TypeLinkKind.HoldsOne or TypeLinkKind.HoldsMany;
+    public static bool IsHeldLink(TypeLink link)
+    {
+        return link.Kind is TypeLinkKind.HoldsOne or TypeLinkKind.HoldsMany;
+    }
 
     /// <summary>The types <paramref name="card"/> links to as <paramref name="isKind"/> picks that
     /// <paramref name="diagram"/> does not show, each once.</summary>
@@ -248,7 +280,10 @@ public static class Diagrams
     private static async Task AddCardsAsync(AppState appState, TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types)
     {
         if (types.Count == 0)
+        {
             return;
+        }
+
         Diagrams.StartReading(diagram);
         var assemblies = appState.Assemblies;
         var read = await Background.Run(() => ReadCards(assemblies, types));
@@ -286,7 +321,10 @@ public static class Diagrams
     {
         Diagrams.FinishReading(diagram);
         if (diagram.IsClosed)
+        {
             return;
+        }
+
         switch (read)
         {
             case Outcome<List<TypeCard>>.Ok ok:
@@ -317,7 +355,10 @@ public static class Diagrams
     private static async Task ReopenDiagramAsync(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
     {
         if (!reopened.IsWaiting)
+        {
             return;
+        }
+
         var tab = reopened.Tab;
         var diagram = ShowSavedDiagram(appState, tab, saved);
         var reading = SavedDocuments.WaitFor(appState.Reopened, tab, saved);
@@ -327,9 +368,15 @@ public static class Diagrams
         var read = await Background.Run(() => ReadCards(assemblies, types));
         Diagrams.FinishReading(diagram);
         if (!SavedDocuments.FinishWaiting(appState.Reopened, reading))
+        {
             return;
+        }
+
         if (diagram.IsClosed)
+        {
             return;
+        }
+
         AddSavedCards(appState, diagram, read, saved);
     }
 
@@ -346,16 +393,24 @@ public static class Diagrams
     private static void TakeHomes(TypeDiagram diagram, List<AssemblyPath>? assemblies)
     {
         if (assemblies == null)
+        {
             return;
+        }
+
         foreach (var assembly in assemblies)
+        {
             Diagrams.TakeHome(diagram, assembly);
+        }
     }
 
     /// <summary>Has the diagram <paramref name="tab"/> shows taken as the one the user works in, when the tab is the active one.</summary>
     private static void WorkInIfActive(AppState appState, DocumentTab tab)
     {
         if (tab != appState.Tabs.Active)
+        {
             return;
+        }
+
         Tabs.MakeActive(appState.Tabs, tab);
     }
 
@@ -398,11 +453,17 @@ public static class Diagrams
     private static async Task LayOutDiagramAsync(AppState appState, TypeDiagram diagram, DiagramMeasures measures)
     {
         if (diagram.IsClosed)
+        {
             return;
+        }
+
         var ticket = Diagrams.StartLayout(diagram);
         var laidOut = await Background.Run(() => DiagramLayouts.Arrange(measures, ticket.Token));
         if (!Diagrams.FinishLayout(diagram, ticket))
+        {
             return;
+        }
+
         switch (laidOut)
         {
             case Outcome<TypeLayout>.Ok ok:
@@ -432,7 +493,9 @@ public static class Diagrams
         foreach (var card in diagram.Cards)
         {
             if (card.Type == type)
+            {
                 return card;
+            }
         }
         return null;
     }
@@ -442,23 +505,35 @@ public static class Diagrams
     {
         var shown = diagram.Cards.Count;
         foreach (var card in cards)
+        {
             AddCardIfNew(diagram, card);
+        }
+
         if (diagram.Cards.Count == shown)
+        {
             return;
+        }
+
         ChangeCards(diagram);
     }
 
     private static void AddCardIfNew(TypeDiagram diagram, TypeCard card)
     {
         if (!diagram.Types.Add(card.Type))
+        {
             return;
+        }
+
         diagram.Cards.Add(card);
     }
 
     public static void RemoveCard(TypeDiagram diagram, CodeReference.Entity type)
     {
         if (!diagram.Types.Remove(type))
+        {
             return;
+        }
+
         diagram.Cards.RemoveAll(c => c.Type == type);
         ChangeCards(diagram);
     }
@@ -468,7 +543,9 @@ public static class Diagrams
         diagram.Version++;
         diagram.Links.Clear();
         foreach (var card in diagram.Cards)
+        {
             AddLinksAmongCards(diagram, card);
+        }
     }
 
     private static void AddLinksAmongCards(TypeDiagram diagram, TypeCard card)
@@ -476,7 +553,9 @@ public static class Diagrams
         foreach (var link in card.Links)
         {
             if (diagram.Types.Contains(link.To))
+            {
                 diagram.Links.Add(link);
+            }
         }
     }
 
@@ -498,7 +577,10 @@ public static class Diagrams
     public static bool IsHome(TypeDiagram diagram, AssemblyPath? assemblyPath)
     {
         if (assemblyPath == null)
+        {
             return false;
+        }
+
         return diagram.HomeAssemblies.Contains(assemblyPath);
     }
 
@@ -528,7 +610,10 @@ public static class Diagrams
     {
         ticket.Work.Dispose();
         if (diagram.LayoutWork != ticket.Work)
+        {
             return false;
+        }
+
         diagram.LayoutWork = null;
         return !diagram.IsClosed;
     }
@@ -551,7 +636,10 @@ public static class Diagrams
     public static bool FollowLayout(LayoutTransition transition, TypeLayout? layout)
     {
         if (ReferenceEquals(layout, transition.To))
+        {
             return false;
+        }
+
         transition.From = transition.To;
         transition.To = layout;
         transition.FromRoutes = ListRoutesByLink(transition.From);
@@ -563,9 +651,15 @@ public static class Diagrams
     {
         var routes = new Dictionary<TypeLink, LinkRoute>();
         if (layout == null)
+        {
             return routes;
+        }
+
         foreach (var route in layout.Routes)
+        {
             routes.TryAdd(route.Link, route);
+        }
+
         return routes;
     }
 
@@ -574,7 +668,10 @@ public static class Diagrams
     private static float GetTransitionStart(TypeLayout? from)
     {
         if (from == null)
+        {
             return LayoutTransition.Seconds;
+        }
+
         return 0f;
     }
 
@@ -588,23 +685,41 @@ public static class Diagrams
     public static PointF? GetCardPlace(LayoutTransition transition, CodeReference.Entity type)
     {
         if (transition.To == null)
+        {
             return null;
+        }
+
         if (!transition.To.Places.TryGetValue(type, out var to))
+        {
             return null;
+        }
+
         var from = FindOldCardPlace(transition, type);
         if (from == null)
+        {
             return to;
+        }
+
         return DiagramLayouts.Lerp(from.Value, to, transition.Progress);
     }
 
     private static PointF? FindOldCardPlace(LayoutTransition transition, CodeReference.Entity type)
     {
         if (!transition.IsMoving)
+        {
             return null;
+        }
+
         if (transition.From == null)
+        {
             return null;
+        }
+
         if (!transition.From.Places.TryGetValue(type, out var from))
+        {
             return null;
+        }
+
         return from;
     }
 
@@ -613,18 +728,30 @@ public static class Diagrams
     public static LinkRoute ShapeRoute(LayoutTransition transition, LinkRoute route)
     {
         if (!transition.IsMoving)
+        {
             return route;
+        }
+
         if (!transition.FromRoutes.TryGetValue(route.Link, out var from))
+        {
             return route;
+        }
+
         if (!CanBlendRoutes(from, route))
+        {
             return route;
+        }
+
         return BlendRoutes(from, route, transition.Progress);
     }
 
     private static bool CanBlendRoutes(LinkRoute from, LinkRoute to)
     {
         if (from.Pieces.Count == 0)
+        {
             return false;
+        }
+
         return to.Pieces.Count > 0;
     }
 
@@ -634,7 +761,10 @@ public static class Diagrams
         var toPieces = SubdivideRoute(to.Pieces, from.Pieces.Count);
         var pieces = new List<RoutePiece>(toPieces.Count);
         for (var i = 0; i < toPieces.Count; i++)
+        {
             pieces.Add(DiagramLayouts.Blend(fromPieces[i], toPieces[i], t));
+        }
+
         var tip = DiagramLayouts.Lerp(from.Tip, to.Tip, t);
         var labelCenter = BlendPoints(from.LabelCenter, to.LabelCenter, t);
         var sourceTip = BlendPoints(from.SourceTip, to.SourceTip, t);
@@ -662,9 +792,15 @@ public static class Diagrams
     private static PointF? BlendPoints(PointF? from, PointF? to, float t)
     {
         if (from == null)
+        {
             return to;
+        }
+
         if (to == null)
+        {
             return null;
+        }
+
         return DiagramLayouts.Lerp(from.Value, to.Value, t);
     }
 }

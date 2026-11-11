@@ -50,30 +50,47 @@ internal static class ILLexer
             {
                 i++;
                 while (i < end && text[i] != c)
+                {
                     i += text[i] == '\\' && i + 1 < end ? 2 : 1;
+                }
+
                 i = Math.Min(i + 1, end);
                 kind = c == '"' ? SpanKind.String : SpanKind.Plain;
             }
             else if (char.IsDigit(c))
             {
                 while (i < end && (char.IsAsciiHexDigit(text[i]) || text[i] is 'x' or '.'))
+                {
                     i++;
+                }
+
                 kind = SpanKind.Number;
             }
             else if (char.IsLetter(c) || c is '_' or '.')
             {
                 i++;
                 while (i < end && (char.IsLetterOrDigit(text[i]) || text[i] is '_' or '.' or '`' or '$' or '@'))
+                {
                     i++;
+                }
+
                 var word = text.AsSpan(tokenStart, i - tokenStart);
                 if (word is ".ctor" or ".cctor")
+                {
                     kind = SpanKind.Method;
+                }
                 else if (word.Length > 1 && word[0] == '.' && char.IsLetter(word[1]))
+                {
                     kind = SpanKind.Keyword;
+                }
                 else if (word.StartsWith("IL_"))
+                {
                     kind = SpanKind.ILLabel;
+                }
                 else
+                {
                     kind = Keywords.GetAlternateLookup<ReadOnlySpan<char>>().Contains(word) ? SpanKind.Keyword : SpanKind.Plain;
+                }
             }
             else
             {
@@ -86,7 +103,11 @@ internal static class ILLexer
 
     private static void Add(List<DocumentSpan> output, int start, int end, SpanKind kind)
     {
-        if (end <= start) return;
+        if (end <= start)
+        {
+            return;
+        }
+
         if (output.Count > 0)
         {
             var last = output[^1];

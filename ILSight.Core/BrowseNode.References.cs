@@ -12,7 +12,10 @@ public static partial class BrowseNodes
     private static bool HasReferences(LoadedModule module)
     {
         if (!module.File.AssemblyReferences.IsEmpty)
+        {
             return true;
+        }
+
         return module.File.Metadata.GetTableRowCount(TableIndex.ModuleRef) > 0;
     }
 
@@ -35,10 +38,16 @@ public static partial class BrowseNodes
     {
         var children = new List<BrowseNode>();
         if (ForwardedTypes.UsesReference(LoadedAssemblies.EnsureReferenceUsage(reference.Module), reference.Reference.Handle))
+        {
             children.Add(Create(parent, new NodeSubject.ReferencedTypes { Reference = reference }));
+        }
+
         var referenced = ResolveReferenced(reference);
         if (referenced != null)
+        {
             children.AddRange(ListAssemblyReferences(referenced, parent));
+        }
+
         return children.ToArray();
     }
 
@@ -47,7 +56,10 @@ public static partial class BrowseNodes
     private static LoadedModule? ResolveReferenced(AssemblyReferenceInfo reference)
     {
         if (AssemblyResolving.ResolveAssembly(reference.Module.Resolver, reference.Reference) is not LoadedModule referenced)
+        {
             return null;
+        }
+
         return referenced;
     }
 
@@ -103,9 +115,15 @@ public static partial class BrowseNodes
     private static string GetQualifiedName(BrowseNode parent, string ns, string label)
     {
         if (parent.Subject is NodeSubject.TypeReference)
+        {
             return $"{GetFullName(parent)}.{label}";
+        }
+
         if (ns.Length == 0)
+        {
             return label;
+        }
+
         return $"{ns}.{label}";
     }
 
@@ -114,9 +132,15 @@ public static partial class BrowseNodes
     private static string GetQualifiedReflectionName(BrowseNode parent, string ns, string name)
     {
         if (parent.Subject is NodeSubject.TypeReference holder)
+        {
             return $"{holder.Value.ReflectionName}+{name}";
+        }
+
         if (ns.Length == 0)
+        {
             return name;
+        }
+
         return $"{ns}.{name}";
     }
 
@@ -124,7 +148,10 @@ public static partial class BrowseNodes
     {
         var usage = LoadedAssemblies.EnsureReferenceUsage(type.Module);
         if (ForwardedTypes.ListTypesIn(usage, type.Handle).Count > 0)
+        {
             return true;
+        }
+
         return ForwardedTypes.ListMembersOf(usage, type.Handle).Count > 0;
     }
 
@@ -159,7 +186,10 @@ public static partial class BrowseNodes
     {
         var declared = ResolveUsed(module, handle).MemberDefinition;
         if (declared is IMethod method && method.AccessorOwner != null)
+        {
             return method.AccessorOwner;
+        }
+
         return declared;
     }
 
@@ -167,7 +197,10 @@ public static partial class BrowseNodes
     {
         var reference = module.MetadataFile.Metadata.GetMemberReference(handle);
         if (reference.GetKind() == MemberReferenceKind.Field)
+        {
             return DecompilerFacts.ResolveMember(module, handle);
+        }
+
         return module.ResolveMethod(handle, default);
     }
 
@@ -202,7 +235,9 @@ public static partial class BrowseNodes
         {
             var file = metadata.GetAssemblyFile(handle);
             if (metadata.StringComparer.Equals(file.Name, name))
+            {
                 return file.ContainsMetadata;
+            }
         }
         return false;
     }
@@ -215,7 +250,10 @@ public static partial class BrowseNodes
         {
             var module = metadata.GetMethodDefinition(handle).GetImport().Module;
             if (module.IsNil)
+            {
                 continue;
+            }
+
             if (!imports.TryGetValue(module, out var methods))
             {
                 methods = new List<MethodDefinitionHandle>();
@@ -230,7 +268,10 @@ public static partial class BrowseNodes
         ModuleReferenceHandle module)
     {
         if (imports.TryGetValue(module, out var methods))
+        {
             return methods;
+        }
+
         return [];
     }
 
@@ -243,7 +284,9 @@ public static partial class BrowseNodes
         {
             var import = CreateImport(typeSystem.GetDefinition(handle), module);
             if (import != null)
+            {
                 imports.Add(import);
+            }
         }
         return imports
             .OrderBy(i => i.Label, NaturalStringComparer.Instance)
@@ -260,10 +303,16 @@ public static partial class BrowseNodes
     {
         var declaring = method.DeclaringTypeDefinition;
         if (declaring == null)
+        {
             return null;
+        }
+
         var shown = NodeDefinitions.FindMember(module.Module, FindEnclosingMethod(method, declaring));
         if (shown == null)
+        {
             return null;
+        }
+
         var entryPoint = ReadEntryPoint(module.Module.File.Metadata, method);
         return new ImportedMethodInfo { Shown = shown, Id = IdStringProvider.GetIdString(method), Label = GetImportLabel(method), DeclaringTypeName = EntityText.FullName(declaring), EntryPoint = entryPoint, ModuleName = module.Name };
     }
@@ -274,7 +323,10 @@ public static partial class BrowseNodes
         var label = EntityText.Label(method);
         var enclosing = FindEnclosingName(method.Name);
         if (enclosing == null)
+        {
             return label;
+        }
+
         return enclosing + label.Substring(method.Name.Length);
     }
 
@@ -284,10 +336,16 @@ public static partial class BrowseNodes
     private static string? FindEnclosingName(string name)
     {
         if (!name.StartsWith('<'))
+        {
             return null;
+        }
+
         var end = name.IndexOf(LocalFunctionMarker, StringComparison.Ordinal);
         if (end < 0)
+        {
             return null;
+        }
+
         return name.Substring(1, end - 1);
     }
 
@@ -297,10 +355,16 @@ public static partial class BrowseNodes
     {
         var enclosing = FindEnclosingName(method.Name);
         if (enclosing == null)
+        {
             return method;
+        }
+
         var declared = declaring.Methods.FirstOrDefault(m => m.Name == enclosing);
         if (declared == null)
+        {
             return method;
+        }
+
         return declared;
     }
 
@@ -310,7 +374,10 @@ public static partial class BrowseNodes
         var handle = DecompilerFacts.GetMethodHandle(method);
         var import = metadata.GetMethodDefinition(handle).GetImport();
         if (import.Name.IsNil)
+        {
             return method.Name;
+        }
+
         return metadata.GetString(import.Name);
     }
 }

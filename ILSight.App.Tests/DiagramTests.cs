@@ -8,7 +8,10 @@ namespace ILSight.App.Tests;
 
 public sealed class DiagramTests
 {
-    private static CodeReference.Entity TypeOf(AppStateDriver d, string type) => d.Fixture(type).Definition;
+    private static CodeReference.Entity TypeOf(AppStateDriver d, string type)
+    {
+        return d.Fixture(type).Definition;
+    }
 
     private static List<string> CardNames(TypeDiagram diagram)
     {

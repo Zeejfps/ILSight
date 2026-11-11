@@ -22,28 +22,38 @@ public static class OptionFolds
         foreach (var name in names)
         {
             if (groups.Folded.Add(name))
+            {
                 groups.Revision++;
+            }
         }
     }
 
     public static void Unfold(FoldedGroups groups, string group)
     {
         if (groups.Folded.Remove(group))
+        {
             groups.Revision++;
+        }
     }
 
     /// <summary>Unfolds <paramref name="group"/> when it is folded, and folds it otherwise.</summary>
     public static void Flip(FoldedGroups groups, string group)
     {
         if (!groups.Folded.Remove(group))
+        {
             groups.Folded.Add(group);
+        }
+
         groups.Revision++;
     }
 
     public static void UnfoldAll(FoldedGroups groups)
     {
         if (groups.Folded.Count == 0)
+        {
             return;
+        }
+
         groups.Folded.Clear();
         groups.Revision++;
     }

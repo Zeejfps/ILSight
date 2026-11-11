@@ -272,7 +272,10 @@ public sealed class SearchTests
     {
         var results = new List<SearchResult>();
         await foreach (var batch in search)
+        {
             results.AddRange(batch);
+        }
+
         return results;
     }
 }

@@ -148,10 +148,16 @@ public static class MetadataGrids
         {
             var filter = filters[c];
             if (filter != null && filter.IsActive)
+            {
                 active.Add((c, filter));
+            }
         }
         var rows = order ?? Enumerable.Range(0, grid.Rows.Count).ToArray();
-        if (active.Count == 0) return rows;
+        if (active.Count == 0)
+        {
+            return rows;
+        }
+
         return rows.Where(row => active.TrueForAll(a => MatchesCell(grid, row, a.Column, a.Filter))).ToArray();
     }
 
@@ -160,8 +166,16 @@ public static class MetadataGrids
     public static MetadataRowDetails? GetDetails(MetadataGrid grid, int row)
     {
         var details = grid.Schema.Details;
-        if (details == null) return null;
-        if (grid.DetailCells.TryGetValue(row, out var known)) return known;
+        if (details == null)
+        {
+            return null;
+        }
+
+        if (grid.DetailCells.TryGetValue(row, out var known))
+        {
+            return known;
+        }
+
         MetadataRowDetails? result;
         try
         {
@@ -182,7 +196,11 @@ public static class MetadataGrids
         var lines = grid.LineCells ??= new (string, int)?[grid.Rows.Count * grid.GridColumns.Count];
         var index = row * grid.GridColumns.Count + column;
         var known = lines[index];
-        if (known != null) return known.Value;
+        if (known != null)
+        {
+            return known.Value;
+        }
+
         var text = GetText(grid, row, column).TrimEnd('\r', '\n');
         var end = text.IndexOf('\n');
         var result = end < 0 ? (text, 0) : (text[..end].TrimEnd('\r'), text.AsSpan(end).Count('\n'));
@@ -196,7 +214,10 @@ public static class MetadataGrids
     {
         var keys = new object?[grid.Rows.Count];
         for (var row = 0; row < keys.Length; row++)
+        {
             keys[row] = GetValue(grid, row, column);
+        }
+
         var order = Enumerable.Range(0, keys.Length).ToArray();
         var sign = descending ? -1 : 1;
         Array.Sort(order, (a, b) =>
@@ -211,9 +232,17 @@ public static class MetadataGrids
     public static MetadataTooltip? GetTooltip(MetadataGrid grid, int row, int column)
     {
         var info = grid.GridColumns[column];
-        if (info.Column.Flags == null && info.Tooltip == null) return null;
+        if (info.Column.Flags == null && info.Tooltip == null)
+        {
+            return null;
+        }
+
         var index = row * grid.GridColumns.Count + column;
-        if (grid.Tooltips.TryGetValue(index, out var known)) return known;
+        if (grid.Tooltips.TryGetValue(index, out var known))
+        {
+            return known;
+        }
+
         object? value;
         try
         {
@@ -240,9 +269,17 @@ public static class MetadataGrids
     /// the table's end, as the end of an empty member list is, leads to the last row.</summary>
     public static MetadataAddress? GetLink(MetadataGrid grid, int row, int column)
     {
-        if (!grid.GridColumns[column].Column.IsToken) return null;
+        if (!grid.GridColumns[column].Column.IsToken)
+        {
+            return null;
+        }
+
         var index = row * grid.GridColumns.Count + column;
-        if (grid.Links.TryGetValue(index, out var known)) return known;
+        if (grid.Links.TryGetValue(index, out var known))
+        {
+            return known;
+        }
+
         var result = FindLink(grid, row, column);
         grid.Links[index] = result;
         return result;
@@ -250,9 +287,17 @@ public static class MetadataGrids
 
     private static MetadataAddress? FindLink(MetadataGrid grid, int row, int column)
     {
-        if (GetValue(grid, row, column) is not int token || (token & 0xFFFFFF) == 0) return null;
+        if (GetValue(grid, row, column) is not int token || (token & 0xFFFFFF) == 0)
+        {
+            return null;
+        }
+
         var table = (TableIndex)(token >>> 24);
-        if (!IsTableListed(grid, table)) return null;
+        if (!IsTableListed(grid, table))
+        {
+            return null;
+        }
+
         var count = grid.File.Metadata.GetTableRowCount(table);
         return new MetadataAddress(table, Math.Min(token & 0xFFFFFF, count) - 1);
     }
@@ -261,7 +306,11 @@ public static class MetadataGrids
     /// do a table they can read that has rows.</summary>
     private static bool IsTableListed(MetadataGrid grid, TableIndex table)
     {
-        if (grid.Listed.TryGetValue(table, out var known)) return known;
+        if (grid.Listed.TryGetValue(table, out var known))
+        {
+            return known;
+        }
+
         var listed = Enum.IsDefined(table) && grid.File.Metadata.GetTableRowCount(table) > 0 && MetadataTables.Create(table, grid.File) != null;
         grid.Listed[table] = listed;
         return listed;
@@ -282,7 +331,11 @@ public static class MetadataGrids
     public static CodeReference.Navigable? FindDefinition(MetadataGrid grid, int row)
     {
         var file = grid.File;
-        if (!ReferenceEquals(file, grid.Module.File) || grid.Schema.Table == null) return null;
+        if (!ReferenceEquals(file, grid.Module.File) || grid.Schema.Table == null)
+        {
+            return null;
+        }
+
         var token = (int)grid.Schema.Table << 24 | row + 1;
         var handle = MetadataTokens.EntityHandle(token);
         var name = handle.Kind == HandleKind.AssemblyDefinition ? grid.Module.Name
@@ -294,7 +347,11 @@ public static class MetadataGrids
     private static bool MatchesCell(MetadataGrid grid, int row, int column, MetadataColumnFilter filter)
     {
         var value = GetValue(grid, row, column);
-        if (value is null) return false;
+        if (value is null)
+        {
+            return false;
+        }
+
         return filter switch
         {
             MetadataColumnFilter.ByFlags flags => flags.Flags.IsEmpty || FilterStatePresenter.MatchesFilter(flags.Flags, GetBits(value)),
@@ -305,15 +362,24 @@ public static class MetadataGrids
 
     private static bool MatchesText(MetadataGrid grid, int row, int column, object value, string text)
     {
-        if (text.Length == 0) return true;
+        if (text.Length == 0)
+        {
+            return true;
+        }
+
         var pattern = FindPattern(text);
         if (pattern != null)
+        {
             return pattern.IsMatch(value.ToString() ?? "");
+        }
+
         if (grid.GridColumns[column].Column.IsNumeric)
         {
             var compared = Compare(value, text);
             if (compared != null)
+            {
                 return compared.Value;
+            }
         }
         return GetText(grid, row, column).Contains(text, StringComparison.OrdinalIgnoreCase);
     }
@@ -322,17 +388,30 @@ public static class MetadataGrids
     private static MetadataTooltip? ExplainFlags(FlagsSchema flags, object? cell)
     {
         if (cell == null)
+        {
             return null;
+        }
+
         return FilterStatePresenter.Explain(flags, GetBits(cell));
     }
 
     internal static Regex? FindPattern(string text)
     {
-        if (text.Length < 2 || text[0] != '/' || text[^1] != '/') return null;
+        if (text.Length < 2 || text[0] != '/' || text[^1] != '/')
+        {
+            return null;
+        }
+
         if (MetadataGrid.Patterns.TryGetValue(text, out var kept))
+        {
             return kept;
+        }
+
         if (MetadataGrid.Patterns.Count >= MetadataGrid.MaxPatterns)
+        {
             MetadataGrid.Patterns.Clear();
+        }
+
         return MetadataGrid.Patterns.GetOrAdd(text, static t =>
         {
             try
@@ -357,11 +436,19 @@ public static class MetadataGrids
             [('>' or '<' or '='), ..] => (text[..1], text[1..].Trim()),
             _ => (null, text),
         };
-        if (op == null) return null;
+        if (op == null)
+        {
+            return null;
+        }
+
         var parsed = operand.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
             ? long.TryParse(operand.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var number)
             : long.TryParse(operand, NumberStyles.Integer, CultureInfo.InvariantCulture, out number);
-        if (!parsed) return null;
+        if (!parsed)
+        {
+            return null;
+        }
+
         long actual;
         try
         {
@@ -402,23 +489,43 @@ public static class MetadataGrids
 
     private static string FormatValue(object? value, string? format)
     {
-        if (value is null) return "";
+        if (value is null)
+        {
+            return "";
+        }
+
         if (!string.IsNullOrEmpty(format))
         {
             if (value is Enum enumValue)
+            {
                 value = Convert.ChangeType(enumValue, enumValue.GetTypeCode(), CultureInfo.InvariantCulture);
+            }
+
             if (value is IFormattable formattable)
+            {
                 return formattable.ToString(format, CultureInfo.InvariantCulture);
+            }
         }
         return value.ToString() ?? "";
     }
 
     private static int Compare(object? a, object? b)
     {
-        if (a is null || b is null) return a is null ? b is null ? 0 : -1 : 1;
-        if (a.GetType() == b.GetType() && a is IComparable comparable) return comparable.CompareTo(b);
+        if (a is null || b is null)
+        {
+            return a is null ? b is null ? 0 : -1 : 1;
+        }
+
+        if (a.GetType() == b.GetType() && a is IComparable comparable)
+        {
+            return comparable.CompareTo(b);
+        }
+
         if (IsNumber(a) && IsNumber(b))
+        {
             return Convert.ToDecimal(a, CultureInfo.InvariantCulture).CompareTo(Convert.ToDecimal(b, CultureInfo.InvariantCulture));
+        }
+
         return string.CompareOrdinal(a.ToString(), b.ToString());
     }
 

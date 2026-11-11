@@ -17,7 +17,10 @@ internal static class ExportStatusView
     {
         var running = export.Running;
         if (running == null)
+        {
             return false;
+        }
+
         Running(ui, running, export.WaitingCount);
         return true;
     }
@@ -26,9 +29,14 @@ internal static class ExportStatusView
     {
         var t = ui.State.Strings;
         if (Glance(ui, running, waiting))
+        {
             OpenExports(ui.State);
+        }
+
         if (!running.IsCancelling && IconButton(ui, "cancel-export", ui.State.Icons.ExportCancel, t.StatusCancelExport))
+        {
             Commands.Later(ui.State, static a => Exports.CancelRunning(a.Export));
+        }
     }
 
     /// <summary>What the export writes, its bar and how many wait, as one button; returns whether it
@@ -47,7 +55,10 @@ internal static class ExportStatusView
             ui.Text(text, color: theme.AccentText, size: theme.FontSizeSmall);
             var fraction = progress.Fraction;
             if (fraction != null)
+            {
                 ui.ProgressBar(fraction.Value, Sizing.Fixed(BarWidth));
+            }
+
             Queued(ui, waiting);
         }
         ui.Tooltip(i.Id, t.StatusShowExports);
@@ -57,16 +68,25 @@ internal static class ExportStatusView
     private static string Describe(Strings t, string name, int part, int parts, bool cancelling)
     {
         if (cancelling)
+        {
             return t.ExportsCancelling;
+        }
+
         if (parts > 1)
+        {
             return t.StatusExportingPart(part, parts, name);
+        }
+
         return t.StatusExportingName(name);
     }
 
     private static void Queued(Ui<UiState> ui, int waiting)
     {
         if (waiting == 0)
+        {
             return;
+        }
+
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var text = ui.Memo("export-queued", (waiting, t), static a => a.t.StatusExportQueued(a.waiting));
@@ -79,7 +99,10 @@ internal static class ExportStatusView
         var theme = ui.Theme;
         var i = ui.Clickable(id);
         using (ui.Row(i.Id, ButtonBox(theme, i)))
+        {
             ui.Glyph(glyph, theme.TextMuted, theme.IconSize);
+        }
+
         ui.Tooltip(i.Id, tooltip);
         return i.Clicked;
     }
@@ -100,9 +123,15 @@ internal static class ExportStatusView
     private static uint HoverBackground(UiTheme theme, Interaction i)
     {
         if (i.Held)
+        {
             return theme.Pressed(theme.RowHover);
+        }
+
         if (i.Hovered)
+        {
             return theme.RowHover;
+        }
+
         return 0u;
     }
 }

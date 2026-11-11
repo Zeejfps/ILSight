@@ -18,7 +18,10 @@ public static class TabPlaceholders
     public static DecompiledDocument GetDocument(TabPlaceholder placeholder, TabContent content, Strings t)
     {
         if (placeholder.Written.TryGet((content, new(t)), out var document))
+        {
             return document;
+        }
+
         document = Documents.CreateFromText("", $"// {Write(t, content)}");
         placeholder.Written = new((content, new(t)), document);
         return document;

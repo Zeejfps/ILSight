@@ -69,7 +69,10 @@ public static class Theming
     private static List<ThemeFile> ReadUserThemes(string? folder)
     {
         if (folder == null)
+        {
             return new List<ThemeFile>();
+        }
+
         return ListThemeFiles<ThemeFile>(folder, ThemeFilePattern, SchemaFileName)
             .Select(static f => Theming.ReadThemeFile(f.Id, f.Path))
             .ToList();
@@ -86,7 +89,9 @@ public static class Theming
         {
             var id = ThemeId<TFile>.Parse(Path.GetFileNameWithoutExtension(path));
             if (id != null)
+            {
                 files.Add((id, path));
+            }
         }
         return files;
     }
@@ -106,7 +111,10 @@ public static class Theming
         }
     }
 
-    private static bool IsNamed(string path, string fileName) => string.Equals(Path.GetFileName(path), fileName, StringComparison.OrdinalIgnoreCase);
+    private static bool IsNamed(string path, string fileName)
+    {
+        return string.Equals(Path.GetFileName(path), fileName, StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>Reports the errors of <paramref name="errors"/> not in <paramref name="known"/>, one report
     /// per file, as problems of themes of <paramref name="kind"/>.</summary>
@@ -117,7 +125,9 @@ public static class Theming
             .Where(e => !known.Contains(e))
             .GroupBy(static e => e.File);
         foreach (var fileErrors in byFile)
+        {
             Errors.Report(appState, new AppProblem.ThemeFileProblems(kind, fileErrors.Key, fileErrors.ToList()));
+        }
     }
 
     /// <summary>The theme the app is drawn in: the chosen one as resolved, or the built-in dark one while
@@ -133,10 +143,16 @@ public static class Theming
     {
         var folder = appState.SettingsPlace.ThemesFolder;
         if (folder == null)
+        {
             return null;
+        }
+
         var error = CreateThemeFolder(folder, SchemaFileName, BuiltInThemes.ReadSchema(), BuiltInThemes.ReadGuide());
         if (error == null)
+        {
             return folder;
+        }
+
         Errors.Report(appState, new AppProblem.ThemesFolderNotMade(ThemeKind.Color, error));
         return null;
     }
@@ -166,11 +182,17 @@ public static class Theming
         var root = chain[0].File;
         var implicitBase = FindImplicitBase(catalog, root);
         if (implicitBase == null)
+        {
             return null;
+        }
+
         var merged = new MergedTheme();
         AddCodeAndIcons(merged, implicitBase);
         foreach (var link in chain)
+        {
             AddContents(merged, link.Contents);
+        }
+
         var errors = new List<ThemeError>();
         var theme = BuildTheme(merged, file.File, errors);
         ThemeCatalogs.AddCatalogErrors(catalog, errors);
@@ -229,14 +251,20 @@ public static class Theming
     private static void WriteIfChanged(string path, string text)
     {
         if (IsWritten(path, text))
+        {
             return;
+        }
+
         File.WriteAllText(path, text);
     }
 
     private static bool IsWritten(string path, string text)
     {
         if (!File.Exists(path))
+        {
             return false;
+        }
+
         return File.ReadAllText(path) == text;
     }
 
@@ -248,14 +276,20 @@ public static class Theming
     {
         var folder = PrepareThemesFolder(appState);
         if (folder == null)
+        {
             return null;
+        }
+
         var themes = appState.Themes;
         var parent = ThemeCatalogs.FindShownId(themes, appState.Theme);
         var id = FindFreeCustomId(parent, candidate => IsTaken(themes, folder, candidate));
         var path = Path.Combine(folder, id.Text + ThemeFile.Extension);
         var text = ThemeDraft.Compose(nameOf(parent), parent, ThemeCatalogs.FindTheme(themes, parent));
         if (!TryWriteNewFile(appState, path, text, ThemeKind.Color))
+        {
             return null;
+        }
+
         ReloadUserThemes(appState);
         SetTheme(appState, id);
         return path;
@@ -284,7 +318,10 @@ public static class Theming
         where TTheme : class
     {
         if (ThemeCatalogs.FindThemeIndex(themes, id) >= 0)
+        {
             return true;
+        }
+
         return File.Exists(Path.Combine(folder, id.Text + ThemeFile.Extension));
     }
 
@@ -324,18 +361,30 @@ public static class Theming
     private static async Task WatchThemeFolderAsync(AppState appState, WatchedThemeFolder folder)
     {
         if (!StartWatching(appState, folder))
+        {
             return;
+        }
+
         var restartedSinceChange = false;
         while (true)
         {
             var outcome = await Background.Wait(Theming.FindNextChange(folder.Watch));
             if (outcome is not Outcome<ThemeFolderEvent>.Ok { Value: var news })
+            {
                 return;
+            }
+
             if (news.Kind == ThemeFolderEventKind.Stopped)
+            {
                 return;
+            }
+
             var isLost = news.Kind == ThemeFolderEventKind.Lost;
             if (isLost && !RestartWatching(appState, folder, news.Reason, restartedSinceChange))
+            {
                 return;
+            }
+
             restartedSinceChange = isLost;
             folder.Reload(appState);
         }
@@ -347,10 +396,16 @@ public static class Theming
     {
         var path = folder.Prepare(appState);
         if (path == null)
+        {
             return false;
+        }
+
         var error = Theming.StartWatch(folder.Watch, path);
         if (error == null)
+        {
             return true;
+        }
+
         ReportUnwatched(appState, folder, error);
         return false;
     }
@@ -361,7 +416,10 @@ public static class Theming
     private static bool RestartWatching(AppState appState, WatchedThemeFolder folder, string reason, bool restartedSinceChange)
     {
         if (!restartedSinceChange)
+        {
             return StartWatching(appState, folder);
+        }
+
         ReportUnwatched(appState, folder, reason);
         return false;
     }
@@ -392,7 +450,10 @@ public static class Theming
     internal static void AddContents(MergedTheme merged, ThemeContents contents)
     {
         foreach (var (name, value) in contents.Palette)
+        {
             merged.Palette[name] = value;
+        }
+
         StackValues(merged.Ui, contents.Ui);
         StackValues(merged.Code, contents.Code);
         StackValues(merged.Icons, contents.Icons);
@@ -401,13 +462,18 @@ public static class Theming
     private static void StackValues(Dictionary<string, List<ThemeValue>> merged, IReadOnlyDictionary<string, ThemeValue> added)
     {
         foreach (var (key, value) in added)
+        {
             EnsureLayers(merged, key).Add(value);
+        }
     }
 
     private static List<ThemeValue> EnsureLayers(Dictionary<string, List<ThemeValue>> merged, string key)
     {
         if (merged.TryGetValue(key, out var layers))
+        {
             return layers;
+        }
+
         layers = new List<ThemeValue>();
         merged[key] = layers;
         return layers;
@@ -436,7 +502,10 @@ public static class Theming
     {
         var colors = new Dictionary<string, uint>();
         foreach (var (key, layers) in values)
+        {
             LookUpTopColor(merged, section, key, layers, colors, errors);
+        }
+
         return colors;
     }
 
@@ -459,9 +528,15 @@ public static class Theming
     private static bool TryLookUp(MergedTheme merged, ThemeValue value, out uint color)
     {
         if (!value.IsPaletteName)
+        {
             return UiColor.TryParse(value.Text, out color);
+        }
+
         if (merged.Palette.TryGetValue(value.Text, out var named))
+        {
             return UiColor.TryParse(named.Text, out color);
+        }
+
         color = 0;
         return false;
     }
@@ -482,7 +557,9 @@ public static class Theming
     internal static void AddFonts(MergedIconTheme merged, IconThemeContents contents)
     {
         foreach (var (id, font) in contents.Fonts)
+        {
             merged.Fonts[id] = font;
+        }
     }
 
     /// <summary>Takes everything <paramref name="contents"/> sets, over what was added before.</summary>
@@ -490,13 +567,18 @@ public static class Theming
     {
         AddFonts(merged, contents);
         foreach (var (key, value) in contents.Icons)
+        {
             EnsureLayers(merged, key).Add(value);
+        }
     }
 
     private static List<IconValue> EnsureLayers(MergedIconTheme merged, string key)
     {
         if (merged.Icons.TryGetValue(key, out var layers))
+        {
             return layers;
+        }
+
         layers = new List<IconValue>();
         merged.Icons[key] = layers;
         return layers;
@@ -509,11 +591,20 @@ public static class Theming
         var glyphs = new Dictionary<string, IconGlyph>();
         var values = new Dictionary<string, IconValue>();
         foreach (var (key, layers) in merged.Icons)
+        {
             TakeTopIcon(merged, key, layers, glyphs, values, errors);
+        }
+
         if (fallback == null)
+        {
             return CreateIconTheme(new IconSet(glyphs), ListFaces(merged, null), values);
+        }
+
         foreach (var (key, value) in fallback.Values)
+        {
             values.TryAdd(key, value);
+        }
+
         return CreateIconTheme(new IconSet(glyphs, fallback.Set), ListFaces(merged, fallback), values);
     }
 
@@ -532,7 +623,10 @@ public static class Theming
             var value = layers[i];
             var glyph = MakeGlyph(merged, key, value, errors);
             if (glyph == null)
+            {
                 continue;
+            }
+
             glyphs[key] = glyph.Value;
             values[key] = value;
             return;
@@ -559,7 +653,10 @@ public static class Theming
             return null;
         }
         if (font is not IconFont.Loaded loaded)
+        {
             return null;
+        }
+
         if (!loaded.Characters.Contains(glyph.Codepoint))
         {
             var codepoint = glyph.Codepoint.ToString(CodepointFormat, CultureInfo.InvariantCulture);
@@ -579,7 +676,10 @@ public static class Theming
             .Select(static f => f.Face)
             .ToList();
         if (fallback == null)
+        {
             return faces;
+        }
+
         var families = faces
             .Select(static f => f.Family)
             .ToHashSet();
@@ -637,7 +737,10 @@ public static class Theming
     {
         var content = json.AsSpan();
         if (content.StartsWith(Utf8Bom))
+        {
             return content.Slice(Utf8Bom.Length);
+        }
+
         return content;
     }
 
@@ -647,7 +750,9 @@ public static class Theming
         for (var i = 0; i < content.Length; i++)
         {
             if (content[i] == (byte)'\n')
+            {
                 starts.Add(i + 1);
+            }
         }
         return starts;
     }
@@ -661,7 +766,10 @@ public static class Theming
             return;
         }
         while (ReadJsonKey(json, ref reader, out var key, out var line))
+        {
             readKey(ref reader, key, line);
+        }
+
         reader.Read();
     }
 
@@ -673,13 +781,21 @@ public static class Theming
         key = "";
         line = 0;
         if (reader.TokenType == JsonTokenType.EndObject)
+        {
             return false;
+        }
+
         line = GetLine(json, reader);
         var name = reader.GetString();
         if (name == null)
+        {
             AddJsonError(json, line, ThemeProblem.InvalidJson, detail: "A key is null.");
+        }
         else
+        {
             key = name;
+        }
+
         reader.Read();
         return true;
     }
@@ -718,9 +834,14 @@ public static class Theming
             var key = ThemeJson.NameKey + "." + tag;
             var name = ReadJsonString(json, ref reader, key, line);
             if (name == null)
+            {
                 continue;
+            }
+
             if (!byTag.TryAdd(tag, name))
+            {
                 AddJsonError(json, line, ThemeProblem.DuplicateLanguage, key);
+            }
         }
         return byTag;
     }
@@ -729,7 +850,10 @@ public static class Theming
     internal static bool IsJsonObject(ThemeJson json, ref Utf8JsonReader reader, string key, int line)
     {
         if (reader.TokenType == JsonTokenType.StartObject)
+        {
             return true;
+        }
+
         AddJsonError(json, line, ThemeProblem.NotAnObject, key);
         reader.Skip();
         return false;
@@ -739,7 +863,10 @@ public static class Theming
     internal static string? ReadJsonString(ThemeJson json, ref Utf8JsonReader reader, string key, int line)
     {
         if (reader.TokenType == JsonTokenType.String)
+        {
             return reader.GetString();
+        }
+
         AddJsonError(json, line, ThemeProblem.NotAString, key);
         reader.Skip();
         return null;
@@ -757,7 +884,10 @@ public static class Theming
         var offset = (int)reader.TokenStartIndex;
         var index = json.LineStarts.BinarySearch(offset);
         if (index >= 0)
+        {
             return index + 1;
+        }
+
         return ~index;
     }
 
@@ -792,7 +922,10 @@ public static class Theming
         var theme = CreateFile(id, path);
         var json = Theming.ReadJsonBytes(theme.Json, path);
         if (json != null)
+        {
             Theming.ReadJson(theme.Json, json, (ref Utf8JsonReader r, string k, int l) => ReadThemeKey(theme, ref r, k, l));
+        }
+
         Theming.KeepThemeContents(theme);
         return theme;
     }
@@ -810,7 +943,10 @@ public static class Theming
     private static void KeepThemeContents(ThemeFile theme)
     {
         if (theme.Json.IsUnreadable)
+        {
             return;
+        }
+
         theme.Contents = new ThemeContents(theme.Palette, theme.Ui, theme.Code, theme.Icons);
     }
 
@@ -852,17 +988,24 @@ public static class Theming
     {
         var name = Theming.ReadJsonName(theme.Json, ref reader, line, theme.Id.Text);
         if (name != null)
+        {
             theme.Name = name;
+        }
     }
 
     private static void ReadType(ThemeFile theme, ref Utf8JsonReader reader, int line)
     {
         var type = Theming.ReadJsonString(theme.Json, ref reader, TypeKey, line);
         if (type == null)
+        {
             return;
+        }
+
         theme.Type = ParseThemeType(type);
         if (theme.Type == null)
+        {
             Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownType, type);
+        }
     }
 
     private static ThemeType? ParseThemeType(string type)
@@ -879,7 +1022,10 @@ public static class Theming
     {
         var parent = Theming.ReadJsonString(theme.Json, ref reader, ThemeJson.ExtendsKey, line);
         if (parent == null)
+        {
             return;
+        }
+
         var id = ThemeId<ThemeFile>.Parse(parent);
         if (id == null)
         {
@@ -893,15 +1039,24 @@ public static class Theming
     private static void ReadPalette(ThemeFile theme, ref Utf8JsonReader reader, int line)
     {
         if (!Theming.IsJsonObject(theme.Json, ref reader, PaletteKey, line))
+        {
             return;
+        }
+
         while (Theming.ReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
         {
             var key = PaletteKey + "." + name;
             var color = Theming.ReadJsonString(theme.Json, ref reader, key, nameLine);
             if (color == null)
+            {
                 continue;
+            }
+
             if (!IsValidColor(theme, key, color, nameLine))
+            {
                 continue;
+            }
+
             theme.Palette[name] = new ThemeValue(color, theme.File, nameLine);
         }
     }
@@ -910,9 +1065,14 @@ public static class Theming
     private static void ReadColors(ThemeFile theme, ref Utf8JsonReader reader, string section, int line, Dictionary<string, ThemeValue> colors, HashSet<string> keys)
     {
         if (!Theming.IsJsonObject(theme.Json, ref reader, section, line))
+        {
             return;
+        }
+
         while (Theming.ReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
+        {
             ReadColor(theme, ref reader, section, name, nameLine, colors, keys);
+        }
     }
 
     private static void ReadColor(ThemeFile theme, ref Utf8JsonReader reader, string section, string name, int line, Dictionary<string, ThemeValue> colors, HashSet<string> keys)
@@ -925,10 +1085,16 @@ public static class Theming
         }
         var text = Theming.ReadJsonString(theme.Json, ref reader, key, line);
         if (text == null)
+        {
             return;
+        }
+
         var value = new ThemeValue(text, theme.File, line);
         if (!value.IsPaletteName && !IsValidColor(theme, key, text, line))
+        {
             return;
+        }
+
         colors[name] = value;
     }
 
@@ -983,7 +1149,10 @@ public static class Theming
     {
         var watcher = new FileSystemWatcher(folder);
         foreach (var filter in watch.Filters)
+        {
             watcher.Filters.Add(filter);
+        }
+
         watcher.IncludeSubdirectories = watch.IncludesSubfolders;
         var quiet = new Timer(state => OnQuiet(watch, state));
         watcher.Changed += (sender, e) => OnChanged(watch, sender, e);
@@ -1001,7 +1170,9 @@ public static class Theming
         }
         watcher.EnableRaisingEvents = true;
         if (removalWatcher != null)
+        {
             removalWatcher.EnableRaisingEvents = true;
+        }
     }
 
     /// <summary>Watches the folder holding the one <paramref name="watcher"/> watches, to lose the watch
@@ -1012,7 +1183,10 @@ public static class Theming
         var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(watcher.Path));
         var parent = Path.GetDirectoryName(folder);
         if (parent == null)
+        {
             return null;
+        }
+
         var removalWatcher = new FileSystemWatcher(parent, Path.GetFileName(folder))
         {
             NotifyFilter = NotifyFilters.DirectoryName,
@@ -1021,7 +1195,9 @@ public static class Theming
         removalWatcher.Renamed += (_, e) =>
         {
             if (e.OldFullPath == folder)
+            {
                 LoseFolder(watch, watcher);
+            }
         };
         return removalWatcher;
     }
@@ -1049,11 +1225,20 @@ public static class Theming
         var shared = held.Value;
         var loss = shared.PendingLoss;
         if (loss != null)
+        {
             return TakePendingLoss(shared, loss);
+        }
+
         if (shared.Watcher == null)
+        {
             return Stopped;
+        }
+
         if (shared.IsChangePending)
+        {
             return TakePendingChange(shared);
+        }
+
         shared.Waiter ??= new TaskCompletionSource<ThemeFolderEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
         return shared.Waiter.Task;
     }
@@ -1090,7 +1275,10 @@ public static class Theming
         {
             var shared = held.Value;
             if (IsWatchReplaced(shared, lost))
+            {
                 return null;
+            }
+
             watcher = shared.Watcher;
             removalWatcher = shared.RemovalWatcher;
             quiet = shared.Quiet;
@@ -1123,7 +1311,10 @@ public static class Theming
             return;
         }
         if (sender is not FileSystemWatcher watcher)
+        {
             throw new UnreachableException("Only a FileSystemWatcher raises its own Error event.");
+        }
+
         LoseWatch(watch, watcher, e.GetException());
     }
 
@@ -1146,7 +1337,10 @@ public static class Theming
     private static bool IsWatchReplaced(ThemeFolderWatch.Shared shared, FileSystemWatcher? lost)
     {
         if (lost == null)
+        {
             return false;
+        }
+
         return !ReferenceEquals(lost, shared.Watcher);
     }
 
@@ -1164,11 +1358,16 @@ public static class Theming
         {
             var shared = held.Value;
             if (shared.Watcher == null)
+            {
                 return;
+            }
+
             waiter = shared.Waiter;
             shared.Waiter = null;
             if (waiter == null)
+            {
                 shared.IsChangePending = true;
+            }
         }
         waiter?.TrySetResult(new ThemeFolderEvent(ThemeFolderEventKind.Changed));
     }

@@ -46,7 +46,10 @@ internal static class DiagramView
         var view = DocumentPanels.GetView(ui.State.Documents, tab).Diagram;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!ui.State.Display.ShowOmnibar)
+        {
             OwnToolbar(ui, tab);
+        }
+
         if (diagram.Cards.Count == 0)
         {
             EmptyHint(ui, diagram);
@@ -61,7 +64,10 @@ internal static class DiagramView
     private static void OwnToolbar(Ui<UiState> ui, DocumentTab tab)
     {
         using (ui.PaneToolbar())
+        {
             Tools(ui, tab);
+        }
+
         ui.Separator();
     }
 
@@ -76,12 +82,21 @@ internal static class DiagramView
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
         {
             if (ui.IconButton("zoom-out", icons.ResourceZoomOut, t.ResourceZoomOut, camera.CanZoomOut))
+            {
                 DiagramCameras.ZoomOut(camera, area);
+            }
+
             ui.Text(t.ResourceZoomPercent(camera.Percent), color: ui.Theme.TextMuted);
             if (ui.IconButton("zoom-in", icons.ResourceZoomIn, t.ResourceZoomIn, camera.CanZoomIn))
+            {
                 DiagramCameras.ZoomIn(camera, area);
+            }
+
             if (ui.Button(t.DiagramFit, id: "fit"))
+            {
                 FitToView(view, area);
+            }
+
             ui.Separator(ui.Theme.IconSize);
             ShowHiddenMembersCheckbox(ui, view);
         }
@@ -91,7 +106,9 @@ internal static class DiagramView
     {
         var shows = view.ShowsHiddenMembers;
         if (ui.Checkbox(ui.State.Strings.DiagramShowHiddenMembers, ref shows, id: "show-hidden-members"))
+        {
             Diagrams.ShowHiddenMembers(view, shows);
+        }
     }
 
     /// <summary>Where the cards were drawn on the last frame.</summary>
@@ -105,7 +122,10 @@ internal static class DiagramView
     {
         var layout = view.Transition.Layout;
         if (layout == null)
+        {
             return;
+        }
+
         DiagramCameras.Fit(view.Camera, layout.Width, layout.Height, area);
     }
 
@@ -125,7 +145,10 @@ internal static class DiagramView
         FollowLayout(ui, view, diagram);
         HoldSelectedCard(view, selectedBefore);
         if (hasRect)
+        {
             BringIntoView(view, diagram, rect);
+        }
+
         var hit = FindHit(ui, view, diagram, i, hasRect, rect);
         Scroll(ui, view, rect, i.Hovered);
         Press(view, i, hit);
@@ -135,9 +158,14 @@ internal static class DiagramView
         ShowHandOverClickable(ui, view, i, hit);
         FillFrame(ui, view, diagram, hit);
         using (ui.Box(id, new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Background = ui.Theme.EditorBackground, Clip = true }))
+        {
             ui.Paint(view.Frame, Paint);
+        }
+
         if (hasRect)
+        {
             MemberTooltip(ui, tooltips, view, diagram, id, IsPanning(view, i), hit);
+        }
     }
 
     /// <summary>Where the selected card is drawn now, before the layout moves on; null when none is.</summary>
@@ -145,7 +173,10 @@ internal static class DiagramView
     {
         var selected = view.Selected;
         if (selected == null)
+        {
             return null;
+        }
+
         return Diagrams.GetCardPlace(view.Transition, selected);
     }
 
@@ -154,10 +185,15 @@ internal static class DiagramView
     private static void FollowLayout(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
         if (Diagrams.FollowLayout(view.Transition, diagram.Layout))
+        {
             view.LaidOutVersion = view.MeasuredVersion;
+        }
+
         Diagrams.AdvanceTransition(view.Transition, ui.DeltaTime);
         if (view.Transition.IsMoving)
+        {
             ui.RequestAnimationFrame();
+        }
     }
 
     /// <summary>Moves the view along with the selected card, which was drawn at <paramref name="before"/>, so
@@ -165,10 +201,16 @@ internal static class DiagramView
     private static void HoldSelectedCard(DiagramViewState view, PointF? before)
     {
         if (before == null)
+        {
             return;
+        }
+
         var after = FindSelectedPlace(view);
         if (after == null)
+        {
             return;
+        }
+
         var corner = view.Camera.Corner;
         DiagramCameras.LookFrom(view.Camera, new PointF(corner.X + after.Value.X - before.Value.X, corner.Y + after.Value.Y - before.Value.Y));
     }
@@ -179,19 +221,31 @@ internal static class DiagramView
     {
         var layout = view.Transition.Layout;
         if (layout == null)
+        {
             return;
+        }
+
         FitFirstLayout(view, layout, rect);
         if (view.LaidOutVersion != diagram.Version)
+        {
             return;
+        }
+
         FocusPendingCard(view, layout, rect);
     }
 
     private static void FitFirstLayout(DiagramViewState view, TypeLayout layout, UiRect rect)
     {
         if (!view.IsFitPending)
+        {
             return;
+        }
+
         if (layout.Places.Count == 0)
+        {
             return;
+        }
+
         DiagramCameras.Fit(view.Camera, layout.Width, layout.Height, rect);
         view.IsFitPending = false;
     }
@@ -200,15 +254,27 @@ internal static class DiagramView
     {
         var type = view.PendingFocus;
         if (type == null)
+        {
             return;
+        }
+
         view.PendingFocus = null;
         if (!layout.Places.TryGetValue(type, out var place))
+        {
             return;
+        }
+
         var face = FindFace(view, type);
         if (face == null)
+        {
             return;
+        }
+
         if (DiagramCameras.Shows(view.Camera, place, face.Width, face.Height, rect))
+        {
             return;
+        }
+
         DiagramCameras.CenterOn(view.Camera, new PointF(place.X + face.Width / 2, place.Y + face.Height / 2), rect);
     }
 
@@ -216,9 +282,15 @@ internal static class DiagramView
     private static DiagramHit FindHit(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, Interaction i, bool hasRect, UiRect rect)
     {
         if (!hasRect)
+        {
             return new DiagramHit.Nothing();
+        }
+
         if (!i.Hovered && !i.Held)
+        {
             return new DiagramHit.Nothing();
+        }
+
         var point = DiagramCameras.ToDiagram(view.Camera, ui.Input.Pointer, rect);
         return HitAt(view, diagram, point);
     }
@@ -230,7 +302,9 @@ internal static class DiagramView
         {
             var hit = HitCard(view, diagram.Cards[i], point);
             if (hit is not DiagramHit.Nothing)
+            {
                 return hit;
+            }
         }
         return new DiagramHit.Nothing();
     }
@@ -239,30 +313,48 @@ internal static class DiagramView
     {
         var face = FindFace(view, card.Type);
         if (face == null)
+        {
             return new DiagramHit.Nothing();
+        }
+
         var place = Diagrams.GetCardPlace(view.Transition, card.Type);
         if (place == null)
+        {
             return new DiagramHit.Nothing();
+        }
+
         if (!Covers(place.Value, face, point))
+        {
             return new DiagramHit.Nothing();
+        }
+
         var row = FindRowAt(face, point.Y - place.Value.Y);
         if (row < 0)
+        {
             return new DiagramHit.Card(face);
+        }
+
         return new DiagramHit.Row(face, row);
     }
 
-    private static CardFace? FaceOf(DiagramHit hit) => hit switch
+    private static CardFace? FaceOf(DiagramHit hit)
     {
-        DiagramHit.Nothing => null,
-        DiagramHit.Card card => card.Face,
-        DiagramHit.Row row => row.Face,
-        _ => throw new UnreachableException(),
-    };
+        return hit switch
+        {
+            DiagramHit.Nothing => null,
+            DiagramHit.Card card => card.Face,
+            DiagramHit.Row row => row.Face,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     private static CardRow? RowOf(DiagramHit hit)
     {
         if (hit is not DiagramHit.Row row)
+        {
             return null;
+        }
+
         return row.Value;
     }
 
@@ -278,10 +370,16 @@ internal static class DiagramView
     private static void Scroll(Ui<UiState> ui, DiagramViewState view, UiRect rect, bool hovered)
     {
         if (!hovered)
+        {
             return;
+        }
+
         var input = ui.Input;
         if (!HasScrolled(input))
+        {
             return;
+        }
+
         if (IsCommandHeld(input.Modifiers))
         {
             DiagramCameras.ZoomAt(view.Camera, input.Pointer, rect, MathF.Pow(WheelZoomStep, input.ScrollY));
@@ -294,17 +392,26 @@ internal static class DiagramView
     private static bool HasScrolled(UiInput input)
     {
         if (input.ScrollY != 0f)
+        {
             return true;
+        }
+
         return input.ScrollX != 0f;
     }
 
-    private static bool IsCommandHeld(KeyModifiers modifiers) => (modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
+    private static bool IsCommandHeld(KeyModifiers modifiers)
+    {
+        return (modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
+    }
 
     /// <summary>Keeps what a press landed on.</summary>
     private static void Press(DiagramViewState view, Interaction i, DiagramHit hit)
     {
         if (!i.Pressed)
+        {
             return;
+        }
+
         view.PressedOn = hit;
         view.PressMoved = false;
     }
@@ -312,10 +419,16 @@ internal static class DiagramView
     private static void OpenCode(UiState screen, TypeDiagram diagram, CardRow? row, bool inNewTab)
     {
         if (row == null)
+        {
             return;
+        }
+
         var target = row.Value.Target;
         if (target == null)
+        {
             return;
+        }
+
         Commands.Later(screen, (diagram, target, inNewTab), static (a, s) => OpenFromDiagram(a, s.diagram, s.target, s.inNewTab));
     }
 
@@ -323,14 +436,23 @@ internal static class DiagramView
     private static void Pan(Ui<UiState> ui, DiagramViewState view, Interaction i)
     {
         if (!ui.TryGetDragStart(i, view.Camera.Corner, out var start))
+        {
             return;
+        }
+
         var pointer = ui.Input.Pointer;
         var dx = pointer.X - ui.PressPosition.X;
         var dy = pointer.Y - ui.PressPosition.Y;
         if (!view.PressMoved)
+        {
             view.PressMoved = dx * dx + dy * dy >= PanThreshold * PanThreshold;
+        }
+
         if (!view.PressMoved)
+        {
             return;
+        }
+
         var zoom = view.Camera.Zoom;
         DiagramCameras.LookFrom(view.Camera, new PointF(start.X - dx / zoom, start.Y - dy / zoom));
     }
@@ -339,16 +461,25 @@ internal static class DiagramView
     private static void SettleCamera(DiagramViewState view, Interaction i)
     {
         if (i.Held)
+        {
             return;
+        }
+
         if (view.Transition.IsMoving)
+        {
             return;
+        }
+
         DiagramCameras.FinishMoving(view.Camera);
     }
 
     private static bool IsPanning(DiagramViewState view, Interaction i)
     {
         if (!i.Held)
+        {
             return false;
+        }
+
         return view.PressMoved;
     }
 
@@ -368,9 +499,15 @@ internal static class DiagramView
             return;
         }
         if (!i.Clicked)
+        {
             return;
+        }
+
         if (view.PressMoved)
+        {
             return;
+        }
+
         Pick(view, view.PressedOn);
         OpenCode(ui.State, diagram, RowOf(view.PressedOn), IsCommandHeld(ui.Input.Modifiers));
     }
@@ -379,7 +516,10 @@ internal static class DiagramView
     {
         var face = FaceOf(hit);
         if (face == null)
+        {
             return;
+        }
+
         view.Selected = face.Card.Type;
         view.MenuCard = face.Card;
         ui.OpenContextMenu(MenuId);
@@ -398,9 +538,15 @@ internal static class DiagramView
         view.Selected = face.Card.Type;
         var row = RowOf(hit);
         if (row == null)
+        {
             return;
+        }
+
         if (row.Value.Content is not CardRowContent.Fold fold)
+        {
             return;
+        }
+
         ToggleFold(view, fold.Part);
     }
 
@@ -408,19 +554,31 @@ internal static class DiagramView
     private static void ShowHandOverClickable(Ui<UiState> ui, DiagramViewState view, Interaction i, DiagramHit hit)
     {
         if (IsPanning(view, i))
+        {
             return;
+        }
+
         var row = RowOf(hit);
         if (row == null)
+        {
             return;
+        }
+
         if (!IsClickable(row.Value))
+        {
             return;
+        }
+
         ui.SetCursor(MouseCursor.Hand);
     }
 
     private static bool IsClickable(CardRow row)
     {
         if (row.IsLink)
+        {
             return true;
+        }
+
         return row.Content is CardRowContent.Fold;
     }
 
@@ -442,11 +600,17 @@ internal static class DiagramView
         frame.Links.Clear();
         var layout = view.Transition.Layout;
         if (layout == null)
+        {
             return;
+        }
+
         foreach (var route in layout.Routes)
         {
             if (!ConnectsShownCards(diagram, route.Link))
+            {
                 continue;
+            }
+
             frame.Links.Add(DrawnLinkOf(ui, view, route));
         }
     }
@@ -454,7 +618,10 @@ internal static class DiagramView
     private static bool ConnectsShownCards(TypeDiagram diagram, TypeLink link)
     {
         if (!Diagrams.HasCard(diagram, link.From))
+        {
             return false;
+        }
+
         return Diagrams.HasCard(diagram, link.To);
     }
 
@@ -463,7 +630,10 @@ internal static class DiagramView
         var shape = Diagrams.ShapeRoute(view.Transition, route);
         var label = DiagramFaces.LabelOf(route.Link);
         if (label == null)
+        {
             return new DrawnLink(route.Link.Kind, shape, null, 0f, 0f);
+        }
+
         var size = DiagramFaces.MeasureLabel(ui, label);
         return new DrawnLink(route.Link.Kind, shape, label, size.Width, size.Height);
     }
@@ -476,10 +646,16 @@ internal static class DiagramView
         {
             var face = FindFace(view, card.Type);
             if (face == null)
+            {
                 continue;
+            }
+
             var place = Diagrams.GetCardPlace(view.Transition, card.Type);
             if (place == null)
+            {
                 continue;
+            }
+
             var isSelected = card.Type == view.Selected;
             frame.Cards.Add(new DrawnCard(face, place.Value, isSelected, HoveredRowOf(face, hit)));
         }
@@ -489,11 +665,20 @@ internal static class DiagramView
     private static int HoveredRowOf(CardFace face, DiagramHit hit)
     {
         if (hit is not DiagramHit.Row row)
+        {
             return -1;
+        }
+
         if (row.Face != face)
+        {
             return -1;
+        }
+
         if (row.Value.Content is CardRowContent.Stereotype)
+        {
             return -1;
+        }
+
         return row.Index;
     }
 
@@ -507,10 +692,16 @@ internal static class DiagramView
         using var popup = ui.TooltipContentAtPointer(canvasId, part, out var shownPart, CodeTooltipView.Look);
         KeptTooltips.Keep(view.Tooltip, tooltip, part, shownPart);
         if (!popup.IsOpen)
+        {
             return;
+        }
+
         var shown = KeptTooltips.Find(view.Tooltip, shownPart);
         if (shown == null)
+        {
             return;
+        }
+
         var click = CodeTooltipView.Render(ui, shown);
         FollowLink(ui, diagram, click);
     }
@@ -518,13 +709,22 @@ internal static class DiagramView
     private static CodeTooltip? FindTooltip(CodeTooltips tooltips, bool isPanning, DiagramHit hit)
     {
         if (isPanning)
+        {
             return null;
+        }
+
         var row = RowOf(hit);
         if (row == null)
+        {
             return null;
+        }
+
         var target = row.Value.Target;
         if (target == null)
+        {
             return null;
+        }
+
         TooltipLookups.TryGetTooltip(tooltips, target, out var tooltip);
         return tooltip;
     }
@@ -532,9 +732,15 @@ internal static class DiagramView
     private static int PartOf(CodeTooltip? tooltip, DiagramHit hit)
     {
         if (tooltip == null)
+        {
             return 0;
+        }
+
         if (hit is not DiagramHit.Row row)
+        {
             return 0;
+        }
+
         return HashCode.Combine(row.Face.Card.Type, row.Index) | 1;
     }
 
@@ -543,7 +749,10 @@ internal static class DiagramView
     private static void FollowLink(Ui<UiState> ui, TypeDiagram diagram, RichTextClick click)
     {
         if (click.Link is not CodeReference.Entity reference)
+        {
             return;
+        }
+
         ui.HideTooltip();
         var inNewTab = click.Button == PointerButton.Middle || IsCommandHeld(ui.Input.Modifiers);
         Commands.Later(ui.State, (diagram, reference, inNewTab), static (a, s) => OpenFromDiagram(a, s.diagram, s.reference, s.inNewTab));
@@ -553,12 +762,21 @@ internal static class DiagramView
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         var card = view.MenuCard;
         if (card == null)
+        {
             return;
+        }
+
         if (!Diagrams.HasCard(diagram, card.Type))
+        {
             return;
+        }
+
         CardMenuItems(ui, view, diagram, card);
     }
 
@@ -566,14 +784,22 @@ internal static class DiagramView
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
+        {
             Commands.Later(ui.State, (diagram, card), static (a, s) => OpenFromDiagram(a, s.diagram, s.card.Type, inNewTab: false));
+        }
+
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
+        {
             Commands.Later(ui.State, (diagram, card), static (a, s) => OpenFromDiagram(a, s.diagram, s.card.Type, inNewTab: true));
+        }
+
         ui.MenuSeparator();
         GrowItems(ui, diagram, card);
         ui.MenuSeparator();
         if (ui.MenuItem(t.DiagramRemove, id: "remove"))
+        {
             Commands.Later(ui.State, (view, diagram, card), static (a, s) => Remove(a, s.view, s.diagram, s.card));
+        }
     }
 
     /// <summary>The items that add the types <paramref name="card"/> is related to, each offered when it has
@@ -582,23 +808,40 @@ internal static class DiagramView
     {
         var t = ui.State.Strings;
         if (HasLinks(card, IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: HasMissingBases(diagram, card), id: "add-bases"))
+        {
             Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandBases(a, s.diagram, s.card));
+        }
+
         if (HasLinks(card, IsInterfaceLink) && ui.MenuItem(t.DiagramAddInterfaces, enabled: HasMissingInterfaces(diagram, card), id: "add-interfaces"))
+        {
             Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandInterfaces(a, s.diagram, s.card));
+        }
+
         if (card.CanHaveDerived && ui.MenuItem(DerivedItemOf(ui, card), id: "add-derived"))
+        {
             Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandDerived(a, s.diagram, s.card));
+        }
+
         if (HasLinks(card, IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: HasMissingHeld(diagram, card), id: "add-held"))
+        {
             Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandHeld(a, s.diagram, s.card));
+        }
     }
 
-    private static bool HasLinks(TypeCard card, Func<TypeLink, bool> isKind) => card.Links.Any(isKind);
+    private static bool HasLinks(TypeCard card, Func<TypeLink, bool> isKind)
+    {
+        return card.Links.Any(isKind);
+    }
 
     /// <summary>Implementations for an interface, derived types for a class.</summary>
     private static string DerivedItemOf(Ui<UiState> ui, TypeCard card)
     {
         var t = ui.State.Strings;
         if (card.Stereotype == TypeStereotype.Interface)
+        {
             return t.DiagramAddImplementations;
+        }
+
         return t.DiagramAddDerived;
     }
 
@@ -607,15 +850,22 @@ internal static class DiagramView
         RemoveFromDiagram(appState, diagram, card.Type);
         view.MenuCard = null;
         if (view.Selected == card.Type)
+        {
             view.Selected = null;
+        }
     }
 
     private static void Paint(UiPainter p, DiagramFrame frame)
     {
         foreach (var link in frame.Links)
+        {
             PaintLink(p, frame, link);
+        }
+
         foreach (var card in frame.Cards)
+        {
             PaintCard(p, frame, card);
+        }
     }
 
     private static PointF ToScreen(UiPainter p, DiagramFrame frame, PointF point)
@@ -635,7 +885,10 @@ internal static class DiagramView
         var dash = isDashed ? DashLength * frame.Zoom : 0f;
         var gap = isDashed ? GapLength * frame.Zoom : 0f;
         foreach (var piece in link.Route.Pieces)
+        {
             PaintPiece(p, frame, piece, color, stroke, dash, gap);
+        }
+
         PaintArrowhead(p, frame, link, color, stroke);
         PaintDiamond(p, frame, link.Route, color, stroke);
         PaintLabel(p, frame, link, color);
@@ -669,9 +922,15 @@ internal static class DiagramView
     private static void PaintDiamond(UiPainter p, DiagramFrame frame, LinkRoute route, uint color, float stroke)
     {
         if (route.SourceTip == null)
+        {
             return;
+        }
+
         if (route.Pieces.Count == 0)
+        {
             return;
+        }
+
         var tip = ToScreen(p, frame, route.SourceTip.Value);
         var back = ToScreen(p, frame, route.Pieces[0].Start);
         var length = MathF.Sqrt(tip.DistanceSqTo(back));
@@ -682,7 +941,10 @@ internal static class DiagramView
     private static PointF GetArrowTail(LinkRoute route)
     {
         if (route.Pieces.Count == 0)
+        {
             return route.Tip;
+        }
+
         return route.Pieces[^1].End;
     }
 
@@ -695,13 +957,22 @@ internal static class DiagramView
     private static void PaintLabel(UiPainter p, DiagramFrame frame, DrawnLink link, uint color)
     {
         if (link.Label == null)
+        {
             return;
+        }
+
         var center = link.Route.LabelCenter;
         if (center == null)
+        {
             return;
+        }
+
         var size = frame.Theme.FontSizeSmall * frame.Zoom;
         if (size < MinTextSize)
+        {
             return;
+        }
+
         var middle = ToScreen(p, frame, center.Value);
         var width = link.LabelWidth * frame.Zoom;
         var height = link.LabelHeight * frame.Zoom;
@@ -716,12 +987,18 @@ internal static class DiagramView
         var topLeft = ToScreen(p, frame, card.Place);
         var rect = new UiRect(topLeft.X, topLeft.Y, face.Width * frame.Zoom, face.Height * frame.Zoom);
         if (!rect.Intersects(p.Clip))
+        {
             return;
+        }
+
         var radius = frame.Theme.CornerRadius * frame.Zoom;
         p.FillRect(rect, frame.Theme.SurfaceRaised, radius);
         p.FillRect(rect with { Height = face.HeaderHeight * frame.Zoom }, frame.Theme.Control, new Corners(radius, radius, 0f, 0f));
         for (var i = 0; i < face.Rows.Count; i++)
+        {
             PaintRow(p, frame, rect, face.Rows[i], i == card.HoveredRow);
+        }
+
         PaintBorder(p, frame, rect, card.IsSelected, radius);
     }
 
@@ -739,9 +1016,15 @@ internal static class DiagramView
     {
         var rect = new UiRect(card.X, card.Y + row.Top * frame.Zoom, card.Width, row.Height * frame.Zoom);
         if (!rect.Intersects(p.Clip))
+        {
             return;
+        }
+
         if (isHovered)
+        {
             p.FillRect(rect, frame.Theme.RowHover);
+        }
+
         var left = card.X + row.Indent * frame.Zoom;
         var underlined = isHovered && row.IsLink;
         switch (row.Content)
@@ -770,7 +1053,9 @@ internal static class DiagramView
         var textLeft = left + (frame.Theme.IconSize + DiagramFaces.IconGap) * frame.Zoom;
         PaintText(p, frame, rect, textLeft, row.Text, color, bold: bold);
         if (underlined)
+        {
             PaintUnderline(p, frame, rect, textLeft, row.TextWidth * frame.Zoom, color);
+        }
     }
 
     private static void PaintUnderline(UiPainter p, DiagramFrame frame, UiRect rect, float left, float width, uint color)
@@ -786,12 +1071,18 @@ internal static class DiagramView
     {
         var size = MathF.Round(frame.Theme.IconSize * frame.Zoom);
         if (size < MinIconSize)
+        {
             return;
+        }
+
         var box = new UiRect(left, row.Y + (row.Height - size) / 2, size, size);
         p.Glyph(box, NodeIcons.Glyph(kind, frame.Icons), NodeIcons.GetColor(frame.Palette, kind), size);
         var overlay = NodeIcons.Overlay(accessibility, frame.Icons);
         if (overlay == null)
+        {
             return;
+        }
+
         var overlaySize = MathF.Round(frame.Theme.IconOverlaySize * frame.Zoom);
         var corner = new UiRect(box.Right - overlaySize * OverlayInset, box.Bottom - overlaySize * OverlayInset, overlaySize, overlaySize);
         p.Glyph(corner, overlay.Value, frame.Palette.Restricted, overlaySize);
@@ -809,7 +1100,10 @@ internal static class DiagramView
     {
         var size = frame.Theme.FontSize * frame.Zoom;
         if (size < MinTextSize)
+        {
             return;
+        }
+
         var width = rect.Right - TextRightPadding * frame.Zoom - left;
         p.Text(new UiRect(left, rect.Y, width, rect.Height), text, color, size, bold, family: family);
     }

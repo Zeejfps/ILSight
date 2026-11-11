@@ -50,11 +50,16 @@ public static class AssemblyClosing
         closer.ListedVersion = -1;
         Update(closer, assemblies);
         if (picked == null)
+        {
             return;
+        }
+
         foreach (var choice in closer.Order)
         {
             if (choice.Assembly == picked)
+            {
                 choice.Included = true;
+            }
         }
     }
 
@@ -78,19 +83,29 @@ public static class AssemblyClosing
     public static void Update(AssemblyCloser closer, AssemblyList assemblies)
     {
         if (assemblies.Version == closer.ListedVersion)
+        {
             return;
+        }
+
         closer.ListedVersion = assemblies.Version;
         var ticked = new HashSet<AssemblyPath>();
         foreach (var choice in closer.Order)
         {
             if (choice.Included)
+            {
                 ticked.Add(choice.Assembly.FilePath);
+            }
         }
         closer.Order.Clear();
         foreach (var item in assemblies.Listed)
+        {
             closer.Order.Add(new CloseChoice { Assembly = item, Included = ticked.Contains(item.FilePath) });
+        }
+
         if (closer.Anchor != null && !closer.Order.Contains(closer.Anchor))
+        {
             closer.Anchor = null;
+        }
     }
 
     /// <summary>The items the dialog shows, in the list's order. Runs each frame the dialog shows, so it
@@ -101,7 +116,9 @@ public static class AssemblyClosing
         foreach (var choice in closer.Order)
         {
             if (IsShown(closer, choice))
+            {
                 shown.Add(choice);
+            }
         }
         return shown;
     }
@@ -109,12 +126,21 @@ public static class AssemblyClosing
     private static bool IsShown(AssemblyCloser closer, CloseChoice choice)
     {
         if (closer.SelectedOnly && !choice.Included)
+        {
             return false;
+        }
+
         var filter = closer.Filter.Trim();
         if (filter.Length == 0)
+        {
             return true;
+        }
+
         if (choice.Assembly.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+        {
             return true;
+        }
+
         return choice.Assembly.FilePath.Text.Contains(filter, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -132,12 +158,20 @@ public static class AssemblyClosing
         foreach (var choice in shown)
         {
             if (choice.Included)
+            {
                 count++;
+            }
         }
         if (count == 0)
+        {
             return false;
+        }
+
         if (count == shown.Count)
+        {
             return true;
+        }
+
         return null;
     }
 
@@ -146,7 +180,9 @@ public static class AssemblyClosing
     public static void IncludeShown(IReadOnlyList<CloseChoice> shown, bool all)
     {
         foreach (var choice in shown)
+        {
             choice.Included = all;
+        }
     }
 
     /// <summary>Follows a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
@@ -159,13 +195,21 @@ public static class AssemblyClosing
         var anchor = closer.Anchor;
         closer.Anchor = clicked;
         if (!extend || anchor == null)
+        {
             return;
+        }
+
         var from = IndexOf(shown, anchor);
         var to = IndexOf(shown, clicked);
         if (from < 0 || to < 0)
+        {
             return;
+        }
+
         for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
+        {
             shown[i].Included = clicked.Included;
+        }
     }
 
     private static int IndexOf(IReadOnlyList<CloseChoice> shown, CloseChoice choice)
@@ -173,7 +217,9 @@ public static class AssemblyClosing
         for (var i = 0; i < shown.Count; i++)
         {
             if (shown[i] == choice)
+            {
                 return i;
+            }
         }
         return -1;
     }
@@ -185,7 +231,9 @@ public static class AssemblyClosing
         foreach (var choice in closer.Order)
         {
             if (choice.Included)
+            {
                 count++;
+            }
         }
         return count;
     }
@@ -197,7 +245,9 @@ public static class AssemblyClosing
         foreach (var choice in closer.Order)
         {
             if (choice.Included)
+            {
                 items.Add(choice.Assembly);
+            }
         }
         return items;
     }

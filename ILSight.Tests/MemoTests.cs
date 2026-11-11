@@ -113,7 +113,9 @@ public sealed class MemoTests
 
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 1000; i++)
+        {
             memo.TryGet((new ByReference<Report>(report), "text", 1), out _);
+        }
 
         Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
     }

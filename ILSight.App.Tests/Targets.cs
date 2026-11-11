@@ -70,7 +70,13 @@ internal static class Targets
         return Selector.OfRole(SemanticRole.Tab, title);
     }
 
-    private static TestSegment Name(string name) => new TestSegment.Named(name);
+    private static TestSegment Name(string name)
+    {
+        return new TestSegment.Named(name);
+    }
 
-    private static TestSegment Key(string key) => new TestSegment.Keyed(key);
+    private static TestSegment Key(string key)
+    {
+        return new TestSegment.Keyed(key);
+    }
 }

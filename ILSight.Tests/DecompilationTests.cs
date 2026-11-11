@@ -387,7 +387,10 @@ public sealed class DecompilationTests
         Assert.Empty(failed);
     }
 
-    private static bool IsModule(BrowseNode node) => node.Subject is NodeSubject.Module;
+    private static bool IsModule(BrowseNode node)
+    {
+        return node.Subject is NodeSubject.Module;
+    }
 
     private static bool IsLeafToSummarize(BrowseNode node)
     {
@@ -404,11 +407,19 @@ public sealed class DecompilationTests
         {
             var node = pending.Pop();
             if (BrowseNodes.GetEntity(node) == null && !IsModule(node))
+            {
                 nodes.Add(node);
+            }
+
             if (IsLeafToSummarize(node))
+            {
                 continue;
+            }
+
             foreach (var child in node.Children)
+            {
                 pending.Push(child);
+            }
         }
         return nodes;
     }

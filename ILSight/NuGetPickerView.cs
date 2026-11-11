@@ -29,7 +29,10 @@ internal static class NuGetPickerView
         var picker = ui.State.NuGetPicker;
         OpenDownloaded(ui, picker);
         if (picker.IsOpen)
+        {
             UpdateSearch(ui, picker);
+        }
+
         var wasOpen = picker.IsOpen;
         Dialog(ui, picker);
         CloseIfDismissed(ui, picker, wasOpen);
@@ -40,7 +43,10 @@ internal static class NuGetPickerView
     {
         var path = NuGetPicking.TakeDownloaded(picker);
         if (path == null)
+        {
             return;
+        }
+
         Commands.Later(ui.State, path, static (a, p) => OpenAssembly(a, p));
         Close(ui, picker);
     }
@@ -49,14 +55,18 @@ internal static class NuGetPickerView
     private static void Close(Ui<UiState> ui, NuGetPicker picker)
     {
         foreach (var image in NuGetPicking.ClosePicker(picker))
+        {
             ui.RemoveImage(image);
+        }
     }
 
     private static void UpdateSearch(Ui<UiState> ui, NuGetPicker picker)
     {
         var wait = NuGetPicking.UpdatePicker(picker, ui.RealTime);
         if (wait > 0)
+        {
             ui.RequestUpdateIn(wait);
+        }
     }
 
     private static void Dialog(Ui<UiState> ui, NuGetPicker picker)
@@ -66,7 +76,10 @@ internal static class NuGetPickerView
         using var dialog = ui.WindowDialog("nuget", t.NugetTitle, ref picker.IsOpen, AppLayout.NuGetDialogWidth, AppLayout.NuGetDialogHeight,
             ref picker.Window.Bounds, minWidth: AppLayout.NuGetDialogMinWidth, minHeight: AppLayout.NuGetDialogMinHeight);
         if (!dialog.IsOpen)
+        {
             return;
+        }
+
         TopRow(ui, picker);
         var open = false;
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
@@ -77,7 +90,9 @@ internal static class NuGetPickerView
         }
         open |= Footer(ui, picker);
         if (open)
+        {
             NuGetPicking.DownloadPicked(picker);
+        }
     }
 
     /// <summary>Stops what the dialog started once its close button or Escape dismissed it, which
@@ -85,9 +100,15 @@ internal static class NuGetPickerView
     private static void CloseIfDismissed(Ui<UiState> ui, NuGetPicker picker, bool wasOpen)
     {
         if (!wasOpen)
+        {
             return;
+        }
+
         if (picker.IsOpen)
+        {
             return;
+        }
+
         Close(ui, picker);
     }
 
@@ -100,16 +121,28 @@ internal static class NuGetPickerView
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
             if (ui.HasFocus(ui.GetId(QueryId)))
+            {
                 MoveSelectionFromQuery(ui, picker);
+            }
+
             if (NuGetPicking.TakeQueryFocus(picker))
+            {
                 ui.Focus(ui.GetId(QueryId));
+            }
+
             if (ui.TextField(QueryId, ref picker.Query, t.NugetQuery, Sizing.Grow(), ui.State.Icons.SearchField, clearable: true))
+            {
                 Submit(ui, picker);
+            }
+
             ui.Checkbox(t.NugetPrerelease, ref picker.IncludePrerelease, id: "nuget-prerelease");
             ui.Leaf(new Box { Width = theme.Gap });
             ui.Text(t.NugetSource, color: theme.TextMuted);
             if (ui.TextField("nuget-feed", ref picker.FeedUrl, t.NugetFeed, Sizing.Fixed(AppLayout.NuGetFeedWidth)))
+            {
                 NuGetPicking.SearchNow(picker);
+            }
+
             KnownFeeds(ui, picker);
         }
     }
@@ -125,12 +158,17 @@ internal static class NuGetPickerView
         var sources = picker.Sources;
         using var menu = ui.DropdownButton("nuget-sources", ui.State.Strings.NugetKnownFeeds, enabled: sources.Count > 0, revision: sources.Count);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         foreach (var source in sources)
         {
             var current = source.Url.Text == picker.FeedUrl;
             if (ui.MenuRadioItem(source.Name, current, id: source.Url.Text))
+            {
                 NuGetPicking.PickFeed(picker, source);
+            }
         }
     }
 
@@ -143,7 +181,9 @@ internal static class NuGetPickerView
         {
             var movesCaret = stroke.Key is KeyboardKey.Home or KeyboardKey.End;
             if (!movesCaret)
+            {
                 MoveSelection(picker, stroke, results, page);
+            }
         }
     }
 
@@ -151,7 +191,10 @@ internal static class NuGetPickerView
     {
         var index = ItemSelections.FindIndexIn(picker.Selection, results);
         if (!UiWidgets.ApplyListKey(stroke, ref index, results.Count, page))
+        {
             return;
+        }
+
         ItemSelections.Select(picker.Selection, results[index], results);
     }
 
@@ -201,7 +244,10 @@ internal static class NuGetPickerView
                 return false;
             }
             if (picker.SearchError != null)
+            {
                 NuGetPlaceholderView.PageFailed(ui, picker);
+            }
+
             return Rows(ui, picker);
         }
     }
@@ -226,7 +272,10 @@ internal static class NuGetPickerView
         ItemSelections.ShowIn(picker.Selection, results);
         using var list = ui.SelectableList(listId, results.Count, picker.Selection.Rows, RowHeight(ui));
         for (var i = list.First; i < list.End; i++)
+        {
             Row(ui, picker, list, results[i], i);
+        }
+
         ItemSelections.TakeFrom(picker.Selection, results);
         return list.Activated;
     }
@@ -269,21 +318,29 @@ internal static class NuGetPickerView
             Radius = ui.Theme.RadiusSmall,
         };
         using (ui.Box(tile))
+        {
             ui.Image(icon.ImageId, side, side, new Box { Width = Sizing.Grow(), Height = Sizing.Grow() });
+        }
     }
 
     private static ShownIcon? ShownIconOf(NuGetPicker picker, FeedPackage package)
     {
         var icon = NuGetPicking.EnsureIcon(picker, package);
         if (icon == null)
+        {
             return null;
+        }
+
         return icon.Shown;
     }
 
     private static bool NeedsBackdrop(Ui<UiState> ui, ShownIcon icon)
     {
         if (!ui.Theme.IsDark)
+        {
             return false;
+        }
+
         return icon.IsDarkOnClear;
     }
 
@@ -291,7 +348,10 @@ internal static class NuGetPickerView
     private static void Upload(Ui<UiState> ui, ShownIcon icon)
     {
         if (ui.HasImage(icon.ImageId))
+        {
             return;
+        }
+
         var pixels = icon.Pixels;
         ui.SetImage(icon.ImageId, pixels.Width, pixels.Height, pixels.Rgba);
     }
@@ -310,7 +370,9 @@ internal static class NuGetPickerView
             Radius = theme.RadiusSmall,
         };
         using (ui.Box(tile))
+        {
             ui.Icon(new UiIcon(ui.State.Icons.NugetPackage, theme.TextMuted));
+        }
     }
 
     /// <summary>The package's id in bold, a mark when its owners are verified, who made it, and its latest version.</summary>
@@ -322,7 +384,10 @@ internal static class NuGetPickerView
         {
             ui.Text(package.Id.Text, color: nameColor, bold: true, overflow: TextOverflow.Ellipsis);
             if (package.Verified)
+            {
                 ui.Icon(new UiIcon(ui.State.Icons.NugetVerified, theme.AccentText));
+            }
+
             Authors(ui, package);
             ui.Text(package.Version.Text, color: theme.TextMuted, size: theme.FontSizeSmall);
         }
@@ -359,7 +424,10 @@ internal static class NuGetPickerView
         using (ui.Row(new Box { Height = theme.ControlHeight, Gap = theme.GapTight, AlignY = Align.Center }))
         {
             if (picker.TotalHits == 0)
+            {
                 return;
+            }
+
             Count(ui, picker);
             PageButtons(ui, picker);
         }
@@ -377,7 +445,10 @@ internal static class NuGetPickerView
     {
         var count = t.NugetCount(total);
         if (browsable >= total)
+        {
             return count;
+        }
+
         return $"{count} · {t.NugetCapped(browsable)}";
     }
 
@@ -388,18 +459,26 @@ internal static class NuGetPickerView
         var icons = ui.State.Icons;
         var idle = !picker.IsSearching;
         if (ui.IconButton("nuget-previous", icons.NugetPreviousPage, t.NugetPreviousPage, picker.HasPreviousPage && idle, ButtonVariant.Neutral))
+        {
             NuGetPicking.ShowPreviousPage(picker);
+        }
+
         var args = (picker.Page, picker.RequestedPage, picker.PageCount, picker.IsLoadingPage, t);
         var label = ui.Memo("nuget-page", args, static a => PageText(a.t, a.Page, a.RequestedPage, a.PageCount, a.IsLoadingPage));
         ui.Text(label, new Box { Width = PageLabelWidth(ui, picker.PageCount) }, color: theme.TextMuted, size: theme.FontSizeSmall, align: Align.Center);
         if (ui.IconButton("nuget-next", icons.NugetNextPage, t.NugetNextPage, picker.HasNextPage && idle, ButtonVariant.Neutral))
+        {
             NuGetPicking.ShowNextPage(picker);
+        }
     }
 
     private static string PageText(Strings t, int page, int requested, int count, bool loading)
     {
         if (loading)
+        {
             return t.NugetLoadingPage(requested + 1);
+        }
+
         return t.NugetPage(page + 1, count);
     }
 
@@ -422,10 +501,16 @@ internal static class NuGetPickerView
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
             if (picker.IsDownloading)
+            {
                 Downloading(ui, picker);
+            }
+
             ui.Spacer();
             if (ui.Button(t.NugetCancel, id: "nuget-cancel"))
+            {
                 Close(ui, picker);
+            }
+
             return ui.Button(t.NugetOpen, enabled: picker.CanOpen, id: "nuget-open", variant: ButtonVariant.Primary, busy: picker.IsDownloading);
         }
     }

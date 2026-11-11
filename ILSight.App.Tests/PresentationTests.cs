@@ -34,9 +34,14 @@ public sealed class PresentationTests
             var node = pending.Dequeue();
             seen.Add(NodeIcons.Of(node.Subject));
             if (node.Subject is NodeSubject.AssemblyReference)
+            {
                 continue;
+            }
+
             foreach (var child in node.Children)
+            {
                 pending.Enqueue(child);
+            }
         }
 
         Assert.True(seen.Count > 25, $"{seen.Count} icons");

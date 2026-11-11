@@ -31,12 +31,18 @@ internal static class MetadataTables
             return CreateTable(table, file, rows);
         }
 
-        IEnumerable<int> Rids() => Enumerable.Range(1, m.GetTableRowCount(table));
+        IEnumerable<int> Rids()
+        {
+            return Enumerable.Range(1, m.GetTableRowCount(table));
+        }
 
         string? Hex(BlobHandle blob)
         {
             if (blob.IsNil)
+            {
                 return null;
+            }
+
             var bytes = m.GetBlobContent(blob);
             return bytes.ToHexString(bytes.Length);
         }
@@ -310,9 +316,14 @@ internal static class MetadataTables
                     foreach (var type in r.DecodeSignature(new DisassemblerSignatureTypeProvider(file, output), default))
                     {
                         if (first)
+                        {
                             first = false;
+                        }
                         else
+                        {
                             output.Write(", ");
+                        }
+
                         type(ILNameSyntax.TypeName);
                     }
                     return output.ToString();
@@ -339,26 +350,47 @@ internal static class MetadataTables
                 AddGuid(columns, "HashAlgorithm", r => r.HashAlgorithm, r =>
                 {
                     if (r.HashAlgorithm.IsNil)
+                    {
                         return null;
+                    }
+
                     var guid = m.GetGuid(r.HashAlgorithm);
                     if (guid == KnownGuids.HashAlgorithmSHA1)
+                    {
                         return "SHA1 [ff1816ec-aa5e-4d10-87f7-6f4963833460]";
+                    }
+
                     if (guid == KnownGuids.HashAlgorithmSHA256)
+                    {
                         return "SHA256 [8829d00f-11b8-4213-878b-770e8597ac16]";
+                    }
+
                     return "Unknown [" + guid + "]";
                 });
                 AddBlob(columns, "Hash", r => r.Hash, r => Hex(r.Hash));
                 AddGuid(columns, "Language", r => r.Language, r =>
                 {
                     if (r.Language.IsNil)
+                    {
                         return null;
+                    }
+
                     var guid = m.GetGuid(r.Language);
                     if (guid == KnownGuids.CSharpLanguageGuid)
+                    {
                         return "Visual C# [3f5162f8-07c6-11d3-9053-00c04fa302a1]";
+                    }
+
                     if (guid == KnownGuids.VBLanguageGuid)
+                    {
                         return "Visual Basic [3a12d0b8-c26c-11d0-b442-00a0244a1dd2]";
+                    }
+
                     if (guid == KnownGuids.FSharpLanguageGuid)
+                    {
                         return "Visual F# [ab4f38c9-b6e6-43ba-be3b-58080b2ccce3]";
+                    }
+
                     return "Unknown [" + guid + "]";
                 });
             }),
@@ -368,23 +400,35 @@ internal static class MetadataTables
                 AddHandle(columns, "Document", r => r.Document, r =>
                 {
                     if (r.Document.IsNil)
+                    {
                         return null;
+                    }
+
                     var document = m.GetDocument(r.Document);
                     return $"{MetadataTokens.GetHeapOffset(document.Name):X} \"{m.GetString(document.Name)}\"";
                 });
                 AddBlob(columns, "SequencePoints", r => r.SequencePointsBlob, r =>
                 {
                     if (r.SequencePointsBlob.IsNil)
+                    {
                         return null;
+                    }
+
                     var sb = new StringBuilder();
                     foreach (var p in r.GetSequencePoints())
+                    {
                         sb.AppendLine($"document='{MetadataTokens.GetToken(p.Document):X8}', offset={p.Offset}, start={p.StartLine};{p.StartColumn}, end={p.EndLine};{p.EndColumn}, hidden={p.IsHidden}");
+                    }
+
                     return sb.ToString().TrimEnd();
                 });
                 AddHandle(columns, "LocalSignature", r => r.LocalSignature, r =>
                 {
                     if (r.LocalSignature.IsNil)
+                    {
                         return null;
+                    }
+
                     return LocalsText(file, m.GetStandaloneSignature(r.LocalSignature));
                 });
             }),
@@ -448,7 +492,10 @@ internal static class MetadataTables
         };
     }
 
-    private static object? NoTooltip<T>(T row) => null;
+    private static object? NoTooltip<T>(T row)
+    {
+        return null;
+    }
 
     private const char StringQuote = '"';
     private const char CharQuote = '\'';
@@ -467,25 +514,34 @@ internal static class MetadataTables
         }
     }
 
-    private static string LiteralText(object? value) => value switch
+    private static string LiteralText(object? value)
     {
-        null => "null",
-        string text => Quote(text, StringQuote),
-        char c => Quote(c.ToString(), CharQuote),
-        true => "true",
-        false => "false",
-        IFormattable number => number.ToString(null, CultureInfo.InvariantCulture),
-        _ => value.ToString() ?? "",
-    };
+        return value switch
+        {
+            null => "null",
+            string text => Quote(text, StringQuote),
+            char c => Quote(c.ToString(), CharQuote),
+            true => "true",
+            false => "false",
+            IFormattable number => number.ToString(null, CultureInfo.InvariantCulture),
+            _ => value.ToString() ?? "",
+        };
+    }
 
-    private static string Quote(string text, char quote) => quote + DisassemblerHelpers.EscapeString(text) + quote;
+    private static string Quote(string text, char quote)
+    {
+        return quote + DisassemblerHelpers.EscapeString(text) + quote;
+    }
 
     /// <summary>The locals a signature of local variables declares, a line each as <c>[index] type</c>; null
     /// for a signature of another kind, or one that cannot be read.</summary>
     private static string? LocalsText(MetadataFile file, StandaloneSignature signature)
     {
         if (signature.GetKind() != StandaloneSignatureKind.LocalVariables)
+        {
             return null;
+        }
+
         try
         {
             return WriteLocals(file, signature);
@@ -505,7 +561,10 @@ internal static class MetadataTables
         for (var i = 0; i < locals.Length; i++)
         {
             if (i > 0)
+            {
                 output.WriteLine();
+            }
+
             output.Write($"[{i}] ");
             locals[i](ILNameSyntax.Signature);
         }
@@ -533,7 +592,10 @@ internal static class MetadataTables
         var context = new MetadataGenericContext(FindDeclaringType(metadata, property), metadata);
         var signature = property.DecodeSignature(new DisassemblerSignatureTypeProvider(file, output), context);
         if (signature.Header.IsInstance)
+        {
             output.Write("instance ");
+        }
+
         signature.ReturnType(ILNameSyntax.Signature);
         output.Write(" ");
         output.Write(DisassemblerHelpers.Escape(metadata.GetString(property.Name)));
@@ -549,7 +611,10 @@ internal static class MetadataTables
     {
         var accessor = FindAccessor(property);
         if (accessor.IsNil)
+        {
             return default;
+        }
+
         return metadata.GetMethodDefinition(accessor).GetDeclaringType();
     }
 
@@ -557,9 +622,15 @@ internal static class MetadataTables
     {
         var accessors = property.GetAccessors();
         if (!accessors.Getter.IsNil)
+        {
             return accessors.Getter;
+        }
+
         if (!accessors.Setter.IsNil)
+        {
             return accessors.Setter;
+        }
+
         return accessors.Others.FirstOrDefault();
     }
 
@@ -568,7 +639,10 @@ internal static class MetadataTables
         for (var i = 0; i < types.Count; i++)
         {
             if (i > 0)
+            {
                 output.Write(", ");
+            }
+
             types[i](ILNameSyntax.Signature);
         }
     }
@@ -576,7 +650,10 @@ internal static class MetadataTables
     private static string? BaseTypeTooltip(MetadataFile file, EntityHandle baseType)
     {
         if (baseType.IsNil)
+        {
             return null;
+        }
+
         var output = new PlainTextOutput();
         var provider = new DisassemblerSignatureTypeProvider(file, output);
         switch (baseType.Kind)
@@ -632,7 +709,9 @@ internal static class MetadataTables
         yield return "";
         yield return "Tables:";
         foreach (var line in ListRowCounts(folder))
+        {
             yield return line;
+        }
     }
 
     /// <summary>The Tables folder as comment lines: how many rows each table has.</summary>
@@ -648,7 +727,9 @@ internal static class MetadataTables
         {
             var count = metadata.GetTableRowCount(table);
             if (count > 0)
+            {
                 yield return $"{(byte)table:X2} {table}: {count} rows";
+            }
         }
     }
 

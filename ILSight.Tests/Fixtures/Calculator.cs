@@ -93,7 +93,10 @@ internal sealed class Circle : IShape
     {
         var grown = Radius;
         for (var step = 0; step < times; step++)
+        {
             grown *= factor;
+        }
+
         return grown;
     }
 
@@ -112,7 +115,10 @@ internal sealed class Circle : IShape
         return range.High - range.Low;
     }
 
-    public TKey Pick<TKey, TValue>(TKey key, TValue value) where TKey : class, IComparable<TKey>, new() where TValue : struct => key;
+    public TKey Pick<TKey, TValue>(TKey key, TValue value) where TKey : class, IComparable<TKey>, new() where TValue : struct
+    {
+        return key;
+    }
 
     public object Echo(object value)
     {

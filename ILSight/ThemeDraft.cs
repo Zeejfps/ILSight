@@ -34,10 +34,16 @@ public static class ThemeDraft
     {
         text.Append(Indent).Append(Quote(section)).Append(": {\n");
         foreach (var key in keys)
+        {
             AppendCommentedColor(text, key.Key, colors[key.Key]);
+        }
+
         text.Append(Indent).Append('}');
         if (!isLast)
+        {
             text.Append(',');
+        }
+
         text.Append('\n');
     }
 

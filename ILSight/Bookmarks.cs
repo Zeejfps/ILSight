@@ -12,7 +12,10 @@ public static class Bookmarks
     public static bool Add(BookmarkList list, Bookmark bookmark)
     {
         if (IsMarked(list, bookmark))
+        {
             return false;
+        }
+
         list.Items.Add(bookmark);
         return true;
     }
@@ -27,14 +30,21 @@ public static class Bookmarks
     {
         var index = list.Items.IndexOf(bookmark);
         if (index < 0)
+        {
             return -1;
+        }
+
         list.Items.RemoveAt(index);
         return index;
     }
 
     public static void SetEnabled(BookmarkList list, Bookmark bookmark, bool enabled)
     {
-        if (bookmark.Enabled == enabled) return;
+        if (bookmark.Enabled == enabled)
+        {
+            return;
+        }
+
         bookmark.Enabled = enabled;
         list.Items.NoteChange();
     }
@@ -44,9 +54,15 @@ public static class Bookmarks
     {
         var trimmed = name.Trim();
         if (trimmed.Length == 0)
+        {
             return;
+        }
+
         if (trimmed == bookmark.Name)
+        {
             return;
+        }
+
         bookmark.Name = trimmed;
         list.Items.NoteChange();
     }
@@ -60,7 +76,11 @@ public static class Bookmarks
         for (var step = 1; step <= count; step++)
         {
             var index = ((start + Math.Sign(direction) * step) % count + count) % count;
-            if (!list.Items[index].Enabled) continue;
+            if (!list.Items[index].Enabled)
+            {
+                continue;
+            }
+
             return list.Items[index];
         }
         return null;
@@ -72,16 +92,25 @@ public static class Bookmarks
     {
         var index = FindRow(list, from);
         if (index >= 0)
+        {
             return index;
+        }
+
         if (direction > 0)
+        {
             return -1;
+        }
+
         return list.Items.Count;
     }
 
     private static int FindRow(BookmarkList list, Bookmark? bookmark)
     {
         if (bookmark == null)
+        {
             return -1;
+        }
+
         return list.Items.IndexOf(bookmark);
     }
 
@@ -92,7 +121,9 @@ public static class Bookmarks
         foreach (var bookmark in list.Items)
         {
             if (bookmark.Enabled)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -104,7 +135,9 @@ public static class Bookmarks
         foreach (var bookmark in list.Items)
         {
             if (Bookmarks.FindLine(bookmark, document, node) == line)
+            {
                 return bookmark;
+            }
         }
         return null;
     }
@@ -114,7 +147,11 @@ public static class Bookmarks
     public static IReadOnlyDictionary<int, bool> ListMarkedLines(BookmarkList list, DecompiledDocument document, BrowseNode node)
     {
         var marks = list.MarksByDocument.GetOrCreateValue(document);
-        if (marks.Revision == list.Revision && Equals(marks.Place, BrowseNodes.GetPath(node))) return marks.Lines;
+        if (marks.Revision == list.Revision && Equals(marks.Place, BrowseNodes.GetPath(node)))
+        {
+            return marks.Lines;
+        }
+
         marks.Revision = list.Revision;
         marks.Place = BrowseNodes.GetPath(node);
         marks.Lines.Clear();
@@ -122,7 +159,9 @@ public static class Bookmarks
         {
             var line = Bookmarks.FindLine(bookmark, document, node);
             if (line >= 0)
+            {
                 marks.Lines[line] = marks.Lines.GetValueOrDefault(line) || bookmark.Enabled;
+            }
         }
         return marks.Lines;
     }
@@ -134,7 +173,9 @@ public static class Bookmarks
         {
             var name = format(n);
             if (!list.Items.Any(b => b.Name == name))
+            {
                 return name;
+            }
         }
     }
 
@@ -165,7 +206,10 @@ public static class Bookmarks
     public static int Import(BookmarkList list, IEnumerable<Bookmark> bookmarks, BookmarkImportMode mode)
     {
         if (mode == BookmarkImportMode.Replace)
+        {
             list.Items.Clear();
+        }
+
         var leftOut = 0;
         foreach (var bookmark in bookmarks)
         {
@@ -199,9 +243,15 @@ public static class Bookmarks
     public static void TakeRemoved(BookmarksPanel panel, Bookmark bookmark, int row, IReadOnlyList<Bookmark> bookmarks)
     {
         if (panel.Renaming == bookmark)
+        {
             panel.Renaming = null;
+        }
+
         if (panel.Selection.Item != bookmark)
+        {
             return;
+        }
+
         SelectInRow(panel, row, bookmarks);
     }
 
@@ -221,9 +271,15 @@ public static class Bookmarks
     public static void FollowList(BookmarksPanel panel, IReadOnlyList<Bookmark> bookmarks)
     {
         if (panel.Renaming == null)
+        {
             return;
+        }
+
         if (bookmarks.Contains(panel.Renaming))
+        {
             return;
+        }
+
         panel.Renaming = null;
     }
 
@@ -250,12 +306,21 @@ public static class Bookmarks
     {
         var node = tab.Node;
         if (node == null)
+        {
             return new BookmarkToggle.Unchanged();
+        }
+
         if (!CanBookmarkLine(tab, line))
+        {
             return new BookmarkToggle.Unchanged();
+        }
+
         var existing = FindAt(appState.Bookmarks, tab.Document, node, line);
         if (existing != null)
+        {
             return RemoveBookmark(appState, existing);
+        }
+
         return AddBookmark(appState, tab, node, line, nameOf);
     }
 
@@ -268,11 +333,20 @@ public static class Bookmarks
     private static bool CanBookmarkLine(DocumentTab tab, int line)
     {
         if (tab.IsBusy)
+        {
             return false;
+        }
+
         if (tab.Document.Error != null)
+        {
             return false;
+        }
+
         if (line < 0)
+        {
             return false;
+        }
+
         return line < tab.Document.Lines.Length;
     }
 
@@ -303,7 +377,10 @@ public static class Bookmarks
         var session = appState.Session;
         var found = await Background.Run(() => NodeLookup.Find(assemblies, session, place));
         if (appState.Intent.IsStale(ticket))
+        {
             return;
+        }
+
         appState.Intent.StopResolving();
         ShowBookmarkPlace(appState, bookmark, found, destination);
     }
@@ -340,7 +417,10 @@ public static class Bookmarks
     {
         var bookmark = FindNext(appState.Bookmarks, from, direction);
         if (bookmark == null)
+        {
             return null;
+        }
+
         GoToBookmark(appState, bookmark);
         return bookmark;
     }
@@ -350,7 +430,10 @@ public static class Bookmarks
         var records = ListRecords(appState.Bookmarks);
         var error = BookmarkFile.Write(path, records);
         if (error == null)
+        {
             return;
+        }
+
         Errors.Report(appState, new AppProblem.BookmarksNotExported(error));
     }
 
@@ -373,7 +456,10 @@ public static class Bookmarks
             return;
         }
         if (read.Unreadable.Count > 0)
+        {
             Errors.Report(appState, new AppProblem.ImportedBookmarksUnreadable(file, read.Unreadable));
+        }
+
         var records = read.Bookmarks;
         appState.Imports.Finding++;
         var assemblies = appState.Assemblies;
@@ -391,11 +477,17 @@ public static class Bookmarks
     private static FoundBookmark FindPlace(AssemblyList assemblies, BrowseSession session, BookmarkRecord record)
     {
         if (record.Location != null)
+        {
             return new FoundBookmark(record, record.Location);
+        }
+
         var treePath = record.ViewState?.SelectedTreeNodePath;
         var node = ILSpyTree.Locate(assemblies, session, record.FileName, treePath, record.Token, record.MemberName);
         if (node == null)
+        {
             return new FoundBookmark(record, null);
+        }
+
         return new FoundBookmark(record, BrowseNodes.GetPath(node));
     }
 
@@ -422,7 +514,10 @@ public static class Bookmarks
             .OfType<Bookmark>()
             .ToList();
         if (bookmarks.Count == 0)
+        {
             return;
+        }
+
         if (appState.Bookmarks.Items.Count == 0)
         {
             TakeBookmarks(appState, bookmarks, BookmarkImportMode.Replace);
@@ -435,7 +530,10 @@ public static class Bookmarks
     {
         var lost = found.FindAll(f => f.Place == null);
         if (lost.Count == 0)
+        {
             return;
+        }
+
         var lines = lost.ConvertAll(DescribeLostBookmark);
         Errors.Report(appState, new AppProblem.ImportedBookmarksLost(file, lines));
     }
@@ -452,9 +550,15 @@ public static class Bookmarks
     public static void FinishBookmarkImport(AppState appState, PendingImport import, BookmarkImportMode? mode)
     {
         if (!appState.Imports.Waiting.Remove(import))
+        {
             return;
+        }
+
         if (mode == null)
+        {
             return;
+        }
+
         TakeBookmarks(appState, import.Bookmarks, mode.Value);
     }
 
@@ -464,7 +568,10 @@ public static class Bookmarks
     {
         var leftOut = Import(appState.Bookmarks, bookmarks, mode);
         if (mode == BookmarkImportMode.Merge)
+        {
             return;
+        }
+
         ReportLeftOutBookmarks(appState, leftOut);
     }
 
@@ -472,7 +579,10 @@ public static class Bookmarks
     internal static void ReportLeftOutBookmarks(AppState appState, int leftOut)
     {
         if (leftOut == 0)
+        {
             return;
+        }
+
         Errors.Report(appState, new AppProblem.BookmarksLeftOut(leftOut));
     }
 
@@ -483,7 +593,10 @@ public static class Bookmarks
     private static Bookmark? CreateBookmark(FoundBookmark found)
     {
         if (found.Place == null)
+        {
             return null;
+        }
+
         return Bookmarks.CreateFromRecord(found.Record, found.Place);
     }
 

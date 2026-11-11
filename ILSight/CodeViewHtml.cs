@@ -17,7 +17,10 @@ internal static class CodeHtml
     {
         var lines = document.Lines;
         if (lines.Length == 0 || start >= end)
+        {
             return "";
+        }
+
         start = CodeText.Clamp(document, start);
         end = CodeText.Clamp(document, end);
 
@@ -37,7 +40,10 @@ internal static class CodeHtml
     private static uint TextColorOf(DecompiledDocument document, CodeHtmlStyle style)
     {
         if (document.Error != null)
+        {
             return style.ErrorText;
+        }
+
         return style.Palette.Plain;
     }
 
@@ -58,9 +64,14 @@ internal static class CodeHtml
     {
         html.Append("<div>");
         if (from >= to)
+        {
             html.Append("<br>");
+        }
         else
+        {
             AppendRuns(html, document, line, from, to, style, textColor);
+        }
+
         html.Append("</div>");
     }
 
@@ -73,7 +84,10 @@ internal static class CodeHtml
             var runStart = Math.Max(span.Start, from);
             var runEnd = Math.Min(span.End, to);
             if (runStart >= runEnd)
+            {
                 continue;
+            }
+
             var color = ColorOf(document, span.Kind, style);
             SwitchColor(html, current, color, textColor);
             current = color;
@@ -85,7 +99,10 @@ internal static class CodeHtml
     private static uint ColorOf(DecompiledDocument document, SpanKind kind, CodeHtmlStyle style)
     {
         if (document.Error != null)
+        {
             return style.ErrorText;
+        }
+
         return style.Palette[kind];
     }
 
@@ -93,16 +110,30 @@ internal static class CodeHtml
     private static void SwitchColor(StringBuilder html, uint current, uint next, uint textColor)
     {
         if (next == current)
+        {
             return;
+        }
+
         if (current != textColor)
+        {
             html.Append("</span>");
+        }
+
         if (next != textColor)
+        {
             html.Append("<span style=\"color: ").Append(Hex(next)).Append(";\">");
+        }
     }
 
-    private static string Hex(uint color) => "#" + (color & 0xFFFFFF).ToString("x6", CultureInfo.InvariantCulture);
+    private static string Hex(uint color)
+    {
+        return "#" + (color & 0xFFFFFF).ToString("x6", CultureInfo.InvariantCulture);
+    }
 
-    private static string Pixels(float size) => size.ToString("0.##", CultureInfo.InvariantCulture) + "px";
+    private static string Pixels(float size)
+    {
+        return size.ToString("0.##", CultureInfo.InvariantCulture) + "px";
+    }
 
     private static string Escape(string text)
     {

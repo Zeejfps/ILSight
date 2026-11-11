@@ -25,10 +25,16 @@ public static class BuiltInIconThemes
     public static IReadOnlyList<ThemeError> Errors => Catalog.Errors;
 
     /// <summary>The JSON schema icon theme files name in <c>$schema</c>, for editors to complete and check their keys.</summary>
-    public static string ReadSchema() => EmbeddedAssets.LoadString(Resources, SchemaResource);
+    public static string ReadSchema()
+    {
+        return EmbeddedAssets.LoadString(Resources, SchemaResource);
+    }
 
     /// <summary>The README the icon themes folder holds, on how to write an icon theme.</summary>
-    public static string ReadGuide() => EmbeddedAssets.LoadString(Resources, GuideResource);
+    public static string ReadGuide()
+    {
+        return EmbeddedAssets.LoadString(Resources, GuideResource);
+    }
 
     private static List<IconThemeFile> ReadFiles()
     {
@@ -40,7 +46,10 @@ public static class BuiltInIconThemes
             .ToList();
     }
 
-    private static bool IsIconThemeResource(string name) => name.StartsWith(ResourcePrefix, StringComparison.Ordinal);
+    private static bool IsIconThemeResource(string name)
+    {
+        return name.StartsWith(ResourcePrefix, StringComparison.Ordinal);
+    }
 
     private static IconThemeFile ReadFile(string resource)
     {
@@ -71,7 +80,10 @@ internal static class EmbeddedIconAssets
     {
         var names = resources.GetManifestResourceNames();
         if (!names.Contains(path))
+        {
             return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
+        }
+
         return new IconAsset(EmbeddedAssets.LoadBytes(resources, path));
     }
 }

@@ -21,10 +21,16 @@ internal static class ForwardedTypes
         {
             var exported = metadata.GetExportedType(handle);
             if (!IsTopLevelForwarder(exported))
+            {
                 continue;
+            }
+
             var type = Read(metadata, handle, exported);
             if (!byNamespace.TryGetValue(type.Namespace, out var types))
+            {
                 byNamespace.Add(type.Namespace, types = new List<ForwardedType>());
+            }
+
             types.Add(type);
         }
         return byNamespace;
@@ -33,20 +39,28 @@ internal static class ForwardedTypes
     internal static bool IsTopLevelForwarder(ExportedType exported)
     {
         if (!exported.IsForwarder)
+        {
             return false;
+        }
+
         return exported.Implementation.Kind == HandleKind.AssemblyReference;
     }
 
     /// <summary>The top-level type <paramref name="handle"/> forwards.</summary>
-    public static ForwardedType Read(MetadataReader metadata, ExportedTypeHandle handle) =>
-        Read(metadata, handle, metadata.GetExportedType(handle));
+    public static ForwardedType Read(MetadataReader metadata, ExportedTypeHandle handle)
+    {
+        return Read(metadata, handle, metadata.GetExportedType(handle));
+    }
 
     private static ForwardedType Read(MetadataReader metadata, ExportedTypeHandle handle, ExportedType exported)
     {
         var name = NameOf(metadata, handle);
         var label = LabelOf(name.Name, name.TypeParameterCount);
         if (exported.Implementation.Kind != HandleKind.AssemblyReference)
+        {
             throw new UnreachableException("Only top-level forwarded types are read, and each names the assembly it is forwarded to.");
+        }
+
         var destination = metadata.GetAssemblyReference((AssemblyReferenceHandle)exported.Implementation);
         return new ForwardedType(handle, name.Namespace, label, name.Name, name.TypeParameterCount, metadata.GetString(destination.Name));
     }
@@ -56,7 +70,10 @@ internal static class ForwardedTypes
     internal static string LabelOf(string name, int arity)
     {
         if (arity == 0)
+        {
             return name;
+        }
+
         var commas = new string(',', arity - 1);
         return $"{name}<{commas}>";
     }
@@ -79,11 +96,20 @@ internal static class ForwardedTypes
     {
         var usage = new ReferenceUsage();
         foreach (var handle in metadata.TypeReferences)
+        {
             AddToList(usage.Types, metadata.GetTypeReference(handle).ResolutionScope, handle);
+        }
+
         foreach (var handle in metadata.MemberReferences)
+        {
             ForwardedTypes.AddUsedMember(usage, metadata, handle);
+        }
+
         foreach (var handle in metadata.ExportedTypes)
+        {
             ForwardedTypes.AddUsedForwarder(usage, metadata, handle);
+        }
+
         return usage;
     }
 
@@ -110,7 +136,10 @@ internal static class ForwardedTypes
     internal static bool UsesReference(ReferenceUsage usage, AssemblyReferenceHandle reference)
     {
         if (ListTypesIn(usage, reference).Count > 0)
+        {
             return true;
+        }
+
         return ListForwardedTo(usage, reference).Count > 0;
     }
 
@@ -118,7 +147,10 @@ internal static class ForwardedTypes
     {
         var type = FindUsedType(metadata, metadata.GetMemberReference(handle).Parent);
         if (type.IsNil)
+        {
             return;
+        }
+
         AddToList(usage.UsedMembers, type, handle);
     }
 
@@ -127,9 +159,15 @@ internal static class ForwardedTypes
     private static EntityHandle FindUsedType(MetadataReader metadata, EntityHandle parent)
     {
         if (parent.Kind == HandleKind.TypeReference)
+        {
             return parent;
+        }
+
         if (parent.Kind != HandleKind.TypeSpecification)
+        {
             return default;
+        }
+
         return FindGenericType(metadata, (TypeSpecificationHandle)parent);
     }
 
@@ -139,11 +177,17 @@ internal static class ForwardedTypes
         {
             var reader = metadata.GetBlobReader(metadata.GetTypeSpecification(handle).Signature);
             if (reader.ReadSignatureTypeCode() != SignatureTypeCode.GenericTypeInstance)
+            {
                 return default;
+            }
+
             SkipClassOrValueType(ref reader);
             var type = reader.ReadTypeHandle();
             if (type.Kind != HandleKind.TypeReference)
+            {
                 return default;
+            }
+
             return type;
         }
         catch (BadImageFormatException)
@@ -161,7 +205,10 @@ internal static class ForwardedTypes
     {
         var exported = metadata.GetExportedType(handle);
         if (!ForwardedTypes.IsTopLevelForwarder(exported))
+        {
             return;
+        }
+
         AddToList(usage.Forwarders, exported.Implementation, handle);
     }
 

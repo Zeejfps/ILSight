@@ -22,7 +22,10 @@ public static class PictureViews
     public static void Follow(PictureView view, ResourceImage? image)
     {
         if (ReferenceEquals(image, view.Shown))
+        {
             return;
+        }
+
         view.Shown = image;
         view.Zoom = default;
         view.ShowsSource = false;

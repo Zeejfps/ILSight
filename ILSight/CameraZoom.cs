@@ -21,7 +21,10 @@ public readonly record struct CameraZoom
     public static CameraZoom Clamp(float zoom)
     {
         if (float.IsNaN(zoom))
+        {
             return default;
+        }
+
         return new CameraZoom(Math.Clamp(zoom, Min, Max));
     }
 }

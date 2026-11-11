@@ -21,10 +21,15 @@ public sealed class CloseAssembliesTests
         return d;
     }
 
-    private static LoadedAssembly Listed(AppStateDriver d, string path) =>
-        d.AppState.Assemblies.Listed.Single(a => a.FilePath.Text == path);
+    private static LoadedAssembly Listed(AppStateDriver d, string path)
+    {
+        return d.AppState.Assemblies.Listed.Single(a => a.FilePath.Text == path);
+    }
 
-    private static List<string> ListedPaths(AppStateDriver d) => d.AppState.Assemblies.Listed.Select(static a => a.FilePath.Text).ToList();
+    private static List<string> ListedPaths(AppStateDriver d)
+    {
+        return d.AppState.Assemblies.Listed.Select(static a => a.FilePath.Text).ToList();
+    }
 
     [Fact]
     public void The_dialog_lists_every_item_in_the_list_order_with_the_picked_one_ticked()

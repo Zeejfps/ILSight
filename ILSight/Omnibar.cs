@@ -33,9 +33,15 @@ public sealed class Omnibar
         {
             var index = ItemSelections.FindIndexIn(Search.Selection, Search.Rows);
             if (index < 0)
+            {
                 return null;
+            }
+
             if (index >= SuggestionCount)
+            {
                 return null;
+            }
+
             return Search.Rows[index];
         }
     }

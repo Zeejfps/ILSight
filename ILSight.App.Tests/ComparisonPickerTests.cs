@@ -19,7 +19,10 @@ public sealed class ComparisonPickerTests
         return d;
     }
 
-    private static LoadedModule Opened(AppStateDriver d, string path) => d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);
+    private static LoadedModule Opened(AppStateDriver d, string path)
+    {
+        return d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);
+    }
 
     private static ComparisonPicker OpenPicker(AppStateDriver d, string path)
     {

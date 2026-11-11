@@ -50,9 +50,13 @@ public readonly struct OnOffChanges<T> : IEnumerable<KeyValuePair<T, bool>> wher
         foreach (var choice in choices)
         {
             if (value == choice.DefaultValue)
+            {
                 changes.Remove(choice);
+            }
             else
+            {
                 changes[choice] = value;
+            }
         }
         return new OnOffChanges<T>(changes.ToImmutable());
     }
@@ -62,7 +66,10 @@ public readonly struct OnOffChanges<T> : IEnumerable<KeyValuePair<T, bool>> wher
     {
         var changes = Changes.ToBuilder();
         foreach (var choice in choices)
+        {
             changes.Remove(choice);
+        }
+
         return new OnOffChanges<T>(changes.ToImmutable());
     }
 

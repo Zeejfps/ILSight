@@ -18,11 +18,17 @@ internal static class BundleContents
     public static IReadOnlyList<SingleFileBundle.Entry>? TryReadManifest(string path)
     {
         if (new FileInfo(path).Length <= SignatureLength)
+        {
             return null;
+        }
+
         using var mapped = MemoryMappedFile.CreateFromFile(path, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
         using var view = mapped.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
         if (!SingleFileBundle.IsBundle(view, out var headerOffset))
+        {
             return null;
+        }
+
         return ReadEntries(view, headerOffset);
     }
 
@@ -49,17 +55,26 @@ internal static class BundleContents
         var bytes = new byte[stored];
         stream.ReadExactly(bytes);
         if (!IsCompressed(entry))
+        {
             return bytes;
+        }
+
         return Inflate(bytes, entry);
     }
 
-    private static bool IsCompressed(SingleFileBundle.Entry entry) => entry.CompressedSize != 0;
+    private static bool IsCompressed(SingleFileBundle.Entry entry)
+    {
+        return entry.CompressedSize != 0;
+    }
 
     private static int StoredLength(SingleFileBundle.Entry entry)
     {
         CheckSize(entry, entry.Size);
         if (!IsCompressed(entry))
+        {
             return (int)entry.Size;
+        }
+
         CheckSize(entry, entry.CompressedSize);
         return (int)entry.CompressedSize;
     }
@@ -67,17 +82,27 @@ internal static class BundleContents
     private static void CheckSize(SingleFileBundle.Entry entry, long size)
     {
         if (size < 0)
+        {
             throw Corrupt(entry, $"its size {size} is negative");
+        }
+
         if (size > int.MaxValue)
+        {
             throw Corrupt(entry, $"its size {size} is too large");
+        }
     }
 
     private static void CheckWithin(Stream stream, SingleFileBundle.Entry entry, int stored)
     {
         if (entry.Offset < 0)
+        {
             throw Corrupt(entry, $"it starts at {entry.Offset}");
+        }
+
         if (entry.Offset + stored > stream.Length)
+        {
             throw Corrupt(entry, $"it runs past the end of the file, at {entry.Offset + stored}");
+        }
     }
 
     /// <summary>Inflates <paramref name="compressed"/>, stopping one byte past the size the manifest
@@ -93,15 +118,23 @@ internal static class BundleContents
             var wanted = (int)Math.Min(buffer.Length, remaining);
             var read = deflate.Read(buffer, 0, wanted);
             if (read == 0)
+            {
                 break;
+            }
+
             inflated.Write(buffer, 0, read);
             remaining -= read;
         }
         if (inflated.Length != entry.Size)
+        {
             throw Corrupt(entry, $"it inflates to {inflated.Length} bytes, not the {entry.Size} declared");
+        }
+
         return inflated.ToArray();
     }
 
-    private static InvalidDataException Corrupt(SingleFileBundle.Entry entry, string why) =>
-        new($"The bundle's entry '{entry.RelativePath}' cannot be read: {why}.");
+    private static InvalidDataException Corrupt(SingleFileBundle.Entry entry, string why)
+    {
+        return new($"The bundle's entry '{entry.RelativePath}' cannot be read: {why}.");
+    }
 }

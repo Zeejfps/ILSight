@@ -19,9 +19,15 @@ public static partial class BrowseNodes
     private static NodeSubject CreateSubject(LoadedModule module, MetadataResource resource)
     {
         if (AvaloniaResources.IsContainerName(resource.Name))
+        {
             return new NodeSubject.ResourceContainer { Value = ResourceNodes.CreateAvaloniaAssets(module, resource) };
+        }
+
         if (resource.Name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+        {
             return new NodeSubject.ResourceContainer { Value = ResourceNodes.CreateResourcesFile(module, resource) };
+        }
+
         return new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = module, Name = resource.Name, Source = new ResourceSource.Manifest(resource) } };
     }
 

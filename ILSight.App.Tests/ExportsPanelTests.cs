@@ -19,7 +19,10 @@ public sealed class ExportsPanelTests : IDisposable
         Directory.CreateDirectory(_temp.Path);
     }
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private string Folder(string name)
     {

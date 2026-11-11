@@ -19,7 +19,10 @@ internal static class ErrorDialogView
     public static void Open(ErrorDialog dialog, IReadOnlyList<AppError> errors)
     {
         if (errors.Count == 0)
+        {
             return;
+        }
+
         ItemSelections.Select(dialog.Selection, errors[^1], errors);
         dialog.IsOpen = true;
     }
@@ -29,7 +32,10 @@ internal static class ErrorDialogView
     public static void ShowNewErrors(ErrorDialog dialog, int revision, IReadOnlyList<AppError> errors)
     {
         if (revision == dialog.ShownRevision)
+        {
             return;
+        }
+
         dialog.ShownRevision = revision;
         Open(dialog, errors);
     }
@@ -57,10 +63,16 @@ internal static class ErrorDialogView
     {
         var error = dialog.SelectedError;
         if (error == null)
+        {
             return DecompiledDocument.Empty;
+        }
+
         var text = GetText(dialog, error, t);
         if (dialog.Document.TryGet(new(error), out var document))
+        {
             return document;
+        }
+
         document = CreateDocument(text);
         dialog.Document = new(new(error), document);
         return document;
@@ -70,7 +82,10 @@ internal static class ErrorDialogView
     {
         var body = text.Details;
         if (body.Length == 0)
+        {
             body = text.Title;
+        }
+
         return Documents.CreateFromText(text.Title, body);
     }
 
@@ -79,7 +94,10 @@ internal static class ErrorDialogView
         var t = ui.State.Strings;
         var shown = ui.State.ErrorDialog;
         if (!shown.IsOpen)
+        {
             return;
+        }
+
         var theme = ui.Theme;
         var title = ui.Memo("errors-title", (errors.Entries.Count, t), static a => a.t.ErrorsTitle(a.Count));
         using var dialog = ui.Dialog("errors", title, ref shown.IsOpen, new Box
@@ -87,11 +105,16 @@ internal static class ErrorDialogView
             Width = Sizing.Grow(0f, AppLayout.ErrorDialogWidth),
             Height = Sizing.Grow(0f, AppLayout.ErrorDialogHeight),
         });
-        if (!dialog.IsOpen) return;
+        if (!dialog.IsOpen)
+        {
+            return;
+        }
 
         ItemSelections.ShowIn(shown.Selection, errors.Entries);
         if (errors.Entries.Count > 1)
+        {
             List(ui, errors, shown);
+        }
 
         var selected = shown.SelectedError;
         if (selected != null)
@@ -104,18 +127,28 @@ internal static class ErrorDialogView
         }
 
         using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.EditorBackground, Clip = true }))
+        {
             CodeViewWidget.RenderCodeView(ui, "error-text", GetSelectedDocument(shown, t), shown.View);
+        }
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
         {
             if (ui.Button(t.ErrorsCopy, id: "error-copy") && selected != null)
+            {
                 ui.ClipboardText = GetText(shown, selected, t).FullText;
+            }
+
             ui.Tooltip(ui.GetId("error-copy"), t.ErrorsCopyTooltip);
             if (ui.Button(t.ErrorsClear, id: "error-clear", variant: ButtonVariant.Ghost))
+            {
                 Commands.Later(ui.State, shown, static (a, s) => ClearErrors(a.Errors, s));
+            }
+
             ui.Spacer();
             if (ui.Button(t.ErrorsClose, id: "error-close", variant: ButtonVariant.Primary))
+            {
                 shown.IsOpen = false;
+            }
         }
     }
 

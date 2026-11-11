@@ -14,8 +14,10 @@ public sealed class TargetFrameworkTests
     private static readonly TargetFrameworkId Net48 = Frameworks.Net48;
     private static readonly string SampleAppPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
 
-    private static LoadedModule FixturesOf(AppState appState) =>
-        appState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+    private static LoadedModule FixturesOf(AppState appState)
+    {
+        return appState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+    }
 
     /// <summary>Right-clicks the fixture assembly's row and picks <paramref name="item"/> from its
     /// Target framework submenu, then waits for the reload.</summary>
@@ -76,7 +78,10 @@ public sealed class TargetFrameworkTests
         var sample = SampleOf(app.AppState);
         var tree = app.Ui.Tree;
         foreach (var node in new[] { fixtures.Root, fixtures.Root.Child(AppStateDriver.FixturesNamespace), sample.Root })
+        {
             tree.View.SetExpanded(node, true);
+        }
+
         tree.View.Refresh();
         var greeter = app.Fixture("Greeter");
         app.Show(greeter, 2);
@@ -101,8 +106,10 @@ public sealed class TargetFrameworkTests
         }
     }
 
-    private static LoadedModule SampleOf(AppState appState) =>
-        appState.Assemblies.Assemblies.Single(a => a.FilePath.Text == SampleAppPath);
+    private static LoadedModule SampleOf(AppState appState)
+    {
+        return appState.Assemblies.Assemblies.Single(a => a.FilePath.Text == SampleAppPath);
+    }
 
     [Fact]
     public void Picking_a_framework_for_an_assembly_in_a_package_keeps_the_tree_expanded_and_the_tab_on_what_it_showed()
@@ -117,7 +124,10 @@ public sealed class TargetFrameworkTests
         var assembly = folder.Children.Single(c => c.Icon == NodeIcon.Assembly);
         var tree = app.Ui.Tree;
         foreach (var node in new[] { package, folder, assembly, assembly.Child(AppStateDriver.FixturesNamespace) })
+        {
             tree.View.SetExpanded(node, true);
+        }
+
         tree.View.Refresh();
         app.Show(assembly.Child(AppStateDriver.FixturesNamespace, "Greeter"), 2);
         var before = Trees.ListExpandedPaths(tree);

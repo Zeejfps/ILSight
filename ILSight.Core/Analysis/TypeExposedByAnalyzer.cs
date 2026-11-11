@@ -10,7 +10,10 @@ internal static class TypeExposedByAnalyzer
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type)
+        {
             return null;
+        }
+
         return context => Analyze(type, context);
     }
 
@@ -20,11 +23,16 @@ internal static class TypeExposedByAnalyzer
         foreach (var type in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, analyzed), context.CancellationToken))
         {
             if (analyzed.Kind == TypeKind.Enum && AnalyzerHelpers.IsSame(type, analyzed) || Members.IsHidden(type))
+            {
                 continue;
+            }
+
             foreach (var member in type.Fields.Concat<IMember>(type.Properties).Concat(type.Events).Concat(type.Methods))
             {
                 if (visitor.IsExposedBy(member))
+                {
                     yield return member;
+                }
             }
         }
     }
@@ -36,13 +44,18 @@ internal static class TypeExposedByAnalyzer
         public bool IsExposedBy(IMember member)
         {
             if (member.Accessibility == Accessibility.Private && !member.IsExplicitInterfaceImplementation)
+            {
                 return false;
+            }
+
             _found = false;
             member.ReturnType.AcceptVisitor(this);
             if (member is IParameterizedMember parameterized)
             {
                 foreach (var parameter in parameterized.Parameters)
+                {
                     parameter.Type.AcceptVisitor(this);
+                }
             }
             return _found;
         }
@@ -53,6 +66,9 @@ internal static class TypeExposedByAnalyzer
             return base.VisitTypeDefinition(type);
         }
 
-        public override IType VisitParameterizedType(ParameterizedType type) => type.GenericType.AcceptVisitor(this);
+        public override IType VisitParameterizedType(ParameterizedType type)
+        {
+            return type.GenericType.AcceptVisitor(this);
+        }
     }
 }

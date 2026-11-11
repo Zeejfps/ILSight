@@ -21,7 +21,10 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private static CodeViewState CodeOf(AppDriver app, DocumentTab tab)
     {
@@ -91,12 +94,21 @@ public sealed class SavedDocumentsTests : IDisposable
     private static bool IsLaidOut(AppDriver app, DocumentTab tab)
     {
         if (app.AppState.IsDiagramming)
+        {
             return false;
+        }
+
         var view = DiagramOf(app, tab);
         if (view.LaidOutVersion != tab.Diagram!.Version)
+        {
             return false;
+        }
+
         if (view.IsFitPending)
+        {
             return false;
+        }
+
         return !view.Transition.IsMoving;
     }
 
@@ -129,7 +141,10 @@ public sealed class SavedDocumentsTests : IDisposable
         return new AppSettings { AssemblyLists = [list] };
     }
 
-    private static TypeAnchor FixtureType(string name) => new(PathOf(AppStateDriver.FixturePath), $"{AppStateDriver.FixturesNamespace}.{name}");
+    private static TypeAnchor FixtureType(string name)
+    {
+        return new(PathOf(AppStateDriver.FixturePath), $"{AppStateDriver.FixturesNamespace}.{name}");
+    }
 
     /// <summary>Where the fixture type <paramref name="name"/> is, as this build saves it.</summary>
     private static NodePath FixturePlace(string name)
@@ -403,12 +418,15 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal("Farewell", d.AppState.Tabs.Active!.Title);
     }
 
-    private static DockSplit? ParentOf(DockNode node, DockNode target) => node switch
+    private static DockSplit? ParentOf(DockNode node, DockNode target)
     {
-        DockSplit split when split.First == target || split.Second == target => split,
-        DockSplit split => ParentOf(split.First, target) ?? ParentOf(split.Second, target),
-        _ => null,
-    };
+        return node switch
+        {
+            DockSplit split when split.First == target || split.Second == target => split,
+            DockSplit split => ParentOf(split.First, target) ?? ParentOf(split.Second, target),
+            _ => null,
+        };
+    }
 
     [Fact]
     public void A_hand_edited_list_keeps_one_document_per_panel_and_none_docked_as_a_view()

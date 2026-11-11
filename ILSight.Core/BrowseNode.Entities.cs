@@ -23,27 +23,45 @@ public static partial class BrowseNodes
         var module = definition.Module;
         var result = new List<BrowseNode>();
         if (type.DirectBaseTypes.Any())
+        {
             result.Add(Create(parent, new NodeSubject.BaseTypes { Type = definition }));
+        }
+
         if (DerivedTypes.CanHave(type))
+        {
             result.Add(Create(parent, new NodeSubject.DerivedTypes { Type = definition }));
+        }
 
         foreach (var nested in type.NestedTypes.OrderBy(t => t.Name, NaturalStringComparer.Instance))
+        {
             AddIfListed(result, CreateForType(module, parent, nested));
+        }
 
         var fields = type.Fields.Where(f => !(type.Kind == TypeKind.Enum && !f.IsStatic));
         if (type.Kind != TypeKind.Enum)
+        {
             fields = fields.OrderBy(f => f.Name, NaturalStringComparer.Instance);
+        }
+
         foreach (var field in fields)
+        {
             AddIfListed(result, CreateForMember(module, parent, field));
+        }
 
         foreach (var property in type.Properties.OrderBy(p => p.Name, NaturalStringComparer.Instance))
+        {
             AddIfListed(result, CreateForMember(module, parent, property));
+        }
 
         foreach (var @event in type.Events.OrderBy(e => e.Name, NaturalStringComparer.Instance))
+        {
             AddIfListed(result, CreateForMember(module, parent, @event));
+        }
 
         foreach (var method in type.Methods.Where(m => !m.IsAccessor).OrderBy(m => m.Name, NaturalStringComparer.Instance))
+        {
             AddIfListed(result, CreateForMember(module, parent, method));
+        }
 
         return result.ToArray();
     }
@@ -52,7 +70,10 @@ public static partial class BrowseNodes
     {
         var result = new List<BrowseNode>();
         foreach (var accessor in Members.Accessors(definition.Symbol))
+        {
             AddIfListed(result, CreateForMember(definition.Module, parent, accessor));
+        }
+
         return result.ToArray();
     }
 
@@ -72,7 +93,9 @@ public static partial class BrowseNodes
         {
             var info = NodeDefinitions.FindDerivedType(module, derived);
             if (info != null)
+            {
                 result.Add(Create(parent, new NodeSubject.DerivedType { Value = info }));
+            }
         }
         return result.ToArray();
     }

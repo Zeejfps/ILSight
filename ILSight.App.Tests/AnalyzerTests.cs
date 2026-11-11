@@ -11,7 +11,10 @@ namespace ILSight.App.Tests;
 
 public sealed class AnalyzerTests
 {
-    private static BrowseNode First(AppStateDriver d) => d.Fixture("Outline").Children.Single(c => c.Text.StartsWith("First()"));
+    private static BrowseNode First(AppStateDriver d)
+    {
+        return d.Fixture("Outline").Children.Single(c => c.Text.StartsWith("First()"));
+    }
 
     private static AnalyzerKindNode Expand(AppStateDriver d, AnalyzerSymbolNode symbol, string header)
     {
@@ -184,7 +187,10 @@ public sealed class AnalyzerTests
         return Assert.IsType<CodeReference.Entity>(document.SpanAt(line, column + offset).Reference);
     }
 
-    private static CodeReference.Entity ReferenceToFirst(AppStateDriver d) => ReferenceTo(d, "Outline", "return First();", "return ".Length);
+    private static CodeReference.Entity ReferenceToFirst(AppStateDriver d)
+    {
+        return ReferenceTo(d, "Outline", "return First();", "return ".Length);
+    }
 
     [Fact]
     public void A_reference_shows_a_loading_root_at_once_that_is_saved_once_it_is_found()

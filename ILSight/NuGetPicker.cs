@@ -66,7 +66,10 @@ public sealed class NuGetPicker
         get
         {
             if (ShownResults == null)
+            {
                 return [];
+            }
+
             return ShownResults.Found.Packages;
         }
     }
@@ -77,7 +80,10 @@ public sealed class NuGetPicker
         get
         {
             if (ShownResults == null)
+            {
                 return 0;
+            }
+
             return ShownResults.Search.Page;
         }
     }
@@ -96,7 +102,10 @@ public sealed class NuGetPicker
         get
         {
             if (ShownResults == null)
+            {
                 return 0;
+            }
+
             return ShownResults.Found.TotalHits;
         }
     }
@@ -115,7 +124,10 @@ public sealed class NuGetPicker
         {
             var setup = NuGetPicking.FindReadySetup(this);
             if (setup == null)
+            {
                 return [];
+            }
+
             return setup.Sources;
         }
     }
@@ -131,7 +143,10 @@ public sealed class NuGetPicker
         get
         {
             if (ShownResults == null)
+            {
                 return "";
+            }
+
             return ShownResults.Search.Query;
         }
     }
@@ -150,7 +165,10 @@ public sealed class NuGetPicker
         get
         {
             if (Run is not SearchRun.Failed failed)
+            {
                 return null;
+            }
+
             return failed.Error;
         }
     }
@@ -163,7 +181,10 @@ public sealed class NuGetPicker
         get
         {
             if (DownloadRun is not DownloadState.Running running)
+            {
                 return "";
+            }
+
             return running.Name;
         }
     }
@@ -180,10 +201,16 @@ public sealed class NuGetPicker
         get
         {
             if (IsSettling)
+            {
                 return false;
+            }
+
             var searched = NuGetPicking.FindLastSearched(this);
             if (searched == null)
+            {
                 return true;
+            }
+
             return NuGetPicking.IsSamePackages(searched, NuGetPicking.FindShownSearch(this));
         }
     }
@@ -195,11 +222,20 @@ public sealed class NuGetPicker
         get
         {
             if (Selected == null)
+            {
                 return false;
+            }
+
             if (IsDownloading)
+            {
                 return false;
+            }
+
             if (!ShowsWhatWasAsked)
+            {
                 return false;
+            }
+
             return Version != null;
         }
     }
@@ -210,10 +246,16 @@ public sealed class NuGetPicker
         get
         {
             if (Selected == null || Version == null)
+            {
                 return 0;
+            }
+
             var listed = NuGetPicking.FindVersion(Selected, Version);
             if (listed == null)
+            {
                 return 0;
+            }
+
             return listed.Downloads;
         }
     }
@@ -283,9 +325,15 @@ public static class NuGetPicking
     public static void RestoreSearch(NuGetPicker picker, SavedNuGetSearch? saved)
     {
         if (saved == null)
+        {
             return;
+        }
+
         if (string.IsNullOrWhiteSpace(saved.FeedUrl))
+        {
             return;
+        }
+
         picker.Kept = saved;
         picker.FeedUrl = saved.FeedUrl;
         picker.IncludePrerelease = saved.IncludePrerelease;
@@ -302,7 +350,9 @@ public static class NuGetPicking
         picker.IsOpen = true;
         picker.FocusQuery = true;
         if (picker.Setup is SetupState.Unread)
+        {
             ReadSetup(picker);
+        }
     }
 
     /// <summary>Reads the user's NuGet.Config in the background; one that cannot be read at all is
@@ -336,9 +386,15 @@ public static class NuGetPicking
     {
         picker.Setup = new SetupState.Ready(setup);
         if (picker.FeedUrl.Length > 0)
+        {
             return;
+        }
+
         if (setup.Sources.Count == 0)
+        {
             return;
+        }
+
         picker.FeedUrl = setup.Sources[0].Url.Text;
     }
 
@@ -366,14 +422,20 @@ public static class NuGetPicking
     internal static NuGetSetup? FindReadySetup(NuGetPicker picker)
     {
         if (picker.Setup is not SetupState.Ready ready)
+        {
             return null;
+        }
+
         return ready.Setup;
     }
 
     private static void StopSearch(NuGetPicker picker)
     {
         if (picker.Run is not SearchRun.Running running)
+        {
             return;
+        }
+
         running.Cancel.Cancel();
         picker.Run = new SearchRun.None();
     }
@@ -381,7 +443,10 @@ public static class NuGetPicking
     private static void StopDownload(NuGetPicker picker)
     {
         if (picker.DownloadRun is not DownloadState.Running running)
+        {
             return;
+        }
+
         running.Cancel.Cancel();
         picker.DownloadRun = new DownloadState.None();
     }
@@ -406,14 +471,20 @@ public static class NuGetPicking
     public static void ShowPreviousPage(NuGetPicker picker)
     {
         if (!picker.HasPreviousPage)
+        {
             return;
+        }
+
         picker.RequestedPage = picker.Page - 1;
     }
 
     public static void ShowNextPage(NuGetPicker picker)
     {
         if (!picker.HasNextPage)
+        {
             return;
+        }
+
         picker.RequestedPage = picker.Page + 1;
     }
 
@@ -439,7 +510,10 @@ public static class NuGetPicking
             return;
         }
         if (picker.IsSearching)
+        {
             return;
+        }
+
         DownloadPicked(picker);
     }
 
@@ -458,7 +532,10 @@ public static class NuGetPicking
         picker.IsSettling = false;
         var setup = FindReadySetup(picker);
         if (setup == null)
+        {
             return 0;
+        }
+
         var source = NuGetSource.FromUrl(picker.TypedUrl);
         if (source == null)
         {
@@ -472,7 +549,10 @@ public static class NuGetPicking
             wanted = wanted with { Page = 0 };
         }
         if (wanted == FindLastSearched(picker))
+        {
             return 0;
+        }
+
         var remaining = DebounceSeconds - (now - picker.TypedAt);
         if (remaining > 0 && IsOnlyTypingChanged(picker, wanted))
         {
@@ -487,7 +567,10 @@ public static class NuGetPicking
     {
         var typed = picker.Query != picker.TypedQuery || picker.FeedUrl != picker.TypedUrl;
         if (!typed)
+        {
             return;
+        }
+
         picker.TypedQuery = picker.Query;
         picker.TypedUrl = picker.FeedUrl;
         picker.TypedAt = now;
@@ -524,7 +607,10 @@ public static class NuGetPicking
     internal static FeedSearch? FindShownSearch(NuGetPicker picker)
     {
         if (picker.ShownResults == null)
+        {
             return null;
+        }
+
         return picker.ShownResults.Search;
     }
 
@@ -533,7 +619,10 @@ public static class NuGetPicking
     {
         var searched = FindLastSearched(picker);
         if (searched != null)
+        {
             return searched;
+        }
+
         return FindShownSearch(picker);
     }
 
@@ -543,18 +632,30 @@ public static class NuGetPicking
     {
         var last = FindLastAsked(picker);
         if (last == null)
+        {
             return false;
+        }
+
         return !IsSamePackages(wanted, last);
     }
 
     internal static bool IsSamePackages(FeedSearch a, FeedSearch? b)
     {
         if (b == null)
+        {
             return false;
+        }
+
         if (a.Feed != b.Feed)
+        {
             return false;
+        }
+
         if (a.Query != b.Query)
+        {
             return false;
+        }
+
         return a.IncludePrerelease == b.IncludePrerelease;
     }
 
@@ -562,9 +663,15 @@ public static class NuGetPicking
     {
         var last = FindLastAsked(picker);
         if (last == null)
+        {
             return false;
+        }
+
         if (wanted.IncludePrerelease != last.IncludePrerelease)
+        {
             return false;
+        }
+
         return wanted.Page == last.Page;
     }
 
@@ -581,7 +688,10 @@ public static class NuGetPicking
         picker.Run = running;
         var found = await Background.Wait(NuGetFeeds.SearchAsync(wanted.Feed, wanted.Query, wanted.IncludePrerelease, wanted.Page, running.Cancel.Token));
         if (!ReferenceEquals(picker.Run, running))
+        {
             return;
+        }
+
         picker.Run = ShowFoundPage(picker, wanted, found);
     }
 
@@ -590,7 +700,10 @@ public static class NuGetPicking
     {
         var kept = new SavedNuGetSearch(searched.Feed.Source.Url.Text, searched.IncludePrerelease);
         if (kept == picker.Kept)
+        {
             return;
+        }
+
         picker.Kept = kept;
         picker.SearchChanges++;
     }
@@ -617,13 +730,18 @@ public static class NuGetPicking
         picker.ShownResults = new ShownPage(searched, page);
         ItemSelections.Clear(picker.Selection);
         if (page.Packages.Count > 0)
+        {
             ItemSelections.Select(picker.Selection, page.Packages[0], page.Packages);
+        }
     }
 
     private static void ReportSearchFailure(NuGetPicker picker, FeedSearch searched, Exception error)
     {
         if (!IsSamePackages(searched, FindShownSearch(picker)))
+        {
             ClearShown(picker);
+        }
+
         picker.ReportError(new AppProblem.NuGetSearchFailed(searched.Feed.Source.Name, error));
     }
 
@@ -633,12 +751,21 @@ public static class NuGetPicking
     {
         var url = package.IconUrl;
         if (url == null)
+        {
             return null;
+        }
+
         var setup = FindReadySetup(picker);
         if (setup == null)
+        {
             return null;
+        }
+
         if (picker.Icons.TryGetValue(url, out var icon))
+        {
             return icon;
+        }
+
         picker.IconCount++;
         icon = new PackageIcon { ImageId = IconImagePrefix + picker.IconCount };
         picker.Icons.Add(url, icon);
@@ -656,7 +783,10 @@ public static class NuGetPicking
     private static void ShowIcon(PackageIcon icon, ResourceImage? pixels)
     {
         if (pixels == null)
+        {
             return;
+        }
+
         icon.Shown = new ShownIcon(icon.ImageId, pixels, ResourceImages.IsDarkOnClear(pixels));
     }
 
@@ -665,9 +795,14 @@ public static class NuGetPicking
         var token = picker.Fetches.Token;
         var fetched = await Background.Wait(NuGetFeeds.FetchIconAsync(setup.Icons, url, NuGetPicker.IconPixels, token));
         if (token.IsCancellationRequested)
+        {
             return;
+        }
+
         if (fetched is Outcome<ResourceImage>.Ok ok)
+        {
             ShowIcon(icon, ok.Value);
+        }
     }
 
     /// <summary>What the feed says of <paramref name="version"/> of <paramref name="package"/>, read
@@ -676,14 +811,23 @@ public static class NuGetPicking
     public static VersionDetails? EnsureDetails(NuGetPicker picker, FeedPackage package, PackageVersion version)
     {
         if (picker.ShownResults == null)
+        {
             return null;
+        }
+
         var listed = FindVersion(package, version);
         if (listed == null)
+        {
             return null;
+        }
+
         var feed = picker.ShownResults.Search.Feed;
         var key = new DetailsKey(feed.Source.Url, package.Id, version);
         if (picker.Details.TryGetValue(key, out var details))
+        {
             return details;
+        }
+
         var loading = new VersionDetails.Loading();
         picker.Details.Add(key, loading);
         ReadDetails(picker, key, feed, listed, loading);
@@ -694,7 +838,10 @@ public static class NuGetPicking
     public static void RetryDetails(NuGetPicker picker, FeedPackage package, PackageVersion version)
     {
         if (picker.ShownResults == null)
+        {
             return;
+        }
+
         picker.Details.Remove(new DetailsKey(picker.ShownResults.Search.Feed.Source.Url, package.Id, version));
     }
 
@@ -715,9 +862,15 @@ public static class NuGetPicking
         var token = picker.Fetches.Token;
         var read = await Background.Wait(NuGetFeeds.ReadDetailsAsync(feed, key.Id, version, token));
         if (token.IsCancellationRequested)
+        {
             return;
+        }
+
         if (!picker.Details.TryGetValue(key, out var current) || !ReferenceEquals(current, loading))
+        {
             return;
+        }
+
         picker.Details[key] = GetReadDetails(read);
     }
 
@@ -736,7 +889,10 @@ public static class NuGetPicking
     {
         var package = picker.Selected;
         if (package == picker.VersionsOf)
+        {
             return;
+        }
+
         picker.VersionsOf = package;
         if (package == null)
         {
@@ -768,13 +924,19 @@ public static class NuGetPicking
         var setup = FindReadySetup(picker);
         var shown = picker.ShownResults;
         if (!picker.CanOpen || version == null || package == null || setup == null || shown == null)
+        {
             return;
+        }
+
         var name = $"{package.Id} {version}";
         var running = new DownloadState.Running(name, new CancellationTokenSource());
         picker.DownloadRun = running;
         var fetched = await Background.Wait(NuGetFeeds.FetchPackageAsync(setup.Cache, shown.Search.Feed, package.Id, version, running.Cancel.Token));
         if (!ReferenceEquals(picker.DownloadRun, running))
+        {
             return;
+        }
+
         picker.DownloadRun = GetDownloadState(picker, name, fetched);
     }
 
@@ -796,7 +958,10 @@ public static class NuGetPicking
     public static string? TakeDownloaded(NuGetPicker picker)
     {
         if (picker.DownloadRun is not DownloadState.Done done)
+        {
             return null;
+        }
+
         picker.DownloadRun = new DownloadState.None();
         return done.Path;
     }

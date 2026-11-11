@@ -27,7 +27,10 @@ public static class IconThemeDraft
         text.Append(Indent).Append("\"extends\": ").Append(Quote(parent.Text)).Append(",\n");
         text.Append(Indent).Append("\"icons\": {\n");
         foreach (var key in AppIcons.Keys)
+        {
             AppendCommentedIcon(text, key.Key, shown.Values[key.Key]);
+        }
+
         text.Append(Indent).Append("}\n");
         text.Append("}\n");
         return text.ToString();

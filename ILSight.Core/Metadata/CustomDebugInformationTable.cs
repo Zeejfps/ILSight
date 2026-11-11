@@ -51,12 +51,17 @@ internal static class CustomDebugInformationTable
     private static string KindString(MetadataReader metadata, GuidHandle kind)
     {
         if (kind.IsNil)
+        {
             return "";
+        }
+
         var guid = metadata.GetGuid(kind);
         foreach (var (knownGuid, knownName) in KnownKindNames)
         {
             if (guid == knownGuid)
+            {
                 return knownName;
+            }
         }
         return "Unknown";
     }
@@ -64,10 +69,16 @@ internal static class CustomDebugInformationTable
     private static string EmbeddedSourceFormat(MetadataReader metadata, BlobHandle value)
     {
         if (value.IsNil)
+        {
             return "{nil blob}";
+        }
+
         var reader = metadata.GetBlobReader(value);
         if (reader.RemainingBytes < 4)
+        {
             return "{blob too short}";
+        }
+
         var format = reader.ReadInt32();
         return format switch
         {
@@ -85,7 +96,10 @@ internal static class CustomDebugInformationTable
     private static MetadataRowDetails? Details(MetadataReader metadata, CustomDebugInformation row)
     {
         if (row.Value.IsNil || row.Kind.IsNil)
+        {
             return null;
+        }
+
         var reader = metadata.GetBlobReader(row.Value);
         try
         {
@@ -104,23 +118,33 @@ internal static class CustomDebugInformationTable
         {
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
+            {
                 rows.Add([reader.ReadUInt32().ToString(), reader.ReadUInt32().ToString()]);
+            }
+
             return new MetadataTableDetails(["Start Offset", "Length"], rows);
         }
         if (kind == KnownGuids.SourceLink)
+        {
             return new MetadataTextDetails(reader.ReadUTF8(reader.RemainingBytes), ".json");
+        }
+
         if (kind == KnownGuids.EmbeddedSource)
         {
             var embeddedSourceFormat = reader.ReadInt32();
 
             if (embeddedSourceFormat < 0) // unknown format, show raw data as hex
+            {
                 return new MetadataTextDetails(reader.ToHexString(), null);
+            }
 
             var embeddedSourceBytes = reader.ReadBytes(reader.RemainingBytes);
             Stream embeddedSourceByteStream = new MemoryStream(embeddedSourceBytes);
 
             if (embeddedSourceFormat > 0) // positive length means the data is compressed using DEFLATE
+            {
                 embeddedSourceByteStream = new System.IO.Compression.DeflateStream(embeddedSourceByteStream, System.IO.Compression.CompressionMode.Decompress);
+            }
 
             using var textReader = new StreamReader(embeddedSourceByteStream, detectEncodingFromByteOrderMarks: true);
             return new MetadataTextDetails(textReader.ReadToEnd(), EmbeddedSourceExtension(metadata, row.Parent));
@@ -129,7 +153,10 @@ internal static class CustomDebugInformationTable
         {
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
+            {
                 rows.Add([ReadNullTerminatedUtf8(ref reader), ReadNullTerminatedUtf8(ref reader)]);
+            }
+
             return new MetadataTableDetails(["Name", "Value"], rows);
         }
         if (kind == KnownGuids.CompilationMetadataReferences)
@@ -151,7 +178,10 @@ internal static class CustomDebugInformationTable
         {
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
+            {
                 rows.Add([ReadNullTerminatedUtf8(ref reader)]);
+            }
+
             return new MetadataTableDetails(["Element Name"], rows);
         }
         return new MetadataTextDetails(reader.ToHexString(), null);
@@ -162,10 +192,16 @@ internal static class CustomDebugInformationTable
     private static string? EmbeddedSourceExtension(MetadataReader metadata, EntityHandle parent)
     {
         if (parent.Kind != HandleKind.Document)
+        {
             return null;
+        }
+
         var document = metadata.GetDocument((DocumentHandle)parent);
         if (document.Name.IsNil)
+        {
             return null;
+        }
+
         var extension = Path.GetExtension(metadata.GetString(document.Name));
         return string.IsNullOrEmpty(extension) ? null : extension;
     }
@@ -176,7 +212,10 @@ internal static class CustomDebugInformationTable
     {
         var length = reader.IndexOf(0);
         if (length < 0)
+        {
             throw new BadImageFormatException("Missing null terminator in blob.");
+        }
+
         var s = reader.ReadUTF8(length);
         reader.ReadByte();
         return s;

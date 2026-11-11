@@ -36,7 +36,10 @@ public static partial class BrowseNodes
         }
         result.Add(Create(parent, new NodeSubject.MetadataTables { Folder = folder }));
         foreach (var (title, heap) in MetadataHeaps.Create(file))
+        {
             result.Add(CreatePart(parent, MetadataTables.CreateGridPart(folder.Module, file, title, new MetadataPartKey.Heap(heap.Key), MetadataGridRole.Heap, heap)));
+        }
+
         return result.ToArray();
     }
 
@@ -56,10 +59,14 @@ public static partial class BrowseNodes
             var rows = file.Metadata.GetTableRowCount(index);
             var schema = rows == 0 ? null : MetadataTables.Create(index, file);
             if (schema == null)
+            {
                 result.Add(CreatePart(parent, MetadataTables.CreateRowCountPart(folder.Module, file, index, rows)));
+            }
             else
+            {
                 result.Add(CreatePart(parent, MetadataTables.CreateGridPart(folder.Module, file, $"{(byte)index:X2} {index} ({rows})", new MetadataPartKey.Table(index),
                     MetadataGridRole.Table, schema)));
+            }
         }
         return result.ToArray();
     }
@@ -91,7 +98,10 @@ public static partial class BrowseNodes
                     case DebugDirectoryEntryType.EmbeddedPortablePdb:
                         var symbols = FindEmbeddedSymbols(module);
                         if (symbols != null)
+                        {
                             result.Add(CreateMetadataFolder(module, parent, symbols.File, symbols.Title));
+                        }
+
                         continue;
                 }
             }
@@ -108,9 +118,15 @@ public static partial class BrowseNodes
     {
         var symbols = LoadedAssemblies.EnsureDebugSymbols(module);
         if (symbols == null)
+        {
             return null;
+        }
+
         if (!symbols.File.IsEmbedded)
+        {
             return null;
+        }
+
         return symbols;
     }
 }

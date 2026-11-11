@@ -65,16 +65,25 @@ public static class RuntimeAssemblies
         foreach (var root in dotnetRoots)
         {
             var frameworks = Path.Combine(root, "shared", "Microsoft.NETCore.App");
-            if (!Directory.Exists(frameworks)) continue;
+            if (!Directory.Exists(frameworks))
+            {
+                continue;
+            }
+
             var versions = new List<(string Dir, Version Version)>();
             foreach (var dir in Directory.EnumerateDirectories(frameworks))
             {
                 var version = ParseVersion(Path.GetFileName(dir));
                 if (version != null && File.Exists(Path.Combine(dir, "System.Private.CoreLib.dll")))
+                {
                     versions.Add((dir, version));
+                }
             }
             var best = versions.OrderByDescending(d => d.Version.Major == major).ThenByDescending(d => d.Version).Select(d => d.Dir).FirstOrDefault();
-            if (best is not null) return best;
+            if (best is not null)
+            {
+                return best;
+            }
         }
         return null;
     }
@@ -82,28 +91,45 @@ public static class RuntimeAssemblies
     private static string RuntimeDirectory()
     {
         var running = Path.TrimEndingDirectorySeparator(RuntimeEnvironment.GetRuntimeDirectory());
-        if (File.Exists(Path.Combine(running, "System.Private.CoreLib.dll"))) return running;
+        if (File.Exists(Path.Combine(running, "System.Private.CoreLib.dll")))
+        {
+            return running;
+        }
+
         return FindInstalledRuntime(DotNetRoots(), Environment.Version.Major) ?? running;
     }
 
     internal static IEnumerable<string> DotNetRoots()
     {
         if (Environment.GetEnvironmentVariable("DOTNET_ROOT") is { Length: > 0 } root)
+        {
             yield return root;
+        }
+
         var exe = OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
         {
             var candidate = new FileInfo(Path.Combine(dir, exe));
-            if (!candidate.Exists) continue;
+            if (!candidate.Exists)
+            {
+                continue;
+            }
+
             var target = candidate.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? candidate.FullName;
             var resolved = Path.GetDirectoryName(target);
             if (resolved != null)
+            {
                 yield return resolved;
+            }
         }
         if (OperatingSystem.IsWindows())
+        {
             yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet");
+        }
         else if (OperatingSystem.IsMacOS())
+        {
             yield return "/usr/local/share/dotnet";
+        }
         else
         {
             yield return "/usr/share/dotnet";
@@ -118,18 +144,27 @@ public static class RuntimeAssemblies
         var sharedDir = frameworkDir is null ? null : Path.GetDirectoryName(frameworkDir);
         var result = ImmutableArray.CreateBuilder<(string, string)>();
         result.Add((frameworkDir is null ? "Microsoft.NETCore.App" : Path.GetFileName(frameworkDir), runtime));
-        if (sharedDir is null || frameworkDir is null || !Directory.Exists(sharedDir)) return result.ToImmutable();
+        if (sharedDir is null || frameworkDir is null || !Directory.Exists(sharedDir))
+        {
+            return result.ToImmutable();
+        }
 
         var version = ParseVersion(Path.GetFileName(runtime));
         foreach (var sibling in Directory.EnumerateDirectories(sharedDir).Order(StringComparer.OrdinalIgnoreCase))
         {
-            if (string.Equals(sibling, frameworkDir, StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.Equals(sibling, frameworkDir, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             var best = Directory.EnumerateDirectories(sibling)
                 .Select(dir => (Dir: dir, Version: ParseVersion(Path.GetFileName(dir))))
                 .Where(d => d.Version is not null && version is not null && d.Version.Major == version.Major && d.Version.Minor == version.Minor)
                 .MaxBy(d => d.Version);
             if (best.Dir is not null)
+            {
                 result.Add((Path.GetFileName(sibling), best.Dir));
+            }
         }
         return result.ToImmutable();
     }
@@ -144,8 +179,13 @@ public static class RuntimeAssemblies
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (_, dir) in runtime.Directories.Value)
-        foreach (var file in Directory.EnumerateFiles(dir, "*.dll"))
-            result.TryAdd(Path.GetFileNameWithoutExtension(file), file);
+        {
+            foreach (var file in Directory.EnumerateFiles(dir, "*.dll"))
+            {
+                result.TryAdd(Path.GetFileNameWithoutExtension(file), file);
+            }
+        }
+
         return result;
     }
 
@@ -154,15 +194,26 @@ public static class RuntimeAssemblies
         var result = new List<RuntimeAssembly>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (framework, dir) in runtime.Directories.Value)
-        foreach (var file in Directory.EnumerateFiles(dir, "*.dll"))
+        {
+            foreach (var file in Directory.EnumerateFiles(dir, "*.dll"))
         {
             var name = Path.GetFileNameWithoutExtension(file);
-            if (seen.Contains(name) || !IsManagedAssembly(file)) continue;
-            var path = AssemblyPath.Parse(file);
-            if (path == null) continue;
-            seen.Add(name);
+            if (seen.Contains(name) || !IsManagedAssembly(file))
+                {
+                    continue;
+                }
+
+                var path = AssemblyPath.Parse(file);
+            if (path == null)
+                {
+                    continue;
+                }
+
+                seen.Add(name);
             result.Add(new RuntimeAssembly(name, framework, path));
         }
+        }
+
         result.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name));
         return result.ToImmutableArray();
     }

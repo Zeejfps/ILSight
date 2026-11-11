@@ -94,7 +94,9 @@ public static class SearchQueries
         {
             var (prefix, term) = SplitPrefix(part);
             if (term.Length >= 2 && term[0] == '"' && term[^1] == '"')
+            {
                 term = term[1..^1];
+            }
 
             switch (prefix)
             {
@@ -136,10 +138,18 @@ public static class SearchQueries
     /// <summary>Whether <paramref name="name"/> matches every term, or the regular expression.</summary>
     public static bool IsMatch(SearchQuery query, string name)
     {
-        if (query.Regex is not null) return query.Regex.IsMatch(name);
+        if (query.Regex is not null)
+        {
+            return query.Regex.IsMatch(name);
+        }
+
         foreach (var term in query.Terms)
         {
-            if (term.Length == 0) continue;
+            if (term.Length == 0)
+            {
+                continue;
+            }
+
             var rest = term.AsSpan(1);
             var matches = term[0] switch
             {
@@ -149,7 +159,10 @@ public static class SearchQueries
                 '+' => name.AsSpan().Contains(rest, StringComparison.OrdinalIgnoreCase),
                 _ => name.Contains(term, StringComparison.OrdinalIgnoreCase),
             };
-            if (!matches) return false;
+            if (!matches)
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -159,23 +172,45 @@ public static class SearchQueries
     /// <c>f</c> suffix, a <see cref="double"/> otherwise; null when the term is not a number.</summary>
     public static object? GetLiteral(SearchQuery query)
     {
-        if (query.Regex is not null || query.Terms.Count != 1) return null;
+        if (query.Regex is not null || query.Terms.Count != 1)
+        {
+            return null;
+        }
+
         var term = query.Terms[0];
         if (term.StartsWith("0x", StringComparison.OrdinalIgnoreCase) || term.StartsWith("-0x", StringComparison.OrdinalIgnoreCase))
         {
             var negative = term[0] == '-';
             var digits = term[(negative ? 3 : 2)..].TrimEnd('u', 'U', 'l', 'L');
-            if (!ulong.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var hex)) return null;
+            if (!ulong.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var hex))
+            {
+                return null;
+            }
+
             return negative ? -(long)hex : (long)hex;
         }
         var integer = term.TrimEnd('u', 'U', 'l', 'L');
-        if (long.TryParse(integer, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var signed)) return signed;
-        if (ulong.TryParse(integer, NumberStyles.None, CultureInfo.InvariantCulture, out var unsigned)) return (long)unsigned;
+        if (long.TryParse(integer, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var signed))
+        {
+            return signed;
+        }
+
+        if (ulong.TryParse(integer, NumberStyles.None, CultureInfo.InvariantCulture, out var unsigned))
+        {
+            return (long)unsigned;
+        }
+
         if (term.Length > 1 && term[^1] is 'f' or 'F')
+        {
             return float.TryParse(term[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var single) ? single : null;
+        }
+
         var real = term.Length > 1 && term[^1] is 'd' or 'D' ? term[..^1] : term;
         if (real.Contains('.') || real.Contains('e') || real.Contains('E'))
+        {
             return double.TryParse(real, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number : null;
+        }
+
         return null;
     }
 
@@ -214,10 +249,17 @@ public static class SearchQueries
     private static (string? Prefix, string Term) SplitPrefix(string part)
     {
         if (part.Length > 1 && part[0] == '@')
+        {
             return ("@", part[1..]);
+        }
+
         var end = part.IndexOfAny(['"', '/']);
         var colon = part.IndexOf(':', 0, end < 0 ? part.Length : end);
-        if (colon <= 0 || colon == part.Length - 1) return (null, part);
+        if (colon <= 0 || colon == part.Length - 1)
+        {
+            return (null, part);
+        }
+
         var prefix = part[..colon].ToLowerInvariant();
         return Prefixes.Contains(prefix) ? (prefix, part[(colon + 1)..]) : (null, part);
     }
@@ -229,7 +271,9 @@ public static class SearchQueries
         foreach (var c in text)
         {
             if (c == '"')
+            {
                 quoted = !quoted;
+            }
             else if (!quoted && char.IsWhiteSpace(c))
             {
                 if (part.Length > 0)
@@ -242,7 +286,9 @@ public static class SearchQueries
             part.Append(c);
         }
         if (part.Length > 0)
+        {
             yield return part.ToString();
+        }
     }
 
     private static bool IsSubsequence(string name, ReadOnlySpan<char> letters)
@@ -251,7 +297,9 @@ public static class SearchQueries
         foreach (var c in name)
         {
             if (char.ToLowerInvariant(c) == char.ToLowerInvariant(letters[next]) && ++next == letters.Length)
+            {
                 return true;
+            }
         }
         return false;
     }

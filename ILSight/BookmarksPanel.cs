@@ -6,7 +6,10 @@ namespace ILSight;
 /// and the text selected there, and the one being renamed, with the name typed so far.</summary>
 public sealed class BookmarksPanel
 {
-    public BookmarksPanel() => Cells = new TableCellSelection(Selection.Rows);
+    public BookmarksPanel()
+    {
+        Cells = new TableCellSelection(Selection.Rows);
+    }
 
     public ItemSelection<Bookmark> Selection { get; } = new();
 

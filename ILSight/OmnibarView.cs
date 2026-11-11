@@ -50,9 +50,15 @@ internal static class OmnibarView
     {
         var menu = omnibar.Menu;
         if (menu == null)
+        {
             return false;
+        }
+
         if (menu.Panel != panel)
+        {
             return false;
+        }
+
         return ReferenceEquals(menu.Node, node);
     }
 
@@ -68,7 +74,10 @@ internal static class OmnibarView
     {
         var searching = omnibar.Searching;
         if (searching == null || !searching.IsFocusPending)
+        {
             return false;
+        }
+
         searching.IsFocusPending = false;
         return true;
     }
@@ -78,9 +87,15 @@ internal static class OmnibarView
     {
         var selected = omnibar.SelectedSuggestion;
         if (selected != null)
+        {
             return selected;
+        }
+
         if (omnibar.SuggestionCount == 0)
+        {
             return null;
+        }
+
         return omnibar.Search.Rows[0];
     }
 
@@ -88,11 +103,17 @@ internal static class OmnibarView
     private static void MoveSuggestion(Omnibar omnibar, int by)
     {
         if (omnibar.SuggestionCount == 0)
+        {
             return;
+        }
+
         Searches.Move(omnibar.Search, by);
         var index = ItemSelections.FindIndexIn(omnibar.Search.Selection, omnibar.Search.Rows);
         if (index < omnibar.SuggestionCount)
+        {
             return;
+        }
+
         Searches.Select(omnibar.Search, omnibar.Search.Rows[omnibar.SuggestionCount - 1]);
     }
 
@@ -111,7 +132,10 @@ internal static class OmnibarView
     private static IReadOnlyList<BrowseNode> ListShown(CrumbMenu menu, IReadOnlyList<BrowseNode> children, BrowseTree tree)
     {
         if (menu.Listed.TryGet((new(children), menu.Filter), out var shown))
+        {
             return shown;
+        }
+
         FilterChildren(menu, children, tree);
         return menu.Shown;
     }
@@ -134,9 +158,15 @@ internal static class OmnibarView
     private static void SelectWaitingChild(CrumbMenu menu)
     {
         if (menu.ToSelect == null)
+        {
             return;
+        }
+
         if (!menu.Shown.Contains(menu.ToSelect))
+        {
             return;
+        }
+
         ItemSelections.Select(menu.Selection, menu.ToSelect, menu.Shown);
         menu.ToSelect = null;
     }
@@ -145,11 +175,20 @@ internal static class OmnibarView
     private static void SelectFirstMatch(CrumbMenu menu)
     {
         if (menu.Filter.Length == 0)
+        {
             return;
+        }
+
         if (menu.Selection.Item != null)
+        {
             return;
+        }
+
         if (menu.Shown.Count == 0)
+        {
             return;
+        }
+
         ItemSelections.Select(menu.Selection, menu.Shown[0], menu.Shown);
     }
 
@@ -158,14 +197,20 @@ internal static class OmnibarView
     private static void FollowPath(Breadcrumb breadcrumb, BrowseNode? node, BrowseTree tree)
     {
         if (breadcrumb.Path.TryGet((new(node), tree.Revision), out _))
+        {
             return;
+        }
+
         breadcrumb.Path = new((new(node), tree.Revision), ListCrumbs(node, tree));
     }
 
     private static Crumb[] ListCrumbs(BrowseNode? node, BrowseTree tree)
     {
         if (node == null)
+        {
             return [];
+        }
+
         return Trees.ListPathTo(tree, node)
             .Select(n => new Crumb(n, GetCrumbLabel(n, tree)))
             .ToArray();
@@ -176,19 +221,30 @@ internal static class OmnibarView
     private static string GetCrumbLabel(BrowseNode node, BrowseTree tree)
     {
         if (node.Subject is NodeSubject.Module)
+        {
             return Trees.GetLabel(tree, node);
+        }
+
         return Trees.GetRowLabel(tree, node);
     }
 
     public static void Render(Ui<UiState> ui, DocumentTab tab)
     {
         if (!ui.State.Display.ShowOmnibar)
+        {
             return;
+        }
+
         var panel = DocumentPanels.GetPanel(ui.State.Documents, tab);
         if (ContinueSearch(ui, panel))
+        {
             SearchBar(ui);
+        }
         else
+        {
             PathBar(ui, tab, panel);
+        }
+
         ui.Separator();
     }
 
@@ -198,7 +254,10 @@ internal static class OmnibarView
     {
         var omnibar = ui.State.Omnibar;
         if (!IsSearchingIn(omnibar, panel))
+        {
             return false;
+        }
+
         var fieldId = ui.GetId(SearchFieldId);
         if (TakeFocus(omnibar))
         {
@@ -206,7 +265,10 @@ internal static class OmnibarView
             return true;
         }
         if (ui.HasFocus(fieldId))
+        {
             return true;
+        }
+
         StopSearch(omnibar);
         return false;
     }
@@ -226,7 +288,9 @@ internal static class OmnibarView
                     CrumbButton(ui, crumbs[i], i);
                     var owner = ChildrenButton(ui, panel, crumbs, i);
                     if (owner != 0)
+                    {
                         menuOwner = owner;
+                    }
                 }
             }
             ContentTools(ui, tab);
@@ -275,9 +339,14 @@ internal static class OmnibarView
         }
         ui.Tooltip(i.Id, NodeText.Tooltip(node));
         if (i.Clicked)
+        {
             Commands.Later(ui.State, (node, inNewTab: IsCommandHeld(ui)), static (a, s) => PickNode(a, s.node, s.inNewTab));
+        }
+
         if (i.ClickedWith(PointerButton.Middle))
+        {
             Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
+        }
     }
 
     /// <summary>Has tests find a crumb's <paramref name="name"/>d part by the crumb's depth, as <c>#1/crumb</c>, since
@@ -285,7 +354,10 @@ internal static class OmnibarView
     private static void RecordDepthPath(Ui<UiState> ui, int id, int depth, string name)
     {
         if (!ui.WantsSemantics)
+        {
             return;
+        }
+
         ui.RecordTestPath(id, new TestPath([new TestSegment.Keyed(depth.ToString(CultureInfo.InvariantCulture)), new TestSegment.Named(name)]));
     }
 
@@ -293,7 +365,10 @@ internal static class OmnibarView
     private static uint CrumbColor(UiTheme theme, BrowseNode node)
     {
         if (NodeDefinitions.GetVisibility(node.Subject).IsPublicApi)
+        {
             return theme.Text;
+        }
+
         return theme.TextMuted;
     }
 
@@ -308,7 +383,10 @@ internal static class OmnibarView
         PreviewNode(appState, node);
     }
 
-    private static bool IsCommandHeld(Ui<UiState> ui) => (ui.Input.Modifiers & Shortcut.CommandModifier) != 0;
+    private static bool IsCommandHeld(Ui<UiState> ui)
+    {
+        return (ui.Input.Modifiers & Shortcut.CommandModifier) != 0;
+    }
 
     /// <summary>The arrow after a crumb that has children, which opens and closes the list of them, pointing
     /// down while it is open. Returns the arrow's id while its list is open, else 0.</summary>
@@ -316,13 +394,19 @@ internal static class OmnibarView
     {
         var node = crumbs[index].Node;
         if (!ui.State.Tree.HasChildren(node))
+        {
             return 0;
+        }
+
         var theme = ui.Theme;
         var omnibar = ui.State.Omnibar;
         var i = ui.Interact("children");
         RecordDepthPath(ui, i.Id, index, "children");
         if (i.Clicked)
+        {
             ToggleChildren(omnibar, panel, crumbs, index);
+        }
+
         var open = IsMenuOpenAt(omnibar, panel, node);
         using (ui.Box(i.Id, new Box
         {
@@ -335,9 +419,15 @@ internal static class OmnibarView
             ui.PaintGlyph(ArrowOf(open), theme.TextMuted);
         }
         if (!open)
+        {
             ui.Tooltip(i.Id, ui.Memo("contents-tip", (crumbs[index].Label, ui.State.Strings), static a => a.Strings.OmnibarContents(a.Label)));
+        }
+
         if (!open)
+        {
             return 0;
+        }
+
         return i.Id;
     }
 
@@ -356,21 +446,32 @@ internal static class OmnibarView
     {
         var next = index + 1;
         if (next >= crumbs.Count)
+        {
             return null;
+        }
+
         return crumbs[next].Node;
     }
 
-    private static UiGlyph ArrowOf(bool open) => open ? UiGlyph.DisclosureOpen : UiGlyph.DisclosureClosed;
+    private static UiGlyph ArrowOf(bool open)
+    {
+        return open ? UiGlyph.DisclosureOpen : UiGlyph.DisclosureClosed;
+    }
 
     /// <summary>The room left after the path, which starts a search when clicked.</summary>
     private static void SearchArea(Ui<UiState> ui, string panel)
     {
         var i = ui.Interact("search-area");
         if (i.Hovered)
+        {
             ui.SetCursor(MouseCursor.Text);
+        }
+
         ui.Leaf(i.Id, new Box { Width = Sizing.Grow(), Height = Sizing.Grow() });
         if (i.Clicked)
+        {
             StartSearch(ui.State.Omnibar, panel);
+        }
     }
 
     private static void SearchButton(Ui<UiState> ui, string panel)
@@ -378,7 +479,9 @@ internal static class OmnibarView
         var t = ui.State.Strings;
         var tooltip = ui.Memo("omnibar-search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.OmnibarSearch));
         if (ui.IconButton("search", ui.State.Icons.SearchField, tooltip))
+        {
             StartSearch(ui.State.Omnibar, panel);
+        }
     }
 
     /// <summary>The list of the open crumb's children under its arrow <paramref name="owner"/>, with a
@@ -389,7 +492,10 @@ internal static class OmnibarView
         var omnibar = ui.State.Omnibar;
         var menu = omnibar.Menu;
         if (menu == null)
+        {
             return;
+        }
+
         if (owner == 0)
         {
             CloseIfIn(omnibar, menu, panel);
@@ -399,9 +505,15 @@ internal static class OmnibarView
         var isOpen = true;
         using var flyout = ui.Flyout(HashCode.Combine(owner, MenuSalt), ref isOpen, owner, new Box { Width = MenuWidth, Gap = theme.GapTight });
         if (!isOpen)
+        {
             omnibar.Menu = null;
+        }
+
         if (!flyout.IsOpen)
+        {
             return;
+        }
+
         var children = ui.State.Tree.GetChildren(menu.Node);
         if (children.PlaceholderRow is TreeRow placeholder)
         {
@@ -413,10 +525,16 @@ internal static class OmnibarView
         var submitted = Filter(ui, menu, shown);
         var picked = ChildRows(ui, menu, shown, listId);
         if (submitted)
+        {
             picked = new PickedChild(menu.Selection.Item, IsCommandHeld(ui));
+        }
+
         var node = picked.Node;
         if (node == null)
+        {
             return;
+        }
+
         omnibar.Menu = null;
         Commands.Later(ui.State, (node, inNewTab: picked.InNewTab), static (a, s) => PickNode(a, s.node, s.inNewTab));
     }
@@ -424,7 +542,9 @@ internal static class OmnibarView
     private static void CloseIfIn(Omnibar omnibar, CrumbMenu menu, string panel)
     {
         if (menu.Panel == panel)
+        {
             omnibar.Menu = null;
+        }
     }
 
     /// <summary>The filter, which takes focus as the list opens and walks the list with Up and Down.
@@ -433,21 +553,35 @@ internal static class OmnibarView
     {
         var fieldId = ui.GetId(FilterFieldId);
         if (TakeFocus(menu))
+        {
             ui.Focus(fieldId);
+        }
+
         var submitted = ui.TextField(FilterFieldId, ref menu.Filter, ui.State.Strings.OmnibarFilter, Sizing.Grow(), clearable: true);
         if (!ui.HasFocus(fieldId))
+        {
             return false;
+        }
+
         foreach (var stroke in ui.Input.Keys)
+        {
             MoveSelection(menu.Selection, shown, stroke.Key);
+        }
+
         return submitted;
     }
 
     private static void MoveSelection(ItemSelection<BrowseNode> selection, IReadOnlyList<BrowseNode> shown, KeyboardKey key)
     {
         if (key == KeyboardKey.DownArrow)
+        {
             ItemSelections.Move(selection, 1, shown);
+        }
+
         if (key == KeyboardKey.UpArrow)
+        {
             ItemSelections.Move(selection, -1, shown);
+        }
     }
 
     /// <summary>A child picked from the list, and whether it is to open in a new tab.</summary>
@@ -468,7 +602,9 @@ internal static class OmnibarView
             {
                 var row = ChildRow(ui, list, shown[i], i);
                 if (row.Node != null)
+                {
                     picked = row;
+                }
             }
         }
         ItemSelections.TakeFrom(menu.Selection, shown);
@@ -486,9 +622,15 @@ internal static class OmnibarView
         ui.Text(label, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
         RecordChildPath(ui, row.Interaction.Id, label);
         if (row.Interaction.Clicked)
+        {
             return new PickedChild(child, IsCommandHeld(ui));
+        }
+
         if (row.Interaction.ClickedWith(PointerButton.Middle))
+        {
             return new PickedChild(child, true);
+        }
+
         return new PickedChild(null, false);
     }
 
@@ -496,7 +638,10 @@ internal static class OmnibarView
     private static void RecordChildPath(Ui<UiState> ui, int id, string label)
     {
         if (!ui.WantsSemantics)
+        {
             return;
+        }
+
         ui.RecordTestPath(id, new TestPath([new TestSegment.Named("child"), new TestSegment.Keyed(label)]));
     }
 
@@ -516,10 +661,16 @@ internal static class OmnibarView
         WalkSuggestions(ui, omnibar, fieldId);
         var clicked = Suggestions(ui, omnibar, fieldId);
         if (submitted)
+        {
             clicked = new PickedMatch(FindSuggestionToShow(omnibar), IsCommandHeld(ui));
+        }
+
         var match = clicked.Match;
         if (match == null)
+        {
             return;
+        }
+
         StopSearch(omnibar);
         Commands.Later(ui.State, (node: match.Node, inNewTab: clicked.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
     }
@@ -528,7 +679,10 @@ internal static class OmnibarView
     private static void SyntaxTooltip(Ui<UiState> ui, Omnibar omnibar, int fieldId)
     {
         if (omnibar.Search.Query.Length > 0)
+        {
             return;
+        }
+
         var t = ui.State.Strings;
         ui.Tooltip(fieldId, ui.Memo("omnibar-syntax", t, static s => s.SearchSyntaxTooltip(Shortcuts.OmnibarSearch)));
     }
@@ -536,17 +690,27 @@ internal static class OmnibarView
     private static void WalkSuggestions(Ui<UiState> ui, Omnibar omnibar, int fieldId)
     {
         if (!ui.HasFocus(fieldId))
+        {
             return;
+        }
+
         foreach (var stroke in ui.Input.Keys)
+        {
             MoveSuggestion(omnibar, stroke.Key);
+        }
     }
 
     private static void MoveSuggestion(Omnibar omnibar, KeyboardKey key)
     {
         if (key == KeyboardKey.DownArrow)
+        {
             MoveSuggestion(omnibar, 1);
+        }
+
         if (key == KeyboardKey.UpArrow)
+        {
             MoveSuggestion(omnibar, -1);
+        }
     }
 
     /// <summary>A match picked from the suggestions, and whether it is to open in a new tab.</summary>
@@ -558,9 +722,15 @@ internal static class OmnibarView
     {
         var picked = new PickedMatch(null, false);
         if (omnibar.Search.Query.Length == 0)
+        {
             return picked;
+        }
+
         if (!ui.TryGetRect(fieldId, out var anchor))
+        {
             return picked;
+        }
+
         var theme = ui.Theme;
         var box = theme.PopupSurface(new Box { Width = anchor.Width, Padding = new Spacing(0f, theme.GapTight), Gap = 0f });
         using (ui.Popup(HashCode.Combine(fieldId, SuggestionsSalt), anchor, box, gap: theme.TooltipGap))
@@ -574,7 +744,9 @@ internal static class OmnibarView
             {
                 var row = SuggestionRow(ui, omnibar, omnibar.Search.Rows[i], fieldId);
                 if (row.Match != null)
+                {
                     picked = row;
+                }
             }
         }
         return picked;
@@ -583,7 +755,10 @@ internal static class OmnibarView
     private static bool HasSuggestions(Omnibar omnibar)
     {
         if (!omnibar.Search.ShowsQuery)
+        {
             return false;
+        }
+
         return omnibar.SuggestionCount > 0;
     }
 
@@ -599,7 +774,10 @@ internal static class OmnibarView
     private static bool IsStillSearching(Search search)
     {
         if (!search.ShowsQuery)
+        {
             return true;
+        }
+
         return search.IsBusy;
     }
 
@@ -611,7 +789,10 @@ internal static class OmnibarView
         var selected = ReferenceEquals(match, omnibar.SelectedSuggestion);
         var i = ui.Interact(RuntimeHelpers.GetHashCode(node));
         if (i.Pressed)
+        {
             ui.Focus(fieldId);
+        }
+
         var nameColor = selected ? theme.SelectionText : theme.Text;
         using (ui.Row(i.Id, SuggestionBox(theme, selected, i.Hovered)))
         {
@@ -621,9 +802,15 @@ internal static class OmnibarView
             ui.Text(match.Location, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
         }
         if (i.Clicked)
+        {
             return new PickedMatch(match, IsCommandHeld(ui));
+        }
+
         if (i.ClickedWith(PointerButton.Middle))
+        {
             return new PickedMatch(match, true);
+        }
+
         return new PickedMatch(null, false);
     }
 
@@ -632,18 +819,24 @@ internal static class OmnibarView
     private static void DescribeSuggestion(Ui<UiState> ui, int id, string text, bool selected)
     {
         if (!ui.WantsSemantics)
+        {
             return;
+        }
+
         ui.RecordTestPath(id, new TestPath([new TestSegment.Named("suggestion"), new TestSegment.Keyed(text)]));
         ui.Semantics(SemanticRole.ListItem, text, selected ? SemanticStates.Selected : SemanticStates.None);
     }
 
     /// <summary>A row of a list that has focus, as the search box holds it for the suggestions.</summary>
-    private static Box SuggestionBox(UiTheme theme, bool selected, bool hovered) => new()
+    private static Box SuggestionBox(UiTheme theme, bool selected, bool hovered)
     {
-        Height = theme.RowHeight,
-        Padding = new Spacing(theme.ShellPaddingX, 0f),
-        Gap = theme.GapTight,
-        AlignY = Align.Center,
-        Background = theme.PickRowBackground(selected, focused: true, hovered),
-    };
+        return new()
+        {
+            Height = theme.RowHeight,
+            Padding = new Spacing(theme.ShellPaddingX, 0f),
+            Gap = theme.GapTight,
+            AlignY = Align.Center,
+            Background = theme.PickRowBackground(selected, focused: true, hovered),
+        };
+    }
 }

@@ -14,7 +14,10 @@ public sealed class UpdateTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     /// <summary>A feed that answers from memory, and can be made to fail at any step.</summary>
     private sealed class FakeFeed(string? newest)
@@ -31,23 +34,35 @@ public sealed class UpdateTests : IDisposable
         {
             Finds++;
             if (FailsToFind)
+            {
                 throw new HttpRequestException("Offline");
+            }
+
             if (newest == null)
+            {
                 return null;
+            }
+
             return new UpdateInfo(new VelopackAsset { Version = SemanticVersion.Parse(newest) }, false);
         }
 
         public void Download(UpdateInfo update)
         {
             if (FailsToDownload)
+            {
                 throw new IOException("Disk full");
+            }
+
             Downloaded = update;
         }
 
         public void ApplyAfterExit(UpdateInfo update)
         {
             if (FailsToApply)
+            {
                 throw new IOException("Updater missing");
+            }
+
             Applied = update;
         }
     }
@@ -59,12 +74,20 @@ public sealed class UpdateTests : IDisposable
         private const float CharacterWidth = 6.5f;
         private const float LineHeight = 16f;
 
-        public float MeasureTextWidth(ReadOnlySpan<char> text, TextStyle style) => text.Length * CharacterWidth;
+        public float MeasureTextWidth(ReadOnlySpan<char> text, TextStyle style)
+        {
+            return text.Length * CharacterWidth;
+        }
 
-        public float MeasureTextPrefix(ReadOnlySpan<char> text, int prefixLength, TextStyle style) =>
-            Math.Clamp(prefixLength, 0, text.Length) * CharacterWidth;
+        public float MeasureTextPrefix(ReadOnlySpan<char> text, int prefixLength, TextStyle style)
+        {
+            return Math.Clamp(prefixLength, 0, text.Length) * CharacterWidth;
+        }
 
-        public float MeasureTextLineHeight(TextStyle style) => LineHeight;
+        public float MeasureTextLineHeight(TextStyle style)
+        {
+            return LineHeight;
+        }
     }
 
     private static AppDriver Opened(FakeFeed feed, bool checkAutomatically = true, ITextMeasurer? measurer = null)
@@ -79,8 +102,10 @@ public sealed class UpdateTests : IDisposable
         return app;
     }
 
-    private static void AwaitStatus<T>(AppDriver app) where T : UpdateStatus =>
+    private static void AwaitStatus<T>(AppDriver app) where T : UpdateStatus
+    {
         app.Frames.WaitUntil(() => app.AppState.Updates.Status is T, Patience);
+    }
 
     private static void OpenAbout(AppDriver app)
     {
@@ -200,7 +225,10 @@ public sealed class UpdateTests : IDisposable
     {
         var locales = new TheoryData<Locale>();
         foreach (var (locale, _) in Locales.All)
+        {
             locales.Add(locale);
+        }
+
         return locales;
     }
 

@@ -10,12 +10,18 @@ internal static class LinuxMenu
 {
     public static void EnsureEntry()
     {
-        if (!OperatingSystem.IsLinux()) return;
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
 
         // The AppImage runtime exports where it mounted the image; a dev build has none, and must not
         // register itself. The icon is the one the image carries, which install.sh uses too.
         var appDir = Environment.GetEnvironmentVariable("APPDIR");
-        if (string.IsNullOrEmpty(appDir) || !Path.IsPathRooted(appDir)) return;
+        if (string.IsNullOrEmpty(appDir) || !Path.IsPathRooted(appDir))
+        {
+            return;
+        }
 
         var entry = new LinuxDesktopEntry(
             fileStem: "ILSight",

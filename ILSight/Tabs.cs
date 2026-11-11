@@ -26,32 +26,51 @@ public static class Tabs
     public static void Remove(DocumentTabs tabs, DocumentTab tab)
     {
         if (!tabs.Open.Remove(tab))
+        {
             return;
+        }
+
         Tabs.Cancel(tab);
         tabs.ClosedChanges += tab.Changes;
         if (tab == tabs.Active)
+        {
             tabs.LastWorkedIn.Set(null);
+        }
+
         if (tab == tabs.Preview)
+        {
             tabs.Previewing.Set(null);
+        }
+
         if (tab == tabs.LastDiagram)
+        {
             tabs.LastDiagram = null;
+        }
     }
 
     /// <summary>Makes <paramref name="tab"/> the active tab, and the diagram tab when it shows a diagram.</summary>
     public static void MakeActive(DocumentTabs tabs, DocumentTab tab)
     {
         if (!tabs.Open.Contains(tab))
+        {
             throw new InvalidOperationException("Only an open tab can be active.");
+        }
+
         tabs.LastWorkedIn.Set(tab);
         if (tab.Diagram != null)
+        {
             tabs.LastDiagram = tab;
+        }
     }
 
     /// <summary>Makes <paramref name="tab"/> the preview tab; the one before it stays open, kept.</summary>
     public static void MakePreview(DocumentTabs tabs, DocumentTab tab)
     {
         if (!tabs.Open.Contains(tab))
+        {
             throw new InvalidOperationException("Only an open tab can be the preview tab.");
+        }
+
         tabs.Previewing.Set(tab);
     }
 
@@ -59,7 +78,10 @@ public static class Tabs
     public static void Keep(DocumentTabs tabs, DocumentTab tab)
     {
         if (tab != tabs.Preview)
+        {
             return;
+        }
+
         tabs.Previewing.Set(null);
     }
 
@@ -72,9 +94,15 @@ public static class Tabs
     public static DocumentTab? KeepIfOpen(DocumentTabs tabs, DocumentTab? tab)
     {
         if (tab == null)
+        {
             return null;
+        }
+
         if (!tabs.Open.Contains(tab))
+        {
             return null;
+        }
+
         return tab;
     }
 
@@ -90,10 +118,16 @@ public static class Tabs
     {
         var diagram = tab.Diagram;
         if (diagram != null)
+        {
             return diagram.Version;
+        }
+
         var comparison = tab.Comparison;
         if (comparison != null)
+        {
             return comparison.Version;
+        }
+
         return 0;
     }
 
@@ -102,11 +136,20 @@ public static class Tabs
     public static bool IsShowing(DocumentTab tab, BrowseNode node, DecompilationLanguage language, DecompilerOptions options)
     {
         if (!ReferenceEquals(node, tab.Node))
+        {
             return false;
+        }
+
         if (tab.IsBusy)
+        {
             return false;
+        }
+
         if (!NodeContentLoader.DependsOnLanguage(node))
+        {
             return true;
+        }
+
         return IsCurrent(tab, language, options);
     }
 
@@ -115,7 +158,10 @@ public static class Tabs
     public static bool IsCurrent(DocumentTab tab, DecompilationLanguage language, DecompilerOptions options)
     {
         if (language != tab.Language)
+        {
             return false;
+        }
+
         return DecompilerToggles.ProducesSameCode(tab.Options, options, language);
     }
 
@@ -139,7 +185,10 @@ public static class Tabs
     {
         load.Work.Dispose();
         if (tab.Work != load.Work)
+        {
             return false;
+        }
+
         tab.Work = null;
         return true;
     }
@@ -167,7 +216,10 @@ public static class Tabs
     private static BrowseNode GetLoadingNode(DocumentTab tab)
     {
         if (tab.Content is not TabContent.Loading loading)
+        {
             throw new InvalidOperationException("Only a loading tab can show what its load brought.");
+        }
+
         return loading.Node;
     }
 
@@ -271,8 +323,13 @@ public static class Tabs
         tab.Work?.Cancel();
         tab.Work = null;
         if (tab.Diagram != null)
+        {
             Diagrams.CloseDiagram(tab.Diagram);
+        }
+
         if (tab.Comparison != null)
+        {
             Comparisons.CloseComparison(tab.Comparison);
+        }
     }
 }

@@ -125,7 +125,9 @@ public static class ScreenLayout
     {
         uiState.ConfirmingLayoutReset = false;
         if (confirmed)
+        {
             ResetLayout(uiState);
+        }
     }
 
     /// <summary>Puts the layout back as it starts out: the assemblies left of every open document,
@@ -134,7 +136,10 @@ public static class ScreenLayout
     {
         var documents = Docking.ListDocumentPanels(uiState.MainLayout);
         if (documents.Count == 0)
+        {
             documents.Add(OpenActiveTabPanel(uiState));
+        }
+
         Docking.ResetLayout(uiState.MainLayout, documents);
         ActivateActivePanel(uiState);
     }

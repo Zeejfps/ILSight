@@ -28,7 +28,9 @@ public static class SavedDocuments
         foreach (var reopened in tabs.Tabs)
         {
             if (reopened.Tab == tab && reopened.IsWaiting)
+            {
                 return reopened.Record;
+            }
         }
         return null;
     }
@@ -46,7 +48,10 @@ public static class SavedDocuments
     public static bool FinishWaiting(ReopenedTabs tabs, ReopenedTab reopened)
     {
         if (!tabs.Tabs.Remove(reopened))
+        {
             return false;
+        }
+
         return reopened.IsWaiting;
     }
 
@@ -108,7 +113,10 @@ public static class SavedDocuments
     {
         var active = FindReopened(reopened, panel);
         if (active == null)
+        {
             active = reopened[0];
+        }
+
         Tabs.MakeActive(appState.Tabs, active.Tab);
     }
 
@@ -116,14 +124,20 @@ public static class SavedDocuments
     {
         var preview = FindReopened(reopened, panel);
         if (preview == null)
+        {
             return;
+        }
+
         Tabs.MakePreview(appState.Tabs, preview.Tab);
     }
 
     private static ReopenedTab? FindReopened(List<ReopenedTab> reopened, string? panel)
     {
         if (panel == null)
+        {
             return null;
+        }
+
         return reopened.Find(r => r.Record.Panel == panel);
     }
 
@@ -137,7 +151,10 @@ public static class SavedDocuments
             .OfType<SavedTab>()
             .ToList();
         if (saved.Count == 0)
+        {
             return null;
+        }
+
         var records = saved.ConvertAll(static s => s.Record);
         var active = FindSavedPanel(saved, appState.Tabs.Active);
         var preview = FindSavedPanel(saved, appState.Tabs.Preview);
@@ -150,12 +167,21 @@ public static class SavedDocuments
         var panel = FindTabPanel(appState, tab);
         var waiting = FindWaiting(appState.Reopened, tab);
         if (waiting != null)
+        {
             return new SavedTab(tab, KeepWaiting(waiting, panel));
+        }
+
         if (panel == null)
+        {
             return null;
+        }
+
         var record = SaveShown(tab, panel);
         if (record == null)
+        {
             return null;
+        }
+
         return new SavedTab(tab, record);
     }
 
@@ -164,7 +190,9 @@ public static class SavedDocuments
         foreach (var panel in appState.View.Tabs ?? [])
         {
             if (panel.Tab == tab)
+            {
                 return panel;
+            }
         }
         return null;
     }
@@ -174,7 +202,10 @@ public static class SavedDocuments
     private static DocumentRecord KeepWaiting(DocumentRecord waiting, TabPanel? panel)
     {
         if (panel == null)
+        {
             return waiting;
+        }
+
         return waiting with { Panel = panel.Panel };
     }
 
@@ -184,13 +215,22 @@ public static class SavedDocuments
     {
         var diagram = tab.Diagram;
         if (diagram != null)
+        {
             return SaveDiagram(tab, diagram, panel);
+        }
+
         var comparison = tab.Comparison;
         if (comparison != null)
+        {
             return SaveComparison(tab, comparison, panel);
+        }
+
         var location = tab.Location;
         if (location == null)
+        {
             return null;
+        }
+
         return new NodeDocumentRecord(panel.Panel, tab.Title, location, tab.Language, tab.PositionToReopen);
     }
 
@@ -215,7 +255,10 @@ public static class SavedDocuments
     {
         var found = saved.Find(s => s.Tab == tab);
         if (found == null)
+        {
             return null;
+        }
+
         return found.Record.Panel;
     }
 
@@ -224,7 +267,10 @@ public static class SavedDocuments
     private static DockLayout? ArrangeSaved(DockLayout? layout, List<DocumentRecord> records)
     {
         if (layout == null)
+        {
             return null;
+        }
+
         var panels = records.ConvertAll(static r => r.Panel);
         var arrangement = layout.CopyArrangement();
         arrangement.Retain(panels.Contains);
@@ -238,7 +284,10 @@ public static class SavedDocuments
     {
         var nodes = new List<WaitingNode>();
         foreach (var reopened in ListWaiting(appState.Reopened))
+        {
             ShowReopened(appState, reopened, nodes);
+        }
+
         FindReopenedNodes(appState, nodes);
     }
 
@@ -265,7 +314,10 @@ public static class SavedDocuments
     private static NodePath? FindListedPlace(AppState appState, NodeDocumentRecord node)
     {
         if (!AssemblyListing.IsListed(appState.Assemblies, node.Location.FilePath))
+        {
             return null;
+        }
+
         return node.Location;
     }
 
@@ -277,7 +329,10 @@ public static class SavedDocuments
     private static async Task FindReopenedNodesAsync(AppState appState, List<WaitingNode> nodes)
     {
         if (nodes.Count == 0)
+        {
             return;
+        }
+
         var places = nodes.ConvertAll(static n => n.Place);
         appState.Reopened.Finding++;
         var assemblies = appState.Assemblies;
@@ -291,7 +346,9 @@ public static class SavedDocuments
             _ => throw new UnreachableException(),
         };
         for (var i = 0; i < nodes.Count; i++)
+        {
             ShowReopenedNode(appState, nodes[i], shown[i]);
+        }
     }
 
     private static List<BrowseNode?> FindNodes(AssemblyList list, BrowseSession session, List<NodePath?> places)
@@ -302,7 +359,10 @@ public static class SavedDocuments
     private static BrowseNode? FindNode(AssemblyList list, BrowseSession session, NodePath? place)
     {
         if (place == null)
+        {
             return null;
+        }
+
         return NodeLookup.FindListed(list, session, place);
     }
 
@@ -312,10 +372,16 @@ public static class SavedDocuments
     private static void ShowReopenedNode(AppState appState, WaitingNode waiting, BrowseNode? node)
     {
         if (!FinishWaiting(appState.Reopened, waiting.Reopened))
+        {
             return;
+        }
+
         var tab = waiting.Reopened.Tab;
         if (!Tabs.IsOpen(appState.Tabs, tab))
+        {
             return;
+        }
+
         if (node == null)
         {
             Tabs.ShowGone(tab, waiting.Record.Location);
@@ -326,13 +392,18 @@ public static class SavedDocuments
         RevealIfActive(appState, tab, node);
     }
 
-    private static ViewPosition? FindSavedPosition(AppState appState, NodeDocumentRecord saved) =>
-        Navigation.KeepPosition(saved.View, saved.Language, appState.Language);
+    private static ViewPosition? FindSavedPosition(AppState appState, NodeDocumentRecord saved)
+    {
+        return Navigation.KeepPosition(saved.View, saved.Language, appState.Language);
+    }
 
     private static void RevealIfActive(AppState appState, DocumentTab tab, BrowseNode node)
     {
         if (tab != appState.Tabs.Active)
+        {
             return;
+        }
+
         appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
     }
 

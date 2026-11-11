@@ -10,7 +10,9 @@ public sealed class AsyncGuardedTests
         var guarded = new AsyncGuarded<int>(1);
 
         using (var held = await guarded.EnterAsync())
+        {
             held.Value = 2;
+        }
 
         using var again = await guarded.EnterAsync();
         Assert.Equal(2, again.Value);

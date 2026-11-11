@@ -86,16 +86,25 @@ public static class AssemblyExport
         var (projectPart, pdbPart) = SplitForPdb(part, extras.Pdb);
         var project = WriteProject(assembly, options, projectPath, extras.StrongNameKeyFile, projectPart, cancellationToken);
         if (!extras.Pdb)
+        {
             return project;
+        }
+
         return WithPdb(project, options, projectPath.Folder, extras.EmbedSourcesInPdb, pdbPart, cancellationToken);
     }
 
     private static (PartProgress? Project, PartProgress? Pdb) SplitForPdb(PartProgress? part, bool pdb)
     {
         if (part == null)
+        {
             return (null, null);
+        }
+
         if (!pdb)
+        {
             return (part, null);
+        }
+
         return GetHalves(part);
     }
 
@@ -129,7 +138,10 @@ public static class AssemblyExport
     {
         var failure = TryGeneratePdb(project.Assembly, options, folder, embedSources, progress, cancellationToken);
         if (failure != null)
+        {
             return project with { Pdb = new ProjectPdb.Failed(failure) };
+        }
+
         var path = Path.Combine(folder, LoadedAssemblies.GetPdbFileName(project.Assembly));
         return project with { Pdb = new ProjectPdb.Written(path) };
     }
@@ -173,14 +185,20 @@ public static class AssemblyExport
     {
         var trimmed = name.Trim();
         if (trimmed.EndsWith(SolutionExtension, StringComparison.OrdinalIgnoreCase))
+        {
             trimmed = trimmed.Substring(0, trimmed.Length - SolutionExtension.Length);
+        }
+
         return WholeProjectDecompiler.CleanUpFileName(trimmed, SolutionExtension);
     }
 
     private const string SolutionExtension = ".sln";
 
     /// <summary><paramref name="name"/> made safe for a file and folder name.</summary>
-    public static string CleanProjectName(string name) => WholeProjectDecompiler.CleanUpDirectoryName(name.Trim());
+    public static string CleanProjectName(string name)
+    {
+        return WholeProjectDecompiler.CleanUpDirectoryName(name.Trim());
+    }
 
     /// <summary>A project of each of <paramref name="assemblies"/>, named after it, with a number
     /// after the names that other assemblies already took.</summary>
@@ -251,7 +269,10 @@ public static class AssemblyExport
     private static PEFile PortableExecutableOf(LoadedModule assembly)
     {
         if (assembly.PEFile == null)
+        {
             throw new InvalidOperationException($"'{assembly.FilePath}' is no portable executable, so no PDB can map its IL.");
+        }
+
         return assembly.PEFile;
     }
 
@@ -269,7 +290,9 @@ public static class AssemblyExport
             var part = Part(progress, assembly, i, bounds);
             var failure = TryGeneratePdb(assembly, options, folder, embedSources: true, part, cancellationToken);
             if (failure != null)
+            {
                 failures.Add(failure);
+            }
         }
         return failures;
     }
@@ -278,7 +301,10 @@ public static class AssemblyExport
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
         if (!LoadedAssemblies.EnsureCanGeneratePdb(assembly))
+        {
             return new PdbFailure.NoDebugEntry(assembly);
+        }
+
         var path = Path.Combine(folder, LoadedAssemblies.GetPdbFileName(assembly));
         try
         {
@@ -322,7 +348,10 @@ public static class AssemblyExport
     private static PartProgress? Part(IProgress<ExportProgress>? progress, LoadedModule assembly, int index, float[] bounds)
     {
         if (progress == null)
+        {
             return null;
+        }
+
         var part = new PartProgress { Progress = progress, Name = assembly.Name, Part = index + 1, Parts = bounds.Length - 1, From = bounds[index], To = bounds[index + 1] };
         StartPart(part);
         return part;
@@ -369,7 +398,10 @@ public static class AssemblyExport
     private static float GetFractionAt(PartProgress part, int done, int total)
     {
         if (total <= 0)
+        {
             return part.From;
+        }
+
         var share = Math.Clamp((float)done / total, 0f, 1f);
         return part.From + (part.To - part.From) * share;
     }

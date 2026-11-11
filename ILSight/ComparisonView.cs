@@ -24,7 +24,10 @@ internal static class ComparisonView
         Comparisons.FollowDiff(rows, comparison.Diff);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!ui.State.Display.ShowOmnibar)
+        {
             OwnToolbar(ui, tab, comparison);
+        }
+
         Summary(ui, comparison);
         var hint = FindHint(ui, comparison, rows);
         if (hint != null)
@@ -40,7 +43,10 @@ internal static class ComparisonView
     private static void OwnToolbar(Ui<UiState> ui, DocumentTab tab, AssemblyComparison comparison)
     {
         using (ui.PaneToolbar())
+        {
             Tools(ui, tab, comparison);
+        }
+
         ui.Separator();
     }
 
@@ -55,12 +61,21 @@ internal static class ComparisonView
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
         {
             if (ui.IconButton("collapse", icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
+            {
                 Comparisons.CollapseAllRows(rows);
+            }
+
             if (ui.IconButton("expand", icons.AnalyzerExpandAll, t.CodeExpandAll, any))
+            {
                 Comparisons.ExpandAllRows(rows);
+            }
+
             ui.Separator(ui.Theme.IconSize);
             if (ui.IconButton("swap", icons.ComparisonSwap, t.ComparisonSwap))
+            {
                 Commands.Later(ui.State, comparison, static (a, c) => SwapComparedAssemblies(a, c));
+            }
+
             ui.Separator(ui.Theme.IconSize);
             OnlyDifferencesCheckbox(ui, rows);
             HiddenMembersCheckbox(ui, comparison);
@@ -71,20 +86,27 @@ internal static class ComparisonView
     {
         var only = rows.OnlyDifferences;
         if (ui.Checkbox(ui.State.Strings.ComparisonOnlyDifferences, ref only, id: "only-differences"))
+        {
             Comparisons.ShowOnlyDifferences(rows, only);
+        }
     }
 
     private static void HiddenMembersCheckbox(Ui<UiState> ui, AssemblyComparison comparison)
     {
         var all = comparison.Scope == ApiScope.AllDeclared;
         if (ui.Checkbox(ui.State.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members"))
+        {
             Commands.Later(ui.State, (comparison, scope: ScopeOf(all)), static (a, s) => ChangeComparedScope(a, s.comparison, s.scope));
+        }
     }
 
     private static ApiScope ScopeOf(bool all)
     {
         if (all)
+        {
             return ApiScope.AllDeclared;
+        }
+
         return ApiScope.PublicApi;
     }
 
@@ -95,7 +117,10 @@ internal static class ComparisonView
     {
         var diff = comparison.Diff;
         if (diff == null)
+        {
             return;
+        }
+
         var t = ui.State.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap, theme.GapTight), Gap = theme.Gap }))
@@ -105,7 +130,9 @@ internal static class ComparisonView
             ui.Text(t.ComparisonRemovedCount(diff.Removed), color: theme.Danger);
             ui.Text(t.ComparisonChangedCount(diff.Changed), color: theme.Warning);
             if (comparison.IsComparing)
+            {
                 ui.Text(t.ComparisonComparing, color: theme.TextMuted);
+            }
         }
         ui.Separator();
     }
@@ -117,39 +144,62 @@ internal static class ComparisonView
         var t = ui.State.Strings;
         var failure = comparison.Failure;
         if (failure != null)
+        {
             return ui.Memo("comparison-failure", (failure, t), static a => DescribeFailure(a.t, a.failure));
+        }
+
         if (comparison.Diff == null)
+        {
             return t.ComparisonComparing;
+        }
+
         if (rows.Roots.Count == 0)
+        {
             return t.ComparisonNoDifferences;
+        }
+
         return null;
     }
 
-    private static string DescribeFailure(Strings t, ComparisonFailure failure) => failure switch
+    private static string DescribeFailure(Strings t, ComparisonFailure failure)
     {
-        ComparisonFailure.AssemblyClosed closed => t.ComparisonAssemblyClosed(closed.File),
-        ComparisonFailure.Failed failed => t.ErrorCompare(failed.Left, failed.Right),
-        _ => throw new UnreachableException(),
-    };
+        return failure switch
+        {
+            ComparisonFailure.AssemblyClosed closed => t.ComparisonAssemblyClosed(closed.File),
+            ComparisonFailure.Failed failed => t.ErrorCompare(failed.Left, failed.Right),
+            _ => throw new UnreachableException(),
+        };
+    }
 
     private static void Tree(Ui<UiState> ui, ComparisonRows rows)
     {
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box);
         if (result.Activated)
+        {
             Commands.Later(ui.State, result.Node, static (a, n) => Open(a, n, inNewTab: false));
+        }
+
         if (result.ContextMenuRequested && result.Node != null)
+        {
             ui.OpenContextMenu(MenuId, result.ContextMenuAt);
+        }
     }
 
     /// <summary>Opens the code of <paramref name="entry"/> in the right assembly, else in the left.</summary>
     private static void Open(AppState appState, ApiEntry? entry, bool inNewTab)
     {
         if (entry == null)
+        {
             return;
+        }
+
         var side = RightOf(entry) ?? LeftOf(entry);
         if (side == null)
+        {
             return;
+        }
+
         Navigate(appState, side.Reference, inNewTab);
     }
 
@@ -157,7 +207,10 @@ internal static class ComparisonView
     private static ApiSide? LeftOf(ApiEntry entry)
     {
         if (entry is not ApiEntry.Entity entity)
+        {
             return null;
+        }
+
         return entity.Sides switch
         {
             ApiSides.LeftOnly sides => sides.Left,
@@ -171,7 +224,10 @@ internal static class ComparisonView
     private static ApiSide? RightOf(ApiEntry entry)
     {
         if (entry is not ApiEntry.Entity entity)
+        {
             return null;
+        }
+
         return entity.Sides switch
         {
             ApiSides.RightOnly sides => sides.Right,
@@ -186,15 +242,26 @@ internal static class ComparisonView
         var t = ui.State.Strings;
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         var entry = rows.View.Selected;
         if (entry == null)
+        {
             return;
+        }
+
         var left = LeftOf(entry);
         var right = RightOf(entry);
         if (ui.MenuItem(t.ComparisonOpenLeft, enabled: left != null, id: "open-left") && left != null)
+        {
             Commands.Later(ui.State, left.Reference, static (a, r) => Navigate(a, r, inNewTab: false));
+        }
+
         if (ui.MenuItem(t.ComparisonOpenRight, enabled: right != null, id: "open-right") && right != null)
+        {
             Commands.Later(ui.State, right.Reference, static (a, r) => Navigate(a, r, inNewTab: false));
+        }
     }
 }

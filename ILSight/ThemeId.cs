@@ -18,11 +18,20 @@ public sealed record ThemeId<TFile>
     public static ThemeId<TFile>? Parse(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
+        {
             return null;
+        }
+
         if (text is "." or "..")
+        {
             return null;
+        }
+
         if (text.IndexOfAny(NotInFileName) >= 0)
+        {
             return null;
+        }
+
         return new ThemeId<TFile>(text);
     }
 
@@ -31,18 +40,30 @@ public sealed record ThemeId<TFile>
     {
         var id = Parse(text);
         if (id == null)
+        {
             throw new ArgumentException($"'{text}' is no theme id.", nameof(text));
+        }
+
         return id;
     }
 
     public bool Equals(ThemeId<TFile>? other)
     {
         if (other is null)
+        {
             return false;
+        }
+
         return string.Equals(Text, other.Text, StringComparison.OrdinalIgnoreCase);
     }
 
-    public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Text);
+    public override int GetHashCode()
+    {
+        return StringComparer.OrdinalIgnoreCase.GetHashCode(Text);
+    }
 
-    public override string ToString() => Text;
+    public override string ToString()
+    {
+        return Text;
+    }
 }

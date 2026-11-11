@@ -47,7 +47,10 @@ public sealed class BrowseNode
         {
             var root = this;
             while (root.Parent != null)
+            {
                 root = root.Parent;
+            }
+
             return root;
         }
     }
@@ -92,5 +95,8 @@ public sealed class BrowseNode
         _ => throw new UnreachableException(),
     };
 
-    public override string ToString() => Text;
+    public override string ToString()
+    {
+        return Text;
+    }
 }

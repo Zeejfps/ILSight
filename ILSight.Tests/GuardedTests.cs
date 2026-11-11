@@ -10,7 +10,9 @@ public sealed class GuardedTests
         var guarded = new Guarded<int>(1);
 
         using (var held = guarded.Enter())
+        {
             held.Value = 2;
+        }
 
         using var again = guarded.Enter();
         Assert.Equal(2, again.Value);
@@ -72,7 +74,9 @@ public sealed class GuardedTests
         var guarded = new Guarded<int>(0);
 
         using (guarded.Enter())
+        {
             Assert.False(IsFreeFromAnotherThread(guarded));
+        }
 
         Assert.True(IsFreeFromAnotherThread(guarded));
     }

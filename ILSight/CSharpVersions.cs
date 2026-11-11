@@ -32,7 +32,10 @@ internal static class CSharpVersions
     {
         foreach (var (v, label) in All)
         {
-            if (v == version) return label;
+            if (v == version)
+            {
+                return label;
+            }
         }
         return version.ToString();
     }

@@ -18,9 +18,15 @@ public sealed class UserIntent
         return _current;
     }
 
-    public bool IsCurrent(int ticket) => ticket == _current;
+    public bool IsCurrent(int ticket)
+    {
+        return ticket == _current;
+    }
 
-    public bool IsStale(int ticket) => ticket != _current;
+    public bool IsStale(int ticket)
+    {
+        return ticket != _current;
+    }
 
     public void StartResolving(int ticket)
     {

@@ -29,9 +29,15 @@ public readonly record struct ViewPosition
         _grid = grid;
     }
 
-    public static ViewPosition OfCode(CodeViewPosition position) => new(Kind.Code, position, default);
+    public static ViewPosition OfCode(CodeViewPosition position)
+    {
+        return new(Kind.Code, position, default);
+    }
 
-    public static ViewPosition OfGrid(GridPosition position) => new(Kind.Grid, default, position);
+    public static ViewPosition OfGrid(GridPosition position)
+    {
+        return new(Kind.Grid, default, position);
+    }
 
     /// <summary>The code view's position, or null when this is a grid's.</summary>
     public CodeViewPosition? Code => _kind == Kind.Code ? _code : null;

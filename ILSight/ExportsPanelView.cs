@@ -58,7 +58,10 @@ internal static class ExportsPanelView
     private static bool IsEmpty(ExportQueue export, List<ExportReport> finished)
     {
         if (export.IsRunning)
+        {
             return false;
+        }
+
         return finished.Count == 0;
     }
 
@@ -66,7 +69,10 @@ internal static class ExportsPanelView
     private static bool IsNarrow(Ui<UiState> ui, int listId)
     {
         if (!ui.TryGetRect(listId, out var rect))
+        {
             return false;
+        }
+
         return rect.Width < NarrowWidth;
     }
 
@@ -81,7 +87,10 @@ internal static class ExportsPanelView
             ui.Text(summary, color: theme.TextMuted, size: theme.FontSizeSmall);
             ui.Spacer();
             if (ui.Button(t.ExportsClearFinished, enabled: finished.Count > 0, id: "clear", variant: ButtonVariant.Ghost))
+            {
                 Commands.Later(ui.State, static a => ClearFinishedExports(a));
+            }
+
             ui.Tooltip(ui.GetId("clear"), t.ExportsClearFinishedTooltip);
         }
     }
@@ -91,11 +100,20 @@ internal static class ExportsPanelView
     {
         var parts = new List<string>();
         if (running)
+        {
             parts.Add(t.ExportsSummaryRunning);
+        }
+
         if (waiting > 0)
+        {
             parts.Add(t.ExportsSummaryQueued(waiting));
+        }
+
         if (finished > 0)
+        {
             parts.Add(t.ExportsSummaryFinished(finished));
+        }
+
         return string.Join(" · ", parts);
     }
 
@@ -103,11 +121,16 @@ internal static class ExportsPanelView
     private static void HandleKeys(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows)
     {
         if (!ui.HasFocus(rows.ListId))
+        {
             return;
+        }
+
         var runs = ListExports(queue, finished);
         var keys = ui.Input.Keys;
         for (var i = 0; i < keys.Count; i++)
+        {
             HandleKey(ui, queue, finished, rows, runs, i);
+        }
     }
 
     private static void HandleKey(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows, List<ExportRun> runs, int index)
@@ -115,7 +138,10 @@ internal static class ExportsPanelView
         var stroke = ui.Input.Keys[index];
         var selected = ui.State.SelectedExport;
         if (selected != null && ActOnSelected(ui, queue, finished, rows, selected, stroke, index))
+        {
             return;
+        }
+
         MoveSelection(ui, rows, runs, stroke);
     }
 
@@ -153,21 +179,32 @@ internal static class ExportsPanelView
         var before = index;
         UiWidgets.ApplyListKey(stroke, ref index, runs.Count, PageRows);
         if (index == before || index < 0)
+        {
             return;
+        }
+
         var moved = runs[index];
         ui.State.SelectedExport = moved;
         using (ui.Id(RowIdOf(moved)))
+        {
             ui.ScrollIntoView(rows.ListId, ui.GetId("row"));
+        }
     }
 
     /// <summary>The id the row of the export <paramref name="run"/> is drawn under, apart from the sections' ids.</summary>
-    private static int RowIdOf(ExportRun run) => HashCode.Combine(run.Number, RowSalt);
+    private static int RowIdOf(ExportRun run)
+    {
+        return HashCode.Combine(run.Number, RowSalt);
+    }
 
     private static void CopyFolder(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
     {
         var folder = FindExportFolder(queue, finished, run);
         if (folder == null)
+        {
             return;
+        }
+
         ui.ClipboardText = folder;
     }
 
@@ -177,7 +214,9 @@ internal static class ExportsPanelView
         using (ui.Id(RowIdOf(run)))
         {
             if (ui.TryGetRect(ui.GetId("row"), out var rect))
+            {
                 at = new PointF(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            }
         }
         OpenMenu(ui, rows, run, at);
     }
@@ -199,7 +238,10 @@ internal static class ExportsPanelView
             ui.Focus(rows.ListId, takesText: false);
         }
         if (hit.DoubleClicked)
+        {
             Commands.Later(ui.State, run, static (a, r) => ActivateExport(a, r));
+        }
+
         if (hit.ClickedWith(PointerButton.Right))
         {
             ui.State.SelectedExport = run;
@@ -212,9 +254,15 @@ internal static class ExportsPanelView
     {
         var theme = ui.Theme;
         if (ui.State.SelectedExport == run)
+        {
             return ui.HasFocus(rows.ListId) ? theme.Selection : theme.SelectionInactive;
+        }
+
         if (hit.Hovered)
+        {
             return theme.RowHover;
+        }
+
         return 0u;
     }
 
@@ -222,7 +270,10 @@ internal static class ExportsPanelView
     {
         var running = export.Running;
         if (running == null)
+        {
             return;
+        }
+
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var queued = running.Export;
@@ -258,11 +309,17 @@ internal static class ExportsPanelView
         if (rows.Narrow)
         {
             if (ui.IconButton("cancel", ui.State.Icons.ExportCancel, t.ExportsCancelTooltip, enabled))
+            {
                 Commands.Later(ui.State, static a => Exports.CancelRunning(a.Export));
+            }
+
             return;
         }
         if (ui.Button(t.ExportsCancel, enabled: enabled, id: "cancel", variant: ButtonVariant.Ghost))
+        {
             Commands.Later(ui.State, static a => Exports.CancelRunning(a.Export));
+        }
+
         ui.Tooltip(ui.GetId("cancel"), t.ExportsCancelTooltip);
     }
 
@@ -270,11 +327,20 @@ internal static class ExportsPanelView
     {
         var kindText = ExportReportText.KindOf(t, kind);
         if (cancelling)
+        {
             return $"{kindText} · {t.ExportsCancelling}";
+        }
+
         if (parts > 1)
+        {
             return $"{kindText} · {t.ExportsAssemblyPart(part, parts, name)}";
+        }
+
         if (preparing)
+        {
             return $"{kindText} · {t.ExportsPreparing}";
+        }
+
         return kindText;
     }
 
@@ -295,16 +361,23 @@ internal static class ExportsPanelView
         using (ui.Row(new Box { Width = Sizing.Grow(), Padding = new Spacing(NameIndent(theme), theme.GapTight, 0f, 0f) }))
         {
             if (fraction != null)
+            {
                 ui.ProgressBar(fraction.Value);
+            }
             else
+            {
                 ui.SlidingBar();
+            }
         }
     }
 
     private static string FormatPercent(float? fraction)
     {
         if (fraction == null)
+        {
             return "";
+        }
+
         var percent = (int)(fraction.Value * 100f);
         return $"{percent}%";
     }
@@ -314,17 +387,25 @@ internal static class ExportsPanelView
         var t = ui.State.Strings;
         var count = export.WaitingCount;
         if (count > 1)
+        {
             Section(ui, SectionQueuedId, ui.Memo("queued", (count, t), static a => a.t.ExportsSectionQueued(a.count)));
+        }
+
         var ahead = 0;
         ExportRun? withdrawn = null;
         foreach (var waiting in export.Waiting)
         {
             if (WaitingRow(ui, rows, waiting, ahead))
+            {
                 withdrawn = waiting.Run;
+            }
+
             ahead++;
         }
         if (withdrawn != null)
+        {
             Commands.Later(ui.State, withdrawn, static (a, run) => Exports.WithdrawExport(a.Export, run));
+        }
     }
 
     /// <summary>Draws a waiting export; returns whether the user took it out of the queue, which
@@ -360,7 +441,10 @@ internal static class ExportsPanelView
     {
         var t = ui.State.Strings;
         if (rows.Narrow)
+        {
             return ui.IconButton("withdraw", ui.State.Icons.ExportWithdraw, t.ExportsWithdraw);
+        }
+
         return ui.Button(t.ExportsWithdraw, id: "withdraw", variant: ButtonVariant.Ghost);
     }
 
@@ -368,7 +452,10 @@ internal static class ExportsPanelView
     {
         var kindText = ExportReportText.KindOf(t, kind);
         if (ahead == 0)
+        {
             return $"{kindText} · {t.ExportsUpNext}";
+        }
+
         return $"{kindText} · {t.ExportsAhead(ahead)}";
     }
 
@@ -376,23 +463,36 @@ internal static class ExportsPanelView
     {
         var t = ui.State.Strings;
         if (reports.Count == 0)
+        {
             return;
+        }
+
         if (HasActiveWork(export))
+        {
             Section(ui, SectionFinishedId, ui.Memo("finished", (reports.Count, t), static a => a.t.ExportsSectionFinished(a.Count)));
+        }
+
         ExportReport? removed = null;
         for (var i = reports.Count - 1; i >= 0; i--)
         {
             if (FinishedRow(ui, rows, reports[i]))
+            {
                 removed = reports[i];
+            }
         }
         if (removed != null)
+        {
             Commands.Later(ui.State, removed, static (a, report) => RemoveFinishedExport(a, report));
+        }
     }
 
     private static bool HasActiveWork(ExportQueue export)
     {
         if (export.IsRunning)
+        {
             return true;
+        }
+
         return export.WaitingCount > 0;
     }
 
@@ -430,10 +530,15 @@ internal static class ExportsPanelView
     private static void RecordFinishedPaths(Ui<UiState> ui, int rowId, ExportRun run)
     {
         if (!ui.WantsSemantics)
+        {
             return;
+        }
+
         ui.RecordTestPath(rowId, new TestSegment.Keyed(run.Number.ToString(CultureInfo.InvariantCulture)));
         foreach (var name in FinishedButtons)
+        {
             ui.RecordTestPath(ui.GetId(name), new TestSegment.Named(name), under: rowId);
+        }
     }
 
     private static readonly string[] FinishedButtons = ["open-folder", "show-report", "remove"];
@@ -458,53 +563,86 @@ internal static class ExportsPanelView
         }
         ShowReportAction(ui, report, labelled: !rows.Narrow);
         if (report.FolderExists)
+        {
             OpenFolderAction(ui, report, labelled: false);
+        }
     }
 
     private static void OpenFolderAction(Ui<UiState> ui, ExportReport report, bool labelled)
     {
         var t = ui.State.Strings;
         if (labelled && ui.Button(t.ExportOpenFolder, id: "open-folder", icon: new UiIcon(ui.State.Icons.ExportOpenFolder)))
+        {
             ui.OpenFolder(report.Folder);
+        }
+
         if (!labelled && ui.IconButton("open-folder", ui.State.Icons.ExportOpenFolder, t.ExportOpenFolder))
+        {
             ui.OpenFolder(report.Folder);
+        }
     }
 
     private static void ShowReportAction(Ui<UiState> ui, ExportReport report, bool labelled)
     {
         var t = ui.State.Strings;
         if (labelled && ui.Button(t.ExportShowReport, id: "show-report", icon: new UiIcon(ui.State.Icons.ExportShowReport)))
+        {
             Commands.Later(ui.State, report, static (a, r) => ShowExportReport(a, r));
+        }
+
         if (!labelled && ui.IconButton("show-report", ui.State.Icons.ExportShowReport, t.ExportShowReport))
+        {
             Commands.Later(ui.State, report, static (a, r) => ShowExportReport(a, r));
+        }
     }
 
     private static bool OpensFolderFirst(ExportReport report)
     {
         if (report.Outcome != ExportOutcome.Finished)
+        {
             return false;
+        }
+
         if (report.HasProblems)
+        {
             return false;
+        }
+
         return report.FolderExists;
     }
 
     private static IconGlyph OutcomeIcon(AppIcons icons, ExportReport report)
     {
         if (report.HasProblems)
+        {
             return icons.ExportProblems;
+        }
+
         if (report.Outcome == ExportOutcome.Cancelled)
+        {
             return icons.ExportCancelled;
+        }
+
         return icons.ExportDone;
     }
 
     private static uint OutcomeColor(UiTheme theme, ExportReport report)
     {
         if (report.Outcome == ExportOutcome.Failed)
+        {
             return theme.Danger;
+        }
+
         if (report.HasProblems)
+        {
             return theme.Warning;
+        }
+
         if (report.Outcome == ExportOutcome.Cancelled)
+        {
             return theme.TextMuted;
+        }
+
         return theme.Success;
     }
 
@@ -513,7 +651,10 @@ internal static class ExportsPanelView
     private static uint OutcomeTextColor(UiTheme theme, ExportReport report)
     {
         if (report.HasProblems)
+        {
             return OutcomeColor(theme, report);
+        }
+
         return theme.TextMuted;
     }
 
@@ -522,29 +663,50 @@ internal static class ExportsPanelView
     {
         using var menu = ui.ContextMenu(rows.MenuId);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         var run = ui.State.ExportMenuTarget;
         if (run == null)
+        {
             return;
+        }
+
         var report = FindFinishedExport(finished, run);
         if (report != null)
+        {
             FinishedMenu(ui, report);
+        }
         else
+        {
             QueuedMenu(ui, queue, finished, run);
+        }
     }
 
     private static void FinishedMenu(Ui<UiState> ui, ExportReport report)
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.ExportShowReport, Shortcuts.Enter, id: "show-report", icon: new UiIcon(ui.State.Icons.ExportShowReport)))
+        {
             Commands.Later(ui.State, report, static (a, r) => ShowExportReport(a, r));
+        }
+
         if (ui.MenuItem(t.ExportOpenFolder, enabled: report.FolderExists, id: "open-folder", icon: new UiIcon(ui.State.Icons.ExportOpenFolder)))
+        {
             ui.OpenFolder(report.Folder);
+        }
+
         if (ui.MenuItem(t.ExportsCopyFolder, Shortcuts.Copy, id: "copy-folder"))
+        {
             ui.ClipboardText = report.Folder;
+        }
+
         ui.MenuSeparator();
         if (ui.MenuItem(t.ExportsRemove, Shortcuts.Delete, id: "remove"))
+        {
             Commands.Later(ui.State, report, static (a, r) => RemoveFinishedExport(a, r));
+        }
     }
 
     private static void QueuedMenu(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
@@ -552,19 +714,30 @@ internal static class ExportsPanelView
         var t = ui.State.Strings;
         var folder = FindExportFolder(queue, finished, run);
         if (folder == null)
+        {
             return;
+        }
+
         if (ui.MenuItem(t.ExportsCopyFolder, Shortcuts.Copy, id: "copy-folder"))
+        {
             ui.ClipboardText = folder;
+        }
+
         ui.MenuSeparator();
         var running = queue.Running;
         if (running != null && running.Export.Run == run)
         {
             if (ui.MenuItem(t.ExportsCancel, enabled: !running.IsCancelling, id: "cancel"))
+            {
                 Commands.Later(ui.State, static a => Exports.CancelRunning(a.Export));
+            }
+
             return;
         }
         if (ui.MenuItem(t.ExportsWithdraw, Shortcuts.Delete, id: "withdraw"))
+        {
             Commands.Later(ui.State, run, static (a, r) => Exports.WithdrawExport(a.Export, r));
+        }
     }
 
 
@@ -574,7 +747,10 @@ internal static class ExportsPanelView
         var theme = ui.Theme;
         using (ui.Id(id))
         using (ui.Row(new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.PanelPadding, theme.GapTight), Background = theme.Surface }))
+        {
             ui.Text(text, color: theme.TextMuted, size: theme.FontSizeSmall, bold: true);
+        }
+
         ui.Separator();
     }
 
@@ -609,19 +785,31 @@ internal static class ExportsPanelView
     }
 
     /// <summary>Where the name and every line under it start: past the icon and the gap after it.</summary>
-    private static float NameIndent(UiTheme theme) => theme.IconSize + theme.Gap;
+    private static float NameIndent(UiTheme theme)
+    {
+        return theme.IconSize + theme.Gap;
+    }
 
-    private static Spacing Indent(UiTheme theme) => new(NameIndent(theme), 0f, 0f, 0f);
+    private static Spacing Indent(UiTheme theme)
+    {
+        return new(NameIndent(theme), 0f, 0f, 0f);
+    }
 
     /// <summary>A row: its top line, then the lines under it, all within the panel's padding.</summary>
-    private static Box RowBox(UiTheme theme, uint background) => new()
+    private static Box RowBox(UiTheme theme, uint background)
     {
-        Width = Sizing.Grow(),
-        Gap = 0f,
-        Padding = new Spacing(theme.PanelPadding, theme.GapTight, theme.PanelPadding, theme.Gap),
-        Background = background,
-    };
+        return new()
+        {
+            Width = Sizing.Grow(),
+            Gap = 0f,
+            Padding = new Spacing(theme.PanelPadding, theme.GapTight, theme.PanelPadding, theme.Gap),
+            Background = background,
+        };
+    }
 
     /// <summary>The row's top line: icon, name and actions, all centered on it.</summary>
-    private static Box TopLine(UiTheme theme) => new() { Width = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Center };
+    private static Box TopLine(UiTheme theme)
+    {
+        return new() { Width = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Center };
+    }
 }

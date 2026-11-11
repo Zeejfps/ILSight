@@ -66,15 +66,24 @@ internal static class DockJson
     {
         var root = Parse(json.Root);
         if (root == null || json.Windows == null)
+        {
             return null;
+        }
+
         var windows = new List<DockWindow>(json.Windows.Count);
         foreach (var window in json.Windows)
         {
             if (window == null)
+            {
                 return null;
+            }
+
             var parsed = Parse(window);
             if (parsed == null)
+            {
                 return null;
+            }
+
             windows.Add(parsed);
         }
         return new DockLayout { Root = root, Windows = windows, NextId = json.NextId };
@@ -94,7 +103,10 @@ internal static class DockJson
     private static DockNode? Parse(DockNodeJson? json)
     {
         if (json == null)
+        {
             return null;
+        }
+
         return json switch
         {
             DockSplitJson split => Parse(split),
@@ -119,10 +131,16 @@ internal static class DockJson
     {
         var first = Parse(json.First);
         if (first == null)
+        {
             return null;
+        }
+
         var second = Parse(json.Second);
         if (second == null)
+        {
             return null;
+        }
+
         return new DockSplit { Id = json.Id, Direction = json.Direction, Ratio = json.Ratio, First = first, Second = second };
     }
 
@@ -134,10 +152,16 @@ internal static class DockJson
     private static DockNode? Parse(DockGroupJson json)
     {
         if (json.Panels == null)
+        {
             return null;
+        }
+
         var panels = json.Panels.OfType<string>().ToList();
         if (panels.Count != json.Panels.Count)
+        {
             return null;
+        }
+
         return new DockGroup { Id = json.Id, Panels = panels, Active = json.Active };
     }
 
@@ -158,7 +182,10 @@ internal static class DockJson
     {
         var root = Parse(json.Root);
         if (root == null)
+        {
             return null;
+        }
+
         return new DockWindow { Id = json.Id, Root = root, X = json.X, Y = json.Y, Width = json.Width, Height = json.Height };
     }
 }

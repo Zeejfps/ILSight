@@ -23,13 +23,17 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         {
             view.Run();
             for (var f = 0; f < view.Document.Folds.Length; f += 2)
+            {
                 CodeViewWidget.SetCollapsed(view.State, f, true);
+            }
         }
         view.Frames.MovePointer(200f, 200f);
         var visibleRows = (int)MathF.Ceiling((Height - 2 * CodeViewDriver.Origin) / CodeViewDriver.Row) + 1;
 
         for (var i = 0; i < WarmUpFrames; i++)
+        {
             Frame(view, scrolling);
+        }
 
         var maxElements = 0;
         var totalElements = 0L;
@@ -44,11 +48,17 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
 
         view.Frames.Canvas.Recording = false;
         for (var i = 0; i < WarmUpFrames; i++)
+        {
             Frame(view, scrolling);
+        }
+
         var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => Frame(view, scrolling));
         var clock = Stopwatch.StartNew();
         for (var i = 0; i < MeasuredFrames; i++)
+        {
             Frame(view, scrolling);
+        }
+
         clock.Stop();
 
         output.WriteLine($"{(scrolling ? "scrolling" : "static")}{(folded ? ", half the folds collapsed" : "")}: " +
@@ -76,7 +86,10 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
 
         view.Frames.Canvas.Recording = false;
         for (var i = 0; i < WarmUpFrames; i++)
+        {
             view.Run();
+        }
+
         var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => view.Run());
 
         output.WriteLine($"{marked}: {allocated:N0} B/frame allocated");
@@ -128,7 +141,9 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
             foreach (var span in document.Lines[line].Spans)
             {
                 if (span.Reference != null)
+                {
                     return (line, span.Start);
+                }
             }
         }
         throw new UnreachableException();
@@ -204,7 +219,10 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
     private static void Frame(CodeViewDriver view, bool scrolling)
     {
         if (scrolling)
+        {
             view.Frames.Wheel(-3);
+        }
+
         view.Run();
     }
 

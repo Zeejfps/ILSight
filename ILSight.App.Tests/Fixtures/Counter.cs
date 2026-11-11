@@ -12,5 +12,8 @@ public class Counter
         Changed?.Invoke();
     }
 
-    public void Watch(Action handler) => Changed += handler;
+    public void Watch(Action handler)
+    {
+        Changed += handler;
+    }
 }

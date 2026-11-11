@@ -8,7 +8,10 @@ namespace ILSight.App.Tests.Fixtures;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class GuardAttribute(SecurityAction action) : CodeAccessSecurityAttribute(action)
 {
-    public override IPermission? CreatePermission() => null;
+    public override IPermission? CreatePermission()
+    {
+        return null;
+    }
 }
 
 public class Guarded

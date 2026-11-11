@@ -13,7 +13,10 @@ internal static class BookmarkImportDialogView
     {
         var import = imports.Asking;
         if (import == null)
+        {
             return;
+        }
+
         Ask(ui, import);
     }
 
@@ -29,15 +32,25 @@ internal static class BookmarkImportDialogView
                 using (ui.DialogActions())
                 {
                     if (ui.Button(t.BookmarksImportCancel, id: "import-cancel", variant: ButtonVariant.Ghost))
+                    {
                         Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, null));
+                    }
+
                     if (ui.Button(t.BookmarksImportReplace, id: "import-replace"))
+                    {
                         Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, BookmarkImportMode.Replace));
+                    }
+
                     if (ui.Button(t.BookmarksImportMerge, id: "import-merge", variant: ButtonVariant.Primary))
+                    {
                         Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, BookmarkImportMode.Merge));
+                    }
                 }
             }
         }
         if (!open)
+        {
             Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, null));
+        }
     }
 }

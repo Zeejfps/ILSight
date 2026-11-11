@@ -5,13 +5,19 @@ namespace ILSight.Tests;
 /// <summary>A test of what holds only where <see cref="AssemblyPath"/> ignores case; skipped elsewhere.</summary>
 public sealed class CaseInsensitivePathsFactAttribute : FactAttribute
 {
-    public CaseInsensitivePathsFactAttribute() => Skip = CaseInsensitivePaths.SkipReason;
+    public CaseInsensitivePathsFactAttribute()
+    {
+        Skip = CaseInsensitivePaths.SkipReason;
+    }
 }
 
 /// <summary>A theory of what holds only where <see cref="AssemblyPath"/> ignores case; skipped elsewhere.</summary>
 public sealed class CaseInsensitivePathsTheoryAttribute : TheoryAttribute
 {
-    public CaseInsensitivePathsTheoryAttribute() => Skip = CaseInsensitivePaths.SkipReason;
+    public CaseInsensitivePathsTheoryAttribute()
+    {
+        Skip = CaseInsensitivePaths.SkipReason;
+    }
 }
 
 internal static class CaseInsensitivePaths

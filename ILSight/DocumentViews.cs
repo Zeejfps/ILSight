@@ -34,7 +34,10 @@ public sealed class DocumentViews
         {
             var revision = OwnChanges + DroppedChanges;
             foreach (var view in Views.Values)
+            {
                 revision += DocumentPanels.CountViewChanges(view);
+            }
+
             return revision;
         }
     }

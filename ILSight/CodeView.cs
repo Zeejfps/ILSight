@@ -18,14 +18,20 @@ public sealed class CodeSelection : TextSelection<DecompiledDocument, TextPositi
     /// owns them as it has to read them and is made with the view; see <see cref="CodeViewState.Folds"/>.</summary>
     internal readonly CodeFolds Folds = new();
 
-    protected override (TextPosition Start, TextPosition End) WordAt(DecompiledDocument document, TextPosition at) => CodeText.WordAt(document, at);
+    protected override (TextPosition Start, TextPosition End) WordAt(DecompiledDocument document, TextPosition at)
+    {
+        return CodeText.WordAt(document, at);
+    }
 
     protected override (TextPosition Start, TextPosition End) BlockAt(DecompiledDocument document, TextPosition at)
     {
         var first = new TextPosition(CodeFolding.FindVisibleLine(Folds, at.Line), 0);
         var next = CodeFolding.FindNextLine(Folds, first.Line);
         if (next >= document.Lines.Length)
+        {
             return (first, CodeText.End(document));
+        }
+
         return (first, new TextPosition(next, 0));
     }
 }
@@ -102,11 +108,20 @@ internal readonly struct CodeHover
 
     /// <summary>Over the text of <paramref name="line"/>, on its span <paramref name="span"/> or none, and on
     /// the chip of the collapsed fold <paramref name="chip"/> or none.</summary>
-    public static CodeHover OnText(int line, int? span, int? chip) => new(Place.Text, line, span, chip);
+    public static CodeHover OnText(int line, int? span, int? chip)
+    {
+        return new(Place.Text, line, span, chip);
+    }
 
-    public static CodeHover OnChevron(int fold) => new(Place.Chevron, 0, null, fold);
+    public static CodeHover OnChevron(int fold)
+    {
+        return new(Place.Chevron, 0, null, fold);
+    }
 
-    public static CodeHover OnMark(int line) => new(Place.Mark, line, null, null);
+    public static CodeHover OnMark(int line)
+    {
+        return new(Place.Mark, line, null, null);
+    }
 
     /// <summary>The span under the pointer, or null.</summary>
     public CodeSpanAt? Span => _place == Place.Text && _span != null ? new CodeSpanAt(_line, _span.Value) : null;
@@ -174,7 +189,10 @@ public sealed class CodeViewState
         get
         {
             if (Pending is PendingScroll.Restore restoring)
+            {
                 return restoring.Position;
+            }
+
             var top = RowHeight > 0f && Folds.RowCount > 0 ? CodeFolding.GetLineAt(Folds, CodeFolding.ClampRow(Folds, CodeViewWidget.GetRowAt(ScrollY, RowHeight))) : 0;
             return new CodeViewPosition(top, ScrollX, Selection.Anchor, Selection.Caret);
         }
@@ -271,7 +289,9 @@ public static class CodeViewWidget
     {
         var fold = CodeFolding.FindInnermost(state.Folds, line);
         if (fold != null)
+        {
             SetCollapsed(state, fold.Value, !CodeFolding.IsCollapsed(state.Folds, fold.Value));
+        }
     }
 
     public static void CollapseAll(CodeViewState state)
@@ -287,14 +307,24 @@ public static class CodeViewWidget
     /// <summary>Takes in <paramref name="document"/>, unless it is the one shown already.</summary>
     internal static void ShowDocument(CodeViewState state, DecompiledDocument document)
     {
-        if (ReferenceEquals(document, state.Document)) return;
+        if (ReferenceEquals(document, state.Document))
+        {
+            return;
+        }
+
         state.Document = document;
         CodeFolding.Reset(state.Folds, document);
         var max = 0;
         foreach (var line in document.Lines)
+        {
             max = Math.Max(max, line.Text.Length);
+        }
+
         foreach (var fold in document.Folds)
+        {
             max = Math.Max(max, document.Lines[fold.StartLine].Text.Length + 1 + fold.CollapsedText.Length);
+        }
+
         state.MaxColumns = max;
         state.Selection.Select(default, default);
         state.Press = null;
@@ -303,7 +333,10 @@ public static class CodeViewWidget
         state.Menu = CodeMenuTarget.None;
         KeptTooltips.Forget(state.Tooltip);
         if (state.Pending is PendingScroll.ShowMatch)
+        {
             state.Pending = null;
+        }
+
         state.Flash = null;
         state.CurrentMatch = null;
         state.KeyScrollRows = 0;
@@ -314,7 +347,9 @@ public static class CodeViewWidget
     {
         var top = FindTopAnchor(state);
         if (CodeFolding.Reveal(state.Folds, line))
+        {
             KeepTop(state, top);
+        }
     }
 
     private static void SetAll(CodeViewState state, bool collapsed)
@@ -327,7 +362,11 @@ public static class CodeViewWidget
     private static (int Line, float Within) FindTopAnchor(CodeViewState state)
     {
         var folds = state.Folds;
-        if (state.RowHeight <= 0f || folds.RowCount == 0) return (0, 0f);
+        if (state.RowHeight <= 0f || folds.RowCount == 0)
+        {
+            return (0, 0f);
+        }
+
         var row = CodeFolding.ClampRow(folds, GetRowAt(state.ScrollY, state.RowHeight));
         return (CodeFolding.GetLineAt(folds, row), state.ScrollY - GetRowTop(row, state.RowHeight));
     }
@@ -335,7 +374,9 @@ public static class CodeViewWidget
     private static void KeepTop(CodeViewState state, (int Line, float Within) top)
     {
         if (state.RowHeight > 0f)
+        {
             state.ScrollY = GetRowTop(CodeFolding.FindRowOf(state.Folds, top.Line), state.RowHeight) + top.Within;
+        }
     }
 
     /// <summary>The row <paramref name="offset"/> below the top of the first falls on, each <paramref name="height"/>
@@ -357,7 +398,10 @@ public static class CodeViewWidget
     {
         var find = state.Find;
         if (ReferenceEquals(document, find.Document) && string.Equals(query, find.Query, StringComparison.Ordinal))
+        {
             return false;
+        }
+
         state.Find = new CodeFindIndex { Matches = ScanForMatches(document, query), Document = document, Query = query };
         return true;
     }
@@ -365,7 +409,10 @@ public static class CodeViewWidget
     private static List<TextPosition> ScanForMatches(DecompiledDocument document, string query)
     {
         var matches = new List<TextPosition>();
-        if (query.Length == 0) return matches;
+        if (query.Length == 0)
+        {
+            return matches;
+        }
 
         var lines = document.Lines;
         for (var line = 0; line < lines.Length; line++)
@@ -384,7 +431,11 @@ public static class CodeViewWidget
     /// <summary>The first match at or after <paramref name="at"/>, wrapping to the first; null when there are none.</summary>
     private static int? FindFirstMatch(CodeFindIndex find, TextPosition at)
     {
-        if (find.Matches.Count == 0) return null;
+        if (find.Matches.Count == 0)
+        {
+            return null;
+        }
+
         var index = FindMatchOnOrAfter(find, at);
         return index < find.Matches.Count ? index : 0;
     }
@@ -396,8 +447,14 @@ public static class CodeViewWidget
         while (low < high)
         {
             var mid = (low + high) >> 1;
-            if (find.Matches[mid] < at) low = mid + 1;
-            else high = mid;
+            if (find.Matches[mid] < at)
+            {
+                low = mid + 1;
+            }
+            else
+            {
+                high = mid;
+            }
         }
         return low;
     }
@@ -409,7 +466,10 @@ public static class CodeViewWidget
     private static bool IsCaretShown(Ui<UiState> ui, CodeViewState state, bool focused)
     {
         if (!focused)
+        {
             return false;
+        }
+
         if (state.Selection.Caret != state.BlinkCaret)
         {
             state.BlinkCaret = state.Selection.Caret;
@@ -479,7 +539,9 @@ public static class CodeViewWidget
             {
                 var analyzed = AnalyzableAt(document, state.Selection.Caret);
                 if (analyzed != null)
+                {
                     intent = new CodeViewIntent.Analyze(analyzed);
+                }
             }
         }
 
@@ -494,7 +556,10 @@ public static class CodeViewWidget
 
             var i = ui.Interact(codeId);
             if (display != null)
+            {
                 zoom = ZoomAsked(ui, focused, i.Hovered);
+            }
+
             var hasRect = ui.TryGetRect(codeId, out var rect);
             ui.TryGetContentRect(codeId, out var content);
 
@@ -502,8 +567,16 @@ public static class CodeViewWidget
             {
                 var row = GetRowAt(y - rect.Y + state.LaidOutScrollY, rowHeight);
                 var column = (int)MathF.Round((x - rect.X - textLeft + state.LaidOutScrollX) / advance);
-                if (row.Index < 0) return CodeText.Clamp(document, new TextPosition(0, 0));
-                if (row.Index >= folds.RowCount) return CodeText.End(document);
+                if (row.Index < 0)
+                {
+                    return CodeText.Clamp(document, new TextPosition(0, 0));
+                }
+
+                if (row.Index >= folds.RowCount)
+                {
+                    return CodeText.End(document);
+                }
+
                 var line = CodeFolding.GetLineAt(folds, row);
                 var fold = CodeFolding.FindCollapsedAt(folds, line);
                 if (fold != null && column > document.Lines[line].Text.Length)
@@ -532,7 +605,10 @@ public static class CodeViewWidget
                             var chipStart = document.Lines[line].Text.Length + 1;
                             int? chip = null;
                             if (collapsed != null && column >= chipStart && column < chipStart + document.Folds[collapsed.Value].CollapsedText.Length)
+                            {
                                 chip = collapsed;
+                            }
+
                             hover = CodeHover.OnText(line, span, chip);
                         }
                     }
@@ -540,7 +616,9 @@ public static class CodeViewWidget
                     {
                         var fold = Documents.FindFoldStartingAt(document, line);
                         if (fold != null)
+                        {
                             hover = CodeHover.OnChevron(fold.Value);
+                        }
                     }
                     else if (bookmarks != null && pointer.X < rect.X + markWidth)
                     {
@@ -555,7 +633,9 @@ public static class CodeViewWidget
             var hoverNavigable = hoverTarget != null;
 
             if (i.Hovered || i.Held)
+            {
                 ui.SetCursor((hoverNavigable || hover.IsOnControl) && !state.PressMoved ? MouseCursor.Hand : MouseCursor.Text);
+            }
 
             var scrollDeltaY = 0f;
             if (i.Pressed && hasRect)
@@ -589,9 +669,14 @@ public static class CodeViewWidget
             {
                 var at = PositionAt(pointer.X, pointer.Y);
                 if (!held.Moved && at != held.At)
+                {
                     held.Moved = true;
+                }
+
                 if (held.Moved)
+                {
                     state.Selection.Drag(document, at);
+                }
 
                 var dy = pointer.Y < content.Y ? pointer.Y - content.Y : pointer.Y > content.Bottom ? pointer.Y - content.Bottom : 0f;
                 var left = rect.X + gutterWidth;
@@ -609,12 +694,19 @@ public static class CodeViewWidget
                 var pressedSpan = clicked.Span;
                 var reference = pressedSpan != null ? document.Lines[pressedSpan.Value.Line].Spans[pressedSpan.Value.Span] : default;
                 if (reference.Reference is CodeReference.Navigable target && !reference.IsDefinition)
+                {
                     intent = new CodeViewIntent.Navigate(target, clicked.ForNewTab);
+                }
                 else
+                {
                     state.Marked = reference.Reference;
+                }
             }
             if (i.ClickedWith(PointerButton.Middle) && hoverTarget != null)
+            {
                 intent = new CodeViewIntent.Navigate(hoverTarget, true);
+            }
+
             if (i.ClickedWith(PointerButton.Right))
             {
                 ui.Focus(focusId, takesText: false);
@@ -639,13 +731,17 @@ public static class CodeViewWidget
                     for (var row = list.First; row < list.End; row++)
                     {
                         using (ui.Box(new Box { Width = Sizing.Grow(min: contentWidth), Height = rowHeight }))
+                        {
                             ui.Paint((state.Frame, new CodeRow(row)), PaintRow);
+                        }
                     }
                 }
                 if (focused && ui.FocusVisible)
                 {
                     using (ui.Float(0f, 0f, box: new Box { Width = Sizing.Grow(), Height = Sizing.Grow() }, z: 1))
+                    {
                         ui.FocusRing(0f);
+                    }
                 }
             }
             if (tooltips != null && hasRect)
@@ -653,7 +749,9 @@ public static class CodeViewWidget
                 var under = new HoveredSpan(hoverSpan, rect.X + textLeft, rect.Y);
                 var followed = ReferenceTooltip(ui, state, document, tooltips, codeId, under, advance, rowHeight);
                 if (followed != null)
+                {
                     intent = followed;
+                }
             }
             state.LaidOutScrollX = state.ScrollX;
             state.LaidOutScrollY = state.ScrollY;
@@ -661,7 +759,10 @@ public static class CodeViewWidget
 
         var picked = ContextMenu(ui, state, document, bookmarks != null);
         if (picked != null)
+        {
             intent = picked;
+        }
+
         return new CodeViewResult(intent, zoom);
     }
 
@@ -669,7 +770,10 @@ public static class CodeViewWidget
     private static int LineNumberDigits(DecompiledDocument document, DisplayOptions display)
     {
         if (!display.ShowLineNumbers)
+        {
             return 0;
+        }
+
         var digits = CodeText.Digits(document.Lines.Length);
         return Math.Max(3, digits);
     }
@@ -690,37 +794,63 @@ public static class CodeViewWidget
         {
             var pressed = ZoomPressed(ui);
             if (pressed != CodeZoom.None)
+            {
                 return pressed;
+            }
         }
         if (!hovered)
+        {
             return CodeZoom.None;
+        }
+
         return ZoomScrolled(ui.Input);
     }
 
     private static CodeZoom ZoomPressed(Ui<UiState> ui)
     {
         if (Shortcuts.AnyPressed(ui, Shortcuts.ZoomInKeys))
+        {
             return CodeZoom.In;
+        }
+
         if (Shortcuts.AnyPressed(ui, Shortcuts.ZoomOutKeys))
+        {
             return CodeZoom.Out;
+        }
+
         if (Shortcuts.AnyPressed(ui, Shortcuts.ZoomResetKeys))
+        {
             return CodeZoom.Reset;
+        }
+
         return CodeZoom.None;
     }
 
     private static CodeZoom ZoomScrolled(UiInput input)
     {
         if (!IsShortcut(input.Modifiers))
+        {
             return CodeZoom.None;
+        }
+
         if (input.ScrollY > 0f)
+        {
             return CodeZoom.In;
+        }
+
         if (input.ScrollY < 0f)
+        {
             return CodeZoom.Out;
+        }
+
         return CodeZoom.None;
     }
 
     // The wheel zooms with Ctrl or Command held, as the framework's own zoom does.
-    private static bool IsShortcut(KeyModifiers modifiers) => (modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
+    private static bool IsShortcut(KeyModifiers modifiers)
+    {
+        return (modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
+    }
 
     /// <summary>Fills what <paramref name="display"/> draws around the text: the caret's line and the
     /// brackets matching at the caret.</summary>
@@ -736,7 +866,10 @@ public static class CodeViewWidget
     private static BracketPair? FindBracketsToShow(CodeViewState state, DecompiledDocument document, DisplayOptions display, TextPosition caret)
     {
         if (!display.HighlightMatchingBrackets)
+        {
             return null;
+        }
+
         return MatchingBrackets.Find(state, document, caret);
     }
 
@@ -752,15 +885,24 @@ public static class CodeViewWidget
         var part = 0;
         var span = hovered.Span;
         if (tooltip != null && span != null)
+        {
             part = HashCode.Combine(span.Value.Line, span.Value.Span) | 1;
+        }
+
         var anchor = TooltipAnchor(state, document, hovered, advance, rowHeight);
         using var popup = ui.TooltipContent(codeId, part, anchor, out var shownPart, CodeTooltipView.Look);
         KeptTooltips.Keep(state.Tooltip, tooltip, part, shownPart);
         if (!popup.IsOpen)
+        {
             return null;
+        }
+
         var shown = KeptTooltips.Find(state.Tooltip, shownPart);
         if (shown == null)
+        {
             return null;
+        }
+
         var click = CodeTooltipView.Render(ui, shown);
         return FollowLink(ui, click);
     }
@@ -770,7 +912,10 @@ public static class CodeViewWidget
     private static CodeViewIntent? FollowLink(Ui<UiState> ui, RichTextClick click)
     {
         if (click.Link is not CodeReference.Navigable reference)
+        {
             return null;
+        }
+
         ui.HideTooltip();
         var withModifier = (ui.Input.Modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
         var inNewTab = click.Button == PointerButton.Middle || withModifier;
@@ -783,11 +928,20 @@ public static class CodeViewWidget
     {
         var span = hovered.Span;
         if (span == null)
+        {
             return null;
+        }
+
         if (state.PressMoved)
+        {
             return null;
+        }
+
         if (document.Lines[span.Value.Line].Spans[span.Value.Span].Reference is not CodeReference.Entity entity)
+        {
             return null;
+        }
+
         TooltipLookups.TryGetTooltip(tooltips, entity, out var tooltip);
         return tooltip;
     }
@@ -804,15 +958,20 @@ public static class CodeViewWidget
     {
         var at = hovered.Span;
         if (at == null)
+        {
             return default;
+        }
+
         var span = document.Lines[at.Value.Line].Spans[at.Value.Span];
         var x = hovered.TextX - state.LaidOutScrollX + span.Start * advance;
         var y = hovered.TextY + GetRowTop(CodeFolding.FindRowOf(state.Folds, at.Value.Line), rowHeight) - state.LaidOutScrollY;
         return new UiRect(x, y, span.Length * advance, rowHeight);
     }
 
-    private static float AutoScroll(float distance, float unit, float deltaTime) =>
-        distance == 0f ? 0f : (distance * AutoScrollSpeed + MathF.Sign(distance) * unit * AutoScrollSpeed) * deltaTime;
+    private static float AutoScroll(float distance, float unit, float deltaTime)
+    {
+        return distance == 0f ? 0f : (distance * AutoScrollSpeed + MathF.Sign(distance) * unit * AutoScrollSpeed) * deltaTime;
+    }
 
     private static void FillFrame(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, UiTheme theme, CodeViewPalette palette, CellMetrics cell,
         float rowHeight, float markWidth, float foldLeft, float foldWidth, float gutterWidth, float textLeft, int digits, bool active,
@@ -900,11 +1059,16 @@ public static class CodeViewWidget
         }
 
         if (viewport > 0f)
+        {
             state.PageRows = (int)MathF.Max(1f, MathF.Floor(viewport / rowHeight) - 1f);
+        }
+
         deltaY += state.KeyScrollRows * rowHeight;
         state.KeyScrollRows = 0;
         if (deltaY != 0f)
+        {
             state.ScrollY = Math.Clamp(state.ScrollY + deltaY, 0f, MathF.Max(0f, folds.RowCount * rowHeight - viewport));
+        }
 
         if (pending is PendingScroll.Reveal reveal)
         {
@@ -930,14 +1094,22 @@ public static class CodeViewWidget
             RevealFolds(state, match.Line);
             var top = GetRowTop(CodeFolding.FindRowOf(folds, match.Line), rowHeight);
             if (top < state.ScrollY || top + rowHeight > state.ScrollY + viewport)
+            {
                 state.ScrollY = MathF.Max(0f, top - viewport / 3f);
+            }
+
             var visible = content.Width - textLeft - advance;
             var from = match.ColumnStart * advance;
             var to = match.ColumnEnd * advance;
             if (from < state.ScrollX)
+            {
                 state.ScrollX = MathF.Max(0f, from - 4f * advance);
+            }
             else if (to > state.ScrollX + visible)
+            {
                 state.ScrollX = to - visible + 4f * advance;
+            }
+
             state.Pending = null;
         }
         else if (pending is PendingScroll.ShowCaret)
@@ -960,35 +1132,59 @@ public static class CodeViewWidget
         var row = CodeFolding.FindRowOf(folds, caret.Line);
         var top = GetRowTop(row, rowHeight);
         if (top < state.ScrollY)
+        {
             state.ScrollY = top;
+        }
         else if (top + rowHeight > state.ScrollY + content.Height)
+        {
             state.ScrollY = MathF.Max(0f, top + rowHeight - content.Height);
+        }
+
         if (CodeFolding.GetLineAt(folds, row) != caret.Line)
+        {
             return;
+        }
+
         var visible = content.Width - textLeft - advance;
         var x = Math.Min(caret.Column, document.Lines[caret.Line].Text.Length) * advance;
         if (x < state.ScrollX)
+        {
             state.ScrollX = MathF.Max(0f, x - 4f * advance);
+        }
         else if (x > state.ScrollX + visible)
+        {
             state.ScrollX = x - visible + 4f * advance;
+        }
     }
 
     /// <summary>What the span at <paramref name="at"/> refers to, or else the span just before it, so a caret
     /// at the end of a name finds it; null when neither refers to anything.</summary>
     private static CodeReference? FindReferenceAt(DecompiledDocument document, TextPosition at)
     {
-        if (at.Line < 0 || at.Line >= document.Lines.Length) return null;
+        if (at.Line < 0 || at.Line >= document.Lines.Length)
+        {
+            return null;
+        }
+
         var spans = document.Lines[at.Line].Spans;
         foreach (var column in (ReadOnlySpan<int>)[at.Column, at.Column - 1])
         {
             if (column < 0)
+            {
                 continue;
+            }
+
             var index = CodeText.SpanAt(spans, column);
             if (index == null)
+            {
                 continue;
+            }
+
             var reference = spans[index.Value].Reference;
             if (reference != null)
+            {
                 return reference;
+            }
         }
         return null;
     }
@@ -997,18 +1193,30 @@ public static class CodeViewWidget
     /// sits after a word as often as in it; punctuation linked to a member does not count.</summary>
     private static CodeReference.Entity? AnalyzableAt(DecompiledDocument document, TextPosition at)
     {
-        if (at.Line < 0 || at.Line >= document.Lines.Length) return null;
+        if (at.Line < 0 || at.Line >= document.Lines.Length)
+        {
+            return null;
+        }
+
         var spans = document.Lines[at.Line].Spans;
         foreach (var column in (ReadOnlySpan<int>)[at.Column, at.Column - 1])
         {
             if (column < 0)
+            {
                 continue;
+            }
+
             var index = CodeText.SpanAt(spans, column);
             if (index == null)
+            {
                 continue;
+            }
+
             var span = spans[index.Value];
             if (span.Kind != SpanKind.Plain && span.Reference is CodeReference.Entity entity)
+            {
                 return entity;
+            }
         }
         return null;
     }
@@ -1019,7 +1227,10 @@ public static class CodeViewWidget
         for (var k = 0; k < keys.Count; k++)
         {
             if (RunShortcut(ui, state, document, focused, k))
+            {
                 continue;
+            }
+
             if (keys[k].Key == KeyboardKey.Escape && state.FindOpen)
             {
                 state.FindOpen = false;
@@ -1027,7 +1238,9 @@ public static class CodeViewWidget
                 continue;
             }
             if (focused)
+            {
                 MoveCaret(state, document, keys[k].Key, keys[k].Modifiers);
+            }
         }
     }
 
@@ -1040,7 +1253,10 @@ public static class CodeViewWidget
     private static void MoveCaret(CodeViewState state, DecompiledDocument document, KeyboardKey key, KeyModifiers modifiers)
     {
         if (document.Lines.Length == 0)
+        {
             return;
+        }
+
         var mac = OperatingSystem.IsMacOS();
         var command = (modifiers & (mac ? KeyModifiers.Super : KeyModifiers.Control)) != 0;
         var byWord = (modifiers & (mac ? KeyModifiers.Alt : KeyModifiers.Control)) != 0;
@@ -1126,7 +1342,9 @@ public static class CodeViewWidget
         var selection = state.Selection;
         selection.Select(extend ? selection.Anchor : to, to);
         if (state.Pending == null)
+        {
             state.Pending = new PendingScroll.ShowCaret();
+        }
     }
 
     /// <summary>Runs the code's shortcut the key at <paramref name="index"/> completes, if any; false
@@ -1136,7 +1354,10 @@ public static class CodeViewWidget
         if (ui.IsPressedAt(Shortcuts.Find, index))
         {
             if (!state.FindOpen && state.HasSelection && state.Selection.Anchor.Line == state.Selection.Caret.Line)
+            {
                 state.Query = GetSelectedText(state);
+            }
+
             state.FindOpen = true;
             state.FocusFind = true;
             return true;
@@ -1148,7 +1369,10 @@ public static class CodeViewWidget
             return true;
         }
         if (!focused)
+        {
             return false;
+        }
+
         if (ui.IsPressedAt(Shortcuts.ToggleFold, index))
         {
             ToggleFold(state, state.Selection.Caret.Line);
@@ -1156,8 +1380,15 @@ public static class CodeViewWidget
         }
         if (ui.IsPressedAt(Shortcuts.ToggleAllFolds, index))
         {
-            if (state.Folds.AnyCollapsed) ExpandAll(state);
-            else CollapseAll(state);
+            if (state.Folds.AnyCollapsed)
+            {
+                ExpandAll(state);
+            }
+            else
+            {
+                CollapseAll(state);
+            }
+
             return true;
         }
         if (ui.IsPressedAt(Shortcuts.CollapseFold, index))
@@ -1192,7 +1423,9 @@ public static class CodeViewWidget
     {
         var fold = CodeFolding.FindInnermost(state.Folds, state.Selection.Caret.Line, collapsed: !collapse);
         if (fold != null)
+        {
             SetCollapsed(state, fold.Value, collapse);
+        }
     }
 
     /// <summary>Copies the selection as plain text and as HTML in the colors and font it is drawn in.</summary>
@@ -1228,7 +1461,9 @@ public static class CodeViewWidget
                 ShowMatch(state);
             }
             if (submitted)
+            {
                 Step(state, document, (ui.Input.Modifiers & KeyModifiers.Shift) != 0 ? -1 : 1);
+            }
 
             var count = state.Find.Matches.Count;
             var label = state.Query.Length == 0 ? ""
@@ -1237,9 +1472,15 @@ public static class CodeViewWidget
             ui.Text(label, new Box { Width = Sizing.Grow() }, color: count == 0 && state.Query.Length > 0 ? theme.Warning : theme.TextMuted,
                 size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
             if (ui.IconButton("previous", ui.State.Icons.CodeFindPrevious, ui.Memo("previous-tip", t, static s => s.FindPrevious("Shift+F3")), count > 0))
+            {
                 Step(state, document, -1);
+            }
+
             if (ui.IconButton("next", ui.State.Icons.CodeFindNext, ui.Memo("next-tip", t, static s => s.FindNext("F3")), count > 0))
+            {
                 Step(state, document, 1);
+            }
+
             if (ui.IconButton("close", ui.State.Icons.CodeFindClose, ui.Memo("close-tip", t, static s => s.FindClose("Esc"))))
             {
                 state.FindOpen = false;
@@ -1259,18 +1500,29 @@ public static class CodeViewWidget
         }
         var current = state.CurrentMatch;
         if (current != null)
+        {
             state.CurrentMatch = (current.Value + direction + count) % count;
+        }
         else if (direction > 0)
+        {
             state.CurrentMatch = FindFirstMatch(state.Find, state.Selection.Caret);
+        }
         else
+        {
             state.CurrentMatch = (FindMatchOnOrAfter(state.Find, state.Selection.Caret) - 1 + count) % count;
+        }
+
         ShowMatch(state);
     }
 
     private static void ShowMatch(CodeViewState state)
     {
         var current = state.CurrentMatch;
-        if (current == null) return;
+        if (current == null)
+        {
+            return;
+        }
+
         var match = state.Find.Matches[current.Value];
         state.Selection.Select(match, match with { Column = match.Column + state.Find.Length });
         RevealFolds(state, match.Line);
@@ -1281,13 +1533,22 @@ public static class CodeViewWidget
     private static CodeViewIntent? DiagramItems(Ui<UiState> ui, CodeReference.Entity entity)
     {
         if (entity.Kind != EntityKind.Type)
+        {
             return null;
+        }
+
         var t = ui.State.Strings;
         CodeViewIntent? picked = null;
         if (ui.MenuItem(t.TreeShowInDiagram, id: "show-in-diagram"))
+        {
             picked = new CodeViewIntent.ShowInDiagram(entity);
+        }
+
         if (ui.MenuItem(t.TreeShowInNewDiagram, id: "show-in-new-diagram"))
+        {
             picked = new CodeViewIntent.ShowInNewDiagram(entity);
+        }
+
         return picked;
     }
 
@@ -1296,61 +1557,103 @@ public static class CodeViewWidget
         var t = ui.State.Strings;
         CodeViewIntent? picked = null;
         using var menu = ui.ContextMenu("menu");
-        if (!menu.IsOpen) return picked;
+        if (!menu.IsOpen)
+        {
+            return picked;
+        }
+
         var target = state.Menu;
 
         if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: state.HasSelection, id: "copy"))
+        {
             CopySelection(ui, state);
+        }
+
         if (ui.MenuItem(t.CodeCopyPlainText, Shortcuts.CopyPlainText, enabled: state.HasSelection, id: "copy-plain-text"))
+        {
             ui.ClipboardText = GetSelectedText(state);
+        }
+
         if (ui.MenuItem(t.CodeSelectAll, Shortcuts.SelectAll, id: "select-all"))
+        {
             state.Selection.Select(default, CodeText.End(document));
+        }
+
         var line = target.Line;
         if (bookmarkable && line != null)
         {
             ui.MenuSeparator();
             if (ui.MenuItem(t.CodeToggleBookmark, id: "toggle-bookmark",
                     icon: new UiIcon(ui.State.Icons.CodeToggleBookmark, ui.State.CodeViewPalette.Bookmark)))
+            {
                 picked = new CodeViewIntent.ToggleBookmark(line.Value);
+            }
         }
         if (document.Folds.Length > 0)
         {
             ui.MenuSeparator();
             var fold = line != null ? CodeFolding.FindInnermost(state.Folds, line.Value) : null;
             if (ui.MenuItem(t.CodeToggleFold, Shortcuts.ToggleFold, id: "toggle-fold", enabled: fold != null) && line != null)
+            {
                 ToggleFold(state, line.Value);
+            }
+
             if (ui.MenuItem(t.CodeCollapseAll, id: "collapse-all"))
+            {
                 CollapseAll(state);
+            }
+
             if (ui.MenuItem(t.CodeExpandAll, id: "expand-all"))
+            {
                 ExpandAll(state);
+            }
         }
         var reference = target.Navigable;
         if (reference != null)
         {
             ui.MenuSeparator();
             if (ui.MenuItem(t.CodeGoToDefinition, id: "go-to-definition"))
+            {
                 picked = new CodeViewIntent.Navigate(reference, false);
+            }
+
             if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
+            {
                 picked = new CodeViewIntent.Navigate(reference, true);
+            }
         }
         var entity = target.Entity;
         if (entity != null)
         {
             if (target.Navigable == null)
+            {
                 ui.MenuSeparator();
+            }
+
             if (ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
+            {
                 picked = new CodeViewIntent.Analyze(entity);
+            }
+
             if (ui.MenuItem(t.TreeShowInApiReference, id: "show-in-api-reference", icon: new UiIcon(ui.State.Icons.LinkApiReference)))
+            {
                 picked = new CodeViewIntent.ShowInApiReference(entity);
+            }
+
             picked = DiagramItems(ui, entity) ?? picked;
         }
         var shown = target.Metadata;
         if (shown != null)
         {
             if (target.Navigable == null && target.Entity == null)
+            {
                 ui.MenuSeparator();
+            }
+
             if (ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
+            {
                 picked = new CodeViewIntent.ShowInMetadata(shown);
+            }
         }
         return picked;
     }
@@ -1377,20 +1680,28 @@ public static class CodeViewWidget
         var cellTop = r.Y + MathF.Floor((frame.RowHeight - frame.CellHeight) / 2);
 
         if (index == frame.CurrentLine)
+        {
             p.FillRect(new UiRect(textAreaLeft, r.Y, right - textAreaLeft, r.Height), frame.Palette.CurrentLine);
+        }
 
         if (index == frame.FlashLine)
+        {
             p.FillRect(new UiRect(textAreaLeft, r.Y, right - textAreaLeft, r.Height), frame.Flash);
+        }
 
         if (frame.Brackets != null)
+        {
             FillBrackets(p, frame, x0, textAreaLeft, r, index, frame.Brackets.Value);
+        }
 
         if (frame.Highlight != null)
         {
             foreach (var span in line.Spans)
             {
                 if (span.Reference != null && span.Reference.Equals(frame.Highlight))
+                {
                     FillCells(p, frame, x0, textAreaLeft, r, span.Start, span.End, frame.Palette.Occurrence);
+                }
             }
         }
 
@@ -1399,9 +1710,13 @@ public static class CodeViewWidget
             for (var m = FindFirstMatchOn(frame, index); m < frame.Matches.Count && frame.Matches[m].Line == index; m++)
             {
                 if (m == frame.CurrentMatch)
+                {
                     FillCells(p, frame, x0, textAreaLeft, r, frame.Matches[m].Column, frame.Matches[m].Column + frame.MatchLength, frame.Palette.CurrentFind, frame.Palette.CurrentFindOutline, frame.OutlineWidth);
+                }
                 else
+                {
                     FillCells(p, frame, x0, textAreaLeft, r, frame.Matches[m].Column, frame.Matches[m].Column + frame.MatchLength, frame.Palette.FindMatch);
+                }
             }
         }
 
@@ -1434,7 +1749,11 @@ public static class CodeViewWidget
                 var span = spans[s];
                 var start = Math.Max(span.Start, firstVisible);
                 var end = Math.Min(span.End, endVisible);
-                if (end <= start) continue;
+                if (end <= start)
+                {
+                    continue;
+                }
+
                 var cells = GetCells(frame, text, start, end);
                 p.GlyphRun(new PointF(x0 + start * frame.Advance, cellTop), cells, frame.Advance, error ? frame.ErrorText : frame.Palette[span.Kind],
                     frame.FontSize, family: MonoFonts.Code, underline: s == underlined);
@@ -1443,13 +1762,22 @@ public static class CodeViewWidget
 
         var caret = frame.Caret;
         if (caret != null)
+        {
             PaintCaret(p, frame, caret.Value, x0, r, index, collapsedFold, chipStart + chipText.Length);
+        }
 
-        if (frame.GutterWidth <= 0f) return;
+        if (frame.GutterWidth <= 0f)
+        {
+            return;
+        }
+
         p.FillRect(new UiRect(left, r.Y, frame.GutterWidth, r.Height), frame.Background);
         p.FillRect(new UiRect(left + frame.GutterWidth - frame.SeparatorWidth, r.Y, frame.SeparatorWidth, r.Height), frame.Palette.GutterSeparator);
         if (frame.Digits > 0)
+        {
             PaintLineNumber(p, frame, left, cellTop, index);
+        }
+
         if (frame.Bookmarks != null && (frame.Bookmarks.TryGetValue(index, out var enabled) || index == frame.HoverMark))
         {
             var color = !frame.Bookmarks.ContainsKey(index) ? frame.Palette.GutterText : enabled ? frame.Palette.Bookmark : frame.Palette.GutterText;
@@ -1457,7 +1785,9 @@ public static class CodeViewWidget
             p.Glyph(new UiRect(left + (frame.MarkWidth - size) / 2, r.Y + (r.Height - size) / 2, size, size), frame.BookmarkGlyph, color, size);
         }
         if (fold != null && frame.FoldWidth > 0f)
+        {
             PaintChevron(p, frame, left + frame.FoldLeft + frame.FoldWidth / 2, r.Y + r.Height / 2, collapsed, fold == frame.HoverFold ? frame.GutterHover : frame.Palette.GutterText);
+        }
     }
 
     /// <summary><paramref name="caret"/>, on the line <paramref name="index"/> when it stands there, or after the chip of the
@@ -1467,11 +1797,18 @@ public static class CodeViewWidget
     {
         int column;
         if (caret.Line == index)
+        {
             column = caret.Column;
+        }
         else if (collapsedFold != null && caret.Line > index && caret.Line <= frame.Document.Folds[collapsedFold.Value].EndLine)
+        {
             column = chipEnd;
+        }
         else
+        {
             return;
+        }
+
         p.FillRect(new UiRect(x0 + column * frame.Advance, row.Y, frame.CaretWidth, row.Height), frame.CaretColor);
     }
 
@@ -1487,9 +1824,14 @@ public static class CodeViewWidget
     private static void FillBrackets(UiPainter p, CodeViewFrame frame, float x0, float left, UiRect row, int index, BracketPair brackets)
     {
         if (brackets.Open.Line == index)
+        {
             FillCells(p, frame, x0, left, row, brackets.Open.Column, brackets.Open.Column + 1, frame.Palette.MatchingBracket);
+        }
+
         if (brackets.Close.Line == index)
+        {
             FillCells(p, frame, x0, left, row, brackets.Close.Column, brackets.Close.Column + 1, frame.Palette.MatchingBracket);
+        }
     }
 
     private static void PaintChevron(UiPainter p, CodeViewFrame frame, float cx, float cy, bool collapsed, uint color)
@@ -1503,7 +1845,9 @@ public static class CodeViewWidget
         var x = MathF.Max(left, x0 + from * frame.Advance);
         var right = x0 + to * frame.Advance;
         if (right > x)
+        {
             p.FillRect(new UiRect(x, row.Y, right - x, row.Height), color, 0f, outline, outlineWidth);
+        }
     }
 
     private static int FindFirstMatchOn(CodeViewFrame frame, int line)
@@ -1512,8 +1856,14 @@ public static class CodeViewWidget
         while (low < high)
         {
             var mid = (low + high) >> 1;
-            if (frame.Matches[mid].Line < line) low = mid + 1;
-            else high = mid;
+            if (frame.Matches[mid].Line < line)
+            {
+                low = mid + 1;
+            }
+            else
+            {
+                high = mid;
+            }
         }
         return low;
     }
@@ -1522,7 +1872,10 @@ public static class CodeViewWidget
     {
         var count = end - start;
         if (frame.CodePoints.Length < count)
+        {
             frame.CodePoints = new int[Math.Max(count, frame.CodePoints.Length * 2)];
+        }
+
         for (var i = 0; i < count; i++)
         {
             var at = start + i;
@@ -1530,7 +1883,10 @@ public static class CodeViewWidget
             if (char.IsHighSurrogate(c) && at + 1 < text.Length && char.IsLowSurrogate(text[at + 1]))
             {
                 frame.CodePoints[i] = char.ConvertToUtf32(c, text[at + 1]);
-                if (i + 1 < count) frame.CodePoints[++i] = ' ';
+                if (i + 1 < count)
+                {
+                    frame.CodePoints[++i] = ' ';
+                }
             }
             else
             {

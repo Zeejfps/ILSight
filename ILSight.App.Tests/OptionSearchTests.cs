@@ -13,18 +13,24 @@ public sealed class OptionSearchTests
 
     /// <summary>Whether a line of the last frame reads <paramref name="text"/>: the texts drawn at one height
     /// joined from left to right, as a marked label is drawn in pieces.</summary>
-    private static bool DrewLine(AppDriver app, string text) =>
-        app.Frames.TextRects()
+    private static bool DrewLine(AppDriver app, string text)
+    {
+        return app.Frames.TextRects()
             .GroupBy(t => MathF.Round(t.Rect.Y))
             .Any(line => string.Concat(line.OrderBy(t => t.Rect.X).Select(t => t.Text)).Contains(text, StringComparison.Ordinal));
+    }
 
     /// <summary>The rects of the last frame filled with the code's find-match color, as marks are.</summary>
-    private static List<UiRect> Marks(AppDriver app) =>
-        app.Frames.Canvas.Rects.Where(r => r.Inputs.Style.BackgroundColor == BuiltInThemes.Dark.Code.FindMatch)
+    private static List<UiRect> Marks(AppDriver app)
+    {
+        return app.Frames.Canvas.Rects.Where(r => r.Inputs.Style.BackgroundColor == BuiltInThemes.Dark.Code.FindMatch)
             .Select(r => app.Frames.ToUi(r.Inputs.Position)).ToList();
+    }
 
-    private static List<(int Start, int End)> Hits(string query, string text) =>
-        OptionSearch.FindHits(CultureInfo.InvariantCulture, query, text);
+    private static List<(int Start, int End)> Hits(string query, string text)
+    {
+        return OptionSearch.FindHits(CultureInfo.InvariantCulture, query, text);
+    }
 
     [Fact]
     public void The_hits_of_a_search_are_every_place_each_word_is_found_ignoring_case_and_accents()
@@ -94,8 +100,10 @@ public sealed class OptionSearchTests
         Assert.True(DrewLine(app, "switch expressions"));
     }
 
-    private static bool IsMatch(string query, string first, string? second = null, string? third = null) =>
-        OptionSearch.IsMatch(CultureInfo.InvariantCulture, OptionSearch.SplitWords(query), first, second, third);
+    private static bool IsMatch(string query, string first, string? second = null, string? third = null)
+    {
+        return OptionSearch.IsMatch(CultureInfo.InvariantCulture, OptionSearch.SplitWords(query), first, second, third);
+    }
 
     [Fact]
     public void Every_word_has_to_be_somewhere_in_the_name_the_description_or_the_heading()

@@ -13,13 +13,22 @@ public static class VersionRange
     {
         var trimmed = range.Trim();
         if (trimmed.Length == 0)
+        {
             return "";
+        }
+
         if (!IsBracketed(trimmed))
+        {
             return "≥ " + trimmed;
+        }
+
         var inner = trimmed.Substring(1, trimmed.Length - 2);
         var comma = inner.IndexOf(',');
         if (comma < 0)
+        {
             return "= " + inner.Trim();
+        }
+
         var lower = inner.Substring(0, comma).Trim();
         var upper = inner.Substring(comma + 1).Trim();
         return JoinBounds(LowerBound(trimmed[0], lower), UpperBound(trimmed[^1], upper));
@@ -28,7 +37,10 @@ public static class VersionRange
     private static bool IsBracketed(string range)
     {
         if (range.Length < 2)
+        {
             return false;
+        }
+
         var opens = range[0] is '[' or '(';
         var closes = range[^1] is ']' or ')';
         return opens && closes;
@@ -37,7 +49,10 @@ public static class VersionRange
     private static string LowerBound(char bracket, string version)
     {
         if (version.Length == 0)
+        {
             return "";
+        }
+
         var sign = bracket == '[' ? "≥ " : "> ";
         return sign + version;
     }
@@ -45,7 +60,10 @@ public static class VersionRange
     private static string UpperBound(char bracket, string version)
     {
         if (version.Length == 0)
+        {
             return "";
+        }
+
         var sign = bracket == ']' ? "≤ " : "< ";
         return sign + version;
     }
@@ -53,9 +71,15 @@ public static class VersionRange
     private static string JoinBounds(string lower, string upper)
     {
         if (lower.Length == 0)
+        {
             return upper;
+        }
+
         if (upper.Length == 0)
+        {
             return lower;
+        }
+
         return lower + ", " + upper;
     }
 }

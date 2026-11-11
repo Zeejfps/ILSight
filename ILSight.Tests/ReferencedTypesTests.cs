@@ -20,7 +20,10 @@ public sealed class ReferencedTypesTests
     private static bool IsList(BrowseNode node)
     {
         if (node.Text != ListLabel)
+        {
             return false;
+        }
+
         return node.Subject is NodeSubject.TypeReference type && type.Value.Namespace == ListNamespace;
     }
 

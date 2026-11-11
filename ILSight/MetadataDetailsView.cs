@@ -17,8 +17,16 @@ internal static class MetadataDetailsView
     /// 0 when it has none.</summary>
     public static float Height(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, float width)
     {
-        if (row < 0) return 0f;
-        if (!grid.HasDetails) return 0f;
+        if (row < 0)
+        {
+            return 0f;
+        }
+
+        if (!grid.HasDetails)
+        {
+            return 0f;
+        }
+
         var theme = ui.Theme;
         var padding = theme.GapTight * 2;
         switch (MetadataGrids.GetDetails(grid, row))
@@ -37,7 +45,10 @@ internal static class MetadataDetailsView
     private static TextSize MeasureText(DetailTexts texts, int row, string text)
     {
         if (texts.Sizes.TryGetValue(row, out var size))
+        {
             return size;
+        }
+
         size = MeasureText(text);
         texts.Sizes[row] = size;
         return size;
@@ -64,7 +75,10 @@ internal static class MetadataDetailsView
         return Math.Min(size.Lines, MaxTextLines) * lineHeight + bar;
     }
 
-    private static float Left(UiTheme theme) => theme.ShellPaddingX + theme.IconSize;
+    private static float Left(UiTheme theme)
+    {
+        return theme.ShellPaddingX + theme.IconSize;
+    }
 
     public static void Render(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, float height)
     {
@@ -93,7 +107,10 @@ internal static class MetadataDetailsView
     private static DetailText FindText(DetailTexts texts, int row, string title, string text)
     {
         if (texts.Texts.TryGetValue(row, out var shown))
+        {
             return shown;
+        }
+
         var document = Documents.CreateFromText(title, text);
         shown = new DetailText(document, new CodeViewState());
         texts.Texts[row] = shown;
@@ -113,12 +130,16 @@ internal static class MetadataDetailsView
         using (ui.Row(new Box { Height = theme.RowHeight, Gap = theme.GapTight, AlignY = Align.Center }))
         {
             foreach (var header in table.Headers)
+            {
                 ui.Text(header, new Box { Width = Sizing.Percent(share) }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
+            }
         }
         using (ui.Scroll("details", new Box { Height = Sizing.Grow(), Gap = 0f }))
         {
             foreach (var cells in table.Rows)
+            {
                 TableRow(ui, cells, share);
+            }
         }
     }
 
@@ -128,7 +149,9 @@ internal static class MetadataDetailsView
         using (ui.Row(new Box { Height = theme.RowHeight, Gap = theme.GapTight, AlignY = Align.Center }))
         {
             foreach (var cell in cells)
+            {
                 ui.Text(cell, new Box { Width = Sizing.Percent(share) }, overflow: TextOverflow.Ellipsis);
+            }
         }
     }
 }

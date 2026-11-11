@@ -31,28 +31,34 @@ public static class ILSpyTree
 
     /// <summary>The name ILSpy's tree gives the node standing for <paramref name="node"/>, or null
     /// for a node it has no named counterpart of.</summary>
-    public static string? NameOf(BrowseNode node) => NameOf(node.Subject);
-
-    private static string? NameOf(NodeSubject subject) => subject switch
+    public static string? NameOf(BrowseNode node)
     {
-        NodeSubject.TypeDefinition type => type.Definition.Symbol.ReflectionName,
-        NodeSubject.MemberDefinition member => member.Definition.Symbol switch
+        return NameOf(node.Subject);
+    }
+
+    private static string? NameOf(NodeSubject subject)
+    {
+        return subject switch
         {
-            IMethod method => "Method " + Signatures.ConvertSymbol(method),
-            IProperty property => "Property " + Signatures.ConvertSymbol(property),
-            IField field => "Field " + field.Name,
-            IEvent @event => "Event " + @event.Name,
-            _ => null,
-        },
-        NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
-            or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
-            or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
-            or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
-            or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.FailedAssembly => null,
-        NodeSubject.Module module => module.Value.FilePath.Text,
-        NodeSubject.Namespace ns => ns.Value.Name,
-        _ => throw new UnreachableException(),
-    };
+            NodeSubject.TypeDefinition type => type.Definition.Symbol.ReflectionName,
+            NodeSubject.MemberDefinition member => member.Definition.Symbol switch
+            {
+                IMethod method => "Method " + Signatures.ConvertSymbol(method),
+                IProperty property => "Property " + Signatures.ConvertSymbol(property),
+                IField field => "Field " + field.Name,
+                IEvent @event => "Event " + @event.Name,
+                _ => null,
+            },
+            NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
+                or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
+                or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
+                or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
+                or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.FailedAssembly => null,
+            NodeSubject.Module module => module.Value.FilePath.Text,
+            NodeSubject.Namespace ns => ns.Value.Name,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     /// <summary>The names of the nodes down from the assembly to <paramref name="node"/>, as ILSpy's
     /// tree finds a node by; null when one of them has no name there.</summary>
@@ -62,7 +68,11 @@ public static class ILSpyTree
         for (var n = node; n != null; n = n.Parent)
         {
             var name = NameOf(n);
-            if (name == null) return null;
+            if (name == null)
+            {
+                return null;
+            }
+
             path.Add(name);
         }
         path.Reverse();
@@ -81,7 +91,9 @@ public static class ILSpyTree
         {
             var found = Find(list, session, treePath);
             if (found != null)
+            {
                 return found;
+            }
         }
         return FindEntity(list, session, filePath, token, memberName);
     }
@@ -89,20 +101,36 @@ public static class ILSpyTree
     private static BrowseNode? Find(AssemblyList list, BrowseSession session, IReadOnlyList<string> path)
     {
         var filePath = AssemblyPath.Parse(path[0]);
-        if (filePath == null) return null;
+        if (filePath == null)
+        {
+            return null;
+        }
+
         var assembly = Load(list, filePath);
-        if (assembly == null) return null;
-        BrowseNode node = BrowseSessions.EnsureRoot(session, assembly);
+        if (assembly == null)
+        {
+            return null;
+        }
+
+        var node = BrowseSessions.EnsureRoot(session, assembly);
         for (var i = 1; i < path.Count; i++)
         {
             BrowseNode? next = null;
             foreach (var child in BrowseSessions.ListChildren(session, node))
             {
-                if (NameOf(child) != path[i]) continue;
+                if (NameOf(child) != path[i])
+                {
+                    continue;
+                }
+
                 next = child;
                 break;
             }
-            if (next == null) return null;
+            if (next == null)
+            {
+                return null;
+            }
+
             node = next;
         }
         return node;
@@ -113,11 +141,23 @@ public static class ILSpyTree
     /// another.</summary>
     private static BrowseNode? FindEntity(AssemblyList list, BrowseSession session, AssemblyPath filePath, uint token, string memberName)
     {
-        if (token == 0) return null;
+        if (token == 0)
+        {
+            return null;
+        }
+
         var assembly = Load(list, filePath);
-        if (assembly == null) return null;
+        if (assembly == null)
+        {
+            return null;
+        }
+
         var entity = Resolve(assembly, (int)token);
-        if (entity == null || entity.FullName != memberName) return null;
+        if (entity == null || entity.FullName != memberName)
+        {
+            return null;
+        }
+
         try
         {
             return BrowseSessions.FindOrAncestor(session, assembly, entity.MetadataToken);
@@ -140,7 +180,9 @@ public static class ILSpyTree
         {
             token = (uint)anchor.Value.Token;
             if (assembly is LoadedModule module)
+            {
                 entity = Resolve(module, anchor.Value.Token) ?? entity;
+            }
         }
         else if (anchor != null)
         {

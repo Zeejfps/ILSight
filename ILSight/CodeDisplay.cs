@@ -14,7 +14,10 @@ public static class CodeDisplay
     {
         var regular = family.FindRegular();
         if (regular == null)
+        {
             return null;
+        }
+
         return new CodeFont(family.Name, regular.File.Path, regular.File.FaceIndex);
     }
 
@@ -22,7 +25,10 @@ public static class CodeDisplay
     public static float GetFontSize(DisplayOptions display, UiTheme theme)
     {
         if (display.FontSize == null)
+        {
             return theme.MonoFontSize;
+        }
+
         return display.FontSize.Value.Points;
     }
 
@@ -39,7 +45,10 @@ public static class CodeDisplay
         var size = GetFontSize(display, theme) + steps * FontSizeStep;
         var zoomed = CodeFontSize.Clamp(size);
         if (zoomed.Points == theme.MonoFontSize)
+        {
             return display with { FontSize = null };
+        }
+
         return display with { FontSize = zoomed };
     }
 
@@ -123,7 +132,9 @@ public static class CodeDisplay
     {
         uiState.ConfirmingDisplayReset = false;
         if (confirmed)
+        {
             ResetDisplayOptions(uiState);
+        }
     }
 
     public static void ResetDisplayOptions(UiState uiState)
@@ -136,12 +147,21 @@ public static class CodeDisplay
     internal static FontFace? EnsureFace(CodeFontFaces faces, CodeFont? font)
     {
         if (font == null)
+        {
             return faces.Bundled;
+        }
+
         if (faces.ReadFaces.TryGetValue(font, out var face))
+        {
             return face;
+        }
+
         var data = ReadFontFile(font.Path);
         if (data == null)
+        {
             return null;
+        }
+
         face = new FontFace(MonoFonts.Code, data, FaceIndex: font.FaceIndex);
         faces.ReadFaces[font] = face;
         return face;
@@ -167,7 +187,10 @@ public static class CodeDisplay
     public static bool TakeListingRequest(CodeFontChoices choices)
     {
         if (choices.ListingAsked)
+        {
             return false;
+        }
+
         choices.ListingAsked = true;
         return true;
     }
@@ -191,7 +214,10 @@ public static class CodeDisplay
     public static string GetFontName(CodeFont? font)
     {
         if (font == null)
+        {
             return CodeFontChoices.BundledName;
+        }
+
         return font.Family;
     }
 
@@ -200,11 +226,20 @@ public static class CodeDisplay
     private static bool IsOfferedFont(SystemFontFamily family)
     {
         if (!family.IsMonospaced)
+        {
             return false;
+        }
+
         if (family.IsSymbol)
+        {
             return false;
+        }
+
         if (family.FindRegular() == null)
+        {
             return false;
+        }
+
         return family.Name != CodeFontChoices.BundledName;
     }
 }

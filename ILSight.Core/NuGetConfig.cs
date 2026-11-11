@@ -28,7 +28,10 @@ public sealed record NuGetSource
     {
         var web = WebUrl.Parse(url);
         if (web == null)
+        {
             return null;
+        }
+
         return new NuGetSource(web.Uri.Host, web);
     }
 
@@ -38,9 +41,15 @@ public sealed record NuGetSource
     {
         var web = WebUrl.Parse(url);
         if (web == null)
+        {
             return null;
+        }
+
         if (!web.Uri.AbsolutePath.EndsWith(ServiceIndexName, StringComparison.OrdinalIgnoreCase))
+        {
             return null;
+        }
+
         return new NuGetSource(name, web);
     }
 }
@@ -77,7 +86,10 @@ public static class NuGetConfigs
     private static string GetUserConfigPath()
     {
         if (OperatingSystem.IsWindows())
+        {
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NuGet", "NuGet.Config");
+        }
+
         return Path.Combine(GetHomeFolder(), ".nuget", "NuGet", "NuGet.Config");
     }
 
@@ -119,9 +131,15 @@ public static class NuGetConfigs
         }
         var disabled = ListDisabled(document);
         foreach (var entry in ListSection(document, "packageSources"))
+        {
             ApplySourceEntry(entry, disabled, sources);
+        }
+
         if (sources.Count == 0)
+        {
             sources.Add(NuGetSource.NuGetOrg);
+        }
+
         return sources;
     }
 
@@ -131,7 +149,9 @@ public static class NuGetConfigs
         foreach (var entry in ListSection(document, "disabledPackageSources"))
         {
             if (IsTrue(entry))
+            {
                 disabled.Add(GetKey(entry));
+            }
         }
         return disabled;
     }
@@ -152,15 +172,27 @@ public static class NuGetConfigs
             return;
         }
         if (entry.Name.LocalName != "add")
+        {
             return;
+        }
+
         var name = GetKey(entry);
         if (disabled.Contains(name))
+        {
             return;
+        }
+
         var source = NuGetSource.FromConfig(name, (string?)entry.Attribute("value") ?? "");
         if (source == null)
+        {
             return;
+        }
+
         if (sources.Any(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)))
+        {
             return;
+        }
+
         sources.Add(source);
     }
 
@@ -170,10 +202,16 @@ public static class NuGetConfigs
     private static string FindGlobalPackagesFolder(XDocument? document, string configPath, string? fromEnvironment)
     {
         if (!string.IsNullOrEmpty(fromEnvironment) && Path.IsPathRooted(fromEnvironment))
+        {
             return Path.GetFullPath(fromEnvironment);
+        }
+
         var fromConfig = FindConfigValue(document, "globalPackagesFolder");
         if (!string.IsNullOrEmpty(fromConfig))
+        {
             return ResolveFrom(configPath, fromConfig);
+        }
+
         return Path.Combine(GetHomeFolder(), ".nuget", "packages");
     }
 
@@ -187,7 +225,10 @@ public static class NuGetConfigs
     private static string? FindConfigValue(XDocument? document, string key)
     {
         if (document == null)
+        {
             return null;
+        }
+
         var entry = ListSection(document, "config")
             .FirstOrDefault(e => GetKey(e) == key);
         return (string?)entry?.Attribute("value");
@@ -197,7 +238,10 @@ public static class NuGetConfigs
     {
         var section = document.Root?.Element(name);
         if (section == null)
+        {
             return [];
+        }
+
         return section.Elements();
     }
 

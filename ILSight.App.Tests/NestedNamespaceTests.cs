@@ -32,11 +32,23 @@ public sealed class NestedNamespaceTests
         foreach (var name in EnclosingNamespaces.Append(AppStateDriver.FixturesNamespace))
         {
             var ns = app.Node(name);
-            if (!tree.View.IsExpanded(parent)) return false;
-            if (!ShownChildren(app, parent).Contains(ns)) return false;
+            if (!tree.View.IsExpanded(parent))
+            {
+                return false;
+            }
+
+            if (!ShownChildren(app, parent).Contains(ns))
+            {
+                return false;
+            }
+
             parent = ns;
         }
-        if (!tree.View.IsExpanded(parent)) return false;
+        if (!tree.View.IsExpanded(parent))
+        {
+            return false;
+        }
+
         return ShownChildren(app, parent).Contains(node);
     }
 

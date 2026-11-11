@@ -147,7 +147,9 @@ public sealed class AppState
             {
                 var diagram = tab.Diagram;
                 if (diagram != null && diagram.IsBusy)
+                {
                     return true;
+                }
             }
             return false;
         }
@@ -162,7 +164,9 @@ public sealed class AppState
             {
                 var comparison = tab.Comparison;
                 if (comparison != null && comparison.IsComparing)
+                {
                     return true;
+                }
             }
             return false;
         }

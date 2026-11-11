@@ -17,7 +17,10 @@ public sealed class TitleBarTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private static AppDriver WithTitleBarToDrawIn(float width = 1000f, float height = 700f)
     {

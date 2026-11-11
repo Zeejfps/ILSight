@@ -52,7 +52,10 @@ public sealed class AsyncGuarded<T>
         {
             var owner = _owner;
             if (owner == null)
+            {
                 return;
+            }
+
             _owner = null;
             owner._gate.Release();
         }
@@ -60,7 +63,10 @@ public sealed class AsyncGuarded<T>
         private AsyncGuarded<T> GetOwner()
         {
             if (_owner == null)
+            {
                 throw new InvalidOperationException("The gate is not held.");
+            }
+
             return _owner;
         }
     }

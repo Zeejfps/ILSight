@@ -12,11 +12,17 @@ public sealed class DiagramTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private static Dictionary<string, DiagramType> Fixtures => s_model.Value.TypesByNamespace[FixturesNamespace];
 
-    private static DiagramType TypeNamed(string id) => Fixtures[id];
+    private static DiagramType TypeNamed(string id)
+    {
+        return Fixtures[id];
+    }
 
     [Fact]
     public void The_diagrammer_is_written_as_a_page_with_its_script_styles_and_icon()
@@ -104,6 +110,9 @@ public sealed class DiagramTests : IDisposable
 
     private sealed class Progress(List<ExportProgress> reports) : IProgress<ExportProgress>
     {
-        public void Report(ExportProgress value) => reports.Add(value);
+        public void Report(ExportProgress value)
+        {
+            reports.Add(value);
+        }
     }
 }

@@ -107,25 +107,50 @@ public sealed class NodePath : IEquatable<NodePath>
     /// the labels.</summary>
     public bool Equals(NodePath? other)
     {
-        if (ReferenceEquals(this, other)) return true;
-        if (other == null) return false;
-        if (other.Steps.Length != Steps.Length) return false;
-        if (!FilePath.Equals(other.FilePath)) return false;
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        if (other == null)
+        {
+            return false;
+        }
+
+        if (other.Steps.Length != Steps.Length)
+        {
+            return false;
+        }
+
+        if (!FilePath.Equals(other.FilePath))
+        {
+            return false;
+        }
+
         for (var i = Steps.Length - 1; i >= 0; i--)
         {
-            if (Steps[i].Segment != other.Steps[i].Segment) return false;
+            if (Steps[i].Segment != other.Steps[i].Segment)
+            {
+                return false;
+            }
         }
         return true;
     }
 
-    public override bool Equals(object? obj) => obj is NodePath other && Equals(other);
+    public override bool Equals(object? obj)
+    {
+        return obj is NodePath other && Equals(other);
+    }
 
     public override int GetHashCode()
     {
         var hash = new HashCode();
         hash.Add(FilePath);
         foreach (var step in Steps)
+        {
             hash.Add(step.Segment);
+        }
+
         return hash.ToHashCode();
     }
 

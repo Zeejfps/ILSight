@@ -21,22 +21,30 @@ internal static class MemberSelection
         foreach (var field in type.Fields)
         {
             if (!field.MetadataToken.IsNil && field.IsStatic == isStatic)
+            {
                 members.Add(field.MetadataToken);
+            }
         }
         foreach (var e in type.Events)
         {
             if (!e.MetadataToken.IsNil && e.IsStatic == isStatic)
+            {
                 members.Add(e.MetadataToken);
+            }
         }
         foreach (var p in type.Properties)
         {
             if (!p.MetadataToken.IsNil && p.IsStatic == isStatic && !p.IsIndexer)
+            {
                 members.Add(p.MetadataToken);
+            }
         }
         foreach (var ctor in type.Methods)
         {
             if (!ctor.MetadataToken.IsNil && ctor.IsConstructor && ctor.IsStatic == isStatic)
+            {
                 members.Add(ctor.MetadataToken);
+            }
         }
         return members;
     }
@@ -74,9 +82,14 @@ internal static class MemberSelection
             {
                 case ConstructorDeclaration cd:
                     if (cd.GetSymbol() == ctor)
+                    {
                         kept = cd;
+                    }
                     else
+                    {
                         Remove(removed, cd);
+                    }
+
                     break;
                 case FieldDeclaration fd when fd.Variables.All(static v => v.Initializer is null):
                     Remove(removed, fd);
@@ -97,13 +110,17 @@ internal static class MemberSelection
             foreach (var node in rootNode.Children)
             {
                 if (node is not ConstructorDeclaration)
+                {
                     Remove(removed, node);
+                }
             }
         }
         foreach (var node in rootNode.Children)
         {
             if (node is Comment && removed.Contains(node.GetSymbol()))
+            {
                 node.Remove();
+            }
         }
     }
 
@@ -118,7 +135,9 @@ internal static class MemberSelection
         foreach (var node in rootNode.Children)
         {
             if (node is EntityDeclaration or Comment && node.GetSymbol() != field)
+            {
                 node.Remove();
+            }
         }
     }
 }

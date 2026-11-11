@@ -36,17 +36,24 @@ internal static class ToolbarView
             {
                 ListPicker(ui, appState.Lists);
                 if (ui.IconButton("manage-lists", ui.State.Icons.ToolbarManageLists, t.ListsManage, variant: ButtonVariant.Neutral))
+                {
                     Commands.Later(ui.State, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
+                }
             }
 
             using (Group(ui))
             {
                 if (ui.IconButton("open", ui.State.Icons.ToolbarOpen, ui.Memo("open-tip", t, static s => s.ToolbarOpen(Shortcuts.Open)),
                         variant: ButtonVariant.Neutral))
+                {
                     MainMenuView.OpenFile(ui);
+                }
+
                 if (ui.IconButton("search", ui.State.Icons.ToolbarSearch, ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search)),
                         variant: ButtonVariant.Neutral))
+                {
                     OpenSearch(ui.State);
+                }
             }
 
             using (Group(ui))
@@ -55,18 +62,28 @@ internal static class ToolbarView
                            ui.Memo("back-tip", t, static s => s.ToolbarBack(Shortcuts.Back)), t.ToolbarBackHistory, appState.History.CanGoBack, appState.History.Revision))
                 {
                     if (back.Clicked)
+                    {
                         Commands.Later(ui.State, static a => GoBack(a));
+                    }
+
                     if (back.IsOpen)
+                    {
                         HistoryItems(ui, appState.History, -1);
+                    }
                 }
                 using (var forward = ui.SplitIconButton("forward", ui.State.Icons.ToolbarForward,
                            ui.Memo("forward-tip", t, static s => s.ToolbarForward(Shortcuts.Forward)), t.ToolbarForwardHistory, appState.History.CanGoForward,
                            appState.History.Revision))
                 {
                     if (forward.Clicked)
+                    {
                         Commands.Later(ui.State, static a => GoForward(a));
+                    }
+
                     if (forward.IsOpen)
+                    {
                         HistoryItems(ui, appState.History, 1);
+                    }
                 }
             }
 
@@ -74,12 +91,17 @@ internal static class ToolbarView
             {
                 var language = appState.Language;
                 if (ui.SegmentedControl("language", ref language, Languages(t)))
+                {
                     Commands.Later(ui.State, language, static (a, l) => SetLanguage(a, l));
+                }
+
                 if (DecompilationLanguages.ShowsCSharp(language))
                 {
                     LanguageVersion(ui, appState.DecompilerOptions);
                     if (ui.IconButton("decompiler-options", ui.State.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
+                    {
                         OpenDecompilerOptions(ui.State);
+                    }
                 }
             }
 
@@ -88,7 +110,9 @@ internal static class ToolbarView
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
             if (ui.IconButton("display-options", ui.State.Icons.ToolbarDisplayOptions,
                     ui.Memo("display-options-tip", t, static s => s.ToolbarDisplayOptions(Shortcuts.Settings)), variant: ButtonVariant.Neutral))
+            {
                 OpenDisplayOptions(ui.State);
+            }
         }
     }
 
@@ -100,12 +124,20 @@ internal static class ToolbarView
         var width = ListPickerWidth(ui, lists);
         using var menu = ui.SelectButton("list", lists.Active, width, t.ListsPick, revision: lists.Count);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         foreach (var name in lists.Names)
+        {
             ListItem(ui, lists, name);
+        }
+
         ui.MenuSeparator();
         if (ui.MenuItem(t.ListsManage, id: "manage", icon: new UiIcon(ui.State.Icons.ListsManage)))
+        {
             Commands.Later(ui.State, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
+        }
     }
 
     /// <summary>Measured again only when the lists or the theme changed, so a frame allocates nothing.</summary>
@@ -114,7 +146,10 @@ internal static class ToolbarView
         var measured = ui.GetState<MeasuredWidth>(ui.GetId("list-width"));
         var unchanged = lists.Revision == measured.Revision && ReferenceEquals(ui.Theme, measured.Theme);
         if (unchanged)
+        {
             return measured.Width;
+        }
+
         measured.Revision = lists.Revision;
         measured.Theme = ui.Theme;
         var names = lists.Names.ToArray();
@@ -135,16 +170,22 @@ internal static class ToolbarView
     {
         var active = name == lists.Active;
         if (!ui.MenuRadioItem(name, active, id: ListItemPrefix + name))
+        {
             return;
+        }
+
         Commands.Later(ui.State, name, static (a, list) => SwitchAssemblyList(a, list));
     }
 
-    private static Segment<DecompilationLanguage>[] Languages(Strings t) => LanguageSegments.GetValue(t, static t =>
+    private static Segment<DecompilationLanguage>[] Languages(Strings t)
+    {
+        return LanguageSegments.GetValue(t, static t =>
     [
         new(DecompilationLanguage.CSharp, "C#", t.ToolbarDecompileCsharp),
         new(DecompilationLanguage.IL, "IL", t.ToolbarDisassembleIl),
         new(DecompilationLanguage.ILWithCSharp, ILWithCSharpLabel, t.ToolbarDisassembleIlWithCsharp),
     ]);
+    }
 
     private static void LanguageVersion(Ui<UiState> ui, DecompilerOptions options)
     {
@@ -152,16 +193,24 @@ internal static class ToolbarView
         var current = options.LanguageVersion;
         using var menu = ui.SelectButton("language-version", CSharpVersions.Label(current), ui.SelectButtonWidth(CSharpVersions.Labels),
             t.ToolbarLanguageVersion);
-        if (!menu.IsOpen) return;
+        if (!menu.IsOpen)
+        {
+            return;
+        }
+
         foreach (var (version, label) in CSharpVersions.All)
         {
             if (ui.MenuRadioItem(label, version == current))
+            {
                 Commands.Later(ui.State, version, static (a, v) => SetLanguageVersion(a, v));
+            }
         }
     }
 
-    private static Ui.Scope Group(Ui<UiState> ui) =>
-        ui.Row(new Box { Width = Sizing.Fit(), Gap = ui.Theme.Gap, AlignY = Align.Center });
+    private static Ui.Scope Group(Ui<UiState> ui)
+    {
+        return ui.Row(new Box { Width = Sizing.Fit(), Gap = ui.Theme.Gap, AlignY = Align.Center });
+    }
 
     private static void HistoryItems(Ui<UiState> ui, NavigationHistory history, int direction)
     {
@@ -180,17 +229,23 @@ internal static class ToolbarView
         }
     }
 
-    private static string TextOf(HistoryEntry entry) => entry switch
+    private static string TextOf(HistoryEntry entry)
     {
-        HistoryEntry.Node node => node.Place.Label,
-        HistoryEntry.Diagram diagram => diagram.Title,
-        _ => throw new UnreachableException(),
-    };
+        return entry switch
+        {
+            HistoryEntry.Node node => node.Place.Label,
+            HistoryEntry.Diagram diagram => diagram.Title,
+            _ => throw new UnreachableException(),
+        };
+    }
 
-    private static UiIcon IconOf(UiState screen, HistoryEntry entry) => entry switch
+    private static UiIcon IconOf(UiState screen, HistoryEntry entry)
     {
-        HistoryEntry.Node node => NodeIcons.Icon(node.Icon, node.Accessibility, screen.NodeIconPalette, screen.Icons),
-        HistoryEntry.Diagram => new UiIcon(screen.Icons.TabDiagram),
-        _ => throw new UnreachableException(),
-    };
+        return entry switch
+        {
+            HistoryEntry.Node node => NodeIcons.Icon(node.Icon, node.Accessibility, screen.NodeIconPalette, screen.Icons),
+            HistoryEntry.Diagram => new UiIcon(screen.Icons.TabDiagram),
+            _ => throw new UnreachableException(),
+        };
+    }
 }

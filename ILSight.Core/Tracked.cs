@@ -19,7 +19,10 @@ public sealed class Tracked<T>
     public bool Set(T value)
     {
         if (EqualityComparer<T>.Default.Equals(Value, value))
+        {
             return false;
+        }
+
         Value = value;
         Changes++;
         return true;
@@ -45,7 +48,10 @@ public sealed class TrackedSet<T> : IReadOnlyCollection<T>
     public void Flip(T item)
     {
         if (!_items.Remove(item))
+        {
             _items.Add(item);
+        }
+
         Revision++;
     }
 
@@ -54,7 +60,10 @@ public sealed class TrackedSet<T> : IReadOnlyCollection<T>
     {
         var replacing = new HashSet<T>(items);
         if (_items.SetEquals(replacing))
+        {
             return;
+        }
+
         _items.Clear();
         _items.UnionWith(replacing);
         Revision++;

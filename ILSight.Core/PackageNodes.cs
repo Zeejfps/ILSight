@@ -29,7 +29,10 @@ internal static class PackageFolders
     public static bool IsWithin(string path, string folder)
     {
         if (path == folder)
+        {
             return true;
+        }
+
         return path.StartsWith(folder + "/", StringComparison.Ordinal);
     }
 
@@ -38,7 +41,10 @@ internal static class PackageFolders
     {
         var at = path.LastIndexOf('/');
         if (at < 0)
+        {
             return "";
+        }
+
         return path.Substring(0, at);
     }
 
@@ -47,7 +53,10 @@ internal static class PackageFolders
     internal static bool ShowsFolder(PackageFolderInfo info, string path)
     {
         if (!PackageFolders.IsWithin(info.Folder.FullName, path))
+        {
             return false;
+        }
+
         return PackageFolders.IsWithin(path, info.Outermost.FullName);
     }
 
@@ -82,7 +91,9 @@ internal static class PackageContents
         foreach (var extension in AssemblyExtensions)
         {
             if (name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
         }
         return false;
     }

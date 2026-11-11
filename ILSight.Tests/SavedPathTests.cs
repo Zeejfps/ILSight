@@ -19,12 +19,18 @@ public sealed class SavedPathTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     /// <summary>A record struct, which the fixtures have none of.</summary>
     private readonly record struct Interval(int Start, int End);
 
-    public static IEnumerable<object[]> SavedKinds() => Kinds.Select(static k => new object[] { k });
+    public static IEnumerable<object[]> SavedKinds()
+    {
+        return Kinds.Select(static k => new object[] { k });
+    }
 
     [Theory]
     [MemberData(nameof(SavedKinds))]
@@ -50,61 +56,70 @@ public sealed class SavedPathTests : IDisposable
     }
 
     /// <summary>A node of <paramref name="kind"/>, in a file left in place for another list to open.</summary>
-    private BrowseNode Sample(string kind) => kind switch
+    private BrowseNode Sample(string kind)
     {
-        "Package" or "PackageFolder" => FirstOf(Open(PackageTests.WritePackage(_temp)), kind),
-        "Bundle" => Open(BundleTests.WriteBundle(_temp)).Root,
-        "FailedAssembly" => Open(_temp.Write("broken.dll", "no assembly")).Root,
-        "ForwardedType" => FirstOf(Open(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll")), kind),
-        _ => FirstOf(Open(Trees.TestAssemblyPath), kind),
-    };
+        return kind switch
+        {
+            "Package" or "PackageFolder" => FirstOf(Open(PackageTests.WritePackage(_temp)), kind),
+            "Bundle" => Open(BundleTests.WriteBundle(_temp)).Root,
+            "FailedAssembly" => Open(_temp.Write("broken.dll", "no assembly")).Root,
+            "ForwardedType" => FirstOf(Open(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll")), kind),
+            _ => FirstOf(Open(Trees.TestAssemblyPath), kind),
+        };
+    }
 
-    private static LoadedAssembly Open(string path) => new AssemblyList().Open(path);
+    private static LoadedAssembly Open(string path)
+    {
+        return new AssemblyList().Open(path);
+    }
 
     /// <summary>The name of the kind of <paramref name="node"/>.</summary>
-    private static string KindOf(BrowseNode node) => node.Subject switch
+    private static string KindOf(BrowseNode node)
     {
-        NodeSubject.Module => "Assembly",
-        NodeSubject.FailedAssembly => "FailedAssembly",
-        NodeSubject.Namespace => "Namespace",
-        NodeSubject.TypeDefinition type => type.Definition.Shape.ToString(),
-        NodeSubject.MemberDefinition member => member.Definition.Shape.ToString(),
-        NodeSubject.References => "ReferencesFolder",
-        NodeSubject.AssemblyReference => "AssemblyReference",
-        NodeSubject.ReferencedTypes => "ReferencedTypes",
-        NodeSubject.TypeReference => "TypeReference",
-        NodeSubject.MemberReference member => member.Value.Shape switch
+        return node.Subject switch
         {
-            MemberShape.Field or MemberShape.Constant => "FieldReference",
-            MemberShape.Property or MemberShape.Indexer => "PropertyReference",
-            MemberShape.Event => "EventReference",
-            MemberShape.Method or MemberShape.Constructor or MemberShape.Operator => "MethodReference",
+            NodeSubject.Module => "Assembly",
+            NodeSubject.FailedAssembly => "FailedAssembly",
+            NodeSubject.Namespace => "Namespace",
+            NodeSubject.TypeDefinition type => type.Definition.Shape.ToString(),
+            NodeSubject.MemberDefinition member => member.Definition.Shape.ToString(),
+            NodeSubject.References => "ReferencesFolder",
+            NodeSubject.AssemblyReference => "AssemblyReference",
+            NodeSubject.ReferencedTypes => "ReferencedTypes",
+            NodeSubject.TypeReference => "TypeReference",
+            NodeSubject.MemberReference member => member.Value.Shape switch
+            {
+                MemberShape.Field or MemberShape.Constant => "FieldReference",
+                MemberShape.Property or MemberShape.Indexer => "PropertyReference",
+                MemberShape.Event => "EventReference",
+                MemberShape.Method or MemberShape.Constructor or MemberShape.Operator => "MethodReference",
+                _ => throw new UnreachableException(),
+            },
+            NodeSubject.ModuleReference => "ModuleReference",
+            NodeSubject.ImportedMethod => "ImportedMethod",
+            NodeSubject.ForwardedType => "ForwardedType",
+            NodeSubject.BaseTypes => "BaseTypes",
+            NodeSubject.BaseType => "BaseType",
+            NodeSubject.DerivedTypes => "DerivedTypes",
+            NodeSubject.DerivedType => "DerivedType",
+            NodeSubject.Resources => "ResourcesFolder",
+            NodeSubject.ResourceContainer => "ResourcesFile",
+            NodeSubject.ResourceEntry entry => entry.Value.IsImage ? "ResourceImage" : "Resource",
+            NodeSubject.Metadata => "Metadata",
+            NodeSubject.MetadataTables => "MetadataTables",
+            NodeSubject.MetadataTable table => table.Value.Role switch
+            {
+                MetadataGridRole.Header => "MetadataHeader",
+                MetadataGridRole.Directory => "MetadataDirectory",
+                MetadataGridRole.Table => "MetadataTable",
+                MetadataGridRole.Heap => "MetadataHeap",
+                _ => throw new UnreachableException(),
+            },
+            NodeSubject.Package package => !package.Value.IsRoot ? "PackageFolder" : package.Value.Package.Package.IsBundle ? "Bundle" : "Package",
+            NodeSubject.PackageFile file => file.Value.IsImage ? "ResourceImage" : "Resource",
             _ => throw new UnreachableException(),
-        },
-        NodeSubject.ModuleReference => "ModuleReference",
-        NodeSubject.ImportedMethod => "ImportedMethod",
-        NodeSubject.ForwardedType => "ForwardedType",
-        NodeSubject.BaseTypes => "BaseTypes",
-        NodeSubject.BaseType => "BaseType",
-        NodeSubject.DerivedTypes => "DerivedTypes",
-        NodeSubject.DerivedType => "DerivedType",
-        NodeSubject.Resources => "ResourcesFolder",
-        NodeSubject.ResourceContainer => "ResourcesFile",
-        NodeSubject.ResourceEntry entry => entry.Value.IsImage ? "ResourceImage" : "Resource",
-        NodeSubject.Metadata => "Metadata",
-        NodeSubject.MetadataTables => "MetadataTables",
-        NodeSubject.MetadataTable table => table.Value.Role switch
-        {
-            MetadataGridRole.Header => "MetadataHeader",
-            MetadataGridRole.Directory => "MetadataDirectory",
-            MetadataGridRole.Table => "MetadataTable",
-            MetadataGridRole.Heap => "MetadataHeap",
-            _ => throw new UnreachableException(),
-        },
-        NodeSubject.Package package => !package.Value.IsRoot ? "PackageFolder" : package.Value.Package.Package.IsBundle ? "Bundle" : "Package",
-        NodeSubject.PackageFile file => file.Value.IsImage ? "ResourceImage" : "Resource",
-        _ => throw new UnreachableException(),
-    };
+        };
+    }
 
     /// <summary>The first node of <paramref name="kind"/> breadth first from the root of
     /// <paramref name="assembly"/>, not following a reference into the references of the assembly it
@@ -116,10 +131,17 @@ public sealed class SavedPathTests : IDisposable
         {
             var node = queue.Dequeue();
             if (KindOf(node) == kind)
+            {
                 return node;
+            }
+
             foreach (var child in node.Children)
             {
-                if (node.Subject is NodeSubject.AssemblyReference && child.Subject is NodeSubject.AssemblyReference) continue;
+                if (node.Subject is NodeSubject.AssemblyReference && child.Subject is NodeSubject.AssemblyReference)
+                {
+                    continue;
+                }
+
                 queue.Enqueue(child);
             }
         }

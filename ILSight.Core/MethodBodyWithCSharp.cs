@@ -76,7 +76,9 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         {
             var method = function.MoveNextMethod ?? function.Method;
             if (method != null && method.MetadataToken == handle)
+            {
                 return list;
+            }
         }
         return [];
     }
@@ -104,9 +106,15 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         WriteFailureAt(output, offset);
         var csharp = _csharp;
         if (csharp == null)
+        {
             return;
+        }
+
         while (_next < _points.Count && _points[_next].Offset < offset)
+        {
             _next++;
+        }
+
         while (_next < _points.Count && _points[_next].Offset == offset)
         {
             WriteStatement(output, csharp, _points[_next]);
@@ -117,9 +125,15 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private void WriteFailureAt(ITextOutput output, int offset)
     {
         if (_failure == null)
+        {
             return;
+        }
+
         if (offset != 0)
+        {
             return;
+        }
+
         WriteComment(output, _failure);
     }
 
@@ -133,7 +147,9 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         var lines = csharp.Lines;
         var indent = IndentOf(lines[point.StartLine - 1].Text);
         for (var line = point.StartLine; line <= point.EndLine; line++)
+        {
             WriteStatementLine(output, point, lines[line - 1], line, indent);
+        }
     }
 
     /// <summary>Writes a line of the statement, less the indentation its first line has: in C#'s colors
@@ -157,7 +173,10 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private static int StartColumnOn(SequencePoint point, int number, string text)
     {
         if (number != point.StartLine)
+        {
             return 0;
+        }
+
         return Math.Clamp(point.StartColumn - 1, 0, text.Length);
     }
 
@@ -166,7 +185,10 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private static int EndColumnOn(SequencePoint point, int number, string text)
     {
         if (number != point.EndLine)
+        {
             return text.Length;
+        }
+
         return Math.Clamp(point.EndColumn - 1, 0, text.Length);
     }
 
@@ -174,7 +196,10 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     {
         var indent = 0;
         while (indent < text.Length && char.IsWhiteSpace(text[indent]))
+        {
             indent++;
+        }
+
         return indent;
     }
 

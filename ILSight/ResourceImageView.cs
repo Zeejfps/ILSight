@@ -46,12 +46,20 @@ internal static class ResourceImageView
             ui.Text(t.ResourceImageInfo(image.Format, image.Width, image.Height), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
                 overflow: TextOverflow.Ellipsis);
             if (!picture.ShowsSource)
+            {
                 ZoomButtons(ui, picture);
+            }
+
             if (hasSource)
+            {
                 SourceButton(ui, picture);
+            }
+
             var node = tab.Node;
             if (node != null && node.HasResource && ui.Button(t.ResourceExport, id: "export", icon: new UiIcon(ui.State.Icons.ResourceExport)))
+            {
                 PickExport(ui, node);
+            }
         }
     }
 
@@ -61,12 +69,21 @@ internal static class ResourceImageView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         if (ui.IconButton("zoom-out", ui.State.Icons.ResourceZoomOut, t.ResourceZoomOut, zoom.CanZoomOut))
+        {
             picture.Zoom = zoom.StepOut();
+        }
+
         ui.Text(t.ResourceZoomPercent(zoom.Percent), color: theme.TextMuted);
         if (ui.IconButton("zoom-in", ui.State.Icons.ResourceZoomIn, t.ResourceZoomIn, zoom.CanZoomIn))
+        {
             picture.Zoom = zoom.StepIn();
+        }
+
         if (ui.IconButton("zoom-reset", ui.State.Icons.ResourceZoomReset, t.ResourceZoomReset, !zoom.IsOwnSize))
+        {
             picture.Zoom = default;
+        }
+
         ui.Separator(theme.IconSize);
     }
 
@@ -78,7 +95,9 @@ internal static class ResourceImageView
         var icons = ui.State.Icons;
         var glyph = picture.ShowsSource ? icons.ResourceShowPicture : icons.ResourceShowSource;
         if (ui.Button(label, id: "source", icon: new UiIcon(glyph)))
+        {
             PictureViews.ToggleSource(picture);
+        }
     }
 
     private static void Picture(Ui<UiState> ui, TabView view, ResourceImage image)
@@ -95,7 +114,9 @@ internal static class ResourceImageView
                 BorderColor = theme.Border,
                 BorderWidth = theme.BorderWidth,
             }))
+            {
                 ui.Image(view.ImageId, image.Width * scale, image.Height * scale);
+            }
         }
     }
 
@@ -105,7 +126,10 @@ internal static class ResourceImageView
     {
         var uploaded = ui.GetState<Uploaded>(ui.GetId(imageId));
         if (!NeedsUpload(ui, imageId, uploaded, image, scale))
+        {
             return;
+        }
+
         var drawn = ResourceImages.DrawAt(image, scale);
         ui.SetImage(imageId, drawn.Width, drawn.Height, drawn.Rgba);
         uploaded.Image = image;
@@ -115,9 +139,15 @@ internal static class ResourceImageView
     private static bool NeedsUpload(Ui<UiState> ui, string imageId, Uploaded uploaded, ResourceImage image, float scale)
     {
         if (!ReferenceEquals(uploaded.Image, image))
+        {
             return true;
+        }
+
         if (!ui.HasImage(imageId))
+        {
             return true;
+        }
+
         return image.IsVector && uploaded.Scale != scale;
     }
 
@@ -138,9 +168,15 @@ internal static class ResourceImageView
     {
         var all = new FileFilter(t.FileFilterAll, ["*.*"]);
         if (!IsXamlName(fileName))
+        {
             return [all];
+        }
+
         return [new FileFilter(t.FileFilterXaml, ["*" + XamlExtension]), all];
     }
 
-    private static bool IsXamlName(string fileName) => Path.GetExtension(fileName).Equals(XamlExtension, StringComparison.OrdinalIgnoreCase);
+    private static bool IsXamlName(string fileName)
+    {
+        return Path.GetExtension(fileName).Equals(XamlExtension, StringComparison.OrdinalIgnoreCase);
+    }
 }

@@ -21,7 +21,10 @@ internal sealed class BamlProjectDecompiler(
     protected override IEnumerable<ProjectItemInfo> WriteResourceToFile(string fileName, string resourceName, Stream entryStream)
     {
         if (!Baml.IsBamlName(fileName))
+        {
             return base.WriteResourceToFile(fileName, resourceName, entryStream);
+        }
+
         return [WriteXaml(fileName, entryStream)];
     }
 
@@ -31,7 +34,10 @@ internal sealed class BamlProjectDecompiler(
         var result = Baml.Decompile(typeSystem, baml, cancellationToken);
         var codeBehind = FindCodeBehind(typeSystem, result);
         if (codeBehind == null)
+        {
             return SaveXaml(result, Baml.XamlName(fileName), PageItem);
+        }
+
         var xamlName = CleanUpPath(codeBehind.ReflectionName) + Baml.XamlExtension;
         var item = SaveXaml(result, xamlName, ItemTypeOf(codeBehind));
         item.PartialTypes = [GeneratedPart(codeBehind, result)];
@@ -41,7 +47,10 @@ internal sealed class BamlProjectDecompiler(
     private static ITypeDefinition? FindCodeBehind(BamlDecompilerTypeSystem typeSystem, BamlDecompilationResult result)
     {
         if (result.TypeName == null)
+        {
             return null;
+        }
+
         return typeSystem.MainModule.GetTypeDefinition(result.TypeName.Value.TopLevelTypeName);
     }
 
@@ -56,7 +65,10 @@ internal sealed class BamlProjectDecompiler(
     private string ItemTypeOf(ITypeDefinition codeBehind)
     {
         if (IsApplicationDefinition(codeBehind, assembly.File))
+        {
             return ApplicationDefinitionItem;
+        }
+
         return PageItem;
     }
 
@@ -64,7 +76,10 @@ internal sealed class BamlProjectDecompiler(
     {
         var part = new PartialTypeInfo(codeBehind);
         foreach (var member in result.GeneratedMembers)
+        {
             part.AddDeclaredMember(member);
+        }
+
         return part;
     }
 }

@@ -47,7 +47,10 @@ public static class MainView
     {
         var dropped = ui.Input.TakeDroppedFiles();
         if (dropped.Count == 0)
+        {
             return;
+        }
+
         Commands.Later(ui.State, dropped, static (a, paths) => OpenDroppedFiles(a, paths));
     }
 
@@ -84,7 +87,9 @@ public static class MainView
     {
         var wait = Searches.Update(search, assemblies, ui.RealTime, shown);
         if (wait > 0)
+        {
             ui.RequestUpdateIn(wait);
+        }
     }
 
     private static bool IsLayoutEmpty(UiState screen)
@@ -101,7 +106,10 @@ public static class MainView
                    tabListTooltip: t.DockAllTabs))
         {
             while (dock.Next(out var panel))
+            {
                 Panel(ui, appState, panel);
+            }
+
             tabMenu = dock.TabMenu;
             doubleClicked = dock.TabDoubleClicked;
         }
@@ -114,10 +122,16 @@ public static class MainView
     {
         var view = DockPanels.ViewOf(panel);
         if (view != null)
+        {
             return DockPanels.Tab(t, screen.Icons, view.Value);
+        }
+
         var tab = DocumentPanels.FindTab(screen.Documents, panel);
         if (tab != null)
+        {
             return DocumentsView.Tab(screen, appState.Tabs, tab);
+        }
+
         return new DockTab(t.DocumentNewTab);
     }
 
@@ -166,13 +180,18 @@ public static class MainView
     {
         var tab = DocumentPanels.FindTab(ui.State.Documents, panel);
         if (tab == null)
+        {
             return;
+        }
+
         DocumentsView.Render(ui, appState.Bookmarks, appState.Tooltips, tab);
     }
 
     private static void RemoveReleasedImages(Ui<UiState> ui)
     {
         foreach (var image in DocumentPanels.TakeReleasedImages(ui.State.Documents))
+        {
             ui.RemoveImage(image);
+        }
     }
 }

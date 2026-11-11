@@ -14,7 +14,10 @@ internal static class TypeUsedByAnalyzer
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type)
+        {
             return null;
+        }
+
         return context => Analyze(type, context);
     }
 
@@ -36,17 +39,24 @@ internal static class TypeUsedByAnalyzer
         var attributeDecoder = AnalyzerHelpers.CreateDecoder(module, analyzedType);
 
         foreach (var result in AnalyzerHelpers.AttributeOwners(typeSystem, UsesType))
+        {
             yield return result;
+        }
 
         foreach (var h in metadata.TypeDefinitions)
         {
             var td = metadata.GetTypeDefinition(h);
             var found = decoder.GetTypeFromEntity(metadata, td.GetBaseTypeOrNil());
             foreach (var ih in td.GetInterfaceImplementations())
+            {
                 found |= decoder.GetTypeFromEntity(metadata, metadata.GetInterfaceImplementation(ih).Interface);
+            }
+
             found |= FindUsesInGenericConstraints(metadata, td.GetGenericParameters(), decoder);
             if (found)
+            {
                 yield return module.GetDefinition(h);
+            }
         }
 
         foreach (var h in metadata.MethodDefinitions)
@@ -64,19 +74,25 @@ internal static class TypeUsedByAnalyzer
         foreach (var h in metadata.FieldDefinitions)
         {
             if (metadata.GetFieldDefinition(h).DecodeSignature(decoder, default))
+            {
                 yield return module.GetDefinition(h);
+            }
         }
 
         foreach (var h in metadata.PropertyDefinitions)
         {
             if (FindTypeDecoder.AnyInMethodSignature(metadata.GetPropertyDefinition(h).DecodeSignature(decoder, default)))
+            {
                 yield return module.GetDefinition(h);
+            }
         }
 
         foreach (var h in metadata.EventDefinitions)
         {
             if (decoder.GetTypeFromEntity(metadata, metadata.GetEventDefinition(h).Type))
+            {
                 yield return module.GetDefinition(h);
+            }
         }
 
         bool UsesType(CustomAttribute attribute)
@@ -95,30 +111,39 @@ internal static class TypeUsedByAnalyzer
         }
     }
 
-    private static bool Found(object? value) =>
-        value switch
+    private static bool Found(object? value)
+    {
+        return value switch
         {
             TokenSearchResult result => (result & TokenSearchResult.Found) != 0,
             ImmutableArray<CustomAttributeTypedArgument<IType>> array => array.Any(element => Found(element.Value)),
             _ => false,
         };
+    }
 
-    private static bool FindUsesInGenericConstraints(MetadataReader metadata, GenericParameterHandleCollection parameters, FindTypeDecoder decoder) =>
-        parameters.Any(h => metadata.GetGenericParameter(h).GetConstraints()
+    private static bool FindUsesInGenericConstraints(MetadataReader metadata, GenericParameterHandleCollection parameters, FindTypeDecoder decoder)
+    {
+        return parameters.Any(h => metadata.GetGenericParameter(h).GetConstraints()
             .Any(c => decoder.GetTypeFromEntity(metadata, metadata.GetGenericParameterConstraint(c).Type)));
+    }
 
     private static bool ScanMethodBody(MetadataFile module, MethodDefinitionHandle handle, FindTypeDecoder decoder)
     {
         var body = AnalyzerHelpers.ReadBody(module, handle);
         if (body == null)
+        {
             return false;
+        }
+
         var metadata = module.Metadata;
         if (!body.LocalSignature.IsNil)
         {
             try
             {
                 if (UsedBySignature(metadata.GetStandaloneSignature(body.LocalSignature)))
+                {
                     return true;
+                }
             }
             catch (BadImageFormatException)
             {
@@ -129,7 +154,10 @@ internal static class TypeUsedByAnalyzer
         bool UsedByMember(EntityHandle member)
         {
             if (member.IsNil)
+            {
                 return false;
+            }
+
             switch (member.Kind)
             {
                 case HandleKind.TypeReference:
@@ -162,12 +190,14 @@ internal static class TypeUsedByAnalyzer
             }
         }
 
-        bool UsedBySignature(StandaloneSignature signature) =>
-            signature.GetKind() switch
+        bool UsedBySignature(StandaloneSignature signature)
+        {
+            return signature.GetKind() switch
             {
                 StandaloneSignatureKind.Method => FindTypeDecoder.AnyInMethodSignature(signature.DecodeMethodSignature(decoder, default)),
                 StandaloneSignatureKind.LocalVariables => signature.DecodeLocalSignature(decoder, default).Any(static t => t),
                 _ => false,
             };
+        }
     }
 }

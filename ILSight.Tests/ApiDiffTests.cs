@@ -41,15 +41,27 @@ public sealed class ApiDiffTests
     {
         var found = entries.FirstOrDefault(e => e.Text == text);
         if (found == null)
+        {
             throw new InvalidOperationException($"No entry '{text}' among: {string.Join(", ", entries.Select(e => e.Text))}");
+        }
+
         return found;
     }
 
-    private static ApiSides.Both Both(ApiEntry entry) => Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(entry).Sides);
+    private static ApiSides.Both Both(ApiEntry entry)
+    {
+        return Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(entry).Sides);
+    }
 
-    private static ApiEntry Public(params ReadOnlySpan<string> path) => Entry(s_public.Value, path);
+    private static ApiEntry Public(params ReadOnlySpan<string> path)
+    {
+        return Entry(s_public.Value, path);
+    }
 
-    private static ApiEntry All(params ReadOnlySpan<string> path) => Entry(s_all.Value, path);
+    private static ApiEntry All(params ReadOnlySpan<string> path)
+    {
+        return Entry(s_all.Value, path);
+    }
 
     [Fact]
     public void The_comparison_names_both_assemblies_with_their_versions()

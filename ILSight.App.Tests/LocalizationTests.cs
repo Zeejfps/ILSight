@@ -8,7 +8,10 @@ namespace ILSight.App.Tests;
 
 public sealed class LocalizationTests
 {
-    public static TheoryData<Locale> AllLocales() => new(Enum.GetValues<Locale>());
+    public static TheoryData<Locale> AllLocales()
+    {
+        return new(Enum.GetValues<Locale>());
+    }
 
     [Fact]
     public void Every_locale_is_offered_in_the_language_menu()
@@ -24,11 +27,17 @@ public sealed class LocalizationTests
         foreach (var property in typeof(Strings).GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (property.PropertyType == typeof(string))
+            {
                 Assert.False(string.IsNullOrWhiteSpace((string?)property.GetValue(strings)), property.Name);
+            }
         }
         foreach (var method in typeof(Strings).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
         {
-            if (method.ReturnType != typeof(string) || method.IsSpecialName) continue;
+            if (method.ReturnType != typeof(string) || method.IsSpecialName)
+            {
+                continue;
+            }
+
             foreach (var count in new[] { 0, 1, 2, 5, 21, 1234 })
             {
                 var args = method.GetParameters().Select(p => p.ParameterType == typeof(int) ? (object)count : "x").ToArray();

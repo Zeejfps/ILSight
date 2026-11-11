@@ -6,7 +6,10 @@ public sealed class BrowseSessionTests : IDisposable
 {
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     [Fact]
     public void Children_are_built_once_and_every_caller_gets_the_same_ones()

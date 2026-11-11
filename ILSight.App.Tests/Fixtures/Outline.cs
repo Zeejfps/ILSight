@@ -10,7 +10,10 @@ public class Outline
     {
         var total = 0;
         foreach (var value in _values)
+        {
             total += value;
+        }
+
         return total;
     }
 
@@ -21,7 +24,10 @@ public class Outline
         return builder.ToString();
     }
 
-    public int Third() => First();
+    public int Third()
+    {
+        return First();
+    }
 
     public class Inner
     {

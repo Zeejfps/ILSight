@@ -40,7 +40,10 @@ public sealed class Guarded<T>
             get
             {
                 if (_owner == null)
+                {
                     throw new InvalidOperationException("The lock is not held.");
+                }
+
                 return ref _owner._value;
             }
         }
@@ -49,7 +52,10 @@ public sealed class Guarded<T>
         {
             var owner = _owner;
             if (owner == null)
+            {
                 return;
+            }
+
             _owner = null;
             owner._gate.Exit();
         }
@@ -112,7 +118,10 @@ public sealed class Guarded<T, TSnapshot> where TSnapshot : class
         {
             var owner = _owner;
             if (owner == null)
+            {
                 return;
+            }
+
             _owner = null;
             owner._gate.Exit();
         }
@@ -120,7 +129,10 @@ public sealed class Guarded<T, TSnapshot> where TSnapshot : class
         private readonly Guarded<T, TSnapshot> GetOwner()
         {
             if (_owner == null)
+            {
                 throw new InvalidOperationException("The lock is not held.");
+            }
+
             return _owner;
         }
     }

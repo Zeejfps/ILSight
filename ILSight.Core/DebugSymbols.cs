@@ -101,7 +101,10 @@ internal static class DebugSymbolFiles
             var entries = assembly.Reader.ReadDebugDirectory();
             var embedded = LoadEmbedded(assembly, entries);
             if (embedded != null)
+            {
                 return embedded;
+            }
+
             return LoadBeside(assembly, package, entries);
         }
         catch (Exception e) when (IsUnreadable(e))
@@ -134,10 +137,16 @@ internal static class DebugSymbolFiles
         {
             var image = System.IO.File.ReadAllBytes(pdbPath);
             if (IsWindowsPdb(image))
+            {
                 return PdbCheck.WindowsPdb;
+            }
+
             var provider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(image));
             if (provider.GetMetadataReader().DebugMetadataHeader == null)
+            {
                 return PdbCheck.Unreadable;
+            }
+
             return CheckBuild(assembly, provider);
         }
         catch (Exception e) when (IsUnreadable(e))
@@ -160,14 +169,22 @@ internal static class DebugSymbolFiles
         foreach (var entry in assembly.Reader.ReadDebugDirectory())
         {
             if (entry.Type != DebugDirectoryEntryType.CodeView)
+            {
                 continue;
+            }
+
             namesBuild = true;
             var codeView = assembly.Reader.ReadCodeViewDebugDirectoryData(entry);
             if (IsBuiltWith(provider, codeView, entry))
+            {
                 return PdbCheck.Matches;
+            }
         }
         if (namesBuild)
+        {
             return PdbCheck.OtherBuild;
+        }
+
         return PdbCheck.Matches;
     }
 
@@ -176,7 +193,10 @@ internal static class DebugSymbolFiles
         foreach (var entry in entries)
         {
             if (entry.Type != DebugDirectoryEntryType.EmbeddedPortablePdb)
+            {
                 continue;
+            }
+
             var provider = assembly.Reader.ReadEmbeddedPortablePdbDebugDirectoryData(entry);
             var file = new MetadataFile(MetadataFile.MetadataFileKind.ProgramDebugDatabase, assembly.FileName, provider, isEmbedded: true);
             return new DebugSymbols { File = file, Title = EmbeddedTitle, Description = EmbeddedDescription };
@@ -189,14 +209,23 @@ internal static class DebugSymbolFiles
         foreach (var entry in entries)
         {
             if (entry.Type != DebugDirectoryEntryType.CodeView)
+            {
                 continue;
+            }
+
             var codeView = assembly.Reader.ReadCodeViewDebugDirectoryData(entry);
             var pdb = ReadBeside(assembly.FileName, codeView.Path, package);
             if (pdb == null)
+            {
                 continue;
+            }
+
             var provider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(pdb.Image));
             if (!IsBuiltWith(provider, codeView, entry))
+            {
                 continue;
+            }
+
             var file = new MetadataFile(MetadataFile.MetadataFileKind.ProgramDebugDatabase, pdb.Path, provider);
             return new DebugSymbols { File = file, Title = BesideTitle, Description = BesideDescription + pdb.Path };
         }
@@ -211,11 +240,17 @@ internal static class DebugSymbolFiles
         var named = Path.Combine(folder, Path.GetFileName(codeViewPath));
         var image = TryReadFile(named, package);
         if (image != null)
+        {
             return new PdbImage(named, image);
+        }
+
         var sibling = Path.ChangeExtension(assemblyPath, DebugSymbols.PdbExtension);
         image = TryReadFile(sibling, package);
         if (image != null)
+        {
             return new PdbImage(sibling, image);
+        }
+
         return null;
     }
 
@@ -224,20 +259,32 @@ internal static class DebugSymbolFiles
     private static byte[]? TryReadFile(string path, AssemblyPackage? package)
     {
         if (package == null)
+        {
             return TryReadFromDisk(path);
+        }
+
         var inPackage = AssemblyPath.Parse(path);
         if (inPackage == null)
+        {
             return null;
+        }
+
         var file = AssemblyPackages.FindFileAt(package, inPackage);
         if (file == null)
+        {
             return null;
+        }
+
         return AssemblyPackages.ReadFile(package, file);
     }
 
     private static byte[]? TryReadFromDisk(string path)
     {
         if (!System.IO.File.Exists(path))
+        {
             return null;
+        }
+
         return System.IO.File.ReadAllBytes(path);
     }
 
@@ -245,10 +292,16 @@ internal static class DebugSymbolFiles
     {
         var header = provider.GetMetadataReader().DebugMetadataHeader;
         if (header == null)
+        {
             return false;
+        }
+
         var id = new BlobContentId(header.Id);
         if (id.Guid != codeView.Guid)
+        {
             return false;
+        }
+
         return id.Stamp == entry.Stamp;
     }
 
@@ -262,7 +315,10 @@ internal static class DebugSymbolFiles
         var points = new List<SequencePoint>();
         var debugInformation = symbols.Metadata.GetMethodDebugInformation(method);
         foreach (var point in debugInformation.GetSequencePoints())
+        {
             points.Add(ToSequencePoint(symbols, point));
+        }
+
         return points;
     }
 
@@ -282,7 +338,10 @@ internal static class DebugSymbolFiles
     private static string GetDocumentName(DebugSymbols symbols, DocumentHandle handle)
     {
         if (handle.IsNil)
+        {
             return "";
+        }
+
         var document = symbols.Metadata.GetDocument(handle);
         return symbols.Metadata.GetString(document.Name);
     }
@@ -303,7 +362,10 @@ internal static class DebugSymbolFiles
         name = null;
         var handle = FindLocal(symbols, method, index);
         if (handle.IsNil)
+        {
             return false;
+        }
+
         var local = symbols.Metadata.GetLocalVariable(handle);
         name = symbols.Metadata.GetString(local.Name);
         return true;
@@ -316,18 +378,28 @@ internal static class DebugSymbolFiles
         extraTypeInfo = default;
         var local = FindLocal(symbols, method, index);
         if (local.IsNil)
+        {
             return false;
+        }
+
         foreach (var handle in symbols.Metadata.GetCustomDebugInformation(local))
         {
             var information = symbols.Metadata.GetCustomDebugInformation(handle);
             var kind = symbols.Metadata.GetGuid(information.Kind);
             if (kind == KnownGuids.TupleElementNames)
+            {
                 extraTypeInfo.TupleElementNames = ReadTupleElementNames(symbols, information.Value);
+            }
             else if (kind == KnownGuids.DynamicLocalVariables)
+            {
                 extraTypeInfo.DynamicFlags = ReadDynamicFlags(symbols, information.Value);
+            }
         }
         if (extraTypeInfo.TupleElementNames != null)
+        {
             return true;
+        }
+
         return extraTypeInfo.DynamicFlags != null;
     }
 
@@ -336,7 +408,9 @@ internal static class DebugSymbolFiles
         foreach (var handle in ListLocals(symbols, method))
         {
             if (symbols.Metadata.GetLocalVariable(handle).Index == index)
+            {
                 return handle;
+            }
         }
         return default;
     }
@@ -347,7 +421,9 @@ internal static class DebugSymbolFiles
         {
             var scope = symbols.Metadata.GetLocalScope(scopeHandle);
             foreach (var local in scope.GetLocalVariables())
+            {
                 yield return local;
+            }
         }
     }
 
@@ -356,7 +432,10 @@ internal static class DebugSymbolFiles
         var reader = symbols.Metadata.GetBlobReader(blob);
         var names = new List<string?>();
         while (reader.RemainingBytes > 0)
+        {
             names.Add(ReadTupleElementName(ref reader));
+        }
+
         return names.ToArray();
     }
 
@@ -367,7 +446,10 @@ internal static class DebugSymbolFiles
         var name = reader.ReadUTF8(length);
         reader.ReadByte();
         if (string.IsNullOrWhiteSpace(name))
+        {
             return null;
+        }
+
         return name;
     }
 

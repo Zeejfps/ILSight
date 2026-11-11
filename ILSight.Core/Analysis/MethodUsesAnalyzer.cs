@@ -12,14 +12,20 @@ internal static class MethodUsesAnalyzer
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not IMethod method || !method.HasBody)
+        {
             return null;
+        }
+
         return context => Analyze(method, context);
     }
 
     private static IEnumerable<ISymbol> Analyze(IMethod method, AnalyzerContext context)
     {
         if (method.ParentModule?.MetadataFile == null)
+        {
             throw new InvalidOperationException("Should never happen.");
+        }
+
         var file = method.ParentModule.MetadataFile;
         var module = AssemblyListing.EnsureTypeSystemOf(context.AssemblyList, file).MainModule;
         return AnalyzerHelpers.EnsureMapping(context, method).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
@@ -30,12 +36,18 @@ internal static class MethodUsesAnalyzer
     {
         var body = AnalyzerHelpers.ReadBody(module.MetadataFile, handle);
         if (body == null)
+        {
             yield break;
+        }
+
         var types = new TypeDefinitionCollector();
         foreach (var (opCode, token) in AnalyzerHelpers.ListTokens(body))
         {
             if (opCode.GetOperandType() == OperandType.Type)
+            {
                 continue;
+            }
+
             switch (Resolve(module, token))
             {
                 case IType type:
@@ -47,7 +59,9 @@ internal static class MethodUsesAnalyzer
             }
         }
         foreach (var type in types.UsedTypes)
+        {
             yield return type;
+        }
     }
 
     private static object? Resolve(MetadataModule module, EntityHandle token)

@@ -107,7 +107,10 @@ public static class Updates
     public static async Task Check(AppUpdates updates, bool asked)
     {
         if (!CanCheck(updates))
+        {
             return;
+        }
+
         updates.Status = new UpdateStatus.Checking();
         var found = await Background.Run(updates.Feed.FindUpdate);
         if (found is not Outcome<UpdateInfo?>.Ok ok)
@@ -143,7 +146,10 @@ public static class Updates
     public static async Task<bool> ApplyAfterExit(AppUpdates updates)
     {
         if (updates.Status is not UpdateStatus.Ready ready)
+        {
             return false;
+        }
+
         updates.Status = new UpdateStatus.Restarting();
         var update = ready.Update;
         var started = await Background.Run(() =>
@@ -152,7 +158,10 @@ public static class Updates
             return update;
         });
         if (started is Outcome<UpdateInfo>.Ok)
+        {
             return true;
+        }
+
         updates.Status = new UpdateStatus.Failed();
         return false;
     }
@@ -161,7 +170,9 @@ public static class Updates
     public static void CheckOnStartup(AppState appState)
     {
         if (appState.Updates.CheckAutomatically)
+        {
             StartCheck(appState, asked: false);
+        }
     }
 
     public static void CheckForUpdates(AppState appState)
@@ -188,6 +199,8 @@ public static class Updates
     private static async Task RestartToUpdateAsync(AppState appState)
     {
         if (await ApplyAfterExit(appState.Updates))
+        {
             appState.ViewCommands.Enqueue(new ViewCommand.Quit());
+        }
     }
 }

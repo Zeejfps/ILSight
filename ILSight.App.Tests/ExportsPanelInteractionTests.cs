@@ -22,7 +22,10 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         Directory.CreateDirectory(_temp.Path);
     }
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     /// <summary>An app with two finished saves, Greeter then Farewell, in folders of their own.</summary>
     private AppDriver TwoFinished(float width = 1000f)
@@ -41,7 +44,10 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         return folder;
     }
 
-    private static ExportRun RunOf(AppDriver app, string name) => app.AppState.FinishedExports.Single(r => r.Name == name).Run;
+    private static ExportRun RunOf(AppDriver app, string name)
+    {
+        return app.AppState.FinishedExports.Single(r => r.Name == name).Run;
+    }
 
     [Fact]
     public void Clicking_a_row_selects_it_and_the_arrow_keys_walk_the_list()

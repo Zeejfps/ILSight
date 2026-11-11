@@ -102,7 +102,9 @@ public static class AssemblyListing
         for (var i = 0; i < listed.Length; i++)
         {
             if (listed[i] is FailedAssembly)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -114,9 +116,14 @@ public static class AssemblyListing
         for (var i = 0; i < listed.Length; i++)
         {
             if (listed[i] is FailedAssembly)
+            {
                 continue;
+            }
+
             if (listed[i].FilePath.Equals(filePath))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -141,10 +148,16 @@ public static class AssemblyListing
         while (true)
         {
             var assembly = LoadOrFail(list, path, generation);
-            if (TryList(list, assembly, generation, cancellationToken)) return assembly;
+            if (TryList(list, assembly, generation, cancellationToken))
+            {
+                return assembly;
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
             if (generation != list.Generation)
+            {
                 throw new OperationCanceledException($"The list was cleared while '{path}' was opened.");
+            }
         }
     }
 
@@ -170,13 +183,21 @@ public static class AssemblyListing
         var item = assembly.ListedItem;
         using (var held = list.State.Enter())
         {
-            if (item is not FailedAssembly && !ForgetKnown(held.Value, item)) return;
+            if (item is not FailedAssembly && !ForgetKnown(held.Value, item))
+            {
+                return;
+            }
+
             var isPackage = item is LoadedPackage;
             list.Pdbs.Forget(item.FilePath, andUnder: isPackage);
             list.TargetFrameworks.Forget(item.FilePath, andUnder: isPackage);
             ForgetReadOutOf(held.Value, item);
             var listed = held.Snapshot.Listed;
-            if (!listed.Contains(item)) return;
+            if (!listed.Contains(item))
+            {
+                return;
+            }
+
             ChangeListed(held, listed.Remove(item));
         }
         list.ChangedHandlers?.Invoke();
@@ -185,9 +206,15 @@ public static class AssemblyListing
     private static bool ForgetKnown(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly assembly)
     {
         if (!byPath.TryGetValue(assembly.FilePath, out var known))
+        {
             return false;
+        }
+
         if (known != assembly)
+        {
             return false;
+        }
+
         byPath.Remove(assembly.FilePath);
         return true;
     }
@@ -199,7 +226,9 @@ public static class AssemblyListing
             .Select(k => k.Key)
             .ToList();
         foreach (var path in read)
+        {
             byPath.Remove(path);
+        }
     }
 
     private static void ChangeListed(HeldListing held, ImmutableArray<LoadedAssembly> listed)
@@ -239,12 +268,18 @@ public static class AssemblyListing
         var loadsReferences = DecompilerToggles.IsOn(options, DecompilerToggle.AutoLoadAssemblyReferences);
         var readerOptions = ChooseReaderOptions(options);
         if (IsSame(list.Now.ReadOptions, loadsReferences, readerOptions))
+        {
             return false;
+        }
+
         using (var held = list.State.Enter())
         {
             var now = held.Snapshot;
             if (IsSame(now.ReadOptions, loadsReferences, readerOptions))
+            {
                 return false;
+            }
+
             held.Snapshot = now with { ReadOptions = new AssemblyList.LoadOptions(loadsReferences, readerOptions), Generation = now.Generation + 1 };
         }
         return true;
@@ -253,7 +288,10 @@ public static class AssemblyListing
     private static MetadataReaderOptions ChooseReaderOptions(DecompilerOptions options)
     {
         if (DecompilerToggles.IsOn(options, DecompilerToggle.ApplyWindowsRuntimeProjections))
+        {
             return MetadataReaderOptions.ApplyWindowsRuntimeProjections;
+        }
+
         return MetadataReaderOptions.None;
     }
 
@@ -264,7 +302,11 @@ public static class AssemblyListing
         {
             var now = held.Snapshot;
             held.Snapshot = now with { Generation = now.Generation + 1 };
-            if (now.Listed.IsEmpty && held.Value.Count == 0) return;
+            if (now.Listed.IsEmpty && held.Value.Count == 0)
+            {
+                return;
+            }
+
             held.Value.Clear();
             ChangeListed(held, ImmutableArray<LoadedAssembly>.Empty);
         }
@@ -280,7 +322,10 @@ public static class AssemblyListing
     {
         var fresh = ReadAssemblyOrPackage(list, assembly.ListedItem.FilePath);
         if (fresh is LoadedPackage package)
+        {
             LoadedAssemblies.EnsureAssemblies(package);
+        }
+
         return fresh;
     }
 
@@ -293,8 +338,16 @@ public static class AssemblyListing
         using (var held = list.State.Enter())
         {
             var listed = held.Snapshot.Listed;
-            if (!listed.Contains(item)) return false;
-            if (!ForgetKnown(held.Value, item)) return false;
+            if (!listed.Contains(item))
+            {
+                return false;
+            }
+
+            if (!ForgetKnown(held.Value, item))
+            {
+                return false;
+            }
+
             ForgetReadOutOf(held.Value, item);
             Know(held.Value, fresh);
             ChangeListed(held, listed.Replace(item, fresh));
@@ -308,9 +361,14 @@ public static class AssemblyListing
     {
         byPath[item.FilePath] = item;
         if (item is not LoadedPackage package)
+        {
             return;
+        }
+
         foreach (var assembly in LoadedAssemblies.EnsureAssemblies(package))
+        {
             byPath[assembly.FilePath] = assembly;
+        }
     }
 
     /// <summary>Orders the open files by name, and those of one name by version.</summary>
@@ -324,7 +382,10 @@ public static class AssemblyListing
                 .ThenBy(a => a.Version)
                 .ToImmutableArray();
             if (sorted.SequenceEqual(listed))
+            {
                 return;
+            }
+
             ChangeListed(held, sorted);
         }
         list.ChangedHandlers?.Invoke();
@@ -343,9 +404,14 @@ public static class AssemblyListing
             cancellationToken.ThrowIfCancellationRequested();
             var found = AssemblyResolving.LoadAssembly(assembly.Resolver, reference);
             if (found == null)
+            {
                 continue;
+            }
+
             if (TryList(list, found, generation, cancellationToken))
+            {
                 listed.Add(found);
+            }
         }
         return listed;
     }
@@ -358,12 +424,21 @@ public static class AssemblyListing
         var generation = list.Generation;
         var owner = TryLoadAssembly(list, reference.FilePath, generation);
         if (owner is null)
+        {
             return default;
+        }
+
         var (assembly, handle) = ResolveTarget(list, owner, reference, generation);
         if (assembly is null)
+        {
             return default;
+        }
+
         if (!TryList(list, assembly, generation))
+        {
             return default;
+        }
+
         return (assembly, handle);
     }
 
@@ -375,7 +450,10 @@ public static class AssemblyListing
                 return ResolveDefinition(list, owner, entity.Handle, generation);
             case CodeReference.Assembly assembly:
                 if (assembly.Referenced == null)
+                {
                     return (owner, EntityHandle.AssemblyDefinition);
+                }
+
                 var target = AssemblyResolving.ResolveAssembly(owner.Resolver, new AssemblyReference(owner.File, assembly.Referenced.Value));
                 return (target, EntityHandle.AssemblyDefinition);
             default:
@@ -399,7 +477,10 @@ public static class AssemblyListing
         {
             var (entity, assembly) = ResolveEntity(list, reference);
             if (entity is null || assembly is null)
+            {
                 return null;
+            }
+
             return Documentation.CreateTooltip(entity, assembly);
         }
         catch (Exception e) when (IsUnreadable(e))
@@ -419,7 +500,10 @@ public static class AssemblyListing
         {
             var (entity, _) = ResolveEntity(list, reference);
             if (entity is null)
+            {
                 return null;
+            }
+
             return MicrosoftDocs.FindPage(entity);
         }
         catch (Exception e) when (IsUnreadable(e))
@@ -434,7 +518,10 @@ public static class AssemblyListing
     internal static ITypeDefinition? FindTypeDefinition(AssemblyList list, CodeReference.Entity reference)
     {
         if (reference.Kind != EntityKind.Type)
+        {
             return null;
+        }
+
         try
         {
             var (entity, _) = ResolveEntity(list, reference);
@@ -455,7 +542,10 @@ public static class AssemblyListing
         {
             var assembly = TryLoadAssembly(list, anchor.AssemblyPath);
             if (assembly is null)
+            {
                 return null;
+            }
+
             return LoadedAssemblies.EnsureMainModule(assembly).GetTypeDefinition(new FullTypeName(anchor.FullName));
         }
         catch (Exception e) when (IsUnreadable(e))
@@ -471,10 +561,16 @@ public static class AssemblyListing
         var generation = list.Generation;
         var owner = TryLoadAssembly(list, entity.FilePath, generation);
         if (owner is null)
+        {
             return default;
+        }
+
         var (assembly, handle) = ResolveDefinition(list, owner, entity.Handle, generation);
         if (assembly is null)
+        {
             return default;
+        }
+
         return (LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(handle), assembly);
     }
 
@@ -486,7 +582,10 @@ public static class AssemblyListing
         var generation = list.Generation;
         var assembly = TryLoad(list, path, generation) ?? FindListedFailure(list, path);
         if (assembly is null || !TryList(list, assembly, generation))
+        {
             return null;
+        }
+
         return assembly;
     }
 
@@ -498,9 +597,14 @@ public static class AssemblyListing
         foreach (var assembly in listed)
         {
             if (assembly is FailedAssembly)
+            {
                 continue;
+            }
+
             if (assembly.FilePath.Equals(path))
+            {
                 return assembly;
+            }
         }
         return null;
     }
@@ -547,7 +651,9 @@ public static class AssemblyListing
             foreach (var assembly in held.Value.Values)
             {
                 if (assembly is LoadedModule loaded && loaded.File == module)
+                {
                     return loaded;
+                }
             }
         }
         throw new InvalidOperationException($"{module.FileName} was not loaded by list list.");
@@ -563,12 +669,30 @@ public static class AssemblyListing
             LoadedModule? best = null;
             foreach (var known in held.Value.Values)
             {
-                if (known is not LoadedModule assembly) continue;
-                if (!string.Equals(assembly.Name, reference.Name, StringComparison.OrdinalIgnoreCase)) continue;
-                if (listedOnly && !held.Snapshot.Listed.Contains(assembly.ListedItem)) continue;
-                if (exactOrNewer && reference.Version != null && assembly.Version != null && assembly.Version < reference.Version) continue;
+                if (known is not LoadedModule assembly)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(assembly.Name, reference.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (listedOnly && !held.Snapshot.Listed.Contains(assembly.ListedItem))
+                {
+                    continue;
+                }
+
+                if (exactOrNewer && reference.Version != null && assembly.Version != null && assembly.Version < reference.Version)
+                {
+                    continue;
+                }
+
                 if (best is null || (assembly.Version ?? new Version()) > (best.Version ?? new Version()))
+                {
                     best = assembly;
+                }
             }
             return best;
         }
@@ -580,14 +704,25 @@ public static class AssemblyListing
     {
         using (var held = list.State.Enter())
         {
-            if (held.Value.TryGetValue(path, out var existing)) return existing;
+            if (held.Value.TryGetValue(path, out var existing))
+            {
+                return existing;
+            }
         }
 
         var assembly = Read(list, path, generation);
         using (var held = list.State.Enter())
         {
-            if (generation != held.Snapshot.Generation) return assembly;
-            if (held.Value.TryGetValue(path, out var existing)) return existing;
+            if (generation != held.Snapshot.Generation)
+            {
+                return assembly;
+            }
+
+            if (held.Value.TryGetValue(path, out var existing))
+            {
+                return existing;
+            }
+
             held.Value.Add(path, assembly);
         }
         return assembly;
@@ -605,16 +740,38 @@ public static class AssemblyListing
     internal static bool TryList(AssemblyList list, LoadedAssembly assembly, int generation, CancellationToken cancellationToken = default)
     {
         if (assembly is LoadedModule module && module.Place != null)
+        {
             return TryList(list, module.Place.Container, generation, cancellationToken);
+        }
+
         if (assembly is LoadedPackage package)
+        {
             LoadedAssemblies.EnsureAssemblies(package);
+        }
+
         using (var held = list.State.Enter())
         {
-            if (generation != held.Snapshot.Generation) return false;
-            if (cancellationToken.IsCancellationRequested) return false;
-            if (!HoldsPathFor(held, assembly)) return false;
+            if (generation != held.Snapshot.Generation)
+            {
+                return false;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
+
+            if (!HoldsPathFor(held, assembly))
+            {
+                return false;
+            }
+
             var listed = held.Snapshot.Listed;
-            if (listed.Contains(assembly)) return true;
+            if (listed.Contains(assembly))
+            {
+                return true;
+            }
+
             ChangeListed(held, ListInPlaceOfFailure(listed, assembly));
         }
         WarmUpLater(assembly);
@@ -627,7 +784,10 @@ public static class AssemblyListing
     private static void WarmUpLater(LoadedAssembly assembly)
     {
         if (assembly is not LoadedModule module)
+        {
             return;
+        }
+
         ThreadPool.QueueUserWorkItem(static m => LoadedAssemblies.WarmUp(m), module, preferLocal: false);
     }
 
@@ -639,16 +799,30 @@ public static class AssemblyListing
         using (var held = list.State.Enter())
         {
             var known = FindReadOutOf(held.Value, package, path);
-            if (known != null) return known;
+            if (known != null)
+            {
+                return known;
+            }
         }
         var read = TryReadOutOfPackage(list, package, path, file.FullName);
         if (read == null)
+        {
             return null;
+        }
+
         using (var held = list.State.Enter())
         {
-            if (!IsKnown(held.Value, package)) return read;
+            if (!IsKnown(held.Value, package))
+            {
+                return read;
+            }
+
             var known = FindReadOutOf(held.Value, package, path);
-            if (known != null) return known;
+            if (known != null)
+            {
+                return known;
+            }
+
             held.Value[path] = read;
         }
         return read;
@@ -657,11 +831,20 @@ public static class AssemblyListing
     private static LoadedModule? FindReadOutOf(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedPackage package, AssemblyPath path)
     {
         if (!byPath.TryGetValue(path, out var known))
+        {
             return null;
+        }
+
         if (known is not LoadedModule module || module.Place == null)
+        {
             return null;
+        }
+
         if (module.Place.Container != package)
+        {
             return null;
+        }
+
         return module;
     }
 
@@ -680,7 +863,10 @@ public static class AssemblyListing
     private static bool IsKnown(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly assembly)
     {
         if (!byPath.TryGetValue(assembly.FilePath, out var known))
+        {
             return false;
+        }
+
         return known == assembly;
     }
 
@@ -689,9 +875,15 @@ public static class AssemblyListing
     private static bool HoldsPathFor(HeldListing held, LoadedAssembly assembly)
     {
         if (assembly is not FailedAssembly)
+        {
             return held.Value.TryGetValue(assembly.FilePath, out var known) && known == assembly;
+        }
+
         if (held.Value.ContainsKey(assembly.FilePath))
+        {
             return false;
+        }
+
         var failure = FindFailure(held.Snapshot.Listed, assembly.FilePath);
         return failure == null || failure == assembly;
     }
@@ -702,7 +894,10 @@ public static class AssemblyListing
     {
         var failure = FindFailure(listed, assembly.FilePath);
         if (failure == null)
+        {
             return listed.Add(assembly);
+        }
+
         return listed.Replace(failure, assembly);
     }
 
@@ -716,9 +911,14 @@ public static class AssemblyListing
         foreach (var assembly in listed)
         {
             if (assembly is not FailedAssembly failed)
+            {
                 continue;
+            }
+
             if (failed.FilePath.Equals(path))
+            {
                 return failed;
+            }
         }
         return null;
     }
@@ -734,7 +934,10 @@ public static class AssemblyListing
 
         var definition = Definitions.Resolve(LoadedAssemblies.EnsureMainModule(owner), handle);
         if (definition == null)
+        {
             return (null, default);
+        }
+
         return (TryLoadAssembly(list, AssemblyPath.Of(DecompilerFacts.GetMetadataFile(definition).FileName), generation), definition.MetadataToken);
     }
 
@@ -744,13 +947,22 @@ public static class AssemblyListing
     private static LoadedAssembly Read(AssemblyList list, AssemblyPath path, int generation)
     {
         if (File.Exists(path.Text))
+        {
             return ReadAssemblyOrPackage(list, path);
+        }
+
         var inPackage = AssemblyPackages.SplitPath(path);
         if (inPackage == null)
+        {
             return LoadedAssemblies.CreateModule(list, path, ReadFile(list, path));
+        }
+
         var container = Load(list, inPackage.Value.Package, generation);
         if (container is not LoadedPackage package)
+        {
             throw new AssemblyLoadException(path, $"'{container.FilePath}' is not a package.");
+        }
+
         return ReadOutOfPackage(list, package, path, inPackage.Value.FullName);
     }
 
@@ -766,7 +978,10 @@ public static class AssemblyListing
         {
             var read = ReadWebCilOrPackage(list, path);
             if (read == null)
+            {
                 throw;
+            }
+
             return read;
         }
     }
@@ -775,10 +990,16 @@ public static class AssemblyListing
     {
         var module = ReadWebCil(list, path);
         if (module != null)
+        {
             return LoadedAssemblies.CreateModule(list, path, module);
+        }
+
         var package = ReadPackage(path);
         if (package == null)
+        {
             return null;
+        }
+
         return LoadedAssemblies.CreatePackage(list, package);
     }
 
@@ -813,7 +1034,10 @@ public static class AssemblyListing
         var package = container.Package;
         var file = AssemblyPackages.FindFile(package, fullName);
         if (file == null)
+        {
             throw new AssemblyLoadException(path, $"'{container.FilePath}' holds no '{fullName}'.");
+        }
+
         var image = ReadPackageFile(list, package, file);
         return LoadedAssemblies.CreateModule(list, path, image, new PackagePlace(container, file));
     }
@@ -853,7 +1077,10 @@ public static class AssemblyListing
         {
             var file = new PEFile(path.Text, stream, PEStreamOptions.PrefetchEntireImage, list.Now.ReadOptions.ReaderOptions);
             if (!file.Reader.HasMetadata)
+            {
                 throw new AssemblyLoadException(path, $"'{path}' is not a .NET assembly.");
+            }
+
             return file;
         }
         catch (Exception e) when (e is BadImageFormatException or InvalidOperationException or MetadataFileNotSupportedException)

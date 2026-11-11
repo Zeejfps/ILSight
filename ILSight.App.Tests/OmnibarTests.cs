@@ -36,7 +36,10 @@ public sealed class OmnibarTests
     {
         var path = node.Path;
         if (path == null)
+        {
             return false;
+        }
+
         return path.Segments[^1] is TestSegment.Named named && named.Name == name;
     }
 

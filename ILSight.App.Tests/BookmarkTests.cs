@@ -16,7 +16,10 @@ public sealed class BookmarkTests : IDisposable
 {
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private static (AppStateDriver Driver, DocumentTab Tab, int Line) OutlineAt(string text, AppStateDriver? driver = null)
     {
@@ -226,11 +229,15 @@ public sealed class BookmarkTests : IDisposable
         Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Flash?.Line);
     }
 
-    private static void Click(AppDriver app, string text, KeyModifiers modifiers = KeyModifiers.None) =>
+    private static void Click(AppDriver app, string text, KeyModifiers modifiers = KeyModifiers.None)
+    {
         app.Frames.Wait(1).Click(app.TextRect(text), modifiers: modifiers).Frame();
+    }
 
-    private static void DoubleClick(AppDriver app, string text) =>
+    private static void DoubleClick(AppDriver app, string text)
+    {
         app.Frames.Wait(1).DoubleClick(app.TextRect(text)).Frame();
+    }
 
     private static (AppDriver App, AppStateDriver Driver, DocumentTab Tab, int Line) ShowBookmark(int frames = 3)
     {
@@ -416,7 +423,10 @@ public sealed class BookmarkTests : IDisposable
         Assert.Equal([1f, 1f, 4f, 1f], restored);
     }
 
-    private string Exported(params string[] lines) => ExportedAs("exported.json", lines);
+    private string Exported(params string[] lines)
+    {
+        return ExportedAs("exported.json", lines);
+    }
 
     private string ExportedAs(string name, params string[] lines)
     {
@@ -424,7 +434,10 @@ public sealed class BookmarkTests : IDisposable
         var path = _temp.PathOf(name);
         var (d, tab, _) = OutlineAt("return First();");
         foreach (var text in lines)
+        {
             ToggleBookmark(d.AppState, tab, tab.Document.Find(text).Line, Names.Bookmark);
+        }
+
         ExportBookmarks(d.AppState, path);
         Assert.Empty(d.AppState.Errors.Entries);
         return path;
@@ -523,26 +536,47 @@ public sealed class BookmarkTests : IDisposable
 
     private const string Fixtures = AppStateDriver.FixturesNamespace;
 
-    private static int TokenOf(string method) => typeof(Fixtures.Outline).GetMethod(method)!.MetadataToken;
+    private static int TokenOf(string method)
+    {
+        return typeof(Fixtures.Outline).GetMethod(method)!.MetadataToken;
+    }
 
-    private string ILSpyFile(string records) => _temp.Write("ILSpy.Bookmarks.json", $$"""{ "Version": 1, "Bookmarks": [ {{records}} ] }""");
+    private string ILSpyFile(string records)
+    {
+        return _temp.Write("ILSpy.Bookmarks.json", $$"""{ "Version": 1, "Bookmarks": [ {{records}} ] }""");
+    }
 
     /// <summary>A bookmark as ILSpy writes one in <c>Outline</c>, on the member <paramref name="token"/> names, which
     /// ILSpy records the full name of, <c>Outline.Third</c> unless <paramref name="memberName"/> says otherwise.</summary>
     private static string Record(string name, string kind, int token, int ilOffset, int lineNumber, string treePath, string? file = null,
-        string memberName = Fixtures + ".Outline.Third") =>
-        System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?>
+        string memberName = Fixtures + ".Outline.Third")
+    {
+        return System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?>
         {
-            ["Name"] = name, ["Enabled"] = true, ["FileName"] = file ?? AppStateDriver.FixturePath, ["AssemblyFullName"] = "ILSight.App.Tests",
-            ["ModuleName"] = "ILSight.App.Tests.dll", ["Token"] = token, ["Kind"] = kind, ["ILOffset"] = ilOffset, ["LineNumber"] = lineNumber,
-            ["MemberName"] = memberName, ["LocationNodeName"] = Fixtures + ".Outline",
+            ["Name"] = name,
+            ["Enabled"] = true,
+            ["FileName"] = file ?? AppStateDriver.FixturePath,
+            ["AssemblyFullName"] = "ILSight.App.Tests",
+            ["ModuleName"] = "ILSight.App.Tests.dll",
+            ["Token"] = token,
+            ["Kind"] = kind,
+            ["ILOffset"] = ilOffset,
+            ["LineNumber"] = lineNumber,
+            ["MemberName"] = memberName,
+            ["LocationNodeName"] = Fixtures + ".Outline",
             ["ViewState"] = new Dictionary<string, object?>
             {
-                ["Version"] = 1, ["CaretOffset"] = 0, ["VerticalOffset"] = 0.0, ["HorizontalOffset"] = 0.0, ["FoldingChecksum"] = null,
-                ["ExpandedFoldings"] = null, ["RenderedLayoutSettings"] = null,
+                ["Version"] = 1,
+                ["CaretOffset"] = 0,
+                ["VerticalOffset"] = 0.0,
+                ["HorizontalOffset"] = 0.0,
+                ["FoldingChecksum"] = null,
+                ["ExpandedFoldings"] = null,
+                ["RenderedLayoutSettings"] = null,
                 ["SelectedTreeNodePath"] = new[] { file ?? AppStateDriver.FixturePath, Fixtures, treePath },
             },
         });
+    }
 
     [Fact]
     public void Exports_are_written_in_ILSpys_bookmark_format()

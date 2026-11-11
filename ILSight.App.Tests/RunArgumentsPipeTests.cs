@@ -8,7 +8,10 @@ public sealed class RunArgumentsPipeTests
 {
     private const string GreetId = "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)";
 
-    private static RunArguments Arguments(params string[] args) => CommandLines.Parse(args).Arguments;
+    private static RunArguments Arguments(params string[] args)
+    {
+        return CommandLines.Parse(args).Arguments;
+    }
 
     private static List<RunArguments> TakeArrived(Channel<RunArguments> inbox, int count)
     {
@@ -18,7 +21,9 @@ public sealed class RunArgumentsPipeTests
         var reading = Task.Run(async () =>
         {
             await foreach (var arguments in inbox.Reader.ReadAllAsync().WithCancellation(timeout.Token))
+            {
                 arrived.Add(arguments);
+            }
         });
         reading.GetAwaiter().GetResult();
         Assert.Equal(count, arrived.Count);

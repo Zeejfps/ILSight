@@ -140,7 +140,10 @@ public sealed class CodeCaretTests
         view.Click(0, 0);
 
         for (var i = 0; i < 60; i++)
+        {
             view.Key(KeyboardKey.DownArrow);
+        }
+
         view.Run();
 
         Assert.Equal(60, view.State.Selection.Caret.Line);

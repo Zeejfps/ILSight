@@ -64,7 +64,9 @@ internal static class NuGetPlaceholderView
         Warning(ui, t.NugetSearchFailed);
         ui.Text(error, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
         if (ui.Button(t.NugetRetry, id: "nuget-retry"))
+        {
             NuGetPicking.RetrySearch(picker);
+        }
     }
 
     /// <summary>That nothing matched the query, with a button that clears it; or that the feed lists nothing.</summary>
@@ -80,7 +82,9 @@ internal static class NuGetPlaceholderView
         var noMatch = ui.Memo("nuget-no-match", (query, t), static a => a.t.NugetNoMatch(a.query));
         Note(ui, noMatch);
         if (ui.Button(t.NugetClearSearch, id: "nuget-clear"))
+        {
             NuGetPicking.ClearQuery(picker);
+        }
     }
 
     /// <summary>Over the packages shown: that the page asked for in their place failed, and a button that asks again.</summary>
@@ -94,7 +98,9 @@ internal static class NuGetPlaceholderView
             Warning(ui, text);
             ui.Spacer();
             if (ui.Button(t.NugetRetry, id: "nuget-retry-page", variant: ButtonVariant.Ghost))
+            {
                 NuGetPicking.RetrySearch(picker);
+            }
         }
     }
 

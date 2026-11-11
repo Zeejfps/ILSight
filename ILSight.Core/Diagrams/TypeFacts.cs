@@ -7,9 +7,15 @@ namespace ILSight.Core.Diagrams;
 
 internal static class TypeFacts
 {
-    public static bool IsObject(IType type) => type.IsKnownType(KnownTypeCode.Object);
+    public static bool IsObject(IType type)
+    {
+        return type.IsKnownType(KnownTypeCode.Object);
+    }
 
-    public static bool IsInterface(IType type) => type.Kind == TypeKind.Interface;
+    public static bool IsInterface(IType type)
+    {
+        return type.Kind == TypeKind.Interface;
+    }
 
     /// <summary>Whether <paramref name="type"/> is <c>Nullable&lt;T&gt;</c>, giving its T.</summary>
     public static bool TryGetNullable(IType type, [MaybeNullWhen(false)] out IType underlying)
@@ -35,10 +41,16 @@ internal static class TypeFacts
     public static bool OverridesObject(IMethod method)
     {
         if (!method.IsOverride)
+        {
             return false;
+        }
+
         var baseMember = InheritanceHelper.GetBaseMember(method);
         if (baseMember == null)
+        {
             return false;
+        }
+
         return IsObject(baseMember.DeclaringType);
     }
 
@@ -47,7 +59,10 @@ internal static class TypeFacts
     public static bool IsAncestor(ITypeDefinition type, IType other)
     {
         if (other.Equals(type))
+        {
             return false;
+        }
+
         return !IsObject(other);
     }
 }

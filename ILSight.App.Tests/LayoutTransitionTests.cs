@@ -11,7 +11,10 @@ public sealed class LayoutTransitionTests
 
     private static readonly Lazy<LoadedAssembly> s_fixtures = new(() => new AssemblyList().Open(AppStateDriver.FixturePath));
 
-    private static CodeReference.Entity TypeOf(string type) => s_fixtures.Value.Root.Child(AppStateDriver.FixturesNamespace, type).Definition;
+    private static CodeReference.Entity TypeOf(string type)
+    {
+        return s_fixtures.Value.Root.Child(AppStateDriver.FixturesNamespace, type).Definition;
+    }
 
     private static readonly CodeReference.Entity Car = TypeOf("Car");
     private static readonly CodeReference.Entity Vehicle = TypeOf("Vehicle");
@@ -21,7 +24,10 @@ public sealed class LayoutTransitionTests
     {
         var cards = new List<MeasuredCard> { new(Vehicle, 120f, vehicleHeight) };
         if (withCar)
+        {
             cards.Add(new MeasuredCard(Car, 100f, 60f));
+        }
+
         return DiagramLayouts.Arrange(new DiagramMeasures(cards, [new MeasuredLink(CarIsVehicle, 0f, 0f)]));
     }
 

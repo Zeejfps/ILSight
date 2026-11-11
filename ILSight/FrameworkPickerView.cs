@@ -28,7 +28,10 @@ internal static class FrameworkPickerView
         picker.FocusFilter = true;
         picker.AppliedFilter = null;
         if (picker.Scan is RuntimeScan.Scanned or RuntimeScan.Scanning)
+        {
             return;
+        }
+
         picker.Scan = new RuntimeScan.Scanning();
         var scanned = await Background.Run(picker.ListAssemblies);
         picker.AppliedFilter = null;
@@ -67,7 +70,10 @@ internal static class FrameworkPickerView
     private static void RefreshListed(FrameworkPicker picker, AssemblyList assemblies)
     {
         if (assemblies.Version == picker.ListedVersion)
+        {
             return;
+        }
+
         picker.ListedVersion = assemblies.Version;
         picker.Listed.Clear();
         picker.Listed.UnionWith(AssemblyListing.ListFilePaths(assemblies));
@@ -77,20 +83,30 @@ internal static class FrameworkPickerView
     private static void ApplyFilter(FrameworkPicker picker)
     {
         if (picker.Scan is not RuntimeScan.Scanned scanned)
+        {
             return;
+        }
+
         if (picker.Filter == picker.AppliedFilter)
+        {
             return;
+        }
+
         picker.AppliedFilter = picker.Filter;
         picker.Filtered.Clear();
         var filter = picker.Filter.Trim();
         foreach (var assembly in scanned.Assemblies)
         {
             if (Offers(picker, assembly, filter))
+            {
                 picker.Filtered.Add(assembly);
+            }
         }
         picker.Selection.Reconcile(picker.Filtered);
         if (!picker.HasSelection)
+        {
             picker.Selection.MoveTo(0, extend: false, picker.Filtered);
+        }
     }
 
     /// <summary>Whether <paramref name="assembly"/> is not open yet and its name matches
@@ -98,9 +114,15 @@ internal static class FrameworkPickerView
     private static bool Offers(FrameworkPicker picker, RuntimeAssembly assembly, string filter)
     {
         if (picker.Listed.Contains(assembly.FilePath))
+        {
             return false;
+        }
+
         if (filter.Length == 0)
+        {
             return true;
+        }
+
         return assembly.Name.Contains(filter, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -109,7 +131,9 @@ internal static class FrameworkPickerView
         var t = ui.State.Strings;
         var picker = ui.State.Picker;
         if (picker.IsOpen)
+        {
             Update(picker, assemblies);
+        }
 
         var theme = ui.Theme;
         var open = false;
@@ -117,14 +141,22 @@ internal static class FrameworkPickerView
         var card = new Box { Width = Sizing.Grow(0f, AppLayout.PickerWidth), Height = Sizing.Percent(AppLayout.PickerHeight) };
         using (var dialog = ui.Dialog("picker", t.PickerTitle, ref picker.IsOpen, card))
         {
-            if (!dialog.IsOpen) return;
+            if (!dialog.IsOpen)
+            {
+                return;
+            }
 
             var listId = ui.GetId("picker-list");
             if (!ui.HasFocus(listId))
+            {
                 MoveSelectionFromFilter(ui, picker, listId);
+            }
 
             if (TakeFilterFocus(picker))
+            {
                 ui.Focus(ui.GetId("picker-filter"));
+            }
+
             open |= ui.TextField("picker-filter", ref picker.Filter, t.PickerFilter, clearable: true);
 
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
@@ -164,10 +196,15 @@ internal static class FrameworkPickerView
             close = true;
         }
         if (close)
+        {
             picker.IsOpen = false;
+        }
     }
 
-    private static string Summary(Strings t, int shown, int selected) => $"{t.PickerCount(shown)} · {t.PickerSelected(selected)}";
+    private static string Summary(Strings t, int shown, int selected)
+    {
+        return $"{t.PickerCount(shown)} · {t.PickerSelected(selected)}";
+    }
 
     private static void OpenSelected(AppState appState, List<RuntimeAssembly> selected)
     {
@@ -184,7 +221,9 @@ internal static class FrameworkPickerView
         {
             var movesCaret = stroke.Key is KeyboardKey.Home or KeyboardKey.End;
             if (!movesCaret)
+            {
                 UiWidgets.ApplyListKey(stroke, picker.Selection, picker.Filtered, page);
+            }
         }
     }
 

@@ -25,9 +25,15 @@ public static class AssemblyLists
     public static void StartWithAssemblyList(AppState appState, string name)
     {
         if (!AssemblyLists.HasList(appState.Lists, name))
+        {
             AssemblyLists.AddList(appState.Lists, name);
+        }
+
         if (!AssemblyLists.ActivateList(appState.Lists, name))
+        {
             return;
+        }
+
         Analysis.ClearRoots(appState.Analyzer);
         Analysis.AddPending(appState.Analyzer, appState.Lists.ActiveAnalyses);
         ReopenDocuments(appState);
@@ -46,7 +52,10 @@ public static class AssemblyLists
     public static void RememberOpenAssemblies(AppState appState)
     {
         if (appState.IsReloading)
+        {
             return;
+        }
+
         AssemblyLists.RememberActive(appState.Lists, AssemblyListing.ListFilePaths(appState.Assemblies));
         AssemblyLists.RememberActivePdbs(appState.Lists, appState.Assemblies.Pdbs.All);
         AssemblyLists.RememberActiveFrameworks(appState.Lists, appState.Assemblies.TargetFrameworks.All);
@@ -68,7 +77,10 @@ public static class AssemblyLists
     {
         RememberActiveAssemblyList(appState);
         if (!AssemblyLists.ActivateList(appState.Lists, name))
+        {
             return;
+        }
+
         OpenActiveList(appState);
     }
 
@@ -77,7 +89,10 @@ public static class AssemblyLists
     public static void OpenAssemblyListNamed(AppState appState, string name)
     {
         if (!AssemblyLists.HasList(appState.Lists, name))
+        {
             AssemblyLists.AddList(appState.Lists, name);
+        }
+
         SwitchAssemblyList(appState, name);
     }
 
@@ -121,7 +136,9 @@ public static class AssemblyLists
         RememberActiveAssemblyList(appState);
         AssemblyLists.DeleteList(appState.Lists, name);
         if (wasActive)
+        {
             OpenActiveList(appState);
+        }
     }
 
     /// <summary>Opens the dialog with the open list of <paramref name="lists"/> picked.</summary>
@@ -152,7 +169,9 @@ public static class AssemblyLists
         for (var i = 0; i < names.Count; i++)
         {
             if (string.Equals(names[i], name.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
                 return i;
+            }
         }
         return -1;
     }
@@ -163,9 +182,15 @@ public static class AssemblyLists
         var names = lists.Names;
         var index = dialog.Selection.Index;
         if (index < 0)
+        {
             return null;
+        }
+
         if (index >= names.Count)
+        {
             return null;
+        }
+
         return names[index];
     }
 
@@ -183,7 +208,10 @@ public static class AssemblyLists
     public static void StopAsking(AssemblyListsDialog dialog)
     {
         if (!dialog.IsAsking)
+        {
             return;
+        }
+
         dialog.Mode = new ListsDialogMode.Browsing();
     }
 
@@ -198,9 +226,15 @@ public static class AssemblyLists
     {
         lists.Lists.Clear();
         foreach (var record in records)
+        {
             LoadList(lists, record);
+        }
+
         if (lists.Lists.Count == 0)
+        {
             lists.Lists.Add(CreateEmpty(SavedAssemblyLists.DefaultName));
+        }
+
         lists.ActiveList = FindList(lists, active) ?? lists.Lists[0];
         lists.Revision++;
     }
@@ -209,9 +243,15 @@ public static class AssemblyLists
     {
         var name = record.Name.Trim();
         if (name.Length == 0)
+        {
             return;
+        }
+
         if (FindList(lists, name) != null)
+        {
             return;
+        }
+
         var analyzed = record.Analyzed ?? new List<CodeAnchor>();
         var list = new SavedAssemblyLists.SavedList { Name = name, Paths = record.Assemblies.ToList(), Analyzed = analyzed.ToList() };
         CopyPicks(record.Pdbs, list.Pdbs);
@@ -236,9 +276,14 @@ public static class AssemblyLists
     private static void CopyPicks<T>(IReadOnlyDictionary<AssemblyPath, T>? picks, Dictionary<AssemblyPath, T> into)
     {
         if (picks == null)
+        {
             return;
+        }
+
         foreach (var (assembly, pick) in picks)
+        {
             into[assembly] = pick;
+        }
     }
 
     /// <summary>Puts the frameworks the settings wrote as <paramref name="saved"/> into <paramref name="into"/>,
@@ -246,12 +291,17 @@ public static class AssemblyLists
     private static void ReadFrameworks(IReadOnlyDictionary<AssemblyPath, string>? saved, Dictionary<AssemblyPath, TargetFrameworkId> into)
     {
         if (saved == null)
+        {
             return;
+        }
+
         foreach (var (assembly, text) in saved)
         {
             var framework = TargetFrameworkId.Parse(text);
             if (framework != null)
+            {
                 into[assembly] = framework;
+            }
         }
     }
 
@@ -277,7 +327,10 @@ public static class AssemblyLists
     private static Dictionary<AssemblyPath, string>? SavePicks(Dictionary<AssemblyPath, string> picks)
     {
         if (picks.Count == 0)
+        {
             return null;
+        }
+
         return new Dictionary<AssemblyPath, string>(picks);
     }
 
@@ -285,7 +338,10 @@ public static class AssemblyLists
     private static Dictionary<AssemblyPath, string>? SaveFrameworks(Dictionary<AssemblyPath, TargetFrameworkId> frameworks)
     {
         if (frameworks.Count == 0)
+        {
             return null;
+        }
+
         return frameworks.ToDictionary(static f => f.Key, static f => f.Value.Text);
     }
 
@@ -299,7 +355,10 @@ public static class AssemblyLists
     {
         var list = FindList(lists, name);
         if (list == null)
+        {
             return [];
+        }
+
         return list.Paths;
     }
 
@@ -308,9 +367,15 @@ public static class AssemblyLists
     {
         var list = FindList(lists, name);
         if (list == null)
+        {
             return false;
+        }
+
         if (list == lists.ActiveList)
+        {
             return false;
+        }
+
         lists.ActiveList = list;
         lists.Revision++;
         return true;
@@ -320,7 +385,10 @@ public static class AssemblyLists
     public static void RememberActive(SavedAssemblyLists lists, IReadOnlyList<AssemblyPath> paths)
     {
         if (lists.ActiveList.Paths.SequenceEqual(paths))
+        {
             return;
+        }
+
         lists.ActiveList.Paths.Clear();
         lists.ActiveList.Paths.AddRange(paths);
         lists.Revision++;
@@ -330,7 +398,10 @@ public static class AssemblyLists
     public static void RememberActiveAnalyses(SavedAssemblyLists lists, IReadOnlyList<CodeAnchor> analyzed)
     {
         if (lists.ActiveList.Analyzed.SequenceEqual(analyzed))
+        {
             return;
+        }
+
         lists.ActiveList.Analyzed.Clear();
         lists.ActiveList.Analyzed.AddRange(analyzed);
         lists.Revision++;
@@ -357,7 +428,10 @@ public static class AssemblyLists
     private static void RememberPicks<T>(SavedAssemblyLists lists, Dictionary<AssemblyPath, T> kept, IReadOnlyDictionary<AssemblyPath, T> picks) where T : class
     {
         if (HasPicks(kept, picks))
+        {
             return;
+        }
+
         kept.Clear();
         CopyPicks(picks, kept);
         lists.Revision++;
@@ -366,7 +440,10 @@ public static class AssemblyLists
     private static bool HasPicks<T>(Dictionary<AssemblyPath, T> kept, IReadOnlyDictionary<AssemblyPath, T> picks) where T : class
     {
         if (kept.Count != picks.Count)
+        {
             return false;
+        }
+
         return picks.All(p => Equals(kept.GetValueOrDefault(p.Key), p.Value));
     }
 
@@ -395,7 +472,10 @@ public static class AssemblyLists
         var copy = new SavedAssemblyLists.SavedList { Name = name, Paths = GetPaths(lists, source).ToList(), Analyzed = GetAnalyses(lists, source).ToList() };
         var original = FindList(lists, source);
         if (original != null)
+        {
             CopyPicksOf(original, copy);
+        }
+
         return InsertList(lists, copy);
     }
 
@@ -409,7 +489,10 @@ public static class AssemblyLists
     {
         var list = FindList(lists, name);
         if (list == null)
+        {
             return [];
+        }
+
         return list.Analyzed;
     }
 
@@ -426,10 +509,16 @@ public static class AssemblyLists
     private static string MakeUniqueName(SavedAssemblyLists lists, string name)
     {
         if (FindList(lists, name) == null)
+        {
             return name;
+        }
+
         var number = 2;
         while (FindList(lists, $"{name} {number}") != null)
+        {
             number++;
+        }
+
         return $"{name} {number}";
     }
 
@@ -439,10 +528,16 @@ public static class AssemblyLists
     {
         var trimmed = newName.Trim();
         if (trimmed.Length == 0)
+        {
             return false;
+        }
+
         var holder = FindList(lists, trimmed);
         if (holder == null)
+        {
             return true;
+        }
+
         return holder == FindList(lists, name);
     }
 
@@ -450,10 +545,16 @@ public static class AssemblyLists
     public static bool RenameList(SavedAssemblyLists lists, string name, string newName)
     {
         if (!CanRenameList(lists, name, newName))
+        {
             return false;
+        }
+
         var list = FindList(lists, name);
         if (list == null)
+        {
             return false;
+        }
+
         list.Name = newName.Trim();
         lists.Revision++;
         return true;
@@ -465,13 +566,22 @@ public static class AssemblyLists
     {
         var list = FindList(lists, name);
         if (list == null)
+        {
             return;
+        }
+
         var replacement = FindReplacement(lists, list.Name);
         lists.Lists.Remove(list);
         if (lists.Lists.Count == 0)
+        {
             lists.Lists.Add(CreateEmpty(SavedAssemblyLists.DefaultName));
+        }
+
         if (list == lists.ActiveList)
+        {
             lists.ActiveList = FindRemainingList(lists, replacement);
+        }
+
         lists.Revision++;
     }
 
@@ -481,12 +591,21 @@ public static class AssemblyLists
     {
         var list = FindList(lists, name);
         if (list == null)
+        {
             return lists.Active;
+        }
+
         var index = lists.Lists.IndexOf(list);
         if (index + 1 < lists.Lists.Count)
+        {
             return lists.Lists[index + 1].Name;
+        }
+
         if (index > 0)
+        {
             return lists.Lists[index - 1].Name;
+        }
+
         return SavedAssemblyLists.DefaultName;
     }
 
@@ -496,14 +615,20 @@ public static class AssemblyLists
     {
         var list = FindList(lists, name);
         if (list == null)
+        {
             throw new UnreachableException($"No list named {name} is left, though the list that takes a deleted one's place always is.");
+        }
+
         return list;
     }
 
     private static SavedAssemblyLists.SavedList? FindList(SavedAssemblyLists lists, string? name)
     {
         if (name == null)
+        {
             return null;
+        }
+
         return lists.Lists.Find(l => string.Equals(l.Name, name.Trim(), StringComparison.OrdinalIgnoreCase));
     }
 }

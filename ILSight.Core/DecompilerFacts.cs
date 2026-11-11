@@ -15,7 +15,10 @@ internal static class DecompilerFacts
     {
         var module = entity.ParentModule;
         if (module == null)
+        {
             throw new UnreachableException($"{entity} belongs to no module, though every entity of a loaded assembly does.");
+        }
+
         return module;
     }
 
@@ -24,7 +27,10 @@ internal static class DecompilerFacts
     public static MetadataModule GetMetadataModule(IEntity entity)
     {
         if (entity.ParentModule is not MetadataModule module)
+        {
             throw new UnreachableException($"{entity} belongs to no module read from metadata, though every entity of a loaded assembly does.");
+        }
+
         return module;
     }
 
@@ -33,7 +39,10 @@ internal static class DecompilerFacts
     {
         var file = entity.ParentModule?.MetadataFile;
         if (file == null)
+        {
             throw new UnreachableException($"{entity} was read from no file, though every entity of a loaded assembly was.");
+        }
+
         return file;
     }
 
@@ -43,7 +52,10 @@ internal static class DecompilerFacts
     {
         var declaring = member.DeclaringTypeDefinition;
         if (declaring == null)
+        {
             throw new UnreachableException($"{member} has no type declaring it, though every member has.");
+        }
+
         return declaring;
     }
 
@@ -53,7 +65,10 @@ internal static class DecompilerFacts
     {
         var token = method.MetadataToken;
         if (token.Kind != HandleKind.MethodDefinition)
+        {
             throw new UnreachableException($"{method} has a {token.Kind} token, though every method of a loaded assembly has a MethodDefinition one.");
+        }
+
         return (MethodDefinitionHandle)token;
     }
 
@@ -63,7 +78,10 @@ internal static class DecompilerFacts
     {
         var token = type.MetadataToken;
         if (token.Kind != HandleKind.TypeDefinition)
+        {
             throw new UnreachableException($"{type} has a {token.Kind} token, though every type of a loaded assembly has a TypeDefinition one.");
+        }
+
         return (TypeDefinitionHandle)token;
     }
 
@@ -72,7 +90,10 @@ internal static class DecompilerFacts
     public static IMember ResolveMember(MetadataModule module, EntityHandle handle)
     {
         if (module.ResolveEntity(handle) is not IMember member)
+        {
             throw new UnreachableException($"The {handle.Kind} handle resolves to no member, though it names one.");
+        }
+
         return member;
     }
 
@@ -82,7 +103,10 @@ internal static class DecompilerFacts
     {
         var header = headers.PEHeader;
         if (header == null)
+        {
             throw new UnreachableException("A portable executable that was loaded has no optional header, which only object files go without.");
+        }
+
         return header;
     }
 }

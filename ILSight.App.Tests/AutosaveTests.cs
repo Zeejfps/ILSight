@@ -12,7 +12,10 @@ public sealed class AutosaveTests : IDisposable
 {
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private static readonly WindowBounds MovedExportWindow = new(-900, 200, 700, 800, false);
     private static readonly WindowBounds MovedNuGetWindow = new(100, -300, 900, 600, false);
@@ -106,26 +109,29 @@ public sealed class AutosaveTests : IDisposable
         }
     }
 
-    private static bool IsSaved(AppSettings saved, string field) => field switch
+    private static bool IsSaved(AppSettings saved, string field)
     {
-        nameof(AppSettings.Theme) => saved.Theme.Text == "monokai",
-        nameof(AppSettings.Language) => saved.Language == DecompilationLanguage.IL,
-        nameof(AppSettings.Decompiler) => saved.Decompiler.LanguageVersion == CSharpVersion.CSharp7_3,
-        nameof(AppSettings.ApiVisibility) => saved.ApiVisibility == ApiVisibility.All,
-        nameof(AppSettings.Locale) => saved.Locale == Locale.De,
-        nameof(AppSettings.SearchKinds) => saved.SearchKinds == SearchKinds.Types,
-        nameof(AppSettings.FoldedOptionGroups) => saved.FoldedOptionGroups?.SequenceEqual(["Other"]) == true,
-        nameof(AppSettings.BookmarkColumns) => saved.BookmarkColumns?.SequenceEqual([1f, 1f, 4f, 1f]) == true,
-        nameof(AppSettings.SearchColumns) => saved.SearchColumns?.SequenceEqual([1f, 4f, 1f]) == true,
-        nameof(AppSettings.ExportColumns) => saved.ExportColumns?.SequenceEqual([1f, 4f, 1f]) == true,
-        nameof(AppSettings.ExportWindow) => saved.ExportWindow == MovedExportWindow,
-        nameof(AppSettings.NuGetWindow) => saved.NuGetWindow == MovedNuGetWindow,
-        nameof(AppSettings.ProcessWindow) => saved.ProcessWindow == MovedProcessWindow,
-        nameof(AppSettings.ProcessColumns) => saved.ProcessColumns?.SequenceEqual([2f, 1f, 3f, 1f]) == true,
-        nameof(AppSettings.ProcessModuleColumns) => saved.ProcessModuleColumns?.SequenceEqual([1f, 4f]) == true,
-        nameof(AppSettings.CloseWindow) => saved.CloseWindow == MovedCloseWindow,
-        _ => throw new ArgumentOutOfRangeException(nameof(field), field, null),
-    };
+        return field switch
+        {
+            nameof(AppSettings.Theme) => saved.Theme.Text == "monokai",
+            nameof(AppSettings.Language) => saved.Language == DecompilationLanguage.IL,
+            nameof(AppSettings.Decompiler) => saved.Decompiler.LanguageVersion == CSharpVersion.CSharp7_3,
+            nameof(AppSettings.ApiVisibility) => saved.ApiVisibility == ApiVisibility.All,
+            nameof(AppSettings.Locale) => saved.Locale == Locale.De,
+            nameof(AppSettings.SearchKinds) => saved.SearchKinds == SearchKinds.Types,
+            nameof(AppSettings.FoldedOptionGroups) => saved.FoldedOptionGroups?.SequenceEqual(["Other"]) == true,
+            nameof(AppSettings.BookmarkColumns) => saved.BookmarkColumns?.SequenceEqual([1f, 1f, 4f, 1f]) == true,
+            nameof(AppSettings.SearchColumns) => saved.SearchColumns?.SequenceEqual([1f, 4f, 1f]) == true,
+            nameof(AppSettings.ExportColumns) => saved.ExportColumns?.SequenceEqual([1f, 4f, 1f]) == true,
+            nameof(AppSettings.ExportWindow) => saved.ExportWindow == MovedExportWindow,
+            nameof(AppSettings.NuGetWindow) => saved.NuGetWindow == MovedNuGetWindow,
+            nameof(AppSettings.ProcessWindow) => saved.ProcessWindow == MovedProcessWindow,
+            nameof(AppSettings.ProcessColumns) => saved.ProcessColumns?.SequenceEqual([2f, 1f, 3f, 1f]) == true,
+            nameof(AppSettings.ProcessModuleColumns) => saved.ProcessModuleColumns?.SequenceEqual([1f, 4f]) == true,
+            nameof(AppSettings.CloseWindow) => saved.CloseWindow == MovedCloseWindow,
+            _ => throw new ArgumentOutOfRangeException(nameof(field), field, null),
+        };
+    }
 
     [Fact]
     public void The_export_window_moved_is_saved_once_the_button_comes_up()
@@ -328,7 +334,9 @@ public sealed class AutosaveTests : IDisposable
         {
             app.Frames.MovePointer(x, 350f).Frame();
             if (app.Frames.Cursor == MouseCursor.ResizeHorizontal)
+            {
                 return x;
+            }
         }
         throw new InvalidOperationException("No splitter near the root split's ratio.");
     }

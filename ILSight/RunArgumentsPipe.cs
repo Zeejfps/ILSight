@@ -103,9 +103,15 @@ public static class RunArgumentsPipe
     {
         var count = await ReadIntAsync(pipe, token);
         if (count < 0)
+        {
             throw new InvalidDataException("Handed arguments are malformed.");
+        }
+
         if (count > max)
+        {
             throw new InvalidDataException("Handed arguments are too long.");
+        }
+
         return count;
     }
 
@@ -150,7 +156,10 @@ public static class RunArgumentsPipe
         var claimed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var receiver = StartReceiver(address, r => RunArgumentsPipe.ClaimAndServe(r, claimed));
         if (claimed.Task.GetAwaiter().GetResult())
+        {
             return receiver;
+        }
+
         receiver.Dispose();
         return null;
     }
@@ -167,7 +176,9 @@ public static class RunArgumentsPipe
         var holdsRole = TryTakeRole(receiver, TimeSpan.Zero);
         claimed.SetResult(holdsRole);
         if (holdsRole)
+        {
             ServeThenRelease(receiver);
+        }
     }
 
     private static void WaitAndServe(RunArgumentsReceiver receiver)
@@ -255,7 +266,9 @@ public static class RunArgumentsPipe
         {
             var arguments = await RunArgumentsPipe.ReceiveAsync(pipe, timeout.Token);
             if (receiver.Inbox.Writer.TryWrite(arguments))
+            {
                 await RunArgumentsPipe.AcknowledgeAsync(pipe, timeout.Token);
+            }
         }
         catch (Exception e) when (RunArgumentsPipe.IsBroken(e) && !stop.IsCancellationRequested)
         {

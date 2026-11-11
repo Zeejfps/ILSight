@@ -103,16 +103,26 @@ internal static class Shortcuts
     {
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
+        {
             Commands.Later(ui.State, static a => GoBack(a));
+        }
+
         if (input.WasPressed(PointerButton.Forward))
+        {
             Commands.Later(ui.State, static a => GoForward(a));
+        }
 
         foreach (var binding in Bindings)
         {
             if (ui.WantsTextInput && !binding.WhileTyping)
+            {
                 continue;
+            }
+
             if (ui.IsPressed(binding.Keys))
+            {
                 binding.Run(ui, appState);
+            }
         }
     }
 
@@ -120,7 +130,10 @@ internal static class Shortcuts
     private static void SearchInOmnibarUnlessFolding(Ui<UiState> ui)
     {
         if (ui.IsPressed(ToggleAllFolds))
+        {
             return;
+        }
+
         SearchInOmnibar(ui.State);
     }
 
@@ -130,7 +143,9 @@ internal static class Shortcuts
         foreach (var shortcut in shortcuts)
         {
             if (ui.IsPressed(shortcut))
+            {
                 return true;
+            }
         }
         return false;
     }

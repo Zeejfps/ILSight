@@ -12,7 +12,10 @@ internal static class AttributeAppliedToAnalyzer
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
         if (symbol is not ITypeDefinition type || !type.GetNonInterfaceBaseTypes().Any(t => t.IsKnownType(KnownTypeCode.Attribute)))
+        {
             return null;
+        }
+
         return context => Analyze(type, context);
     }
 
@@ -45,37 +48,57 @@ internal static class AttributeAppliedToAnalyzer
             var parent = metadata.GetDeclarativeSecurityAttribute(h).Parent;
             var attributes = SecurityAttributesOf(ts, parent);
             if (attributes.Any(a => IsOfType(a, attributeType)))
+            {
                 yield return SecurityOwner(ts, parent);
+            }
         }
     }
 
     private static IEnumerable<IAttribute> SecurityAttributesOf(DecompilerTypeSystem ts, EntityHandle parent)
     {
         if (parent.Kind == HandleKind.AssemblyDefinition)
+        {
             return ts.MainModule.GetAssemblyAttributes();
+        }
+
         var entity = ts.MainModule.ResolveEntity(parent);
         if (entity == null)
+        {
             return [];
+        }
+
         return entity.GetAttributes();
     }
 
     private static bool IsOfType(IAttribute attribute, ITypeDefinition attributeType)
     {
         if (attribute.AttributeType.ReflectionName != attributeType.ReflectionName)
+        {
             return false;
+        }
+
         var definition = attribute.AttributeType.GetDefinition();
         if (definition == null)
+        {
             return true;
+        }
+
         return definition.ParentModule?.AssemblyName == attributeType.ParentModule?.AssemblyName;
     }
 
     private static ISymbol SecurityOwner(DecompilerTypeSystem ts, EntityHandle parent)
     {
         if (parent.Kind == HandleKind.AssemblyDefinition)
+        {
             return ts.MainModule;
+        }
+
         var entity = ts.MainModule.ResolveEntity(parent);
         if (entity is IMethod method && method.AccessorOwner != null)
+        {
             return method.AccessorOwner;
+        }
+
         return entity;
     }
 
@@ -95,9 +118,14 @@ internal static class AttributeAppliedToAnalyzer
             _ => [],
         };
 
-        IEnumerable<ISymbol> Fields() => types.SelectMany(static t => t.Fields).Where(f => f.HasAttribute(attribute));
+        IEnumerable<ISymbol> Fields()
+        {
+            return types.SelectMany(static t => t.Fields).Where(f => f.HasAttribute(attribute));
+        }
 
-        IEnumerable<ISymbol> Parameters() =>
-            methods.Where(m => m.Parameters.Any(p => p.HasAttribute(attribute))).Select(static m => m.AccessorOwner ?? m);
+        IEnumerable<ISymbol> Parameters()
+        {
+            return methods.Where(m => m.Parameters.Any(p => p.HasAttribute(attribute))).Select(static m => m.AccessorOwner ?? m);
+        }
     }
 }

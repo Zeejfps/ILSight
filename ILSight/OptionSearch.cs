@@ -43,11 +43,20 @@ internal static class OptionSearch
         foreach (var word in words)
         {
             if (Contains(compare, first, word))
+            {
                 continue;
+            }
+
             if (second != null && Contains(compare, second, word))
+            {
                 continue;
+            }
+
             if (third != null && Contains(compare, third, word))
+            {
                 continue;
+            }
+
             return false;
         }
         return true;
@@ -71,7 +80,10 @@ internal static class OptionSearch
             {
                 var at = compare.IndexOf(text.AsSpan(from), word, Loose, out var length);
                 if (at < 0 || length == 0)
+                {
                     break;
+                }
+
                 hits.Add((from + at, from + at + length));
                 from += at + length;
             }
@@ -81,9 +93,13 @@ internal static class OptionSearch
         foreach (var hit in hits)
         {
             if (joined.Count > 0 && hit.Start <= joined[^1].End)
+            {
                 joined[^1] = (joined[^1].Start, Math.Max(joined[^1].End, hit.End));
+            }
             else
+            {
                 joined.Add(hit);
+            }
         }
         return joined;
     }
@@ -96,12 +112,18 @@ internal static class OptionSearch
         foreach (var (start, end) in hits)
         {
             if (start > at)
+            {
                 runs.Add(new RichTextRun(text[at..start], style));
+            }
+
             runs.Add(new RichTextRun(text[start..end], style, IsMarked: true));
             at = end;
         }
         if (at < text.Length)
+        {
             runs.Add(new RichTextRun(text[at..], style));
+        }
+
         return runs;
     }
 
@@ -111,7 +133,10 @@ internal static class OptionSearch
     {
         if (label.HasValue && ReferenceEquals(label.Style, style) && string.Equals(label.Text, text, StringComparison.Ordinal)
             && string.Equals(label.Query, query, StringComparison.Ordinal))
+        {
             return label.Runs;
+        }
+
         var hits = FindHits(culture, query, text);
         label.HasValue = true;
         label.Text = text;
@@ -127,13 +152,19 @@ internal static class OptionSearch
     public static IReadOnlyList<RichTextRun>? EnsureMarkedRuns(Ui<UiState> ui, string query, string text, TextStyle style, int part = 0)
     {
         if (query.Length == 0)
+        {
             return null;
+        }
+
         var label = ui.GetState<MarkedLabel>(HashCode.Combine(ui.GetId(text), part, MarkSalt));
         return EnsureMarkedRuns(label, ui.State.Strings.Culture, query, text, style);
     }
 
     /// <summary>The background a hit of the search is marked on: that of a find match in the code.</summary>
-    public static uint GetMarkBackground(Ui<UiState> ui) => ui.State.CodeViewPalette.FindMatch;
+    public static uint GetMarkBackground(Ui<UiState> ui)
+    {
+        return ui.State.CodeViewPalette.FindMatch;
+    }
 
     /// <summary>The search field, filling the row it is in. Escape empties it while it has focus, and so
     /// does the cross at its end while it holds text.</summary>
@@ -141,7 +172,10 @@ internal static class OptionSearch
     {
         var t = ui.State.Strings;
         if (query.Length > 0 && ui.HasFocus(ui.GetId(FieldId)) && ui.Input.TakeKey(KeyboardKey.Escape))
+        {
             query = "";
+        }
+
         ui.TextField(FieldId, ref query, t.OptionsSearchPlaceholder, Sizing.Grow(), ui.State.Icons.OptionsSearch, clearable: true);
     }
 
@@ -154,7 +188,9 @@ internal static class OptionSearch
         {
             ui.Text(t.OptionsSearchNoMatch, color: theme.TextMuted, wrap: true);
             if (ui.Button(t.OptionsSearchClear, id: "clear-search", variant: ButtonVariant.Ghost))
+            {
                 query = "";
+            }
         }
     }
 }

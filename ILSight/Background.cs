@@ -19,10 +19,16 @@ public abstract record Outcome<T>
 /// <summary>Runs work on the thread pool for the UI thread to await.</summary>
 public static class Background
 {
-    public static BackgroundWork<T> Run<T>(Func<T> work) => new(Task.Run(work));
+    public static BackgroundWork<T> Run<T>(Func<T> work)
+    {
+        return new(Task.Run(work));
+    }
 
     /// <summary>Waits for <paramref name="task"/> as <see cref="BackgroundWork{T}"/> does.</summary>
-    public static BackgroundWork<T> Wait<T>(Task<T> task) => new(task);
+    public static BackgroundWork<T> Wait<T>(Task<T> task)
+    {
+        return new(task);
+    }
 
     /// <summary>Lets <paramref name="workflow"/>, started on the UI thread, run to its end, counted in
     /// <paramref name="work"/> as <paramref name="name"/> until then, so a harness waiting for the UI to be ready
@@ -58,7 +64,10 @@ public static class Background
 /// Awaited where there is no UI thread, it continues on the thread pool as <c>await</c> does.</summary>
 public readonly struct BackgroundWork<T>(Task<T> task)
 {
-    public Awaiter GetAwaiter() => new(task);
+    public Awaiter GetAwaiter()
+    {
+        return new(task);
+    }
 
     public readonly struct Awaiter(Task<T> task) : INotifyCompletion
     {
@@ -78,21 +87,30 @@ public readonly struct BackgroundWork<T>(Task<T> task)
         private static void Continue(object? continuation)
         {
             if (continuation is not Action action)
+            {
                 throw new UnreachableException("OnCompleted posts Continue with the continuation it was given.");
+            }
+
             action();
         }
 
         public Outcome<T> GetResult()
         {
             if (task.IsCompletedSuccessfully)
+            {
                 return new Outcome<T>.Ok(task.Result);
+            }
+
             return new Outcome<T>.Failed(FindError());
         }
 
         private Exception FindError()
         {
             if (task.Exception == null)
+            {
                 return new OperationCanceledException();
+            }
+
             return task.Exception.GetBaseException();
         }
     }

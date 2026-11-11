@@ -71,7 +71,9 @@ public sealed class CodeViewScrollTests
             {
                 using var screen = ui.Screen();
                 using (ui.Id(tab))
+                {
                     CodeViewWidget.RenderCodeView(ui, "code", document, state);
+                }
             });
         }
 
@@ -84,7 +86,10 @@ public sealed class CodeViewScrollTests
         var scrolled = a.Position.TopLine;
 
         for (var i = 0; i < 1100; i++)
+        {
             Show(2, b, documentB);
+        }
+
         Show(1, a, documentA);
         Show(1, a, documentA);
 

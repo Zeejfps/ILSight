@@ -32,7 +32,11 @@ public sealed class ILSpyTreeTests
 
         foreach (var node in assembly.Calculator().Children.Prepend(assembly.Calculator()))
         {
-            if (ILSpyTree.PathOf(node) is not { } path) continue;
+            if (ILSpyTree.PathOf(node) is not { } path)
+            {
+                continue;
+            }
+
             Assert.Equal(BrowseNodes.GetPath(node), PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "")));
         }
     }

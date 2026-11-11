@@ -18,7 +18,10 @@ public static class ShownReports
     public static DecompiledDocument GetDocument(ShownReport shown, ExportReport report, Strings t)
     {
         if (shown.Written.TryGet((new(report), new(t)), out var document))
+        {
             return document;
+        }
+
         document = ExportReportText.Write(t, [report]);
         shown.Written = new((new(report), new(t)), document);
         return document;

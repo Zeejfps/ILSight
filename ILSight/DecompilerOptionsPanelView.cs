@@ -31,19 +31,30 @@ internal static class DecompilerOptionsPanelView
             OptionSearch.Field(ui, ref ui.State.DecompilerOptionsQuery);
             var searching = ui.State.DecompilerOptionsQuery.Trim().Length > 0;
             if (ui.IconButton("collapse", ui.State.Icons.OptionsCollapseAll, t.CodeCollapseAll, !searching && !AllFolded(folded)))
+            {
                 OptionFolds.Fold(folded, Sections.Select(static s => s.Key));
+            }
+
             if (ui.IconButton("expand", ui.State.Icons.OptionsExpandAll, t.CodeExpandAll, !searching && folded.Count > 0))
+            {
                 OptionFolds.UnfoldAll(folded);
+            }
+
             ui.Separator(theme.IconSize);
             if (ui.IconButton("reset", ui.State.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
+            {
                 Commands.Later(ui.State, static a => ResetDecompilerToggles(a));
+            }
         }
         ui.Separator();
         var tooNew = options.LanguageVersion < Newest ? ui.Memo("too-new", (t, options.LanguageVersion), static a => TooNew(a.t, a.LanguageVersion)) : null;
         if (tooNew != null)
         {
             using (ui.Column(new Box { Padding = new Spacing(theme.ShellPaddingX, theme.ToolbarPaddingY) }))
+            {
                 ui.Text(tooNew, color: theme.TextMuted, wrap: true);
+            }
+
             ui.Separator();
         }
 
@@ -68,7 +79,9 @@ internal static class DecompilerOptionsPanelView
                     if (toggle is null)
                     {
                         if (Header(ui, shownFolds, section, options, rowHeight, tooNew))
+                        {
                             flipped = section.Key;
+                        }
                     }
                     else
                     {
@@ -78,7 +91,9 @@ internal static class DecompilerOptionsPanelView
             }
         }
         if (flipped != null)
+        {
             OptionFolds.Flip(folded, flipped);
+        }
     }
 
     /// <summary>The sections with only the toggles <paramref name="words"/> match, by the toggle's label,
@@ -93,12 +108,17 @@ internal static class DecompilerOptionsPanelView
                 .Where(toggle => OptionSearch.IsMatch(t.Culture, words, Label(t, toggle), toggle.Name, title))
                 .ToArray();
             if (toggles.Length > 0)
+            {
                 matching.Add(section with { Toggles = toggles });
+            }
         }
         return matching.ToArray();
     }
 
-    private static string Label(Strings t, DecompilerToggle toggle) => DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name;
+    private static string Label(Strings t, DecompilerToggle toggle)
+    {
+        return DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name;
+    }
 
     /// <summary>Draws a section's header: a chevron and a checkbox that sets every toggle shown in it,
     /// showing a square when only some are on. Returns true when the row besides the checkbox was
@@ -133,10 +153,15 @@ internal static class DecompilerOptionsPanelView
                 ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui), ref all, "all", allowed, Sizing.Grow())
                 : ui.Checkbox(title, ref all, id: "all", enabled: allowed, width: Sizing.Grow(), bold: bold);
             if (flipped)
+            {
                 Commands.Later(ui.State, (toggles: section.Toggles, on: all == true), static (a, s) => SetDecompilerToggles(a, s.toggles, s.on));
+            }
         }
         if (!allowed && tooNew != null)
+        {
             ui.Tooltip(item.Id, tooNew);
+        }
+
         return folded != null && item.Clicked;
     }
 
@@ -144,14 +169,20 @@ internal static class DecompilerOptionsPanelView
     private static bool IsFolded(FoldedGroups? folded, Section section)
     {
         if (folded == null)
+        {
             return false;
+        }
+
         return OptionFolds.IsFolded(folded, section.Key);
     }
 
     private static bool IsAllowed(Section section, DecompilerOptions options)
     {
         if (section.Group is not DecompilerToggleGroup.Language language)
+        {
             return true;
+        }
+
         return language.IntroducedIn <= options.LanguageVersion;
     }
 
@@ -160,7 +191,10 @@ internal static class DecompilerOptionsPanelView
     private static CSharpVersion? FindVersion(DecompilerToggleGroup group)
     {
         if (group is not DecompilerToggleGroup.Language language)
+        {
             return null;
+        }
+
         return language.IntroducedIn;
     }
 
@@ -184,12 +218,20 @@ internal static class DecompilerOptionsPanelView
         foreach (var toggle in section.Toggles)
         {
             if (DecompilerToggles.IsOn(options, toggle))
+            {
                 on++;
+            }
         }
         if (on == section.Toggles.Length)
+        {
             return true;
+        }
+
         if (on == 0)
+        {
             return false;
+        }
+
         return null;
     }
 
@@ -198,7 +240,10 @@ internal static class DecompilerOptionsPanelView
     {
         foreach (var toggle in section.Toggles)
         {
-            if (DecompilerToggles.IsChanged(options, toggle)) return true;
+            if (DecompilerToggles.IsChanged(options, toggle))
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -225,11 +270,16 @@ internal static class DecompilerOptionsPanelView
                 ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui), ref on, toggle.Name, enabled, Sizing.Grow())
                 : ui.Checkbox(label, ref on, id: toggle.Name, enabled: enabled, width: Sizing.Grow(), bold: bold);
             if (flipped)
+            {
                 Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
+            }
         }
     }
 
-    private static string TooNew(Strings t, CSharpVersion version) => t.DecompilerOptionsTooNew(CSharpVersions.Label(version));
+    private static string TooNew(Strings t, CSharpVersion version)
+    {
+        return t.DecompilerOptionsTooNew(CSharpVersions.Label(version));
+    }
 
     private static string Title(Strings t, Section section)
     {
@@ -247,7 +297,10 @@ internal static class DecompilerOptionsPanelView
     {
         foreach (var section in Sections)
         {
-            if (!OptionFolds.IsFolded(folded, section.Key)) return false;
+            if (!OptionFolds.IsFolded(folded, section.Key))
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -256,7 +309,10 @@ internal static class DecompilerOptionsPanelView
     {
         var count = 0;
         foreach (var section in sections)
+        {
             count += 1 + (IsFolded(folded, section) ? 0 : section.Toggles.Length);
+        }
+
         return count;
     }
 
@@ -265,9 +321,17 @@ internal static class DecompilerOptionsPanelView
     {
         foreach (var section in sections)
         {
-            if (row == 0) return (section, null);
+            if (row == 0)
+            {
+                return (section, null);
+            }
+
             var shown = IsFolded(folded, section) ? 0 : section.Toggles.Length;
-            if (row <= shown) return (section, section.Toggles[row - 1]);
+            if (row <= shown)
+            {
+                return (section, section.Toggles[row - 1]);
+            }
+
             row -= 1 + shown;
         }
         throw new ArgumentOutOfRangeException(nameof(row));

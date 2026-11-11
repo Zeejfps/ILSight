@@ -70,12 +70,21 @@ internal sealed class CodeViewDriver
     public float TextLeft => FoldLeft + (Document.Folds.Length > 0 ? FoldColumn : 0f) + CodePadding;
 
     /// <summary>Where the bookmark mark of <paramref name="row"/> is, the view scrolled to the top.</summary>
-    public (float X, float Y) MarkOf(CodeRow row) => (Origin + (MarkColumn + GutterPadding) / 2, MiddleOf(row));
+    public (float X, float Y) MarkOf(CodeRow row)
+    {
+        return (Origin + (MarkColumn + GutterPadding) / 2, MiddleOf(row));
+    }
 
     /// <summary>Where the fold chevron of <paramref name="row"/> is, the view scrolled to the top.</summary>
-    public (float X, float Y) ChevronOf(CodeRow row) => (FoldLeft + FoldColumn / 2, MiddleOf(row));
+    public (float X, float Y) ChevronOf(CodeRow row)
+    {
+        return (FoldLeft + FoldColumn / 2, MiddleOf(row));
+    }
 
-    private static float MiddleOf(CodeRow row) => Origin + CodeViewWidget.GetRowTop(row, Row) + Row / 2;
+    private static float MiddleOf(CodeRow row)
+    {
+        return Origin + CodeViewWidget.GetRowTop(row, Row) + Row / 2;
+    }
 
     public CodeViewResult Run(int frames = 1)
     {
@@ -84,7 +93,10 @@ internal sealed class CodeViewDriver
     }
 
     /// <summary>Where <paramref name="column"/> of <paramref name="row"/> is, the view scrolled to the top.</summary>
-    public (float X, float Y) PointOf(CodeRow row, int column) => (TextLeft + column * Cell + 1f, MiddleOf(row));
+    public (float X, float Y) PointOf(CodeRow row, int column)
+    {
+        return (TextLeft + column * Cell + 1f, MiddleOf(row));
+    }
 
     /// <summary>Where <paramref name="column"/> of the row <paramref name="line"/> is shown on is, the view scrolled to the top.</summary>
     public (float X, float Y) PointOf(int line, int column)
@@ -104,8 +116,10 @@ internal sealed class CodeViewDriver
     }
 
     /// <summary>Clicks at the cell, as <see cref="Click(ValueTuple{float, float}, PointerButton, KeyModifiers)"/>.</summary>
-    public CodeViewResult Click(CodeRow row, int column, PointerButton button = PointerButton.Left, KeyModifiers modifiers = KeyModifiers.None) =>
-        Click(PointOf(row, column), button, modifiers);
+    public CodeViewResult Click(CodeRow row, int column, PointerButton button = PointerButton.Left, KeyModifiers modifiers = KeyModifiers.None)
+    {
+        return Click(PointOf(row, column), button, modifiers);
+    }
 
     /// <summary>Clicks at <paramref name="column"/> of the row <paramref name="line"/> is shown on.</summary>
     public CodeViewResult Click(int line, int column, PointerButton button = PointerButton.Left, KeyModifiers modifiers = KeyModifiers.None)
@@ -123,25 +137,42 @@ internal sealed class CodeViewDriver
         return pressed != default ? pressed : Last;
     }
 
-    public UiFrames Key(KeyboardKey key, KeyModifiers modifiers = KeyModifiers.None) => Frames.Key(key, modifiers).Frame();
+    public UiFrames Key(KeyboardKey key, KeyModifiers modifiers = KeyModifiers.None)
+    {
+        return Frames.Key(key, modifiers).Frame();
+    }
 
-    public UiFrames Key(Shortcut shortcut) => Frames.Key(shortcut).Frame();
+    public UiFrames Key(Shortcut shortcut)
+    {
+        return Frames.Key(shortcut).Frame();
+    }
 
     /// <summary>The lines whose text was drawn, by the top of the row they were drawn in.</summary>
-    public IEnumerable<(string Text, float Top)> DrawnText() =>
-        Frames.Canvas.GlyphRuns.Where(r => r.Origin.X >= TextLeft - 0.5f).Select(r => (r.Text, RowTop(r.Origin.Y)));
+    public IEnumerable<(string Text, float Top)> DrawnText()
+    {
+        return Frames.Canvas.GlyphRuns.Where(r => r.Origin.X >= TextLeft - 0.5f).Select(r => (r.Text, RowTop(r.Origin.Y)));
+    }
 
     /// <summary>The top of the row a glyph run drawn at canvas height <paramref name="y"/> sits in.</summary>
-    public float RowTop(float y) => Frames.Height - y - CellInset;
+    public float RowTop(float y)
+    {
+        return Frames.Height - y - CellInset;
+    }
 
     public static DecompiledDocument Numbered(int count, string prefix = "line ")
     {
         return Documents.CreateFromText("numbered", string.Join('\n', Enumerable.Range(0, count).Select(i => prefix + i)));
     }
 
-    public static DecompiledDocument Greeter() => s_greeter.Value;
+    public static DecompiledDocument Greeter()
+    {
+        return s_greeter.Value;
+    }
 
-    public static DecompiledDocument Outline() => s_outline.Value;
+    public static DecompiledDocument Outline()
+    {
+        return s_outline.Value;
+    }
 
     /// <summary>A document of <paramref name="type"/> decompiled through an assembly list of its own.</summary>
     public static DecompiledDocument Decompile(Type type)
@@ -151,5 +182,8 @@ internal sealed class CodeViewDriver
         return node.Decompile(DecompilationLanguage.CSharp);
     }
 
-    private static int CodeTextDigits(int value) => value.ToString().Length;
+    private static int CodeTextDigits(int value)
+    {
+        return value.ToString().Length;
+    }
 }

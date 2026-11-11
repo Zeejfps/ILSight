@@ -50,7 +50,10 @@ public sealed class NuGetPickerTests : IDisposable
         _fake.AnswerSearches(FixturesPackage);
     }
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     private NuGetSetup Setup()
     {
@@ -70,7 +73,10 @@ public sealed class NuGetPickerTests : IDisposable
         return picker;
     }
 
-    private int SearchCount() => _fake.Requested.Count(r => r.StartsWith(FakeFeed.SearchUrl));
+    private int SearchCount()
+    {
+        return _fake.Requested.Count(r => r.StartsWith(FakeFeed.SearchUrl));
+    }
 
     [Fact]
     public void Opening_searches_the_first_feed_and_picks_the_latest_version_of_the_first_package()

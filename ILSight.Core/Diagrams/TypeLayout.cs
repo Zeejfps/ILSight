@@ -95,7 +95,10 @@ public static class DiagramLayouts
     public static TypeLayout Arrange(DiagramMeasures measures, CancellationToken cancellationToken = default)
     {
         if (measures.Cards.Count == 0)
+        {
             return new TypeLayout { Places = new Dictionary<CodeReference.Entity, PointF>(), Routes = [], Width = 0f, Height = 0f };
+        }
+
         var graph = new GeometryGraph();
         var nodes = AddNodes(graph, measures.Cards);
         var edges = AddEdges(graph, nodes, measures.Links);
@@ -125,7 +128,10 @@ public static class DiagramLayouts
         {
             var edge = CreateEdge(nodes, link);
             if (edge == null)
+            {
                 continue;
+            }
+
             graph.Edges.Add(edge);
             edges.Add(edge);
         }
@@ -135,24 +141,42 @@ public static class DiagramLayouts
     private static Edge? CreateEdge(Dictionary<CodeReference.Entity, Node> nodes, MeasuredLink link)
     {
         if (!nodes.TryGetValue(link.Link.From, out var source))
+        {
             return null;
+        }
+
         if (!nodes.TryGetValue(link.Link.To, out var target))
+        {
             return null;
+        }
+
         var edge = new Edge(source, target) { UserData = link.Link };
         edge.EdgeGeometry.TargetArrowhead = new Arrowhead { Length = TypeLayout.ArrowLength };
         if (IsHeld(link.Link.Kind))
+        {
             edge.EdgeGeometry.SourceArrowhead = new Arrowhead { Length = TypeLayout.DiamondLength };
+        }
+
         if (HasLabel(link))
+        {
             edge.Label = new Label(link.LabelWidth, link.LabelHeight, edge);
+        }
+
         return edge;
     }
 
-    private static bool IsHeld(TypeLinkKind kind) => kind is TypeLinkKind.HoldsOne or TypeLinkKind.HoldsMany;
+    private static bool IsHeld(TypeLinkKind kind)
+    {
+        return kind is TypeLinkKind.HoldsOne or TypeLinkKind.HoldsMany;
+    }
 
     private static bool HasLabel(MeasuredLink link)
     {
         if (link.LabelWidth <= 0f)
+        {
             return false;
+        }
+
         return link.LabelHeight > 0f;
     }
 
@@ -170,7 +194,10 @@ public static class DiagramLayouts
     private static void Cancel(object? cancel)
     {
         if (cancel is not CancelToken token)
+        {
             throw new UnreachableException("Calculate registers Cancel with the CancelToken it cancels.");
+        }
+
         token.Canceled = true;
     }
 
@@ -178,16 +205,25 @@ public static class DiagramLayouts
     {
         var places = new Dictionary<CodeReference.Entity, PointF>();
         foreach (var (type, node) in nodes)
+        {
             places[type] = TopLeftOf(node.BoundingBox, origin);
+        }
+
         return places;
     }
 
     /// <summary>The corner of <paramref name="box"/> nearest <paramref name="origin"/>, which the layout
     /// draws at its top-left: MSAGL's Y runs up, with the types derived from lowest, and the layout is
     /// drawn with it running down.</summary>
-    private static PointF TopLeftOf(MsaglRectangle box, MsaglPoint origin) => Place(new MsaglPoint(box.Left, box.Bottom), origin);
+    private static PointF TopLeftOf(MsaglRectangle box, MsaglPoint origin)
+    {
+        return Place(new MsaglPoint(box.Left, box.Bottom), origin);
+    }
 
-    private static PointF Place(MsaglPoint point, MsaglPoint origin) => new((float)(point.X - origin.X), (float)(point.Y - origin.Y));
+    private static PointF Place(MsaglPoint point, MsaglPoint origin)
+    {
+        return new((float)(point.X - origin.X), (float)(point.Y - origin.Y));
+    }
 
     private static List<LinkRoute> RoutesOf(List<Edge> edges, MsaglPoint origin)
     {
@@ -196,7 +232,9 @@ public static class DiagramLayouts
         {
             var route = RouteOf(edge, origin);
             if (route != null)
+            {
                 routes.Add(route);
+            }
         }
         return routes;
     }
@@ -205,12 +243,18 @@ public static class DiagramLayouts
     {
         var curve = edge.Curve;
         if (curve == null)
+        {
             return null;
+        }
+
         var pieces = new List<RoutePiece>();
         AddPieces(pieces, curve, origin);
         var tip = Place(edge.EdgeGeometry.TargetArrowhead.TipPosition, origin);
         if (edge.UserData is not TypeLink link)
+        {
             throw new UnreachableException("Every edge of the graph carries the link it was made for.");
+        }
+
         return new LinkRoute(link, pieces, tip, LabelCenterOf(edge, origin), SourceTipOf(edge, origin));
     }
 
@@ -218,14 +262,20 @@ public static class DiagramLayouts
     {
         var diamond = edge.EdgeGeometry.SourceArrowhead;
         if (diamond == null)
+        {
             return null;
+        }
+
         return Place(diamond.TipPosition, origin);
     }
 
     private static PointF? LabelCenterOf(Edge edge, MsaglPoint origin)
     {
         if (edge.Label == null)
+        {
             return null;
+        }
+
         return Place(edge.Label.Center, origin);
     }
 
@@ -237,7 +287,10 @@ public static class DiagramLayouts
         {
             case Curve compound:
                 foreach (var segment in compound.Segments)
+                {
                     AddPieces(pieces, segment, origin);
+                }
+
                 break;
             case LineSegment line:
                 pieces.Add(CreateLine(Place(line.Start, origin), Place(line.End, origin)));

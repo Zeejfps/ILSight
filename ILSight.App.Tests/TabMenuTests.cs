@@ -15,7 +15,10 @@ public sealed class TabMenuTests
         app.Settle(2);
         var assembly = app.AppState.Tabs.Active!.Node!;
         foreach (var type in Types)
+        {
             app.Show(app.Fixture(type), 2, inNewTab: true);
+        }
+
         app.Settle(2);
         return (app, assembly);
     }

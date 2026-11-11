@@ -10,7 +10,10 @@ public sealed partial record PackageVersion
 {
     private const char BuildMetadataSeparator = '+';
 
-    private PackageVersion(string text) => Text = text;
+    private PackageVersion(string text)
+    {
+        Text = text;
+    }
 
     public string Text { get; }
 
@@ -30,11 +33,17 @@ public sealed partial record PackageVersion
     public static PackageVersion? Parse(string text)
     {
         if (!Pattern().IsMatch(text))
+        {
             return null;
+        }
+
         return new PackageVersion(text);
     }
 
-    public override string ToString() => Text;
+    public override string ToString()
+    {
+        return Text;
+    }
 
     [GeneratedRegex(@"^\d+(\.\d+){1,3}(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?\z")]
     private static partial Regex Pattern();

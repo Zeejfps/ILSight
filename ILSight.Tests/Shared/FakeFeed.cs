@@ -40,22 +40,37 @@ internal sealed class FakeFeed : HttpMessageHandler
 
     public NuGetSource Source => NuGetSource.FromConfig("test", IndexUrl)!;
 
-    public void Answer(string url, string text) => _answers[url] = Encoding.UTF8.GetBytes(text);
+    public void Answer(string url, string text)
+    {
+        _answers[url] = Encoding.UTF8.GetBytes(text);
+    }
 
-    public void Answer(string url, byte[] bytes) => _answers[url] = bytes;
+    public void Answer(string url, byte[] bytes)
+    {
+        _answers[url] = bytes;
+    }
 
     /// <summary>Answers every search with <paramref name="json"/>.</summary>
-    public void AnswerSearches(string json) => Answer(SearchUrl, json);
+    public void AnswerSearches(string json)
+    {
+        Answer(SearchUrl, json);
+    }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var url = request.RequestUri!.ToString();
         Requested.Add(url);
         if (Holds)
+        {
             await HoldUntilCancelled(cancellationToken);
+        }
+
         var key = StripQuery(url);
         if (!_answers.TryGetValue(key, out var bytes))
+        {
             return new HttpResponseMessage(HttpStatusCode.NotFound);
+        }
+
         return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
     }
 
@@ -76,7 +91,10 @@ internal sealed class FakeFeed : HttpMessageHandler
     {
         var at = url.IndexOf('?');
         if (at < 0)
+        {
             return url;
+        }
+
         return url.Substring(0, at);
     }
 }

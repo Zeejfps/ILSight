@@ -24,7 +24,10 @@ internal static class AvaloniaResources
 
     private readonly record struct IndexEntry(string Path, int Offset, int Size);
 
-    public static bool IsContainerName(string name) => name == ContainerName;
+    public static bool IsContainerName(string name)
+    {
+        return name == ContainerName;
+    }
 
     /// <summary>Each asset's path and bytes, in index order. Throws when
     /// <paramref name="container"/> is not one Avalonia writes.</summary>
@@ -43,9 +46,15 @@ internal static class AvaloniaResources
     {
         var version = reader.ReadInt32();
         if (version == BinaryIndexVersion)
+        {
             return ReadBinaryIndex(reader);
+        }
+
         if (version == XmlIndexVersion)
+        {
             return ReadXmlIndex(container, indexLength);
+        }
+
         throw new InvalidDataException($"{ContainerName} has an index of unknown version {version}.");
     }
 
@@ -84,21 +93,29 @@ internal static class AvaloniaResources
         return new IndexEntry(path, offset, size);
     }
 
-    private static XElement Required(XElement entry, XName name) =>
-        entry.Element(name) ?? throw new InvalidDataException($"{ContainerName} has an index entry without {name.LocalName}.");
+    private static XElement Required(XElement entry, XName name)
+    {
+        return entry.Element(name) ?? throw new InvalidDataException($"{ContainerName} has an index entry without {name.LocalName}.");
+    }
 
     private static byte[] Slice(byte[] container, int dataStart, IndexEntry entry)
     {
         var start = (long)dataStart + entry.Offset;
         if (!IsWithin(container, start, entry))
+        {
             throw new InvalidDataException($"{entry.Path} lies outside {ContainerName}.");
+        }
+
         return container.AsSpan((int)start, entry.Size).ToArray();
     }
 
     private static bool IsWithin(byte[] container, long start, IndexEntry entry)
     {
         if (entry.Offset < 0 || entry.Size < 0)
+        {
             return false;
+        }
+
         return start + entry.Size <= container.Length;
     }
 }

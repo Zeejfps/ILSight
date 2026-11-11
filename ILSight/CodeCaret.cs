@@ -23,7 +23,10 @@ internal static class CodeCaret
         }
         var row = CodeFolding.FindRowOf(folds, at.Line);
         if (row.Index <= 0)
+        {
             return at;
+        }
+
         var above = CodeFolding.GetLineAt(folds, new CodeRow(row.Index - 1));
         return new TextPosition(above, document.Lines[above].Text.Length);
     }
@@ -34,10 +37,16 @@ internal static class CodeCaret
     {
         var text = document.Lines[at.Line].Text;
         if (at.Column < text.Length)
+        {
             return at with { Column = byWord ? TextBoundaries.NextWord(text, at.Column, splitPunctuation: true) : TextBoundaries.Next(text, at.Column) };
+        }
+
         var next = CodeFolding.FindNextLine(folds, at.Line);
         if (next >= document.Lines.Length)
+        {
             return at;
+        }
+
         return new TextPosition(next, 0);
     }
 
@@ -47,10 +56,16 @@ internal static class CodeCaret
     public static TextPosition MoveRows(DecompiledDocument document, CodeFolds folds, TextPosition at, int rows, int goal)
     {
         if (folds.RowCount == 0)
+        {
             return at;
+        }
+
         var target = CodeFolding.FindRowOf(folds, at.Line).Index + rows;
         if (target < 0)
+        {
             return new TextPosition(CodeFolding.GetLineAt(folds, new CodeRow(0)), 0);
+        }
+
         if (target >= folds.RowCount)
         {
             var last = CodeFolding.GetLineAt(folds, new CodeRow(folds.RowCount - 1));
@@ -68,9 +83,15 @@ internal static class CodeCaret
         var text = document.Lines[at.Line].Text;
         var indent = 0;
         while (indent < text.Length && char.IsWhiteSpace(text[indent]))
+        {
             indent++;
+        }
+
         if (indent == text.Length || at.Column == indent)
+        {
             return at with { Column = 0 };
+        }
+
         return at with { Column = indent };
     }
 
@@ -83,7 +104,10 @@ internal static class CodeCaret
     public static TextPosition GetEnd(DecompiledDocument document, CodeFolds folds)
     {
         if (folds.RowCount == 0)
+        {
             return default;
+        }
+
         var last = CodeFolding.GetLineAt(folds, new CodeRow(folds.RowCount - 1));
         return new TextPosition(last, document.Lines[last].Text.Length);
     }

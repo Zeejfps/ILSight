@@ -7,7 +7,10 @@ namespace ILSight.Tests;
 
 public sealed class ResourceTests
 {
-    private static BrowseNode Resources(LoadedAssembly assembly) => assembly.Root.Child("Resources");
+    private static BrowseNode Resources(LoadedAssembly assembly)
+    {
+        return assembly.Root.Child("Resources");
+    }
 
     private static byte[] Fixture(string name)
     {

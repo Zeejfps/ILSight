@@ -61,7 +61,10 @@ public static class ScreenSettings
     {
         var sources = CaptureViewSources(uiState);
         if (sources == uiState.KeptView)
+        {
             return null;
+        }
+
         return TakeViewSettings(uiState);
     }
 

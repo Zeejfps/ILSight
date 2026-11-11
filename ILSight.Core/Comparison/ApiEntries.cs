@@ -37,11 +37,16 @@ public static class ApiEntries
         var leftSet = left.ToHashSet(StringComparer.Ordinal);
         var names = new List<(string, ApiPresence)>();
         foreach (var name in left)
+        {
             names.Add((name, rightSet.Contains(name) ? ApiPresence.Both : ApiPresence.LeftOnly));
+        }
+
         foreach (var name in right)
         {
             if (!leftSet.Contains(name))
+            {
                 names.Add((name, ApiPresence.RightOnly));
+            }
         }
         return names;
     }
@@ -54,9 +59,15 @@ public static class ApiEntries
         foreach (var type in module.TopLevelTypeDefinitions)
         {
             if (IsModuleType(type))
+            {
                 continue;
+            }
+
             if (!IsTakenIn(type, scope))
+            {
                 continue;
+            }
+
             var types = FindOrAddNamespace(byNamespace, type.Namespace);
             AddByKey(types, type);
         }
@@ -70,7 +81,10 @@ public static class ApiEntries
     {
         var reference = CodeReferences.Find(entity);
         if (reference == null)
+        {
             return;
+        }
+
         var compared = new Compared(entity, reference);
         var key = ApiKeys.Of(entity);
         var candidate = key;
@@ -87,7 +101,10 @@ public static class ApiEntries
     private static bool IsModuleType(ITypeDefinition type)
     {
         if (type.Namespace.Length > 0)
+        {
             return false;
+        }
+
         return type.Name == ModuleTypeName;
     }
 
@@ -96,16 +113,25 @@ public static class ApiEntries
     private static bool IsTakenIn(IEntity entity, ApiScope scope)
     {
         if (Members.IsHidden(entity))
+        {
             return false;
+        }
+
         if (scope == ApiScope.AllDeclared)
+        {
             return true;
+        }
+
         return EntityText.IsPublicApi(entity);
     }
 
     private static Dictionary<string, Compared> FindOrAddNamespace(Dictionary<string, Dictionary<string, Compared>> byNamespace, string name)
     {
         if (byNamespace.TryGetValue(name, out var types))
+        {
             return types;
+        }
+
         types = new Dictionary<string, Compared>(StringComparer.Ordinal);
         byNamespace.Add(name, types);
         return types;
@@ -114,7 +140,10 @@ public static class ApiEntries
     private static string NamespaceText(string name)
     {
         if (name.Length == 0)
+        {
             return GlobalNamespaceText;
+        }
+
         return name;
     }
 
@@ -128,15 +157,21 @@ public static class ApiEntries
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (right.TryGetValue(key, out var rightOne))
+            {
                 entries.Add(CompareBoth(leftOne, rightOne, scope, cancellationToken));
+            }
             else
+            {
                 entries.Add(Removed(leftOne, scope, cancellationToken));
+            }
         }
         foreach (var (key, rightOne) in right)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (!left.ContainsKey(key))
+            {
                 entries.Add(Added(rightOne, scope, cancellationToken));
+            }
         }
         return entries
             .OrderBy(static e => SortGroup(e.Shape))
@@ -226,7 +261,10 @@ public static class ApiEntries
     private static ApiChange GetChange(ApiSides.Both sides)
     {
         if (sides.Left.Declaration != sides.Right.Declaration)
+        {
             return ApiChange.Changed;
+        }
+
         return ApiChange.Unchanged;
     }
 
@@ -247,19 +285,27 @@ public static class ApiEntries
         };
     }
 
-    private static ApiSide SideOf(Compared compared) => new(compared.Reference, ApiDeclarations.Of(compared.Entity));
+    private static ApiSide SideOf(Compared compared)
+    {
+        return new(compared.Reference, ApiDeclarations.Of(compared.Entity));
+    }
 
     /// <summary>The nested types and members of <paramref name="compared"/> that <paramref name="scope"/>
     /// takes in, each by its key, without accessors or an enum's value field; none for a member.</summary>
     private static Dictionary<string, Compared> ListChildren(Compared compared, ApiScope scope)
     {
         if (compared.Entity is not ITypeDefinition type)
+        {
             return None;
+        }
+
         var children = new Dictionary<string, Compared>(StringComparer.Ordinal);
         foreach (var member in ListMembers(type))
         {
             if (IsTakenIn(member, scope))
+            {
                 AddByKey(children, member);
+            }
         }
         return children;
     }
@@ -279,14 +325,18 @@ public static class ApiEntries
     private static bool IsEnumValueField(ITypeDefinition type, IField field)
     {
         if (type.Kind != TypeKind.Enum)
+        {
             return false;
+        }
+
         return !field.IsStatic;
     }
 
     /// <summary>Where entries of <paramref name="shape"/> sort among a type's: nested types first, then
     /// fields, properties, events and methods; namespaces among themselves.</summary>
-    private static int SortGroup(SymbolShape shape) =>
-        shape switch
+    private static int SortGroup(SymbolShape shape)
+    {
+        return shape switch
         {
             SymbolShape.Member member => member.Shape switch
             {
@@ -299,6 +349,7 @@ public static class ApiEntries
             SymbolShape.Type or SymbolShape.Namespace or SymbolShape.Assembly => 0,
             _ => throw new UnreachableException(),
         };
+    }
 
     /// <summary>How many types and members under <paramref name="entries"/> changed as <paramref name="change"/>
     /// says, counting an added or removed one alone, not with what it holds.</summary>
@@ -306,17 +357,26 @@ public static class ApiEntries
     {
         var count = 0;
         foreach (var entry in entries)
+        {
             count += Count(entry, change);
+        }
+
         return count;
     }
 
     private static int Count(ApiEntry entry, ApiChange change)
     {
         if (entry is not ApiEntry.Entity)
+        {
             return Count(entry.Children, change);
+        }
+
         var own = entry.Change == change ? 1 : 0;
         if (entry.Change is ApiChange.Added or ApiChange.Removed)
+        {
             return own;
+        }
+
         return own + Count(entry.Children, change);
     }
 }

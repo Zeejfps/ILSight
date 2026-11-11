@@ -53,16 +53,25 @@ internal static class Trees
     /// <see cref="OpenTestAssembly"/>.</summary>
     public static LoadedModule TestAssembly => s_testAssembly.Value;
 
-    public static DecompiledDocument CalculatorDocument(DecompilationLanguage language) => language switch
+    public static DecompiledDocument CalculatorDocument(DecompilationLanguage language)
     {
-        DecompilationLanguage.CSharp => s_calculatorCSharp.Value,
-        DecompilationLanguage.IL => s_calculatorIL.Value,
-        _ => throw new ArgumentOutOfRangeException(nameof(language)),
-    };
+        return language switch
+        {
+            DecompilationLanguage.CSharp => s_calculatorCSharp.Value,
+            DecompilationLanguage.IL => s_calculatorIL.Value,
+            _ => throw new ArgumentOutOfRangeException(nameof(language)),
+        };
+    }
 
-    public static BrowseNode Fixtures(this LoadedAssembly assembly) => assembly.Root.Child(FixturesNamespace);
+    public static BrowseNode Fixtures(this LoadedAssembly assembly)
+    {
+        return assembly.Root.Child(FixturesNamespace);
+    }
 
-    public static BrowseNode Calculator(this LoadedAssembly assembly) => assembly.Fixtures().Child("Calculator<T>");
+    public static BrowseNode Calculator(this LoadedAssembly assembly)
+    {
+        return assembly.Fixtures().Child("Calculator<T>");
+    }
 
     public static (AssemblyList List, LoadedModule Assembly) OpenTestAssembly()
     {
@@ -72,7 +81,10 @@ internal static class Trees
 
     /// <summary>The assembly or module at <paramref name="path"/>, opened in <paramref name="list"/>; fails
     /// the test when it opens as anything else.</summary>
-    public static LoadedModule OpenModule(this AssemblyList list, string path) => Assert.IsType<LoadedModule>(list.Open(path));
+    public static LoadedModule OpenModule(this AssemblyList list, string path)
+    {
+        return Assert.IsType<LoadedModule>(list.Open(path));
+    }
 
     /// <summary>Opens the file at <paramref name="path"/>, which the test names and must be absolute.</summary>
     public static LoadedAssembly Open(this AssemblyList list, string path, CancellationToken cancellationToken = default)

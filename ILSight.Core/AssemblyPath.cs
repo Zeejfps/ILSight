@@ -26,7 +26,10 @@ public sealed record AssemblyPath
     public static AssemblyPath? Parse(string text)
     {
         if (!Path.IsPathFullyQualified(text))
+        {
             return null;
+        }
+
         try
         {
             return new AssemblyPath(Path.GetFullPath(text));
@@ -43,27 +46,44 @@ public sealed record AssemblyPath
     {
         var path = Parse(text);
         if (path == null)
+        {
             throw new ArgumentException($"'{text}' is no absolute path.", nameof(text));
+        }
+
         return path;
     }
 
     /// <summary>The path of <paramref name="relative"/> under this one, as when this is a package.</summary>
-    public AssemblyPath Combine(string relative) => Of(Path.Combine(Text, relative));
+    public AssemblyPath Combine(string relative)
+    {
+        return Of(Path.Combine(Text, relative));
+    }
 
     /// <summary>Whether this path lies under <paramref name="folder"/>, compared as the file system does.</summary>
-    public bool IsUnder(AssemblyPath folder) =>
-        Text.Length > folder.Text.Length
+    public bool IsUnder(AssemblyPath folder)
+    {
+        return Text.Length > folder.Text.Length
         && Text[folder.Text.Length] == Path.DirectorySeparatorChar
         && Text.StartsWith(folder.Text, Comparison);
+    }
 
     public bool Equals(AssemblyPath? other)
     {
         if (other is null)
+        {
             return false;
+        }
+
         return Comparer.Equals(Text, other.Text);
     }
 
-    public override int GetHashCode() => Comparer.GetHashCode(Text);
+    public override int GetHashCode()
+    {
+        return Comparer.GetHashCode(Text);
+    }
 
-    public override string ToString() => Text;
+    public override string ToString()
+    {
+        return Text;
+    }
 }

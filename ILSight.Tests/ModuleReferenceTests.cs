@@ -13,7 +13,10 @@ public sealed class ModuleReferenceTests
     }
 
     /// <summary>The References folder of System.Private.CoreLib, which calls into native modules.</summary>
-    private static BrowseNode CoreLibReferences() => ReferencesOf("System.Private.CoreLib");
+    private static BrowseNode CoreLibReferences()
+    {
+        return ReferencesOf("System.Private.CoreLib");
+    }
 
     [Fact]
     public void The_references_list_the_modules_an_assembly_calls_into_sorted_by_name()

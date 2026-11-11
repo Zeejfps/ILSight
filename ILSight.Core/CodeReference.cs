@@ -43,12 +43,23 @@ public abstract class CodeReference : IEquatable<CodeReference>
 
         public override bool Equals(CodeReference? other)
         {
-            if (ReferenceEquals(this, other)) return true;
-            if (other is not Navigable navigable) return false;
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if (other is not Navigable navigable)
+            {
+                return false;
+            }
+
             return Handle == navigable.Handle && FilePath.Equals(navigable.FilePath);
         }
 
-        public override int GetHashCode() => HashCode.Combine(FilePath, MetadataTokens.GetToken(Handle));
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(FilePath, MetadataTokens.GetToken(Handle));
+        }
     }
 
     /// <summary>The assembly in the file at <see cref="Navigable.FilePath"/> itself, or one that file
@@ -65,12 +76,18 @@ public abstract class CodeReference : IEquatable<CodeReference>
             get
             {
                 if (Referenced == null)
+                {
                     return EntityHandle.AssemblyDefinition;
+                }
+
                 return Referenced.Value;
             }
         }
 
-        public override string ToString() => $"Assembly {Name}";
+        public override string ToString()
+        {
+            return $"Assembly {Name}";
+        }
     }
 
     /// <summary>A type or member, defined or referenced by its handle in the file.</summary>
@@ -83,7 +100,10 @@ public abstract class CodeReference : IEquatable<CodeReference>
 
         public override EntityHandle Handle => Target;
 
-        public override string ToString() => $"{Kind} {Name}";
+        public override string ToString()
+        {
+            return $"{Kind} {Name}";
+        }
     }
 
     /// <summary>A local variable or parameter, numbered by <see cref="Key"/> within <see cref="Scope"/>.</summary>
@@ -94,13 +114,23 @@ public abstract class CodeReference : IEquatable<CodeReference>
 
         public override bool Equals(CodeReference? other)
         {
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             return other is Local local && Key == local.Key && Equals(Scope, local.Scope);
         }
 
-        public override int GetHashCode() => HashCode.Combine(nameof(Local), Key, Scope);
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(nameof(Local), Key, Scope);
+        }
 
-        public override string ToString() => $"Local {Name}";
+        public override string ToString()
+        {
+            return $"Local {Name}";
+        }
     }
 
     /// <summary>An IL label, numbered by <see cref="Key"/> within <see cref="Scope"/>.</summary>
@@ -111,23 +141,43 @@ public abstract class CodeReference : IEquatable<CodeReference>
 
         public override bool Equals(CodeReference? other)
         {
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             return other is Label label && Key == label.Key && Equals(Scope, label.Scope);
         }
 
-        public override int GetHashCode() => HashCode.Combine(nameof(Label), Key, Scope);
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(nameof(Label), Key, Scope);
+        }
 
-        public override string ToString() => $"Label {Name}";
+        public override string ToString()
+        {
+            return $"Label {Name}";
+        }
     }
 
     public abstract bool Equals(CodeReference? other);
 
-    public sealed override bool Equals(object? obj) => obj is CodeReference other && Equals(other);
+    public sealed override bool Equals(object? obj)
+    {
+        return obj is CodeReference other && Equals(other);
+    }
 
     public abstract override int GetHashCode();
 
-    public static bool operator ==(CodeReference? left, CodeReference? right) => Equals(left, right);
-    public static bool operator !=(CodeReference? left, CodeReference? right) => !Equals(left, right);
+    public static bool operator ==(CodeReference? left, CodeReference? right)
+    {
+        return Equals(left, right);
+    }
+
+    public static bool operator !=(CodeReference? left, CodeReference? right)
+    {
+        return !Equals(left, right);
+    }
 }
 
 /// <summary>Making <see cref="CodeReference"/>s of what the decompiler and metadata name.</summary>
@@ -139,7 +189,10 @@ internal static class CodeReferences
     {
         var file = entity.ParentModule?.MetadataFile;
         if (file == null || entity.MetadataToken.IsNil)
+        {
             return null;
+        }
+
         return new CodeReference.Entity { Kind = GetKind(entity.SymbolKind), Name = name ?? entity.Name, FilePath = AssemblyPath.Of(file.FileName), Target = entity.MetadataToken };
     }
 

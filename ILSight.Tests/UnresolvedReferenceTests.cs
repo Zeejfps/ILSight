@@ -10,7 +10,10 @@ public sealed class UnresolvedReferenceTests : IDisposable
 
     private readonly TempDir _temp = new();
 
-    public void Dispose() => _temp.Dispose();
+    public void Dispose()
+    {
+        _temp.Dispose();
+    }
 
     /// <summary>A type whose base type ILSight.Core defines.</summary>
     private sealed record Detached : NodeContent;
@@ -21,8 +24,10 @@ public sealed class UnresolvedReferenceTests : IDisposable
         return (list, list.OpenModule(_temp.Copy(Trees.TestAssemblyPath, "ILSight.Tests.dll")));
     }
 
-    private static BrowseNode BaseTypes(LoadedAssembly assembly) =>
-        assembly.Root.Child("ILSight.Tests", nameof(UnresolvedReferenceTests), nameof(Detached), "Base Types");
+    private static BrowseNode BaseTypes(LoadedAssembly assembly)
+    {
+        return assembly.Root.Child("ILSight.Tests", nameof(UnresolvedReferenceTests), nameof(Detached), "Base Types");
+    }
 
     [Fact]
     public void A_reference_that_resolves_to_no_assembly_lists_only_the_types_used_from_it_and_goes_nowhere()

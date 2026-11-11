@@ -17,7 +17,10 @@ public abstract class Vehicle
     public abstract int Wheels { get; }
 
     /// <summary>How far the vehicle has gone.</summary>
-    public int Mileage() => _mileage;
+    public int Mileage()
+    {
+        return _mileage;
+    }
 }
 
 public class Car : Vehicle, IDriven

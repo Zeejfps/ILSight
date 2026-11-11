@@ -68,9 +68,15 @@ public sealed class FoldingTests
             Assert.True(fold.EndLine > fold.StartLine);
             Assert.True(fold.EndLine < document.Lines.Length);
             while (open.Count > 0 && open.Peek().EndLine < fold.StartLine)
+            {
                 open.Pop();
+            }
+
             if (open.Count > 0)
+            {
                 Assert.True(fold.EndLine <= open.Peek().EndLine);
+            }
+
             open.Push(fold);
             previous = fold.StartLine;
             var index = Documents.FindFoldStartingAt(document, fold.StartLine);

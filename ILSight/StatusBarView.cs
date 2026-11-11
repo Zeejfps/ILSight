@@ -30,7 +30,10 @@ internal static class StatusBarView
             using (ui.Row(new Box { Width = Sizing.Fit(), Height = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
             {
                 if (ExportStatusView.Render(ui, appState.Export))
+                {
                     Dot(ui);
+                }
+
                 if (appState.Updates.Status is UpdateStatus.Ready)
                 {
                     RestartToUpdateButton(ui);
@@ -57,13 +60,25 @@ internal static class StatusBarView
     private static string? DescribeActivity(AppState appState, Strings t)
     {
         if (appState.IsReloading)
+        {
             return t.StatusReloading;
+        }
+
         if (appState.IsReopening)
+        {
             return t.StatusReloading;
+        }
+
         if (IsDecompiling(appState.Tabs.Active))
+        {
             return t.StatusDecompiling;
+        }
+
         if (appState.IsResolving)
+        {
             return t.StatusResolving;
+        }
+
         return null;
     }
 
@@ -72,7 +87,10 @@ internal static class StatusBarView
         return tab != null && tab.IsBusy;
     }
 
-    private static void Dot(Ui<UiState> ui) => ui.Text("·", color: ui.Theme.TextDisabled, size: ui.Theme.FontSizeSmall);
+    private static void Dot(Ui<UiState> ui)
+    {
+        ui.Text("·", color: ui.Theme.TextDisabled, size: ui.Theme.FontSizeSmall);
+    }
 
     private static void RestartToUpdateButton(Ui<UiState> ui)
     {
@@ -80,7 +98,9 @@ internal static class StatusBarView
         var theme = ui.Theme;
         var i = ui.Clickable("restart-to-update");
         if (i.Clicked)
+        {
             Commands.Later(ui.State, static a => Updates.RestartToUpdate(a));
+        }
 
         using (ui.Row(i.Id, new Box
         {
@@ -101,7 +121,9 @@ internal static class StatusBarView
         var theme = ui.Theme;
         var i = ui.Clickable("errors");
         if (i.Clicked)
+        {
             ErrorDialogView.Open(ui.State.ErrorDialog, errors.Entries);
+        }
 
         using (ui.Row(i.Id, new Box
         {

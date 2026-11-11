@@ -14,7 +14,10 @@ public sealed record PackageFile(string Name, string FullName, long Length)
         {
             var at = FullName.LastIndexOf('/');
             if (at < 0)
+            {
                 return "";
+            }
+
             return FullName.Substring(0, at);
         }
     }
@@ -94,7 +97,10 @@ public static class AssemblyPackages
     {
         var zip = TryReadZip(path);
         if (zip != null)
+        {
             return zip;
+        }
+
         return TryReadBundle(path);
     }
 
@@ -116,7 +122,10 @@ public static class AssemblyPackages
         var tree = CreateTree();
         var entryNames = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var entry in archive.Entries)
+        {
             AddZipEntry(tree, entryNames, entry);
+        }
+
         return CreatePackage(tree, path, isBundle: false, file => ReadZipFile(path, file, entryNames[file.FullName]));
     }
 
@@ -127,7 +136,10 @@ public static class AssemblyPackages
     {
         var fullName = FindNameInside(entry.FullName);
         if (string.IsNullOrEmpty(fullName))
+        {
             return;
+        }
+
         if (IsFolderName(entry.FullName))
         {
             AddFolder(tree, fullName);
@@ -151,14 +163,20 @@ public static class AssemblyPackages
     {
         var entries = BundleContents.TryReadManifest(path.Text);
         if (entries == null)
+        {
             return null;
+        }
+
         var tree = CreateTree();
         var byName = new Dictionary<string, SingleFileBundle.Entry>(StringComparer.Ordinal);
         foreach (var entry in entries)
         {
             var fullName = FindNameInside(entry.RelativePath);
             if (string.IsNullOrEmpty(fullName))
+            {
                 continue;
+            }
+
             AddFile(tree, fullName, entry.Size);
             byName.TryAdd(fullName, entry);
         }
@@ -176,14 +194,23 @@ public static class AssemblyPackages
     private static string? FindNameInside(string name)
     {
         if (name.StartsWith(Separator) || name.StartsWith('\\') || name.Contains(':'))
+        {
             return null;
+        }
+
         var parts = new List<string>();
         foreach (var part in name.Split(Separator, '\\'))
         {
             if (part == "..")
+            {
                 return null;
+            }
+
             if (part is "" or ".")
+            {
                 continue;
+            }
+
             parts.Add(part);
         }
         return string.Join(Separator, parts);
@@ -193,7 +220,10 @@ public static class AssemblyPackages
     {
         var at = fullName.LastIndexOf(Separator);
         if (at < 0)
+        {
             return ("", fullName);
+        }
+
         return (fullName.Substring(0, at), fullName.Substring(at + 1));
     }
 
@@ -207,7 +237,10 @@ public static class AssemblyPackages
     {
         var (folderName, name) = SplitName(fullName);
         if (name.Length == 0)
+        {
             return;
+        }
+
         var file = new PackageFile(name, fullName, length);
         AddFolder(tree, folderName).Files.Add(file);
         tree.Files.TryAdd(fullName, file);
@@ -216,7 +249,10 @@ public static class AssemblyPackages
     private static PackageFolder AddFolder(AssemblyPackage.FileTree tree, string fullName)
     {
         if (tree.Folders.TryGetValue(fullName, out var found))
+        {
             return found;
+        }
+
         var (parentName, name) = SplitName(fullName);
         var parent = AddFolder(tree, parentName);
         var folder = new PackageFolder { Name = name, FullName = fullName };
@@ -236,7 +272,9 @@ public static class AssemblyPackages
         folder.Folders.Sort(static (a, b) => NaturalStringComparer.Instance.Compare(a.Name, b.Name));
         folder.Files.Sort(static (a, b) => NaturalStringComparer.Instance.Compare(a.Name, b.Name));
         foreach (var child in folder.Folders)
+        {
             SortFolder(child);
+        }
     }
 
     /// <summary>Every file of the package, folder by folder in the order <see cref="AssemblyPackage.Root"/> lists them:
@@ -251,7 +289,10 @@ public static class AssemblyPackages
     private static void CollectFiles(PackageFolder folder, List<PackageFile> files)
     {
         foreach (var child in folder.Folders)
+        {
             CollectFiles(child, files);
+        }
+
         files.AddRange(folder.Files);
     }
 
@@ -261,11 +302,16 @@ public static class AssemblyPackages
     {
         var name = fullName.Replace('\\', Separator);
         if (package.Files.TryGetValue(name, out var exact))
+        {
             return exact;
+        }
+
         foreach (var (key, file) in package.Files)
         {
             if (string.Equals(key, name, StringComparison.OrdinalIgnoreCase))
+            {
                 return file;
+            }
         }
         return null;
     }
@@ -296,7 +342,9 @@ public static class AssemblyPackages
             progress?.Report(new ExportProgress(folder.Name, 1, 1, (float)i / files.Count));
             var failure = TryExtract(package, files[i], folder, root, written);
             if (failure != null)
+            {
                 failures.Add(failure);
+            }
         }
         return new ExtractedFiles(written, failures);
     }
@@ -307,7 +355,10 @@ public static class AssemblyPackages
         {
             var path = FindTargetPath(file, folder, root);
             if (path == null)
+            {
                 return new ExtractFailure.OutsideFolder(file);
+            }
+
             WriteFile(package, file, path);
             written.Add(path.Text);
             return null;
@@ -325,16 +376,25 @@ public static class AssemblyPackages
         var relative = GetRelativePath(folder, file).Replace(Separator, Path.DirectorySeparatorChar);
         var path = FullFilePath.Parse(Path.GetFullPath(Path.Combine(root, relative)));
         if (path == null)
+        {
             return null;
+        }
+
         if (!IsInside(path.Text, root))
+        {
             return null;
+        }
+
         return path;
     }
 
     private static string GetRelativePath(PackageFolder folder, PackageFile file)
     {
         if (folder.FullName.Length == 0)
+        {
             return file.FullName;
+        }
+
         return file.FullName.Substring(folder.FullName.Length + 1);
     }
 
@@ -342,7 +402,10 @@ public static class AssemblyPackages
     {
         var prefix = root;
         if (!Path.EndsInDirectorySeparator(prefix))
+        {
             prefix += Path.DirectorySeparatorChar;
+        }
+
         var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         return path.StartsWith(prefix, comparison);
     }
@@ -357,11 +420,20 @@ public static class AssemblyPackages
     private static bool IsExtractError(Exception e)
     {
         if (e is IOException)
+        {
             return true;
+        }
+
         if (e is UnauthorizedAccessException)
+        {
             return true;
+        }
+
         if (e is InvalidDataException)
+        {
             return true;
+        }
+
         return e is ArgumentException;
     }
 

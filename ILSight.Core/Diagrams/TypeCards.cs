@@ -13,7 +13,10 @@ public static class TypeCards
     {
         var definition = AssemblyListing.FindTypeDefinition(list, type);
         if (definition == null)
+        {
             return null;
+        }
+
         return Read(definition);
     }
 
@@ -24,17 +27,25 @@ public static class TypeCards
     {
         var definition = AssemblyListing.FindTypeDefinition(list, type);
         if (definition == null)
+        {
             return [];
+        }
+
         var card = Read(definition);
         if (card == null)
+        {
             return [];
+        }
+
         var cards = new List<TypeCard> { card };
         foreach (var neighbour in ListNeighbours(definition))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var read = Read(neighbour);
             if (read != null)
+            {
                 cards.Add(read);
+            }
         }
         return cards;
     }
@@ -45,7 +56,10 @@ public static class TypeCards
     {
         var definition = AssemblyListing.FindTypeDefinition(list, anchor);
         if (definition == null)
+        {
             return null;
+        }
+
         return Read(definition);
     }
 
@@ -55,7 +69,10 @@ public static class TypeCards
     {
         var definition = AssemblyListing.FindTypeDefinition(list, type);
         if (definition == null)
+        {
             return [];
+        }
+
         return DerivedTypes.Find(list, definition, cancellationToken)
             .Where(IsShown)
             .Select(Read)
@@ -69,7 +86,10 @@ public static class TypeCards
     {
         var reference = CodeReferences.Find(type);
         if (reference == null)
+        {
             return null;
+        }
+
         return new TypeCard(
             Type: reference,
             Anchor: new TypeAnchor(reference.FilePath, type.ReflectionName),
@@ -88,13 +108,25 @@ public static class TypeCards
     private static TypeStereotype StereotypeOf(ITypeDefinition type)
     {
         if (TypeFacts.IsInterface(type))
+        {
             return TypeStereotype.Interface;
+        }
+
         if (type.Kind != TypeKind.Class)
+        {
             return TypeStereotype.None;
+        }
+
         if (!type.IsAbstract)
+        {
             return TypeStereotype.None;
+        }
+
         if (type.IsSealed)
+        {
             return TypeStereotype.Static;
+        }
+
         return TypeStereotype.Abstract;
     }
 
@@ -116,7 +148,10 @@ public static class TypeCards
             .OfType<CardMember>()
             .ToList();
         if (shown.Count == 0)
+        {
             return;
+        }
+
         sections.Add(new CardSection(kind, shown));
     }
 
@@ -125,15 +160,27 @@ public static class TypeCards
     private static IEnumerable<IMember> ListFields(ITypeDefinition type)
     {
         if (type.Kind != TypeKind.Enum)
+        {
             return Sort(type.Fields);
+        }
+
         return type.Fields.Where(static f => f.IsStatic);
     }
 
-    private static IEnumerable<IMethod> ListMethods(ITypeDefinition type) => type.Methods.Where(static m => !m.IsAccessor);
+    private static IEnumerable<IMethod> ListMethods(ITypeDefinition type)
+    {
+        return type.Methods.Where(static m => !m.IsAccessor);
+    }
 
-    private static IEnumerable<IMember> Sort(IEnumerable<IMember> members) => members.OrderBy(static m => m.Name, NaturalStringComparer.Instance);
+    private static IEnumerable<IMember> Sort(IEnumerable<IMember> members)
+    {
+        return members.OrderBy(static m => m.Name, NaturalStringComparer.Instance);
+    }
 
-    private static bool IsShown(IEntity entity) => !Members.IsHidden(entity);
+    private static bool IsShown(IEntity entity)
+    {
+        return !Members.IsHidden(entity);
+    }
 
     /// <summary>The card's line for <paramref name="member"/>; null when it has no metadata file or token
     /// to be referenced by.</summary>
@@ -141,7 +188,10 @@ public static class TypeCards
     {
         var reference = CodeReferences.Find(member);
         if (reference == null)
+        {
             return null;
+        }
+
         return new CardMember(reference, EntityText.Label(member), EntityText.ShapeOf(member), EntityText.Map(member.Accessibility));
     }
 
@@ -162,7 +212,10 @@ public static class TypeCards
     {
         var definition = ancestor.GetDefinition();
         if (definition == null)
+        {
             return new InheritedGroup(EntityText.ShortTypeName(ancestor), null, []);
+        }
+
         var members = definition.Fields
             .Concat<IMember>(definition.Properties)
             .Concat(ListMethods(definition))
@@ -180,20 +233,35 @@ public static class TypeCards
     private static bool IsInherited(IMember member)
     {
         if (!IsShown(member))
+        {
             return false;
+        }
+
         if (member.IsStatic)
+        {
             return false;
+        }
+
         if (member.Accessibility == Accessibility.Private)
+        {
             return false;
+        }
+
         if (member is IMethod method)
+        {
             return IsInheritedMethod(method);
+        }
+
         return true;
     }
 
     private static bool IsInheritedMethod(IMethod method)
     {
         if (method.IsConstructor)
+        {
             return false;
+        }
+
         return !TypeFacts.OverridesObject(method);
     }
 
@@ -210,7 +278,10 @@ public static class TypeCards
     {
         var to = CodeReferences.Find(relation.Target);
         if (to == null)
+        {
             return null;
+        }
+
         return new TypeLink(from, to, relation.Kind, relation.Label);
     }
 
@@ -230,9 +301,15 @@ public static class TypeCards
         {
             var definition = baseType.GetDefinition();
             if (definition == null)
+            {
                 continue;
+            }
+
             if (IsImplicitBase(definition))
+            {
                 continue;
+            }
+
             relations.Add(new Relation(definition, BaseLinkKindOf(type, definition), null));
         }
     }
@@ -246,9 +323,15 @@ public static class TypeCards
     private static TypeLinkKind BaseLinkKindOf(ITypeDefinition type, ITypeDefinition baseType)
     {
         if (!TypeFacts.IsInterface(baseType))
+        {
             return TypeLinkKind.Inherits;
+        }
+
         if (TypeFacts.IsInterface(type))
+        {
             return TypeLinkKind.Inherits;
+        }
+
         return TypeLinkKind.Implements;
     }
 
@@ -257,10 +340,15 @@ public static class TypeCards
         foreach (var property in type.Properties)
         {
             if (!IsShown(property))
+            {
                 continue;
+            }
+
             var held = FindHeld(property);
             if (held != null)
+            {
                 relations.Add(held.Value);
+            }
         }
     }
 
@@ -270,10 +358,16 @@ public static class TypeCards
     private static Relation? FindHeld(IProperty property)
     {
         if (TypeFacts.TryGetElementType(property, out var elementType))
+        {
             return HeldRelation(elementType, TypeLinkKind.HoldsMany, property.Name);
+        }
+
         var type = property.ReturnType;
         if (TypeFacts.TryGetNullable(type, out var underlying))
+        {
             type = underlying;
+        }
+
         return HeldRelation(type, TypeLinkKind.HoldsOne, property.Name);
     }
 
@@ -281,9 +375,15 @@ public static class TypeCards
     {
         var definition = type.GetDefinition();
         if (definition == null)
+        {
             return null;
+        }
+
         if (definition.KnownTypeCode != KnownTypeCode.None)
+        {
             return null;
+        }
+
         return new Relation(definition, kind, label);
     }
 

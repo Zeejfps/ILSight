@@ -27,13 +27,19 @@ internal static class AssemblyListsDialogView
         var t = ui.State.Strings;
         var dialog = ui.State.ListsDialog;
         if (!dialog.IsOpen)
+        {
             return;
+        }
+
         var card = new Box { Width = Sizing.Grow(0f, AppLayout.ListsDialogWidth) };
         var open = true;
         using (var scope = ui.Dialog("assembly-lists", t.ListsTitle, ref open, card, closeOnEscape: !dialog.IsAsking))
         {
             if (!scope.IsOpen)
+            {
                 return;
+            }
+
             Toolbar(ui, lists);
             Rows(ui, lists);
             RenameProblem(ui, lists);
@@ -41,7 +47,9 @@ internal static class AssemblyListsDialogView
             Footer(ui);
         }
         if (!open)
+        {
             AssemblyLists.CloseListsDialog(dialog);
+        }
     }
 
     /// <summary>New list on the left; what can be done to the picked list on the right.</summary>
@@ -55,14 +63,25 @@ internal static class AssemblyListsDialogView
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
             if (ui.Button(t.ListsNew, id: "new", icon: new UiIcon(ui.State.Icons.ListsNew)))
+            {
                 Commands.Later(ui.State, (dialog, name: t.ListsNewName), static (a, s) => Create(s.dialog, a, s.name));
+            }
+
             ui.Spacer();
             if (ui.IconButton("duplicate", ui.State.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked != null)
+            {
                 Commands.Later(ui.State, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
+            }
+
             if (ui.IconButton("rename", ui.State.Icons.ListsRename, t.ListsRename, any) && picked != null)
+            {
                 AssemblyLists.StartRenaming(dialog, picked);
+            }
+
             if (ui.IconButton("delete", ui.State.Icons.ListsDelete, t.ListsDelete, any) && picked != null)
+            {
                 AssemblyLists.StartConfirmingDelete(dialog, picked);
+            }
         }
     }
 
@@ -91,16 +110,29 @@ internal static class AssemblyListsDialogView
             using var list = ui.SelectableList(listId, names.Count, dialog.Selection, rowHeight);
             var doubleClicked = false;
             for (var i = list.First; i < list.End; i++)
+            {
                 doubleClicked |= Row(ui, lists, list, listId, i, names[i]);
+            }
+
             if (list.Focused)
+            {
                 HandleKeys(ui, lists);
+            }
+
             if (list.Activated)
+            {
                 ActOnRow(ui, names[list.Index], doubleClicked);
+            }
+
             if (list.ContextMenuRequested)
+            {
                 ui.OpenContextMenu(MenuId, list.ContextMenuAt);
+            }
         }
         if (dialog.Selection.Index != picked)
+        {
             LeavePickedRow(ui);
+        }
     }
 
     /// <summary>A check mark when the list is the active one, its name, or the box renaming it, how
@@ -117,13 +149,21 @@ internal static class AssemblyListsDialogView
         {
             ActiveMark(ui, active);
             if (dialog.Mode is ListsDialogMode.Renaming renaming && renaming.List == name)
+            {
                 NameBox(ui, renaming, listId);
+            }
             else
+            {
                 NameText(ui, name, row.Selected);
+            }
+
             var count = AssemblyLists.GetPaths(lists, name).Count;
             ui.Text(t.ListsCount(count), color: theme.TextMuted, size: theme.FontSizeSmall);
             if (ui.Button(t.ListsActivate, enabled: !active, id: "activate", variant: ButtonVariant.Ghost))
+            {
                 Commands.Later(ui.State, name, static (a, n) => SwitchAssemblyList(a, n));
+            }
+
             return row.Interaction.DoubleClicked;
         }
     }
@@ -135,7 +175,9 @@ internal static class AssemblyListsDialogView
         using (ui.Box(new Box { Width = theme.IconSize, Height = Sizing.Grow() }))
         {
             if (active)
+            {
                 ui.Icon(new UiIcon(ui.State.Icons.ListsActive, theme.Accent));
+            }
         }
     }
 
@@ -153,11 +195,16 @@ internal static class AssemblyListsDialogView
         var begin = TakeFocus(renaming);
         var result = ui.InlineEdit(NameId, ref renaming.NewName, begin, Sizing.Grow());
         if (result == InlineEditResult.Editing)
+        {
             return;
+        }
+
         var stillHere = ui.HasFocus(ui.GetId(NameId));
         FinishNameBox(ui, result);
         if (stillHere || result == InlineEditResult.Cancelled)
+        {
             ui.Focus(listId, takesText: false);
+        }
     }
 
     /// <summary>True once: the name box should take focus with the whole name selected.</summary>
@@ -182,14 +229,25 @@ internal static class AssemblyListsDialogView
     {
         var dialog = ui.State.ListsDialog;
         if (dialog.IsAsking)
+        {
             return;
+        }
+
         var picked = AssemblyLists.FindPickedList(dialog, lists);
         if (picked == null)
+        {
             return;
+        }
+
         if (ui.Input.TakeKey(KeyboardKey.F2))
+        {
             AssemblyLists.StartRenaming(dialog, picked);
+        }
+
         if (ui.IsPressed(Shortcuts.Delete))
+        {
             AssemblyLists.StartConfirmingDelete(dialog, picked);
+        }
     }
 
     /// <summary>A double-click renames the row; Enter activates it.</summary>
@@ -222,17 +280,26 @@ internal static class AssemblyListsDialogView
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
         if (dialog.Mode is not ListsDialogMode.Renaming renaming)
+        {
             return;
+        }
+
         var newName = renaming.NewName;
         if (AssemblyLists.CanRenameList(lists, renaming.List, newName))
+        {
             return;
+        }
+
         ui.Text(DescribeRenameProblem(t, newName), color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
     }
 
     private static string DescribeRenameProblem(Strings t, string newName)
     {
         if (newName.Trim().Length == 0)
+        {
             return t.ListsNameEmpty;
+        }
+
         return t.ListsNameTaken;
     }
 
@@ -240,10 +307,16 @@ internal static class AssemblyListsDialogView
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         var picked = AssemblyLists.FindPickedList(ui.State.ListsDialog, lists);
         if (picked == null)
+        {
             return;
+        }
+
         MenuItems(ui, lists, picked);
     }
 
@@ -253,14 +326,25 @@ internal static class AssemblyListsDialogView
         var dialog = ui.State.ListsDialog;
         var active = picked == lists.Active;
         if (ui.MenuItem(t.ListsActivate, enabled: !active, id: "activate"))
+        {
             Commands.Later(ui.State, picked, static (a, n) => SwitchAssemblyList(a, n));
+        }
+
         if (ui.MenuItem(t.ListsRename, Shortcuts.Rename, id: "rename"))
+        {
             AssemblyLists.StartRenaming(dialog, picked);
+        }
+
         if (ui.MenuItem(t.ListsDuplicate, id: "duplicate"))
+        {
             Commands.Later(ui.State, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
+        }
+
         ui.MenuSeparator();
         if (ui.MenuItem(t.ListsDelete, Shortcuts.Delete, id: "delete"))
+        {
             AssemblyLists.StartConfirmingDelete(dialog, picked);
+        }
     }
 
     /// <summary>Add preconfigured on the left, Close on the right.</summary>
@@ -273,7 +357,9 @@ internal static class AssemblyListsDialogView
             PresetMenu(ui);
             ui.Spacer();
             if (ui.Button(t.ListsClose, id: "close"))
+            {
                 AssemblyLists.CloseListsDialog(dialog);
+            }
         }
     }
 
@@ -284,15 +370,23 @@ internal static class AssemblyListsDialogView
         var t = ui.State.Strings;
         using var menu = ui.SelectButton(PresetMenuId, t.ListsAddPreset);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         var presets = AssemblyListPresets.ListInstalled(ui.State.Runtime);
         if (presets.Count == 0)
+        {
             ui.MenuItem(t.ListsNoPresets, enabled: false);
+        }
+
         foreach (var preset in presets)
         {
             var count = t.ListsCount(preset.Paths.Count);
             if (ui.MenuItem(preset.Name, detail: count))
+            {
                 Commands.Later(ui.State, (dialog: ui.State.ListsDialog, preset), static (a, s) => AddPreset(s.dialog, a, s.preset));
+            }
         }
     }
 
@@ -331,7 +425,10 @@ internal static class AssemblyListsDialogView
     {
         var dialog = screen.ListsDialog;
         if (dialog.Mode is not ListsDialogMode.Renaming renaming)
+        {
             return;
+        }
+
         AssemblyLists.StopAsking(dialog);
         Commands.Later(screen, (list: renaming.List, newName: renaming.NewName), static (a, s) => AssemblyLists.RenameList(a.Lists, s.list, s.newName));
     }

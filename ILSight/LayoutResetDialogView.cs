@@ -21,13 +21,20 @@ internal static class LayoutResetDialogView
                 using (ui.DialogActions())
                 {
                     if (ui.Button(t.ViewResetLayoutCancel, id: "reset-cancel", variant: ButtonVariant.Ghost))
+                    {
                         FinishLayoutReset(screen, false);
+                    }
+
                     if (ui.Button(t.ViewResetLayoutConfirm, id: "reset-confirm", variant: ButtonVariant.Primary))
+                    {
                         FinishLayoutReset(screen, true);
+                    }
                 }
             }
         }
         if (!open && screen.ConfirmingLayoutReset)
+        {
             FinishLayoutReset(screen, false);
+        }
     }
 }

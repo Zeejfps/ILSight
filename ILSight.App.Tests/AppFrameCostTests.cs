@@ -18,7 +18,9 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         app.Show(app.Fixture("Greeter"), 2);
         app.Settle(5);
         if (errorsOpen)
+        {
             OpenErrors(app);
+        }
 
         app.Frames.Canvas.Recording = false;
         app.Run(WarmUpFrames);

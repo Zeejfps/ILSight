@@ -49,7 +49,10 @@ public static class DiagramCameras
     public static void LookFrom(DiagramCamera camera, PointF corner)
     {
         if (corner == camera.Corner)
+        {
             return;
+        }
+
         camera.Corner = corner;
         camera.IsMoving = true;
     }
@@ -58,7 +61,10 @@ public static class DiagramCameras
     public static void FinishMoving(DiagramCamera camera)
     {
         if (!camera.IsMoving)
+        {
             return;
+        }
+
         camera.IsMoving = false;
         camera.Changes++;
     }

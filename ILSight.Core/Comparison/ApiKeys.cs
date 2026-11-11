@@ -17,8 +17,9 @@ internal static class ApiKeys
     private const string ImplicitConversion = "op_Implicit";
     private const string ExplicitConversion = "op_Explicit";
 
-    public static string Of(IEntity entity) =>
-        entity switch
+    public static string Of(IEntity entity)
+    {
+        return entity switch
         {
             ITypeDefinition type => TypePrefix + type.ReflectionName,
             IField field => FieldPrefix + field.Name,
@@ -27,6 +28,7 @@ internal static class ApiKeys
             IMethod method => OfMethod(method),
             _ => throw new UnreachableException(),
         };
+    }
 
     /// <summary>A conversion operator also keys by the type it converts to, as only that sets apart its overloads.</summary>
     private static string OfMethod(IMethod method)
@@ -34,14 +36,20 @@ internal static class ApiKeys
         var parameters = ParameterList(method.Parameters);
         var key = $"{MethodPrefix}{method.Name}`{method.TypeParameters.Count}{parameters}";
         if (!IsConversion(method))
+        {
             return key;
+        }
+
         return key + ":" + method.ReturnType.ReflectionName;
     }
 
     private static bool IsConversion(IMethod method)
     {
         if (method.Name == ImplicitConversion)
+        {
             return true;
+        }
+
         return method.Name == ExplicitConversion;
     }
 
@@ -51,5 +59,8 @@ internal static class ApiKeys
         return "(" + string.Join(",", types) + ")";
     }
 
-    private static string ParameterKey(IParameter parameter) => parameter.ReferenceKind + " " + parameter.Type.ReflectionName;
+    private static string ParameterKey(IParameter parameter)
+    {
+        return parameter.ReferenceKind + " " + parameter.Type.ReflectionName;
+    }
 }

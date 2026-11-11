@@ -18,7 +18,10 @@ internal static class SvgPicture
         var text = ReadText(data);
         var trimmed = text.TrimStart();
         if (!trimmed.StartsWith('<'))
+        {
             return false;
+        }
+
         return trimmed.Contains(SvgElement, StringComparison.Ordinal);
     }
 
@@ -53,9 +56,15 @@ internal static class SvgPicture
         var width = document.IntrinsicWidth;
         var height = document.IntrinsicHeight;
         if (width <= 0f || height <= 0f)
+        {
             return (FallbackSide, FallbackSide);
+        }
+
         return (width, height);
     }
 
-    private static int WholePixels(float size) => Math.Max(1, (int)MathF.Ceiling(size));
+    private static int WholePixels(float size)
+    {
+        return Math.Max(1, (int)MathF.Ceiling(size));
+    }
 }

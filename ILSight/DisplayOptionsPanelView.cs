@@ -41,7 +41,10 @@ internal static class DisplayOptionsPanelView
         var theme = ui.Theme;
         using var panel = ui.Column(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar())
+        {
             OptionSearch.Field(ui, ref ui.State.DisplayOptionsQuery);
+        }
+
         ui.Separator();
         var words = OptionSearch.SplitWords(ui.State.DisplayOptionsQuery);
         using var pane = ui.Scroll(PaneId, new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
@@ -56,9 +59,13 @@ internal static class DisplayOptionsPanelView
         shown |= CodeSection(ui, words);
         shown |= TreeSection(ui, words);
         if (words.Length == 0)
+        {
             ResetRow(ui);
+        }
         else if (!shown)
+        {
             OptionSearch.NoMatch(ui, ref ui.State.DisplayOptionsQuery);
+        }
     }
 
     /// <summary>Whether the option called <paramref name="title"/> is shown for <paramref name="words"/>:
@@ -67,7 +74,10 @@ internal static class DisplayOptionsPanelView
     private static bool Shows(Strings t, string[] words, string heading, string title, string? description = null)
     {
         if (words.Length == 0)
+        {
             return true;
+        }
+
         return OptionSearch.IsMatch(t.Culture, words, title, description, heading);
     }
 
@@ -75,7 +85,10 @@ internal static class DisplayOptionsPanelView
     private static void NextRow(Ui<UiState> ui, ref int rows)
     {
         if (rows > 0)
+        {
             ui.Separator();
+        }
+
         rows++;
     }
 
@@ -83,7 +96,10 @@ internal static class DisplayOptionsPanelView
     {
         var screen = ui.State;
         if (!CodeDisplay.TakeListingRequest(screen.CodeFonts))
+        {
             return;
+        }
+
         ui.ListSystemFonts(families => KeepInstalledFonts(screen, families));
     }
 
@@ -100,7 +116,9 @@ internal static class DisplayOptionsPanelView
         var language = Shows(t, words, heading, t.DisplayOptionsLanguage);
         var titleBar = ui.CanDrawTitleBar && Shows(t, words, heading, t.DisplayOptionsSystemTitleBar);
         if (!theme && !iconTheme && !scale && !language && !titleBar)
+        {
             return false;
+        }
 
         using var section = Section(ui, ui.Memo("interface", t, static s => Heading(s.DisplayOptionsInterface)));
         using var card = Card(ui);
@@ -109,26 +127,34 @@ internal static class DisplayOptionsPanelView
         {
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsTheme, null, false))
+            {
                 ThemePicker(ui, appState.Themes, appState.Theme, appState.SettingsPlace);
+            }
         }
         if (iconTheme)
         {
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsIconTheme, null, false))
+            {
                 IconThemePicker(ui, appState.IconThemes, appState.IconTheme, appState.SettingsPlace);
+            }
         }
         if (scale)
         {
             NextRow(ui, ref rows);
             var changed = ui.State.Display.UiScale != DisplayOptions.Default.UiScale;
             using (OptionRow(ui, t.DisplayOptionsUiScale, t.DisplayOptionsUiScaleDescription, changed))
+            {
                 UiScalePicker(ui);
+            }
         }
         if (language)
         {
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsLanguage, null, false))
+            {
                 LanguagePicker(ui, appState.Locale);
+            }
         }
         if (titleBar)
         {
@@ -147,7 +173,9 @@ internal static class DisplayOptionsPanelView
         var system = display.SystemTitleBar;
         var changed = system != DisplayOptions.Default.SystemTitleBar;
         if (SwitchRow(ui, t.DisplayOptionsSystemTitleBar, ref system, "system-title-bar", changed))
+        {
             SetDisplayOptions(ui.State, display with { SystemTitleBar = system });
+        }
     }
 
     /// <summary>The themes of the catalog, built-in ones first, then the buttons that start a custom theme
@@ -158,7 +186,10 @@ internal static class DisplayOptionsPanelView
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
         PickTheme(ui, themes, chosen);
         if (settingsPlace.ThemesFolder == null)
+        {
             return;
+        }
+
         CustomizeThemeButton(ui);
         OpenThemesFolderButton(ui);
         ReloadThemesButton(ui);
@@ -170,7 +201,9 @@ internal static class DisplayOptionsPanelView
         var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
+        {
             Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => SetTheme(a, theme));
+        }
     }
 
     /// <summary>Starts a theme of the user's own from the one shown, switches to it and opens its file.</summary>
@@ -178,7 +211,10 @@ internal static class DisplayOptionsPanelView
     {
         var t = ui.State.Strings;
         if (!ui.IconButton("customize-theme", ui.State.Icons.OptionsCustomizeTheme, t.DisplayOptionsCustomizeTheme, variant: ButtonVariant.Neutral))
+        {
             return;
+        }
+
         Commands.Later(ui.State, (screen: ui.State, t), static (a, s) => CustomizeTheme(s.screen, a, s.t));
     }
 
@@ -186,14 +222,19 @@ internal static class DisplayOptionsPanelView
     {
         var file = CreateCustomTheme(appState, parent => t.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.Themes, parent, t.Culture)));
         if (file != null)
+        {
             screen.FilesToOpen.Enqueue(file);
+        }
     }
 
     private static void OpenThemesFolderButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
         if (!ui.IconButton("themes-folder", ui.State.Icons.OptionsOpenThemesFolder, t.DisplayOptionsOpenThemesFolder, variant: ButtonVariant.Neutral))
+        {
             return;
+        }
+
         Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, PrepareThemesFolder(a)));
     }
 
@@ -201,7 +242,9 @@ internal static class DisplayOptionsPanelView
     {
         var t = ui.State.Strings;
         if (ui.IconButton("reload-themes", ui.State.Icons.OptionsReloadThemes, t.DisplayOptionsReloadThemes, variant: ButtonVariant.Neutral))
+        {
             Commands.Later(ui.State, static a => ReloadUserThemes(a));
+        }
     }
 
     /// <summary>The icon themes of the catalog, built-in ones first, then the buttons that start a custom
@@ -212,7 +255,10 @@ internal static class DisplayOptionsPanelView
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
         PickIconTheme(ui, themes, chosen);
         if (settingsPlace.IconThemesFolder == null)
+        {
             return;
+        }
+
         CustomizeIconThemeButton(ui);
         OpenIconThemesFolderButton(ui);
         ReloadIconThemesButton(ui);
@@ -224,7 +270,9 @@ internal static class DisplayOptionsPanelView
         var current = ThemeCatalogs.FindThemeIndex(themes, chosen);
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked != NothingPicked)
+        {
             Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => SetIconTheme(a, theme));
+        }
     }
 
     /// <summary>Starts an icon theme of the user's own from the one shown, switches to it and opens its file.</summary>
@@ -232,7 +280,10 @@ internal static class DisplayOptionsPanelView
     {
         var t = ui.State.Strings;
         if (!ui.IconButton("customize-icon-theme", ui.State.Icons.OptionsCustomizeIconTheme, t.DisplayOptionsCustomizeIconTheme, variant: ButtonVariant.Neutral))
+        {
             return;
+        }
+
         Commands.Later(ui.State, (screen: ui.State, t), static (a, s) => CustomizeIconTheme(s.screen, a, s.t));
     }
 
@@ -240,28 +291,37 @@ internal static class DisplayOptionsPanelView
     {
         var file = CreateCustomIconTheme(appState, parent => t.ThemeCustomName(ThemeCatalogs.GetThemeName(appState.IconThemes, parent, t.Culture)));
         if (file != null)
+        {
             screen.FilesToOpen.Enqueue(file);
+        }
     }
 
     private static void OpenIconThemesFolderButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
         if (!ui.IconButton("icon-themes-folder", ui.State.Icons.OptionsOpenIconThemesFolder, t.DisplayOptionsOpenIconThemesFolder, variant: ButtonVariant.Neutral))
+        {
             return;
+        }
+
         Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, PrepareIconThemesFolder(a)));
     }
 
     private static void OpenFolder(UiState screen, string? folder)
     {
         if (folder != null)
+        {
             screen.FoldersToOpen.Enqueue(folder);
+        }
     }
 
     private static void ReloadIconThemesButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
         if (ui.IconButton("reload-icon-themes", ui.State.Icons.OptionsReloadIconThemes, t.DisplayOptionsReloadIconThemes, variant: ButtonVariant.Neutral))
+        {
             Commands.Later(ui.State, static a => ReloadUserIconThemes(a));
+        }
     }
 
     private static void UiScalePicker(Ui<UiState> ui)
@@ -271,7 +331,9 @@ internal static class DisplayOptionsPanelView
         var current = IndexOfScale(scales, ui.State.Display.UiScale);
         var picked = PickFrom(ui, "ui-scale", labels, current);
         if (picked != NothingPicked)
+        {
             SetUiScale(ui.State, scales[picked]);
+        }
     }
 
     private static int IndexOfScale(IReadOnlyList<float> scales, float scale)
@@ -279,7 +341,9 @@ internal static class DisplayOptionsPanelView
         for (var i = 0; i < scales.Count; i++)
         {
             if (scales[i] == scale)
+            {
                 return i;
+            }
         }
         return NothingPicked;
     }
@@ -304,11 +368,15 @@ internal static class DisplayOptionsPanelView
         for (var i = 0; i < locales.Count; i++)
         {
             if (locales[i].Locale == chosen)
+            {
                 current = i;
+            }
         }
         var picked = PickFrom(ui, "language", LocaleLabels, current);
         if (picked != NothingPicked)
+        {
             Commands.Later(ui.State, locales[picked].Locale, static (a, locale) => SetLocale(a, locale));
+        }
     }
 
     private static string[] ListLocaleLabels()
@@ -324,8 +392,10 @@ internal static class DisplayOptionsPanelView
     /// this frame, or <see cref="NothingPicked"/>. Its items are told apart by <paramref name="itemIds"/>
     /// when labels can repeat, else by their labels; the open menu closes when <paramref name="revision"/>
     /// changes, as when the items change under it.</summary>
-    private static int PickFrom(Ui<UiState> ui, string id, string[] labels, int current) =>
-        PickFrom<string>(ui, id, labels, current, null, 0);
+    private static int PickFrom(Ui<UiState> ui, string id, string[] labels, int current)
+    {
+        return PickFrom<string>(ui, id, labels, current, null, 0);
+    }
 
     private static int PickFrom<TItem>(Ui<UiState> ui, string id, string[] labels, int current, IReadOnlyList<TItem>? itemIds,
         int revision)
@@ -335,13 +405,18 @@ internal static class DisplayOptionsPanelView
         var shown = Math.Max(current, 0);
         using var menu = ui.SelectButton(id, labels[shown], width, revision: revision);
         if (!menu.IsOpen)
+        {
             return NothingPicked;
+        }
+
         var picked = NothingPicked;
         for (var i = 0; i < labels.Length; i++)
         {
             var itemId = ItemIdAt(itemIds, i);
             if (ui.MenuRadioItem(labels[i], i == current, id: itemId))
+            {
                 picked = i;
+            }
         }
         return picked;
     }
@@ -350,7 +425,10 @@ internal static class DisplayOptionsPanelView
         where TItem : notnull
     {
         if (itemIds == null)
+        {
             return null;
+        }
+
         return itemIds[index].ToString();
     }
 
@@ -371,7 +449,9 @@ internal static class DisplayOptionsPanelView
         var usages = Shows(t, words, heading, t.DisplayOptionsUsagesAtCaret);
         var omnibar = Shows(t, words, heading, t.DisplayOptionsOmnibar);
         if (!font && !fontSize && !lineNumbers && !currentLine && !brackets && !usages && !omnibar)
+        {
             return false;
+        }
 
         using var section = Section(ui, ui.Memo("code", t, static s => Heading(s.DisplayOptionsCode)));
         using var card = Card(ui);
@@ -380,50 +460,67 @@ internal static class DisplayOptionsPanelView
         {
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsFont, null, display.Font != null))
+            {
                 FontPicker(ui);
+            }
         }
         if (fontSize)
         {
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsFontSize, hint, display.FontSize != null))
+            {
                 FontSizeStepper(ui);
+            }
         }
         if (font || fontSize)
+        {
             FontPreview(ui);
+        }
+
         if (lineNumbers)
         {
             NextRow(ui, ref rows);
             var on = display.ShowLineNumbers;
             if (SwitchRow(ui, t.DisplayOptionsLineNumbers, ref on, "line-numbers", on != defaults.ShowLineNumbers))
+            {
                 SetDisplayOptions(ui.State, display with { ShowLineNumbers = on });
+            }
         }
         if (currentLine)
         {
             NextRow(ui, ref rows);
             var on = display.HighlightCurrentLine;
             if (SwitchRow(ui, t.DisplayOptionsCurrentLine, ref on, "current-line", on != defaults.HighlightCurrentLine))
+            {
                 SetDisplayOptions(ui.State, display with { HighlightCurrentLine = on });
+            }
         }
         if (brackets)
         {
             NextRow(ui, ref rows);
             var on = display.HighlightMatchingBrackets;
             if (SwitchRow(ui, t.DisplayOptionsMatchingBrackets, ref on, "matching-brackets", on != defaults.HighlightMatchingBrackets))
+            {
                 SetDisplayOptions(ui.State, display with { HighlightMatchingBrackets = on });
+            }
         }
         if (usages)
         {
             NextRow(ui, ref rows);
             var on = display.HighlightUsagesAtCaret;
             if (SwitchRow(ui, t.DisplayOptionsUsagesAtCaret, ref on, "usages-at-caret", on != defaults.HighlightUsagesAtCaret))
+            {
                 SetDisplayOptions(ui.State, display with { HighlightUsagesAtCaret = on });
+            }
         }
         if (omnibar)
         {
             NextRow(ui, ref rows);
             var on = display.ShowOmnibar;
             if (SwitchRow(ui, t.DisplayOptionsOmnibar, ref on, "omnibar", on != defaults.ShowOmnibar))
+            {
                 SetDisplayOptions(ui.State, display with { ShowOmnibar = on });
+            }
         }
         return true;
     }
@@ -439,15 +536,22 @@ internal static class DisplayOptionsPanelView
         var width = ControlWidth(PickerMinWidth, MeasureFontPicker(ui, shown), FontPickerMaxWidth);
         using var menu = ui.SelectButton("code-font", shown, width);
         if (!menu.IsOpen)
+        {
             return;
+        }
+
         var fonts = choices.Fonts;
         for (var i = 0; i < fonts.Count; i++)
         {
             if (ui.MenuRadioItem(choices.Labels[i], choices.Labels[i] == shown))
+            {
                 SetCodeFont(ui.State, fonts[i]);
+            }
         }
         if (!choices.IsListed)
+        {
             ui.MenuItem(t.DisplayOptionsFontsLoading, enabled: false, id: "fonts-loading");
+        }
     }
 
     /// <summary>As wide as the longest name offered or <paramref name="shown"/>, up to a limit past which
@@ -467,13 +571,18 @@ internal static class DisplayOptionsPanelView
         var display = ui.State.Display;
         var smaller = ui.Memo("smaller", t, static s => s.DisplayOptionsSmaller(Shortcuts.ZoomOut.Label));
         if (ui.IconButton("smaller", ui.State.Icons.OptionsFontSmaller, smaller, CodeDisplay.CanZoomOut(display, theme), ButtonVariant.Neutral))
+        {
             ZoomCode(ui.State, -1);
+        }
+
         var size = CodeDisplay.GetFontSize(display, theme);
         var text = ui.Memo("size", size, static s => FormatFontSize(s));
         ui.Text(text, new Box { Width = Sizing.Fixed(MeasureFontSizeSlot(ui)) }, align: Align.Center);
         var larger = ui.Memo("larger", t, static s => s.DisplayOptionsLarger(Shortcuts.ZoomIn.Label));
         if (ui.IconButton("larger", ui.State.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
+        {
             ZoomCode(ui.State, 1);
+        }
     }
 
     /// <summary>A line of code text in the chosen font and size on the documents' background, under the
@@ -500,7 +609,10 @@ internal static class DisplayOptionsPanelView
         ui.Text(PreviewText, new Box { Width = Sizing.Grow() }, color: color, size: size, family: MonoFonts.Code, wrap: true);
     }
 
-    private static string FormatFontSize(float size) => size.ToString(FontSizeFormat, CultureInfo.CurrentCulture);
+    private static string FormatFontSize(float size)
+    {
+        return size.ToString(FontSizeFormat, CultureInfo.CurrentCulture);
+    }
 
     /// <summary>As wide as the largest size, so the buttons beside it stay put as it changes.</summary>
     private static float MeasureFontSizeSlot(Ui<UiState> ui)
@@ -523,7 +635,9 @@ internal static class DisplayOptionsPanelView
         var nested = Shows(t, words, heading, t.DisplayOptionsNestedNamespaces);
         var previewTabs = Shows(t, words, heading, t.DisplayOptionsPreviewTabs);
         if (!tokens && !emptyTables && !nested && !previewTabs)
+        {
             return false;
+        }
 
         using var section = Section(ui, ui.Memo("tree", t, static s => Heading(s.DisplayOptionsTree)));
         using var card = Card(ui);
@@ -532,28 +646,36 @@ internal static class DisplayOptionsPanelView
         {
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsTokens, t.DisplayOptionsTokensDescription, display.TreeTokens != defaults.TreeTokens))
+            {
                 TokenFormatPicker(ui);
+            }
         }
         if (emptyTables)
         {
             NextRow(ui, ref rows);
             var on = display.ShowEmptyMetadataTables;
             if (SwitchRow(ui, t.DisplayOptionsEmptyTables, ref on, "empty-tables", on != defaults.ShowEmptyMetadataTables))
+            {
                 SetDisplayOptions(ui.State, display with { ShowEmptyMetadataTables = on });
+            }
         }
         if (nested)
         {
             NextRow(ui, ref rows);
             var on = display.NestedNamespaces;
             if (SwitchRow(ui, t.DisplayOptionsNestedNamespaces, ref on, "nested-namespaces", on != defaults.NestedNamespaces))
+            {
                 SetDisplayOptions(ui.State, display with { NestedNamespaces = on });
+            }
         }
         if (previewTabs)
         {
             NextRow(ui, ref rows);
             var on = display.PreviewTabs;
             if (SwitchRow(ui, t.DisplayOptionsPreviewTabs, ref on, "preview-tabs", on != defaults.PreviewTabs))
+            {
                 SetDisplayOptions(ui.State, display with { PreviewTabs = on });
+            }
         }
         return true;
     }
@@ -564,7 +686,9 @@ internal static class DisplayOptionsPanelView
         var current = Array.IndexOf(TokenFormats, ui.State.Display.TreeTokens);
         var picked = PickFrom(ui, "tokens", labels, current);
         if (picked != NothingPicked)
+        {
             SetTreeTokens(ui.State, TokenFormats[picked]);
+        }
     }
 
     private static string[] ListTokenFormatLabels(Strings t)
@@ -574,26 +698,41 @@ internal static class DisplayOptionsPanelView
             .ToArray();
     }
 
-    private static string TokenFormatLabel(Strings t, TokenFormat format) => format switch
+    private static string TokenFormatLabel(Strings t, TokenFormat format)
     {
-        TokenFormat.Hex => t.DisplayOptionsTokensHex,
-        TokenFormat.Decimal => t.DisplayOptionsTokensDecimal,
-        _ => t.DisplayOptionsTokensHidden,
-    };
+        return format switch
+        {
+            TokenFormat.Hex => t.DisplayOptionsTokensHex,
+            TokenFormat.Decimal => t.DisplayOptionsTokensDecimal,
+            _ => t.DisplayOptionsTokensHidden,
+        };
+    }
 
     /// <summary>A row whose switch flips when it or the rest of the row is clicked.</summary>
     private static bool SwitchRow(Ui<UiState> ui, string title, ref bool value, string id, bool changed)
     {
         var press = ui.Interact(id + RowSuffix);
         if (press.Hovered)
+        {
             ui.SetCursor(MouseCursor.Hand);
+        }
+
         bool flipped;
         using (OptionRow(ui, press.Id, title, null, changed))
+        {
             flipped = ui.Switch(id, ref value);
+        }
+
         if (flipped)
+        {
             return true;
+        }
+
         if (!press.Clicked)
+        {
             return false;
+        }
+
         value = !value;
         return true;
     }
@@ -607,11 +746,16 @@ internal static class DisplayOptionsPanelView
         using (ui.Row(new Box { Width = Sizing.Grow(), AlignX = Align.End }))
         {
             if (ui.Button(t.DisplayOptionsReset, enabled: changed, id: "reset", variant: ButtonVariant.Ghost, icon: icon))
+            {
                 AskToResetDisplayOptions(ui.State);
+            }
         }
     }
 
-    private static string Heading(string text) => text.ToUpperInvariant();
+    private static string Heading(string text)
+    {
+        return text.ToUpperInvariant();
+    }
 
     /// <summary>A section of the form: its heading in small muted capitals over what the caller adds.</summary>
     private static Ui.Scope Section(Ui<UiState> ui, string heading)
@@ -639,8 +783,10 @@ internal static class DisplayOptionsPanelView
 
     /// <summary>A row of a card: <paramref name="title"/>, bold when changed, over its muted
     /// <paramref name="description"/> when it has one, then the control the caller adds at the right.</summary>
-    private static Ui.Scope OptionRow(Ui<UiState> ui, string title, string? description, bool changed) =>
-        OptionRow(ui, 0, title, description, changed);
+    private static Ui.Scope OptionRow(Ui<UiState> ui, string title, string? description, bool changed)
+    {
+        return OptionRow(ui, 0, title, description, changed);
+    }
 
     /// <summary>A row as <see cref="OptionRow(Ui{UiState}, string, string?, bool)"/>, which <paramref name="id"/>
     /// takes the pointer for when it is not 0.</summary>
@@ -663,14 +809,18 @@ internal static class DisplayOptionsPanelView
             if (titleRuns != null)
             {
                 using (ui.Box(new Box { Width = Sizing.Grow(), Clip = true }))
+                {
                     ui.RichText(titleRuns, wrap: false, markBackground: mark);
+                }
             }
             else
             {
                 ui.Text(title, new Box { Width = Sizing.Grow() }, bold: changed, overflow: TextOverflow.Ellipsis);
             }
             if (description != null)
+            {
                 Description(ui, description, query, mark);
+            }
         }
         return row;
     }
@@ -683,9 +833,13 @@ internal static class DisplayOptionsPanelView
         var box = new Box { Width = Sizing.Percent(WholeWidth) };
         var runs = OptionSearch.EnsureMarkedRuns(ui, query, description, ui.StyleText(theme.TextMuted, theme.FontSizeSmall), part: 1);
         if (runs != null)
+        {
             ui.RichText(runs, box, markBackground: mark);
+        }
         else
+        {
             ui.Text(description, box, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
+        }
     }
 
     /// <summary>The title's share of a row: what the control leaves. The description wraps in it and
@@ -701,5 +855,8 @@ internal static class DisplayOptionsPanelView
     /// <summary>A control's width at the right of a row: <paramref name="size"/>, or its content's when
     /// larger, up to <paramref name="max"/>, giving up room down to <paramref name="min"/> before the
     /// title gives up any.</summary>
-    private static Sizing ControlWidth(float min, float size, float max = float.PositiveInfinity) => Sizing.Shrink(min, size, max);
+    private static Sizing ControlWidth(float min, float size, float max = float.PositiveInfinity)
+    {
+        return Sizing.Shrink(min, size, max);
+    }
 }

@@ -295,7 +295,9 @@ public sealed class PackageTests
 
         var results = new List<SearchResult>();
         await foreach (var batch in list.SearchAsync("Calculator", SearchKinds.Types))
+        {
             results.AddRange(batch);
+        }
 
         var calculator = Assert.Single(results, r => r.Text == "Calculator<T>");
         Assert.Same(package, ContainerOf(calculator.Node.Assembly));
@@ -388,17 +390,25 @@ public sealed class PackageTests
     private static bool IsTestAssembly(BrowseNode node)
     {
         if (node.Subject is not NodeSubject.Module)
+        {
             return false;
+        }
+
         return node.Assembly.Name == TestAssemblyName;
     }
 
     /// <summary>A NuGet package of the test assembly, with its PDB, and the assembly it references,
     /// without one, beside a native library and a text file.</summary>
     /// <summary>The package <paramref name="assembly"/> was read out of; fails the test when it was read from no package.</summary>
-    private static LoadedPackage ContainerOf(LoadedAssembly assembly) =>
-        Assert.IsType<PackagePlace>(Assert.IsType<LoadedModule>(assembly).Place).Container;
+    private static LoadedPackage ContainerOf(LoadedAssembly assembly)
+    {
+        return Assert.IsType<PackagePlace>(Assert.IsType<LoadedModule>(assembly).Place).Container;
+    }
 
-    private static PackageFolder FolderOf(BrowseNode node) => Assert.IsType<PackageFolderPlace>(node.FolderInPackage).Folder;
+    private static PackageFolder FolderOf(BrowseNode node)
+    {
+        return Assert.IsType<PackageFolderPlace>(node.FolderInPackage).Folder;
+    }
 
     internal static string WritePackage(TempDir temp)
     {

@@ -17,8 +17,10 @@ public static class NamespaceNames
     /// <summary><paramref name="name"/> and the names of the namespaces it nests in, the name first.</summary>
     internal static IEnumerable<string> AndEnclosing(string name)
     {
-        for (string? enclosing = name; enclosing != null; enclosing = EnclosingName(enclosing))
+        for (var enclosing = name; enclosing != null; enclosing = EnclosingName(enclosing))
+        {
             yield return enclosing;
+        }
     }
 
     /// <summary>The name <paramref name="name"/> extends by a segment; null for an outermost name.</summary>
@@ -26,7 +28,10 @@ public static class NamespaceNames
     {
         var last = name.LastIndexOf(Separator);
         if (last < 0)
+        {
             return null;
+        }
+
         return name.Substring(0, last);
     }
 }

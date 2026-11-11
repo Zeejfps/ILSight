@@ -27,11 +27,17 @@ public static class ProcessPicking
     {
         var request = ++picker.ScanRequest;
         if (picker.Scan is not ProcessScan.Scanned)
+        {
             picker.Scan = new ProcessScan.Scanning();
+        }
+
         var find = picker.FindProcesses;
         var outcome = await Background.Wait(Task.Run(() => find(CancellationToken.None)));
         if (request != picker.ScanRequest)
+        {
             return;
+        }
+
         picker.AppliedFilter = null;
         switch (outcome)
         {
@@ -77,9 +83,15 @@ public static class ProcessPicking
     private static void ApplyFilter(ProcessPicker picker)
     {
         if (picker.Scan is not ProcessScan.Scanned scanned)
+        {
             return;
+        }
+
         if (picker.Filter == picker.AppliedFilter)
+        {
             return;
+        }
+
         picker.AppliedFilter = picker.Filter;
         var selected = GetSelectedProcess(picker);
         picker.Filtered.Clear();
@@ -87,7 +99,9 @@ public static class ProcessPicking
         foreach (var process in scanned.Processes)
         {
             if (IsMatch(process, filter))
+            {
                 picker.Filtered.Add(process);
+            }
         }
         var index = selected == null ? -1 : picker.Filtered.FindIndex(p => p.Id == selected.Id);
         picker.ProcessSelection.Select(index, picker.Filtered.Count, reveal: false);
@@ -97,13 +111,25 @@ public static class ProcessPicking
     public static bool IsMatch(RunningProcess process, string filter)
     {
         if (filter.Length == 0)
+        {
             return true;
+        }
+
         if (process.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+        {
             return true;
+        }
+
         if (process.Id.ToString().Contains(filter, StringComparison.Ordinal))
+        {
             return true;
+        }
+
         if (process.Info == null || process.Info.EntryAssemblyName == null)
+        {
             return false;
+        }
+
         return process.Info.EntryAssemblyName.Contains(filter, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -112,7 +138,10 @@ public static class ProcessPicking
     {
         var index = picker.ProcessSelection.Index;
         if (index < 0 || index >= picker.Filtered.Count)
+        {
             return null;
+        }
+
         return picker.Filtered[index];
     }
 
@@ -123,7 +152,10 @@ public static class ProcessPicking
         var selected = GetSelectedProcess(picker);
         var shown = GetProcess(picker.Modules);
         if (selected?.Id == shown?.Id)
+        {
             return;
+        }
+
         StopModules(picker);
         if (selected == null)
         {
@@ -148,7 +180,10 @@ public static class ProcessPicking
         var find = picker.FindModules;
         var outcome = await Background.Wait(Task.Run(() => ListModulesAsync(find, process, cancellationToken)));
         if (request != picker.ModuleRequest)
+        {
             return;
+        }
+
         switch (outcome)
         {
             case Outcome<ModuleScan>.Ok ok:
@@ -184,7 +219,10 @@ public static class ProcessPicking
     private static void SelectEntryModule(ProcessPicker picker, ModuleScan scan)
     {
         if (scan is not ModuleScan.Loaded loaded || loaded.EntryAssembly == null)
+        {
             return;
+        }
+
         foreach (var module in loaded.Modules)
         {
             if (module is RunningModule.OnDisk onDisk && onDisk.Path.Equals(loaded.EntryAssembly))
@@ -226,7 +264,10 @@ public static class ProcessPicking
     public static IReadOnlyList<RunningModule> GetModules(ModuleScan scan)
     {
         if (scan is ModuleScan.Loaded loaded)
+        {
             return loaded.Modules;
+        }
+
         return [];
     }
 
@@ -234,11 +275,16 @@ public static class ProcessPicking
     public static bool CanOpen(ProcessPicker picker)
     {
         if (picker.ModuleSelection.Count == 0)
+        {
             return GetEntryAssembly(picker.Modules) != null;
+        }
+
         foreach (var module in GetModules(picker.Modules))
         {
             if (module is RunningModule.OnDisk && picker.ModuleSelection.Contains(module))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -256,7 +302,9 @@ public static class ProcessPicking
         foreach (var module in picker.ModuleSelection.InOrder(GetModules(picker.Modules)))
         {
             if (module is RunningModule.OnDisk onDisk)
+            {
                 paths.Add(onDisk.Path);
+            }
         }
         return paths;
     }

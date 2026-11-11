@@ -64,7 +64,10 @@ internal static class CodeFolding
         var folds = document.Folds;
         var collapsed = new bool[folds.Length];
         for (var i = 0; i < folds.Length; i++)
+        {
             collapsed[i] = folds[i].DefaultCollapsed;
+        }
+
         state.Layout = CreateLayout(document, collapsed);
     }
 
@@ -80,7 +83,11 @@ internal static class CodeFolding
 
     public static void SetCollapsed(CodeFolds state, int fold, bool collapsed)
     {
-        if (state.Collapsed[fold] == collapsed) return;
+        if (state.Collapsed[fold] == collapsed)
+        {
+            return;
+        }
+
         var changed = state.Collapsed.ToArray();
         changed[fold] = collapsed;
         state.Layout = CreateLayout(state.Document, changed);
@@ -96,7 +103,11 @@ internal static class CodeFolding
     /// <summary>Expands every fold that hides <paramref name="line"/>; returns whether any did.</summary>
     public static bool Reveal(CodeFolds state, int line)
     {
-        if (state.IsIdentity) return false;
+        if (state.IsIdentity)
+        {
+            return false;
+        }
+
         var folds = state.Document.Folds;
         bool[]? opened = null;
         for (var i = 0; i < folds.Length && folds[i].StartLine < line; i++)
@@ -107,7 +118,11 @@ internal static class CodeFolding
                 opened[i] = false;
             }
         }
-        if (opened == null) return false;
+        if (opened == null)
+        {
+            return false;
+        }
+
         state.Layout = CreateLayout(state.Document, opened);
         return true;
     }
@@ -115,9 +130,17 @@ internal static class CodeFolding
     /// <summary>The collapsed fold whose row is <paramref name="line"/>, or null.</summary>
     public static int? FindCollapsedAt(CodeFolds state, int line)
     {
-        if (state.IsIdentity) return null;
+        if (state.IsIdentity)
+        {
+            return null;
+        }
+
         var fold = Documents.FindFoldStartingAt(state.Document, line);
-        if (fold == null) return null;
+        if (fold == null)
+        {
+            return null;
+        }
+
         return state.Collapsed[fold.Value] ? fold : null;
     }
 
@@ -131,7 +154,9 @@ internal static class CodeFolding
         for (var i = 0; i < folds.Length && folds[i].StartLine <= line; i++)
         {
             if (line <= folds[i].EndLine && (collapsed == null || state.Collapsed[i] == collapsed))
+            {
                 found = i;
+            }
         }
         return found;
     }
@@ -163,13 +188,23 @@ internal static class CodeFolding
     /// <summary>The row <paramref name="line"/> is shown on: its own, or that of the fold hiding it.</summary>
     public static CodeRow FindRowOf(CodeFolds state, int line)
     {
-        if (state.IsIdentity) return ClampRow(state, new CodeRow(line));
+        if (state.IsIdentity)
+        {
+            return ClampRow(state, new CodeRow(line));
+        }
+
         int low = 0, high = state.RowCount - 1;
         while (low < high)
         {
             var mid = (low + high + 1) >> 1;
-            if (state.Rows[mid] <= line) low = mid;
-            else high = mid - 1;
+            if (state.Rows[mid] <= line)
+            {
+                low = mid;
+            }
+            else
+            {
+                high = mid - 1;
+            }
         }
         return new CodeRow(low);
     }
@@ -191,7 +226,9 @@ internal static class CodeFolding
         var lines = document.Lines.Length;
         var folds = document.Folds;
         if (Array.IndexOf(collapsed, true) < 0)
+        {
             return new CodeFoldLayout { Document = document, Collapsed = [..collapsed], Rows = [], IsIdentity = true, RowCount = lines };
+        }
 
         var rows = new int[lines];
         var count = 0;
@@ -200,7 +237,10 @@ internal static class CodeFolding
         {
             rows[count++] = line;
             while (next < folds.Length && folds[next].StartLine < line)
+            {
                 next++;
+            }
+
             line = next < folds.Length && folds[next].StartLine == line && collapsed[next] ? folds[next].EndLine + 1 : line + 1;
         }
         return new CodeFoldLayout { Document = document, Collapsed = [..collapsed], Rows = [..rows.AsSpan(0, count)], IsIdentity = false, RowCount = count };

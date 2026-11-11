@@ -35,21 +35,29 @@ namespace ILSight.Core.Metadata
 		/// <summary>Masks that gather independent flags rather than mutually exclusive values.</summary>
 		static readonly HashSet<string> flagMasks = ["ReservedMask", "SpecialConstraintMask"];
 
-		/// <summary>Whether <paramref name="type"/> is an enum of bits: one marked
-		/// <see cref="FlagsAttribute"/>, or one whose <c>*Mask</c> fields carve its bits up, as
-		/// <see cref="MethodImplAttributes"/> does.</summary>
-		public static bool IsFlags([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type type) =>
-			type.IsEnum && (type.IsDefined(typeof(FlagsAttribute), false)
-				|| type.GetFields(BindingFlags.Public | BindingFlags.Static).Any(static f => IsMask(f.Name)));
+        /// <summary>Whether <paramref name="type"/> is an enum of bits: one marked
+        /// <see cref="FlagsAttribute"/>, or one whose <c>*Mask</c> fields carve its bits up, as
+        /// <see cref="MethodImplAttributes"/> does.</summary>
+        public static bool IsFlags([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type type)
+        {
+            return type.IsEnum && (type.IsDefined(typeof(FlagsAttribute), false)
+                || type.GetFields(BindingFlags.Public | BindingFlags.Static).Any(static f => IsMask(f.Name)));
+        }
 
-		public static FlagsSchema For([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type enumType)
+        public static FlagsSchema For([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type enumType)
 		{
 			ArgumentNullException.ThrowIfNull(enumType);
 			if (!enumType.IsEnum)
-				throw new ArgumentException($"Type '{enumType}' is not an enum.", nameof(enumType));
-			if (cache.TryGetValue(enumType, out var schema))
-				return schema;
-			return cache.GetOrAdd(enumType, Build(enumType));
+            {
+                throw new ArgumentException($"Type '{enumType}' is not an enum.", nameof(enumType));
+            }
+
+            if (cache.TryGetValue(enumType, out var schema))
+            {
+                return schema;
+            }
+
+            return cache.GetOrAdd(enumType, Build(enumType));
 		}
 
 		static FlagsSchema Build([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type enumType)
@@ -67,22 +75,29 @@ namespace ILSight.Core.Metadata
 			string? unclaimedZero = null;
 			foreach (var f in fields)
 			{
-				uint v = ToUInt32(f.GetRawConstantValue());
+				var v = ToUInt32(f.GetRawConstantValue());
 				if (IsMask(f.Name))
 				{
 					if (flagMasks.Contains(f.Name))
-						continue;
-					maskFields.Add((f.Name, v));
+                    {
+                        continue;
+                    }
+
+                    maskFields.Add((f.Name, v));
 					currentMask = v;
 				}
 				else
 				{
 					valueFields.Add((f.Name, v));
 					if (v == 0 && currentMask is uint mask && !zeroNames.ContainsKey(mask))
-						zeroNames[mask] = f.Name;
-					else if (v == 0)
-						unclaimedZero ??= f.Name;
-				}
+                    {
+                        zeroNames[mask] = f.Name;
+                    }
+                    else if (v == 0)
+                    {
+                        unclaimedZero ??= f.Name;
+                    }
+                }
 			}
 
 			// Sort masks ascending by mask value so that when a value fits in more than one
@@ -100,25 +115,39 @@ namespace ILSight.Core.Metadata
 			foreach (var (name, value) in valueFields)
 			{
 				if (value == 0)
-					continue; // zero defaults are synthesised below
-				if (!seenValues.Add(value))
-					continue; // skip aliases (multiple names for the same bits)
-				bool placed = false;
+                {
+                    continue; // zero defaults are synthesised below
+                }
+
+                if (!seenValues.Add(value))
+                {
+                    continue; // skip aliases (multiple names for the same bits)
+                }
+
+                var placed = false;
 				foreach (var (maskName, mask) in maskFields)
 				{
 					if ((value & ~mask) != 0)
-						continue;
-					groupBuckets[mask].Add(new MutexValue($"{ValueName(name, maskName)} ({value:X4})", value));
+                    {
+                        continue;
+                    }
+
+                    groupBuckets[mask].Add(new MutexValue($"{ValueName(name, maskName)} ({value:X4})", value));
 					placed = true;
 					break;
 				}
 				if (!placed && BitOperations.IsPow2(value))
-					independentFlags.Add(new IndependentFlag(name, value));
-			}
+                {
+                    independentFlags.Add(new IndependentFlag(name, value));
+                }
+            }
 
 			if (extraFlags.TryGetValue(enumType, out var extras))
-				independentFlags.AddRange(extras);
-			independentFlags.Sort(static (a, b) => a.Bit.CompareTo(b.Bit));
+            {
+                independentFlags.AddRange(extras);
+            }
+
+            independentFlags.Sort(static (a, b) => a.Bit.CompareTo(b.Bit));
 
 			// Build the final mutex groups. Drop empty buckets — a *Mask field whose
 			// values weren't named in the enum (or were aliased away) doesn't earn a
@@ -130,8 +159,11 @@ namespace ILSight.Core.Metadata
 			{
 				var values = groupBuckets[mask];
 				if (values.Count == 0)
-					continue;
-				values.Sort(static (a, b) => a.Value.CompareTo(b.Value));
+                {
+                    continue;
+                }
+
+                values.Sort(static (a, b) => a.Value.CompareTo(b.Value));
 				var zeroName = zeroNames.GetValueOrDefault(mask) ?? unclaimedZero;
 				values.Insert(0, zeroName != null
 					? new MutexValue($"{ValueName(zeroName, maskName)} (0000)", 0)
@@ -142,12 +174,18 @@ namespace ILSight.Core.Metadata
 			return new FlagsSchema(enumType, groups, independentFlags);
 		}
 
-		static bool IsMask(string name) => name.EndsWith("Mask", StringComparison.Ordinal);
+        static bool IsMask(string name)
+        {
+            return name.EndsWith("Mask", StringComparison.Ordinal);
+        }
 
-		static string GroupName(string maskName) => maskName[..^"Mask".Length];
+        static string GroupName(string maskName)
+        {
+            return maskName[..^"Mask".Length];
+        }
 
-		/// <summary>A value's name without its group's prefix: <c>Ansi</c> of <c>CharSetAnsi</c>.</summary>
-		static string ValueName(string name, string maskName)
+        /// <summary>A value's name without its group's prefix: <c>Ansi</c> of <c>CharSetAnsi</c>.</summary>
+        static string ValueName(string name, string maskName)
 		{
 			var group = GroupName(maskName);
 			return name.Length > group.Length && name.StartsWith(group, StringComparison.Ordinal) ? name[group.Length..] : name;
@@ -156,8 +194,11 @@ namespace ILSight.Core.Metadata
 		static uint ToUInt32(object? raw)
 		{
 			if (raw is null)
-				return 0;
-			return Convert.ToUInt32(Convert.ToInt64(raw, CultureInfo.InvariantCulture)
+            {
+                return 0;
+            }
+
+            return Convert.ToUInt32(Convert.ToInt64(raw, CultureInfo.InvariantCulture)
 				& 0xFFFFFFFFL, CultureInfo.InvariantCulture);
 		}
 	}

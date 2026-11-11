@@ -4,7 +4,10 @@ namespace ILSight.App.Tests;
 
 public sealed class RunArgumentsReceiverTests
 {
-    private static RunArguments Arguments(params string[] args) => CommandLines.Parse(args).Arguments;
+    private static RunArguments Arguments(params string[] args)
+    {
+        return CommandLines.Parse(args).Arguments;
+    }
 
     [Fact]
     public void The_first_run_with_some_settings_gets_the_role_and_later_ones_do_not()

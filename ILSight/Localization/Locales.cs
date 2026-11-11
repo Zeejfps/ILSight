@@ -18,16 +18,19 @@ public static class Locales
     ];
 
     /// <summary>The locale for <paramref name="culture"/>'s language, or English when there is none.</summary>
-    public static Locale For(CultureInfo culture) => culture.TwoLetterISOLanguageName switch
+    public static Locale For(CultureInfo culture)
     {
-        "de" => Locale.De,
-        "es" => Locale.Es,
-        "fr" => Locale.Fr,
-        "ja" => Locale.Ja,
-        "ko" => Locale.Ko,
-        "pt" => Locale.PtBr,
-        "ru" => Locale.Ru,
-        "zh" => Locale.ZhHans,
-        _ => Locale.En,
-    };
+        return culture.TwoLetterISOLanguageName switch
+        {
+            "de" => Locale.De,
+            "es" => Locale.Es,
+            "fr" => Locale.Fr,
+            "ja" => Locale.Ja,
+            "ko" => Locale.Ko,
+            "pt" => Locale.PtBr,
+            "ru" => Locale.Ru,
+            "zh" => Locale.ZhHans,
+            _ => Locale.En,
+        };
+    }
 }

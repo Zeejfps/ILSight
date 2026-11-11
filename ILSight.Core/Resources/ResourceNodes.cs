@@ -48,10 +48,12 @@ internal static class ResourceNodes
         return copy.ToArray();
     }
 
-    public static (bool IsPublic, NodeAccessibility Accessibility) Visibility(MetadataResource resource) =>
-        (resource.Attributes & ManifestResourceAttributes.VisibilityMask) == ManifestResourceAttributes.Public
+    public static (bool IsPublic, NodeAccessibility Accessibility) Visibility(MetadataResource resource)
+    {
+        return (resource.Attributes & ManifestResourceAttributes.VisibilityMask) == ManifestResourceAttributes.Public
             ? (true, NodeAccessibility.Public)
             : (false, NodeAccessibility.Private);
+    }
 
     /// <summary>The entries in name order. The containers WPF generates key their entries by a
     /// URI-escaped path, which is unescaped as ILSpy does.</summary>
@@ -60,21 +62,27 @@ internal static class ResourceNodes
         using var stream = new MemoryStream(Read(resource));
         IEnumerable<KeyValuePair<string, object?>> entries = new ResourcesFile(stream).ToList();
         if (WholeProjectDecompiler.IsWpfGeneratedResourceContainer(resource.Name))
+        {
             entries = entries.Select(static e => new KeyValuePair<string, object?>(Uri.UnescapeDataString(e.Key), e.Value));
+        }
+
         return entries.OrderBy(static e => e.Key, NaturalStringComparer.Instance).ToList();
     }
 
     /// <summary>The grid of the entries: each one's name, its value as text, and the type of value.</summary>
-    public static GridSchema<(string Name, string Value, string Type)> Schema(LoadedModule assembly, Lazy<List<KeyValuePair<string, object?>>> entries) =>
-        AddColumns(CreateGrid<(string Name, string Value, string Type)>("Resources", assembly.File, () => entries.Value.Select(static e => Row(e.Key, e.Value))), columns =>
+    public static GridSchema<(string Name, string Value, string Type)> Schema(LoadedModule assembly, Lazy<List<KeyValuePair<string, object?>>> entries)
+    {
+        return AddColumns(CreateGrid<(string Name, string Value, string Type)>("Resources", assembly.File, () => entries.Value.Select(static e => Row(e.Key, e.Value))), columns =>
         {
             AddValue(columns, "Name", static r => r.Name);
             AddValue(columns, "Value", static r => r.Value, tooltip: static r => r.Value.Length > 80 || r.Value.Contains('\n') ? r.Value : null);
             AddValue(columns, "Type", static r => r.Type);
         });
+    }
 
-    private static (string Name, string Value, string Type) Row(string name, object? value) =>
-        value switch
+    private static (string Name, string Value, string Type) Row(string name, object? value)
+    {
+        return value switch
         {
             null => (name, "null", ""),
             string text => (name, text, "System.String"),
@@ -83,6 +91,7 @@ internal static class ResourceNodes
             ResourceSerializedObject serialized => (name, "<serialized>", serialized.TypeName ?? ""),
             _ => (name, Convert.ToString(value, CultureInfo.InvariantCulture) ?? "", value.GetType().FullName ?? value.GetType().Name),
         };
+    }
 
     internal static byte[] ReadData(ResourceEntryInfo entry)
     {

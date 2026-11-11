@@ -78,7 +78,9 @@ public static class MetadataGridWidget
         state.SortColumn = column;
         state.Order = MetadataGrids.OrderRows(state.Grid, column, state.Descending);
         if (state.Selected != MetadataGridState.None)
+        {
             state.Pending = new PendingGridScroll.Reveal(state.Selected);
+        }
     }
 
     /// <summary>The filter of <paramref name="column"/>, made on first use; a column of flags gets
@@ -87,7 +89,10 @@ public static class MetadataGridWidget
     {
         var filter = state.Filters[column];
         if (filter != null)
+        {
             return filter;
+        }
+
         filter = CreateColumnFilter(state, column, flags);
         state.Filters[column] = filter;
         return filter;
@@ -96,7 +101,10 @@ public static class MetadataGridWidget
     private static MetadataColumnFilter CreateColumnFilter(MetadataGridState state, int column, MetadataFilters flags)
     {
         if (!IsFlagsColumn(state, column))
+        {
             return new MetadataColumnFilter.ByText();
+        }
+
         return new MetadataColumnFilter.ByFlags { Flags = FindFilter(flags, state.Grid, column) };
     }
 
@@ -109,7 +117,11 @@ public static class MetadataGridWidget
     internal static void UpdateView(MetadataGridState state, MetadataFilters flags)
     {
         var key = ComputeViewKey(state, flags);
-        if (key == state.ViewKey) return;
+        if (key == state.ViewKey)
+        {
+            return;
+        }
+
         var selected = state.Selected;
         state.ViewKey = key;
         state.View = MetadataGrids.FilterRows(state.Grid, state.Order, state.Filters);
@@ -182,7 +194,11 @@ public static class MetadataGridWidget
     internal static void SelectCell(MetadataGridState state, int row, int column)
     {
         var index = FindIndexOf(state, row);
-        if (index < 0) return;
+        if (index < 0)
+        {
+            return;
+        }
+
         state.Cell.Select(index, state.View.Length, column, reveal: false);
     }
 
@@ -217,16 +233,32 @@ public static class MetadataGridWidget
 
     internal static string GetShownTextAt(MetadataGridState state, int row, int column)
     {
-        if (row < 0) return "";
-        if (column < 0) return "";
-        if (IsOpenAt(state, row, column)) return MetadataGrids.GetText(state.Grid, row, column);
+        if (row < 0)
+        {
+            return "";
+        }
+
+        if (column < 0)
+        {
+            return "";
+        }
+
+        if (IsOpenAt(state, row, column))
+        {
+            return MetadataGrids.GetText(state.Grid, row, column);
+        }
+
         return MetadataGrids.GetLines(state.Grid, row, column).FirstLine;
     }
 
     /// <summary>What copying takes: the current cell's text, or the whole row's without one.</summary>
     internal static string GetCopiedText(MetadataGridState state)
     {
-        if (state.CurrentColumn < 0) return GetRowText(state, state.Selected);
+        if (state.CurrentColumn < 0)
+        {
+            return GetRowText(state, state.Selected);
+        }
+
         return GetCellText(state);
     }
 
@@ -266,13 +298,23 @@ public static class MetadataGridWidget
     public static FilterState FindFilter(MetadataFilters filters, MetadataGrid grid, int column)
     {
         var key = GetKey(grid, column);
-        if (filters.States.TryGetValue(key, out var state)) return state;
+        if (filters.States.TryGetValue(key, out var state))
+        {
+            return state;
+        }
+
         var schema = grid.Columns[column].Flags;
         if (schema == null)
+        {
             throw new ArgumentException($"{key} is not a flags column.", nameof(column));
+        }
+
         state = FilterStatePresenter.CreateFilterState(schema);
         if (filters.Saved.TryGetValue(key, out var saved))
+        {
             FilterStatePresenter.RestoreFilter(state, saved);
+        }
+
         filters.States.Add(key, state);
         return state;
     }
@@ -289,9 +331,13 @@ public static class MetadataGridWidget
         {
             var saved = FilterStatePresenter.SaveFilter(state);
             if (saved != null)
+            {
                 filters.Saved[key] = saved;
+            }
             else
+            {
                 filters.Saved.Remove(key);
+            }
         }
         return new Dictionary<string, SavedFilterState>(filters.Saved);
     }
@@ -306,9 +352,15 @@ public static class MetadataGridWidget
         state.TallRows.Clear();
         MeasureOpenCells(state, rowHeight);
         if (details > 0f)
+        {
             state.TallCellsByRow.TryAdd(state.Selected, rowHeight);
+        }
+
         foreach (var (row, cells) in state.TallCellsByRow)
+        {
             AddTallRow(state, row, cells, details);
+        }
+
         state.TallRows.Sort(static (a, b) => a.Index.CompareTo(b.Index));
     }
 
@@ -324,7 +376,11 @@ public static class MetadataGridWidget
     private static void AddTallRow(MetadataGridState state, int row, float cells, float details)
     {
         var index = FindIndexOf(state, row);
-        if (index < 0) return;
+        if (index < 0)
+        {
+            return;
+        }
+
         var below = row == state.Selected ? details : 0f;
         state.TallRowsByIndex[index] = new RowHeights(cells, below);
         state.TallRows.Add(new TallRow(index, cells + below));
@@ -366,7 +422,9 @@ public static class MetadataGridWidget
             state.BeginEdit = false;
             filter.Text = edit == InlineEditResult.Cancelled ? "" : text;
             if (edit != InlineEditResult.Editing)
+            {
                 StopEditingFilter(state);
+            }
         }
     }
 
@@ -375,9 +433,15 @@ public static class MetadataGridWidget
         var theme = ui.Theme;
         var shown = ui.Interact(textId);
         if (shown.Hovered)
+        {
             ui.SetCursor(MouseCursor.Text);
+        }
+
         if (shown.Clicked)
+        {
             StartEditingFilter(state, column);
+        }
+
         ui.Text(filter.Text, new Box { Width = Sizing.Grow() }, color: theme.AccentText, size: theme.FontSizeSmall, id: shown.Id,
             overflow: TextOverflow.Ellipsis);
     }
@@ -394,19 +458,29 @@ public static class MetadataGridWidget
         var theme = ui.Theme;
         var funnel = ui.Clickable(GetFunnelId(heading.ListId, column));
         if (funnel.Clicked)
+        {
             ClickFunnel(heading.State, filter, column);
+        }
+
         var glyph = GetFunnelGlyph(heading.Icons, filter);
         var color = GetFunnelColor(theme, filter, funnel.Hovered);
         using (ui.Box(funnel.Id, new Box { Width = theme.IconSize, Height = Sizing.Grow(), AlignX = Align.Center, AlignY = Align.Center }))
+        {
             ui.Glyph(glyph, color, theme.FontSizeSmall);
+        }
+
         if (!IsFlagsFlyoutOpenFor(heading.State, column))
+        {
             ui.Tooltip(funnel.Id, GetFunnelTooltip(ui, heading.Strings, funnel.Id, heading.Grid.Columns[column].Name));
+        }
     }
 
     private static string GetFunnelTooltip(Ui ui, Strings t, int funnelId, string name)
     {
         using (ui.Id(funnelId))
+        {
             return ui.Memo("tooltip", (name, t), static a => a.t.MetadataFilter(a.name));
+        }
     }
 
     private static void ClickFunnel(MetadataGridState state, MetadataColumnFilter filter, int column)
@@ -441,9 +515,15 @@ public static class MetadataGridWidget
     private static uint GetFunnelColor(UiTheme theme, MetadataColumnFilter filter, bool hovered)
     {
         if (filter.IsActive)
+        {
             return theme.AccentText;
+        }
+
         if (hovered)
+        {
             return theme.Text;
+        }
+
         return theme.TextMuted;
     }
 }
@@ -483,11 +563,17 @@ internal ref struct MetadataGridFrame
         _focused = table.Focused;
         table.TakeKeys(State.View.Length);
         if (_focused)
+        {
             _result = Keys();
+        }
+
         Rows(table, columns);
         var picked = Menu();
         if (picked != null)
+        {
             _result = picked.Value;
+        }
+
         return _result;
     }
 
@@ -518,11 +604,17 @@ internal ref struct MetadataGridFrame
         }
         var width = Ui.MeasureText(column.Name, theme.FontSizeSmall) + theme.IconSize * 2 + theme.GapTight * 2;
         for (var row = 0; row < rows; row++)
+        {
             width = MathF.Max(width, Ui.MeasureText(MetadataGrids.GetText(Grid, row, c), size, family: family));
+        }
+
         return width;
     }
 
-    private static bool IsMono(MetadataColumn column) => column.IsNumeric || column.IsToken;
+    private static bool IsMono(MetadataColumn column)
+    {
+        return column.IsNumeric || column.IsToken;
+    }
 
     private void Header(TableFrame table)
     {
@@ -531,27 +623,47 @@ internal ref struct MetadataGridFrame
         var sort = new TableSort(State.SortColumn, new UiIcon(sortGlyph));
         var heading = new MetadataGridHeading { Grid = Grid, State = State, Flags = Flags, Strings = Strings, Icons = icons, ListId = ListId };
         var clicked = table.Header(State.Headers, sort, MetadataGridWidget.RenderHeading, heading);
-        if (clicked < 0) return;
-        if (clicked == State.EditingColumn) return;
+        if (clicked < 0)
+        {
+            return;
+        }
+
+        if (clicked == State.EditingColumn)
+        {
+            return;
+        }
+
         MetadataGridWidget.SortBy(State, clicked);
     }
 
     private void FlagsFlyout()
     {
-        if (State.FlagsColumn < 0) return;
+        if (State.FlagsColumn < 0)
+        {
+            return;
+        }
+
         var theme = Ui.Theme;
         var filter = MetadataGridWidget.FindFilter(Flags, Grid, State.FlagsColumn);
         var width = FlagsFilterView.ContentWidth + theme.TooltipPaddingX * 2 + theme.ScrollBarHitWidth;
         var funnelId = MetadataGridWidget.GetFunnelId(ListId, State.FlagsColumn);
         using var flyout = Ui.Flyout(HashCode.Combine(ListId, FlyoutSalt), ref State.FlagsOpen, funnelId,
             new Box { Width = Sizing.Fit(FlyoutMinWidth, width), Gap = theme.Gap });
-        if (!flyout.IsOpen) return;
+        if (!flyout.IsOpen)
+        {
+            return;
+        }
+
         FlagsFilterView.Render(Ui, filter);
     }
 
     private MetadataGridResult Keys()
     {
-        if (State.View.Length == 0) return default;
+        if (State.View.Length == 0)
+        {
+            return default;
+        }
+
         var result = default(MetadataGridResult);
         var keys = Ui.Input.Keys;
         for (var i = 0; i < keys.Count; i++)
@@ -571,14 +683,21 @@ internal ref struct MetadataGridFrame
                     continue;
             }
             if (!State.HasCurrentCell)
+            {
                 continue;
+            }
+
             if (Ui.IsPressedAt(Shortcuts.SelectAll, i))
+            {
                 MetadataGridWidget.SelectAllText(State);
+            }
             else if (Ui.IsPressedAt(Shortcuts.GoToToken, i))
             {
                 var target = MetadataGrids.GetLink(Grid, State.Selected, State.CurrentColumn);
                 if (target != null)
+                {
                     result = new MetadataGridResult(target, null, false);
+                }
             }
         }
         return result;
@@ -605,7 +724,9 @@ internal ref struct MetadataGridFrame
             {
                 Row(body, index, row, height.Cells);
                 if (height.Details > 0f)
+                {
                     MetadataDetailsView.Render(Ui, Grid, State.Details, row, height.Details);
+                }
             }
         }
         Answer(body);
@@ -613,9 +734,17 @@ internal ref struct MetadataGridFrame
 
     private void Arrive(TableBody body, float rowHeight)
     {
-        if (body.Viewport <= 0f) return;
+        if (body.Viewport <= 0f)
+        {
+            return;
+        }
+
         var pending = State.Pending;
-        if (pending == null) return;
+        if (pending == null)
+        {
+            return;
+        }
+
         State.Pending = null;
         switch (pending)
         {
@@ -636,18 +765,26 @@ internal ref struct MetadataGridFrame
         body.ScrollTo(restore.TopRow * rowHeight);
         var row = restore.Row;
         if (row != null)
+        {
             MetadataGridWidget.SelectCell(State, row.Value, restore.Column ?? MetadataGridState.None);
+        }
     }
 
     private void ArriveAtRevealed(TableBody body, float rowHeight, int row)
     {
         MetadataGridWidget.SelectCell(State, row, State.CurrentColumn);
         var index = MetadataGridWidget.FindIndexOf(State, row);
-        if (index < 0) return;
+        if (index < 0)
+        {
+            return;
+        }
+
         var top = body.TopOf(index);
         var outOfView = top < body.Offset || top + rowHeight > body.Offset + body.Viewport;
         if (outOfView)
+        {
             body.ScrollTo(MathF.Max(0f, top - body.Viewport / 3f));
+        }
     }
 
     private void Row(TableBody body, int index, int row, float height)
@@ -662,15 +799,26 @@ internal ref struct MetadataGridFrame
 
     private void ExpandOnPress(Interaction cell, int row, int column)
     {
-        if (!cell.Pressed) return;
-        if (!CanExpand(row, column)) return;
+        if (!cell.Pressed)
+        {
+            return;
+        }
+
+        if (!CanExpand(row, column))
+        {
+            return;
+        }
+
         MetadataGridWidget.ExpandCell(State, row, column);
     }
 
     private bool CanExpand(int row, int column)
     {
         if (MetadataGridWidget.IsOpenAt(State, row, column))
+        {
             return false;
+        }
+
         return MetadataGrids.GetLines(Grid, row, column).MoreLines > 0;
     }
 
@@ -678,17 +826,29 @@ internal ref struct MetadataGridFrame
     private void Answer(TableBody body)
     {
         if (body.Activated)
+        {
             OpenDefinition(State.Selected, body.InNewTab);
+        }
+
         if (body.CopyRequested)
+        {
             Ui.ClipboardText = MetadataGridWidget.GetCopiedText(State);
+        }
+
         if (body.ContextMenuRequested)
+        {
             Ui.OpenContextMenu(MenuId, body.ContextMenuAt);
+        }
     }
 
     private void OpenDefinition(int row, bool inNewTab)
     {
         var definition = MetadataGrids.FindDefinition(Grid, row);
-        if (definition == null) return;
+        if (definition == null)
+        {
+            return;
+        }
+
         _result = new MetadataGridResult(null, definition, inNewTab);
     }
 
@@ -715,58 +875,112 @@ internal ref struct MetadataGridFrame
         }
         string? more = null;
         if (!expanded)
+        {
             more = MoreLines(row, c, cellId);
+        }
+
         var followed = cells.TextCell(c, MetadataGridWidget.GetShownTextAt(State, row, c), color, size, family, link: link, linkTooltip: Strings.MetadataGoToToken, suffix: more,
             expanded: expanded);
         if (followed)
+        {
             _result = new MetadataGridResult(target, null, false);
+        }
+
         Tooltip(row, c, cellId);
     }
     /// <summary>How many lines a closed multi-line cell hides, as its suffix; null for a single line.</summary>
     private string? MoreLines(int row, int column, int cellId)
     {
         var more = MetadataGrids.GetLines(Grid, row, column).MoreLines;
-        if (more == 0) return null;
+        if (more == 0)
+        {
+            return null;
+        }
+
         var t = Strings;
         using (Ui.Id(cellId))
+        {
             return Ui.Memo("more-lines", (more, t), static a => a.t.MetadataMoreLines(a.more));
+        }
     }
 
     private void Tooltip(int row, int column, int cellId)
     {
-        if (!Ui.IsHovered(cellId)) return;
+        if (!Ui.IsHovered(cellId))
+        {
+            return;
+        }
+
         var content = MetadataGrids.GetTooltip(Grid, row, column);
-        if (content == null) return;
+        if (content == null)
+        {
+            return;
+        }
+
         using var tooltip = Ui.TooltipContent(cellId);
-        if (!tooltip.IsOpen) return;
+        if (!tooltip.IsOpen)
+        {
+            return;
+        }
+
         MetadataTooltipView.Render(Ui, content);
     }
 
     private MetadataGridResult? Menu()
     {
         using var menu = Ui.ContextMenu(MenuId);
-        if (!menu.IsOpen) return null;
-        if (State.Selected < 0) return null;
-        if (State.Selected >= Grid.RowCount) return null;
+        if (!menu.IsOpen)
+        {
+            return null;
+        }
+
+        if (State.Selected < 0)
+        {
+            return null;
+        }
+
+        if (State.Selected >= Grid.RowCount)
+        {
+            return null;
+        }
+
         var row = State.Selected;
         var column = State.CurrentColumn;
         MetadataGridResult? result = null;
         if (Ui.MenuItem(Strings.CodeCopy, Shortcuts.Copy, enabled: column >= 0, id: "copy"))
+        {
             Ui.ClipboardText = MetadataGridWidget.GetCellText(State);
+        }
+
         if (Ui.MenuItem(Strings.MetadataCopyRow, id: "copy-row"))
+        {
             Ui.ClipboardText = MetadataGridWidget.GetRowText(State, row);
+        }
+
         var target = column >= 0 ? MetadataGrids.GetLink(Grid, row, column) : null;
         var definition = MetadataGrids.FindDefinition(Grid, row);
-        if (target == null && definition == null) return null;
+        if (target == null && definition == null)
+        {
+            return null;
+        }
+
         Ui.MenuSeparator();
         if (target != null && Ui.MenuItem(Strings.MetadataGoToToken, Shortcuts.GoToToken, id: "go-to-token"))
+        {
             result = new MetadataGridResult(target, null, false);
+        }
+
         if (definition != null)
         {
             if (Ui.MenuItem(Strings.CodeGoToDefinition, Shortcuts.Enter, id: "go-to-definition"))
+            {
                 result = new MetadataGridResult(null, definition, false);
+            }
+
             if (Ui.MenuItem(Strings.CodeOpenInNewTab, id: "open-in-new-tab"))
+            {
                 result = new MetadataGridResult(null, definition, true);
+            }
         }
         return result;
     }

@@ -17,14 +17,26 @@ public sealed record WebUrl
     public static WebUrl? Parse(string? text)
     {
         if (text == null)
+        {
             return null;
+        }
+
         var trimmed = text.Trim();
         if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+        {
             return null;
+        }
+
         if (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp)
+        {
             return null;
+        }
+
         return new WebUrl(uri, trimmed);
     }
 
-    public override string ToString() => Text;
+    public override string ToString()
+    {
+        return Text;
+    }
 }

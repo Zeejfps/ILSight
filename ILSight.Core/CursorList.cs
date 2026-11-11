@@ -37,7 +37,10 @@ public sealed class CursorList<T> : IReadOnlyList<T> where T : class
         _items.RemoveRange(after, _items.Count - after);
         _items.Add(item);
         if (_items.Count > Capacity)
+        {
             _items.RemoveAt(0);
+        }
+
         CurrentIndex = _items.Count - 1;
         Revision++;
     }
@@ -48,16 +51,25 @@ public sealed class CursorList<T> : IReadOnlyList<T> where T : class
     {
         _items.RemoveAt(index);
         if (index <= CurrentIndex)
+        {
             CurrentIndex--;
+        }
+
         if (CurrentIndex < 0 && _items.Count > 0)
+        {
             CurrentIndex = 0;
+        }
+
         Revision++;
     }
 
     public void Clear()
     {
         if (_items.Count == 0)
+        {
             return;
+        }
+
         _items.Clear();
         CurrentIndex = -1;
         Revision++;
@@ -68,7 +80,10 @@ public sealed class CursorList<T> : IReadOnlyList<T> where T : class
     public bool MoveTo(int index)
     {
         if (index < 0 || index >= _items.Count || index == CurrentIndex)
+        {
             return false;
+        }
+
         CurrentIndex = index;
         Revision++;
         return true;
@@ -79,7 +94,10 @@ public sealed class CursorList<T> : IReadOnlyList<T> where T : class
     public bool ReplaceCurrent(T item)
     {
         if (CurrentIndex < 0)
+        {
             return false;
+        }
+
         _items[CurrentIndex] = item;
         return true;
     }

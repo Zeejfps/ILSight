@@ -33,9 +33,15 @@ public static class DocumentPanels
     public static string? FindPanel(DocumentViews documents, DocumentTab? tab)
     {
         if (tab == null)
+        {
             return null;
+        }
+
         if (!documents.Views.TryGetValue(tab, out var view))
+        {
             return null;
+        }
+
         return view.Panel;
     }
 
@@ -45,7 +51,9 @@ public static class DocumentPanels
         foreach (var (tab, view) in documents.Views)
         {
             if (view.Panel == panel)
+            {
                 return tab;
+            }
         }
         return null;
     }
@@ -55,7 +63,10 @@ public static class DocumentPanels
     {
         var panel = NextPanel(documents);
         while (documents.Skipped.Contains(panel))
+        {
             panel = NextPanel(documents);
+        }
+
         return panel;
     }
 
@@ -70,7 +81,9 @@ public static class DocumentPanels
     public static void SkipPanels(DocumentViews documents, IEnumerable<string> panels)
     {
         foreach (var panel in panels)
+        {
             documents.Skipped.Add(panel);
+        }
     }
 
     /// <summary>The panel each tab with a view is docked as, and how its diagram or comparison is viewed,
@@ -79,7 +92,10 @@ public static class DocumentPanels
     {
         var panels = new List<TabPanel>();
         foreach (var (tab, view) in documents.Views)
+        {
             panels.Add(new TabPanel(tab, view.Panel, SaveView(tab, view)));
+        }
+
         return panels;
     }
 
@@ -87,7 +103,10 @@ public static class DocumentPanels
     public static void AddView(DocumentViews documents, DocumentTab tab)
     {
         if (HasView(documents, tab))
+        {
             return;
+        }
+
         AddView(documents, tab, CreatePanel(documents));
     }
 
@@ -97,7 +116,10 @@ public static class DocumentPanels
     public static void AddView(DocumentViews documents, DocumentTab tab, string panel)
     {
         if (HasView(documents, tab))
+        {
             return;
+        }
+
         var view = new TabView { Panel = panel, ImageId = $"{panel}-image" };
         PictureViews.Follow(view.Picture, tab.Image);
         documents.Views.Add(tab, view);
@@ -108,7 +130,10 @@ public static class DocumentPanels
     public static void RemoveView(DocumentViews documents, DocumentTab tab)
     {
         if (!documents.Views.Remove(tab, out var view))
+        {
             return;
+        }
+
         documents.ReleasedImages.Add(view.ImageId);
         documents.DroppedChanges += CountViewChanges(view);
         documents.OwnChanges++;
@@ -121,7 +146,9 @@ public static class DocumentPanels
         foreach (var tab in documents.Views.Keys)
         {
             if (!Tabs.IsOpen(tabs, tab))
+            {
                 documents.Closed.Add(tab);
+            }
         }
         return documents.Closed;
     }
@@ -130,14 +157,19 @@ public static class DocumentPanels
     public static void FollowViewContent(DocumentViews documents)
     {
         foreach (var (tab, view) in documents.Views)
+        {
             PictureViews.Follow(view.Picture, tab.Image);
+        }
     }
 
     /// <summary>Where the view of <paramref name="tab"/> stands, or null when it has none.</summary>
     public static ViewPosition? FindViewPosition(DocumentViews documents, DocumentTab tab)
     {
         if (!documents.Views.TryGetValue(tab, out var view))
+        {
             return null;
+        }
+
         return GetPosition(view, tab);
     }
 
@@ -145,7 +177,10 @@ public static class DocumentPanels
     public static IReadOnlyList<string> TakeReleasedImages(DocumentViews documents)
     {
         if (documents.ReleasedImages.Count == 0)
+        {
             return Array.Empty<string>();
+        }
+
         var released = documents.ReleasedImages.ToArray();
         documents.ReleasedImages.Clear();
         return released;
@@ -157,18 +192,26 @@ public static class DocumentPanels
     {
         var view = documents.Views.GetValueOrDefault(tab);
         if (view == null)
+        {
             return;
+        }
+
         var shown = tab.Grid;
         if (shown == null)
         {
             var code = position.Code;
             if (code != null)
+            {
                 CodeViewWidget.RestorePosition(view.Code, code.Value);
+            }
+
             return;
         }
         var grid = position.Grid;
         if (grid != null)
+        {
             MetadataGridWidget.RestorePosition(GetGridState(view, shown), grid.Value);
+        }
     }
 
     /// <summary>Returns the view of the diagram <paramref name="tab"/>, an open tab, shows to how
@@ -177,7 +220,10 @@ public static class DocumentPanels
     {
         var view = documents.Views.GetValueOrDefault(tab);
         if (view == null)
+        {
             return;
+        }
+
         Diagrams.RestoreView(view.Diagram, saved);
     }
 
@@ -187,7 +233,10 @@ public static class DocumentPanels
     {
         var view = documents.Views.GetValueOrDefault(tab);
         if (view == null)
+        {
             return;
+        }
+
         Comparisons.RestoreRowsView(view.Comparison, saved);
     }
 
@@ -196,9 +245,15 @@ public static class DocumentPanels
     {
         var view = documents.Views.GetValueOrDefault(tab);
         if (view == null)
+        {
             return;
+        }
+
         if (line >= tab.Document.Lines.Length)
+        {
             return;
+        }
+
         CodeViewWidget.RevealLine(view.Code, line);
     }
 
@@ -207,10 +262,16 @@ public static class DocumentPanels
     {
         var view = documents.Views.GetValueOrDefault(tab);
         if (view == null)
+        {
             return;
+        }
+
         var grid = tab.Grid;
         if (grid == null || row >= grid.RowCount)
+        {
             return;
+        }
+
         MetadataGridWidget.RevealRow(GetGridState(view, grid), row);
     }
 
@@ -220,7 +281,10 @@ public static class DocumentPanels
     {
         var view = documents.Views.GetValueOrDefault(tab);
         if (view == null)
+        {
             return;
+        }
+
         Diagrams.FocusCard(view.Diagram, type);
     }
 
@@ -248,7 +312,10 @@ public static class DocumentPanels
     {
         var shown = view.Grid;
         if (shown != null && ReferenceEquals(shown.Grid, grid))
+        {
             return shown;
+        }
+
         shown = MetadataGridWidget.CreateState(grid);
         view.Grid = shown;
         return shown;
@@ -259,7 +326,10 @@ public static class DocumentPanels
     {
         var grid = tab.Grid;
         if (grid != null)
+        {
             return ViewPosition.OfGrid(GetGridState(view, grid).Position);
+        }
+
         return ViewPosition.OfCode(view.Code.Position);
     }
 
@@ -271,7 +341,10 @@ public static class DocumentPanels
     {
         var panels = new Dictionary<string, string>();
         foreach (var reopened in tabs)
+        {
             panels[reopened.Record.Panel] = AddReopenedView(uiState, reopened);
+        }
+
         DockUndocked(uiState, panels, layout);
         ActivateActivePanel(uiState);
     }
@@ -290,27 +363,42 @@ public static class DocumentPanels
     private static string ChooseReopenedPanel(UiState uiState, string saved)
     {
         if (!IsTabPanel(uiState, saved))
+        {
             return saved;
+        }
+
         return DocumentPanels.CreatePanel(uiState.Documents);
     }
 
     private static void RestoreDiagramView(UiState uiState, ReopenedTab reopened)
     {
         if (reopened.Record is not DiagramDocumentRecord diagram)
+        {
             return;
+        }
+
         var view = diagram.View;
         if (view == null)
+        {
             return;
+        }
+
         DocumentPanels.RestoreDiagramView(uiState.Documents, reopened.Tab, view);
     }
 
     private static void RestoreComparisonView(UiState uiState, ReopenedTab reopened)
     {
         if (reopened.Record is not ComparisonDocumentRecord comparison)
+        {
             return;
+        }
+
         var view = comparison.View;
         if (view == null)
+        {
             return;
+        }
+
         DocumentPanels.RestoreComparisonView(uiState.Documents, reopened.Tab, view);
     }
 
@@ -322,7 +410,10 @@ public static class DocumentPanels
             .Where(p => !uiState.Layout.Contains(p))
             .ToList();
         if (undocked.Count == 0)
+        {
             return;
+        }
+
         var arrangement = ArrangeUndocked(undocked, panels, layout);
         Docking.DockArranged(uiState.MainLayout, undocked, arrangement);
     }
@@ -332,7 +423,10 @@ public static class DocumentPanels
     private static DockLayout ArrangeUndocked(List<string> undocked, Dictionary<string, string> panels, DockLayout? layout)
     {
         if (layout == null)
+        {
             return ArrangeInOneGroup(undocked);
+        }
+
         var arrangement = layout.CopyArrangement();
         DockPanels.Rename(arrangement, panels);
         arrangement.Retain(undocked.Contains);
@@ -350,9 +444,15 @@ public static class DocumentPanels
     {
         var panel = FindActivePanel(uiState);
         if (panel == null)
+        {
             return;
+        }
+
         if (!uiState.Layout.Contains(panel))
+        {
             return;
+        }
+
         uiState.Layout.Activate(panel);
     }
 
@@ -362,18 +462,27 @@ public static class DocumentPanels
     public static void ShowInRestoredDocuments(UiState uiState, DocumentTabs tabs)
     {
         for (var i = 0; i < tabs.Open.Count; i++)
+        {
             ShowInRestoredPlace(uiState, tabs.Open[i]);
+        }
+
         uiState.Layout.Retain(p => IsShownPanel(uiState, p));
     }
 
     private static void ShowInRestoredPlace(UiState uiState, DocumentTab tab)
     {
         if (DocumentPanels.HasView(uiState.Documents, tab))
+        {
             return;
+        }
+
         var panel = DocumentPanels.CreatePanel(uiState.Documents);
         DocumentPanels.AddView(uiState.Documents, tab, panel);
         if (DockPanels.PlaceDocument(uiState.Layout, panel, p => IsTabPanel(uiState, p)))
+        {
             return;
+        }
+
         Docking.DockDocument(uiState.MainLayout, panel, panel);
     }
 
@@ -381,7 +490,10 @@ public static class DocumentPanels
     private static bool IsShownPanel(UiState uiState, string panel)
     {
         if (DockPanels.IsView(panel))
+        {
             return true;
+        }
+
         return IsTabPanel(uiState, panel);
     }
 
@@ -398,7 +510,10 @@ public static class DocumentPanels
     internal static void OnPanelClosed(UiState uiState, string panel)
     {
         if (panel == DockPanels.Search)
+        {
             Searches.Clear(uiState.Search);
+        }
+
         CloseTabOf(uiState, panel);
     }
 
@@ -406,7 +521,10 @@ public static class DocumentPanels
     {
         var tab = DocumentPanels.FindTab(uiState.Documents, panel);
         if (tab == null)
+        {
             return;
+        }
+
         RemoveView(uiState.Documents, tab);
         Commands.Later(uiState, (uiState, tab), static (a, s) => AppFrames.CloseTabAndFocusNext(s.uiState, a, s.tab));
     }
@@ -416,9 +534,15 @@ public static class DocumentPanels
     {
         var next = DocumentPanels.FindTab(uiState.Documents, uiState.Layout.Focused);
         if (next == null)
+        {
             next = FindFrontTab(uiState);
+        }
+
         if (next == null)
+        {
             return;
+        }
+
         AskToFocusTab(uiState, next);
     }
 
@@ -429,12 +553,17 @@ public static class DocumentPanels
         var layout = uiState.Layout;
         var docked = FindFrontTab(uiState, layout.Root);
         if (docked != null)
+        {
             return docked;
+        }
+
         foreach (var window in layout.Windows)
         {
             var floating = FindFrontTab(uiState, window.Root);
             if (floating != null)
+            {
                 return floating;
+            }
         }
         return null;
     }
@@ -442,12 +571,21 @@ public static class DocumentPanels
     private static DocumentTab? FindFrontTab(UiState uiState, DockNode node)
     {
         if (node is DockGroup group)
+        {
             return DocumentPanels.FindTab(uiState.Documents, group.Active);
+        }
+
         if (node is not DockSplit split)
+        {
             return null;
+        }
+
         var first = FindFrontTab(uiState, split.First);
         if (first != null)
+        {
             return first;
+        }
+
         return FindFrontTab(uiState, split.Second);
     }
 
@@ -462,10 +600,16 @@ public static class DocumentPanels
     public static void FocusNextTabIfNone(UiState uiState, DocumentTabs tabs)
     {
         if (tabs.Active != null)
+        {
             return;
+        }
+
         var attempt = new TabFocusTry(uiState.Layout.Changes, tabs.Open.Count);
         if (attempt == uiState.LastTabFocusTry)
+        {
             return;
+        }
+
         uiState.LastTabFocusTry = attempt;
         FocusNextTab(uiState);
     }
@@ -478,7 +622,10 @@ public static class DocumentPanels
         DocumentPanels.AddView(documents, tab);
         var panel = DocumentPanels.GetPanel(documents, tab);
         if (!uiState.Layout.Contains(panel))
+        {
             Docking.DockDocument(uiState.MainLayout, panel, DocumentPanels.FindPanel(documents, beside));
+        }
+
         uiState.Layout.Activate(panel);
     }
 
@@ -486,7 +633,10 @@ public static class DocumentPanels
     public static void ActivateTab(UiState uiState, DocumentTab tab)
     {
         if (!DocumentPanels.HasView(uiState.Documents, tab))
+        {
             return;
+        }
+
         uiState.Layout.Activate(DocumentPanels.GetPanel(uiState.Documents, tab));
         AskToFocusTab(uiState, tab);
     }
@@ -498,9 +648,15 @@ public static class DocumentPanels
         FollowActiveTab(uiState, active);
         var tab = DocumentPanels.FindTab(uiState.Documents, uiState.Layout.Focused);
         if (tab == null)
+        {
             return;
+        }
+
         if (tab == active)
+        {
             return;
+        }
+
         AskToFocusTab(uiState, tab);
     }
 
@@ -515,19 +671,31 @@ public static class DocumentPanels
     {
         var active = uiState.ActiveTab;
         if (active == null)
+        {
             return;
+        }
+
         var activePanel = DocumentPanels.GetPanel(uiState.Documents, active);
         var group = uiState.Layout.GroupOf(activePanel);
         if (group == null)
+        {
             return;
+        }
+
         var panels = group.Panels.FindAll(p => IsTabPanel(uiState, p));
         if (panels.Count < 2)
+        {
             return;
+        }
+
         var index = panels.IndexOf(activePanel);
         var next = panels[WrapIndex(index + by, panels.Count)];
         var tab = DocumentPanels.FindTab(uiState.Documents, next);
         if (tab == null)
+        {
             return;
+        }
+
         ActivateTab(uiState, tab);
     }
 
@@ -540,7 +708,10 @@ public static class DocumentPanels
     {
         var wrapped = index % count;
         if (wrapped < 0)
+        {
             wrapped += count;
+        }
+
         return wrapped;
     }
 
@@ -548,7 +719,10 @@ public static class DocumentPanels
     {
         var tab = uiState.ActiveTab;
         if (tab == null)
+        {
             return;
+        }
+
         CloseTab(uiState, tab);
     }
 
@@ -596,7 +770,10 @@ public static class DocumentPanels
     {
         var all = new List<DocumentTab>();
         foreach (var group in uiState.Layout.AllGroups())
+        {
             AddTabsOf(uiState, all, group);
+        }
+
         CloseTabs(uiState, all);
     }
 
@@ -607,7 +784,10 @@ public static class DocumentPanels
         var tabs = new List<DocumentTab>();
         var group = uiState.Layout.GroupOf(DocumentPanels.GetPanel(uiState.Documents, tab));
         if (group == null)
+        {
             return tabs;
+        }
+
         AddTabsOf(uiState, tabs, group);
         return tabs;
     }
@@ -617,7 +797,9 @@ public static class DocumentPanels
     private static void AddTabsOf(UiState uiState, List<DocumentTab> tabs, DockGroup group)
     {
         foreach (var panel in group.Panels)
+        {
             AddTabOf(uiState, tabs, panel);
+        }
     }
 
     /// <summary>Adds the tab of <paramref name="panel"/> to <paramref name="tabs"/> when it is a document's.</summary>
@@ -625,14 +807,19 @@ public static class DocumentPanels
     {
         var tab = DocumentPanels.FindTab(uiState.Documents, panel);
         if (tab == null)
+        {
             return;
+        }
+
         tabs.Add(tab);
     }
 
     private static void CloseTabs(UiState uiState, List<DocumentTab> tabs)
     {
         foreach (var tab in tabs)
+        {
             CloseTab(uiState, tab);
+        }
     }
 
     /// <summary>The panel of the active tab, which the views dock beside, or null.</summary>
@@ -669,14 +856,19 @@ public static class DocumentPanels
     private static void ClosePanel(UiState uiState, string panel)
     {
         if (!uiState.Layout.Contains(panel))
+        {
             return;
+        }
+
         uiState.Layout.Close(panel);
     }
 
     private static void AddOpenTabViews(UiState uiState, DocumentTabs tabs)
     {
         for (var i = 0; i < tabs.Open.Count; i++)
+        {
             DocumentPanels.AddView(uiState.Documents, tabs.Open[i]);
+        }
     }
 
     /// <summary>The tab in front of each group that has one.</summary>
@@ -684,7 +876,10 @@ public static class DocumentPanels
     {
         var tabs = new List<DocumentTab>();
         foreach (var group in uiState.Layout.AllGroups())
+        {
             AddTabOf(uiState, tabs, group.Active);
+        }
+
         return tabs;
     }
 }

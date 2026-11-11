@@ -36,7 +36,10 @@ public static partial class ClassDiagrams
         var page = Path.Combine(folder, PageFileName);
         File.WriteAllText(page, WritePage(assembly, model));
         foreach (var asset in Assets)
+        {
             CopyAsset(asset, folder);
+        }
+
         return page;
     }
 
@@ -55,7 +58,10 @@ public static partial class ClassDiagrams
         var built = new BuiltTypes { AssemblyName = assembly.Name, Total = picked.Length, Progress = progress };
         var byNamespace = new Dictionary<string, Dictionary<string, DiagramType>>();
         foreach (var group in namespaces)
+        {
             byNamespace[group.Key] = BuildNamespace(group, names, types, built, cancellationToken);
+        }
+
         return new DiagramModel { OutsideReferences = names.OutsideReferences, TypesByNamespace = byNamespace };
     }
 
@@ -103,7 +109,10 @@ public static partial class ClassDiagrams
         var resource = ResourcePrefix + name;
         var stream = typeof(ClassDiagrams).Assembly.GetManifestResourceStream(resource);
         if (stream == null)
+        {
             throw new FileNotFoundException("The diagrammer's resource is missing.", resource);
+        }
+
         return stream;
     }
 
@@ -141,7 +150,10 @@ public static partial class ClassDiagrams
         var ids = new Dictionary<IType, string>();
         var groups = types.GroupBy(static t => t.Name);
         foreach (var group in groups)
+        {
             AddIds(ids, group);
+        }
+
         return ids;
     }
 
@@ -155,7 +167,9 @@ public static partial class ClassDiagrams
             return;
         }
         for (var i = 0; i < types.Count; i++)
+        {
             ids[types[i]] = types[i].Name + (i + 1);
+        }
     }
 
     // A type in the main module of an executable is named <Module>.
@@ -176,7 +190,10 @@ public static partial class ClassDiagrams
         var openGeneric = GetOpenGeneric(type);
         var identified = openGeneric ?? type;
         if (naming.Ids.TryGetValue(identified, out var id))
+        {
             return (id, openGeneric);
+        }
+
         var created = CreateOutsideId(naming, identified);
         naming.Ids[identified] = created;
         return (created, openGeneric);
@@ -185,9 +202,15 @@ public static partial class ClassDiagrams
     private static IType? GetOpenGeneric(IType type)
     {
         if (type is not ParameterizedType generic)
+        {
             return null;
+        }
+
         if (generic.TypeArguments.Any(static a => a is ITypeParameter))
+        {
             return null;
+        }
+
         return generic.GenericType;
     }
 
@@ -197,7 +220,10 @@ public static partial class ClassDiagrams
     {
         var id = Sanitize(type.FullName.Replace('.', '_'));
         if (type.TypeParameterCount == 0)
+        {
             return id;
+        }
+
         var parameters = type.TypeParameters.Select(p => GetId(naming, p));
         return id + "_" + string.Join("_", parameters);
     }
@@ -208,7 +234,10 @@ public static partial class ClassDiagrams
     internal static string GetTypeName(DiagramNames naming, IType type)
     {
         if (naming.NamesByType.TryGetValue(type, out var name))
+        {
             return name;
+        }
+
         var created = CreateName(naming, type);
         naming.NamesByType[type] = created;
         return created;
@@ -217,9 +246,15 @@ public static partial class ClassDiagrams
     private static string CreateName(DiagramNames naming, IType type)
     {
         if (type.TypeParameterCount < 1)
+        {
             return CreatePlainName(naming, type);
+        }
+
         if (TypeFacts.TryGetNullable(type, out var underlying))
+        {
             return GetTypeName(naming, underlying) + "?";
+        }
+
         var arguments = type.TypeArguments.Select(a => GetTypeName(naming, a));
         return type.Name + "❰" + string.Join(", ", arguments) + "❱";
     }
@@ -227,17 +262,31 @@ public static partial class ClassDiagrams
     private static string CreatePlainName(DiagramNames naming, IType type)
     {
         if (type is ArrayType array)
+        {
             return GetTypeName(naming, array.ElementType) + "[]";
+        }
+
         if (type is ByReferenceType reference)
+        {
             return "&" + GetTypeName(naming, reference.ElementType);
+        }
 
         var definition = type.GetDefinition();
         if (definition == null)
+        {
             return type.Name;
+        }
+
         if (definition.KnownTypeCode != KnownTypeCode.None)
+        {
             return GetKeyword(definition.KnownTypeCode, type);
+        }
+
         if (type.DeclaringType != null)
+        {
             return type.DeclaringType.Name + '+' + type.Name;
+        }
+
         return type.Name.Replace('<', '❰').Replace('>', '❱');
     }
 
@@ -245,7 +294,10 @@ public static partial class ClassDiagrams
     {
         var keyword = KnownTypeReference.GetCSharpNameByTypeCode(code);
         if (keyword == null)
+        {
             return type.Name;
+        }
+
         return keyword;
     }
 
@@ -258,16 +310,25 @@ public static partial class ClassDiagrams
         var referred = openGeneric ?? type;
         RecordOutside(naming, id, referred);
         if (propertyName != null)
+        {
             return new DiagramReference(id, propertyName);
+        }
+
         if (openGeneric == null)
+        {
             return new DiagramReference(id, null);
+        }
+
         return new DiagramReference(id, GetTypeName(naming, type));
     }
 
     private static void RecordOutside(DiagramNames naming, string id, IType type)
     {
         if (IsPicked(naming, type))
+        {
             return;
+        }
+
         naming.OutsideReferences.TryAdd(id, type.Namespace + '.' + GetTypeName(naming, type));
     }
 
@@ -287,7 +348,10 @@ public static partial class ClassDiagrams
     private static string ListTypeArguments(MermaidMembers mermaid, IMethod method)
     {
         if (method.TypeArguments.Count == 0)
+        {
             return "";
+        }
+
         var arguments = method.TypeArguments.Select(a => GetTypeName(mermaid.Names, a));
         return "❰" + string.Join(", ", arguments) + "❱";
     }
@@ -296,10 +360,16 @@ public static partial class ClassDiagrams
     private static string GetMethodName(MermaidMembers mermaid, IMethod method)
     {
         if (!method.IsExplicitInterfaceImplementation)
+        {
             return method.Name;
+        }
+
         var implemented = method.ExplicitlyImplementedInterfaceMembers.FirstOrDefault();
         if (implemented == null)
+        {
             return method.Name;
+        }
+
         return ClassDiagrams.GetTypeName(mermaid.Names, implemented.DeclaringType) + '.' + implemented.Name;
     }
 
@@ -318,9 +388,15 @@ public static partial class ClassDiagrams
     private static string GetModifier(IMember member)
     {
         if (member.IsAbstract)
+        {
             return "*";
+        }
+
         if (member.IsStatic)
+        {
             return "$";
+        }
+
         return "";
     }
 
@@ -344,7 +420,10 @@ public static partial class ClassDiagrams
     internal static DiagramType BuildType(DiagramTypes diagram, ITypeDefinition type)
     {
         if (type.Kind == TypeKind.Enum)
+        {
             return BuildEnum(diagram, type);
+        }
+
         return BuildClass(diagram, type);
     }
 
@@ -368,9 +447,15 @@ public static partial class ClassDiagrams
     private static bool IsEnumValue(IField field)
     {
         if (!field.IsConst)
+        {
             return false;
+        }
+
         if (!field.IsStatic)
+        {
             return false;
+        }
+
         return field.Accessibility == Accessibility.Public;
     }
 
@@ -403,7 +488,10 @@ public static partial class ClassDiagrams
     {
         var name = ClassDiagrams.GetTypeName(diagram.Names, type);
         if (name == id)
+        {
             return null;
+        }
+
         return name;
     }
 
@@ -430,13 +518,25 @@ public static partial class ClassDiagrams
     private static bool IsShownMethod(ITypeDefinition type, IMethod method)
     {
         if (method.IsOperator)
+        {
             return false;
+        }
+
         if (method.IsCompilerGenerated())
+        {
             return false;
+        }
+
         if (method.DeclaringTypeDefinition == type)
+        {
             return true;
+        }
+
         if (TypeFacts.IsObject(method.DeclaringType))
+        {
             return false;
+        }
+
         return !TypeFacts.OverridesObject(method);
     }
 
@@ -452,7 +552,10 @@ public static partial class ClassDiagrams
     private static bool IsShownField(DiagramTypes diagram, IField field, IProperty[] properties)
     {
         if (IsHiddenEntity(diagram, field))
+        {
             return false;
+        }
+
         return !properties.Any(p => IsBackingField(field, p));
     }
 
@@ -465,7 +568,10 @@ public static partial class ClassDiagrams
     private static bool IsBackingField(IField field, IProperty property)
     {
         if (!field.ReturnType.Equals(property.ReturnType))
+        {
             return false;
+        }
+
         return field.Name.Contains(property.Name, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -505,7 +611,10 @@ public static partial class ClassDiagrams
     {
         var type = property.ReturnType;
         if (TypeFacts.TryGetNullable(type, out var underlying))
+        {
             type = underlying;
+        }
+
         return ClassDiagrams.IsPicked(diagram.Names, type);
     }
 
@@ -513,9 +622,15 @@ public static partial class ClassDiagrams
     private static DiagramTypes.ManyRelation? FindManyRelation(DiagramTypes diagram, IProperty property)
     {
         if (!TypeFacts.TryGetElementType(property, out var elementType))
+        {
             return null;
+        }
+
         if (!ClassDiagrams.IsPicked(diagram.Names, elementType))
+        {
             return null;
+        }
+
         return new DiagramTypes.ManyRelation(property, elementType);
     }
 
@@ -524,7 +639,10 @@ public static partial class ClassDiagrams
         var own = PadMembers(ListFlatMembers(diagram, members, type, ""));
         var annotation = GetAnnotation(type);
         if (annotation == null)
+        {
             return own.TrimEnd(' ');
+        }
+
         return own + $"<<{annotation}>>" + NewLine;
     }
 
@@ -533,11 +651,20 @@ public static partial class ClassDiagrams
     private static string? GetAnnotation(ITypeDefinition type)
     {
         if (TypeFacts.IsInterface(type))
+        {
             return "Interface";
+        }
+
         if (!type.IsAbstract)
+        {
             return null;
+        }
+
         if (type.IsSealed)
+        {
             return "Service";
+        }
+
         return "Abstract";
     }
 
@@ -554,7 +681,10 @@ public static partial class ClassDiagrams
     private static T[] GetDeclared<T>(Dictionary<IType, T[]> byType, IType declaring)
     {
         if (byType.TryGetValue(declaring, out var declared))
+        {
             return declared;
+        }
+
         return [];
     }
 
@@ -568,7 +698,10 @@ public static partial class ClassDiagrams
             .GetNonInterfaceBaseTypes()
             .Where(t => TypeFacts.IsAncestor(type, t));
         foreach (var ancestor in ancestors)
+        {
             inherited[ClassDiagrams.GetId(diagram.Names, ancestor)] = GetInheritedFrom(diagram, members, ancestor, prefix);
+        }
+
         return inherited;
     }
 
@@ -577,7 +710,10 @@ public static partial class ClassDiagrams
         var flat = ListFlatMembers(diagram, members, ancestor, prefix).ToList();
         string? flatMembers = null;
         if (flat.Count > 0)
+        {
             flatMembers = string.Join(NewLine, flat);
+        }
+
         return new InheritedMembers
         {
             FlatMembers = flatMembers,
@@ -589,10 +725,16 @@ public static partial class ClassDiagrams
     private static Dictionary<string, string>? MapHasOne(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType declaring)
     {
         if (!members.HasOne.TryGetValue(declaring, out var properties))
+        {
             return null;
+        }
+
         var relations = new Dictionary<string, string>();
         foreach (var property in properties)
+        {
             RelateOne(diagram, relations, property);
+        }
+
         return relations;
     }
 
@@ -601,7 +743,10 @@ public static partial class ClassDiagrams
         var type = property.ReturnType;
         var label = property.Name;
         if (property.IsIndexer)
+        {
             label += WriteIndexerParameters(property);
+        }
+
         if (TypeFacts.TryGetNullable(type, out var underlying))
         {
             type = underlying;
@@ -619,10 +764,16 @@ public static partial class ClassDiagrams
     private static Dictionary<string, string>? MapHasMany(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType declaring)
     {
         if (!members.HasMany.TryGetValue(declaring, out var many))
+        {
             return null;
+        }
+
         var relations = new Dictionary<string, string>();
         foreach (var relation in many)
+        {
             Relate(relations, relation.Property.Name, ClassDiagrams.ReferTo(diagram.Names, relation.ElementType, relation.Property.Name));
+        }
+
         return relations;
     }
 
@@ -637,7 +788,10 @@ public static partial class ClassDiagrams
     {
         var baseType = type.DirectBaseTypes.FirstOrDefault(IsBaseClass);
         if (baseType == null)
+        {
             return null;
+        }
+
         var reference = ClassDiagrams.ReferTo(diagram.Names, baseType);
         return new Dictionary<string, string?> { [reference.To] = reference.Label };
     }
@@ -645,7 +799,10 @@ public static partial class ClassDiagrams
     private static bool IsBaseClass(IType type)
     {
         if (TypeFacts.IsInterface(type))
+        {
             return false;
+        }
+
         return !TypeFacts.IsObject(type);
     }
 
@@ -658,7 +815,10 @@ public static partial class ClassDiagrams
             .Select(i => ClassDiagrams.ReferTo(diagram.Names, i))
             .ToList();
         if (references.Count == 0)
+        {
             return null;
+        }
+
         return references
             .GroupBy(static r => r.To)
             .ToDictionary(static g => g.Key, ListLabels);
@@ -691,13 +851,22 @@ public static partial class ClassDiagrams
     {
         var provider = docs.Provider;
         if (provider == null)
+        {
             return null;
+        }
+
         var found = new Dictionary<string, string>();
         AddDoc(provider, found, string.Empty, type);
         foreach (var member in members)
+        {
             AddDoc(provider, found, member.Name, member);
+        }
+
         if (found.Count == 0)
+        {
             return null;
+        }
+
         return found;
     }
 
@@ -705,7 +874,10 @@ public static partial class ClassDiagrams
     {
         var text = GetDocText(provider, entity);
         if (string.IsNullOrEmpty(text))
+        {
             return;
+        }
+
         found[key] = text;
     }
 
@@ -713,7 +885,10 @@ public static partial class ClassDiagrams
     {
         var xml = ReadDocXml(provider, entity);
         if (xml == null)
+        {
             return null;
+        }
+
         var text = xml
             .Replace("<summary>", null)
             .Replace("</summary>", null)

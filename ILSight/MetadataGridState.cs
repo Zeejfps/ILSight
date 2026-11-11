@@ -77,7 +77,10 @@ public sealed class MetadataGridState
         get
         {
             if (Pending is PendingGridScroll.Restore restoring)
+            {
                 return restoring.Position;
+            }
+
             var topRow = RowHeight > 0f ? (int)(Scroll.Y / RowHeight) : 0;
             int? row = Selected == None ? null : Selected;
             int? column = CurrentColumn == None ? null : CurrentColumn;
@@ -91,7 +94,11 @@ public sealed class MetadataGridState
         get
         {
             var index = Rows.Index;
-            if (index < 0 || index >= View.Length) return None;
+            if (index < 0 || index >= View.Length)
+            {
+                return None;
+            }
+
             return View[index];
         }
     }

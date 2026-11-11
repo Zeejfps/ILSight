@@ -47,7 +47,10 @@ public static class ItemSelections
         where T : class
     {
         if (selection.Item == null)
+        {
             return;
+        }
+
         Select(selection, selection.Item, items);
     }
 
@@ -56,7 +59,10 @@ public static class ItemSelections
         where T : class
     {
         if (FindIndexIn(selection, items) >= 0)
+        {
             return;
+        }
+
         Clear(selection);
     }
 
@@ -80,9 +86,15 @@ public static class ItemSelections
         where T : class
     {
         if (index < 0)
+        {
             return null;
+        }
+
         if (index >= items.Count)
+        {
             return null;
+        }
+
         return items[index];
     }
 
@@ -91,11 +103,16 @@ public static class ItemSelections
         where T : class
     {
         if (selection.Item == null)
+        {
             return -1;
+        }
+
         for (var i = 0; i < items.Count; i++)
         {
             if (ReferenceEquals(items[i], selection.Item))
+            {
                 return i;
+            }
         }
         return -1;
     }

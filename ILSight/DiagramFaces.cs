@@ -35,7 +35,10 @@ internal static class DiagramFaces
     {
         var key = KeyOf(ui, view, diagram);
         if (view.MeasuredFor == key)
+        {
             return;
+        }
+
         var faces = Measure(ui, view, diagram);
         Diagrams.KeepFaces(view, key, faces);
         view.MeasuredVersion = diagram.Version;
@@ -61,9 +64,15 @@ internal static class DiagramFaces
         AddHeader(stack, card);
         var headerHeight = stack.Top;
         foreach (var section in card.Sections)
+        {
             AddSection(stack, view, diagram, card, section);
+        }
+
         foreach (var group in card.Inherited)
+        {
             AddInherited(stack, view, diagram, card, group);
+        }
+
         var width = MathF.Max(MinWidth, stack.Width + RightPadding);
         return new CardFace(card, stack.Rows, width, stack.Top + BottomPadding, headerHeight);
     }
@@ -73,19 +82,25 @@ internal static class DiagramFaces
         AddRow(stack, new CardRow(new CardRowContent.Name(NodeIcons.Of(card.Shape), card.Accessibility, card.Type), stack.RowHeight + NameRowExtra, Padding, card.Name));
         var stereotype = StereotypeOf(card.Stereotype);
         if (stereotype == null)
+        {
             return;
+        }
+
         var indent = Padding + stack.IconSize + IconGap;
         AddRow(stack, new CardRow(new CardRowContent.Stereotype(), stack.RowHeight, indent, stereotype));
     }
 
-    private static string? StereotypeOf(TypeStereotype stereotype) => stereotype switch
+    private static string? StereotypeOf(TypeStereotype stereotype)
     {
-        TypeStereotype.Abstract => Abstract,
-        TypeStereotype.Static => Static,
-        TypeStereotype.Interface => Interface,
-        TypeStereotype.None => null,
-        _ => throw new UnreachableException(),
-    };
+        return stereotype switch
+        {
+            TypeStereotype.Abstract => Abstract,
+            TypeStereotype.Static => Static,
+            TypeStereotype.Interface => Interface,
+            TypeStereotype.None => null,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     private static void AddSection(RowStack stack, DiagramViewState view, TypeDiagram diagram, TypeCard card, CardSection section)
     {
@@ -94,14 +109,17 @@ internal static class DiagramFaces
         AddFold(stack, view, new CardFold.Own(card.Anchor, section.Kind), title, members);
     }
 
-    private static string TitleOf(Strings t, MemberSection section) => section switch
+    private static string TitleOf(Strings t, MemberSection section)
     {
-        MemberSection.Fields => t.DiagramFields,
-        MemberSection.Properties => t.DiagramProperties,
-        MemberSection.Methods => t.DiagramMethods,
-        MemberSection.Events => t.DiagramEvents,
-        _ => throw new UnreachableException(),
-    };
+        return section switch
+        {
+            MemberSection.Fields => t.DiagramFields,
+            MemberSection.Properties => t.DiagramProperties,
+            MemberSection.Methods => t.DiagramMethods,
+            MemberSection.Events => t.DiagramEvents,
+            _ => throw new UnreachableException(),
+        };
+    }
 
     private static void AddInherited(RowStack stack, DiagramViewState view, TypeDiagram diagram, TypeCard card, InheritedGroup group)
     {
@@ -116,9 +134,15 @@ internal static class DiagramFaces
     private static List<CardMember> ListShown(DiagramViewState view, TypeDiagram diagram, AssemblyPath? assemblyPath, IReadOnlyList<CardMember> members)
     {
         if (view.ShowsHiddenMembers)
+        {
             return members.ToList();
+        }
+
         if (Diagrams.IsHome(diagram, assemblyPath))
+        {
             return members.ToList();
+        }
+
         return members
             .Where(static m => m.IsVisibleOutside)
             .ToList();
@@ -129,14 +153,22 @@ internal static class DiagramFaces
     private static void AddFold(RowStack stack, DiagramViewState view, CardFold fold, string title, List<CardMember> members)
     {
         if (members.Count == 0)
+        {
             return;
+        }
+
         var isOpen = Diagrams.IsFoldOpen(view, fold);
         var text = $"{title} ({members.Count})";
         AddRow(stack, new CardRow(new CardRowContent.Fold(fold, isOpen), stack.RowHeight, Padding, text));
         if (!isOpen)
+        {
             return;
+        }
+
         foreach (var member in members)
+        {
             AddRow(stack, MemberRow(stack, member));
+        }
     }
 
     private static CardRow MemberRow(RowStack stack, CardMember member)
@@ -159,7 +191,10 @@ internal static class DiagramFaces
     {
         var label = LabelOf(link);
         if (label == null)
+        {
             return new MeasuredLink(link, 0f, 0f);
+        }
+
         var size = MeasureLabel(ui, label);
         return new MeasuredLink(link, size.Width, size.Height);
     }
@@ -177,9 +212,15 @@ internal static class DiagramFaces
     public static string? LabelOf(TypeLink link)
     {
         if (link.Label == null)
+        {
             return null;
+        }
+
         if (link.Kind != TypeLinkKind.HoldsMany)
+        {
             return link.Label;
+        }
+
         return link.Label + ManyMark;
     }
 

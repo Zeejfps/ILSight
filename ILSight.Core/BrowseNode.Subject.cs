@@ -219,7 +219,10 @@ public static partial class BrowseNodes
     {
         var definition = NodeDefinitions.FindType(module, type);
         if (definition == null)
+        {
             return null;
+        }
+
         return Create(parent, new NodeSubject.TypeDefinition { Definition = definition });
     }
 
@@ -229,7 +232,10 @@ public static partial class BrowseNodes
     {
         var definition = NodeDefinitions.FindMember(module, member);
         if (definition == null)
+        {
             return null;
+        }
+
         return Create(parent, new NodeSubject.MemberDefinition { Definition = definition });
     }
 
@@ -237,7 +243,10 @@ public static partial class BrowseNodes
     internal static IEntity? GetEntity(BrowseNode? node)
     {
         if (node == null)
+        {
             return null;
+        }
+
         return node.Entity;
     }
 
@@ -245,13 +254,18 @@ public static partial class BrowseNodes
     internal static bool IsMember(BrowseNode? node)
     {
         if (node == null)
+        {
             return false;
+        }
+
         return node.Subject is NodeSubject.MemberDefinition;
     }
 
     private static void AddIfListed(List<BrowseNode> nodes, BrowseNode? node)
     {
         if (node != null)
+        {
             nodes.Add(node);
+        }
     }
 }

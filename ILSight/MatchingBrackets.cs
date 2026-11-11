@@ -18,7 +18,10 @@ public static class MatchingBrackets
     public static BracketPair? Find(CodeViewState state, DecompiledDocument document, TextPosition caret)
     {
         if (state.Brackets.TryGet((new(document), caret), out var brackets))
+        {
             return brackets;
+        }
+
         brackets = Match(document, caret);
         state.Brackets = new((new(document), caret), brackets);
         return brackets;
@@ -28,9 +31,15 @@ public static class MatchingBrackets
     {
         var after = MatchAt(document, caret);
         if (after != null)
+        {
             return after;
+        }
+
         if (caret.Column == 0)
+        {
             return null;
+        }
+
         var before = caret with { Column = caret.Column - 1 };
         return MatchAt(document, before);
     }
@@ -40,10 +49,16 @@ public static class MatchingBrackets
         var bracket = BracketAt(document, at);
         var open = Opens.IndexOf(bracket);
         if (open >= 0)
+        {
             return MatchForward(document, at, Opens[open], Closes[open]);
+        }
+
         var close = Closes.IndexOf(bracket);
         if (close >= 0)
+        {
             return MatchBackward(document, at, Opens[close], Closes[close]);
+        }
+
         return null;
     }
 
@@ -51,20 +66,32 @@ public static class MatchingBrackets
     private static char BracketAt(DecompiledDocument document, TextPosition at)
     {
         if (at.Line < 0 || at.Line >= document.Lines.Length)
+        {
             return '\0';
+        }
+
         var line = document.Lines[at.Line];
         var span = CodeText.SpanAt(line.Spans, at.Column);
         if (span == null)
+        {
             return '\0';
+        }
+
         if (!IsCode(line.Spans[span.Value]))
+        {
             return '\0';
+        }
+
         return line.Text[at.Column];
     }
 
     private static bool IsCode(DocumentSpan span)
     {
         if (span.Kind == SpanKind.String)
+        {
             return false;
+        }
+
         return span.Kind != SpanKind.Comment;
     }
 
@@ -79,18 +106,33 @@ public static class MatchingBrackets
             foreach (var span in line.Spans)
             {
                 if (span.End <= from)
+                {
                     continue;
+                }
+
                 if (!IsCode(span))
+                {
                     continue;
+                }
+
                 for (var column = Math.Max(span.Start, from); column < span.End; column++)
                 {
                     var c = line.Text[column];
                     if (c == opening)
+                    {
                         depth++;
+                    }
+
                     if (c != closing)
+                    {
                         continue;
+                    }
+
                     if (depth == 0)
+                    {
                         return new BracketPair(open, new TextPosition(index, column));
+                    }
+
                     depth--;
                 }
             }
@@ -111,18 +153,33 @@ public static class MatchingBrackets
             {
                 var span = spans[s];
                 if (span.Start >= before)
+                {
                     continue;
+                }
+
                 if (!IsCode(span))
+                {
                     continue;
+                }
+
                 for (var column = Math.Min(span.End, before) - 1; column >= span.Start; column--)
                 {
                     var c = line.Text[column];
                     if (c == closing)
+                    {
                         depth++;
+                    }
+
                     if (c != opening)
+                    {
                         continue;
+                    }
+
                     if (depth == 0)
+                    {
                         return new BracketPair(new TextPosition(index, column), close);
+                    }
+
                     depth--;
                 }
             }

@@ -21,13 +21,20 @@ internal static class DisplayOptionsResetDialogView
                 using (ui.DialogActions())
                 {
                     if (ui.Button(t.DisplayOptionsResetCancel, id: "display-reset-cancel", variant: ButtonVariant.Ghost))
+                    {
                         FinishDisplayOptionsReset(screen, false);
+                    }
+
                     if (ui.Button(t.DisplayOptionsResetConfirm, id: "display-reset-confirm", variant: ButtonVariant.Primary))
+                    {
                         FinishDisplayOptionsReset(screen, true);
+                    }
                 }
             }
         }
         if (!open && screen.ConfirmingDisplayReset)
+        {
             FinishDisplayOptionsReset(screen, false);
+        }
     }
 }

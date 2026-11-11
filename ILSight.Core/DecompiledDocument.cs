@@ -19,18 +19,27 @@ public static class DecompilationLanguages
     public static IReadOnlyList<DecompilationLanguage> All { get; } = Enum.GetValues<DecompilationLanguage>();
 
     /// <summary>The language's name as ILSpy shows it.</summary>
-    public static string Label(DecompilationLanguage language) => language switch
+    public static string Label(DecompilationLanguage language)
     {
-        DecompilationLanguage.IL => "IL",
-        DecompilationLanguage.ILWithCSharp => "IL with C#",
-        _ => "C#",
-    };
+        return language switch
+        {
+            DecompilationLanguage.IL => "IL",
+            DecompilationLanguage.ILWithCSharp => "IL with C#",
+            _ => "C#",
+        };
+    }
 
     /// <summary>Whether the language shows decompiled C#, which the decompiler options shape.</summary>
-    public static bool ShowsCSharp(DecompilationLanguage language) => language != DecompilationLanguage.IL;
+    public static bool ShowsCSharp(DecompilationLanguage language)
+    {
+        return language != DecompilationLanguage.IL;
+    }
 
     /// <summary>Whether the language is disassembled to IL.</summary>
-    public static bool IsIL(DecompilationLanguage language) => language != DecompilationLanguage.CSharp;
+    public static bool IsIL(DecompilationLanguage language)
+    {
+        return language != DecompilationLanguage.CSharp;
+    }
 }
 
 /// <summary>How a <see cref="DocumentSpan"/> is colored.</summary>
@@ -79,7 +88,10 @@ public readonly struct DocumentLine
 
     public ReadOnlySpan<DocumentSpan> Spans => DocumentSpans.AsSpan().Slice(FirstSpan, SpanCount);
 
-    public override string ToString() => Text;
+    public override string ToString()
+    {
+        return Text;
+    }
 }
 
 /// <summary>A foldable range of a <see cref="DecompiledDocument"/>. Collapsed, line
@@ -139,9 +151,18 @@ public static class Documents
         {
             var mid = (low + high) >> 1;
             var start = document.Folds[mid].StartLine;
-            if (start < line) low = mid + 1;
-            else if (start > line) high = mid - 1;
-            else return mid;
+            if (start < line)
+            {
+                low = mid + 1;
+            }
+            else if (start > line)
+            {
+                high = mid - 1;
+            }
+            else
+            {
+                return mid;
+            }
         }
         return null;
     }
@@ -166,7 +187,10 @@ public static class Documents
     {
         var reference = NodeDefinitions.ReferenceOf(node.Subject);
         if (reference == null)
+        {
             return -1;
+        }
+
         return FindDefinitionLine(document, reference);
     }
 
@@ -174,12 +198,22 @@ public static class Documents
     /// it, else the entity it defines; null for a line with neither, such as a brace or a blank line.</summary>
     public static CodeAnchor? FindAnchorAt(DecompiledDocument document, int line)
     {
-        if (line < 0 || line >= document.Lines.Length) return null;
-        if (document.Statements.TryGetValue(line, out var statement)) return statement;
+        if (line < 0 || line >= document.Lines.Length)
+        {
+            return null;
+        }
+
+        if (document.Statements.TryGetValue(line, out var statement))
+        {
+            return statement;
+        }
+
         foreach (var span in document.Lines[line].Spans)
         {
             if (span.IsDefinition && span.Reference is CodeReference.Entity entity)
+            {
                 return GetDefinitionAnchor(entity);
+            }
         }
         return null;
     }
@@ -190,14 +224,24 @@ public static class Documents
     public static int FindLine(DecompiledDocument document, CodeAnchor anchor)
     {
         if (anchor.Kind == CodeAnchorKind.Definition)
+        {
             return EnsureDefinitionLines(document).GetValueOrDefault(anchor, -1);
+        }
 
         var statementLines = EnsureStatementLines(document);
-        if (!statementLines.TryGetValue(GetMethodAnchor(anchor), out var points)) return -1;
+        if (!statementLines.TryGetValue(GetMethodAnchor(anchor), out var points))
+        {
+            return -1;
+        }
+
         var found = points[0].Line;
         foreach (var (offset, line) in points)
         {
-            if (offset > anchor.ILOffset) break;
+            if (offset > anchor.ILOffset)
+            {
+                break;
+            }
+
             found = line;
         }
         return found;
@@ -209,7 +253,10 @@ public static class Documents
     {
         var kept = Volatile.Read(ref document.DefinitionLines);
         if (kept != null)
+        {
             return kept;
+        }
+
         return FillDefinitionLines(document);
     }
 
@@ -223,7 +270,10 @@ public static class Documents
     {
         var kept = Volatile.Read(ref document.StatementLines);
         if (kept != null)
+        {
             return kept;
+        }
+
         return FillStatementLines(document);
     }
 
@@ -238,7 +288,9 @@ public static class Documents
         foreach (var (reference, line) in document.Definitions)
         {
             if (reference is CodeReference.Entity entity)
+            {
                 lines.TryAdd(GetDefinitionAnchor(entity), line);
+            }
         }
         return lines;
     }
@@ -276,7 +328,11 @@ public static class Documents
         var builder = new System.Text.StringBuilder();
         for (var i = first; i < end; i++)
         {
-            if (i > first) builder.Append('\n');
+            if (i > first)
+            {
+                builder.Append('\n');
+            }
+
             builder.Append(document.Lines[i].Text);
         }
         return builder.ToString();

@@ -116,7 +116,9 @@ public sealed class TrackedTests
         var before = GC.GetAllocatedBytesForCurrentThread();
         var found = 0;
         foreach (var item in set)
+        {
             found += set.Contains(item) ? 1 : 0;
+        }
 
         Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
         Assert.Equal(1, found);
