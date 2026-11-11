@@ -48,7 +48,7 @@ public abstract record DecompilerToggleGroup
 
 /// <summary>One of the decompiler's on/off choices, named as the decompiler names it; <see cref="All"/>
 /// holds every one there is.</summary>
-public sealed class DecompilerToggle : IOnOffChoice
+public sealed class DecompilerToggle
 {
     public required string Name { get; init; }
 
@@ -252,7 +252,7 @@ public sealed record DecompilerOptions
     public CSharpVersion LanguageVersion { get; init; } = CSharpVersion.CSharp14;
 
     /// <summary>The toggles set away from their defaults, by name, and what each is set to.</summary>
-    public OnOffChanges<DecompilerToggle> Changes { get; internal init; }
+    public OnOffChanges Changes { get; internal init; }
 
     /// <summary>Whether any toggle is set away from its default.</summary>
     public bool HasChanges => Changes.Count > 0;

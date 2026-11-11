@@ -68,3 +68,4 @@ An `ILSight.Tests` test failed once in 7 runs right after this change and never 
 | C1 API diff | R008 | `ApiEntry.Change` and `HasChanges` are computed (`ApiSides.Change` per case; `Both.IsDeclaredDifferently`; namespaces from `Presence`) instead of stored beside the sides that decide them. 5 new tests. | 1,671 tests |
 
 An `ILSight.App.Tests` test also failed once during C1 (name not captured) and passed in 5 reruns: a second intermittent test to identify.
+| C16 one-impl interface | R004 | `IOnOffChoice` (one implementation) deleted; `OnOffChanges` works on `DecompilerToggle` directly. | – |

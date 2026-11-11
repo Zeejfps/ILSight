@@ -445,7 +445,7 @@ public sealed class DecompilationTests
     {
         var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
 
-        OnOffChanges<DecompilerToggle> none = default;
+        OnOffChanges none = default;
         var set = none.With([bodies], !bodies.DefaultValue);
         var back = set.With([bodies], bodies.DefaultValue);
 
