@@ -89,3 +89,4 @@ An `ILSight.App.Tests` test also failed once during C1 (name not captured) and p
 | Z6 omnibar | R004 | ~200 lines of state logic moved out of `OmnibarView` onto `Omnibar`, `CrumbMenu` and `Breadcrumb` (search start/stop, focus, crumb menus, selection, the crumb-path memo); the view draws and calls them. 11 new direct tests. | 1,725 tests |
 
 The second intermittent test is `CloseAssembliesTests.Closing_takes_the_ticked_items_off_the_list_and_leaves_the_rest` (one extra path in the list; failed once, passed in 4 reruns).
+| A14 tooltip layout | R004 | ~390 lines mapping the doc model to rich-text runs moved out of `CodeTooltipView` into `TooltipLayouts.Build`; styles no longer need a `Ui`, so the layout is testable without rendering. The view still rebuilds only when the tooltip changes. 9 new tests. | – |

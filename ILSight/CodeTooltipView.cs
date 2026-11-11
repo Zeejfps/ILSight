@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ZGF.Gui;
 using ZGF.Gui.Immediate;
@@ -23,8 +22,6 @@ internal static class CodeTooltipView
     private const float ContextGap = 2f;
     private const float ParameterIndent = 16f;
     private const float ConstraintGap = 6f;
-    private const char KindMark = '\u0001';
-    private const char NameMark = '\u0002';
     private const float DocumentationPaddingY = 10f;
     private const float SectionGap = 11f;
     private const float HeadingGap = 4f;
@@ -39,8 +36,6 @@ internal static class CodeTooltipView
     private const float ExceptionGap = 2f;
     private const float CodeBlockPadding = 8f;
     private const float CodeBlockRadius = 4f;
-    private const string Bullet = "•";
-    private const string TermSeparator = " – ";
     private const float CodeChipMix = 0.06f;
     private const float CodeBlockMix = 0.3f;
     private const float HeadingMix = 0.2f;
@@ -53,78 +48,78 @@ internal static class CodeTooltipView
     /// <summary>Records the tooltip and returns the link clicked in it this frame, if one was.</summary>
     public static RichTextClick Render(Ui<UiState> ui, CodeTooltip tooltip)
     {
-        var layout = LayoutOf(ui, tooltip);
-        layout.Clicked = default;
+        var shown = ShownOf(ui, tooltip);
+        shown.Clicked = default;
         using (ui.Column(new Box { Gap = 0f }))
         {
-            RenderSignature(ui, layout);
-            if (layout.Groups.Count == 0)
+            RenderSignature(ui, shown);
+            if (shown.Layout.Groups.Count == 0)
             {
-                return layout.Clicked;
+                return shown.Clicked;
             }
 
             ui.Separator();
-            RenderDocumentation(ui, layout);
+            RenderDocumentation(ui, shown);
         }
-        return layout.Clicked;
+        return shown.Clicked;
     }
 
     /// <summary>Records <paramref name="runs"/> with their links clickable, keeping a click on one.</summary>
-    private static void Text(Ui<UiState> ui, TooltipLayout layout, IReadOnlyList<RichTextRun> runs)
+    private static void Text(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> runs)
     {
         var id = ui.GetId(RuntimeHelpers.GetHashCode(runs));
-        var click = ui.RichText(runs, codeBackground: layout.CodeBackground, id: id);
+        var click = ui.RichText(runs, codeBackground: shown.CodeBackground, id: id);
         if (click.Link is not null)
         {
-            layout.Clicked = click;
+            shown.Clicked = click;
         }
     }
 
-    private static void RenderSignature(Ui<UiState> ui, TooltipLayout layout)
+    private static void RenderSignature(Ui<UiState> ui, ShownTooltip shown)
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = ContextGap }))
         {
-            RenderDeclaration(ui, layout);
-            if (layout.Container.Count > 0)
+            RenderDeclaration(ui, shown);
+            if (shown.Layout.Container.Count > 0)
             {
-                Text(ui, layout, layout.Container);
+                Text(ui, shown, shown.Layout.Container);
             }
 
-            RenderConstraints(ui, layout);
+            RenderConstraints(ui, shown);
         }
     }
 
-    private static void RenderConstraints(Ui<UiState> ui, TooltipLayout layout)
+    private static void RenderConstraints(Ui<UiState> ui, ShownTooltip shown)
     {
-        if (layout.Constraints.Count == 0)
+        if (shown.Layout.Constraints.Count == 0)
         {
             return;
         }
 
         using (ui.Column(new Box { Padding = new Spacing(0f, ConstraintGap, 0f, 0f), Gap = 0f }))
         {
-            foreach (var constraint in layout.Constraints)
+            foreach (var constraint in shown.Layout.Constraints)
             {
-                Text(ui, layout, constraint);
+                Text(ui, shown, constraint);
             }
         }
     }
 
-    private static void RenderDeclaration(Ui<UiState> ui, TooltipLayout layout)
+    private static void RenderDeclaration(Ui<UiState> ui, ShownTooltip shown)
     {
-        if (FitsOnOneLine(ui, layout))
+        if (FitsOnOneLine(ui, shown))
         {
-            Text(ui, layout, layout.Declaration);
+            Text(ui, shown, shown.Layout.Declaration);
             return;
         }
         using (ui.Column(new Box { Gap = 0f }))
         {
-            Text(ui, layout, layout.DeclarationHead);
+            Text(ui, shown, shown.Layout.DeclarationHead);
             using (ui.Column(new Box { Padding = new Spacing(ParameterIndent, 0f, 0f, 0f), Gap = 0f }))
             {
-                foreach (var parameter in layout.Parameters)
+                foreach (var parameter in shown.Layout.Parameters)
                 {
-                    Text(ui, layout, parameter);
+                    Text(ui, shown, parameter);
                 }
             }
         }
@@ -132,35 +127,35 @@ internal static class CodeTooltipView
 
     /// <summary>Whether the declaration stays on one line: when it has no parameters to break
     /// at, or fits the tooltip's width.</summary>
-    private static bool FitsOnOneLine(Ui<UiState> ui, TooltipLayout layout)
+    private static bool FitsOnOneLine(Ui<UiState> ui, ShownTooltip shown)
     {
-        if (layout.Parameters.Count == 0)
+        if (shown.Layout.Parameters.Count == 0)
         {
             return true;
         }
 
         var room = MaxWidth - 2 * PaddingX;
-        return ui.MeasureRuns(layout.Declaration) <= room;
+        return ui.MeasureRuns(shown.Layout.Declaration) <= room;
     }
 
-    private static void RenderDocumentation(Ui<UiState> ui, TooltipLayout layout)
+    private static void RenderDocumentation(Ui<UiState> ui, ShownTooltip shown)
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, DocumentationPaddingY), Gap = SectionGap }))
         {
-            foreach (var group in layout.Groups)
+            foreach (var group in shown.Layout.Groups)
             {
-                RenderGroup(ui, layout, group);
+                RenderGroup(ui, shown, group);
             }
         }
     }
 
-    private static void RenderGroup(Ui<UiState> ui, TooltipLayout layout, TooltipGroup group)
+    private static void RenderGroup(Ui<UiState> ui, ShownTooltip shown, TooltipGroup group)
     {
         using (ui.Column(new Box { Gap = HeadingGap }))
         {
             if (group.Heading is not null)
             {
-                Text(ui, layout, group.Heading);
+                Text(ui, shown, group.Heading);
             }
 
             var labelWidth = LabelWidth(ui, group.Entries);
@@ -168,7 +163,7 @@ internal static class CodeTooltipView
             {
                 foreach (var entry in group.Entries)
                 {
-                    RenderEntry(ui, layout, group.Shape, entry, labelWidth);
+                    RenderEntry(ui, shown, group.Shape, entry, labelWidth);
                 }
             }
         }
@@ -189,105 +184,105 @@ internal static class CodeTooltipView
         return MathF.Min(widest, MaxLabelWidth) + ColumnGap;
     }
 
-    private static void RenderEntry(Ui<UiState> ui, TooltipLayout layout, EntryShape shape, TooltipEntry entry, float labelWidth)
+    private static void RenderEntry(Ui<UiState> ui, ShownTooltip shown, EntryShape shape, TooltipEntry entry, float labelWidth)
     {
         switch (shape)
         {
             case EntryShape.Column when entry.Label is not null:
-                RenderColumnEntry(ui, layout, entry.Label, entry.Blocks, labelWidth);
+                RenderColumnEntry(ui, shown, entry.Label, entry.Blocks, labelWidth);
                 break;
             case EntryShape.Stacked when entry.Label is not null:
-                RenderStackedEntry(ui, layout, entry.Label, entry.Blocks);
+                RenderStackedEntry(ui, shown, entry.Label, entry.Blocks);
                 break;
             default:
-                RenderBlocks(ui, layout, entry.Blocks);
+                RenderBlocks(ui, shown, entry.Blocks);
                 break;
         }
     }
 
     /// <summary>The label in its column, its blocks beside it.</summary>
-    private static void RenderColumnEntry(Ui<UiState> ui, TooltipLayout layout, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks,
+    private static void RenderColumnEntry(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks,
         float labelWidth)
     {
         using (ui.Row(new Box { Gap = 0f }))
         {
             using (ui.Column(new Box { Width = labelWidth }))
             {
-                Text(ui, layout, label);
+                Text(ui, shown, label);
             }
 
             using (ui.Column(new Box { Width = Sizing.Grow() }))
             {
-                RenderBlocks(ui, layout, blocks);
+                RenderBlocks(ui, shown, blocks);
             }
         }
     }
 
     /// <summary>The label on a line of its own, its blocks indented under it.</summary>
-    private static void RenderStackedEntry(Ui<UiState> ui, TooltipLayout layout, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks)
+    private static void RenderStackedEntry(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks)
     {
         using (ui.Column(new Box { Gap = ExceptionGap }))
         {
-            Text(ui, layout, label);
+            Text(ui, shown, label);
             using (ui.Column(new Box { Padding = new Spacing(ExceptionIndent, 0f, 0f, 0f) }))
             {
-                RenderBlocks(ui, layout, blocks);
+                RenderBlocks(ui, shown, blocks);
             }
         }
     }
 
-    private static void RenderBlocks(Ui<UiState> ui, TooltipLayout layout, IReadOnlyList<TooltipBlock> blocks)
+    private static void RenderBlocks(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<TooltipBlock> blocks)
     {
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ParagraphGap }))
         {
             foreach (var block in blocks)
             {
-                RenderBlock(ui, layout, block);
+                RenderBlock(ui, shown, block);
             }
         }
     }
 
-    private static void RenderBlock(Ui<UiState> ui, TooltipLayout layout, TooltipBlock block)
+    private static void RenderBlock(Ui<UiState> ui, ShownTooltip shown, TooltipBlock block)
     {
         switch (block)
         {
             case TextBlock text:
-                Text(ui, layout, text.Runs);
+                Text(ui, shown, text.Runs);
                 break;
             case CodeBlock code:
-                RenderCode(ui, layout, code);
+                RenderCode(ui, shown, code);
                 break;
             case ListBlock list:
-                RenderList(ui, layout, list);
+                RenderList(ui, shown, list);
                 break;
         }
     }
 
-    private static void RenderCode(Ui<UiState> ui, TooltipLayout layout, CodeBlock code)
+    private static void RenderCode(Ui<UiState> ui, ShownTooltip shown, CodeBlock code)
     {
         var box = new Box
         {
             Width = Sizing.Grow(),
             Padding = new Spacing(CodeBlockPadding),
             Radius = CodeBlockRadius,
-            Background = layout.CodeBlockBackground,
+            Background = shown.CodeBlockBackground,
         };
         using (ui.Column(box))
         {
-            Text(ui, layout, code.Runs);
+            Text(ui, shown, code.Runs);
         }
     }
 
     /// <summary>Each row's lead — a marker, or a table's term — in a column of its own, so wrapped
     /// lines hang under the text rather than the lead.</summary>
-    private static void RenderList(Ui<UiState> ui, TooltipLayout layout, ListBlock list)
+    private static void RenderList(Ui<UiState> ui, ShownTooltip shown, ListBlock list)
     {
         var leadWidth = LeadWidth(ui, list);
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ItemGap }))
         {
             foreach (var row in list.Rows)
             {
-                RenderListRow(ui, layout, row, leadWidth);
+                RenderListRow(ui, shown, row, leadWidth);
             }
         }
     }
@@ -310,56 +305,25 @@ internal static class CodeTooltipView
         return MathF.Max(MarkerWidth, widest + MarkerGap);
     }
 
-    private static void RenderListRow(Ui<UiState> ui, TooltipLayout layout, ListRow row, float leadWidth)
+    private static void RenderListRow(Ui<UiState> ui, ShownTooltip shown, ListRow row, float leadWidth)
     {
         using (ui.Row(new Box { Gap = 0f }))
         {
             using (ui.Column(new Box { Width = leadWidth }))
             {
-                Text(ui, layout, row.Lead);
+                Text(ui, shown, row.Lead);
             }
 
             using (ui.Column(new Box { Width = Sizing.Grow() }))
             {
-                Text(ui, layout, row.Content);
+                Text(ui, shown, row.Content);
             }
         }
     }
 
-    /// <summary>How a group sets out its entries: parameters with their names in a column,
-    /// exceptions with their descriptions under them, anything else as its blocks.</summary>
-    private enum EntryShape
-    {
-        Blocks,
-        Column,
-        Stacked,
-    }
-
-    private abstract record TooltipBlock;
-
-    private sealed record TextBlock(IReadOnlyList<RichTextRun> Runs) : TooltipBlock;
-
-    private sealed record CodeBlock(IReadOnlyList<RichTextRun> Runs) : TooltipBlock;
-
-    /// <summary>A list's rows, each a lead and its content: a marker and the item, or a table's
-    /// term and its description.</summary>
-    private sealed record ListBlock(bool IsTable, IReadOnlyList<ListRow> Rows) : TooltipBlock;
-
-    private sealed record ListRow(IReadOnlyList<RichTextRun> Lead, IReadOnlyList<RichTextRun> Content);
-
-    /// <summary>A section's label, the parameter or exception it is about, and its blocks.</summary>
-    private sealed record TooltipEntry(IReadOnlyList<RichTextRun>? Label, IReadOnlyList<TooltipBlock> Blocks);
-
-    /// <summary>A group of the documentation: the summary, or every section of one kind under its
-    /// heading, one entry per section.</summary>
-    private sealed record TooltipGroup(DocSectionKind Kind, IReadOnlyList<RichTextRun>? Heading, EntryShape Shape)
-    {
-        public List<TooltipEntry> Entries { get; } = new();
-    }
-
-    /// <summary>The tooltip as rich text, kept until another tooltip, palette, theme or language is
-    /// shown.</summary>
-    private sealed class TooltipLayout
+    /// <summary>The tooltip shown, as rich text, kept until another tooltip, palette, theme or
+    /// language is shown, and the link clicked in it this frame.</summary>
+    private sealed class ShownTooltip
     {
         public CodeTooltip? Tooltip;
         public CodeViewPalette? Palette;
@@ -368,417 +332,54 @@ internal static class CodeTooltipView
         public uint CodeBackground;
         public uint CodeBlockBackground;
         public RichTextClick Clicked;
-        public IReadOnlyList<RichTextRun> Declaration = [];
-        public IReadOnlyList<RichTextRun> DeclarationHead = [];
-        public readonly List<IReadOnlyList<RichTextRun>> Parameters = new();
-        public IReadOnlyList<RichTextRun> Container = [];
-        public readonly List<IReadOnlyList<RichTextRun>> Constraints = new();
-        public readonly List<TooltipGroup> Groups = new();
+        public TooltipLayout Layout = TooltipLayout.Empty;
     }
 
-    private static bool IsBuiltFor(TooltipLayout layout, CodeTooltip tooltip, CodeViewPalette palette, UiTheme theme, Strings strings)
+    private static bool IsBuiltFor(ShownTooltip shown, CodeTooltip tooltip, CodeViewPalette palette, UiTheme theme, Strings strings)
     {
-        var sameLook = ReferenceEquals(layout.Palette, palette) && ReferenceEquals(layout.Theme, theme);
-        return ReferenceEquals(layout.Tooltip, tooltip) && sameLook && ReferenceEquals(layout.Strings, strings);
+        var sameLook = ReferenceEquals(shown.Palette, palette) && ReferenceEquals(shown.Theme, theme);
+        return ReferenceEquals(shown.Tooltip, tooltip) && sameLook && ReferenceEquals(shown.Strings, strings);
     }
 
-    private static TooltipLayout LayoutOf(Ui<UiState> ui, CodeTooltip tooltip)
+    private static ShownTooltip ShownOf(Ui<UiState> ui, CodeTooltip tooltip)
     {
         var t = ui.State.Strings;
-        var layout = ui.GetState<TooltipLayout>(ui.GetId("code-tooltip"));
+        var shown = ui.GetState<ShownTooltip>(ui.GetId("code-tooltip"));
         var palette = ui.State.CodeViewPalette;
-        if (IsBuiltFor(layout, tooltip, palette, ui.Theme, t))
+        if (IsBuiltFor(shown, tooltip, palette, ui.Theme, t))
         {
-            return layout;
+            return shown;
         }
 
-        layout.Tooltip = tooltip;
-        layout.Palette = palette;
-        layout.Theme = ui.Theme;
-        layout.Strings = t;
-        layout.CodeBackground = UiColor.Mix(ui.Theme.SurfaceRaised, ui.Theme.Text, CodeChipMix);
-        layout.CodeBlockBackground = UiColor.Mix(ui.Theme.SurfaceRaised, ui.Theme.EditorBackground, CodeBlockMix);
-        Build(layout, CreateStyles(ui, palette), t, tooltip);
-        return layout;
-    }
-
-    private static void Build(TooltipLayout layout, TooltipStyles styles, Strings t, CodeTooltip tooltip)
-    {
-        BuildDeclaration(layout, styles, tooltip.Signature);
-        layout.Container = ContainerRuns(styles, t, tooltip.Container);
-        BuildConstraints(layout, styles, tooltip.Signature);
-        layout.Groups.Clear();
-        foreach (var section in tooltip.Sections)
-        {
-            var group = GroupFor(layout.Groups, styles, t, section.Kind);
-            group.Entries.Add(EntryOf(styles, section));
-        }
-    }
-
-    /// <summary>The declaration on one line, and cut where each parameter starts: the head up to
-    /// the first, then each parameter with its comma, the last with what follows it.</summary>
-    private static void BuildDeclaration(TooltipLayout layout, TooltipStyles styles, CodeSignature signature)
-    {
-        var line = signature.Line;
-        var starts = signature.ParameterStarts;
-        layout.Declaration = CodeRuns(styles, line, 0, line.Text.Length);
-        layout.Parameters.Clear();
-        if (starts.Count == 0)
-        {
-            return;
-        }
-
-        layout.DeclarationHead = CodeRuns(styles, line, 0, starts[0]);
-        for (var i = 0; i < starts.Count; i++)
-        {
-            var end = i + 1 < starts.Count ? starts[i + 1] : line.Text.Length;
-            layout.Parameters.Add(CodeRuns(styles, line, starts[i], end));
-        }
-    }
-
-    private static void BuildConstraints(TooltipLayout layout, TooltipStyles styles, CodeSignature signature)
-    {
-        layout.Constraints.Clear();
-        foreach (var line in signature.Constraints)
-        {
-            var start = LeadingSpaces(line.Text);
-            layout.Constraints.Add(CodeRuns(styles, line, start, line.Text.Length));
-        }
-    }
-
-    private static int LeadingSpaces(string text)
-    {
-        var start = 0;
-        while (start < text.Length && text[start] == ' ')
-        {
-            start++;
-        }
-
-        return start;
-    }
-
-    /// <summary>The line's text from <paramref name="from"/> to <paramref name="to"/> as runs in
-    /// its spans' colors, without the spaces it ends with.</summary>
-    private static IReadOnlyList<RichTextRun> CodeRuns(TooltipStyles styles, DocumentLine line, int from, int to)
-    {
-        var end = TrimmedEnd(line.Text, from, to);
-        var runs = new List<RichTextRun>();
-        foreach (var span in line.Spans)
-        {
-            var start = Math.Max(span.Start, from);
-            var stop = Math.Min(span.End, end);
-            if (stop <= start)
-            {
-                continue;
-            }
-
-            var text = line.Text.Substring(start, stop - start);
-            runs.Add(new RichTextRun(text, GetCodeStyle(styles, span.Kind), Link: LinkOf(span.Reference)));
-        }
-        return runs;
-    }
-
-    private static int TrimmedEnd(string text, int from, int to)
-    {
-        var end = to;
-        while (end > from && text[end - 1] == ' ')
-        {
-            end--;
-        }
-
-        return end;
-    }
-
-    /// <summary>"in class Namespace.Type" or "in namespace Namespace", worded as the language words
-    /// it, the keyword and name colored as code; nothing for the global namespace.</summary>
-    private static IReadOnlyList<RichTextRun> ContainerRuns(TooltipStyles styles, Strings t, CodeContainer? container)
-    {
-        if (container == null)
-        {
-            return [];
-        }
-
-        var pattern = t.CodeTooltipContainer(KindMark, NameMark);
-        var nameKind = container.IsNamespace ? SpanKind.Namespace : SpanKind.Type;
-        var runs = new List<RichTextRun>();
-        var start = 0;
-        for (var i = 0; i < pattern.Length; i++)
-        {
-            if (pattern[i] != KindMark && pattern[i] != NameMark)
-            {
-                continue;
-            }
-
-            AddContainerText(runs, styles, pattern.Substring(start, i - start));
-            if (pattern[i] == KindMark)
-            {
-                runs.Add(new RichTextRun(container.Keyword, GetCodeStyle(styles, SpanKind.Keyword)));
-            }
-            else
-            {
-                runs.Add(new RichTextRun(container.Name, GetCodeStyle(styles, nameKind)));
-            }
-
-            start = i + 1;
-        }
-        AddContainerText(runs, styles, pattern.Substring(start));
-        return runs;
-    }
-
-    private static void AddContainerText(List<RichTextRun> runs, TooltipStyles styles, string text)
-    {
-        if (text.Length > 0)
-        {
-            runs.Add(new RichTextRun(text, styles.Container));
-        }
-    }
-
-    /// <summary>The group a section of <paramref name="kind"/> joins: the last one when it is of the
-    /// same kind, else a new one under the kind's heading.</summary>
-    private static TooltipGroup GroupFor(List<TooltipGroup> groups, TooltipStyles styles, Strings t, DocSectionKind kind)
-    {
-        if (groups.Count > 0 && groups[^1].Kind == kind)
-        {
-            return groups[^1];
-        }
-
-        var heading = HeadingRuns(styles, t, kind);
-        var group = new TooltipGroup(kind, heading, ShapeOf(kind));
-        groups.Add(group);
-        return group;
-    }
-
-    private static IReadOnlyList<RichTextRun>? HeadingRuns(TooltipStyles styles, Strings t, DocSectionKind kind)
-    {
-        var heading = HeadingOf(t, kind);
-        if (heading is null)
-        {
-            return null;
-        }
-
-        return [new RichTextRun(heading, styles.Heading)];
-    }
-
-    private static string? HeadingOf(Strings t, DocSectionKind kind)
-    {
-        return kind switch
-        {
-            DocSectionKind.TypeParameter => t.CodeTooltipTypeParameters,
-            DocSectionKind.Parameter => t.CodeTooltipParameters,
-            DocSectionKind.Returns => t.CodeTooltipReturns,
-            DocSectionKind.Value => t.CodeTooltipValue,
-            DocSectionKind.Exception => t.CodeTooltipExceptions,
-            DocSectionKind.Remarks => t.CodeTooltipRemarks,
-            DocSectionKind.Example => t.CodeTooltipExample,
-            _ => null,
-        };
-    }
-
-    private static EntryShape ShapeOf(DocSectionKind kind)
-    {
-        return kind switch
-        {
-            DocSectionKind.TypeParameter => EntryShape.Column,
-            DocSectionKind.Parameter => EntryShape.Column,
-            DocSectionKind.Exception => EntryShape.Stacked,
-            _ => EntryShape.Blocks,
-        };
-    }
-
-    private static TooltipEntry EntryOf(TooltipStyles styles, DocSection section)
-    {
-        var label = LabelRuns(styles, section);
-        var blocks = new List<TooltipBlock>();
-        foreach (var block in section.Blocks)
-        {
-            blocks.Add(BlockOf(styles, block));
-        }
-
-        return new TooltipEntry(label, blocks);
-    }
-
-    /// <summary>A parameter or type parameter by its name in code, an exception by its type.</summary>
-    private static IReadOnlyList<RichTextRun>? LabelRuns(TooltipStyles styles, DocSection section)
-    {
-        if (section.Label is null)
-        {
-            return null;
-        }
-
-        var label = section.Label.Value;
-        return section.Kind switch
-        {
-            DocSectionKind.TypeParameter => [new RichTextRun(label.Text, GetCodeStyle(styles, SpanKind.Type))],
-            DocSectionKind.Parameter => [new RichTextRun(label.Text, GetCodeStyle(styles, SpanKind.Parameter))],
-            _ => [Run(styles, label)],
-        };
-    }
-
-    private static TooltipBlock BlockOf(TooltipStyles styles, DocBlock block)
-    {
-        return block.Match<TooltipBlock>(
-            paragraph: paragraph => new TextBlock(Runs(styles, paragraph.Runs)),
-            code: code => new CodeBlock([new RichTextRun(code.Text, styles.CodeBlock)]),
-            list: list => ListOf(styles, list));
-    }
-
-    private static ListBlock ListOf(TooltipStyles styles, DocBlock.List list)
-    {
-        var isTable = list.Kind == DocListKind.Table;
-        var rows = new List<ListRow>();
-        if (list.Header != null)
-        {
-            rows.Add(HeaderRow(styles, list.Header, isTable));
-        }
-
-        for (var i = 0; i < list.Items.Count; i++)
-        {
-            rows.Add(ItemRow(styles, list, i));
-        }
-
-        return new ListBlock(isTable, rows);
-    }
-
-    /// <summary>A table's heading row, its term over the terms and description over the
-    /// descriptions; another list's leading item, without a marker.</summary>
-    private static ListRow HeaderRow(TooltipStyles styles, DocListItem header, bool isTable)
-    {
-        if (!isTable)
-        {
-            return new ListRow([], TermAndDescription(styles, header));
-        }
-
-        var term = TextOf(header.Term);
-        var description = TextOf(header.Description);
-        return new ListRow([new RichTextRun(term, styles.Heading)], [new RichTextRun(description, styles.Heading)]);
-    }
-
-    private static ListRow ItemRow(TooltipStyles styles, DocBlock.List list, int index)
-    {
-        var item = list.Items[index];
-        if (list.Kind == DocListKind.Table)
-        {
-            return new ListRow(Runs(styles, item.Term), Runs(styles, item.Description));
-        }
-
-        var marker = list.Kind == DocListKind.Number ? $"{index + 1}." : Bullet;
-        return new ListRow([new RichTextRun(marker, styles.Plain)], TermAndDescription(styles, item));
-    }
-
-    /// <summary>The item's term in bold and its description after a dash, or the description alone.</summary>
-    private static IReadOnlyList<RichTextRun> TermAndDescription(TooltipStyles styles, DocListItem item)
-    {
-        var description = Runs(styles, item.Description);
-        if (item.Term.Count == 0)
-        {
-            return description;
-        }
-
-        var runs = new List<RichTextRun> { new RichTextRun(TextOf(item.Term), styles.Bold), new RichTextRun(TermSeparator, styles.Plain) };
-        runs.AddRange(description);
-        return runs;
-    }
-
-    private static string TextOf(IReadOnlyList<DocRun> runs)
-    {
-        return string.Concat(runs.Select(static r => r.Text));
-    }
-
-    private static List<RichTextRun> Runs(TooltipStyles styles, IReadOnlyList<DocRun> runs)
-    {
-        var converted = new List<RichTextRun>();
-        foreach (var run in runs)
-        {
-            converted.Add(Run(styles, run));
-        }
-
-        return converted;
-    }
-
-    /// <summary>What a name links to: the type or member a reference points at; none for a local
-    /// or an assembly.</summary>
-    private static CodeReference.Entity? LinkOf(CodeReference? reference)
-    {
-        return reference as CodeReference.Entity;
-    }
-
-    private static RichTextRun Run(TooltipStyles styles, DocRun run)
-    {
-        return run.Style switch
-        {
-            DocStyle.Bold => new RichTextRun(run.Text, styles.Bold),
-            DocStyle.Italic => new RichTextRun(run.Text, styles.Italic),
-            DocStyle.Code => new RichTextRun(run.Text, styles.CodeBlock, IsCode: true),
-            DocStyle.Reference => new RichTextRun(run.Text, GetReferenceStyle(styles, run.Reference), Link: LinkOf(run.Reference)),
-            _ => new RichTextRun(run.Text, styles.Plain),
-        };
-    }
-
-    /// <summary>The text styles of a tooltip in the current theme and code palette: prose at the
-    /// theme's text size, headings smaller and muted.</summary>
-    private sealed class TooltipStyles
-    {
-        public required Ui<UiState> Ui { get; init; }
-        public required CodeViewPalette Palette { get; init; }
-        public required float Size { get; init; }
-
-        public required TextStyle Plain { get; init; }
-        public required TextStyle Bold { get; init; }
-        public required TextStyle Italic { get; init; }
-        public required TextStyle Heading { get; init; }
-        public required TextStyle Container { get; init; }
-        public required TextStyle CodeBlock { get; init; }
+        shown.Tooltip = tooltip;
+        shown.Palette = palette;
+        shown.Theme = ui.Theme;
+        shown.Strings = t;
+        shown.CodeBackground = UiColor.Mix(ui.Theme.SurfaceRaised, ui.Theme.Text, CodeChipMix);
+        shown.CodeBlockBackground = UiColor.Mix(ui.Theme.SurfaceRaised, ui.Theme.EditorBackground, CodeBlockMix);
+        shown.Layout = TooltipLayouts.Build(CreateStyles(ui, palette), t, tooltip);
+        return shown;
     }
 
     private static TooltipStyles CreateStyles(Ui<UiState> ui, CodeViewPalette palette)
     {
         var theme = ui.Theme;
+        var size = theme.FontSize;
         return new TooltipStyles
         {
-            Ui = ui,
-            Palette = palette,
-            Size = theme.FontSize,
-            Plain = ui.StyleText(theme.Text, theme.FontSize),
-            Bold = ui.StyleText(theme.Text, theme.FontSize, bold: true),
-            Italic = ui.StyleText(theme.Text, theme.FontSize, family: TextFonts.Italic),
+            Plain = ui.StyleText(theme.Text, size),
+            Bold = ui.StyleText(theme.Text, size, bold: true),
+            Italic = ui.StyleText(theme.Text, size, family: TextFonts.Italic),
             Heading = ui.StyleText(GetHeadingColor(theme), theme.FontSizeSmall, bold: true),
-            Container = ui.StyleText(theme.TextMuted, theme.FontSize, family: MonoFonts.Code),
-            CodeBlock = ui.StyleText(theme.Text, theme.FontSize, family: MonoFonts.Code),
+            Container = ui.StyleText(theme.TextMuted, size, family: MonoFonts.Code),
+            CodeBlock = ui.StyleText(theme.Text, size, family: MonoFonts.Code),
+            Code = kind => ui.StyleText(palette[kind], size, family: MonoFonts.Code),
+            Reference = kind => ui.StyleText(palette[kind], size),
         };
-    }
-
-    private static TextStyle GetCodeStyle(TooltipStyles styles, SpanKind kind)
-    {
-        return styles.Ui.StyleText(styles.Palette[kind], styles.Size, family: MonoFonts.Code);
-    }
-
-    /// <summary>A type or member named in the text, colored as code colors what it points at.</summary>
-    private static TextStyle GetReferenceStyle(TooltipStyles styles, CodeReference? reference)
-    {
-        var kind = GetSpanKind(reference);
-        return styles.Ui.StyleText(styles.Palette[kind], styles.Size);
     }
 
     private static uint GetHeadingColor(UiTheme theme)
     {
         return UiColor.Mix(theme.TextMuted, theme.Text, HeadingMix);
-    }
-
-    private static SpanKind GetSpanKind(CodeReference? reference)
-    {
-        if (reference is not CodeReference.Entity entity)
-        {
-            return SpanKind.Type;
-        }
-
-        return entity.Kind switch
-        {
-            EntityKind.Type => SpanKind.Type,
-            EntityKind.Method => SpanKind.Method,
-            EntityKind.Field => SpanKind.Field,
-            EntityKind.Property => SpanKind.Property,
-            EntityKind.Event => SpanKind.Event,
-            _ => throw new UnreachableException(),
-        };
     }
 }

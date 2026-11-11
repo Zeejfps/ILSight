@@ -49,7 +49,7 @@ Done items are struck through with their commit.
 | A10 | R001, R004 | `Exports.FindBlocker` and file checks | "Can we export?" does file I/O through memo fields → pure decision, file checks at the edge. | S–M / low |
 | A11 | R001 | `FrameworkPicker`, its view, `ComparisonPickerView` | Workflow and filtering in views; three I/O delegates → a port and methods; views only draw. | S–M / low |
 | ~~Z6~~ (done) | R004 | `OmnibarView`, `Omnibar` | ~200 lines of state logic in the view → methods on `Omnibar` / `CrumbMenu`. | S / low |
-| A14 | R004 | `CodeTooltipView` | ~390 lines of pure tooltip layout in the view → `TooltipLayouts.Build`. | S / low |
+| ~~A14~~ (done) | R004 | `CodeTooltipView` | ~390 lines of pure tooltip layout in the view → `TooltipLayouts.Build`. | S / low |
 | Z19 | R004 | `Preferences`, `ScreenLayout` | Trivial setters and one-line forwarders → removed / one `Docking.Open`. | S–M / low |
 | Z20 | R004 | `UiState` | Per-feature column state on `UiState` → each feature's state type. | M / low |
 | C5 | R009, R008 | `AssemblyList` read functions, `FailedAssembly` | Expected outcomes ("not a .NET file", "missing") thrown at ~8 sites and caught at 4 → `AssemblyRead` union, `LoadFailure`. | M / medium |
