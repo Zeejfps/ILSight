@@ -205,39 +205,25 @@ public static class Navigation
 
     private static async Task NavigateAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab)
     {
-        var ticket = appState.Intent.Begin();
         var destination = ChooseDestination(appState, inNewTab);
-        appState.Intent.StartResolving(ticket);
         var assemblies = appState.Assemblies;
         var session = appState.Session;
-        var found = await Background.Run(() => NodeLookup.Find(assemblies, session, reference));
-        if (appState.Intent.IsStale(ticket))
-        {
-            return;
-        }
-
-        appState.Intent.StopResolving();
-        ShowResolved(appState, reference, found, destination);
+        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, reference), CancellationToken.None);
+        ShowResolved(appState, reference, resolved, destination);
     }
 
-    private static void ShowResolved(AppState appState, CodeReference reference, Outcome<BrowseNode?> found, TabDestination destination)
+    private static void ShowResolved(AppState appState, CodeReference reference, Resolution<BrowseNode> resolved, TabDestination destination)
     {
-        switch (found)
-        {
-            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
-                LeaveActiveTab(appState);
-                ShowNodeIn(appState, destination, ok.Value);
-                appState.History.RecordPlace(ok.Value, appState.Language);
-                break;
-            case Outcome<BrowseNode?>.Ok:
-                ReportUnresolvedReference(appState, reference, null);
-                break;
-            case Outcome<BrowseNode?>.Failed failed:
-                ReportUnresolvedReference(appState, reference, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        resolved.Switch((appState, reference, destination),
+            static (s, found) =>
+            {
+                LeaveActiveTab(s.appState);
+                ShowNodeIn(s.appState, s.destination, found.Value);
+                s.appState.History.RecordPlace(found.Value, s.appState.Language);
+            },
+            static (s, _) => ReportUnresolvedReference(s.appState, s.reference, null),
+            static (s, failed) => ReportUnresolvedReference(s.appState, s.reference, failed.Error),
+            static (_, _) => { });
     }
 
     /// <summary>Shows the table row a metadata token leads to where <see cref="ShowNode"/> shows a
@@ -270,37 +256,20 @@ public static class Navigation
 
     private static async Task ShowInMetadataAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab)
     {
-        var ticket = appState.Intent.Begin();
         var destination = ChooseDestination(appState, inNewTab);
-        appState.Intent.StartResolving(ticket);
         var assemblies = appState.Assemblies;
         var session = appState.Session;
-        var found = await Background.Run(() => NodeLookup.FindMetadataRow(assemblies, session, reference));
-        if (appState.Intent.IsStale(ticket))
-        {
-            return;
-        }
-
-        appState.Intent.StopResolving();
-        ShowResolvedRow(appState, reference, found, destination);
+        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.FindMetadataRow(assemblies, session, reference), CancellationToken.None);
+        ShowResolvedRow(appState, reference, resolved, destination);
     }
 
-    private static void ShowResolvedRow(AppState appState, CodeReference reference, Outcome<MetadataTarget?> found, TabDestination destination)
+    private static void ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
     {
-        switch (found)
-        {
-            case Outcome<MetadataTarget?>.Ok ok when ok.Value is not null:
-                ShowRowIn(appState, destination, ok.Value.Value);
-                break;
-            case Outcome<MetadataTarget?>.Ok:
-                ReportUnresolvedReference(appState, reference, null);
-                break;
-            case Outcome<MetadataTarget?>.Failed failed:
-                ReportUnresolvedReference(appState, reference, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        resolved.Switch((appState, reference, destination),
+            static (s, found) => ShowRowIn(s.appState, s.destination, found.Value),
+            static (s, _) => ReportUnresolvedReference(s.appState, s.reference, null),
+            static (s, failed) => ReportUnresolvedReference(s.appState, s.reference, failed.Error),
+            static (_, _) => { });
     }
 
     private static void ShowRowIn(AppState appState, TabDestination destination, MetadataTarget target)
@@ -396,27 +365,21 @@ public static class Navigation
 
     private static async Task RestoreAsync(AppState appState, HistoryEntry.Node entry)
     {
-        var ticket = appState.Intent.Begin();
         var destination = ChooseDestination(appState, inNewTab: false);
         var place = entry.Place;
         var position = KeepPosition(entry.Position, entry.Language, appState.Language);
         var shown = FindShownNode(appState, FindTab(appState, destination), place);
         if (shown is not null)
         {
+            appState.Intent.Begin();
             ShowNodeIn(appState, destination, shown, position);
             return;
         }
-        appState.Intent.StartResolving(ticket);
+
         var assemblies = appState.Assemblies;
         var session = appState.Session;
-        var found = await Background.Run(() => NodeLookup.Find(assemblies, session, place));
-        if (appState.Intent.IsStale(ticket))
-        {
-            return;
-        }
-
-        appState.Intent.StopResolving();
-        ShowHistoryPlace(appState, place, position, found, destination);
+        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, place), CancellationToken.None);
+        ShowHistoryPlace(appState, place, position, resolved, destination);
     }
 
     private static BrowseNode? FindShownNode(AppState appState, DocumentTab? tab, NodePath place)
@@ -445,23 +408,14 @@ public static class Navigation
         return node;
     }
 
-    private static void ShowHistoryPlace(AppState appState, NodePath place, ViewPosition? position, Outcome<BrowseNode?> found,
+    private static void ShowHistoryPlace(AppState appState, NodePath place, ViewPosition? position, Resolution<BrowseNode> resolved,
         TabDestination destination)
     {
-        switch (found)
-        {
-            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
-                ShowNodeIn(appState, destination, ok.Value, position);
-                break;
-            case Outcome<BrowseNode?>.Ok:
-                ReportHistoryPlaceGone(appState, place, null);
-                break;
-            case Outcome<BrowseNode?>.Failed failed:
-                ReportHistoryPlaceGone(appState, place, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        resolved.Switch((appState, place, position, destination),
+            static (s, found) => ShowNodeIn(s.appState, s.destination, found.Value, s.position),
+            static (s, _) => ReportHistoryPlaceGone(s.appState, s.place, null),
+            static (s, failed) => ReportHistoryPlaceGone(s.appState, s.place, failed.Error),
+            static (_, _) => { });
     }
 
     private static void ReportHistoryPlaceGone(AppState appState, NodePath place, Exception? error)

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ILSight;
 
 /// <summary>What the user last asked for. Each request takes a ticket; background work started for
@@ -36,5 +38,108 @@ public sealed class UserIntent
     public void StopResolving()
     {
         _resolving = NoTicket;
+    }
+
+    /// <summary>Begins a request that finds a place with <paramref name="lookup"/> in the background,
+    /// resolving until it is done; the lookup's null means the place is not there. Stale when another
+    /// request has begun meanwhile. <paramref name="ct"/> keeps the lookup from starting.</summary>
+    public Task<Resolution<T>> ResolveAsync<T>(Func<T?> lookup, CancellationToken ct) where T : class
+    {
+        return RunLookupAsync(() => FoundOrMissing(lookup()), ct);
+    }
+
+    /// <inheritdoc cref="ResolveAsync{T}(Func{T}, CancellationToken)"/>
+    public Task<Resolution<T>> ResolveAsync<T>(Func<T?> lookup, CancellationToken ct) where T : struct
+    {
+        return RunLookupAsync(() => FoundOrMissing(lookup()), ct);
+    }
+
+    private async Task<Resolution<T>> RunLookupAsync<T>(Func<Resolution<T>> lookup, CancellationToken ct)
+    {
+        var ticket = Begin();
+        StartResolving(ticket);
+        var outcome = await Background.Wait(Task.Run(lookup, ct));
+        if (IsStale(ticket))
+        {
+            return new Resolution<T>.Stale();
+        }
+
+        StopResolving();
+        return outcome.Match<Resolution<T>>(static ok => ok.Value, static failed => new Resolution<T>.Failed(failed.Error));
+    }
+
+    private static Resolution<T> FoundOrMissing<T>(T? value) where T : class
+    {
+        if (value is null)
+        {
+            return new Resolution<T>.Missing();
+        }
+
+        return new Resolution<T>.Found(value);
+    }
+
+    private static Resolution<T> FoundOrMissing<T>(T? value) where T : struct
+    {
+        if (value is null)
+        {
+            return new Resolution<T>.Missing();
+        }
+
+        return new Resolution<T>.Found(value.Value);
+    }
+}
+
+/// <summary>What finding a place for a request came to: found, not there, failed, or stale because
+/// the user has asked for something else since.</summary>
+public abstract record Resolution<T>
+{
+    private Resolution()
+    {
+    }
+
+    public sealed record Found(T Value) : Resolution<T>;
+
+    /// <summary>The place is not there.</summary>
+    public sealed record Missing : Resolution<T>;
+
+    public sealed record Failed(Exception Error) : Resolution<T>;
+
+    /// <summary>Another request began while this one was resolving: nothing is to be shown or reported.</summary>
+    public sealed record Stale : Resolution<T>;
+
+    public TResult Match<TResult>(Func<Found, TResult> found, Func<Missing, TResult> missing, Func<Failed, TResult> failed, Func<Stale, TResult> stale)
+    {
+        return this switch
+        {
+            Found f => found(f),
+            Missing m => missing(m),
+            Failed f => failed(f),
+            Stale s => stale(s),
+            _ => throw new UnreachableException($"Resolution.Match does not handle {GetType().Name}."),
+        };
+    }
+
+    /// <summary>Runs the handler for this case with <paramref name="state"/>, for effects that differ per
+    /// case; static lambdas allocate nothing.</summary>
+    public void Switch<TState>(TState state, Action<TState, Found> found, Action<TState, Missing> missing, Action<TState, Failed> failed,
+        Action<TState, Stale> stale)
+    {
+        switch (this)
+        {
+            case Found f:
+                found(state, f);
+                break;
+            case Missing m:
+                missing(state, m);
+                break;
+            case Failed f:
+                failed(state, f);
+                break;
+            case Stale s:
+                stale(state, s);
+                break;
+            default:
+                throw new UnreachableException($"Resolution.Switch does not handle {GetType().Name}.");
+        }
     }
 }

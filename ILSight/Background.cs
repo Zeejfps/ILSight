@@ -14,6 +14,16 @@ public abstract record Outcome<T>
     public sealed record Ok(T Value) : Outcome<T>;
 
     public sealed record Failed(Exception Error) : Outcome<T>;
+
+    public TResult Match<TResult>(Func<Ok, TResult> ok, Func<Failed, TResult> failed)
+    {
+        return this switch
+        {
+            Ok o => ok(o),
+            Failed f => failed(f),
+            _ => throw new UnreachableException($"Outcome.Match does not handle {GetType().Name}."),
+        };
+    }
 }
 
 /// <summary>Runs work on the thread pool for the UI thread to await.</summary>

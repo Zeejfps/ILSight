@@ -153,41 +153,27 @@ public static class Bookmarks
 
     private static async Task GoToBookmarkAsync(AppState appState, Bookmark bookmark)
     {
-        var ticket = appState.Intent.Begin();
         var destination = ChooseDestination(appState, inNewTab: false);
         var place = bookmark.Place;
-        appState.Intent.StartResolving(ticket);
         var assemblies = appState.Assemblies;
         var session = appState.Session;
-        var found = await Background.Run(() => NodeLookup.Find(assemblies, session, place));
-        if (appState.Intent.IsStale(ticket))
-        {
-            return;
-        }
-
-        appState.Intent.StopResolving();
-        ShowBookmarkPlace(appState, bookmark, found, destination);
+        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, place), CancellationToken.None);
+        ShowBookmarkPlace(appState, bookmark, resolved, destination);
     }
 
-    private static void ShowBookmarkPlace(AppState appState, Bookmark bookmark, Outcome<BrowseNode?> found, TabDestination destination)
+    private static void ShowBookmarkPlace(AppState appState, Bookmark bookmark, Resolution<BrowseNode> resolved, TabDestination destination)
     {
-        switch (found)
-        {
-            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
-                appState.Bookmarks.Resolve(bookmark, ok.Value);
-                LeaveActiveTab(appState);
-                ShowNodeIn(appState, destination, ok.Value, target: bookmark);
-                appState.History.RecordPlace(ok.Value, appState.Language);
-                break;
-            case Outcome<BrowseNode?>.Ok:
-                ReportBookmarkGone(appState, bookmark, null);
-                break;
-            case Outcome<BrowseNode?>.Failed failed:
-                ReportBookmarkGone(appState, bookmark, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        resolved.Switch((appState, bookmark, destination),
+            static (s, found) =>
+            {
+                s.appState.Bookmarks.Resolve(s.bookmark, found.Value);
+                LeaveActiveTab(s.appState);
+                ShowNodeIn(s.appState, s.destination, found.Value, target: s.bookmark);
+                s.appState.History.RecordPlace(found.Value, s.appState.Language);
+            },
+            static (s, _) => ReportBookmarkGone(s.appState, s.bookmark, null),
+            static (s, failed) => ReportBookmarkGone(s.appState, s.bookmark, failed.Error),
+            static (_, _) => { });
     }
 
     private static void ReportBookmarkGone(AppState appState, Bookmark bookmark, Exception? error)
