@@ -85,6 +85,9 @@ public sealed class AppState
 
     /// <summary>The newer version looked for, downloaded and offered, if any.</summary>
     public required AppUpdates Updates { get; set; }
+
+    /// <summary>Whether the app looks for a newer version when it starts.</summary>
+    public required bool IsUpdateCheckAutomatic { get; set; }
     public DocumentTabs Tabs { get; } = new();
 
     /// <summary>The tabs reopened from the open list's saved documents that wait for what they showed.</summary>

@@ -237,7 +237,7 @@ internal static class MainMenuView
 
         if (ui.MenuItem(t.FileOpenFromProcess, id: "open-from-process", icon: new UiIcon(icons.FileOpenFromProcess)))
         {
-            ProcessPicking.OpenPicker(ui.State.ProcessPicker);
+            ProcessPickerView.Open(ui.State);
         }
 
         ui.MenuSeparator();

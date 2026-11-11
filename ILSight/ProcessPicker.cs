@@ -1,54 +1,23 @@
-using ZGF.Gui.Immediate;
-using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Processes;
 
 namespace ILSight;
 
-/// <summary>The "open from running process" dialog: the running .NET processes, looked for each time it
-/// opens and filtered by name, id or entry assembly, and the assemblies the selected one has loaded.</summary>
+/// <summary>The "open from running process" dialog as its widgets bind it: whether it is open, where its window
+/// is and the filter typed; and <see cref="Browser"/>, the running .NET processes it found and the assemblies the
+/// selected one has loaded, which keeps its own rules.</summary>
 public sealed class ProcessPicker
 {
-    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
-    public required BackgroundWork Work { get; init; }
-
-    /// <summary>Tells the user that looking for the processes failed.</summary>
-    public required Action<AppProblem> ReportError { get; init; }
-
-    /// <summary>Lists the running .NET processes.</summary>
-    public required Func<CancellationToken, Task<IReadOnlyList<RunningProcess>>> FindProcesses { get; init; }
-
-    /// <summary>Lists the modules a process has loaded.</summary>
-    public required Func<ProcessId, CancellationToken, Task<ModuleListing>> FindModules { get; init; }
+    public bool IsOpen;
 
     /// <summary>Where the dialog's window is, kept between runs.</summary>
     public DialogWindow Window { get; } = new();
 
-    public bool IsOpen;
-    public bool FocusFilter;
+    /// <summary>What the processes are filtered by: their name, id or entry assembly.</summary>
     public string Filter = "";
-    public string? AppliedFilter;
 
-    public ProcessScan Scan = new ProcessScan.NotStarted();
-
-    /// <summary>Counts the scans started, so that only the latest one's result is kept.</summary>
-    public int ScanRequest;
-
-    /// <summary>The processes the filter shows, in the order shown.</summary>
-    public readonly List<RunningProcess> Filtered = new();
-
-    /// <summary>The process whose modules are shown, as a row of <see cref="Filtered"/>.</summary>
-    public ListSelection ProcessSelection { get; } = new();
-
-    public ModuleScan Modules = new ModuleScan.None();
-
-    /// <summary>Counts the module listings started, so that only the latest one's result is kept.</summary>
-    public int ModuleRequest;
-
-    /// <summary>Cancels the module listing running, when another process is picked or the dialog closes.</summary>
-    public CancellationTokenSource ModuleWork = new();
-
-    public MultiSelection<RunningModule> ModuleSelection { get; } = new();
+    /// <summary>The processes found, those the filter shows, the one selected and its modules.</summary>
+    public required ProcessBrowser Browser { get; init; }
 }
 
 /// <summary>How far looking for the running processes has got.</summary>

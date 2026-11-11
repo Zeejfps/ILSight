@@ -3,7 +3,7 @@ using ZGF.Desktop;
 using ZGF.Gui;
 using ZGF.Gui.Testing;
 using ILSight.Localization;
-using static ILSight.Updates;
+using static ILSight.AppFrames;
 
 namespace ILSight.App.Tests;
 
@@ -19,9 +19,9 @@ public sealed class UpdateTests : IDisposable
     }
 
     /// <summary>A feed that answers from memory, and can be made to fail at any step.</summary>
-    private sealed class FakeFeed(string? newest)
+    private sealed class FakeFeed(string? newest) : AppUpdates.IPorts
     {
-        public bool IsInstalled { get; init; } = true;
+        public bool IsInstalledCopy { get; init; } = true;
         public bool FailsToFind { get; init; }
         public bool FailsToDownload { get; init; }
         public bool FailsToApply { get; init; }
@@ -29,40 +29,47 @@ public sealed class UpdateTests : IDisposable
         public UpdateInfo? Downloaded { get; private set; }
         public UpdateInfo? Applied { get; private set; }
 
-        public UpdateInfo? FindUpdate()
+        public bool IsInstalled()
+        {
+            return IsInstalledCopy;
+        }
+
+        public Task<Outcome<UpdateInfo?>> LookUpUpdateAsync(CancellationToken ct)
         {
             Finds++;
             if (FailsToFind)
             {
-                throw new HttpRequestException("Offline");
+                return Task.FromResult<Outcome<UpdateInfo?>>(new Outcome<UpdateInfo?>.Failed(new HttpRequestException("Offline")));
             }
 
             if (newest is null)
             {
-                return null;
+                return Task.FromResult<Outcome<UpdateInfo?>>(new Outcome<UpdateInfo?>.Ok(null));
             }
 
-            return new UpdateInfo(new VelopackAsset { Version = SemanticVersion.Parse(newest) }, false);
+            return Task.FromResult<Outcome<UpdateInfo?>>(new Outcome<UpdateInfo?>.Ok(new UpdateInfo(new VelopackAsset { Version = SemanticVersion.Parse(newest) }, false)));
         }
 
-        public void Download(UpdateInfo update)
+        public Task<bool> TryDownloadAsync(UpdateInfo update, CancellationToken ct)
         {
             if (FailsToDownload)
             {
-                throw new IOException("Disk full");
+                return Task.FromResult(false);
             }
 
             Downloaded = update;
+            return Task.FromResult(true);
         }
 
-        public void ApplyAfterExit(UpdateInfo update)
+        public Task<bool> TryApplyAfterExitAsync(UpdateInfo update, CancellationToken ct)
         {
             if (FailsToApply)
             {
-                throw new IOException("Updater missing");
+                return Task.FromResult(false);
             }
 
             Applied = update;
+            return Task.FromResult(true);
         }
     }
 
@@ -92,11 +99,8 @@ public sealed class UpdateTests : IDisposable
     private static AppDriver Opened(FakeFeed feed, bool checkAutomatically = true, ITextMeasurer? measurer = null)
     {
         var app = AppDriver.Opened(width: 1600f, measurer: measurer);
-        app.AppState.Updates = new AppUpdates
-        {
-            Feed = new UpdateFeed(() => feed.IsInstalled, feed.FindUpdate, feed.Download, feed.ApplyAfterExit),
-            CheckAutomatically = checkAutomatically,
-        };
+        app.AppState.Updates = new AppUpdates(feed);
+        app.AppState.IsUpdateCheckAutomatic = checkAutomatically;
         app.Run();
         return app;
     }
@@ -120,10 +124,10 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void A_copy_that_is_not_installed_looks_for_nothing()
     {
-        var feed = new FakeFeed("9.0.0") { IsInstalled = false };
+        var feed = new FakeFeed("9.0.0") { IsInstalledCopy = false };
         var app = Opened(feed);
 
-        CheckOnStartup(app.AppState);
+        CheckForUpdatesOnStartup(app.AppState);
         OpenAbout(app);
         ClickCheckForUpdates(app);
         app.Run(2);
@@ -138,7 +142,7 @@ public sealed class UpdateTests : IDisposable
         var feed = new FakeFeed("9.0.0");
         var app = Opened(feed);
 
-        CheckOnStartup(app.AppState);
+        CheckForUpdatesOnStartup(app.AppState);
         AwaitStatus<UpdateStatus.Ready>(app);
         app.Run(2);
 
@@ -152,7 +156,7 @@ public sealed class UpdateTests : IDisposable
         var feed = new FakeFeed("9.0.0");
         var app = Opened(feed, checkAutomatically: false);
 
-        CheckOnStartup(app.AppState);
+        CheckForUpdatesOnStartup(app.AppState);
         app.Run(2);
 
         Assert.Equal(0, feed.Finds);
@@ -164,8 +168,8 @@ public sealed class UpdateTests : IDisposable
         var uneventful = Opened(new FakeFeed(null));
         var failing = Opened(new FakeFeed("9.0.0") { FailsToFind = true });
 
-        CheckOnStartup(uneventful.AppState);
-        CheckOnStartup(failing.AppState);
+        CheckForUpdatesOnStartup(uneventful.AppState);
+        CheckForUpdatesOnStartup(failing.AppState);
         uneventful.Frames.WaitUntil(() => uneventful.AppState.Updates.Status is UpdateStatus.Idle, Patience);
         failing.Frames.WaitUntil(() => failing.AppState.Updates.Status is UpdateStatus.Idle, Patience);
 
@@ -198,7 +202,7 @@ public sealed class UpdateTests : IDisposable
         app.Run(2);
 
         Assert.True(app.Frames.Drew(Strings.En.AboutUpdateFailed));
-        Assert.True(CanCheck(app.AppState.Updates));
+        Assert.True(app.AppState.Updates.CanCheck());
     }
 
     [Theory]
@@ -287,13 +291,13 @@ public sealed class UpdateTests : IDisposable
     {
         var app = new AppDriver(width: 1600f, settings: _temp.Settings());
         app.Run(2);
-        Assert.True(app.AppState.Updates.CheckAutomatically);
+        Assert.True(app.AppState.IsUpdateCheckAutomatic);
 
         OpenAbout(app);
         app.Frames.ClickOn(Selector.WithText(Strings.En.AboutCheckAutomatically)).Frame(2);
         app.Run(2);
 
         Assert.False(_temp.Settings().CheckForUpdates);
-        Assert.False(new AppDriver(settings: _temp.Settings()).AppState.Updates.CheckAutomatically);
+        Assert.False(new AppDriver(settings: _temp.Settings()).AppState.IsUpdateCheckAutomatic);
     }
 }

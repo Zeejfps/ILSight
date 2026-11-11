@@ -26,15 +26,29 @@ internal static class ProcessPickerView
     /// shown too, take the rest.</summary>
     private const float ProcessPaneShare = 0.4f;
 
+    /// <summary>Opens the dialog, drawn from this frame on, and asks for the processes to be looked for again
+    /// once the frame is drawn, as they come and go.</summary>
+    public static void Open(UiState uiState)
+    {
+        var picker = uiState.ProcessPicker;
+        OpenPicker(picker);
+        Refresh(uiState, picker.Browser);
+    }
+
+    /// <summary>Asks for the processes to be looked for again once the frame is drawn, keeping those shown until
+    /// the new list comes.</summary>
+    private static void Refresh(UiState uiState, ProcessBrowser browser)
+    {
+        Commands.Start(uiState, nameof(ProcessBrowser.ScanAsync), browser, static (_, b, ct) => b.ScanAsync(ct));
+    }
+
+    /// <summary>Draws the dialog, over the filter applied and the modules of the process selected, which start
+    /// listing before it draws (see <see cref="AppFrames.FollowProcessPicker"/>).</summary>
     public static void Render(Ui<UiState> ui)
     {
         var picker = ui.State.ProcessPicker;
+        var browser = picker.Browser;
         var wasOpen = picker.IsOpen;
-        if (wasOpen)
-        {
-            UpdatePicker(picker);
-        }
-
         var open = false;
         var close = false;
         using (var dialog = ui.WindowDialog("process-picker", ui.State.Strings.ProcessPickerTitle, ref picker.IsOpen,
@@ -47,9 +61,9 @@ internal static class ProcessPickerView
             }
         }
 
-        if (open && CanOpen(picker))
+        if (open && browser.CanOpen)
         {
-            Commands.Start(ui.State, nameof(OpenAssembliesAsync), ListToOpen(picker), static (a, paths, ct) => OpenAssembliesAsync(a, paths, a.AssemblyPorts, ct));
+            Commands.Start(ui.State, nameof(OpenAssembliesAsync), browser.ListToOpen(), static (a, paths, ct) => OpenAssembliesAsync(a, paths, a.AssemblyPorts, ct));
             close = true;
         }
         // Escape or the close button only clear IsOpen.
@@ -66,14 +80,15 @@ internal static class ProcessPickerView
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
+        var browser = picker.Browser;
         var processListId = ui.GetId(ProcessListId);
         var filterId = ui.GetId(FilterId);
         if (ui.HasFocus(filterId))
         {
-            MoveSelectionFromFilter(ui, picker, processListId);
+            MoveSelectionFromFilter(ui, browser, processListId);
         }
 
-        if (TakeFilterFocus(picker))
+        if (browser.TryTakeFilterFocus())
         {
             ui.Focus(ui.GetId(FilterId));
         }
@@ -84,28 +99,28 @@ internal static class ProcessPickerView
         {
             using (Pane(ui, ProcessPaneShare))
             {
-                open |= Processes(ui, picker, processListId);
+                open |= Processes(ui, browser, processListId);
             }
 
             using (Pane(ui, 1f - ProcessPaneShare))
             {
-                open |= Modules(ui, picker);
+                open |= Modules(ui, browser);
             }
         }
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
         {
-            var counts = (Processes: picker.Filtered.Count, Modules: GetModules(picker.Modules).Count, Selected: picker.ModuleSelection.Count, t);
+            var counts = (Processes: browser.Filtered.Count, Modules: GetModules(browser.Modules).Count, Selected: browser.ModuleSelection.Count, t);
             var summary = ui.Memo("process-count", counts, static a => Summary(a.t, a.Processes, a.Modules, a.Selected));
             ui.Text(summary, color: theme.TextMuted, size: theme.FontSizeSmall);
             ui.Spacer();
-            if (ui.Button(t.ProcessPickerRefresh, enabled: picker.Scan is not ProcessScan.Scanning, id: "process-refresh"))
+            if (ui.Button(t.ProcessPickerRefresh, enabled: browser.Scan is not ProcessScan.Scanning, id: "process-refresh"))
             {
-                Refresh(picker);
+                Refresh(ui.State, browser);
             }
 
             close |= ui.Button(t.PickerCancel, id: "process-cancel");
-            open |= ui.Button(t.PickerOpen, enabled: CanOpen(picker), id: "process-open", variant: ButtonVariant.Primary);
+            open |= ui.Button(t.PickerOpen, enabled: browser.CanOpen, id: "process-open", variant: ButtonVariant.Primary);
         }
     }
 
@@ -127,7 +142,7 @@ internal static class ProcessPickerView
     }
 
     /// <summary>Walks the processes from the filter, leaving Home and End to its text.</summary>
-    private static void MoveSelectionFromFilter(Ui<UiState> ui, ProcessPicker picker, int listId)
+    private static void MoveSelectionFromFilter(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);
         foreach (var stroke in ui.Input.Keys)
@@ -137,10 +152,10 @@ internal static class ProcessPickerView
                 continue;
             }
 
-            var index = picker.ProcessSelection.Index;
-            if (UiWidgets.ApplyListKey(stroke, ref index, picker.Filtered.Count, page))
+            var index = browser.ProcessSelection.Index;
+            if (UiWidgets.ApplyListKey(stroke, ref index, browser.Filtered.Count, page))
             {
-                picker.ProcessSelection.Select(index, picker.Filtered.Count);
+                browser.ProcessSelection.Select(index, browser.Filtered.Count);
             }
         }
     }
@@ -152,10 +167,10 @@ internal static class ProcessPickerView
     }
 
     /// <summary>The processes, or why there are none. True when one was activated.</summary>
-    private static bool Processes(Ui<UiState> ui, ProcessPicker picker, int listId)
+    private static bool Processes(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
         var t = ui.State.Strings;
-        switch (picker.Scan)
+        switch (browser.Scan)
         {
             case ProcessScan.NotStarted:
             case ProcessScan.Scanning:
@@ -170,7 +185,7 @@ internal static class ProcessPickerView
                     Note(ui, t.ProcessPickerNone);
                     return false;
                 }
-                return ProcessRows(ui, picker, listId);
+                return ProcessRows(ui, browser, listId);
             default:
                 throw new UnreachableException();
         }
@@ -178,18 +193,18 @@ internal static class ProcessPickerView
 
     /// <summary>The processes as a table whose columns can be resized: name, id, entry assembly and runtime.
     /// True when one was activated.</summary>
-    private static bool ProcessRows(Ui<UiState> ui, ProcessPicker picker, int listId)
+    private static bool ProcessRows(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var headers = ProcessHeaders.GetValue(t, static t =>
             [t.ProcessPickerColumnName, t.ProcessPickerColumnId, t.ProcessPickerColumnEntry, t.ProcessPickerColumnRuntime]);
-        var table = ui.Table(listId, ui.State.ProcessColumns, picker.ProcessSelection);
+        var table = ui.Table(listId, ui.State.ProcessColumns, browser.ProcessSelection);
         table.Header(headers);
-        using var body = table.Body(picker.Filtered.Count);
+        using var body = table.Body(browser.Filtered.Count);
         for (var i = body.First; i < body.End; i++)
         {
-            var process = picker.Filtered[i];
+            var process = browser.Filtered[i];
             using var row = body.Row(i, process.Id.Value);
             var nameColor = row.Selected ? theme.SelectionText : theme.Text;
             row.TextCell(0, process.Name, nameColor);
@@ -207,10 +222,10 @@ internal static class ProcessPickerView
     }
 
     /// <summary>The selected process's assemblies, or why they aren't shown. True when some were activated.</summary>
-    private static bool Modules(Ui<UiState> ui, ProcessPicker picker)
+    private static bool Modules(Ui<UiState> ui, ProcessBrowser browser)
     {
         var t = ui.State.Strings;
-        switch (picker.Modules)
+        switch (browser.Modules)
         {
             case ModuleScan.None:
                 Note(ui, t.ProcessPickerPickProcess);
@@ -227,7 +242,7 @@ internal static class ProcessPickerView
                 Note(ui, unreadable.Detail);
                 return false;
             case ModuleScan.Loaded loaded:
-                return ModuleRows(ui, picker, loaded.Modules);
+                return ModuleRows(ui, browser, loaded.Modules);
             default:
                 throw new UnreachableException();
         }
@@ -235,12 +250,12 @@ internal static class ProcessPickerView
 
     /// <summary>The assemblies as a table whose columns can be resized: name, and the folder or that it is
     /// only in memory. True when the picked-out ones were activated.</summary>
-    private static bool ModuleRows(Ui<UiState> ui, ProcessPicker picker, IReadOnlyList<RunningModule> modules)
+    private static bool ModuleRows(Ui<UiState> ui, ProcessBrowser browser, IReadOnlyList<RunningModule> modules)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var headers = ModuleHeaders.GetValue(t, static t => [t.ProcessPickerColumnAssembly, t.ProcessPickerColumnFolder]);
-        var table = ui.Table(ModuleListId, ui.State.ProcessModuleColumns, picker.ModuleSelection);
+        var table = ui.Table(ModuleListId, ui.State.ProcessModuleColumns, browser.ModuleSelection);
         table.Header(headers);
         using var rows = table.Body(modules);
         for (var i = rows.First; i < rows.End; i++)

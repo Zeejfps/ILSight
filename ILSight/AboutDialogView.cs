@@ -2,7 +2,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Localization;
 using static ILSight.Dialogs;
-using static ILSight.Updates;
 
 namespace ILSight;
 
@@ -36,14 +35,14 @@ internal static class AboutDialogView
 
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.DialogGap }))
         {
-            Identity(ui, appState.Updates);
+            Identity(ui, appState.Updates, appState.IsUpdateCheckAutomatic);
             Versions(ui);
         }
         Actions(ui);
     }
 
     /// <summary>The app's icon beside its name, its version and what can be done about updates.</summary>
-    private static void Identity(Ui<UiState> ui, AppUpdates updates)
+    private static void Identity(Ui<UiState> ui, AppUpdates updates, bool isCheckAutomatic)
     {
         var theme = ui.Theme;
         using var row = ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.DialogGap, AlignY = Align.Center });
@@ -51,7 +50,7 @@ internal static class AboutDialogView
         using var text = ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.Gap });
         NameAndVersion(ui);
         UpdateRow(ui, updates);
-        CheckAutomatically(ui, updates);
+        CheckAutomatically(ui, isCheckAutomatic);
     }
 
     private static void NameAndVersion(Ui<UiState> ui)
@@ -79,18 +78,18 @@ internal static class AboutDialogView
         var t = ui.State.Strings;
         if (updates.Status is UpdateStatus.Ready ready)
         {
-            var label = ui.Memo("about-restart", (t, Version: GetVersion(ready.Update)), static a => a.t.AboutRestartToUpdate(a.Version));
+            var label = ui.Memo("about-restart", (t, Version: AppUpdates.GetVersion(ready.Update)), static a => a.t.AboutRestartToUpdate(a.Version));
             if (ui.Button(label, id: "about-updates"))
             {
-                Commands.Later(ui.State, static a => RestartToUpdate(a));
+                Commands.Start(ui.State, nameof(AppUpdates.RestartToUpdateAsync), static (a, ct) => a.Updates.RestartToUpdateAsync(a.ViewCommands, ct));
             }
 
             return;
         }
         var text = ButtonText(ui, updates.Status);
-        if (ui.Button(text, enabled: CanCheck(updates), id: "about-updates", variant: ButtonVariant.Neutral))
+        if (ui.Button(text, enabled: updates.CanCheck(), id: "about-updates", variant: ButtonVariant.Neutral))
         {
-            Commands.Later(ui.State, static a => CheckForUpdates(a));
+            Commands.Start(ui.State, nameof(AppUpdates.CheckAsync), static (a, ct) => a.Updates.CheckAsync(asked: true, ct));
         }
     }
 
@@ -124,13 +123,13 @@ internal static class AboutDialogView
         }
     }
 
-    private static void CheckAutomatically(Ui<UiState> ui, AppUpdates updates)
+    private static void CheckAutomatically(Ui<UiState> ui, bool isCheckAutomatic)
     {
         var t = ui.State.Strings;
-        var check = updates.CheckAutomatically;
+        var check = isCheckAutomatic;
         if (ui.Checkbox(t.AboutCheckAutomatically, ref check, id: "about-check-automatically", compact: true))
         {
-            Commands.Later(ui.State, check, static (a, on) => SetCheckAutomatically(a, on));
+            Commands.Later(ui.State, check, static (a, on) => a.IsUpdateCheckAutomatic = on);
         }
     }
 

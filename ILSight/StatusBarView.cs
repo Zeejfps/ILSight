@@ -99,7 +99,7 @@ internal static class StatusBarView
         var i = ui.Clickable("restart-to-update");
         if (i.Clicked)
         {
-            Commands.Later(ui.State, static a => Updates.RestartToUpdate(a));
+            Commands.Start(ui.State, nameof(AppUpdates.RestartToUpdateAsync), static (a, ct) => a.Updates.RestartToUpdateAsync(a.ViewCommands, ct));
         }
 
         using (ui.Row(i.Id, new Box

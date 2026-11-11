@@ -10,7 +10,6 @@ using static ILSight.IconTheming;
 using static ILSight.Settings;
 using static ILSight.ScreenSettings;
 using static ILSight.Theming;
-using static ILSight.Updates;
 
 namespace ILSight;
 
@@ -51,7 +50,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         RestoreAnalyses(_appState);
         WatchUserThemes(_appState);
         WatchUserIconThemes(_appState);
-        CheckOnStartup(_appState);
+        CheckForUpdatesOnStartup(_appState);
         Background.StartForever(ApplyPendingArgumentsAsync(), problem => Errors.Report(_appState, problem));
     }
 
@@ -59,6 +58,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     {
         StartFrame(ui.State, _appState);
         FollowNuGetPicker(ui, _appState);
+        FollowProcessPicker(ui.State, _appState);
         MainView.Render(ui, _appState);
         FinishFrame(ui, _appState, _codeFonts);
     }

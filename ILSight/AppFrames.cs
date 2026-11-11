@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
+using ILSight.Core.Processes;
 using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.CodeDisplay;
@@ -77,6 +78,31 @@ internal static partial class AppFrames
         {
             ui.RequestUpdateIn(picker.Browser.CalculateSecondsToSettle(now));
         }
+    }
+
+    /// <summary>Does what comes before the "open from running process" dialog draws: while it is open, takes in
+    /// the filter typed, and starts listing the modules of the process selected once it is another than the one
+    /// whose modules are shown, so that the dialog draws them loading.</summary>
+    internal static void FollowProcessPicker(UiState uiState, AppState appState)
+    {
+        var picker = uiState.ProcessPicker;
+        if (!picker.IsOpen)
+        {
+            return;
+        }
+
+        var process = ProcessPicking.UpdatePicker(picker);
+        if (process is not null)
+        {
+            StartListingModules(appState, picker.Browser, process);
+        }
+    }
+
+    /// <summary>Starts listing the modules of <paramref name="process"/> now, before the frame draws. A method of
+    /// its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartListingModules(AppState appState, ProcessBrowser browser, RunningProcess process)
+    {
+        appState.Workflows.Start(nameof(ProcessBrowser.ListModulesAsync), ct => browser.ListModulesAsync(process, ct));
     }
 
     /// <summary>Starts <paramref name="search"/> now, before the frame draws. A method of its own, so that the
@@ -309,6 +335,18 @@ internal static partial class AppFrames
         }
 
         ui.RequestUpdate();
+    }
+
+    /// <summary>Looks for a newer version as the app starts, unless the user turned that off.</summary>
+    internal static void CheckForUpdatesOnStartup(AppState appState)
+    {
+        if (!appState.IsUpdateCheckAutomatic)
+        {
+            return;
+        }
+
+        var updates = appState.Updates;
+        appState.Workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(asked: false, ct));
     }
 
     /// <summary>Opens the active list, then <paramref name="files"/> while it opens, once the app is running.</summary>

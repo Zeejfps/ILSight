@@ -1,7 +1,6 @@
 using System.Globalization;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.Core.Processes;
 using ILSight.Localization;
 
 namespace ILSight;
@@ -68,7 +67,8 @@ internal static class AppRoot
             DecompilerOptions = settings.Decompiler,
             Locale = ChooseLocale(settings),
             ApiVisibility = settings.ApiVisibility,
-            Updates = new AppUpdates { Feed = GitHubUpdates.CreateFeed(), CheckAutomatically = settings.CheckForUpdates },
+            Updates = new AppUpdates(new AppUpdatesAdapter()),
+            IsUpdateCheckAutomatic = settings.CheckForUpdates,
         };
         AssemblyListing.UseLoadOptions(assemblies, settings.Decompiler);
         return appState;
@@ -117,13 +117,7 @@ internal static class AppRoot
             Runtime = runtime,
             Picker = new FrameworkPicker(new FrameworkPickerAdapter(reportError, runtime)),
             NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser(new NuGetBrowserAdapter(reportError)) },
-            ProcessPicker = new ProcessPicker
-            {
-                Work = work,
-                ReportError = reportError,
-                FindProcesses = RunningProcesses.FindProcessesAsync,
-                FindModules = RunningProcesses.GetModulesAsync,
-            },
+            ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(new ProcessBrowserAdapter(reportError)) },
             Display = saved.Display ?? DisplayOptions.Default,
             Analyzer = new AnalyzerRows { AppCommands = appCommands },
             MainLayout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) },

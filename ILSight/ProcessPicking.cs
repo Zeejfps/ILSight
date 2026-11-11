@@ -5,106 +5,30 @@ using ILSight.Core.Processes;
 
 namespace ILSight;
 
-/// <summary>What the "open from running process" dialog does: looking for the processes, filtering them,
-/// listing the selected one's modules, and what Open opens.</summary>
+/// <summary>What the "open from running process" dialog does with what its widgets bind: opening and closing
+/// it, and the filter typed; and what is known of a module listing whatever came of it.</summary>
 public static class ProcessPicking
 {
-    /// <summary>Opens the dialog and looks for the processes again, as they come and go.</summary>
+    /// <summary>Opens the dialog, its filter taking focus. The processes are looked for again by
+    /// <see cref="ProcessBrowser.ScanAsync"/>, as they come and go.</summary>
     public static void OpenPicker(ProcessPicker picker)
     {
         picker.IsOpen = true;
-        picker.FocusFilter = true;
-        Refresh(picker);
-    }
-
-    /// <summary>Looks for the processes again, keeping those shown until the new list comes.</summary>
-    public static void Refresh(ProcessPicker picker)
-    {
-        Background.Start(picker.Work, nameof(ScanAsync), ScanAsync(picker), picker.ReportError);
-    }
-
-    private static async Task ScanAsync(ProcessPicker picker)
-    {
-        var request = ++picker.ScanRequest;
-        if (picker.Scan is not ProcessScan.Scanned)
-        {
-            picker.Scan = new ProcessScan.Scanning();
-        }
-
-        var find = picker.FindProcesses;
-        var outcome = await Background.Wait(Task.Run(() => find(CancellationToken.None)));
-        if (request != picker.ScanRequest)
-        {
-            return;
-        }
-
-        picker.AppliedFilter = null;
-        switch (outcome)
-        {
-            case Outcome<IReadOnlyList<RunningProcess>>.Ok ok:
-                picker.Scan = new ProcessScan.Scanned(ok.Value);
-                break;
-            case Outcome<IReadOnlyList<RunningProcess>>.Failed failed:
-                // Listing reports a process it can't reach as a row, so a failure here is a bug.
-                picker.ReportError(new AppProblem.Unexpected(failed.Error));
-                picker.Scan = new ProcessScan.Failed(failed.Error.Message);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        picker.Browser.FocusFilter();
     }
 
     /// <summary>Stops what the dialog started and forgets the process picked, once it closed.</summary>
     public static void ClosePicker(ProcessPicker picker)
     {
         picker.IsOpen = false;
-        picker.ScanRequest++;
-        StopModules(picker);
-        picker.Modules = new ModuleScan.None();
-        picker.ProcessSelection.Clear();
+        picker.Browser.Close();
     }
 
-    /// <summary>True once after <see cref="OpenPicker"/>: the filter box should take focus.</summary>
-    public static bool TakeFilterFocus(ProcessPicker picker)
+    /// <summary>Takes in the filter as typed; returns the process whose modules are to be listed now, or null.
+    /// See <see cref="ProcessBrowser.Update"/>.</summary>
+    public static RunningProcess? UpdatePicker(ProcessPicker picker)
     {
-        var focus = picker.FocusFilter;
-        picker.FocusFilter = false;
-        return focus;
-    }
-
-    /// <summary>Re-filters when the processes or the filter changed, and lists the modules of the process
-    /// selected when that changed.</summary>
-    public static void UpdatePicker(ProcessPicker picker)
-    {
-        ApplyFilter(picker);
-        FollowSelection(picker);
-    }
-
-    private static void ApplyFilter(ProcessPicker picker)
-    {
-        if (picker.Scan is not ProcessScan.Scanned scanned)
-        {
-            return;
-        }
-
-        if (picker.Filter == picker.AppliedFilter)
-        {
-            return;
-        }
-
-        picker.AppliedFilter = picker.Filter;
-        var selected = FindSelectedProcess(picker);
-        picker.Filtered.Clear();
-        var filter = picker.Filter.Trim();
-        foreach (var process in scanned.Processes)
-        {
-            if (IsMatch(process, filter))
-            {
-                picker.Filtered.Add(process);
-            }
-        }
-        var index = selected == null ? -1 : picker.Filtered.FindIndex(p => p.Id == selected.Id);
-        picker.ProcessSelection.Select(index, picker.Filtered.Count, reveal: false);
+        return picker.Browser.Update(picker.Filter);
     }
 
     /// <summary>Whether <paramref name="filter"/> is in the process's name, id or entry assembly's name.</summary>
@@ -132,106 +56,6 @@ public static class ProcessPicking
         }
 
         return process.Info.EntryAssemblyName.Contains(filter, StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>The process selected among those shown, or null.</summary>
-    public static RunningProcess? FindSelectedProcess(ProcessPicker picker)
-    {
-        var index = picker.ProcessSelection.Index;
-        if (index < 0 || index >= picker.Filtered.Count)
-        {
-            return null;
-        }
-
-        return picker.Filtered[index];
-    }
-
-    /// <summary>Lists the modules of the process selected, once it is another than the one shown; the
-    /// listing of the one before is cancelled, and its result dropped.</summary>
-    private static void FollowSelection(ProcessPicker picker)
-    {
-        var selected = FindSelectedProcess(picker);
-        var shown = FindProcess(picker.Modules);
-        if (selected?.Id == shown?.Id)
-        {
-            return;
-        }
-
-        StopModules(picker);
-        if (selected == null)
-        {
-            picker.Modules = new ModuleScan.None();
-            return;
-        }
-        picker.Modules = new ModuleScan.Loading(selected);
-        Background.Start(picker.Work, nameof(ScanModulesAsync), ScanModulesAsync(picker, selected, picker.ModuleRequest, picker.ModuleWork.Token), picker.ReportError);
-    }
-
-    private static void StopModules(ProcessPicker picker)
-    {
-        picker.ModuleRequest++;
-        picker.ModuleWork.Cancel();
-        picker.ModuleWork.Dispose();
-        picker.ModuleWork = new CancellationTokenSource();
-        picker.ModuleSelection.Clear();
-    }
-
-    private static async Task ScanModulesAsync(ProcessPicker picker, RunningProcess process, int request, CancellationToken cancellationToken)
-    {
-        var find = picker.FindModules;
-        var outcome = await Background.Wait(Task.Run(() => ListModulesAsync(find, process, cancellationToken)));
-        if (request != picker.ModuleRequest)
-        {
-            return;
-        }
-
-        switch (outcome)
-        {
-            case Outcome<ModuleScan>.Ok ok:
-                picker.Modules = ok.Value;
-                SelectEntryModule(picker, ok.Value);
-                break;
-            case Outcome<ModuleScan>.Failed failed:
-                // A process that can't be asked is a result, so a failure here is a bug.
-                picker.ReportError(new AppProblem.Unexpected(failed.Error));
-                picker.Modules = new ModuleScan.Unreachable(process, failed.Error.Message, null);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    /// <summary>The modules of <paramref name="process"/> and its entry assembly, read off the UI thread, as
-    /// finding the entry assembly looks for files.</summary>
-    private static async Task<ModuleScan> ListModulesAsync(Func<ProcessId, CancellationToken, Task<ModuleListing>> find, RunningProcess process,
-        CancellationToken cancellationToken)
-    {
-        var listing = await find(process.Id, cancellationToken).ConfigureAwait(false);
-        return listing switch
-        {
-            ModuleListing.Listed listed => new ModuleScan.Loaded(process, listed.Modules, RunningProcesses.FindEntryAssembly(process, listed.Modules)),
-            ModuleListing.Unreachable unreachable => new ModuleScan.Unreachable(process, unreachable.Detail, RunningProcesses.FindEntryAssembly(process, [])),
-            ModuleListing.Unreadable unreadable => new ModuleScan.Unreadable(process, unreadable.Detail, RunningProcesses.FindEntryAssembly(process, [])),
-            _ => throw new UnreachableException(),
-        };
-    }
-
-    /// <summary>Picks out the entry assembly's module, so that Open opens it unless another is picked.</summary>
-    private static void SelectEntryModule(ProcessPicker picker, ModuleScan scan)
-    {
-        if (scan is not ModuleScan.Loaded loaded || loaded.EntryAssembly == null)
-        {
-            return;
-        }
-
-        foreach (var module in loaded.Modules)
-        {
-            if (module is RunningModule.OnDisk onDisk && onDisk.Path.Equals(loaded.EntryAssembly))
-            {
-                picker.ModuleSelection.Select(module, SelectionChange.Replace, loaded.Modules);
-                return;
-            }
-        }
     }
 
     /// <summary>The process <paramref name="scan"/> is of, or null when none is selected.</summary>
@@ -271,36 +95,249 @@ public static class ProcessPicking
 
         return [];
     }
+}
+
+/// <summary>
+/// What the "open from running process" dialog found, and the rules it keeps: the running .NET processes, looked
+/// for each time it opens and on Refresh, those shown kept until the newest scan's list comes; those the filter
+/// matches; the process selected among them, whose modules are listed once it is another than the one shown, the
+/// listing before it stopped and its result dropped; and what Open opens. Its workflows return once their work is
+/// done, and reach the processes and the user's error reports through <see cref="IPorts"/>.
+/// </summary>
+public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
+{
+    public interface IPorts
+    {
+        /// <summary>Tells the user that looking for the processes or their modules failed unexpectedly.</summary>
+        void ReportError(AppProblem problem);
+
+        /// <summary>The running .NET processes, listed without holding up the screen; a listing that failed comes
+        /// back as <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<IReadOnlyList<RunningProcess>>> ListProcessesAsync(CancellationToken ct);
+
+        /// <summary>The modules <paramref name="process"/> has loaded and its entry assembly, listed without holding
+        /// up the screen; a listing that failed comes back as <see cref="Outcome{T}.Failed"/>, as does one
+        /// <paramref name="stop"/> stopped.</summary>
+        Task<Outcome<ModuleScan>> ListModulesAsync(RunningProcess process, CancellationToken stop, CancellationToken ct);
+    }
+
+    private readonly List<RunningProcess> _filtered = [];
+    private readonly LatestWork _scans = new();
+    private readonly LatestWork _listings = new();
+    private string? _appliedFilter;
+    private bool _focusFilter;
+
+    /// <summary>How far looking for the running processes has got.</summary>
+    public ProcessScan Scan { get; private set; } = new ProcessScan.NotStarted();
+
+    /// <summary>The processes the filter shows, in the order shown.</summary>
+    public IReadOnlyList<RunningProcess> Filtered => _filtered;
+
+    /// <summary>The process whose modules are shown, as a row of <see cref="Filtered"/>.</summary>
+    public ListSelection ProcessSelection { get; } = new();
+
+    /// <summary>How far listing the selected process's modules has got.</summary>
+    public ModuleScan Modules { get; private set; } = new ModuleScan.None();
+
+    public MultiSelection<RunningModule> ModuleSelection { get; } = new();
 
     /// <summary>Whether Open has anything to open, worked out without building the list.</summary>
-    public static bool CanOpen(ProcessPicker picker)
+    public bool CanOpen
     {
-        if (picker.ModuleSelection.Count == 0)
+        get
         {
-            return FindEntryAssembly(picker.Modules) != null;
+            if (ModuleSelection.Count == 0)
+            {
+                return ProcessPicking.FindEntryAssembly(Modules) != null;
+            }
+
+            foreach (var module in ProcessPicking.GetModules(Modules))
+            {
+                if (module is RunningModule.OnDisk && ModuleSelection.Contains(module))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>Has the filter take focus once, the next time <see cref="TryTakeFilterFocus"/> is asked.</summary>
+    public void FocusFilter()
+    {
+        _focusFilter = true;
+    }
+
+    /// <summary>True once after <see cref="FocusFilter"/>: the filter box should take focus.</summary>
+    public bool TryTakeFilterFocus()
+    {
+        var focus = _focusFilter;
+        _focusFilter = false;
+        return focus;
+    }
+
+    /// <summary>Looks for the processes again, keeping those shown until the new list comes, which takes their
+    /// place unless another scan started or the dialog closed meanwhile. A listing that failed says so and is
+    /// reported.</summary>
+    public async Task ScanAsync(CancellationToken ct)
+    {
+        var ticket = _scans.Start(ct);
+        if (Scan is not ProcessScan.Scanned)
+        {
+            Scan = new ProcessScan.Scanning();
         }
 
-        foreach (var module in GetModules(picker.Modules))
+        var found = await ports.ListProcessesAsync(ct);
+        if (!_scans.TryFinish(ticket))
         {
-            if (module is RunningModule.OnDisk && picker.ModuleSelection.Contains(module))
+            return;
+        }
+
+        _appliedFilter = null;
+        Scan = found.Match<ProcessScan>(static ok => new ProcessScan.Scanned(ok.Value), ReportScanFailure);
+    }
+
+    private ProcessScan.Failed ReportScanFailure(Outcome<IReadOnlyList<RunningProcess>>.Failed failed)
+    {
+        // Listing reports a process it can't reach as a row, so a failure here is a bug.
+        ports.ReportError(new AppProblem.Unexpected(failed.Error));
+        return new ProcessScan.Failed(failed.Error.Message);
+    }
+
+    /// <summary>Stops the module listing running and drops the scan's result, and forgets the process picked.</summary>
+    public void Close()
+    {
+        _scans.Cancel();
+        StopListing();
+        Modules = new ModuleScan.None();
+        ProcessSelection.Clear();
+    }
+
+    /// <summary>Re-filters when the processes or <paramref name="filter"/> changed, and follows the process
+    /// selected: returns it, for its modules to be listed now, once it is another than the one whose modules are
+    /// shown; else null. A selection cleared stops the listing and shows no modules.</summary>
+    public RunningProcess? Update(string filter)
+    {
+        ApplyFilter(filter);
+        return FollowSelection();
+    }
+
+    private void ApplyFilter(string filter)
+    {
+        if (Scan is not ProcessScan.Scanned scanned)
+        {
+            return;
+        }
+
+        if (filter == _appliedFilter)
+        {
+            return;
+        }
+
+        _appliedFilter = filter;
+        var selected = FindSelectedProcess();
+        _filtered.Clear();
+        var trimmed = filter.Trim();
+        foreach (var process in scanned.Processes)
+        {
+            if (ProcessPicking.IsMatch(process, trimmed))
             {
-                return true;
+                _filtered.Add(process);
             }
         }
-        return false;
+        var index = selected == null ? -1 : _filtered.FindIndex(p => p.Id == selected.Id);
+        ProcessSelection.Select(index, _filtered.Count, reveal: false);
+    }
+
+    /// <summary>The process selected among those shown, or null.</summary>
+    public RunningProcess? FindSelectedProcess()
+    {
+        var index = ProcessSelection.Index;
+        if (index < 0 || index >= _filtered.Count)
+        {
+            return null;
+        }
+
+        return _filtered[index];
+    }
+
+    private RunningProcess? FollowSelection()
+    {
+        var selected = FindSelectedProcess();
+        var shown = ProcessPicking.FindProcess(Modules);
+        if (selected?.Id == shown?.Id)
+        {
+            return null;
+        }
+
+        if (selected == null)
+        {
+            StopListing();
+            Modules = new ModuleScan.None();
+        }
+        return selected;
+    }
+
+    /// <summary>Lists the modules of <paramref name="process"/> in place of the listing running, which is stopped
+    /// and its result dropped, and shows them unless another process was picked or the dialog closed meanwhile,
+    /// the entry assembly's picked out. A listing that failed unexpectedly is reported.</summary>
+    public async Task ListModulesAsync(RunningProcess process, CancellationToken ct)
+    {
+        var ticket = _listings.Start(ct);
+        ModuleSelection.Clear();
+        Modules = new ModuleScan.Loading(process);
+        var listed = await ports.ListModulesAsync(process, ticket.Token, ct);
+        if (!_listings.TryFinish(ticket))
+        {
+            return;
+        }
+
+        Modules = listed.Match<ModuleScan>(static ok => ok.Value, failed => ReportListingFailure(process, failed.Error));
+        SelectEntryModule();
+    }
+
+    private ModuleScan.Unreachable ReportListingFailure(RunningProcess process, Exception error)
+    {
+        // A process that can't be asked is a result, so a failure here is a bug.
+        ports.ReportError(new AppProblem.Unexpected(error));
+        return new ModuleScan.Unreachable(process, error.Message, null);
+    }
+
+    private void StopListing()
+    {
+        _listings.Cancel();
+        ModuleSelection.Clear();
+    }
+
+    /// <summary>Picks out the entry assembly's module, so that Open opens it unless another is picked.</summary>
+    private void SelectEntryModule()
+    {
+        if (Modules is not ModuleScan.Loaded loaded || loaded.EntryAssembly == null)
+        {
+            return;
+        }
+
+        foreach (var module in loaded.Modules)
+        {
+            if (module is RunningModule.OnDisk onDisk && onDisk.Path.Equals(loaded.EntryAssembly))
+            {
+                ModuleSelection.Select(module, SelectionChange.Replace, loaded.Modules);
+                return;
+            }
+        }
     }
 
     /// <summary>What Open opens: the modules picked out that have a file, in the order shown; with none picked
     /// out, the entry assembly, which may be no module, as a single-file app's executable isn't.</summary>
-    public static List<AssemblyPath> ListToOpen(ProcessPicker picker)
+    public List<AssemblyPath> ListToOpen()
     {
-        if (picker.ModuleSelection.Count == 0)
+        if (ModuleSelection.Count == 0)
         {
-            var entry = FindEntryAssembly(picker.Modules);
+            var entry = ProcessPicking.FindEntryAssembly(Modules);
             return entry == null ? [] : [entry];
         }
         var paths = new List<AssemblyPath>();
-        foreach (var module in picker.ModuleSelection.InOrder(GetModules(picker.Modules)))
+        foreach (var module in ModuleSelection.InOrder(ProcessPicking.GetModules(Modules)))
         {
             if (module is RunningModule.OnDisk onDisk)
             {
@@ -308,5 +345,43 @@ public static class ProcessPicking
             }
         }
         return paths;
+    }
+}
+
+/// <summary>Reaches the running processes off the UI thread, and the app's error reports, for
+/// <see cref="ProcessBrowser"/>. What a listing throws comes back as <see cref="Outcome{T}.Failed"/>, except the
+/// cancellation of the token the call was given.</summary>
+public sealed class ProcessBrowserAdapter(Action<AppProblem> reportError) : ProcessBrowser.IPorts
+{
+    public void ReportError(AppProblem problem)
+    {
+        reportError(problem);
+    }
+
+    public async Task<Outcome<IReadOnlyList<RunningProcess>>> ListProcessesAsync(CancellationToken ct)
+    {
+        var listed = await Background.Wait(Task.Run(() => RunningProcesses.FindProcessesAsync(ct), ct));
+        ct.ThrowIfCancellationRequested();
+        return listed;
+    }
+
+    /// <summary>Lists on the thread pool, as finding the entry assembly looks for files.</summary>
+    public async Task<Outcome<ModuleScan>> ListModulesAsync(RunningProcess process, CancellationToken stop, CancellationToken ct)
+    {
+        var listed = await Background.Wait(Task.Run(() => ScanModulesAsync(process, stop), stop));
+        ct.ThrowIfCancellationRequested();
+        return listed;
+    }
+
+    private static async Task<ModuleScan> ScanModulesAsync(RunningProcess process, CancellationToken ct)
+    {
+        var listing = await RunningProcesses.GetModulesAsync(process.Id, ct);
+        return listing switch
+        {
+            ModuleListing.Listed listed => new ModuleScan.Loaded(process, listed.Modules, RunningProcesses.FindEntryAssembly(process, listed.Modules)),
+            ModuleListing.Unreachable unreachable => new ModuleScan.Unreachable(process, unreachable.Detail, RunningProcesses.FindEntryAssembly(process, [])),
+            ModuleListing.Unreadable unreadable => new ModuleScan.Unreadable(process, unreadable.Detail, RunningProcesses.FindEntryAssembly(process, [])),
+            _ => throw new UnreachableException(),
+        };
     }
 }
