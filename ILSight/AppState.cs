@@ -33,7 +33,7 @@ public sealed class AppState
     public required BrowseSession Session { get; init; }
 
     /// <summary>The named assembly lists, one of which <see cref="Assemblies"/> holds open.</summary>
-    public SavedAssemblyLists Lists { get; } = AssemblyLists.CreateLists();
+    public SavedAssemblyLists Lists { get; } = new();
 
     public NavigationHistory History { get; } = new();
     public UserIntent Intent { get; } = new();

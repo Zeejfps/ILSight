@@ -17,10 +17,10 @@ public sealed class SavedAssemblyListsTests
     [Fact]
     public void A_new_list_is_numbered_when_its_name_is_taken()
     {
-        var lists = AssemblyLists.CreateLists();
+        var lists = new SavedAssemblyLists();
 
-        var first = AssemblyLists.AddList(lists, "New list");
-        var second = AssemblyLists.AddList(lists, "new list");
+        var first = lists.Add("New list");
+        var second = lists.Add("new list");
 
         Assert.Equal("New list", first);
         Assert.Equal("new list 2", second);
@@ -30,49 +30,49 @@ public sealed class SavedAssemblyListsTests
     [Fact]
     public void A_list_is_never_made_without_a_name()
     {
-        var lists = AssemblyLists.CreateLists();
+        var lists = new SavedAssemblyLists();
 
-        Assert.Throws<ArgumentException>(() => AssemblyLists.AddList(lists, " "));
-        Assert.Throws<ArgumentException>(() => AssemblyLists.DuplicateList(lists, SavedAssemblyLists.DefaultName, ""));
+        Assert.Throws<ArgumentException>(() => lists.Add(" "));
+        Assert.Throws<ArgumentException>(() => lists.Duplicate(SavedAssemblyLists.DefaultName, ""));
         Assert.Equal([SavedAssemblyLists.DefaultName], lists.Names);
     }
 
     [Fact]
     public void A_duplicate_holds_the_same_assemblies_under_a_name_of_its_own()
     {
-        var lists = AssemblyLists.CreateLists();
-        AssemblyLists.RememberActive(lists, [FakePath("a.dll"), FakePath("b.dll")]);
+        var lists = new SavedAssemblyLists();
+        lists.RememberActivePaths([FakePath("a.dll"), FakePath("b.dll")]);
 
-        var copy = AssemblyLists.DuplicateList(lists, SavedAssemblyLists.DefaultName, "Default copy");
-        AssemblyLists.RememberActive(lists, [FakePath("c.dll")]);
+        var copy = lists.Duplicate(SavedAssemblyLists.DefaultName, "Default copy");
+        lists.RememberActivePaths([FakePath("c.dll")]);
 
         Assert.Equal("Default copy", copy);
-        Assert.Equal([FakePath("a.dll"), FakePath("b.dll")], AssemblyLists.GetPaths(lists, copy));
+        Assert.Equal([FakePath("a.dll"), FakePath("b.dll")], lists.GetPaths(copy));
     }
 
     [Fact]
     public void A_list_made_from_assemblies_holds_them_under_a_name_of_its_own()
     {
-        var lists = AssemblyLists.CreateLists();
-        AssemblyLists.AddList(lists, "Framework");
+        var lists = new SavedAssemblyLists();
+        lists.Add("Framework");
 
-        var name = AssemblyLists.AddList(lists, "Framework", [FakePath("a.dll"), FakePath("b.dll")]);
+        var name = lists.Add("Framework", [FakePath("a.dll"), FakePath("b.dll")]);
 
         Assert.Equal("Framework 2", name);
-        Assert.Equal([FakePath("a.dll"), FakePath("b.dll")], AssemblyLists.GetPaths(lists, name));
+        Assert.Equal([FakePath("a.dll"), FakePath("b.dll")], lists.GetPaths(name));
         Assert.Equal(SavedAssemblyLists.DefaultName, lists.Active);
     }
 
     [Fact]
     public void A_list_is_not_renamed_to_nothing_or_to_another_lists_name()
     {
-        var lists = AssemblyLists.CreateLists();
-        AssemblyLists.AddList(lists, "Work");
+        var lists = new SavedAssemblyLists();
+        lists.Add("Work");
 
-        Assert.False(AssemblyLists.RenameList(lists, "Work", "  "));
-        Assert.False(AssemblyLists.RenameList(lists, "Work", "default"));
-        Assert.True(AssemblyLists.RenameList(lists, "Work", "WORK"));
-        Assert.True(AssemblyLists.RenameList(lists, SavedAssemblyLists.DefaultName, " Play "));
+        Assert.False(lists.TryRename("Work", "  "));
+        Assert.False(lists.TryRename("Work", "default"));
+        Assert.True(lists.TryRename("Work", "WORK"));
+        Assert.True(lists.TryRename(SavedAssemblyLists.DefaultName, " Play "));
         Assert.Equal(["Play", "WORK"], lists.Names);
         Assert.Equal("Play", lists.Active);
     }
@@ -80,26 +80,52 @@ public sealed class SavedAssemblyListsTests
     [Fact]
     public void Deleting_the_open_list_opens_the_one_that_takes_its_place_and_the_last_leaves_an_empty_default()
     {
-        var lists = AssemblyLists.CreateLists();
-        AssemblyLists.AddList(lists, "Work");
-        AssemblyLists.AddList(lists, "Play");
-        AssemblyLists.ActivateList(lists, "Play");
+        var lists = new SavedAssemblyLists();
+        lists.Add("Work");
+        lists.Add("Play");
+        lists.TryActivate("Play");
 
-        AssemblyLists.DeleteList(lists, "Play");
+        lists.Remove("Play");
         Assert.Equal("Work", lists.Active);
 
-        AssemblyLists.DeleteList(lists, "Work");
-        AssemblyLists.RememberActive(lists, [FakePath("a.dll")]);
-        AssemblyLists.DeleteList(lists, SavedAssemblyLists.DefaultName);
+        lists.Remove("Work");
+        lists.RememberActivePaths([FakePath("a.dll")]);
+        lists.Remove(SavedAssemblyLists.DefaultName);
 
         Assert.Equal([SavedAssemblyLists.DefaultName], lists.Names);
         Assert.Empty(lists.ActivePaths);
     }
 
     [Fact]
+    public void The_revision_rises_with_every_change_to_the_lists_and_not_with_what_changes_nothing()
+    {
+        var lists = new SavedAssemblyLists();
+        var revisions = new List<int> { lists.Revision };
+
+        lists.Add("Work");
+        revisions.Add(lists.Revision);
+        Assert.False(lists.TryRename("Work", SavedAssemblyLists.DefaultName));
+        Assert.False(lists.TryActivate(SavedAssemblyLists.DefaultName));
+        lists.RememberActivePaths([]);
+        lists.RememberActiveDocuments(null);
+        revisions.Add(lists.Revision);
+        lists.RememberActivePaths([FakePath("a.dll")]);
+        revisions.Add(lists.Revision);
+        Assert.True(lists.TryRename("Work", "Play"));
+        revisions.Add(lists.Revision);
+        Assert.True(lists.TryActivate("Play"));
+        revisions.Add(lists.Revision);
+        lists.Remove("Play");
+        revisions.Add(lists.Revision);
+
+        Assert.Equal([0, 1, 1, 2, 3, 4, 5], revisions);
+        Assert.Equal(SavedAssemblyLists.DefaultName, lists.Active);
+    }
+
+    [Fact]
     public void Loading_drops_nameless_and_repeated_lists_and_opens_the_named_one_or_else_the_first()
     {
-        var lists = AssemblyLists.CreateLists();
+        var lists = new SavedAssemblyLists();
         List<AssemblyListRecord> records =
         [
             new(" ", [FakePath("x.dll")]),
@@ -108,11 +134,11 @@ public sealed class SavedAssemblyListsTests
             new("Play", [FakePath("c.dll")]),
         ];
 
-        AssemblyLists.RestoreLists(lists, records, "play");
+        lists.Restore(records, "play");
         Assert.Equal(["Work", "Play"], lists.Names);
         Assert.Equal("Play", lists.Active);
 
-        AssemblyLists.RestoreLists(lists, records, "Gone");
+        lists.Restore(records, "Gone");
         Assert.Equal("Work", lists.Active);
         Assert.Equal([FakePath("a.dll")], lists.ActivePaths);
     }
@@ -179,7 +205,7 @@ public sealed class AssemblyListingTests
         first.Analyze(first.Fixture("Greeter"));
         SaveSettings(first.AppState);
         var d = new AppStateDriver(temp.Settings());
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
 
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
@@ -196,7 +222,7 @@ public sealed class AssemblyListingTests
     {
         var d = AppStateDriver.Opened();
         d.Analyze(d.Fixture("Greeter"));
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
 
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
@@ -229,7 +255,7 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
 
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
@@ -248,7 +274,7 @@ public sealed class AssemblyListingTests
     public void Switching_lists_with_every_document_closed_opens_an_empty_one()
     {
         var d = AppStateDriver.Opened();
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
         foreach (var tab in d.AppState.Tabs.Open.ToList())
         {
             CloseTab(d.AppState, tab);
@@ -278,14 +304,14 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
-        Assert.Equal([other], AssemblyLists.GetPaths(d.AppState.Lists, "New list").Select(static p => p.Text));
+        Assert.Equal([other], d.AppState.Lists.GetPaths("New list").Select(static p => p.Text));
     }
 
     [Fact]
     public void An_assembly_still_opening_when_the_list_is_switched_stays_out_of_the_next_list()
     {
         var d = AppStateDriver.Opened();
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
 
         OpenAssembly(d.AppState, typeof(AppState).Assembly.Location);
         SwitchAssemblyList(d.AppState, Other);
@@ -300,7 +326,7 @@ public sealed class AssemblyListingTests
     public void Switching_lists_stops_the_assemblies_still_opening_from_landing_in_the_next_list()
     {
         var d = AppStateDriver.Opened();
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
         var opening = d.AppState.Opens.Token;
 
         SwitchAssemblyList(d.AppState, Other);
@@ -327,7 +353,7 @@ public sealed class AssemblyListingTests
     public void Reloading_reopens_the_whole_list_even_while_it_is_still_being_opened()
     {
         var d = AppStateDriver.Opened();
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
 
@@ -554,7 +580,7 @@ public sealed class AssemblyListingTests
     public void The_assemblies_panel_names_the_open_list_and_the_dialog_counts_each_lists_assemblies()
     {
         var app = AppDriver.Opened();
-        AssemblyLists.AddList(app.AppState.Lists, Other);
+        app.AppState.Lists.Add(Other);
         app.Run(2);
         Assert.True(app.Frames.Drew(SavedAssemblyLists.DefaultName));
 
@@ -615,7 +641,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, preset.Name)).Frame(2);
 
         Assert.Equal(preset.Name, Assert.IsType<ListsDialogMode.Renaming>(app.Ui.ListsDialog.Mode).List);
-        Assert.Equal(preset.Paths, AssemblyLists.GetPaths(app.AppState.Lists, preset.Name));
+        Assert.Equal(preset.Paths, app.AppState.Lists.GetPaths(preset.Name));
         Assert.Equal(SavedAssemblyLists.DefaultName, app.AppState.Lists.Active);
     }
 
@@ -643,7 +669,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.AtPath("delete")).Frame(2);
         Assert.True(app.Frames.Drew("Delete assembly list"));
         Assert.Equal(SavedAssemblyLists.DefaultName, Assert.IsType<ListsDialogMode.ConfirmingDelete>(app.Ui.ListsDialog.Mode).List);
-        Assert.Equal(Other, AssemblyLists.GetReplacement(app.AppState.Lists, SavedAssemblyLists.DefaultName));
+        Assert.Equal(Other, app.AppState.Lists.GetReplacement(SavedAssemblyLists.DefaultName));
         app.Frames.ClickOn(Selector.WithText("Delete list")).Frame(2);
         app.Settle(2);
 
@@ -672,7 +698,7 @@ public sealed class AssemblyListingTests
     private static AppDriver OpenedDialog()
     {
         var app = AppDriver.Opened();
-        AssemblyLists.AddList(app.AppState.Lists, Other);
+        app.AppState.Lists.Add(Other);
         AssemblyListsDialogView.Open(app.Ui.ListsDialog, app.AppState);
         app.Run(2);
         return app;

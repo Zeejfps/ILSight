@@ -11,163 +11,6 @@ namespace ILSight;
 /// <summary>Analyzing types and members, and analyzing again what was analyzed in the last run.</summary>
 public static class Analysis
 {
-    internal static void NoteFindings(AnalyzerTree tree)
-    {
-        tree.Findings++;
-    }
-
-    /// <summary>Adds <paramref name="symbol"/> as a root, unless a root analyzes it already, and
-    /// returns the root that does.</summary>
-    public static AnalyzerSymbolNode AddRoot(AnalyzerTree tree, AnalysisSymbol symbol)
-    {
-        var existing = FindRoot(tree, symbol);
-        if (existing is not null)
-        {
-            return existing;
-        }
-
-        var root = new AnalyzerSymbolNode { Symbol = symbol };
-        tree.Roots.Add(root);
-        tree.Revision++;
-        return root;
-    }
-
-    private static AnalyzerSymbolNode? FindRoot(AnalyzerTree tree, AnalysisSymbol symbol)
-    {
-        if (symbol.Reference == null)
-        {
-            return null;
-        }
-
-        foreach (var root in tree.Roots)
-        {
-            if (root is AnalyzerSymbolNode found && Equals(found.Symbol.Reference, symbol.Reference))
-            {
-                return found;
-            }
-        }
-        return null;
-    }
-
-    /// <summary>Adds a root that waits for its symbol to be found, saved as <paramref name="savedAs"/>
-    /// meanwhile, or not saved when it is null.</summary>
-    public static AnalyzerPendingNode AddPending(AnalyzerTree tree, CodeAnchor? savedAs)
-    {
-        var root = new AnalyzerPendingNode { SavedAs = savedAs };
-        tree.Roots.Add(root);
-        if (savedAs is not null)
-        {
-            tree.Revision++;
-        }
-
-        return root;
-    }
-
-    /// <summary>Adds a waiting root for each of <paramref name="analyzed"/>, in order, saved as it.</summary>
-    public static void AddPending(AnalyzerTree tree, IReadOnlyList<CodeAnchor> analyzed)
-    {
-        foreach (var anchor in analyzed)
-        {
-            AddPending(tree, anchor);
-        }
-    }
-
-    /// <summary>The roots restored from the saved analyses that are still waiting for their symbols, each
-    /// with the analysis it was restored from.</summary>
-    public static List<(AnalyzerPendingNode Root, CodeAnchor SavedAs)> ListRestoring(AnalyzerTree tree)
-    {
-        var restoring = new List<(AnalyzerPendingNode Root, CodeAnchor SavedAs)>();
-        foreach (var root in tree.Roots)
-        {
-            if (root is not AnalyzerPendingNode pending)
-            {
-                continue;
-            }
-
-            if (pending.SavedAs is null)
-            {
-                continue;
-            }
-
-            restoring.Add((pending, pending.SavedAs.Value));
-        }
-        return restoring;
-    }
-
-    /// <summary>Turns the waiting <paramref name="pending"/> into the analysis of <paramref name="symbol"/>,
-    /// in its place; when another root analyzes it already, <paramref name="pending"/> goes. Returns
-    /// the root that analyzes <paramref name="symbol"/>, or null once <paramref name="pending"/> was removed.</summary>
-    public static AnalyzerSymbolNode? ResolveRoot(AnalyzerTree tree, AnalyzerPendingNode pending, AnalysisSymbol symbol)
-    {
-        var index = tree.Roots.IndexOf(pending);
-        if (index < 0)
-        {
-            return null;
-        }
-
-        var existing = FindRoot(tree, symbol);
-        if (existing is not null)
-        {
-            RemoveRoot(tree, pending);
-            return existing;
-        }
-        var root = new AnalyzerSymbolNode { Symbol = symbol };
-        tree.Roots[index] = root;
-        if (symbol.Definition != pending.SavedAs)
-        {
-            tree.Revision++;
-        }
-
-        return root;
-    }
-
-    public static bool HasRoot(AnalyzerTree tree, AnalyzerNode root)
-    {
-        return tree.Roots.Contains(root);
-    }
-
-    public static void RemoveRoot(AnalyzerTree tree, AnalyzerNode root)
-    {
-        if (!tree.Roots.Remove(root))
-        {
-            return;
-        }
-
-        var saved = SavedAnalysisOf(root);
-        if (saved is not null)
-        {
-            tree.Revision++;
-        }
-
-        CancelNode(root);
-    }
-
-    /// <summary>The analyses the roots save as, in their order.</summary>
-    public static List<CodeAnchor> ListSavedAnalyses(AnalyzerTree tree)
-    {
-        var saved = new List<CodeAnchor>();
-        foreach (var root in tree.Roots)
-        {
-            var anchor = SavedAnalysisOf(root);
-            if (anchor is not null)
-            {
-                saved.Add(anchor.Value);
-            }
-        }
-        return saved;
-    }
-
-    public static void ClearRoots(AnalyzerTree tree)
-    {
-        foreach (var root in tree.Roots)
-        {
-            CancelNode(root);
-        }
-
-        tree.Roots.Clear();
-        tree.Revision++;
-    }
-
     /// <summary>The children of <paramref name="symbol"/>, listed the first time they are asked for.</summary>
     public static List<AnalyzerNode> EnsureChildren(AnalyzerSymbolNode symbol)
     {
@@ -307,17 +150,6 @@ public static class Analysis
         changed();
     }
 
-    private static CodeAnchor? SavedAnalysisOf(AnalyzerNode root)
-    {
-        return root switch
-        {
-            AnalyzerSymbolNode symbol => symbol.Symbol.Definition,
-            AnalyzerPendingNode pending => pending.SavedAs,
-            AnalyzerKindNode or AnalyzerMessageNode => null,
-            _ => throw new UnreachableException(),
-        };
-    }
-
     /// <summary>Analyzes the type or member <paramref name="node"/> stands for in the analyzer. Returns
     /// the root analyzing it, or null when it cannot be analyzed.</summary>
     public static AnalyzerSymbolNode? AddToAnalyzer(AppState appState, BrowseNode node)
@@ -335,7 +167,7 @@ public static class Analysis
     /// already there when it was analyzed before.</summary>
     public static AnalyzerSymbolNode AddToAnalyzer(AppState appState, AnalysisSymbol symbol)
     {
-        return AddRoot(appState.Analyzer, symbol);
+        return appState.Analyzer.AddRoot(symbol);
     }
 
     /// <summary>Runs the analysis <paramref name="kind"/> stands for over the open assemblies in the
@@ -343,7 +175,7 @@ public static class Analysis
     public static void RunAnalysis(AppState appState, AnalyzerKindNode kind)
     {
         var tree = appState.Analyzer;
-        StartAnalysisOnce(appState.Work, kind, appState.Assemblies, () => NoteFindings(tree), error => ReportAnalysisFailure(appState, kind, error),
+        StartAnalysisOnce(appState.Work, kind, appState.Assemblies, () => tree.NoteFindings(), error => ReportAnalysisFailure(appState, kind, error),
             problem => Errors.Report(appState, problem));
     }
 
@@ -364,11 +196,11 @@ public static class Analysis
 
     private static async Task AddToAnalyzerAsync(AppState appState, CodeReference.Navigable reference)
     {
-        var root = AddPending(appState.Analyzer, savedAs: null);
+        var root = appState.Analyzer.AddPending(savedAs: null);
         var assemblies = appState.Assemblies;
         var session = appState.Session;
         var found = await Background.Run(() => NodeLookup.Find(assemblies, session, reference));
-        if (!HasRoot(appState.Analyzer, root))
+        if (!appState.Analyzer.HasRoot(root))
         {
             return;
         }
@@ -379,11 +211,11 @@ public static class Analysis
                 AnalyzeFound(appState, root, ok.Value);
                 break;
             case Outcome<BrowseNode>.Ok:
-                RemoveRoot(appState.Analyzer, root);
+                appState.Analyzer.RemoveRoot(root);
                 ReportUnresolvedReference(appState, reference, null);
                 break;
             case Outcome<BrowseNode>.Failed failed:
-                RemoveRoot(appState.Analyzer, root);
+                appState.Analyzer.RemoveRoot(root);
                 ReportUnresolvedReference(appState, reference, failed.Error);
                 break;
             default:
@@ -396,7 +228,7 @@ public static class Analysis
         var symbol = Analyzers.Of(node);
         if (symbol is null)
         {
-            RemoveRoot(appState.Analyzer, root);
+            appState.Analyzer.RemoveRoot(root);
             return;
         }
         ResolveAnalysis(appState, root, symbol);
@@ -406,7 +238,7 @@ public static class Analysis
     /// the view to show the root that analyzes it.</summary>
     private static void ResolveAnalysis(AppState appState, AnalyzerPendingNode root, AnalysisSymbol symbol)
     {
-        var shown = ResolveRoot(appState.Analyzer, root, symbol);
+        var shown = appState.Analyzer.ResolveRoot(root, symbol);
         if (shown is null)
         {
             return;
@@ -426,7 +258,7 @@ public static class Analysis
 
     private static async Task RestoreAnalysesAsync(AppState appState)
     {
-        var pending = ListRestoring(appState.Analyzer);
+        var pending = appState.Analyzer.ListRestoring();
         if (pending.Count == 0)
         {
             return;
@@ -478,7 +310,7 @@ public static class Analysis
     {
         foreach (var root in restoring)
         {
-            RemoveRoot(appState.Analyzer, root);
+            appState.Analyzer.RemoveRoot(root);
         }
     }
 
@@ -486,7 +318,7 @@ public static class Analysis
     {
         if (symbol is null)
         {
-            RemoveRoot(appState.Analyzer, root);
+            appState.Analyzer.RemoveRoot(root);
             return;
         }
         ResolveAnalysis(appState, root, symbol);
@@ -529,7 +361,7 @@ public static class Analysis
             return;
         }
 
-        if (Analysis.HasRoot(analyzer, root))
+        if (analyzer.HasRoot(root))
         {
             return;
         }

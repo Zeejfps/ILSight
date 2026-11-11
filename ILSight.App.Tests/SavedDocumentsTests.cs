@@ -366,7 +366,7 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
         OpenAssembly(d.AppState, AppStateDriver.FixturePath);
@@ -400,7 +400,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var layout = d.Ui.Layout;
         layout.Dock(DocumentPanels.GetPanel(d.Ui.Documents, d.AppState.Tabs.Active!), layout.GroupOf(greeterPanel)!, DockEdge.Right);
         d.Settle();
-        AssemblyLists.AddList(d.AppState.Lists, Other);
+        d.AppState.Lists.Add(Other);
         SwitchAssemblyList(d.AppState, Other);
         d.Settle();
 

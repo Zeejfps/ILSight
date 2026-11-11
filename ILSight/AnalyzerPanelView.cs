@@ -51,12 +51,12 @@ internal static class AnalyzerPanelView
             ui.Separator(theme.IconSize);
             if (ui.IconButton("remove", ui.State.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root is not null) && root is not null)
             {
-                Commands.Later(ui.State, root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
+                Commands.Later(ui.State, root, static (a, r) => a.Analyzer.RemoveRoot(r));
             }
 
             if (ui.IconButton("clear", ui.State.Icons.AnalyzerRemoveAll, t.AnalyzerRemoveAll, any))
             {
-                Commands.Later(ui.State, static a => Analysis.ClearRoots(a.Analyzer));
+                Commands.Later(ui.State, static a => a.Analyzer.ClearRoots());
             }
         }
     }
@@ -109,7 +109,7 @@ internal static class AnalyzerPanelView
         var root = Analysis.FindSelectedRoot(rows);
         if (root is not null)
         {
-            Commands.Later(screen, root, static (a, r) => Analysis.RemoveRoot(a.Analyzer, r));
+            Commands.Later(screen, root, static (a, r) => a.Analyzer.RemoveRoot(r));
         }
     }
 
@@ -144,7 +144,7 @@ internal static class AnalyzerPanelView
             return;
         }
 
-        var isRoot = Analysis.HasRoot(analyzer, node);
+        var isRoot = analyzer.HasRoot(node);
         var target = node.Symbol.Reference;
         if (target != null)
         {
@@ -159,12 +159,12 @@ internal static class AnalyzerPanelView
         ui.MenuSeparator();
         if (isRoot && ui.MenuItem(t.AnalyzerRemove, id: "remove"))
         {
-            Commands.Later(ui.State, node, static (a, n) => Analysis.RemoveRoot(a.Analyzer, n));
+            Commands.Later(ui.State, node, static (a, n) => a.Analyzer.RemoveRoot(n));
         }
 
         if (ui.MenuItem(t.AnalyzerClear, id: "clear"))
         {
-            Commands.Later(ui.State, static a => Analysis.ClearRoots(a.Analyzer));
+            Commands.Later(ui.State, static a => a.Analyzer.ClearRoots());
         }
     }
 

@@ -26,7 +26,7 @@ internal static partial class AppFrames
     internal static UiState CreateUiState(AppState appState)
     {
         var uiState = CreateScreen(appState.View, appState.Work, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime);
-        DocumentPanels.SkipPanels(uiState.Documents, AssemblyLists.ListDocumentPanels(appState.Lists));
+        DocumentPanels.SkipPanels(uiState.Documents, appState.Lists.ListDocumentPanels());
         FollowActiveTab(uiState, appState.Tabs.Active);
         RunViewCommands(uiState, appState);
         ShowInRestoredDocuments(uiState, appState.Tabs);

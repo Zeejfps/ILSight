@@ -107,7 +107,7 @@ internal static partial class AppFrames
     /// <summary>Expands <paramref name="root"/> and selects it, unless it was removed meanwhile.</summary>
     private static void ShowAnalysis(UiState uiState, AppState appState, AnalyzerSymbolNode root)
     {
-        if (!Analysis.HasRoot(appState.Analyzer, root))
+        if (!appState.Analyzer.HasRoot(root))
         {
             return;
         }

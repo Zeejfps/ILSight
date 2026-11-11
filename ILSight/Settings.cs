@@ -24,9 +24,9 @@ public static class Settings
         var appState = CreateAppState(settings, session);
         var first = Tabs.AddNew(appState.Tabs);
         Tabs.MakeActive(appState.Tabs, first);
-        RestoreLists(appState.Lists, settings.AssemblyLists, settings.ActiveAssemblyList);
-        var leftOutBookmarks = RestoreBookmarks(appState.Bookmarks, settings.Bookmarks);
-        Analysis.AddPending(appState.Analyzer, appState.Lists.ActiveAnalyses);
+        appState.Lists.Restore(settings.AssemblyLists, settings.ActiveAssemblyList);
+        var leftOutBookmarks = appState.Bookmarks.Restore(settings.Bookmarks);
+        appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         ReopenDocuments(appState);
         appState.LastSaved = CaptureSavedSources(appState);
         ReportLeftOutBookmarks(appState, leftOutBookmarks);
@@ -184,7 +184,7 @@ public static class Settings
         {
             FilePath = appState.SettingsPlace.FilePath,
             CanSaveOverFile = appState.SettingsPlace.CanSaveOverFile,
-            AssemblyLists = AssemblyLists.SaveLists(appState.Lists),
+            AssemblyLists = appState.Lists.ToRecords(),
             ActiveAssemblyList = appState.Lists.Active,
             Theme = appState.Theme,
             IconTheme = appState.IconTheme,
@@ -193,7 +193,7 @@ public static class Settings
             ApiVisibility = appState.ApiVisibility,
             CheckForUpdates = appState.Updates.CheckAutomatically,
             Locale = appState.Locale,
-            Bookmarks = ILSight.Bookmarks.ListRecords(appState.Bookmarks),
+            Bookmarks = appState.Bookmarks.ListRecords(),
             Window = appState.Window,
             BookmarkColumns = view.BookmarkColumns,
             SearchColumns = view.SearchColumns,

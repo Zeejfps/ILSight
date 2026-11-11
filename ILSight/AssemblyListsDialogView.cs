@@ -157,7 +157,7 @@ internal static class AssemblyListsDialogView
                 NameText(ui, name, row.Selected);
             }
 
-            var count = AssemblyLists.GetPaths(lists, name).Count;
+            var count = lists.GetPaths(name).Count;
             ui.Text(t.ListsCount(count), color: theme.TextMuted, size: theme.FontSizeSmall);
             if (ui.Button(t.ListsActivate, enabled: !active, id: "activate", variant: ButtonVariant.Ghost))
             {
@@ -285,7 +285,7 @@ internal static class AssemblyListsDialogView
         }
 
         var newName = renaming.NewName;
-        if (AssemblyLists.CanRenameList(lists, renaming.List, newName))
+        if (lists.CanRename(renaming.List, newName))
         {
             return;
         }
@@ -430,6 +430,6 @@ internal static class AssemblyListsDialogView
         }
 
         AssemblyLists.StopAsking(dialog);
-        Commands.Later(screen, (list: renaming.List, newName: renaming.NewName), static (a, s) => AssemblyLists.RenameList(a.Lists, s.list, s.newName));
+        Commands.Later(screen, (list: renaming.List, newName: renaming.NewName), static (a, s) => a.Lists.TryRename(s.list, s.newName));
     }
 }

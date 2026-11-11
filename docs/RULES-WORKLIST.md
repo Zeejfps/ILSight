@@ -32,9 +32,9 @@ Done items are struck through with their commit.
 | ~~Z18~~ (done) | R004 | `Search`, `NuGetPicker` debounce | Debounce logic copied twice → a `TypedText` value. | S / low |
 | ~~Z3~~ (done) | R004 | `Reload`, `Reopens`, `OpenRequests`, `Reloads` | Public setters, rules in a grab-bag `Reloads` → methods on each type. | S / low |
 | ~~Z5~~ (done) | R004 | `Navigation` history ops, `NavigationHistory` | History operations mutate public `Entries` from outside → methods on `NavigationHistory`. | S / low |
-| A8 | R004 | `BookmarkList`, `Bookmarks` | "No two bookmarks mark the same line" holds only by convention (public `Items`, setters skip `NoteChange`) → operations on `BookmarkList`, private state. | S–M / low |
-| A9, Z17 | R004 | `SavedAssemblyLists`, `AssemblyLists` | Documented invariants (unique non-empty names, one list open, `Revision`) breakable from anywhere → methods on `SavedAssemblyLists`. | M / low |
-| A13 | R004 | `AnalyzerTree`, `Analysis` | `Revision` bumped by hand in 5 places → root operations on `AnalyzerTree`. | S–M / low |
+| ~~A8~~ (done) | R004 | `BookmarkList`, `Bookmarks` | "No two bookmarks mark the same line" holds only by convention (public `Items`, setters skip `NoteChange`) → operations on `BookmarkList`, private state. | S–M / low |
+| ~~A9, Z17~~ (done) | R004 | `SavedAssemblyLists`, `AssemblyLists` | Documented invariants (unique non-empty names, one list open, `Revision`) breakable from anywhere → methods on `SavedAssemblyLists`. | M / low |
+| ~~A13~~ (done) | R004 | `AnalyzerTree`, `Analysis` | `Revision` bumped by hand in 5 places → root operations on `AnalyzerTree`. | S–M / low |
 | Z4 | R004 | `ThemeCatalog`, `ThemeCatalogs` | Public collections that must agree; generic constraints repeated ~20 times → instance methods. | S / low |
 | Z10 | R004, R008 | `MetadataGridState`, `MetadataGridView` | ~30 state functions in the widget; bool + value pairs (`FlagsOpen` + `FlagsColumn`) → methods on the state, `int? FlagsFlyoutColumn`. | S–M / low–med (frame-cost tests) |
 | Z11 | R008 | `NuGetPicker` versions | `Version`, `Versions`, `VersionTexts` must agree; the view writes one directly → one `VersionChoice?`. | S / low |

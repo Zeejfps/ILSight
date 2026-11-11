@@ -127,7 +127,7 @@ internal static class BookmarksPanelView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var panel = ui.State.BookmarksPanel;
-        var any = HasEnabled(bookmarks);
+        var any = bookmarks.HasEnabled();
         var selected = panel.Selected;
         using (ui.PaneToolbar())
         {
@@ -440,7 +440,7 @@ internal static class BookmarksPanelView
     /// <summary>Removes <paramref name="bookmark"/>, passing its selection to the bookmark now in its row.</summary>
     internal static void Remove(BookmarksPanel panel, BookmarkList bookmarks, Bookmark bookmark)
     {
-        var row = Bookmarks.Remove(bookmarks, bookmark);
+        var row = bookmarks.Remove(bookmark);
         TakeRemoved(panel, bookmark, row, bookmarks.Items);
     }
 
@@ -473,11 +473,11 @@ internal static class BookmarksPanelView
             return;
         }
 
-        Commands.Later(screen, (bookmark, name: panel.RenameText), static (a, s) => Rename(a.Bookmarks, s.bookmark, s.name));
+        Commands.Later(screen, (bookmark, name: panel.RenameText), static (a, s) => a.Bookmarks.Rename(s.bookmark, s.name));
     }
 
     private static void ToggleEnabled(AppState appState, Bookmark bookmark)
     {
-        SetEnabled(appState.Bookmarks, bookmark, !bookmark.Enabled);
+        appState.Bookmarks.SetEnabled(bookmark, !bookmark.Enabled);
     }
 }
