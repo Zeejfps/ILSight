@@ -43,10 +43,10 @@ internal static class ErrorDialogView
     /// <summary><paramref name="error"/> in the words of <paramref name="t"/>, put into them once per language.</summary>
     public static ProblemText GetText(ErrorDialog dialog, AppError error, Strings t)
     {
-        if (!dialog.Texts.TryGet(new(t), out var texts))
+        if (!dialog.Texts.TryGet(new ByReference<Strings>(t), out var texts))
         {
             texts = new Dictionary<AppError, ProblemText>(ReferenceEqualityComparer.Instance);
-            dialog.Texts = new(new(t), texts);
+            dialog.Texts = new Memo<ByReference<Strings>, Dictionary<AppError, ProblemText>>(new ByReference<Strings>(t), texts);
             dialog.Document = default;
         }
         if (!texts.TryGetValue(error, out var text))
@@ -68,13 +68,13 @@ internal static class ErrorDialogView
         }
 
         var text = GetText(dialog, error, t);
-        if (dialog.Document.TryGet(new(error), out var document))
+        if (dialog.Document.TryGet(new ByReference<AppError>(error), out var document))
         {
             return document;
         }
 
         document = CreateDocument(text);
-        dialog.Document = new(new(error), document);
+        dialog.Document = new Memo<ByReference<AppError>, DecompiledDocument>(new ByReference<AppError>(error), document);
         return document;
     }
 

@@ -143,7 +143,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static TypeAnchor FixtureType(string name)
     {
-        return new(PathOf(AppStateDriver.FixturePath), $"{AppStateDriver.FixturesNamespace}.{name}");
+        return new TypeAnchor(PathOf(AppStateDriver.FixturePath), $"{AppStateDriver.FixturesNamespace}.{name}");
     }
 
     /// <summary>Where the fixture type <paramref name="name"/> is, as this build saves it.</summary>
@@ -443,7 +443,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static NodeDocumentRecord HandTab(string panel, string title)
     {
-        return new(panel, title, NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
+        return new NodeDocumentRecord(panel, title, NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
     }
 
     [Fact]

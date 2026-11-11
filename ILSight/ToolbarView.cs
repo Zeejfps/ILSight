@@ -181,9 +181,9 @@ internal static class ToolbarView
     {
         return LanguageSegments.GetValue(t, static t =>
     [
-        new(DecompilationLanguage.CSharp, "C#", t.ToolbarDecompileCsharp),
-        new(DecompilationLanguage.IL, "IL", t.ToolbarDisassembleIl),
-        new(DecompilationLanguage.ILWithCSharp, ILWithCSharpLabel, t.ToolbarDisassembleIlWithCsharp),
+        new Segment<DecompilationLanguage>(DecompilationLanguage.CSharp, "C#", t.ToolbarDecompileCsharp),
+        new Segment<DecompilationLanguage>(DecompilationLanguage.IL, "IL", t.ToolbarDisassembleIl),
+        new Segment<DecompilationLanguage>(DecompilationLanguage.ILWithCSharp, ILWithCSharpLabel, t.ToolbarDisassembleIlWithCsharp),
     ]);
     }
 

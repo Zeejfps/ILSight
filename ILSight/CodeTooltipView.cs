@@ -677,7 +677,7 @@ internal static class CodeTooltipView
             return description;
         }
 
-        var runs = new List<RichTextRun> { new(TextOf(item.Term), styles.Bold), new(TermSeparator, styles.Plain) };
+        var runs = new List<RichTextRun> { new RichTextRun(TextOf(item.Term), styles.Bold), new RichTextRun(TermSeparator, styles.Plain) };
         runs.AddRange(description);
         return runs;
     }

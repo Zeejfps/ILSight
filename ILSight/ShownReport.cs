@@ -17,13 +17,13 @@ public static class ShownReports
     /// <summary><paramref name="report"/> written out with <paramref name="t"/>.</summary>
     public static DecompiledDocument GetDocument(ShownReport shown, ExportReport report, Strings t)
     {
-        if (shown.Written.TryGet((new(report), new(t)), out var document))
+        if (shown.Written.TryGet((new ByReference<ExportReport>(report), new ByReference<Strings>(t)), out var document))
         {
             return document;
         }
 
         document = ExportReportText.Write(t, [report]);
-        shown.Written = new((new(report), new(t)), document);
+        shown.Written = new Memo<(ByReference<ExportReport>, ByReference<Strings>), DecompiledDocument>((new ByReference<ExportReport>(report), new ByReference<Strings>(t)), document);
         return document;
     }
 }

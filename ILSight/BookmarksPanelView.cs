@@ -117,8 +117,8 @@ internal static class BookmarksPanelView
     private static FileFilter[] Filters(Strings t)
     {
         return [
-        new(t.BookmarksFileFilter, ["*.json"]),
-        new(t.FileFilterAll, ["*.*"]),
+        new FileFilter(t.BookmarksFileFilter, ["*.json"]),
+        new FileFilter(t.FileFilterAll, ["*.*"]),
     ];
     }
 

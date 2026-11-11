@@ -121,7 +121,7 @@ public sealed class SettingsFormatTests : IDisposable
 
     private static AppSettings ExpectedSettings()
     {
-        return new()
+        return new AppSettings()
         {
             AssemblyLists =
             [
@@ -160,7 +160,7 @@ public sealed class SettingsFormatTests : IDisposable
             ExportColumns = [2f, 0.5f],
             FlagsFilters = new Dictionary<string, SavedFilterState>
             {
-                ["TypeDef/Attributes"] = new(new Dictionary<string, uint[]> { ["Visibility"] = [1u, 2u] },
+                ["TypeDef/Attributes"] = new SavedFilterState(new Dictionary<string, uint[]> { ["Visibility"] = [1u, 2u] },
                     new Dictionary<string, TriState> { ["Sealed"] = TriState.Required }, MatchMode.Any),
             },
             Window = new WindowBounds(10, 20, 1200, 800, true),

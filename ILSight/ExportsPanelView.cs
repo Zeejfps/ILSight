@@ -792,13 +792,13 @@ internal static class ExportsPanelView
 
     private static Spacing Indent(UiTheme theme)
     {
-        return new(NameIndent(theme), 0f, 0f, 0f);
+        return new Spacing(NameIndent(theme), 0f, 0f, 0f);
     }
 
     /// <summary>A row: its top line, then the lines under it, all within the panel's padding.</summary>
     private static Box RowBox(UiTheme theme, uint background)
     {
-        return new()
+        return new Box()
         {
             Width = Sizing.Grow(),
             Gap = 0f,
@@ -810,6 +810,6 @@ internal static class ExportsPanelView
     /// <summary>The row's top line: icon, name and actions, all centered on it.</summary>
     private static Box TopLine(UiTheme theme)
     {
-        return new() { Width = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Center };
+        return new Box() { Width = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Center };
     }
 }

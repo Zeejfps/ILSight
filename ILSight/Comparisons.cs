@@ -238,7 +238,7 @@ public static class Comparisons
 
     public static ComparisonViewRecord SaveRowsView(ComparisonRows rows)
     {
-        return new(rows.OnlyDifferences);
+        return new ComparisonViewRecord(rows.OnlyDifferences);
     }
 
     /// <summary>Shows the rows as <paramref name="saved"/> says they were shown.</summary>

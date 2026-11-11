@@ -376,7 +376,7 @@ public sealed class MetadataTests
 
         var saved = FilterStatePresenter.SaveFilter(state)!;
         var restored = FilterStatePresenter.CreateFilterState(schema);
-        FilterStatePresenter.RestoreFilter(restored, saved with { Groups = new(saved.Groups!) { ["Gone"] = [1u] }, Flags = new(saved.Flags!) { ["Missing"] = TriState.Required } });
+        FilterStatePresenter.RestoreFilter(restored, saved with { Groups = new Dictionary<string, uint[]>(saved.Groups!) { ["Gone"] = [1u] }, Flags = new Dictionary<string, TriState>(saved.Flags!) { ["Missing"] = TriState.Required } });
 
         Assert.Equal(FilterStatePresenter.Describe(state), FilterStatePresenter.Describe(restored));
         Assert.Equal(MatchMode.Any, restored.Mode);

@@ -226,7 +226,7 @@ public sealed class ThemeLoadingTests
         Assert.Same(ThemeCatalogs.FindTheme(catalog, Id("monokai")), ThemeCatalogs.FindTheme(catalog, Id("broken")));
     }
 
-    public static TheoryData<string, ThemeProblem, string> BadInput => new()
+    public static TheoryData<string, ThemeProblem, string> BadInput => new TheoryData<string, ThemeProblem, string>()
     {
         { """[]""", ThemeProblem.RootNotAnObject, "" },
         { """{ "colour": "#FFFFFF" }""", ThemeProblem.UnknownKey, "colour" },

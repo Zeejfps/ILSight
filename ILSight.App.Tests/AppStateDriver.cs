@@ -226,14 +226,14 @@ internal sealed class AppStateDriver
 
     private static SettingsLoadResult NoProblem(AppSettings? settings)
     {
-        return new(settings ?? new AppSettings(), new SettingsProblem.None());
+        return new SettingsLoadResult(settings ?? new AppSettings(), new SettingsProblem.None());
     }
 
     /// <summary>A driver over the app state and screen the app starts with, from <paramref name="loadResult"/>
     /// and <paramref name="arguments"/>, before the app opens any assemblies.</summary>
     public static AppStateDriver Started(SettingsLoadResult loadResult, RunArguments arguments)
     {
-        return new(loadResult, arguments, withScreen: true);
+        return new AppStateDriver(loadResult, arguments, withScreen: true);
     }
 
     /// <summary>A driver that has opened the fixture assembly.</summary>
@@ -247,7 +247,7 @@ internal sealed class AppStateDriver
     /// <summary>A driver with an app state and no screen, which shows that the features need none.</summary>
     public static AppStateDriver WithoutScreen(AppSettings? settings = null)
     {
-        return new(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: false);
+        return new AppStateDriver(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: false);
     }
 
     /// <summary>A driver with no screen that has opened the fixture assembly.</summary>

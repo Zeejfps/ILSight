@@ -5,6 +5,6 @@ internal static class TestJobs
 {
     public static ExportJob Named(string name)
     {
-        return new(name, ExportKind.Project, Path.GetTempPath());
+        return new ExportJob(name, ExportKind.Project, Path.GetTempPath());
     }
 }

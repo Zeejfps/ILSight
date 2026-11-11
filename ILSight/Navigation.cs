@@ -617,7 +617,7 @@ public static class Navigation
     /// <paramref name="inNewTab"/>.</summary>
     internal static TabDestination ChooseDestination(AppState appState, bool inNewTab)
     {
-        return new(appState.Tabs.Active, inNewTab);
+        return new TabDestination(appState.Tabs.Active, inNewTab);
     }
 
     /// <summary>Shows <paramref name="node"/> in the tab <paramref name="destination"/> leads to now, makes

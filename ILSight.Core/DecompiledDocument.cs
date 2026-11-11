@@ -310,7 +310,7 @@ public static class Documents
 
     private static CodeAnchor GetDefinitionAnchor(CodeReference.Entity entity)
     {
-        return new(CodeAnchorKind.Definition, entity.FilePath, MetadataTokens.GetToken(entity.Handle));
+        return new CodeAnchor(CodeAnchorKind.Definition, entity.FilePath, MetadataTokens.GetToken(entity.Handle));
     }
 
     /// <summary>The whole text, lines joined by '\n'.</summary>

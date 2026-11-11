@@ -135,6 +135,6 @@ internal static class BundleContents
 
     private static InvalidDataException Corrupt(SingleFileBundle.Entry entry, string why)
     {
-        return new($"The bundle's entry '{entry.RelativePath}' cannot be read: {why}.");
+        return new InvalidDataException($"The bundle's entry '{entry.RelativePath}' cannot be read: {why}.");
     }
 }

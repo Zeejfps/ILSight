@@ -87,44 +87,44 @@ namespace ILSight.Core.Metadata
 
         static FlagsSchema Bits(Type type, string[] meanings)
         {
-            return new(type, [], meanings.Select(static (m, i) => new IndependentFlag(m, 1u << i)).ToArray());
+            return new FlagsSchema(type, [], meanings.Select(static (m, i) => new IndependentFlag(m, 1u << i)).ToArray());
         }
 
         static List<Entry> DosEntries(PEFile module)
 		{
 			var reader = module.Reader.GetEntireImage().GetReader(0, 64);
 			var entries = new List<Entry>(31) {
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_magic", "Magic Number (MZ)"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_cblp", "Bytes on last page of file"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_cp", "Pages in file"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_crlc", "Relocations"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_cparhdr", "Size of header in paragraphs"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_minalloc", "Minimum extra paragraphs needed"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_maxalloc", "Maximum extra paragraphs needed"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_ss", "Initial (relative) SS value"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_sp", "Initial SP value"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_csum", "Checksum"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_ip", "Initial IP value"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_cs", "Initial (relative) CS value"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_lfarlc", "File address of relocation table"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_ovno", "Overlay number"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res[0]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res[1]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res[2]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res[3]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_oemid", "OEM identifier (for e_oeminfo)"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_oeminfo", "OEM information; e_oemid specific"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[0]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[1]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[2]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[3]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[4]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[5]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[6]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[7]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[8]", "Reserved words"),
-				new(reader.Offset, reader.ReadUInt16(), 2, "e_res2[9]", "Reserved words"),
-				new(reader.Offset, reader.ReadInt32(), 4, "e_lfanew", "File address of new exe header"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_magic", "Magic Number (MZ)"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_cblp", "Bytes on last page of file"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_cp", "Pages in file"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_crlc", "Relocations"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_cparhdr", "Size of header in paragraphs"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_minalloc", "Minimum extra paragraphs needed"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_maxalloc", "Maximum extra paragraphs needed"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_ss", "Initial (relative) SS value"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_sp", "Initial SP value"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_csum", "Checksum"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_ip", "Initial IP value"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_cs", "Initial (relative) CS value"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_lfarlc", "File address of relocation table"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_ovno", "Overlay number"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res[0]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res[1]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res[2]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res[3]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_oemid", "OEM identifier (for e_oeminfo)"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_oeminfo", "OEM information; e_oemid specific"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[0]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[1]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[2]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[3]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[4]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[5]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[6]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[7]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[8]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[9]", "Reserved words"),
+				new Entry(reader.Offset, reader.ReadInt32(), 4, "e_lfanew", "File address of new exe header"),
 			};
 			return entries;
 		}
@@ -135,13 +135,13 @@ namespace ILSight.Core.Metadata
 			var header = headers.CoffHeader;
 			var linkerDateTime = DateTimeOffset.FromUnixTimeSeconds(unchecked((uint)header.TimeDateStamp)).DateTime;
 			return new List<Entry> {
-				new(headers.CoffHeaderStartOffset, (int)header.Machine, 2, "Machine", header.Machine.ToString()),
-				new(headers.CoffHeaderStartOffset + 2, (int)header.NumberOfSections, 2, "Number of Sections", "Number of sections; indicates size of the Section Table, which immediately follows the headers."),
-				new(headers.CoffHeaderStartOffset + 4, header.TimeDateStamp, 4, "Time/Date Stamp", $"{linkerDateTime} (UTC) / {linkerDateTime.ToLocalTime()} - Time and date the file was created in seconds since January 1st 1970 00:00:00 or 0. Note that for deterministic builds this value is meaningless."),
-				new(headers.CoffHeaderStartOffset + 8, header.PointerToSymbolTable, 4, "Pointer to Symbol Table", "Always 0 in .NET executables."),
-				new(headers.CoffHeaderStartOffset + 12, header.NumberOfSymbols, 4, "Number of Symbols", "Always 0 in .NET executables."),
-				new(headers.CoffHeaderStartOffset + 16, (int)header.SizeOfOptionalHeader, 2, "Optional Header Size", "Size of the optional header."),
-				new(headers.CoffHeaderStartOffset + 18, (int)header.Characteristics, 2, "Characteristics", "Flags indicating attributes of the file.", CharacteristicsBits),
+				new Entry(headers.CoffHeaderStartOffset, (int)header.Machine, 2, "Machine", header.Machine.ToString()),
+				new Entry(headers.CoffHeaderStartOffset + 2, (int)header.NumberOfSections, 2, "Number of Sections", "Number of sections; indicates size of the Section Table, which immediately follows the headers."),
+				new Entry(headers.CoffHeaderStartOffset + 4, header.TimeDateStamp, 4, "Time/Date Stamp", $"{linkerDateTime} (UTC) / {linkerDateTime.ToLocalTime()} - Time and date the file was created in seconds since January 1st 1970 00:00:00 or 0. Note that for deterministic builds this value is meaningless."),
+				new Entry(headers.CoffHeaderStartOffset + 8, header.PointerToSymbolTable, 4, "Pointer to Symbol Table", "Always 0 in .NET executables."),
+				new Entry(headers.CoffHeaderStartOffset + 12, header.NumberOfSymbols, 4, "Number of Symbols", "Always 0 in .NET executables."),
+				new Entry(headers.CoffHeaderStartOffset + 16, (int)header.SizeOfOptionalHeader, 2, "Optional Header Size", "Size of the optional header."),
+				new Entry(headers.CoffHeaderStartOffset + 18, (int)header.Characteristics, 2, "Characteristics", "Flags indicating attributes of the file.", CharacteristicsBits),
 			};
 		}
 

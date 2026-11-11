@@ -10,7 +10,7 @@ public sealed class LocalizationTests
 {
     public static TheoryData<Locale> AllLocales()
     {
-        return new(Enum.GetValues<Locale>());
+        return new TheoryData<Locale>(Enum.GetValues<Locale>());
     }
 
     [Fact]

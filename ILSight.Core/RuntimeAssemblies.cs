@@ -16,11 +16,11 @@ public sealed class InstalledRuntime
 {
     public InstalledRuntime()
     {
-        Directories = new(RuntimeAssemblies.FindDirectories, LazyThreadSafetyMode.PublicationOnly);
-        DirectoryPaths = new(() => Directories.Value.Select(static d => d.Path).ToImmutableArray(), LazyThreadSafetyMode.PublicationOnly);
-        FilesByName = new(() => RuntimeAssemblies.IndexFiles(this), LazyThreadSafetyMode.PublicationOnly);
-        Assemblies = new(() => RuntimeAssemblies.ScanAssemblies(this), LazyThreadSafetyMode.PublicationOnly);
-        Presets = new(AssemblyListPresets.FindInstalled);
+        Directories = new Lazy<ImmutableArray<(string Framework, string Path)>>(RuntimeAssemblies.FindDirectories, LazyThreadSafetyMode.PublicationOnly);
+        DirectoryPaths = new Lazy<ImmutableArray<string>>(() => Directories.Value.Select(static d => d.Path).ToImmutableArray(), LazyThreadSafetyMode.PublicationOnly);
+        FilesByName = new Lazy<IReadOnlyDictionary<string, string>>(() => RuntimeAssemblies.IndexFiles(this), LazyThreadSafetyMode.PublicationOnly);
+        Assemblies = new Lazy<ImmutableArray<RuntimeAssembly>>(() => RuntimeAssemblies.ScanAssemblies(this), LazyThreadSafetyMode.PublicationOnly);
+        Presets = new Lazy<ImmutableArray<AssemblyListPreset>>(AssemblyListPresets.FindInstalled);
     }
 
     internal Lazy<ImmutableArray<(string Framework, string Path)>> Directories { get; }

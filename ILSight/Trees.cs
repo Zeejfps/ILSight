@@ -549,17 +549,17 @@ public static class Trees
 
     private static TreeRow CreateLoadingRow(BrowseTree tree)
     {
-        return new(LoadingLabel, NodeIcons.Loading(tree.IconColors, tree.Icons), tree.Theme.TextMuted, Spinning: true);
+        return new TreeRow(LoadingLabel, NodeIcons.Loading(tree.IconColors, tree.Icons), tree.Theme.TextMuted, Spinning: true);
     }
 
     private static TreeRow CreateFailedRow(BrowseTree tree, Exception error)
     {
-        return new($"Error: {error.Message}", NodeIcons.Failed(tree.IconColors, tree.Icons), Tooltip: error.Message);
+        return new TreeRow($"Error: {error.Message}", NodeIcons.Failed(tree.IconColors, tree.Icons), Tooltip: error.Message);
     }
 
     public static TreeRow GetRow(BrowseTree tree, BrowseNode node)
     {
-        return new(
+        return new TreeRow(
             GetRowLabel(tree, node),
             NodeIcons.Icon(node, tree.IconColors, tree.Icons),
             NodeDefinitions.GetVisibility(node.Subject).IsPublicApi ? 0u : tree.Theme.TextMuted,

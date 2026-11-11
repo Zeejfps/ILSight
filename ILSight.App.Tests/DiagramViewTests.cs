@@ -149,7 +149,7 @@ public sealed class DiagramViewTests
 
     private static PointF CenterOf(UiRect rect)
     {
-        return new(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+        return new PointF(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
     }
 
     /// <summary>Clicks a little in from the left of the text drawn in <paramref name="rect"/>.</summary>

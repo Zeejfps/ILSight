@@ -55,7 +55,7 @@ public sealed record TargetFrameworkId
 
     internal static TargetFrameworkId Of(string name, string version)
     {
-        return new(name + VersionMark + version, name, version);
+        return new TargetFrameworkId(name + VersionMark + version, name, version);
     }
 
     /// <summary>The id as ILSpy shows it, e.g. <c>.NETCoreApp, v10.0</c>.</summary>

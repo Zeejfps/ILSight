@@ -222,7 +222,7 @@ public static class DiagramLayouts
 
     private static PointF Place(MsaglPoint point, MsaglPoint origin)
     {
-        return new((float)(point.X - origin.X), (float)(point.Y - origin.Y));
+        return new PointF((float)(point.X - origin.X), (float)(point.Y - origin.Y));
     }
 
     private static List<LinkRoute> RoutesOf(List<Edge> edges, MsaglPoint origin)

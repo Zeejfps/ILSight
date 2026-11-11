@@ -75,7 +75,7 @@ public static class NuGetConfigs
     /// <summary>What a config that says nothing means: nuget.org, and the default packages folder.</summary>
     public static NuGetConfig CreateDefault()
     {
-        return new([NuGetSource.NuGetOrg], FindGlobalPackagesFolder(null, "", ReadPackagesFolderVariable()));
+        return new NuGetConfig([NuGetSource.NuGetOrg], FindGlobalPackagesFolder(null, "", ReadPackagesFolderVariable()));
     }
 
     private static string? ReadPackagesFolderVariable()

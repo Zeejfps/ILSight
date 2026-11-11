@@ -131,7 +131,7 @@ internal static class OmnibarView
     /// top of this function, on the way to returning what is already known.</summary>
     private static IReadOnlyList<BrowseNode> ListShown(CrumbMenu menu, IReadOnlyList<BrowseNode> children, BrowseTree tree)
     {
-        if (menu.Listed.TryGet((new(children), menu.Filter), out var shown))
+        if (menu.Listed.TryGet((new ByReference<IReadOnlyList<BrowseNode>>(children), menu.Filter), out var shown))
         {
             return shown;
         }
@@ -143,7 +143,7 @@ internal static class OmnibarView
     private static void FilterChildren(CrumbMenu menu, IReadOnlyList<BrowseNode> children, BrowseTree tree)
     {
         var shown = children.Where(c => HoldsFilter(menu, Trees.GetRowLabel(tree, c))).ToList();
-        menu.Listed = new((new(children), menu.Filter), shown);
+        menu.Listed = new Memo<(ByReference<IReadOnlyList<BrowseNode>>, string), IReadOnlyList<BrowseNode>>((new ByReference<IReadOnlyList<BrowseNode>>(children), menu.Filter), shown);
         SelectWaitingChild(menu);
         ItemSelections.DropIfGone(menu.Selection, menu.Shown);
         SelectFirstMatch(menu);
@@ -196,12 +196,12 @@ internal static class OmnibarView
     /// Runs each frame, so listing the crumbs is a function of its own, for the reason <see cref="ListShown"/> gives.</summary>
     private static void FollowPath(Breadcrumb breadcrumb, BrowseNode? node, BrowseTree tree)
     {
-        if (breadcrumb.Path.TryGet((new(node), tree.Revision), out _))
+        if (breadcrumb.Path.TryGet((new ByReference<BrowseNode>(node), tree.Revision), out _))
         {
             return;
         }
 
-        breadcrumb.Path = new((new(node), tree.Revision), ListCrumbs(node, tree));
+        breadcrumb.Path = new Memo<(ByReference<BrowseNode>, int), IReadOnlyList<Crumb>>((new ByReference<BrowseNode>(node), tree.Revision), ListCrumbs(node, tree));
     }
 
     private static Crumb[] ListCrumbs(BrowseNode? node, BrowseTree tree)
@@ -830,7 +830,7 @@ internal static class OmnibarView
     /// <summary>A row of a list that has focus, as the search box holds it for the suggestions.</summary>
     private static Box SuggestionBox(UiTheme theme, bool selected, bool hovered)
     {
-        return new()
+        return new Box()
         {
             Height = theme.RowHeight,
             Padding = new Spacing(theme.ShellPaddingX, 0f),

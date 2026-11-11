@@ -32,7 +32,7 @@ internal sealed class MemoryIconAssets
 
     public static implicit operator IconAssets(MemoryIconAssets assets)
     {
-        return new(assets.Read, assets.GetFamily);
+        return new IconAssets(assets.Read, assets.GetFamily);
     }
 
     public IconAsset Read(string path)
@@ -191,7 +191,7 @@ public sealed class IconThemeLoadingTests
         Assert.Equal("lucide", Assert.IsType<IconValue.Glyph>(theme.Values["node.method"]).Font);
     }
 
-    public static TheoryData<string, ThemeProblem, string, string> BadInput => new()
+    public static TheoryData<string, ThemeProblem, string, string> BadInput => new TheoryData<string, ThemeProblem, string, string>()
     {
         { """{ "icons": { "node.klass": { "font": "lucide", "glyph": "E061" } } }""", ThemeProblem.UnknownKey, "icons.node.klass", "" },
         { """{ "icons": { "node.class": { "font": "lucide", "glyph": "XYZ" } } }""", ThemeProblem.NotACodepoint, "icons.node.class", "XYZ" },

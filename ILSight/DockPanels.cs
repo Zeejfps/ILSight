@@ -70,7 +70,7 @@ public static class DockPanels
 
     public static DockTab Tab(Strings t, AppIcons icons, DockView view)
     {
-        return new(Title(t, view), Icon: Icon(icons, view));
+        return new DockTab(Title(t, view), Icon: Icon(icons, view));
     }
 
     private static string Title(Strings t, DockView view)
@@ -91,7 +91,7 @@ public static class DockPanels
     /// <summary>The view's icon in <paramref name="icons"/>, on its tab and in the menu that opens it.</summary>
     public static UiIcon Icon(AppIcons icons, DockView view)
     {
-        return new(Glyph(icons, view));
+        return new UiIcon(Glyph(icons, view));
     }
 
     private static IconGlyph Glyph(AppIcons icons, DockView view)

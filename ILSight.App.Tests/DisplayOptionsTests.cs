@@ -723,7 +723,7 @@ public sealed class MatchingBracketsTests
 
     private static BracketPair Pair(int openLine, int openColumn, int closeLine, int closeColumn)
     {
-        return new(new TextPosition(openLine, openColumn), new TextPosition(closeLine, closeColumn));
+        return new BracketPair(new TextPosition(openLine, openColumn), new TextPosition(closeLine, closeColumn));
     }
 
     [Theory]

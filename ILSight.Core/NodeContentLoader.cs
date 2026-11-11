@@ -193,13 +193,13 @@ public static class NodeContentLoader
 
     private static DocumentRequest.Resource ResourceRequest(BrowseNode node, ResourceData resource)
     {
-        return new(node.SourceModule, resource.Description, resource.ReadData, node.Text, BrowseNodes.GetFullName(node));
+        return new DocumentRequest.Resource(node.SourceModule, resource.Description, resource.ReadData, node.Text, BrowseNodes.GetFullName(node));
     }
 
     /// <summary>A comment a resource, describing each that <paramref name="node"/> lists.</summary>
     private static SummaryInfo.Comments DescribeResources(BrowseSession session, BrowseNode node)
     {
-        return new(BrowseSessions.ListChildren(session, node).Select(static c => BrowseNodes.GetResourceData(c)).OfType<ResourceData>().Select(static r => r.Description).ToList());
+        return new SummaryInfo.Comments(BrowseSessions.ListChildren(session, node).Select(static c => BrowseNodes.GetResourceData(c)).OfType<ResourceData>().Select(static r => r.Description).ToList());
     }
 
     /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists.</summary>
@@ -295,7 +295,7 @@ public static class NodeContentLoader
 
     private static ForwardedLine ForwardedLineOf(BrowseNode node, NodeSubject.ForwardedType forwarded)
     {
-        return new(forwarded.Value.Label, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination);
+        return new ForwardedLine(forwarded.Value.Label, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination);
     }
 
     private static SpanKind UsedMemberSpan(IMember member)

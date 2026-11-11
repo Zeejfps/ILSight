@@ -31,12 +31,12 @@ public readonly record struct ViewPosition
 
     public static ViewPosition OfCode(CodeViewPosition position)
     {
-        return new(Kind.Code, position, default);
+        return new ViewPosition(Kind.Code, position, default);
     }
 
     public static ViewPosition OfGrid(GridPosition position)
     {
-        return new(Kind.Grid, default, position);
+        return new ViewPosition(Kind.Grid, default, position);
     }
 
     /// <summary>The code view's position, or null when this is a grid's.</summary>

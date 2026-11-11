@@ -17,13 +17,13 @@ public static class MatchingBrackets
 
     public static BracketPair? Find(CodeViewState state, DecompiledDocument document, TextPosition caret)
     {
-        if (state.Brackets.TryGet((new(document), caret), out var brackets))
+        if (state.Brackets.TryGet((new ByReference<DecompiledDocument>(document), caret), out var brackets))
         {
             return brackets;
         }
 
         brackets = Match(document, caret);
-        state.Brackets = new((new(document), caret), brackets);
+        state.Brackets = new Memo<(ByReference<DecompiledDocument>, TextPosition), BracketPair?>((new ByReference<DecompiledDocument>(document), caret), brackets);
         return brackets;
     }
 

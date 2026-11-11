@@ -287,7 +287,7 @@ public static class ApiEntries
 
     private static ApiSide SideOf(Compared compared)
     {
-        return new(compared.Reference, ApiDeclarations.Of(compared.Entity));
+        return new ApiSide(compared.Reference, ApiDeclarations.Of(compared.Entity));
     }
 
     /// <summary>The nested types and members of <paramref name="compared"/> that <paramref name="scope"/>

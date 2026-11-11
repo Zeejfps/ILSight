@@ -17,13 +17,13 @@ public static class TabPlaceholders
     /// <summary>The note for <paramref name="content"/>, written with <paramref name="t"/>.</summary>
     public static DecompiledDocument GetDocument(TabPlaceholder placeholder, TabContent content, Strings t)
     {
-        if (placeholder.Written.TryGet((content, new(t)), out var document))
+        if (placeholder.Written.TryGet((content, new ByReference<Strings>(t)), out var document))
         {
             return document;
         }
 
         document = Documents.CreateFromText("", $"// {Write(t, content)}");
-        placeholder.Written = new((content, new(t)), document);
+        placeholder.Written = new Memo<(TabContent, ByReference<Strings>), DecompiledDocument>((content, new ByReference<Strings>(t)), document);
         return document;
     }
 

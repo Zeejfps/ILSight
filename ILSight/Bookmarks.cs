@@ -642,7 +642,7 @@ public static class Bookmarks
     /// <summary>This bookmark as ILSpy's bookmarks file holds it, with this app's place and language.</summary>
     public static BookmarkRecord CreateRecord(Bookmark bookmark)
     {
-        return new(
+        return new BookmarkRecord(
         bookmark.Name,
         bookmark.Enabled,
         bookmark.Anchor?.FilePath ?? bookmark.Place.FilePath,

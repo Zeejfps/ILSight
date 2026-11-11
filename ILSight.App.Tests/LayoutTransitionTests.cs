@@ -22,7 +22,7 @@ public sealed class LayoutTransitionTests
 
     private static TypeLayout Arrange(float vehicleHeight, bool withCar = true)
     {
-        var cards = new List<MeasuredCard> { new(Vehicle, 120f, vehicleHeight) };
+        var cards = new List<MeasuredCard> { new MeasuredCard(Vehicle, 120f, vehicleHeight) };
         if (withCar)
         {
             cards.Add(new MeasuredCard(Car, 100f, 60f));

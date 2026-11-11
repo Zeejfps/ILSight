@@ -305,7 +305,7 @@ public static class NodeIcons
     /// <paramref name="accessibility"/>.</summary>
     public static UiIcon Icon(NodeIcon kind, NodeAccessibility accessibility, NodeIconPalette palette, AppIcons icons)
     {
-        return new(Glyph(kind, icons), GetColor(palette, kind), Overlay: Overlay(accessibility, icons), OverlayColor: palette.Restricted);
+        return new UiIcon(Glyph(kind, icons), GetColor(palette, kind), Overlay: Overlay(accessibility, icons), OverlayColor: palette.Restricted);
     }
 
     /// <summary>The color <paramref name="palette"/> draws a node of <paramref name="kind"/> in.</summary>
@@ -317,13 +317,13 @@ public static class NodeIcons
     /// <summary>The icon of the row shown while a node's children are being read.</summary>
     public static UiIcon Loading(NodeIconPalette palette, AppIcons icons)
     {
-        return new(icons.NodeLoading, palette.Neutral);
+        return new UiIcon(icons.NodeLoading, palette.Neutral);
     }
 
     /// <summary>The icon of the row shown in place of children that could not be read.</summary>
     public static UiIcon Failed(NodeIconPalette palette, AppIcons icons)
     {
-        return new(icons.NodeError, palette.Error);
+        return new UiIcon(icons.NodeError, palette.Error);
     }
 
     /// <summary>Records <paramref name="kind"/>'s <see cref="Icon"/> as the tree shows it, in the screen's

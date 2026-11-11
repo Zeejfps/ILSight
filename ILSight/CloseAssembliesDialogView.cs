@@ -99,7 +99,7 @@ internal static class CloseAssembliesDialogView
     /// <summary>A bordered list on the field color that fills the dialog, its rows clipped to its corners.</summary>
     private static Box ListFrame(UiTheme theme)
     {
-        return new()
+        return new Box()
         {
             Height = Sizing.Grow(),
             Gap = 0f,

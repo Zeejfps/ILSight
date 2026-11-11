@@ -233,14 +233,14 @@ namespace ILSight.Core.Metadata
 		/// <summary>Applies what <see cref="SaveFilter"/> kept, skipping groups and flags the schema no longer has.</summary>
 		public static void RestoreFilter(FilterState state, SavedFilterState saved)
 		{
-			foreach (var (group, values) in saved.Groups ?? new())
+			foreach (var (group, values) in saved.Groups ?? new Dictionary<string, uint[]>())
 			{
 				if (state.Groups.ContainsKey(group))
                 {
                     state.Groups[group] = values.ToImmutableHashSet();
                 }
             }
-			foreach (var (flag, wanted) in saved.Flags ?? new())
+			foreach (var (flag, wanted) in saved.Flags ?? new Dictionary<string, TriState>())
 			{
 				if (state.Flags.ContainsKey(flag))
                 {

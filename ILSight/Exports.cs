@@ -726,7 +726,7 @@ public static class Exports
         }
 
         holdsFiles = HoldsFiles(setup.Folder.Trim());
-        setup.FolderCheck = new(setup.Folder, holdsFiles);
+        setup.FolderCheck = new Memo<string, bool>(setup.Folder, holdsFiles);
         return holdsFiles;
     }
 
@@ -754,7 +754,7 @@ public static class Exports
         }
 
         isMissing = IsFileMissing(setup.StrongNameKeyFile.Trim());
-        setup.KeyFileCheck = new(setup.StrongNameKeyFile, isMissing);
+        setup.KeyFileCheck = new Memo<string, bool>(setup.StrongNameKeyFile, isMissing);
         return isMissing;
     }
 

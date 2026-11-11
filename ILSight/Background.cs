@@ -21,13 +21,13 @@ public static class Background
 {
     public static BackgroundWork<T> Run<T>(Func<T> work)
     {
-        return new(Task.Run(work));
+        return new BackgroundWork<T>(Task.Run(work));
     }
 
     /// <summary>Waits for <paramref name="task"/> as <see cref="BackgroundWork{T}"/> does.</summary>
     public static BackgroundWork<T> Wait<T>(Task<T> task)
     {
-        return new(task);
+        return new BackgroundWork<T>(task);
     }
 
     /// <summary>Lets <paramref name="workflow"/>, started on the UI thread, run to its end, counted in
@@ -66,7 +66,7 @@ public readonly struct BackgroundWork<T>(Task<T> task)
 {
     public Awaiter GetAwaiter()
     {
-        return new(task);
+        return new Awaiter(task);
     }
 
     public readonly struct Awaiter(Task<T> task) : INotifyCompletion

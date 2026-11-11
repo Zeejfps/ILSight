@@ -110,17 +110,17 @@ internal readonly struct CodeHover
     /// the chip of the collapsed fold <paramref name="chip"/> or none.</summary>
     public static CodeHover OnText(int line, int? span, int? chip)
     {
-        return new(Place.Text, line, span, chip);
+        return new CodeHover(Place.Text, line, span, chip);
     }
 
     public static CodeHover OnChevron(int fold)
     {
-        return new(Place.Chevron, 0, null, fold);
+        return new CodeHover(Place.Chevron, 0, null, fold);
     }
 
     public static CodeHover OnMark(int line)
     {
-        return new(Place.Mark, line, null, null);
+        return new CodeHover(Place.Mark, line, null, null);
     }
 
     /// <summary>The span under the pointer, or null.</summary>

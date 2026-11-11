@@ -227,7 +227,7 @@ internal static class ExportDialogView
     /// <summary>A bordered list on the field color, its rows clipped to its rounded corners.</summary>
     private static Box ListFrame(UiTheme theme)
     {
-        return new()
+        return new Box()
         {
             Gap = 0f,
             Background = theme.Field,
