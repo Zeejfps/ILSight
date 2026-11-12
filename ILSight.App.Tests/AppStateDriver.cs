@@ -1,6 +1,5 @@
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
-using ILSight.Localization;
 using ILSight.Exporting;
 using ILSight.Commanding;
 using ILSight.AppSettingsFormat;

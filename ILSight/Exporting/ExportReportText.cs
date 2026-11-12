@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using ILSight.Core;
-using ILSight.Localization;
 
 namespace ILSight.Exporting;
 

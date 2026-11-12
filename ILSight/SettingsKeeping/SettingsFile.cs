@@ -1,5 +1,4 @@
 using ILSight.Core;
-using ILSight.Localization;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;

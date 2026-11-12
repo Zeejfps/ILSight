@@ -1,7 +1,6 @@
 using ZGF.Desktop;
 using ZGF.KeyboardModule;
 using ILSight.Core;
-using ILSight.Localization;
 using ILSight.CodeView;
 using ILSight.Bookmarking;
 using static ILSight.AssemblyListKeeping.AssemblyLists;

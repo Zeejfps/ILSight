@@ -2,7 +2,6 @@ using ZGF.Desktop;
 using ZGF.Geometry;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Localization;
 using static ILSight.Preferences;
 using static ILSight.SettingsKeeping.Settings;
 using ILSight.AppSettingsFormat;

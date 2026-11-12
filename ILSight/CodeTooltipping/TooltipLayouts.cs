@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using ZGF.Gui;
 using ILSight.Core;
-using ILSight.Localization;
 
 namespace ILSight.CodeTooltipping;
 

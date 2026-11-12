@@ -1,6 +1,5 @@
 using ZGF.Desktop;
 using ZGF.Gui.Testing;
-using ILSight.Localization;
 using ILSight.MainScreen;
 using static ILSight.AppHosting.AppFrames;
 

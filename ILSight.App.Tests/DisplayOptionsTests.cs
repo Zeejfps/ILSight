@@ -585,7 +585,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("English")).Frame();
         app.Frames.ClickOn(Selector.WithText("Deutsch")).Frame();
 
-        Assert.Equal(Localization.Locale.De, app.AppState.Locale);
+        Assert.Equal(ILSight.Locale.De, app.AppState.Locale);
         Assert.True(app.Frames.Drew("Sprache"));
     }
 

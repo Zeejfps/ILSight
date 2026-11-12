@@ -1,4 +1,4 @@
-namespace ILSight.Localization;
+namespace ILSight;
 
 public enum Locale
 {

@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using ILSight.Core;
-using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.NuGet;
 using ILSight.AppHosting;

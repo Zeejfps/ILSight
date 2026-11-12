@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace ILSight.Localization;
+namespace ILSight;
 
 public static class Locales
 {

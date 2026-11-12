@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.Localization;
 
 namespace ILSight.DocumentViewing;
 

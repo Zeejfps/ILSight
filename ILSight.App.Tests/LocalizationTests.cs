@@ -1,7 +1,6 @@
 using static ILSight.SettingsKeeping.Settings;
 using System.Globalization;
 using System.Reflection;
-using ILSight.Localization;
 
 namespace ILSight.App.Tests;
 

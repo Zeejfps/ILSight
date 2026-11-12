@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.Localization;
 using static ILSight.SettingsKeeping.Settings;
 using static ILSight.Theming;
 using ILSight.CodeView;

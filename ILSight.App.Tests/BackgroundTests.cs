@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using ILSight.Localization;
 
 namespace ILSight.App.Tests;
 

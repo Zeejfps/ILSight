@@ -5,7 +5,6 @@ using ZGF.Gui.Immediate;
 using TextOverflow = ZGF.Gui.Immediate.TextOverflow;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Localization;
 
 namespace ILSight.NuGet;
 

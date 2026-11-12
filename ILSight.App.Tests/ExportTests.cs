@@ -1,7 +1,6 @@
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.Exporting;
 using static ILSight.Exporting.Exports;

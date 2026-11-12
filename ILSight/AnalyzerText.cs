@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using ILSight.Core.Analysis;
-using ILSight.Localization;
 
 namespace ILSight;
 

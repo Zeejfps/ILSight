@@ -1,5 +1,4 @@
 using ILSight.Core;
-using ILSight.Localization;
 using ILSight.Exporting;
 using ILSight.DocumentViewing;
 using static ILSight.Exporting.Exports;
@@ -248,7 +247,7 @@ public sealed class ExportsPanelTests : IDisposable
     [InlineData(3720, "1h 02m")]
     public void Durations_read_as_people_say_them(double seconds, string expected)
     {
-        var t = ILSight.Localization.Strings.For(ILSight.Localization.Locale.En);
+        var t = ILSight.Strings.For(ILSight.Locale.En);
 
         Assert.Equal(expected, ExportReportText.FormatDuration(t, TimeSpan.FromSeconds(seconds)));
     }

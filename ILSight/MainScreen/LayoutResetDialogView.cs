@@ -1,6 +1,5 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using ILSight.Localization;
 using static ILSight.ScreenLayout;
 
 namespace ILSight.MainScreen;

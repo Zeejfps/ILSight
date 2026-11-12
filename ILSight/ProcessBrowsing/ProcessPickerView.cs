@@ -5,7 +5,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
 using ILSight.Core.Processes;
-using ILSight.Localization;
 using ILSight.Commanding;
 using ILSight.UserState;
 using ILSight.AppHosting;

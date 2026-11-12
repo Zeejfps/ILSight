@@ -1,7 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Desktop;
 using ILSight.Core;
-using ILSight.Localization;
 using ILSight.Exporting;
 using ILSight.Bookmarking;
 using ILSight.CodeTooltipping;

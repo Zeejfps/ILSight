@@ -1,5 +1,4 @@
 using ILSight.Core;
-using ILSight.Localization;
 using ILSight.Exporting;
 
 namespace ILSight;

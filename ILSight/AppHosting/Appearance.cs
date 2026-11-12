@@ -1,4 +1,3 @@
-using ILSight.Localization;
 
 namespace ILSight.AppHosting;
 

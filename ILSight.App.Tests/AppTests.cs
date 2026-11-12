@@ -4,7 +4,6 @@ using ZGF.Gui;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.BuiltInAssets;
 using ILSight.Searching;
@@ -764,7 +763,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.WithText("Language"));
         app.Frames.ClickOn(Selector.WithText("Deutsch"));
 
-        Assert.Equal(Localization.Locale.De, app.AppState.Locale);
+        Assert.Equal(ILSight.Locale.De, app.AppState.Locale);
     }
 
     [Fact]

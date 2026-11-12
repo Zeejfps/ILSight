@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using ILSight.Core;
-using ILSight.Localization;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.IconTheming;
 using static ILSight.ScreenLayout;

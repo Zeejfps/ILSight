@@ -1,4 +1,3 @@
-using ILSight.Localization;
 using ZGF.Gui.Immediate.Widgets;
 using ZGF.Gui.Immediate;
 using System.Diagnostics;
