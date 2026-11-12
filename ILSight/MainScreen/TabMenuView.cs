@@ -3,7 +3,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Commanding;
 using static ILSight.DocumentPanels;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>The context menu of a document's tab: keeping the preview tab open, and closing the tab, the
 /// other documents of its group, all of them, or those to its left or right.</summary>

@@ -11,7 +11,7 @@ using static ILSight.Assemblies;
 using static ILSight.Diagrams;
 using static ILSight.ScreenLayout;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 internal static class TreePaneView
 {

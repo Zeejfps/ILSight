@@ -6,7 +6,7 @@ using ILSight.Localization;
 using ILSight.Commanding;
 using static ILSight.Preferences;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>The decompiler's toggles, grouped by the C# version that brought each feature, newest
 /// first, then the rest. Every change shows in the open documents at once. Features newer than the

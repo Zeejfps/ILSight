@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.MainScreen;
 
 namespace ILSight;
 

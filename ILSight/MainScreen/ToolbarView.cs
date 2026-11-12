@@ -10,7 +10,7 @@ using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 internal static class ToolbarView
 {

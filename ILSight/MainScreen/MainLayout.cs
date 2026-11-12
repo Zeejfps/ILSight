@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>Where the main window's panels go: the documents together right of the assemblies, and
 /// the other views beside or below them. Methods that place a panel by the documents take the active

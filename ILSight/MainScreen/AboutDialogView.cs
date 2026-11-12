@@ -2,9 +2,9 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Localization;
 using ILSight.Commanding;
-using static ILSight.Dialogs;
+using static ILSight.MainScreen.Dialogs;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>The app's icon beside its name, its version and what can be done about updates, over the
 /// versions of the decompiler, the runtime and the system; then the licenses folder where the app ships

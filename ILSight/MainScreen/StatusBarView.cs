@@ -4,7 +4,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Exporting;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>The shown node's full name at the left, ellipsized, and a content-sized cluster at the
 /// right: activity, errors, language and the assembly count.</summary>

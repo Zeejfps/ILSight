@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using ICSharpCode.Decompiler.CSharp;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>The versions of the app, the decompiler it is built on, the runtime and the system it runs
 /// on, as the About dialog shows them.</summary>

@@ -3,7 +3,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Localization;
 using static ILSight.ScreenLayout;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>Asks whether to put every panel back where it started before the layout is reset.</summary>
 internal static class LayoutResetDialogView

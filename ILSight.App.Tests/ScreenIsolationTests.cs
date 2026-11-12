@@ -11,6 +11,7 @@ using ILSight.AssemblyListKeeping;
 using ILSight.MetadataGridArea;
 using ILSight.NuGet;
 using ILSight.Searching;
+using ILSight.MainScreen;
 using static ILSight.Settings;
 using static ILSight.ScreenLayout;
 

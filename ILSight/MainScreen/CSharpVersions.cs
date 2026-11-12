@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>The C# versions offered, oldest first, with the names ILSpy gives them.</summary>
 internal static class CSharpVersions

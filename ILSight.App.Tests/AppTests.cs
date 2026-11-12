@@ -8,6 +8,7 @@ using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.BuiltInAssets;
 using ILSight.Searching;
+using ILSight.MainScreen;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;

@@ -4,6 +4,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.BuiltInAssets;
+using ILSight.MainScreen;
 using static ILSight.ScreenLayout;
 
 namespace ILSight.App.Tests;

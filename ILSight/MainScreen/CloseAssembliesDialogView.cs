@@ -6,7 +6,7 @@ using ILSight.Commanding;
 using static ILSight.AssemblyClosing;
 using static ILSight.Assemblies;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>Draws the "close assemblies" dialog: every item of the list to tick, filtered by name or path as
 /// the export dialog's assemblies are, and Close, which closes the ticked ones.</summary>

@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>A group of the decompiler's toggles as the options panel shows it: its key, the group and its
 /// toggles.</summary>

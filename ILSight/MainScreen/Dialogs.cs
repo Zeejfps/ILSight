@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>The dialogs of the screen as a whole.</summary>
 public static class Dialogs

@@ -16,7 +16,7 @@ using ILSight.NuGet;
 using ILSight.Searching;
 using static ILSight.DocumentPanels;
 
-namespace ILSight;
+namespace ILSight.MainScreen;
 
 /// <summary>The whole window: menu bar, toolbar, tree | documents and search, status bar, and the
 /// dialogs over them.</summary>
