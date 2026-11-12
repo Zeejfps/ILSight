@@ -168,9 +168,10 @@ public sealed class NuGetFeedTests
         fake.Answer("https://feed.test/reg/tiny/1.0.0.json", registration);
         fake.Answer("https://feed.test/catalog/array.json", "[]");
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
+        var id = Packages.Id("Tiny");
+        var version = new FeedVersion(Packages.Version("1.0.0"), 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"));
 
-        await Assert.ThrowsAsync<InvalidDataException>(() =>
-            NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion(Packages.Version("1.0.0"), 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"))));
+        await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.ReadDetailsAsync(feed, id, version));
     }
 
     [Fact]

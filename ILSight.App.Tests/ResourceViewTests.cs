@@ -170,7 +170,7 @@ public sealed class ResourceViewTests
         var first = app.TextRect("first line");
         var more = app.TextRect("+1 lines");
 
-        Assert.Throws<InvalidOperationException>(() => app.TextRect("second line"));
+        Assert.False(app.Frames.Drew("second line"));
         Assert.True(more.X > first.X + first.Width);
         Assert.Equal(first.Y, more.Y, 4f);
     }
@@ -197,7 +197,7 @@ public sealed class ResourceViewTests
         Assert.Equal(theme.RowHeight, MathF.Abs(second.Y - first.Y), 0.5f);
         Assert.Equal(color, app.Frames.TextColor("second line"));
         Assert.Equal(2 * theme.RowHeight, MathF.Abs(app.TextRect("Notes.xml").Y - app.TextRect("Multiline").Y), 0.5f);
-        Assert.Throws<InvalidOperationException>(() => app.TextRect("+1 lines"));
+        Assert.False(app.Frames.Drew("+1 lines"));
     }
 
     [Fact]

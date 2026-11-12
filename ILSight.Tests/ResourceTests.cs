@@ -113,7 +113,9 @@ public sealed class ResourceTests
     [Fact]
     public void Anything_else_is_no_picture()
     {
-        Assert.Throws<InvalidDataException>(() => ResourceImages.DecodeImage(Fixture("blob.bin")));
+        var blob = Fixture("blob.bin");
+
+        Assert.Throws<InvalidDataException>(() => ResourceImages.DecodeImage(blob));
         Assert.Throws<InvalidDataException>(() => ResourceImages.DecodeImage([0x89, (byte)'P', (byte)'N', (byte)'G', 1, 2]));
     }
 
