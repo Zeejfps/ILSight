@@ -24,12 +24,12 @@ public static class Analysis
     private static List<AnalyzerNode> ListChildren(AnalyzerSymbolNode symbol)
     {
         var children = new List<AnalyzerNode>();
-        foreach (var accessor in Analyzers.AccessorsOf(symbol.Symbol))
+        foreach (var accessor in symbol.Symbol.Accessors)
         {
             children.Add(new AnalyzerSymbolNode { Symbol = accessor });
         }
 
-        foreach (var kind in Analyzers.KindsFor(symbol.Symbol))
+        foreach (var kind in symbol.Symbol.Kinds)
         {
             children.Add(new AnalyzerKindNode { Subject = symbol.Symbol, Kind = kind });
         }
@@ -141,7 +141,7 @@ public static class Analysis
     /// the root analyzing it, or null when it cannot be analyzed.</summary>
     public static AnalyzerSymbolNode? AddToAnalyzer(AppState appState, BrowseNode node)
     {
-        var symbol = Analyzers.Of(node);
+        var symbol = node.Analysis;
         if (symbol is null)
         {
             return null;
@@ -188,7 +188,7 @@ public static class Analysis
     /// <paramref name="viewCommands"/> has the view show; removes it when that cannot be analyzed.</summary>
     public static void AnalyzeFound(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, BrowseNode node)
     {
-        var symbol = Analyzers.Of(node);
+        var symbol = node.Analysis;
         if (symbol is null)
         {
             analyzer.RemoveRoot(root);

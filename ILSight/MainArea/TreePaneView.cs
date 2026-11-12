@@ -460,7 +460,7 @@ internal static class TreePaneView
         }
 
         DocsItem(ui, node);
-        var analysis = Analyzers.Of(node);
+        var analysis = node.Analysis;
         if (analysis is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
         {
             Commands.Later(ui.State, (screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));

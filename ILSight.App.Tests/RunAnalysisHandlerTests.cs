@@ -6,7 +6,7 @@ public sealed class RunAnalysisHandlerTests
 {
     private static AnalysisSymbol SymbolOf(AppStateDriver d, string type)
     {
-        var symbol = Analyzers.Of(d.Fixture(type));
+        var symbol = d.Fixture(type).Analysis;
         Assert.NotNull(symbol);
         return symbol;
     }
@@ -15,7 +15,7 @@ public sealed class RunAnalysisHandlerTests
     private static AnalysisRun StartGreeterAnalysis(AppStateDriver d)
     {
         var symbol = SymbolOf(d, "Greeter");
-        var kind = new AnalyzerKindNode { Subject = symbol, Kind = Analyzers.KindsFor(symbol)[0] };
+        var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds[0] };
         var run = Analysis.StartRun(kind);
         Assert.NotNull(run);
         return run;

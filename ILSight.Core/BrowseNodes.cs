@@ -248,6 +248,7 @@ public static class BrowseNodes
             Visibility = NodeDefinitions.GetVisibility(subject),
             Reference = NodeDefinitions.ReferenceOf(subject),
             Activation = NodeDefinitions.GetActivation(subject),
+            Analysis = Analysis.Analyzers.Of(subject),
             CanHaveChildren = CanHaveChildren(subject),
             Name = GetName(subject, assembly, text),
             IsCode = IsCode(subject),

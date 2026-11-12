@@ -47,9 +47,9 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var elsewhere = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root.Child(AppStateDriver.FixturesNamespace, "Outline");
-        var symbol = Core.Analysis.Analyzers.Of(elsewhere);
+        var symbol = elsewhere.Analysis;
         Assert.NotNull(symbol);
-        var kind = new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol).Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
+        var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds.Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
 
         Commands.StartAnalysis(d.AppState, StartRun(kind));
         d.RunUntil(() => kind.IsDone);
@@ -324,9 +324,9 @@ public sealed class AnalyzerTests
 
     private static AnalyzerKindNode NewKind(AppStateDriver d)
     {
-        var symbol = Core.Analysis.Analyzers.Of(First(d));
+        var symbol = First(d).Analysis;
         Assert.NotNull(symbol);
-        return new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol)[0] };
+        return new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds[0] };
     }
 
     private static AnalyzerKindNode RunningKind(AppStateDriver d)
@@ -355,7 +355,7 @@ public sealed class AnalyzerTests
     public void Cancelling_a_symbol_whose_children_were_never_listed_leaves_them_unlisted()
     {
         var d = AppStateDriver.Opened();
-        var analyzed = Core.Analysis.Analyzers.Of(First(d));
+        var analyzed = First(d).Analysis;
         Assert.NotNull(analyzed);
         var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 
@@ -448,7 +448,7 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var rows = NewRows();
-        var analyzed = Core.Analysis.Analyzers.Of(First(d));
+        var analyzed = First(d).Analysis;
         Assert.NotNull(analyzed);
         var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 

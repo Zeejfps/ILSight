@@ -66,6 +66,10 @@ public sealed class BrowseNode
     /// <summary>What activating the node does, worked out when the node was made.</summary>
     public required Activation Activation { get; init; }
 
+    /// <summary>What analyses run on for the node: the type or member it stands for, or for a base or derived type
+    /// entry the type it names; null for any other node. Read when the node was made.</summary>
+    public required Analysis.AnalysisSymbol? Analysis { get; init; }
+
     /// <summary>Whether the node may have children, guessed when it was made without building them.</summary>
     public required bool CanHaveChildren { get; init; }
 

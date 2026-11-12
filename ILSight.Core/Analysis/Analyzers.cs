@@ -55,11 +55,11 @@ public static class Analyzers
         };
     }
 
-    /// <summary>The type or member <paramref name="node"/> stands for — for a base or derived type
+    /// <summary>The type or member a node of <paramref name="subject"/> stands for — for a base or derived type
     /// entry the type it names — or null for any other node.</summary>
-    public static AnalysisSymbol? Of(BrowseNode node)
+    internal static AnalysisSymbol? Of(NodeSubject subject)
     {
-        return node.Subject switch
+        return subject switch
         {
             NodeSubject.TypeDefinition type => Describe(type.Definition.Symbol),
             NodeSubject.MemberDefinition member => Describe(member.Definition.Symbol),
@@ -113,16 +113,10 @@ public static class Analyzers
         }
     }
 
-    /// <summary>The analyses that apply to <paramref name="symbol"/>, in ILSpy's order.</summary>
-    public static IReadOnlyList<AnalysisKind> KindsFor(AnalysisSymbol symbol)
+    /// <summary>The analyses that apply to <paramref name="symbol"/>, in the order they are offered.</summary>
+    private static IReadOnlyList<AnalysisKind> ListKinds(ISymbol symbol)
     {
-        return Kinds.Where(k => k.Prepare(symbol.Symbol) is not null).OrderBy(static k => k.Order).ToArray();
-    }
-
-    /// <summary>The accessors of a property or event, which ILSpy analyzes on their own.</summary>
-    public static IReadOnlyList<AnalysisSymbol> AccessorsOf(AnalysisSymbol symbol)
-    {
-        return symbol.Symbol is IEntity entity ? Members.Accessors(entity).Select(static m => DescribeEntity(m)).ToArray() : [];
+        return Kinds.Where(k => k.Prepare(symbol) is not null).OrderBy(static k => k.Order).ToArray();
     }
 
     /// <summary>Runs <paramref name="kind"/> on <paramref name="symbol"/> over the open assemblies on
@@ -161,7 +155,13 @@ public static class Analyzers
             case IEntity entity:
                 return DescribeEntity(entity);
             case IModule module:
-                return new AnalysisSymbol { Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName, Location = module.MetadataFile?.FileName ?? "", Reference = module.MetadataFile is not null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null };
+                return new AnalysisSymbol
+                {
+                    Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName,
+                    Location = module.MetadataFile?.FileName ?? "",
+                    Reference = module.MetadataFile is not null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null,
+                    Kinds = ListKinds(module), Accessors = [],
+                };
             default:
                 return null;
         }
@@ -169,7 +169,12 @@ public static class Analyzers
 
     private static AnalysisSymbol DescribeEntity(IEntity entity)
     {
-        return new AnalysisSymbol { Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity), Location = Where(entity), Reference = CodeReferences.Find(entity) };
+        return new AnalysisSymbol
+        {
+            Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity),
+            Location = Where(entity), Reference = CodeReferences.Find(entity), Kinds = ListKinds(entity),
+            Accessors = Members.Accessors(entity).Select(static m => DescribeEntity(m)).ToArray(),
+        };
     }
 
     private static string Where(IEntity entity)

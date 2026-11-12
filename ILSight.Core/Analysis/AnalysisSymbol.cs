@@ -24,6 +24,12 @@ public sealed class AnalysisSymbol
     /// <summary>What to navigate to it by; null when it cannot be shown.</summary>
     public required CodeReference.Navigable? Reference { get; init; }
 
+    /// <summary>The analyses that apply to the symbol, in the order they are offered, worked out when it was read.</summary>
+    public required IReadOnlyList<AnalysisKind> Kinds { get; init; }
+
+    /// <summary>The accessors of a property or event, which are analyzed on their own; none for anything else.</summary>
+    public required IReadOnlyList<AnalysisSymbol> Accessors { get; init; }
+
     /// <summary>Whether it is in <paramref name="item"/>, an assembly or a package on the list, or read out of
     /// one; or is that assembly.</summary>
     public bool IsIn(LoadedAssembly item)

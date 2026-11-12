@@ -21,7 +21,7 @@ public sealed class RestoreAnalysesHandlerTests
 
     private static AnalysisSymbol SymbolOf(AppStateDriver d, string type)
     {
-        var symbol = Analyzers.Of(d.Fixture(type));
+        var symbol = d.Fixture(type).Analysis;
         Assert.NotNull(symbol);
         return symbol;
     }
