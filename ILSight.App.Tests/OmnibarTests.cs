@@ -339,7 +339,9 @@ public sealed class OmnibarTests
         omnibar.ToggleMenu(Panel, crumbs, crumbs.Count - 1);
 
         Assert.True(omnibar.IsMenuOpenAt(Panel, d.Fixture("Greeter")));
-        Assert.Null(omnibar.Menu?.ToSelect);
+        var menu = omnibar.Menu;
+        Assert.NotNull(menu);
+        Assert.Null(menu.ToSelect);
     }
 
     [Fact]

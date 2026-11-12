@@ -420,8 +420,12 @@ public sealed class NuGetBrowserTests
         var errors = await RunFetchesAsync(picker.Browser);
 
         Assert.Equal(3, ports.Asked.Count(a => a == nameof(IPorts.DownloadIconAsync)));
-        Assert.Null(icons[0]?.Shown);
-        Assert.Null(icons[1]?.Shown);
+        var first = icons[0];
+        var second = icons[1];
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Null(first.Shown);
+        Assert.Null(second.Shown);
         Assert.Same(pixels, icons[2]?.Shown?.Pixels);
         Assert.Equal(2, errors.Entries.Count);
         Assert.All(errors.Entries, static e => Assert.IsType<AppProblem.Unexpected>(e.Problem));

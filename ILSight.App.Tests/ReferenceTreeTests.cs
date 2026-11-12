@@ -35,6 +35,9 @@ public sealed class ReferenceTreeTests
         Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
         app.Settle(3);
         Assert.False(app.AppState.IsResolving);
-        Assert.NotSame(greeter, app.AppState.Tabs.Active?.Node);
+        var active = app.AppState.Tabs.Active;
+        Assert.NotNull(active);
+        Assert.NotNull(active.Node);
+        Assert.NotSame(greeter, active.Node);
     }
 }

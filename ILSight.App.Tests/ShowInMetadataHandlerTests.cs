@@ -26,6 +26,7 @@ public sealed class ShowInMetadataHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.Tabs.Active?.Node;
+        Assert.NotNull(shown);
         var reference = d.Fixture("Greeter").Definition;
         var error = new IOException("unreadable");
         var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(null) };
@@ -48,6 +49,7 @@ public sealed class ShowInMetadataHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         var shown = appState.Tabs.Active?.Node;
+        Assert.NotNull(shown);
         var reference = d.Fixture("Greeter").Definition;
         var row = NodeLookup.FindMetadataRow(appState.Assemblies, appState.Session, reference);
         var found = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(row), WhileLooking = () => appState.Intent.Begin() };

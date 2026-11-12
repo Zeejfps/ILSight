@@ -36,6 +36,7 @@ public sealed class OpenAndShowIdHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.Tabs.Active?.Node;
+        Assert.NotNull(shown);
         var appState = d.AppState;
         var found = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(d.Fixture("Greeter")), WhileOpening = () => appState.Intent.Begin() };
         var missing = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileOpening = () => appState.Intent.Begin() };

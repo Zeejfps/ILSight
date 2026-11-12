@@ -50,7 +50,9 @@ public sealed class AssembliesTests
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
         Assert.Same(BrowseSessions.EnsureRoot(d.AppState.Session, fixtures), d.AppState.Tabs.Active?.Node);
         Assert.Empty(ports.Reported);
-        Assert.Same(d.AppState.Tabs.Active, load?.Tab);
+        var active = d.AppState.Tabs.Active;
+        Assert.NotNull(active);
+        Assert.Same(active, load?.Tab);
     }
 
     [Fact]
@@ -58,6 +60,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.Tabs.Active?.Node;
+        Assert.NotNull(shown);
         var error = new IOException("unreadable");
         var failed = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
         var cancelled = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new OperationCanceledException()) };
@@ -78,6 +81,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Greeter"));
         var shown = d.AppState.Tabs.Active?.Node;
+        Assert.NotNull(shown);
         var appState = d.AppState;
         var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)), WhileWorking = () => appState.Intent.Begin() };
 

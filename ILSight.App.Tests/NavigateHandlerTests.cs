@@ -18,7 +18,9 @@ public sealed class NavigateHandlerTests
 
         Assert.Same(reference, Assert.Single(lookup.LookedUp));
         Assert.Same(farewell, appState.Tabs.Active?.Node);
-        Assert.Same(appState.Tabs.Active, load?.Tab);
+        var active = appState.Tabs.Active;
+        Assert.NotNull(active);
+        Assert.Same(active, load?.Tab);
         Assert.True(appState.History.IsCurrentPlace(appState.Tabs.Active?.Location));
         Assert.True(resolvingWhileLooking);
         Assert.False(appState.IsResolving);
@@ -30,6 +32,7 @@ public sealed class NavigateHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.Tabs.Active?.Node;
+        Assert.NotNull(shown);
         var reference = d.Fixture("Farewell").Definition;
         var error = new IOException("unreadable");
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
@@ -54,6 +57,7 @@ public sealed class NavigateHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         var shown = appState.Tabs.Active?.Node;
+        Assert.NotNull(shown);
         var farewell = d.Fixture("Farewell");
         var found = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => appState.Intent.Begin() };
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => appState.Intent.Begin() };

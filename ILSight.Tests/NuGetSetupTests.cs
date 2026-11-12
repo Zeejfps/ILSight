@@ -29,8 +29,11 @@ public sealed class NuGetSetupTests
         var upper = NuGetSource.FromUrl("https://PKGS.test/V3/Index.json");
         var other = NuGetSource.FromUrl("https://pkgs.test/v2/index.json");
 
+        Assert.NotNull(lower);
+        Assert.NotNull(upper);
+        Assert.NotNull(other);
         Assert.Equal(lower, upper);
-        Assert.Equal(lower?.Url.GetHashCode(), upper?.Url.GetHashCode());
+        Assert.Equal(lower.Url.GetHashCode(), upper.Url.GetHashCode());
         Assert.NotEqual(lower, other);
     }
 
