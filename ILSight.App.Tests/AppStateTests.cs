@@ -503,13 +503,86 @@ public sealed class AppStateTests
     }
 
     [Fact]
+    public void A_sort_asked_for_shows_at_once_and_the_results_follow_once_sorted()
+    {
+        var d = AppStateDriver.Opened();
+        var search = d.Ui.Search;
+        search.Query = "e";
+        Searches.Update(search, d.AppState.Assemblies, 0, true);
+        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        d.Settle();
+        var found = search.Rows.ToList();
+
+        var sorting = Searches.StartSort(search, SearchSort.Name);
+
+        Assert.Equal(SearchSort.Name, search.Sorting.Asked.Sort);
+        Assert.Equal(SearchSort.Relevance, search.Sorting.Applied.Sort);
+        Assert.True(search.IsBusy);
+        Assert.Equal(found, search.Rows);
+
+        d.Start((_, ct) => Searches.SortAsync(search, sorting, ct));
+        d.Settle();
+
+        Assert.Equal(found.OrderBy(r => r.Text, StringComparer.OrdinalIgnoreCase).Select(r => r.Text), search.Rows.Select(r => r.Text));
+        Assert.Equal(SearchSort.Name, search.Sorting.Applied.Sort);
+        Assert.False(search.IsBusy);
+    }
+
+    [Fact]
+    public void Only_the_newest_sort_asked_for_is_taken()
+    {
+        var d = AppStateDriver.Opened();
+        var search = d.Ui.Search;
+        search.Query = "e";
+        Searches.Update(search, d.AppState.Assemblies, 0, true);
+        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        d.Settle();
+
+        var ascending = Searches.StartSort(search, SearchSort.Name);
+        var descending = Searches.StartSort(search, SearchSort.Name);
+
+        Assert.True(ascending.Work.Token.IsCancellationRequested);
+        Assert.True(descending.Order.Descending);
+        d.Start((_, ct) => Searches.SortAsync(search, descending, ct));
+        d.Settle();
+
+        Assert.Equal(search.Rows.OrderByDescending(r => r.Text, StringComparer.OrdinalIgnoreCase).Select(r => r.Text), search.Rows.Select(r => r.Text));
+        Assert.True(search.Sorting.Applied.Descending);
+    }
+
+    [Fact]
+    public void Results_that_arrive_while_sorting_are_sorted_with_the_rest()
+    {
+        var d = AppStateDriver.Opened();
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, typeof(object).Assembly.Location, ct));
+        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
+        var search = d.Ui.Search;
+        search.Query = "e";
+        Searches.Update(search, d.AppState.Assemblies, 0, true);
+        Searches.Update(search, d.AppState.Assemblies, 1, true);
+
+        var sorting = Searches.StartSort(search, SearchSort.Name);
+        d.Start((_, ct) => Searches.SortAsync(search, sorting, ct));
+        d.Settle();
+
+        var sorted = search.Rows
+            .OrderBy(r => r.Text, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(r => r.Location, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(r => r.Node.Assembly.NameAndVersion, StringComparer.OrdinalIgnoreCase);
+        Assert.True(search.Rows.Count > 1000);
+        Assert.Equal(sorted, search.Rows);
+    }
+
+    [Fact]
     public void Results_streamed_in_many_batches_end_up_in_sort_order()
     {
         var d = AppStateDriver.Opened();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, typeof(object).Assembly.Location, ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         var search = d.Ui.Search;
-        Searches.SortBy(search, SearchSort.Name);
+        var sorting = Searches.StartSort(search, SearchSort.Name);
+        d.Start((_, ct) => Searches.SortAsync(search, sorting, ct));
+        d.Settle();
         search.Query = "e";
 
         Searches.Update(search, d.AppState.Assemblies, 0, true);

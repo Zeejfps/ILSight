@@ -36,7 +36,8 @@ public sealed class Search
     /// <summary>What the query looks for, unless prefixes in it say otherwise.</summary>
     public SearchKinds Kinds = SearchKinds.TypesAndMembers;
 
-    public bool IsBusy => Runs.Count > 0;
+    /// <summary>Whether results may still arrive, or be sorted into the order asked for.</summary>
+    public bool IsBusy => Runs.Count > 0 || Sorting.IsSorting;
 
     /// <summary>Whether <see cref="Rows"/> are the hits of the query as typed, rather than of one typed
     /// before it settled; more may still arrive.</summary>
@@ -46,6 +47,6 @@ public sealed class Search
 
     public SearchResult? SelectedRow => Selection.Item;
 
-    public SearchSort Sort { get; set; }
-    public bool Descending { get; set; }
+    /// <summary>The order the results are in and the one asked for.</summary>
+    public SearchSorting Sorting { get; } = new();
 }

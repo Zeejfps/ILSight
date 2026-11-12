@@ -432,27 +432,31 @@ public sealed class AppTests
         Searches.Select(search, search.Rows[search.Rows.Count - 1]);
         var selected = search.SelectedRow!.Node;
         var names = search.Rows.Select(r => r.Text).ToList();
-        Assert.Equal(SearchSort.Relevance, search.Sort);
+        Assert.Equal(SearchSort.Relevance, search.Sorting.Asked.Sort);
         Assert.Equal(search.Rows.Select(r => r.Fitness).OrderDescending(), search.Rows.Select(r => r.Fitness));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
+        app.RunOut();
         Assert.Equal(names.Order(StringComparer.OrdinalIgnoreCase), search.Rows.Select(r => r.Text));
         Assert.Same(selected, search.SelectedRow!.Node);
         Assert.True(app.Frames.Drew(Text(Icons.SortAscending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
+        app.RunOut();
         Assert.Equal(names.OrderDescending(StringComparer.OrdinalIgnoreCase), search.Rows.Select(r => r.Text));
         Assert.Same(selected, search.SelectedRow!.Node);
         Assert.True(app.Frames.Drew(Text(Icons.SortDescending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
-        Assert.Equal(SearchSort.Relevance, search.Sort);
+        app.RunOut();
+        Assert.Equal(SearchSort.Relevance, search.Sorting.Asked.Sort);
         Assert.Equal(names, search.Rows.Select(r => r.Text));
         Assert.Same(selected, search.SelectedRow!.Node);
 
         app.Frames.ClickOn(Selector.WithText("Assembly")).Frame();
-        Assert.Equal(SearchSort.Assembly, search.Sort);
-        Assert.False(search.Descending);
+        app.RunOut();
+        Assert.Equal(SearchSort.Assembly, search.Sorting.Asked.Sort);
+        Assert.False(search.Sorting.Asked.Descending);
     }
 
     [Fact]

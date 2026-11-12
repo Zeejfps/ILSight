@@ -221,13 +221,16 @@ internal static class SearchPanelView
         var t = ui.State.Strings;
         var search = ui.State.Search;
         var headers = Headers.GetValue(t, static t => [t.SearchColumnName, t.SearchColumnLocation, t.SearchColumnAssembly]);
-        var sort = new TableSort(ColumnOf(search.Sort), SortIcon(ui.State.Icons, search));
+        var asked = search.Sorting.Asked;
+        var sort = new TableSort(ColumnOf(asked.Sort), SortIcon(ui.State.Icons, asked));
         ItemSelections.ShowIn(search.Selection, search.Rows);
         var table = ui.Table(ResultsId, ui.State.SearchColumns, search.Selection.Rows);
         var clicked = table.Header(headers, sort);
         if (clicked >= 0)
         {
-            Searches.SortBy(search, SortOf(clicked));
+            var sorting = Searches.StartSort(search, SortOf(clicked));
+            Commands.Start(ui.State, nameof(Searches.SortAsync), (search, sorting), static (_, s, ct) => Searches.SortAsync(s.search, s.sorting, ct),
+                sorting.Work.Token);
         }
 
         ResultRows(ui, table);
@@ -247,9 +250,9 @@ internal static class SearchPanelView
         };
     }
 
-    private static UiIcon SortIcon(AppIcons icons, Search search)
+    private static UiIcon SortIcon(AppIcons icons, SearchOrder order)
     {
-        var glyph = search.Descending ? icons.SortDescending : icons.SortAscending;
+        var glyph = order.Descending ? icons.SortDescending : icons.SortAscending;
         return new UiIcon(glyph);
     }
 

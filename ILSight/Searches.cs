@@ -71,6 +71,7 @@ public static class Searches
         var searched = new SearchedQuery(search.Typed.Text, search.Kinds, assemblies.Version);
         search.LastSearched = searched;
         search.Rows.Clear();
+        search.Sorting.NoteRowsEmptied();
         ItemSelections.Clear(search.Selection);
         var listed = assemblies.Assemblies;
         search.SearchedAssemblies.Clear();
@@ -110,6 +111,7 @@ public static class Searches
         }
 
         search.Rows.RemoveAll(r => !search.SearchedAssemblies.Contains(r.Node.Assembly));
+        search.Sorting.NoteRowsChanged();
         ItemSelections.DropIfGone(search.Selection, search.Rows);
     }
 
@@ -186,13 +188,15 @@ public static class Searches
 
         var arrived = SortArrived(search, batch);
         MergeIntoRows(search, arrived);
+        search.Sorting.NoteRowsChanged();
     }
 
-    /// <summary>The hits of <paramref name="batch"/> still wanted, in order. The order reads the sort of the
-    /// moment, so a comparer is made per batch.</summary>
+    /// <summary>The hits of <paramref name="batch"/> still wanted, in the order the rows are in, which a comparer
+    /// is made for per batch.</summary>
     private static List<SearchResult> SortArrived(Search search, IReadOnlyList<SearchResult> batch)
     {
-        var order = Comparer<SearchResult>.Create((a, b) => Compare(search, a, b));
+        var applied = search.Sorting.Applied;
+        var order = Comparer<SearchResult>.Create((a, b) => Compare(applied, a, b));
         return batch
             .Where(r => search.SearchedAssemblies.Contains(r.Node.Assembly))
             .Order(order)
@@ -204,12 +208,13 @@ public static class Searches
     private static void MergeIntoRows(Search search, List<SearchResult> arrived)
     {
         var rows = search.Rows;
+        var applied = search.Sorting.Applied;
         var kept = rows.Count - 1;
         var next = arrived.Count - 1;
         rows.AddRange(arrived);
         for (var at = rows.Count - 1; next >= 0; at--)
         {
-            var keptGoesLast = kept >= 0 && Compare(search, rows[kept], arrived[next]) > 0;
+            var keptGoesLast = kept >= 0 && Compare(applied, rows[kept], arrived[next]) > 0;
             if (keptGoesLast)
             {
                 rows[at] = rows[kept];
@@ -264,30 +269,67 @@ public static class Searches
         return SearchQueries.AddScope(search.Query, AssemblyScope, node.Assembly.Name);
     }
 
-    /// <summary>Sorts the results by <paramref name="sort"/>, ascending, then descending when they
-    /// already are, then by relevance again, keeping the selection in view.</summary>
-    public static void SortBy(Search search, SearchSort sort)
+    /// <summary>Asks for the results by <paramref name="sort"/>, ascending, then descending when they already are,
+    /// then by relevance again: the header shows it from now on. Returns what <see cref="SortAsync"/> needs to sort
+    /// the results into it, which a newer sort or a new search cancels.</summary>
+    public static SearchSortTicket StartSort(Search search, SearchSort sort)
     {
-        if (search.Sort == sort && search.Descending)
+        var asked = search.Sorting.Asked;
+        if (asked.Sort == sort && asked.Descending)
         {
             sort = SearchSort.Relevance;
         }
 
-        search.Descending = search.Sort == sort && sort != SearchSort.Relevance;
-        search.Sort = sort;
-        search.Rows.Sort((a, b) => Compare(search, a, b));
+        var order = new SearchOrder { Sort = sort, Descending = asked.Sort == sort && sort != SearchSort.Relevance };
+        return search.Sorting.Start(order, search.Rows);
+    }
+
+    /// <summary>Sorts the results into the order <paramref name="sorting"/> asked for, off the UI thread, and shows
+    /// them so unless a newer order was asked for meanwhile, keeping the selection in view. Results that arrived or
+    /// went while it sorted are sorted again with the rest. <paramref name="ct"/> is the sort's token, linked to what
+    /// else may cancel it.</summary>
+    public static async Task SortAsync(Search search, SearchSortTicket sorting, CancellationToken ct)
+    {
+        var version = sorting.RowsVersion;
+        var sorted = await SortOffThreadAsync(sorting.Rows, sorting.Order, ct);
+        while (version != search.Sorting.RowsVersion)
+        {
+            version = search.Sorting.RowsVersion;
+            sorted = await SortOffThreadAsync(search.Rows.ToList(), sorting.Order, ct);
+        }
+
+        if (!search.Sorting.TryFinish(sorting))
+        {
+            return;
+        }
+
+        search.Rows.Clear();
+        search.Rows.AddRange(sorted);
         ItemSelections.Reveal(search.Selection, search.Rows);
     }
 
-    private static int Compare(Search search, SearchResult a, SearchResult b)
+    private static Task<List<SearchResult>> SortOffThreadAsync(IReadOnlyList<SearchResult> rows, SearchOrder order, CancellationToken ct)
     {
-        var order = CompareAscending(search, a, b);
-        return search.Descending ? -order : order;
+        return Task.Run(() => Sort(rows, order), ct);
     }
 
-    private static int CompareAscending(Search search, SearchResult a, SearchResult b)
+    /// <summary><paramref name="rows"/> in <paramref name="order"/>, as a list of their own.</summary>
+    private static List<SearchResult> Sort(IReadOnlyList<SearchResult> rows, SearchOrder order)
     {
-        return search.Sort switch
+        var sorted = rows.ToList();
+        sorted.Sort((a, b) => Compare(order, a, b));
+        return sorted;
+    }
+
+    private static int Compare(SearchOrder order, SearchResult a, SearchResult b)
+    {
+        var compared = CompareAscending(order.Sort, a, b);
+        return order.Descending ? -compared : compared;
+    }
+
+    private static int CompareAscending(SearchSort sort, SearchResult a, SearchResult b)
+    {
+        return sort switch
         {
             SearchSort.Name => CompareByName(a, b),
             SearchSort.Location => CompareByLocation(a, b),
