@@ -9,7 +9,7 @@ using ILSight.Bookmarking;
 namespace ILSight;
 
 /// <summary>What persists between runs, in the user's app-data folder, as read from its file by
-/// <see cref="SettingsJson.ReadSettingsFile"/>: whatever the file held, every value here is one the app can use.</summary>
+/// <see cref="SettingsReading"/>: whatever the file held, every value here is one the app can use.</summary>
 public sealed class AppSettings
 {
     /// <summary>The settings file in the user's app-data folder; under this process's folder when the

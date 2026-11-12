@@ -7,7 +7,7 @@ internal static class TempSettings
 {
     public static AppSettings Settings(this TempDir temp)
     {
-        return SettingsJson.ReadSettingsFile(FullFilePath.Of(temp.PathOf("settings.json"))).Settings;
+        return AppRoot.ReadSettingsFile(FullFilePath.Of(temp.PathOf("settings.json"))).Settings;
     }
 
     /// <summary>Writes <paramref name="settings"/> where they were read from, as the app saves them.</summary>

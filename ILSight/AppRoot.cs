@@ -15,6 +15,14 @@ internal static class AppRoot
 {
     private const string LicensesFolder = "licenses";
 
+    /// <summary>The settings in the file at <paramref name="file"/>, which the app starts with, and what was wrong with
+    /// it; read from the disk.</summary>
+    internal static SettingsLoadResult ReadSettingsFile(FullFilePath file)
+    {
+        var reading = new SettingsReading(new SettingsReadingAdapter());
+        return reading.ReadFile(file);
+    }
+
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, over
     /// <paramref name="session"/>, told of what was wrong with the settings, with <paramref name="arguments"/>
     /// followed. The screen is built over this; the files they name open once the app runs.</summary>

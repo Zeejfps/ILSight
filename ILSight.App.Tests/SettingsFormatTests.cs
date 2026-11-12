@@ -78,7 +78,7 @@ public sealed class SettingsFormatTests : IDisposable
     {
         var path = _temp.Write(SettingsFixture, Fixture(SettingsFixture));
 
-        var (loaded, problem) = SettingsJson.ReadSettingsFile(FullFilePath.Of(path));
+        var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(path));
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));
 

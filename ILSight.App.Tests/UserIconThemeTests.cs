@@ -77,7 +77,7 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var path = _temp.Write("settings.json", """{ "IconTheme": null }""");
 
-        Assert.Equal("lucide", SettingsJson.ReadSettingsFile(FullFilePath.Of(path)).Settings.IconTheme.Text);
+        Assert.Equal("lucide", AppRoot.ReadSettingsFile(FullFilePath.Of(path)).Settings.IconTheme.Text);
     }
 
     [Fact]

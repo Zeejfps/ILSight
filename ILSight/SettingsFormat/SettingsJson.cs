@@ -818,8 +818,6 @@ internal static class SettingsJson
         return kept;
     }
 
-    private const string UnreadableExtension = ".unreadable.json";
-
     /// <summary><paramref name="bounds"/> with its size kept within reason, or null when it has none.
     /// A position off every monitor is the window system's to correct when the window opens.</summary>
     public static WindowBounds? SanitizeWindow(WindowBounds? bounds)
@@ -865,81 +863,33 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The settings in the file at <paramref name="path"/>, each value read on its own, so a
-    /// value the file holds wrong leaves out only that one, for its default to stand in.</summary>
-    public static SettingsLoadResult ReadSettingsFile(FullFilePath path)
+    /// <summary>What the settings file's <paramref name="text"/> holds, each value read on its own, so a value it
+    /// holds wrong leaves out only that one, for its default to stand in. When values were left out, a saved layout
+    /// that couldn't be restored is told among them.</summary>
+    public static SettingsTextContent ParseSettingsText(string text)
     {
-        var (settings, problem) = ReadSettings(path.Text);
-        settings.FilePath = path;
-        settings.CanSaveOverFile = CanSaveOverFile(problem);
-        return new SettingsLoadResult(settings, problem);
-    }
-
-    private static bool CanSaveOverFile(SettingsProblem problem)
-    {
-        return problem switch
-        {
-            SettingsProblem.NotRead notRead => notRead.Kept is not SettingsKept.NotSaved,
-            SettingsProblem.NotJson notJson => notJson.Kept is not SettingsKept.NotSaved,
-            SettingsProblem.ValuesLeftOut leftOut => leftOut.Kept is not SettingsKept.NotSaved,
-            _ => true,
-        };
-    }
-
-    private static SettingsLoadResult ReadSettings(string path)
-    {
-        if (!File.Exists(path))
-        {
-            return new SettingsLoadResult(new AppSettings(), new SettingsProblem.None());
-        }
-
         Dictionary<string, JsonElement>? fields;
         try
         {
-            fields = JsonSerializer.Deserialize(File.ReadAllText(path), AppSettingsJson.Default.DictionaryStringJsonElement);
+            fields = JsonSerializer.Deserialize(text, AppSettingsJson.Default.DictionaryStringJsonElement);
         }
         catch (Exception e) when (e is JsonException or NotSupportedException)
         {
-            return new SettingsLoadResult(new AppSettings(), new SettingsProblem.NotJson(e.Message, KeepUnreadable(path)));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return new SettingsLoadResult(new AppSettings(), new SettingsProblem.NotRead(e.Message, KeepUnreadable(path)));
+            return new SettingsTextContent.NotJson(e.Message);
         }
         if (fields is null)
         {
-            return new SettingsLoadResult(new AppSettings(), new SettingsProblem.Empty());
+            return new SettingsTextContent.Empty();
         }
 
         var file = new SettingsReader { Fields = fields };
         var settings = ParseSettings(file, out var layoutProblem);
-        if (file.LeftOut.Count == 0)
-        {
-            return new SettingsLoadResult(settings, layoutProblem);
-        }
-
-        if (layoutProblem is not SettingsProblem.None)
+        if (file.LeftOut.Count > 0 && layoutProblem is not SettingsProblem.None)
         {
             SettingsJson.LeaveOut(file, nameof(SettingsFile.Layout));
         }
 
-        return new SettingsLoadResult(settings, new SettingsProblem.ValuesLeftOut(file.LeftOut, KeepUnreadable(path)));
-    }
-
-    /// <summary>Copies the settings file at <paramref name="path"/>, which could not be read whole,
-    /// beside it, so that saving the settings does not lose what it holds.</summary>
-    private static SettingsKept KeepUnreadable(string path)
-    {
-        var copy = Path.ChangeExtension(path, UnreadableExtension);
-        try
-        {
-            File.Copy(path, copy, overwrite: true);
-            return new SettingsKept.CopiedTo(copy);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return new SettingsKept.NotSaved();
-        }
+        return new SettingsTextContent.Values { Settings = settings, LeftOut = file.LeftOut, LayoutProblem = layoutProblem };
     }
 
     /// <summary>The settings <paramref name="file"/> holds, with what older files kept moved to where

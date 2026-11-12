@@ -22,7 +22,7 @@ public static class ILSightAppLauncher
             return;
         }
 
-        var loadResult = SettingsJson.ReadSettingsFile(config.SettingsPath);
+        var loadResult = AppRoot.ReadSettingsFile(config.SettingsPath);
         var app = CreateApp(loadResult, arguments, receiver.Inbox);
         OpenWindow(app, loadResult, config);
     }
