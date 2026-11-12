@@ -101,22 +101,20 @@ public static class BrowseSessions
         Task<ChildrenState> load;
         using (var held = slot.Enter())
         {
-            switch (held.Value)
+            // Running before the build can keep what it built: it waits for the lock held here.
+            // The build runs to its end whatever the token says: whoever waits next takes it.
+            var (found, started) = held.Value.Match((session, node, slot),
+                static (s, _) => (Task.Run(() => KeepBuiltAsync(s.session, s.node, s.slot, CancellationToken.None)), true),
+                static (_, running) => (running.Load, false),
+                static (_, ready) => (Task.FromResult<ChildrenState>(ready), false),
+                static (_, failed) => (Task.FromResult<ChildrenState>(failed), false));
+            if (started)
             {
-                case ChildrenState.Ready or ChildrenState.Failed:
-                    return Task.FromResult(held.Value);
-                case ChildrenState.Running running:
-                    load = running.Load;
-                    break;
-                case ChildrenState.Unloaded:
-                    // Running before the build can keep what it built: it waits for the lock held here.
-                    // The build runs to its end whatever the token says: whoever waits next takes it.
-                    load = Task.Run(() => KeepBuiltAsync(session, node, slot, CancellationToken.None));
-                    held.Value = new ChildrenState.Running(load);
-                    return load;
-                default:
-                    throw new UnreachableException();
+                held.Value = new ChildrenState.Running(found);
+                return found;
             }
+
+            load = found;
         }
         return load.WaitAsync(cancellationToken);
     }
@@ -283,13 +281,7 @@ public static class BrowseSessions
             return null;
         }
 
-        var path = segment switch
-        {
-            NodePathSegment.PackageFolder folder => folder.Path,
-            NodePathSegment.PackageFile file => file.Path,
-            NodePathSegment.EmbeddedModule module => module.Path,
-            _ => throw new UnreachableException(),
-        };
+        var path = PackagePathOf(segment);
         if (segment is NodePathSegment.PackageFolder)
         {
             return await FindFolderNodeAsync(session, packageRoot, path, ct);
@@ -302,6 +294,28 @@ public static class BrowseSessions
         }
 
         return BrowseSession.FindChild(await ListChildrenAsync(session, holder, ct), segment);
+    }
+
+    /// <summary>The full path in its package of the entry <paramref name="segment"/> names, a folder, a file or
+    /// an assembly read out of the package.</summary>
+    private static string PackagePathOf(NodePathSegment segment)
+    {
+        if (segment is NodePathSegment.PackageFolder folder)
+        {
+            return folder.Path;
+        }
+
+        if (segment is NodePathSegment.PackageFile file)
+        {
+            return file.Path;
+        }
+
+        if (segment is NodePathSegment.EmbeddedModule module)
+        {
+            return module.Path;
+        }
+
+        throw new UnreachableException();
     }
 
     /// <summary>The node of the type or member <paramref name="handle"/> defines in <paramref name="module"/>, whose

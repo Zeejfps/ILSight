@@ -14,18 +14,13 @@ public sealed class ResourceEntryInfo
     /// <summary>Whether it is shown as a picture: named as a picture is, and no BAML.</summary>
     public bool IsImage => Source is not ResourceSource.Baml && ResourceImages.IsImageName(Name);
 
-    public string Description => Source switch
-    {
-        ResourceSource.Manifest manifest => ResourceNodes.Describe(manifest.Resource),
-        ResourceSource.Entry entry => $"{Name} ({entry.Data.Length} bytes)",
-        ResourceSource.Baml baml => $"{Name} ({baml.Data.Length} bytes)",
-        _ => throw new System.Diagnostics.UnreachableException(),
-    };
+    public string Description => Source.Match(Name,
+        static (_, manifest) => ResourceNodes.Describe(manifest.Resource),
+        static (name, entry) => $"{name} ({entry.Data.Length} bytes)",
+        static (name, baml) => $"{name} ({baml.Data.Length} bytes)");
 
-    public string FileName => Source switch
-    {
-        ResourceSource.Baml => Resources.Baml.XamlName(Path.GetFileName(Name)),
-        ResourceSource.Manifest or ResourceSource.Entry => Path.GetFileName(Name),
-        _ => throw new System.Diagnostics.UnreachableException(),
-    };
+    public string FileName => Source.Match(Name,
+        static (name, _) => Path.GetFileName(name),
+        static (name, _) => Path.GetFileName(name),
+        static (name, _) => Resources.Baml.XamlName(Path.GetFileName(name)));
 }

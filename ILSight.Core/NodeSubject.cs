@@ -195,4 +195,51 @@ public abstract class NodeSubject
             _ => throw new UnreachableException($"NodeSubject.Match does not handle {GetType().Name}."),
         };
     }
+
+    /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
+    /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
+    public TResult Match<TState, TResult>(TState state, Func<TState, Module, TResult> module,
+        Func<TState, Namespace, TResult> @namespace, Func<TState, FailedAssembly, TResult> failedAssembly,
+        Func<TState, TypeDefinition, TResult> typeDefinition, Func<TState, MemberDefinition, TResult> memberDefinition,
+        Func<TState, References, TResult> references, Func<TState, AssemblyReference, TResult> assemblyReference,
+        Func<TState, ReferencedTypes, TResult> referencedTypes, Func<TState, TypeReference, TResult> typeReference,
+        Func<TState, MemberReference, TResult> memberReference, Func<TState, ModuleReference, TResult> moduleReference,
+        Func<TState, ImportedMethod, TResult> importedMethod, Func<TState, ForwardedType, TResult> forwardedType,
+        Func<TState, BaseTypes, TResult> baseTypes, Func<TState, BaseType, TResult> baseType,
+        Func<TState, DerivedTypes, TResult> derivedTypes, Func<TState, DerivedType, TResult> derivedType,
+        Func<TState, Resources, TResult> resources, Func<TState, ResourceContainer, TResult> resourceContainer,
+        Func<TState, ResourceEntry, TResult> resourceEntry, Func<TState, Metadata, TResult> metadata,
+        Func<TState, MetadataTables, TResult> metadataTables, Func<TState, MetadataTable, TResult> metadataTable,
+        Func<TState, Package, TResult> package, Func<TState, PackageFile, TResult> packageFile)
+    {
+        return this switch
+        {
+            Module c => module(state, c),
+            Namespace c => @namespace(state, c),
+            FailedAssembly c => failedAssembly(state, c),
+            TypeDefinition c => typeDefinition(state, c),
+            MemberDefinition c => memberDefinition(state, c),
+            References c => references(state, c),
+            AssemblyReference c => assemblyReference(state, c),
+            ReferencedTypes c => referencedTypes(state, c),
+            TypeReference c => typeReference(state, c),
+            MemberReference c => memberReference(state, c),
+            ModuleReference c => moduleReference(state, c),
+            ImportedMethod c => importedMethod(state, c),
+            ForwardedType c => forwardedType(state, c),
+            BaseTypes c => baseTypes(state, c),
+            BaseType c => baseType(state, c),
+            DerivedTypes c => derivedTypes(state, c),
+            DerivedType c => derivedType(state, c),
+            Resources c => resources(state, c),
+            ResourceContainer c => resourceContainer(state, c),
+            ResourceEntry c => resourceEntry(state, c),
+            Metadata c => metadata(state, c),
+            MetadataTables c => metadataTables(state, c),
+            MetadataTable c => metadataTable(state, c),
+            Package c => package(state, c),
+            PackageFile c => packageFile(state, c),
+            _ => throw new UnreachableException($"NodeSubject.Match does not handle {GetType().Name}."),
+        };
+    }
 }

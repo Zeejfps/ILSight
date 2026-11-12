@@ -207,13 +207,11 @@ public sealed class BrowseSession
     /// possible. Children that failed to build count, so that why can be shown.</summary>
     public bool HasChildren(BrowseNode node)
     {
-        return PeekChildren(node) switch
-        {
-            ChildrenState.Ready ready => ready.Children.Count > 0,
-            ChildrenState.Failed => true,
-            ChildrenState.Running or ChildrenState.Unloaded => node.CanHaveChildren,
-            _ => throw new UnreachableException(),
-        };
+        return PeekChildren(node).Match(node,
+            static (n, _) => n.CanHaveChildren,
+            static (n, _) => n.CanHaveChildren,
+            static (_, ready) => ready.Children.Count > 0,
+            static (_, _) => true);
     }
 
     /// <summary>The child of <paramref name="parent"/> standing where <paramref name="other"/> stands under
@@ -303,12 +301,17 @@ public sealed class BrowseSession
     /// it and its own children, each where ILSpy sorts the full names of the types in it; else as built.</summary>
     private IReadOnlyList<BrowseNode> NestChildren(BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
-        return node.Subject switch
+        if (node.Subject is NodeSubject.Module)
         {
-            NodeSubject.Module => children.Where(static c => c.EnclosingNamespace is null).ToArray(),
-            NodeSubject.Namespace => Interleave(ListInnerNamespaces(node), children),
-            _ => children,
-        };
+            return children.Where(static c => c.EnclosingNamespace is null).ToArray();
+        }
+
+        if (node.Subject is NodeSubject.Namespace)
+        {
+            return Interleave(ListInnerNamespaces(node), children);
+        }
+
+        return children;
     }
 
     /// <summary>The namespaces in <paramref name="inner"/> among <paramref name="own"/>, a namespace's
@@ -341,12 +344,23 @@ public sealed class BrowseSession
     /// <summary>The name a namespace's type is sorted under, as its reflection name ends: <c>List`1</c>.</summary>
     private static string GetReflectionName(BrowseNode child)
     {
-        var (name, arity) = child.Subject switch
+        if (child.Subject is NodeSubject.TypeDefinition type)
         {
-            NodeSubject.TypeDefinition type => (type.Definition.Name, type.Definition.Arity),
-            NodeSubject.ForwardedType forwarded => (forwarded.Value.SortName, forwarded.Value.Arity),
-            _ => throw new UnreachableException(),
-        };
+            return ReflectionName(type.Definition.Name, type.Definition.Arity);
+        }
+
+        if (child.Subject is NodeSubject.ForwardedType forwarded)
+        {
+            return ReflectionName(forwarded.Value.SortName, forwarded.Value.Arity);
+        }
+
+        throw new UnreachableException();
+    }
+
+    /// <summary>The reflection name of a type named <paramref name="name"/> with <paramref name="arity"/> type
+    /// parameters: <c>List`1</c>.</summary>
+    private static string ReflectionName(string name, int arity)
+    {
         return arity == 0 ? name : name + "`" + arity;
     }
 }

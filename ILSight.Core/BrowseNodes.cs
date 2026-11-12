@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ICSharpCode.Decompiler.TypeSystem;
 using ILSight.Core.Metadata;
 using ILSight.Core.Resources;
@@ -9,35 +8,32 @@ public static class BrowseNodes
 {
     private static LoadedAssembly GetAssembly(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.TypeDefinition type => type.Definition.Module,
-            NodeSubject.MemberDefinition member => member.Definition.Module,
-            NodeSubject.References references => references.Owner,
-            NodeSubject.AssemblyReference reference => reference.Value.Module,
-            NodeSubject.ReferencedTypes types => types.Reference.Module,
-            NodeSubject.TypeReference type => type.Value.Module,
-            NodeSubject.MemberReference member => member.Value.Module,
-            NodeSubject.ModuleReference module => module.Value.Module,
-            NodeSubject.ImportedMethod import => import.Value.Shown.Module,
-            NodeSubject.ForwardedType forwarded => forwarded.Value.Module,
-            NodeSubject.BaseTypes baseTypes => baseTypes.Type.Module,
-            NodeSubject.BaseType baseType => baseType.Value.Module,
-            NodeSubject.DerivedTypes derivedTypes => derivedTypes.Type.Module,
-            NodeSubject.DerivedType derived => derived.Value.Module,
-            NodeSubject.Resources resources => resources.Owner,
-            NodeSubject.ResourceContainer container => container.Value.Module,
-            NodeSubject.ResourceEntry entry => entry.Value.Module,
-            NodeSubject.Metadata metadata => metadata.Value.Module,
-            NodeSubject.MetadataTables tables => tables.Folder.Module,
-            NodeSubject.MetadataTable table => table.Value.Module,
-            NodeSubject.Package package => package.Value.Package,
-            NodeSubject.PackageFile file => file.Value.Package,
-            NodeSubject.Module module => module.Value,
-            NodeSubject.Namespace ns => ns.Value.Module,
-            NodeSubject.FailedAssembly failed => failed.Value,
-            _ => throw new UnreachableException(),
-        };
+        return subject.Match<LoadedAssembly>(
+            module: static module => module.Value,
+            @namespace: static ns => ns.Value.Module,
+            failedAssembly: static failed => failed.Value,
+            typeDefinition: static type => type.Definition.Module,
+            memberDefinition: static member => member.Definition.Module,
+            references: static references => references.Owner,
+            assemblyReference: static reference => reference.Value.Module,
+            referencedTypes: static types => types.Reference.Module,
+            typeReference: static type => type.Value.Module,
+            memberReference: static member => member.Value.Module,
+            moduleReference: static module => module.Value.Module,
+            importedMethod: static import => import.Value.Shown.Module,
+            forwardedType: static forwarded => forwarded.Value.Module,
+            baseTypes: static baseTypes => baseTypes.Type.Module,
+            baseType: static baseType => baseType.Value.Module,
+            derivedTypes: static derivedTypes => derivedTypes.Type.Module,
+            derivedType: static derived => derived.Value.Module,
+            resources: static resources => resources.Owner,
+            resourceContainer: static container => container.Value.Module,
+            resourceEntry: static entry => entry.Value.Module,
+            metadata: static metadata => metadata.Value.Module,
+            metadataTables: static tables => tables.Folder.Module,
+            metadataTable: static table => table.Value.Module,
+            package: static package => package.Value.Package,
+            packageFile: static file => file.Value.Package);
     }
 
     /// <summary>The name of what a node of <paramref name="subject"/>, read from <paramref name="assembly"/> and
@@ -91,111 +87,141 @@ public static class BrowseNodes
     /// <summary>Whether a node of <paramref name="subject"/> stands for a picture.</summary>
     internal static bool IsImage(NodeSubject subject)
     {
-        return subject switch
+        if (subject is NodeSubject.ResourceEntry entry)
         {
-            NodeSubject.ResourceEntry entry => entry.Value.IsImage,
-            NodeSubject.PackageFile file => file.Value.IsImage,
-            _ => false,
-        };
+            return entry.Value.IsImage;
+        }
+
+        if (subject is NodeSubject.PackageFile file)
+        {
+            return file.Value.IsImage;
+        }
+
+        return false;
     }
 
     /// <summary>The bytes of the resource a node of <paramref name="subject"/> stands for; null for one of anything else.</summary>
     internal static ResourceData? FindResourceData(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.ResourceContainer container => ResourceNodes.CreateData(container.Value),
-            NodeSubject.ResourceEntry entry => ResourceNodes.CreateData(entry.Value),
-            NodeSubject.PackageFile file => ResourceNodes.CreateData(file.Value),
-            NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.References or NodeSubject.AssemblyReference
-                or NodeSubject.ReferencedTypes or NodeSubject.TypeReference or NodeSubject.MemberReference or NodeSubject.ModuleReference
-                or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseTypes or NodeSubject.BaseType
-                or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources or NodeSubject.Metadata
-                or NodeSubject.MetadataTables or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly => null,
-            _ => throw new UnreachableException(),
-        };
+        return subject.Match<ResourceData?>(
+            module: static _ => null,
+            @namespace: static _ => null,
+            failedAssembly: static _ => null,
+            typeDefinition: static _ => null,
+            memberDefinition: static _ => null,
+            references: static _ => null,
+            assemblyReference: static _ => null,
+            referencedTypes: static _ => null,
+            typeReference: static _ => null,
+            memberReference: static _ => null,
+            moduleReference: static _ => null,
+            importedMethod: static _ => null,
+            forwardedType: static _ => null,
+            baseTypes: static _ => null,
+            baseType: static _ => null,
+            derivedTypes: static _ => null,
+            derivedType: static _ => null,
+            resources: static _ => null,
+            resourceContainer: static container => ResourceNodes.CreateData(container.Value),
+            resourceEntry: static entry => ResourceNodes.CreateData(entry.Value),
+            metadata: static _ => null,
+            metadataTables: static _ => null,
+            metadataTable: static _ => null,
+            package: static _ => null,
+            packageFile: static file => ResourceNodes.CreateData(file.Value));
     }
 
     /// <summary>A qualified name for copying a node of <paramref name="subject"/>, labelled <paramref name="text"/>,
     /// e.g. <c>System.Collections.Generic.List&lt;T&gt;.Add(T)</c>.</summary>
     private static string ComposeFullName(NodeSubject subject, string text)
     {
-        return subject switch
-        {
-            NodeSubject.TypeDefinition type => EntityText.FullName(NodeDefinitions.GetSymbol(type.Definition)),
-            NodeSubject.MemberDefinition member => EntityText.FullName(NodeDefinitions.GetSymbol(member.Definition)),
-            NodeSubject.AssemblyReference reference => reference.Value.Reference.FullName,
-            NodeSubject.TypeReference type => type.Value.FullName,
-            NodeSubject.MemberReference member => member.Value.FullName,
-            NodeSubject.ImportedMethod import => $"{import.Value.DeclaringTypeName}.{import.Value.Label}",
-            NodeSubject.ForwardedType forwarded => forwarded.Value.FullName,
-            NodeSubject.Package package => package.Value.FullName,
-            NodeSubject.PackageFile file => file.Value.File.FullName,
-            NodeSubject.Module module => module.Value.FullName,
-            NodeSubject.Namespace ns => ns.Value.Name,
-            NodeSubject.FailedAssembly failed => failed.Value.FilePath.Text,
-            NodeSubject.References or NodeSubject.ReferencedTypes or NodeSubject.ModuleReference or NodeSubject.BaseTypes
-                or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
-                or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables
-                or NodeSubject.MetadataTable => text,
-            _ => throw new UnreachableException(),
-        };
+        return subject.Match(text,
+            module: static (_, module) => module.Value.FullName,
+            @namespace: static (_, ns) => ns.Value.Name,
+            failedAssembly: static (_, failed) => failed.Value.FilePath.Text,
+            typeDefinition: static (_, type) => EntityText.FullName(NodeDefinitions.GetSymbol(type.Definition)),
+            memberDefinition: static (_, member) => EntityText.FullName(NodeDefinitions.GetSymbol(member.Definition)),
+            references: static (label, _) => label,
+            assemblyReference: static (_, reference) => reference.Value.Reference.FullName,
+            referencedTypes: static (label, _) => label,
+            typeReference: static (_, type) => type.Value.FullName,
+            memberReference: static (_, member) => member.Value.FullName,
+            moduleReference: static (label, _) => label,
+            importedMethod: static (_, import) => $"{import.Value.DeclaringTypeName}.{import.Value.Label}",
+            forwardedType: static (_, forwarded) => forwarded.Value.FullName,
+            baseTypes: static (label, _) => label,
+            baseType: static (label, _) => label,
+            derivedTypes: static (label, _) => label,
+            derivedType: static (label, _) => label,
+            resources: static (label, _) => label,
+            resourceContainer: static (label, _) => label,
+            resourceEntry: static (label, _) => label,
+            metadata: static (label, _) => label,
+            metadataTables: static (label, _) => label,
+            metadataTable: static (label, _) => label,
+            package: static (_, package) => package.Value.FullName,
+            packageFile: static (_, file) => file.Value.File.FullName);
     }
 
     private static string GetText(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.TypeDefinition type => EntityText.Label(NodeDefinitions.GetSymbol(type.Definition)),
-            NodeSubject.MemberDefinition member => EntityText.Label(NodeDefinitions.GetSymbol(member.Definition)),
-            NodeSubject.References => "References",
-            NodeSubject.AssemblyReference reference => reference.Value.Reference.Name,
-            NodeSubject.ReferencedTypes => "Referenced types",
-            NodeSubject.TypeReference type => type.Value.Label,
-            NodeSubject.MemberReference member => EntityText.Label(NodeDefinitions.GetDeclared(member.Value)),
-            NodeSubject.ModuleReference module => module.Value.Name,
-            NodeSubject.ImportedMethod import => import.Value.Label,
-            NodeSubject.ForwardedType forwarded => forwarded.Value.Label,
-            NodeSubject.BaseTypes => "Base Types",
-            NodeSubject.BaseType baseType => EntityText.TypeName(NodeDefinitions.GetSymbols(baseType.Value).Type),
-            NodeSubject.DerivedTypes => "Derived Types",
-            NodeSubject.DerivedType derived => EntityText.TypeName(NodeDefinitions.GetSymbol(derived.Value)),
-            NodeSubject.Resources => "Resources",
-            NodeSubject.ResourceContainer container => container.Value.Resource.Name,
-            NodeSubject.ResourceEntry entry => entry.Value.Name,
-            NodeSubject.Metadata metadata => metadata.Value.Title,
-            NodeSubject.MetadataTables => "Tables",
-            NodeSubject.MetadataTable table => table.Value.Title,
-            NodeSubject.Package package => package.Value.Label,
-            NodeSubject.PackageFile file => file.Value.File.Name,
-            NodeSubject.Module module => BrowseRoots.GetModuleLabel(module.Value),
-            NodeSubject.Namespace ns => ns.Value.Label,
-            NodeSubject.FailedAssembly failed => failed.Value.FilePath.FileName,
-            _ => throw new UnreachableException(),
-        };
+        return subject.Match(
+            module: static module => BrowseRoots.GetModuleLabel(module.Value),
+            @namespace: static ns => ns.Value.Label,
+            failedAssembly: static failed => failed.Value.FilePath.FileName,
+            typeDefinition: static type => EntityText.Label(NodeDefinitions.GetSymbol(type.Definition)),
+            memberDefinition: static member => EntityText.Label(NodeDefinitions.GetSymbol(member.Definition)),
+            references: static _ => "References",
+            assemblyReference: static reference => reference.Value.Reference.Name,
+            referencedTypes: static _ => "Referenced types",
+            typeReference: static type => type.Value.Label,
+            memberReference: static member => EntityText.Label(NodeDefinitions.GetDeclared(member.Value)),
+            moduleReference: static module => module.Value.Name,
+            importedMethod: static import => import.Value.Label,
+            forwardedType: static forwarded => forwarded.Value.Label,
+            baseTypes: static _ => "Base Types",
+            baseType: static baseType => EntityText.TypeName(NodeDefinitions.GetSymbols(baseType.Value).Type),
+            derivedTypes: static _ => "Derived Types",
+            derivedType: static derived => EntityText.TypeName(NodeDefinitions.GetSymbol(derived.Value)),
+            resources: static _ => "Resources",
+            resourceContainer: static container => container.Value.Resource.Name,
+            resourceEntry: static entry => entry.Value.Name,
+            metadata: static metadata => metadata.Value.Title,
+            metadataTables: static _ => "Tables",
+            metadataTable: static table => table.Value.Title,
+            package: static package => package.Value.Label,
+            packageFile: static file => file.Value.File.Name);
     }
 
     /// <summary>Whether a node of <paramref name="subject"/> may have children, guessed without building them.</summary>
     private static bool CanHaveChildren(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.TypeDefinition type => EntityNodes.CanListMembers(type.Definition),
-            NodeSubject.MemberDefinition member => NodeDefinitions.GetSymbol(member.Definition) is IProperty or IEvent,
-            NodeSubject.References references => ReferenceNodes.HasReferences(references.Owner),
-            NodeSubject.AssemblyReference => true,
-            NodeSubject.ReferencedTypes types => ForwardedTypes.UsesReference(LoadedAssemblies.EnsureReferenceUsage(types.Reference.Module), types.Reference.Reference.Handle),
-            NodeSubject.TypeReference type => ReferenceNodes.UsesAnythingOf(type.Value),
-            NodeSubject.ModuleReference module => module.Value.Imports.Count > 0,
-            NodeSubject.BaseTypes or NodeSubject.DerivedTypes or NodeSubject.Resources or NodeSubject.ResourceContainer
-                or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.Package or NodeSubject.Module => true,
-            NodeSubject.Namespace ns => !ns.Value.IsEnclosingOnly,
-            NodeSubject.MetadataTable table => table.Value.Part is MetadataPart.DebugDirectory,
-            NodeSubject.DerivedType derived => !NodeDefinitions.GetSymbol(derived.Value).IsSealed,
-            NodeSubject.MemberReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseType
-                or NodeSubject.ResourceEntry or NodeSubject.PackageFile or NodeSubject.FailedAssembly => false,
-            _ => throw new UnreachableException(),
-        };
+        return subject.Match(
+            module: static _ => true,
+            @namespace: static ns => !ns.Value.IsEnclosingOnly,
+            failedAssembly: static _ => false,
+            typeDefinition: static type => EntityNodes.CanListMembers(type.Definition),
+            memberDefinition: static member => NodeDefinitions.GetSymbol(member.Definition) is IProperty or IEvent,
+            references: static references => ReferenceNodes.HasReferences(references.Owner),
+            assemblyReference: static _ => true,
+            referencedTypes: static types => ForwardedTypes.UsesReference(LoadedAssemblies.EnsureReferenceUsage(types.Reference.Module), types.Reference.Reference.Handle),
+            typeReference: static type => ReferenceNodes.UsesAnythingOf(type.Value),
+            memberReference: static _ => false,
+            moduleReference: static module => module.Value.Imports.Count > 0,
+            importedMethod: static _ => false,
+            forwardedType: static _ => false,
+            baseTypes: static _ => true,
+            baseType: static _ => false,
+            derivedTypes: static _ => true,
+            derivedType: static derived => !NodeDefinitions.GetSymbol(derived.Value).IsSealed,
+            resources: static _ => true,
+            resourceContainer: static _ => true,
+            resourceEntry: static _ => false,
+            metadata: static _ => true,
+            metadataTables: static _ => true,
+            metadataTable: static table => table.Value.Part is MetadataPart.DebugDirectory,
+            package: static _ => true,
+            packageFile: static _ => false);
     }
 
     /// <summary>The module whose type system building the children of a node of <paramref name="subject"/> reads: a
@@ -241,30 +267,32 @@ public static class BrowseNodes
     /// it began; the <see cref="BrowseSession"/> calls it once.</summary>
     internal static BrowseNode[] CreateChildren(BrowseNode parent, ChildrenReads reads)
     {
-        return parent.Subject switch
-        {
-            NodeSubject.TypeDefinition type => EntityNodes.ListMembers(parent, type.Definition),
-            NodeSubject.MemberDefinition member => EntityNodes.ListAccessors(parent, member.Definition),
-            NodeSubject.References references => ReferenceNodes.ListAssemblyReferences(references.Owner, parent).Concat(ReferenceNodes.ListModuleReferences(references.Owner, parent)).ToArray(),
-            NodeSubject.AssemblyReference reference => ReferenceNodes.ListReferenceContents(parent, reference.Value),
-            NodeSubject.ReferencedTypes types => ReferenceNodes.ListUsedTypes(parent, types.Reference),
-            NodeSubject.TypeReference type => ReferenceNodes.ListUsedOf(parent, type.Value, reads.RequireMain()),
-            NodeSubject.ModuleReference module => ReferenceNodes.ListImports(parent, module.Value, reads.RequireMain()),
-            NodeSubject.BaseTypes baseTypes => EntityNodes.ListBaseTypes(parent, baseTypes.Type),
-            NodeSubject.DerivedTypes derivedTypes => EntityNodes.FindDerivedTypes(derivedTypes.Type.Module, parent, NodeDefinitions.GetSymbol(derivedTypes.Type), reads),
-            NodeSubject.DerivedType derived => EntityNodes.FindDerivedTypes(derived.Value.Module, parent, NodeDefinitions.GetSymbol(derived.Value), reads),
-            NodeSubject.Resources resources => ResourceNodes.ListResources(parent, resources.Owner),
-            NodeSubject.ResourceContainer container => ResourceNodes.ListEntries(parent, container.Value),
-            NodeSubject.Metadata metadata => MetadataNodes.ListMetadata(parent, metadata.Value),
-            NodeSubject.MetadataTables tables => MetadataTableNodes.List(parent, tables.Folder),
-            NodeSubject.MetadataTable table => table.Value.Part is MetadataPart.DebugDirectory directory ? MetadataNodes.ListDebugEntries(parent, table.Value.Module, directory.File) : [],
-            NodeSubject.Package package => PackageNodes.ListPackageFolder(parent, package.Value),
-            NodeSubject.Module module => ModuleNodes.ListModule(parent, module.Value, reads.RequireMain()),
-            NodeSubject.Namespace ns => ModuleNodes.ListNamespace(parent, ns.Value),
-            NodeSubject.MemberReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseType
-                or NodeSubject.ResourceEntry or NodeSubject.PackageFile or NodeSubject.FailedAssembly => [],
-            _ => throw new UnreachableException(),
-        };
+        return parent.Subject.Match((parent, reads),
+            module: static (s, module) => ModuleNodes.ListModule(s.parent, module.Value, s.reads.RequireMain()),
+            @namespace: static (s, ns) => ModuleNodes.ListNamespace(s.parent, ns.Value),
+            failedAssembly: static (_, _) => [],
+            typeDefinition: static (s, type) => EntityNodes.ListMembers(s.parent, type.Definition),
+            memberDefinition: static (s, member) => EntityNodes.ListAccessors(s.parent, member.Definition),
+            references: static (s, references) => ReferenceNodes.ListAssemblyReferences(references.Owner, s.parent).Concat(ReferenceNodes.ListModuleReferences(references.Owner, s.parent)).ToArray(),
+            assemblyReference: static (s, reference) => ReferenceNodes.ListReferenceContents(s.parent, reference.Value),
+            referencedTypes: static (s, types) => ReferenceNodes.ListUsedTypes(s.parent, types.Reference),
+            typeReference: static (s, type) => ReferenceNodes.ListUsedOf(s.parent, type.Value, s.reads.RequireMain()),
+            memberReference: static (_, _) => [],
+            moduleReference: static (s, module) => ReferenceNodes.ListImports(s.parent, module.Value, s.reads.RequireMain()),
+            importedMethod: static (_, _) => [],
+            forwardedType: static (_, _) => [],
+            baseTypes: static (s, baseTypes) => EntityNodes.ListBaseTypes(s.parent, baseTypes.Type),
+            baseType: static (_, _) => [],
+            derivedTypes: static (s, derivedTypes) => EntityNodes.FindDerivedTypes(derivedTypes.Type.Module, s.parent, NodeDefinitions.GetSymbol(derivedTypes.Type), s.reads),
+            derivedType: static (s, derived) => EntityNodes.FindDerivedTypes(derived.Value.Module, s.parent, NodeDefinitions.GetSymbol(derived.Value), s.reads),
+            resources: static (s, resources) => ResourceNodes.ListResources(s.parent, resources.Owner),
+            resourceContainer: static (s, container) => ResourceNodes.ListEntries(s.parent, container.Value),
+            resourceEntry: static (_, _) => [],
+            metadata: static (s, metadata) => MetadataNodes.ListMetadata(s.parent, metadata.Value),
+            metadataTables: static (s, tables) => MetadataTableNodes.List(s.parent, tables.Folder),
+            metadataTable: static (s, table) => table.Value.Part is MetadataPart.DebugDirectory directory ? MetadataNodes.ListDebugEntries(s.parent, table.Value.Module, directory.File) : [],
+            package: static (s, package) => PackageNodes.ListPackageFolder(s.parent, package.Value),
+            packageFile: static (_, _) => []);
     }
 
     /// <summary>The node of <paramref name="subject"/>, under <paramref name="parent"/>, which for a namespace may be one

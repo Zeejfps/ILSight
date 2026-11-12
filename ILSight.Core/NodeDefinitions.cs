@@ -163,18 +163,32 @@ public static class NodeDefinitions
     /// point at it; null for a node that defines none.</summary>
     public static CodeReference.Entity? ReferenceOf(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.TypeDefinition type => type.Definition.Reference,
-            NodeSubject.MemberDefinition member => member.Definition.Reference,
-            NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
-                or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
-                or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
-                or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables
-                or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace
-                or NodeSubject.FailedAssembly => null,
-            _ => throw new UnreachableException(),
-        };
+        return subject.Match<CodeReference.Entity?>(
+            module: static _ => null,
+            @namespace: static _ => null,
+            failedAssembly: static _ => null,
+            typeDefinition: static type => type.Definition.Reference,
+            memberDefinition: static member => member.Definition.Reference,
+            references: static _ => null,
+            assemblyReference: static _ => null,
+            referencedTypes: static _ => null,
+            typeReference: static _ => null,
+            memberReference: static _ => null,
+            moduleReference: static _ => null,
+            importedMethod: static _ => null,
+            forwardedType: static _ => null,
+            baseTypes: static _ => null,
+            baseType: static _ => null,
+            derivedTypes: static _ => null,
+            derivedType: static _ => null,
+            resources: static _ => null,
+            resourceContainer: static _ => null,
+            resourceEntry: static _ => null,
+            metadata: static _ => null,
+            metadataTables: static _ => null,
+            metadataTable: static _ => null,
+            package: static _ => null,
+            packageFile: static _ => null);
     }
 
     /// <summary>The metadata token of the type or member a node of <paramref name="subject"/> defines;
@@ -205,28 +219,35 @@ public static class NodeDefinitions
     /// <summary>How visible what a node of <paramref name="subject"/> stands for is.</summary>
     public static NodeVisibility GetVisibility(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.TypeDefinition type => type.Definition.Visibility,
-            NodeSubject.MemberDefinition member => member.Definition.Visibility,
-            NodeSubject.ImportedMethod import => import.Value.Shown.Visibility with { IsCompilerGenerated = false },
-            NodeSubject.DerivedType derived => derived.Value.Visibility,
-            NodeSubject.BaseType baseType => baseType.Value.Visibility,
-            NodeSubject.Namespace ns => new NodeVisibility(NodeAccessibility.None, ns.Value.IsPublicApi, ns.Value.IsCompilerGenerated),
-            NodeSubject.ResourceContainer container => GetResourceVisibility(container.Value.Resource),
-            NodeSubject.ResourceEntry entry => entry.Value.Source switch
-            {
-                ResourceSource.Manifest manifest => GetResourceVisibility(manifest.Resource),
-                ResourceSource.Entry or ResourceSource.Baml => NodeVisibility.Open,
-                _ => throw new UnreachableException(),
-            },
-            NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
-                or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ForwardedType or NodeSubject.BaseTypes
-                or NodeSubject.DerivedTypes or NodeSubject.Resources or NodeSubject.Metadata or NodeSubject.MetadataTables
-                or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module
-                or NodeSubject.FailedAssembly => NodeVisibility.Open,
-            _ => throw new UnreachableException(),
-        };
+        return subject.Match(
+            module: static _ => NodeVisibility.Open,
+            @namespace: static ns => new NodeVisibility(NodeAccessibility.None, ns.Value.IsPublicApi, ns.Value.IsCompilerGenerated),
+            failedAssembly: static _ => NodeVisibility.Open,
+            typeDefinition: static type => type.Definition.Visibility,
+            memberDefinition: static member => member.Definition.Visibility,
+            references: static _ => NodeVisibility.Open,
+            assemblyReference: static _ => NodeVisibility.Open,
+            referencedTypes: static _ => NodeVisibility.Open,
+            typeReference: static _ => NodeVisibility.Open,
+            memberReference: static _ => NodeVisibility.Open,
+            moduleReference: static _ => NodeVisibility.Open,
+            importedMethod: static import => import.Value.Shown.Visibility with { IsCompilerGenerated = false },
+            forwardedType: static _ => NodeVisibility.Open,
+            baseTypes: static _ => NodeVisibility.Open,
+            baseType: static baseType => baseType.Value.Visibility,
+            derivedTypes: static _ => NodeVisibility.Open,
+            derivedType: static derived => derived.Value.Visibility,
+            resources: static _ => NodeVisibility.Open,
+            resourceContainer: static container => GetResourceVisibility(container.Value.Resource),
+            resourceEntry: static entry => entry.Value.Source.Match(
+                static manifest => GetResourceVisibility(manifest.Resource),
+                static _ => NodeVisibility.Open,
+                static _ => NodeVisibility.Open),
+            metadata: static _ => NodeVisibility.Open,
+            metadataTables: static _ => NodeVisibility.Open,
+            metadataTable: static _ => NodeVisibility.Open,
+            package: static _ => NodeVisibility.Open,
+            packageFile: static _ => NodeVisibility.Open);
     }
 
     private static NodeVisibility GetResourceVisibility(ICSharpCode.Decompiler.Metadata.Resource resource)
@@ -238,31 +259,39 @@ public static class NodeDefinitions
     /// <summary>What activating a node of <paramref name="subject"/> does.</summary>
     public static Activation GetActivation(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.AssemblyReference reference => new Activation.Navigate(CodeReferences.CreateAssembly(reference.Value.Reference.Name,
+        return subject.Match<Activation>(
+            module: static _ => Open,
+            @namespace: static _ => Open,
+            failedAssembly: static _ => Open,
+            typeDefinition: static _ => Open,
+            memberDefinition: static _ => Open,
+            references: static _ => Open,
+            assemblyReference: static reference => new Activation.Navigate(CodeReferences.CreateAssembly(reference.Value.Reference.Name,
                 reference.Value.Module.FilePath, reference.Value.Reference.Handle)),
-            NodeSubject.TypeReference type => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, type.Value.Label, type.Value.Module.FilePath,
+            referencedTypes: static _ => Open,
+            typeReference: static type => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, type.Value.Label, type.Value.Module.FilePath,
                 type.Value.Handle)),
-            NodeSubject.MemberReference member => new Activation.Navigate(CodeReferences.CreateEntity(CodeReferences.GetKind(NodeDefinitions.GetDeclared(member.Value).SymbolKind),
+            memberReference: static member => new Activation.Navigate(CodeReferences.CreateEntity(CodeReferences.GetKind(NodeDefinitions.GetDeclared(member.Value).SymbolKind),
                 NodeDefinitions.GetDeclared(member.Value).Name, member.Value.Module.FilePath, member.Value.Handle)),
-            NodeSubject.ForwardedType forwarded => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, forwarded.Value.Label,
+            moduleReference: static _ => Open,
+            importedMethod: static import => new Activation.Navigate(import.Value.Shown.Reference),
+            forwardedType: static forwarded => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, forwarded.Value.Label,
                 forwarded.Value.Module.FilePath, forwarded.Value.Handle)),
-            NodeSubject.ImportedMethod import => new Activation.Navigate(import.Value.Shown.Reference),
-            NodeSubject.DerivedType derived => new Activation.Navigate(derived.Value.Reference),
-            NodeSubject.BaseType baseType => baseType.Value.Target switch
-            {
-                BaseTypeTarget.Navigable navigable => new Activation.Navigate(navigable.Reference),
-                BaseTypeTarget.Unaddressed or BaseTypeTarget.Unresolved => Open,
-                _ => throw new UnreachableException(),
-            },
-            NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.References or NodeSubject.ReferencedTypes
-                or NodeSubject.ModuleReference or NodeSubject.BaseTypes or NodeSubject.DerivedTypes or NodeSubject.Resources
-                or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables
-                or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace
-                or NodeSubject.FailedAssembly => Open,
-            _ => throw new UnreachableException(),
-        };
+            baseTypes: static _ => Open,
+            baseType: static baseType => baseType.Value.Target.Match<Activation>(
+                static navigable => new Activation.Navigate(navigable.Reference),
+                static _ => Open,
+                static _ => Open),
+            derivedTypes: static _ => Open,
+            derivedType: static derived => new Activation.Navigate(derived.Value.Reference),
+            resources: static _ => Open,
+            resourceContainer: static _ => Open,
+            resourceEntry: static _ => Open,
+            metadata: static _ => Open,
+            metadataTables: static _ => Open,
+            metadataTable: static _ => Open,
+            package: static _ => Open,
+            packageFile: static _ => Open);
     }
 
     /// <summary>The reference a node of <paramref name="subject"/> points at, as documents link to it;
@@ -316,35 +345,32 @@ public static class NodeDefinitions
     /// <summary>The segment naming a node of <paramref name="subject"/>; null for the root of a tree.</summary>
     internal static NodePathSegment? FindPathSegment(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.TypeDefinition type => new NodePathSegment.Definition(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(type.Definition))),
-            NodeSubject.MemberDefinition member => new NodePathSegment.Definition(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(member.Definition))),
-            NodeSubject.References => new NodePathSegment.Folder(NodeFolder.References),
-            NodeSubject.AssemblyReference reference => new NodePathSegment.AssemblyReference(reference.Value.Reference.Name),
-            NodeSubject.ReferencedTypes => new NodePathSegment.Folder(NodeFolder.ReferencedTypes),
-            NodeSubject.TypeReference type => new NodePathSegment.UsedType(type.Value.ReflectionName),
-            NodeSubject.MemberReference member => new NodePathSegment.UsedMember(GetUsedMemberId(NodeDefinitions.GetDeclared(member.Value))),
-            NodeSubject.ModuleReference module => new NodePathSegment.ModuleReference(module.Value.Name),
-            NodeSubject.ImportedMethod import => new NodePathSegment.ImportedMethod(import.Value.Id),
-            NodeSubject.ForwardedType forwarded => new NodePathSegment.ForwardedType(forwarded.Value.ReflectionName),
-            NodeSubject.BaseTypes => new NodePathSegment.Folder(NodeFolder.BaseTypes),
-            NodeSubject.BaseType baseType => new NodePathSegment.BaseType(GetSymbols(baseType.Value).Type.ReflectionName),
-            NodeSubject.DerivedTypes => new NodePathSegment.Folder(NodeFolder.DerivedTypes),
-            NodeSubject.DerivedType derived => new NodePathSegment.DerivedType(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(derived.Value))),
-            NodeSubject.Resources => new NodePathSegment.Folder(NodeFolder.Resources),
-            NodeSubject.ResourceContainer container => new NodePathSegment.Resource(container.Value.Resource.Name),
-            NodeSubject.ResourceEntry entry => new NodePathSegment.Resource(entry.Value.Name),
-            NodeSubject.Metadata metadata => new NodePathSegment.Metadata(LoadedAssemblies.IsOwnMetadata(metadata.Value) ? MetadataSource.Own : MetadataSource.Debug),
-            NodeSubject.MetadataTables => new NodePathSegment.Folder(NodeFolder.MetadataTables),
-            NodeSubject.MetadataTable table => new NodePathSegment.MetadataPart(table.Value.Key),
-            NodeSubject.Package package => package.Value.IsRoot ? null : new NodePathSegment.PackageFolder(package.Value.Folder.FullName),
-            NodeSubject.PackageFile file => new NodePathSegment.PackageFile(file.Value.File.FullName),
-            NodeSubject.Module module => module.Value.Place is null ? null : new NodePathSegment.EmbeddedModule(module.Value.Place.File.FullName),
-            NodeSubject.Namespace ns => new NodePathSegment.Namespace(ns.Value.Name),
-            NodeSubject.FailedAssembly => null,
-            _ => throw new UnreachableException(),
-        };
+        return subject.Match<NodePathSegment?>(
+            module: static module => module.Value.Place is null ? null : new NodePathSegment.EmbeddedModule(module.Value.Place.File.FullName),
+            @namespace: static ns => new NodePathSegment.Namespace(ns.Value.Name),
+            failedAssembly: static _ => null,
+            typeDefinition: static type => new NodePathSegment.Definition(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(type.Definition))),
+            memberDefinition: static member => new NodePathSegment.Definition(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(member.Definition))),
+            references: static _ => new NodePathSegment.Folder(NodeFolder.References),
+            assemblyReference: static reference => new NodePathSegment.AssemblyReference(reference.Value.Reference.Name),
+            referencedTypes: static _ => new NodePathSegment.Folder(NodeFolder.ReferencedTypes),
+            typeReference: static type => new NodePathSegment.UsedType(type.Value.ReflectionName),
+            memberReference: static member => new NodePathSegment.UsedMember(GetUsedMemberId(NodeDefinitions.GetDeclared(member.Value))),
+            moduleReference: static module => new NodePathSegment.ModuleReference(module.Value.Name),
+            importedMethod: static import => new NodePathSegment.ImportedMethod(import.Value.Id),
+            forwardedType: static forwarded => new NodePathSegment.ForwardedType(forwarded.Value.ReflectionName),
+            baseTypes: static _ => new NodePathSegment.Folder(NodeFolder.BaseTypes),
+            baseType: static baseType => new NodePathSegment.BaseType(GetSymbols(baseType.Value).Type.ReflectionName),
+            derivedTypes: static _ => new NodePathSegment.Folder(NodeFolder.DerivedTypes),
+            derivedType: static derived => new NodePathSegment.DerivedType(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(derived.Value))),
+            resources: static _ => new NodePathSegment.Folder(NodeFolder.Resources),
+            resourceContainer: static container => new NodePathSegment.Resource(container.Value.Resource.Name),
+            resourceEntry: static entry => new NodePathSegment.Resource(entry.Value.Name),
+            metadata: static metadata => new NodePathSegment.Metadata(LoadedAssemblies.IsOwnMetadata(metadata.Value) ? MetadataSource.Own : MetadataSource.Debug),
+            metadataTables: static _ => new NodePathSegment.Folder(NodeFolder.MetadataTables),
+            metadataTable: static table => new NodePathSegment.MetadataPart(table.Value.Key),
+            package: static package => package.Value.IsRoot ? null : new NodePathSegment.PackageFolder(package.Value.Folder.FullName),
+            packageFile: static file => new NodePathSegment.PackageFile(file.Value.File.FullName));
     }
 
     /// <summary>The documentation id of <paramref name="member"/>, written from its signature as the type

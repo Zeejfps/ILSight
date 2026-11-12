@@ -89,13 +89,10 @@ internal static class ResourceNodes
 
     internal static byte[] ReadData(ResourceEntryInfo entry)
     {
-        return entry.Source switch
-        {
-            ResourceSource.Manifest manifest => ResourceNodes.Read(manifest.Resource),
-            ResourceSource.Entry bytes => bytes.Data,
-            ResourceSource.Baml baml => Encoding.UTF8.GetBytes(Resources.Baml.DecompileToText(entry.Module, baml.Data, CancellationToken.None)),
-            _ => throw new System.Diagnostics.UnreachableException(),
-        };
+        return entry.Source.Match(entry,
+            static (_, manifest) => ResourceNodes.Read(manifest.Resource),
+            static (_, bytes) => bytes.Data,
+            static (info, baml) => Encoding.UTF8.GetBytes(Resources.Baml.DecompileToText(info.Module, baml.Data, CancellationToken.None)));
     }
 
     internal static byte[] ReadData(ResourceContainerInfo container)
@@ -107,12 +104,9 @@ internal static class ResourceNodes
     /// asset container, which has none.</summary>
     internal static Metadata.MetadataGrid? EnsureGrid(ResourceContainerInfo container)
     {
-        return container.Contents switch
-        {
-            ContainerContents.ResourcesFile file => file.Grid.Value,
-            ContainerContents.AvaloniaAssets => null,
-            _ => throw new System.Diagnostics.UnreachableException(),
-        };
+        return container.Contents.Match<Metadata.MetadataGrid?>(
+            static file => file.Grid.Value,
+            static _ => null);
     }
 
     internal static ResourceContainerInfo CreateResourcesFile(LoadedModule module, MetadataResource resource)
@@ -157,23 +151,20 @@ internal static class ResourceNodes
     /// among them, or Avalonia's assets, sorted by their paths.</summary>
     internal static BrowseNode[] ListEntries(BrowseNode parent, ResourceContainerInfo container)
     {
-        return container.Contents switch
-        {
-            ContainerContents.ResourcesFile file => file.Entries.Value
+        return container.Contents.Match((parent, container),
+            static (s, file) => file.Entries.Value
                 .Select(e => e.Value switch
                 {
-                    byte[] bytes => CreateEntry(parent, container.Module, e.Key, bytes),
-                    MemoryStream stream => CreateEntry(parent, container.Module, e.Key, stream.ToArray()),
+                    byte[] bytes => CreateEntry(s.parent, s.container.Module, e.Key, bytes),
+                    MemoryStream stream => CreateEntry(s.parent, s.container.Module, e.Key, stream.ToArray()),
                     _ => (BrowseNode?)null,
                 })
                 .OfType<BrowseNode>()
                 .ToArray(),
-            ContainerContents.AvaloniaAssets => AvaloniaResources.ReadEntries(ResourceNodes.ReadData(container))
+            static (s, _) => AvaloniaResources.ReadEntries(ResourceNodes.ReadData(s.container))
                 .OrderBy(e => e.Path, NaturalStringComparer.Instance)
-                .Select(e => BrowseNodes.Create(parent, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
-                .ToArray(),
-            _ => throw new System.Diagnostics.UnreachableException(),
-        };
+                .Select(e => BrowseNodes.Create(s.parent, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = s.container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
+                .ToArray());
     }
 
     private static BrowseNode CreateEntry(BrowseNode parent, LoadedModule module, string name, byte[] data)

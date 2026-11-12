@@ -33,10 +33,12 @@ public static class ILSpyTree
     /// <see cref="BrowseNodes"/> makes the node.</summary>
     internal static string? NameOf(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.TypeDefinition type => NodeDefinitions.GetSymbol(type.Definition).ReflectionName,
-            NodeSubject.MemberDefinition member => NodeDefinitions.GetSymbol(member.Definition) switch
+        return subject.Match<string?>(
+            module: static module => module.Value.FilePath.Text,
+            @namespace: static ns => ns.Value.Name,
+            failedAssembly: static _ => null,
+            typeDefinition: static type => NodeDefinitions.GetSymbol(type.Definition).ReflectionName,
+            memberDefinition: static member => NodeDefinitions.GetSymbol(member.Definition) switch
             {
                 IMethod method => "Method " + Signatures.ConvertSymbol(method),
                 IProperty property => "Property " + Signatures.ConvertSymbol(property),
@@ -44,15 +46,26 @@ public static class ILSpyTree
                 IEvent @event => "Event " + @event.Name,
                 _ => null,
             },
-            NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
-                or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
-                or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
-                or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
-                or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.FailedAssembly => null,
-            NodeSubject.Module module => module.Value.FilePath.Text,
-            NodeSubject.Namespace ns => ns.Value.Name,
-            _ => throw new UnreachableException(),
-        };
+            references: static _ => null,
+            assemblyReference: static _ => null,
+            referencedTypes: static _ => null,
+            typeReference: static _ => null,
+            memberReference: static _ => null,
+            moduleReference: static _ => null,
+            importedMethod: static _ => null,
+            forwardedType: static _ => null,
+            baseTypes: static _ => null,
+            baseType: static _ => null,
+            derivedTypes: static _ => null,
+            derivedType: static _ => null,
+            resources: static _ => null,
+            resourceContainer: static _ => null,
+            resourceEntry: static _ => null,
+            metadata: static _ => null,
+            metadataTables: static _ => null,
+            metadataTable: static _ => null,
+            package: static _ => null,
+            packageFile: static _ => null);
     }
 
     /// <summary>The names of the nodes down from the assembly to <paramref name="node"/>, as ILSpy's

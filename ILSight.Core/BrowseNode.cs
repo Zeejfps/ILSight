@@ -1,6 +1,5 @@
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using System.Reflection.Metadata.Ecma335;
-using System.Diagnostics;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core;
@@ -108,30 +107,60 @@ public sealed class BrowseNode
 
     /// <summary>The folder of a package the node lists, whose files can be extracted: the root folder for
     /// a package's own node; null for a node that lists none.</summary>
-    public PackageFolderPlace? FolderInPackage => Subject switch
-    {
-        NodeSubject.Package package => new PackageFolderPlace(package.Value.Package, package.Value.Folder),
-        NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.References or NodeSubject.AssemblyReference
-            or NodeSubject.ReferencedTypes or NodeSubject.TypeReference or NodeSubject.MemberReference or NodeSubject.ModuleReference
-            or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseTypes or NodeSubject.BaseType
-            or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources or NodeSubject.ResourceContainer
-            or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
-            or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly => null,
-        _ => throw new UnreachableException(),
-    };
+    public PackageFolderPlace? FolderInPackage => Subject.Match<PackageFolderPlace?>(
+        module: static _ => null,
+        @namespace: static _ => null,
+        failedAssembly: static _ => null,
+        typeDefinition: static _ => null,
+        memberDefinition: static _ => null,
+        references: static _ => null,
+        assemblyReference: static _ => null,
+        referencedTypes: static _ => null,
+        typeReference: static _ => null,
+        memberReference: static _ => null,
+        moduleReference: static _ => null,
+        importedMethod: static _ => null,
+        forwardedType: static _ => null,
+        baseTypes: static _ => null,
+        baseType: static _ => null,
+        derivedTypes: static _ => null,
+        derivedType: static _ => null,
+        resources: static _ => null,
+        resourceContainer: static _ => null,
+        resourceEntry: static _ => null,
+        metadata: static _ => null,
+        metadataTables: static _ => null,
+        metadataTable: static _ => null,
+        package: static package => new PackageFolderPlace(package.Value.Package, package.Value.Folder),
+        packageFile: static _ => null);
 
     /// <summary>The type or member the node defines; null for a node of anything else.</summary>
-    internal IEntity? Entity => Subject switch
-    {
-        NodeSubject.TypeDefinition type => NodeDefinitions.GetSymbol(type.Definition),
-        NodeSubject.MemberDefinition member => NodeDefinitions.GetSymbol(member.Definition),
-        NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
-            or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
-            or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
-            or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables
-            or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly => null,
-        _ => throw new UnreachableException(),
-    };
+    internal IEntity? Entity => Subject.Match<IEntity?>(
+        module: static _ => null,
+        @namespace: static _ => null,
+        failedAssembly: static _ => null,
+        typeDefinition: static type => NodeDefinitions.GetSymbol(type.Definition),
+        memberDefinition: static member => NodeDefinitions.GetSymbol(member.Definition),
+        references: static _ => null,
+        assemblyReference: static _ => null,
+        referencedTypes: static _ => null,
+        typeReference: static _ => null,
+        memberReference: static _ => null,
+        moduleReference: static _ => null,
+        importedMethod: static _ => null,
+        forwardedType: static _ => null,
+        baseTypes: static _ => null,
+        baseType: static _ => null,
+        derivedTypes: static _ => null,
+        derivedType: static _ => null,
+        resources: static _ => null,
+        resourceContainer: static _ => null,
+        resourceEntry: static _ => null,
+        metadata: static _ => null,
+        metadataTables: static _ => null,
+        metadataTable: static _ => null,
+        package: static _ => null,
+        packageFile: static _ => null);
 
     public override string ToString()
     {
