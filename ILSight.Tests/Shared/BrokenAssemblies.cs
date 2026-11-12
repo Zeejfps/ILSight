@@ -32,4 +32,26 @@ internal static class BrokenAssemblies
         pe.Serialize(image);
         return temp.Write("Unreadable.dll", image.ToArray());
     }
+
+    /// <summary>A copy of the assembly at <paramref name="path"/> whose first type after <c>&lt;Module&gt;</c> has a
+    /// namespace that points past its string heap: the file opens, and reading its type system, which lists the
+    /// namespaces, throws.</summary>
+    public static string WriteUnreadableTypeSystem(TempDir temp, string path)
+    {
+        var image = File.ReadAllBytes(path);
+        using (var pe = new PEReader(new MemoryStream(image)))
+        {
+            var reader = pe.GetMetadataReader();
+            var rowSize = reader.GetTableRowSize(TableIndex.TypeDef);
+            var stringHeapSize = reader.GetHeapSize(HeapIndex.String);
+            var stringIndexSize = stringHeapSize < 0x10000 ? 2 : 4;
+            const int flagsSize = 4;
+            const int secondRow = 1;
+            var offset = pe.PEHeaders.MetadataStartOffset + reader.GetTableMetadataOffset(TableIndex.TypeDef) + rowSize * secondRow + flagsSize +
+                         stringIndexSize;
+            image.AsSpan(offset, stringIndexSize).Fill(0xFF);
+        }
+
+        return temp.Write("UnreadableTypes.dll", image);
+    }
 }

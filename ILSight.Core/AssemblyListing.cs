@@ -158,7 +158,7 @@ public static class AssemblyListing
             Know(held.Value, fresh);
             ChangeListed(held, listed.Replace(item, fresh));
         }
-        WarmUpLater(fresh);
+        AskTypeSystemRead(list, fresh);
         list.ChangedHandlers?.Invoke();
         return true;
     }
@@ -572,21 +572,21 @@ public static class AssemblyListing
 
             ChangeListed(held, ListInPlaceOfFailure(listed, assembly));
         }
-        WarmUpLater(assembly);
+        AskTypeSystemRead(list, assembly);
         list.ChangedHandlers?.Invoke();
         return true;
     }
 
-    /// <summary>Loads a listed assembly's type system in the background, so that it is ready when
-    /// first shown.</summary>
-    private static void WarmUpLater(LoadedAssembly assembly)
+    /// <summary>Asks for a listed assembly's type system to be read ahead of its first use, so that it is ready when
+    /// first shown: the app's frame edge begins the read (<see cref="LoadedAssemblies.ReadTypeSystemAsync"/>).</summary>
+    private static void AskTypeSystemRead(AssemblyList list, LoadedAssembly assembly)
     {
         if (assembly is not LoadedModule module)
         {
             return;
         }
 
-        ThreadPool.QueueUserWorkItem(static m => LoadedAssemblies.WarmUp(m), module, preferLocal: false);
+        list.AskTypeSystemRead(module);
     }
 
     /// <summary>The assembly <paramref name="package"/> holds as <paramref name="file"/>: the one read

@@ -180,6 +180,29 @@ public static class Commands
         appState.Workflows.Start(nameof(BuildChildrenHandler), ct => appState.BuildChildrenHandler.HandleAsync(tree, node, ct));
     }
 
+    /// <summary>Starts reading the type system of each module listed since the last frame, ahead of its first use,
+    /// which takes the same read's outcome (<see cref="LoadedAssemblies.ReadTypeSystemAsync"/>): a read the library
+    /// fails on ends with nothing to report, its first use showing why. Each is counted in the app's background work
+    /// until it ends. Allocates nothing while nothing is asked for.</summary>
+    public static void StartReadingTypeSystems(WorkflowRunner workflows, AssemblyList assemblies)
+    {
+        if (!assemblies.HasTypeSystemReadsAsked)
+        {
+            return;
+        }
+
+        foreach (var module in assemblies.TakeTypeSystemReadsAsked())
+        {
+            StartReadingTypeSystem(workflows, module);
+        }
+    }
+
+    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartReadingTypeSystem(WorkflowRunner workflows, LoadedModule module)
+    {
+        workflows.Start(nameof(LoadedAssemblies.ReadTypeSystemAsync), ct => LoadedAssemblies.ReadTypeSystemAsync(module, ct));
+    }
+
     /// <summary>Starts the runs <paramref name="search"/> asked for while the screen drew (<see cref="RunSearchHandler"/>)
     /// now, each counted in the app's background work until it ends, on a token that a new query cancels too.
     /// Allocates nothing while nothing is asked for.</summary>

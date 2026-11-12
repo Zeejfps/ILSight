@@ -49,6 +49,28 @@ public sealed class BrowseTreeTests
     }
 
     [Fact]
+    public void A_module_whose_types_the_library_cannot_read_says_why_in_the_tree_and_nothing_in_the_error_log()
+    {
+        using var temp = new TempDir();
+        var path = BrokenAssemblies.WriteUnreadableTypeSystem(temp, Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll"));
+        var app = new AppDriver();
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(path), AssemblyPath.Of(AppStateDriver.FixturePath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
+        app.Settle(2);
+        var module = app.AppState.Assemblies.Assemblies[0];
+
+        app.Ui.Tree.View.SetExpanded(module.Root, true);
+        app.Ui.Tree.View.Refresh();
+        app.Frames.WaitUntil(() => module.Root.ChildrenState is ChildrenState.Failed, AppStateDriver.Patience);
+        app.Settle(2);
+
+        var failed = Assert.IsType<TreeRow>(app.Ui.Tree.GetChildren(module.Root).PlaceholderRow);
+        Assert.StartsWith("Error: ", failed.Label);
+        Assert.Single(app.Frames.TextRects(), t => t.Text == failed.Label);
+        Assert.Empty(app.AppState.Errors.Entries);
+    }
+
+    [Fact]
     public void An_assembly_spins_while_it_is_reopened()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };

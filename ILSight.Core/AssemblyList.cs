@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 
 namespace ILSight.Core;
@@ -51,6 +52,32 @@ public sealed class AssemblyList
     /// <summary>Who <see cref="Changed"/> calls, for <see cref="AssemblyListing"/> to call them, as only this
     /// type can raise it.</summary>
     public Action? ChangedHandlers => Changed;
+
+    /// <summary>The modules listed whose type system is to be read ahead of its first use, in the order they were
+    /// listed; <see cref="AssemblyListing"/> adds each module it lists, on whichever thread lists it.</summary>
+    private readonly ConcurrentQueue<LoadedModule> _typeSystemReadsAsked = new();
+
+    /// <summary>Whether a listed module's type system waits to be read ahead of its first use. Asking allocates
+    /// nothing.</summary>
+    public bool HasTypeSystemReadsAsked => !_typeSystemReadsAsked.IsEmpty;
+
+    internal void AskTypeSystemRead(LoadedModule module)
+    {
+        _typeSystemReadsAsked.Enqueue(module);
+    }
+
+    /// <summary>Takes the modules listed since the last take whose type system is to be read ahead of its first use,
+    /// for the app's frame edge to begin each read (<see cref="LoadedAssemblies.ReadTypeSystemAsync"/>).</summary>
+    public List<LoadedModule> TakeTypeSystemReadsAsked()
+    {
+        var taken = new List<LoadedModule>();
+        while (_typeSystemReadsAsked.TryDequeue(out var module))
+        {
+            taken.Add(module);
+        }
+
+        return taken;
+    }
 
     /// <summary>Whether resolving a reference reads its assembly from a file, rather than only finding one listed.</summary>
     internal bool LoadsReferences => Now.ReadOptions.LoadsReferences;

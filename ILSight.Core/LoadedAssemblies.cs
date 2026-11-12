@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using ICSharpCode.Decompiler;
@@ -49,7 +50,7 @@ public static class LoadedAssemblies
         {
             File = file,
             Resolver = resolver,
-            TypeSystem = new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(file, resolver, Settings.Create())),
+            TypeSystem = new TypeSystemReading(file, resolver),
             DebugSymbols = new Lazy<DebugSymbols?>(() => FindDebugSymbols(list, path, file, place)),
             ReferenceUsage = new Lazy<ReferenceUsage>(() => ForwardedTypes.ReadUsage(file.Metadata)),
         });
@@ -221,10 +222,26 @@ public static class LoadedAssemblies
         return GetLibrary(module).DebugSymbols.Value;
     }
 
-    /// <summary>The assembly's type system, read the first time.</summary>
+    /// <summary>The assembly's type system, waiting for its read when it is under way, and beginning it when it has not
+    /// begun. Throws again what the library threw reading it, as every asker does.</summary>
     public static DecompilerTypeSystem EnsureTypeSystem(LoadedModule module)
     {
-        return GetLibrary(module).TypeSystem.Value;
+        var read = GetLibrary(module).TypeSystem.ReadAsync(CancellationToken.None).GetAwaiter().GetResult();
+        return read.Match(static r => r.TypeSystem, ThrowAgain);
+    }
+
+    /// <summary>Begins reading the assembly's type system ahead of its first use, which takes the same read's outcome;
+    /// ends when the read does, throwing nothing for a module the library fails on (its first use shows that). Only
+    /// <paramref name="ct"/> being cancelled before the read began ends it early.</summary>
+    public static Task ReadTypeSystemAsync(LoadedModule module, CancellationToken ct)
+    {
+        return GetLibrary(module).TypeSystem.ReadAsync(ct);
+    }
+
+    private static DecompilerTypeSystem ThrowAgain(TypeSystemRead.Unreadable unreadable)
+    {
+        unreadable.Thrown.Throw();
+        throw new UnreachableException();
     }
 
     /// <summary>The module of the type system this assembly's metadata is read into, read the first time.</summary>
@@ -257,20 +274,6 @@ public static class LoadedAssemblies
     public static IReadOnlyList<LoadedModule> EnsureAssemblies(LoadedPackage package)
     {
         return package.Assemblies.Value;
-    }
-
-    /// <summary>Reads the type system ahead of its first use, on a thread-pool thread. Whatever
-    /// reading it throws is left for that first use, which reads it again and reports it; it is caught
-    /// whole here because an exception leaving a thread-pool work item ends the process.</summary>
-    internal static void WarmUp(LoadedModule module)
-    {
-        try
-        {
-            _ = EnsureTypeSystem(module);
-        }
-        catch (Exception)
-        {
-        }
     }
 
     /// <summary>The type or member <paramref name="main"/> defines that <paramref name="idString"/> names,
