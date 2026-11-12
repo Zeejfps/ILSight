@@ -5,7 +5,6 @@ using ILSight.Core;
 using ILSight.Localization;
 using static ILSight.SettingsKeeping.Settings;
 using static ILSight.Theming;
-using ILSight.SettingsFormat;
 using ILSight.CodeView;
 using ILSight.BuiltInAssets;
 using ILSight.AppSettingsFormat;

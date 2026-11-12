@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.CodeView;
 
-namespace ILSight.SettingsFormat;
+namespace ILSight;
 
 internal sealed record NodeDocumentJson(
     string? Panel,

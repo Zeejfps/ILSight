@@ -1,4 +1,3 @@
-using ILSight.SettingsFormat;
 
 namespace ILSight.AssemblyListKeeping;
 

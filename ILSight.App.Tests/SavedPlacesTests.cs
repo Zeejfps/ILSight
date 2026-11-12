@@ -2,7 +2,6 @@ using ILSight.Core;
 using System.Text.Json;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Bookmarking.Bookmarks;
-using ILSight.SettingsFormat;
 using ILSight.SettingsKeeping;
 
 namespace ILSight.App.Tests;

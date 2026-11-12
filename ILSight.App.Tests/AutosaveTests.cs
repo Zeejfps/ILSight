@@ -5,7 +5,6 @@ using ILSight.Core;
 using ILSight.Localization;
 using static ILSight.Preferences;
 using static ILSight.SettingsKeeping.Settings;
-using ILSight.SettingsFormat;
 using ILSight.AppSettingsFormat;
 
 namespace ILSight.App.Tests;

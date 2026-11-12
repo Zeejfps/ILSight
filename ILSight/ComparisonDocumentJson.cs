@@ -1,6 +1,6 @@
 using ILSight.Core.Comparison;
 
-namespace ILSight.SettingsFormat;
+namespace ILSight;
 
 internal sealed record ComparisonDocumentJson(
     string? Panel,

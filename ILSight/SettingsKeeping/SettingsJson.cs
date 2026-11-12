@@ -12,7 +12,6 @@ using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
 using ILSight.Diagramming;
-using ILSight.SettingsFormat;
 
 namespace ILSight.SettingsKeeping;
 

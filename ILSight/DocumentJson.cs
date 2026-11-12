@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using ILSight.Diagramming;
 
-namespace ILSight.SettingsFormat;
+namespace ILSight;
 
 /// <summary>An open tab as a settings file can hold it. Without a panel or what it shows it is none.</summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]

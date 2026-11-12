@@ -9,7 +9,6 @@ using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Diagramming.Diagrams;
 using static ILSight.DocumentPanels;
 using static ILSight.App.Tests.TestPaths;
-using ILSight.SettingsFormat;
 using ILSight.CodeView;
 using ILSight.DiagramViewport;
 using ILSight.DocumentViewing;

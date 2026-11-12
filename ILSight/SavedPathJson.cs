@@ -1,4 +1,4 @@
-namespace ILSight.SettingsFormat;
+namespace ILSight;
 
 /// <summary>A place as a settings or bookmarks file can hold it, in the format of <see cref="Version"/>: a
 /// step per node down from the root of the listed file. Of another version, or with a step that cannot be

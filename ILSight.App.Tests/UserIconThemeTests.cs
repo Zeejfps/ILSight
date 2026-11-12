@@ -6,7 +6,6 @@ using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.IconTheming;
 using static ILSight.ScreenLayout;
 using static ILSight.SettingsKeeping.Settings;
-using ILSight.SettingsFormat;
 using ILSight.BuiltInAssets;
 using ILSight.UserState;
 using ILSight.AppSettingsFormat;
