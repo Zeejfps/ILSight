@@ -829,7 +829,7 @@ public sealed class NuGetBrowser
             ClearShown();
         }
 
-        return new SearchRun.Failed(searched, error.Message);
+        return new SearchRun.Failed { Search = searched, Error = error.Message };
     }
 
     /// <summary>The page of packages shown, and the search that found it.</summary>

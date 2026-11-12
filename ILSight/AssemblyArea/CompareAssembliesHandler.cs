@@ -50,7 +50,7 @@ public sealed class CompareAssembliesHandler(CompareAssembliesHandler.IPorts por
     {
         var left = run.Left.NameAndVersion;
         var right = run.Right.NameAndVersion;
-        run.Comparison.ShowFailure(new ComparisonFailure.Failed(left, right));
-        ports.ReportError(new AppProblem.ComparisonFailed(left, right, error));
+        run.Comparison.ShowFailure(new ComparisonFailure.Failed { Left = left, Right = right });
+        ports.ReportError(new AppProblem.ComparisonFailed { Left = left, Right = right, Error = error });
     }
 }

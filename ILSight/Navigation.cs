@@ -212,7 +212,7 @@ public sealed class Navigation
             return ShowNode(node, setup);
         }
         Tabs.MakeActive(_tabs, showing);
-        ViewCommands.Enqueue(new ViewCommand.ShowTab(showing, Beside: null));
+        ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = showing, Beside = null });
         RecordShownPlace(showing, setup.Language);
         return null;
     }
@@ -416,7 +416,7 @@ public sealed class Navigation
         _intent.Begin();
         LeaveActiveTab();
         Tabs.MakeActive(_tabs, tab);
-        ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
+        ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = tab, Beside = null });
         RecordShownPlace(tab, tab.Load.Language);
     }
 
@@ -930,7 +930,7 @@ public sealed class Navigation
     {
         _intent.Begin();
         Tabs.MakeActive(_tabs, tab);
-        ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
+        ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = tab, Beside = null });
     }
 
     /// <summary>The open tab showing <paramref name="diagram"/>, the very one; null when none does.</summary>
@@ -1079,7 +1079,7 @@ public sealed class Navigation
         }
         else
         {
-            ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
+            ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = tab, Beside = null });
         }
 
         if (IsPreviewed(destination))
@@ -1174,7 +1174,7 @@ public sealed class Navigation
             return OpenNewTab();
         }
 
-        ViewCommands.Enqueue(new ViewCommand.ShowTab(empty, Beside: null));
+        ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = empty, Beside = null });
         return empty;
     }
 
@@ -1182,7 +1182,7 @@ public sealed class Navigation
     private DocumentTab OpenNewTab()
     {
         var tab = _tabs.AddNew();
-        ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, _tabs.Active));
+        ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = tab, Beside = _tabs.Active });
         return tab;
     }
 }

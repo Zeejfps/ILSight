@@ -13,11 +13,21 @@ public abstract record CardFold
     {
     }
 
-    /// <summary>The members of <paramref name="Card"/> of the kind <paramref name="Section"/>.</summary>
-    public sealed record Own(TypeAnchor Card, MemberSection Section) : CardFold;
+    /// <summary>The members of <see cref="Card"/> of the kind <see cref="Section"/>.</summary>
+    public sealed record Own : CardFold
+    {
+        public required TypeAnchor Card { get; init; }
 
-    /// <summary>What <paramref name="Card"/> inherits from the base type named <paramref name="From"/>.</summary>
-    public sealed record Inherited(TypeAnchor Card, string From) : CardFold;
+        public required MemberSection Section { get; init; }
+    }
+
+    /// <summary>What <see cref="Card"/> inherits from the base type named <see cref="From"/>.</summary>
+    public sealed record Inherited : CardFold
+    {
+        public required TypeAnchor Card { get; init; }
+
+        public required string From { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<Own, TResult> own, Func<Inherited, TResult> inherited)

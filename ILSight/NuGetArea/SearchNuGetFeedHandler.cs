@@ -29,7 +29,11 @@ public sealed class SearchNuGetFeedHandler(SearchNuGetFeedHandler.IPorts ports)
 
         if (found is Outcome<FeedPage>.Failed failed)
         {
-            ports.ReportError(new AppProblem.NuGetSearchFailed(search.Search.Feed.Name, failed.Error));
+            ports.ReportError(new AppProblem.NuGetSearchFailed
+            {
+                Feed = search.Search.Feed.Name,
+                Error = failed.Error,
+            });
         }
     }
 }

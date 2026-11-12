@@ -12,8 +12,14 @@ internal abstract record CodePress
 
     /// <summary>A press on the text at <see cref="At"/>, with Ctrl held when <see cref="ForNewTab"/>, on the
     /// span <see cref="Span"/> of a line or none.</summary>
-    public sealed record OnText(TextPosition At, bool ForNewTab, CodeSpanAt? Span) : CodePress
+    public sealed record OnText : CodePress
     {
+        public required TextPosition At { get; init; }
+
+        public required bool ForNewTab { get; init; }
+
+        public required CodeSpanAt? Span { get; init; }
+
         /// <summary>Whether the press has moved off where it started, dragging a selection.</summary>
         public bool Moved;
     }

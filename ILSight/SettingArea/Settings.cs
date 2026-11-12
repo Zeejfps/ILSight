@@ -52,7 +52,7 @@ public static class Settings
             return null;
         }
 
-        return new AppProblem.SettingsUnreadable(place.FilePath?.Text, problem);
+        return new AppProblem.SettingsUnreadable { Path = place.FilePath?.Text, Problem = problem };
     }
 
     internal static SavedSources CaptureSavedSources(AppState appState)

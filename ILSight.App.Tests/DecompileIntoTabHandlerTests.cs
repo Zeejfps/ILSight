@@ -55,7 +55,7 @@ public sealed class DecompileIntoTabHandlerTests
         var shown = Assert.IsType<TabContent.Code>(tab.Content);
         Assert.Same(code.Document, shown.Document);
         Assert.False(tab.Load.IsBusy);
-        Assert.Equal([new ViewCommand.RestoreView(tab, AtLineTen)], viewCommands);
+        Assert.Equal([new ViewCommand.RestoreView { Tab = tab, Position = AtLineTen }], viewCommands);
         Assert.Empty(ports.Reported);
     }
 
@@ -78,7 +78,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.Equal("Bad IL range.", failed.Message);
         Assert.False(tab.Load.IsBusy);
         Assert.Same(corrupt, Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
-        Assert.DoesNotContain(new ViewCommand.RestoreView(tab, AtLineTen), viewCommands);
+        Assert.DoesNotContain(new ViewCommand.RestoreView { Tab = tab, Position = AtLineTen }, viewCommands);
     }
 
     [Fact]
@@ -171,6 +171,6 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.Null(load);
         Assert.False(tab.Load.IsBusy);
         Assert.Equal(changes, tab.Changes);
-        Assert.Equal([new ViewCommand.RestoreView(tab, AtLineTen)], d.TakeViewCommands());
+        Assert.Equal([new ViewCommand.RestoreView { Tab = tab, Position = AtLineTen }], d.TakeViewCommands());
     }
 }

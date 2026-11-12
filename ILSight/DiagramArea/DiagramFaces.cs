@@ -88,7 +88,12 @@ internal static class DiagramFaces
 
     private static void AddHeader(RowStack stack, TypeCard card)
     {
-        AddRow(stack, new CardRow(new CardRowContent.Name(NodeIcons.Of(card.Shape), card.Accessibility, card.Type), stack.RowHeight + NameRowExtra, Padding, card.Name));
+        AddRow(stack, new CardRow(new CardRowContent.Name
+        {
+            Icon = NodeIcons.Of(card.Shape),
+            Accessibility = card.Accessibility,
+            Type = card.Type,
+        }, stack.RowHeight + NameRowExtra, Padding, card.Name));
         var stereotype = StereotypeOf(card.Stereotype);
         if (stereotype is null)
         {
@@ -115,7 +120,7 @@ internal static class DiagramFaces
     {
         var members = ListShown(view, diagram, card.AssemblyPath, section.Members);
         var title = TitleOf(stack.Strings, section.Kind);
-        AddFold(stack, view, new CardFold.Own(card.Anchor, section.Kind), title, members);
+        AddFold(stack, view, new CardFold.Own { Card = card.Anchor, Section = section.Kind }, title, members);
     }
 
     private static string TitleOf(Strings t, MemberSection section)
@@ -134,7 +139,7 @@ internal static class DiagramFaces
     {
         var members = ListShown(view, diagram, group.AssemblyPath, group.Members);
         var title = stack.Strings.DiagramInheritedFrom(group.From);
-        AddFold(stack, view, new CardFold.Inherited(card.Anchor, group.From), title, members);
+        AddFold(stack, view, new CardFold.Inherited { Card = card.Anchor, From = group.From }, title, members);
     }
 
     /// <summary>The members of <paramref name="members"/>, of the assembly at <paramref name="assemblyPath"/>,
@@ -168,7 +173,11 @@ internal static class DiagramFaces
 
         var isOpen = Diagrams.IsFoldOpen(view, fold);
         var text = $"{title} ({members.Count})";
-        AddRow(stack, new CardRow(new CardRowContent.Fold(fold, isOpen), stack.RowHeight, Padding, text));
+        AddRow(stack, new CardRow(new CardRowContent.Fold
+        {
+            Part = fold,
+            IsOpen = isOpen,
+        }, stack.RowHeight, Padding, text));
         if (!isOpen)
         {
             return;
@@ -182,7 +191,12 @@ internal static class DiagramFaces
 
     private static CardRow MemberRow(RowStack stack, CardMember member)
     {
-        return new CardRow(new CardRowContent.Member(NodeIcons.Of(member.Shape), member.Accessibility, member.Reference), stack.RowHeight, Padding + ChevronWidth, member.Text);
+        return new CardRow(new CardRowContent.Member
+        {
+            Icon = NodeIcons.Of(member.Shape),
+            Accessibility = member.Accessibility,
+            Reference = member.Reference,
+        }, stack.RowHeight, Padding + ChevronWidth, member.Text);
     }
 
     private static DiagramMeasures MeasuresOf(Ui<UiState> ui, TypeDiagram diagram, List<CardFace> faces)

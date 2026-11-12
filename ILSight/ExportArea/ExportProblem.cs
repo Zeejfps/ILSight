@@ -16,12 +16,22 @@ public abstract record ExportProblem
     /// <summary>The assembly <see cref="Assembly"/> has no entry point a PDB can be written for.</summary>
     public sealed record NoPdbEntry(string Assembly) : ExportProblem;
 
-    public sealed record PdbNotWritten(string Assembly, ExportError Error) : ExportProblem;
+    public sealed record PdbNotWritten : ExportProblem
+    {
+        public required string Assembly { get; init; }
+
+        public required ExportError Error { get; init; }
+    }
 
     /// <summary>The package file at <see cref="Path"/> was skipped: its path leads outside the folder.</summary>
     public sealed record OutsideFolder(string Path) : ExportProblem;
 
-    public sealed record FileNotWritten(string Path, ExportError Error) : ExportProblem;
+    public sealed record FileNotWritten : ExportProblem
+    {
+        public required string Path { get; init; }
+
+        public required ExportError Error { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<NotDecompiled, TResult> notDecompiled, Func<NoPdbEntry, TResult> noPdbEntry,

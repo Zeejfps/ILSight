@@ -71,6 +71,6 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
             return;
         }
 
-        ports.ReportError(new AppProblem.DecompilationFailed(node.FullName, error));
+        ports.ReportError(new AppProblem.DecompilationFailed { Node = node.FullName, Error = error });
     }
 }

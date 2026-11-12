@@ -45,7 +45,7 @@ public sealed class BookmarkTests : IDisposable
         var removed = ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
 
         Assert.Equal(new BookmarkToggle.Added(bookmark), added);
-        Assert.Equal(new BookmarkToggle.Removed(bookmark, 0), removed);
+        Assert.Equal(new BookmarkToggle.Removed { Bookmark = bookmark, Row = 0 }, removed);
         Assert.Equal("Bookmark 1", bookmark.Name);
         Assert.Equal(CodeAnchorKind.Statement, bookmark.Anchor?.Kind);
         Assert.Equal("Outline:" + (line + 1), bookmark.Location);
@@ -91,8 +91,8 @@ public sealed class BookmarkTests : IDisposable
         var commands = d.TakeViewCommands();
 
         Assert.Same(bookmarks.Items[1], panel.Selected);
-        Assert.Contains(new ViewCommand.ShowTab(tab, Beside: null), commands);
-        Assert.Contains(new ViewCommand.RevealLine(tab, line), commands);
+        Assert.Contains(new ViewCommand.ShowTab { Tab = tab, Beside = null }, commands);
+        Assert.Contains(new ViewCommand.RevealLine { Tab = tab, Line = line }, commands);
         Assert.NotNull(tab.Node);
         Assert.Contains(new ViewCommand.RevealNode(tab.Node), commands);
     }

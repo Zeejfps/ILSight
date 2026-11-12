@@ -46,7 +46,11 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
 
         return Save(appState).Match<(AppState appState, double now), Saving>((appState, now),
             static (_, _) => new Saving.Saved(),
-            static (s, failed) => new Saving.Failed(failed.Reason, AdvanceRetry(s.appState, s.now)));
+            static (s, failed) => new Saving.Failed
+            {
+                Reason = failed.Reason,
+                RetryIn = AdvanceRetry(s.appState, s.now),
+            });
     }
 
     /// <summary>Moves the wait on, starting it if this is the first time it is asked for after a failure,

@@ -16,7 +16,12 @@ public abstract record BookmarkToggle
     public sealed record Added(Bookmark Bookmark) : BookmarkToggle;
 
     /// <summary>Removed <see cref="Bookmark"/>, which was in <see cref="Row"/> of the list.</summary>
-    public sealed record Removed(Bookmark Bookmark, int Row) : BookmarkToggle;
+    public sealed record Removed : BookmarkToggle
+    {
+        public required Bookmark Bookmark { get; init; }
+
+        public required int Row { get; init; }
+    }
 
     /// <summary>Does what the handler of whichever case this is does with it.</summary>
     public void Switch(Action<Unchanged> unchanged, Action<Added> added, Action<Removed> removed)

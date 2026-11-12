@@ -16,7 +16,7 @@ public static class Decompilation
         var position = arrival.Position;
         if (position is not null)
         {
-            viewCommands.Enqueue(new ViewCommand.RestoreView(tab, position.Value));
+            viewCommands.Enqueue(new ViewCommand.RestoreView { Tab = tab, Position = position.Value });
             return;
         }
         if (tab.Grid is not null)
@@ -30,7 +30,7 @@ public static class Decompilation
             return;
         }
 
-        viewCommands.Enqueue(new ViewCommand.RevealLine(tab, line.Value));
+        viewCommands.Enqueue(new ViewCommand.RevealLine { Tab = tab, Line = line.Value });
     }
 
     private static void RevealRow(Queue<ViewCommand> viewCommands, DocumentTab tab, int? row)
@@ -40,7 +40,7 @@ public static class Decompilation
             return;
         }
 
-        viewCommands.Enqueue(new ViewCommand.RevealRow(tab, row.Value));
+        viewCommands.Enqueue(new ViewCommand.RevealRow { Tab = tab, Row = row.Value });
     }
 
     /// <summary>The line <paramref name="target"/> marks, else the node's definition; null when there is neither.</summary>

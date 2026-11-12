@@ -48,6 +48,6 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
 
     private void ReportHistoryPlaceGone(NodePath place, Exception? error)
     {
-        ports.ReportError(new AppProblem.HistoryPlaceGone(place, error));
+        ports.ReportError(new AppProblem.HistoryPlaceGone { Place = place, Error = error });
     }
 }

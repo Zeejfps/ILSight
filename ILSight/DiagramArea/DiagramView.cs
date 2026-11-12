@@ -339,7 +339,7 @@ internal static class DiagramView
             return new DiagramHit.Card(face);
         }
 
-        return new DiagramHit.Row(face, row.Value);
+        return new DiagramHit.Row { Face = face, Index = row.Value };
     }
 
     private static CardFace? FaceOf(DiagramHit hit)

@@ -47,6 +47,11 @@ public sealed class RunAnalysisHandler(RunAnalysisHandler.IPorts ports)
     private void Fail(AnalyzerTree analyzer, AnalysisRun run, Exception error)
     {
         Analysis.FinishRun(analyzer, run, error.Message);
-        ports.ReportError(new AppProblem.AnalysisFailed(run.Kind.Subject.Label, run.Kind.Kind, error));
+        ports.ReportError(new AppProblem.AnalysisFailed
+        {
+            Subject = run.Kind.Subject.Label,
+            Kind = run.Kind.Kind,
+            Error = error,
+        });
     }
 }

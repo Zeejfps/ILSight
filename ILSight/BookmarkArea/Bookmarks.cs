@@ -113,7 +113,7 @@ public static class Bookmarks
             throw new UnreachableException($"Bookmark '{bookmark.Name}', found marking the line, was not listed.");
         }
 
-        return new BookmarkToggle.Removed(bookmark, row.Value);
+        return new BookmarkToggle.Removed { Bookmark = bookmark, Row = row.Value };
     }
 
     private static bool CanBookmarkLine(DocumentTab tab, int line)

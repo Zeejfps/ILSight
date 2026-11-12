@@ -233,7 +233,7 @@ public static class IconTheming
         var bytes = TakeBytes(theme, named, asset);
         if (bytes is null)
         {
-            return new IconFont.Broken(named.Path);
+            return new IconFont.Broken { Path = named.Path };
         }
 
         var face = new FontFace(asset.Family ?? id, bytes);
@@ -241,9 +241,9 @@ public static class IconTheming
         if (characters is null)
         {
             Theming.AddJsonError(theme.Json, named.Line, ThemeProblem.NotAFont, named.Subject, named.Path);
-            return new IconFont.Broken(named.Path);
+            return new IconFont.Broken { Path = named.Path };
         }
-        return new IconFont.Loaded(named.Path, face, characters);
+        return new IconFont.Loaded { Path = named.Path, Face = face, Characters = characters };
     }
 
     private static void ReadIcons(IconThemeFile theme, ref Utf8JsonReader reader, int line)
@@ -349,7 +349,7 @@ public static class IconTheming
             Theming.AddJsonError(theme.Json, line, ThemeProblem.NotACodepoint, subject, glyph);
             return null;
         }
-        return new IconValue.Glyph(font, codepoint.Value, theme.File, line);
+        return new IconValue.Glyph { Font = font, Codepoint = codepoint.Value, File = theme.File, Line = line };
     }
 
     /// <summary>The Unicode scalar value <paramref name="hex"/> writes in up to six hex digits, or null.</summary>
@@ -394,7 +394,7 @@ public static class IconTheming
             Theming.AddJsonError(theme.Json, named.Line, ThemeProblem.InvalidSvg, named.Subject, $"{named.Path}: {error}");
             return null;
         }
-        return new IconValue.Picture(named.Path, svg, theme.File, named.Line);
+        return new IconValue.Picture { SvgPath = named.Path, Svg = svg, File = theme.File, Line = named.Line };
     }
 
     private static string DecodeText(byte[] bytes)

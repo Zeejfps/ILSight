@@ -45,7 +45,12 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         var check = checking.Match(static ok => ok.Value, static _ => PdbCheck.Unreadable);
         if (check != PdbCheck.Matches)
         {
-            ports.ReportError(new AppProblem.PdbUnusable(pdbPath, assembly.Name, check));
+            ports.ReportError(new AppProblem.PdbUnusable
+            {
+                PdbPath = pdbPath,
+                Assembly = assembly.Name,
+                Check = check,
+            });
             return [];
         }
         var assemblies = session.Assemblies;
@@ -161,7 +166,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// <summary>Reports why <paramref name="item"/> could not be read again. Returns no loads: none started.</summary>
     private List<DecompileTicket> ReportNotReopened(LoadedAssembly item, Exception error)
     {
-        ports.ReportError(new AppProblem.AssemblyNotReloaded(item.Name, error));
+        ports.ReportError(new AppProblem.AssemblyNotReloaded { Assembly = item.Name, Error = error });
         return [];
     }
 

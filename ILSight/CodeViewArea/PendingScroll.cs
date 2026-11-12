@@ -16,7 +16,14 @@ internal abstract record PendingScroll
     public sealed record Restore(CodeViewPosition Position) : PendingScroll;
 
     /// <summary>Bring the columns from <see cref="ColumnStart"/> to <see cref="ColumnEnd"/> of <see cref="Line"/> into view.</summary>
-    public sealed record ShowMatch(int Line, int ColumnStart, int ColumnEnd) : PendingScroll;
+    public sealed record ShowMatch : PendingScroll
+    {
+        public required int Line { get; init; }
+
+        public required int ColumnStart { get; init; }
+
+        public required int ColumnEnd { get; init; }
+    }
 
     /// <summary>Scroll as little as brings the caret into view, after a key moved it.</summary>
     public sealed record ShowCaret : PendingScroll;

@@ -57,6 +57,6 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
 
         cards.Switch(
             ok => Diagrams.AddCards(diagram, ok.Value),
-            failed => ports.ReportError(new AppProblem.DiagramNotReopened(title, failed.Error)));
+            failed => ports.ReportError(new AppProblem.DiagramNotReopened { Diagram = title, Error = failed.Error }));
     }
 }

@@ -15,24 +15,49 @@ public abstract record ViewCommand
 
     /// <summary>Bring <see cref="Tab"/>'s panel to the front, docked beside the tab <see cref="Beside"/>
     /// when it is not docked yet.</summary>
-    public sealed record ShowTab(DocumentTab Tab, DocumentTab? Beside) : ViewCommand;
+    public sealed record ShowTab : ViewCommand
+    {
+        public required DocumentTab Tab { get; init; }
+
+        public required DocumentTab? Beside { get; init; }
+    }
 
     /// <summary>Show the reopened <see cref="Tabs"/> in the panels they were docked as: where the layout
     /// still has them, else as <see cref="Layout"/>, the documents' saved arrangement, has them in the place of
     /// the documents; and return their diagrams' views to how they were saved.</summary>
-    public sealed record ShowReopened(IReadOnlyList<ReopenedTab> Tabs, DockLayout? Layout) : ViewCommand;
+    public sealed record ShowReopened : ViewCommand
+    {
+        public required IReadOnlyList<ReopenedTab> Tabs { get; init; }
+
+        public required DockLayout? Layout { get; init; }
+    }
 
     /// <summary>Dock <see cref="View"/> if it is not, and bring it to the front.</summary>
     public sealed record OpenPanel(DockView View) : ViewCommand;
 
     /// <summary>Return <see cref="Tab"/>'s view to <see cref="Position"/>.</summary>
-    public sealed record RestoreView(DocumentTab Tab, ViewPosition Position) : ViewCommand;
+    public sealed record RestoreView : ViewCommand
+    {
+        public required DocumentTab Tab { get; init; }
+
+        public required ViewPosition Position { get; init; }
+    }
 
     /// <summary>Scroll <see cref="Tab"/>'s code to <see cref="Line"/> and flash it.</summary>
-    public sealed record RevealLine(DocumentTab Tab, int Line) : ViewCommand;
+    public sealed record RevealLine : ViewCommand
+    {
+        public required DocumentTab Tab { get; init; }
+
+        public required int Line { get; init; }
+    }
 
     /// <summary>Select <see cref="Tab"/>'s grid row <see cref="Row"/> and scroll to it.</summary>
-    public sealed record RevealRow(DocumentTab Tab, int Row) : ViewCommand;
+    public sealed record RevealRow : ViewCommand
+    {
+        public required DocumentTab Tab { get; init; }
+
+        public required int Row { get; init; }
+    }
 
     /// <summary>Expand the tree down to <see cref="Node"/>, select it and scroll to it.</summary>
     public sealed record RevealNode(BrowseNode Node) : ViewCommand;
@@ -42,7 +67,12 @@ public abstract record ViewCommand
 
     /// <summary>Select the card of <see cref="Type"/> on the diagram <see cref="Tab"/> shows, and bring it
     /// into view once it is laid out.</summary>
-    public sealed record FocusCard(DocumentTab Tab, CodeReference.Entity Type) : ViewCommand;
+    public sealed record FocusCard : ViewCommand
+    {
+        public required DocumentTab Tab { get; init; }
+
+        public required CodeReference.Entity Type { get; init; }
+    }
 
     /// <summary>Expand the analyzer's <see cref="Root"/> and select it.</summary>
     public sealed record ShowAnalysis(AnalyzerSymbolNode Root) : ViewCommand;

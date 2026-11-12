@@ -55,7 +55,12 @@ public sealed class AppStateTests
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.NotSame(before, tab);
-        Assert.Equal([new ViewCommand.ShowTab(tab, before), new ViewCommand.RevealNode(greeter)], commands);
+        Assert.Equal(
+            [
+                new ViewCommand.ShowTab { Tab = tab, Beside = before },
+                new ViewCommand.RevealNode(greeter),
+            ],
+            commands);
     }
 
     [Fact]
@@ -109,8 +114,8 @@ public sealed class AppStateTests
         var rowBefore = DocumentPanels.GetGridState(DocumentPanels.GetView(d.Ui.Documents, grid), table).Pending;
 
         d.AppState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes([ns]));
-        d.AppState.ViewCommands.Enqueue(new ViewCommand.RevealLine(code, lines));
-        d.AppState.ViewCommands.Enqueue(new ViewCommand.RevealRow(grid, rows));
+        d.AppState.ViewCommands.Enqueue(new ViewCommand.RevealLine { Tab = code, Line = lines });
+        d.AppState.ViewCommands.Enqueue(new ViewCommand.RevealRow { Tab = grid, Row = rows });
         d.NextFrame();
 
         Assert.False(d.Ui.Tree.View.IsExpanded(ns));
@@ -719,7 +724,7 @@ public sealed class AppStateTests
         Assert.Null(tab.Node);
         Assert.Equal("Greeter", tab.Title);
         Assert.NotNull(tab.Location);
-        Assert.Equal(new TabContent.Gone(tab.Location, "Greeter"), tab.Content);
+        Assert.Equal(new TabContent.Gone { Location = tab.Location, Title = "Greeter" }, tab.Content);
         Assert.Contains("gone", TabPlaceholders.Write(d.Ui.Strings, tab.Content));
         Assert.IsType<FailedAssembly>(Assert.Single(d.AppState.Assemblies.Listed));
         Assert.Contains(d.AppState.Errors.Entries, e => e.Words().Title.Contains("Greeter"));

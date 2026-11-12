@@ -15,8 +15,12 @@ public abstract record DiagramHit
     public sealed record Card(CardFace Face) : DiagramHit;
 
     /// <summary>The row <see cref="Index"/> of <see cref="Face"/>.</summary>
-    public sealed record Row(CardFace Face, int Index) : DiagramHit
+    public sealed record Row : DiagramHit
     {
+        public required CardFace Face { get; init; }
+
+        public required int Index { get; init; }
+
         public CardRow Value => Face.Rows[Index];
     }
 

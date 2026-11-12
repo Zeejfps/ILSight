@@ -46,7 +46,7 @@ public sealed class SettingsReading(SettingsReading.IPorts ports)
             notRead: notRead => new SettingsLoadResult
             {
                 Settings = new AppSettings(),
-                Problem = new SettingsProblem.NotRead(notRead.Detail, ports.KeepUnreadable(file)),
+                Problem = new SettingsProblem.NotRead { Detail = notRead.Detail, Kept = ports.KeepUnreadable(file) },
             });
     }
 
@@ -57,7 +57,7 @@ public sealed class SettingsReading(SettingsReading.IPorts ports)
             notJson: notJson => new SettingsLoadResult
             {
                 Settings = new AppSettings(),
-                Problem = new SettingsProblem.NotJson(notJson.Detail, ports.KeepUnreadable(file)),
+                Problem = new SettingsProblem.NotJson { Detail = notJson.Detail, Kept = ports.KeepUnreadable(file) },
             },
             empty: _ => new SettingsLoadResult { Settings = new AppSettings(), Problem = new SettingsProblem.Empty() },
             values: values => ReadValues(file, values));
@@ -73,7 +73,7 @@ public sealed class SettingsReading(SettingsReading.IPorts ports)
         return new SettingsLoadResult
         {
             Settings = values.Settings,
-            Problem = new SettingsProblem.ValuesLeftOut(values.LeftOut, ports.KeepUnreadable(file)),
+            Problem = new SettingsProblem.ValuesLeftOut { Fields = values.LeftOut, Kept = ports.KeepUnreadable(file) },
         };
     }
 }

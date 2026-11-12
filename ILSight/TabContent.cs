@@ -22,32 +22,73 @@ public abstract record TabContent
     public sealed record Loading(BrowseNode Node) : TabContent;
 
     /// <summary><see cref="Node"/>'s decompiled code.</summary>
-    public sealed record Code(BrowseNode Node, DecompiledDocument Document) : TabContent;
+    public sealed record Code : TabContent
+    {
+        public required BrowseNode Node { get; init; }
+
+        public required DecompiledDocument Document { get; init; }
+    }
 
     /// <summary>The rows of <see cref="Node"/>, which shows a grid.</summary>
-    public sealed record Table(BrowseNode Node, MetadataGrid Grid) : TabContent;
+    public sealed record Table : TabContent
+    {
+        public required BrowseNode Node { get; init; }
+
+        public required MetadataGrid Grid { get; init; }
+    }
 
     /// <summary>The picture of <see cref="Node"/>, which shows one, with its markup when it is stored as such, such as SVG.</summary>
-    public sealed record Picture(BrowseNode Node, ResourceImage Image, DecompiledDocument? Source) : TabContent;
+    public sealed record Picture : TabContent
+    {
+        public required BrowseNode Node { get; init; }
+
+        public required ResourceImage Image { get; init; }
+
+        public required DecompiledDocument? Source { get; init; }
+    }
 
     /// <summary>The report of an export, which the screen writes out.</summary>
     public sealed record Report(ExportReport Export) : TabContent;
 
     /// <summary>A diagram of types, which grows as types are shown in it, what its tab is titled, and the id the
     /// navigation gave it, never reused, which the history finds it by.</summary>
-    public sealed record Diagram(TypeDiagram Types, string Title, int Id) : TabContent;
+    public sealed record Diagram : TabContent
+    {
+        public required TypeDiagram Types { get; init; }
+
+        public required string Title { get; init; }
+
+        public required int Id { get; init; }
+    }
 
     /// <summary>What changed in the API from one assembly to another, what its tab is titled, and the id the navigation
     /// gave it, never reused, which the history finds it by.</summary>
-    public sealed record Comparison(AssemblyComparison Assemblies, string Title, int Id) : TabContent;
+    public sealed record Comparison : TabContent
+    {
+        public required AssemblyComparison Assemblies { get; init; }
+
+        public required string Title { get; init; }
+
+        public required int Id { get; init; }
+    }
 
     /// <summary>Decompiling <see cref="Node"/> failed with <see cref="Message"/>.</summary>
-    public sealed record Failed(BrowseNode Node, string Message) : TabContent;
+    public sealed record Failed : TabContent
+    {
+        public required BrowseNode Node { get; init; }
+
+        public required string Message { get; init; }
+    }
 
     /// <summary>The tab waits to find the node at <see cref="Location"/> again: its assembly is reloading,
     /// or the saved documents are reopening. <see cref="Title"/> is the node's name as it was last known,
     /// or null where the saved documents kept none.</summary>
-    public sealed record Reloading(NodePath Location, string? Title) : TabContent;
+    public sealed record Reloading : TabContent
+    {
+        public required NodePath Location { get; init; }
+
+        public required string? Title { get; init; }
+    }
 
     /// <summary>The saved diagram or comparison waits for the assemblies to be listed to be read again,
     /// under the title it was saved with, if any.</summary>
@@ -55,7 +96,12 @@ public abstract record TabContent
 
     /// <summary>The reloaded assemblies hold nothing at <see cref="Location"/> any more; <see cref="Title"/>
     /// is the node's name as it was last known, if it was.</summary>
-    public sealed record Gone(NodePath Location, string? Title) : TabContent;
+    public sealed record Gone : TabContent
+    {
+        public required NodePath Location { get; init; }
+
+        public required string? Title { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<Empty, TResult> empty, Func<Loading, TResult> loading, Func<Code, TResult> code,

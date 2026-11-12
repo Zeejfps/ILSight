@@ -76,7 +76,7 @@ public sealed class DiagramGrowingTests
         Assert.Equal(["Car", "Vehicle"], CardNames(read.Diagram));
         Assert.True(Diagrams.IsHome(read.Diagram, read.Diagram.Cards[0].AssemblyPath));
         Assert.False(read.Diagram.IsBusy);
-        Assert.Equal([new ViewCommand.FocusCard(read.Tab, vehicle)], viewCommands);
+        Assert.Equal([new ViewCommand.FocusCard { Tab = read.Tab, Type = vehicle }], viewCommands);
         Assert.Empty(ports.Reported);
     }
 

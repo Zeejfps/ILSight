@@ -18,13 +18,34 @@ public abstract record ModuleScan
 
     public sealed record Loading(RunningProcess Process) : ModuleScan;
 
-    public sealed record Loaded(RunningProcess Process, IReadOnlyList<RunningModule> Modules, AssemblyPath? EntryAssembly) : ModuleScan;
+    public sealed record Loaded : ModuleScan
+    {
+        public required RunningProcess Process { get; init; }
+
+        public required IReadOnlyList<RunningModule> Modules { get; init; }
+
+        public required AssemblyPath? EntryAssembly { get; init; }
+    }
 
     /// <summary>The process could not be asked: it is gone, refused, or didn't answer in time.</summary>
-    public sealed record Unreachable(RunningProcess Process, string Detail, AssemblyPath? EntryAssembly) : ModuleScan;
+    public sealed record Unreachable : ModuleScan
+    {
+        public required RunningProcess Process { get; init; }
+
+        public required string Detail { get; init; }
+
+        public required AssemblyPath? EntryAssembly { get; init; }
+    }
 
     /// <summary>The process answered with what could not be read.</summary>
-    public sealed record Unreadable(RunningProcess Process, string Detail, AssemblyPath? EntryAssembly) : ModuleScan;
+    public sealed record Unreadable : ModuleScan
+    {
+        public required RunningProcess Process { get; init; }
+
+        public required string Detail { get; init; }
+
+        public required AssemblyPath? EntryAssembly { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<None, TResult> none, Func<Loading, TResult> loading,

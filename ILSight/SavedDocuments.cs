@@ -84,7 +84,11 @@ public static class SavedDocuments
         var reopened = saved.Tabs.ConvertAll(r => ReopenTab(session, r));
         MakeSavedActive(session, reopened, saved.Active);
         MakeSavedPreview(session, reopened, saved.Preview);
-        session.Navigation.ViewCommands.Enqueue(new ViewCommand.ShowReopened(reopened, saved.Layout));
+        session.Navigation.ViewCommands.Enqueue(new ViewCommand.ShowReopened
+        {
+            Tabs = reopened,
+            Layout = saved.Layout,
+        });
     }
 
     private static ReopenedTab ReopenTab(OpenListSession session, DocumentRecord record)

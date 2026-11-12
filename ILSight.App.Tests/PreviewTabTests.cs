@@ -169,7 +169,7 @@ public sealed class PreviewTabTests
 
         var empty = app.AppState.Navigation.OpenEmptyTab();
         Assert.Null(app.AppState.Navigation.FocusTab(empty, app.AppState.Decompiler.Setup));
-        app.AppState.ViewCommands.Enqueue(new ViewCommand.ShowTab(empty, before));
+        app.AppState.ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = empty, Beside = before });
         app.Run(2);
         Pick(app, "Farewell");
 

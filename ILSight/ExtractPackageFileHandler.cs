@@ -24,7 +24,11 @@ public sealed class ExtractPackageFileHandler(ExtractPackageFileHandler.IPorts p
         var extracted = ports.ExtractPackageFile(place, path);
         if (extracted is Outcome.Failed failed)
         {
-            ports.ReportError(new AppProblem.PackageFileNotExtracted(place.File.Name, failed.Error.Message));
+            ports.ReportError(new AppProblem.PackageFileNotExtracted
+            {
+                File = place.File.Name,
+                Reason = failed.Error.Message,
+            });
         }
     }
 }

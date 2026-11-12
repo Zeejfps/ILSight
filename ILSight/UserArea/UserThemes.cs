@@ -140,7 +140,12 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
             .GroupBy(static e => e.File);
         foreach (var fileErrors in byFile)
         {
-            ports.ReportError(new AppProblem.ThemeFileProblems(TFile.Kind, fileErrors.Key, fileErrors.ToList()));
+            ports.ReportError(new AppProblem.ThemeFileProblems
+            {
+                Kind = TFile.Kind,
+                File = fileErrors.Key,
+                Errors = fileErrors.ToList(),
+            });
         }
     }
 
@@ -159,7 +164,7 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
             return folder;
         }
 
-        ports.ReportError(new AppProblem.ThemesFolderNotMade(TFile.Kind, reason));
+        ports.ReportError(new AppProblem.ThemesFolderNotMade { Kind = TFile.Kind, Reason = reason });
         return null;
     }
 
@@ -182,7 +187,7 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         var text = TFile.ComposeDraft(nameOf(parent), parent, Themes.GetTheme(parent));
         if (!ports.TryWriteNewFile(path, text, out var reason))
         {
-            ports.ReportError(new AppProblem.CustomThemeNotWritten(TFile.Kind, path, reason));
+            ports.ReportError(new AppProblem.CustomThemeNotWritten { Kind = TFile.Kind, Path = path, Reason = reason });
             return null;
         }
 
@@ -293,6 +298,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
 
     private void ReportUnwatched(string reason)
     {
-        ports.ReportError(new AppProblem.ThemesNotWatched(TFile.Kind, reason));
+        ports.ReportError(new AppProblem.ThemesNotWatched { Kind = TFile.Kind, Reason = reason });
     }
 }

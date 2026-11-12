@@ -29,7 +29,7 @@ public sealed class DownloadNuGetPackageHandler(DownloadNuGetPackageHandler.IPor
 
         if (fetched is Outcome<string>.Failed failed)
         {
-            ports.ReportError(new AppProblem.PackageNotDownloaded(download.Name, failed.Error));
+            ports.ReportError(new AppProblem.PackageNotDownloaded { Package = download.Name, Error = failed.Error });
         }
     }
 }

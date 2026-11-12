@@ -54,6 +54,6 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
 
     private void ReportUnresolved(CodeReference reference, Exception? error)
     {
-        ports.ReportError(new AppProblem.Unresolved(reference, error));
+        ports.ReportError(new AppProblem.Unresolved { Reference = reference, Error = error });
     }
 }

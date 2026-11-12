@@ -20,8 +20,12 @@ public abstract record SettingsProblem
     public sealed record None : SettingsProblem;
 
     /// <summary>The file could not be read, so the settings are the defaults.</summary>
-    public sealed record NotRead(string Detail, SettingsKept Kept) : SettingsProblem
+    public sealed record NotRead : SettingsProblem
     {
+        public required string Detail { get; init; }
+
+        public required SettingsKept Kept { get; init; }
+
         public override SettingsKept FindKept()
         {
             return Kept;
@@ -29,8 +33,12 @@ public abstract record SettingsProblem
     }
 
     /// <summary>The file is not JSON of the settings, so the settings are the defaults.</summary>
-    public sealed record NotJson(string Detail, SettingsKept Kept) : SettingsProblem
+    public sealed record NotJson : SettingsProblem
     {
+        public required string Detail { get; init; }
+
+        public required SettingsKept Kept { get; init; }
+
         public override SettingsKept FindKept()
         {
             return Kept;
@@ -39,8 +47,12 @@ public abstract record SettingsProblem
 
     /// <summary>Some of the file's values, named by their fields, are not what those fields hold, so
     /// they are the defaults; the rest are as the file has them.</summary>
-    public sealed record ValuesLeftOut(IReadOnlyList<string> Fields, SettingsKept Kept) : SettingsProblem
+    public sealed record ValuesLeftOut : SettingsProblem
     {
+        public required IReadOnlyList<string> Fields { get; init; }
+
+        public required SettingsKept Kept { get; init; }
+
         public override SettingsKept FindKept()
         {
             return Kept;

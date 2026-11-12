@@ -58,7 +58,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
 
         Diagrams.TakeHome(read.Diagram, cards[0]);
         Diagrams.AddCards(read.Diagram, cards);
-        viewCommands.Enqueue(new ViewCommand.FocusCard(read.Tab, cards[0].Type));
+        viewCommands.Enqueue(new ViewCommand.FocusCard { Tab = read.Tab, Type = cards[0].Type });
     }
 
     /// <summary>Adds to <paramref name="diagram"/> the types <paramref name="card"/> derives from, or, for an
@@ -124,6 +124,6 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
 
     private void ReportUnreadable(CodeReference.Entity type, Exception? error)
     {
-        ports.ReportError(new AppProblem.TypeNotDiagrammed(type, error));
+        ports.ReportError(new AppProblem.TypeNotDiagrammed { Type = type, Error = error });
     }
 }

@@ -258,7 +258,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var view = DiagramOf(app, diagram);
         DiagramCameras.Restore(view.Camera, new PointF(-30f, 12f), 1.5f);
         Assert.NotNull(diagram.Diagram);
-        var fields = new CardFold.Own(diagram.Diagram.Cards[0].Anchor, MemberSection.Fields);
+        var fields = new CardFold.Own { Card = diagram.Diagram.Cards[0].Anchor, Section = MemberSection.Fields };
         Diagrams.ToggleFold(view, fields);
         Diagrams.ShowHiddenMembers(view, true);
         ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Decompiler.Setup, greeter);

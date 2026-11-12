@@ -32,9 +32,13 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         var file = Path.GetFileName(path);
         var read = ports.ReadBookmarks(path);
         var problem = read.Match<AppProblem?>(
-            read: r => r.Problems.Count == 0 ? null : new AppProblem.ImportedBookmarksUnreadable(file, r.Problems),
+            read: r => r.Problems.Count == 0 ? null : new AppProblem.ImportedBookmarksUnreadable
+            {
+                File = file,
+                Problems = r.Problems,
+            },
             notBookmarksFile: _ => new AppProblem.NotBookmarksFile(path),
-            failed: f => new AppProblem.BookmarksNotImported(file, f.Reason));
+            failed: f => new AppProblem.BookmarksNotImported { File = file, Reason = f.Reason });
         if (problem is not null)
         {
             ports.ReportError(problem);
@@ -55,7 +59,11 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
     {
         found.Switch(
             ok => TakeImported(bookmarks, imports, records, ok.Value, file),
-            failed => ports.ReportError(new AppProblem.BookmarksNotImported(file, failed.Error.ToString())));
+            failed => ports.ReportError(new AppProblem.BookmarksNotImported
+            {
+                File = file,
+                Reason = failed.Error.ToString(),
+            }));
     }
 
     private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, List<NodePath?> places, string file)
@@ -88,7 +96,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         }
 
         var lines = lost.ConvertAll(DescribeLostBookmark);
-        ports.ReportError(new AppProblem.ImportedBookmarksLost(file, lines));
+        ports.ReportError(new AppProblem.ImportedBookmarksLost { File = file, Lost = lines });
     }
 
     private static string DescribeLostBookmark(FoundBookmark lost)

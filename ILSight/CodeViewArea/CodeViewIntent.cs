@@ -11,7 +11,12 @@ public abstract record CodeViewIntent
     }
 
     /// <summary>Go to <see cref="Target"/>, in a new tab when <see cref="InNewTab"/>.</summary>
-    public sealed record Navigate(CodeReference.Navigable Target, bool InNewTab) : CodeViewIntent;
+    public sealed record Navigate : CodeViewIntent
+    {
+        public required CodeReference.Navigable Target { get; init; }
+
+        public required bool InNewTab { get; init; }
+    }
 
     public sealed record ToggleBookmark(int Line) : CodeViewIntent;
 

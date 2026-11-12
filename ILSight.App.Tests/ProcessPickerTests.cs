@@ -73,7 +73,7 @@ public sealed class ProcessPickerTests
 
     private static Task<Outcome<ModuleScan>> ListedAsync(RunningProcess process, IReadOnlyList<RunningModule> modules, AssemblyPath? entry = null)
     {
-        return AnswerAsync(new ModuleScan.Loaded(process, modules, entry));
+        return AnswerAsync(new ModuleScan.Loaded { Process = process, Modules = modules, EntryAssembly = entry });
     }
 
     private static Task<Outcome<ModuleScan>> AnswerAsync(ModuleScan scan)
@@ -207,7 +207,12 @@ public sealed class ProcessPickerTests
         var ports = new FakePorts
         {
             Running = [Worker],
-            Modules = static (process, _) => AnswerAsync(new ModuleScan.Unreachable(process, "gone", FakePath("Jobs.Worker.dll"))),
+            Modules = static (process, _) => AnswerAsync(new ModuleScan.Unreachable
+            {
+                Process = process,
+                Detail = "gone",
+                EntryAssembly = FakePath("Jobs.Worker.dll"),
+            }),
         };
         var picker = await OpenAsync(ports);
 
@@ -221,7 +226,16 @@ public sealed class ProcessPickerTests
     [Fact]
     public async Task ListModulesAsync_AnswerUnreadable_SaysSoAndHasNothingToOpen()
     {
-        var ports = new FakePorts { Running = [Silent], Modules = static (process, _) => AnswerAsync(new ModuleScan.Unreadable(process, "garbled", null)) };
+        var ports = new FakePorts
+        {
+            Running = [Silent],
+            Modules = static (process, _) => AnswerAsync(new ModuleScan.Unreadable
+            {
+                Process = process,
+                Detail = "garbled",
+                EntryAssembly = null,
+            }),
+        };
         var picker = await OpenAsync(ports);
 
         await SelectAndListAsync(picker, Silent);
@@ -260,7 +274,12 @@ public sealed class ProcessPickerTests
         Assert.Equal(Web, Assert.IsType<ModuleScan.Loading>(picker.Browser.Modules).Process);
 
         await SelectAndListAsync(picker, Worker);
-        first.SetResult(new Outcome<ModuleScan>.Ok(new ModuleScan.Loaded(Web, [WebDll], null)));
+        first.SetResult(new Outcome<ModuleScan>.Ok(new ModuleScan.Loaded
+        {
+            Process = Web,
+            Modules = [WebDll],
+            EntryAssembly = null,
+        }));
         await listingWeb;
 
         Assert.True(ports.ListingTokens[0].IsCancellationRequested);
@@ -280,7 +299,12 @@ public sealed class ProcessPickerTests
         var listing = SelectAndListAsync(picker, Web);
 
         Close(picker);
-        never.SetResult(new Outcome<ModuleScan>.Ok(new ModuleScan.Loaded(Web, [WebDll], null)));
+        never.SetResult(new Outcome<ModuleScan>.Ok(new ModuleScan.Loaded
+        {
+            Process = Web,
+            Modules = [WebDll],
+            EntryAssembly = null,
+        }));
         await listing;
 
         Assert.True(Assert.Single(ports.ListingTokens).IsCancellationRequested);

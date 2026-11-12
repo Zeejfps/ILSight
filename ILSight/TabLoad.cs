@@ -56,7 +56,7 @@ public sealed class TabLoad
     public TabLoad(LatestWork work, NodePath location, string? title, DecompilationLanguage language)
     {
         _work = work;
-        _content = new TabContent.Reloading(location, title);
+        _content = new TabContent.Reloading { Location = location, Title = title };
         _language = language;
     }
 
@@ -192,9 +192,9 @@ public sealed class TabLoad
 
         var node = GetLoadingNode();
         _content = loaded.Match<TabContent>(
-            code: code => new TabContent.Code(node, code.Document),
-            table: table => new TabContent.Table(node, table.Grid),
-            picture: picture => new TabContent.Picture(node, picture.Image, picture.Source));
+            code: code => new TabContent.Code { Node = node, Document = code.Document },
+            table: table => new TabContent.Table { Node = node, Grid = table.Grid },
+            picture: picture => new TabContent.Picture { Node = node, Image = picture.Image, Source = picture.Source });
         return true;
     }
 
@@ -207,7 +207,7 @@ public sealed class TabLoad
             return false;
         }
 
-        _content = new TabContent.Failed(GetLoadingNode(), message);
+        _content = new TabContent.Failed { Node = GetLoadingNode(), Message = message };
         return true;
     }
 
@@ -242,14 +242,14 @@ public sealed class TabLoad
     /// cancelling what was in flight.</summary>
     public void ShowReloading(NodePath location)
     {
-        ReleaseNode(new TabContent.Reloading(location, Title));
+        ReleaseNode(new TabContent.Reloading { Location = location, Title = Title });
     }
 
     /// <summary>Lets go of the node, which the assemblies no longer hold at <paramref name="location"/>, cancelling
     /// what was in flight.</summary>
     public void ShowGone(NodePath location)
     {
-        ReleaseNode(new TabContent.Gone(location, Title));
+        ReleaseNode(new TabContent.Gone { Location = location, Title = Title });
     }
 
     private void ReleaseNode(TabContent content)

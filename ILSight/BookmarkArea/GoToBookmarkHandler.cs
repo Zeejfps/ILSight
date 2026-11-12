@@ -56,6 +56,11 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
 
     private void ReportBookmarkGone(Bookmark bookmark, Exception? error)
     {
-        ports.ReportError(new AppProblem.BookmarkGone(bookmark.Name, bookmark.Place, error));
+        ports.ReportError(new AppProblem.BookmarkGone
+        {
+            Bookmark = bookmark.Name,
+            Place = bookmark.Place,
+            Error = error,
+        });
     }
 }

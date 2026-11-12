@@ -61,7 +61,7 @@ public sealed class SettingsFormatTests : IDisposable
             InheritedFrom = null,
         });
 
-        Assert.Equal(new CardFold.Own(Calculator, MemberSection.Methods), fold);
+        Assert.Equal(new CardFold.Own { Card = Calculator, Section = MemberSection.Methods }, fold);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class SettingsFormatTests : IDisposable
             InheritedFrom = "Base",
         });
 
-        Assert.Equal(new CardFold.Inherited(Calculator, "Base"), fold);
+        Assert.Equal(new CardFold.Inherited { Card = Calculator, From = "Base" }, fold);
     }
 
     [Fact]
@@ -244,7 +244,11 @@ public sealed class SettingsFormatTests : IDisposable
             X = 10.5f,
             Y = -20.25f,
             Zoom = 1.5f,
-            Folds = [new CardFold.Own(Calculator, MemberSection.Methods), new CardFold.Inherited(Calculator, "Base")],
+            Folds =
+            [
+                new CardFold.Own { Card = Calculator, Section = MemberSection.Methods },
+                new CardFold.Inherited { Card = Calculator, From = "Base" },
+            ],
             ShowsHiddenMembers = true,
         };
         DocumentRecord[] tabs =

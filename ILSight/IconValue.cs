@@ -7,21 +7,29 @@ namespace ILSight;
 /// a font, or a picture read from an SVG file.</summary>
 public abstract record IconValue
 {
-    private IconValue(string file, int line)
+    private IconValue()
     {
-        File = file;
-        Line = line;
     }
 
-    public string File { get; }
+    public required string File { get; init; }
 
-    public int Line { get; }
+    public required int Line { get; init; }
 
     /// <summary>The codepoint <see cref="Codepoint"/> of the font the theme declares as <see cref="Font"/>.</summary>
-    public sealed record Glyph(string Font, int Codepoint, string File, int Line) : IconValue(File, Line);
+    public sealed record Glyph : IconValue
+    {
+        public required string Font { get; init; }
+
+        public required int Codepoint { get; init; }
+    }
 
     /// <summary>The picture <see cref="Svg"/> read from the file at <see cref="SvgPath"/>.</summary>
-    public sealed record Picture(string SvgPath, SvgDocument Svg, string File, int Line) : IconValue(File, Line);
+    public sealed record Picture : IconValue
+    {
+        public required string SvgPath { get; init; }
+
+        public required SvgDocument Svg { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
     /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>

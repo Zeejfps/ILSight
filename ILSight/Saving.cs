@@ -18,7 +18,12 @@ public abstract record Saving
     public sealed record Waiting(double RetryIn) : Saving;
 
     /// <summary>The write failed, and is tried again in <see cref="RetryIn"/> seconds.</summary>
-    public sealed record Failed(string Reason, double RetryIn) : Saving;
+    public sealed record Failed : Saving
+    {
+        public required string Reason { get; init; }
+
+        public required double RetryIn { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<Unchanged, TResult> unchanged, Func<Saved, TResult> saved,

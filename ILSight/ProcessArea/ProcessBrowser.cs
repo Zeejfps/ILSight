@@ -246,7 +246,7 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
     {
         // A process that can't be asked is a result, so a failure here is a bug.
         ports.ReportError(new AppProblem.Unexpected(error));
-        return new ModuleScan.Unreachable(process, error.Message, null);
+        return new ModuleScan.Unreachable { Process = process, Detail = error.Message, EntryAssembly = null };
     }
 
     private void StopListing()

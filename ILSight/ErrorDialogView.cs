@@ -13,7 +13,7 @@ internal static class ErrorDialogView
     /// <summary>Logs <paramref name="problem"/> as having happened at <paramref name="time"/>.</summary>
     public static void AddError(ErrorLog errors, AppProblem problem, DateTime time)
     {
-        errors.Entries.Add(new AppError(problem, time));
+        errors.Entries.Add(new AppError { Problem = problem, Time = time });
     }
 
     /// <summary>Opens the dialog on the newest of <paramref name="errors"/>, unless there are none.</summary>

@@ -24,7 +24,7 @@ public sealed class SaveResourceHandler(SaveResourceHandler.IPorts ports)
         var saved = ports.SaveResource(node, path);
         if (saved is Outcome.Failed failed)
         {
-            ports.ReportError(new AppProblem.ResourceNotSaved(node.Text, failed.Error.Message));
+            ports.ReportError(new AppProblem.ResourceNotSaved { Resource = node.Text, Reason = failed.Error.Message });
         }
     }
 }

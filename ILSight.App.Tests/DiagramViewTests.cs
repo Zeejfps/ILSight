@@ -90,8 +90,16 @@ public sealed class DiagramViewTests
             AssemblyPath = AssemblyPath.Of(AppStateDriver.FixturePath),
             FullName = "Ns.Calculator",
         };
-        CardFold[] own = [new CardFold.Own(card, MemberSection.Methods), new CardFold.Own(card, MemberSection.Methods)];
-        CardFold[] inherited = [new CardFold.Inherited(card, "Base"), new CardFold.Inherited(card, "Base")];
+        CardFold[] own =
+        [
+            new CardFold.Own { Card = card, Section = MemberSection.Methods },
+            new CardFold.Own { Card = card, Section = MemberSection.Methods },
+        ];
+        CardFold[] inherited =
+        [
+            new CardFold.Inherited { Card = card, From = "Base" },
+            new CardFold.Inherited { Card = card, From = "Base" },
+        ];
 
         Assert.True(Diagrams.IsFoldOpen(view, own[0]));
         Assert.False(Diagrams.IsFoldOpen(view, inherited[0]));

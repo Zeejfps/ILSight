@@ -792,12 +792,12 @@ internal static class SettingsJson
 
         if (json.Section is not null && json.InheritedFrom is null)
         {
-            return new CardFold.Own(card.Value, json.Section.Value);
+            return new CardFold.Own { Card = card.Value, Section = json.Section.Value };
         }
 
         if (json.Section is null && json.InheritedFrom is not null)
         {
-            return new CardFold.Inherited(card.Value, json.InheritedFrom);
+            return new CardFold.Inherited { Card = card.Value, From = json.InheritedFrom };
         }
 
         return null;

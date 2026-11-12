@@ -7,15 +7,19 @@ namespace ILSight;
 /// be read or loaded, which was reported.</summary>
 public abstract record IconFont
 {
-    private IconFont(string path)
+    private IconFont()
     {
-        Path = path;
     }
 
-    public string Path { get; }
+    public required string Path { get; init; }
 
     /// <summary>The face read from the font and the characters it has glyphs for.</summary>
-    public sealed record Loaded(string Path, FontFace Face, FontCharacters Characters) : IconFont(Path);
+    public sealed record Loaded : IconFont
+    {
+        public required FontFace Face { get; init; }
 
-    public sealed record Broken(string Path) : IconFont(Path);
+        public required FontCharacters Characters { get; init; }
+    }
+
+    public sealed record Broken : IconFont;
 }

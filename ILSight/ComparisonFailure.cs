@@ -13,7 +13,12 @@ public abstract record ComparisonFailure
     public sealed record AssemblyClosed(string File) : ComparisonFailure;
 
     /// <summary>Comparing the assemblies <see cref="Left"/> and <see cref="Right"/> failed.</summary>
-    public sealed record Failed(string Left, string Right) : ComparisonFailure;
+    public sealed record Failed : ComparisonFailure
+    {
+        public required string Left { get; init; }
+
+        public required string Right { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
     /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>

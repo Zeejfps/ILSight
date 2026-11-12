@@ -433,7 +433,7 @@ public static class CodeViewWidget
                 {
                     var at = PositionAt(pointer.X, pointer.Y);
                     var forNewTab = (ui.Input.Modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
-                    state.Press = new CodePress.OnText(at, forNewTab, hoverSpan);
+                    state.Press = new CodePress.OnText { At = at, ForNewTab = forNewTab, Span = hoverSpan };
                     state.Selection.Press(document, at, i.ClickCount, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
                 }
             }
@@ -467,7 +467,7 @@ public static class CodeViewWidget
                 var reference = pressedSpan is not null ? document.Lines[pressedSpan.Value.Line].Spans[pressedSpan.Value.Span] : default;
                 if (reference.Reference is CodeReference.Navigable target && !reference.IsDefinition)
                 {
-                    intent = new CodeViewIntent.Navigate(target, clicked.ForNewTab);
+                    intent = new CodeViewIntent.Navigate { Target = target, InNewTab = clicked.ForNewTab };
                 }
                 else
                 {
@@ -476,7 +476,7 @@ public static class CodeViewWidget
             }
             if (i.ClickedWith(PointerButton.Middle) && hoverTarget != null)
             {
-                intent = new CodeViewIntent.Navigate(hoverTarget, true);
+                intent = new CodeViewIntent.Navigate { Target = hoverTarget, InNewTab = true };
             }
 
             if (i.ClickedWith(PointerButton.Right))
@@ -691,7 +691,7 @@ public static class CodeViewWidget
         ui.HideTooltip();
         var withModifier = (ui.Input.Modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
         var inNewTab = click.Button == PointerButton.Middle || withModifier;
-        return new CodeViewIntent.Navigate(reference, inNewTab);
+        return new CodeViewIntent.Navigate { Target = reference, InNewTab = inNewTab };
     }
 
     /// <summary>The tooltip of the span under the pointer when it points at a type or member and
@@ -1350,7 +1350,12 @@ public static class CodeViewWidget
         var match = state.Find.Matches[current.Value];
         state.Selection.Select(match, match with { Column = match.Column + state.Find.Length });
         RevealFolds(state, match.Line);
-        state.Pending = new PendingScroll.ShowMatch(match.Line, match.Column, match.Column + state.Find.Length);
+        state.Pending = new PendingScroll.ShowMatch
+        {
+            Line = match.Line,
+            ColumnStart = match.Column,
+            ColumnEnd = match.Column + state.Find.Length,
+        };
     }
 
     /// <summary>The items that show <paramref name="entity"/> on a diagram, when it is a type.</summary>
@@ -1438,12 +1443,12 @@ public static class CodeViewWidget
             ui.MenuSeparator();
             if (ui.MenuItem(t.CodeGoToDefinition, id: "go-to-definition"))
             {
-                picked = new CodeViewIntent.Navigate(reference, false);
+                picked = new CodeViewIntent.Navigate { Target = reference, InNewTab = false };
             }
 
             if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
             {
-                picked = new CodeViewIntent.Navigate(reference, true);
+                picked = new CodeViewIntent.Navigate { Target = reference, InNewTab = true };
             }
         }
         var entity = target.Entity;

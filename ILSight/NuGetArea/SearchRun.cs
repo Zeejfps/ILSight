@@ -16,7 +16,12 @@ internal abstract record SearchRun
 
     public sealed record Found(FeedSearch Search) : SearchRun;
 
-    public sealed record Failed(FeedSearch Search, string Error) : SearchRun;
+    public sealed record Failed : SearchRun
+    {
+        public required FeedSearch Search { get; init; }
+
+        public required string Error { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<None, TResult> none, Func<Running, TResult> running, Func<Found, TResult> found,
