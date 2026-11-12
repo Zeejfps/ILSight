@@ -55,6 +55,8 @@
   "toolbar.display_options": "表示オプション ({shortcut})",
   "toolbar.back_history": "戻る履歴",
   "toolbar.forward_history": "進む履歴",
+  "toolbar.history_closed": "{place}（{name} は閉じられています）",
+  "toolbar.history_report_removed": "{place}（エクスポートから削除済み）",
   "toolbar.decompile_csharp": "C# に逆コンパイル",
   "toolbar.disassemble_il": "IL に逆アセンブル",
   "toolbar.disassemble_il_with_csharp": "IL に逆アセンブルし、各ステートメントの上に C# を表示",

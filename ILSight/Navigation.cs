@@ -633,30 +633,22 @@ public sealed class Navigation
         _history.KeepPosition(shownAs, position);
     }
 
-    /// <summary>Goes to the history entry before the current one, as <see cref="GoToEntry"/> does.</summary>
+    /// <summary>Goes to the nearest history entry before the current one that can be shown (<see cref="CanShow"/>),
+    /// passing over those between that can't, and shows it as <see cref="GoToEntry"/> does. Nothing when there is
+    /// none.</summary>
     public HistoryMove? GoBack(AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
     {
-        return GoToEntry(_history.CurrentIndex - 1, assemblies, finished, setup);
+        return GoOn(_history.CurrentIndex - 1, assemblies, finished, setup);
     }
 
-    /// <summary>Goes to the history entry after the current one, as <see cref="GoToEntry"/> does.</summary>
+    /// <summary>Goes to the nearest history entry after the current one that can be shown, as <see cref="GoBack"/>
+    /// does.</summary>
     public HistoryMove? GoForward(AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
     {
-        return GoToEntry(_history.CurrentIndex + 1, assemblies, finished, setup);
+        return GoOn(_history.CurrentIndex + 1, assemblies, finished, setup);
     }
 
-    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward, passing over, on
-    /// in the same direction, each entry that names nothing open: a diagram or comparison no tab shows whose assemblies
-    /// are none of them listed in <paramref name="assemblies"/>, a report no tab shows whose export is not among
-    /// <paramref name="finished"/>. Nothing when there is none to go to or it is the current one. The active tab leaves
-    /// its entry, and a new intent begins: a diagram's, comparison's or report's entry brings the tab showing it to the
-    /// front, else shows it again in a tab of its own, made again from the entry; a node's entry shows its node in the
-    /// tab it shows in, at the place the view stood when it is still good in the language of <paramref name="setup"/>,
-    /// when that tab still shows it and its assembly is listed, else begins looking up the place the entry recorded,
-    /// the app saying it is resolving. Returns what is left for the edge to start: the load the tab started, the lookup
-    /// (for <see cref="GoToHistoryEntryHandler"/>), the read of a diagram's cards or the run of a comparison; null when
-    /// nothing is.</summary>
-    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
+    private HistoryMove? GoOn(int index, AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
     {
         var found = FindEntryToShow(index, assemblies, finished);
         if (found is null)
@@ -664,8 +656,38 @@ public sealed class Navigation
             return null;
         }
 
+        return ShowEntryAt(found.Value, assemblies, finished, setup);
+    }
+
+    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward, as one picked by name
+    /// (the history menu) is gone to: that entry only. Nothing when there is none to go to, it is the current one, or it
+    /// can't be shown (<see cref="CanShow"/>: the menu offers it to no click). The active tab leaves its entry, and a new
+    /// intent begins: a diagram's, comparison's or report's entry brings the tab showing it to the
+    /// front, else shows it again in a tab of its own, made again from the entry; a node's entry shows its node in the
+    /// tab it shows in, at the place the view stood when it is still good in the language of <paramref name="setup"/>,
+    /// when that tab still shows it and its assembly is listed, else begins looking up the place the entry recorded among
+    /// the listed assemblies, the app saying it is resolving. Returns what is left for the edge to start: the load the tab started, the lookup
+    /// (for <see cref="GoToHistoryEntryHandler"/>), the read of a diagram's cards or the run of a comparison; null when
+    /// nothing is.</summary>
+    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
+    {
+        if (!CanGoTo(index))
+        {
+            return null;
+        }
+
+        if (!CanShow(_history.Entries[index], assemblies, finished))
+        {
+            return null;
+        }
+
+        return ShowEntryAt(index, assemblies, finished, setup);
+    }
+
+    private HistoryMove? ShowEntryAt(int index, AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
+    {
         LeaveActiveTab();
-        var entry = _history.MoveToEntry(found.Value);
+        var entry = _history.MoveToEntry(index);
         switch (entry)
         {
             case HistoryEntry.Node node:
@@ -683,7 +705,7 @@ public sealed class Navigation
     }
 
     /// <summary>The index of the entry at <paramref name="index"/>, or of the first after it on in the same direction,
-    /// that names something open; null when none does or <paramref name="index"/> is none to go to.</summary>
+    /// that can be shown; null when none can or <paramref name="index"/> is none to go to.</summary>
     private int? FindEntryToShow(int index, AssemblyList assemblies, IReadOnlyList<ExportReport> finished)
     {
         if (!CanGoTo(index))
@@ -695,7 +717,7 @@ public sealed class Navigation
         var entries = _history.Entries;
         for (var i = index; i >= 0 && i < entries.Count; i += step)
         {
-            if (NamesAnythingOpen(entries[i], assemblies, finished))
+            if (CanShow(entries[i], assemblies, finished))
             {
                 return i;
             }
@@ -703,13 +725,15 @@ public sealed class Navigation
         return null;
     }
 
-    /// <summary>Whether going to <paramref name="entry"/> can show something: a node's always can (its place is
-    /// looked up); a diagram or comparison when a tab shows it or one of its assemblies is listed; a report when a tab
-    /// shows it or its export is among <paramref name="finished"/>.</summary>
-    private bool NamesAnythingOpen(HistoryEntry entry, AssemblyList assemblies, IReadOnlyList<ExportReport> finished)
+    /// <summary>Whether going to <paramref name="entry"/> can show something, decided without a wait from what it names,
+    /// the same way for every kind: a node's when a tab is at its place or its place's assembly is listed in
+    /// <paramref name="assemblies"/> (a place gone from a listed assembly is the lookup's answer); a diagram or
+    /// comparison when a tab shows it or one of its assemblies is listed; a report when a tab shows it or its export is
+    /// among <paramref name="finished"/>. Back and Forward pass over an entry that can't; the history menu marks it.</summary>
+    public bool CanShow(HistoryEntry entry, AssemblyList assemblies, IReadOnlyList<ExportReport> finished)
     {
         return entry.Match(
-            static _ => true,
+            node => FindTabAt(node.Place) is not null || assemblies.IsListed(node.Place.FilePath),
             diagram => FindDiagramTab(diagram.Id) is not null || IsAnyListed(assemblies, diagram.HomeAssemblies) || IsAnyTypeListed(assemblies, diagram.Types),
             comparison => FindComparisonTab(comparison.Id) is not null || assemblies.IsListed(comparison.LeftPath)
                 || assemblies.IsListed(comparison.RightPath),
@@ -915,6 +939,19 @@ public sealed class Navigation
         foreach (var tab in _tabs.Open)
         {
             if (tab.Diagram == diagram)
+            {
+                return tab;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The open tab at <paramref name="place"/>; null when none is.</summary>
+    private DocumentTab? FindTabAt(NodePath place)
+    {
+        foreach (var tab in _tabs.Open)
+        {
+            if (place.Equals(tab.Location))
             {
                 return tab;
             }

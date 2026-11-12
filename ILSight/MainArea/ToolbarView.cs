@@ -221,7 +221,8 @@ internal static class ToolbarView
 
     /// <summary>The entries of <paramref name="navigation"/>'s history before the current one, or after it when
     /// <paramref name="direction"/> is positive; the one picked is gone to in this frame, and only its load or lookup is
-    /// queued.</summary>
+    /// queued. An entry that can't be shown (<see cref="Navigation.CanShow"/>) is drawn disabled, saying what is closed,
+    /// and offered to no click.</summary>
     private static void HistoryItems(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, IReadOnlyList<ExportArea.ExportReport> finished, DecompilerSetup setup,
         int direction)
     {
@@ -233,6 +234,12 @@ internal static class ToolbarView
                 var entry = entries[i];
                 var text = TextOf(ui.State.Strings, entry);
                 var icon = IconOf(ui.State, entry);
+                if (!navigation.CanShow(entry, assemblies, finished))
+                {
+                    ui.MenuItem(SayWhyNotShown(ui.State.Strings, entry, text), enabled: false, id: "entry", icon: icon);
+                    continue;
+                }
+
                 if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
                     Commands.MoveLater(ui.State, navigation.GoToEntry(i, assemblies, finished, setup));
@@ -252,6 +259,33 @@ internal static class ToolbarView
             HistoryEntry.Report => strings.ExportReportTitle,
             _ => throw new UnreachableException(),
         };
+    }
+
+    /// <summary><paramref name="text"/>, the label of <paramref name="entry"/>, which can't be shown, with why: what it
+    /// names that is closed, or for a report that its export was removed from the exports.</summary>
+    private static string SayWhyNotShown(Strings strings, HistoryEntry entry, string text)
+    {
+        return entry.Match(
+            node => strings.ToolbarHistoryClosed(text, NameOf(node.Place.FilePath)),
+            diagram => strings.ToolbarHistoryClosed(text, NameDiagramAssemblies(diagram)),
+            comparison => strings.ToolbarHistoryClosed(text, NameComparedAssemblies(comparison)),
+            report => strings.ToolbarHistoryReportRemoved(text));
+    }
+
+    private static string NameOf(AssemblyPath path)
+    {
+        return Path.GetFileNameWithoutExtension(path.FileName);
+    }
+
+    private static string NameDiagramAssemblies(HistoryEntry.Diagram diagram)
+    {
+        var paths = diagram.HomeAssemblies.Concat(diagram.Types.Select(static t => t.AssemblyPath));
+        return string.Join(", ", paths.Select(NameOf).Distinct());
+    }
+
+    private static string NameComparedAssemblies(HistoryEntry.Comparison comparison)
+    {
+        return string.Join(", ", new[] { NameOf(comparison.LeftPath), NameOf(comparison.RightPath) }.Distinct());
     }
 
     private static UiIcon IconOf(UiState screen, HistoryEntry entry)

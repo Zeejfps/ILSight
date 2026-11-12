@@ -11,10 +11,10 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         /// <summary>Tells the user the place an entry recorded is gone.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>The node at <paramref name="place"/>, null when it is gone, looked for without holding up the
-        /// screen (it may read an assembly from disk); a lookup that failed comes back as
-        /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct);
+        /// <summary>The node at <paramref name="place"/> among the listed assemblies, null when it is gone, looked for
+        /// without holding up the screen (it may build children); opens and lists nothing. A lookup that failed comes
+        /// back as <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<BrowseNode?>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct);
     }
 
     /// <summary>Looks up the place <paramref name="lookup"/> is for, which going to a history entry began
@@ -24,7 +24,7 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
     /// something else was asked for meanwhile.</summary>
     public async Task<DecompileTicket?> HandleAsync(AppState appState, HistoryMove.LookUp lookup, CancellationToken ct)
     {
-        var found = await ports.LookUpPlaceAsync(lookup.Place, ct);
+        var found = await ports.LookUpListedPlaceAsync(lookup.Place, ct);
         return ShowHistoryPlace(appState, lookup.Place, lookup.Position, appState.Navigation.EndResolving(lookup.Ticket.Intent, found), lookup.Ticket.Destination);
     }
 

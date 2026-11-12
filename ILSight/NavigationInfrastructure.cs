@@ -36,6 +36,13 @@ public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assem
         return await Background.Wait(Task.Run(() => NodeLookup.Find(assemblies, session, place), ct));
     }
 
+    /// <summary>Looks among the listed assemblies on the thread pool, opening nothing, and comes back on the UI thread,
+    /// with whatever the lookup threw as <see cref="Outcome{T}.Failed"/>.</summary>
+    public async Task<Outcome<BrowseNode?>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct)
+    {
+        return await Background.Wait(Task.Run(() => NodeLookup.FindListed(assemblies, session, place), ct));
+    }
+
     /// <summary>Looks among the listed assemblies on the thread pool and comes back on the UI thread, with whatever
     /// the lookup threw as <see cref="Outcome{T}.Failed"/>, except the cancellation of <paramref name="ct"/>, which it
     /// lets through.</summary>

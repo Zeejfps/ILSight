@@ -55,6 +55,8 @@
   "toolbar.display_options": "显示选项 ({shortcut})",
   "toolbar.back_history": "后退历史记录",
   "toolbar.forward_history": "前进历史记录",
+  "toolbar.history_closed": "{place}（{name} 已关闭）",
+  "toolbar.history_report_removed": "{place}（已从导出中移除）",
   "toolbar.decompile_csharp": "反编译为 C#",
   "toolbar.disassemble_il": "反汇编为 IL",
   "toolbar.disassemble_il_with_csharp": "反汇编为 IL,并在每条语句上方显示 C#",

@@ -55,6 +55,8 @@
   "toolbar.display_options": "Параметры отображения ({shortcut})",
   "toolbar.back_history": "История назад",
   "toolbar.forward_history": "История вперёд",
+  "toolbar.history_closed": "{place} ({name} закрыта)",
+  "toolbar.history_report_removed": "{place} (удалён из списка «Экспорт»)",
   "toolbar.decompile_csharp": "Декомпилировать в C#",
   "toolbar.disassemble_il": "Дизассемблировать в IL",
   "toolbar.disassemble_il_with_csharp": "Дизассемблировать в IL с кодом C# над каждой инструкцией",

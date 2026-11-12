@@ -55,6 +55,8 @@
   "toolbar.display_options": "Opciones de visualización ({shortcut})",
   "toolbar.back_history": "Historial hacia atrás",
   "toolbar.forward_history": "Historial hacia adelante",
+  "toolbar.history_closed": "{place} ({name} cerrado)",
+  "toolbar.history_report_removed": "{place} (quitado de Exportaciones)",
   "toolbar.decompile_csharp": "Descompilar a C#",
   "toolbar.disassemble_il": "Desensamblar a IL",
   "toolbar.disassemble_il_with_csharp": "Desensamblar a IL con el C# sobre cada instrucción",

@@ -2,11 +2,14 @@ using ILSight.Core;
 using ILSight.CodeViewArea;
 using ILSight.ILSightAppArea;
 using static ILSight.App.Tests.BuiltInGlyphs;
+using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
 public sealed class HistoryTests
 {
+    private static readonly string ApiDiffSamplePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "ApiDiff", "Older", "ApiDiffSample.dll");
+
     private static AppDriver Opened()
     {
         var app = AppDriver.Opened(height: 360f);
@@ -228,6 +231,89 @@ public sealed class HistoryTests
 
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == glyph && t.Inputs.Position.Left < row.Left
             && MathF.Abs(t.Inputs.Position.Top - t.Inputs.Position.Height / 2 - (row.Top - row.Height / 2)) < 2f);
+    }
+
+    /// <summary>Greeter, then ApiDiffSample's Account, then Farewell shown; then ApiDiffSample closed.</summary>
+    private static AppDriver ShowAccountThenCloseItsAssembly()
+    {
+        var app = Opened();
+        Show(app, "Greeter");
+        app.Show(OpenApiDiffSample(app).Root.Child("ApiDiffSample", "Account"), 4);
+        Show(app, "Farewell");
+        app.AppState.ListSession.CloseAssemblies([ApiDiffSampleOf(app)]);
+        app.Run(4);
+        return app;
+    }
+
+    private static LoadedModule OpenApiDiffSample(AppDriver app)
+    {
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(ApiDiffSamplePath)], ct));
+        app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(PathOf(ApiDiffSamplePath)));
+        app.Settle(4);
+        return ApiDiffSampleOf(app);
+    }
+
+    private static LoadedModule ApiDiffSampleOf(AppDriver app)
+    {
+        return app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == ApiDiffSamplePath);
+    }
+
+    [Fact]
+    public void Going_back_passes_over_a_place_whose_assembly_was_closed_and_opens_nothing()
+    {
+        var app = ShowAccountThenCloseItsAssembly();
+
+        app.GoBack();
+        app.Settle(4);
+
+        Assert.Equal("Greeter", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.False(app.AppState.Assemblies.IsListed(PathOf(ApiDiffSamplePath)));
+    }
+
+    [Fact]
+    public void The_back_dropdown_marks_a_place_whose_assembly_was_closed_and_offers_it_no_click()
+    {
+        var app = ShowAccountThenCloseItsAssembly();
+        var current = app.AppState.Navigation.HistoryIndex;
+
+        ClickBackDropdown(app);
+        var account = app.Frames.Find(Selector.OfRole(SemanticRole.MenuItem, "Account (ApiDiffSample closed)"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Account (ApiDiffSample closed)"));
+        app.Settle(4);
+
+        Assert.True(account.Has(ZGF.Gui.Immediate.SemanticStates.Disabled));
+        Assert.Equal("Farewell", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal(current, app.AppState.Navigation.HistoryIndex);
+        Assert.False(app.AppState.Assemblies.IsListed(PathOf(ApiDiffSamplePath)));
+    }
+
+    [Fact]
+    public void Going_back_reaches_a_passed_over_place_again_once_its_assembly_is_open_again()
+    {
+        var app = ShowAccountThenCloseItsAssembly();
+
+        OpenApiDiffSample(app);
+        app.GoBack();
+        app.Settle(4);
+        var fromOpened = app.AppState.Navigation.ActiveTab?.Node?.Text;
+        app.GoBack();
+        app.Settle(4);
+
+        Assert.Equal("Farewell", fromOpened);
+        Assert.Equal("Account", app.AppState.Navigation.ActiveTab?.Node?.Text);
+    }
+
+    [Fact]
+    public void Picking_an_entry_from_the_dropdown_goes_to_that_entry_only()
+    {
+        var app = ShowAccountThenCloseItsAssembly();
+        var account = app.AppState.Navigation.HistoryIndex - 1;
+
+        app.GoToEntry(account);
+        app.Settle(4);
+
+        Assert.Equal("Farewell", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal(account + 1, app.AppState.Navigation.HistoryIndex);
     }
 
     private static void ClickBackDropdown(AppDriver app)

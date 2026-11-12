@@ -244,25 +244,30 @@ internal sealed class AppStateDriver
     /// load or the lookup it left, as the app's commands start them, without waiting for them.</summary>
     public void GoToEntry(int index)
     {
-        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup);
+        StartMoving(AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
+    }
+
+    /// <summary>Goes back as the toolbar's Back does, passing over the entries that can't be shown, then starts what
+    /// it left as <see cref="GoToEntry"/> does.</summary>
+    public void GoBack()
+    {
+        StartMoving(AppState.Navigation.GoBack(AppState.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
+    }
+
+    /// <summary>Goes forward as <see cref="GoBack"/> goes back.</summary>
+    public void GoForward()
+    {
+        StartMoving(AppState.Navigation.GoForward(AppState.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
+    }
+
+    private void StartMoving(HistoryMove? move)
+    {
         if (move is null)
         {
             return;
         }
 
         Commands.StartMoving(AppState, move);
-    }
-
-    /// <summary>Goes to the history entry before the current one, as <see cref="GoToEntry"/> does.</summary>
-    public void GoBack()
-    {
-        GoToEntry(AppState.Navigation.HistoryIndex - 1);
-    }
-
-    /// <summary>Goes to the history entry after the current one, as <see cref="GoToEntry"/> does.</summary>
-    public void GoForward()
-    {
-        GoToEntry(AppState.Navigation.HistoryIndex + 1);
     }
 
     /// <summary>Starts <paramref name="workflow"/> over the app state now, as the app starts the workflows the screen

@@ -19,7 +19,7 @@ internal sealed class FakeGoToHistoryEntryHandlerPorts : GoToHistoryEntryHandler
         Reported.Add(problem);
     }
 
-    public Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
+    public Task<Outcome<BrowseNode?>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct)
     {
         LookedUp.Add(place);
         WhileLooking();
