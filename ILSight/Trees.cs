@@ -134,7 +134,7 @@ public static class Trees
             return null;
         }
 
-        return BrowseSessions.FindLoadedChildLike(tree.Session, parent, node);
+        return tree.Session.FindLoadedChildLike(parent, node);
     }
 
     /// <summary>Collapses <paramref name="node"/> and the nodes under it, expanding each one's
@@ -152,7 +152,7 @@ public static class Trees
             tree.View.SetExpanded(counterpart, true);
         }
 
-        var children = BrowseSessions.PeekChildren(tree.Session, node);
+        var children = tree.Session.PeekChildren(node);
         if (children is not ChildrenState.Ready loaded)
         {
             return;
@@ -171,7 +171,7 @@ public static class Trees
             return null;
         }
 
-        return BrowseSessions.FindLoadedChildLike(tree.Session, parent, child);
+        return tree.Session.FindLoadedChildLike(parent, child);
     }
 
     /// <summary>The node's name as tabs show it: assemblies listed more than once under one name
@@ -364,7 +364,7 @@ public static class Trees
 
     private static bool AreInnerNamespacesHidden(BrowseTree tree, BrowseNode node)
     {
-        return BrowseSessions.ListInnerNamespaces(tree.Session, node).All(inner => IsInnerNamespaceHidden(tree, inner));
+        return tree.Session.ListInnerNamespaces(node).All(inner => IsInnerNamespaceHidden(tree, inner));
     }
 
     private static bool IsInnerNamespaceHidden(BrowseTree tree, BrowseNode node)
@@ -411,7 +411,7 @@ public static class Trees
                 }
 
                 paths.Add(node.Path);
-                var children = BrowseSessions.PeekChildren(tree.Session, node);
+                var children = tree.Session.PeekChildren(node);
                 if (children is ChildrenState.Ready loaded)
                 {
                     Collect(loaded.Children);
@@ -484,10 +484,10 @@ public static class Trees
     {
         if (!tree.NestsNamespaces)
         {
-            return BrowseSessions.HasChildren(tree.Session, node);
+            return tree.Session.HasChildren(node);
         }
 
-        return BrowseSessions.HasChildren(tree.Session, node) || BrowseSessions.ListInnerNamespaces(tree.Session, node).Count > 0;
+        return tree.Session.HasChildren(node) || tree.Session.ListInnerNamespaces(node).Count > 0;
     }
 
     /// <summary>The children shown under <paramref name="node"/>: those not hidden, with namespaces
@@ -495,7 +495,7 @@ public static class Trees
     /// be built (<see cref="ChildBuilds"/>), and a row saying why when they could not be.</summary>
     public static TreeChildren<BrowseNode> GetChildren(BrowseTree tree, BrowseNode node)
     {
-        var state = tree.NestsNamespaces ? BrowseSessions.PeekNestedChildren(tree.Session, node) : BrowseSessions.PeekChildren(tree.Session, node);
+        var state = tree.NestsNamespaces ? tree.Session.PeekNestedChildren(node) : tree.Session.PeekChildren(node);
         switch (state)
         {
             case ChildrenState.Ready ready:

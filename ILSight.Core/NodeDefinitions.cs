@@ -91,7 +91,11 @@ public static class NodeDefinitions
             return null;
         }
 
-        return new DefinedType { Module = module, Symbol = type, Handle = (TypeDefinitionHandle)type.MetadataToken, Reference = reference, Visibility = GetDefinitionVisibility(type) };
+        return new DefinedType
+        {
+            Module = module, Symbol = type, Handle = (TypeDefinitionHandle)type.MetadataToken, Reference = reference, Visibility = GetDefinitionVisibility(type),
+            Name = type.Name, Arity = type.TypeParameterCount,
+        };
     }
 
     /// <summary>The definition of <paramref name="member"/> in <paramref name="module"/>; null when it has

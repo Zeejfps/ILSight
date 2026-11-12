@@ -21,7 +21,7 @@ public sealed class BrowseSessionTests : IDisposable
         var blocking = Enumerable.Range(0, 8).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.GetChildren(session, root)).ToArray();
         var waited = Task.WhenAll(waits).GetAwaiter().GetResult();
 
-        var children = Assert.IsType<ChildrenState.Ready>(BrowseSessions.PeekChildren(session, root)).Children;
+        var children = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(root)).Children;
         Assert.All(waited.Concat(blocking), s => Assert.Same(children, Assert.IsType<ChildrenState.Ready>(s).Children));
     }
 
@@ -49,7 +49,7 @@ public sealed class BrowseSessionTests : IDisposable
 
         Assert.IsType<InvalidDataException>(failed.Error);
         Assert.Same(failed, BrowseSessions.GetChildren(session, container));
-        Assert.True(BrowseSessions.HasChildren(session, container));
+        Assert.True(session.HasChildren(container));
         Assert.Empty(BrowseSessions.ListChildren(session, container));
     }
 
@@ -62,6 +62,6 @@ public sealed class BrowseSessionTests : IDisposable
 
         Assert.Same(BrowseSessions.EnsureRoot(first, assembly), BrowseSessions.EnsureRoot(first, assembly));
         Assert.NotSame(BrowseSessions.EnsureRoot(first, assembly), BrowseSessions.EnsureRoot(second, assembly));
-        Assert.IsType<ChildrenState.Unloaded>(BrowseSessions.PeekChildren(second, BrowseSessions.EnsureRoot(first, assembly)));
+        Assert.IsType<ChildrenState.Unloaded>(second.PeekChildren(BrowseSessions.EnsureRoot(first, assembly)));
     }
 }

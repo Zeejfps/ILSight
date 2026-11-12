@@ -22,16 +22,16 @@ internal static class SessionQueries
         /// <summary>The children, built on this thread when nobody built them yet; none when they failed.</summary>
         public IReadOnlyList<BrowseNode> Children => BrowseSessions.ListChildren(TestSession.Shared, node);
 
-        public bool HasChildren => BrowseSessions.HasChildren(TestSession.Shared, node);
+        public bool HasChildren => TestSession.Shared.HasChildren(node);
 
-        public ChildrenState ChildrenState => BrowseSessions.PeekChildren(TestSession.Shared, node);
+        public ChildrenState ChildrenState => TestSession.Shared.PeekChildren(node);
 
         public void EnsureChildren()
         {
             BrowseSessions.GetChildren(TestSession.Shared, node);
         }
 
-        public IReadOnlyList<BrowseNode> InnerNamespaces => BrowseSessions.ListInnerNamespaces(TestSession.Shared, node);
+        public IReadOnlyList<BrowseNode> InnerNamespaces => TestSession.Shared.ListInnerNamespaces(node);
 
         /// <summary>What sort of type the node defines; fails the test when it defines none.</summary>
         public TypeShape TypeShape => Assert.IsType<NodeSubject.TypeDefinition>(node.Subject).Definition.Shape;

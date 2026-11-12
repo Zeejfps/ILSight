@@ -108,44 +108,6 @@ public static class BrowseSessions
         }
     }
 
-    /// <summary>Where <paramref name="node"/>'s children stand now; never blocks or builds them.</summary>
-    public static ChildrenState PeekChildren(BrowseSession session, BrowseNode node)
-    {
-        if (!session.Children.TryGetValue(node, out var slot))
-        {
-            return ChildrenState.NotLoaded;
-        }
-
-        using var held = slot.Enter();
-        return held.Value;
-    }
-
-    /// <summary><see cref="PeekChildren"/>, with the children as the tree lists them when it nests
-    /// namespaces: for an assembly, its children but the namespaces nested in others; for a namespace,
-    /// the namespaces nested in it and its own children, sorted together by name.</summary>
-    public static ChildrenState PeekNestedChildren(BrowseSession session, BrowseNode node)
-    {
-        var state = PeekChildren(session, node);
-        if (state is not ChildrenState.Ready ready)
-        {
-            return state;
-        }
-
-        if (session.Nested.TryGetValue(node, out var nested))
-        {
-            return new ChildrenState.Ready(nested);
-        }
-
-        return new ChildrenState.Ready(AddNested(session, node, ready.Children));
-    }
-
-    /// <summary>Apart from <see cref="PeekNestedChildren"/>, which the tree asks per expanded row every frame,
-    /// so that only the first time pays for the closure.</summary>
-    private static IReadOnlyList<BrowseNode> AddNested(BrowseSession session, BrowseNode node, IReadOnlyList<BrowseNode> children)
-    {
-        return session.Nested.GetValue(node, n => NestChildren(session, n, children));
-    }
-
     /// <summary>The children of <paramref name="node"/>, built on the thread pool when nobody asked for
     /// them yet. Every caller waits for the same build; cancelling a wait leaves the build running for
     /// the others. Ends <see cref="ChildrenState.Ready"/> or <see cref="ChildrenState.Failed"/>.</summary>
@@ -219,62 +181,6 @@ public static class BrowseSessions
         }
 
         return [];
-    }
-
-    /// <summary>Whether <paramref name="node"/> has children, answered without building them where
-    /// possible. Children that failed to build count, so that why can be shown.</summary>
-    public static bool HasChildren(BrowseSession session, BrowseNode node)
-    {
-        return PeekChildren(session, node) switch
-        {
-            ChildrenState.Ready ready => ready.Children.Count > 0,
-            ChildrenState.Failed => true,
-            ChildrenState.Running or ChildrenState.Unloaded => BrowseNodes.CanHaveChildren(node),
-            _ => throw new UnreachableException(),
-        };
-    }
-
-    /// <summary>The child of <paramref name="parent"/> standing where <paramref name="other"/> stands under
-    /// its own parent, naming the same thing: its counterpart under a copy of the same file read again.
-    /// Null when there is none or more than one, or the children are not built yet; never blocks.</summary>
-    public static BrowseNode? FindLoadedChildLike(BrowseSession session, BrowseNode parent, BrowseNode other)
-    {
-        var children = PeekChildren(session, parent);
-        if (children is not ChildrenState.Ready ready)
-        {
-            return null;
-        }
-
-        var segment = other.Segment;
-        if (segment is null)
-        {
-            return null;
-        }
-
-        return FindChild(ready.Children, segment);
-    }
-
-    /// <summary>The one child among <paramref name="children"/> that <paramref name="segment"/> names;
-    /// null when none or more than one does.</summary>
-    private static BrowseNode? FindChild(IReadOnlyList<BrowseNode> children, NodePathSegment segment)
-    {
-        BrowseNode? found = null;
-        foreach (var child in children)
-        {
-            var childSegment = child.Segment;
-            if (!segment.Equals(childSegment))
-            {
-                continue;
-            }
-
-            if (found is not null)
-            {
-                return null;
-            }
-
-            found = child;
-        }
-        return found;
     }
 
     private static Guarded<ChildrenState> EnsureSlot(BrowseSession session, BrowseNode node)
@@ -371,7 +277,7 @@ public static class BrowseSessions
         foreach (var step in steps)
         {
             var segment = step.Segment;
-            var next = segment.IsPackageEntry ? FindInPackage(session, node, segment) : FindChild(ListChildren(session, node), segment);
+            var next = segment.IsPackageEntry ? FindInPackage(session, node, segment) : BrowseSession.FindChild(ListChildren(session, node), segment);
             if (next is null)
             {
                 return null;
@@ -409,7 +315,7 @@ public static class BrowseSessions
             return null;
         }
 
-        return FindChild(ListChildren(session, holder), segment);
+        return BrowseSession.FindChild(ListChildren(session, holder), segment);
     }
 
     /// <summary>The node of the type or member <paramref name="handle"/> defines in <paramref name="module"/>;
@@ -513,97 +419,6 @@ public static class BrowseSessions
     private static ConcurrentDictionary<string, BrowseNode> EnsureNamespaces(BrowseSession session, LoadedModule module)
     {
         return session.Namespaces.GetValue(module, static _ => new ConcurrentDictionary<string, BrowseNode>(StringComparer.Ordinal));
-    }
-
-    /// <summary>The namespaces whose names extend <paramref name="node"/>'s by a segment, sorted by name;
-    /// none for a node that is no namespace. Never blocks.</summary>
-    public static IReadOnlyList<BrowseNode> ListInnerNamespaces(BrowseSession session, BrowseNode node)
-    {
-        if (session.Inner.TryGetValue(node, out var known))
-        {
-            return known;
-        }
-
-        if (node.Subject is not NodeSubject.Namespace)
-        {
-            return [];
-        }
-
-        var parent = node.Parent;
-        if (parent is null)
-        {
-            return [];
-        }
-
-        var parentChildren = PeekChildren(session, parent);
-        if (parentChildren is not ChildrenState.Ready siblings)
-        {
-            return [];
-        }
-
-        return AddInnerNamespaces(session, node, siblings.Children);
-    }
-
-    /// <summary>Apart from <see cref="ListInnerNamespaces"/>, which the tree asks per row every frame while
-    /// namespaces nest, so that only the first time pays for the closures.</summary>
-    private static IReadOnlyList<BrowseNode> AddInnerNamespaces(BrowseSession session, BrowseNode node, IReadOnlyList<BrowseNode> siblings)
-    {
-        var inner = siblings
-            .Where(c => ReferenceEquals(c.EnclosingNamespace, node))
-            .ToArray();
-        return session.Inner.GetValue(node, _ => inner);
-    }
-
-    /// <summary>The children as the tree lists them when it nests namespaces, given those built: for a
-    /// module, its children but the namespaces nested in others; for a namespace, the namespaces nested in
-    /// it and its own children, each where ILSpy sorts the full names of the types in it; else as built.</summary>
-    private static IReadOnlyList<BrowseNode> NestChildren(BrowseSession session, BrowseNode node, IReadOnlyList<BrowseNode> children)
-    {
-        return node.Subject switch
-        {
-            NodeSubject.Module => children.Where(static c => c.EnclosingNamespace is null).ToArray(),
-            NodeSubject.Namespace => Interleave(ListInnerNamespaces(session, node), children),
-            _ => children,
-        };
-    }
-
-    /// <summary>The namespaces in <paramref name="inner"/> among <paramref name="own"/>, a namespace's
-    /// children sorted.</summary>
-    private static BrowseNode[] Interleave(IReadOnlyList<BrowseNode> inner, IReadOnlyList<BrowseNode> own)
-    {
-        var result = new List<BrowseNode>(own.Count + inner.Count);
-        var pending = new Queue<BrowseNode>(inner);
-        foreach (var child in own)
-        {
-            while (pending.TryPeek(out var next) && SortsBefore(next, child))
-            {
-                result.Add(pending.Dequeue());
-            }
-
-            result.Add(child);
-        }
-        result.AddRange(pending);
-        return result.ToArray();
-    }
-
-    /// <summary>Whether ILSpy, sorting the full names of the types, comes to those in
-    /// <paramref name="inner"/> before <paramref name="child"/>.</summary>
-    private static bool SortsBefore(BrowseNode inner, BrowseNode child)
-    {
-        var key = NamespaceNames.LastSegment(inner.FullName) + ".";
-        return NaturalStringComparer.Instance.Compare(key, GetReflectionName(child)) < 0;
-    }
-
-    /// <summary>The name a namespace's type is sorted under, as its reflection name ends: <c>List`1</c>.</summary>
-    private static string GetReflectionName(BrowseNode child)
-    {
-        var (name, arity) = child.Subject switch
-        {
-            NodeSubject.TypeDefinition type => (type.Definition.Symbol.Name, type.Definition.Symbol.TypeParameterCount),
-            NodeSubject.ForwardedType forwarded => (forwarded.Value.SortName, forwarded.Value.Arity),
-            _ => throw new UnreachableException(),
-        };
-        return arity == 0 ? name : name + "`" + arity;
     }
 
     /// <summary>The node of the namespace, type or member <paramref name="idString"/> names in

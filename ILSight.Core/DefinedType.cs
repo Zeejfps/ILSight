@@ -18,4 +18,10 @@ public sealed class DefinedType
 
     /// <summary>How visible the type is: compiler-generated when the compiler made it up, or a type it is nested in.</summary>
     public required NodeVisibility Visibility { get; init; }
+
+    /// <summary>The type's name, without its type parameters.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>How many type parameters the type declares itself.</summary>
+    public required int Arity { get; init; }
 }

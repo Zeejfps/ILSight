@@ -116,10 +116,10 @@ public static class BrowseNodes
         };
     }
 
-    /// <summary>Whether this node may have children, guessed without building them.</summary>
-    internal static bool CanHaveChildren(BrowseNode node)
+    /// <summary>Whether a node of <paramref name="subject"/> may have children, guessed without building them.</summary>
+    private static bool CanHaveChildren(NodeSubject subject)
     {
-        return node.Subject switch
+        return subject switch
         {
             NodeSubject.TypeDefinition type => EntityNodes.CanListMembers(type.Definition),
             NodeSubject.MemberDefinition member => member.Definition.Symbol is IProperty or IEvent,
@@ -189,6 +189,7 @@ public static class BrowseNodes
             Visibility = NodeDefinitions.GetVisibility(subject),
             Reference = NodeDefinitions.ReferenceOf(subject),
             Activation = NodeDefinitions.GetActivation(subject),
+            CanHaveChildren = CanHaveChildren(subject),
         };
     }
 

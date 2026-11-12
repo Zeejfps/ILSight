@@ -486,7 +486,7 @@ public static class AssemblySearch
                 AddResult(search, node, parent.Subject is NodeSubject.ResourceContainer ? parent.Text : "");
             }
 
-            if (BrowseSessions.HasChildren(search.Session, node))
+            if (search.Session.HasChildren(node))
             {
                 ScanResources(search, node);
             }

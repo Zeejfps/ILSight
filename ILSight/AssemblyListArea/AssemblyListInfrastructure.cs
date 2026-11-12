@@ -79,7 +79,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
     /// the old ones.</summary>
     private void EnsureChildrenAsLoaded(BrowseNode old, BrowseNode fresh)
     {
-        var oldChildren = BrowseSessions.PeekChildren(session, old);
+        var oldChildren = session.PeekChildren(old);
         if (oldChildren is not ChildrenState.Ready loaded)
         {
             return;
@@ -88,7 +88,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         BrowseSessions.GetChildren(session, fresh);
         foreach (var child in loaded.Children)
         {
-            var counterpart = BrowseSessions.FindLoadedChildLike(session, fresh, child);
+            var counterpart = session.FindLoadedChildLike(fresh, child);
             if (counterpart is not null)
             {
                 EnsureChildrenAsLoaded(child, counterpart);

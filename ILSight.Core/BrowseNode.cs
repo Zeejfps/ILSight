@@ -65,6 +65,9 @@ public sealed class BrowseNode
     /// <summary>What activating the node does, worked out when the node was made.</summary>
     public required Activation Activation { get; init; }
 
+    /// <summary>Whether the node may have children, guessed when it was made without building them.</summary>
+    public required bool CanHaveChildren { get; init; }
+
     /// <summary>The module the node is read from; null for a node of a package's folders and files.</summary>
     internal LoadedModule? SourceModule => Assembly as LoadedModule;
 
