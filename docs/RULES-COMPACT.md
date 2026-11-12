@@ -254,7 +254,12 @@ Take the first match:
   was left; never the document), so Back shows it in the tab showing it, else in one made again; it passes over a
   place naming nothing open, found when Back reaches it; closing a tab leaves the history alone. Forgotten on close,
   the place was lost, and a later way of replacing a tab's document left an entry Back did nothing for; held as the
-  document, every closed one stayed alive.
+  document, every closed one stayed alive. **The history follows where the user is:** whatever changes the document
+  the user is at records it (opened, followed to, or an open tab brought to the front: clicked, picked again in the
+  tree, focused after a close); Back, Forward and an entry picked move in it and record nothing; an empty tab is no
+  place. Recorded only when opened, Back after clicking a tab went to where the user already was, and Back from code
+  followed out of a re-focused comparison skipped it; recorded when followed out of, Back after a click still went
+  nowhere.
 - **The parts end where the rule does, and the type keeps its rule against what it hands out.** Its parts are what
   the rule decides with (which document each tab is, the active tab, history, intent): it holds privately each part
   some member of which could make the rule false, and makes those changes its methods. An object keeping a rule of its
@@ -264,7 +269,15 @@ Take the first match:
   the parts a wide change spans (R010) passes the same test: a rule across two parts (an analysis is of an assembly on
   the list) is kept by the type holding both, not by functions over the carrier (closing through the list alone left
   the analysis, on ILSight too). Not every part private (a forwarder for each read: 78 on ILSight's session), not the
-  parts as parameters.
+  parts as parameters. **Per-object state stays where only the holder reaches it:** C# hides from other types and
+  assemblies, never from whoever holds the object, so each object handed out (a tab) has reads only, over a separate
+  state object only the holder holds and changes (ILSight's `DocumentTab` over `TabDocument`). Not `internal` changes
+  (a feature written later in that assembly pointed the tab past the intent), not state keyed in the holder (every
+  reader takes the holder; a closed tab's read threw). **A change that lands late is a caller:** an add whose answer
+  arrives after the change the rule follows (an analysis landing after its assembly closed) can break the rule, so each
+  such change checks the rule as it lands, reading the other part read-only, and refuses it as an expected outcome; or
+  the holder holds the part. Where the check only reads, the part checks (no forwarders); closing both stays the
+  holder's.
 
 ## R005: Data goes in through `required init` properties
 
@@ -312,8 +325,9 @@ Build: everything (`.editorconfig`, RL0701 target-typed `new()`, RL0702 two stat
 ## R008: Make invalid states unrepresentable with unions
 
 Build: RL0801 (`switch` on a union), RL0802 (discarded `To*` / `With*`), RL0803 (`if` chain over cases), RL0804
-(discarded result union), RL0805 (status enum + nullables), RL0806 (case added from outside); suggestion while
-measured: RL0807 (a dropped value of a type marked `[MustUse]`).
+(discarded result union), RL0805 (status enum + nullables; rows, saved forms and wire shapes named for their role
+skipped: `*Row`, `*Record`, `*Dto`, `*Json`, `*Request`, `*Response`), RL0806 (case added from outside), each for
+another project's unions too; suggestion while measured: RL0807 (a dropped value of a type marked `[MustUse]`).
 
 - Use a union when which data exists depends on a state or kind: a status with fields that must agree, success **or**
   error, kinds of message. Fields that are optional independently stay nullable.
@@ -369,7 +383,8 @@ measured: RL0807 (a dropped value of a type marked `[MustUse]`).
 
 ## R009: Exceptions are for bugs; expected failures are results
 
-Build: RL0901 (empty catch), RL0902 (catch-all outside an edge), RL0804, CA2200 (`throw ex`), CA2201 (throwing `Exception`);
+Build: RL0901 (empty catch), RL0902 (catch-all outside an edge; accepted around a listed library's read that carries
+the exception and lets cancellation through), RL0804, CA2200 (`throw ex`), CA2201 (throwing `Exception`), CA2261;
 suggestions while measured: RL0903 (an adapter's catch that turns cancellation into a result), RL0904 (an adapter's
 port member returning a sequence that isn't its own iterator).
 
@@ -407,6 +422,25 @@ port member returning a sequence that isn't its own iterator).
   the ticket's work was cancelled; its adapter links the ticket with the workflow's token and lets the workflow's own
   cancellation through (shutdown still ends the workflow, it doesn't become `Stopped`). Work a workflow starts that
   nothing after it needs is handed back the same way, whatever cancels it (R010).
+- **A library's failure on the user's data is the data's failure, whatever it throws** (a decompiler's bug on one
+  member, as well as the corrupt file it documents): list it in `rulelab.untrusted_libraries`; the code reading with it
+  (an adapter's member, R006's conversion step) catches everything the read throws, cancellation asked for excepted,
+  into the failure case of the unit the user asked for, carrying why, shown where its answer would be
+  (`catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } catch (Exception ex) { return new
+  CodeRead.Failed { Why = ex.GetType().Name }; }`). Only the read inside (with what the library calls back while it
+  reads): the app's own code on the answer stays out (inside, its bug read as the library's). Narrowed to the documented exception, the bug left a tab "decompiling" for
+  good and ended a search at its module; skipped, the module dropped out of the results unsaid.
+- **An ending with nothing left to do is written as what follows**, never an empty catch: cancellation asked for
+  reaches the edge; an expected failure is the operation's answer (`null`, `false`, a case) and the caller's flow
+  reads it (a run gone partway: no arguments, the next run served); a wait whose every ending is no news (a delay
+  stopping cut short, a read the code's own close ended) doesn't throw:
+  `ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing)`, plain
+  `Task` only (CA2261); a failure that would be news isn't caught (a temporary folder still held). Not a value only a
+  test reads. Propagated, a run's failure replaced the pipe server and dropped the run behind it.
+- **A failure is reported while something can show it:** work whose failure the user must hear (the settings at exit)
+  runs at the close request, and a failure keeps the window open until its next frame shows it (the next close closes).
+  After the window closes a report reaches no one: dropped or matched to nothing at shutdown, the font change was lost
+  unsaid; a note for the next run was refused by the same read-only folder.
 - An adapter that turns failures into results lets cancellation through: catch the failures it reports, and a timeout
   as `catch (TaskCanceledException) when (!ct.IsCancellationRequested)`; never `OperationCanceledException` (or
   everything) into `Failed`, or shutdown is reported as a failure and every workflow must re-check its token.
@@ -434,7 +468,10 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   **A workflow awaits only what its own later steps need:** work it starts that nothing after it needs (a reload's
   lookup of the reopened tabs' nodes) is handed back to the edge as a kind of its own (R008). Awaited, it held back the
   loads handed back with it (a tab whose code was ready said "loading") and its cancellation lost them; recorded as
-  pending for the frame edge it works a frame later, which is the form for work a draw finds. **Work handed back
+  pending for the frame edge it works a frame later, which is the form for work a draw finds. **A read started early**
+  (a warm-up) is that read: one task the later use awaits, its library failure a value (R009), started by an edge
+  (handed back); not a second read whose failure is dropped (ILSight's: an empty catch-all on the thread pool, run on
+  after shutdown), nor one the edge reports besides (reported twice). **Work handed back
   partway** (clearing the list hands back the lookup of the tabs it left waiting) isn't held by a later wait (opening
   files): the workflow ends there, and the edge starts that work and the rest as a workflow of its own. Held, the tabs
   said "waiting" until the files opened, and for good when opening was cancelled. Not a sink the edge passes in (left
@@ -475,7 +512,8 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   and for work it left for the next frame's edge, the edge when a workflow it started ends; else it waits for input.
 - One operation at a time per `DbContext`; real parallelism needs a context per query (`IDbContextFactory<T>`).
 - An `async void` event handler is an edge: `try` / `catch` its body and suppress VSTHRD100 with the reason.
-- No `ConfigureAwait(false)` in application code.
+- No `ConfigureAwait(false)` in application code (a wait whose every ending is no news keeps the context:
+  `ContinueOnCapturedContext | SuppressThrowing`, R009).
 
 ## R011: One level of abstraction per method; calls only go down
 
