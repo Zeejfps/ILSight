@@ -48,7 +48,7 @@ dotnet_diagnostic.VSTHRD003.severity = none
 
 # RuleLab checks: warnings until each rule is clean in this repo.
 dotnet_diagnostic.RL0101.severity = warning
-dotnet_diagnostic.RL0201.severity = warning
+dotnet_diagnostic.RL0201.severity = error
 dotnet_diagnostic.RL0202.severity = error
 dotnet_diagnostic.RL0203.severity = warning
 dotnet_diagnostic.RL0301.severity = error
