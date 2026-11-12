@@ -13,6 +13,7 @@ using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
+using ILSight.NuGetBrowsing;
 
 namespace ILSight;
 

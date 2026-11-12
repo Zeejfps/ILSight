@@ -1,3 +1,5 @@
+using ILSight.NuGetBrowsing;
+
 namespace ILSight;
 
 /// <summary>A search <see cref="NuGetBrowser.StartSearch"/> started, for <see cref="NuGetBrowser.SearchAsync"/> to run:

@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.NuGetBrowsing;
 
 /// <summary>The versions a package lists to pick from, newest first, how each is written, and the one
 /// picked: the package's latest at first, then whichever of those listed the user picks.</summary>

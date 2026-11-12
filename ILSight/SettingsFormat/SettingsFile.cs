@@ -3,6 +3,7 @@ using ILSight.Localization;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
+using ILSight.NuGetBrowsing;
 
 namespace ILSight.SettingsFormat;
 
