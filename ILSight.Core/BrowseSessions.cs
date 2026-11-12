@@ -217,7 +217,7 @@ public static class BrowseSessions
         {
             built = BrowseNodes.CreateChildren(node);
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             return new ChildrenState.Failed(e);
         }
