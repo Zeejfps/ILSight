@@ -7,7 +7,7 @@ namespace ILSight.Core;
 /// </summary>
 public sealed class NuGetClient
 {
-    private readonly Dictionary<string, NuGetFeed> _feeds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<FeedUrl, NuGetFeed> _feeds = [];
     private readonly HttpMessageHandler? _handler;
 
     /// <summary>A client whose requests <paramref name="handler"/> sends; the app's shared connections when null.</summary>
@@ -24,13 +24,13 @@ public sealed class NuGetClient
     /// for. Call it from one thread only.</summary>
     public NuGetFeed EnsureFeed(NuGetSource source)
     {
-        if (_feeds.TryGetValue(source.Url.Text, out var feed))
+        if (_feeds.TryGetValue(source.Url, out var feed))
         {
             return feed;
         }
 
         feed = NuGetFeeds.CreateFeed(source, _handler);
-        _feeds.Add(source.Url.Text, feed);
+        _feeds.Add(source.Url, feed);
         return feed;
     }
 }

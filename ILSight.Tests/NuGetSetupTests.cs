@@ -23,6 +23,18 @@ public sealed class NuGetSetupTests
     }
 
     [Fact]
+    public void Sources_at_one_url_typed_in_other_letters_are_the_same_feed()
+    {
+        var lower = NuGetSource.FromUrl("https://pkgs.test/v3/index.json");
+        var upper = NuGetSource.FromUrl("https://PKGS.test/V3/Index.json");
+        var other = NuGetSource.FromUrl("https://pkgs.test/v2/index.json");
+
+        Assert.Equal(lower, upper);
+        Assert.Equal(lower?.Url.GetHashCode(), upper?.Url.GetHashCode());
+        Assert.NotEqual(lower, other);
+    }
+
+    [Fact]
     public void A_client_makes_a_feed_once_per_url_whatever_its_letters()
     {
         var typed = NuGetSource.FromUrl("https://PKGS.test/v3/index.json");

@@ -180,7 +180,7 @@ public static class NuGetFeeds
 
     private static async Task<NuGetFeed.ServiceIndex> GetIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
     {
-        using var document = await ReadJsonAsync(feed, feed.Source.Url, cancellationToken).ConfigureAwait(false);
+        using var document = await ReadJsonAsync(feed, feed.Source.Url.Address, cancellationToken).ConfigureAwait(false);
         var resources = FeedJson.ReadResources(document.RootElement);
         var search = GetResource(feed, resources, SearchType);
         var folder = GetResource(feed, resources, PackageFolderType);
@@ -345,7 +345,7 @@ public static class NuGetFeeds
     /// it when the config lists it; else <paramref name="source"/> itself.</summary>
     public static NuGetSource GetListedSource(NuGetSetup setup, NuGetSource source)
     {
-        var listed = setup.Sources.FirstOrDefault(s => string.Equals(s.Url.Text, source.Url.Text, StringComparison.OrdinalIgnoreCase));
+        var listed = setup.Sources.FirstOrDefault(s => s.Url == source.Url);
         if (listed is null)
         {
             return source;

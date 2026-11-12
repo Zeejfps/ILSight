@@ -13,12 +13,13 @@ public sealed record NuGetSource
     private NuGetSource(string name, WebUrl url)
     {
         Name = name;
-        Url = url;
+        Url = new FeedUrl { Address = url };
     }
 
     public string Name { get; }
 
-    public WebUrl Url { get; }
+    /// <summary>Its service index URL, which is the feed's identity: compared ignoring case.</summary>
+    public FeedUrl Url { get; }
 
     /// <summary>The source a typed <paramref name="url"/> names, called after its host; null unless it
     /// is an absolute HTTP or HTTPS URL.</summary>

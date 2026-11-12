@@ -52,7 +52,6 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     private const string IconImagePrefix = "nuget-icon-";
 
     private readonly Dictionary<WebUrl, PackageIcon> _icons = [];
-    private readonly Dictionary<string, NuGetSource> _feeds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<DetailsKey, VersionDetails> _details = [];
     private readonly List<IconFetch> _iconsToFetch = [];
     private readonly List<DetailsFetch> _detailsToFetch = [];
@@ -333,7 +332,6 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     internal void UseSetup(NuGetSetup setup)
     {
         _setup = new SetupState.Ready(setup);
-        _feeds.Clear();
     }
 
     /// <summary>Takes in <paramref name="url"/>, picked rather than typed, and the query typed as settled, so
@@ -401,7 +399,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             DropResults();
             return null;
         }
-        var wanted = new FeedSearch(EnsureFeed(setup, source), _typedQuery.Text, includePrerelease, RequestedPage);
+        var wanted = new FeedSearch(NuGetFeeds.GetListedSource(setup, source), _typedQuery.Text, includePrerelease, RequestedPage);
         if (IsNewSearch(wanted))
         {
             RequestedPage = 0;
@@ -420,20 +418,6 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             return null;
         }
         return wanted;
-    }
-
-    /// <summary>The feed at <paramref name="source"/>'s URL as it was first asked for with this setup, named as the
-    /// config names it when the config lists it, so the same URL typed in other letters is the same feed.</summary>
-    private NuGetSource EnsureFeed(NuGetSetup setup, NuGetSource source)
-    {
-        if (_feeds.TryGetValue(source.Url.Text, out var feed))
-        {
-            return feed;
-        }
-
-        feed = NuGetFeeds.GetListedSource(setup, source);
-        _feeds.Add(source.Url.Text, feed);
-        return feed;
     }
 
     /// <summary>The seconds left at <paramref name="now"/> before both the query and the feed typed settled,
@@ -995,7 +979,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     }
 
     /// <summary>Which version of which package of which feed details are of.</summary>
-    internal readonly record struct DetailsKey(WebUrl Feed, PackageId Id, PackageVersion Version);
+    internal readonly record struct DetailsKey(FeedUrl Feed, PackageId Id, PackageVersion Version);
 
     /// <summary>An icon asked for, still to be fetched, and where from.</summary>
     internal sealed record IconFetch
