@@ -55,7 +55,7 @@ internal static class SaveDialogs
         var t = ui.State.Strings;
         var screen = ui.State;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"])];
-        ui.PickSaveFile(t.ExportPdbTitle, null, LoadedAssemblies.GetPdbFileName(assembly), filters,
+        ui.PickSaveFile(t.ExportPdbTitle, null, assembly.PdbFileName, filters,
             path => Commands.Later(screen, (assembly, path), static (a, s) => GeneratePdb(a, s.assembly, s.path)));
     }
 

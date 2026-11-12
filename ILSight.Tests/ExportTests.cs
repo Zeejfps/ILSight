@@ -105,7 +105,7 @@ public sealed class ExportTests : IDisposable
         Assert.Equal("Calculator.cs", NodeContentLoader.SuggestCodeFileName(calculator, DecompilationLanguage.CSharp));
         Assert.Equal("Calculator.il", NodeContentLoader.SuggestCodeFileName(calculator, DecompilationLanguage.IL));
         Assert.Equal("ILSight.Tests.cs", NodeContentLoader.SuggestCodeFileName(Trees.TestAssembly.Root, DecompilationLanguage.CSharp));
-        Assert.Equal("ILSight.Tests.pdb", LoadedAssemblies.GetPdbFileName(Trees.TestAssembly));
+        Assert.Equal("ILSight.Tests.pdb", Trees.TestAssembly.PdbFileName);
     }
 
     [Fact]

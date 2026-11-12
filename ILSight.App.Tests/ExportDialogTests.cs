@@ -591,7 +591,7 @@ public sealed class ExportDialogTests : IDisposable
         d.StartExport();
         d.Settle();
 
-        var pdb = _temp.PathOf(LoadedAssemblies.GetPdbFileName(Fixtures(d)));
+        var pdb = _temp.PathOf(Fixtures(d).PdbFileName);
         Assert.True(File.Exists(pdb));
         Assert.Contains(pdb, Assert.IsType<ExportEnd.Finished>(Assert.Single(d.AppState.FinishedExports).End).Written);
     }

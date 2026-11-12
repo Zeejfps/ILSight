@@ -93,7 +93,7 @@ public sealed class ExportTests : IDisposable
         GeneratePdbs(d.AppState, _temp.Path);
         d.Settle();
 
-        Assert.True(File.Exists(_temp.PathOf(LoadedAssemblies.GetPdbFileName(assembly))));
+        Assert.True(File.Exists(_temp.PathOf(assembly.PdbFileName)));
         Assert.Empty(d.AppState.Errors.Entries);
     }
 

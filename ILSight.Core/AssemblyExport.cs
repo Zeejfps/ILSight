@@ -85,7 +85,7 @@ public static class AssemblyExport
             return project with { Pdb = new ProjectPdb.Failed(failure) };
         }
 
-        var path = Path.Combine(folder, LoadedAssemblies.GetPdbFileName(project.Assembly));
+        var path = Path.Combine(folder, project.Assembly.PdbFileName);
         return project with { Pdb = new ProjectPdb.Written(path) };
     }
 
@@ -178,7 +178,7 @@ public static class AssemblyExport
             return new PdbFailure.NoDebugEntry(assembly);
         }
 
-        var path = Path.Combine(folder, LoadedAssemblies.GetPdbFileName(assembly));
+        var path = Path.Combine(folder, assembly.PdbFileName);
         try
         {
             GeneratePdb(assembly, options, path, embedSources, progress, cancellationToken);

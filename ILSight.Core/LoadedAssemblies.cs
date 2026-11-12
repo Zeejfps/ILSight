@@ -197,12 +197,6 @@ public static class LoadedAssemblies
         }
     }
 
-    /// <summary>The name a portable PDB of this assembly is written under.</summary>
-    public static string GetPdbFileName(LoadedAssembly assembly)
-    {
-        return WholeProjectDecompiler.CleanUpFileName(assembly.Name, DebugSymbols.PdbExtension);
-    }
-
     /// <summary>The symbols of the PDB the list picked for this assembly, else those it finds itself.</summary>
     private static DebugSymbols? FindDebugSymbols(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place)
     {

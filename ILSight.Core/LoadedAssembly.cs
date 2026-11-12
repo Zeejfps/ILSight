@@ -1,3 +1,5 @@
+using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
+
 namespace ILSight.Core;
 
 /// <summary>
@@ -43,6 +45,9 @@ public abstract class LoadedAssembly
     public required string NameAndVersion { get; init; }
 
     public required AssemblyList List { get; init; }
+
+    /// <summary>The name a portable PDB of this assembly is written under: its name, cleaned up as a file name.</summary>
+    public string PdbFileName => WholeProjectDecompiler.CleanUpFileName(Name, DebugSymbols.PdbExtension);
 
     public override string ToString()
     {
