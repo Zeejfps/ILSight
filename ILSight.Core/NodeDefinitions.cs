@@ -247,13 +247,6 @@ public static class NodeDefinitions
         return new NodePath { FilePath = n.Assembly.FilePath, Steps = steps.ToImmutableArray() };
     }
 
-    /// <summary>The path to the node reached from the root of the file at <paramref name="filePath"/>
-    /// through <paramref name="steps"/>, as <see cref="NodePath.Steps"/> gives them.</summary>
-    public static NodePath CreatePath(AssemblyPath filePath, IEnumerable<NodePathStep> steps)
-    {
-        return new NodePath { FilePath = filePath, Steps = steps.ToImmutableArray() };
-    }
-
     /// <summary>The text of <paramref name="path"/>: its file, then the label of each step.</summary>
     internal static string DescribePath(NodePath path)
     {

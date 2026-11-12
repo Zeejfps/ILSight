@@ -429,7 +429,7 @@ internal static class SettingsJson
 
             steps.Add(step.Value);
         }
-        return NodeDefinitions.CreatePath(filePath, steps);
+        return NodePath.From(filePath, steps);
     }
 
     private static NodePathStep? Parse(SavedPathStepJson json)

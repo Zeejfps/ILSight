@@ -590,7 +590,7 @@ public static class BrowseSessions
     /// <paramref name="inner"/> before <paramref name="child"/>.</summary>
     private static bool SortsBefore(BrowseNode inner, BrowseNode child)
     {
-        var key = NamespaceNames.LastSegment(BrowseNodes.GetFullName(inner)) + ".";
+        var key = NamespaceNames.LastSegment(inner.FullName) + ".";
         return NaturalStringComparer.Instance.Compare(key, GetReflectionName(child)) < 0;
     }
 

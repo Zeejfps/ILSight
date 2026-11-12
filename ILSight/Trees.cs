@@ -384,7 +384,7 @@ public static class Trees
             return false;
         }
 
-        var visibility = NodeDefinitions.GetVisibility(node.Subject);
+        var visibility = node.Visibility;
         if (visibility.IsCompilerGenerated)
         {
             return true;
@@ -543,7 +543,7 @@ public static class Trees
 
     public static TreeRow GetRow(BrowseTree tree, BrowseNode node)
     {
-        var visibility = NodeDefinitions.GetVisibility(node.Subject);
+        var visibility = node.Visibility;
         return new TreeRow(
             GetRowLabel(tree, node),
             NodeIcons.Icon(node, tree.IconColors, tree.Icons),

@@ -57,10 +57,11 @@ public static class BrowseNodes
         };
     }
 
-    /// <summary>A qualified name for copying, e.g. <c>System.Collections.Generic.List&lt;T&gt;.Add(T)</c>.</summary>
-    public static string GetFullName(BrowseNode node)
+    /// <summary>A qualified name for copying a node of <paramref name="subject"/>, labelled <paramref name="text"/>,
+    /// e.g. <c>System.Collections.Generic.List&lt;T&gt;.Add(T)</c>.</summary>
+    private static string ComposeFullName(NodeSubject subject, string text)
     {
-        return node.Subject switch
+        return subject switch
         {
             NodeSubject.TypeDefinition type => EntityText.FullName(type.Definition.Symbol),
             NodeSubject.MemberDefinition member => EntityText.FullName(member.Definition.Symbol),
@@ -77,7 +78,7 @@ public static class BrowseNodes
             NodeSubject.References or NodeSubject.ReferencedTypes or NodeSubject.ModuleReference or NodeSubject.BaseTypes
                 or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources
                 or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables
-                or NodeSubject.MetadataTable => node.Text,
+                or NodeSubject.MetadataTable => text,
             _ => throw new UnreachableException(),
         };
     }
@@ -167,17 +168,23 @@ public static class BrowseNodes
         };
     }
 
-    /// <summary>The node of <paramref name="subject"/>, under <paramref name="parent"/>, which for a namespace
-    /// may be one extending the name of <paramref name="enclosingNamespace"/> by a segment.</summary>
+    /// <summary>The node of <paramref name="subject"/>, under <paramref name="parent"/>, which for a namespace may be one
+    /// extending the name of <paramref name="enclosingNamespace"/> by a segment, with the values it shows (its full
+    /// name, visibility, definition and activation) read now from what the subject stands for.</summary>
     internal static BrowseNode Create(BrowseNode? parent, NodeSubject subject, BrowseNode? enclosingNamespace = null)
     {
+        var text = GetText(subject);
         return new BrowseNode
         {
             Assembly = GetAssembly(subject),
             Parent = parent,
-            Text = GetText(subject),
+            Text = text,
             Subject = subject,
             EnclosingNamespace = enclosingNamespace,
+            FullName = ComposeFullName(subject, text),
+            Visibility = NodeDefinitions.GetVisibility(subject),
+            Reference = NodeDefinitions.ReferenceOf(subject),
+            Activation = NodeDefinitions.GetActivation(subject),
         };
     }
 

@@ -221,7 +221,7 @@ public sealed class SettingsFormatTests : IDisposable
 
     private static NodePath CalculatorPlace()
     {
-        return NodeDefinitions.CreatePath(A,
+        return NodePath.From(A,
         [
             new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
             new NodePathStep(new NodePathSegment.Definition("T:Ns.Calculator"), "Calculator"),
@@ -230,7 +230,7 @@ public sealed class SettingsFormatTests : IDisposable
 
     private static NodePath OtherPlace()
     {
-        return NodeDefinitions.CreatePath(B,
+        return NodePath.From(B,
         [
             new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
             new NodePathStep(new NodePathSegment.Definition("T:Ns.Other"), "Other"),

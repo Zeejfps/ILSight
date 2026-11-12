@@ -161,7 +161,7 @@ public sealed class SavedDocumentsTests : IDisposable
     /// <summary>Where the fixture type <paramref name="name"/> is, as this build saves it.</summary>
     private static NodePath FixturePlace(string name)
     {
-        return NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath),
+        return NodePath.From(PathOf(AppStateDriver.FixturePath),
         [
             new NodePathStep(new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace), AppStateDriver.FixturesNamespace),
             new NodePathStep(new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.{name}"), name),
@@ -478,7 +478,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static NodeDocumentRecord HandTab(string panel, string title)
     {
-        return new NodeDocumentRecord(panel, title, NodeDefinitions.CreatePath(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
+        return new NodeDocumentRecord(panel, title, NodePath.From(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
     }
 
     [Fact]

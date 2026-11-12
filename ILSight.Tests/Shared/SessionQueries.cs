@@ -66,19 +66,19 @@ internal static class SessionQueries
         };
 
         /// <summary>A reference to the type or member the node defines; fails the test when it defines none.</summary>
-        public CodeReference.Entity Definition => Assert.IsType<CodeReference.Entity>(NodeDefinitions.ReferenceOf(node.Subject));
+        public CodeReference.Entity Definition => Assert.IsType<CodeReference.Entity>(node.Reference);
 
-        public NodeAccessibility Accessibility => NodeDefinitions.GetVisibility(node.Subject).Accessibility;
+        public NodeAccessibility Accessibility => node.Visibility.Accessibility;
 
-        public bool IsPublicApi => NodeDefinitions.GetVisibility(node.Subject).IsPublicApi;
+        public bool IsPublicApi => node.Visibility.IsPublicApi;
 
-        public bool IsCompilerGenerated => NodeDefinitions.GetVisibility(node.Subject).IsCompilerGenerated;
+        public bool IsCompilerGenerated => node.Visibility.IsCompilerGenerated;
 
         /// <summary>The metadata token of what the node defines; null when it defines nothing.</summary>
-        public int? Token => NodeDefinitions.TokenOf(node.Subject);
+        public int? Token => node.Token;
 
         /// <summary>Where activating the node goes; fails the test when it opens itself.</summary>
-        public CodeReference.Navigable Destination => Assert.IsType<Activation.Navigate>(NodeDefinitions.GetActivation(node.Subject)).Target;
+        public CodeReference.Navigable Destination => Assert.IsType<Activation.Navigate>(node.Activation).Target;
     }
 
     extension(AssemblyList list)

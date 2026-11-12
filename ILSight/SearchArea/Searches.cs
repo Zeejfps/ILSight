@@ -206,7 +206,7 @@ public static class Searches
     {
         if (node.Subject is NodeSubject.Namespace)
         {
-            return SearchQueries.AddScope(search.Query, NamespaceScope, BrowseNodes.GetFullName(node));
+            return SearchQueries.AddScope(search.Query, NamespaceScope, node.FullName);
         }
 
         return SearchQueries.AddScope(search.Query, AssemblyScope, node.Assembly.Name);

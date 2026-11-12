@@ -87,7 +87,7 @@ public sealed class HistoryTests
 
         app.Frames.Key(Shortcuts.Back).Frame();
 
-        Assert.True(app.Frames.Drew(BrowseNodes.GetFullName(app.Fixture("Outline"))));
+        Assert.True(app.Frames.Drew(app.Fixture("Outline").FullName));
         Assert.Same(outline, app.AppState.Navigation.ActiveTab);
     }
 

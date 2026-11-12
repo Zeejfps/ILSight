@@ -42,7 +42,7 @@ public sealed class NavigationHistory
         {
             Place = place,
             Icon = NodeIcons.Of(node.Subject),
-            Accessibility = NodeDefinitions.GetVisibility(node.Subject).Accessibility,
+            Accessibility = node.Visibility.Accessibility,
             Language = language,
             Position = null,
             ShownAs = null,

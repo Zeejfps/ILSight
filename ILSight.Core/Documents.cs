@@ -52,7 +52,7 @@ public static class Documents
     /// if it has none or this document does not define it.</summary>
     public static int? FindDefinitionLine(DecompiledDocument document, BrowseNode node)
     {
-        var reference = NodeDefinitions.ReferenceOf(node.Subject);
+        var reference = node.Reference;
         if (reference == null)
         {
             return null;

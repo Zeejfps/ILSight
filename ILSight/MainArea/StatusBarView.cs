@@ -24,7 +24,7 @@ internal static class StatusBarView
         }))
         {
             var selected = appState.Navigation.ActiveTab?.Node;
-            ui.Text(ui.Memo("status-node", selected, static n => n is null ? "" : BrowseNodes.GetFullName(n)), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
+            ui.Text(ui.Memo("status-node", selected, static n => n is null ? "" : n.FullName), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
                 size: size, overflow: TextOverflow.Ellipsis);
 
             using (ui.Row(new Box { Width = Sizing.Fit(), Height = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))

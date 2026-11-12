@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using System.Diagnostics;
 using ICSharpCode.Decompiler.TypeSystem;
 
@@ -48,6 +49,22 @@ public sealed class BrowseNode
 
     /// <summary>What the node stands for: its label, flags and children all follow from that.</summary>
     public required NodeSubject Subject { get; init; }
+
+    /// <summary>A qualified name for copying, e.g. <c>System.Collections.Generic.List&lt;T&gt;.Add(T)</c>, worked out
+    /// when the node was made.</summary>
+    public required string FullName { get; init; }
+
+    /// <summary>How visible what the node stands for is, worked out when the node was made.</summary>
+    public required NodeVisibility Visibility { get; init; }
+
+    /// <summary>The type or member the node defines; null for a node that defines none.</summary>
+    public required CodeReference.Entity? Reference { get; init; }
+
+    /// <summary>The metadata token of the type or member the node defines; null for a node that defines none.</summary>
+    public int? Token => Reference is null ? null : MetadataTokens.GetToken(Reference.Handle);
+
+    /// <summary>What activating the node does, worked out when the node was made.</summary>
+    public required Activation Activation { get; init; }
 
     /// <summary>The module the node is read from; null for a node of a package's folders and files.</summary>
     internal LoadedModule? SourceModule => Assembly as LoadedModule;

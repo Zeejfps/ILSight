@@ -401,7 +401,7 @@ internal static class TreePaneView
     /// tab kept open.</summary>
     private static void Open(UiState screen, Navigation navigation, BrowseNode node, DecompilerSetup setup)
     {
-        var activation = NodeDefinitions.GetActivation(node.Subject);
+        var activation = node.Activation;
         if (activation is Activation.Navigate jump)
         {
             Commands.FollowLater(screen, jump.Target, navigation.BeginResolving(inNewTab: false));
@@ -437,7 +437,7 @@ internal static class TreePaneView
         BrowseNode node)
     {
         var t = ui.State.Strings;
-        var jump = NodeDefinitions.GetActivation(node.Subject) as Activation.Navigate;
+        var jump = node.Activation as Activation.Navigate;
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
         {
@@ -456,7 +456,7 @@ internal static class TreePaneView
 
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))
         {
-            ui.ClipboardText = BrowseNodes.GetFullName(node);
+            ui.ClipboardText = node.FullName;
         }
 
         DocsItem(ui, node);
@@ -466,7 +466,7 @@ internal static class TreePaneView
             Commands.Later(ui.State, (screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));
         }
 
-        var definition = NodeDefinitions.ReferenceOf(node.Subject);
+        var definition = node.Reference;
         if (definition != null && ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
         {
             Commands.ShowInMetadataLater(ui.State, definition, navigation.BeginResolving(inNewTab: false));

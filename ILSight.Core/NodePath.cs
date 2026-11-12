@@ -75,4 +75,11 @@ public sealed class NodePath : IEquatable<NodePath>
     {
         return NodeDefinitions.DescribePath(this);
     }
+
+    /// <summary>The path to the node reached from the root of the file at <paramref name="filePath"/>
+    /// through <paramref name="steps"/>, as <see cref="NodePath.Steps"/> gives them.</summary>
+    public static NodePath From(AssemblyPath filePath, IEnumerable<NodePathStep> steps)
+    {
+        return new NodePath { FilePath = filePath, Steps = steps.ToImmutableArray() };
+    }
 }

@@ -35,7 +35,7 @@ public sealed class ReferencedTypesTests
         var list = UsedList(assembly);
 
         Assert.IsType<NodeSubject.TypeReference>(list.Subject);
-        Assert.Equal("System.Collections.Generic.List<>", BrowseNodes.GetFullName(list));
+        Assert.Equal("System.Collections.Generic.List<>", list.FullName);
         Assert.Equal(MemberShape.Method, Assert.IsType<NodeSubject.MemberReference>(list.Child("Add(T) : void").Subject).Value.Shape);
         Assert.IsType<NodeSubject.TypeReference>(list.Child("Enumerator").Subject);
     }

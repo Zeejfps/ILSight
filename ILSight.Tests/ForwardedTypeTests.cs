@@ -22,7 +22,7 @@ public sealed class ForwardedTypeTests
         Assert.True(generic.IsPublicApi);
         Assert.IsType<NodeSubject.ForwardedType>(list.Subject);
         Assert.Equal("System.Private.CoreLib", Assert.IsType<NodeSubject.ForwardedType>(list.Subject).Value.Destination);
-        Assert.Equal("System.Collections.Generic.IList<>", BrowseNodes.GetFullName(list));
+        Assert.Equal("System.Collections.Generic.IList<>", list.FullName);
         Assert.IsType<NodeSubject.ForwardedType>(dictionary.Subject);
         Assert.IsType<NodeSubject.ForwardedType>(exception.Subject);
         Assert.False(list.HasChildren);

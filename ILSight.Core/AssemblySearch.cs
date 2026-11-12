@@ -544,7 +544,7 @@ public static class AssemblySearch
             return;
         }
 
-        var visibility = NodeDefinitions.GetVisibility(node.Subject);
+        var visibility = node.Visibility;
         if (visibility.IsCompilerGenerated)
         {
             return;
@@ -589,7 +589,7 @@ public static class AssemblySearch
         {
             while (node is not null)
         {
-            var visibility = NodeDefinitions.GetVisibility(node.Subject);
+            var visibility = node.Visibility;
             if (!visibility.IsCompilerGenerated)
             {
                 break;

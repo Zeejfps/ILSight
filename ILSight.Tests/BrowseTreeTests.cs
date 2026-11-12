@@ -40,7 +40,7 @@ public sealed class BrowseTreeTests
         Assert.False(circle.IsPublicApi);
         Assert.False(circle.Child("Area : double").IsPublicApi);
         Assert.Equal(NodeAccessibility.Public, circle.Child("Area : double").Accessibility);
-        Assert.Equal("ILSight.Tests.Fixtures.Calculator<T>", BrowseNodes.GetFullName(fixtures.Child("Calculator<T>")));
+        Assert.Equal("ILSight.Tests.Fixtures.Calculator<T>", fixtures.Child("Calculator<T>").FullName);
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public sealed class BrowseTreeTests
 
         Assert.Equal(EntityKind.Method, add.Definition.Kind);
         Assert.Same(add, list.FindNode(add.Definition));
-        Assert.Null(NodeDefinitions.ReferenceOf(assembly.Fixtures().Subject));
+        Assert.Null(assembly.Fixtures().Reference);
     }
 
     [Fact]

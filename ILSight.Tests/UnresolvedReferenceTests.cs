@@ -52,7 +52,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var resolved = BaseTypes(beside).Child(nameof(GridSchema));
 
         Assert.IsType<NodeSubject.BaseType>(unresolved.Subject);
-        Assert.IsType<Activation.OpenSelf>(NodeDefinitions.GetActivation(unresolved.Subject));
+        Assert.IsType<Activation.OpenSelf>(unresolved.Activation);
         Assert.Equal(NodeAccessibility.None, unresolved.Accessibility);
         Assert.True(unresolved.IsPublicApi);
         Assert.Contains(nameof(GridSchema), Documents.GetText(unresolved.Decompile(DecompilationLanguage.CSharp)));
@@ -68,7 +68,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var used = assembly.Root.Child("References", Core, "Referenced types", nameof(GridSchema));
 
         Assert.IsType<NodeSubject.TypeReference>(used.Subject);
-        Assert.Equal(typeof(GridSchema).FullName, BrowseNodes.GetFullName(used));
+        Assert.Equal(typeof(GridSchema).FullName, used.FullName);
         Assert.Null(list.FindNode(used.Destination));
         Assert.NotEmpty(used.Children);
         Assert.All(used.Children, m => Assert.Null(list.FindNode(m.Destination)));

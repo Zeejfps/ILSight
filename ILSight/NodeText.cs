@@ -136,7 +136,7 @@ public static class NodeText
     /// in hex. Null when the node has none or tokens are hidden.</summary>
     public static string? Token(BrowseNode node, TokenFormat format)
     {
-        var token = NodeDefinitions.TokenOf(node.Subject);
+        var token = node.Token;
         if (token is null)
         {
             return null;
@@ -168,7 +168,7 @@ public static class NodeText
     /// <summary>The token of what <paramref name="node"/> defines, asked for only of one that defines something.</summary>
     private static int DefinedToken(BrowseNode node)
     {
-        return NodeDefinitions.TokenOf(node.Subject) ?? throw new UnreachableException();
+        return node.Token ?? throw new UnreachableException();
     }
 
     /// <summary>An assembly's version and framework; with a picked framework, which its row shows bold
@@ -201,8 +201,8 @@ public static class NodeText
             return failed.Value.Error.Message;
         }
 
-        var name = BrowseNodes.GetFullName(node);
-        var accessibility = Accessibility(NodeDefinitions.GetVisibility(node.Subject).Accessibility);
+        var name = node.FullName;
+        var accessibility = Accessibility(node.Visibility.Accessibility);
         return accessibility is not null ? $"{name}\n{accessibility}" : name;
     }
 

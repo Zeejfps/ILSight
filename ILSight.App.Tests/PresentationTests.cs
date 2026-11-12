@@ -187,7 +187,7 @@ public sealed class PresentationTests
         var row = tree.Row(hidden);
 
         Assert.False(hidden.IsPublicApi);
-        Assert.Equal(BrowseNodes.GetFullName(hidden) + "\ninternal", row.Tooltip);
+        Assert.Equal(hidden.FullName + "\ninternal", row.Tooltip);
     }
 
     [Fact]

@@ -119,7 +119,7 @@ internal static class ReferenceNodes
     {
         if (parent.Subject is NodeSubject.TypeReference)
         {
-            return $"{BrowseNodes.GetFullName(parent)}.{label}";
+            return $"{parent.FullName}.{label}";
         }
 
         if (ns.Length == 0)
@@ -180,7 +180,7 @@ internal static class ReferenceNodes
 
     private static BrowseNode CreateUsedMember(BrowseNode parent, LoadedModule module, MemberReferenceHandle handle, IMember declared)
     {
-        var info = new MemberReferenceInfo { Module = module, Handle = handle, Declared = declared, FullName = $"{BrowseNodes.GetFullName(parent)}.{EntityText.Label(declared)}" };
+        var info = new MemberReferenceInfo { Module = module, Handle = handle, Declared = declared, FullName = $"{parent.FullName}.{EntityText.Label(declared)}" };
         return BrowseNodes.Create(parent, new NodeSubject.MemberReference { Value = info });
     }
 
