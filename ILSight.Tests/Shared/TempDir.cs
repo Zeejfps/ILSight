@@ -34,15 +34,9 @@ internal sealed class TempDir : IDisposable
 
     public void Dispose()
     {
-        try
+        if (Directory.Exists(Path))
         {
-            if (Directory.Exists(Path))
-            {
-                Directory.Delete(Path, recursive: true);
-            }
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
+            Directory.Delete(Path, recursive: true);
         }
     }
 

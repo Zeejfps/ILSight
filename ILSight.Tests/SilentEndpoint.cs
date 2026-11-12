@@ -41,13 +41,7 @@ internal sealed class SilentEndpoint : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _server.DisposeAsync();
-        try
-        {
-            await _accepted;
-        }
-        catch (Exception e) when (e is IOException or SocketException or ObjectDisposedException or OperationCanceledException)
-        {
-            // The listener closed before or after a connection came; either is the end of the test.
-        }
+        // The listener closed before or after a connection came; either is the end of the test.
+        await _accepted.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);
     }
 }
