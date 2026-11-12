@@ -418,7 +418,7 @@ public static partial class ClassDiagrams
     private const string NewLine = "\n";
     private const string MemberSeparator = NewLine + "    ";
 
-    internal static DiagramType BuildType(DiagramTypes diagram, ITypeDefinition type)
+    private static DiagramType BuildType(DiagramTypes diagram, ITypeDefinition type)
     {
         if (type.Kind == TypeKind.Enum)
         {
@@ -576,14 +576,14 @@ public static partial class ClassDiagrams
         return field.Name.Contains(property.Name, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static DiagramTypes.DeclaredMembers SplitByDeclaringType(DiagramTypes diagram, IProperty[] properties, IMethod[] methods, IField[] fields)
+    private static DeclaredMembers SplitByDeclaringType(DiagramTypes diagram, IProperty[] properties, IMethod[] methods, IField[] fields)
     {
         var hasOne = properties
             .Where(p => HoldsOne(diagram, p))
             .ToArray();
         var hasMany = properties
             .Select(p => FindManyRelation(diagram, p))
-            .OfType<DiagramTypes.ManyRelation>()
+            .OfType<ManyRelation>()
             .ToArray();
         var related = hasMany
             .Select(static r => r.Property)
@@ -592,7 +592,7 @@ public static partial class ClassDiagrams
         var flat = properties
             .Where(p => !related.Contains(p))
             .ToArray();
-        return new DiagramTypes.DeclaredMembers(
+        return new DeclaredMembers(
             GroupByDeclaringType(flat, static p => p),
             GroupByDeclaringType(hasOne, static p => p),
             GroupByDeclaringType(hasMany, static r => r.Property),
@@ -620,7 +620,7 @@ public static partial class ClassDiagrams
     }
 
     // A property of a generic enumerable of a type drawn in the diagram.
-    private static DiagramTypes.ManyRelation? FindManyRelation(DiagramTypes diagram, IProperty property)
+    private static ManyRelation? FindManyRelation(DiagramTypes diagram, IProperty property)
     {
         if (!TypeFacts.TryGetElementType(property, out var elementType))
         {
@@ -632,10 +632,10 @@ public static partial class ClassDiagrams
             return null;
         }
 
-        return new DiagramTypes.ManyRelation(property, elementType);
+        return new ManyRelation(property, elementType);
     }
 
-    private static string WriteBody(DiagramTypes diagram, ITypeDefinition type, DiagramTypes.DeclaredMembers members)
+    private static string WriteBody(DiagramTypes diagram, ITypeDefinition type, DeclaredMembers members)
     {
         var own = PadMembers(ListFlatMembers(diagram, members, type, ""));
         var annotation = FindAnnotation(type);
@@ -669,7 +669,7 @@ public static partial class ClassDiagrams
         return "Abstract";
     }
 
-    private static IEnumerable<string> ListFlatMembers(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType declaring, string prefix)
+    private static IEnumerable<string> ListFlatMembers(DiagramTypes diagram, DeclaredMembers members, IType declaring, string prefix)
     {
         var properties = GetDeclared(members.FlatProperties, declaring).Select(p => prefix + ClassDiagrams.FormatProperty(diagram.Members, p));
         var methods = GetDeclared(members.Methods, declaring).Select(m => prefix + ClassDiagrams.FormatMethod(diagram.Members, m));
@@ -691,7 +691,7 @@ public static partial class ClassDiagrams
 
     /// <summary>The members <paramref name="type"/> inherits, by the id of each base type declaring
     /// them, written as members of <paramref name="id"/> for the diagrammer to add.</summary>
-    private static Dictionary<string, InheritedMembers> ListInherited(DiagramTypes diagram, ITypeDefinition type, string id, DiagramTypes.DeclaredMembers members)
+    private static Dictionary<string, InheritedMembers> ListInherited(DiagramTypes diagram, ITypeDefinition type, string id, DeclaredMembers members)
     {
         var prefix = id + " : ";
         var inherited = new Dictionary<string, InheritedMembers>();
@@ -706,7 +706,7 @@ public static partial class ClassDiagrams
         return inherited;
     }
 
-    private static InheritedMembers GetInheritedFrom(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType ancestor, string prefix)
+    private static InheritedMembers GetInheritedFrom(DiagramTypes diagram, DeclaredMembers members, IType ancestor, string prefix)
     {
         var flat = ListFlatMembers(diagram, members, ancestor, prefix).ToList();
         string? flatMembers = null;
@@ -723,7 +723,7 @@ public static partial class ClassDiagrams
         };
     }
 
-    private static Dictionary<string, string>? MapHasOne(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType declaring)
+    private static Dictionary<string, string>? MapHasOne(DiagramTypes diagram, DeclaredMembers members, IType declaring)
     {
         if (!members.HasOne.TryGetValue(declaring, out var properties))
         {
@@ -762,7 +762,7 @@ public static partial class ClassDiagrams
         return "[" + string.Join(", ", parameters) + "]";
     }
 
-    private static Dictionary<string, string>? MapHasMany(DiagramTypes diagram, DiagramTypes.DeclaredMembers members, IType declaring)
+    private static Dictionary<string, string>? MapHasMany(DiagramTypes diagram, DeclaredMembers members, IType declaring)
     {
         if (!members.HasMany.TryGetValue(declaring, out var many))
         {
@@ -930,4 +930,32 @@ public static partial class ClassDiagrams
     /// <summary>A reference from one type of a diagram to another: the id it points to, and the label it
     /// is drawn with, when it has one.</summary>
     private readonly record struct DiagramReference(string To, string? Label);
+
+    /// <summary>The types of a diagram, each as a mermaid class definition of its own members, with
+    /// properties holding diagram types drawn as relations instead, and the members it inherits kept
+    /// apart by the type declaring them, so the diagrammer can leave out those a base type it draws
+    /// already shows.</summary>
+    private sealed class DiagramTypes
+    {
+        public required DiagramNames Names { get; init; }
+
+        public required DiagramDocs Docs { get; init; }
+
+        // The settings compiler-generated members are recognised by, among them automatic properties'
+        // backing fields.
+        public readonly DecompilerSettings Settings = new();
+        public required MermaidMembers Members { get; init; }
+    }
+
+    /// <summary>A property holding many of a diagram's types, and the type it holds.</summary>
+    private readonly record struct ManyRelation(IProperty Property, IType ElementType);
+
+    /// <summary>A type's members as the diagram splits them, each kind by the type declaring it:
+    /// plain properties, properties holding one or many diagram types, methods and fields.</summary>
+    private sealed record DeclaredMembers(
+        Dictionary<IType, IProperty[]> FlatProperties,
+        Dictionary<IType, IProperty[]> HasOne,
+        Dictionary<IType, ManyRelation[]> HasMany,
+        Dictionary<IType, IMethod[]> Methods,
+        Dictionary<IType, IField[]> Fields);
 }

@@ -109,14 +109,14 @@ public static class Theming
     private const string KeySeparator = ", ";
 
     /// <summary>Takes the code and icon colors of <paramref name="contents"/>, under all that is added later.</summary>
-    internal static void AddCodeAndIcons(MergedTheme merged, ThemeContents contents)
+    private static void AddCodeAndIcons(MergedTheme merged, ThemeContents contents)
     {
         StackValues(merged.Code, contents.Code);
         StackValues(merged.Icons, contents.Icons);
     }
 
     /// <summary>Takes everything <paramref name="contents"/> sets, over what was added before.</summary>
-    internal static void AddContents(MergedTheme merged, ThemeContents contents)
+    private static void AddContents(MergedTheme merged, ThemeContents contents)
     {
         foreach (var (name, value) in contents.Palette)
         {
@@ -150,7 +150,7 @@ public static class Theming
 
     /// <summary>The theme the merged colors make, or null when a required color is missing; adds what
     /// is wrong to <paramref name="errors"/>, a missing color as an error of <paramref name="file"/>.</summary>
-    internal static AppTheme? BuildTheme(MergedTheme merged, string file, ICollection<ThemeError> errors)
+    private static AppTheme? BuildTheme(MergedTheme merged, string file, ICollection<ThemeError> errors)
     {
         var ui = LookUpColors(merged, UiSection, merged.Ui, errors);
         var code = LookUpColors(merged, CodeSection, merged.Code, errors);
@@ -768,5 +768,17 @@ public static class Theming
         return keys
             .Select(static k => k.Key)
             .ToHashSet();
+    }
+
+    /// <summary>A theme's palette and colors merged over those of the themes it extends, before palette names
+    /// are looked up. Built once at the end, so a color a parent names takes the palette color a child set, a
+    /// color whose palette name is unknown keeps the one beneath it, and a role nobody set is derived from the
+    /// final base roles.</summary>
+    private sealed class MergedTheme
+    {
+        public readonly Dictionary<string, ThemeValue> Palette = new();
+        public readonly Dictionary<string, List<ThemeValue>> Ui = new();
+        public readonly Dictionary<string, List<ThemeValue>> Code = new();
+        public readonly Dictionary<string, List<ThemeValue>> Icons = new();
     }
 }

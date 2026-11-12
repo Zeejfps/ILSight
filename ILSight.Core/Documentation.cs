@@ -485,7 +485,7 @@ internal static class Documentation
         };
     }
 
-    public static void AddRun(DocText doc, string text, DocStyle style, CodeReference? reference = null)
+    private static void AddRun(DocText doc, string text, DocStyle style, CodeReference? reference = null)
     {
         var collapsed = CollapseWhitespace(text);
         if (EndsWithSpace(doc) && collapsed.StartsWith(' '))
@@ -503,7 +503,7 @@ internal static class Documentation
 
     /// <summary>Adds <paramref name="code"/> as a block of its own, lines kept and their common
     /// indentation removed.</summary>
-    public static void AddCode(DocText doc, string code)
+    private static void AddCode(DocText doc, string code)
     {
         BreakParagraph(doc);
         var lines = Dedent(code);
@@ -515,7 +515,7 @@ internal static class Documentation
         doc.Blocks.Add(new DocBlock.Code(lines));
     }
 
-    public static void AddList(DocText doc, DocBlock.List list)
+    private static void AddList(DocText doc, DocBlock.List list)
     {
         BreakParagraph(doc);
         if (list.Items.Count > 0 || list.Header is not null)
@@ -525,7 +525,7 @@ internal static class Documentation
     }
 
     /// <summary>Ends the open paragraph.</summary>
-    public static void BreakParagraph(DocText doc)
+    private static void BreakParagraph(DocText doc)
     {
         TrimParagraphEnds(doc);
         if (doc.Runs.Count > 0)
@@ -536,7 +536,7 @@ internal static class Documentation
         doc.Runs = new List<DocRun>();
     }
 
-    public static IReadOnlyList<DocBlock> FinishBlocks(DocText doc)
+    private static IReadOnlyList<DocBlock> FinishBlocks(DocText doc)
     {
         BreakParagraph(doc);
         return doc.Blocks;
@@ -544,7 +544,7 @@ internal static class Documentation
 
     /// <summary>The text read as one run of words, its paragraphs joined by spaces, as a list item
     /// shows it; code blocks and lists inside it are left out.</summary>
-    public static IReadOnlyList<DocRun> FinishInline(DocText doc)
+    private static IReadOnlyList<DocRun> FinishInline(DocText doc)
     {
         var joined = new List<DocRun>();
         foreach (var block in FinishBlocks(doc))
@@ -666,5 +666,18 @@ internal static class Documentation
         }
 
         return line.Substring(indent);
+    }
+
+    /// <summary>
+    /// Documentation blocks as they are read: runs join the open paragraph with their whitespace
+    /// collapsed, as XML documentation is rendered, and a paragraph is kept only when it has text.
+    /// Code blocks and lists stand on their own between paragraphs.
+    /// </summary>
+    private sealed class DocText
+    {
+        public readonly List<DocBlock> Blocks = new();
+        internal List<DocRun> Runs = new();
+
+        public bool IsEmpty => Blocks.Count == 0 && Runs.Count == 0;
     }
 }
