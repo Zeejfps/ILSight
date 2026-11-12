@@ -64,7 +64,16 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   handle goes; decision code asks its port for anything more. List the library's lazily-reading types too (RL0101,
   RL0105). Walked in a draw, a referenced file was read in the frame and a corrupt one threw there; a port for the
   library's hook only faked the reads in tests; a store keyed by a value kept a closed module and served it stale; held
-  beside the values, a later status bar walked it unreported. A decision that compared objects ("the same feed"
+  beside the values, a later status bar walked it unreported. **What a read can reach decides it, as the app made the
+  object, not the type:** one that only decodes bytes the app already read, each read bounded (an image read whole into
+  memory, a built type system's entities), is data, read where needed, a draw included (each cell's failure shown in
+  place, R009; a sort, a filter or a cache sized to all of it is a wait, R010); one whose reads reach a file (mapped by
+  the library, a resolver hook) stays on the I/O side, and a view of a large table over it is paged: the draw records
+  the pages it finds missing, the frame edge reads them (R010). Read whole when opened, a 200,000-row table held 75 MB;
+  paged with nothing to wait for, each new page showed "loading" for a frame; ILSight's grid allocated a cache for the
+  whole table (12.2 MB) in its first frame. List only the types whose reads reach past memory; a type the app makes both
+  ways can't be listed (review). A value made from a handle's values alone (a session's node for a listed item) is its
+  owner's, off the listed type. A decision that compared objects ("the same feed"
   = the same object the library made once per URL) is restated on a value key whose own equality is that identity's
   (`FeedUrl`: the URL ignoring case, with `Equals` and `GetHashCode`), not a map each place must remember: compared by
   their fields, the same feed retyped in other letters searched again.
@@ -254,7 +263,11 @@ Take the first match:
   was left; never the document), so Back shows it in the tab showing it, else in one made again; it passes over a
   place naming nothing open, found when Back reaches it; closing a tab leaves the history alone. Forgotten on close,
   the place was lost, and a later way of replacing a tab's document left an entry Back did nothing for; held as the
-  document, every closed one stayed alive. **The history follows where the user is:** whatever changes the document
+  document, every closed one stayed alive. **Passing over belongs to a direction, the same for every kind:** Back and
+  Forward go to the nearest place that can be shown, decided without a wait from what it names (a node's assembly
+  listed, as a diagram's), opening nothing the user closed; the history menu marks a place that can't be shown, saying
+  why, and offers it to no click. Looked up as ILSight's, Back to a node of a closed assembly opened it again; a pick
+  moved on like Back showed a place the user didn't pick. **The history follows where the user is:** whatever changes the document
   the user is at records it (opened, followed to, or an open tab brought to the front: clicked, picked again in the
   tree, focused after a close); Back, Forward and an entry picked move in it and record nothing; an empty tab is no
   place. Recorded only when opened, Back after clicking a tab went to where the user already was, and Back from code
@@ -424,7 +437,8 @@ port member returning a sequence that isn't its own iterator).
   nothing after it needs is handed back the same way, whatever cancels it (R010).
 - **A library's failure on the user's data is the data's failure, whatever it throws** (a decompiler's bug on one
   member, as well as the corrupt file it documents): list it in `rulelab.untrusted_libraries`; the code reading with it
-  (an adapter's member, R006's conversion step) catches everything the read throws, cancellation asked for excepted,
+  (an adapter's member, R006's conversion step, or code reading a library object that is data: a draw's cell) catches
+  everything the read throws, cancellation asked for excepted,
   into the failure case of the unit the user asked for, carrying why, shown where its answer would be
   (`catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } catch (Exception ex) { return new
   CodeRead.Failed { Why = ex.GetType().Name }; }`). Only the read inside (with what the library calls back while it
@@ -485,10 +499,10 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   edge starts every queued command, even after a failed draw, and the ticket is `[MustUse]` (R008). A wait is
   anything that can take longer than a frame: I/O, and CPU work that grows with the user's data (sorting their list,
   parsing their file: queued, run off the UI thread with `Task.Run`; in the frame, a 3,000,000-row sort froze it for
-  half a second); bounded work stays in the frame. Work found while drawing (icons, details) is recorded as
-  pending on its owner, once per item, and an edge starts it: the frame edge right after that draw (the frame it was
-  found in, as one queued command), or before the next draw (which the draw then asks for); one workflow for a batch
-  the port takes, else one per item.
+  half a second); bounded work stays in the frame. Work found while drawing (icons, details, the pages of a table
+  whose reads reach a file) is recorded as pending on its owner, once per item, and an edge starts it: the frame edge
+  right after that draw (the frame it was found in, as one queued command), or before the next draw (which the draw
+  then asks for); one workflow for a batch the port takes, else one per item.
 - **A draw takes what its input changes** (R001 point 8): the parts, and where the change keeps a rule across several
   (the active tab, its history, the newest intent), the type that holds them, made if missing (R004), with what the
   change only reads (the language) as values, however many parts it spans (switching the session's list); only work
