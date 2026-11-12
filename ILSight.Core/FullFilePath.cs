@@ -30,7 +30,15 @@ public sealed record FullFilePath
         {
             full = Path.GetFullPath(text);
         }
-        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+        catch (PathTooLongException)
         {
             return null;
         }

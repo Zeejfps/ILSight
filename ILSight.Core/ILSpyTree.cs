@@ -156,7 +156,11 @@ public static class ILSpyTree
         {
             return BrowseSessions.FindOrAncestor(session, assembly, entity.MetadataToken);
         }
-        catch (Exception e) when (e is ArgumentException or BadImageFormatException)
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (BadImageFormatException)
         {
             return null;
         }
@@ -193,7 +197,15 @@ public static class ILSpyTree
         {
             return LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(MetadataTokens.EntityHandle(token));
         }
-        catch (Exception e) when (e is ArgumentException or BadImageFormatException or InvalidOperationException)
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
         {
             return null;
         }
@@ -205,7 +217,19 @@ public static class ILSpyTree
         {
             return AssemblyListing.TryLoadAssembly(list, filePath);
         }
-        catch (Exception e) when (e is IOException or BadImageFormatException or InvalidOperationException or UnauthorizedAccessException)
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
         {
             return null;
         }

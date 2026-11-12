@@ -142,7 +142,19 @@ public sealed class AssemblyResolver : IAssemblyResolver
                 return found;
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or BadImageFormatException or InvalidOperationException)
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
         {
             return null;
         }

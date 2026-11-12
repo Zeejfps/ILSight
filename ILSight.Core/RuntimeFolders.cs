@@ -208,7 +208,15 @@ public static class RuntimeFolders
             using var reader = new PEReader(stream);
             return reader.HasMetadata && reader.GetMetadataReader().IsAssembly;
         }
-        catch (Exception e) when (e is IOException or BadImageFormatException or UnauthorizedAccessException)
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (BadImageFormatException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
         {
             return false;
         }

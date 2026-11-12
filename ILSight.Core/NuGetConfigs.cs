@@ -57,7 +57,15 @@ public static class NuGetConfigs
         {
             return XDocument.Load(path);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or XmlException)
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (XmlException)
         {
             return null;
         }

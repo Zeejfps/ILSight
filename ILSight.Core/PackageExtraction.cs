@@ -45,9 +45,21 @@ public static class PackageExtraction
             written.Add(path.Text);
             return null;
         }
-        catch (Exception e) when (IsExtractError(e))
+        catch (IOException e)
         {
-            return new ExtractFailure.NotWritten(file, new ExportError(e.Message, e.ToString()));
+            return NotWritten(file, e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return NotWritten(file, e);
+        }
+        catch (InvalidDataException e)
+        {
+            return NotWritten(file, e);
+        }
+        catch (ArgumentException e)
+        {
+            return NotWritten(file, e);
         }
     }
 
@@ -99,23 +111,8 @@ public static class PackageExtraction
         File.WriteAllBytes(path.Text, bytes);
     }
 
-    private static bool IsExtractError(Exception e)
+    private static ExtractFailure NotWritten(PackageFile file, Exception e)
     {
-        if (e is IOException)
-        {
-            return true;
-        }
-
-        if (e is UnauthorizedAccessException)
-        {
-            return true;
-        }
-
-        if (e is InvalidDataException)
-        {
-            return true;
-        }
-
-        return e is ArgumentException;
+        return new ExtractFailure.NotWritten(file, new ExportError(e.Message, e.ToString()));
     }
 }

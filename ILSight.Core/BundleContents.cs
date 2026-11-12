@@ -38,7 +38,11 @@ internal static class BundleContents
         {
             return SingleFileBundle.ReadManifest(view, headerOffset).Entries;
         }
-        catch (Exception e) when (e is InvalidDataException or EndOfStreamException)
+        catch (InvalidDataException)
+        {
+            return null;
+        }
+        catch (EndOfStreamException)
         {
             return null;
         }

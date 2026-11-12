@@ -23,7 +23,11 @@ public static class NodeLookup
 
             return BrowseSessions.FindNode(session, item, path);
         }
-        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
@@ -44,7 +48,11 @@ public static class NodeLookup
         {
             return BrowseSessions.FindNode(session, item, path);
         }
-        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
@@ -71,7 +79,11 @@ public static class NodeLookup
 
             return BrowseSessions.FindOrAncestor(session, assembly, handle);
         }
-        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
@@ -93,7 +105,11 @@ public static class NodeLookup
 
             return BrowseSessions.FindMetadataRow(session, assembly, handle);
         }
-        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
@@ -121,7 +137,11 @@ public static class NodeLookup
         {
             return BrowseSessions.FindById(session, assembly, idString);
         }
-        catch (Exception e) when (AssemblyListing.IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }

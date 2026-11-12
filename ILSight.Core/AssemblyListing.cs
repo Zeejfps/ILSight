@@ -387,11 +387,6 @@ public static class AssemblyListing
         }
     }
 
-    internal static bool IsUnreadable(Exception e)
-    {
-        return e is BadImageFormatException or IOException;
-    }
-
     /// <summary>
     /// What hovering <paramref name="reference"/> explains: the declaration and XML documentation of
     /// the type or member it points at. Null when it cannot be resolved. Loads the files it needs without listing them, and reads documentation files:
@@ -409,7 +404,11 @@ public static class AssemblyListing
 
             return Documentation.CreateTooltip(entity, assembly);
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
@@ -432,7 +431,11 @@ public static class AssemblyListing
 
             return MicrosoftDocs.FindPage(entity);
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
@@ -453,7 +456,11 @@ public static class AssemblyListing
             var (entity, _) = ResolveEntity(list, reference);
             return entity as ITypeDefinition;
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
@@ -474,7 +481,11 @@ public static class AssemblyListing
 
             return LoadedAssemblies.EnsureMainModule(assembly).GetTypeDefinition(new FullTypeName(anchor.FullName));
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
@@ -938,9 +949,21 @@ public static class AssemblyListing
         {
             return WebCilFile.FromFile(path.Text, list.Now.ReadOptions.ReaderOptions);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or BadImageFormatException or InvalidOperationException)
+        catch (IOException e)
         {
-            throw new AssemblyLoadException(path, $"Cannot open '{path}': {e.Message}", e);
+            throw CannotOpen(path, e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            throw CannotOpen(path, e);
+        }
+        catch (BadImageFormatException e)
+        {
+            throw CannotOpen(path, e);
+        }
+        catch (InvalidOperationException e)
+        {
+            throw CannotOpen(path, e);
         }
     }
 
@@ -950,9 +973,13 @@ public static class AssemblyListing
         {
             return AssemblyPackages.TryRead(path);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (IOException e)
         {
-            throw new AssemblyLoadException(path, $"Cannot open '{path}': {e.Message}", e);
+            throw CannotOpen(path, e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            throw CannotOpen(path, e);
         }
     }
 
@@ -978,9 +1005,17 @@ public static class AssemblyListing
             using var stream = new MemoryStream(bytes);
             return ReadImage(list, path, stream);
         }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        catch (IOException e)
         {
-            throw new AssemblyLoadException(path, $"Cannot open '{path}': {e.Message}", e);
+            throw CannotOpen(path, e);
+        }
+        catch (InvalidDataException e)
+        {
+            throw CannotOpen(path, e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            throw CannotOpen(path, e);
         }
     }
 
@@ -991,9 +1026,13 @@ public static class AssemblyListing
             using var stream = new FileStream(path.Text, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             return ReadImage(list, path, stream);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (IOException e)
         {
-            throw new AssemblyLoadException(path, $"Cannot open '{path}': {e.Message}", e);
+            throw CannotOpen(path, e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            throw CannotOpen(path, e);
         }
     }
 
@@ -1010,14 +1049,27 @@ public static class AssemblyListing
 
             return file;
         }
-        catch (Exception e) when (e is BadImageFormatException or InvalidOperationException or MetadataFileNotSupportedException)
+        catch (BadImageFormatException e)
         {
-            throw new AssemblyLoadException(path, $"Cannot open '{path}': {e.Message}", e);
+            throw CannotOpen(path, e);
+        }
+        catch (InvalidOperationException e)
+        {
+            throw CannotOpen(path, e);
+        }
+        catch (MetadataFileNotSupportedException e)
+        {
+            throw CannotOpen(path, e);
         }
     }
 
     private static bool IsSame(AssemblyLoadOptions options, bool loadsReferences, MetadataReaderOptions readerOptions)
     {
         return options.LoadsReferences == loadsReferences && options.ReaderOptions == readerOptions;
+    }
+
+    private static AssemblyLoadException CannotOpen(AssemblyPath path, Exception e)
+    {
+        return new AssemblyLoadException(path, $"Cannot open '{path}': {e.Message}", e);
     }
 }

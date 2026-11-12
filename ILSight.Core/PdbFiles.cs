@@ -43,7 +43,23 @@ public static class PdbFiles
 
             return CheckBuild(assembly, provider);
         }
-        catch (Exception e) when (DebugSymbolFiles.IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return PdbCheck.Unreadable;
+        }
+        catch (IOException)
+        {
+            return PdbCheck.Unreadable;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return PdbCheck.Unreadable;
+        }
+        catch (InvalidOperationException)
+        {
+            return PdbCheck.Unreadable;
+        }
+        catch (InvalidDataException)
         {
             return PdbCheck.Unreadable;
         }

@@ -38,7 +38,23 @@ internal static class DebugSymbolFiles
 
             return FindBeside(assembly, package, entries);
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (InvalidDataException)
         {
             return null;
         }
@@ -55,7 +71,23 @@ internal static class DebugSymbolFiles
             var file = new MetadataFile(MetadataFile.MetadataFileKind.ProgramDebugDatabase, pdbPath, provider);
             return new DebugSymbols { File = file, Title = BesideTitle, Description = BesideDescription + pdbPath };
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (InvalidDataException)
         {
             return null;
         }
@@ -176,10 +208,5 @@ internal static class DebugSymbolFiles
         }
 
         return id.Stamp == entry.Stamp;
-    }
-
-    internal static bool IsUnreadable(Exception e)
-    {
-        return e is BadImageFormatException or IOException or UnauthorizedAccessException or InvalidOperationException or InvalidDataException;
     }
 }

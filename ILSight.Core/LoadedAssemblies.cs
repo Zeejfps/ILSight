@@ -253,7 +253,11 @@ public static class LoadedAssemblies
         {
             return IdStringProvider.FindEntity(idString, new SimpleTypeResolveContext(main));
         }
-        catch (Exception e) when (e is ArgumentException or ReflectionNameParseException)
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (ReflectionNameParseException)
         {
             return null;
         }

@@ -563,7 +563,11 @@ public static class AssemblySearch
             {
                 node = BrowseSessions.FindOrAncestor(search.Session, assembly, handle);
             }
-            catch (Exception e) when (e is BadImageFormatException or InvalidOperationException)
+            catch (BadImageFormatException)
+            {
+                return;
+            }
+            catch (InvalidOperationException)
             {
                 return;
             }
@@ -603,7 +607,11 @@ public static class AssemblySearch
             {
                 return BrowseSessions.FindNode(search.Session, assembly, handle);
             }
-            catch (Exception e) when (e is BadImageFormatException or InvalidOperationException)
+            catch (BadImageFormatException)
+            {
+                return null;
+            }
+            catch (InvalidOperationException)
             {
                 return null;
             }

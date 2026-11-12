@@ -495,7 +495,15 @@ internal static class DocumentWriting
         {
             return Definitions.Resolve(LoadedAssemblies.EnsureMainModule(builder.Assembly), handle);
         }
-        catch (Exception e) when (e is BadImageFormatException or InvalidOperationException or NotSupportedException)
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
         {
             return null;
         }
