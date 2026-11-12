@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 
 namespace ILSight.BookmarkArea;
@@ -54,17 +53,9 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 
     private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, Outcome<List<NodePath?>> found, string file)
     {
-        switch (found)
-        {
-            case Outcome<List<NodePath?>>.Ok ok:
-                TakeImported(bookmarks, imports, records, ok.Value, file);
-                break;
-            case Outcome<List<NodePath?>>.Failed failed:
-                ports.ReportError(new AppProblem.BookmarksNotImported(file, failed.Error.ToString()));
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        found.Switch(
+            ok => TakeImported(bookmarks, imports, records, ok.Value, file),
+            failed => ports.ReportError(new AppProblem.BookmarksNotImported(file, failed.Error.ToString())));
     }
 
     private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, List<NodePath?> places, string file)

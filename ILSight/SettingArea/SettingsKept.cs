@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ILSight.SettingArea;
 
 /// <summary>How a settings file that could not be read whole is kept from being saved over.</summary>
@@ -12,4 +14,15 @@ public abstract record SettingsKept
 
     /// <summary>The file could not be copied either, so the settings are not saved this time.</summary>
     public sealed record NotSaved : SettingsKept;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<CopiedTo, TResult> copiedTo, Func<NotSaved, TResult> notSaved)
+    {
+        return this switch
+        {
+            CopiedTo c => copiedTo(c),
+            NotSaved c => notSaved(c),
+            _ => throw new UnreachableException($"SettingsKept.Match does not handle {GetType().Name}."),
+        };
+    }
 }

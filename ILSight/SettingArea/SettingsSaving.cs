@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 using ILSight.AppSettingArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
@@ -45,30 +44,27 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
             return new Saving.Waiting(wait);
         }
 
-        return Save(appState) switch
-        {
-            SettingsWriteResult.Written => new Saving.Saved(),
-            SettingsWriteResult.Failed failed => new Saving.Failed(failed.Reason, AdvanceRetry(appState, now)),
-            _ => throw new UnreachableException(),
-        };
+        return Save(appState).Match<(AppState appState, double now), Saving>((appState, now),
+            static (_, _) => new Saving.Saved(),
+            static (s, failed) => new Saving.Failed(failed.Reason, AdvanceRetry(s.appState, s.now)));
     }
 
     /// <summary>Moves the wait on, starting it if this is the first time it is asked for after a failure,
     /// and returns the seconds left at <paramref name="now"/> before a failed write is tried again.</summary>
     private static double AdvanceRetry(AppState appState, double now)
     {
-        switch (appState.SaveRetry)
-        {
-            case SaveRetry.Clear:
-                return 0;
-            case SaveRetry.Failed:
-                appState.SaveRetry = new SaveRetry.Waiting(now);
-                return SaveRetry.DelaySeconds;
-            case SaveRetry.Waiting waiting:
-                return Math.Max(0, SaveRetry.DelaySeconds - (now - waiting.Since));
-            default:
-                throw new UnreachableException();
-        }
+        return appState.SaveRetry.Match<(AppState appState, double now), double>((appState, now),
+            static (_, _) => 0,
+            static (s, _) => StartWaiting(s.appState, s.now),
+            static (s, waiting) => Math.Max(0, SaveRetry.DelaySeconds - (s.now - waiting.Since)));
+    }
+
+    /// <summary>Starts the wait for the next try of a failed write at <paramref name="now"/>, and returns its
+    /// seconds.</summary>
+    private static double StartWaiting(AppState appState, double now)
+    {
+        appState.SaveRetry = new SaveRetry.Waiting(now);
+        return SaveRetry.DelaySeconds;
     }
 
     /// <summary>Writes the settings, counting what they were copied from as saved only once the write
@@ -97,18 +93,16 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
 
     private void TakeWrite(AppState appState, SavedSources sources, SettingsWriteResult write)
     {
-        switch (write)
-        {
-            case SettingsWriteResult.Written:
-                appState.LastSaved = sources;
-                appState.SaveRetry = new SaveRetry.Clear();
-                break;
-            case SettingsWriteResult.Failed failed:
-                ReportWriteFailure(appState, failed.Reason);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        write.Switch(
+            _ => TakeWritten(appState, sources),
+            failed => ReportWriteFailure(appState, failed.Reason));
+    }
+
+    /// <summary>Counts what the settings were copied from as saved, and writes as going through.</summary>
+    private static void TakeWritten(AppState appState, SavedSources sources)
+    {
+        appState.LastSaved = sources;
+        appState.SaveRetry = new SaveRetry.Clear();
     }
 
     /// <summary>Reports a failed write, unless writes were failing already.</summary>

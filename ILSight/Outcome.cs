@@ -32,6 +32,22 @@ public abstract record Outcome<T>
             _ => throw new UnreachableException($"Outcome.Match does not handle {GetType().Name}."),
         };
     }
+
+    /// <summary>Does what the handler of whichever case this is does with it.</summary>
+    public void Switch(Action<Ok> ok, Action<Failed> failed)
+    {
+        switch (this)
+        {
+            case Ok c:
+                ok(c);
+                return;
+            case Failed c:
+                failed(c);
+                return;
+            default:
+                throw new UnreachableException($"Outcome.Switch does not handle {GetType().Name}.");
+        }
+    }
 }
 
 /// <summary>What work run in the background that gives nothing back came to: it ran to its end, or the error it

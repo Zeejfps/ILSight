@@ -173,29 +173,23 @@ internal static class ExportReportText
     /// <summary><paramref name="problem"/> of an export of <paramref name="kind"/> in a line.</summary>
     public static string Headline(Strings t, ExportKind kind, ExportProblem problem)
     {
-        return problem switch
-        {
-            ExportProblem.NotDecompiled part => part.Error.Message,
-            ExportProblem.NoPdbEntry pdb => t.ErrorNoPdbEntry(pdb.Assembly),
-            ExportProblem.PdbNotWritten pdb => $"{pdb.Assembly}: {pdb.Error.Message}",
-            ExportProblem.OutsideFolder outside => t.ExportOutsideFolder(outside.Path),
-            ExportProblem.FileNotWritten file => $"{file.Path}: {file.Error.Message}",
-            _ => throw new UnreachableException(),
-        };
+        return problem.Match(
+            notDecompiled: static part => part.Error.Message,
+            noPdbEntry: pdb => t.ErrorNoPdbEntry(pdb.Assembly),
+            pdbNotWritten: static pdb => $"{pdb.Assembly}: {pdb.Error.Message}",
+            outsideFolder: outside => t.ExportOutsideFolder(outside.Path),
+            fileNotWritten: static file => $"{file.Path}: {file.Error.Message}");
     }
 
     /// <summary>The full error under <paramref name="problem"/>'s headline, when there is one.</summary>
     public static string? DetailsOf(ExportProblem problem)
     {
-        return problem switch
-        {
-            ExportProblem.NotDecompiled part => part.Error.Details,
-            ExportProblem.NoPdbEntry => null,
-            ExportProblem.PdbNotWritten pdb => pdb.Error.Details,
-            ExportProblem.OutsideFolder => null,
-            ExportProblem.FileNotWritten file => file.Error.Details,
-            _ => throw new UnreachableException(),
-        };
+        return problem.Match<string?>(
+            notDecompiled: static part => part.Error.Details,
+            noPdbEntry: static _ => null,
+            pdbNotWritten: static pdb => pdb.Error.Details,
+            outsideFolder: static _ => null,
+            fileNotWritten: static file => file.Error.Details);
     }
 
     /// <summary>The failure <paramref name="failed"/> of an export of <paramref name="kind"/> in a line.</summary>

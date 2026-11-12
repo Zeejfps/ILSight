@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
 using static ILSight.AssemblyListArea.AssemblyLists;
@@ -154,16 +153,16 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             return [];
         }
 
-        switch (outcome)
-        {
-            case Outcome<ReopenedFile>.Ok ok:
-                return ShowReopened(session, session.Navigation, decompiler, item, ok.Value, tabs);
-            case Outcome<ReopenedFile>.Failed failed:
-                ports.ReportError(new AppProblem.AssemblyNotReloaded(item.Name, failed.Error));
-                return [];
-            default:
-                throw new UnreachableException();
-        }
+        return outcome.Match(
+            ok => ShowReopened(session, session.Navigation, decompiler, item, ok.Value, tabs),
+            failed => ReportNotReopened(item, failed.Error));
+    }
+
+    /// <summary>Reports why <paramref name="item"/> could not be read again. Returns no loads: none started.</summary>
+    private List<DecompileTicket> ReportNotReopened(LoadedAssembly item, Exception error)
+    {
+        ports.ReportError(new AppProblem.AssemblyNotReloaded(item.Name, error));
+        return [];
     }
 
     private List<DecompileTicket> ShowReopened(OpenListSession session, Navigation navigation, DecompilerSetup decompiler, LoadedAssembly item,
@@ -235,17 +234,18 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             return TabLoads.None;
         }
 
-        switch (outcome)
-        {
-            case Outcome<ReloadedNodes>.Ok ok:
-                return ShowReloaded(session, viewCommands, decompiler, ok.Value, intent, tabs);
-            case Outcome<ReloadedNodes>.Failed failed:
-                var reopened = ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
-                ports.ReportError(new AppProblem.AssembliesNotReloaded(failed.Error));
-                return reopened;
-            default:
-                throw new UnreachableException();
-        }
+        return outcome.Match(
+            ok => ShowReloaded(session, viewCommands, decompiler, ok.Value, intent, tabs),
+            failed => ShowNotReloaded(session, failed.Error));
+    }
+
+    /// <summary>Shows what the tabs reopened from the saved documents showed, the nodes those wait for still to be
+    /// found, and reports why the reload failed. Returns the loads it started in the tabs.</summary>
+    private TabLoads ShowNotReloaded(OpenListSession session, Exception error)
+    {
+        var reopened = ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
+        ports.ReportError(new AppProblem.AssembliesNotReloaded(error));
+        return reopened;
     }
 
     /// <summary>Shows each tab's place again and what the tabs reopened from the saved documents showed, the nodes

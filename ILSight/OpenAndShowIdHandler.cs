@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 using ILSight.AssemblyArea;
 
@@ -35,30 +34,31 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
     /// why not. Returns the load it started in the tab; null when it started none.</summary>
     private DecompileTicket? ShowFound(AppState appState, string idString, Outcome<BrowseNode?> found, int ticket)
     {
-        switch (found)
-        {
-            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
-                if (!appState.Navigation.IsStale(ticket))
-                {
-                    return appState.Navigation.ShowNode(ok.Value, appState.Decompiler.Setup);
-                }
-
-                break;
-            case Outcome<BrowseNode?>.Ok:
-                if (!appState.Navigation.IsStale(ticket))
-                {
-                    ports.ReportError(new AppProblem.IdNotFound(idString));
-                }
-
-                break;
-            case Outcome<BrowseNode?>.Failed failed:
+        return found.Match(
+            ok => ShowFoundNode(appState, idString, ok.Value, ticket),
+            failed =>
+            {
                 ReportOpenFailure(failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
+                return null;
+            });
+    }
+
+    /// <summary>Shows <paramref name="node"/>, what the id names, unless something else was asked for meanwhile;
+    /// reports when none has it. Returns the load it started in the tab; null when it started none.</summary>
+    private DecompileTicket? ShowFoundNode(AppState appState, string idString, BrowseNode? node, int ticket)
+    {
+        if (appState.Navigation.IsStale(ticket))
+        {
+            return null;
         }
 
-        return null;
+        if (node is null)
+        {
+            ports.ReportError(new AppProblem.IdNotFound(idString));
+            return null;
+        }
+
+        return appState.Navigation.ShowNode(node, appState.Decompiler.Setup);
     }
 
     private void ReportOpenFailure(Exception error)

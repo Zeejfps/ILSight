@@ -12,15 +12,10 @@ public static class Bookmarks
     /// the bookmark now in its row.</summary>
     public static void TakeToggle(BookmarksPanel panel, BookmarkToggle toggle, IReadOnlyList<Bookmark> bookmarks)
     {
-        switch (toggle)
-        {
-            case BookmarkToggle.Added added:
-                ItemSelections.Select(panel.Selection, added.Bookmark, bookmarks);
-                break;
-            case BookmarkToggle.Removed removed:
-                TakeRemoved(panel, removed.Bookmark, removed.Row, bookmarks);
-                break;
-        }
+        toggle.Switch(
+            unchanged: static _ => { },
+            added: added => ItemSelections.Select(panel.Selection, added.Bookmark, bookmarks),
+            removed: removed => TakeRemoved(panel, removed.Bookmark, removed.Row, bookmarks));
     }
 
     /// <summary>Passes the selection of <paramref name="bookmark"/>, removed from <paramref name="row"/>, to the

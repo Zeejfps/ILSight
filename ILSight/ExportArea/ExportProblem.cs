@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ILSight.Core;
 
 namespace ILSight.ExportArea;
@@ -21,4 +22,20 @@ public abstract record ExportProblem
     public sealed record OutsideFolder(string Path) : ExportProblem;
 
     public sealed record FileNotWritten(string Path, ExportError Error) : ExportProblem;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<NotDecompiled, TResult> notDecompiled, Func<NoPdbEntry, TResult> noPdbEntry,
+        Func<PdbNotWritten, TResult> pdbNotWritten, Func<OutsideFolder, TResult> outsideFolder,
+        Func<FileNotWritten, TResult> fileNotWritten)
+    {
+        return this switch
+        {
+            NotDecompiled c => notDecompiled(c),
+            NoPdbEntry c => noPdbEntry(c),
+            PdbNotWritten c => pdbNotWritten(c),
+            OutsideFolder c => outsideFolder(c),
+            FileNotWritten c => fileNotWritten(c),
+            _ => throw new UnreachableException($"ExportProblem.Match does not handle {GetType().Name}."),
+        };
+    }
 }

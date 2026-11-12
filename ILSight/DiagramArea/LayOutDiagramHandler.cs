@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core.Diagrams;
 
 namespace ILSight.DiagramArea;
@@ -30,16 +29,8 @@ public sealed class LayOutDiagramHandler(LayOutDiagramHandler.IPorts ports)
             return;
         }
 
-        switch (laidOut)
-        {
-            case Outcome<TypeLayout>.Ok ok:
-                Diagrams.ShowLayout(diagram, ok.Value);
-                break;
-            case Outcome<TypeLayout>.Failed failed:
-                ports.ReportError(new AppProblem.DiagramNotLaidOut(failed.Error));
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        laidOut.Switch(
+            ok => Diagrams.ShowLayout(diagram, ok.Value),
+            failed => ports.ReportError(new AppProblem.DiagramNotLaidOut(failed.Error)));
     }
 }

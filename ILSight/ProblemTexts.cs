@@ -27,50 +27,47 @@ public static class ProblemTexts
 
     private static (string Title, string Details) Words(Strings t, AppProblem problem)
     {
-        return problem switch
-        {
-            AppProblem.OpenFailed p => (t.ErrorOpenAssemblies, p.Error.ToString()),
-            AppProblem.PdbUnusable p => (t.ErrorSelectPdb(Path.GetFileName(p.PdbPath), p.Assembly),
+        return problem.Match<(string Title, string Details)>(
+            openFailed: p => (t.ErrorOpenAssemblies, p.Error.ToString()),
+            pdbUnusable: p => (t.ErrorSelectPdb(Path.GetFileName(p.PdbPath), p.Assembly),
                 DescribePdbCheck(t, p.Check, p.Assembly) + Environment.NewLine + p.PdbPath),
-            AppProblem.AssemblyNotReloaded p => (t.ErrorReloadAssembly(p.Assembly), p.Error.ToString()),
-            AppProblem.AssembliesNotReloaded p => (t.ErrorReloadAssemblies, p.Error.ToString()),
-            AppProblem.GoneAfterReload p => (t.ErrorFindAfterReload(p.Location.Label), p.Location.ToString()),
-            AppProblem.AnalysisFailed p => (t.ErrorAnalyze(p.Subject, AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
-            AppProblem.AnalysesNotRestored p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
-            AppProblem.IdNotFound p => (t.ErrorNavigateTo(p.Id), ""),
-            AppProblem.ArgumentsIgnored p => (t.ErrorArgumentsIgnored(p.Arguments.Count), string.Join(Environment.NewLine, p.Arguments)),
-            AppProblem.NoApiReferencePage p => (t.ErrorNoApiReferencePage(p.Name), t.ErrorNoApiReferencePageDetails),
-            AppProblem.Unresolved p => (t.ErrorResolve(p.Reference.Name), Failure(p.Error, t.ErrorNoDefinition(p.Reference))),
-            AppProblem.HistoryPlaceGone p => (t.ErrorGoBack(p.Place.Label), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
-            AppProblem.BookmarkGone p => (t.ErrorGoToBookmark(p.Bookmark), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
-            AppProblem.BookmarksNotExported p => (t.ErrorExportBookmarks, p.Reason),
-            AppProblem.BookmarksNotImported p => (t.ErrorImportBookmarks(p.File), p.Reason),
-            AppProblem.NotBookmarksFile p => (t.ErrorImportBookmarks(Path.GetFileName(p.Path)), $"{p.Path}{Environment.NewLine}{t.ErrorNotBookmarksFile}"),
-            AppProblem.ImportedBookmarksUnreadable p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems)),
-            AppProblem.ImportedBookmarksLost p => (t.ErrorBookmarksNotFound(p.File), string.Join(Environment.NewLine, p.Lost)),
-            AppProblem.BookmarksLeftOut p => (t.ErrorDuplicateBookmarks(p.Count), ""),
-            AppProblem.ComparisonFailed p => (t.ErrorCompare(p.Left, p.Right), p.Error.ToString()),
-            AppProblem.DecompilationFailed p => (t.ErrorDecompile(p.Node), p.Error.ToString()),
-            AppProblem.TypeNotDiagrammed p => (t.ErrorShowInDiagram(p.Type.Name), Failure(p.Error, t.ErrorNoDefinition(p.Type))),
-            AppProblem.DiagramNotReopened p => (t.ErrorShowInDiagram(p.Diagram), p.Error.ToString()),
-            AppProblem.DiagramNotLaidOut p => (t.ErrorLayOutDiagram, p.Error.ToString()),
-            AppProblem.ResourceNotSaved p => (t.ErrorSaveResource(p.Resource), p.Reason),
-            AppProblem.PackageFileNotExtracted p => (t.ErrorExtractFile(p.File), p.Reason),
-            AppProblem.SettingsUnreadable p => (SettingsTitle(t, p.Problem), $"{p.Path}{Environment.NewLine}{DescribeSettings(t, p.Problem)}"),
-            AppProblem.SettingsNotSaved p => (t.ErrorSaveSettings, p.Reason),
-            AppProblem.ThemeFileProblems p => (ThemeFileTitle(t, p.Kind, Path.GetFileName(p.File)), DescribeThemeErrors(t, p.Errors)),
-            AppProblem.ThemesFolderNotMade p => (p.Kind == ThemeKind.Color ? t.ErrorThemesFolder : t.ErrorIconThemesFolder, p.Reason),
-            AppProblem.CustomThemeNotWritten p => (p.Kind == ThemeKind.Color ? t.ErrorCustomTheme : t.ErrorCustomIconTheme,
+            assemblyNotReloaded: p => (t.ErrorReloadAssembly(p.Assembly), p.Error.ToString()),
+            assembliesNotReloaded: p => (t.ErrorReloadAssemblies, p.Error.ToString()),
+            goneAfterReload: p => (t.ErrorFindAfterReload(p.Location.Label), p.Location.ToString()),
+            analysisFailed: p => (t.ErrorAnalyze(p.Subject, AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
+            analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
+            idNotFound: p => (t.ErrorNavigateTo(p.Id), ""),
+            argumentsIgnored: p => (t.ErrorArgumentsIgnored(p.Arguments.Count), string.Join(Environment.NewLine, p.Arguments)),
+            noApiReferencePage: p => (t.ErrorNoApiReferencePage(p.Name), t.ErrorNoApiReferencePageDetails),
+            unresolved: p => (t.ErrorResolve(p.Reference.Name), Failure(p.Error, t.ErrorNoDefinition(p.Reference))),
+            historyPlaceGone: p => (t.ErrorGoBack(p.Place.Label), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
+            bookmarkGone: p => (t.ErrorGoToBookmark(p.Bookmark), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
+            bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
+            bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
+            notBookmarksFile: p => (t.ErrorImportBookmarks(Path.GetFileName(p.Path)), $"{p.Path}{Environment.NewLine}{t.ErrorNotBookmarksFile}"),
+            importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems)),
+            importedBookmarksLost: p => (t.ErrorBookmarksNotFound(p.File), string.Join(Environment.NewLine, p.Lost)),
+            bookmarksLeftOut: p => (t.ErrorDuplicateBookmarks(p.Count), ""),
+            comparisonFailed: p => (t.ErrorCompare(p.Left, p.Right), p.Error.ToString()),
+            decompilationFailed: p => (t.ErrorDecompile(p.Node), p.Error.ToString()),
+            typeNotDiagrammed: p => (t.ErrorShowInDiagram(p.Type.Name), Failure(p.Error, t.ErrorNoDefinition(p.Type))),
+            diagramNotReopened: p => (t.ErrorShowInDiagram(p.Diagram), p.Error.ToString()),
+            diagramNotLaidOut: p => (t.ErrorLayOutDiagram, p.Error.ToString()),
+            resourceNotSaved: p => (t.ErrorSaveResource(p.Resource), p.Reason),
+            packageFileNotExtracted: p => (t.ErrorExtractFile(p.File), p.Reason),
+            settingsUnreadable: p => (SettingsTitle(t, p.Problem), $"{p.Path}{Environment.NewLine}{DescribeSettings(t, p.Problem)}"),
+            settingsNotSaved: p => (t.ErrorSaveSettings, p.Reason),
+            themeFileProblems: p => (ThemeFileTitle(t, p.Kind, Path.GetFileName(p.File)), DescribeThemeErrors(t, p.Errors)),
+            themesFolderNotMade: p => (p.Kind == ThemeKind.Color ? t.ErrorThemesFolder : t.ErrorIconThemesFolder, p.Reason),
+            customThemeNotWritten: p => (p.Kind == ThemeKind.Color ? t.ErrorCustomTheme : t.ErrorCustomIconTheme,
                 $"{p.Path}{Environment.NewLine}{p.Reason}"),
-            AppProblem.ThemesNotWatched p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason),
-            AppProblem.RuntimeNotScanned p => (t.ErrorScanRuntime, p.Error.ToString()),
-            AppProblem.NuGetConfigUnreadable p => (t.ErrorReadNugetConfig, p.Error.ToString()),
-            AppProblem.NuGetSearchFailed p => (t.ErrorSearchNuget(p.Feed), p.Error.ToString()),
-            AppProblem.PackageNotDownloaded p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
-            AppProblem.SearchFailed p => (t.ErrorSearch, p.Error.ToString()),
-            AppProblem.Unexpected p => (t.ErrorUnexpected, p.Error.ToString()),
-            _ => throw new UnreachableException(),
-        };
+            themesNotWatched: p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason),
+            runtimeNotScanned: p => (t.ErrorScanRuntime, p.Error.ToString()),
+            nuGetConfigUnreadable: p => (t.ErrorReadNugetConfig, p.Error.ToString()),
+            nuGetSearchFailed: p => (t.ErrorSearchNuget(p.Feed), p.Error.ToString()),
+            packageNotDownloaded: p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
+            searchFailed: p => (t.ErrorSearch, p.Error.ToString()),
+            unexpected: p => (t.ErrorUnexpected, p.Error.ToString()));
     }
 
     private static string Failure(Exception? error, string fallback)
@@ -108,37 +105,33 @@ public static class ProblemTexts
 
     private static string SettingsTitle(Strings t, SettingsProblem problem)
     {
-        return problem switch
-        {
-            SettingsProblem.NotRead or SettingsProblem.NotJson or SettingsProblem.Empty => t.ErrorReadSettings,
-            SettingsProblem.ValuesLeftOut => t.ErrorReadSomeSettings,
-            SettingsProblem.LayoutPartsMissing or SettingsProblem.LayoutPartsRepeated => t.ErrorReadLayout,
-            _ => throw new UnreachableException(),
-        };
+        return problem.Match(
+            none: static _ => throw new UnreachableException("SettingsProblem.None is no problem to tell of."),
+            notRead: _ => t.ErrorReadSettings,
+            notJson: _ => t.ErrorReadSettings,
+            valuesLeftOut: _ => t.ErrorReadSomeSettings,
+            empty: _ => t.ErrorReadSettings,
+            layoutPartsMissing: _ => t.ErrorReadLayout,
+            layoutPartsRepeated: _ => t.ErrorReadLayout);
     }
 
     private static string DescribeSettings(Strings t, SettingsProblem problem)
     {
-        return problem switch
-        {
-            SettingsProblem.NotRead notRead => notRead.Detail + Environment.NewLine + DescribeKept(t, notRead.Kept),
-            SettingsProblem.NotJson notJson => t.ErrorSettingsNotJson(notJson.Detail) + Environment.NewLine + DescribeKept(t, notJson.Kept),
-            SettingsProblem.ValuesLeftOut leftOut => t.ErrorSettingsValuesLeftOut(string.Join(", ", leftOut.Fields)) + Environment.NewLine + DescribeKept(t, leftOut.Kept),
-            SettingsProblem.Empty => t.ErrorSettingsEmpty,
-            SettingsProblem.LayoutPartsMissing => t.ErrorLayoutPartsMissing,
-            SettingsProblem.LayoutPartsRepeated => t.ErrorLayoutPartsRepeated,
-            _ => throw new UnreachableException(),
-        };
+        return problem.Match(
+            none: static _ => throw new UnreachableException("SettingsProblem.None is no problem to tell of."),
+            notRead: notRead => notRead.Detail + Environment.NewLine + DescribeKept(t, notRead.Kept),
+            notJson: notJson => t.ErrorSettingsNotJson(notJson.Detail) + Environment.NewLine + DescribeKept(t, notJson.Kept),
+            valuesLeftOut: leftOut => t.ErrorSettingsValuesLeftOut(string.Join(", ", leftOut.Fields)) + Environment.NewLine + DescribeKept(t, leftOut.Kept),
+            empty: _ => t.ErrorSettingsEmpty,
+            layoutPartsMissing: _ => t.ErrorLayoutPartsMissing,
+            layoutPartsRepeated: _ => t.ErrorLayoutPartsRepeated);
     }
 
     private static string DescribeKept(Strings t, SettingsKept kept)
     {
-        return kept switch
-        {
-            SettingsKept.CopiedTo copied => t.ErrorSettingsKeptAs(copied.Path),
-            SettingsKept.NotSaved => t.ErrorSettingsNotSaved,
-            _ => throw new UnreachableException(),
-        };
+        return kept.Match(
+            copied => t.ErrorSettingsKeptAs(copied.Path),
+            _ => t.ErrorSettingsNotSaved);
     }
 
     private static string ThemeFileTitle(Strings t, ThemeKind kind, string file)

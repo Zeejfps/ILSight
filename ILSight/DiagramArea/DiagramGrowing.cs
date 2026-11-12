@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 
@@ -44,17 +43,9 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
             return;
         }
 
-        switch (cards)
-        {
-            case Outcome<List<TypeCard>>.Ok ok:
-                TakeHome(viewCommands, read, ok.Value);
-                break;
-            case Outcome<List<TypeCard>>.Failed failed:
-                ReportUnreadable(read.Type, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        cards.Switch(
+            ok => TakeHome(viewCommands, read, ok.Value),
+            failed => ReportUnreadable(read.Type, failed.Error));
     }
 
     private void TakeHome(Queue<ViewCommand> viewCommands, NeighboursRead read, List<TypeCard> cards)
@@ -126,17 +117,9 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
             return;
         }
 
-        switch (read)
-        {
-            case Outcome<List<TypeCard>>.Ok ok:
-                Diagrams.AddCards(diagram, ok.Value);
-                break;
-            case Outcome<List<TypeCard>>.Failed failed:
-                ReportUnreadable(card.Type, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        read.Switch(
+            ok => Diagrams.AddCards(diagram, ok.Value),
+            failed => ReportUnreadable(card.Type, failed.Error));
     }
 
     private void ReportUnreadable(CodeReference.Entity type, Exception? error)

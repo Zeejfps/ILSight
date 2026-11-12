@@ -591,17 +591,18 @@ internal static class ExportDialogView
 
     private static string BlockerText(Strings t, ExportBlocker? blocker)
     {
-        return blocker switch
+        if (blocker is null)
         {
-            null => "",
-            ExportBlocker.NoAssembly => t.ExportNeedsAssembly,
-            ExportBlocker.NoFolder => t.ExportNeedsFolder,
-            ExportBlocker.NamelessProject => t.ExportNeedsName,
-            ExportBlocker.Clash clash => t.ExportNameClash(clash.Name),
-            ExportBlocker.KeyFileMissing => t.ExportKeyFileMissing,
-            ExportBlocker.Checking => "",
-            _ => throw new UnreachableException(),
-        };
+            return "";
+        }
+
+        return blocker.Match(t,
+            noAssembly: static (t, _) => t.ExportNeedsAssembly,
+            noFolder: static (t, _) => t.ExportNeedsFolder,
+            namelessProject: static (t, _) => t.ExportNeedsName,
+            clash: static (t, clash) => t.ExportNameClash(clash.Name),
+            keyFileMissing: static (t, _) => t.ExportKeyFileMissing,
+            checking: static (_, _) => "");
     }
 
     /// <summary>All the open assemblies to tick, ticked ones first, narrowed by a filter. Only the list

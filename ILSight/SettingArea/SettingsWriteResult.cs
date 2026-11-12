@@ -24,4 +24,33 @@ public abstract record SettingsWriteResult
             _ => throw new UnreachableException($"SettingsWriteResult.Match does not handle {GetType().Name}."),
         };
     }
+
+    /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
+    /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
+    public TResult Match<TState, TResult>(TState state, Func<TState, Written, TResult> written,
+        Func<TState, Failed, TResult> failed)
+    {
+        return this switch
+        {
+            Written c => written(state, c),
+            Failed c => failed(state, c),
+            _ => throw new UnreachableException($"SettingsWriteResult.Match does not handle {GetType().Name}."),
+        };
+    }
+
+    /// <summary>Does what the handler of whichever case this is does with it.</summary>
+    public void Switch(Action<Written> written, Action<Failed> failed)
+    {
+        switch (this)
+        {
+            case Written c:
+                written(c);
+                return;
+            case Failed c:
+                failed(c);
+                return;
+            default:
+                throw new UnreachableException($"SettingsWriteResult.Switch does not handle {GetType().Name}.");
+        }
+    }
 }

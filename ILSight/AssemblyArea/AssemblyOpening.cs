@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 
 namespace ILSight.AssemblyArea;
@@ -56,25 +55,30 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     private DecompileTicket? ShowOpened(AppState appState, Outcome<BrowseNode?> outcome, int ticket)
     {
         appState.Navigation.EndOpening(ticket);
-        switch (outcome)
-        {
-            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
-                if (!appState.Navigation.IsStale(ticket))
-                {
-                    return appState.Navigation.ShowNode(ok.Value, appState.Decompiler.Setup);
-                }
-
-                break;
-            case Outcome<BrowseNode?>.Ok:
-                break;
-            case Outcome<BrowseNode?>.Failed failed:
+        return outcome.Match(
+            ok => ShowLastOpened(appState, ok.Value, ticket),
+            failed =>
+            {
                 ReportOpenFailure(failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
+                return null;
+            });
+    }
+
+    /// <summary>Shows <paramref name="node"/>, the last assembly opened, unless none was or something else was asked
+    /// for meanwhile. Returns the load it started in the tab; null when it started none.</summary>
+    private static DecompileTicket? ShowLastOpened(AppState appState, BrowseNode? node, int ticket)
+    {
+        if (node is null)
+        {
+            return null;
         }
 
-        return null;
+        if (appState.Navigation.IsStale(ticket))
+        {
+            return null;
+        }
+
+        return appState.Navigation.ShowNode(node, appState.Decompiler.Setup);
     }
 
     /// <summary>Reports why opening failed, unless the opening was cancelled.</summary>

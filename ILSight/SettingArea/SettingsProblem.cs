@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ILSight.SettingArea;
 
 /// <summary>What was wrong with the settings file, for the screen to tell in the chosen language. A
@@ -54,4 +56,22 @@ public abstract record SettingsProblem
 
     /// <summary>Two parts of the saved layout have one id, so the panels are where they start out.</summary>
     public sealed record LayoutPartsRepeated : SettingsProblem;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<None, TResult> none, Func<NotRead, TResult> notRead,
+        Func<NotJson, TResult> notJson, Func<ValuesLeftOut, TResult> valuesLeftOut, Func<Empty, TResult> empty,
+        Func<LayoutPartsMissing, TResult> layoutPartsMissing, Func<LayoutPartsRepeated, TResult> layoutPartsRepeated)
+    {
+        return this switch
+        {
+            None c => none(c),
+            NotRead c => notRead(c),
+            NotJson c => notJson(c),
+            ValuesLeftOut c => valuesLeftOut(c),
+            Empty c => empty(c),
+            LayoutPartsMissing c => layoutPartsMissing(c),
+            LayoutPartsRepeated c => layoutPartsRepeated(c),
+            _ => throw new UnreachableException($"SettingsProblem.Match does not handle {GetType().Name}."),
+        };
+    }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Analysis;
 using ILSight.BookmarkArea;
@@ -105,4 +106,71 @@ public abstract record AppProblem
 
     /// <summary>Work started on the UI thread failed where it does not expect to fail.</summary>
     public sealed record Unexpected(Exception Error) : AppProblem;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<OpenFailed, TResult> openFailed, Func<PdbUnusable, TResult> pdbUnusable,
+        Func<AssemblyNotReloaded, TResult> assemblyNotReloaded,
+        Func<AssembliesNotReloaded, TResult> assembliesNotReloaded, Func<GoneAfterReload, TResult> goneAfterReload,
+        Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored,
+        Func<IdNotFound, TResult> idNotFound, Func<ArgumentsIgnored, TResult> argumentsIgnored,
+        Func<NoApiReferencePage, TResult> noApiReferencePage, Func<Unresolved, TResult> unresolved,
+        Func<HistoryPlaceGone, TResult> historyPlaceGone, Func<BookmarkGone, TResult> bookmarkGone,
+        Func<BookmarksNotExported, TResult> bookmarksNotExported,
+        Func<BookmarksNotImported, TResult> bookmarksNotImported, Func<NotBookmarksFile, TResult> notBookmarksFile,
+        Func<ImportedBookmarksUnreadable, TResult> importedBookmarksUnreadable,
+        Func<ImportedBookmarksLost, TResult> importedBookmarksLost, Func<BookmarksLeftOut, TResult> bookmarksLeftOut,
+        Func<ComparisonFailed, TResult> comparisonFailed, Func<DecompilationFailed, TResult> decompilationFailed,
+        Func<TypeNotDiagrammed, TResult> typeNotDiagrammed, Func<DiagramNotReopened, TResult> diagramNotReopened,
+        Func<DiagramNotLaidOut, TResult> diagramNotLaidOut, Func<ResourceNotSaved, TResult> resourceNotSaved,
+        Func<PackageFileNotExtracted, TResult> packageFileNotExtracted,
+        Func<SettingsUnreadable, TResult> settingsUnreadable, Func<SettingsNotSaved, TResult> settingsNotSaved,
+        Func<ThemeFileProblems, TResult> themeFileProblems, Func<ThemesFolderNotMade, TResult> themesFolderNotMade,
+        Func<CustomThemeNotWritten, TResult> customThemeNotWritten, Func<ThemesNotWatched, TResult> themesNotWatched,
+        Func<RuntimeNotScanned, TResult> runtimeNotScanned, Func<NuGetConfigUnreadable, TResult> nuGetConfigUnreadable,
+        Func<NuGetSearchFailed, TResult> nuGetSearchFailed, Func<PackageNotDownloaded, TResult> packageNotDownloaded,
+        Func<SearchFailed, TResult> searchFailed, Func<Unexpected, TResult> unexpected)
+    {
+        return this switch
+        {
+            OpenFailed c => openFailed(c),
+            PdbUnusable c => pdbUnusable(c),
+            AssemblyNotReloaded c => assemblyNotReloaded(c),
+            AssembliesNotReloaded c => assembliesNotReloaded(c),
+            GoneAfterReload c => goneAfterReload(c),
+            AnalysisFailed c => analysisFailed(c),
+            AnalysesNotRestored c => analysesNotRestored(c),
+            IdNotFound c => idNotFound(c),
+            ArgumentsIgnored c => argumentsIgnored(c),
+            NoApiReferencePage c => noApiReferencePage(c),
+            Unresolved c => unresolved(c),
+            HistoryPlaceGone c => historyPlaceGone(c),
+            BookmarkGone c => bookmarkGone(c),
+            BookmarksNotExported c => bookmarksNotExported(c),
+            BookmarksNotImported c => bookmarksNotImported(c),
+            NotBookmarksFile c => notBookmarksFile(c),
+            ImportedBookmarksUnreadable c => importedBookmarksUnreadable(c),
+            ImportedBookmarksLost c => importedBookmarksLost(c),
+            BookmarksLeftOut c => bookmarksLeftOut(c),
+            ComparisonFailed c => comparisonFailed(c),
+            DecompilationFailed c => decompilationFailed(c),
+            TypeNotDiagrammed c => typeNotDiagrammed(c),
+            DiagramNotReopened c => diagramNotReopened(c),
+            DiagramNotLaidOut c => diagramNotLaidOut(c),
+            ResourceNotSaved c => resourceNotSaved(c),
+            PackageFileNotExtracted c => packageFileNotExtracted(c),
+            SettingsUnreadable c => settingsUnreadable(c),
+            SettingsNotSaved c => settingsNotSaved(c),
+            ThemeFileProblems c => themeFileProblems(c),
+            ThemesFolderNotMade c => themesFolderNotMade(c),
+            CustomThemeNotWritten c => customThemeNotWritten(c),
+            ThemesNotWatched c => themesNotWatched(c),
+            RuntimeNotScanned c => runtimeNotScanned(c),
+            NuGetConfigUnreadable c => nuGetConfigUnreadable(c),
+            NuGetSearchFailed c => nuGetSearchFailed(c),
+            PackageNotDownloaded c => packageNotDownloaded(c),
+            SearchFailed c => searchFailed(c),
+            Unexpected c => unexpected(c),
+            _ => throw new UnreachableException($"AppProblem.Match does not handle {GetType().Name}."),
+        };
+    }
 }

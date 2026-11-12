@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Processes;
@@ -523,19 +522,15 @@ internal static class AppFrames
 
     private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)
     {
-        switch (appState.SettingsSaving.SaveIfChanged(appState, ui.RealTime))
+        var saving = appState.SettingsSaving.SaveIfChanged(appState, ui.RealTime);
+        var retryIn = saving.Match<double?>(
+            static _ => null,
+            static _ => null,
+            static waiting => waiting.RetryIn,
+            static failed => failed.RetryIn);
+        if (retryIn is not null)
         {
-            case Saving.Unchanged:
-            case Saving.Saved:
-                break;
-            case Saving.Waiting waiting:
-                ui.RequestUpdateIn(waiting.RetryIn);
-                break;
-            case Saving.Failed failed:
-                ui.RequestUpdateIn(failed.RetryIn);
-                break;
-            default:
-                throw new UnreachableException();
+            ui.RequestUpdateIn(retryIn.Value);
         }
     }
 }

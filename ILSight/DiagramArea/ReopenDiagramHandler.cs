@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 
@@ -56,16 +55,8 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
             return;
         }
 
-        switch (cards)
-        {
-            case Outcome<List<TypeCard>>.Ok ok:
-                Diagrams.AddCards(diagram, ok.Value);
-                break;
-            case Outcome<List<TypeCard>>.Failed failed:
-                ports.ReportError(new AppProblem.DiagramNotReopened(title, failed.Error));
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        cards.Switch(
+            ok => Diagrams.AddCards(diagram, ok.Value),
+            failed => ports.ReportError(new AppProblem.DiagramNotReopened(title, failed.Error)));
     }
 }
