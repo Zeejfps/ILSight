@@ -47,16 +47,9 @@ public static class Assemblies
         appState.Intent.Begin();
         appState.Opens.Cancel();
         appState.Reload.Stop();
-        ClearAssemblies(appState);
+        OpenAssemblies.CloseAll(appState.Assemblies, appState.Analyzer);
         appState.Assemblies.Pdbs.ForgetAll();
         appState.Assemblies.TargetFrameworks.ForgetAll();
         ShowReopenedDocuments(appState);
-    }
-
-    /// <summary>Takes every assembly off the open list, and the analyses of them with it.</summary>
-    internal static void ClearAssemblies(AppState appState)
-    {
-        AssemblyListing.CloseAll(appState.Assemblies);
-        appState.Analyzer.ClearRoots();
     }
 }
