@@ -435,7 +435,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var settings = _temp.Settings();
         List<DocumentRecord> tabs = [HandTab("document-1", "First"), HandTab("document-1", "Twin"), HandTab(DockPanels.Assemblies, "Tree")];
         settings.AssemblyLists.Add(new AssemblyListRecord("Hand", [], Documents: new DocumentsRecord(tabs, null, null, null)));
-        SettingsJson.SaveSettings(settings);
+        TempSettings.Save(settings);
 
         var kept = _temp.Settings().AssemblyLists.Single(static l => l.Name == "Hand").Documents!.Tabs;
 
@@ -462,7 +462,7 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var d = new AppStateDriver(_temp.Settings());
         d.NextFrame();
-        Settings.SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var saved = _temp.Settings();
         var next = new AppStateDriver(saved);

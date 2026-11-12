@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using ILSight.Core;
 using static ILSight.SavedDocuments;
-using static ILSight.Settings;
 
 namespace ILSight;
 
@@ -42,7 +41,7 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
         switch (outcome)
         {
             case Outcome<LoadedAssembly?>.Ok:
-                SaveSettings(appState);
+                appState.SettingsSaving.Save(appState);
                 break;
             case Outcome<LoadedAssembly?>.Failed failed:
                 ports.ReportError(new AppProblem.OpenFailed(failed.Error));

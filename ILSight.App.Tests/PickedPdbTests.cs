@@ -39,7 +39,7 @@ public sealed class PickedPdbTests
         var d = OpenedCopy(temp, copy);
 
         Pick(d, FixturePdb);
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
         var next = new AppStateDriver(temp.Settings());
         next.Start(RestoreActiveAssemblyListAsync);
         next.Settle();
@@ -71,7 +71,7 @@ public sealed class PickedPdbTests
 
         d.Change(CloseAllAssemblies);
         RememberOpenAssemblies(d.AppState);
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         Assert.Empty(d.AppState.Assemblies.Pdbs.All);
         Assert.Null(Assert.Single(temp.Settings().AssemblyLists).Pdbs);

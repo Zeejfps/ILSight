@@ -19,7 +19,7 @@ internal static class AppRoot
     internal static AppState RestoreAppState(SettingsLoadResult loadResult, RunArguments arguments, BrowseSession session)
     {
         var appState = RestoreAppState(loadResult.Settings, session);
-        Settings.ReportSettingsProblem(appState, loadResult.Problem);
+        ReportProblem(appState, Settings.FindProblem(appState.SettingsPlace, loadResult.Problem));
         RunArgumentsActions.ApplyStartupOptions(appState, arguments);
         return appState;
     }
@@ -31,10 +31,21 @@ internal static class AppRoot
         var appState = CreateAppState(settings, session);
         var first = appState.Tabs.AddNew();
         Tabs.MakeActive(appState.Tabs, first);
-        Settings.Restore(appState, settings);
+        ReportProblem(appState, Settings.Restore(appState, settings));
         appState.UserThemes.ReadThemes();
         appState.UserIconThemes.ReadThemes();
         return appState;
+    }
+
+    /// <summary>Tells the user <paramref name="problem"/>, if anything is wrong.</summary>
+    private static void ReportProblem(AppState appState, AppProblem? problem)
+    {
+        if (problem is null)
+        {
+            return;
+        }
+
+        Errors.Report(appState, problem);
     }
 
     /// <summary>The app state <paramref name="settings"/> describe, with its use cases over the adapters they
@@ -72,6 +83,7 @@ internal static class AppRoot
             ShowReopenedNodesHandler = new ShowReopenedNodesHandler(navigation),
             BookmarkImporting = new BookmarkImporting(bookmarks),
             ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),
+            SettingsSaving = new SettingsSaving(new SettingsSavingAdapter(errors)),
             ExportWriting = new ExportWriting(exports),
             SaveResourceHandler = new SaveResourceHandler(exports),
             ExtractPackageFileHandler = new ExtractPackageFileHandler(exports),

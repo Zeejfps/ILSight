@@ -307,7 +307,7 @@ public sealed class MetadataGridTests
         using var temp = new TempDir();
         var settings = temp.Settings();
         settings.FlagsFilters = MetadataGridWidget.ListSaved(app.Ui.MetadataFilters);
-        SettingsJson.SaveSettings(settings);
+        TempSettings.Save(settings);
         var saved = temp.Settings().FlagsFilters;
         var restored = MetadataGridWidget.GetFilter(MetadataGridWidget.CreateFilters(saved), grid, attributes);
         Assert.Equal("Visibility = Public", FilterStatePresenter.Describe(restored));

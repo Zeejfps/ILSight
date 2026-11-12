@@ -9,4 +9,10 @@ internal static class TempSettings
     {
         return SettingsJson.ReadSettingsFile(FullFilePath.Of(temp.PathOf("settings.json"))).Settings;
     }
+
+    /// <summary>Writes <paramref name="settings"/> where they were read from, as the app saves them.</summary>
+    public static SettingsWriteResult Save(AppSettings settings)
+    {
+        return new SettingsSaving(new SettingsSavingAdapter(new ErrorLog())).WriteSettings(settings);
+    }
 }

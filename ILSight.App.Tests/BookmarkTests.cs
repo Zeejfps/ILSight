@@ -163,7 +163,7 @@ public sealed class BookmarkTests : IDisposable
     {
         var (d, tab, line) = OutlineAt("return First();", new AppStateDriver(_temp.Settings()));
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
         var settings = _temp.Settings();
         settings.Bookmarks.Add(settings.Bookmarks[0] with { Name = "Twin" });
 
@@ -420,7 +420,7 @@ public sealed class BookmarkTests : IDisposable
         var d = new AppStateDriver(_temp.Settings());
         d.Ui.BookmarkColumns.Restore([1f, 1f, 4f, 1f]);
         d.NextFrame();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var restored = new AppStateDriver(_temp.Settings()).Ui.BookmarkColumns.Weights;
 

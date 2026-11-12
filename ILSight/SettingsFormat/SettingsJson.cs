@@ -1231,27 +1231,9 @@ internal static class SettingsJson
         return ThemeId<IconThemeFile>.Parse(saved) ?? IconTheming.ReferenceId;
     }
 
-    /// <summary>Writes the settings to <see cref="AppSettings.FilePath"/>, replacing the file whole so a failed
-    /// write never leaves it truncated; writes nothing while they are kept in memory only or may not be
-    /// saved over the file.</summary>
-    public static SettingsWriteResult SaveSettings(AppSettings settings)
+    /// <summary>The text of the settings file that keeps <paramref name="settings"/>.</summary>
+    public static string ToJson(AppSettings settings)
     {
-        if (settings.FilePath is null || !settings.CanSaveOverFile)
-        {
-            return new SettingsWriteResult.Written();
-        }
-
-        var temporary = settings.FilePath.Text + ".tmp";
-        try
-        {
-            Directory.CreateDirectory(settings.FilePath.Folder);
-            File.WriteAllText(temporary, JsonSerializer.Serialize(SettingsJson.Write(settings), AppSettingsJson.Default.SettingsFile));
-            File.Move(temporary, settings.FilePath.Text, overwrite: true);
-            return new SettingsWriteResult.Written();
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return new SettingsWriteResult.Failed($"{settings.FilePath}{Environment.NewLine}{e.Message}");
-        }
+        return JsonSerializer.Serialize(Write(settings), AppSettingsJson.Default.SettingsFile);
     }
 }

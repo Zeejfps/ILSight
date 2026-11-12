@@ -155,6 +155,6 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     {
         KeepWindow(_appState, window);
         KeepViewSettings(_appState, TakeViewSettings(UiState));
-        SaveSettings(_appState);
+        _appState.SettingsSaving.Save(_appState);
     }
 }

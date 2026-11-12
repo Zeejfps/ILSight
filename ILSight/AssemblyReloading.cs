@@ -4,7 +4,6 @@ using ILSight.Core;
 using static ILSight.AssemblyLists;
 using static ILSight.Decompilation;
 using static ILSight.SavedDocuments;
-using static ILSight.Settings;
 
 namespace ILSight;
 
@@ -148,7 +147,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             return [];
         }
 
-        SaveSettings(appState);
+        appState.SettingsSaving.Save(appState);
         switch (outcome)
         {
             case Outcome<ReopenedFile>.Ok ok:
@@ -253,7 +252,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
 
         var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
-        SaveSettings(appState);
+        appState.SettingsSaving.Save(appState);
         return TabLoads.None.With(loads).With(reopened);
     }
 

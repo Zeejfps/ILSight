@@ -19,7 +19,7 @@ public sealed class AssemblyListingTests
     {
         using var temp = new TempDir();
         var d = AppStateDriver.Opened(temp.Settings());
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var loaded = temp.Settings();
 
@@ -37,7 +37,7 @@ public sealed class AssemblyListingTests
         var d = new AppStateDriver(settings);
 
         d.Start(RestoreActiveAssemblyListAsync);
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
         d.Settle();
@@ -55,7 +55,7 @@ public sealed class AssemblyListingTests
 
         d.Start(RestoreActiveAssemblyListAsync);
         d.Settle();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var roots = d.Ui.Tree.Roots;
         Assert.Equal([NodeIcon.FailedAssembly, NodeIcon.Assembly], roots.Select(r => r.Icon));
@@ -87,13 +87,13 @@ public sealed class AssemblyListingTests
         using var temp = new TempDir();
         var first = AppStateDriver.Opened(temp.Settings());
         first.Analyze(first.Fixture("Greeter"));
-        SaveSettings(first.AppState);
+        first.AppState.SettingsSaving.Save(first.AppState);
         var d = new AppStateDriver(temp.Settings());
         d.AppState.Lists.Add(Other);
 
         d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var lists = temp.Settings().AssemblyLists;
         Assert.Empty(d.AppState.Analyzer.Roots);

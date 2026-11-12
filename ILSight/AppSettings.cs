@@ -21,7 +21,7 @@ public sealed class AppSettings
     /// in memory only.</summary>
     public FullFilePath? FilePath { get; set; }
 
-    /// <summary>Whether <see cref="SettingsJson.SaveSettings"/> writes to <see cref="FilePath"/>; false when the
+    /// <summary>Whether <see cref="SettingsSaving.WriteSettings"/> writes to <see cref="FilePath"/>; false when the
     /// file there could be neither read whole nor copied aside, so writing over it would lose what it holds.</summary>
     public bool CanSaveOverFile { get; set; } = true;
 

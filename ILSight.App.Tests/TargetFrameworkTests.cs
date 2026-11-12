@@ -37,7 +37,7 @@ public sealed class TargetFrameworkTests
         app.Settle(2);
 
         PickFramework(app, "net48");
-        SaveSettings(app.AppState);
+        app.AppState.SettingsSaving.Save(app.AppState);
 
         var assembly = FixturesOf(app.AppState);
         Assert.True(assembly.IsTargetFrameworkPicked);

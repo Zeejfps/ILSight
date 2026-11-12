@@ -135,7 +135,7 @@ public sealed class TitleBarTests : IDisposable
         var d = new AppStateDriver(_temp.Settings());
         SetDisplayOptions(d.Ui, d.Ui.Display with { SystemTitleBar = true });
         d.NextFrame();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var next = new AppStateDriver(_temp.Settings());
 

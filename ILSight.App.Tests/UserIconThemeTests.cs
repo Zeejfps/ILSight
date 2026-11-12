@@ -67,7 +67,7 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, ResolveIconTheme(appState).Icons.NodeClass);
 
         appState.IconTheme = Id("mine");
-        SaveSettingsIfChanged(appState, 0);
+        appState.SettingsSaving.SaveIfChanged(appState, 0);
 
         Assert.Equal("mine", Settings().IconTheme.Text);
     }
@@ -88,7 +88,7 @@ public sealed class UserIconThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
         Assert.Same(appState.IconThemes.GetTheme(Id("lucide")), ResolveIconTheme(appState));
-        SaveSettings(appState);
+        appState.SettingsSaving.Save(appState);
         Assert.Equal("gone", Settings().IconTheme.Text);
     }
 

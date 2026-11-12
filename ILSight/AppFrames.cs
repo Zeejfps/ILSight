@@ -447,7 +447,7 @@ internal static class AppFrames
 
     private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)
     {
-        switch (SaveSettingsIfChanged(appState, ui.RealTime))
+        switch (appState.SettingsSaving.SaveIfChanged(appState, ui.RealTime))
         {
             case Saving.Unchanged:
             case Saving.Saved:

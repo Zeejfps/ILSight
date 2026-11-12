@@ -32,7 +32,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         OpenPanel(screen, DockView.Analyzer);
         screen.Layout.Dock(DockPanels.Bookmarks, screen.Layout.GroupOf(DockPanels.Analyzer)!, DockEdge.Center);
         d.NextFrame();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var next = new AppStateDriver(_temp.Settings());
         var layout = next.Ui.Layout;
@@ -56,7 +56,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         OpenPanel(screen, DockView.Analyzer);
         screen.Layout.Dock(DockPanels.Search, screen.Layout.GroupOf(DockPanels.Analyzer)!, DockEdge.Center);
         d.NextFrame();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var next = new AppStateDriver(_temp.Settings()).Ui;
 

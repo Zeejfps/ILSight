@@ -108,7 +108,7 @@ internal sealed class AppStateDriver
             NextFrame();
         }
 
-        SaveSettingsIfChanged(AppState, Now);
+        AppState.SettingsSaving.SaveIfChanged(AppState, Now);
     }
 
     /// <summary>Does what a frame does before and after it draws: the screen follows the trees and the

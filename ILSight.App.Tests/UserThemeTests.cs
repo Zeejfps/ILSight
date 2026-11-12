@@ -103,7 +103,7 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
         Assert.Same(appState.Themes.GetTheme(Id("dark")), ResolveTheme(appState));
-        SaveSettings(appState);
+        appState.SettingsSaving.Save(appState);
         Assert.Equal("gone", _temp.Settings().Theme.Text);
     }
 

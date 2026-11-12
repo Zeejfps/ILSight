@@ -8,33 +8,27 @@ using ILSight.SettingsFormat;
 
 namespace ILSight;
 
-/// <summary>Restoring what the settings keep into the app state, and saving the settings when something in them changed.</summary>
+/// <summary>Restoring what the settings keep into the app state, and the settings as the app state holds them now, to
+/// be saved (<see cref="SettingsSaving"/>).</summary>
 public static class Settings
 {
-    private static readonly Saving.Unchanged Unchanged = new();
-
     /// <summary>Restores into <paramref name="appState"/> what <paramref name="settings"/> keep: the assembly
-    /// lists, the bookmarks and analyses, and the open list's documents reopened; records what is saved as saved,
-    /// and reports the bookmarks left out.</summary>
-    public static void Restore(AppState appState, AppSettings settings)
+    /// lists, the bookmarks and analyses, and the open list's documents reopened; records what is saved as saved.
+    /// Returns what to tell the user: how many of the bookmarks were left out because another marks the same line, or
+    /// null when none was.</summary>
+    public static AppProblem? Restore(AppState appState, AppSettings settings)
     {
         appState.Lists.Restore(settings.AssemblyLists, settings.ActiveAssemblyList);
         var leftOutBookmarks = appState.Bookmarks.Restore(settings.Bookmarks);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         ReopenDocuments(appState);
         appState.LastSaved = CaptureSavedSources(appState);
-        ReportLeftOutBookmarks(appState, leftOutBookmarks);
-    }
-
-    /// <summary>Says how many of the bookmarks the settings keep were left out because another marks the same line.</summary>
-    private static void ReportLeftOutBookmarks(AppState appState, int leftOut)
-    {
-        if (leftOut == 0)
+        if (leftOutBookmarks == 0)
         {
-            return;
+            return null;
         }
 
-        Errors.Report(appState, new AppProblem.BookmarksLeftOut(leftOut));
+        return new AppProblem.BookmarksLeftOut(leftOutBookmarks);
     }
 
     /// <summary>The folder <paramref name="name"/> beside <paramref name="settingsFile"/>; null while the
@@ -49,74 +43,16 @@ public static class Settings
         return Path.Combine(settingsFile.Folder, name);
     }
 
-    /// <summary>Saves the settings when what they are saved from changed since the last save written,
-    /// unless the assemblies are reloading or a failed write is still waiting to be tried again at
-    /// <paramref name="now"/>.</summary>
-    public static Saving SaveSettingsIfChanged(AppState appState, double now)
-    {
-        if (appState.IsReloading)
-        {
-            return Unchanged;
-        }
-
-        var sources = CaptureSavedSources(appState);
-        if (sources == appState.LastSaved)
-        {
-            return Unchanged;
-        }
-
-        var wait = AdvanceRetry(appState, now);
-        if (wait > 0)
-        {
-            return new Saving.Waiting(wait);
-        }
-
-        return SaveSettings(appState) switch
-        {
-            SettingsWriteResult.Written => new Saving.Saved(),
-            SettingsWriteResult.Failed failed => new Saving.Failed(failed.Reason, AdvanceRetry(appState, now)),
-            _ => throw new UnreachableException(),
-        };
-    }
-
-    /// <summary>Moves the wait on, starting it if this is the first time it is asked for after a failure,
-    /// and returns the seconds left at <paramref name="now"/> before a failed write is tried again.</summary>
-    private static double AdvanceRetry(AppState appState, double now)
-    {
-        switch (appState.SaveRetry)
-        {
-            case SaveRetry.Clear:
-                return 0;
-            case SaveRetry.Failed:
-                appState.SaveRetry = new SaveRetry.Waiting(now);
-                return SaveRetry.DelaySeconds;
-            case SaveRetry.Waiting waiting:
-                return Math.Max(0, SaveRetry.DelaySeconds - (now - waiting.Since));
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    /// <summary>Tells the user what was wrong with the settings file, if anything.</summary>
-    public static void ReportSettingsProblem(AppState appState, SettingsProblem problem)
+    /// <summary>What to tell the user of what was wrong with the settings file read from
+    /// <paramref name="place"/>, or null when nothing was.</summary>
+    public static AppProblem? FindProblem(SettingsPlace place, SettingsProblem problem)
     {
         if (problem is SettingsProblem.None)
         {
-            return;
+            return null;
         }
 
-        Errors.Report(appState, new AppProblem.SettingsUnreadable(appState.SettingsPlace.FilePath?.Text, problem));
-    }
-
-    /// <summary>Writes the settings, counting what they were copied from as saved only once the write
-    /// succeeds. A failed write is reported, unless writes were failing already.</summary>
-    public static SettingsWriteResult SaveSettings(AppState appState)
-    {
-        RememberActiveAssemblyList(appState);
-        var sources = CaptureSavedSources(appState);
-        var write = SettingsJson.SaveSettings(CreateSettings(appState));
-        TakeWrite(appState, sources, write);
-        return write;
+        return new AppProblem.SettingsUnreadable(place.FilePath?.Text, problem);
     }
 
     internal static SavedSources CaptureSavedSources(AppState appState)
@@ -139,7 +75,7 @@ public static class Settings
 
     /// <summary>The settings as the app state and the screen it was handed hold them now, to be written
     /// where they were read from.</summary>
-    private static AppSettings CreateSettings(AppState appState)
+    internal static AppSettings CreateSettings(AppState appState)
     {
         var view = appState.View;
         return new AppSettings
@@ -173,35 +109,6 @@ public static class Settings
             ProcessModuleColumns = view.ProcessModuleColumns,
             CloseWindow = view.CloseWindow,
         };
-    }
-
-    private static void TakeWrite(AppState appState, SavedSources sources, SettingsWriteResult write)
-    {
-        switch (write)
-        {
-            case SettingsWriteResult.Written:
-                appState.LastSaved = sources;
-                appState.SaveRetry = new SaveRetry.Clear();
-                break;
-            case SettingsWriteResult.Failed failed:
-                ReportWriteFailure(appState, failed.Reason);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    /// <summary>Reports a failed write, unless writes were failing already.</summary>
-    private static void ReportWriteFailure(AppState appState, string error)
-    {
-        var wasFailing = appState.SaveRetry is not SaveRetry.Clear;
-        appState.SaveRetry = new SaveRetry.Failed();
-        if (wasFailing)
-        {
-            return;
-        }
-
-        Errors.Report(appState, new AppProblem.SettingsNotSaved(error));
     }
 
     /// <summary>Takes what the settings keep of the screen, as it changed, to be written with the next save.</summary>

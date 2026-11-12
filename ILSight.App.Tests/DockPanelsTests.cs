@@ -16,7 +16,7 @@ public sealed class DockPanelsTests
         var layout = d.Ui.Layout;
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 50f, 300f, 400f));
         d.NextFrame();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         var next = new AppStateDriver(temp.Settings());
         var restored = next.Ui.Layout;
@@ -77,7 +77,7 @@ public sealed class DockPanelsTests
 
         d.Ui.Search.Kinds = SearchKinds.Literals;
         d.NextFrame();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         Assert.Equal(SearchKinds.Literals, new AppStateDriver(temp.Settings()).Ui.Search.Kinds);
     }
@@ -92,7 +92,7 @@ public sealed class DockPanelsTests
         d.Ui.Search.Kinds = SearchKinds.Literals;
         d.AppState.Language = DecompilationLanguage.IL;
         d.NextFrame();
-        SaveSettings(d.AppState);
+        d.AppState.SettingsSaving.Save(d.AppState);
 
         Assert.Equal(SearchKinds.TypesAndMembers, settings.SearchKinds);
         Assert.Equal(DecompilationLanguage.CSharp, settings.Language);

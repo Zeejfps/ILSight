@@ -97,6 +97,9 @@ public sealed class AppState
     /// <summary>Imports bookmarks from files, this app's or the real ILSpy's.</summary>
     public required BookmarkImporting BookmarkImporting { get; init; }
 
+    /// <summary>Saves the settings.</summary>
+    public required SettingsSaving SettingsSaving { get; init; }
+
     /// <summary>Writes an export the exports panel queued, once its turn comes.</summary>
     public required ExportWriting ExportWriting { get; init; }
 

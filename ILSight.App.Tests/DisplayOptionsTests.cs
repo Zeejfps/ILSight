@@ -243,7 +243,7 @@ public sealed class DisplayOptionsTests
 
         SetDisplayOptions(app.Ui, options);
         app.Run();
-        SaveSettings(app.AppState);
+        app.AppState.SettingsSaving.Save(app.AppState);
 
         var restored = new AppStateDriver(temp.Settings());
         Assert.Equal(options, restored.Ui.Display);
