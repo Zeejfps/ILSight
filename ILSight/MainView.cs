@@ -8,6 +8,8 @@ using ILSight.Bookmarking;
 using ILSight.ComparisonPicking;
 using ILSight.Commanding;
 using ILSight.DocumentViewing;
+using ILSight.ProcessBrowsing;
+using ILSight.FrameworkPicking;
 using static ILSight.DocumentPanels;
 
 namespace ILSight;

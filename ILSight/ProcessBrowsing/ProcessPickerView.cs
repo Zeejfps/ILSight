@@ -7,9 +7,9 @@ using ZGF.KeyboardModule;
 using ILSight.Core.Processes;
 using ILSight.Localization;
 using ILSight.Commanding;
-using static ILSight.ProcessPicking;
+using static ILSight.ProcessBrowsing.ProcessPicking;
 
-namespace ILSight;
+namespace ILSight.ProcessBrowsing;
 
 /// <summary>Draws the "open from running process" dialog: the processes on the left, the assemblies the
 /// selected one has loaded on the right.</summary>

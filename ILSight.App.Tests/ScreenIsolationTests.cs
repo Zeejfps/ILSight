@@ -5,6 +5,8 @@ using ILSight.Core;
 using ILSight.CodeView;
 using ILSight.Exporting;
 using ILSight.Bookmarking;
+using ILSight.ProcessBrowsing;
+using ILSight.FrameworkPicking;
 using static ILSight.Settings;
 using static ILSight.ScreenLayout;
 

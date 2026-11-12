@@ -6,7 +6,7 @@ using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.Commanding;
 
-namespace ILSight;
+namespace ILSight.FrameworkPicking;
 
 internal static class FrameworkPickerView
 {

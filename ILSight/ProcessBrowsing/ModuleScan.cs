@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Processes;
 
-namespace ILSight;
+namespace ILSight.ProcessBrowsing;
 
 /// <summary>How far listing the selected process's modules has got. Each case past <see cref="None"/> names
 /// its process, and those that ended name its entry assembly, which a failed listing can still find from the

@@ -1,5 +1,6 @@
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.FrameworkPicking;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;

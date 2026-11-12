@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Processes;
 
-namespace ILSight;
+namespace ILSight.ProcessBrowsing;
 
 /// <summary>What the "open from running process" dialog knows of the processes: which a filter matches, and
 /// what is known of a module listing whatever came of it.</summary>

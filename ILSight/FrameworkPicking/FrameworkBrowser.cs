@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.FrameworkPicking;
 
 /// <summary>What the "open from framework" dialog offers, and the rules it keeps: the runtime's assemblies not open
 /// yet, scanned once, filtered by name, those picked out among them. Its workflow returns once its work is done,

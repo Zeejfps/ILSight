@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core.Processes;
 
-namespace ILSight;
+namespace ILSight.ProcessBrowsing;
 
 /// <summary>Reaches the running processes off the UI thread, and the app's error reports, for
 /// <see cref="ProcessBrowser"/>. What a listing throws comes back as <see cref="Outcome{T}.Failed"/>, except the

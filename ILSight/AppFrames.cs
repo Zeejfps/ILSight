@@ -4,6 +4,7 @@ using ILSight.Core;
 using ILSight.Core.Processes;
 using ILSight.Exporting;
 using ILSight.Commanding;
+using ILSight.ProcessBrowsing;
 using static ILSight.AssemblyLists;
 using static ILSight.CodeDisplay;
 using static ILSight.Decompilation;

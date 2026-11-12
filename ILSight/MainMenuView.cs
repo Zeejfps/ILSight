@@ -6,6 +6,8 @@ using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Exporting;
 using ILSight.Commanding;
+using ILSight.ProcessBrowsing;
+using ILSight.FrameworkPicking;
 using static ILSight.Dialogs;
 using static ILSight.DocumentPanels;
 using static ILSight.Exporting.Exports;

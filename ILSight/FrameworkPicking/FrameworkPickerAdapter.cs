@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.FrameworkPicking;
 
 /// <summary>Reaches the runtime installed on this machine, and the app's error reports, for
 /// <see cref="FrameworkBrowser"/>. What the scan throws comes back as <see cref="Outcome{T}.Failed"/>, except the

@@ -1,4 +1,5 @@
 using ILSight.Core.Processes;
+using ILSight.ProcessBrowsing;
 
 namespace ILSight;
 

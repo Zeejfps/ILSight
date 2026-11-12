@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.FrameworkPicking;
 
 /// <summary>How far scanning the runtime for its assemblies has got.</summary>
 public abstract record RuntimeScan

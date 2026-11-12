@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Processes;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.ProcessBrowsing;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;

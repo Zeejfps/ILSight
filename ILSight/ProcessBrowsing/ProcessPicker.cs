@@ -1,6 +1,6 @@
 using ILSight.Core.Processes;
 
-namespace ILSight;
+namespace ILSight.ProcessBrowsing;
 
 /// <summary>The "open from running process" dialog as its widgets bind it: whether it is open, where its window
 /// is and the filter typed; and <see cref="Browser"/>, the running .NET processes it found and the assemblies the

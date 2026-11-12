@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Processes;
 
-namespace ILSight;
+namespace ILSight.ProcessBrowsing;
 
 /// <summary>
 /// What the "open from running process" dialog found, and the rules it keeps: the running .NET processes, looked

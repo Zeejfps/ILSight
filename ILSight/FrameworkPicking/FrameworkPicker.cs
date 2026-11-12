@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.FrameworkPicking;
 
 /// <summary>The "open from framework" dialog as its widgets bind it: whether it is open and the filter typed;
 /// and <see cref="Browser"/>, the runtime's assemblies it offers, which keeps its own rules.</summary>

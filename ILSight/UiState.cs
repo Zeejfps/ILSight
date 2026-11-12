@@ -9,6 +9,8 @@ using ILSight.BuiltInAssets;
 using ILSight.ComparisonPicking;
 using ILSight.Omnibars;
 using ILSight.DocumentViewing;
+using ILSight.ProcessBrowsing;
+using ILSight.FrameworkPicking;
 
 namespace ILSight;
 
