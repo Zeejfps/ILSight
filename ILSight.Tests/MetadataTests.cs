@@ -450,7 +450,7 @@ public sealed class MetadataTests
     public void CoreLibs_relationship_tables_hold_the_rows_the_metadata_reader_decodes()
     {
         var corelib = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.CoreLibPath);
-        var md = corelib.File.Metadata;
+        var md = LoadedAssemblies.GetFile(corelib).Metadata;
         var types = md.TypeDefinitions.Select(t => (Handle: t, Type: md.GetTypeDefinition(t))).ToArray();
         var fields = md.FieldDefinitions.Select(f => (Handle: f, Field: md.GetFieldDefinition(f))).ToArray();
 

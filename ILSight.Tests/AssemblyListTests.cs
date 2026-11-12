@@ -381,8 +381,7 @@ public sealed class AssemblyListTests
 
         var main = LoadedAssemblies.EnsureMainModule(assembly);
 
-        Assert.True(assembly.TypeSystem.IsValueCreated);
-        Assert.Same(assembly.TypeSystem.Value.MainModule, main);
+        Assert.Same(LoadedAssemblies.EnsureTypeSystem(assembly).MainModule, main);
     }
 
     [Fact]

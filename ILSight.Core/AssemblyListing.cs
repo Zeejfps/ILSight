@@ -325,10 +325,10 @@ public static class AssemblyListing
     {
         var generation = list.Generation;
         var listed = new List<LoadedModule>();
-        foreach (var reference in assembly.File.AssemblyReferences)
+        foreach (var reference in LoadedAssemblies.GetFile(assembly).AssemblyReferences)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var found = assembly.Resolver.FindAssembly(reference);
+            var found = LoadedAssemblies.GetResolver(assembly).FindAssembly(reference);
             if (found is null)
             {
                 continue;
@@ -380,7 +380,7 @@ public static class AssemblyListing
                     return (owner, EntityHandle.AssemblyDefinition);
                 }
 
-                var target = owner.Resolver.ResolveAssembly(new AssemblyReference(owner.File, assembly.Referenced.Value));
+                var target = LoadedAssemblies.GetResolver(owner).ResolveAssembly(new AssemblyReference(LoadedAssemblies.GetFile(owner), assembly.Referenced.Value));
                 return (target, EntityHandle.AssemblyDefinition);
             default:
                 throw new UnreachableException();
@@ -588,7 +588,7 @@ public static class AssemblyListing
         {
             foreach (var assembly in held.Value.Values)
             {
-                if (assembly is LoadedModule loaded && loaded.File == module)
+                if (assembly is LoadedModule loaded && LoadedAssemblies.IsReadFrom(loaded, module))
                 {
                     return loaded;
                 }

@@ -11,12 +11,13 @@ internal static class ReferenceNodes
 
     internal static bool HasReferences(LoadedModule module)
     {
-        if (!module.File.AssemblyReferences.IsEmpty)
+        var file = LoadedAssemblies.GetFile(module);
+        if (!file.AssemblyReferences.IsEmpty)
         {
             return true;
         }
 
-        return module.File.Metadata.GetTableRowCount(TableIndex.ModuleRef) > 0;
+        return file.Metadata.GetTableRowCount(TableIndex.ModuleRef) > 0;
     }
 
     /// <summary>The references of <paramref name="module"/>, sorted by name, under <paramref name="parent"/>.
@@ -25,7 +26,7 @@ internal static class ReferenceNodes
     internal static BrowseNode[] ListAssemblyReferences(LoadedModule module, BrowseNode parent)
     {
         LoadedAssemblies.EnsureReferenceUsage(module);
-        return module.File.AssemblyReferences
+        return LoadedAssemblies.GetFile(module).AssemblyReferences
             .OrderBy(r => r.Name, NaturalStringComparer.Instance)
             .Select(r => BrowseNodes.Create(parent, new NodeSubject.AssemblyReference { Value = new AssemblyReferenceInfo { Module = module, Reference = r } }))
             .ToArray();
@@ -56,7 +57,7 @@ internal static class ReferenceNodes
     /// cannot be found or read.</summary>
     private static LoadedModule? ResolveReferenced(AssemblyReferenceInfo reference)
     {
-        var resolved = reference.Module.Resolver.ResolveAssembly(reference.Reference);
+        var resolved = LoadedAssemblies.GetResolver(reference.Module).ResolveAssembly(reference.Reference);
         if (resolved is not LoadedModule referenced)
         {
             return null;
@@ -71,7 +72,7 @@ internal static class ReferenceNodes
     {
         var module = reference.Module;
         var usage = LoadedAssemblies.EnsureReferenceUsage(module);
-        var metadata = module.File.Metadata;
+        var metadata = LoadedAssemblies.GetFile(module).Metadata;
         var handle = reference.Reference.Handle;
         var used = ForwardedTypes.ListTypesIn(usage, handle)
             .Select(h => CreateUsedTypeInfo(parent, module, h))
@@ -103,7 +104,7 @@ internal static class ReferenceNodes
     /// <summary>The type <paramref name="handle"/> names, used from a reference, as listed under <paramref name="parent"/>.</summary>
     private static TypeReferenceInfo CreateUsedTypeInfo(BrowseNode parent, LoadedModule module, TypeReferenceHandle handle)
     {
-        var metadata = module.File.Metadata;
+        var metadata = LoadedAssemblies.GetFile(module).Metadata;
         var reference = metadata.GetTypeReference(handle);
         var name = metadata.GetString(reference.Name);
         var bare = ReflectionHelper.SplitTypeParameterCountFromReflectionName(name, out var arity);
@@ -213,7 +214,7 @@ internal static class ReferenceNodes
     /// they have children without reading it there.</summary>
     internal static BrowseNode[] ListModuleReferences(LoadedModule module, BrowseNode parent)
     {
-        var metadata = module.File.Metadata;
+        var metadata = LoadedAssemblies.GetFile(module).Metadata;
         var imports = ListImportsByModule(metadata);
         return Enumerable.Range(1, metadata.GetTableRowCount(TableIndex.ModuleRef))
             .Select(MetadataTokens.ModuleReferenceHandle)
@@ -226,7 +227,7 @@ internal static class ReferenceNodes
     private static BrowseNode CreateModuleReference(LoadedModule module, BrowseNode parent, ModuleReferenceHandle handle,
         Dictionary<ModuleReferenceHandle, List<MethodDefinitionHandle>> imports)
     {
-        var metadata = module.File.Metadata;
+        var metadata = LoadedAssemblies.GetFile(module).Metadata;
         var name = metadata.GetString(metadata.GetModuleReference(handle).Name);
         var info = new ModuleReferenceInfo { Module = module, Name = name, ContainsMetadata = IsModuleWithMetadata(metadata, name), Imports = ListImportsFrom(imports, handle) };
         return BrowseNodes.Create(parent, new NodeSubject.ModuleReference { Value = info });
@@ -317,7 +318,7 @@ internal static class ReferenceNodes
             return null;
         }
 
-        var entryPoint = ReadEntryPoint(module.Module.File.Metadata, method);
+        var entryPoint = ReadEntryPoint(LoadedAssemblies.GetFile(module.Module).Metadata, method);
         return new ImportedMethodInfo { Shown = shown, Id = IdStringProvider.GetIdString(method), Label = GetImportLabel(method), DeclaringTypeName = EntityText.FullName(declaring), EntryPoint = entryPoint, ModuleName = module.Name };
     }
 

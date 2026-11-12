@@ -13,7 +13,7 @@ namespace ILSight.Core;
 /// pages beside the code-behind, whose generated members stay out of the C# files.</summary>
 internal sealed class BamlProjectDecompiler(
     LoadedModule assembly, DecompilerSettings settings, IDebugInfoProvider? symbols, CancellationToken cancellationToken)
-    : WholeProjectDecompiler(settings, assembly.Resolver, null, null, symbols)
+    : WholeProjectDecompiler(settings, LoadedAssemblies.GetResolver(assembly), null, null, symbols)
 {
     private const string PageItem = "Page";
     private const string ApplicationDefinitionItem = "ApplicationDefinition";
@@ -30,7 +30,7 @@ internal sealed class BamlProjectDecompiler(
 
     private ProjectItemInfo WriteXaml(string fileName, Stream baml)
     {
-        var typeSystem = new BamlDecompilerTypeSystem(assembly.File, assembly.Resolver);
+        var typeSystem = new BamlDecompilerTypeSystem(LoadedAssemblies.GetFile(assembly), LoadedAssemblies.GetResolver(assembly));
         var result = Baml.Decompile(typeSystem, baml, cancellationToken);
         var codeBehind = FindCodeBehind(typeSystem, result);
         if (codeBehind is null)
@@ -64,7 +64,8 @@ internal sealed class BamlProjectDecompiler(
 
     private string ItemTypeOf(ITypeDefinition codeBehind)
     {
-        if (IsApplicationDefinition(codeBehind, assembly.File))
+        var file = LoadedAssemblies.GetFile(assembly);
+        if (IsApplicationDefinition(codeBehind, file))
         {
             return ApplicationDefinitionItem;
         }

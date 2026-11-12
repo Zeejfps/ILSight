@@ -52,7 +52,7 @@ public static partial class ClassDiagrams
             .Where(static t => !t.IsCompilerGeneratedOrIsInCompilerGeneratedClass())
             .ToArray();
         var names = CreateNames(picked);
-        var types = new DiagramTypes { Names = names, Docs = ReadDocs(assembly.File), Members = new MermaidMembers { Names = names } };
+        var types = new DiagramTypes { Names = names, Docs = ReadDocs(LoadedAssemblies.GetFile(assembly)), Members = new MermaidMembers { Names = names } };
         var namespaces = picked
             .GroupBy(static t => t.Namespace)
             .OrderBy(static g => g.Key, StringComparer.InvariantCulture);

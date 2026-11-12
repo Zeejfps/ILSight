@@ -56,12 +56,12 @@ public sealed class TargetFrameworkTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var detected = list.OpenModule(Trees.TestAssemblyPath);
         var reference = AssemblyNameReference.Parse("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
-        var onCore = detected.Resolver.FindAssemblyFile(reference);
+        var onCore = LoadedAssemblies.GetResolver(detected).FindAssemblyFile(reference);
         list.TargetFrameworks.Pick(detected.FilePath, Frameworks.Net48);
         AssemblyListing.CloseAll(list);
         var picked = list.OpenModule(Trees.TestAssemblyPath);
 
-        var onFramework = picked.Resolver.FindAssemblyFile(reference);
+        var onFramework = LoadedAssemblies.GetResolver(picked).FindAssemblyFile(reference);
 
         var framework = new UniversalAssemblyResolver(Trees.TestAssemblyPath, false, Frameworks.Net48.Text, null, PEStreamOptions.PrefetchEntireImage, MetadataReaderOptions.Default);
         Assert.NotNull(onCore);

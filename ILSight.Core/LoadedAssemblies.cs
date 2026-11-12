@@ -1,4 +1,5 @@
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.Documentation;
@@ -6,6 +7,7 @@ using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using System.Reflection.PortableExecutable;
 using ICSharpCode.Decompiler.DebugInfo;
+using ILSight.Core.Metadata;
 
 namespace ILSight.Core;
 
@@ -14,8 +16,12 @@ public static class LoadedAssemblies
 {
     private static readonly TypeSystemOptions DefaultTypeSystemOptions = DecompilerTypeSystem.GetOptions(Settings.Create());
 
+    /// <summary>The library's objects of each module made here, kept against the module, so they live as long as it
+    /// does.</summary>
+    private static readonly ConditionalWeakTable<LoadedModule, ModuleLibrary> Libraries = new();
+
     /// <summary>The module <paramref name="file"/> holds, known by <paramref name="path"/>, with nothing
-    /// but its headers read yet.</summary>
+    /// but its headers read yet; the library's objects kept against it.</summary>
     internal static LoadedModule CreateModule(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place = null)
     {
         var name = GetModuleName(path, file);
@@ -24,7 +30,7 @@ public static class LoadedAssemblies
         var picked = list.TargetFrameworks.Find(path);
         var targetFramework = picked ?? detected;
         var resolver = AssemblyResolver.Create(list, path, targetFramework, place?.Container.Package);
-        return new LoadedModule
+        var module = new LoadedModule
         {
             List = list,
             FilePath = path,
@@ -32,17 +38,65 @@ public static class LoadedAssemblies
             FullName = GetFullName(file),
             Version = version,
             NameAndVersion = JoinNameAndVersion(name, version),
-            File = file,
             Place = place,
             DetectedTargetFramework = detected,
             TargetFramework = targetFramework,
             IsTargetFrameworkPicked = picked is not null,
+            CanGeneratePdb = file is PEFile pe && DebugSymbolFiles.CanGenerateFor(pe),
+            CanPickPdb = file is PEFile,
+        };
+        Libraries.Add(module, new ModuleLibrary
+        {
+            File = file,
             Resolver = resolver,
             TypeSystem = new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(file, resolver, Settings.Create())),
             DebugSymbols = new Lazy<DebugSymbols?>(() => FindDebugSymbols(list, path, file, place)),
-            CanGeneratePdb = new Lazy<bool>(() => file is PEFile pe && DebugSymbolFiles.CanGenerateFor(pe)),
             ReferenceUsage = new Lazy<ReferenceUsage>(() => ForwardedTypes.ReadUsage(file.Metadata)),
-        };
+        });
+        return module;
+    }
+
+    /// <summary>The library's objects kept against <paramref name="module"/>; throws for one not made here.</summary>
+    private static ModuleLibrary GetLibrary(LoadedModule module)
+    {
+        if (!Libraries.TryGetValue(module, out var library))
+        {
+            throw new InvalidOperationException($"The module '{module.FilePath}' was not read by {nameof(LoadedAssemblies)}.");
+        }
+
+        return library;
+    }
+
+    /// <summary>The library's file <paramref name="module"/> was read from.</summary>
+    internal static MetadataFile GetFile(LoadedModule module)
+    {
+        return GetLibrary(module).File;
+    }
+
+    /// <summary><see cref="GetFile"/> as a portable executable; null for a WebCIL module, which has no PE
+    /// headers.</summary>
+    internal static PEFile? FindPEFile(LoadedModule module)
+    {
+        return GetFile(module) as PEFile;
+    }
+
+    /// <summary>The resolver of what <paramref name="module"/> references.</summary>
+    internal static AssemblyResolver GetResolver(LoadedModule module)
+    {
+        return GetLibrary(module).Resolver;
+    }
+
+    /// <summary>Whether <paramref name="module"/> was read from <paramref name="file"/>, the very one.</summary>
+    internal static bool IsReadFrom(LoadedModule module, MetadataFile file)
+    {
+        return ReferenceEquals(GetFile(module), file);
+    }
+
+    /// <summary>Whether <paramref name="folder"/> shows the metadata of its module's own file, rather than that of its
+    /// debug symbols.</summary>
+    internal static bool IsOwnMetadata(MetadataFolderInfo folder)
+    {
+        return ReferenceEquals(folder.File, GetFile(folder.Module));
     }
 
     /// <summary>The failure listed for the file <paramref name="error"/> tells of.</summary>
@@ -166,22 +220,17 @@ public static class LoadedAssemblies
         return DebugSymbolFiles.ReadPicked(picked);
     }
 
-    /// <summary>Whether a PDB can be generated for <paramref name="module"/>, worked out the first time.</summary>
-    public static bool CanGeneratePdb(LoadedModule module)
-    {
-        return module.CanGeneratePdb.Value;
-    }
 
     /// <summary>The assembly's portable PDB, read the first time; null when it has none.</summary>
     public static DebugSymbols? EnsureDebugSymbols(LoadedModule module)
     {
-        return module.DebugSymbols.Value;
+        return GetLibrary(module).DebugSymbols.Value;
     }
 
     /// <summary>The assembly's type system, read the first time.</summary>
     public static DecompilerTypeSystem EnsureTypeSystem(LoadedModule module)
     {
-        return module.TypeSystem.Value;
+        return GetLibrary(module).TypeSystem.Value;
     }
 
     /// <summary>The module of the type system this assembly's metadata is read into, read the first time.</summary>
@@ -200,13 +249,14 @@ public static class LoadedAssemblies
             return EnsureTypeSystem(module);
         }
 
-        return module.TypeSystems.GetOrAdd(options, static (o, m) => new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(m.File, m.Resolver, o)), module).Value;
+        var library = GetLibrary(module);
+        return library.TypeSystems.GetOrAdd(options, static (o, l) => new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(l.File, l.Resolver, o)), library).Value;
     }
 
     /// <summary>What the assembly uses of the assemblies it references. Read the first time, then kept.</summary>
     public static ReferenceUsage EnsureReferenceUsage(LoadedModule module)
     {
-        return module.ReferenceUsage.Value;
+        return GetLibrary(module).ReferenceUsage.Value;
     }
 
     /// <summary>The assemblies read out of the package. Read the first time, then kept.</summary>

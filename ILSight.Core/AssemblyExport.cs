@@ -60,7 +60,7 @@ public static class AssemblyExport
         decompiler.ProgressIndicator = progress;
         decompiler.StrongNameKeyFile = strongNameKeyFile;
         using var projectFile = new StreamWriter(projectPath.Text);
-        var id = decompiler.DecompileProject(assembly.File, folder, projectFile, cancellationToken);
+        var id = decompiler.DecompileProject(LoadedAssemblies.GetFile(assembly), folder, projectFile, cancellationToken);
         var errors = decompiler.Errors
             .Select(static e => new ExportError(e.Message, e.ToString()))
             .ToList();
@@ -140,12 +140,13 @@ public static class AssemblyExport
 
     private static PEFile PortableExecutableOf(LoadedModule assembly)
     {
-        if (assembly.PEFile is null)
+        var pe = LoadedAssemblies.FindPEFile(assembly);
+        if (pe is null)
         {
             throw new InvalidOperationException($"'{assembly.FilePath}' is no portable executable, so no PDB can map its IL.");
         }
 
-        return assembly.PEFile;
+        return pe;
     }
 
     /// <summary>Writes a portable PDB of each of <paramref name="assemblies"/> into
@@ -172,7 +173,7 @@ public static class AssemblyExport
     private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerOptions options, string folder, bool embedSources,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
-        if (!LoadedAssemblies.CanGeneratePdb(assembly))
+        if (!assembly.CanGeneratePdb)
         {
             return new PdbFailure.NoDebugEntry(assembly);
         }
@@ -210,7 +211,7 @@ public static class AssemblyExport
 
     private static int WeightOf(LoadedModule assembly)
     {
-        var types = assembly.File.Metadata.TypeDefinitions.Count;
+        var types = LoadedAssemblies.GetFile(assembly).Metadata.TypeDefinitions.Count;
         return Math.Max(1, types);
     }
 

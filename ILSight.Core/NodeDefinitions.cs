@@ -287,7 +287,7 @@ public static class NodeDefinitions
             NodeSubject.Resources => new NodePathSegment.Folder(NodeFolder.Resources),
             NodeSubject.ResourceContainer container => new NodePathSegment.Resource(container.Value.Resource.Name),
             NodeSubject.ResourceEntry entry => new NodePathSegment.Resource(entry.Value.Name),
-            NodeSubject.Metadata metadata => new NodePathSegment.Metadata(ReferenceEquals(metadata.Value.File, metadata.Value.Module.File) ? MetadataSource.Own : MetadataSource.Debug),
+            NodeSubject.Metadata metadata => new NodePathSegment.Metadata(LoadedAssemblies.IsOwnMetadata(metadata.Value) ? MetadataSource.Own : MetadataSource.Debug),
             NodeSubject.MetadataTables => new NodePathSegment.Folder(NodeFolder.MetadataTables),
             NodeSubject.MetadataTable table => new NodePathSegment.MetadataPart(table.Value.Key),
             NodeSubject.Package package => package.Value.IsRoot ? null : new NodePathSegment.PackageFolder(package.Value.Folder.FullName),

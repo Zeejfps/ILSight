@@ -30,7 +30,7 @@ internal static class Baml
 
     public static string DecompileToText(LoadedModule assembly, byte[] data, CancellationToken cancellationToken)
     {
-        var typeSystem = new BamlDecompilerTypeSystem(assembly.File, assembly.Resolver);
+        var typeSystem = new BamlDecompilerTypeSystem(LoadedAssemblies.GetFile(assembly), LoadedAssemblies.GetResolver(assembly));
         using var stream = new MemoryStream(data);
         var result = Decompile(typeSystem, stream, cancellationToken);
         return result.Xaml.ToString();

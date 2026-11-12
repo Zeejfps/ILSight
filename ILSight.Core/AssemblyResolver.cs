@@ -36,7 +36,8 @@ public sealed class AssemblyResolver : IAssemblyResolver
 
     public MetadataFile? Resolve(IAssemblyReference reference)
     {
-        return ResolveAssembly(reference)?.File;
+        var resolved = ResolveAssembly(reference);
+        return resolved is null ? null : LoadedAssemblies.GetFile(resolved);
     }
 
     public IDisposable? BeginSnapshot()
@@ -58,7 +59,13 @@ public sealed class AssemblyResolver : IAssemblyResolver
             return null;
         }
 
-        return Exists(path) ? AssemblyListing.TryLoadAssembly(List, path)?.File : null;
+        if (!Exists(path))
+        {
+            return null;
+        }
+
+        var loaded = AssemblyListing.TryLoadAssembly(List, path);
+        return loaded is null ? null : LoadedAssemblies.GetFile(loaded);
     }
 
     public Task<MetadataFile?> ResolveAsync(IAssemblyReference reference)

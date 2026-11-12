@@ -66,7 +66,7 @@ internal static class ResourceNodes
     /// <summary>The grid of the entries: each one's name, its value as text, and the type of value.</summary>
     public static GridSchema<(string Name, string Value, string Type)> Schema(LoadedModule assembly, Lazy<List<KeyValuePair<string, object?>>> entries)
     {
-        return AddColumns(CreateGrid<(string Name, string Value, string Type)>("Resources", assembly.File, () => entries.Value.Select(static e => Row(e.Key, e.Value))), columns =>
+        return AddColumns(CreateGrid<(string Name, string Value, string Type)>("Resources", LoadedAssemblies.GetFile(assembly), () => entries.Value.Select(static e => Row(e.Key, e.Value))), columns =>
         {
             AddValue(columns, "Name", static r => r.Name);
             AddValue(columns, "Value", static r => r.Value, tooltip: static r => r.Value.Length > 80 || r.Value.Contains('\n') ? r.Value : null);
@@ -118,7 +118,7 @@ internal static class ResourceNodes
     internal static ResourceContainerInfo CreateResourcesFile(LoadedModule module, MetadataResource resource)
     {
         var entries = new Lazy<List<KeyValuePair<string, object?>>>(() => ResourceNodes.ReadEntries(resource));
-        var grid = new Lazy<Metadata.MetadataGrid>(() => Metadata.MetadataGrids.CreateGrid(resource.Name, module, module.File, ResourceNodes.Schema(module, entries)));
+        var grid = new Lazy<Metadata.MetadataGrid>(() => Metadata.MetadataGrids.CreateGrid(resource.Name, module, LoadedAssemblies.GetFile(module), ResourceNodes.Schema(module, entries)));
         return new ResourceContainerInfo { Module = module, Resource = resource, Contents = new ContainerContents.ResourcesFile(entries, grid) };
     }
 
@@ -130,7 +130,7 @@ internal static class ResourceNodes
     /// <summary>The module's manifest resources, sorted by name.</summary>
     internal static BrowseNode[] ListResources(BrowseNode parent, LoadedModule module)
     {
-        return module.File.Resources
+        return LoadedAssemblies.GetFile(module).Resources
             .OrderBy(r => r.Name, NaturalStringComparer.Instance)
             .Select(r => BrowseNodes.Create(parent, CreateSubject(module, r)))
             .ToArray();

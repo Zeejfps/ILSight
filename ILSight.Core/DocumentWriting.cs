@@ -486,7 +486,14 @@ internal static class DocumentWriting
 
     private static IEntity? ResolveDefinition(DocumentBuilder builder, MetadataFile metadata, EntityHandle handle)
     {
-        if (builder.Assembly is null || !ReferenceEquals(metadata, builder.Assembly.File))
+        var assembly = builder.Assembly;
+        if (assembly is null)
+        {
+            return null;
+        }
+
+        var own = LoadedAssemblies.GetFile(assembly);
+        if (!ReferenceEquals(metadata, own))
         {
             return null;
         }

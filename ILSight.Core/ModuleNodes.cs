@@ -22,7 +22,7 @@ internal static class ModuleNodes
     /// one it nests in.</summary>
     internal static BrowseNode[] ListModule(BrowseNode parent, LoadedModule module)
     {
-        var file = module.File;
+        var file = LoadedAssemblies.GetFile(module);
         var result = new List<BrowseNode> { MetadataNodes.CreateMetadataFolder(module, parent, file, "Metadata") };
         var symbols = LoadedAssemblies.EnsureDebugSymbols(module);
         if (symbols is not null)

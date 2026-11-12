@@ -160,7 +160,7 @@ public sealed class ExportTests : IDisposable
         var assembly = Trees.TestAssembly;
         var path = _temp.PathOf("Tests.pdb");
 
-        Assert.True(LoadedAssemblies.CanGeneratePdb(assembly));
+        Assert.True(assembly.CanGeneratePdb);
         AssemblyExport.GeneratePdb(assembly, DecompilerOptions.Default, path);
 
         using var stream = File.OpenRead(path);
@@ -234,8 +234,8 @@ public sealed class ExportTests : IDisposable
 
         var bounds = AssemblyExport.PartBounds([tests, coreLib]);
 
-        var testTypes = tests.File.Metadata.TypeDefinitions.Count;
-        var coreLibTypes = coreLib.File.Metadata.TypeDefinitions.Count;
+        var testTypes = LoadedAssemblies.GetFile(tests).Metadata.TypeDefinitions.Count;
+        var coreLibTypes = LoadedAssemblies.GetFile(coreLib).Metadata.TypeDefinitions.Count;
         Assert.Equal(0f, bounds[0]);
         Assert.Equal((float)testTypes / (testTypes + coreLibTypes), bounds[1], 5);
         Assert.Equal(1f, bounds[2]);

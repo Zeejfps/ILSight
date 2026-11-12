@@ -164,7 +164,7 @@ internal static class NodeDecompiler
         switch (export)
         {
             case CodeExport.WholeModule whole:
-                var file = whole.Module.File;
+                var file = LoadedAssemblies.GetFile(whole.Module);
                 var disassembler = CreateDisassembler(whole.Module, output, language, settings, cancellationToken);
                 disassembler.WriteAssemblyReferences(file.Metadata);
                 if (file.Metadata.IsAssembly)
@@ -179,7 +179,7 @@ internal static class NodeDecompiler
                 break;
             case CodeExport.Namespace ns:
                 CreateDisassembler(ns.Module, output, language, settings, cancellationToken)
-                    .DisassembleNamespace(ns.Name, ns.Module.File, TypeHandles(ns));
+                    .DisassembleNamespace(ns.Name, LoadedAssemblies.GetFile(ns.Module), TypeHandles(ns));
                 break;
             default:
                 throw new UnreachableException();
@@ -237,7 +237,7 @@ internal static class NodeDecompiler
         switch (request)
         {
             case DocumentRequest.ModulePreview preview:
-                var file = preview.Module.File;
+                var file = LoadedAssemblies.GetFile(preview.Module);
                 var disassembler = CreateDisassembler(preview.Module, output, language, settings, cancellationToken);
                 WriteAssemblySummary(preview.Module, output);
                 output.WriteLine();
@@ -252,11 +252,11 @@ internal static class NodeDecompiler
                 break;
             case DocumentRequest.Type type:
                 CreateDisassembler(type.Definition.Module, output, language, settings, cancellationToken)
-                    .DisassembleType(type.Definition.Module.File, type.Definition.Handle);
+                    .DisassembleType(LoadedAssemblies.GetFile(type.Definition.Module), type.Definition.Handle);
                 break;
             case DocumentRequest.Member member:
                 var memberDisassembler = CreateDisassembler(member.Definition.Module, output, language, settings, cancellationToken);
-                DisassembleMember(memberDisassembler, member.Definition.Module.File, member.Definition.Handle);
+                DisassembleMember(memberDisassembler, LoadedAssemblies.GetFile(member.Definition.Module), member.Definition.Handle);
                 break;
             case DocumentRequest.Summary or DocumentRequest.Resource or DocumentRequest.Baml:
                 WriteSummary(request, output, cancellationToken);
@@ -295,7 +295,7 @@ internal static class NodeDecompiler
         {
             DetectControlStructure = true,
             ExpandMemberDefinitions = true,
-            AssemblyResolver = assembly.Resolver,
+            AssemblyResolver = LoadedAssemblies.GetResolver(assembly),
             DebugInfo = DebugSymbolsFor(assembly, settings),
         };
     }
@@ -404,7 +404,7 @@ internal static class NodeDecompiler
 
     private static void WriteAssemblySummary(LoadedModule assembly, DocumentBuilder output)
     {
-        var file = assembly.File;
+        var file = LoadedAssemblies.GetFile(assembly);
         WriteComment(output, assembly.FilePath.Text);
         WriteComment(output, assembly.FullName);
         var corHeader = file.CorHeader;
@@ -416,9 +416,10 @@ internal static class NodeDecompiler
                 WriteEntryPoint(assembly, MetadataTokens.EntityHandle(entryPoint), output);
             }
         }
-        if (assembly.PEFile is not null)
+        var pe = LoadedAssemblies.FindPEFile(assembly);
+        if (pe is not null)
         {
-            WriteComment(output, $"Architecture: {ArchitectureOf(assembly.PEFile.Reader.PEHeaders)}");
+            WriteComment(output, $"Architecture: {ArchitectureOf(pe.Reader.PEHeaders)}");
         }
 
         if (assembly.TargetFramework is not null)
@@ -546,7 +547,7 @@ internal static class NodeDecompiler
                 break;
             case SummaryInfo.AssemblyReference reference:
                 WriteComment(output, reference.Reference.FullName);
-                var path = reference.Module.Resolver.FindAssemblyFile(reference.Reference);
+                var path = LoadedAssemblies.GetResolver(reference.Module).FindAssemblyFile(reference.Reference);
                 WriteComment(output, path is null ? "Not found" : $"Resolves to {path}");
                 break;
             case SummaryInfo.Used used:

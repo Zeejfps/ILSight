@@ -452,7 +452,7 @@ public static class BrowseSessions
             return FindOwnerNode(session, module, handle);
         }
 
-        var metadata = module.File.Metadata;
+        var metadata = LoadedAssemblies.GetFile(module).Metadata;
         var type = metadata.GetTypeDefinition((TypeDefinitionHandle)handle);
         var declaringType = type.GetDeclaringType();
         if (!declaringType.IsNil)
@@ -636,7 +636,7 @@ public static class BrowseSessions
         }
 
         var metadata = ListChildren(session, EnsureRoot(session, module))
-            .FirstOrDefault(f => IsMetadataOf(f, module.File));
+            .FirstOrDefault(f => IsMetadataOf(f, LoadedAssemblies.GetFile(module)));
         if (metadata is null)
         {
             return null;

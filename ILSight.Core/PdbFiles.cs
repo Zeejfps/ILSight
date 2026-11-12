@@ -15,12 +15,13 @@ public static class PdbFiles
     /// file.</summary>
     public static PdbCheck Check(LoadedModule module, string pdbPath)
     {
-        if (module.PEFile is null)
+        var pe = LoadedAssemblies.FindPEFile(module);
+        if (pe is null)
         {
             return PdbCheck.Unreadable;
         }
 
-        return Check(module.PEFile, pdbPath);
+        return Check(pe, pdbPath);
     }
 
     /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>.</summary>

@@ -153,7 +153,7 @@ internal sealed class AnalyzerScope
             foreach (var assembly in Assemblies)
             {
                 ct.ThrowIfCancellationRequested();
-                var module = assembly.File;
+                var module = LoadedAssemblies.GetFile(assembly);
                 if (!module.IsAssembly || checkedFiles.Contains(module))
                 {
                     continue;
@@ -163,7 +163,8 @@ internal sealed class AnalyzerScope
                 foreach (var reference in module.AssemblyReferences)
                 {
                     var known = AssemblyListing.FindKnown(List, reference, exactOrNewer: true);
-                    if (known?.File == current)
+                    var knownFile = known is null ? null : LoadedAssemblies.GetFile(known);
+                    if (knownFile == current)
                     {
                         found = true;
                         break;
@@ -215,14 +216,15 @@ internal sealed class AnalyzerScope
         foreach (var assembly in Assemblies)
         {
             ct.ThrowIfCancellationRequested();
-            if (!friends.Contains(assembly.Name) || assembly.File.IsMetadataOnly)
+            var file = LoadedAssemblies.GetFile(assembly);
+            if (!friends.Contains(assembly.Name) || file.IsMetadataOnly)
             {
                 continue;
             }
 
-            if (ReferencesScopeType(assembly.File.Metadata, typeScope.Name, typeScope.Namespace))
+            if (ReferencesScopeType(file.Metadata, typeScope.Name, typeScope.Namespace))
             {
-                yield return assembly.File;
+                yield return file;
             }
         }
     }

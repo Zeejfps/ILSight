@@ -92,7 +92,7 @@ public static class AssemblySearch
 
         private static void ScanEntities(Search search, LoadedModule assembly)
         {
-            var reader = assembly.File.Metadata;
+            var reader = LoadedAssemblies.GetFile(assembly).Metadata;
             var kinds = search.Query.Kinds;
             var types = (kinds & SearchKinds.Types) != 0;
             var methods = (kinds & SearchKinds.Methods) != 0;
@@ -234,7 +234,7 @@ public static class AssemblySearch
 
         private static void ScanLiterals(Search search, LoadedModule assembly)
         {
-            var file = assembly.File;
+            var file = LoadedAssemblies.GetFile(assembly);
             var reader = file.Metadata;
             var literal = SearchLiteral.FromQuery(search.Query);
             foreach (var handle in reader.MethodDefinitions)
@@ -448,7 +448,7 @@ public static class AssemblySearch
             return;
         }
 
-        var reader = assembly.File.Metadata;
+        var reader = LoadedAssemblies.GetFile(assembly).Metadata;
             var rows = handle.Kind switch
             {
                 HandleKind.TypeDefinition => reader.TypeDefinitions.Count,

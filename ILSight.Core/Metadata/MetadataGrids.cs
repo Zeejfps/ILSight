@@ -250,7 +250,8 @@ public static class MetadataGrids
     public static CodeReference.Navigable? FindDefinition(MetadataGrid grid, int row)
     {
         var file = grid.File;
-        if (!ReferenceEquals(file, grid.Module.File) || grid.Schema.Table is null)
+        var own = LoadedAssemblies.GetFile(grid.Module);
+        if (!ReferenceEquals(file, own) || grid.Schema.Table is null)
         {
             return null;
         }

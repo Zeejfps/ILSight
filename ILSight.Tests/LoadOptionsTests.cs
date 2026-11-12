@@ -58,7 +58,7 @@ public sealed class LoadOptionsTests
         var opened = list.OpenModule(Trees.TestAssemblyPath);
 
         Assert.NotSame(readBefore, opened);
-        Assert.Equal(MetadataReaderOptions.None, opened.File.Metadata.Options);
+        Assert.Equal(MetadataReaderOptions.None, LoadedAssemblies.GetFile(opened).Metadata.Options);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public sealed class LoadOptionsTests
         var (_, projected) = OpenWith(DecompilerOptions.Default);
         var (_, plain) = OpenWith(Off(DecompilerToggle.ApplyWindowsRuntimeProjections));
 
-        Assert.Equal(MetadataReaderOptions.ApplyWindowsRuntimeProjections, projected.File.Metadata.Options);
-        Assert.Equal(MetadataReaderOptions.None, plain.File.Metadata.Options);
+        Assert.Equal(MetadataReaderOptions.ApplyWindowsRuntimeProjections, LoadedAssemblies.GetFile(projected).Metadata.Options);
+        Assert.Equal(MetadataReaderOptions.None, LoadedAssemblies.GetFile(plain).Metadata.Options);
     }
 }

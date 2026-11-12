@@ -8,7 +8,7 @@ internal static class EntityNodes
     /// a nested type, a member, or types that may derive from it.</summary>
     internal static bool CanListMembers(DefinedType type)
     {
-        var definition = type.Module.File.Metadata.GetTypeDefinition(type.Handle);
+        var definition = LoadedAssemblies.GetFile(type.Module).Metadata.GetTypeDefinition(type.Handle);
         return !definition.BaseType.IsNil || definition.GetInterfaceImplementations().Count > 0 || definition.GetNestedTypes().Length > 0 ||
                DerivedTypes.CanHave(type.Symbol) || definition.GetFields().Count > 0 || definition.GetMethods().Count > 0 ||
                definition.GetProperties().Count > 0 || definition.GetEvents().Count > 0;
