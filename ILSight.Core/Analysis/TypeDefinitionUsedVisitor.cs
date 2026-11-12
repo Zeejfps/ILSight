@@ -30,7 +30,7 @@ internal sealed class TypeDefinitionUsedVisitor(ITypeDefinition definition) : Ty
 
     public override IType VisitTypeDefinition(ITypeDefinition type)
     {
-        _found |= AnalyzerHelpers.IsSame(type, definition);
+        _found |= Members.IsSame(type, definition);
         return base.VisitTypeDefinition(type);
     }
 

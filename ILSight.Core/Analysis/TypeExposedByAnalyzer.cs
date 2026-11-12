@@ -20,9 +20,9 @@ internal static class TypeExposedByAnalyzer
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition analyzed, AnalyzerContext context)
     {
         var visitor = new TypeDefinitionUsedVisitor(analyzed);
-        foreach (var type in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, analyzed), context.CancellationToken))
+        foreach (var type in AnalyzerScope.Create(context.AssemblyList, analyzed).GetTypes(context.CancellationToken))
         {
-            if (analyzed.Kind == TypeKind.Enum && AnalyzerHelpers.IsSame(type, analyzed) || Members.IsHidden(type))
+            if (analyzed.Kind == TypeKind.Enum && Members.IsSame(type, analyzed) || Members.IsHidden(type))
             {
                 continue;
             }

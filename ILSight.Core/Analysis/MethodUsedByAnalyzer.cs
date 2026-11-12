@@ -1,6 +1,7 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
 using System.Reflection.Metadata;
+using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Analysis;
@@ -42,9 +43,9 @@ internal static class MethodUsedByAnalyzer
             yield return parent;
         }
 
-        var users = AnalyzerHelpers.FindMembersWithCode(AnalyzerHelpers.GetScope(context, analyzed), 
+        var users = AnalyzerScope.Create(context.AssemblyList, analyzed).FindMembersWithCode(
             method => method.ParentModule is MetadataModule module
-                && AnalyzerHelpers.HasToken(AnalyzerHelpers.FindMethodBody(context, method), (opCode, token) => References(module, opCode, token)),
+                && MethodBodies.HasToken(MethodBodies.Find(method), (opCode, token) => References(module, opCode, token)),
             context.CancellationToken);
         foreach (var user in users)
         {
@@ -54,7 +55,7 @@ internal static class MethodUsedByAnalyzer
         IMethod ParentOf(IMethod method)
         {
             return DecompilerFacts.GetMetadataModule(method).GetDefinition(
-                AnalyzerHelpers.EnsureMapping(context, DecompilerFacts.GetDeclaringTypeDefinition(method)).GetParentMethod(DecompilerFacts.GetMethodHandle(method)));
+                context.EnsureMapping(DecompilerFacts.GetDeclaringTypeDefinition(method)).GetParentMethod(DecompilerFacts.GetMethodHandle(method)));
         }
 
         bool References(MetadataModule module, ILOpCode opCode, EntityHandle token)
@@ -65,14 +66,37 @@ internal static class MethodUsedByAnalyzer
                 return false;
             }
 
-            if (!AnalyzerHelpers.IsPossibleReferenceTo(token, module.MetadataFile, analyzed)
-                && (baseMethod is null || !AnalyzerHelpers.IsPossibleReferenceTo(token, module.MetadataFile, baseMethod)))
+            if (!IsPossibleReferenceTo(token, module.MetadataFile, analyzed)
+                && (baseMethod is null || !IsPossibleReferenceTo(token, module.MetadataFile, baseMethod)))
             {
                 return false;
             }
 
             var member = (module.ResolveEntity(token) as IMember)?.MemberDefinition;
-            return member is not null && (opCode == ILOpCode.Callvirt && baseMethod is not null && AnalyzerHelpers.IsSame(member, baseMethod) || AnalyzerHelpers.IsSame(member, analyzed));
+            return member is not null && (opCode == ILOpCode.Callvirt && baseMethod is not null && Members.IsSame(member, baseMethod) || Members.IsSame(member, analyzed));
+        }
+    }
+
+    private static bool IsPossibleReferenceTo(EntityHandle member, MetadataFile module, IMethod analyzedMethod)
+    {
+        if (member.IsNil)
+        {
+            return false;
+        }
+
+        var metadata = module.Metadata;
+        switch (member.Kind)
+        {
+            case HandleKind.MethodDefinition:
+                return member == analyzedMethod.MetadataToken && module == analyzedMethod.ParentModule?.MetadataFile;
+            case HandleKind.MemberReference:
+                var mr = metadata.GetMemberReference((MemberReferenceHandle)member);
+                return mr.GetKind() == MemberReferenceKind.Method && metadata.StringComparer.Equals(mr.Name, analyzedMethod.Name);
+            case HandleKind.MethodSpecification:
+                var ms = metadata.GetMethodSpecification((MethodSpecificationHandle)member);
+                return IsPossibleReferenceTo(ms.Method, module, analyzedMethod);
+            default:
+                return false;
         }
     }
 }

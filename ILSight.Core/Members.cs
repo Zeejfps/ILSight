@@ -8,6 +8,12 @@ internal static class Members
 {
     private static readonly DecompilerSettings Settings = Core.Settings.Create();
 
+    /// <summary>Whether both name the same definition: the same token in the same file.</summary>
+    public static bool IsSame(IEntity entity, IEntity other)
+    {
+        return entity.MetadataToken == other.MetadataToken && entity.ParentModule?.MetadataFile == other.ParentModule?.MetadataFile;
+    }
+
     public static bool IsHidden(IEntity entity)
     {
         return IsMissing(entity) || IsCompilerGenerated(entity);

@@ -20,9 +20,9 @@ internal static class TypeInstantiatedByAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition type, AnalyzerContext context)
     {
-        return AnalyzerHelpers.FindMembersWithCode(AnalyzerHelpers.GetScope(context, type), 
+        return AnalyzerScope.Create(context.AssemblyList, type).FindMembersWithCode(
             method => method.ParentModule is MetadataModule module
-                && AnalyzerHelpers.HasToken(AnalyzerHelpers.FindMethodBody(context, method), (opCode, token) => Instantiates(module, opCode, token, type)),
+                && MethodBodies.HasToken(MethodBodies.Find(method), (opCode, token) => Instantiates(module, opCode, token, type)),
             context.CancellationToken);
     }
 
@@ -39,7 +39,7 @@ internal static class TypeInstantiatedByAnalyzer
             HandleKind.TypeDefinition or HandleKind.TypeReference => module.ResolveType(token, default)?.GetDefinition(),
             _ => null,
         };
-        return found?.ParentModule is not null && AnalyzerHelpers.IsSame(found, type);
+        return found?.ParentModule is not null && Members.IsSame(found, type);
     }
 
     private static ITypeDefinition? FindConstructedType(MetadataModule module, EntityHandle token)

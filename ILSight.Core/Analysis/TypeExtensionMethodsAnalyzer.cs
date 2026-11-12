@@ -24,7 +24,7 @@ internal static class TypeExtensionMethodsAnalyzer
             yield break;
         }
 
-        foreach (var type in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, analyzed), context.CancellationToken))
+        foreach (var type in AnalyzerScope.Create(context.AssemblyList, analyzed).GetTypes(context.CancellationToken))
         {
             if (!type.HasExtensions)
             {
@@ -39,7 +39,7 @@ internal static class TypeExtensionMethodsAnalyzer
                 }
 
                 var extended = method.Parameters[0].Type.GetDefinition();
-                if (extended is not null && AnalyzerHelpers.IsSame(extended, analyzed))
+                if (extended is not null && Members.IsSame(extended, analyzed))
                 {
                     yield return method;
                 }

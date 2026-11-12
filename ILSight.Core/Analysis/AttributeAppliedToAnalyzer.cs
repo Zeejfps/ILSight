@@ -27,11 +27,11 @@ internal static class AttributeAppliedToAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition attributeType, AnalyzerContext context)
     {
-        var scope = AnalyzerHelpers.GetScope(context, attributeType);
+        var scope = AnalyzerScope.Create(context.AssemblyList, attributeType);
         var known = attributeType.IsBuiltinAttribute();
-        var found = AnalyzerHelpers.GetModulesInScope(scope, context.CancellationToken).SelectMany(module =>
+        var found = scope.GetModules(context.CancellationToken).SelectMany(module =>
         {
-            var ts = AnalyzerHelpers.GetTypeSystem(scope, module);
+            var ts = scope.GetTypeSystem(module);
             context.CancellationToken.ThrowIfCancellationRequested();
             return known.IsCustomAttribute() ? CustomAppliedTo(attributeType, ts) : BuiltinAppliedTo(known, ts);
         });
@@ -42,7 +42,7 @@ internal static class AttributeAppliedToAnalyzer
     {
         var metadata = ts.MainModule.MetadataFile.Metadata;
         var decoder = new FindTypeDecoder(ts.MainModule, attributeType);
-        var owners = AnalyzerHelpers.AttributeOwners(ts, a => AnalyzerHelpers.IsCustomAttributeOfType(a.Constructor, metadata, decoder));
+        var owners = CustomAttributes.ListOwners(ts, a => CustomAttributes.IsOfType(a.Constructor, metadata, decoder));
         return owners.Concat(SecurityAppliedTo(attributeType, ts));
     }
 

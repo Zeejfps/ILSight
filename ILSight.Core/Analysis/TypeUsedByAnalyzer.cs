@@ -23,10 +23,10 @@ internal static class TypeUsedByAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition analyzedType, AnalyzerContext context)
     {
-        var scope = AnalyzerHelpers.GetScope(context, analyzedType);
-        return AnalyzerHelpers.GetModulesInScope(scope, context.CancellationToken)
+        var scope = AnalyzerScope.Create(context.AssemblyList, analyzedType);
+        return scope.GetModules(context.CancellationToken)
             .AsParallel().AsOrdered()
-            .SelectMany(module => AnalyzeModule(analyzedType, AnalyzerHelpers.GetTypeSystem(scope, module))
+            .SelectMany(module => AnalyzeModule(analyzedType, scope.GetTypeSystem(module))
                 .Distinct()
                 .Where(s => !analyzedType.Equals((s as IEntity)?.DeclaringTypeDefinition)));
     }
@@ -36,9 +36,9 @@ internal static class TypeUsedByAnalyzer
         var module = typeSystem.MainModule;
         var metadata = module.MetadataFile.Metadata;
         var decoder = new FindTypeDecoder(module, analyzedType);
-        var attributeDecoder = AnalyzerHelpers.CreateDecoder(module, analyzedType);
+        var attributeDecoder = FindTypeInAttributeDecoder.Create(module, analyzedType);
 
-        foreach (var result in AnalyzerHelpers.AttributeOwners(typeSystem, UsesType))
+        foreach (var result in CustomAttributes.ListOwners(typeSystem, UsesType))
         {
             yield return result;
         }
@@ -109,7 +109,7 @@ internal static class TypeUsedByAnalyzer
             {
                 return false;
             }
-            return AnalyzerHelpers.IsCustomAttributeOfType(attribute.Constructor, metadata, decoder)
+            return CustomAttributes.IsOfType(attribute.Constructor, metadata, decoder)
                 || value.FixedArguments.Any(a => IsFound(a.Value)) || value.NamedArguments.Any(a => IsFound(a.Value));
         }
     }
@@ -132,7 +132,7 @@ internal static class TypeUsedByAnalyzer
 
     private static bool IsUsedInMethodBody(MetadataFile module, MethodDefinitionHandle handle, FindTypeDecoder decoder)
     {
-        var body = AnalyzerHelpers.ReadBody(module, handle);
+        var body = MethodBodies.Read(module, handle);
         if (body is null)
         {
             return false;
@@ -153,7 +153,7 @@ internal static class TypeUsedByAnalyzer
             {
             }
         }
-        return AnalyzerHelpers.HasToken(body, (_, token) => IsUsedByMember(token));
+        return MethodBodies.HasToken(body, (_, token) => IsUsedByMember(token));
 
         bool IsUsedByMember(EntityHandle member)
         {

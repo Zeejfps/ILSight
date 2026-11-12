@@ -22,7 +22,7 @@ internal static class FieldAccessAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(FieldAccessKind kind, IField field, AnalyzerContext context)
     {
-        return AnalyzerHelpers.FindMembersWithCode(AnalyzerHelpers.GetScope(context, field), method => Accesses(kind, method, field, context), context.CancellationToken);
+        return AnalyzerScope.Create(context.AssemblyList, field).FindMembersWithCode(method => Accesses(kind, method, field, context), context.CancellationToken);
     }
 
     private static bool Accesses(FieldAccessKind kind, IMethod method, IField field, AnalyzerContext context)
@@ -33,9 +33,9 @@ internal static class FieldAccessAnalyzer
         }
 
         var file = module.MetadataFile;
-        return AnalyzerHelpers.EnsureMapping(context, DecompilerFacts.GetDeclaringTypeDefinition(method)).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
-            .Any(part => AnalyzerHelpers.HasToken(AnalyzerHelpers.ReadBody(file, part), (opCode, token) =>
-                Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && AnalyzerHelpers.IsSame(found, field)));
+        return context.EnsureMapping(DecompilerFacts.GetDeclaringTypeDefinition(method)).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
+            .Any(part => MethodBodies.HasToken(MethodBodies.Read(file, part), (opCode, token) =>
+                Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && Members.IsSame(found, field)));
     }
 
     private static bool Is(FieldAccessKind kind, ILOpCode opCode)

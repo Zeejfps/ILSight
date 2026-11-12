@@ -28,20 +28,20 @@ internal static class MethodUsesAnalyzer
 
         var file = method.ParentModule.MetadataFile;
         var module = AssemblyListing.EnsureTypeSystemOf(context.AssemblyList, file).MainModule;
-        return AnalyzerHelpers.EnsureMapping(context, method).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
+        return context.EnsureMapping(method).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
             .SelectMany(part => ScanMethod(module, part)).Distinct();
     }
 
     private static IEnumerable<IEntity> ScanMethod(MetadataModule module, MethodDefinitionHandle handle)
     {
-        var body = AnalyzerHelpers.ReadBody(module.MetadataFile, handle);
+        var body = MethodBodies.Read(module.MetadataFile, handle);
         if (body is null)
         {
             yield break;
         }
 
         var types = new TypeDefinitionCollector();
-        foreach (var (opCode, token) in AnalyzerHelpers.ListTokens(body))
+        foreach (var (opCode, token) in MethodBodies.ListTokens(body))
         {
             var operandType = opCode.GetOperandType();
             if (operandType == OperandType.Type)
