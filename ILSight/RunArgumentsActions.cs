@@ -4,14 +4,13 @@ using static ILSight.AssemblyLists;
 namespace ILSight;
 
 /// <summary>Doing what the arguments of a run ask: those the app starts with, and those later runs hand the
-/// window already open; either tells of the ones ignored.</summary>
+/// window already open; and what to tell of the ones ignored, which the edge that takes them tells.</summary>
 public static class RunArgumentsActions
 {
     /// <summary>Decompiles to the language <paramref name="arguments"/> name, and starts with the assembly list they
     /// name, emptied first when they ask for that.</summary>
     public static void ApplyStartupOptions(AppState appState, RunArguments arguments)
     {
-        ReportIgnored(appState, arguments);
         if (arguments.Language is not null)
         {
             appState.Language = arguments.Language.Value;
@@ -34,7 +33,6 @@ public static class RunArgumentsActions
     /// started in the tabs, the one showing what the files name among them, for the edge to start.</summary>
     public static async Task<TabLoads> ApplyArgumentsAsync(AppState appState, RunArguments arguments, CancellationToken ct)
     {
-        ReportIgnored(appState, arguments);
         if (arguments.Language is not null)
         {
             appState.Language = arguments.Language.Value;
@@ -57,12 +55,16 @@ public static class RunArgumentsActions
         return (await switching).With(clearing).With(await opening);
     }
 
-    private static void ReportIgnored(AppState appState, RunArguments arguments)
+    /// <summary>What to tell the user of the arguments of <paramref name="arguments"/> that were ignored, or null when
+    /// none was.</summary>
+    public static AppProblem? FindIgnored(RunArguments arguments)
     {
-        if (arguments.Ignored.Count > 0)
+        if (arguments.Ignored.Count == 0)
         {
-            Errors.Report(appState, new AppProblem.ArgumentsIgnored(arguments.Ignored.ToList()));
+            return null;
         }
+
+        return new AppProblem.ArgumentsIgnored(arguments.Ignored.ToList());
     }
 
     /// <summary>Opens <paramref name="files"/>, then shows the namespace, type or member they

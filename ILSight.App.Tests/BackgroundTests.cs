@@ -19,22 +19,17 @@ public sealed class BackgroundTests
     }
 
     [Fact]
-    public void A_workflow_that_throws_after_awaiting_is_reported_as_unexpected()
+    public async Task A_workflow_that_throws_after_awaiting_is_reported_as_unexpected()
     {
-        var reported = new List<AppProblem>();
         var work = new BackgroundWork();
+        var errors = new ErrorLog();
         var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        Background.Start(work, "failing", FailAsync(resume.Task), problem =>
-        {
-            reported.Add(problem);
-            done.SetResult();
-        });
+        new WorkflowRunner(work, errors).Start("failing", _ => FailAsync(resume.Task));
 
         resume.SetResult();
-        done.Task.Wait(TimeSpan.FromSeconds(10));
+        await WorkflowRunnerTests.WaitUntilEndedAsync(work);
 
-        var problem = Assert.IsType<AppProblem.Unexpected>(Assert.Single(reported));
+        var problem = Assert.IsType<AppProblem.Unexpected>(Assert.Single(errors.Entries).Problem);
         Assert.IsType<InvalidOperationException>(problem.Error);
         Assert.Equal(Strings.En.ErrorUnexpected, ProblemTexts.Describe(Strings.En, problem).Title);
     }

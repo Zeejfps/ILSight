@@ -51,7 +51,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         Commands.StartRestoringAnalyses(_appState, Analysis.BeginRestoring(_appState.Analyzer, _appState.Assemblies));
         WatchUserThemesOnStartup(_appState);
         CheckForUpdatesOnStartup(_appState);
-        Background.StartForever(ApplyPendingArgumentsAsync(), problem => Errors.Report(_appState, problem));
+        _appState.Workflows.StartUntilShutdown(ApplyPendingArgumentsAsync);
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -142,13 +142,26 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     /// each one arriving wakes the app. Each is a workflow of its own, so arguments that fail are reported by
     /// the workflow runner rather than ending this loop, which would leave the pipe answering later runs with no
     /// one to follow them.</summary>
-    internal async Task ApplyPendingArgumentsAsync()
+    internal async Task ApplyPendingArgumentsAsync(CancellationToken ct)
     {
-        await foreach (var arguments in _inbox.Reader.ReadAllAsync())
+        await foreach (var arguments in _inbox.Reader.ReadAllAsync(ct))
         {
+            ReportIgnored(arguments);
             Commands.StartShowing(_appState, nameof(ApplyArgumentsAsync), ct => ApplyArgumentsAsync(_appState, arguments, ct));
             UiState.FrontAsked = true;
         }
+    }
+
+    /// <summary>Tells the user of the arguments of <paramref name="arguments"/> that were ignored, if any.</summary>
+    private void ReportIgnored(RunArguments arguments)
+    {
+        var ignored = RunArgumentsActions.FindIgnored(arguments);
+        if (ignored is null)
+        {
+            return;
+        }
+
+        Errors.Report(_appState, ignored);
     }
 
     internal void SaveOnExit(WindowBounds window)

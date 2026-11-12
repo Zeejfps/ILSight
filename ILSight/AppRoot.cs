@@ -20,6 +20,7 @@ internal static class AppRoot
     {
         var appState = RestoreAppState(loadResult.Settings, session);
         ReportProblem(appState, Settings.FindProblem(appState.SettingsPlace, loadResult.Problem));
+        ReportProblem(appState, RunArgumentsActions.FindIgnored(arguments));
         RunArgumentsActions.ApplyStartupOptions(appState, arguments);
         return appState;
     }

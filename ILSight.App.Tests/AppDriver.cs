@@ -27,7 +27,7 @@ internal sealed class AppDriver
         // so one empty frame, which takes no time, fetches it.
         var ui = Frames.Run(0f, static ui => ui);
         Driver.WakeOnPost(ui.RequestFrame);
-        Background.StartForever(App.ApplyPendingArgumentsAsync(), problem => Errors.Report(AppState, problem));
+        AppState.Workflows.StartUntilShutdown(App.ApplyPendingArgumentsAsync);
         Frames.BeforeFrame = PumpAtFrameTime;
         Driver.Step = RunFramesInPlace;
     }
