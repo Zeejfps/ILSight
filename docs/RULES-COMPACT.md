@@ -31,7 +31,9 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   interface, not a record of functions (the build checks none of a delegate's name or token). Take the parts of the
   application state the function uses, not the whole state; only an edge or a function that works on all of it
   (saving a session) takes it. Passing the state on to a callee doesn't count: **narrow from the bottom up**, callees
-  first, then the caller.
+  first, then the caller. A caller converted before its callee keeps passing the state on as before, until the callee
+  is narrowed (convert it next); never through a port member carrying the whole state, which narrows nothing (its
+  test still builds the state, and a fake besides) and which RL0105 reports when the state holds a listed service.
 - Name port members for what the class needs (`FindOrderAsync`, `Now`, `LogOrderConfirmed`). Their signatures carry
   values: no `DbContext`, `IQueryable`, `HttpClient` or `ILogger`, and no type that holds one (a library's feed object
   keeping an `HttpClient`). Pass what the class decides with (`PackageSource`); the adapter keeps the library's
@@ -73,7 +75,11 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   object, and saving reads the live values back into a settings value.
 - **Adapters** (`<Class>Adapter`) implement the port with real infrastructure. No branching on business data; branching
   that translates the infrastructure (a 404 → `null`, a unique-key violation → "already exists") belongs there, and so
-  does calling another use case the root built for a port member that asks for it.
+  does calling another use case the root built for a port member that asks for it. The test: **would a second adapter
+  of the same port need the branch?** One on which of this source's encodings a record has (a bookmark's own place,
+  else ILSpy's description of it looked up) is about the source: translation. One every adapter would repeat (what a
+  gone place means: drop the bookmark or keep it as missing) is a decision, the use case's: in an adapter, the same use
+  case lost the bookmark from the file and kept it from the store, and its fake-port test kept it.
 - **Adapters that share code:** ones that differ only in values (a folder, the kind's facts) are one adapter, generic
   over the kind, built per kind by the root. Where they also differ in what they do, the I/O they share is a type of
   its own each adapter holds (infrastructure: only adapters use it, it decides nothing), not a base adapter with hooks:
@@ -286,8 +292,14 @@ measured: RL0807 (a dropped value of a type marked `[MustUse]`).
   anything else whose loss leaves state stuck (a ticket for I/O only the caller starts: dropped, the tab says
   "loading" forever), a type marked `[MustUse]`, an attribute the project declares (any namespace). Mark the type, not
   each method. RL0807 reports it, or its `T?` or a list of it, as a statement, after `_ =`, as the body of a lambda
-  whose delegate returns nothing (`Later(() => ShowNode(...))`), or in a local nothing reads. Not a union made only to
-  be un-droppable: RL0804 misses a list of them and a lambda's.
+  whose delegate returns nothing (`Later(() => ShowNode(...))`), in a local nothing reads, or as a `Task<T>` taken as a
+  plain `Task` (`Workflows.Start(name, ct => handler.HandleAsync(...))`, a `Task` local or argument). Not a union made
+  only to be un-droppable: RL0804 misses a list of them and a lambda's.
+- **Several kinds of work handed back through one chain** (decompiles, diagrams' card reads) are one `[MustUse]` value
+  that makes its consumer handle each kind: one handler per kind (a list of a union of the kinds, or a carrier with
+  `Switch(decompile, readCards, ...)`), so a kind added later doesn't compile at the edge until it is started. Not
+  lists the edge reads one by one (a new kind is carried and never started) and not a tuple (the edge discards the new
+  element to compile again; RL0807 can't see inside).
 - EF never maps the union: a row type, `row.ToOrder()` (throws `InvalidDataException` on contradictory columns) and
   `order.CopyTo(trackedRow)` through `Match`.
 
@@ -328,7 +340,8 @@ port member returning a sequence that isn't its own iterator).
   a result whose ticket isn't its newest: linking saves work, it doesn't decide what's shown. Where the workflow needs
   the I/O's outcome after it, the port takes the ticket (not a second bare token: it swaps) and answers `Stopped` when
   the ticket's work was cancelled; its adapter links the ticket with the workflow's token and lets the workflow's own
-  cancellation through (shutdown still ends the workflow, it doesn't become `Stopped`).
+  cancellation through (shutdown still ends the workflow, it doesn't become `Stopped`). Work a workflow starts that
+  nothing after it needs is handed back the same way, whatever cancels it (R010).
 - An adapter that turns failures into results lets cancellation through: catch the failures it reports, and a timeout
   as `catch (TaskCanceledException) when (!ct.IsCancellationRequested)`; never `OperationCanceledException` (or
   everything) into `Failed`, or shutdown is reported as a failure and every workflow must re-check its token.
@@ -349,6 +362,10 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   effect that can't be undone (R009).
 - Only an edge starts work. Features return a `Task` their caller awaits; one that starts its own work returns before
   it's done (callers read stale state) on a token nobody can cancel. List the job runner in `rulelab.ambient_types`.
+  **A workflow awaits only what its own later steps need:** work it starts that nothing after it needs (a reload's
+  lookup of the reopened tabs' nodes) is handed back to the edge as a kind of its own (R008). Awaited, it held back the
+  loads handed back with it (a tab whose code was ready said "loading") and its cancellation lost them; recorded as
+  pending for the frame edge it works a frame later, which is the form for work a draw finds.
 - **Frame-driven UIs** (the draw isn't an edge): the input's frame shows the input taken and nothing it made untrue
   as current. Split each workflow at its first wait: what it changes before waiting (cached answers included) changes
   in the input's frame, what it can't know yet shows as under way ("loading") in place of what it replaces, and only
@@ -360,11 +377,19 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   half a second); bounded work stays in the frame. Work found while drawing (icons, details) is recorded as
   pending on its owner, once per item, and an edge starts it (the frame edge before the next draw, or one queued
   command): one workflow for a batch the port takes, else one per item.
+- **A draw takes what its input changes** (R001 point 8): the parts, and where the change keeps a rule across several
+  (the active tab, its history, the newest intent), the type that holds them, made if missing (R004), with what the
+  change only reads (the language) as values. Not the whole state below the draw's root, and not a command queued only
+  for want of the parts (a frame late). Handed the whole state or the parts, a bookmarks panel written later moved the
+  tab past the history and the intent, and a late lookup overtook it; the type keeps the rule (`DEMO_CS0122`).
 - **Screen state the edge reads back after the draw** (where a tab's view stands) is kept with the content the view
   drew: the view records the version it drew (the tab counts its changes), and the read-back stores it on the tab
   while it still shows that version, on what kept that content once replaced (its history entry), never on newer
   content. Then a change in the draw needs no view and no reordering; don't delay the change to a command after the
   read-back (a frame late), and reading back before the next draw doesn't help (the view still holds the old line).
+  Where several owners' content meets (one history for every tab), the key is unique across all of them and a value:
+  the owner's never-reused id with its version, or one shared stamp. Not the version alone (two tabs count alike), the
+  owner's position (taken after a close) or the owner object (it keeps closed tabs alive).
 - A widget learns of its input when drawn: state drawn above it shows the input next frame. Draw the state after the
   widget where the layout allows; otherwise the draw asks for a frame. In a UI that draws on demand, whatever changes
   drawn state with no frame to follow asks for one: the draw (`ui.RequestFrame()`) for what it changed after drawing it
@@ -428,7 +453,8 @@ return `bool` in a condition).
 Build: RL1301 (a second top-level type in a file), RL1302 (a file named after none of its types), RL1303 (a type
 written in two or more hand-written places), RL1305 (a nested type that is a unit of its own: code that uses none of
 its container's private members, or a type code outside its container names); suggestions: RL1304 (a top-level shape
-only one type uses), RL1306 (a namespace named like a type). Generated code doesn't count.
+only one type uses), RL1306 (a namespace named like a type), RL1307 (a nested type its container keeps in a field and
+calls, reaching the container's private members). Generated code doesn't count.
 
 - One top-level type per file, named after it (`Order.cs`; `Result` and `Result<T>` share `Result.cs`). Related types
   share a folder and its namespace, not a file.
@@ -437,17 +463,21 @@ only one type uses), RL1306 (a namespace named like a type). Generated code does
   folder, where they're seen with it; a group with none (every type named for it and used across the app: `Theme*`)
   stays put, since a folder would add a `using` to each user for nothing. Types several groups use stay in the folder
   above them. The folder is named for its group (`SettingsFormat/`, `CodeView/`, `Exporting/`), never like a type in
-  it or in a namespace around it: the namespace hides that type (`SettingsJson.Read` finds the namespace).
+  it or in a namespace around it: the namespace hides that type (`SettingsJson.Read` finds the namespace). When names
+  nest (`Code*` holds `CodeView*`, compared by words), the longest whose group holds the parts is the seed; a shorter
+  one only for parts the longer miss (what it adds is used across the app: no parts).
 - **"Uses" means names it or reaches it through another type's members** (a property, parameter or return type others
   call). The test: nested `private` in its one user, does everything compile? Narrow members first (one only its own
   type calls is private). Nested, private, go its user's **parts**: shapes that declare no methods (records, DTOs,
   enums, interfaces, delegates; a format's DTOs with their serializer context), and code that works on its container's
-  private members (a lock's scope, an enumerator). Nested, **public**, go the contract a type declares for others to
+  private members as what the container hands out (a lock's scope it returns, an enumerator, a progress callback it
+  passes on), never code the container keeps in a field and calls (its own code split in two by topic). Nested, **public**, go the contract a type declares for others to
   name through it: a union's cases (R008) and a use case's `IPorts` (R001: its adapter implements it). Any other type
   with code of its own (a sub-view, one analyzer of a set, a converter, a test's fake), or that others name, has its own
   file even with one user: nested, it reaches the user's private state (a nested tab strip broke the workspace's rule)
   and doubles the file. A group used through one type is placed member by member; the shapes a moved type names go
-  with it.
+  with it. Narrowing is judgement: no per-project check sees another project's calls (on ILSight, 430 of 597
+  candidates are called from one).
 - A helper only this file uses that can't be nested (extension methods need a top-level static class) is a `file` type.
 - `partial` only where a tool writes the other half (`[GeneratedRegex]`, `[LibraryImport]`, a `JsonSerializerContext`, a
   UI generator, a designer file). Never to split a class you wrote: a class too big for one file is split into types by

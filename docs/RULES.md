@@ -71,16 +71,16 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R002 | `!` (RL0201), `== null` (RL0202, except in expression trees, which can't contain `is`), nullable suppressions (RL0203) | where to narrow, what null means |
 | R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306: also `bool CloseTab`, `bool Set`), a `Get*` returning -1 or `default` of a struct (RL0307) | whether a name is a verb; choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) or travel through the codebase's own parameters (-1 for "no row"); a `TrySet` that should count changes; a placeholder returned to fill a generic `T` |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
-| R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806); suggestion while measured: a dropped value of a type marked `[MustUse]` (RL0807) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case); which types leave state stuck when dropped (the marker is put by hand); a value passed to code that ignores it |
+| R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806); suggestion while measured: a dropped value of a type marked `[MustUse]`, a `Task<T>` of one taken as a plain `Task` included (RL0807) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case); which types leave state stuck when dropped (the marker is put by hand); a value passed to code that ignores it; whether a value carrying several kinds of work makes its consumer handle each (a handler per kind) |
 | R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122) |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
-| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters use: I/O code they share), the composition root, tests and edge code (`[Edge]` types, `rulelab.infrastructure` folders) (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; a decision that relied on an object's identity once the port passes values (a key's hand-written `Equals` without `GetHashCode` is CS8851); ports, adapters, what counts as a decision |
+| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters use: I/O code they share), the composition root, tests and edge code (`[Edge]` types, `rulelab.infrastructure` folders) (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; a decision that relied on an object's identity once the port passes values (a key's hand-written `Equals` without `GetHashCode` is CS8851); ports, adapters, what counts as a decision (would a second adapter of the port repeat the branch?); a caller converted before its callee (passes the state on, no port member carrying it) |
 | R006 | – | all, including whether an input is read all-or-nothing or leniently |
-| R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849); a job runner listed in `rulelab.ambient_types` started from a draw (RL0101); an I/O step called without what its state change returned (the compiler: CS1503 / CS7036); edge code outside a type marked `[Edge]` (RL0101, RL0102, RL0902 report it, and say so) | parallel queries on one `DbContext`; moving async work out of sync-only callers; what the input's frame must show (and where a workflow's first wait is); work started from a draw by other means; state drawn before the widget that changes it; whether a frame follows a change in a UI that draws on demand; where the edge's read-back of the screen is kept |
+| R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849); a job runner listed in `rulelab.ambient_types` started from a draw (RL0101); an I/O step called without what its state change returned (the compiler: CS1503 / CS7036); edge code outside a type marked `[Edge]` (RL0101, RL0102, RL0902 report it, and say so); a shortcut past the type that keeps a rule across the parts a draw changes (the compiler, once the type holds them: CS0122) | parallel queries on one `DbContext`; moving async work out of sync-only callers; what the input's frame must show (and where a workflow's first wait is); what a draw takes (the parts it changes, or the type that keeps their rule; never the whole state below the draw's root); work started from a draw by other means; state drawn before the widget that changes it; whether a frame follows a change in a UI that draws on demand; where the edge's read-back of the screen is kept, and whether its key is unique across every owner the store holds; follow-up work no later step needs, awaited instead of handed back |
 | R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestions while measured: an adapter's catch that turns cancellation into a result (RL0903), an adapter's port member returning a sequence that isn't its own iterator (RL0904), a dropped ticket handed back (RL0807) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object leaving an adapter; another call to a stream's source inside its loop; cancellation turned into a result without a catch (an awaiter or continuation); whether a workflow's token is linked to everything that cancels it on purpose, and to nothing else (a deadline is a timeout), and a canceller found partway handed back to the edge; where an effect can't be undone, and whether what follows it is one transaction or a durable record's |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
 | R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
-| R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303), a nested type that is a unit of its own: code that uses none of its container's private members, or a type code outside its container names (RL1305); suggestions while measured: a top-level shape only one type uses (RL1304), a namespace named like a type (RL1306); generated code doesn't count | whether a group has parts and gets a folder; whether a nested type's private reach is its container's own operation; narrowing a member to its users; how to split a class that was split across files (by what each part knows, R004); whether code is a test's input |
+| R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303), a nested type that is a unit of its own: code that uses none of its container's private members, or a type code outside its container names (RL1305); suggestions while measured: a top-level shape only one type uses (RL1304), a namespace named like a type (RL1306), a nested type its container keeps in a field and calls while it reaches the container's private members (RL1307); generated code doesn't count | whether a group has parts and gets a folder, and which of nested names is its seed (the longest whose group holds the parts); whether a nested type's private reach is its container's own operation (handed out, not held); narrowing a member to its users (another project's calls aren't seen); how to split a class that was split across files (by what each part knows, R004); whether code is a test's input |
 
 To break a rule on purpose, suppress it with the reason written down:
 `#pragma warning disable RL0802 // Deliberate: demonstrates the discarded-result trap`, or on a member
@@ -324,6 +324,11 @@ one's port, extends it, or takes something beside its own.
      In testing, a test of that panel built all 5 services on the state; narrowing only the update left it so, and
      after the panel followed, the test built a feed, a status bar and one fake port, which now answers only whether the
      update happened (S16, S20).
+     **A caller converted before its callee keeps passing the state on** to the callee as it did, until the callee is
+     narrowed; convert the callee next. Not a port member that carries the whole state for its adapter to pass on: it
+     narrows nothing. In testing (S16), the panel converted first, its port carrying the state, still took the state
+     (to pass it on), and its test built all 5 services and a fake port besides; where the state holds a listed service,
+     the build reports such a member (RL0105: ILSight's `AppState` holds its `WorkflowRunner`).
 
 ### Adapters
 
@@ -337,6 +342,16 @@ one's port, extends it, or takes something beside its own.
   propagates (R009). A library that throws lazily is translated where its values are read, and cancellation is not a
   failure to translate (R009 "Adapters translate"). Calling another use case the composition root built, for a port
   member that asks for it, is translating too ("Where an effect comes from", S20).
+  **The test: would a second adapter of the same port need the branch?** One on which of this source's encodings a
+  record has (a bookmark record's own place, else ILSpy's description of it looked up), on a status code or a wire
+  format, is about the source: another adapter has nothing like it, so it is translation. One every adapter would
+  have to repeat (what a place that no longer exists means: drop the bookmark, or keep it as missing) is about what
+  the answer means to the app: a decision, the use case's. In testing (S25, a bookmarks file and ILSight's settings
+  store behind one port), the file adapter's branch between its two encodings needed nothing in the store's adapter;
+  a file adapter that also dropped a gone member's bookmark made the same use case lose it from the file and keep it
+  from the store, and the use case's test with a fake port kept it; the encodings handed to the use case instead made
+  the port carry the file's records and a lookup of ILSpy's descriptions, which the store's adapter couldn't answer
+  (the import failed when a place was gone).
 - **Adapters that share code.** Adapters that differ only in values (a folder, the kind's facts) are one adapter,
   generic over the kind when the port is, built per kind by the composition root. Where they also differ in what they
   do, the I/O they share is a type of its own that each adapter holds: infrastructure, like a library's I/O client
@@ -467,7 +482,7 @@ outside the composition root.
 - [ ] Effects reached through an object passed in (a method that reads the disk, runs work, reports an error) are on the port; plain data and pure methods on it are used directly.
 - [ ] Another use case is reached through a member of this one's port, and the adapter calls it; never its port, its effects, or the use case itself beside the port.
 - [ ] Only the composition root, an edge (`[Edge]`), constructs use cases and adapters; tests build the application through it.
-- [ ] Only edges and functions that work on the whole state take it; callees were narrowed first, then their callers.
+- [ ] Only edges and functions that work on the whole state take it; callees were narrowed first, then their callers (a caller converted first passes the state on as before, never through a port member).
 - [ ] Per-document / per-request objects come from a factory the root built; configured values arrive through constructors or `required init`, never a settings pass.
 - [ ] No `DateTime.Now`/`UtcNow`, `Guid.NewGuid()`, `Random`, `File`, `Environment`, `HttpClient` or `ILogger` in a class that makes decisions.
 - [ ] No call to the codebase's own services (job runners, error logs, caches), static or through an object passed in, in a class that makes decisions; they are listed in `rulelab.ambient_types`.
@@ -476,7 +491,7 @@ outside the composition root.
 - [ ] Per-call data arrives through method parameters.
 - [ ] Pure collaborators are called directly, not injected. Pure code that differs per kind is `static abstract` on the
       kind's type (the use case's type parameter); a handler parameter only carries the caller's own policy.
-- [ ] Adapters contain no business branching.
+- [ ] Adapters contain no business branching: a branch a second adapter of the same port would repeat is the use case's.
 - [ ] Adapters that differ only in values are one adapter; I/O that adapters share is a type they hold, not a base adapter.
 
 ---
@@ -1580,13 +1595,39 @@ commands.Later(() => Navigation.ShowNode(tab, node)); // RL0807: an Action drops
 
 RL0807 reports a value of a marked type (or its `T?`, or a collection of them) used as a statement (awaited, or
 through `?.`), discarded with `_ =`, returned by a lambda whose delegate returns nothing, or put in a local nothing
-reads. In testing (S10), ILSight's `DecompileTicket?` dropped those three ways (a call as a statement, the list a
-reload returns, a lambda handed to `Later` where `ShowLater` was meant) compiled cleanly and left every tab "loading"
-with no load started; with the type marked, each drop is reported. A union for "a load or nothing" (`Showing.Loading` /
+reads, and a `Task<T>` of one taken as a plain `Task`, which nobody can read the `T` from: a lambda or a method group
+handed to a runner whose delegate returns `Task` (`Workflows.Start(name, ct => handler.HandleAsync(...))`), a `Task`
+local, an argument, a `return`, `Task.WhenAll` over tasks of different types (a task kept in a variable first can
+still be read, and isn't reported). In testing (S10), ILSight's `DecompileTicket?` dropped those four ways (a call as a
+statement, the list a reload returns, a lambda handed to `Later` where `ShowLater` was meant, a workflow returning the
+ticket run through a runner that takes a plain `Task`) compiled cleanly and left every tab "loading" with no load
+started; with the type marked, each drop is reported. A union for "a load or nothing" (`Showing.Loading` /
 `AlreadyShown`) behaved the same when used, but RL0804 reported one of the three drops, and every caller wrote a
 `Switch` for what `T?` already says. Marking methods instead (JetBrains' `[MustUseReturnValue]`) would take 26
 attributes in ILSight, and miss the 27th method. RL0807 is a suggestion while measured; a project that marks a type
 can make it an error in its `.editorconfig` (`dotnet_diagnostic.RL0807.severity = error`).
+
+**Several kinds of work handed back through one chain are one `[MustUse]` value that makes its consumer handle each
+kind it carries:** one handler per kind, as a union's `Switch`, so a kind added later doesn't compile at the edge
+until the edge starts it (`DEMO_CS7036`). Either a list of a union of the kinds, or a carrier whose one method takes a
+handler per kind:
+
+```csharp
+[MustUse]
+public sealed class TabLoads                                   // decompiles, diagrams' card reads, comparisons to run
+{
+    public void Switch(Action<DecompileTicket> decompile, Action<CardsRead> readCards, Action<ComparisonRun> compare)
+}
+
+loads.Switch(StartDecompiling, StartReadingCards, StartComparing);   // the edge: a kind added is a handler added
+```
+
+Not lists the edge reads one by one, and not a tuple. In testing (S11, a third kind added to ILSight's two), the
+carrier whose lists the edge read (ILSight's `TabLoads`) carried the new kind to the edge, which still compiled and
+never started it ("comparing" for good); the tuple broke every deconstruction, and the edge compiled again once the
+new element was discarded (`var (decompiles, reads, _) = work;`), with the same result, and RL0807 doesn't look
+inside a tuple. A handler per kind and a list of a union both started all three; combining two results is the
+carrier's own `With` or concatenating lists.
 
 ### Persistence
 
@@ -1624,7 +1665,8 @@ update without a tracking number has no case to become). Response DTOs stay flat
 - [ ] A question only some cases answer: a virtual member with a "doesn't apply" default (only where that default is harmless for a future case), or one `is` check per case in another layer, not a `Match` that answers "none" for most cases; never `switch` with `_`.
 - [ ] `Switch` only for synchronous side effects that differ per case.
 - [ ] Transitions are `To<State>` on the source state, and their result is used.
-- [ ] A value whose loss leaves state stuck (a ticket for I/O the caller must start) is a type marked `[MustUse]`, and none is dropped (RL0807).
+- [ ] A value whose loss leaves state stuck (a ticket for I/O the caller must start) is a type marked `[MustUse]`, and none is dropped (RL0807), a `Task<T>` of it taken as a plain `Task` included.
+- [ ] Several kinds of work handed back together make the consumer handle each: one handler per kind (a union's `Switch`, or the carrier's), not lists read one by one or a tuple.
 - [ ] Persisted unions go through a row type with `ToX()` / `CopyTo(trackedRow)`.
 - [ ] Independent optional fields stay nullable.
 
@@ -1858,7 +1900,8 @@ while (!stoppingToken.IsCancellationRequested)
   "Reopening..." stayed for good; the other three ran it. In every form a late answer was refused by the tab's own
   check; a tab that trusted the token showed the old load over the newer one. Handing back costs a step: the workflow
   no longer returns once the code is shown, so its test starts the load it gets back, and a caller that reaches it
-  through its port returns the ticket on.
+  through its port returns the ticket on. Work the workflow starts that nothing after it needs is handed back the same
+  way, whether or not anything cancels it partway (R010 point 4: awaited, it held back the loads handed back with it).
 - **Cancellation stops a workflow only where stopping leaves nothing half done.** Up to the first effect that can't be
   undone (a card charged, a message sent to another system), the request's token may stop it. That effect and what
   must follow it can't be left to a token that may stop between them, and nothing held in the process survives a
@@ -1891,7 +1934,7 @@ while (!stoppingToken.IsCancellationRequested)
 - [ ] An adapter that turns failures into results lets `OperationCanceledException` through when its own token was cancelled (a timeout is a failure).
 - [ ] A lazily-throwing library's values are read inside the adapter member's catch; no library object leaves the adapter, and a sequence it returns is its own iterator, each item read inside its catch (RL0904); a stream is read in one loop with no other call to its source inside.
 - [ ] Catch-alls exist only at the edge, around one unit of work, and end quietly only for cancellation someone asked for (shutdown, newer work, a closed dialog: the workflow's token is linked to each), never for a timeout, the app's own deadlines included (kept apart, reported or a result case).
-- [ ] A workflow whose state change creates a canceller partway (a ticket) ends there and returns it; the edge starts the I/O under it, linked to it (no catch in the workflow, no token added to the runner's).
+- [ ] A workflow whose state change creates a canceller partway (a ticket) ends there and returns it; the edge starts the I/O under it, linked to it (no catch in the workflow, no token added to the runner's); so is work it starts that nothing after it needs.
 - [ ] An effect that can't be undone and what must follow it are one transaction, or a durable record's worker does them under the record's key; never left to the request's token, `CancellationToken.None` or a grace period.
 - [ ] No empty catch, no `throw ex;`, no log-and-rethrow.
 
@@ -1933,6 +1976,15 @@ together on one `DbContext` threw "a second operation was started on this contex
    purpose, never to a deadline (R009 "Cancellation someone asked for"; what the workflow's own state change creates
    partway, the workflow hands back to the edge with the I/O it cancels), keeps track of it, and reports its unexpected
    failure (R009). List your job runner in `rulelab.ambient_types` (R001) so a start outside an edge is reported.
+   **A workflow awaits only what its own later steps need.** Work it starts that nothing after it needs (after a
+   reload, the lookup that finds the nodes of the tabs reopened from saved documents) is handed back to the edge with
+   the rest of what it hands back, as a kind of its own (R008 "Several kinds of work handed back"), and the edge starts
+   it beside the rest. In testing (S15), awaited (ILSight's form), the lookup held back the loads handed back with it:
+   a reshown tab whose code was ready said "loading" until another tab's lookup ended, and when the lookup was
+   cancelled that tab's load was lost with it; started inside the workflow (ILSight's form before), it outlived
+   shutdown and changed a tab after it. Handed back, the tab showed its code at once and shutdown stopped the lookup.
+   Recorded as pending on the state for the frame edge to start was right too, a frame later and only once a frame
+   came (S08): that is the form for work a draw finds, where nothing returns to an edge.
 5. **No `async void`** (VSTHRD100): its exceptions can't be caught by the caller. The one exception is an event handler,
    which must be `async void`: it is an edge (R009), so wrap its body in a `try` / `catch` and suppress VSTHRD100 on it
    with the reason.
@@ -1975,6 +2027,28 @@ draw, or from a **command** the draw queues, which the frame loop starts after t
   the I/O without its ticket didn't compile (CS1503), and a forged ticket's result was refused. Where it hurts: if the
   queued I/O never starts, the state says "Downloading..." for nothing (verified), hence the frame edge's duty, and
   the ticket is a type the build won't let anyone drop (`[MustUse]`, R008) (S06).
+- **A draw takes what its input changes, as any function takes the parts it uses** (R001 point 8). The change is made
+  in the input's frame, so the view that reads the input is handed the state the change needs. Where the change keeps
+  a rule across several parts (what the active tab shows, the history of it, and the newest intent, which a lookup
+  still running must not overtake), it is a method of the type that holds those parts; when nothing holds them, that
+  type is missing (R004): make it, and hand the views it, with the values the change only reads (the language) as
+  values. Not the whole app state below the draw's root (the root view, which hands each view its parts, is where it
+  stops), and not a command queued only because the view lacks the parts (a frame late).
+  ```csharp
+  public static void Draw(Screen screen, Browsing browsing, string language, ListSelection tree, int? clickedRow)
+  {
+      ...
+      browsing.Show(Nodes[clickedRow.Value], language);   // a new intent, a place in the history, the tab: one rule
+  }
+  ```
+  In testing (S13), the change in the draw showed the click in its frame whether the view took the whole state, the
+  parts or the type; ILSight's queued command showed it a frame late. A bookmarks panel written later, handed the whole
+  state or the parts, showed its node through the tab's own method, skipping the new intent and the history, and a
+  lookup that answered after it took the tab away from the bookmark the user clicked last; handed the type, that
+  shortcut doesn't compile (`DEMO_CS0122`), and the whole state holding the type behaved as the type: the type keeps
+  the rule, not what the view takes. What the view takes decides its test: the tree view's test built the whole
+  state's 6 members (a use case and a fake port it never calls among them; ILSight's `AppState` has 34 required
+  members), the parts 4, the type and the language 2.
 - **State the edge reads back from the screen belongs to the content it was drawn for.** A frame edge that copies
   the screen into the app after the draw (where a tab's view stands, kept for its history) stores it with the content
   the view drew: the view records the version of the content it drew (the tab counts its content's changes, R003),
@@ -2000,6 +2074,17 @@ draw, or from a **command** the draw queues, which the frame loop starts after t
   were right, and the click's frame showed the new tab; ILSight's queued command was right a frame later. A change
   that reads the view back first (`Navigate(node, view)`) was right too, but then every change needs the view, which a
   workflow continuing between frames doesn't have.
+  **Where several owners' content meets** (one history that every tab's Back and Forward go through), what identifies
+  drawn content is unique across every owner the store holds, for as long as it holds it, and is a value: the owner's
+  id, which the code that creates owners hands out and never reuses, with the owner's own version (R003's count), or
+  one stamp that every owner's change takes from the same counter. Not the version alone (two tabs count the same
+  numbers), not the owner's position (another takes it after a close), and not the owner object (the store then keeps
+  closed owners alive, or every way of closing one must remember to forget it).
+  In testing (S14, two tabs and the app's history; a tab closed, another opened), the version alone stored the new
+  tab's line 30 on the other tab's entry too, and Back showed it there at 30, not 12; the tab's position did the same
+  once a close moved the tabs along. The id with the version, a shared stamp and the entry holding the tab were each
+  right; holding the tab kept a closed tab's 256 KB document alive (ILSight keeps 200 entries), and forgetting it on
+  close released it until a later way of closing every tab skipped that step.
 - **Work the draw finds it needs** (a row's icon, its details) **is recorded as pending on the state that owns it,
   once per item, and an edge starts it for everything pending**: the frame edge before the next draw, or one command
   the draw queues (a frame sooner). The draw shows "loading" from the pending state, in the same frame. Start one
@@ -2026,10 +2111,11 @@ draw, or from a **command** the draw queues, which the frame loop starts after t
 - [ ] No `.Result`, `.Wait()` or `.GetAwaiter().GetResult()` on a task.
 - [ ] Every async method takes `CancellationToken ct` last and passes it to every async call.
 - [ ] Every task is awaited: no `_ = ...Async(...)`, no `async void` except event handlers (with a `try` / `catch`).
-- [ ] Only an edge starts work; features return tasks their callers await.
+- [ ] Only an edge starts work; features return tasks their callers await, and await only what their later steps need (other work they start is handed back to the edge).
 - [ ] Frame-driven UIs: the input's frame shows the input taken and nothing it made untrue as current (each workflow split at its first wait: I/O, or CPU work that grows with the user's data; what waits shown as under way), and the queued part takes what that change returned; work found while drawing is recorded as pending and started by an edge.
+- [ ] A draw takes the parts its input changes, or the type that keeps their rule (made if missing), never the whole state below the draw's root, and never a command queued only for want of them.
 - [ ] State drawn before the widget that changes it is drawn after it, or the draw asks for a frame; in a UI that draws on demand, the draw asks for a frame for work it left for the frame edge, and the edge for each workflow that ends.
-- [ ] The edge's read-back of the screen is kept with the content the view drew (a version the view records): on the tab while it still shows it, on what kept it once replaced, never on newer content; the change itself stays in the input's frame.
+- [ ] The edge's read-back of the screen is kept with the content the view drew (a version the view records): on the tab while it still shows it, on what kept it once replaced, never on newer content; the change itself stays in the input's frame. Where several owners' content meets (one history for every tab), the key is unique across them: the owner's never-reused id with its version, or one shared stamp.
 - [ ] No parallel queries on one `DbContext`.
 
 ---
@@ -2255,6 +2341,12 @@ code of its own brings the same bug back (S05).
    users are: a folder would add a `using` to each file that uses it (24) and show nothing a name search doesn't. A type
    several groups use stays in the folder above them; a project's root holds what the whole app shares and the
    composition root. The namespace follows the folder.
+   **When names nest** (`Code*` holds `CodeView*`; names compared by their words, so `Diagrams` is not a `Diagram*`
+   name), the group's name is the longest whose group holds the parts: a shorter one seeds a group of its own only for
+   parts the longer ones miss. What a shorter name adds besides is named for it and used across the app, a group with
+   no parts, which stays put. On ILSight's use graph (all four projects), `CodeView*` gathers 8 types and 4 parts, and
+   `Code*` the same 4 with 20 more types, each used from outside the group (62 outside users instead of 46); the same
+   test picks `DiagramView` over `Diagram` and `MetadataGrid` over `Metadata`.
 3. **A folder is named for its group, never like a type**: not like a type in it, nor like one in a namespace around
    it. A namespace hides a type of its name from the code around it: a folder named after its main type makes every
    caller outside write `SettingsJson.SettingsJson.Read` (the plain call finds the namespace: `DEMO_CS0234`), and one
@@ -2271,8 +2363,13 @@ code of its own brings the same bug back (S05).
    - **shapes** only that type uses: types that declare no methods (records and DTOs, computed properties included;
      enums, interfaces, delegates): a helper record (S03), the wire DTOs only a format's reader uses with their
      serializer context (S02);
-   - **code that works on its container's private members**, the container's own operation: a lock's scope, an
-     enumerator.
+   - **code that works on its container's private members**, the container's own operation: what the container hands
+     out for others to call (a scope it returns, an enumerator, a progress callback it passes to a library, a test's
+     fake it gives the code under test). Not code the container keeps in a field and calls to do part of its own work:
+     that is the container split in two by topic, as a split class is (S05's tab strip, which the workspace held and
+     forwarded to, broke the workspace's rule). On ILSight, of the 9 nested types with code that reach their
+     container's privates, 7 are handed out (3 lock scopes, a progress callback, 3 tests' fakes) and 2 are a union's
+     cases; none is held. S05's strip is (RL1307).
 
    Nested, **public**, go the contract a type declares for others to name through it: **a union's cases** (R008: callers
    build and match them, `Outcome.Failed`) and **a use case's `IPorts`** (R001: its adapter implements it,
@@ -2330,20 +2427,24 @@ adds a `using` to each file outside that uses it (ILSight's code view: 9 files).
 a type declared in two or more hand-written places, RL1305 a nested type that is a unit of its own (code that uses none
 of its containers' private members, or a type code outside its container names; a union's cases and `IPorts` aside).
 Suggestions while measured: RL1304, a top-level shape that only one type names and none of its members shows (another
-project's uses, a test's, aren't seen), and RL1306, a namespace named like a type in it or around it. Code a tool
+project's uses, a test's, aren't seen), RL1306, a namespace named like a type in it or around it, and RL1307, a nested
+type with code that reaches its container's private members while the container keeps it in a field or property. Code a tool
 generated doesn't count. Files whose layout is itself data opt out of the layout checks (all but RL1303) with
 `rulelab.one_type_per_file = false` (the sandbox's scenario files, which pair variants on purpose; a decompiler's test
 fixtures). Measured: on the sandbox 6 findings in 3 files for RL1301 / RL1302, and 3 nested collaborators and a type
 named outside its container for RL1305, all real; on ILSight 486 for RL1301-RL1303 and 53 for RL1305 (and 1 in its
-fixtures, where the option belongs), no false alarms; RL1304 found 2 there, one named by a test. Not checked: whether a
-group has parts (its seed is a name), whether a nested type's private reach is its container's own operation (S05's
-strip reaches the list too), and whether a member could be narrowed.
+fixtures, where the option belongs), no false alarms; RL1304 found 2 there, one named by a test; RL1307 0 there (of its 9
+nested types that reach their container's privates, 7 are handed out and 2 are a union's cases) and S05's strip in the
+sandbox. Not checked: whether a group has parts (its seed is a name,
+the longest that holds the parts), and whether a member could be narrowed: another project's calls aren't seen, and on
+ILSight 430 of the 597 members whose own project calls them only from their own type are called from another project
+(the app calls the core's, the tests both), while both production assemblies show their internals to the tests.
 
 ### Checklist
 
 - [ ] Each file declares one top-level type and is named after it (types that differ only in arity share it).
-- [ ] Related types share a folder, not a file; a group with parts (types only it uses) has its folder, named for the group and like no type.
-- [ ] Nested types are their container's parts: private, shapes only it uses and code that works on its private members; public, a union's cases and a use case's `IPorts`; any other type with code of its own, or that others name, has its own file (members narrowed to their users first).
+- [ ] Related types share a folder, not a file; a group with parts (types only it uses) has its folder, named for the group and like no type; of nested names, the longest that holds the parts seeds it.
+- [ ] Nested types are their container's parts: private, shapes only it uses and code that works on its private members as what it hands out (a scope, an enumerator, a callback), never code it keeps and calls; public, a union's cases and a use case's `IPorts`; any other type with code of its own, or that others name, has its own file (members narrowed to their users first).
 - [ ] A helper only one file uses that can't be nested (extension methods) is a `file` type.
 - [ ] `partial` appears only where a tool writes the other half; no type is written by hand in two places.
 - [ ] A class too big for one file is split into types by what each knows (R004), not into files by topic.
