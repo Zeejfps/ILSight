@@ -108,18 +108,18 @@ internal static class SessionQueries
             return NodeLookup.FindMetadataRow(list, TestSession.Shared, reference);
         }
 
-        public IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default)
+        public IAsyncEnumerable<IReadOnlyList<SearchFind>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default)
         {
             return AssemblySearch.SearchAsync(TestSession.Shared, list.Assemblies, query, cancellationToken);
         }
 
-        public IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(SearchQuery query, IEnumerable<LoadedModule> assemblies,
+        public IAsyncEnumerable<IReadOnlyList<SearchFind>> SearchAsync(SearchQuery query, IEnumerable<LoadedModule> assemblies,
             CancellationToken cancellationToken = default)
         {
             return AssemblySearch.SearchAsync(TestSession.Shared, assemblies, query, cancellationToken);
         }
 
-        public IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(string text, SearchKinds kinds = SearchKinds.TypesAndMembers,
+        public IAsyncEnumerable<IReadOnlyList<SearchFind>> SearchAsync(string text, SearchKinds kinds = SearchKinds.TypesAndMembers,
             CancellationToken cancellationToken = default)
         {
             return AssemblySearch.SearchAsync(TestSession.Shared, list.Assemblies, SearchQueries.ParseQuery(text, kinds), cancellationToken);

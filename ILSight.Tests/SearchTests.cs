@@ -336,12 +336,13 @@ public sealed class SearchTests
         Assert.Equal("innamespace:\"\" ", SearchQueries.AddScope("", "innamespace", ""));
     }
 
-    private static async Task<List<SearchResult>> CollectAsync(IAsyncEnumerable<IReadOnlyList<SearchResult>> search)
+    /// <summary>The hits of <paramref name="search"/>, which searches every assembly it is given.</summary>
+    private static async Task<List<SearchResult>> CollectAsync(IAsyncEnumerable<IReadOnlyList<SearchFind>> search)
     {
         var results = new List<SearchResult>();
         await foreach (var batch in search)
         {
-            results.AddRange(batch);
+            results.AddRange(batch.Select(static f => Assert.IsType<SearchFind.Hit>(f).Result));
         }
 
         return results;

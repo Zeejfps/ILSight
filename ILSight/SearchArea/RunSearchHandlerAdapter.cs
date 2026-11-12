@@ -14,7 +14,7 @@ public sealed class RunSearchHandlerAdapter(ErrorLog errors, BrowseSession sessi
         Errors.Report(errors, problem);
     }
 
-    public async IAsyncEnumerable<Outcome<IReadOnlyList<SearchResult>>> SearchAsync(SearchQuery query, IReadOnlyList<LoadedModule> within,
+    public async IAsyncEnumerable<Outcome<IReadOnlyList<SearchFind>>> SearchAsync(SearchQuery query, IReadOnlyList<LoadedModule> within,
         [EnumeratorCancellation] CancellationToken ct)
     {
         await using var batches = AssemblySearch.SearchAsync(session, within, query, ct).GetAsyncEnumerator(ct);
@@ -27,7 +27,7 @@ public sealed class RunSearchHandlerAdapter(ErrorLog errors, BrowseSession sessi
             }
 
             yield return next;
-            if (next is Outcome<IReadOnlyList<SearchResult>>.Failed)
+            if (next is Outcome<IReadOnlyList<SearchFind>>.Failed)
             {
                 yield break;
             }
@@ -35,13 +35,13 @@ public sealed class RunSearchHandlerAdapter(ErrorLog errors, BrowseSession sessi
     }
 
     /// <summary>The next batch of <paramref name="batches"/>, or what reading it threw; null at the end.</summary>
-    private static async Task<Outcome<IReadOnlyList<SearchResult>>?> ReadNextAsync(IAsyncEnumerator<IReadOnlyList<SearchResult>> batches,
+    private static async Task<Outcome<IReadOnlyList<SearchFind>>?> ReadNextAsync(IAsyncEnumerator<IReadOnlyList<SearchFind>> batches,
         CancellationToken ct)
     {
         var moved = await Background.Wait(batches.MoveNextAsync().AsTask());
         ct.ThrowIfCancellationRequested();
-        return moved.Match<Outcome<IReadOnlyList<SearchResult>>?>(
-            ok => ok.Value ? new Outcome<IReadOnlyList<SearchResult>>.Ok(batches.Current) : null,
-            static failed => new Outcome<IReadOnlyList<SearchResult>>.Failed(failed.Error));
+        return moved.Match<Outcome<IReadOnlyList<SearchFind>>?>(
+            ok => ok.Value ? new Outcome<IReadOnlyList<SearchFind>>.Ok(batches.Current) : null,
+            static failed => new Outcome<IReadOnlyList<SearchFind>>.Failed(failed.Error));
     }
 }

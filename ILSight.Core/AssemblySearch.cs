@@ -14,12 +14,13 @@ namespace ILSight.Core;
 public static class AssemblySearch
 {
     /// <summary>Searches <paramref name="assemblies"/> for what <paramref name="query"/> asks, on a
-    /// background thread. Results arrive in batches as they are found.</summary>
-    public static IAsyncEnumerable<IReadOnlyList<SearchResult>> SearchAsync(BrowseSession session, IEnumerable<LoadedModule> assemblies,
+    /// background thread. The hits arrive in batches as they are found, and with them each assembly the library
+    /// failed on, which the search goes on past.</summary>
+    public static IAsyncEnumerable<IReadOnlyList<SearchFind>> SearchAsync(BrowseSession session, IEnumerable<LoadedModule> assemblies,
         SearchQuery query, CancellationToken cancellationToken = default)
     {
         var searched = assemblies.ToImmutableArray();
-        return Batches.StreamAsync<SearchResult>((emit, token) =>
+        return Batches.StreamAsync<SearchFind>((emit, token) =>
         {
             if (!query.CanFind)
             {
@@ -29,9 +30,32 @@ public static class AssemblySearch
             var search = new Search { Session = session, Query = query, Emit = emit, CancellationToken = token };
             foreach (var assembly in searched)
             {
-                AssemblySearch.SearchAssembly(search, assembly);
+                var why = AssemblySearch.TrySearchAssembly(search, assembly);
+                if (why is not null)
+                {
+                    emit(new SearchFind.Unsearched { Assembly = assembly, Why = why });
+                }
             }
         }, cancellationToken);
+    }
+
+    /// <summary>Searches <paramref name="assembly"/>; why the library failed on it, else null. Cancellation asked for
+    /// goes through.</summary>
+    private static string? TrySearchAssembly(Search search, LoadedModule assembly)
+    {
+        try
+        {
+            SearchAssembly(search, assembly);
+            return null;
+        }
+        catch (OperationCanceledException) when (search.CancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return e.Message;
+        }
     }
 
     private sealed class Search
@@ -40,7 +64,7 @@ public static class AssemblySearch
 
         public required SearchQuery Query { get; init; }
 
-        public required Action<SearchResult> Emit { get; init; }
+        public required Action<SearchFind> Emit { get; init; }
 
         public required CancellationToken CancellationToken { get; init; }
 
@@ -70,13 +94,7 @@ public static class AssemblySearch
             return;
         }
 
-        try
-            {
-                scan(assembly);
-            }
-            catch (Exception e) when (e is not OperationCanceledException)
-            {
-            }
+        scan(assembly);
         }
 
         private static bool IsInAssembly(LoadedModule assembly, string scope)
@@ -649,7 +667,7 @@ public static class AssemblySearch
             return;
         }
 
-        search.Emit(new SearchResult(node, node.Text, location, GetFitness(node)));
+        search.Emit(new SearchFind.Hit { Result = new SearchResult(node, node.Text, location, GetFitness(node)) });
         }
 
         private static float GetFitness(BrowseNode node)

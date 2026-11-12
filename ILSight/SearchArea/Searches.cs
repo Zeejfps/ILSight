@@ -59,6 +59,7 @@ public static class Searches
         var searched = new SearchedQuery(search.Typed.Text, search.Kinds, assemblies.Version);
         search.LastSearched = searched;
         search.Rows.Clear();
+        search.Unsearched.Clear();
         search.Sorting.NoteRowsEmptied();
         ItemSelections.Clear(search.Selection);
         var listed = assemblies.Assemblies;
@@ -89,6 +90,7 @@ public static class Searches
         }
 
         search.Rows.RemoveAll(r => !search.SearchedAssemblies.Contains(r.Node.Assembly));
+        search.Unsearched.RemoveAll(u => !search.SearchedAssemblies.Contains(u.Assembly));
         search.Sorting.NoteRowsChanged();
         ItemSelections.DropIfGone(search.Selection, search.Rows);
     }
@@ -120,18 +122,35 @@ public static class Searches
         search.Runs.Ask(new SearchRun { Query = query, Within = [.. within] });
     }
 
-    /// <summary>Merges the hits of <paramref name="batch"/> that are still wanted into the rows, in their order, unless
-    /// a new query replaced <paramref name="run"/>, which found them.</summary>
-    public static void Deliver(Search search, IReadOnlyList<SearchResult> batch, SearchRun run)
+    /// <summary>Merges the hits of <paramref name="batch"/> that are still wanted into the rows, in their order, and
+    /// notes the assemblies it couldn't search that are still searched, unless a new query replaced
+    /// <paramref name="run"/>, which found them.</summary>
+    public static void Deliver(Search search, IReadOnlyList<SearchFind> batch, SearchRun run)
     {
         if (!search.Runs.IsCurrent(run))
         {
             return;
         }
 
-        var arrived = SortArrived(search, batch);
+        var hits = new List<SearchResult>();
+        foreach (var find in batch)
+        {
+            find.Switch(hit => hits.Add(hit.Result), unsearched => NoteUnsearched(search, unsearched));
+        }
+
+        var arrived = SortArrived(search, hits);
         MergeIntoRows(search, arrived);
         search.Sorting.NoteRowsChanged();
+    }
+
+    private static void NoteUnsearched(Search search, SearchFind.Unsearched unsearched)
+    {
+        if (!search.SearchedAssemblies.Contains(unsearched.Assembly))
+        {
+            return;
+        }
+
+        search.Unsearched.Add(unsearched);
     }
 
     /// <summary>The hits of <paramref name="batch"/> still wanted, in the order the rows are in, which a comparer

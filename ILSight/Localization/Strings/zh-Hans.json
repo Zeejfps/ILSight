@@ -82,6 +82,7 @@
   "search.column_location": "位置",
   "search.column_assembly": "程序集",
   "search.invalid_regex": "无效的正则表达式",
+  "search.unsearched": "{name}：无法搜索（{why}）",
 
   "omnibar.search": "转到类型或成员…",
   "omnibar.contents": "{name} 的内容",

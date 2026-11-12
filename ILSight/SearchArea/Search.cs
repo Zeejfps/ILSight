@@ -12,6 +12,9 @@ public sealed class Search
     /// <see cref="SearchedAssemblies"/> only; <see cref="Searches"/> keeps them so.</summary>
     public readonly List<SearchResult> Rows = new();
     public readonly HashSet<LoadedAssembly> SearchedAssemblies = new(ReferenceEqualityComparer.Instance);
+    /// <summary>The assemblies of <see cref="SearchedAssemblies"/> the library failed on while they were searched, and
+    /// why, in the order they came in; <see cref="Searches"/> keeps them so.</summary>
+    public readonly List<SearchFind.Unsearched> Unsearched = new();
     /// <summary>The runs that may still deliver hits.</summary>
     public SearchRuns Runs { get; } = new();
     public readonly TypedText Typed = new();

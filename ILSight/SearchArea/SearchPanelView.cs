@@ -37,7 +37,24 @@ internal static class SearchPanelView
             ResultCount(ui, ui.State.Search);
         }
         ui.Separator();
+        Unsearched(ui, ui.State.Search);
         Results(ui, navigation, setup);
+    }
+
+    /// <summary>A line for each assembly the search couldn't search, saying why, above the hits.</summary>
+    private static void Unsearched(Ui<UiState> ui, Search search)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        for (var i = 0; i < search.Unsearched.Count; i++)
+        {
+            var unsearched = search.Unsearched[i];
+            using (ui.Id(i))
+            {
+                var line = ui.Memo("unsearched", (unsearched, t), static a => a.t.SearchUnsearched(a.unsearched.Assembly.FilePath.FileName, a.unsearched.Why));
+                ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
+            }
+        }
     }
 
     private static void KindsButton(Ui<UiState> ui)

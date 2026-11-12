@@ -82,6 +82,7 @@
   "search.column_location": "위치",
   "search.column_assembly": "어셈블리",
   "search.invalid_regex": "잘못된 정규식",
+  "search.unsearched": "{name}: 검색할 수 없습니다 ({why})",
 
   "omnibar.search": "형식 또는 멤버로 이동…",
   "omnibar.contents": "{name}의 내용",

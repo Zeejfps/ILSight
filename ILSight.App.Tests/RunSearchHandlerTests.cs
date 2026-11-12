@@ -5,8 +5,8 @@ namespace ILSight.App.Tests;
 
 public sealed class RunSearchHandlerTests
 {
-    private static readonly Outcome<IReadOnlyList<SearchResult>> Failure =
-        new Outcome<IReadOnlyList<SearchResult>>.Failed(new InvalidDataException("unreadable"));
+    private static readonly Outcome<IReadOnlyList<SearchFind>> Failure =
+        new Outcome<IReadOnlyList<SearchFind>>.Failed(new InvalidDataException("unreadable"));
 
     /// <summary>A run of <paramref name="search"/> asked for and taken, as the edge takes it to start it.</summary>
     private static SearchRun AskRun(Search search)
@@ -20,7 +20,7 @@ public sealed class RunSearchHandlerTests
     {
         var search = new Search();
         var run = AskRun(search);
-        var ports = new FakeRunSearchHandlerPorts { Found = [new Outcome<IReadOnlyList<SearchResult>>.Ok([])] };
+        var ports = new FakeRunSearchHandlerPorts { Found = [new Outcome<IReadOnlyList<SearchFind>>.Ok([])] };
 
         await new RunSearchHandler(ports).HandleAsync(search, run, CancellationToken.None);
 

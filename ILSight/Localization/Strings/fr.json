@@ -82,6 +82,7 @@
   "search.column_location": "Emplacement",
   "search.column_assembly": "Assembly",
   "search.invalid_regex": "Expression régulière non valide",
+  "search.unsearched": "{name} : la recherche y a échoué ({why})",
 
   "omnibar.search": "Aller à un type ou un membre…",
   "omnibar.contents": "Contenu de {name}",

@@ -82,6 +82,7 @@
   "search.column_location": "Ort",
   "search.column_assembly": "Assembly",
   "search.invalid_regex": "Ungültiger regulärer Ausdruck",
+  "search.unsearched": "{name}: konnte nicht durchsucht werden ({why})",
 
   "omnibar.search": "Zu Typ oder Member springen…",
   "omnibar.contents": "Inhalt von {name}",

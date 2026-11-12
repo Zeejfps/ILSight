@@ -86,6 +86,7 @@
   "search.column_location": "Location",
   "search.column_assembly": "Assembly",
   "search.invalid_regex": "Invalid regular expression",
+  "search.unsearched": "{name}: couldn't be searched ({why})",
 
   "omnibar.search": "Go to type or member…",
   "omnibar.contents": "Contents of {name}",

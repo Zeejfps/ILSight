@@ -12,10 +12,10 @@ public sealed class RunSearchHandler(RunSearchHandler.IPorts ports)
         /// <summary>Tells the user a search failed.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>The hits of <paramref name="query"/> in <paramref name="within"/>, in batches as they are found,
-        /// worked out without holding up the screen. Working it out that failed ends the sequence with
+        /// <summary>The hits of <paramref name="query"/> in <paramref name="within"/>, in batches as they are found, with
+        /// each assembly that couldn't be searched, worked out without holding up the screen. Working it out that failed ends the sequence with
         /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let through.</summary>
-        IAsyncEnumerable<Outcome<IReadOnlyList<SearchResult>>> SearchAsync(SearchQuery query, IReadOnlyList<LoadedModule> within, CancellationToken ct);
+        IAsyncEnumerable<Outcome<IReadOnlyList<SearchFind>>> SearchAsync(SearchQuery query, IReadOnlyList<LoadedModule> within, CancellationToken ct);
     }
 
     /// <summary>Runs <paramref name="run"/>, delivering what it finds to <paramref name="search"/>, then ends it.

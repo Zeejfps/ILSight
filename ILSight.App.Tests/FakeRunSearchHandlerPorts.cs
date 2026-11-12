@@ -8,7 +8,7 @@ namespace ILSight.App.Tests;
 /// reported.</summary>
 internal sealed class FakeRunSearchHandlerPorts : RunSearchHandler.IPorts
 {
-    public required IReadOnlyList<Outcome<IReadOnlyList<SearchResult>>> Found { get; init; }
+    public required IReadOnlyList<Outcome<IReadOnlyList<SearchFind>>> Found { get; init; }
 
     public List<AppProblem> Reported { get; } = [];
 
@@ -17,7 +17,7 @@ internal sealed class FakeRunSearchHandlerPorts : RunSearchHandler.IPorts
         Reported.Add(problem);
     }
 
-    public async IAsyncEnumerable<Outcome<IReadOnlyList<SearchResult>>> SearchAsync(SearchQuery query, IReadOnlyList<LoadedModule> within,
+    public async IAsyncEnumerable<Outcome<IReadOnlyList<SearchFind>>> SearchAsync(SearchQuery query, IReadOnlyList<LoadedModule> within,
         [EnumeratorCancellation] CancellationToken ct)
     {
         foreach (var found in Found)

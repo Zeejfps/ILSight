@@ -82,6 +82,7 @@
   "search.column_location": "場所",
   "search.column_assembly": "アセンブリ",
   "search.invalid_regex": "無効な正規表現",
+  "search.unsearched": "{name}: 検索できませんでした ({why})",
 
   "omnibar.search": "型またはメンバーに移動…",
   "omnibar.contents": "{name} の内容",

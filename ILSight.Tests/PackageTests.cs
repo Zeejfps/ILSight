@@ -306,7 +306,7 @@ public sealed class PackageTests
         var results = new List<SearchResult>();
         await foreach (var batch in list.SearchAsync("Calculator", SearchKinds.Types))
         {
-            results.AddRange(batch);
+            results.AddRange(batch.Select(static f => Assert.IsType<SearchFind.Hit>(f).Result));
         }
 
         var calculator = Assert.Single(results, r => r.Text == "Calculator<T>");

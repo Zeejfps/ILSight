@@ -82,6 +82,7 @@
   "search.column_location": "Расположение",
   "search.column_assembly": "Сборка",
   "search.invalid_regex": "Недопустимое регулярное выражение",
+  "search.unsearched": "{name}: не удалось выполнить поиск ({why})",
 
   "omnibar.search": "Перейти к типу или члену…",
   "omnibar.contents": "Содержимое {name}",
