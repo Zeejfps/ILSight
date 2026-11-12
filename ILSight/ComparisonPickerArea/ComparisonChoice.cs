@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 
 namespace ILSight.ComparisonPickerArea;
@@ -30,13 +29,10 @@ public sealed class ComparisonChoice
     {
         get
         {
-            return Dialog switch
-            {
-                ComparisonDialog.Closed => null,
-                ComparisonDialog.Open open => open.Compared,
-                ComparisonDialog.Going going => going.Compared,
-                _ => throw new UnreachableException(),
-            };
+            return Dialog.Match<LoadedModule?>(
+                static _ => null,
+                static open => open.Compared,
+                static going => going.Compared);
         }
     }
 
@@ -171,21 +167,5 @@ public sealed class ComparisonChoice
         }
 
         ItemSelections.Select(Selection, _filtered[index], _filtered);
-    }
-
-    /// <summary>Whether the "compare with" dialog shows, and of which assembly.</summary>
-    private abstract record ComparisonDialog
-    {
-        private ComparisonDialog()
-        {
-        }
-
-        public sealed record Closed : ComparisonDialog;
-
-        /// <summary>Asks what to compare <see cref="Compared"/> with.</summary>
-        public sealed record Open(LoadedModule Compared) : ComparisonDialog;
-
-        /// <summary>Dismissed from the dialog itself, which goes out still showing <see cref="Compared"/>.</summary>
-        public sealed record Going(LoadedModule Compared) : ComparisonDialog;
     }
 }

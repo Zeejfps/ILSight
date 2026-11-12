@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
@@ -171,12 +170,9 @@ internal static class ComparisonView
 
     private static string DescribeFailure(Strings t, ComparisonFailure failure)
     {
-        return failure switch
-        {
-            ComparisonFailure.AssemblyClosed closed => t.ComparisonAssemblyClosed(closed.File),
-            ComparisonFailure.Failed failed => t.ErrorCompare(failed.Left, failed.Right),
-            _ => throw new UnreachableException(),
-        };
+        return failure.Match(t,
+            static (t, closed) => t.ComparisonAssemblyClosed(closed.File),
+            static (t, failed) => t.ErrorCompare(failed.Left, failed.Right));
     }
 
     private static void Tree(Ui<UiState> ui, Navigation navigation, ComparisonRows rows)

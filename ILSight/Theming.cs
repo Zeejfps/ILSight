@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Diagnostics;
 using System.Globalization;
 using ZGF.Gui.Immediate;
 using ILSight.CodeViewArea;
@@ -307,12 +306,9 @@ public static class Theming
     /// no theme declares its font or that the font has no glyph for it.</summary>
     private static IconGlyph? MakeGlyph(MergedIconTheme merged, string key, IconValue value, ICollection<ThemeError> errors)
     {
-        return value switch
-        {
-            IconValue.Picture picture => IconGlyph.FromSvg(picture.Svg),
-            IconValue.Glyph glyph => MakeFontGlyph(merged, key, glyph, errors),
-            _ => throw new UnreachableException(),
-        };
+        return value.Match((merged, key, errors),
+            glyph: static (s, glyph) => MakeFontGlyph(s.merged, s.key, glyph, s.errors),
+            picture: static (_, picture) => IconGlyph.FromSvg(picture.Svg));
     }
 
     private static IconGlyph? MakeFontGlyph(MergedIconTheme merged, string key, IconValue.Glyph glyph, ICollection<ThemeError> errors)

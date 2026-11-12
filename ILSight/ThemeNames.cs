@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 
 namespace ILSight;
@@ -10,12 +9,9 @@ public static class ThemeNames
     /// <summary>What <paramref name="name"/> reads as in <paramref name="culture"/>.</summary>
     public static string GetName(ThemeName name, CultureInfo culture)
     {
-        return name switch
-        {
-            ThemeName.Plain plain => plain.Name,
-            ThemeName.PerLanguage perLanguage => GetName(perLanguage, culture),
-            _ => throw new UnreachableException(),
-        };
+        return name.Match(culture,
+            static (_, plain) => plain.Name,
+            static (culture, perLanguage) => GetName(perLanguage, culture));
     }
 
     private static string GetName(ThemeName.PerLanguage name, CultureInfo culture)

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Processes;
 
@@ -38,28 +37,23 @@ public static class ProcessPicking
     /// <summary>The process <paramref name="scan"/> is of, or null when none is selected.</summary>
     public static RunningProcess? FindProcess(ModuleScan scan)
     {
-        return scan switch
-        {
-            ModuleScan.None => null,
-            ModuleScan.Loading loading => loading.Process,
-            ModuleScan.Loaded loaded => loaded.Process,
-            ModuleScan.Unreachable unreachable => unreachable.Process,
-            ModuleScan.Unreadable unreadable => unreadable.Process,
-            _ => throw new UnreachableException(),
-        };
+        return scan.Match<RunningProcess?>(
+            none: static _ => null,
+            loading: static loading => loading.Process,
+            loaded: static loaded => loaded.Process,
+            unreachable: static unreachable => unreachable.Process,
+            unreadable: static unreadable => unreadable.Process);
     }
 
     /// <summary>The entry assembly found for the process <paramref name="scan"/> is of, or null.</summary>
     public static AssemblyPath? FindEntryAssembly(ModuleScan scan)
     {
-        return scan switch
-        {
-            ModuleScan.None or ModuleScan.Loading => null,
-            ModuleScan.Loaded loaded => loaded.EntryAssembly,
-            ModuleScan.Unreachable unreachable => unreachable.EntryAssembly,
-            ModuleScan.Unreadable unreadable => unreadable.EntryAssembly,
-            _ => throw new UnreachableException(),
-        };
+        return scan.Match<AssemblyPath?>(
+            none: static _ => null,
+            loading: static _ => null,
+            loaded: static loaded => loaded.EntryAssembly,
+            unreachable: static unreachable => unreachable.EntryAssembly,
+            unreadable: static unreadable => unreadable.EntryAssembly);
     }
 
     /// <summary>The modules listed, or none while they aren't.</summary>

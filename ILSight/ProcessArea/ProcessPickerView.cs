@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
@@ -169,26 +168,39 @@ internal static class ProcessPickerView
     /// <summary>The processes, or why there are none. True when one was activated.</summary>
     private static bool Processes(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
-        var t = ui.State.Strings;
-        switch (browser.Scan)
+        return browser.Scan.Match((ui, browser, listId),
+            notStarted: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanning),
+            scanning: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanning),
+            scanned: static (s, scanned) => ScannedProcesses(s.ui, s.browser, s.listId, scanned),
+            failed: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanFailed));
+    }
+
+    /// <summary>Notes <paramref name="text"/> where the rows would be. False: none was activated.</summary>
+    private static bool NoteInstead(Ui<UiState> ui, string text)
+    {
+        Note(ui, text);
+        return false;
+    }
+
+    /// <summary>Notes <paramref name="text"/> and then <paramref name="detail"/> where the rows would be. False: none
+    /// was activated.</summary>
+    private static bool NoteInstead(Ui<UiState> ui, string text, string detail)
+    {
+        Note(ui, text);
+        Note(ui, detail);
+        return false;
+    }
+
+    /// <summary>The processes <paramref name="scanned"/> found, or that there are none. True when one was
+    /// activated.</summary>
+    private static bool ScannedProcesses(Ui<UiState> ui, ProcessBrowser browser, int listId, ProcessScan.Scanned scanned)
+    {
+        if (scanned.Processes.Count == 0)
         {
-            case ProcessScan.NotStarted:
-            case ProcessScan.Scanning:
-                Note(ui, t.ProcessPickerScanning);
-                return false;
-            case ProcessScan.Failed:
-                Note(ui, t.ProcessPickerScanFailed);
-                return false;
-            case ProcessScan.Scanned scanned:
-                if (scanned.Processes.Count == 0)
-                {
-                    Note(ui, t.ProcessPickerNone);
-                    return false;
-                }
-                return ProcessRows(ui, browser, listId);
-            default:
-                throw new UnreachableException();
+            return NoteInstead(ui, ui.State.Strings.ProcessPickerNone);
         }
+
+        return ProcessRows(ui, browser, listId);
     }
 
     /// <summary>The processes as a table whose columns can be resized: name, id, entry assembly and runtime.
@@ -224,28 +236,12 @@ internal static class ProcessPickerView
     /// <summary>The selected process's assemblies, or why they aren't shown. True when some were activated.</summary>
     private static bool Modules(Ui<UiState> ui, ProcessBrowser browser)
     {
-        var t = ui.State.Strings;
-        switch (browser.Modules)
-        {
-            case ModuleScan.None:
-                Note(ui, t.ProcessPickerPickProcess);
-                return false;
-            case ModuleScan.Loading:
-                Note(ui, t.ProcessPickerLoading);
-                return false;
-            case ModuleScan.Unreachable unreachable:
-                Note(ui, t.ProcessPickerUnreachable);
-                Note(ui, unreachable.Detail);
-                return false;
-            case ModuleScan.Unreadable unreadable:
-                Note(ui, t.ProcessPickerUnreadable);
-                Note(ui, unreadable.Detail);
-                return false;
-            case ModuleScan.Loaded loaded:
-                return ModuleRows(ui, browser, loaded.Modules);
-            default:
-                throw new UnreachableException();
-        }
+        return browser.Modules.Match((ui, browser),
+            none: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerPickProcess),
+            loading: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerLoading),
+            loaded: static (s, loaded) => ModuleRows(s.ui, s.browser, loaded.Modules),
+            unreachable: static (s, unreachable) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerUnreachable, unreachable.Detail),
+            unreadable: static (s, unreadable) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerUnreadable, unreadable.Detail));
     }
 
     /// <summary>The assemblies as a table whose columns can be resized: name, and the folder or that it is

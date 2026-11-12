@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
@@ -57,22 +56,11 @@ internal static class FrameworkPickerView
 
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
             {
-                switch (browser.Scan)
-                {
-                    case RuntimeScan.NotStarted:
-                    case RuntimeScan.Scanning:
-                        ui.Text(t.PickerScanning, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted);
-                        break;
-                    case RuntimeScan.Failed:
-                        ui.Text(t.PickerScanFailed, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) },
-                            color: theme.TextMuted, wrap: true);
-                        break;
-                    case RuntimeScan.Scanned:
-                        open |= Rows(ui, browser, listId);
-                        break;
-                    default:
-                        throw new UnreachableException();
-                }
+                open |= browser.Scan.Match((ui, browser, listId),
+                    notStarted: static (s, _) => NoteScanning(s.ui),
+                    scanning: static (s, _) => NoteScanning(s.ui),
+                    scanned: static (s, _) => Rows(s.ui, s.browser, s.listId),
+                    failed: static (s, _) => NoteScanFailed(s.ui));
             }
 
             using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -111,6 +99,23 @@ internal static class FrameworkPickerView
     }
 
     /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>
+    /// <summary>Notes that the runtime is being scanned, where its assemblies will be. False: none was opened.</summary>
+    private static bool NoteScanning(Ui<UiState> ui)
+    {
+        var theme = ui.Theme;
+        ui.Text(ui.State.Strings.PickerScanning, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted);
+        return false;
+    }
+
+    /// <summary>Notes that scanning the runtime failed, where its assemblies would be. False: none was opened.</summary>
+    private static bool NoteScanFailed(Ui<UiState> ui)
+    {
+        var theme = ui.Theme;
+        ui.Text(ui.State.Strings.PickerScanFailed, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) },
+            color: theme.TextMuted, wrap: true);
+        return false;
+    }
+
     private static void MoveSelectionFromFilter(Ui<UiState> ui, FrameworkBrowser browser, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 
 namespace ILSight.NuGetArea;
@@ -712,14 +711,11 @@ public sealed class NuGetBrowser
     /// <summary>The search running or last run; null before any, or once it was stopped or dropped.</summary>
     private FeedSearch? FindLastSearched()
     {
-        return _run switch
-            {
-                SearchRun.None => null,
-                SearchRun.Running running => running.Search,
-                SearchRun.Found found => found.Search,
-                SearchRun.Failed failed => failed.Search,
-                _ => throw new UnreachableException(),
-            };
+        return _run.Match<FeedSearch?>(
+            static _ => null,
+            static running => running.Search,
+            static found => found.Search,
+            static failed => failed.Search);
     }
 
     private FeedSearch? FindShownSearch()
@@ -847,23 +843,6 @@ public sealed class NuGetBrowser
         public sealed record Reading : SetupState;
 
         public sealed record Ready(NuGetSetup Setup) : SetupState;
-    }
-
-    /// <summary>The last search: none since the dialog was made or the search was dropped, one
-    /// running, or one that found a page or failed to.</summary>
-    private abstract record SearchRun
-    {
-        private SearchRun()
-        {
-        }
-
-        public sealed record None : SearchRun;
-
-        public sealed record Running(FeedSearch Search) : SearchRun;
-
-        public sealed record Found(FeedSearch Search) : SearchRun;
-
-        public sealed record Failed(FeedSearch Search, string Error) : SearchRun;
     }
 
     /// <summary>A download: none, one running, or the package file one fetched, until it is taken.</summary>

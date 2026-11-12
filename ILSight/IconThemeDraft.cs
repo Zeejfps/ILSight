@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -45,18 +44,15 @@ public static class IconThemeDraft
 
     private static void AppendIcon(StringBuilder text, IconValue value)
     {
-        switch (value)
-        {
-            case IconValue.Picture picture:
-                text.Append("{ \"svg\": ").Append(Quote(picture.SvgPath)).Append(" }");
-                break;
-            case IconValue.Glyph glyph:
-                var codepoint = glyph.Codepoint.ToString(CodepointFormat, CultureInfo.InvariantCulture);
-                text.Append("{ \"font\": ").Append(Quote(glyph.Font)).Append(", \"glyph\": ").Append(Quote(codepoint)).Append(" }");
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        value.Switch(text,
+            glyph: static (text, glyph) => AppendGlyph(text, glyph),
+            picture: static (text, picture) => text.Append("{ \"svg\": ").Append(Quote(picture.SvgPath)).Append(" }"));
+    }
+
+    private static void AppendGlyph(StringBuilder text, IconValue.Glyph glyph)
+    {
+        var codepoint = glyph.Codepoint.ToString(CodepointFormat, CultureInfo.InvariantCulture);
+        text.Append("{ \"font\": ").Append(Quote(glyph.Font)).Append(", \"glyph\": ").Append(Quote(codepoint)).Append(" }");
     }
 
     private static string Quote(string value)

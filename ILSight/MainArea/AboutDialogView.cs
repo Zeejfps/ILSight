@@ -117,17 +117,23 @@ internal static class AboutDialogView
     private static string ButtonText(Ui<UiState> ui, UpdateStatus status)
     {
         var t = ui.State.Strings;
-        switch (status)
+        if (status is UpdateStatus.Checking)
         {
-            case UpdateStatus.Checking:
-                return t.AboutCheckingForUpdates;
-            case UpdateStatus.Downloading downloading:
-                return ui.Memo("about-downloading", (t, downloading.Version), static a => a.t.AboutDownloadingUpdate(a.Version));
-            case UpdateStatus.Restarting:
-                return t.AboutRestarting;
-            default:
-                return t.AboutCheckForUpdates;
+            return t.AboutCheckingForUpdates;
         }
+
+        if (status is UpdateStatus.Downloading downloading)
+        {
+            return ui.Memo("about-downloading", (t, downloading.Version), static a => a.t.AboutDownloadingUpdate(a.Version));
+        }
+
+        if (status is UpdateStatus.Restarting)
+        {
+            return t.AboutRestarting;
+        }
+
+        // Every other status, now and later, leaves the button asking to check.
+        return t.AboutCheckForUpdates;
     }
 
     /// <summary>What a check the user asked for came to.</summary>

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using ZGF.Gui;
 using ZGF.Gui.Immediate;
@@ -176,25 +175,31 @@ internal static class NuGetDetailsView
 
     private static void DetailsStatus(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
-        var theme = ui.Theme;
-        switch (details)
+        if (details is null)
         {
-            case null:
-            case VersionDetails.Read:
-                break;
-            case VersionDetails.Loading:
-                ui.Spinner(theme.Surface);
-                ui.Text(ui.State.Strings.NugetLoadingDetails, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
-                break;
-            case VersionDetails.Failed:
-                if (ui.Button(ui.State.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Browser.Version != null)
-                {
-                    picker.Browser.RetryDetails(package, picker.Browser.Version);
-                }
+            return;
+        }
 
-                break;
-            default:
-                throw new UnreachableException();
+        details.Switch((ui, picker, package),
+            loading: static (s, _) => LoadingStatus(s.ui),
+            read: static (_, _) => { },
+            failed: static (s, _) => RetryStatus(s.ui, s.picker, s.package));
+    }
+
+    /// <summary>That the version's details are being read.</summary>
+    private static void LoadingStatus(Ui<UiState> ui)
+    {
+        var theme = ui.Theme;
+        ui.Spinner(theme.Surface);
+        ui.Text(ui.State.Strings.NugetLoadingDetails, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
+    }
+
+    /// <summary>A button that reads the version's details again, after they could not be read.</summary>
+    private static void RetryStatus(Ui<UiState> ui, NuGetPicker picker, FeedPackage package)
+    {
+        if (ui.Button(ui.State.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Browser.Version != null)
+        {
+            picker.Browser.RetryDetails(package, picker.Browser.Version);
         }
     }
 
