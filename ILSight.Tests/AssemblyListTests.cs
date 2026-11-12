@@ -10,7 +10,9 @@ public sealed class AssemblyListTests
         var list = new AssemblyList();
 
         var first = list.OpenModule(Trees.TestAssemblyPath);
-        var second = list.Open(Path.Combine(Path.GetDirectoryName(Trees.TestAssemblyPath)!, ".", Path.GetFileName(Trees.TestAssemblyPath)));
+        var folder = Path.GetDirectoryName(Trees.TestAssemblyPath);
+        Assert.NotNull(folder);
+        var second = list.Open(Path.Combine(folder, ".", Path.GetFileName(Trees.TestAssemblyPath)));
 
         Assert.Same(first, second);
         Assert.Single(list.Assemblies);
@@ -34,7 +36,7 @@ public sealed class AssemblyListTests
         Assert.True(replaced);
         Assert.Equal([fresh, second], list.Listed);
         Assert.Equal("net48", Assert.IsType<LoadedModule>(fresh).FrameworkMoniker);
-        Assert.Same(fresh, list.FindNode(BrowseNodes.GetPath(first.Root))!.Assembly);
+        Assert.Same(fresh, list.FindNode(BrowseNodes.GetPath(first.Root))?.Assembly);
     }
 
     [Fact]
@@ -69,7 +71,8 @@ public sealed class AssemblyListTests
         var before = list.Generation;
         AssemblyListing.CloseAll(list);
 
-        var late = list.TryLoad(Trees.TestAssemblyPath, before)!;
+        var late = list.TryLoad(Trees.TestAssemblyPath, before);
+        Assert.NotNull(late);
 
         Assert.False(AssemblyListing.TryList(list, late, before));
         Assert.Empty(list.Assemblies);
@@ -205,7 +208,7 @@ public sealed class AssemblyListTests
         var root = temp.Path;
         string Runtime(string version)
         {
-            return Path.GetDirectoryName(temp.Write(Path.Combine("shared", "Microsoft.NETCore.App", version, "System.Private.CoreLib.dll"), ""))!;
+            return Path.GetDirectoryName(temp.Write(Path.Combine("shared", "Microsoft.NETCore.App", version, "System.Private.CoreLib.dll"), "")) ?? throw new InvalidOperationException("A file written to the temp folder is in a folder.");
         }
 
         Runtime("9.0.11");
@@ -268,8 +271,9 @@ public sealed class AssemblyListTests
         var runtime = list.FindNode(references.Child("System.Runtime").Destination);
         var sibling = list.FindNode(references.Child("ILSight.Core").Destination);
 
-        Assert.Equal(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll"), runtime!.Assembly.FilePath.Text, ignoreCase: true);
-        Assert.Equal(typeof(AssemblyList).Assembly.Location, sibling!.Assembly.FilePath.Text, ignoreCase: true);
+        Assert.NotNull(runtime);
+        Assert.Equal(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll"), runtime.Assembly.FilePath.Text, ignoreCase: true);
+        Assert.Equal(typeof(AssemblyList).Assembly.Location, sibling?.Assembly.FilePath.Text, ignoreCase: true);
         Assert.Same(runtime.Assembly.Root, runtime);
         Assert.Contains(runtime.Assembly, list.Assemblies);
     }

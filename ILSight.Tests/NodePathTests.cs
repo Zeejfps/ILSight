@@ -15,7 +15,7 @@ public sealed class NodePathTests
         Assert.Empty(empty.Listed);
 
         var (listing, _) = Trees.OpenTestAssembly();
-        Assert.Equal(add.Text, listing.FindListedNode(BrowseNodes.GetPath(add))!.Text);
+        Assert.Equal(add.Text, listing.FindListedNode(BrowseNodes.GetPath(add))?.Text);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public sealed class NodePathTests
 
         Assert.NotNull(found);
         Assert.NotSame(add, found);
-        Assert.Equal(BrowseNodes.GetPath(add), BrowseNodes.GetPath(found!));
+        Assert.Equal(BrowseNodes.GetPath(add), BrowseNodes.GetPath(found));
         Assert.Equal(add.Text, found.Text);
         Assert.Contains(found.Assembly, fresh.Assemblies);
     }

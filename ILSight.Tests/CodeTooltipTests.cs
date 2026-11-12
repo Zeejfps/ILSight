@@ -6,7 +6,9 @@ public sealed class CodeTooltipTests
 {
     private static CodeTooltip TooltipOf(AssemblyList list, BrowseNode node)
     {
-        return AssemblyListing.DescribeReference(list, node.Definition)!;
+        var tooltip = AssemblyListing.DescribeReference(list, node.Definition);
+        Assert.NotNull(tooltip);
+        return tooltip;
     }
 
     private static DocSection Section(CodeTooltip tooltip, DocSectionKind kind)
@@ -69,7 +71,7 @@ public sealed class CodeTooltipTests
         Assert.Equal("public enum Calculator<T>.Mode", mode.Signature.Line.Text);
         Assert.Equal(new CodeContainer("class", "ILSight.Tests.Fixtures.Calculator<T>", false), mode.Container);
         Assert.Equal(new CodeContainer("namespace", "ILSight.Tests.Fixtures", true), calculator.Container);
-        Assert.Equal("namespace", point.Container!.Keyword);
+        Assert.Equal("namespace", point.Container?.Keyword);
     }
 
     [Fact]
@@ -108,8 +110,8 @@ public sealed class CodeTooltipTests
         var x = TooltipOf(list, assembly.Fixtures().Child("Point", "X : int"));
         var width = TooltipOf(list, assembly.Fixtures().Child("Size", "Width : int"));
 
-        Assert.Equal("record", x.Container!.Keyword);
-        Assert.Equal("struct", width.Container!.Keyword);
+        Assert.Equal("record", x.Container?.Keyword);
+        Assert.Equal("struct", width.Container?.Keyword);
     }
 
     [Fact]
@@ -141,7 +143,7 @@ public sealed class CodeTooltipTests
         Assert.Equal("Adds an item and raises Calculator<T>.Changed.", TextOf(summary));
         Assert.Equal(DocStyle.Reference, changed.Style);
         Assert.Same(calculator.Child("Changed : EventHandler?"), list.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(changed.Reference)));
-        Assert.Equal("item", item.Label!.Value.Text);
+        Assert.Equal("item", item.Label?.Text);
         Assert.Equal("The item to add.", TextOf(Assert.Single(item.Blocks)));
     }
 
@@ -174,7 +176,8 @@ public sealed class CodeTooltipTests
         var numbered = Assert.IsType<DocBlock.List>(remarks[1]);
 
         Assert.Equal(DocListKind.Table, table.Kind);
-        Assert.Equal("Bound", TextOf(table.Header!.Term));
+        Assert.NotNull(table.Header);
+        Assert.Equal("Bound", TextOf(table.Header.Term));
         Assert.Equal("Value", TextOf(table.Header.Description));
         Assert.Equal(["Low", "High"], table.Items.Select(i => TextOf(i.Term)));
         Assert.Equal(["The radius.", "Twice the radius."], table.Items.Select(i => TextOf(i.Description)));
@@ -208,8 +211,9 @@ public sealed class CodeTooltipTests
 
         var exception = Section(TooltipOf(list, grow), DocSectionKind.Exception);
 
-        Assert.Equal("ArgumentOutOfRangeException", exception.Label!.Value.Text);
-        Assert.NotNull(exception.Label.Value.Reference);
+        var label = Assert.NotNull(exception.Label);
+        Assert.Equal("ArgumentOutOfRangeException", label.Text);
+        Assert.NotNull(label.Reference);
         Assert.Equal("times is negative.", TextOf(Assert.Single(exception.Blocks)));
     }
 
@@ -242,7 +246,8 @@ public sealed class CodeTooltipTests
         var document = assembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item)")];
 
-        var tooltip = AssemblyListing.DescribeReference(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference))!;
+        var tooltip = AssemblyListing.DescribeReference(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference));
+        Assert.NotNull(tooltip);
 
         Assert.StartsWith("public void List<T>.Add(T item)", tooltip.Signature.Line.Text);
         Assert.Equal(new CodeContainer("class", "System.Collections.Generic.List<T>", false), tooltip.Container);

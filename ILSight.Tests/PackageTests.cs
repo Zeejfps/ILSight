@@ -41,11 +41,15 @@ public sealed class PackageTests
             WriteText(archive, "./readme.txt", "Read me");
         }
 
-        var package = AssemblyPackages.TryRead(AssemblyPath.Of(path))!;
+        var package = AssemblyPackages.TryRead(AssemblyPath.Of(path));
+        Assert.NotNull(package);
 
-        var guide = AssemblyPackages.FindFile(package, "docs/guide.txt")!;
+        var guide = AssemblyPackages.FindFile(package, "docs/guide.txt");
+        Assert.NotNull(guide);
         Assert.Equal("Guide", Encoding.UTF8.GetString(AssemblyPackages.ReadFile(package, guide)));
-        Assert.Equal("Read me", Encoding.UTF8.GetString(AssemblyPackages.ReadFile(package, AssemblyPackages.FindFile(package, "readme.txt")!)));
+        var readme = AssemblyPackages.FindFile(package, "readme.txt");
+        Assert.NotNull(readme);
+        Assert.Equal("Read me", Encoding.UTF8.GetString(AssemblyPackages.ReadFile(package, readme)));
     }
 
     [Theory]
@@ -66,7 +70,8 @@ public sealed class PackageTests
             WriteText(archive, "readme.txt", "Read me");
         }
 
-        var package = AssemblyPackages.TryRead(AssemblyPath.Of(path))!;
+        var package = AssemblyPackages.TryRead(AssemblyPath.Of(path));
+        Assert.NotNull(package);
 
         Assert.Equal(["readme.txt"], AssemblyPackages.ListFiles(package).Select(static f => f.FullName));
         Assert.Empty(package.Root.Folders);
@@ -97,7 +102,8 @@ public sealed class PackageTests
         var sibling = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Core.dll"));
         list.TargetFrameworks.Pick(sibling, Frameworks.Net48);
         AssemblyListing.CloseAll(list);
-        var assembly = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll")))!;
+        var assembly = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll")));
+        Assert.NotNull(assembly);
 
         AssemblyListing.CloseAssembly(list, assembly);
 
@@ -150,7 +156,8 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var path = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll"));
 
-        var assembly = AssemblyListing.TryLoad(list, path)!;
+        var assembly = AssemblyListing.TryLoad(list, path);
+        Assert.NotNull(assembly);
 
         Assert.Same(package.Root.Child(LibFolder), assembly.Root.Parent);
         Assert.Same(assembly.Root, TestAssemblyRoot(package.Root.Child(LibFolder)));
@@ -186,7 +193,8 @@ public sealed class PackageTests
         var core = assembly.Root.Child("References", "ILSight.Core");
         var resolved = list.FindNode(core.Destination);
 
-        Assert.Equal(package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Core.dll")), resolved!.Assembly.FilePath);
+        Assert.NotNull(resolved);
+        Assert.Equal(package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Core.dll")), resolved.Assembly.FilePath);
         Assert.Same(package, ContainerOf(resolved.Assembly));
     }
 
@@ -200,7 +208,8 @@ public sealed class PackageTests
         var list = new AssemblyList();
         var found = list.FindNode(calculator.Definition);
 
-        Assert.Equal(calculator.Text, found!.Text);
+        Assert.NotNull(found);
+        Assert.Equal(calculator.Text, found.Text);
         var listed = Assert.Single(list.Listed);
         Assert.Equal(packagePath, listed.FilePath.Text);
         Assert.Same(listed, ContainerOf(found.Assembly));
@@ -213,7 +222,8 @@ public sealed class PackageTests
         var list = new AssemblyList();
         var package = list.Open(WritePackage(temp));
         var add = TestAssemblyRoot(package.Root.Child(LibFolder)).Assembly.Calculator().Child("Add(T) : void");
-        var symbol = Analyzers.Of(add)!;
+        var symbol = Analyzers.Of(add);
+        Assert.NotNull(symbol);
         var usedBy = Analyzers.KindsFor(symbol).Single(k => Analyzers.GetHeader(k) == "Used By");
 
         var callers = Analyzers.RunAsync(list, symbol, usedBy)
@@ -236,7 +246,7 @@ public sealed class PackageTests
         var core = assembly.Root.Child("References", "ILSight.Core");
         var resolved = list.FindNode(core.Destination);
 
-        Assert.Equal(CoreAssemblyPath, resolved!.Assembly.FilePath.Text, ignoreCase: true);
+        Assert.Equal(CoreAssemblyPath, resolved?.Assembly.FilePath.Text, ignoreCase: true);
     }
 
     [Fact]
@@ -316,7 +326,7 @@ public sealed class PackageTests
 
         var symbols = LoadedAssemblies.EnsureDebugSymbols(assembly);
 
-        Assert.Equal(Path.ChangeExtension(assembly.FilePath.Text, ".pdb"), symbols!.SourceFileName);
+        Assert.Equal(Path.ChangeExtension(assembly.FilePath.Text, ".pdb"), symbols?.SourceFileName);
         Assert.Null(LoadedAssemblies.EnsureDebugSymbols(core));
     }
 

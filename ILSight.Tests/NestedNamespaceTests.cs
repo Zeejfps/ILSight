@@ -86,7 +86,7 @@ public sealed class NestedNamespaceTests
 
         Assert.Equal([new NodePathSegment.Namespace("ILSight")], BrowseNodes.GetPath(ilsight).Steps.Select(static s => s.Segment));
         Assert.NotNull(found);
-        Assert.True(Assert.IsType<NodeSubject.Namespace>(found!.Subject).Value.IsEnclosingOnly);
+        Assert.True(Assert.IsType<NodeSubject.Namespace>(found.Subject).Value.IsEnclosingOnly);
         Assert.Equal("ILSight", found.Text);
         Assert.StartsWith("namespace ILSight", Documents.GetText(ilsight.Decompile(DecompilationLanguage.CSharp)));
     }

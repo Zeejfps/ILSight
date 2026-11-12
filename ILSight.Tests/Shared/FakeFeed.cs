@@ -38,7 +38,7 @@ internal sealed class FakeFeed : HttpMessageHandler
     /// <summary>How many held requests were cancelled.</summary>
     public int Cancelled => Volatile.Read(ref _cancelled);
 
-    public NuGetSource Source => NuGetSource.FromConfig("test", IndexUrl)!;
+    public NuGetSource Source => NuGetSource.FromConfig("test", IndexUrl) ?? throw new InvalidOperationException($"Not a source's URL: '{IndexUrl}'");
 
     public void Answer(string url, string text)
     {
@@ -58,7 +58,7 @@ internal sealed class FakeFeed : HttpMessageHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var url = request.RequestUri!.ToString();
+        var url = (request.RequestUri ?? throw new ArgumentException("The request names no URL.", nameof(request))).ToString();
         Requested.Add(url);
         if (Holds)
         {

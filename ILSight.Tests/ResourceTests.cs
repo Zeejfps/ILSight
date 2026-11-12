@@ -14,7 +14,7 @@ public sealed class ResourceTests
 
     private static byte[] Fixture(string name)
     {
-        using var stream = typeof(ResourceTests).Assembly.GetManifestResourceStream(name)!;
+        using var stream = typeof(ResourceTests).Assembly.GetManifestResourceStream(name) ?? throw new InvalidOperationException($"No resource is embedded as '{name}'.");
         using var copy = new MemoryStream();
         stream.CopyTo(copy);
         return copy.ToArray();
@@ -207,7 +207,7 @@ public sealed class ResourceTests
                 ("Poem", "roses\nviolets\nsugar", "System.String"),
             ],
             rows);
-        Assert.Equal("first line\nsecond line", MetadataGrids.FindTooltip(grid, 2, 1)!.Text);
+        Assert.Equal("first line\nsecond line", MetadataGrids.FindTooltip(grid, 2, 1)?.Text);
         Assert.Equal(("first line", 1), MetadataGrids.GetLines(grid, 2, 1));
         Assert.Equal(("Hello", 0), MetadataGrids.GetLines(grid, 1, 1));
         Assert.False(grid.HasDetails);

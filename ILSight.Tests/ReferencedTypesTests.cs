@@ -73,7 +73,8 @@ public sealed class ReferencedTypesTests
     public void The_referenced_types_read_as_each_type_with_what_is_used_of_it_indented_under_it()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
-        var types = UsedList(assembly).Parent!;
+        var types = UsedList(assembly).Parent;
+        Assert.NotNull(types);
 
         var text = Documents.GetText(Assert.IsType<NodeContent.Code>(types.Content()).Document);
 

@@ -6,7 +6,7 @@ public sealed class PackageIconsTests
 {
     private const string IconUrl = "https://feed.test/icon";
 
-    private static WebUrl Icon => WebUrl.Parse(IconUrl)!;
+    private static WebUrl Icon => WebUrl.Parse(IconUrl) ?? throw new InvalidOperationException($"Not a URL: '{IconUrl}'");
 
     [Fact]
     public async Task An_icon_is_fetched_and_drawn_to_fit_the_side_asked_for()

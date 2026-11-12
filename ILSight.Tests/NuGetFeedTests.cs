@@ -70,7 +70,7 @@ public sealed class NuGetFeedTests
         Assert.Equal(["logging", "structured"], package.Tags);
         Assert.Equal("https://serilog.net/", package.ProjectUrl?.Text);
         Assert.Equal(1, package.Vulnerabilities);
-        Assert.Equal(new FeedVersion(PackageVersion.Parse("4.4.0")!, 5, WebUrl.Parse("https://feed.test/reg/serilog/4.4.0.json")), package.Versions[0]);
+        Assert.Equal(new FeedVersion(Packages.Version("4.4.0"), 5, WebUrl.Parse("https://feed.test/reg/serilog/4.4.0.json")), package.Versions[0]);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public sealed class NuGetFeedTests
             """);
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await NuGetFeeds.ReadDetailsAsync(feed, PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion(Packages.Version("1.0.0"), 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
 
         Assert.Equal(0, Assert.Single(details.Vulnerabilities).Severity);
     }
@@ -127,14 +127,14 @@ public sealed class NuGetFeedTests
             """);
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await NuGetFeeds.ReadDetailsAsync(feed, PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion(Packages.Version("1.0.0"), 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
 
         Assert.Equal(new DateTimeOffset(2024, 5, 1, 10, 0, 0, TimeSpan.Zero), details.Published);
         Assert.Equal("MIT", details.License);
         Assert.Equal(2048, details.PackageSize);
         Assert.Equal(["net8.0", "netstandard2.0"], details.DependencyGroups.Select(g => g.TargetFramework));
         Assert.Equal(new PackageDependency("Dep", "[1.0.0, )"), Assert.Single(details.DependencyGroups[0].Dependencies));
-        Assert.Equal("Tiny2", details.Deprecation!.AlternatePackage);
+        Assert.Equal("Tiny2", details.Deprecation?.AlternatePackage);
         Assert.Equal(3, Assert.Single(details.Vulnerabilities).Severity);
     }
 
@@ -170,7 +170,7 @@ public sealed class NuGetFeedTests
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
         await Assert.ThrowsAsync<InvalidDataException>(() =>
-            NuGetFeeds.ReadDetailsAsync(feed, PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0")!, 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"))));
+            NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion(Packages.Version("1.0.0"), 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"))));
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public sealed class NuGetFeedTests
         fake.Answer("https://feed.test/reg/tiny/1.0.0-beta.json", """{ "catalogEntry": { "licenseUrl": "https://license.test" } }""");
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await NuGetFeeds.ReadDetailsAsync(feed, PackageId.Parse("Tiny")!, new FeedVersion(PackageVersion.Parse("1.0.0-Beta")!, 0, null));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion(Packages.Version("1.0.0-Beta"), 0, null));
 
         Assert.Equal("https://license.test", details.LicenseUrl?.Text);
         Assert.Null(details.Published);

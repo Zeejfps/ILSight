@@ -138,7 +138,8 @@ public sealed class DecompilationTests
     [Fact]
     public void IL_comes_out_the_same_under_any_toggle_but_debug_symbols()
     {
-        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces")!;
+        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
+        Assert.NotNull(braces);
         var bracesOff = DecompilerToggles.SetToggle(DecompilerOptions.Default, braces, false);
         var symbolsOff = DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
@@ -223,7 +224,8 @@ public sealed class DecompilationTests
     public void Turning_xml_documentation_off_leaves_it_out()
     {
         var count = Trees.TestAssembly.Calculator().Child("Count : int");
-        var docs = DecompilerToggles.FindToggle("ShowXmlDocumentation")!;
+        var docs = DecompilerToggles.FindToggle("ShowXmlDocumentation");
+        Assert.NotNull(docs);
         var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, docs, false);
 
         Assert.Contains("/// <summary>How many items were added.</summary>", Documents.GetText(count.Decompile(DecompilationLanguage.CSharp)));
@@ -245,7 +247,8 @@ public sealed class DecompilationTests
     {
         var assembly = Trees.TestAssembly;
         var count = assembly.Calculator().Child("Count : int");
-        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
+        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties");
+        Assert.NotNull(bodies);
         var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, bodies, false);
         var offOnCSharp5 = off with { LanguageVersion = CSharpVersion.CSharp5 };
 
@@ -443,7 +446,8 @@ public sealed class DecompilationTests
     [Fact]
     public void Default_changes_hold_nothing_and_a_toggle_set_back_to_its_default_goes()
     {
-        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
+        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties");
+        Assert.NotNull(bodies);
 
         OnOffChanges none = default;
         var set = none.With([bodies], !bodies.DefaultValue);
@@ -458,7 +462,8 @@ public sealed class DecompilationTests
     [Fact]
     public void Options_copied_with_with_keep_holding_only_what_differs()
     {
-        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties")!;
+        var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties");
+        Assert.NotNull(bodies);
         var set = DecompilerToggles.SetToggle(DecompilerOptions.Default, bodies, !bodies.DefaultValue);
 
         var copy = set with { Changes = set.Changes.With([bodies], bodies.DefaultValue) };

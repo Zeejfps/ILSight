@@ -22,7 +22,7 @@ public sealed class NavigationTests
 
         var node = list.FindNodeById(id, [assembly]);
 
-        Assert.Equal(text, node!.Text);
+        Assert.Equal(text, node?.Text);
     }
 
     [Theory]
@@ -55,7 +55,7 @@ public sealed class NavigationTests
         var node = list.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(line.SpanAt("List").Reference));
 
         Assert.NotNull(node);
-        Assert.Equal("List<T>", node!.Text);
+        Assert.Equal("List<T>", node.Text);
         Assert.Equal(TypeShape.Class, node.TypeShape);
         Assert.Equal("System.Private.CoreLib", node.Assembly.Name);
         Assert.Contains(node.Assembly, list.Assemblies);
@@ -72,8 +72,9 @@ public sealed class NavigationTests
         var addOnList = list.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("Add").Reference));
         var field = list.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("_items").Reference));
 
-        Assert.Equal("Add(T) : void", addOnList!.Text);
-        Assert.Equal("List<T>", addOnList.Parent!.Text);
+        Assert.NotNull(addOnList);
+        Assert.Equal("Add(T) : void", addOnList.Text);
+        Assert.Equal("List<T>", addOnList.Parent?.Text);
         Assert.Same(assembly.Calculator().Child("_items : List<T>"), field);
     }
 
@@ -84,9 +85,9 @@ public sealed class NavigationTests
         var document = assembly.Calculator().Decompile(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item);")];
 
-        var add = list.FindMetadataRow(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("Add").Reference))!.Value;
-        var field = list.FindMetadataRow(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("_items").Reference))!.Value;
-        var self = list.FindMetadataRow(CodeReferences.CreateAssembly(assembly.Name, assembly.FilePath))!.Value;
+        var add = Assert.NotNull(list.FindMetadataRow(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("Add").Reference)));
+        var field = Assert.NotNull(list.FindMetadataRow(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("_items").Reference)));
+        var self = Assert.NotNull(list.FindMetadataRow(CodeReferences.CreateAssembly(assembly.Name, assembly.FilePath)));
 
         var methods = Assert.IsType<MetadataGrid>(MetadataTables.EnsureGrid(TableOf(add.Node)));
         var fields = Assert.IsType<MetadataGrid>(MetadataTables.EnsureGrid(TableOf(field.Node)));
@@ -114,11 +115,13 @@ public sealed class NavigationTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
         var document = assembly.Calculator().Decompile(DecompilationLanguage.IL);
-        var objectReference = document.SpansOf().First(s => s.Text == "System.Object" && s.Span.Reference is not null).Span.Reference!;
+        var objectReference = document.SpansOf().First(s => s.Text == "System.Object" && s.Span.Reference is not null).Span.Reference;
+        Assert.NotNull(objectReference);
 
         var node = list.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(objectReference));
 
-        Assert.Equal("Object", node!.Text);
+        Assert.NotNull(node);
+        Assert.Equal("Object", node.Text);
         Assert.Equal("System.Private.CoreLib", node.Assembly.Name);
     }
 

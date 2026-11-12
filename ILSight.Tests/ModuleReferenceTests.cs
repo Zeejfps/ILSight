@@ -7,7 +7,8 @@ public sealed class ModuleReferenceTests
     /// <summary>The References folder of the runtime's assembly <paramref name="name"/>.</summary>
     private static BrowseNode ReferencesOf(string name)
     {
-        var path = RuntimeAssemblies.Find(TestRuntime.Installed, name)!;
+        var path = RuntimeAssemblies.Find(TestRuntime.Installed, name);
+        Assert.NotNull(path);
         var assembly = new AssemblyList().Open(path);
         return assembly.Root.Child("References");
     }
@@ -90,12 +91,15 @@ public sealed class ModuleReferenceTests
     {
         var qcall = CoreLibReferences().Child("QCall");
         var list = new AssemblyList();
-        var coreLib = list.Open(RuntimeAssemblies.Find(TestRuntime.Installed, "System.Private.CoreLib")!);
+        var coreLibPath = RuntimeAssemblies.Find(TestRuntime.Installed, "System.Private.CoreLib");
+        Assert.NotNull(coreLibPath);
+        var coreLib = list.Open(coreLibPath);
         var imports = coreLib.Root.Child("References", "QCall").Children;
 
         // GC._Collect is a generated stub on every system; most QCalls are not, or not everywhere.
         var collect = imports.First(i => i.Text.StartsWith("_Collect(", StringComparison.Ordinal));
-        var definition = list.FindNode(collect.Destination)!;
+        var definition = list.FindNode(collect.Destination);
+        Assert.NotNull(definition);
 
         Assert.DoesNotContain(qcall.Children, i => i.Text.Contains(">g__", StringComparison.Ordinal));
         Assert.Equal("System.GC", Assert.IsType<NodeSubject.ImportedMethod>(collect.Subject).Value.DeclaringTypeName);

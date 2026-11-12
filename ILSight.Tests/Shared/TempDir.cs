@@ -49,7 +49,7 @@ internal sealed class TempDir : IDisposable
     private string Made(string name)
     {
         var path = PathOf(name);
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path) ?? throw new ArgumentException($"'{name}' names no file in a folder.", nameof(name)));
         return path;
     }
 }

@@ -18,7 +18,9 @@ public sealed class TypeCardTests
 
     private static TypeCard Card(string type)
     {
-        return TypeCards.Read(List, Zoo(type))!;
+        var card = TypeCards.Read(List, Zoo(type));
+        Assert.NotNull(card);
+        return card;
     }
 
     private static List<string> NamesIn(TypeCard card, MemberSection kind)

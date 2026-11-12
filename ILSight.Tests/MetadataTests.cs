@@ -153,7 +153,8 @@ public sealed class MetadataTests
     {
         var grid = TypeDefs();
 
-        var tooltip = MetadataGrids.FindTooltip(grid, grid.RowNamed("Calculator`1"), grid.Column("Attributes"))!;
+        var tooltip = MetadataGrids.FindTooltip(grid, grid.RowNamed("Calculator`1"), grid.Column("Attributes"));
+        Assert.NotNull(tooltip);
 
         Assert.Equal(["Visibility", "Layout", "ClassSemantics", "StringFormat", "Flags"], tooltip.Groups.Select(g => g.Header));
         var visibility = tooltip.Groups[0];
@@ -209,11 +210,13 @@ public sealed class MetadataTests
         var types = Grid(Table(assembly, "TypeDef"));
         var references = Grid(Table(assembly, "TypeRef"));
 
-        var calculator = MetadataGrids.FindDefinition(types, types.RowNamed("Calculator`1"))!;
-        var obj = MetadataGrids.FindDefinition(references, references.RowNamed("Object"))!;
+        var calculator = MetadataGrids.FindDefinition(types, types.RowNamed("Calculator`1"));
+        Assert.NotNull(calculator);
+        var obj = MetadataGrids.FindDefinition(references, references.RowNamed("Object"));
+        Assert.NotNull(obj);
 
         Assert.Same(assembly.Calculator(), list.FindNode(calculator));
-        Assert.Equal("Object", list.FindNode(obj)!.Text);
+        Assert.Equal("Object", list.FindNode(obj)?.Text);
         Assert.Null(MetadataGrids.FindDefinition(Grid(Metadata(assembly).Child("DOS Header")), 0));
     }
 
@@ -282,7 +285,9 @@ public sealed class MetadataTests
         }
 
         Assert.InRange(MetadataGrid.CachedPatterns, 1, MetadataGrid.MaxPatterns);
-        Assert.Matches(MetadataGrids.FindPattern("/^limit0$/")!, "LIMIT0");
+        var limit0 = MetadataGrids.FindPattern("/^limit0$/");
+        Assert.NotNull(limit0);
+        Assert.Matches(limit0, "LIMIT0");
     }
 
     private static MetadataColumnFilter?[] Filters(MetadataGrid grid, string column, MetadataColumnFilter filter)
@@ -323,7 +328,8 @@ public sealed class MetadataTests
     public void A_flags_filter_picks_values_of_a_group_and_requires_or_excludes_flags()
     {
         var grid = TypeDefs();
-        var schema = grid.Columns[grid.Column("Attributes")].Flags!;
+        var schema = grid.Columns[grid.Column("Attributes")].Flags;
+        Assert.NotNull(schema);
         var state = FilterStatePresenter.CreateFilterState(schema);
         var filters = Filters(grid, "Attributes", new MetadataColumnFilter.ByFlags { Flags = state });
 
@@ -342,7 +348,9 @@ public sealed class MetadataTests
     public void Setting_the_independent_mode_counts_as_a_change_only_when_it_is_one()
     {
         var grid = TypeDefs();
-        var state = FilterStatePresenter.CreateFilterState(grid.Columns[grid.Column("Attributes")].Flags!);
+        var schema = grid.Columns[grid.Column("Attributes")].Flags;
+        Assert.NotNull(schema);
+        var state = FilterStatePresenter.CreateFilterState(schema);
         var before = state.Revision;
 
         FilterStatePresenter.SetIndependentMode(state, state.Mode);
@@ -374,14 +382,17 @@ public sealed class MetadataTests
         FilterStatePresenter.SetFlagState(state, "Abstract", TriState.Required);
         FilterStatePresenter.SetIndependentMode(state, MatchMode.Any);
 
-        var saved = FilterStatePresenter.SaveFilter(state)!;
+        var saved = FilterStatePresenter.SaveFilter(state);
+        Assert.NotNull(saved);
         var restored = FilterStatePresenter.CreateFilterState(schema);
-        FilterStatePresenter.RestoreFilter(restored, saved with { Groups = new Dictionary<string, uint[]>(saved.Groups!) { ["Gone"] = [1u] }, Flags = new Dictionary<string, TriState>(saved.Flags!) { ["Missing"] = TriState.Required } });
+        Assert.NotNull(saved.Groups);
+        Assert.NotNull(saved.Flags);
+        FilterStatePresenter.RestoreFilter(restored, saved with { Groups = new Dictionary<string, uint[]>(saved.Groups) { ["Gone"] = [1u] }, Flags = new Dictionary<string, TriState>(saved.Flags) { ["Missing"] = TriState.Required } });
 
         Assert.Equal(FilterStatePresenter.Describe(state), FilterStatePresenter.Describe(restored));
         Assert.Equal(MatchMode.Any, restored.Mode);
-        Assert.Equal(["Abstract"], saved.Flags!.Keys);
-        Assert.Equal(["Visibility"], saved.Groups!.Keys);
+        Assert.Equal(["Abstract"], saved.Flags.Keys);
+        Assert.Equal(["Visibility"], saved.Groups.Keys);
         Assert.Null(FilterStatePresenter.SaveFilter(FilterStatePresenter.CreateFilterState(schema)));
     }
 
@@ -392,7 +403,9 @@ public sealed class MetadataTests
         var coff = Grid(Metadata(assembly).Child("COFF Header"));
         var characteristics = Enumerable.Range(0, coff.RowCount).Single(r => MetadataGrids.GetText(coff, r, coff.Column("Member")) == "Characteristics");
 
-        var bits = Assert.Single(MetadataGrids.FindTooltip(coff, characteristics, coff.Column("Value"))!.Groups).Flags;
+        var tooltip = MetadataGrids.FindTooltip(coff, characteristics, coff.Column("Value"));
+        Assert.NotNull(tooltip);
+        var bits = Assert.Single(tooltip.Groups).Flags;
 
         Assert.False(coff.HasDetails);
         Assert.Equal(16, bits.Count);
@@ -505,7 +518,7 @@ public sealed class MetadataTests
         Assert.Equal(2, log.RowCount);
         Assert.Equal(type, Hex(log, 0, "Handle"));
         Assert.Equal((int)EditAndContinueOperation.AddMethod, Hex(log, 1, "FuncCode"));
-        Assert.Equal(nameof(EditAndContinueOperation.AddMethod), MetadataGrids.FindTooltip(log, 1, log.Column("FuncCode"))!.Text);
+        Assert.Equal(nameof(EditAndContinueOperation.AddMethod), MetadataGrids.FindTooltip(log, 1, log.Column("FuncCode"))?.Text);
         Assert.Equal(1, map.RowCount);
         Assert.Equal(type, Hex(map, 0, "Handle"));
         Assert.Equal(new MetadataAddress(TableIndex.TypeDef, 0), MetadataGrids.FindLink(map, 0, map.Column("Handle")));

@@ -10,7 +10,7 @@ public sealed class AnchorTests
         var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var line = type.LineContaining("Changed?.Invoke(this, EventArgs.Empty);");
 
-        var anchor = Documents.FindAnchorAt(type, line)!.Value;
+        var anchor = Assert.NotNull(Documents.FindAnchorAt(type, line));
         var method = Trees.TestAssembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
         var ilLine = Assert.NotNull(Documents.FindLine(il, anchor));
@@ -28,7 +28,7 @@ public sealed class AnchorTests
         var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var line = type.LineContaining("public void Add(T item)");
 
-        var anchor = Documents.FindAnchorAt(type, line)!.Value;
+        var anchor = Assert.NotNull(Documents.FindAnchorAt(type, line));
         var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
 
         Assert.Equal(CodeAnchorKind.Definition, anchor.Kind);
@@ -43,7 +43,7 @@ public sealed class AnchorTests
     {
         var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var line = type.LineContaining(text);
-        var anchor = Documents.FindAnchorAt(type, line)!.Value;
+        var anchor = Assert.NotNull(Documents.FindAnchorAt(type, line));
 
         var upper = anchor with { FilePath = AssemblyPath.Of(anchor.FilePath.Text.ToUpperInvariant()) };
 
@@ -74,7 +74,7 @@ public sealed class AnchorTests
     {
         var first = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var lines = new[] { first.LineContaining("Changed?.Invoke(this, EventArgs.Empty);"), first.LineContaining("public void Add(T item)") };
-        var anchors = lines.Select(l => Documents.FindAnchorAt(first, l)!.Value).ToArray();
+        var anchors = lines.Select(l => Assert.NotNull(Documents.FindAnchorAt(first, l))).ToArray();
 
         for (var round = 0; round < 20; round++)
         {

@@ -85,6 +85,6 @@ public sealed class DependencyTests
 
     private static string NameOf(Type type)
     {
-        return type.FullName!;
+        return type.FullName ?? throw new ArgumentException($"{type} has no full name.", nameof(type));
     }
 }

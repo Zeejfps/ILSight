@@ -71,9 +71,10 @@ public sealed class DiagramTests : IDisposable
     {
         var calculator = TypeNamed("Calculator");
 
-        Assert.Equal("How many items were added.", calculator.XmlDocs!["Count"]);
+        Assert.NotNull(calculator.XmlDocs);
+        Assert.Equal("How many items were added.", calculator.XmlDocs["Count"]);
         Assert.StartsWith("Adds an item and raises [ILSight.Tests.Fixtures.Calculator`1.Changed].", calculator.XmlDocs["Add"]);
-        Assert.Equal("The space the shape covers.", TypeNamed("IShape").XmlDocs!["Area"]);
+        Assert.Equal("The space the shape covers.", TypeNamed("IShape").XmlDocs?["Area"]);
     }
 
     [Fact]

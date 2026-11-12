@@ -76,7 +76,7 @@ public sealed class ILSpyTreeTests
 
         Assert.Equal(assembly.FullName, info.AssemblyFullName);
         Assert.Equal(assembly.FilePath.FileName, info.ModuleName);
-        Assert.Equal((uint)anchor!.Value.Token, info.Token);
+        Assert.Equal((uint)Assert.NotNull(anchor).Token, info.Token);
         Assert.Equal(Trees.FixturesNamespace + ".Calculator.Add", info.MemberName);
         Assert.Equal(Trees.FixturesNamespace + ".Calculator", info.LocationNodeName);
         Assert.Equal([assembly.FilePath.Text, Trees.FixturesNamespace, Trees.FixturesNamespace + ".Calculator`1"], info.TreePath);

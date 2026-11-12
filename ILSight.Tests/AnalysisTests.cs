@@ -13,7 +13,9 @@ public sealed class AnalysisTests
 
     private static List<AnalysisSymbol> Run(AssemblyList list, BrowseNode node, string header)
     {
-        return Analyzers.RunAsync(list, Analyzers.Of(node)!, Analyzers.KindsFor(Analyzers.Of(node)!).Single(k => Analyzers.GetHeader(k) == header))
+        var symbol = Analyzers.Of(node);
+        Assert.NotNull(symbol);
+        return Analyzers.RunAsync(list, symbol, Analyzers.KindsFor(symbol).Single(k => Analyzers.GetHeader(k) == header))
             .ToBlockingEnumerable().SelectMany(static b => b).ToList();
     }
 
@@ -22,7 +24,9 @@ public sealed class AnalysisTests
     {
         var (_, add) = Member("Add(T) : void");
 
-        var kinds = Analyzers.KindsFor(Analyzers.Of(add)!).Select(Analyzers.GetHeader);
+        var symbol = Analyzers.Of(add);
+        Assert.NotNull(symbol);
+        var kinds = Analyzers.KindsFor(symbol).Select(Analyzers.GetHeader);
 
         Assert.Equal(["Uses", "Used By", "Implements"], kinds);
     }
@@ -38,7 +42,9 @@ public sealed class AnalysisTests
         Assert.Equal(new SymbolShape.Member(MemberShape.Operator), plus.Shape);
         Assert.StartsWith("operator +", plus.Label);
         Assert.Equal(Trees.FixturesNamespace + ".Calculator<T> (ILSight.Tests)", plus.Location);
-        Assert.Same(add.Parent!.Children.Single(c => c.Is(MemberShape.Operator)), list.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(plus.Reference)));
+        var calculator = add.Parent;
+        Assert.NotNull(calculator);
+        Assert.Same(calculator.Children.Single(c => c.Is(MemberShape.Operator)), list.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(plus.Reference)));
     }
 
     [Fact]
@@ -62,7 +68,9 @@ public sealed class AnalysisTests
 
         var users = Run(list, shape, "Used By").Select(r => r.Label);
         var implementations = Run(list, area, "Implemented By").Select(r => r.Label);
-        var accessors = Analyzers.AccessorsOf(Analyzers.Of(area)!).Select(a => a.Label);
+        var areaSymbol = Analyzers.Of(area);
+        Assert.NotNull(areaSymbol);
+        var accessors = Analyzers.AccessorsOf(areaSymbol).Select(a => a.Label);
 
         Assert.Contains("Circle", users);
         Assert.Contains(implementations, l => l.StartsWith("Area"));

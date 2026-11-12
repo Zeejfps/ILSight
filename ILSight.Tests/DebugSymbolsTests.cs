@@ -23,20 +23,23 @@ public sealed class DebugSymbolsTests
     [Fact]
     public void Locals_keep_the_tuple_names_and_dynamic_flags_their_signatures_cannot()
     {
-        var symbols = LoadedAssemblies.EnsureDebugSymbols(Trees.TestAssembly)!;
+        var symbols = LoadedAssemblies.EnsureDebugSymbols(Trees.TestAssembly);
+        Assert.NotNull(symbols);
 
         Assert.True(symbols.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Spread)), 0, out var tuple));
         Assert.True(symbols.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Echo)), 0, out var dynamic));
 
         Assert.Equal(["Low", "High"], tuple.TupleElementNames);
         Assert.Null(tuple.DynamicFlags);
-        Assert.True(dynamic.DynamicFlags![0]);
+        Assert.NotNull(dynamic.DynamicFlags);
+        Assert.True(dynamic.DynamicFlags[0]);
     }
 
     [Fact]
     public void A_local_without_extra_type_info_has_none()
     {
-        var symbols = LoadedAssemblies.EnsureDebugSymbols(Trees.TestAssembly)!;
+        var symbols = LoadedAssemblies.EnsureDebugSymbols(Trees.TestAssembly);
+        Assert.NotNull(symbols);
 
         Assert.False(symbols.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Grow)), 0, out _));
         Assert.True(symbols.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
@@ -73,8 +76,10 @@ public sealed class DebugSymbolsTests
         var after = list.OpenModule(copy);
 
         Assert.Null(before);
-        Assert.Equal(TestPdbPath, LoadedAssemblies.EnsureDebugSymbols(after)!.SourceFileName);
-        Assert.True(LoadedAssemblies.EnsureDebugSymbols(after).TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
+        var symbols = LoadedAssemblies.EnsureDebugSymbols(after);
+        Assert.NotNull(symbols);
+        Assert.Equal(TestPdbPath, symbols.SourceFileName);
+        Assert.True(symbols.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
         Assert.Equal("step", name);
         Assert.Contains(after.Root.Children, c => c.Text == "Debug Metadata (From portable PDB)");
     }
@@ -95,7 +100,7 @@ public sealed class DebugSymbolsTests
 
     private static MethodDefinitionHandle CircleMethod(string name)
     {
-        var token = typeof(Circle).GetMethod(name)!.MetadataToken;
+        var token = (typeof(Circle).GetMethod(name) ?? throw new MissingMethodException(nameof(Circle), name)).MetadataToken;
         return (MethodDefinitionHandle)MetadataTokens.EntityHandle(token);
     }
 }

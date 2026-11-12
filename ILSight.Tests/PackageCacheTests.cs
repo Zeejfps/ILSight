@@ -5,9 +5,9 @@ namespace ILSight.Tests;
 public sealed class PackageCacheTests
 {
     private static readonly byte[] PackageBytes = [1, 2, 3];
-    private static readonly PackageId Tiny = PackageId.Parse("Tiny")!;
-    private static readonly PackageId Gone = PackageId.Parse("Gone")!;
-    private static readonly PackageVersion OneZero = PackageVersion.Parse("1.0.0")!;
+    private static readonly PackageId Tiny = Packages.Id("Tiny");
+    private static readonly PackageId Gone = Packages.Id("Gone");
+    private static readonly PackageVersion OneZero = Packages.Version("1.0.0");
 
     [Fact]
     public async Task A_package_not_on_disk_is_downloaded_from_its_lower_case_url_and_kept()
@@ -17,11 +17,11 @@ public sealed class PackageCacheTests
         fake.Answer(FakeFeed.PackagesUrl + "tiny/1.0.0-beta/tiny.1.0.0-beta.nupkg", PackageBytes);
         var cache = new PackageCache { GlobalPackagesFolder = temp.PathOf("global"), DownloadFolder = temp.PathOf("downloads") };
 
-        var path = await NuGetFeeds.GetPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, PackageVersion.Parse("1.0.0-Beta+build.5")!);
+        var path = await NuGetFeeds.GetPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, Packages.Version("1.0.0-Beta+build.5"));
 
         Assert.Equal(temp.PathOf(Path.Combine("downloads", "tiny", "1.0.0-beta", "tiny.1.0.0-beta.nupkg")), path);
         Assert.Equal(PackageBytes, File.ReadAllBytes(path));
-        Assert.Equal(path, NuGetFeeds.FindPackage(cache, Tiny, PackageVersion.Parse("1.0.0-beta")!));
+        Assert.Equal(path, NuGetFeeds.FindPackage(cache, Tiny, Packages.Version("1.0.0-beta")));
     }
 
     [Fact]

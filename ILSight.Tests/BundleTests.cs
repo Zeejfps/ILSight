@@ -50,7 +50,7 @@ public sealed class BundleTests
 
         Assert.Null(calculator.Error);
         Assert.Contains("class Calculator<T>", Documents.GetText(calculator));
-        Assert.Equal(bundle.FilePath.Combine("ILSight.Core.dll"), core!.Assembly.FilePath);
+        Assert.Equal(bundle.FilePath.Combine("ILSight.Core.dll"), core?.Assembly.FilePath);
     }
 
     [Fact]

@@ -34,7 +34,8 @@ public sealed class ApiDiffTests
             entry = Named(entries, text);
             entries = entry.Children;
         }
-        return entry!;
+        Assert.NotNull(entry);
+        return entry;
     }
 
     private static ApiEntry Named(IReadOnlyList<ApiEntry> entries, string text)
@@ -281,8 +282,8 @@ public sealed class ApiDiffTests
         var left = opened.List.FindNode(Both(deposit).Left.Reference);
         var right = opened.List.FindNode(Both(deposit).Right.Reference);
 
-        Assert.Same(opened.Left, left!.Assembly);
-        Assert.Same(opened.Right, right!.Assembly);
+        Assert.Same(opened.Left, left?.Assembly);
+        Assert.Same(opened.Right, right?.Assembly);
     }
 
     [Fact]

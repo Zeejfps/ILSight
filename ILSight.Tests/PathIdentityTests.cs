@@ -97,11 +97,12 @@ public sealed class PathIdentityTests : IDisposable
         var found = places.Select(p => after.FindNode(BrowseNodes.GetPath(p))).ToArray();
 
         Assert.All(found, Assert.NotNull);
-        Assert.Equal(places.Select(static p => BrowseNodes.GetPath(p)), found.Select(static f => BrowseNodes.GetPath(f!)));
-        Assert.Equal(["Box<TItem>", "Put(TItem) : void"], found.Take(2).Select(static f => f!.Text));
-        Assert.Equal(TypeShape.Record, found[2]!.TypeShape);
-        Assert.Equal(MemberShape.Constant, found[3]!.MemberShape);
-        Assert.NotEqual(places[4].Text, found[4]!.Text);
+        var foundNodes = found.OfType<BrowseNode>().ToArray();
+        Assert.Equal(places.Select(static p => BrowseNodes.GetPath(p)), foundNodes.Select(static f => BrowseNodes.GetPath(f)));
+        Assert.Equal(["Box<TItem>", "Put(TItem) : void"], foundNodes.Take(2).Select(static f => f.Text));
+        Assert.Equal(TypeShape.Record, foundNodes[2].TypeShape);
+        Assert.Equal(MemberShape.Constant, foundNodes[3].MemberShape);
+        Assert.NotEqual(places[4].Text, foundNodes[4].Text);
     }
 
     [Fact]
@@ -132,7 +133,7 @@ public sealed class PathIdentityTests : IDisposable
         var found = new[] { list.FindNode(BrowseNodes.GetPath(lib)), list.FindNode(BrowseNodes.GetPath(shape)) };
 
         Assert.Equal(["net10.0", "Shape"], found.Select(static f => f?.Text));
-        Assert.Equal("lib", found[0]!.Parent!.Text);
+        Assert.Equal("lib", found[0]?.Parent?.Text);
     }
 
     /// <summary>Asserts <paramref name="nodes"/> are two nodes of one label, named apart, and each found
@@ -149,7 +150,7 @@ public sealed class PathIdentityTests : IDisposable
 
         Assert.All(found, Assert.NotNull);
         Assert.NotSame(found[0], found[1]);
-        Assert.Equal(nodes.Select(static n => BrowseNodes.GetPath(n)), found.Select(static f => BrowseNodes.GetPath(f!)));
+        Assert.Equal(nodes.Select(static n => BrowseNodes.GetPath(n)), found.OfType<BrowseNode>().Select(static f => BrowseNodes.GetPath(f)));
     }
 
     /// <summary>Gives the first entry of the debug directory of the file at <paramref name="path"/> of type
@@ -161,7 +162,9 @@ public sealed class PathIdentityTests : IDisposable
         var bytes = File.ReadAllBytes(path);
         using (var reader = new PEReader(new MemoryStream(bytes)))
         {
-            var directory = reader.PEHeaders.PEHeader!.DebugTableDirectory;
+            var header = reader.PEHeaders.PEHeader;
+            Assert.NotNull(header);
+            var directory = header.DebugTableDirectory;
             Assert.True(reader.PEHeaders.TryGetDirectoryOffset(directory, out var start));
             var at = reader.ReadDebugDirectory().ToList().FindIndex(e => e.Type == from);
             Assert.True(at >= 0);

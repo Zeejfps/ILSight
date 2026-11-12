@@ -117,7 +117,9 @@ public sealed class ExportTests : IDisposable
 
         Assert.Equal(projectPath, exported.ProjectPath);
         Assert.Contains("<Project", File.ReadAllText(projectPath));
-        var files = Directory.EnumerateFiles(Path.GetDirectoryName(projectPath)!, "*.cs", SearchOption.AllDirectories);
+        var folder = Path.GetDirectoryName(projectPath);
+        Assert.NotNull(folder);
+        var files = Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories);
         Assert.Contains(files, f => Path.GetFileName(f) == "Calculator.cs");
     }
 
@@ -129,7 +131,8 @@ public sealed class ExportTests : IDisposable
 
         AssemblyExport.ExportProject(assembly, DecompilerOptions.Default, projectPath);
 
-        var folder = Path.GetDirectoryName(projectPath)!;
+        var folder = Path.GetDirectoryName(projectPath);
+        Assert.NotNull(folder);
         var project = File.ReadAllText(projectPath);
         var window = File.ReadAllText(Path.Combine(folder, "SampleApp", "MainWindow.xaml"));
         var codeBehind = File.ReadAllText(Path.Combine(folder, "SampleApp", "MainWindow.cs"));
@@ -192,7 +195,7 @@ public sealed class ExportTests : IDisposable
 
         Assert.Contains(progress.Reports, r => r is { Part: 1, Parts: 2 });
         Assert.Contains(progress.Reports, r => r is { Part: 2, Parts: 2, Fraction: 0.5f });
-        Assert.All(progress.Reports, r => Assert.InRange(r.Fraction!.Value, 0f, 1f));
+        Assert.All(progress.Reports, r => Assert.InRange(Assert.NotNull(r.Fraction), 0f, 1f));
     }
 
     [Fact]
@@ -305,8 +308,10 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public void Resetting_the_code_toggles_leaves_how_projects_are_exported()
     {
-        var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces")!;
-        var deadCode = DecompilerToggles.FindToggle("RemoveDeadCode")!;
+        var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces");
+        Assert.NotNull(nested);
+        var deadCode = DecompilerToggles.FindToggle("RemoveDeadCode");
+        Assert.NotNull(deadCode);
         var changed = DecompilerToggles.SetToggle(DecompilerToggles.SetToggle(DecompilerOptions.Default, nested, !nested.DefaultValue), deadCode, !deadCode.DefaultValue);
 
         var reset = DecompilerToggles.ResetCodeToggles(changed);
@@ -328,7 +333,8 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public void The_project_export_toggles_leave_decompiled_code_as_it_was()
     {
-        var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces")!;
+        var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces");
+        Assert.NotNull(nested);
         var changed = DecompilerToggles.SetToggle(DecompilerOptions.Default, nested, !nested.DefaultValue);
 
         Assert.True(DecompilerToggles.ProducesSameCode(changed, DecompilerOptions.Default, DecompilationLanguage.CSharp));

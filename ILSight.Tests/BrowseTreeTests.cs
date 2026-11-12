@@ -110,7 +110,7 @@ public sealed class BrowseTreeTests
         Assert.DoesNotContain(fixtures.Child("Circle").Children, c => c.Subject is NodeSubject.DerivedTypes);
         Assert.DoesNotContain(fixtures.Child("Size").Children, c => c.Subject is NodeSubject.DerivedTypes);
         Assert.Empty(assembly.Calculator().Child("Derived Types").Children);
-        Assert.Equal("Circle", ILSight.Core.Analysis.Analyzers.Of(circle)!.Label);
+        Assert.Equal("Circle", ILSight.Core.Analysis.Analyzers.Of(circle)?.Label);
     }
 
     [Fact]
