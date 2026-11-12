@@ -137,11 +137,16 @@ internal static class AboutDialogView
         if (status is UpdateStatus.UpToDate)
         {
             ui.Text(t.AboutUpToDate, color: ui.Theme.TextMuted, wrap: true);
+            return;
         }
-        else if (status is UpdateStatus.Failed)
+
+        if (status is UpdateStatus.Failed)
         {
             ui.Text(t.AboutUpdateFailed, color: ui.Theme.Danger, wrap: true);
+            return;
         }
+
+        // Every other status, now and later, is no check's result: nothing shows.
     }
 
     private static void CheckAutomatically(Ui<UiState> ui, bool isCheckAutomatic)

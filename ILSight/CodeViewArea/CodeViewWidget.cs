@@ -809,27 +809,7 @@ public static class CodeViewWidget
     private static void Scroll(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, float advance, float textLeft,
         UiRect content, float deltaY)
     {
-        var folds = state.Folds;
         var viewport = content.Height;
-        var pending = state.Pending;
-        if (pending is PendingScroll.Restore restoring)
-        {
-            var restore = restoring.Position;
-            if (viewport <= 0f)
-            {
-                ui.RequestUpdate();
-            }
-            else
-            {
-                state.Pending = null;
-                var top = Math.Clamp(restore.TopLine, 0, Math.Max(0, document.Lines.Length - 1));
-                RevealFolds(state, top);
-                state.ScrollY = GetRowTop(CodeFolding.GetRowOf(folds, top), rowHeight);
-                state.ScrollX = restore.ScrollX;
-                state.Selection.Select(CodeText.Clamp(document, restore.Anchor), CodeText.Clamp(document, restore.Caret));
-            }
-        }
-
         if (viewport > 0f)
         {
             state.PageRows = (int)MathF.Max(1f, MathF.Floor(viewport / rowHeight) - 1f);
@@ -837,63 +817,131 @@ public static class CodeViewWidget
 
         deltaY += state.KeyScrollRows * rowHeight;
         state.KeyScrollRows = 0;
+        var pending = state.Pending;
+        if (pending is null)
+        {
+            ScrollBy(state, rowHeight, viewport, deltaY);
+            return;
+        }
+
+        ScrollToPending(ui, state, pending, document, rowHeight, advance, textLeft, content, deltaY);
+    }
+
+    /// <summary>Scrolls by <paramref name="deltaY"/> and where <paramref name="pending"/> asks, once the view is laid
+    /// out: a position restored first, so the scroll moves on from it; the others after it, so they win over it.</summary>
+    private static void ScrollToPending(Ui<UiState> ui, CodeViewState state, PendingScroll pending, DecompiledDocument document, float rowHeight,
+        float advance, float textLeft, UiRect content, float deltaY)
+    {
+        pending.Switch(
+            reveal: reveal =>
+            {
+                ScrollBy(state, rowHeight, content.Height, deltaY);
+                ScrollToRevealed(ui, state, document, rowHeight, content, reveal);
+            },
+            restore: restore =>
+            {
+                ScrollToRestored(ui, state, document, rowHeight, content, restore);
+                ScrollBy(state, rowHeight, content.Height, deltaY);
+            },
+            showMatch: match =>
+            {
+                ScrollBy(state, rowHeight, content.Height, deltaY);
+                ScrollToMatch(ui, state, rowHeight, advance, textLeft, content, match);
+            },
+            showCaret: _ =>
+            {
+                ScrollBy(state, rowHeight, content.Height, deltaY);
+                ShowCaretOnceLaidOut(ui, state, document, rowHeight, advance, textLeft, content);
+            });
+    }
+
+    private static void ScrollBy(CodeViewState state, float rowHeight, float viewport, float deltaY)
+    {
         if (deltaY != 0f)
         {
-            state.ScrollY = Math.Clamp(state.ScrollY + deltaY, 0f, MathF.Max(0f, folds.RowCount * rowHeight - viewport));
+            state.ScrollY = Math.Clamp(state.ScrollY + deltaY, 0f, MathF.Max(0f, state.Folds.RowCount * rowHeight - viewport));
         }
+    }
 
-        if (pending is PendingScroll.Reveal reveal)
+    private static void ScrollToRestored(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, UiRect content,
+        PendingScroll.Restore restoring)
+    {
+        var restore = restoring.Position;
+        if (content.Height <= 0f)
         {
-            if (viewport <= 0f)
-            {
-                ui.RequestUpdate();
-                return;
-            }
-            var line = Math.Clamp(reveal.Line, 0, Math.Max(0, document.Lines.Length - 1));
-            RevealFolds(state, line);
-            state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.GetRowOf(folds, line), rowHeight) - viewport / 3f);
-            state.Flash = new CodeFlash(line, ui.RealTime);
-            state.Pending = null;
             ui.RequestUpdate();
+            return;
         }
-        else if (pending is PendingScroll.ShowMatch match)
-        {
-            if (viewport <= 0f || content.Width <= 0f)
-            {
-                ui.RequestUpdate();
-                return;
-            }
-            RevealFolds(state, match.Line);
-            var top = GetRowTop(CodeFolding.GetRowOf(folds, match.Line), rowHeight);
-            if (top < state.ScrollY || top + rowHeight > state.ScrollY + viewport)
-            {
-                state.ScrollY = MathF.Max(0f, top - viewport / 3f);
-            }
 
-            var visible = content.Width - textLeft - advance;
-            var from = match.ColumnStart * advance;
-            var to = match.ColumnEnd * advance;
-            if (from < state.ScrollX)
-            {
-                state.ScrollX = MathF.Max(0f, from - 4f * advance);
-            }
-            else if (to > state.ScrollX + visible)
-            {
-                state.ScrollX = to - visible + 4f * advance;
-            }
+        state.Pending = null;
+        var top = Math.Clamp(restore.TopLine, 0, Math.Max(0, document.Lines.Length - 1));
+        RevealFolds(state, top);
+        state.ScrollY = GetRowTop(CodeFolding.GetRowOf(state.Folds, top), rowHeight);
+        state.ScrollX = restore.ScrollX;
+        state.Selection.Select(CodeText.Clamp(document, restore.Anchor), CodeText.Clamp(document, restore.Caret));
+    }
 
-            state.Pending = null;
-        }
-        else if (pending is PendingScroll.ShowCaret)
+    private static void ScrollToRevealed(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, UiRect content,
+        PendingScroll.Reveal reveal)
+    {
+        var viewport = content.Height;
+        if (viewport <= 0f)
         {
-            if (viewport <= 0f || content.Width <= 0f)
-            {
-                ui.RequestUpdate();
-                return;
-            }
-            ShowCaret(state, document, rowHeight, advance, textLeft, content);
-            state.Pending = null;
+            ui.RequestUpdate();
+            return;
         }
+
+        var line = Math.Clamp(reveal.Line, 0, Math.Max(0, document.Lines.Length - 1));
+        RevealFolds(state, line);
+        state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.GetRowOf(state.Folds, line), rowHeight) - viewport / 3f);
+        state.Flash = new CodeFlash(line, ui.RealTime);
+        state.Pending = null;
+        ui.RequestUpdate();
+    }
+
+    private static void ScrollToMatch(Ui<UiState> ui, CodeViewState state, float rowHeight, float advance, float textLeft, UiRect content,
+        PendingScroll.ShowMatch match)
+    {
+        var viewport = content.Height;
+        if (viewport <= 0f || content.Width <= 0f)
+        {
+            ui.RequestUpdate();
+            return;
+        }
+
+        RevealFolds(state, match.Line);
+        var top = GetRowTop(CodeFolding.GetRowOf(state.Folds, match.Line), rowHeight);
+        if (top < state.ScrollY || top + rowHeight > state.ScrollY + viewport)
+        {
+            state.ScrollY = MathF.Max(0f, top - viewport / 3f);
+        }
+
+        var visible = content.Width - textLeft - advance;
+        var from = match.ColumnStart * advance;
+        var to = match.ColumnEnd * advance;
+        if (from < state.ScrollX)
+        {
+            state.ScrollX = MathF.Max(0f, from - 4f * advance);
+        }
+        else if (to > state.ScrollX + visible)
+        {
+            state.ScrollX = to - visible + 4f * advance;
+        }
+
+        state.Pending = null;
+    }
+
+    private static void ShowCaretOnceLaidOut(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, float advance,
+        float textLeft, UiRect content)
+    {
+        if (content.Height <= 0f || content.Width <= 0f)
+        {
+            ui.RequestUpdate();
+            return;
+        }
+
+        ShowCaret(state, document, rowHeight, advance, textLeft, content);
+        state.Pending = null;
     }
 
     /// <summary>Scrolls as little as brings the caret's row, and its column on a line that is shown, into view.</summary>
