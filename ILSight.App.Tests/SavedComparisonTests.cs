@@ -1,6 +1,7 @@
 using ZGF.Desktop;
 using ILSight.Core;
 using ILSight.Core.Comparison;
+using ILSight.AssemblyHandling;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Comparisons;
 using static ILSight.App.Tests.TestPaths;

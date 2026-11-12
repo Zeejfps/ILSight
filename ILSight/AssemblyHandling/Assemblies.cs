@@ -1,7 +1,7 @@
 using ILSight.Core;
 using static ILSight.SavedDocuments;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>Closing the assemblies of the list, and what to tell the user about opening that failed. Opening them
 /// is <see cref="AssemblyOpening"/>'s, reading them again <see cref="AssemblyReloading"/>'s.</summary>

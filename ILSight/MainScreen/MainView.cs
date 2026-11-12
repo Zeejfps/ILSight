@@ -14,6 +14,7 @@ using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
 using ILSight.Searching;
+using ILSight.AssemblyHandling;
 using static ILSight.DocumentPanels;
 
 namespace ILSight.MainScreen;

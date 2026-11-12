@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Comparison;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>Reaches the app's error reports, and compares assemblies' APIs off the UI thread, for
 /// <see cref="CompareAssembliesHandler"/>. The comparison runs on the thread pool and comes back on the UI thread, with

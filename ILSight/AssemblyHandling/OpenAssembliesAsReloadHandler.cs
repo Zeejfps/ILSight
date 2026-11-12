@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using static ILSight.SavedDocuments;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>Opens files into the list as a reload does, as switching to a list or starting the app does, reaching
 /// the files and the user's error reports through <see cref="IPorts"/>.</summary>

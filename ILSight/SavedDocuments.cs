@@ -2,6 +2,7 @@ using System.Diagnostics;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Diagramming;
+using ILSight.AssemblyHandling;
 using static ILSight.Comparisons;
 using static ILSight.Decompilation;
 using static ILSight.Diagramming.Diagrams;

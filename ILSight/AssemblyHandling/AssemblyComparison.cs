@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Comparison;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>The two assemblies a comparison tab compares, by file, on the left and on the right, what it takes in, and
 /// what the newest comparison of them that finished came to. Mutated on the UI thread only.</summary>

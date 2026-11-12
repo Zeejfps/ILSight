@@ -1,4 +1,4 @@
-using static ILSight.Assemblies;
+using static ILSight.AssemblyHandling.Assemblies;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 
 namespace ILSight.AppHosting;

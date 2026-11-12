@@ -16,6 +16,7 @@ using ILSight.DisplayChoices;
 using ILSight.NuGet;
 using ILSight.Searching;
 using ILSight.MainScreen;
+using ILSight.AssemblyHandling;
 
 namespace ILSight;
 

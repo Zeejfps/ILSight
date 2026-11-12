@@ -1,4 +1,6 @@
-namespace ILSight.Exporting;
+using ILSight.Exporting;
+
+namespace ILSight.AssemblyHandling;
 
 /// <summary>
 /// The export dialog's Choose page: the open assemblies with the ticked ones first, in an order

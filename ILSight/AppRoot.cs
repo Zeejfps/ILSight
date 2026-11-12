@@ -19,6 +19,7 @@ using ILSight.Searching;
 using ILSight.AppHosting;
 using ILSight.MainScreen;
 using ILSight.Diagramming;
+using ILSight.AssemblyHandling;
 
 namespace ILSight;
 

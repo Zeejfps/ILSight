@@ -1,5 +1,6 @@
 using ILSight.Core;
 using ILSight.Core.Comparison;
+using ILSight.AssemblyHandling;
 
 namespace ILSight.App.Tests;
 

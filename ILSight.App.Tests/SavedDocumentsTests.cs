@@ -4,7 +4,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
-using static ILSight.Assemblies;
+using static ILSight.AssemblyHandling.Assemblies;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Diagramming.Diagrams;
 using static ILSight.DocumentPanels;

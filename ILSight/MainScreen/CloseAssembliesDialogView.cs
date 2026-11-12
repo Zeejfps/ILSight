@@ -3,8 +3,9 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Commanding;
-using static ILSight.AssemblyClosing;
-using static ILSight.Assemblies;
+using ILSight.AssemblyHandling;
+using static ILSight.AssemblyHandling.AssemblyClosing;
+using static ILSight.AssemblyHandling.Assemblies;
 
 namespace ILSight.MainScreen;
 

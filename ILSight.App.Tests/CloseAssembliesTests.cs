@@ -1,8 +1,8 @@
 using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
-using static ILSight.AssemblyClosing;
-using static ILSight.Assemblies;
+using static ILSight.AssemblyHandling.AssemblyClosing;
+using static ILSight.AssemblyHandling.Assemblies;
 
 namespace ILSight.App.Tests;
 

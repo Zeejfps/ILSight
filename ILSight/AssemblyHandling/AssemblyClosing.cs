@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>What the "close assemblies" dialog does: listing the items, filtering and ticking them, and
 /// what Close closes.</summary>

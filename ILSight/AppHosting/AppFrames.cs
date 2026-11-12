@@ -6,6 +6,7 @@ using ILSight.Exporting;
 using ILSight.Commanding;
 using ILSight.ProcessBrowsing;
 using ILSight.NuGet;
+using ILSight.AssemblyHandling;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.CodeDisplay;
 using static ILSight.Decompilation;

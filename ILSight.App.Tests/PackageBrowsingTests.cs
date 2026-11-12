@@ -2,6 +2,7 @@ using System.IO.Compression;
 using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Exporting;
+using ILSight.AssemblyHandling;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;

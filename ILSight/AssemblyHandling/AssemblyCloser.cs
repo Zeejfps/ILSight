@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>The "close assemblies" dialog: every item of the list in the list's order, ticked to close,
 /// narrowed by a filter on name or path and, when asked, to the ticked ones. A Shift-click ticks or unticks

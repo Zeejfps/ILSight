@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>Opening assemblies into the list: files the user picked or dropped, and the assemblies one references.
 /// The workflows return once the files are open, with the load they started in a tab for the edge to start, and

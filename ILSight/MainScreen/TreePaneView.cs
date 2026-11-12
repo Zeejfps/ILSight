@@ -8,7 +8,8 @@ using ILSight.Localization;
 using ILSight.Exporting;
 using ILSight.Commanding;
 using ILSight.Diagramming;
-using static ILSight.Assemblies;
+using ILSight.AssemblyHandling;
+using static ILSight.AssemblyHandling.Assemblies;
 using static ILSight.Diagramming.Diagrams;
 using static ILSight.ScreenLayout;
 

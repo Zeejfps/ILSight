@@ -5,7 +5,7 @@ using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Decompilation;
 using static ILSight.SavedDocuments;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>Reading the assemblies of the list again: one of them, with a PDB or a target framework picked for it,
 /// or all of them from disk, then showing each tab's place in them again. The workflows return once the files are

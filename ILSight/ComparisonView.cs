@@ -6,6 +6,7 @@ using ILSight.Core.Comparison;
 using ILSight.Localization;
 using ILSight.Commanding;
 using ILSight.DocumentViewing;
+using ILSight.AssemblyHandling;
 using static ILSight.Comparisons;
 
 namespace ILSight;

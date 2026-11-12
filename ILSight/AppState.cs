@@ -8,6 +8,7 @@ using ILSight.CodeTooltipping;
 using ILSight.UserState;
 using ILSight.Searching;
 using ILSight.Diagramming;
+using ILSight.AssemblyHandling;
 
 namespace ILSight;
 
@@ -220,7 +221,7 @@ public sealed class AppState
     /// <summary>True while a reference or a history entry is being found in the background.</summary>
     public bool IsResolving => Intent.IsResolving;
 
-    /// <summary>True while <see cref="ILSight.AssemblyReloading.RefreshAssembliesAsync"/> reopens the assemblies.</summary>
+    /// <summary>True while <see cref="ILSight.AssemblyHandling.AssemblyReloading.RefreshAssembliesAsync"/> reopens the assemblies.</summary>
     public bool IsReloading => Reload.IsRunning;
 
     /// <summary>True while a file of the list is read again, the list still holding it as it was.</summary>

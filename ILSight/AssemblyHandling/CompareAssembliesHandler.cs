@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Comparison;
 
-namespace ILSight;
+namespace ILSight.AssemblyHandling;
 
 /// <summary>Runs a comparison <see cref="Comparisons"/> started: compares its two assemblies' APIs through
 /// <see cref="IPorts"/>, without holding up the screen, and shows what changed, or that it failed, unless a newer

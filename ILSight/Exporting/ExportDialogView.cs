@@ -7,6 +7,7 @@ using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.Commanding;
 using ILSight.AppHosting;
+using ILSight.AssemblyHandling;
 using static ILSight.Exporting.Exports;
 using static ILSight.Preferences;
 

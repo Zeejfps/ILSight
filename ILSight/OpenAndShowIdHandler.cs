@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using ILSight.Core;
+using ILSight.AssemblyHandling;
 
 namespace ILSight;
 
