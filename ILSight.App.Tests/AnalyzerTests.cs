@@ -107,7 +107,7 @@ public sealed class AnalyzerTests
         d.Settle();
         AnalyzerPanelView.Analyze(app.Ui.Analyzer, app.AppState, caller.Symbol);
 
-        Assert.StartsWith("Third()", d.AppState.Tabs.Active?.Node?.Text);
+        Assert.StartsWith("Third()", d.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.Equal(2, analyzer.Roots.Count);
         Assert.Same(analyzer.Roots[1], app.Ui.Analyzer.View.Selected);
     }
@@ -169,7 +169,7 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Outline"));
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition("return First();");
@@ -187,7 +187,7 @@ public sealed class AnalyzerTests
     private static CodeReference.Entity ReferenceTo(AppStateDriver d, string type, string text, int offset = 0)
     {
         d.Show(d.Fixture(type));
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition(text);

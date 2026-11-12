@@ -25,7 +25,7 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
     public async Task<DecompileTicket?> HandleAsync(AppState appState, CodeReference.Navigable reference, ResolveTicket ticket, CancellationToken ct)
     {
         var found = await ports.LookUpReferenceAsync(reference, ct);
-        return ShowResolved(appState, reference, appState.Intent.EndResolving(ticket.Intent, found), ticket.Destination);
+        return ShowResolved(appState, reference, appState.Navigation.EndResolving(ticket.Intent, found), ticket.Destination);
     }
 
     /// <summary>Shows what <paramref name="resolved"/> found, or reports it unresolved. Returns the load it started
@@ -49,10 +49,7 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
 
     private static DecompileTicket? ShowFound(AppState appState, BrowseNode found, TabDestination destination)
     {
-        appState.Navigation.LeaveActiveTab();
-        var load = appState.Navigation.ShowNodeIn(destination, found, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
-        appState.History.RecordPlace(found, appState.Language);
-        return load;
+        return appState.Navigation.ShowFoundNode(destination, found, appState.Language, appState.DecompilerOptions);
     }
 
     private void ReportUnresolved(CodeReference reference, Exception? error)

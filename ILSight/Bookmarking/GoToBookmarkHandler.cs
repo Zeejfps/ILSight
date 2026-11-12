@@ -23,11 +23,10 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
     /// as when something else was asked for meanwhile.</summary>
     public async Task<DecompileTicket?> HandleAsync(AppState appState, Bookmark bookmark, CancellationToken ct)
     {
-        var destination = appState.Navigation.ChooseDestination(inNewTab: false);
-        var ticket = appState.Intent.BeginResolving();
+        var ticket = appState.Navigation.BeginResolving(inNewTab: false);
         var found = await ports.LookUpPlaceAsync(bookmark.Place, ct);
-        var resolved = appState.Intent.EndResolving(ticket, found);
-        return ShowBookmarkPlace(appState, bookmark, resolved, destination);
+        var resolved = appState.Navigation.EndResolving(ticket.Intent, found);
+        return ShowBookmarkPlace(appState, bookmark, resolved, ticket.Destination);
     }
 
     /// <summary>Shows the place <paramref name="resolved"/> found, or reports the bookmark gone. Returns the load it
@@ -52,10 +51,7 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
     private static DecompileTicket? ShowBookmarkedNode(AppState appState, Bookmark bookmark, BrowseNode node, TabDestination destination)
     {
         appState.Bookmarks.Resolve(bookmark, node);
-        appState.Navigation.LeaveActiveTab();
-        var load = appState.Navigation.ShowNodeIn(destination, node, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, target: bookmark);
-        appState.History.RecordPlace(node, appState.Language);
-        return load;
+        return appState.Navigation.ShowFoundNode(destination, node, appState.Language, appState.DecompilerOptions, bookmark);
     }
 
     private void ReportBookmarkGone(Bookmark bookmark, Exception? error)

@@ -13,7 +13,7 @@ public sealed class BookmarkImportingTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Outline"));
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
         Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark);

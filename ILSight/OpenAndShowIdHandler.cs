@@ -26,7 +26,7 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
     /// something else was asked for meanwhile.</summary>
     public async Task<DecompileTicket?> HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
     {
-        var ticket = appState.Intent.Begin();
+        var ticket = appState.Navigation.BeginRequest();
         var found = await ports.OpenAndFindIdAsync(paths, idString, ct);
         return ShowFound(appState, idString, found, ticket);
     }
@@ -38,14 +38,14 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
         switch (found)
         {
             case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
-                if (!appState.Intent.IsStale(ticket))
+                if (!appState.Navigation.IsStale(ticket))
                 {
-                    return appState.Navigation.ShowNode(ok.Value, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
+                    return appState.Navigation.ShowNode(ok.Value, appState.Language, appState.DecompilerOptions);
                 }
 
                 break;
             case Outcome<BrowseNode?>.Ok:
-                if (!appState.Intent.IsStale(ticket))
+                if (!appState.Navigation.IsStale(ticket))
                 {
                     ports.ReportError(new AppProblem.IdNotFound(idString));
                 }

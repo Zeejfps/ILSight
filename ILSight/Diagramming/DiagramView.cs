@@ -437,7 +437,7 @@ internal static class DiagramView
             return;
         }
 
-        Commands.FollowLater(screen, target, BeginOpeningFromDiagram(navigation, diagram, inNewTab));
+        Commands.FollowLater(screen, target, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
     /// <summary>A press dragged further than a click pans the diagram along with the pointer.</summary>
@@ -763,7 +763,7 @@ internal static class DiagramView
 
         ui.HideTooltip();
         var inNewTab = click.Button == PointerButton.Middle || IsCommandHeld(ui.Input.Modifiers);
-        Commands.FollowLater(ui.State, reference, BeginOpeningFromDiagram(navigation, diagram, inNewTab));
+        Commands.FollowLater(ui.State, reference, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
     /// <summary>Asks for the type <paramref name="type"/> points at to be shown on the diagram the user last worked
@@ -811,12 +811,12 @@ internal static class DiagramView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
         {
-            Commands.FollowLater(ui.State, card.Type, BeginOpeningFromDiagram(navigation, diagram, inNewTab: false));
+            Commands.FollowLater(ui.State, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.FollowLater(ui.State, card.Type, BeginOpeningFromDiagram(navigation, diagram, inNewTab: true));
+            Commands.FollowLater(ui.State, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: true));
         }
 
         ui.MenuSeparator();

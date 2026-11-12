@@ -185,7 +185,7 @@ public sealed class AutosaveTests : IDisposable
     {
         var d = AppStateDriver.Opened(_temp.Settings());
         d.Show(d.Fixture("Outline"));
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition("return First();");

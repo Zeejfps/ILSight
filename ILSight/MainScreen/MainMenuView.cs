@@ -207,9 +207,9 @@ internal static class MainMenuView
         }
     }
 
-    /// <summary>Asks which file to open; the file picked begins a request in <paramref name="intent"/> as it is
+    /// <summary>Asks which file to open; the file picked begins a request in <paramref name="navigation"/> as it is
     /// answered, and only opening it is queued.</summary>
-    public static void OpenFile(Ui<UiState> ui, UserIntent intent)
+    public static void OpenFile(Ui<UiState> ui, Navigation navigation)
     {
         var t = ui.State.Strings;
         var screen = ui.State;
@@ -218,10 +218,10 @@ internal static class MainMenuView
             new(t.FileFilterAssembliesAndPackages, ["*.dll", "*.exe", "*.winmd", "*.wasm", "*.nupkg", "*.zip"]),
             new(t.FileFilterAll, ["*.*"]),
         ];
-        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(screen, intent, path));
+        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(screen, navigation, path));
     }
 
-    private static void OpenPicked(UiState screen, UserIntent intent, string path)
+    private static void OpenPicked(UiState screen, Navigation navigation, string path)
     {
         var file = AssemblyPath.Parse(path);
         if (file is null)
@@ -229,7 +229,7 @@ internal static class MainMenuView
             return;
         }
 
-        Commands.OpenFilesLater(screen, intent.BeginOpening([file]));
+        Commands.OpenFilesLater(screen, navigation.BeginOpening([file]));
     }
 
     private static void FileMenu(Ui<UiState> ui, AppState appState)
@@ -238,7 +238,7 @@ internal static class MainMenuView
         var icons = ui.State.Icons;
         if (ui.MenuItem(t.FileOpen, Shortcuts.Open, id: "open", icon: new UiIcon(icons.FileOpen)))
         {
-            OpenFile(ui, appState.Intent);
+            OpenFile(ui, appState.Navigation);
         }
 
         if (ui.MenuItem(t.FileOpenFromFramework, id: "open-from-framework", icon: new UiIcon(icons.FileOpenFromFramework)))
@@ -263,16 +263,16 @@ internal static class MainMenuView
     private static void ExportItems(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Strings;
-        var canSave = CanSaveCode(appState.Tabs.Active?.Node);
+        var canSave = CanSaveCode(appState.Navigation.ActiveTab?.Node);
         if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language);
+            SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Language);
         }
 
         var anyOpen = ui.State.Tree.Roots.Length > 0;
         if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
         {
-            Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs));
+            Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Navigation));
         }
 
         if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
@@ -284,14 +284,14 @@ internal static class MainMenuView
     private static void ViewMenu(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Strings;
-        if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.History.CanGoBack, id: "back"))
+        if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.Navigation.CanGoBack, id: "back"))
         {
-            Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
+            Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions));
         }
 
-        if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.History.CanGoForward, id: "forward"))
+        if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.Navigation.CanGoForward, id: "forward"))
         {
-            Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
+            Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions));
         }
 
         ui.MenuSeparator();
@@ -300,7 +300,7 @@ internal static class MainMenuView
         ApiVisibilityMenu(ui, appState.ApiVisibility);
         ui.MenuSeparator();
         PanelsMenu(ui);
-        if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.Tabs.Open.Count > 0, id: "close-all-documents"))
+        if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.Navigation.OpenTabs.Count > 0, id: "close-all-documents"))
         {
             CloseAllTabs(ui.State);
         }

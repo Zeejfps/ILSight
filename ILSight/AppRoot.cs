@@ -56,8 +56,7 @@ internal static class AppRoot
     internal static AppState RestoreAppState(AppSettings settings, BrowseSession session)
     {
         var appState = CreateAppState(settings, session);
-        var first = appState.Tabs.AddNew();
-        Tabs.MakeActive(appState.Tabs, first);
+        appState.Navigation.OpenFirstTab();
         ReportProblem(appState, Settings.Restore(appState, settings));
         appState.UserThemes.ReadThemes();
         appState.UserIconThemes.ReadThemes();
@@ -98,7 +97,7 @@ internal static class AppRoot
         var appState = new AppState
         {
             ViewCommands = viewCommands,
-            Navigation = new Navigation { ViewCommands = viewCommands },
+            Navigation = new Navigation { ViewCommands = viewCommands, PreviewTabs = (settings.Display ?? DisplayOptions.Default).PreviewTabs },
             Work = work,
             Workflows = new WorkflowRunner(work, errors),
             DecompileIntoTabHandler = decompileIntoTab,

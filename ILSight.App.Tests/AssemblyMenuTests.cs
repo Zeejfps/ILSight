@@ -69,7 +69,7 @@ public sealed class AssemblyMenuTests
         var app = AppDriver.Opened();
         app.Show(app.Fixture("Greeter"), 2);
         app.Settle(2);
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
         var references = document.SpansOf()

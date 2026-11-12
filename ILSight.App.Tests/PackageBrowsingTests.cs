@@ -18,12 +18,12 @@ public sealed class PackageBrowsingTests
         var app = new AppDriver();
 
         app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, WritePackage(temp), ct));
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
 
         Assert.Equal(NodeIcon.Package, Assert.Single(app.Ui.Tree.Roots).Icon);
         Assert.True(app.Frames.Drew(PackageName));
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.Contains($"{LibFolder}/", Documents.GetText(tab.Document));
     }
@@ -38,7 +38,7 @@ public sealed class PackageBrowsingTests
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(2);
 
-        Assert.Same(greeter, app.AppState.Tabs.Active?.Node);
+        Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
     }
 
@@ -144,7 +144,7 @@ public sealed class PackageBrowsingTests
     {
         var app = new AppDriver();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, WritePackage(temp), ct));
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
         return app;
     }

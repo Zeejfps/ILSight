@@ -117,10 +117,10 @@ public sealed class RunArgumentsPipeTests
 
         Assert.True(RunArgumentsPipe.TrySend(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
         app.Frames.WaitUntil(() => app.Frames.FrontRequested, Patience);
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Method, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, Patience);
         app.Settle(1);
 
-        Assert.Equal("Greet(int) : string", app.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Greet(int) : string", app.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(app.AppState.Assemblies).Select(static p => p.Text));
     }
 

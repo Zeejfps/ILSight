@@ -33,9 +33,9 @@ internal static class AppFrames
     internal static void FollowRestoredAppState(UiState uiState, AppState appState)
     {
         DocumentPanels.SkipPanels(uiState.Documents, appState.Lists.ListDocumentPanels());
-        FollowActiveTab(uiState, appState.Tabs.Active);
+        FollowActiveTab(uiState, appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        ShowInRestoredDocuments(uiState, appState.Tabs);
+        ShowInRestoredDocuments(uiState, appState.Navigation);
     }
 
     /// <summary>Does what comes before drawing a frame: the screen takes the theme, icons and strings the
@@ -50,11 +50,11 @@ internal static class AppFrames
         ApplyThemeAndLanguage(uiState, ResolveTheme(appState), appState.Locale);
         ApplyIconTheme(uiState, ResolveIconTheme(appState));
         SyncTrees(uiState, appState.Assemblies, appState.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
-        Navigation.UsePreviewTabs(appState, uiState.Display.PreviewTabs);
+        appState.Navigation.UsePreviewTabs(uiState.Display.PreviewTabs);
         FollowTabContent(uiState);
-        FollowActiveTab(uiState, appState.Tabs.Active);
+        FollowActiveTab(uiState, appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        SyncTabViews(uiState, appState.Tabs);
+        SyncTabViews(uiState, appState.Navigation);
         FocusNextTabIfNone(uiState, appState.Navigation, appState.Language, appState.DecompilerOptions);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
@@ -94,7 +94,7 @@ internal static class AppFrames
     internal static void FollowNuGetPicker(Ui<UiState> ui, AppState appState)
     {
         var picker = ui.State.NuGetPicker;
-        NuGetPickerView.OpenDownloaded(ui, appState.Intent, picker);
+        NuGetPickerView.OpenDownloaded(ui, appState.Navigation, picker);
         if (!picker.IsOpen)
         {
             return;
@@ -225,22 +225,23 @@ internal static class AppFrames
     /// settings keep what changed of the screen.</summary>
     internal static void KeepScreenChanges(UiState uiState, AppState appState)
     {
-        KeepTabPositions(uiState, appState.Tabs, appState.History);
+        KeepTabPositions(uiState, appState.Navigation);
         KeepChangedViewSettings(uiState, appState);
     }
 
     /// <summary>Keeps where each tab's view stands with what it drew: on the tab while it still shows that, else on
     /// the history entry left from it, as when the tab moved on while the frame was drawn. Allocates nothing while
     /// each tab shows what its view drew.</summary>
-    private static void KeepTabPositions(UiState uiState, DocumentTabs tabs, NavigationHistory history)
+    private static void KeepTabPositions(UiState uiState, Navigation navigation)
     {
-        for (var i = 0; i < tabs.Open.Count; i++)
+        var open = navigation.OpenTabs;
+        for (var i = 0; i < open.Count; i++)
         {
-            KeepTabPosition(uiState, history, tabs.Open[i]);
+            KeepTabPosition(uiState, navigation, open[i]);
         }
     }
 
-    private static void KeepTabPosition(UiState uiState, NavigationHistory history, DocumentTab tab)
+    private static void KeepTabPosition(UiState uiState, Navigation navigation, DocumentTab tab)
     {
         var view = DocumentPanels.FindView(uiState.Documents, tab);
         if (view is null)
@@ -260,7 +261,7 @@ internal static class AppFrames
             return;
         }
 
-        history.KeepPosition(shown, DocumentPanels.GetShownPosition(view));
+        navigation.KeepPositionLeft(shown, DocumentPanels.GetShownPosition(view));
     }
 
     private static void KeepChangedViewSettings(UiState uiState, AppState appState)

@@ -37,10 +37,10 @@ public static class MainView
             ui.Separator();
             StatusBarView.Render(ui, appState);
         }
-        FrameworkPickerView.Render(ui, appState.Intent, appState.Assemblies);
+        FrameworkPickerView.Render(ui, appState.Navigation, appState.Assemblies);
         ComparisonPickerView.Render(ui, appState.Navigation, appState.Assemblies);
         NuGetPickerView.Render(ui);
-        ProcessPickerView.Render(ui, appState.Intent);
+        ProcessPickerView.Render(ui, appState.Navigation);
         CloseAssembliesDialogView.Render(ui, appState.Assemblies);
         AssemblyListsDialogView.Render(ui, appState.Lists);
         AssemblyListDeleteDialogView.Render(ui, appState.Lists);
@@ -124,7 +124,7 @@ public static class MainView
             doubleClicked = dock.TabDoubleClicked;
         }
         TabMenuView.OpenOnRightClick(ui, tabMenu);
-        TabMenuView.Render(ui, appState.Tabs);
+        TabMenuView.Render(ui, appState.Navigation);
         TabMenuView.KeepOpenOnDoubleClick(ui, doubleClicked);
     }
 
@@ -139,7 +139,7 @@ public static class MainView
         var tab = DocumentPanels.FindTab(screen.Documents, panel);
         if (tab is not null)
         {
-            return DocumentsView.Tab(screen, appState.Tabs, tab);
+            return DocumentsView.Tab(screen, appState.Navigation, tab);
         }
 
         return new DockTab(t.DocumentNewTab);
@@ -161,10 +161,10 @@ public static class MainView
         switch (view)
         {
             case DockView.Assemblies:
-                TreePaneView.Render(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
+                TreePaneView.Render(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions);
                 break;
             case DockView.Search:
-                SearchPanelView.Render(ui, appState.Navigation, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
+                SearchPanelView.Render(ui, appState.Navigation, appState.Language, appState.DecompilerOptions);
                 break;
             case DockView.Bookmarks:
                 BookmarksPanelView.Render(ui, appState.Bookmarks, appState.Assemblies);
@@ -194,7 +194,7 @@ public static class MainView
             return;
         }
 
-        DocumentsView.Render(ui, appState.Navigation, appState.Session, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs,
+        DocumentsView.Render(ui, appState.Navigation, appState.Session, appState.Assemblies, appState.Language, appState.DecompilerOptions,
             appState.Bookmarks, appState.Tooltips, tab);
     }
 

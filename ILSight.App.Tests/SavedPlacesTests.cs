@@ -87,7 +87,7 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var d = Restored(WithTab($"\"Path\": {GreeterPath}"));
 
-        Assert.Same(d.Fixture("Greeter"), Assert.Single(d.AppState.Tabs.Open).Node);
+        Assert.Same(d.Fixture("Greeter"), Assert.Single(d.AppState.Navigation.OpenTabs).Node);
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class SavedPlacesTests : IDisposable
         d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         d.Settle();
 
-        Assert.Same(d.Fixture("Greeter"), d.AppState.Tabs.Active?.Node);
+        Assert.Same(d.Fixture("Greeter"), d.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Theory]
@@ -114,7 +114,7 @@ public sealed class SavedPlacesTests : IDisposable
         var (d, problem) = RestoredWith(WithTab($"\"Path\": {path}"));
 
         Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
-        Assert.Null(Assert.Single(d.AppState.Tabs.Open).Node);
+        Assert.Null(Assert.Single(d.AppState.Navigation.OpenTabs).Node);
     }
 
     [Fact]

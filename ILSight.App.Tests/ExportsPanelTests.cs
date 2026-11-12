@@ -72,11 +72,11 @@ public sealed class ExportsPanelTests : IDisposable
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report")).Frame(2);
 
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var shown = Assert.IsType<TabContent.Report>(tab.Content);
         Assert.Equal(path, Assert.Single(Assert.IsType<ExportEnd.Finished>(shown.Export.End).Written));
-        Assert.Equal("Export report", DocumentsView.Tab(app.Ui, app.AppState.Tabs, tab).Title);
+        Assert.Equal("Export report", DocumentsView.Tab(app.Ui, app.AppState.Navigation, tab).Title);
         var text = Documents.GetText(ExportReportText.Write(Strings.En, [shown.Export]));
         Assert.Contains("    " + path, text);
         Assert.DoesNotContain("Farewell", text);
@@ -293,9 +293,9 @@ public sealed class ExportsPanelTests : IDisposable
         app.Run(2);
 
         var german = Strings.For(Locale.De);
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.Equal(german.ExportReportTitle, DocumentsView.Tab(app.Ui, app.AppState.Tabs, tab).Title);
+        Assert.Equal(german.ExportReportTitle, DocumentsView.Tab(app.Ui, app.AppState.Navigation, tab).Title);
         var document = DocumentPanels.GetView(app.Ui.Documents, tab).Code.Document;
         Assert.NotNull(document);
         Assert.Contains(german.ExportWritten, Documents.GetText(document));
@@ -308,13 +308,13 @@ public sealed class ExportsPanelTests : IDisposable
         SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
         d.Settle();
         ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
-        var active = d.AppState.Tabs.Active;
+        var active = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var report = active.Content;
 
         d.AppState.Language = DecompilationLanguage.IL;
         d.Settle();
 
-        Assert.Same(report, d.AppState.Tabs.Active?.Content);
+        Assert.Same(report, d.AppState.Navigation.ActiveTab?.Content);
     }
 }

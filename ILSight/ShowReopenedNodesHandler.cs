@@ -68,7 +68,7 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
         }
 
         var tab = waiting.Reopened.Tab;
-        if (!Tabs.IsOpen(appState.Tabs, tab))
+        if (!appState.Navigation.IsOpen(tab))
         {
             return null;
         }
@@ -79,14 +79,14 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             return null;
         }
         var position = Navigation.KeepPosition(waiting.Record.View, waiting.Record.Language, appState.Language);
-        var load = StartDecompiling(appState.ViewCommands, tab, node, appState.Language, appState.DecompilerOptions, new Arrival(position));
+        var load = appState.Navigation.Restore(tab, node, appState.Language, appState.DecompilerOptions, position);
         RevealIfActive(appState, tab, node);
         return load;
     }
 
     private static void RevealIfActive(AppState appState, DocumentTab tab, BrowseNode node)
     {
-        if (tab != appState.Tabs.Active)
+        if (tab != appState.Navigation.ActiveTab)
         {
             return;
         }

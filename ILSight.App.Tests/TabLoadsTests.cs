@@ -52,13 +52,13 @@ public sealed class TabLoadsTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var path = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath).FilePath;
         var record = new ComparisonDocumentRecord("document-9", "Fixtures API diff", path, path, ApiScope.AllDeclared, null);
-        var tab = d.AppState.Tabs.AddNew();
+        var tab = d.AppState.Navigation.OpenReopenedTab();
         Tabs.WaitForComparison(tab, record.Title);
         SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
         var runs = new List<ComparisonRun>();
         var other = 0;
 
-        var loads = SavedDocuments.ShowReopenedDocuments(d.AppState.Tabs, d.AppState.Reopened, d.AppState.Assemblies);
+        var loads = SavedDocuments.ShowReopenedDocuments(d.AppState.Navigation, d.AppState.Reopened, d.AppState.Assemblies);
         loads.Switch(_ => other++, _ => other++, _ => other++, runs.Add, _ => other++);
 
         var run = Assert.Single(runs);

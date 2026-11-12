@@ -71,7 +71,7 @@ internal static class QueuedCommands
 
     private static void ShowTabIfOpen(UiState uiState, AppState appState, DocumentTab tab, DocumentTab? beside)
     {
-        if (!Tabs.IsOpen(appState.Tabs, tab))
+        if (!appState.Navigation.IsOpen(tab))
         {
             return;
         }
@@ -83,7 +83,7 @@ internal static class QueuedCommands
     private static void ShowReopenedIfOpen(UiState uiState, AppState appState, IReadOnlyList<ReopenedTab> tabs, DockLayout? layout)
     {
         var open = tabs
-            .Where(r => Tabs.IsOpen(appState.Tabs, r.Tab))
+            .Where(r => appState.Navigation.IsOpen(r.Tab))
             .ToList();
         ShowReopenedTabs(uiState, open, layout);
     }
@@ -119,7 +119,7 @@ internal static class QueuedCommands
 
     private static void RestoreView(UiState uiState, AppState appState, DocumentTab tab, ViewPosition position)
     {
-        if (!Tabs.IsOpen(appState.Tabs, tab))
+        if (!appState.Navigation.IsOpen(tab))
         {
             return;
         }
@@ -129,7 +129,7 @@ internal static class QueuedCommands
 
     private static void RevealLine(UiState uiState, AppState appState, DocumentTab tab, int line)
     {
-        if (!Tabs.IsOpen(appState.Tabs, tab))
+        if (!appState.Navigation.IsOpen(tab))
         {
             return;
         }
@@ -139,7 +139,7 @@ internal static class QueuedCommands
 
     private static void RevealRow(UiState uiState, AppState appState, DocumentTab tab, int row)
     {
-        if (!Tabs.IsOpen(appState.Tabs, tab))
+        if (!appState.Navigation.IsOpen(tab))
         {
             return;
         }
@@ -149,7 +149,7 @@ internal static class QueuedCommands
 
     private static void FocusCard(UiState uiState, AppState appState, DocumentTab tab, CodeReference.Entity type)
     {
-        if (!Tabs.IsOpen(appState.Tabs, tab))
+        if (!appState.Navigation.IsOpen(tab))
         {
             return;
         }
@@ -176,7 +176,7 @@ internal static class QueuedCommands
             return;
         }
 
-        var tab = OpenEmptyTab(appState);
+        var tab = appState.Navigation.OpenEmptyTab();
         DocumentPanels.AddView(uiState.Documents, tab, panel);
         var becomesActive = focus || uiState.Layout.Focused == panel;
         if (becomesActive)
@@ -187,7 +187,7 @@ internal static class QueuedCommands
 
     internal static void CloseTabAndFocusNext(UiState uiState, AppState appState, DocumentTab tab)
     {
-        var closed = CloseTab(appState, tab);
+        var closed = appState.Navigation.CloseTab(tab);
         if (!closed.WasActive)
         {
             return;

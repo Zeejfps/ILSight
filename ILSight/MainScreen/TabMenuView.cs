@@ -46,7 +46,7 @@ internal static class TabMenuView
         Commands.Later(ui.State, tab, static (a, kept) => a.Navigation.KeepTabOpen(kept));
     }
 
-    public static void Render(Ui<UiState> ui, DocumentTabs tabs)
+    public static void Render(Ui<UiState> ui, Navigation navigation)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -65,16 +65,16 @@ internal static class TabMenuView
             return;
         }
 
-        TabMenu(ui, tabs, tab);
+        TabMenu(ui, navigation, tab);
     }
 
-    private static void TabMenu(Ui<UiState> ui, DocumentTabs tabs, DocumentTab tab)
+    private static void TabMenu(Ui<UiState> ui, Navigation navigation, DocumentTab tab)
     {
         var t = ui.State.Strings;
         var screen = ui.State;
         var group = ListTabsInGroup(screen, tab);
         var index = group.IndexOf(tab);
-        KeepOpenItem(ui, tabs, tab);
+        KeepOpenItem(ui, navigation, tab);
         if (ui.MenuItem(t.TabClose, Shortcuts.CloseTab, id: "close"))
         {
             CloseTab(screen, tab);
@@ -103,9 +103,9 @@ internal static class TabMenuView
     }
 
     /// <summary>The item keeping the tab open, with a separator after it, while it is the preview tab.</summary>
-    private static void KeepOpenItem(Ui<UiState> ui, DocumentTabs tabs, DocumentTab tab)
+    private static void KeepOpenItem(Ui<UiState> ui, Navigation navigation, DocumentTab tab)
     {
-        if (tab != tabs.Preview)
+        if (tab != navigation.PreviewTab)
         {
             return;
         }

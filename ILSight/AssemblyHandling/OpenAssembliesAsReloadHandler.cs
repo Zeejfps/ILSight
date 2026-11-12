@@ -36,7 +36,7 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
             return TabLoads.None;
         }
 
-        var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
+        var reopened = ShowReopenedDocuments(appState.Navigation, appState.Reopened, appState.Assemblies);
         if (outcome is Outcome<LoadedAssembly?>.Failed failed)
         {
             ports.ReportError(new AppProblem.OpenFailed(failed.Error));

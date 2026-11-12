@@ -108,38 +108,13 @@ public static class Diagrams
     /// edge to start (<see cref="DiagramGrowing.AddWithNeighboursAsync"/>) on a token closing the diagram cancels.</summary>
     public static NeighboursRead ShowInDiagram(AppState appState, CodeReference.Entity type, string newTitle)
     {
-        var tab = appState.Tabs.Diagram;
+        var tab = appState.Navigation.DiagramTab;
         if (tab is null || tab.Content is not TabContent.Diagram shown)
         {
             return ShowInNewDiagram(appState, type, newTitle);
         }
-        BringToFront(appState, tab);
-        appState.History.RecordDiagram(shown.Types, shown.Title);
+        appState.Navigation.ShowDiagramTab(tab, shown);
         return StartReadingWithNeighbours(tab, shown.Types, type);
-    }
-
-    private static void BringToFront(AppState appState, DocumentTab tab)
-    {
-        appState.Navigation.LeaveActiveTab();
-        Tabs.MakeActive(appState.Tabs, tab);
-        appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
-    }
-
-    /// <summary>Begins opening the code of a type or member picked on <paramref name="diagram"/> beside it, in a new
-    /// tab when <paramref name="inNewTab"/>: records the diagram in the history, so that going back returns to it, and
-    /// begins the request whose lookup finds the code (<see cref="Navigation.BeginResolving"/>). Returns its ticket, for
-    /// <see cref="NavigateHandler"/> to look up and show what was picked; null when no open tab shows the
-    /// diagram.</summary>
-    public static ResolveTicket? BeginOpeningFromDiagram(Navigation navigation, TypeDiagram diagram, bool inNewTab)
-    {
-        var tab = navigation.FindTabShowing(diagram);
-        if (tab is null || tab.Content is not TabContent.Diagram shown)
-        {
-            return null;
-        }
-
-        navigation.History.RecordDiagram(shown.Types, shown.Title);
-        return navigation.BeginResolving(inNewTab);
     }
 
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is
@@ -147,13 +122,8 @@ public static class Diagrams
     /// the read of their cards it started, as <see cref="ShowInDiagram"/> does.</summary>
     public static NeighboursRead ShowInNewDiagram(AppState appState, CodeReference.Entity type, string title)
     {
-        appState.Navigation.LeaveActiveTab();
-        var tab = appState.Navigation.GetOrOpenEmptyTab();
         var diagram = new TypeDiagram();
-        Tabs.ShowDiagram(tab, title, diagram);
-        Tabs.Keep(appState.Tabs, tab);
-        Tabs.MakeActive(appState.Tabs, tab);
-        appState.History.RecordDiagram(diagram, title);
+        var tab = appState.Navigation.OpenDiagram(diagram, title);
         return StartReadingWithNeighbours(tab, diagram, type);
     }
 
@@ -225,7 +195,7 @@ public static class Diagrams
     /// tab wait on for the cards of its types still found. Returns the read of those cards it started, for the edge to
     /// start (<see cref="ReopenDiagramHandler"/>) on a token closing the diagram cancels; null when the tab waits no
     /// more, as when it was pointed elsewhere.</summary>
-    internal static SavedDiagramRead? ReopenDiagram(DocumentTabs tabs, ReopenedTabs reopenedTabs, ReopenedTab reopened, DiagramDocumentRecord saved)
+    internal static SavedDiagramRead? ReopenDiagram(Navigation navigation, ReopenedTabs reopenedTabs, ReopenedTab reopened, DiagramDocumentRecord saved)
     {
         if (!reopened.IsWaiting)
         {
@@ -233,19 +203,17 @@ public static class Diagrams
         }
 
         var tab = reopened.Tab;
-        var diagram = ShowSavedDiagram(tabs, tab, saved);
+        var diagram = ShowSavedDiagram(navigation, tab, saved);
         var waiting = SavedDocuments.WaitFor(reopenedTabs, tab, saved);
         StartReading(diagram);
         return new SavedDiagramRead { Reopened = waiting, Diagram = diagram, Saved = saved };
     }
 
-    private static TypeDiagram ShowSavedDiagram(DocumentTabs tabs, DocumentTab tab, DiagramDocumentRecord saved)
+    private static TypeDiagram ShowSavedDiagram(Navigation navigation, DocumentTab tab, DiagramDocumentRecord saved)
     {
         var diagram = new TypeDiagram();
         TakeHomes(diagram, saved.HomeAssemblies);
-        var title = saved.Title ?? string.Empty;
-        Tabs.ShowDiagram(tab, title, diagram);
-        WorkInIfActive(tabs, tab);
+        navigation.RestoreDiagram(tab, diagram, saved.Title ?? string.Empty);
         return diagram;
     }
 
@@ -260,17 +228,6 @@ public static class Diagrams
         {
             Diagrams.TakeHome(diagram, assembly);
         }
-    }
-
-    /// <summary>Has the diagram <paramref name="tab"/> shows taken as the one the user works in, when the tab is the active one.</summary>
-    private static void WorkInIfActive(DocumentTabs tabs, DocumentTab tab)
-    {
-        if (tab != tabs.Active)
-        {
-            return;
-        }
-
-        Tabs.MakeActive(tabs, tab);
     }
 
     /// <summary>Starts laying out <paramref name="diagram"/>, cancelling the layout in flight, whose result is then

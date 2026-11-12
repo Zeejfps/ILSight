@@ -46,7 +46,7 @@ internal static class ToolbarView
                 var openTip = ui.Memo("open-tip", t, static s => s.ToolbarOpen(Shortcuts.Open));
                 if (ui.IconButton("open", ui.State.Icons.ToolbarOpen, openTip, variant: ButtonVariant.Neutral))
                 {
-                    MainMenuView.OpenFile(ui, appState.Intent);
+                    MainMenuView.OpenFile(ui, appState.Navigation);
                 }
 
                 var searchTip = ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search));
@@ -59,30 +59,30 @@ internal static class ToolbarView
             using (Group(ui))
             {
                 using (var back = ui.SplitIconButton("back", ui.State.Icons.ToolbarBack,
-                           ui.Memo("back-tip", t, static s => s.ToolbarBack(Shortcuts.Back)), t.ToolbarBackHistory, appState.History.CanGoBack, appState.History.Revision))
+                           ui.Memo("back-tip", t, static s => s.ToolbarBack(Shortcuts.Back)), t.ToolbarBackHistory, appState.Navigation.CanGoBack, appState.Navigation.HistoryRevision))
                 {
                     if (back.Clicked)
                     {
-                        Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
+                        Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions));
                     }
 
                     if (back.IsOpen)
                     {
-                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, -1);
+                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions, -1);
                     }
                 }
                 using (var forward = ui.SplitIconButton("forward", ui.State.Icons.ToolbarForward,
-                           ui.Memo("forward-tip", t, static s => s.ToolbarForward(Shortcuts.Forward)), t.ToolbarForwardHistory, appState.History.CanGoForward,
-                           appState.History.Revision))
+                           ui.Memo("forward-tip", t, static s => s.ToolbarForward(Shortcuts.Forward)), t.ToolbarForwardHistory, appState.Navigation.CanGoForward,
+                           appState.Navigation.HistoryRevision))
                 {
                     if (forward.Clicked)
                     {
-                        Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
+                        Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions));
                     }
 
                     if (forward.IsOpen)
                     {
-                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, 1);
+                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions, 1);
                     }
                 }
             }
@@ -222,11 +222,10 @@ internal static class ToolbarView
     /// <paramref name="direction"/> is positive; the one picked is gone to in this frame, and only its load or lookup is
     /// queued.</summary>
     private static void HistoryItems(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs, int direction)
+        int direction)
     {
-        var history = navigation.History;
-        var entries = history.Entries;
-        for (var i = history.CurrentIndex + direction; i >= 0 && i < entries.Count; i += direction)
+        var entries = navigation.HistoryEntries;
+        for (var i = navigation.HistoryIndex + direction; i >= 0 && i < entries.Count; i += direction)
         {
             using (ui.Id(i))
             {
@@ -235,7 +234,7 @@ internal static class ToolbarView
                 var icon = IconOf(ui.State, entry);
                 if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
-                    Commands.MoveLater(ui.State, navigation.GoToEntry(i, assemblies, language, options, previewTabs));
+                    Commands.MoveLater(ui.State, navigation.GoToEntry(i, assemblies, language, options));
                     return;
                 }
             }

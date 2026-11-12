@@ -1,33 +1,106 @@
 using ILSight.Core;
 using ILSight.Core.Metadata;
+using ILSight.AssemblyHandling;
 using ILSight.Bookmarking;
+using ILSight.Exporting;
 using ILSight.UserState;
 using static ILSight.Decompilation;
 
 namespace ILSight;
 
-/// <summary>Moving through the code: the open tabs, the history of what they showed, and the newest thing the user
-/// asked for, which change together. Showing a node or a table row in a tab is a new intent (what was still being
-/// looked up for an older one is dropped) and a place in the history, the place the active tab leaves keeping where
-/// its view stood; this type's methods keep that, and the views that show nodes take it and call them in the frame
-/// of their input. It reads the language, the decompiler options and whether tabs preview as values it is handed.
+/// <summary>Moving through the code: the open tabs, the history of what they showed, the newest thing the user
+/// asked for and whether tabs preview, which change together and which it holds privately. Showing a node, a table
+/// row, a diagram or a comparison in a tab is a new intent (what was still being looked up for an older one is
+/// dropped), and a node's, a row's or a diagram's a place in the history, the place the active tab leaves keeping
+/// where its view stood; restoring a tab after a reload or a reopen is neither (<see cref="Restore"/>). Every change
+/// to the tabs, the history and the intent is one of its methods, and the views that show nodes take it and call them
+/// in the frame of their input. It reads the language and the decompiler options as values it is handed.
 /// What waits on a lookup is a handler of its own: <see cref="NavigateHandler"/>, <see cref="ShowInMetadataHandler"/>,
 /// <see cref="ShowInApiReferenceHandler"/>, <see cref="OpenAndShowIdHandler"/> and
 /// <see cref="GoToHistoryEntryHandler"/>.</summary>
 public sealed class Navigation
 {
     /// <summary>The open document tabs.</summary>
-    public DocumentTabs Tabs { get; } = new();
+    private readonly DocumentTabs _tabs = new();
 
     /// <summary>Back and forward over the places and diagrams the tabs showed.</summary>
-    public NavigationHistory History { get; } = new();
+    private readonly NavigationHistory _history = new();
 
     /// <summary>What the user last asked for, so that an answer to an older ask is dropped.</summary>
-    public UserIntent Intent { get; } = new();
+    private readonly UserIntent _intent = new();
+
+    private bool _previewTabs;
 
     /// <summary>Where what the view is to do about a change (bring a tab to the front, reveal a node in the tree)
     /// is queued, for the screen to run before it draws next.</summary>
     public required Queue<ViewCommand> ViewCommands { get; init; }
+
+    /// <summary>Whether what is picked and followed shows in the preview tab, else in the active tab; changed by
+    /// <see cref="UsePreviewTabs"/>.</summary>
+    public required bool PreviewTabs
+    {
+        get => _previewTabs;
+        init => _previewTabs = value;
+    }
+
+    /// <summary>The tab the user last worked in, where the tree and navigation show what they pick.</summary>
+    public DocumentTab? ActiveTab => _tabs.Active;
+
+    /// <summary>The tab that shows what is picked until it is kept open; null when no tab is one.</summary>
+    public DocumentTab? PreviewTab => _tabs.Preview;
+
+    /// <summary>The tab of the diagram the user last worked in, which types shown in a diagram are added to; null
+    /// when no open tab shows a diagram the user worked in.</summary>
+    public DocumentTab? DiagramTab => _tabs.Diagram;
+
+    /// <summary>The tabs open, in order.</summary>
+    public IReadOnlyList<DocumentTab> OpenTabs => _tabs.Open;
+
+    /// <summary>Counts up whenever the tabs change, as <see cref="DocumentTabs.Changes"/> counts. Allocates
+    /// nothing.</summary>
+    public int TabChanges => _tabs.Changes;
+
+    /// <summary>The places and diagrams the tabs showed, oldest first.</summary>
+    public IReadOnlyList<HistoryEntry> HistoryEntries => _history.Entries;
+
+    /// <summary>Where in <see cref="HistoryEntries"/> the tabs are now.</summary>
+    public int HistoryIndex => _history.CurrentIndex;
+
+    /// <summary>The history entry the tabs are at now; null when the history is empty.</summary>
+    public HistoryEntry? CurrentEntry => _history.Current;
+
+    /// <summary>Counts up whenever the history changes.</summary>
+    public int HistoryRevision => _history.Revision;
+
+    public bool CanGoBack => _history.CanGoBack;
+
+    public bool CanGoForward => _history.CanGoForward;
+
+    /// <summary>True while the newest request is finding a place in the background.</summary>
+    public bool IsResolving => _intent.IsResolving;
+
+    public bool IsOpen(DocumentTab tab)
+    {
+        return Tabs.IsOpen(_tabs, tab);
+    }
+
+    /// <summary>Whether <paramref name="place"/> is the place of the history entry the tabs are at.</summary>
+    public bool IsCurrentPlace(NodePath? place)
+    {
+        return _history.IsCurrentPlace(place);
+    }
+
+    /// <summary>Whether <paramref name="ticket"/> is the newest request's.</summary>
+    public bool IsCurrent(int ticket)
+    {
+        return _intent.IsCurrent(ticket);
+    }
+
+    /// <summary>Whether a request has begun since the one <paramref name="ticket"/> is.</summary>
+    public bool IsStale(int ticket)
+    {
+        return _intent.IsStale(ticket);
+    }
 
     /// <summary><paramref name="position"/>, taken while the node was shown in <paramref name="shownIn"/>, when it
     /// still holds once the node is shown in <paramref name="language"/>: a grid's in any language, a code view's
@@ -52,31 +125,87 @@ public sealed class Navigation
         return position;
     }
 
-    /// <summary>Shows <paramref name="node"/> in the preview tab while <paramref name="previewTabs"/>, or the active
+    /// <summary>Begins a request whose answer comes later: what was still being looked up for an older one is
+    /// dropped. Returns its ticket, which <see cref="IsStale"/> tells apart once another request begins.</summary>
+    public int BeginRequest()
+    {
+        return _intent.Begin();
+    }
+
+    /// <summary>Begins a request to open <paramref name="paths"/>, as <see cref="UserIntent.BeginOpening"/>
+    /// does.</summary>
+    public FileOpening? BeginOpening(IEnumerable<AssemblyPath> paths)
+    {
+        return _intent.BeginOpening(paths);
+    }
+
+    /// <summary>What finding a place for <paramref name="ticket"/> came to, as
+    /// <see cref="UserIntent.EndResolving{T}(int, Outcome{T})"/> says.</summary>
+    public Resolution<T> EndResolving<T>(int ticket, Outcome<T?> outcome) where T : class
+    {
+        return _intent.EndResolving(ticket, outcome);
+    }
+
+    /// <inheritdoc cref="EndResolving{T}(int, Outcome{T})"/>
+    public Resolution<T> EndResolving<T>(int ticket, Outcome<T?> outcome) where T : struct
+    {
+        return _intent.EndResolving(ticket, outcome);
+    }
+
+    /// <summary>Shows <paramref name="node"/> in the preview tab while <see cref="PreviewTabs"/>, or the active
     /// tab while tabs do not preview, or else a new tab kept open, in <paramref name="language"/> with
     /// <paramref name="options"/>; reveals it in the tree and records it in the history. Returns the load it started
     /// in the tab, for <see cref="DecompileIntoTabHandler"/> to bring in; null when the tab shows the node
     /// already.</summary>
-    public DecompileTicket? ShowNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, bool previewTabs, bool inNewTab = false)
+    public DecompileTicket? ShowNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, bool inNewTab = false)
     {
-        Intent.Begin();
+        _intent.Begin();
         LeaveActiveTab();
-        var load = ShowNodeIn(ChooseDestination(inNewTab), node, language, options, previewTabs);
-        History.RecordPlace(node, language);
+        var load = ShowNodeIn(ChooseDestination(inNewTab), node, language, options);
+        _history.RecordPlace(node, language);
         return load;
+    }
+
+    /// <summary>Shows <paramref name="node"/>, a lookup's answer, in the tab <paramref name="destination"/> leads to
+    /// now, at <paramref name="target"/> when that is a bookmark's place, and records it in the history. Returns the
+    /// load it started, as <see cref="ShowNode"/> does.</summary>
+    public DecompileTicket? ShowFoundNode(TabDestination destination, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+        Bookmark? target = null)
+    {
+        LeaveActiveTab();
+        var load = ShowNodeIn(destination, node, language, options, target: target);
+        _history.RecordPlace(node, language);
+        return load;
+    }
+
+    /// <summary>Shows <paramref name="node"/>, found again at the place of the history entry gone to, in the tab
+    /// <paramref name="destination"/> leads to now, at <paramref name="position"/>; the history stays at that entry.
+    /// Returns the load it started, as <see cref="ShowNode"/> does.</summary>
+    public DecompileTicket? ShowHistoryPlace(TabDestination destination, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+        ViewPosition? position)
+    {
+        return ShowNodeIn(destination, node, language, options, position);
+    }
+
+    /// <summary>Shows <paramref name="node"/> again in <paramref name="tab"/>, which showed it before a reload or a
+    /// reopen, at <paramref name="position"/>: no place in the history and no new intent, as the user asked for
+    /// nothing. Returns the load it started in the tab, as <see cref="ShowNode"/> does.</summary>
+    public DecompileTicket? Restore(DocumentTab tab, BrowseNode node, DecompilationLanguage language, DecompilerOptions options, ViewPosition? position)
+    {
+        return StartDecompiling(ViewCommands, tab, node, language, options, new Arrival(position));
     }
 
     /// <summary>Shows <paramref name="node"/>, picked in the tree, as <see cref="ShowNode"/> does, unless
     /// a tab shows it already, which is brought to the front instead. Returns the load it started, as
     /// <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? PreviewNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
+    public DecompileTicket? PreviewNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options)
     {
         var showing = FindTabShowing(node);
         if (showing is null)
         {
-            return ShowNode(node, language, options, previewTabs);
+            return ShowNode(node, language, options);
         }
-        ILSight.Tabs.MakeActive(Tabs, showing);
+        Tabs.MakeActive(_tabs, showing);
         ViewCommands.Enqueue(new ViewCommand.ShowTab(showing, Beside: null));
         return null;
     }
@@ -84,13 +213,13 @@ public sealed class Navigation
     /// <summary>The tab showing <paramref name="node"/>, the active one first; null when none does.</summary>
     private DocumentTab? FindTabShowing(BrowseNode node)
     {
-        var active = Tabs.Active;
+        var active = _tabs.Active;
         if (active is not null && active.Node == node)
         {
             return active;
         }
 
-        foreach (var tab in Tabs.Open)
+        foreach (var tab in _tabs.Open)
         {
             if (tab.Node == node)
             {
@@ -103,20 +232,20 @@ public sealed class Navigation
     /// <summary>Shows <paramref name="node"/>, opened from the tree, as <see cref="PreviewNode"/> does and
     /// keeps the tab showing it open; while tabs do not preview, as <see cref="ShowNode"/> does. Returns the load
     /// it started, as <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? OpenNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
+    public DecompileTicket? OpenNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options)
     {
-        if (!previewTabs)
+        if (!_previewTabs)
         {
-            return ShowNode(node, language, options, previewTabs);
+            return ShowNode(node, language, options);
         }
-        var load = PreviewNode(node, language, options, previewTabs);
+        var load = PreviewNode(node, language, options);
         KeepActiveTabOpen();
         return load;
     }
 
     private void KeepActiveTabOpen()
     {
-        var active = Tabs.Active;
+        var active = _tabs.Active;
         if (active is null)
         {
             return;
@@ -128,23 +257,23 @@ public sealed class Navigation
     /// <summary>Keeps <paramref name="tab"/> open, so that what is picked next shows in another tab.</summary>
     public void KeepTabOpen(DocumentTab tab)
     {
-        ILSight.Tabs.Keep(Tabs, tab);
+        Tabs.Keep(_tabs, tab);
     }
 
     /// <summary>Has what is picked and followed shown in the preview tab, or, when <paramref name="on"/>
     /// is false, in the active tab, the preview tab then kept open as any other.</summary>
-    public static void UsePreviewTabs(AppState appState, bool on)
+    public void UsePreviewTabs(bool on)
     {
-        appState.PreviewTabs = on;
+        _previewTabs = on;
         if (on)
         {
             return;
         }
 
-        var preview = appState.Tabs.Preview;
+        var preview = _tabs.Preview;
         if (preview is not null)
         {
-            ILSight.Tabs.Keep(appState.Tabs, preview);
+            Tabs.Keep(_tabs, preview);
         }
     }
 
@@ -154,13 +283,13 @@ public sealed class Navigation
     /// to bring in; null when none did.</summary>
     public DecompileTicket? FocusTab(DocumentTab tab, DecompilationLanguage language, DecompilerOptions options)
     {
-        if (!ILSight.Tabs.IsOpen(Tabs, tab))
+        if (!Tabs.IsOpen(_tabs, tab))
         {
             return null;
         }
 
-        Intent.Begin();
-        ILSight.Tabs.MakeActive(Tabs, tab);
+        _intent.Begin();
+        Tabs.MakeActive(_tabs, tab);
         return StartDecompilingAgainIfOutdated(ViewCommands, tab, language, options);
     }
 
@@ -181,17 +310,17 @@ public sealed class Navigation
 
     /// <summary>Shows the table row a metadata token leads to where <see cref="ShowNode"/> shows a
     /// node, and records it in the history. Returns the load it started, as <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? ShowMetadataTarget(MetadataTarget target, bool inNewTab, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
+    public DecompileTicket? ShowMetadataTarget(MetadataTarget target, bool inNewTab, DecompilationLanguage language, DecompilerOptions options)
     {
-        Intent.Begin();
-        return ShowRowIn(ChooseDestination(inNewTab), target, language, options, previewTabs);
+        _intent.Begin();
+        return ShowRowIn(ChooseDestination(inNewTab), target, language, options);
     }
 
     /// <summary>Shows the table row <paramref name="address"/>, a link of the grid <paramref name="grid"/>
     /// shows, leads to among the nodes of <paramref name="session"/>, as <see cref="ShowMetadataTarget"/> does;
     /// nothing when it leads nowhere. Returns the load it started, as <see cref="ShowNode"/> does.</summary>
     public DecompileTicket? ShowMetadataLink(BrowseSession session, BrowseNode grid, MetadataAddress address, bool inNewTab, DecompilationLanguage language,
-        DecompilerOptions options, bool previewTabs)
+        DecompilerOptions options)
     {
         var target = BrowseSessions.FindMetadataRow(session, grid, address);
         if (target is null)
@@ -199,42 +328,239 @@ public sealed class Navigation
             return null;
         }
 
-        return ShowMetadataTarget(target.Value, inNewTab, language, options, previewTabs);
+        return ShowMetadataTarget(target.Value, inNewTab, language, options);
     }
 
     /// <summary>Shows the table row <paramref name="target"/> leads to in the tab <paramref name="destination"/>
     /// leads to now, and records it in the history. Returns the load it started, as <see cref="ShowNode"/>
     /// does.</summary>
-    internal DecompileTicket? ShowRowIn(TabDestination destination, MetadataTarget target, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs)
+    public DecompileTicket? ShowRowIn(TabDestination destination, MetadataTarget target, DecompilationLanguage language, DecompilerOptions options)
     {
         LeaveActiveTab();
-        var load = ShowNodeIn(destination, target.Node, language, options, previewTabs, row: target.Row);
-        History.RecordPlace(target.Node, language);
+        var load = ShowNodeIn(destination, target.Node, language, options, row: target.Row);
+        _history.RecordPlace(target.Node, language);
         return load;
     }
 
     /// <summary>Begins a request whose place a lookup finds, asked for from the active tab: what was still being
     /// looked up for an older request is dropped, and the app says it is resolving until the lookup's answer is taken
-    /// (<see cref="UserIntent.EndResolving{T}(int, Outcome{T})"/>). What it finds shows in a new tab when
+    /// (<see cref="EndResolving{T}(int, Outcome{T})"/>). What it finds shows in a new tab when
     /// <paramref name="inNewTab"/>, else where <see cref="FindTab"/> leads then. Returns the ticket the lookup's answer
     /// is shown by.</summary>
     public ResolveTicket BeginResolving(bool inNewTab)
     {
         var destination = ChooseDestination(inNewTab);
-        return new ResolveTicket { Intent = Intent.BeginResolving(), Destination = destination };
+        return new ResolveTicket { Intent = _intent.BeginResolving(), Destination = destination };
+    }
+
+    /// <summary>Begins opening the code of a type or member picked on <paramref name="diagram"/> beside it, in a new
+    /// tab when <paramref name="inNewTab"/>: records the diagram in the history, so that going back returns to it, and
+    /// begins the request whose lookup finds the code (<see cref="BeginResolving"/>). Returns its ticket; null when no
+    /// open tab shows the diagram.</summary>
+    public ResolveTicket? BeginResolvingFromDiagram(TypeDiagram diagram, bool inNewTab)
+    {
+        var tab = FindTabShowing(diagram);
+        if (tab is null || tab.Content is not TabContent.Diagram shown)
+        {
+            return null;
+        }
+
+        _history.RecordDiagram(shown.Types, shown.Title);
+        return BeginResolving(inNewTab);
+    }
+
+    /// <summary>Brings <paramref name="tab"/>, which shows a diagram, to the front as the tab the user works in: a new
+    /// intent, and the diagram a place in the history.</summary>
+    public void ShowDiagramTab(DocumentTab tab, TabContent.Diagram shown)
+    {
+        _intent.Begin();
+        LeaveActiveTab();
+        Tabs.MakeActive(_tabs, tab);
+        ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
+        _history.RecordDiagram(shown.Types, shown.Title);
+    }
+
+    /// <summary>Shows <paramref name="diagram"/>, titled <paramref name="title"/>, in the active tab while it shows
+    /// nothing, else in a new tab, kept open and made the tab the user works in: a new intent, and the diagram a place
+    /// in the history. Returns the tab.</summary>
+    public DocumentTab OpenDiagram(TypeDiagram diagram, string title)
+    {
+        _intent.Begin();
+        LeaveActiveTab();
+        var tab = GetOrOpenEmptyTab();
+        Tabs.ShowDiagram(tab, title, diagram);
+        Tabs.Keep(_tabs, tab);
+        Tabs.MakeActive(_tabs, tab);
+        _history.RecordDiagram(diagram, title);
+        return tab;
+    }
+
+    /// <summary>Shows <paramref name="diagram"/>, read back from the saved documents, in <paramref name="tab"/>, which
+    /// waited for it: no place in the history and no new intent; taken as the diagram the user works in when the tab
+    /// is the active one.</summary>
+    public void RestoreDiagram(DocumentTab tab, TypeDiagram diagram, string title)
+    {
+        Tabs.ShowDiagram(tab, title, diagram);
+        if (tab != _tabs.Active)
+        {
+            return;
+        }
+
+        Tabs.MakeActive(_tabs, tab);
+    }
+
+    /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, in the active tab while it shows
+    /// nothing, else in a new tab, kept open and made the tab the user works in: a new intent. Returns the tab.</summary>
+    public DocumentTab OpenComparison(AssemblyComparison comparison, string title)
+    {
+        _intent.Begin();
+        LeaveActiveTab();
+        var tab = GetOrOpenEmptyTab();
+        Tabs.ShowComparison(tab, title, comparison);
+        Tabs.Keep(_tabs, tab);
+        Tabs.MakeActive(_tabs, tab);
+        return tab;
+    }
+
+    /// <summary>Shows <paramref name="report"/> in a new tab, made the tab the user works in.</summary>
+    public void ShowReport(ExportReport report)
+    {
+        var tab = OpenNewTab();
+        Tabs.MakeActive(_tabs, tab);
+        Tabs.ShowReport(tab, report);
+    }
+
+    /// <summary>Opens the tab the app starts with, empty and the tab the user works in.</summary>
+    public void OpenFirstTab()
+    {
+        var first = _tabs.AddNew();
+        Tabs.MakeActive(_tabs, first);
+    }
+
+    /// <summary>Opens an empty tab for a panel the screen made for itself.</summary>
+    public DocumentTab OpenEmptyTab()
+    {
+        return _tabs.AddNew();
+    }
+
+    /// <summary>Opens a tab for a document reopened from the saved documents, to wait for what it showed: no place
+    /// in the history and no new intent.</summary>
+    public DocumentTab OpenReopenedTab()
+    {
+        return _tabs.AddNew();
+    }
+
+    /// <summary>Makes <paramref name="tab"/>, reopened from the saved documents, the tab the user works in, as it was
+    /// when they were saved.</summary>
+    public void RestoreActiveTab(DocumentTab tab)
+    {
+        Tabs.MakeActive(_tabs, tab);
+    }
+
+    /// <summary>Makes <paramref name="tab"/>, reopened from the saved documents, the preview tab, as it was when they
+    /// were saved.</summary>
+    public void RestorePreviewTab(DocumentTab tab)
+    {
+        Tabs.MakePreview(_tabs, tab);
+    }
+
+    /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing, unless it is closed already: a new intent,
+    /// and the diagram it shows dropped from the history. Returns whether it was the active tab, which leaves none
+    /// active until the view focuses another.</summary>
+    public ClosedTab CloseTab(DocumentTab tab)
+    {
+        if (!Tabs.IsOpen(_tabs, tab))
+        {
+            return new ClosedTab { WasActive = false };
+        }
+
+        _intent.Begin();
+        var wasActive = tab == _tabs.Active;
+        ForgetDiagramOf(tab);
+        Tabs.Remove(_tabs, tab);
+        return new ClosedTab { WasActive = wasActive };
+    }
+
+    /// <summary>Drops the diagram <paramref name="tab"/> shows, which it is about to stop showing, from
+    /// the history.</summary>
+    private void ForgetDiagramOf(DocumentTab tab)
+    {
+        var diagram = tab.Diagram;
+        if (diagram is null)
+        {
+            return;
+        }
+
+        _history.ForgetDiagram(diagram);
+    }
+
+    /// <summary>Closes every document tab but the active one, and empties that one; with no tab left
+    /// open, opens an empty one.</summary>
+    public void CloseDocuments()
+    {
+        var kept = GetTabToKeep();
+        var others = _tabs
+            .Open.Where(t => t != kept)
+            .ToList();
+        foreach (var tab in others)
+        {
+            CloseTab(tab);
+        }
+
+        ForgetDiagramOf(kept);
+        Tabs.Clear(kept);
+        Tabs.MakeActive(_tabs, kept);
+    }
+
+    private DocumentTab GetTabToKeep()
+    {
+        var active = _tabs.Active;
+        if (active is not null)
+        {
+            return active;
+        }
+
+        if (_tabs.Open.Count > 0)
+        {
+            return _tabs.Open[0];
+        }
+
+        return OpenNewTab();
+    }
+
+    /// <summary>Closes every document tab, leaving none open.</summary>
+    public void CloseAllTabs()
+    {
+        var all = _tabs.Open.ToList();
+        foreach (var tab in all)
+        {
+            CloseTab(tab);
+        }
+    }
+
+    /// <summary>Forgets every place and diagram the tabs showed, as switching to another list does.</summary>
+    public void ClearHistory()
+    {
+        _history.Clear();
+    }
+
+    /// <summary>Keeps where the view stood in what a tab showed as <paramref name="shownAs"/>, which it shows no more,
+    /// on the history entry left with it; read back from the screen after it drew.</summary>
+    public void KeepPositionLeft(TabVersion shownAs, ViewPosition position)
+    {
+        _history.KeepPosition(shownAs, position);
     }
 
     /// <summary>Goes to the history entry before the current one, as <see cref="GoToEntry"/> does.</summary>
-    public HistoryMove? GoBack(AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
+    public HistoryMove? GoBack(AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
     {
-        return GoToEntry(History.CurrentIndex - 1, assemblies, language, options, previewTabs);
+        return GoToEntry(_history.CurrentIndex - 1, assemblies, language, options);
     }
 
     /// <summary>Goes to the history entry after the current one, as <see cref="GoToEntry"/> does.</summary>
-    public HistoryMove? GoForward(AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
+    public HistoryMove? GoForward(AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
     {
-        return GoToEntry(History.CurrentIndex + 1, assemblies, language, options, previewTabs);
+        return GoToEntry(_history.CurrentIndex + 1, assemblies, language, options);
     }
 
     /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward; nothing when there
@@ -244,7 +570,7 @@ public sealed class Navigation
     /// and its assembly in <paramref name="assemblies"/> is listed, else begins looking up the place the entry
     /// recorded, the app saying it is resolving. Returns what is left for the edge to start: the load the tab
     /// started, or the lookup (for <see cref="GoToHistoryEntryHandler"/>); null when nothing is.</summary>
-    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
+    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
     {
         if (!CanGoTo(index))
         {
@@ -252,11 +578,11 @@ public sealed class Navigation
         }
 
         LeaveActiveTab();
-        var entry = History.MoveToEntry(index);
+        var entry = _history.MoveToEntry(index);
         switch (entry)
         {
             case HistoryEntry.Node node:
-                return ShowEntry(node, assemblies, language, options, previewTabs);
+                return ShowEntry(node, assemblies, language, options);
             case HistoryEntry.Diagram diagram:
                 BringDiagramToFront(diagram.Shown);
                 return null;
@@ -272,30 +598,29 @@ public sealed class Navigation
             return false;
         }
 
-        if (index >= History.Entries.Count)
+        if (index >= _history.Entries.Count)
         {
             return false;
         }
 
-        return index != History.CurrentIndex;
+        return index != _history.CurrentIndex;
     }
 
     /// <summary>Shows the node <paramref name="entry"/> recorded when the tab it shows in still shows it, else begins
     /// looking up the place it recorded. Returns the load or the lookup it started; null when neither did.</summary>
-    private HistoryMove? ShowEntry(HistoryEntry.Node entry, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs)
+    private HistoryMove? ShowEntry(HistoryEntry.Node entry, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
     {
         var destination = ChooseDestination(inNewTab: false);
         var place = entry.Place;
         var position = KeepPosition(entry.Position, entry.Language, language);
-        var shown = FindShownNode(assemblies, FindTab(destination, previewTabs), place);
+        var shown = FindShownNode(assemblies, FindTab(destination), place);
         if (shown is null)
         {
             return new HistoryMove.LookUp { Place = place, Position = position, Ticket = BeginResolving(inNewTab: false) };
         }
 
-        Intent.Begin();
-        var load = ShowNodeIn(destination, shown, language, options, previewTabs, position);
+        _intent.Begin();
+        var load = ShowNodeIn(destination, shown, language, options, position);
         if (load is null)
         {
             return null;
@@ -336,20 +661,20 @@ public sealed class Navigation
     /// navigated to meanwhile.</summary>
     private void BringDiagramToFront(TypeDiagram diagram)
     {
-        Intent.Begin();
+        _intent.Begin();
         var tab = FindTabShowing(diagram);
         if (tab is null)
         {
             return;
         }
 
-        ILSight.Tabs.MakeActive(Tabs, tab);
+        Tabs.MakeActive(_tabs, tab);
         ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
-    internal DocumentTab? FindTabShowing(TypeDiagram diagram)
+    private DocumentTab? FindTabShowing(TypeDiagram diagram)
     {
-        foreach (var tab in Tabs.Open)
+        foreach (var tab in _tabs.Open)
         {
             if (tab.Diagram == diagram)
             {
@@ -362,9 +687,9 @@ public sealed class Navigation
     /// <summary>Records where the active tab's view is in the history entry it shows, before it shows
     /// something else, with what of the tab the entry was shown as, which a later read-back of the view keeps
     /// its place by.</summary>
-    internal void LeaveActiveTab()
+    private void LeaveActiveTab()
     {
-        var tab = Tabs.Active;
+        var tab = _tabs.Active;
         if (tab is null)
         {
             return;
@@ -376,37 +701,36 @@ public sealed class Navigation
             return;
         }
 
-        if (!History.IsCurrentPlace(tab.Location))
+        if (!_history.IsCurrentPlace(tab.Location))
         {
             return;
         }
 
-        History.LeaveEntry(tab.Language, position.Value, TabVersion.Of(tab));
+        _history.LeaveEntry(tab.Language, position.Value, TabVersion.Of(tab));
     }
 
     /// <summary>Where what is asked for now from the active tab will show, in a new tab when
     /// <paramref name="inNewTab"/>.</summary>
-    internal TabDestination ChooseDestination(bool inNewTab)
+    public TabDestination ChooseDestination(bool inNewTab)
     {
-        return new TabDestination(Tabs.Active, inNewTab);
+        return new TabDestination(_tabs.Active, inNewTab);
     }
 
     /// <summary>Shows <paramref name="node"/> in the tab <paramref name="destination"/> leads to now, in
     /// <paramref name="language"/> with <paramref name="options"/>, makes that tab active, and commands the view to
     /// bring it to the front and reveal the node in the tree. Returns the load it started in the tab, for
     /// <see cref="DecompileIntoTabHandler"/> to bring in; null when the tab shows the node already.</summary>
-    internal DecompileTicket? ShowNodeIn(
+    private DecompileTicket? ShowNodeIn(
         TabDestination destination,
         BrowseNode node,
         DecompilationLanguage language,
         DecompilerOptions options,
-        bool previewTabs,
         ViewPosition? position = null,
         Bookmark? target = null,
         int? row = null)
     {
-        var shownIn = GetOrOpenTab(destination, previewTabs);
-        ILSight.Tabs.MakeActive(Tabs, shownIn);
+        var shownIn = GetOrOpenTab(destination);
+        Tabs.MakeActive(_tabs, shownIn);
         var load = StartDecompiling(ViewCommands, shownIn, node, language, options, new Arrival(position, target, row));
         ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
         return load;
@@ -414,9 +738,9 @@ public sealed class Navigation
 
     /// <summary>The tab <paramref name="destination"/> leads to now, brought to the front, else a new one
     /// opened; made the preview tab when it shows what tabs preview.</summary>
-    private DocumentTab GetOrOpenTab(TabDestination destination, bool previewTabs)
+    private DocumentTab GetOrOpenTab(TabDestination destination)
     {
-        var tab = FindTab(destination, previewTabs);
+        var tab = FindTab(destination);
         if (tab is null)
         {
             tab = OpenNewTab();
@@ -426,24 +750,24 @@ public sealed class Navigation
             ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
         }
 
-        if (IsPreviewed(destination, previewTabs))
+        if (IsPreviewed(destination))
         {
-            ILSight.Tabs.MakePreview(Tabs, tab);
+            Tabs.MakePreview(_tabs, tab);
         }
 
         return tab;
     }
 
     /// <summary>The open tab <paramref name="destination"/> leads to now, the preview tab while
-    /// <paramref name="previewTabs"/>; null when it calls for a new one.</summary>
-    internal DocumentTab? FindTab(TabDestination destination, bool previewTabs)
+    /// <see cref="PreviewTabs"/>; null when it calls for a new one.</summary>
+    private DocumentTab? FindTab(TabDestination destination)
     {
         if (destination.InNewTab)
         {
             return null;
         }
 
-        if (previewTabs)
+        if (_previewTabs)
         {
             return FindPreviewTab();
         }
@@ -455,7 +779,7 @@ public sealed class Navigation
     /// which nothing replaces; else null.</summary>
     private DocumentTab? FindOriginToReplace(DocumentTab? origin)
     {
-        var open = ILSight.Tabs.KeepIfOpen(Tabs, origin);
+        var open = Tabs.KeepIfOpen(_tabs, origin);
         if (open is null)
         {
             return null;
@@ -479,13 +803,13 @@ public sealed class Navigation
             return empty;
         }
 
-        return Tabs.Preview;
+        return _tabs.Preview;
     }
 
     /// <summary>The active tab while it shows nothing, as a tab just opened; else null.</summary>
-    internal DocumentTab? FindEmptyActiveTab()
+    private DocumentTab? FindEmptyActiveTab()
     {
-        var active = Tabs.Active;
+        var active = _tabs.Active;
         if (active is null)
         {
             return null;
@@ -499,18 +823,18 @@ public sealed class Navigation
         return active;
     }
 
-    private static bool IsPreviewed(TabDestination destination, bool previewTabs)
+    private bool IsPreviewed(TabDestination destination)
     {
         if (destination.InNewTab)
         {
             return false;
         }
 
-        return previewTabs;
+        return _previewTabs;
     }
 
     /// <summary>The active tab while it shows nothing, brought to the front, else a new tab.</summary>
-    internal DocumentTab GetOrOpenEmptyTab()
+    private DocumentTab GetOrOpenEmptyTab()
     {
         var empty = FindEmptyActiveTab();
         if (empty is null)
@@ -523,10 +847,10 @@ public sealed class Navigation
     }
 
     /// <summary>Opens an empty tab, which the view docks beside the active one.</summary>
-    internal DocumentTab OpenNewTab()
+    private DocumentTab OpenNewTab()
     {
-        var tab = Tabs.AddNew();
-        ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Tabs.Active));
+        var tab = _tabs.AddNew();
+        ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, _tabs.Active));
         return tab;
     }
 }

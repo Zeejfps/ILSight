@@ -15,7 +15,7 @@ public sealed class ResourceViewTests
     {
         var app = AppDriver.Opened(width: 1400f);
         app.Show(app.Node(["Resources", .. path]), 3);
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         return (app, tab);
     }
@@ -135,7 +135,7 @@ public sealed class ResourceViewTests
         var image = ImageOf(app, tab);
         Assert.True(app.Frames.Canvas.HasImage(image));
 
-        CloseTab(app.AppState, tab);
+        app.AppState.Navigation.CloseTab(tab);
         app.Run(2);
 
         Assert.False(app.Frames.Canvas.HasImage(image));

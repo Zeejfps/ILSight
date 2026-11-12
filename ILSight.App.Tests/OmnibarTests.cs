@@ -23,7 +23,7 @@ public sealed class OmnibarTests
 
     private static IReadOnlyList<Crumb> ActiveCrumbs(AppDriver app)
     {
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         return DocumentPanels.GetView(app.Ui.Documents, tab).Breadcrumb.Crumbs;
     }
@@ -107,7 +107,7 @@ public sealed class OmnibarTests
     public void The_frame_a_crumb_is_clicked_in_draws_the_tab_pointed_at_its_node()
     {
         var app = Showing("Greeter");
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         ClickCrumb(app, AppStateDriver.FixturesNamespace);
@@ -126,8 +126,8 @@ public sealed class OmnibarTests
         ClickCrumb(app, AppStateDriver.FixturesNamespace).Frame(2);
         app.Settle(2);
 
-        Assert.Same(app.Node(AppStateDriver.FixturesNamespace), app.AppState.Tabs.Active?.Node);
-        Assert.Same(app.AppState.Tabs.Active, app.AppState.Tabs.Preview);
+        Assert.Same(app.Node(AppStateDriver.FixturesNamespace), app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(app.AppState.Navigation.ActiveTab, app.AppState.Navigation.PreviewTab);
         Assert.Same(app.Node(AppStateDriver.FixturesNamespace), app.Ui.Tree.View.Selected);
     }
 
@@ -145,7 +145,7 @@ public sealed class OmnibarTests
 
         Assert.Same(app.Fixture("Greeter"), selected);
         Assert.Null(app.Ui.Omnibar.Menu);
-        Assert.Same(app.Fixture("Farewell"), app.AppState.Tabs.Active?.Node);
+        Assert.Same(app.Fixture("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public sealed class OmnibarTests
         app.Settle(2);
 
         Assert.Equal([app.Fixture("Farewell")], shown);
-        Assert.Same(app.Fixture("Farewell"), app.AppState.Tabs.Active?.Node);
+        Assert.Same(app.Fixture("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public sealed class OmnibarTests
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
         app.Settle(2);
 
-        var active = app.AppState.Tabs.Active;
+        var active = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.Equal(DocumentPanels.GetPanel(app.Ui.Documents, active), searchedIn);
         Assert.Same(app.Fixture("Farewell"), active.Node);
@@ -200,7 +200,7 @@ public sealed class OmnibarTests
         Assert.Same(omnibar.Search.Rows[0], first);
         Assert.Same(omnibar.Search.Rows[1], second);
         Assert.False(omnibar.IsSearching);
-        Assert.Same(app.Fixture("Greeter"), app.AppState.Tabs.Active?.Node);
+        Assert.Same(app.Fixture("Greeter"), app.AppState.Navigation.ActiveTab?.Node);
         GetCrumb(app, "Greeter");
     }
 
@@ -213,7 +213,7 @@ public sealed class OmnibarTests
         app.Frames.ClickOn(GetSuggestion("document-1", "Farewell")).Frame(2);
         app.Settle(2);
 
-        Assert.Same(app.Fixture("Farewell"), app.AppState.Tabs.Active?.Node);
+        Assert.Same(app.Fixture("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
         Assert.False(app.Ui.Omnibar.IsSearching);
     }
 
@@ -224,7 +224,7 @@ public sealed class OmnibarTests
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-1/search")).Frame(2);
 
-        var active = app.AppState.Tabs.Active;
+        var active = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.True(app.Ui.Omnibar.IsSearchingIn(DocumentPanels.GetPanel(app.Ui.Documents, active)));
         Assert.True(app.Frames.WantsTextInput);
@@ -251,7 +251,7 @@ public sealed class OmnibarTests
     public void Ctrl_M_then_Ctrl_L_in_the_code_still_folds_everything_rather_than_searching()
     {
         var app = Showing("Greeter");
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var view = DocumentPanels.GetView(app.Ui.Documents, tab);
 

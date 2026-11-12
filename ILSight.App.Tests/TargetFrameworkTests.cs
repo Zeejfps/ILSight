@@ -98,7 +98,7 @@ public sealed class TargetFrameworkTests
         Assert.NotNull(selected);
         Assert.Equal(BrowseNodes.GetPath(greeter), BrowseNodes.GetPath(selected));
         Assert.NotSame(greeter, tree.View.Selected);
-        Assert.Same(FixturesOf(app.AppState), app.AppState.Tabs.Active?.Node?.Assembly);
+        Assert.Same(FixturesOf(app.AppState), app.AppState.Navigation.ActiveTab?.Node?.Assembly);
         Assert.Empty(app.AppState.Errors.Entries);
 
         void RunFrame()
@@ -119,7 +119,7 @@ public sealed class TargetFrameworkTests
         using var temp = new TempDir();
         var app = new AppDriver();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, WritePackage(temp), ct));
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Node?.Icon == NodeIcon.Package, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
         var package = app.AppState.Assemblies.Listed[0].Root;
         var folder = package.Child("lib/net10.0");
@@ -138,7 +138,7 @@ public sealed class TargetFrameworkTests
         app.Settle(3);
 
         Assert.Equal(before, Trees.ListExpandedPaths(tree));
-        Assert.Equal("Greeter", app.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Greeter", app.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.Empty(app.AppState.Errors.Entries);
     }
 

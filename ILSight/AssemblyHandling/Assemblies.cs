@@ -45,12 +45,12 @@ public static class Assemblies
     /// asked for this to start.</summary>
     public static TabLoads CloseAllAssemblies(AppState appState)
     {
-        appState.Intent.Begin();
+        appState.Navigation.BeginRequest();
         appState.Opens.Cancel();
         appState.Reload.Stop();
         OpenAssemblies.CloseAll(appState.Assemblies, appState.Analyzer);
         appState.Assemblies.Pdbs.ForgetAll();
         appState.Assemblies.TargetFrameworks.ForgetAll();
-        return ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
+        return ShowReopenedDocuments(appState.Navigation, appState.Reopened, appState.Assemblies);
     }
 }

@@ -62,7 +62,7 @@ public static class Settings
             appState.Lists.Revision,
             appState.Bookmarks.Revision,
             appState.Analyzer.Revision,
-            appState.Tabs.Changes,
+            appState.Navigation.TabChanges,
             appState.ViewSettingsChanges,
             appState.Theme,
             appState.IconTheme,

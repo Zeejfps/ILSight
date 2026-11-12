@@ -33,7 +33,7 @@ public sealed class SavedComparisonTests : IDisposable
         var assemblies = app.AppState.Assemblies.Assemblies;
         app.StartComparing(CompareAssemblies(app.AppState.Navigation, app.AppState.Assemblies, assemblies[0], assemblies[1],
             Names.Comparison(assemblies[0])));
-        app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Result is ComparisonResult.Compared, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, Patience);
         app.Settle(2);
         return app;
     }
@@ -50,8 +50,8 @@ public sealed class SavedComparisonTests : IDisposable
 
     private static AssemblyComparison? FindComparison(AppDriver app)
     {
-        return app.AppState.Tabs
-            .Open.Select(static t => t.Comparison)
+        return app.AppState.Navigation
+            .OpenTabs.Select(static t => t.Comparison)
             .FirstOrDefault(static c => c is not null);
     }
 
@@ -68,7 +68,7 @@ public sealed class SavedComparisonTests : IDisposable
     public void After_a_restart_a_comparison_comes_back_in_its_panel_with_its_sides_and_filters_and_compares_again()
     {
         var app = Compared();
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var comparison = tab.Comparison;
         Assert.NotNull(comparison);
@@ -80,7 +80,7 @@ public sealed class SavedComparisonTests : IDisposable
 
         var next = Restart(app);
 
-        var restored = next.AppState.Tabs.Open.Single(t => t.Comparison is not null);
+        var restored = next.AppState.Navigation.OpenTabs.Single(t => t.Comparison is not null);
         var reopened = restored.Comparison;
         Assert.NotNull(reopened);
         Assert.Equal("ApiDiffSample API diff", restored.Title);
@@ -97,7 +97,7 @@ public sealed class SavedComparisonTests : IDisposable
     public void Swapping_the_sides_or_showing_every_entry_is_saved_without_anything_else_changing()
     {
         var app = Compared();
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.Equal(LeftPath, ReadSavedComparison().LeftPath.Text);
 

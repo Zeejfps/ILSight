@@ -27,6 +27,36 @@ public sealed class DiagramGrowingTests
     }
 
     [Fact]
+    public void ShowInNewDiagram_LookupStillRunning_IsANewIntentThatDropsItsAnswer()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var navigation = d.AppState.Navigation;
+        var lookup = navigation.BeginResolving(inNewTab: false);
+
+        var read = Diagrams.ShowInNewDiagram(d.AppState, TypeOf(d, "Vehicle"), "Vehicle diagram");
+
+        Assert.Same(read.Tab, navigation.ActiveTab);
+        Assert.True(navigation.IsStale(lookup.Intent));
+        Assert.False(navigation.IsResolving);
+    }
+
+    [Fact]
+    public void ShowInDiagram_LookupStillRunning_IsANewIntentThatDropsItsAnswer()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var navigation = d.AppState.Navigation;
+        var first = Diagrams.ShowInNewDiagram(d.AppState, TypeOf(d, "Vehicle"), "Vehicle diagram");
+        var lookup = navigation.BeginResolving(inNewTab: false);
+
+        var read = Diagrams.ShowInDiagram(d.AppState, TypeOf(d, "Greeter"), "Greeter diagram");
+
+        Assert.Same(first.Tab, read.Tab);
+        Assert.Same(read.Tab, navigation.ActiveTab);
+        Assert.True(navigation.IsStale(lookup.Intent));
+        Assert.False(navigation.IsResolving);
+    }
+
+    [Fact]
     public async Task AddWithNeighboursAsync_Read_TakesTheTypeHomeAddsTheCardsAndFocusesTheTypes()
     {
         var d = AppStateDriver.OpenedWithoutScreen();

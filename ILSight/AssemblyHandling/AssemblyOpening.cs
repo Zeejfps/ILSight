@@ -32,7 +32,7 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     /// work; null when none started. Reports why opening failed, unless the opens were cancelled.</summary>
     public Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
     {
-        var opening = appState.Intent.BeginOpening(paths);
+        var opening = appState.Navigation.BeginOpening(paths);
         if (opening is null)
         {
             return Task.FromResult<DecompileTicket?>(null);
@@ -57,9 +57,9 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         switch (outcome)
         {
             case Outcome<LoadedAssembly?>.Ok ok when ok.Value is not null:
-                if (!appState.Intent.IsStale(ticket))
+                if (!appState.Navigation.IsStale(ticket))
                 {
-                    return appState.Navigation.ShowNode(BrowseSessions.EnsureRoot(appState.Session, ok.Value), appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
+                    return appState.Navigation.ShowNode(BrowseSessions.EnsureRoot(appState.Session, ok.Value), appState.Language, appState.DecompilerOptions);
                 }
 
                 break;

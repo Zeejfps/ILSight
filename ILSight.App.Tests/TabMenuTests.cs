@@ -13,7 +13,7 @@ public sealed class TabMenuTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Settle(2);
-        var active = app.AppState.Tabs.Active;
+        var active = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var assembly = active.Node;
         Assert.NotNull(assembly);
@@ -28,7 +28,7 @@ public sealed class TabMenuTests
 
     private static List<string> TitlesInGroup(AppDriver app)
     {
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         return ListTabsInGroup(app.Ui, tab)
             .Select(t =>
@@ -55,12 +55,12 @@ public sealed class TabMenuTests
         PickFromTabMenu(app, "Greeter", "Close all to the right");
 
         Assert.Equal([NodeText.Name(assembly), "Greeter"], TitlesInGroup(app));
-        Assert.Equal(2, app.AppState.Tabs.Open.Count);
+        Assert.Equal(2, app.AppState.Navigation.OpenTabs.Count);
 
         PickFromTabMenu(app, "Greeter", "Close others");
 
         Assert.Equal(["Greeter"], TitlesInGroup(app));
-        Assert.Single(app.AppState.Tabs.Open);
+        Assert.Single(app.AppState.Navigation.OpenTabs);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class TabMenuTests
     public void Closing_all_closes_the_documents_of_the_group_and_leaves_the_other_panels_docked_there()
     {
         var (app, _) = OpenTabs();
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var group = app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, tab));
         Assert.NotNull(group);
@@ -87,7 +87,7 @@ public sealed class TabMenuTests
         CloseTabsInGroup(app.Ui, tab);
         app.Settle(2);
 
-        Assert.Empty(app.AppState.Tabs.Open);
+        Assert.Empty(app.AppState.Navigation.OpenTabs);
         Assert.Same(group, app.Ui.Layout.GroupOf(DockPanels.Bookmarks));
     }
 
@@ -96,7 +96,7 @@ public sealed class TabMenuTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Settle(2);
-        var active = app.AppState.Tabs.Active;
+        var active = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var node = active.Node;
         Assert.NotNull(node);
@@ -107,6 +107,6 @@ public sealed class TabMenuTests
         Assert.True(app.Frames.Drew("Close others"));
         Assert.True(app.Frames.Drew(Shortcuts.CloseTab.Label));
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close others")).Frame(2);
-        Assert.Single(app.AppState.Tabs.Open);
+        Assert.Single(app.AppState.Navigation.OpenTabs);
     }
 }

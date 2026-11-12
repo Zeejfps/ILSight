@@ -45,15 +45,6 @@ public sealed class AppState
     /// <summary>The open tabs, the history of what they showed and the newest thing asked for, which change
     /// together: showing a node is one of its methods.</summary>
     public required Navigation Navigation { get; init; }
-
-    /// <summary>The open tabs, <see cref="Navigation"/>'s.</summary>
-    public DocumentTabs Tabs => Navigation.Tabs;
-
-    /// <summary>Back and forward over what the tabs showed, <see cref="Navigation"/>'s.</summary>
-    public NavigationHistory History => Navigation.History;
-
-    /// <summary>What the user last asked for, <see cref="Navigation"/>'s.</summary>
-    public UserIntent Intent => Navigation.Intent;
     public Reload Reload { get; } = new();
 
     /// <summary>The files of the list being read again one at a time, as when another framework or
@@ -156,7 +147,7 @@ public sealed class AppState
     /// <summary>Opens files and shows what an id names among them, as a command line asks.</summary>
     public required OpenAndShowIdHandler OpenAndShowIdHandler { get; init; }
 
-    /// <summary>Goes back and forward through <see cref="History"/>.</summary>
+    /// <summary>Goes back and forward through <see cref="Navigation"/>'s history.</summary>
     public required GoToHistoryEntryHandler GoToHistoryEntryHandler { get; init; }
 
     /// <summary>Opens assemblies into the list: files picked or dropped, and the assemblies one references.</summary>
@@ -200,9 +191,6 @@ public sealed class AppState
     public required ThemeId<IconThemeFile> IconTheme;
     public ApiVisibility ApiVisibility;
 
-    /// <summary>Whether what is picked and followed shows in the preview tab rather than the active tab.</summary>
-    public bool PreviewTabs = true;
-
     /// <summary>The interface language.</summary>
     public Locale Locale;
 
@@ -219,7 +207,7 @@ public sealed class AppState
     public int ViewSettingsChanges;
 
     /// <summary>True while a reference or a history entry is being found in the background.</summary>
-    public bool IsResolving => Intent.IsResolving;
+    public bool IsResolving => Navigation.IsResolving;
 
     /// <summary>True while <see cref="ILSight.AssemblyHandling.AssemblyReloading.RefreshAssembliesAsync"/> reopens the assemblies.</summary>
     public bool IsReloading => Reload.IsRunning;
@@ -254,7 +242,7 @@ public sealed class AppState
     {
         get
         {
-            foreach (var tab in Tabs.Open)
+            foreach (var tab in Navigation.OpenTabs)
             {
                 var diagram = tab.Diagram;
                 if (diagram is not null && diagram.IsBusy)
@@ -271,7 +259,7 @@ public sealed class AppState
     {
         get
         {
-            foreach (var tab in Tabs.Open)
+            foreach (var tab in Navigation.OpenTabs)
             {
                 var comparison = tab.Comparison;
                 if (comparison is not null && comparison.IsComparing)

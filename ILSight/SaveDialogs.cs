@@ -13,9 +13,9 @@ internal static class SaveDialogs
 {
     /// <summary>Asks where to save the active tab's node, when it can be saved: a resource's bytes
     /// under its own name, else its code in the current language as one file.</summary>
-    public static void PickActiveCodeFile(Ui<UiState> ui, DocumentTabs tabs, DecompilationLanguage language)
+    public static void PickActiveCodeFile(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language)
     {
-        var node = tabs.Active?.Node;
+        var node = navigation.ActiveTab?.Node;
         if (!CanSaveCode(node))
         {
             return;

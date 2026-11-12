@@ -45,7 +45,7 @@ internal static class ProcessPickerView
     /// <summary>Draws the dialog, over the filter applied and the modules of the process selected, which start
     /// listing before it draws (see <see cref="AppFrames.FollowProcessPicker"/>); then tells what it found whether
     /// it is still open, which stops what it started once it is not, however it was closed.</summary>
-    public static void Render(Ui<UiState> ui, UserIntent intent)
+    public static void Render(Ui<UiState> ui, Navigation navigation)
     {
         var picker = ui.State.ProcessPicker;
         var browser = picker.Browser;
@@ -63,7 +63,7 @@ internal static class ProcessPickerView
 
         if (open && browser.CanOpen)
         {
-            Commands.OpenFilesLater(ui.State, intent.BeginOpening(browser.ListToOpen()));
+            Commands.OpenFilesLater(ui.State, navigation.BeginOpening(browser.ListToOpen()));
             close = true;
         }
         if (close)

@@ -144,7 +144,7 @@ internal sealed class AppStateDriver
             _ui.Display = _ui.Display with { PreviewTabs = false };
         }
 
-        Navigation.UsePreviewTabs(AppState, false);
+        AppState.Navigation.UsePreviewTabs(false);
     }
 
     /// <summary>Pumps until no background work the app state knows of is left.</summary>
@@ -156,7 +156,7 @@ internal sealed class AppStateDriver
     private bool IsSettled()
     {
         var appState = AppState;
-        return appState.Work.Outstanding.Count == 0 && !appState.IsReloading && !appState.IsReopening && !appState.IsFindingDocuments && !appState.IsFindingAnalyses &&!appState.IsResolving && !appState.IsImporting && !appState.IsExporting && !appState.IsDiagramming && !appState.IsComparing && !IsSearching() && appState.Tabs.Open.All(static t => !t.IsBusy) && _posted.IsEmpty;
+        return appState.Work.Outstanding.Count == 0 && !appState.IsReloading && !appState.IsReopening && !appState.IsFindingDocuments && !appState.IsFindingAnalyses &&!appState.IsResolving && !appState.IsImporting && !appState.IsExporting && !appState.IsDiagramming && !appState.IsComparing && !IsSearching() && appState.Navigation.OpenTabs.All(static t => !t.IsBusy) && _posted.IsEmpty;
     }
 
     private bool IsSearching()
@@ -182,9 +182,9 @@ internal sealed class AppStateDriver
     public LoadedModule OpenFixtures()
     {
         Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, FixturePath, ct));
-        RunUntil(() => AppState.Tabs.Active?.Node?.Icon == NodeIcon.Assembly);
+        RunUntil(() => AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Assembly);
         Settle();
-        return Assert.IsType<LoadedModule>(AppState.Tabs.Active?.Node?.Assembly);
+        return Assert.IsType<LoadedModule>(AppState.Navigation.ActiveTab?.Node?.Assembly);
     }
 
     /// <summary>The listed node at the labels under the fixture assembly's root.</summary>
@@ -209,14 +209,14 @@ internal sealed class AppStateDriver
     /// starts decompiling it there, without waiting for that.</summary>
     public void StartShowing(BrowseNode node, bool inNewTab = false)
     {
-        Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Language, AppState.DecompilerOptions, AppState.PreviewTabs, inNewTab));
+        Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Language, AppState.DecompilerOptions, inNewTab));
     }
 
     /// <summary>Goes to the history entry at <paramref name="index"/> as the toolbar does: in place, then starts the
     /// load or the lookup it left, as the app's commands start them, without waiting for them.</summary>
     public void GoToEntry(int index)
     {
-        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.Language, AppState.DecompilerOptions, AppState.PreviewTabs);
+        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.Language, AppState.DecompilerOptions);
         if (move is null)
         {
             return;
@@ -228,13 +228,13 @@ internal sealed class AppStateDriver
     /// <summary>Goes to the history entry before the current one, as <see cref="GoToEntry"/> does.</summary>
     public void GoBack()
     {
-        GoToEntry(AppState.History.CurrentIndex - 1);
+        GoToEntry(AppState.Navigation.HistoryIndex - 1);
     }
 
     /// <summary>Goes to the history entry after the current one, as <see cref="GoToEntry"/> does.</summary>
     public void GoForward()
     {
-        GoToEntry(AppState.History.CurrentIndex + 1);
+        GoToEntry(AppState.Navigation.HistoryIndex + 1);
     }
 
     /// <summary>Starts <paramref name="workflow"/> over the app state now, as the app starts the workflows the screen

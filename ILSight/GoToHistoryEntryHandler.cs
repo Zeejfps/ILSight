@@ -25,14 +25,14 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
     public async Task<DecompileTicket?> HandleAsync(AppState appState, HistoryMove.LookUp lookup, CancellationToken ct)
     {
         var found = await ports.LookUpPlaceAsync(lookup.Place, ct);
-        return ShowHistoryPlace(appState, lookup.Place, lookup.Position, appState.Intent.EndResolving(lookup.Ticket.Intent, found), lookup.Ticket.Destination);
+        return ShowHistoryPlace(appState, lookup.Place, lookup.Position, appState.Navigation.EndResolving(lookup.Ticket.Intent, found), lookup.Ticket.Destination);
     }
 
     private DecompileTicket? ShowHistoryPlace(AppState appState, NodePath place, ViewPosition? position, Resolution<BrowseNode> resolved,
         TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => appState.Navigation.ShowNodeIn(destination, found.Value, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, position),
+            found => appState.Navigation.ShowHistoryPlace(destination, found.Value, appState.Language, appState.DecompilerOptions, position),
             _ =>
             {
                 ReportHistoryPlaceGone(place, null);

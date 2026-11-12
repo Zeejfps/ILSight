@@ -151,8 +151,8 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         Assert.Empty(d.AppState.Assemblies.Assemblies);
-        Assert.Null(Assert.Single(d.AppState.Tabs.Open).Location);
-        Assert.Empty(d.AppState.History.Entries);
+        Assert.Null(Assert.Single(d.AppState.Navigation.OpenTabs).Location);
+        Assert.Empty(d.AppState.Navigation.HistoryEntries);
 
         d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
         d.Settle();
@@ -165,16 +165,16 @@ public sealed class AssemblyListingTests
     {
         var d = AppStateDriver.Opened();
         d.AppState.Lists.Add(Other);
-        foreach (var tab in d.AppState.Tabs.Open.ToList())
+        foreach (var tab in d.AppState.Navigation.OpenTabs.ToList())
         {
-            CloseTab(d.AppState, tab);
+            d.AppState.Navigation.CloseTab(tab);
         }
 
         d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
         d.Settle();
 
-        var empty = Assert.Single(d.AppState.Tabs.Open);
-        Assert.Same(empty, d.AppState.Tabs.Active);
+        var empty = Assert.Single(d.AppState.Navigation.OpenTabs);
+        Assert.Same(empty, d.AppState.Navigation.ActiveTab);
         Assert.True(d.Ui.Layout.Contains(DocumentPanels.GetPanel(d.Ui.Documents, empty)));
         Assert.Null(empty.Location);
     }
@@ -280,7 +280,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/collapse")).Frame(2);
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.Same(greeter, app.AppState.Tabs.Active?.Node);
+        Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -290,7 +290,7 @@ public sealed class AssemblyListingTests
         var greeter = app.Fixture("Greeter");
         var farewell = app.Fixture("Farewell");
         app.Show(greeter, 2);
-        var first = app.AppState.Tabs.Active;
+        var first = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(first);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Farewell"), PointerButton.Right).Frame();
@@ -300,7 +300,7 @@ public sealed class AssemblyListingTests
 
         Assert.Same(greeter, shownAfterRightClick);
         Assert.Same(greeter, first.Node);
-        Assert.Same(farewell, app.AppState.Tabs.Active?.Node);
+        Assert.Same(farewell, app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -311,7 +311,7 @@ public sealed class AssemblyListingTests
         var greeter = app.Fixture("Greeter");
         var farewell = app.Fixture("Farewell");
         app.Show(greeter, 2);
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         app.Frames.ClickOn(Selector.WithText("Farewell")).Frame(2);
@@ -322,7 +322,7 @@ public sealed class AssemblyListingTests
 
         Assert.Same(greeter, shownAfterClick);
         Assert.Same(farewell, selectedAfterClick);
-        Assert.Same(tab, app.AppState.Tabs.Active);
+        Assert.Same(tab, app.AppState.Navigation.ActiveTab);
         Assert.Same(farewell, tab.Node);
     }
 
@@ -332,14 +332,14 @@ public sealed class AssemblyListingTests
         var app = AppDriver.Opened();
         var farewell = app.Fixture("Farewell");
         app.Show(app.Fixture("Greeter"), 2);
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Farewell"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Open")).Frame(2);
         app.Settle(2);
 
-        Assert.Same(tab, app.AppState.Tabs.Active);
+        Assert.Same(tab, app.AppState.Navigation.ActiveTab);
         Assert.Same(farewell, tab.Node);
     }
 
@@ -350,14 +350,14 @@ public sealed class AssemblyListingTests
         var greeter = app.Fixture("Greeter");
         var farewell = app.Fixture("Farewell");
         app.Show(greeter, 2);
-        var first = app.AppState.Tabs.Active;
+        var first = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(first);
         app.Show(farewell, 2, inNewTab: true);
 
         DocumentPanels.ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Language, app.AppState.DecompilerOptions, first);
         app.Run(2);
 
-        Assert.Same(first, app.AppState.Tabs.Active);
+        Assert.Same(first, app.AppState.Navigation.ActiveTab);
         Assert.Same(farewell, app.Ui.Tree.View.Selected);
     }
 
@@ -375,7 +375,7 @@ public sealed class AssemblyListingTests
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
         Assert.True(app.Ui.Tree.View.IsExpanded(app.Node(AppStateDriver.FixturesNamespace)));
-        Assert.Same(greeter, app.AppState.Tabs.Active?.Node);
+        Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -471,7 +471,7 @@ public sealed class AssemblyListingTests
 
         Assert.True(saidResolving);
         Assert.False(app.Frames.Drew(app.Ui.Strings.StatusResolving));
-        Assert.True(app.AppState.Intent.IsStale(resolving.Intent));
+        Assert.True(app.AppState.Navigation.IsStale(resolving.Intent));
         app.Frames.WaitUntil(() => AssemblyListing.ListFilePaths(app.AppState.Assemblies).Contains(PathOf(other)), Patience);
     }
 

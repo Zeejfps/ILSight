@@ -81,9 +81,9 @@ public static class Exports
     }
 
     /// <summary>The assembly of the node the active tab shows, or null when it shows none that was read.</summary>
-    public static LoadedModule? FindActiveAssembly(DocumentTabs tabs)
+    public static LoadedModule? FindActiveAssembly(Navigation navigation)
     {
-        if (tabs.Active?.Node?.Assembly is not LoadedModule assembly)
+        if (navigation.ActiveTab?.Node?.Assembly is not LoadedModule assembly)
         {
             return null;
         }
@@ -172,9 +172,7 @@ public static class Exports
     /// <summary>Shows the report of <paramref name="report"/> in a new tab.</summary>
     public static void ShowExportReport(AppState appState, ExportReport report)
     {
-        var tab = appState.Navigation.OpenNewTab();
-        Tabs.MakeActive(appState.Tabs, tab);
-        Tabs.ShowReport(tab, report);
+        appState.Navigation.ShowReport(report);
     }
 
     /// <summary>The runs of every export in the order the exports panel lists them: the running one,

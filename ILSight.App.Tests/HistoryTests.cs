@@ -21,11 +21,11 @@ public sealed class HistoryTests
 
     private static CodeViewPosition ScrollTo(AppDriver app, int topLine, TextPosition anchor, TextPosition caret)
     {
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         CodeViewWidget.RestorePosition(CodeOf(app, tab), new CodeViewPosition(topLine, 0f, anchor, caret));
         app.Run(4);
-        var scrolled = app.AppState.Tabs.Active;
+        var scrolled = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(scrolled);
         return CodeOf(app, scrolled).Position;
     }
@@ -46,13 +46,13 @@ public sealed class HistoryTests
 
         app.GoBack();
         app.Settle(4);
-        var backTab = app.AppState.Tabs.Active;
+        var backTab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(backTab);
         var back = backTab.Node?.Text;
         var backPosition = CodeOf(app, backTab).Position;
         app.GoForward();
         app.Settle(4);
-        var forward = app.AppState.Tabs.Active;
+        var forward = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(forward);
 
         Assert.Equal(20, outline.TopLine);
@@ -73,7 +73,7 @@ public sealed class HistoryTests
 
         Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
         app.Settle(4);
-        Assert.Equal("Outline", app.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Outline", app.AppState.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
@@ -81,14 +81,14 @@ public sealed class HistoryTests
     {
         var app = Opened();
         Show(app, "Outline");
-        var outline = app.AppState.Tabs.Active;
+        var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
 
         app.Frames.Key(Shortcuts.Back).Frame();
 
         Assert.True(app.Frames.Drew(BrowseNodes.GetFullName(app.Fixture("Outline"))));
-        Assert.Same(outline, app.AppState.Tabs.Active);
+        Assert.Same(outline, app.AppState.Navigation.ActiveTab);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class HistoryTests
     {
         var app = Opened();
         Show(app, "Outline");
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(tab.Document.SpanAt(line, column + "return ".Length).Reference);
@@ -120,7 +120,7 @@ public sealed class HistoryTests
         var app = Opened();
         Show(app, "Outline");
         ScrollTo(app, 20, new TextPosition(21, 4), new TextPosition(22, 8));
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
         var scrolled = new CodeViewPosition(25, 0f, new TextPosition(line, column), new TextPosition(line, column + 6));
@@ -148,7 +148,7 @@ public sealed class HistoryTests
         app.Settle(4);
         app.GoBack();
         app.Settle(4);
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         Assert.Equal("Outline", tab.Node?.Text);
@@ -161,21 +161,21 @@ public sealed class HistoryTests
     public void Going_to_an_entry_jumps_over_the_ones_between_and_keeps_them_all()
     {
         var app = Opened();
-        var history = app.AppState.History;
+        var navigation = app.AppState.Navigation;
         Show(app, "Outline");
-        var first = history.CurrentIndex;
+        var first = navigation.HistoryIndex;
         Show(app, "Greeter");
         Show(app, "Outline");
-        var count = history.Entries.Count;
+        var count = navigation.HistoryEntries.Count;
 
         app.GoToEntry(first);
         app.Settle(4);
-        var back = app.AppState.Tabs.Active?.Node?.Text;
+        var back = app.AppState.Navigation.ActiveTab?.Node?.Text;
 
         Assert.Equal("Outline", back);
-        Assert.Equal(first, history.CurrentIndex);
-        Assert.Equal(count, history.Entries.Count);
-        Assert.True(history.CanGoForward);
+        Assert.Equal(first, navigation.HistoryIndex);
+        Assert.Equal(count, navigation.HistoryEntries.Count);
+        Assert.True(navigation.CanGoForward);
     }
 
     [Fact]
@@ -183,7 +183,7 @@ public sealed class HistoryTests
     {
         var app = Opened();
         Show(app, "Outline");
-        var first = app.AppState.History.CurrentIndex;
+        var first = app.AppState.Navigation.HistoryIndex;
         Show(app, "Greeter");
         Show(app, "Outline");
 
@@ -194,8 +194,8 @@ public sealed class HistoryTests
         app.Settle(4);
 
         Assert.True(greeter.Top > outline.Top);
-        Assert.Equal("Outline", app.AppState.Tabs.Active?.Node?.Text);
-        Assert.Equal(first, app.AppState.History.CurrentIndex);
+        Assert.Equal("Outline", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal(first, app.AppState.Navigation.HistoryIndex);
     }
 
     [Fact]
@@ -211,7 +211,7 @@ public sealed class HistoryTests
         app.Settle(4);
 
         Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Position.Top == row.Top && t.Inputs.Position.Left == row.Left);
-        Assert.Equal("Outline", app.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Outline", app.AppState.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]

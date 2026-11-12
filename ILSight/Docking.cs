@@ -5,89 +5,10 @@ using ILSight.MainScreen;
 
 namespace ILSight;
 
-/// <summary>Opening empty document tabs, switching to them and closing them. Where their panels are
-/// docked is the screen's.</summary>
+/// <summary>Where the panels of the document tabs and the views are docked. Opening and closing the tabs is
+/// <see cref="Navigation"/>'s.</summary>
 public static class Docking
 {
-    /// <summary>Opens an empty tab for a panel the screen made for itself.</summary>
-    public static DocumentTab OpenEmptyTab(AppState appState)
-    {
-        return appState.Tabs.AddNew();
-    }
-
-    /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing, unless it is closed already.
-    /// Returns whether it was the active tab, which leaves none active until the view focuses another.</summary>
-    public static ClosedTab CloseTab(AppState appState, DocumentTab tab)
-    {
-        if (!Tabs.IsOpen(appState.Tabs, tab))
-        {
-            return new ClosedTab { WasActive = false };
-        }
-
-        appState.Intent.Begin();
-        var wasActive = tab == appState.Tabs.Active;
-        ForgetDiagramOf(appState, tab);
-        Tabs.Remove(appState.Tabs, tab);
-        return new ClosedTab { WasActive = wasActive };
-    }
-
-    /// <summary>Drops the diagram <paramref name="tab"/> shows, which it is about to stop showing, from
-    /// the history.</summary>
-    private static void ForgetDiagramOf(AppState appState, DocumentTab tab)
-    {
-        var diagram = tab.Diagram;
-        if (diagram is null)
-        {
-            return;
-        }
-
-        appState.History.ForgetDiagram(diagram);
-    }
-
-    /// <summary>Closes every document tab but the active one, and empties that one; with no tab left
-    /// open, opens an empty one.</summary>
-    public static void CloseDocuments(AppState appState)
-    {
-        var kept = GetTabToKeep(appState);
-        var others = appState.Tabs
-            .Open.Where(t => t != kept)
-            .ToList();
-        foreach (var tab in others)
-        {
-            CloseTab(appState, tab);
-        }
-
-        ForgetDiagramOf(appState, kept);
-        Tabs.Clear(kept);
-        Tabs.MakeActive(appState.Tabs, kept);
-    }
-
-    private static DocumentTab GetTabToKeep(AppState appState)
-    {
-        var active = appState.Tabs.Active;
-        if (active is not null)
-        {
-            return active;
-        }
-
-        if (appState.Tabs.Open.Count > 0)
-        {
-            return appState.Tabs.Open[0];
-        }
-
-        return appState.Navigation.OpenNewTab();
-    }
-
-    /// <summary>Closes every document tab, leaving none open.</summary>
-    internal static void CloseAllTabs(AppState appState)
-    {
-        var all = appState.Tabs.Open.ToList();
-        foreach (var tab in all)
-        {
-            CloseTab(appState, tab);
-        }
-    }
-
     private const float ToolShare = 0.3f;
     private const float DocumentShare = 0.66f;
     private const float AssembliesShare = 0.34f;

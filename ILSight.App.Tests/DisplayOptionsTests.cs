@@ -348,7 +348,7 @@ public sealed class DisplayOptionsTests
     public void Switching_preview_tabs_off_in_the_panel_keeps_the_preview_tab_open_and_shows_picks_in_the_active_tab()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        var shown = app.AppState.Tabs.Preview;
+        var shown = app.AppState.Navigation.PreviewTab;
         OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
@@ -356,8 +356,8 @@ public sealed class DisplayOptionsTests
 
         Assert.NotNull(shown);
         Assert.False(app.Ui.Display.PreviewTabs);
-        Assert.False(app.AppState.PreviewTabs);
-        Assert.Null(app.AppState.Tabs.Preview);
+        Assert.False(app.AppState.Navigation.PreviewTabs);
+        Assert.Null(app.AppState.Navigation.PreviewTab);
         Assert.True(IsBold(app, "Preview tabs"));
     }
 

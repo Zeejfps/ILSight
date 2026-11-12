@@ -38,7 +38,7 @@ public sealed class LayoutPersistenceTests : IDisposable
 
         var next = new AppStateDriver(_temp.Settings());
         var layout = next.Ui.Layout;
-        var active = next.AppState.Tabs.Active;
+        var active = next.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var documents = layout.GroupOf(DocumentPanels.GetPanel(next.Ui.Documents, active));
         Assert.NotNull(documents);
@@ -51,7 +51,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         Assert.Equal(Direction.Vertical, split.Direction);
         Assert.Same(documents, split.First);
         Assert.Same(views, split.Second);
-        Assert.Single(next.AppState.Tabs.Open);
+        Assert.Single(next.AppState.Navigation.OpenTabs);
     }
 
     [Fact]

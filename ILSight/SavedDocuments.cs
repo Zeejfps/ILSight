@@ -67,7 +67,7 @@ public static class SavedDocuments
         var saved = appState.Lists.ActiveDocuments;
         if (saved is null)
         {
-            CloseDocuments(appState);
+            appState.Navigation.CloseDocuments();
             return;
         }
         ReopenTabs(appState, saved);
@@ -77,10 +77,10 @@ public static class SavedDocuments
     {
         if (saved.Tabs.Count == 0)
         {
-            CloseDocuments(appState);
+            appState.Navigation.CloseDocuments();
             return;
         }
-        CloseAllTabs(appState);
+        appState.Navigation.CloseAllTabs();
         var reopened = saved.Tabs.ConvertAll(r => ReopenTab(appState, r));
         MakeSavedActive(appState, reopened, saved.Active);
         MakeSavedPreview(appState, reopened, saved.Preview);
@@ -89,7 +89,7 @@ public static class SavedDocuments
 
     private static ReopenedTab ReopenTab(AppState appState, DocumentRecord record)
     {
-        var tab = appState.Tabs.AddNew();
+        var tab = appState.Navigation.OpenReopenedTab();
         WaitForSaved(tab, record);
         return WaitFor(appState.Reopened, tab, record);
     }
@@ -119,7 +119,7 @@ public static class SavedDocuments
             active = reopened[0];
         }
 
-        Tabs.MakeActive(appState.Tabs, active.Tab);
+        appState.Navigation.RestoreActiveTab(active.Tab);
     }
 
     private static void MakeSavedPreview(AppState appState, List<ReopenedTab> reopened, string? panel)
@@ -130,7 +130,7 @@ public static class SavedDocuments
             return;
         }
 
-        Tabs.MakePreview(appState.Tabs, preview.Tab);
+        appState.Navigation.RestorePreviewTab(preview.Tab);
     }
 
     private static ReopenedTab? FindReopened(List<ReopenedTab> reopened, string? panel)
@@ -148,8 +148,8 @@ public static class SavedDocuments
     /// preview tab and how their panels are arranged. Null when no tab is kept.</summary>
     internal static DocumentsRecord? SaveDocuments(AppState appState)
     {
-        var saved = appState.Tabs
-            .Open.Select(t => SaveTab(appState, t))
+        var saved = appState.Navigation
+            .OpenTabs.Select(t => SaveTab(appState, t))
             .OfType<SavedTab>()
             .ToList();
         if (saved.Count == 0)
@@ -158,8 +158,8 @@ public static class SavedDocuments
         }
 
         var records = saved.ConvertAll(static s => s.Record);
-        var active = FindSavedPanel(saved, appState.Tabs.Active);
-        var preview = FindSavedPanel(saved, appState.Tabs.Preview);
+        var active = FindSavedPanel(saved, appState.Navigation.ActiveTab);
+        var preview = FindSavedPanel(saved, appState.Navigation.PreviewTab);
         var layout = ArrangeSaved(appState.View.Layout, records);
         return new DocumentsRecord(records, active, preview, layout);
     }
@@ -285,14 +285,14 @@ public static class SavedDocuments
     /// started this to start: the reading of the diagrams' cards, the comparisons' runs, and the lookup of the nodes the
     /// other tabs wait for (<see cref="ShowReopenedNodesHandler"/>), which nothing after this needs and which the edge
     /// starts as work of its own, so that what the caller started meanwhile does not wait for it.</summary>
-    internal static TabLoads ShowReopenedDocuments(DocumentTabs tabs, ReopenedTabs reopenedTabs, AssemblyList assemblies)
+    internal static TabLoads ShowReopenedDocuments(Navigation navigation, ReopenedTabs reopenedTabs, AssemblyList assemblies)
     {
         var nodes = new List<WaitingNode>();
         var diagramReads = new List<SavedDiagramRead>();
         var comparisonRuns = new List<ComparisonRun>();
         foreach (var reopened in ListWaiting(reopenedTabs))
         {
-            ShowReopened(tabs, reopenedTabs, assemblies, reopened, nodes, diagramReads, comparisonRuns);
+            ShowReopened(navigation, reopenedTabs, assemblies, reopened, nodes, diagramReads, comparisonRuns);
         }
 
         return TabLoads.From([], diagramReads, ListLookups(nodes), comparisonRuns);
@@ -312,7 +312,7 @@ public static class SavedDocuments
     /// <summary>Shows the diagram or comparison <paramref name="reopened"/> showed, adding the read of its cards to
     /// <paramref name="diagramReads"/>, or its run to <paramref name="comparisonRuns"/>, or adds its node to
     /// <paramref name="nodes"/>, to be found with the others.</summary>
-    private static void ShowReopened(DocumentTabs tabs, ReopenedTabs reopenedTabs, AssemblyList assemblies, ReopenedTab reopened, List<WaitingNode> nodes,
+    private static void ShowReopened(Navigation navigation, ReopenedTabs reopenedTabs, AssemblyList assemblies, ReopenedTab reopened, List<WaitingNode> nodes,
         List<SavedDiagramRead> diagramReads, List<ComparisonRun> comparisonRuns)
     {
         switch (reopened.Record)
@@ -321,7 +321,7 @@ public static class SavedDocuments
                 nodes.Add(new WaitingNode { Reopened = reopened, Record = node, Place = FindListedPlace(assemblies, node) });
                 break;
             case DiagramDocumentRecord diagram:
-                AddStarted(diagramReads, ReopenDiagram(tabs, reopenedTabs, reopened, diagram));
+                AddStarted(diagramReads, ReopenDiagram(navigation, reopenedTabs, reopened, diagram));
                 break;
             case ComparisonDocumentRecord comparison:
                 AddStarted(comparisonRuns, ReopenComparison(reopenedTabs, assemblies, reopened, comparison));

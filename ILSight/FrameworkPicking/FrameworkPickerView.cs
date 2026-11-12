@@ -24,7 +24,7 @@ internal static class FrameworkPickerView
         Commands.Start(uiState, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct));
     }
 
-    public static void Render(Ui<UiState> ui, UserIntent intent, AssemblyList assemblies)
+    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies)
     {
         var t = ui.State.Strings;
         var picker = ui.State.Picker;
@@ -88,7 +88,7 @@ internal static class FrameworkPickerView
 
         if (open && browser.HasSelection)
         {
-            Commands.OpenFilesLater(ui.State, intent.BeginOpening(ListPaths(browser.ListSelected())));
+            Commands.OpenFilesLater(ui.State, navigation.BeginOpening(ListPaths(browser.ListSelected())));
             close = true;
         }
         if (close)

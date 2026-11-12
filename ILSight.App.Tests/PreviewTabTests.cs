@@ -48,15 +48,15 @@ public sealed class PreviewTabTests
     {
         var app = Revealed();
         Pick(app, "Greeter");
-        var preview = app.AppState.Tabs.Preview;
+        var preview = app.AppState.Navigation.PreviewTab;
         var shownFirst = preview?.Node?.Text;
 
         Pick(app, "Farewell");
 
         Assert.Equal("Greeter", shownFirst);
-        Assert.Same(preview, app.AppState.Tabs.Preview);
+        Assert.Same(preview, app.AppState.Navigation.PreviewTab);
         Assert.Equal("Farewell", preview?.Node?.Text);
-        Assert.Single(app.AppState.Tabs.Open);
+        Assert.Single(app.AppState.Navigation.OpenTabs);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class PreviewTabTests
     {
         var app = Revealed();
         Pick(app, "Greeter");
-        var preview = app.AppState.Tabs.Preview;
+        var preview = app.AppState.Navigation.PreviewTab;
         Assert.NotNull(preview);
         app.Frames.MoveTo(GetFixtureRow("Farewell"));
 
@@ -81,17 +81,17 @@ public sealed class PreviewTabTests
         var app = Revealed();
         app.DoubleClickOn(Selector.WithText("Greeter")).Frame(2);
         app.Settle(2);
-        var kept = app.AppState.Tabs.Active;
+        var kept = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(kept);
-        var previewAfterOpening = app.AppState.Tabs.Preview;
+        var previewAfterOpening = app.AppState.Navigation.PreviewTab;
 
         Pick(app, "Farewell");
 
         Assert.Null(previewAfterOpening);
         Assert.Equal("Greeter", kept.Node?.Text);
-        Assert.Equal(2, app.AppState.Tabs.Open.Count);
-        Assert.Equal("Farewell", app.AppState.Tabs.Preview?.Node?.Text);
-        Assert.Same(app.AppState.Tabs.Preview, app.AppState.Tabs.Active);
+        Assert.Equal(2, app.AppState.Navigation.OpenTabs.Count);
+        Assert.Equal("Farewell", app.AppState.Navigation.PreviewTab?.Node?.Text);
+        Assert.Same(app.AppState.Navigation.PreviewTab, app.AppState.Navigation.ActiveTab);
     }
 
     [Fact]
@@ -99,18 +99,18 @@ public sealed class PreviewTabTests
     {
         var app = Revealed();
         app.Show(app.Fixture("Greeter"), 2);
-        var kept = app.AppState.Tabs.Active;
+        var kept = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(kept);
         app.AppState.Navigation.KeepTabOpen(kept);
         Pick(app, "Farewell");
-        var preview = app.AppState.Tabs.Preview;
+        var preview = app.AppState.Navigation.PreviewTab;
 
         Pick(app, "Greeter");
 
-        Assert.Same(kept, app.AppState.Tabs.Active);
-        Assert.Same(preview, app.AppState.Tabs.Preview);
+        Assert.Same(kept, app.AppState.Navigation.ActiveTab);
+        Assert.Same(preview, app.AppState.Navigation.PreviewTab);
         Assert.Equal("Farewell", preview?.Node?.Text);
-        Assert.Equal(2, app.AppState.Tabs.Open.Count);
+        Assert.Equal(2, app.AppState.Navigation.OpenTabs.Count);
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public sealed class PreviewTabTests
         var app = AppDriver.Opened();
         var greeter = app.Fixture("Greeter");
         app.Show(greeter, 2);
-        var kept = app.AppState.Tabs.Active;
+        var kept = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(kept);
         app.AppState.Navigation.KeepTabOpen(kept);
 
@@ -128,8 +128,8 @@ public sealed class PreviewTabTests
         app.Settle(2);
 
         Assert.Same(greeter, kept.Node);
-        Assert.Equal("Farewell", app.AppState.Tabs.Active?.Node?.Text);
-        Assert.Same(app.AppState.Tabs.Active, app.AppState.Tabs.Preview);
+        Assert.Equal("Farewell", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Same(app.AppState.Navigation.ActiveTab, app.AppState.Navigation.PreviewTab);
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class PreviewTabTests
 
         app.Frames.DoubleClick(title).Frame(2);
 
-        Assert.Null(app.AppState.Tabs.Preview);
+        Assert.Null(app.AppState.Navigation.PreviewTab);
         Assert.DoesNotContain(app.Frames.Canvas.Texts, IsItalic);
     }
 
@@ -155,8 +155,8 @@ public sealed class PreviewTabTests
         app.Frames.Click(title.X + 2f, title.Y + title.Height / 2, PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Keep tab open")).Frame(2);
 
-        Assert.Null(app.AppState.Tabs.Preview);
-        Assert.Equal("Greeter", app.AppState.Tabs.Active?.Node?.Text);
+        Assert.Null(app.AppState.Navigation.PreviewTab);
+        Assert.Equal("Greeter", app.AppState.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
@@ -164,17 +164,17 @@ public sealed class PreviewTabTests
     {
         var app = Revealed();
         Pick(app, "Greeter");
-        var before = app.AppState.Tabs.Preview;
+        var before = app.AppState.Navigation.PreviewTab;
         Assert.NotNull(before);
 
-        var empty = Docking.OpenEmptyTab(app.AppState);
-        Tabs.MakeActive(app.AppState.Tabs, empty);
+        var empty = app.AppState.Navigation.OpenEmptyTab();
+        Assert.Null(app.AppState.Navigation.FocusTab(empty, app.AppState.Language, app.AppState.DecompilerOptions));
         app.AppState.ViewCommands.Enqueue(new ViewCommand.ShowTab(empty, before));
         app.Run(2);
         Pick(app, "Farewell");
 
         Assert.Equal("Greeter", before.Node?.Text);
-        Assert.Equal("Farewell", app.AppState.Tabs.Preview?.Node?.Text);
-        Assert.Same(empty, app.AppState.Tabs.Preview);
+        Assert.Equal("Farewell", app.AppState.Navigation.PreviewTab?.Node?.Text);
+        Assert.Same(empty, app.AppState.Navigation.PreviewTab);
     }
 }

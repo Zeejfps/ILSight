@@ -147,7 +147,7 @@ public sealed class DecompileIntoTabHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var greeter = d.Fixture("Greeter");
         d.Show(greeter);
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var viewCommands = new Queue<ViewCommand>();
         var changes = tab.Changes;

@@ -25,7 +25,7 @@ public sealed class AppStateTests
     public void Showing_a_node_in_a_new_tab_asks_the_view_to_dock_it_beside_the_active_tab_and_reveal_the_node()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var before = d.AppState.Tabs.Active;
+        var before = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(before);
         var greeter = d.Fixture("Greeter");
         d.TakeViewCommands();
@@ -33,7 +33,7 @@ public sealed class AppStateTests
         d.StartShowing(greeter, inNewTab: true);
         var commands = d.TakeViewCommands();
 
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.NotSame(before, tab);
         Assert.Equal([new ViewCommand.ShowTab(tab, before), new ViewCommand.RevealNode(greeter)], commands);
@@ -44,14 +44,14 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Greeter"), inNewTab: true);
-        var greeter = d.AppState.Tabs.Active;
+        var greeter = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(greeter);
 
-        var closed = CloseTab(d.AppState, greeter);
+        var closed = d.AppState.Navigation.CloseTab(greeter);
 
         Assert.True(closed.WasActive);
-        Assert.Null(d.AppState.Tabs.Active);
-        Assert.Single(d.AppState.Tabs.Open);
+        Assert.Null(d.AppState.Navigation.ActiveTab);
+        Assert.Single(d.AppState.Navigation.OpenTabs);
     }
 
     [Fact]
@@ -74,10 +74,10 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.Show(d.Node("Metadata", "Tables").Table("TypeDef"));
-        var grid = d.AppState.Tabs.Active;
+        var grid = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(grid);
         d.Show(d.Fixture("Greeter"), inNewTab: true);
-        var code = d.AppState.Tabs.Active;
+        var code = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(code);
         d.NextFrame();
         var lines = code.Document.Lines.Length;
@@ -104,7 +104,7 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         d.Show(d.Node("Metadata", "Tables").Table("TypeDef"));
-        var grid = d.AppState.Tabs.Active;
+        var grid = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(grid);
         var documents = d.Ui.Documents;
         var panel = DocumentPanels.GetPanel(documents, grid);
@@ -125,9 +125,9 @@ public sealed class AppStateTests
 
         d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, AppStateDriver.FixturePath, ct));
 
-        Assert.Null(Assert.Single(d.AppState.Tabs.Open).Location);
-        d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
-        Assert.Equal(NodeIcon.Assembly, d.AppState.Tabs.Active?.Node?.Icon);
+        Assert.Null(Assert.Single(d.AppState.Navigation.OpenTabs).Location);
+        d.RunUntil(() => d.AppState.Navigation.ActiveTab?.Node is not null);
+        Assert.Equal(NodeIcon.Assembly, d.AppState.Navigation.ActiveTab?.Node?.Icon);
     }
 
     [Fact]
@@ -136,8 +136,8 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
-        var greeter = d.AppState.Tabs.Open[^2];
-        var farewell = d.AppState.Tabs.Active;
+        var greeter = d.AppState.Navigation.OpenTabs[^2];
+        var farewell = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         var farewellPanel = DocumentPanels.GetPanel(d.Ui.Documents, farewell);
         var documents = d.Ui.Layout;
@@ -147,11 +147,11 @@ public sealed class AppStateTests
 
         d.Show(d.Fixture("Outline"), inNewTab: true);
 
-        var outline = d.AppState.Tabs.Active;
+        var outline = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
         var outlinePanel = DocumentPanels.GetPanel(d.Ui.Documents, outline);
         Assert.Same(documents.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, greeter)), documents.GroupOf(outlinePanel));
-        Assert.Equal("Outline", d.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Outline", d.AppState.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
@@ -159,7 +159,7 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
-        var greeter = d.AppState.Tabs.Active;
+        var greeter = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
         var documents = d.Ui.Layout;
@@ -170,11 +170,11 @@ public sealed class AppStateTests
         SyncActiveTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions);
         d.NextFrame();
 
-        Assert.Equal(2, d.AppState.Tabs.Open.Count);
-        var empty = d.AppState.Tabs.Open.Single(t => t != greeter);
+        Assert.Equal(2, d.AppState.Navigation.OpenTabs.Count);
+        var empty = d.AppState.Navigation.OpenTabs.Single(t => t != greeter);
         Assert.Null(empty.Location);
         Assert.NotSame(documents.GroupOf(greeterPanel), documents.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, empty)));
-        Assert.Same(empty, d.AppState.Tabs.Active);
+        Assert.Same(empty, d.AppState.Navigation.ActiveTab);
 
         d.Show(d.Fixture("Farewell"));
 
@@ -188,15 +188,15 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
-        var greeter = d.AppState.Tabs.Open[^2];
+        var greeter = d.AppState.Navigation.OpenTabs[^2];
 
-        var farewell = d.AppState.Tabs.Active;
+        var farewell = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(farewell);
-        CloseTab(d.AppState, farewell);
+        d.AppState.Navigation.CloseTab(farewell);
         d.NextFrame();
 
-        Assert.Same(greeter, d.AppState.Tabs.Active);
-        Assert.DoesNotContain(d.AppState.Tabs.Open, t => t.Node?.Text == "Farewell");
+        Assert.Same(greeter, d.AppState.Navigation.ActiveTab);
+        Assert.DoesNotContain(d.AppState.Navigation.OpenTabs, t => t.Node?.Text == "Farewell");
         var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
         Assert.Equal([greeterPanel], d.Ui.Layout.GroupOf(greeterPanel)?.Panels);
     }
@@ -208,11 +208,11 @@ public sealed class AppStateTests
         var missing = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.dll");
 
         d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, missing, ct));
-        d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
+        d.RunUntil(() => d.AppState.Navigation.ActiveTab?.Node is not null);
         d.Settle();
 
         var failed = Assert.Single(d.AppState.Assemblies.Listed);
-        var tab = Assert.Single(d.AppState.Tabs.Open);
+        var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
         Assert.IsType<FailedAssembly>(failed);
         Assert.Same(failed.Root, tab.Node);
         Assert.Contains(Path.GetFileName(missing), Documents.GetText(tab.Document));
@@ -231,7 +231,7 @@ public sealed class AppStateTests
         d.StartShowing(farewell);
         d.Settle();
 
-        var tab = Assert.Single(d.AppState.Tabs.Open);
+        var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
         Assert.Same(farewell, tab.Node);
     }
 
@@ -264,8 +264,8 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), ct));
         d.Settle();
 
-        Assert.Equal(["Greeter", "Farewell"], d.AppState.Tabs.Open.Select(t => t.Node?.Text));
-        Assert.All(d.AppState.Tabs.Open, t =>
+        Assert.Equal(["Greeter", "Farewell"], d.AppState.Navigation.OpenTabs.Select(t => t.Node?.Text));
+        Assert.All(d.AppState.Navigation.OpenTabs, t =>
         {
             Assert.NotNull(t.Node);
             Assert.Contains(t.Node.Assembly, d.AppState.Assemblies.Assemblies);
@@ -305,7 +305,7 @@ public sealed class AppStateTests
         d.GoBack();
         d.Settle();
 
-        var shown = d.AppState.Tabs.Active?.Node;
+        var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         Assert.Empty(d.AppState.Errors.Entries.Select(e => e.Words().FullText));
         Assert.Equal("Greeter", shown.Text);
@@ -320,9 +320,9 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Tabs.Open[0]);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Navigation.OpenTabs[0]);
         d.Settle();
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
 
@@ -340,7 +340,7 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
-        var active = d.AppState.Tabs.Active;
+        var active = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var document = active.Document;
         var (line, column) = document.GetPosition("Name;");
@@ -350,11 +350,11 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.StartShowing(farewell);
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Tabs.Open[0]);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Navigation.OpenTabs[0]);
         d.NextFrame();
         d.Settle();
 
-        var tab = Assert.Single(d.AppState.Tabs.Open);
+        var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
         Assert.Same(farewell, tab.Node);
         Assert.False(d.AppState.IsResolving);
     }
@@ -364,7 +364,7 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
-        var active = d.AppState.Tabs.Active;
+        var active = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var document = active.Document;
         var (line, column) = document.GetPosition("Name;");
@@ -373,7 +373,7 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
-        var tab = Assert.Single(d.AppState.Tabs.Open);
+        var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
         Assert.Equal("Name : string", tab.Node?.Text);
         Assert.Same(tab.Node, d.Ui.Tree.View.Selected);
     }
@@ -382,7 +382,7 @@ public sealed class AppStateTests
     public void A_document_is_only_scrolled_to_a_definition_it_has()
     {
         var d = AppStateDriver.Opened();
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;
@@ -416,7 +416,7 @@ public sealed class AppStateTests
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
 
-        var active = d.AppState.Tabs.Active;
+        var active = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var document = active.Document;
         var (line, column) = document.GetPosition("Length");
@@ -607,9 +607,9 @@ public sealed class AppStateTests
         using var temp = new TempDir();
         var copy = temp.Copy(AppStateDriver.FixturePath, "fixture.dll");
         d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, copy, ct));
-        d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
+        d.RunUntil(() => d.AppState.Navigation.ActiveTab?.Node is not null);
         d.Settle();
-        var root = d.AppState.Tabs.Active?.Node;
+        var root = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(root);
         var greeter = root.Child(AppStateDriver.FixturesNamespace, "Greeter");
         d.Show(greeter);
@@ -618,7 +618,7 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), ct));
         d.Settle();
 
-        var tab = Assert.Single(d.AppState.Tabs.Open);
+        var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
         Assert.Null(tab.Node);
         Assert.Equal("Greeter", tab.Title);
         Assert.NotNull(tab.Location);

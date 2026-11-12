@@ -8,7 +8,7 @@ public sealed class NamespacePageTests
         var app = AppDriver.Opened();
         var d = app.Driver;
         d.Show(d.Node(AppStateDriver.FixturesNamespace));
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("Greeter");
         var span = tab.Document.SpanAt(line, column);

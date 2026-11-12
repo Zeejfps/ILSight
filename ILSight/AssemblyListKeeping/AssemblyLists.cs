@@ -136,7 +136,7 @@ public static class AssemblyLists
     {
         var closing = CloseAllAssemblies(appState);
         ReopenDocuments(appState);
-        appState.History.Clear();
+        appState.Navigation.ClearHistory();
         var (paths, reload) = BeginRestoringActiveAssemblyList(appState);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         var analyses = Analysis.BeginRestoring(appState.Analyzer, appState.Assemblies);

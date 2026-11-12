@@ -25,7 +25,7 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     public async Task<DecompileTicket?> HandleAsync(AppState appState, CodeReference.Navigable reference, ResolveTicket ticket, CancellationToken ct)
     {
         var found = await ports.LookUpMetadataRowAsync(reference, ct);
-        return ShowResolvedRow(appState, reference, appState.Intent.EndResolving(ticket.Intent, found), ticket.Destination);
+        return ShowResolvedRow(appState, reference, appState.Navigation.EndResolving(ticket.Intent, found), ticket.Destination);
     }
 
     /// <summary>Shows the row <paramref name="resolved"/> found, or reports it unresolved. Returns the load it
@@ -33,7 +33,7 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     private DecompileTicket? ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => appState.Navigation.ShowRowIn(destination, found.Value, appState.Language, appState.DecompilerOptions, appState.PreviewTabs),
+            found => appState.Navigation.ShowRowIn(destination, found.Value, appState.Language, appState.DecompilerOptions),
             _ =>
             {
                 ReportUnresolved(reference, null);

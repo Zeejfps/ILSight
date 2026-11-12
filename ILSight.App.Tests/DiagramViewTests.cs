@@ -45,7 +45,7 @@ public sealed class DiagramViewTests
             return false;
         }
 
-        var tab = app.AppState.Tabs.Active;
+        var tab = app.AppState.Navigation.ActiveTab;
         if (tab is null)
         {
             return false;
@@ -102,8 +102,8 @@ public sealed class DiagramViewTests
 
     private static List<DocumentTab> ListDiagramTabs(AppDriver app)
     {
-        return app.AppState.Tabs
-            .Open.Where(static t => t.Diagram is not null)
+        return app.AppState.Navigation
+            .OpenTabs.Where(static t => t.Diagram is not null)
             .ToList();
     }
 
@@ -199,12 +199,12 @@ public sealed class DiagramViewTests
 
         ClickAt(app, CardText(app, "Bike"));
         app.Settle(2);
-        Assert.Equal("Bike", app.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Bike", app.AppState.Navigation.ActiveTab?.Node?.Text);
 
         app.Frames.ClickOn(Selector.WithText(VehicleDiagram)).Frame();
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
-        Assert.Equal("Mileage() : int", app.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Mileage() : int", app.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.NotNull(DiagramTab(app).Diagram);
     }
 
@@ -230,17 +230,17 @@ public sealed class DiagramViewTests
         var diagram = DiagramTab(app);
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
-        var code = app.AppState.Tabs.Active;
+        var code = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(code);
         Assert.NotEqual(diagram, code);
 
         app.GoBack();
         app.Settle(2);
-        Assert.Equal(diagram, app.AppState.Tabs.Active);
+        Assert.Equal(diagram, app.AppState.Navigation.ActiveTab);
 
         app.GoForward();
         app.Settle(2);
-        Assert.Equal("Mileage() : int", app.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Mileage() : int", app.AppState.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
@@ -248,11 +248,11 @@ public sealed class DiagramViewTests
     {
         var app = PickFromTree("Vehicle", "Show in diagram");
         var diagram = DiagramTab(app);
-        Assert.Contains(app.AppState.History.Entries, static e => e is HistoryEntry.Diagram);
+        Assert.Contains(app.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Diagram);
 
-        CloseTab(app.AppState, diagram);
+        app.AppState.Navigation.CloseTab(diagram);
 
-        Assert.DoesNotContain(app.AppState.History.Entries, static e => e is HistoryEntry.Diagram);
+        Assert.DoesNotContain(app.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Diagram);
     }
 
     [Fact]

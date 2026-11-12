@@ -23,7 +23,7 @@ internal static class StatusBarView
             Background = theme.Surface,
         }))
         {
-            var selected = appState.Tabs.Active?.Node;
+            var selected = appState.Navigation.ActiveTab?.Node;
             ui.Text(ui.Memo("status-node", selected, static n => n is null ? "" : BrowseNodes.GetFullName(n)), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
                 size: size, overflow: TextOverflow.Ellipsis);
 
@@ -69,7 +69,7 @@ internal static class StatusBarView
             return t.StatusReloading;
         }
 
-        if (IsDecompiling(appState.Tabs.Active))
+        if (IsDecompiling(appState.Navigation.ActiveTab))
         {
             return t.StatusDecompiling;
         }

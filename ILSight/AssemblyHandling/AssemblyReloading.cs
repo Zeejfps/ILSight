@@ -115,7 +115,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     private static List<ReloadingTab> ListTabsShowing(AppState appState, LoadedAssembly item)
     {
         var showing = new List<ReloadingTab>();
-        foreach (var tab in appState.Tabs.Open)
+        foreach (var tab in appState.Navigation.OpenTabs)
         {
             var location = tab.Location;
             if (location is null)
@@ -181,7 +181,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     public async Task<TabLoads> RefreshAssembliesAsync(AppState appState, IReadOnlyList<NodePath> expanded, CancellationToken ct)
     {
         RememberOpenAssemblies(appState);
-        var intent = appState.Intent.Begin();
+        var intent = appState.Navigation.BeginRequest();
         var ticket = appState.Reload.Start();
 
         var paths = appState.Lists.ActivePaths.ToList();
@@ -196,7 +196,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     private static List<ReloadingTab> ReleaseShownTabs(AppState appState)
     {
         var reloading = new List<ReloadingTab>();
-        foreach (var tab in appState.Tabs.Open)
+        foreach (var tab in appState.Navigation.OpenTabs)
         {
             var location = tab.Location;
             if (location is null)
@@ -230,7 +230,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             case Outcome<ReloadedNodes>.Ok ok:
                 return ShowReloaded(appState, ok.Value, intent, tabs);
             case Outcome<ReloadedNodes>.Failed failed:
-                var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
+                var reopened = ShowReopenedDocuments(appState.Navigation, appState.Reopened, appState.Assemblies);
                 ports.ReportError(new AppProblem.AssembliesNotReloaded(failed.Error));
                 return reopened;
             default:
@@ -250,7 +250,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             ReshowTab(appState, tabs[i], reloaded.Places[i], intent, loads);
         }
 
-        var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
+        var reopened = ShowReopenedDocuments(appState.Navigation, appState.Reopened, appState.Assemblies);
         return TabLoads.None.With(loads).With(reopened);
     }
 
@@ -261,7 +261,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             return;
         }
 
-        if (reloading.Tab == appState.Tabs.Active && appState.Intent.IsCurrent(intent))
+        if (reloading.Tab == appState.Navigation.ActiveTab && appState.Navigation.IsCurrent(intent))
         {
             appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
         }
@@ -273,7 +273,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     private bool TryShowAgain(AppState appState, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node, List<DecompileTicket> loads)
     {
         var tab = reloading.Tab;
-        if (!Tabs.IsOpen(appState.Tabs, tab))
+        if (!appState.Navigation.IsOpen(tab))
         {
             return false;
         }
@@ -288,7 +288,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             ReleaseGoneTab(tab, reloading.Location);
             return false;
         }
-        var load = StartDecompiling(appState.ViewCommands, tab, node, appState.Language, appState.DecompilerOptions, new Arrival(reloading.Position));
+        var load = appState.Navigation.Restore(tab, node, appState.Language, appState.DecompilerOptions, reloading.Position);
         if (load is not null)
         {
             loads.Add(load);

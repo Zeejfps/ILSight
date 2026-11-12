@@ -12,10 +12,10 @@ public sealed class ReopenDiagramHandlerTests
         var vehicle = TypeCards.Read(d.AppState.Assemblies, d.Fixture("Vehicle").Definition);
         Assert.NotNull(vehicle);
         var saved = new DiagramDocumentRecord("document-1", "Vehicle diagram", [vehicle.Anchor], null, null);
-        var tab = d.AppState.Tabs.AddNew();
+        var tab = d.AppState.Navigation.OpenReopenedTab();
         Tabs.WaitForDiagram(tab, saved.Title);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, saved);
-        var read = Diagrams.ReopenDiagram(d.AppState.Tabs, d.AppState.Reopened, reopened, saved);
+        var read = Diagrams.ReopenDiagram(d.AppState.Navigation, d.AppState.Reopened, reopened, saved);
         Assert.NotNull(read);
         return read;
     }

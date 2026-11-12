@@ -48,9 +48,9 @@ public sealed class AssembliesTests
         Assert.Equal(path, Assert.Single(Assert.Single(ports.OpenedPaths)));
         Assert.Equal(d.AppState.Opens.Token, Assert.Single(ports.Stops));
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
-        Assert.Same(BrowseSessions.EnsureRoot(d.AppState.Session, fixtures), d.AppState.Tabs.Active?.Node);
+        Assert.Same(BrowseSessions.EnsureRoot(d.AppState.Session, fixtures), d.AppState.Navigation.ActiveTab?.Node);
         Assert.Empty(ports.Reported);
-        var active = d.AppState.Tabs.Active;
+        var active = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.Same(active, load?.Tab);
     }
@@ -59,7 +59,7 @@ public sealed class AssembliesTests
     public async Task OpenAssembliesAsync_OpeningFailedOrCancelled_ReportsOnlyTheFailure()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var shown = d.AppState.Tabs.Active?.Node;
+        var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var error = new IOException("unreadable");
         var failed = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
@@ -70,7 +70,7 @@ public sealed class AssembliesTests
 
         Assert.Same(error, Assert.IsType<AppProblem.OpenFailed>(Assert.Single(failed.Reported)).Error);
         Assert.Empty(cancelled.Reported);
-        Assert.Same(shown, d.AppState.Tabs.Active?.Node);
+        Assert.Same(shown, d.AppState.Navigation.ActiveTab?.Node);
         Assert.Null(failedLoad);
         Assert.Null(cancelledLoad);
     }
@@ -80,14 +80,14 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Greeter"));
-        var shown = d.AppState.Tabs.Active?.Node;
+        var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var appState = d.AppState;
-        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)), WhileWorking = () => appState.Intent.Begin() };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)), WhileWorking = () => appState.Navigation.BeginRequest() };
 
         var load = await new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Opened.dll")], CancellationToken.None);
 
-        Assert.Same(shown, appState.Tabs.Active?.Node);
+        Assert.Same(shown, appState.Navigation.ActiveTab?.Node);
         Assert.Empty(ports.Reported);
         Assert.Null(load);
     }
@@ -196,7 +196,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         var fixtures = FixturesOf(d);
-        var tab = appState.Tabs.Active;
+        var tab = appState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var ports = new FakeAssemblyReloadingPorts { ReadAgain = (item, places) => ReadAgain(appState, item, places) };
 
@@ -244,7 +244,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
-        var tab = appState.Tabs.Active;
+        var tab = appState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var location = tab.Location;
         Assert.NotNull(location);
@@ -363,7 +363,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var place = BrowseNodes.GetPath(d.Fixture("Greeter"));
         var record = new NodeDocumentRecord("document-9", "Greeter", place, DecompilationLanguage.CSharp, null);
-        var tab = d.AppState.Tabs.AddNew();
+        var tab = d.AppState.Navigation.OpenReopenedTab();
         Tabs.WaitForNode(tab, place, record.Title, record.Language);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new IOException("unreadable")) };

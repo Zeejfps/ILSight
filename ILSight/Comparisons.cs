@@ -20,12 +20,8 @@ public static class Comparisons
     /// null when it shows why it can't run.</summary>
     public static ComparisonRun? CompareAssemblies(Navigation navigation, AssemblyList assemblies, LoadedModule left, LoadedModule right, string title)
     {
-        navigation.LeaveActiveTab();
-        var tab = navigation.GetOrOpenEmptyTab();
         var comparison = new AssemblyComparison { LeftPath = left.FilePath, RightPath = right.FilePath };
-        Tabs.ShowComparison(tab, title, comparison);
-        Tabs.Keep(navigation.Tabs, tab);
-        Tabs.MakeActive(navigation.Tabs, tab);
+        navigation.OpenComparison(comparison, title);
         return StartComparing(assemblies, comparison);
     }
 

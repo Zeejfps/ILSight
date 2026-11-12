@@ -145,13 +145,13 @@ public static class DocumentPanels
         documents.OwnChanges++;
     }
 
-    /// <summary>The tabs with a view that <paramref name="tabs"/> no longer holds, in a list the next call reuses.</summary>
-    public static IReadOnlyList<DocumentTab> ListClosedTabs(DocumentViews documents, DocumentTabs tabs)
+    /// <summary>The tabs with a view that <paramref name="navigation"/> no longer holds, in a list the next call reuses.</summary>
+    public static IReadOnlyList<DocumentTab> ListClosedTabs(DocumentViews documents, Navigation navigation)
     {
         documents.Closed.Clear();
         foreach (var tab in documents.Views.Keys)
         {
-            if (!Tabs.IsOpen(tabs, tab))
+            if (!navigation.IsOpen(tab))
             {
                 documents.Closed.Add(tab);
             }
@@ -491,11 +491,11 @@ public static class DocumentPanels
     /// <summary>Shows each open tab no panel was given, such as the one a run starts with when the open
     /// list kept no documents, in the place of the documents the layout was restored with, then takes the
     /// panels of the documents no tab is shown in out of the layout.</summary>
-    public static void ShowInRestoredDocuments(UiState uiState, DocumentTabs tabs)
+    public static void ShowInRestoredDocuments(UiState uiState, Navigation navigation)
     {
-        for (var i = 0; i < tabs.Open.Count; i++)
+        for (var i = 0; i < navigation.OpenTabs.Count; i++)
         {
-            ShowInRestoredPlace(uiState, tabs.Open[i]);
+            ShowInRestoredPlace(uiState, navigation.OpenTabs[i]);
         }
 
         uiState.Layout.Retain(p => IsShownPanel(uiState, p));
@@ -634,13 +634,12 @@ public static class DocumentPanels
     /// trying again only once the tabs or the layout changed since the last try found none.</summary>
     public static void FocusNextTabIfNone(UiState uiState, Navigation navigation, DecompilationLanguage language, DecompilerOptions options)
     {
-        var tabs = navigation.Tabs;
-        if (tabs.Active is not null)
+        if (navigation.ActiveTab is not null)
         {
             return;
         }
 
-        var attempt = new TabFocusTry(uiState.Layout.Changes, tabs.Open.Count);
+        var attempt = new TabFocusTry(uiState.Layout.Changes, navigation.OpenTabs.Count);
         if (attempt == uiState.LastTabFocusTry)
         {
             return;
@@ -682,7 +681,7 @@ public static class DocumentPanels
     /// front <paramref name="navigation"/>'s active tab, as <see cref="FocusTab"/> does, unless it is.</summary>
     public static void SyncActiveTab(UiState uiState, Navigation navigation, DecompilationLanguage language, DecompilerOptions options)
     {
-        var active = navigation.Tabs.Active;
+        var active = navigation.ActiveTab;
         FollowActiveTab(uiState, active);
         var tab = DocumentPanels.FindTab(uiState.Documents, uiState.Layout.Focused);
         if (tab is null)
@@ -875,16 +874,16 @@ public static class DocumentPanels
 
     /// <summary>Drops the view of each tab closed, keeping its image to free, and closes its panel; and
     /// makes a view for each tab opened that has none yet.</summary>
-    public static void SyncTabViews(UiState uiState, DocumentTabs tabs)
+    public static void SyncTabViews(UiState uiState, Navigation navigation)
     {
-        DropClosedTabViews(uiState, tabs);
-        AddOpenTabViews(uiState, tabs);
+        DropClosedTabViews(uiState, navigation);
+        AddOpenTabViews(uiState, navigation);
     }
 
-    private static void DropClosedTabViews(UiState uiState, DocumentTabs tabs)
+    private static void DropClosedTabViews(UiState uiState, Navigation navigation)
     {
         var documents = uiState.Documents;
-        foreach (var tab in DocumentPanels.ListClosedTabs(documents, tabs))
+        foreach (var tab in DocumentPanels.ListClosedTabs(documents, navigation))
         {
             var panel = DocumentPanels.GetPanel(documents, tab);
             RemoveView(documents, tab);
@@ -902,11 +901,11 @@ public static class DocumentPanels
         uiState.Layout.Close(panel);
     }
 
-    private static void AddOpenTabViews(UiState uiState, DocumentTabs tabs)
+    private static void AddOpenTabViews(UiState uiState, Navigation navigation)
     {
-        for (var i = 0; i < tabs.Open.Count; i++)
+        for (var i = 0; i < navigation.OpenTabs.Count; i++)
         {
-            DocumentPanels.AddView(uiState.Documents, tabs.Open[i]);
+            DocumentPanels.AddView(uiState.Documents, navigation.OpenTabs[i]);
         }
     }
 

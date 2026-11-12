@@ -25,9 +25,8 @@ internal static class TreePaneView
 
     /// <summary>The tree and its toolbar. A node picked or opened shows in <paramref name="navigation"/>'s tabs in this
     /// frame, in <paramref name="language"/> with <paramref name="options"/>, in the preview tab while
-    /// <paramref name="previewTabs"/>; only its decompile is queued.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs)
+    /// <see cref="Navigation.PreviewTabs"/>; only its decompile is queued.</summary>
+    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
     {
         var theme = ui.Theme;
         var tree = ui.State.Tree;
@@ -36,7 +35,7 @@ internal static class TreePaneView
         Trees.ShowEmptyTables(tree, ui.State.Display.ShowEmptyMetadataTables);
         Trees.NestNamespaces(tree, ui.State.Display.NestedNamespaces);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        Toolbar(ui, navigation.Tabs, assemblies);
+        Toolbar(ui, navigation, assemblies);
         ui.Separator();
         if (tree.Roots.Length == 0)
         {
@@ -46,14 +45,14 @@ internal static class TreePaneView
         var result = ui.TreeView(TreeId, tree.Roots, tree, tree.View, new Box { Padding = new Spacing(0f, theme.GapTight) });
         AnalyzeOnShortcut(ui);
         CloseOnDelete(ui);
-        Respond(ui, navigation, language, options, previewTabs, result);
-        ContextMenu(ui, navigation, assemblies, language, options, previewTabs);
+        Respond(ui, navigation, language, options, result);
+        ContextMenu(ui, navigation, assemblies, language, options);
     }
 
     /// <summary>The panel's toolbar: as many of its tools as fit, in order, and the rest in the menu of a
     /// "more" button after them. What fits is worked out from the width the toolbar had last frame, so
     /// the first frame shows them all.</summary>
-    private static void Toolbar(Ui<UiState> ui, DocumentTabs tabs, AssemblyList assemblies)
+    private static void Toolbar(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies)
     {
         var toolbarId = ui.GetId(ToolbarId);
         var shown = CountShownTools(ui, toolbarId);
@@ -61,7 +60,7 @@ internal static class TreePaneView
         {
             for (var i = 0; i < shown; i++)
             {
-                Tool(ui, tabs, assemblies, i, shown, inMenu: false);
+                Tool(ui, navigation, assemblies, i, shown, inMenu: false);
             }
 
             if (shown == ToolCount)
@@ -77,7 +76,7 @@ internal static class TreePaneView
 
             for (var i = shown; i < ToolCount; i++)
             {
-                Tool(ui, tabs, assemblies, i, shown, inMenu: true);
+                Tool(ui, navigation, assemblies, i, shown, inMenu: true);
             }
         }
     }
@@ -140,7 +139,7 @@ internal static class TreePaneView
     /// <summary>The tool at <paramref name="index"/>, as a button in the toolbar or an item of the "more"
     /// menu, the first <paramref name="shown"/> being in the toolbar. A separator is drawn only between
     /// two tools in the same place.</summary>
-    private static void Tool(Ui<UiState> ui, DocumentTabs tabs, AssemblyList assemblies, int index, int shown, bool inMenu)
+    private static void Tool(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, int index, int shown, bool inMenu)
     {
         var t = ui.State.Strings;
         var icons = ui.State.Icons;
@@ -150,7 +149,7 @@ internal static class TreePaneView
         {
             case 0:
             {
-                var opened = FindOpenedNode(tabs);
+                var opened = FindOpenedNode(navigation);
                 if (DrawTool(ui, inMenu, "select-opened", icons.AssembliesSelectOpened, t.TreeSelectOpenedNode, opened is not null) && opened is not null)
                     {
                         SelectOpenedNode(ui, assemblies, opened);
@@ -249,9 +248,9 @@ internal static class TreePaneView
     }
 
     /// <summary>The node the active tab shows, or null when it shows none.</summary>
-    private static BrowseNode? FindOpenedNode(DocumentTabs tabs)
+    private static BrowseNode? FindOpenedNode(Navigation navigation)
     {
-        var tab = tabs.Active;
+        var tab = navigation.ActiveTab;
         if (tab is null)
         {
             return null;
@@ -350,7 +349,7 @@ internal static class TreePaneView
         Commands.Later(ui.State, picked.Assembly, static (a, assembly) => AssemblyListing.CloseAssembly(a.Assemblies, assembly));
     }
 
-    private static void Respond(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
+    private static void Respond(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options,
         TreeViewResult<BrowseNode> result)
     {
         var node = result.Node;
@@ -361,12 +360,12 @@ internal static class TreePaneView
 
         if (IsPicked(result))
         {
-            Preview(ui.State, navigation, node, language, options, previewTabs);
+            Preview(ui.State, navigation, node, language, options);
         }
 
         if (result.Activated)
         {
-            Open(ui.State, navigation, node, language, options, previewTabs);
+            Open(ui.State, navigation, node, language, options);
         }
 
         if (result.ContextMenuRequested)
@@ -388,21 +387,19 @@ internal static class TreePaneView
 
     /// <summary>Shows <paramref name="node"/>, just picked, in the preview tab while tabs preview, and asks for the
     /// load it started in the tab to be brought in.</summary>
-    private static void Preview(UiState screen, Navigation navigation, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs)
+    private static void Preview(UiState screen, Navigation navigation, BrowseNode node, DecompilationLanguage language, DecompilerOptions options)
     {
-        if (!previewTabs)
+        if (!navigation.PreviewTabs)
         {
             return;
         }
 
-        Commands.DecompileLater(screen, navigation.PreviewNode(node, language, options, previewTabs));
+        Commands.DecompileLater(screen, navigation.PreviewNode(node, language, options));
     }
 
     /// <summary>Asks to go where <paramref name="node"/> points when it stands for a reference, else opens it in a
     /// tab kept open.</summary>
-    private static void Open(UiState screen, Navigation navigation, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs)
+    private static void Open(UiState screen, Navigation navigation, BrowseNode node, DecompilationLanguage language, DecompilerOptions options)
     {
         var activation = NodeDefinitions.GetActivation(node.Subject);
         if (activation is Activation.Navigate jump)
@@ -410,7 +407,7 @@ internal static class TreePaneView
             Commands.FollowLater(screen, jump.Target, navigation.BeginResolving(inNewTab: false));
             return;
         }
-        Commands.DecompileLater(screen, navigation.OpenNode(node, language, options, previewTabs));
+        Commands.DecompileLater(screen, navigation.OpenNode(node, language, options));
     }
 
     private static void OpenContextMenu(Ui<UiState> ui, BrowseNode node, PointF at)
@@ -419,8 +416,7 @@ internal static class TreePaneView
         ui.OpenContextMenu(MenuId, at);
     }
 
-    private static void ContextMenu(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs)
+    private static void ContextMenu(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -434,23 +430,23 @@ internal static class TreePaneView
             return;
         }
 
-        NodeMenu(ui, navigation, assemblies, language, options, previewTabs, node);
+        NodeMenu(ui, navigation, assemblies, language, options, node);
     }
 
     private static void NodeMenu(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs, BrowseNode node)
+        BrowseNode node)
     {
         var t = ui.State.Strings;
         var jump = NodeDefinitions.GetActivation(node.Subject) as Activation.Navigate;
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
         {
-            Commands.DecompileLater(ui.State, navigation.OpenNode(node, language, options, previewTabs));
+            Commands.DecompileLater(ui.State, navigation.OpenNode(node, language, options));
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.DecompileLater(ui.State, navigation.ShowNode(node, language, options, previewTabs, inNewTab: true));
+            Commands.DecompileLater(ui.State, navigation.ShowNode(node, language, options, inNewTab: true));
         }
 
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))

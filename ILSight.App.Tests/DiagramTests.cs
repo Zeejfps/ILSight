@@ -25,7 +25,7 @@ public sealed class DiagramTests
     {
         DiagramView.ShowInNewDiagramLater(d.Ui, TypeOf(d, type), Names.Diagram(TypeOf(d, type)));
         d.Settle();
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var diagram = tab.Diagram;
         Assert.NotNull(diagram);
@@ -42,8 +42,8 @@ public sealed class DiagramTests
 
     private static List<DocumentTab> ListDiagramTabs(AppStateDriver d)
     {
-        return d.AppState.Tabs
-            .Open.Where(static t => t.Diagram is not null)
+        return d.AppState.Navigation
+            .OpenTabs.Where(static t => t.Diagram is not null)
             .ToList();
     }
 
@@ -54,13 +54,13 @@ public sealed class DiagramTests
 
         ShowIn(d, "Vehicle");
 
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.Equal("Vehicle diagram", tab.Title);
         Assert.NotNull(tab.Diagram);
         Assert.Equal("Vehicle", tab.Diagram.Cards[0].Name);
         Assert.Equal(["Bike", "Car", "Garage", "Vehicle"], CardNames(tab.Diagram));
-        Assert.Same(tab, d.AppState.Tabs.Diagram);
+        Assert.Same(tab, d.AppState.Navigation.DiagramTab);
         Assert.Empty(d.AppState.Errors.Entries);
     }
 
@@ -83,13 +83,13 @@ public sealed class DiagramTests
     {
         var d = AppStateDriver.Opened();
         ShowIn(d, "Vehicle");
-        var diagramTab = d.AppState.Tabs.Active;
+        var diagramTab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(diagramTab);
         d.Show(d.Fixture("Greeter"));
 
         ShowIn(d, "Counter");
 
-        Assert.Same(diagramTab, d.AppState.Tabs.Active);
+        Assert.Same(diagramTab, d.AppState.Navigation.ActiveTab);
         Assert.Single(ListDiagramTabs(d));
         Assert.NotNull(diagramTab.Diagram);
         Assert.Equal(["Bike", "Car", "Counter", "Garage", "Vehicle"], CardNames(diagramTab.Diagram));
@@ -113,13 +113,13 @@ public sealed class DiagramTests
     public void A_new_diagram_takes_the_active_tab_while_it_shows_nothing()
     {
         var d = AppStateDriver.Opened();
-        var empty = d.AppState.Navigation.OpenNewTab();
-        Tabs.MakeActive(d.AppState.Tabs, empty);
-        var tabs = d.AppState.Tabs.Open.Count;
+        var empty = d.AppState.Navigation.OpenEmptyTab();
+        Assert.Null(d.AppState.Navigation.FocusTab(empty, d.AppState.Language, d.AppState.DecompilerOptions));
+        var tabs = d.AppState.Navigation.OpenTabs.Count;
 
         ShowInNew(d, "Greeter");
 
-        Assert.Equal(tabs, d.AppState.Tabs.Open.Count);
+        Assert.Equal(tabs, d.AppState.Navigation.OpenTabs.Count);
         Assert.NotNull(empty.Diagram);
     }
 
@@ -215,17 +215,17 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         DiagramView.ShowInNewDiagramLater(d.Ui, TypeOf(d, "Vehicle"), Names.Diagram(TypeOf(d, "Vehicle")));
         d.NextFrame();
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var diagram = tab.Diagram;
         Assert.NotNull(diagram);
 
-        CloseTab(d.AppState, tab);
+        d.AppState.Navigation.CloseTab(tab);
         d.Settle();
 
         Assert.True(diagram.IsClosed);
         Assert.Empty(diagram.Cards);
-        Assert.Null(d.AppState.Tabs.Diagram);
+        Assert.Null(d.AppState.Navigation.DiagramTab);
         Assert.Empty(d.AppState.Errors.Entries);
     }
 
@@ -235,16 +235,16 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         d.TurnOffPreviewTabs();
         ShowInNew(d, "Vehicle");
-        var tab = d.AppState.Tabs.Active;
+        var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         var greeter = TypeOf(d, "Greeter");
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
-        Assert.NotSame(tab, d.AppState.Tabs.Active);
+        Assert.NotSame(tab, d.AppState.Navigation.ActiveTab);
         Assert.NotNull(tab.Diagram);
-        Assert.Equal("Greeter", d.AppState.Tabs.Active?.Node?.Text);
+        Assert.Equal("Greeter", d.AppState.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
