@@ -53,18 +53,32 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     /// keeps why for the first instruction to say.</summary>
     private void DecompileToCSharp(MethodDefinitionHandle handle)
     {
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = _assembly };
+        var points = TryWriteCSharp(handle, builder);
+        if (points is null)
+        {
+            return;
+        }
+
+        _csharp = DocumentWriting.BuildDocument(builder, "");
+        _points = FindPoints(points, handle);
+    }
+
+    /// <summary>Has the decompiler write the method in C# into <paramref name="builder"/>; the sequence points of what
+    /// it wrote, or null when it failed on the module, keeping why.</summary>
+    private Dictionary<ILFunction, List<SequencePoint>>? TryWriteCSharp(MethodDefinitionHandle handle, DocumentBuilder builder)
+    {
         try
         {
             var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _settings, _cancellationToken);
             var syntaxTree = decompiler.Decompile(handle);
-            var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = _assembly };
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
-            _csharp = DocumentWriting.BuildDocument(builder, "");
-            _points = FindPoints(decompiler.CreateSequencePoints(syntaxTree), handle);
+            return decompiler.CreateSequencePoints(syntaxTree);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
             _failure = $"(C# could not be decompiled: {e.Message})";
+            return null;
         }
     }
 

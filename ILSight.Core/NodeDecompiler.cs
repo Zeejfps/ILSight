@@ -27,30 +27,9 @@ internal static class NodeDecompiler
         "This assembly is marked as 'reference assembly', which means that it only contains metadata and no executable code.";
 
     /// <summary>Writes the document <paramref name="request"/> asks for, after <paramref name="note"/>
-    /// as a comment when given. Throws <see cref="OperationCanceledException"/> when cancelled; any other
-    /// failure becomes a document describing it.</summary>
+    /// as a comment when given. Throws <see cref="OperationCanceledException"/> when cancelled; whatever the
+    /// decompiler throws while it writes becomes a document describing it.</summary>
     public static DecompiledDocument Decompile(DocumentRequest request, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken cancellationToken, string? note = null)
-    {
-        try
-        {
-            return DecompileOrThrow(request, language, options, cancellationToken, note);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            var error = new DocumentBuilder { Language = language };
-            error.Write($"// Error decompiling {request.FullName}", SpanKind.Comment);
-            error.WriteLine();
-            error.Write(e.ToString(), SpanKind.Comment);
-            return DocumentWriting.BuildFailure(error, request.Title, e);
-        }
-    }
-
-    private static DecompiledDocument DecompileOrThrow(DocumentRequest request, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken, string? note = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -66,6 +45,56 @@ internal static class NodeDecompiler
         }
 
         var settings = Settings.Create(options);
+        var thrown = TryWrite(request, builder, language, settings, cancellationToken);
+        if (thrown is not null)
+        {
+            return DescribeFailure(request, language, thrown);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return DocumentWriting.BuildDocument(builder, request.Title);
+    }
+
+    /// <summary>Has the decompiler write what <paramref name="request"/> asks for into <paramref name="builder"/>;
+    /// what it threw when it failed on the module, else null. Cancellation asked for goes through.</summary>
+    private static Exception? TryWrite(DocumentRequest request, DocumentBuilder builder, DecompilationLanguage language,
+        DecompilerSettings settings, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Write(request, builder, language, settings, cancellationToken);
+            return null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return e;
+        }
+    }
+
+    /// <summary>Writes the document <paramref name="request"/> asks for, as <see cref="Decompile"/> does, but throws
+    /// what the decompiler throws.</summary>
+    private static DecompiledDocument DecompileOrThrow(DocumentRequest request, DecompilationLanguage language, DecompilerOptions options,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (request is DocumentRequest.Failure failure)
+        {
+            return DescribeLoadError(failure, language);
+        }
+
+        var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request) };
+        Write(request, builder, language, Settings.Create(options), cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return DocumentWriting.BuildDocument(builder, request.Title);
+    }
+
+    private static void Write(DocumentRequest request, DocumentBuilder builder, DecompilationLanguage language, DecompilerSettings settings,
+        CancellationToken cancellationToken)
+    {
         if (language == DecompilationLanguage.CSharp)
         {
             WriteCSharp(request, builder, settings, cancellationToken);
@@ -74,9 +103,17 @@ internal static class NodeDecompiler
         {
             WriteIL(request, builder, language, settings, cancellationToken);
         }
+    }
 
-        cancellationToken.ThrowIfCancellationRequested();
-        return DocumentWriting.BuildDocument(builder, request.Title);
+    /// <summary>The document saying the decompiler failed on what <paramref name="request"/> asks for, and
+    /// how.</summary>
+    private static DecompiledDocument DescribeFailure(DocumentRequest request, DecompilationLanguage language, Exception thrown)
+    {
+        var error = new DocumentBuilder { Language = language };
+        error.Write($"// Error decompiling {request.FullName}", SpanKind.Comment);
+        error.WriteLine();
+        error.Write(thrown.ToString(), SpanKind.Comment);
+        return DocumentWriting.BuildFailure(error, request.Title, thrown);
     }
 
     /// <summary>Why the file <paramref name="failure"/> names could not be read.</summary>
