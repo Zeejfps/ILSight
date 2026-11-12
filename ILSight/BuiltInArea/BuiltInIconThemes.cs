@@ -55,6 +55,7 @@ public static class BuiltInIconThemes
     {
         var id = ThemeId<IconThemeFile>.Of(Path.GetFileNameWithoutExtension(resource));
         var json = EmbeddedAssets.LoadBytes(Resources, resource);
-        return IconTheming.ReadTheme(id, resource, json, EmbeddedIconAssets.Open(Resources));
+        var parsed = IconThemeFile.Parse(id, resource, json);
+        return IconThemeFile.Complete(parsed, EmbeddedIconAssets.ReadNamed(Resources, parsed.NamedFiles));
     }
 }

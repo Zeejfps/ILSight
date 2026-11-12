@@ -6,7 +6,7 @@ namespace ILSight.UserArea;
 
 /// <summary>The seam around the user's icon themes folder, for <see cref="UserThemes{TFile, TContents, TTheme}"/>
 /// of icon themes: the theme files at the top of the folder, and the fonts and pictures they name anywhere in it,
-/// read with the file that names them, through the folder it holds; and the app's error reports.</summary>
+/// each read when asked, through the folder it holds; and the app's error reports.</summary>
 public sealed class UserIconThemesAdapter(ErrorLog errors) : UserThemes<IconThemeFile, IconThemeContents, IconTheme>.IPorts
 {
     private const string SchemaFileName = "icon-theme.schema.json";
@@ -23,28 +23,14 @@ public sealed class UserIconThemesAdapter(ErrorLog errors) : UserThemes<IconThem
         return _folder.ListThemeFiles(folder, IconThemeFile.Extension, SchemaFileName);
     }
 
-    /// <summary>Reads the whole file and what it names now, inside one catch, so nothing is left to fail
-    /// later.</summary>
-    public IconThemeFile ReadThemeFile(ThemeId<IconThemeFile> id, string path)
+    public Outcome<byte[]> ReadThemeFile(string path)
     {
-        try
-        {
-            return IconTheming.ReadTheme(id, path, _folder.ReadFile(path), OpenAssets(path));
-        }
-        catch (IOException e)
-        {
-            return IconTheming.CreateUnreadableTheme(id, path, OpenAssets(path), e.Message);
-        }
-        catch (UnauthorizedAccessException e)
-        {
-            return IconTheming.CreateUnreadableTheme(id, path, OpenAssets(path), e.Message);
-        }
+        return _folder.ReadThemeFile(path);
     }
 
-    /// <summary>The fonts and pictures inside the folder the file at <paramref name="path"/> is in.</summary>
-    private static IconAssets OpenAssets(string path)
+    public IReadOnlyDictionary<string, IconAsset> ReadNamedFiles(string themePath, IReadOnlyList<string> paths)
     {
-        return IconAssetFolders.Open(FullFilePath.Of(Path.GetFullPath(path)).Folder);
+        return _folder.ReadNamedFiles(themePath, paths);
     }
 
     public bool TryMakeFolder(string folder, [NotNullWhen(false)] out string? reason)

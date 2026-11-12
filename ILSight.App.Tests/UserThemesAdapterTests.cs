@@ -32,14 +32,13 @@ public sealed class UserThemesAdapterTests : IDisposable
     }
 
     [Fact]
-    public void ReadThemeFile_FileMissing_GivesAThemeThatSaysItCannotBeRead()
+    public void ReadThemeFile_FileMissing_SaysWhyItCannotBeRead()
     {
         var adapter = new UserColorThemesAdapter(new ErrorLog());
         var path = _temp.PathOf("themes/gone.json");
 
-        var theme = adapter.ReadThemeFile(ThemeId<ThemeFile>.Of("gone"), path);
+        var read = adapter.ReadThemeFile(path);
 
-        Assert.Null(theme.Contents);
-        Assert.Equal(ThemeProblem.Unreadable, Assert.Single(theme.Errors).Problem);
+        Assert.IsType<DirectoryNotFoundException>(Assert.IsType<Outcome<byte[]>.Failed>(read).Error);
     }
 }

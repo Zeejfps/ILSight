@@ -20,23 +20,31 @@ internal sealed class MemoryIconAssets
         return With(path, Encoding.UTF8.GetBytes(text));
     }
 
-    public static implicit operator IconAssets(MemoryIconAssets assets)
+    /// <summary>The icon theme <paramref name="id"/> of <paramref name="file"/> read from <paramref name="json"/> as
+    /// the kind reads one: parsed, then completed with the fonts and pictures it names, read from here.</summary>
+    public IconThemeFile ReadTheme(ThemeId<IconThemeFile> id, string file, byte[] json)
     {
-        return new IconAssets(assets.Read, assets.GetFamily);
+        var parsed = IconThemeFile.Parse(id, file, json);
+        return IconThemeFile.Complete(parsed, ReadNamed(parsed.NamedFiles));
+    }
+
+    private Dictionary<string, IconAsset> ReadNamed(IReadOnlyList<ThemeNamedFile> named)
+    {
+        var read = new Dictionary<string, IconAsset>();
+        foreach (var file in named)
+        {
+            read[file.Path] = Read(file.Path);
+        }
+        return read;
     }
 
     public IconAsset Read(string path)
     {
         if (_files.TryGetValue(path, out var bytes))
         {
-            return new IconAsset(bytes);
+            return new IconAsset(bytes, Family: "memory:" + path);
         }
 
         return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
-    }
-
-    public string GetFamily(string fontId, string path)
-    {
-        return "memory:" + path;
     }
 }

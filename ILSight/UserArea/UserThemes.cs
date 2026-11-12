@@ -22,9 +22,13 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         /// schema the folder holds; none when it is missing or cannot be listed.</summary>
         List<string> ListThemeFiles(string folder);
 
-        /// <summary>The theme <paramref name="id"/> read from the file at <paramref name="path"/>, with what is
-        /// wrong in it; a file that cannot be read has no contents and says why.</summary>
-        TFile ReadThemeFile(ThemeId<TFile> id, string path);
+        /// <summary>The whole theme file at <paramref name="path"/>; why it cannot be read as
+        /// <see cref="Outcome{T}.Failed"/>.</summary>
+        Outcome<byte[]> ReadThemeFile(string path);
+
+        /// <summary>The files at <paramref name="paths"/>, which the theme file at <paramref name="themePath"/> names
+        /// relative to its folder, each read, with the family a font is drawn as; or why it cannot be.</summary>
+        IReadOnlyDictionary<string, IconAsset> ReadNamedFiles(string themePath, IReadOnlyList<string> paths);
 
         /// <summary>Makes <paramref name="folder"/>, with the schema theme files name in it and a guide on
         /// writing them; false, with why in <paramref name="reason"/>, when it cannot.</summary>
@@ -90,10 +94,42 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
             var id = ThemeId<TFile>.Parse(Path.GetFileNameWithoutExtension(path));
             if (id is not null)
             {
-                files.Add(ports.ReadThemeFile(id, path));
+                files.Add(ReadTheme(id, path));
             }
         }
         return files;
+    }
+
+    /// <summary>The theme <paramref name="id"/> of the file at <paramref name="path"/>, as the kind reads it: what its
+    /// text says, then the files it names read and taken in (<see cref="IUserThemeFile{TSelf, TContents, TTheme}.Parse"/>,
+    /// <see cref="IUserThemeFile{TSelf, TContents, TTheme}.Complete"/>); a file that cannot be read has no contents and
+    /// says why.</summary>
+    private TFile ReadTheme(ThemeId<TFile> id, string path)
+    {
+        var text = ports.ReadThemeFile(path);
+        return text.Match(ok => Complete(TFile.Parse(id, path, ok.Value), path), failed => TFile.CreateUnreadable(id, path, failed.Error.Message));
+    }
+
+    /// <summary><paramref name="parsed"/>, read from the file at <paramref name="path"/>, finished with the files it
+    /// names, read.</summary>
+    private TFile Complete(TFile parsed, string path)
+    {
+        var named = ListNamedPaths(parsed.NamedFiles);
+        if (named.Count == 0)
+        {
+            return TFile.Complete(parsed, new Dictionary<string, IconAsset>());
+        }
+
+        return TFile.Complete(parsed, ports.ReadNamedFiles(path, named));
+    }
+
+    /// <summary>The paths of <paramref name="named"/>, each once.</summary>
+    private static List<string> ListNamedPaths(IReadOnlyList<ThemeNamedFile> named)
+    {
+        return named
+            .Select(static n => n.Path)
+            .Distinct()
+            .ToList();
     }
 
     /// <summary>Reports the errors of <see cref="Themes"/> not in <paramref name="known"/>, one report per file.</summary>

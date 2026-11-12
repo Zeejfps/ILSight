@@ -4,7 +4,8 @@ using ILSight.BuiltInArea;
 namespace ILSight.UserArea;
 
 /// <summary>The seam around the user's color themes folder, for <see cref="UserThemes{TFile, TContents, TTheme}"/>
-/// of color themes: the theme files at the top of the folder, read through the folder it holds; and the app's error
+/// of color themes: the theme files at the top of the folder (which name no other files: a file named is read as an
+/// icon theme's is), read through the folder it holds; and the app's error
 /// reports.</summary>
 public sealed class UserColorThemesAdapter(ErrorLog errors) : UserThemes<ThemeFile, ThemeContents, AppTheme>.IPorts
 {
@@ -22,24 +23,14 @@ public sealed class UserColorThemesAdapter(ErrorLog errors) : UserThemes<ThemeFi
         return _folder.ListThemeFiles(folder, ThemeFile.Extension, SchemaFileName);
     }
 
-    /// <summary>Reads the whole file now, so nothing is left to fail later.</summary>
-    public ThemeFile ReadThemeFile(ThemeId<ThemeFile> id, string path)
+    public Outcome<byte[]> ReadThemeFile(string path)
     {
-        byte[] json;
-        try
-        {
-            json = _folder.ReadFile(path);
-        }
-        catch (IOException e)
-        {
-            return Theming.CreateUnreadableTheme(id, path, e.Message);
-        }
-        catch (UnauthorizedAccessException e)
-        {
-            return Theming.CreateUnreadableTheme(id, path, e.Message);
-        }
+        return _folder.ReadThemeFile(path);
+    }
 
-        return Theming.ReadTheme(id, path, json);
+    public IReadOnlyDictionary<string, IconAsset> ReadNamedFiles(string themePath, IReadOnlyList<string> paths)
+    {
+        return _folder.ReadNamedFiles(themePath, paths);
     }
 
     public bool TryMakeFolder(string folder, [NotNullWhen(false)] out string? reason)

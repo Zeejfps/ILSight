@@ -1,12 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
+using ILSight.Core;
 
 namespace ILSight.UserArea;
 
 /// <summary>A folder of the user's theme files on disk: the I/O the adapters of both kinds of theme do on theirs,
 /// each holding one. Lists and reads its files, makes it with a schema and a guide in it, writes new files, and
-/// watches it, telling of a change on the UI thread. What the disk refuses comes back as a result, except a read,
-/// which throws what the disk throws for the adapter to translate with the rest of what it reads. Decides
-/// nothing.</summary>
+/// watches it, telling of a change on the UI thread; and reads the files a theme file names. What the disk refuses
+/// comes back as a result. Decides nothing.</summary>
 public sealed class ThemeFolder(ThemeFolderWatch watch)
 {
     private const string GuideFileName = "README.md";
@@ -37,10 +37,35 @@ public sealed class ThemeFolder(ThemeFolderWatch watch)
         return string.Equals(Path.GetFileName(path), fileName, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>The whole file at <paramref name="path"/>; throws what the disk throws.</summary>
-    public byte[] ReadFile(string path)
+    /// <summary>The whole theme file at <paramref name="path"/>, read now, so nothing is left to fail later; why it
+    /// cannot be read as <see cref="Outcome{T}.Failed"/>.</summary>
+    public Outcome<byte[]> ReadThemeFile(string path)
     {
-        return File.ReadAllBytes(path);
+        try
+        {
+            return new Outcome<byte[]>.Ok(File.ReadAllBytes(path));
+        }
+        catch (IOException e)
+        {
+            return new Outcome<byte[]>.Failed(e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return new Outcome<byte[]>.Failed(e);
+        }
+    }
+
+    /// <summary>The files at <paramref name="paths"/>, which the theme file at <paramref name="themePath"/> names
+    /// relative to its folder, each read, or why it cannot be (<see cref="IconAssetFolders.Read"/>).</summary>
+    public Dictionary<string, IconAsset> ReadNamedFiles(string themePath, IReadOnlyList<string> paths)
+    {
+        var folder = FullFilePath.Of(Path.GetFullPath(themePath)).Folder;
+        var read = new Dictionary<string, IconAsset>();
+        foreach (var path in paths)
+        {
+            read[path] = IconAssetFolders.Read(folder, path);
+        }
+        return read;
     }
 
     /// <summary>Makes <paramref name="folder"/>, with <paramref name="schema"/> in it as

@@ -20,6 +20,25 @@ public sealed class ThemeFile : IUserThemeFile<ThemeFile, ThemeContents, AppThem
         return ThemeDraft.Compose(name, parent, shown);
     }
 
+    /// <summary>The theme read whole from its text (<see cref="Theming.ReadTheme"/>): a color theme names no files.</summary>
+    public static ThemeFile Parse(ThemeId<ThemeFile> id, string file, byte[] json)
+    {
+        return Theming.ReadTheme(id, file, json);
+    }
+
+    /// <summary><paramref name="parsed"/> as it is: a color theme names no files.</summary>
+    public static ThemeFile Complete(ThemeFile parsed, IReadOnlyDictionary<string, IconAsset> named)
+    {
+        return parsed;
+    }
+
+    public static ThemeFile CreateUnreadable(ThemeId<ThemeFile> id, string file, string reason)
+    {
+        return Theming.CreateUnreadableTheme(id, file, reason);
+    }
+
+    public IReadOnlyList<ThemeNamedFile> NamedFiles => [];
+
     public required ThemeJson Json { get; init; }
     public readonly Dictionary<string, ThemeValue> Palette = new();
     public readonly Dictionary<string, ThemeValue> Ui = new();

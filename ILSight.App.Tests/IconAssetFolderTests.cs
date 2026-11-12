@@ -29,9 +29,9 @@ public sealed class IconAssetFolderTests : IDisposable
     public void A_path_that_leaves_the_folder_is_refused(string path)
     {
         _temp.Write("outside.svg", MemoryIconAssets.Picture);
-        var folder = IconAssetFolders.Open(_temp.PathOf("icon-themes"));
+        var folder = _temp.PathOf("icon-themes");
 
-        var asset = folder.Read(path);
+        var asset = IconAssetFolders.Read(folder, path);
 
         Assert.Null(asset.Bytes);
         Assert.Equal((ThemeProblem.AssetOutsideFolder, path), (asset.Problem, asset.Detail));
@@ -40,10 +40,10 @@ public sealed class IconAssetFolderTests : IDisposable
     [Fact]
     public void A_path_no_path_may_be_is_unreadable_rather_than_thrown()
     {
-        var folder = IconAssetFolders.Open(_temp.PathOf("icon-themes"));
+        var folder = _temp.PathOf("icon-themes");
         var path = "a" + (char)0 + ".svg";
 
-        var asset = folder.Read(path);
+        var asset = IconAssetFolders.Read(folder, path);
 
         Assert.Null(asset.Bytes);
         Assert.Equal(ThemeProblem.AssetUnreadable, asset.Problem);
@@ -70,11 +70,12 @@ public sealed class IconAssetFolderTests : IDisposable
     public void A_path_inside_the_folder_is_read_and_a_font_is_drawn_as_a_family_of_its_own_file()
     {
         _temp.Write("icon-themes/svg/a.svg", MemoryIconAssets.Picture);
-        var folder = IconAssetFolders.Open(_temp.PathOf("icon-themes"));
+        _temp.Write("icon-themes/fonts/f.ttf", "not read as a font here");
+        var folder = _temp.PathOf("icon-themes");
 
-        var asset = folder.Read("svg/../svg/a.svg");
+        var asset = IconAssetFolders.Read(folder, "svg/../svg/a.svg");
 
         Assert.NotNull(asset.Bytes);
-        Assert.Equal("icon-font:" + _temp.PathOf(Path.Combine("icon-themes", "fonts", "f.ttf")), folder.GetFamily("f", "fonts/f.ttf"));
+        Assert.Equal("icon-font:" + _temp.PathOf(Path.Combine("icon-themes", "fonts", "f.ttf")), IconAssetFolders.Read(folder, "fonts/f.ttf").Family);
     }
 }

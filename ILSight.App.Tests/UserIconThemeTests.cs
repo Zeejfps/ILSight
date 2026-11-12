@@ -175,7 +175,6 @@ public sealed class UserIconThemeTests : IDisposable
         var catalog = appState.IconThemes;
         var shapes = catalog.GetTheme(Id("shapes"));
         var lines = IconThemeDraft.Compose("Mine", Id("shapes"), shapes).Split('\n');
-        var assets = IconAssetFolders.Open(_temp.PathOf("icon-themes"));
 
         for (var i = 0; i < lines.Length; i++)
         {
@@ -186,8 +185,8 @@ public sealed class UserIconThemeTests : IDisposable
 
             var edited = lines.ToArray();
             edited[i] = lines[i].Replace("// ", "");
-            var file = IconTheming.ReadTheme(Id("mine"), "mine.json", Encoding.UTF8.GetBytes(string.Join('\n', edited)), assets);
-            catalog.ReplaceUserThemes([new UserIconThemesAdapter(new ErrorLog()).ReadThemeFile(Id("shapes"), _temp.PathOf("icon-themes/shapes.json")), file]);
+            WriteIconTheme("mine", string.Join('\n', edited));
+            appState.UserIconThemes.ReloadThemes();
             Assert.True(catalog.Errors.Count == 0, edited[i] + ": " + string.Join("; ", catalog.Errors));
         }
         Assert.Contains(lines, l => l.Trim() == "// \"node.class\": { \"svg\": \"svg/class.svg\" },");

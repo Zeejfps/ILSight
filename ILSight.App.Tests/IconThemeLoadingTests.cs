@@ -25,7 +25,7 @@ public sealed class IconThemeLoadingTests
 
     private static IconThemeFile User(string id, string json, MemoryIconAssets? assets = null)
     {
-        return IconTheming.ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json), assets ?? new MemoryIconAssets());
+        return (assets ?? new MemoryIconAssets()).ReadTheme(Id(id), id + ".json", Encoding.UTF8.GetBytes(json));
     }
 
     private static ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> BuildCatalog(params IconThemeFile[] users)

@@ -5,12 +5,19 @@ using ILSight.UserArea;
 
 namespace ILSight.App.Tests;
 
-/// <summary>A theme folder held in memory: answers each port member as the test set it, and keeps what was
-/// reported and, in order, what was asked of the folder.</summary>
-internal sealed class FakeUserThemesPorts : UserThemes<ThemeFile, ThemeContents, AppTheme>.IPorts
+/// <summary>A theme folder held in memory, of either kind of theme: answers each port member as the test set it,
+/// and keeps what was reported and, in order, what was asked of the folder.</summary>
+internal sealed class FakeUserThemesPorts<TFile, TContents, TTheme> : UserThemes<TFile, TContents, TTheme>.IPorts
+    where TFile : class, IUserThemeFile<TFile, TContents, TTheme>
+    where TContents : class
+    where TTheme : class
 {
     /// <summary>The files in the folder by path, with what they hold; a null file cannot be read.</summary>
     public Dictionary<string, string?> Files { get; } = [];
+
+    /// <summary>The files the themes name (fonts, pictures) by the path they name them by; one not here cannot be
+    /// read.</summary>
+    public Dictionary<string, byte[]> NamedFiles { get; } = [];
 
     public bool CanMakeFolder { get; init; } = true;
 
@@ -40,15 +47,36 @@ internal sealed class FakeUserThemesPorts : UserThemes<ThemeFile, ThemeContents,
             .ToList();
     }
 
-    public ThemeFile ReadThemeFile(ThemeId<ThemeFile> id, string path)
+    public Outcome<byte[]> ReadThemeFile(string path)
     {
         var json = Files[path];
         if (json is null)
         {
-            return Theming.CreateUnreadableTheme(id, path, "Access is denied.");
+            return new Outcome<byte[]>.Failed(new UnauthorizedAccessException("Access is denied."));
         }
 
-        return Theming.ReadTheme(id, path, Encoding.UTF8.GetBytes(json));
+        return new Outcome<byte[]>.Ok(Encoding.UTF8.GetBytes(json));
+    }
+
+    public IReadOnlyDictionary<string, IconAsset> ReadNamedFiles(string themePath, IReadOnlyList<string> paths)
+    {
+        Asked.Add(nameof(ReadNamedFiles));
+        var read = new Dictionary<string, IconAsset>();
+        foreach (var path in paths)
+        {
+            read[path] = ReadNamedFile(path);
+        }
+        return read;
+    }
+
+    private IconAsset ReadNamedFile(string path)
+    {
+        if (!NamedFiles.TryGetValue(path, out var bytes))
+        {
+            return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
+        }
+
+        return new IconAsset(bytes, Family: "memory:" + path);
     }
 
     public bool TryMakeFolder(string folder, [NotNullWhen(false)] out string? reason)

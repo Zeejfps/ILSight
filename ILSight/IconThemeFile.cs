@@ -18,10 +18,36 @@ public sealed class IconThemeFile : IUserThemeFile<IconThemeFile, IconThemeConte
         return IconThemeDraft.Compose(name, parent, shown);
     }
 
+    /// <summary>What the file says (<see cref="IconTheming.Parse"/>): its icons drawn in fonts, and the fonts and
+    /// pictures it names, to be read.</summary>
+    public static IconThemeFile Parse(ThemeId<IconThemeFile> id, string file, byte[] json)
+    {
+        return IconTheming.Parse(id, file, json);
+    }
+
+    /// <summary><paramref name="parsed"/> with the fonts and pictures it names loaded from what reading them came to
+    /// (<see cref="IconTheming.Complete"/>).</summary>
+    public static IconThemeFile Complete(IconThemeFile parsed, IReadOnlyDictionary<string, IconAsset> named)
+    {
+        return IconTheming.Complete(parsed, named);
+    }
+
+    public static IconThemeFile CreateUnreadable(ThemeId<IconThemeFile> id, string file, string reason)
+    {
+        return IconTheming.CreateUnreadableTheme(id, file, reason);
+    }
+
     public required ThemeJson Json { get; init; }
-    public required IconAssets Assets { get; init; }
     public readonly Dictionary<string, IconFont> Fonts = new();
     public readonly Dictionary<string, IconValue> Icons = new();
+
+    /// <summary>The fonts the file names by id, to be read and loaded as <see cref="Fonts"/>.</summary>
+    public readonly Dictionary<string, ThemeNamedFile> NamedFonts = new();
+
+    /// <summary>The pictures the file names by icon key, to be read and loaded as <see cref="Icons"/>.</summary>
+    public readonly Dictionary<string, ThemeNamedFile> NamedPictures = new();
+
+    public IReadOnlyList<ThemeNamedFile> NamedFiles => [.. NamedFonts.Values, .. NamedPictures.Values];
 
     public required ThemeId<IconThemeFile> Id { get; init; }
 

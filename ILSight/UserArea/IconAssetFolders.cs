@@ -8,22 +8,11 @@ public static class IconAssetFolders
     private const string FamilyPrefix = "icon-font:";
     private const string ParentFolder = "..";
 
-    public static IconAssets Open(string folder)
+    /// <summary>The file at <paramref name="path"/> inside <paramref name="folder"/>, as a theme file there names it,
+    /// read, with the family a font in it is drawn as; or why it cannot be read.</summary>
+    public static IconAsset Read(string folder, string path)
     {
         var root = Path.GetFullPath(folder);
-        return new IconAssets(
-            path =>
-            {
-                return Read(root, path);
-            },
-            (_, path) =>
-            {
-                return FamilyPrefix + Resolve(root, path);
-            });
-    }
-
-    private static IconAsset Read(string root, string path)
-    {
         try
         {
             return ReadInside(root, path);
@@ -54,7 +43,7 @@ public static class IconAssetFolders
             return IconTheming.CreateFailedAsset(ThemeProblem.AssetOutsideFolder, path);
         }
 
-        return new IconAsset(File.ReadAllBytes(full));
+        return new IconAsset(File.ReadAllBytes(full), Family: FamilyPrefix + full);
     }
 
     /// <summary>True for what reading a file can throw, a path with characters no path may hold included.</summary>

@@ -61,7 +61,8 @@ public static class BuiltInThemes
     {
         var id = ThemeId<ThemeFile>.Of(Path.GetFileNameWithoutExtension(resource));
         var json = EmbeddedAssets.LoadBytes(Resources, resource);
-        return Theming.ReadTheme(id, resource, json);
+        var parsed = ThemeFile.Parse(id, resource, json);
+        return ThemeFile.Complete(parsed, EmbeddedIconAssets.ReadNamed(Resources, parsed.NamedFiles));
     }
 
     private static int RankOf(ThemeFile file)
