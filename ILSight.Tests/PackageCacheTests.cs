@@ -20,7 +20,7 @@ public sealed class PackageCacheTests
         var path = await NuGetFeeds.GetPackageAsync(cache, NuGetFeeds.CreateFeed(fake.Source, fake), Tiny, Packages.Version("1.0.0-Beta+build.5"));
 
         Assert.Equal(temp.PathOf(Path.Combine("downloads", "tiny", "1.0.0-beta", "tiny.1.0.0-beta.nupkg")), path);
-        Assert.Equal(PackageBytes, File.ReadAllBytes(path));
+        Assert.Equal(PackageBytes, await File.ReadAllBytesAsync(path));
         Assert.Equal(path, NuGetFeeds.FindPackage(cache, Tiny, Packages.Version("1.0.0-beta")));
     }
 

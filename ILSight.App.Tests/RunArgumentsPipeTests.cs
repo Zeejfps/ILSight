@@ -15,25 +15,22 @@ public sealed class RunArgumentsPipeTests
         return CommandLines.Parse(args).Arguments;
     }
 
-    private static List<RunArguments> TakeArrived(Channel<RunArguments> inbox, int count)
+    private static async Task<List<RunArguments>> TakeArrivedAsync(Channel<RunArguments> inbox, int count)
     {
         inbox.Writer.TryComplete();
         var arrived = new List<RunArguments>();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var reading = Task.Run(async () =>
+        await foreach (var arguments in inbox.Reader.ReadAllAsync().WithCancellation(timeout.Token))
         {
-            await foreach (var arguments in inbox.Reader.ReadAllAsync().WithCancellation(timeout.Token))
-            {
-                arrived.Add(arguments);
-            }
-        });
-        reading.GetAwaiter().GetResult();
+            arrived.Add(arguments);
+        }
+
         Assert.Equal(count, arrived.Count);
         return arrived;
     }
 
     [Fact]
-    public void The_receiver_takes_the_arguments_a_later_run_sends()
+    public async Task The_receiver_takes_the_arguments_a_later_run_sends()
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
@@ -43,7 +40,7 @@ public sealed class RunArgumentsPipeTests
         var handedOver = RunArgumentsPipe.TrySend(address, Arguments("--navigateto=T:Some.Type", "relative.dll"));
 
         Assert.True(handedOver);
-        var handed = Assert.Single(TakeArrived(receiver.Inbox, 1));
+        var handed = Assert.Single(await TakeArrivedAsync(receiver.Inbox, 1));
         Assert.Equal("T:Some.Type", handed.Files.NavigateTo);
         Assert.Equal([Path.GetFullPath("relative.dll")], handed.Files.Paths.Select(static p => p.Text));
     }
@@ -74,7 +71,7 @@ public sealed class RunArgumentsPipeTests
     }
 
     [Fact]
-    public void Many_runs_starting_together_all_reach_the_receiver()
+    public async Task Many_runs_starting_together_all_reach_the_receiver()
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
@@ -82,10 +79,10 @@ public sealed class RunArgumentsPipeTests
         Assert.NotNull(receiver);
 
         var sends = Enumerable.Range(0, 16).Select(i => Task.Run(() => RunArgumentsPipe.TrySend(address, Arguments(i + ".dll")))).ToArray();
-        Task.WaitAll(sends);
+        var sent = await Task.WhenAll(sends);
 
-        Assert.All(sends, static send => Assert.True(send.Result));
-        Assert.Equal(16, TakeArrived(receiver.Inbox, 16).Count);
+        Assert.All(sent, Assert.True);
+        Assert.Equal(16, (await TakeArrivedAsync(receiver.Inbox, 16)).Count);
     }
 
     [Fact]

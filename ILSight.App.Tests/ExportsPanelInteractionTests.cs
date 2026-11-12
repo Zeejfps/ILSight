@@ -129,11 +129,11 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void A_waiting_export_is_withdrawn_from_the_keyboard_and_the_running_one_stays()
+    public async Task A_waiting_export_is_withdrawn_from_the_keyboard_and_the_running_one_stays()
     {
         var app = AppDriver.Opened(height: TallWindow);
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Running")).Turn.Result);
+        var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Later")).Turn.IsCompleted);
         app.Run(2);
 
@@ -149,11 +149,11 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void The_remove_from_queue_button_takes_the_export_out_mid_frame_without_breaking_the_list()
+    public async Task The_remove_from_queue_button_takes_the_export_out_mid_frame_without_breaking_the_list()
     {
         var app = AppDriver.Opened(height: TallWindow);
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Running")).Turn.Result);
+        var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Second")).Turn.IsCompleted);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Third")).Turn.IsCompleted);
         app.Run(2);
@@ -175,12 +175,12 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void A_row_lines_its_icon_name_and_actions_up_and_runs_the_bar_from_the_name_to_the_actions()
+    public async Task A_row_lines_its_icon_name_and_actions_up_and_runs_the_bar_from_the_name_to_the_actions()
     {
         var app = AppDriver.Opened(height: TallWindow);
         var theme = app.Theme;
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Running")).Turn.Result);
+        var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         running.Progress.Report(new ExportProgress("Fixtures", 1, 1, 0.5f));
         app.Run(2);
 
@@ -203,11 +203,11 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void The_running_export_keeps_the_frames_coming_so_its_spinner_turns()
+    public async Task The_running_export_keeps_the_frames_coming_so_its_spinner_turns()
     {
         var app = AppDriver.Opened();
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Running")).Turn.Result);
+        var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         app.Run(2);
 
         Assert.False(app.Frames.Drew(Text(Icons.StatusLoading)));

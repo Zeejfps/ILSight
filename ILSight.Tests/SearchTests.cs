@@ -85,7 +85,7 @@ public sealed class SearchTests
             {
                 Assert.NotEmpty(batch);
                 batches++;
-                cancellation.Cancel();
+                await cancellation.CancelAsync();
             }
         });
         Assert.Equal(1, batches);

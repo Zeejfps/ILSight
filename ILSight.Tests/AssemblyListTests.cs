@@ -334,7 +334,7 @@ public sealed class AssemblyListTests
             list.Close(list.Open(Trees.TestAssemblyPath));
         }
 
-        stop.Cancel();
+        await stop.CancelAsync();
 
         await reader;
         Assert.Empty(list.Listed);

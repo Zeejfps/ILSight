@@ -321,15 +321,15 @@ public sealed class DecompilationTests
     }
 
     [Fact]
-    public void Cancellation_throws_instead_of_returning_a_document()
+    public async Task Cancellation_throws_instead_of_returning_a_document()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
         using var cancelled = new CancellationTokenSource();
-        cancelled.Cancel();
+        await cancelled.CancelAsync();
 
         Assert.Throws<OperationCanceledException>(() => assembly.Calculator().Decompile(DecompilationLanguage.CSharp, cancelled.Token));
-        Assert.ThrowsAny<OperationCanceledException>(() =>
-            NodeContentLoader.GetContentAsync(TestSession.Shared, assembly.Calculator(), DecompilationLanguage.IL, DecompilerOptions.Default, cancelled.Token).GetAwaiter().GetResult());
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            NodeContentLoader.GetContentAsync(TestSession.Shared, assembly.Calculator(), DecompilationLanguage.IL, DecompilerOptions.Default, cancelled.Token));
     }
 
     [Fact]

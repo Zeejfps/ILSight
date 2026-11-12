@@ -53,7 +53,7 @@ public sealed class AsyncGuardedTests
         var held = await guarded.EnterAsync();
 
         var waiting = guarded.EnterAsync(cancellation.Token);
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
         Assert.False(guarded.EnterAsync(new CancellationToken(canceled: true)).IsCompletedSuccessfully);

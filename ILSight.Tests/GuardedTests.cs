@@ -156,7 +156,7 @@ public sealed class GuardedTests
     }
 
     [Fact]
-    public void Threads_changing_the_value_and_snapshot_keep_them_in_step_for_readers()
+    public async Task Threads_changing_the_value_and_snapshot_keep_them_in_step_for_readers()
     {
         const int threads = 4;
         const int rounds = 20_000;
@@ -180,8 +180,8 @@ public sealed class GuardedTests
                 held.Snapshot = Tuple.Create(held.Value, held.Value);
             }
         });
-        stop.Cancel();
-        reader.GetAwaiter().GetResult();
+        await stop.CancelAsync();
+        await reader;
 
         Assert.Equal(threads * rounds, guarded.Snapshot.Item1);
         using var total = guarded.Enter();

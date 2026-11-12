@@ -47,7 +47,7 @@ internal static class Batches
         }
         finally
         {
-            stop.Cancel();
+            await stop.CancelAsync().ConfigureAwait(false);
             await ending.ConfigureAwait(false);
         }
     }
