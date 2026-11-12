@@ -277,19 +277,20 @@ public static class SavedDocuments
         return arrangement;
     }
 
-    /// <summary>Shows again what the reopened tabs still waiting showed, now that the open list's assemblies
-    /// are listed: shows their diagrams and comparisons. Returns the loads that started in the tabs, for the edge that
-    /// started this to start: the reading of the diagrams' cards, and the lookup of the nodes the other tabs wait for
-    /// (<see cref="ShowReopenedNodesHandler"/>), which nothing after this needs and which the edge starts as work of its
-    /// own, so that what the caller started meanwhile does not wait for it.</summary>
-    internal static TabLoads ShowReopenedDocuments(AppState appState)
+    /// <summary>Shows again what the tabs of <paramref name="tabs"/> reopened and still waiting
+    /// (<paramref name="reopenedTabs"/>) showed, now that the open list's assemblies, <paramref name="assemblies"/>, are
+    /// listed: shows their diagrams and comparisons. Returns the loads that started in the tabs, for the edge that
+    /// started this to start: the reading of the diagrams' cards, the comparisons' runs, and the lookup of the nodes the
+    /// other tabs wait for (<see cref="ShowReopenedNodesHandler"/>), which nothing after this needs and which the edge
+    /// starts as work of its own, so that what the caller started meanwhile does not wait for it.</summary>
+    internal static TabLoads ShowReopenedDocuments(DocumentTabs tabs, ReopenedTabs reopenedTabs, AssemblyList assemblies)
     {
         var nodes = new List<WaitingNode>();
         var diagramReads = new List<SavedDiagramRead>();
         var comparisonRuns = new List<ComparisonRun>();
-        foreach (var reopened in ListWaiting(appState.Reopened))
+        foreach (var reopened in ListWaiting(reopenedTabs))
         {
-            ShowReopened(appState, reopened, nodes, diagramReads, comparisonRuns);
+            ShowReopened(tabs, reopenedTabs, assemblies, reopened, nodes, diagramReads, comparisonRuns);
         }
 
         return TabLoads.From([], diagramReads, ListLookups(nodes), comparisonRuns);
@@ -309,19 +310,19 @@ public static class SavedDocuments
     /// <summary>Shows the diagram or comparison <paramref name="reopened"/> showed, adding the read of its cards to
     /// <paramref name="diagramReads"/>, or its run to <paramref name="comparisonRuns"/>, or adds its node to
     /// <paramref name="nodes"/>, to be found with the others.</summary>
-    private static void ShowReopened(AppState appState, ReopenedTab reopened, List<WaitingNode> nodes, List<SavedDiagramRead> diagramReads,
-        List<ComparisonRun> comparisonRuns)
+    private static void ShowReopened(DocumentTabs tabs, ReopenedTabs reopenedTabs, AssemblyList assemblies, ReopenedTab reopened, List<WaitingNode> nodes,
+        List<SavedDiagramRead> diagramReads, List<ComparisonRun> comparisonRuns)
     {
         switch (reopened.Record)
         {
             case NodeDocumentRecord node:
-                nodes.Add(new WaitingNode { Reopened = reopened, Record = node, Place = FindListedPlace(appState, node) });
+                nodes.Add(new WaitingNode { Reopened = reopened, Record = node, Place = FindListedPlace(assemblies, node) });
                 break;
             case DiagramDocumentRecord diagram:
-                AddStarted(diagramReads, ReopenDiagram(appState, reopened, diagram));
+                AddStarted(diagramReads, ReopenDiagram(tabs, reopenedTabs, reopened, diagram));
                 break;
             case ComparisonDocumentRecord comparison:
-                AddStarted(comparisonRuns, ReopenComparison(appState.Reopened, appState.Assemblies, reopened, comparison));
+                AddStarted(comparisonRuns, ReopenComparison(reopenedTabs, assemblies, reopened, comparison));
                 break;
         }
     }
@@ -339,9 +340,9 @@ public static class SavedDocuments
 
     /// <summary>Where <paramref name="node"/> was, when its file is open in the list; else null, as the
     /// list holds it no more.</summary>
-    private static NodePath? FindListedPlace(AppState appState, NodeDocumentRecord node)
+    private static NodePath? FindListedPlace(AssemblyList assemblies, NodeDocumentRecord node)
     {
-        if (!AssemblyListing.IsListed(appState.Assemblies, node.Location.FilePath))
+        if (!AssemblyListing.IsListed(assemblies, node.Location.FilePath))
         {
             return null;
         }

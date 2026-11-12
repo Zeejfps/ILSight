@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Core.Comparison;
 
 namespace ILSight.App.Tests;
 
@@ -40,5 +41,28 @@ public sealed class TabLoadsTests
         TabLoads.None.With((DecompileTicket?)null).Switch(_ => handed++, _ => handed++, _ => handed++, _ => handed++);
 
         Assert.Equal(0, handed);
+    }
+
+    [Fact]
+    public void A_reopened_comparison_shows_in_its_tab_and_hands_back_its_run_as_a_kind_of_its_own()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var path = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath).FilePath;
+        var record = new ComparisonDocumentRecord("document-9", "Fixtures API diff", path, path, ApiScope.AllDeclared, null);
+        var tab = d.AppState.Tabs.AddNew();
+        Tabs.WaitForComparison(tab, record.Title);
+        SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
+        var runs = new List<ComparisonRun>();
+        var other = 0;
+
+        var loads = SavedDocuments.ShowReopenedDocuments(d.AppState.Tabs, d.AppState.Reopened, d.AppState.Assemblies);
+        loads.Switch(_ => other++, _ => other++, _ => other++, runs.Add);
+
+        var run = Assert.Single(runs);
+        Assert.Same(tab.Comparison, run.Comparison);
+        Assert.Equal(ApiScope.AllDeclared, run.Scope);
+        Assert.True(run.Comparison.IsComparing);
+        Assert.Equal(0, other);
+        Assert.Empty(d.AppState.Reopened.Tabs);
     }
 }

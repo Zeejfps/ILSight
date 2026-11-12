@@ -38,7 +38,7 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
             return TabLoads.None;
         }
 
-        var reopened = ShowReopenedDocuments(appState);
+        var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
         switch (outcome)
         {
             case Outcome<LoadedAssembly?>.Ok:

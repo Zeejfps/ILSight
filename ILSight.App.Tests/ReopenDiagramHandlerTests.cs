@@ -14,7 +14,7 @@ public sealed class ReopenDiagramHandlerTests
         var tab = d.AppState.Tabs.AddNew();
         Tabs.WaitForDiagram(tab, saved.Title);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, saved);
-        var read = Diagrams.ReopenDiagram(d.AppState, reopened, saved);
+        var read = Diagrams.ReopenDiagram(d.AppState.Tabs, d.AppState.Reopened, reopened, saved);
         Assert.NotNull(read);
         return read;
     }

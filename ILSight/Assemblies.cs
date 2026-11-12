@@ -51,6 +51,6 @@ public static class Assemblies
         OpenAssemblies.CloseAll(appState.Assemblies, appState.Analyzer);
         appState.Assemblies.Pdbs.ForgetAll();
         appState.Assemblies.TargetFrameworks.ForgetAll();
-        return ShowReopenedDocuments(appState);
+        return ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
     }
 }

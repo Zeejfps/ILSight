@@ -218,11 +218,12 @@ public static class Diagrams
         RemoveCard(diagram, type);
     }
 
-    /// <summary>Shows the diagram <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in, the
-    /// assemblies it names its own, and has the tab wait on for the cards of its types still found. Returns the read
-    /// of those cards it started, for the edge to start (<see cref="ReopenDiagramHandler"/>) on a token closing the
-    /// diagram cancels; null when the tab waits no more, as when it was pointed elsewhere.</summary>
-    internal static SavedDiagramRead? ReopenDiagram(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
+    /// <summary>Shows the diagram <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in, one
+    /// of <paramref name="tabs"/> and of <paramref name="reopenedTabs"/>, the assemblies it names its own, and has the
+    /// tab wait on for the cards of its types still found. Returns the read of those cards it started, for the edge to
+    /// start (<see cref="ReopenDiagramHandler"/>) on a token closing the diagram cancels; null when the tab waits no
+    /// more, as when it was pointed elsewhere.</summary>
+    internal static SavedDiagramRead? ReopenDiagram(DocumentTabs tabs, ReopenedTabs reopenedTabs, ReopenedTab reopened, DiagramDocumentRecord saved)
     {
         if (!reopened.IsWaiting)
         {
@@ -230,19 +231,19 @@ public static class Diagrams
         }
 
         var tab = reopened.Tab;
-        var diagram = ShowSavedDiagram(appState, tab, saved);
-        var waiting = SavedDocuments.WaitFor(appState.Reopened, tab, saved);
+        var diagram = ShowSavedDiagram(tabs, tab, saved);
+        var waiting = SavedDocuments.WaitFor(reopenedTabs, tab, saved);
         StartReading(diagram);
         return new SavedDiagramRead { Reopened = waiting, Diagram = diagram, Saved = saved };
     }
 
-    private static TypeDiagram ShowSavedDiagram(AppState appState, DocumentTab tab, DiagramDocumentRecord saved)
+    private static TypeDiagram ShowSavedDiagram(DocumentTabs tabs, DocumentTab tab, DiagramDocumentRecord saved)
     {
         var diagram = new TypeDiagram();
         TakeHomes(diagram, saved.HomeAssemblies);
         var title = saved.Title ?? string.Empty;
         Tabs.ShowDiagram(tab, title, diagram);
-        WorkInIfActive(appState, tab);
+        WorkInIfActive(tabs, tab);
         return diagram;
     }
 
@@ -260,14 +261,14 @@ public static class Diagrams
     }
 
     /// <summary>Has the diagram <paramref name="tab"/> shows taken as the one the user works in, when the tab is the active one.</summary>
-    private static void WorkInIfActive(AppState appState, DocumentTab tab)
+    private static void WorkInIfActive(DocumentTabs tabs, DocumentTab tab)
     {
-        if (tab != appState.Tabs.Active)
+        if (tab != tabs.Active)
         {
             return;
         }
 
-        Tabs.MakeActive(appState.Tabs, tab);
+        Tabs.MakeActive(tabs, tab);
     }
 
     /// <summary>Starts laying out <paramref name="diagram"/>, cancelling the layout in flight, whose result is then

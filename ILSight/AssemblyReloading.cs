@@ -232,7 +232,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             case Outcome<ReloadedNodes>.Ok ok:
                 return ShowReloaded(appState, ok.Value, intent, tabs);
             case Outcome<ReloadedNodes>.Failed failed:
-                var reopened = ShowReopenedDocuments(appState);
+                var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
                 ports.ReportError(new AppProblem.AssembliesNotReloaded(failed.Error));
                 return reopened;
             default:
@@ -252,7 +252,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             ReshowTab(appState, tabs[i], reloaded.Places[i], intent, loads);
         }
 
-        var reopened = ShowReopenedDocuments(appState);
+        var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
         SaveSettings(appState);
         return TabLoads.None.With(loads).With(reopened);
     }
