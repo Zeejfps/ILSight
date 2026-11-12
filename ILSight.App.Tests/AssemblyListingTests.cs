@@ -256,7 +256,7 @@ public sealed class AssemblyListingTests
         var root = tree.Roots[0];
         Trees.CollapseTree(tree);
 
-        Trees.ExpandNamespaces(tree);
+        Commands.StartExpandingNamespaces(d.AppState, tree, Trees.ExpandNamespaces(tree));
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.RunUntil(() => tree.View.IsExpanded(ns));
 

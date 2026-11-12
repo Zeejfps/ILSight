@@ -124,6 +124,56 @@ public static class Commands
             ct => appState.RestoreAnalysesHandler.HandleAsync(appState.Analyzer, appState.Assemblies, appState.ViewCommands, restore, ct));
     }
 
+    /// <summary>Asks for the namespaces of each assembly <paramref name="expansion"/> expanded in <paramref name="tree"/>
+    /// to be expanded once the frame is drawn (<see cref="StartExpandingNamespaces"/>): the draw expanded the assemblies
+    /// in the frame of its input, and only building their children, which takes longer than a frame, waits for the
+    /// edge.</summary>
+    public static void ExpandNamespacesLater(UiState uiState, BrowseTree tree, NamespaceExpansion expansion)
+    {
+        uiState.AppCommands.Enqueue(CreateExpandNamespaces(tree, expansion));
+    }
+
+    private static AppCommand CreateExpandNamespaces(BrowseTree tree, NamespaceExpansion expansion)
+    {
+        return appState =>
+        {
+            StartExpandingNamespaces(appState, tree, expansion);
+        };
+    }
+
+    /// <summary>Starts building the children of each assembly <paramref name="expansion"/> expanded and expanding the
+    /// namespaces among them (<see cref="ExpandNamespacesHandler"/>) now, a workflow per assembly, each counted in the
+    /// app's background work until it ends.</summary>
+    public static void StartExpandingNamespaces(AppState appState, BrowseTree tree, NamespaceExpansion expansion)
+    {
+        foreach (var root in expansion.Roots)
+        {
+            appState.Workflows.Start(nameof(ExpandNamespacesHandler), ct => appState.ExpandNamespacesHandler.HandleAsync(tree, expansion, root, ct));
+        }
+    }
+
+    /// <summary>Starts building the children <paramref name="tree"/> asked for while it drew
+    /// (<see cref="BuildChildrenHandler"/>) now, a workflow per node, each counted in the app's background work until it
+    /// ends. Allocates nothing while nothing is asked for.</summary>
+    public static void StartBuildingChildren(AppState appState, BrowseTree tree)
+    {
+        if (!tree.Builds.HasAsked)
+        {
+            return;
+        }
+
+        foreach (var node in tree.Builds.TakeAsked())
+        {
+            StartBuildingChildren(appState, tree, node);
+        }
+    }
+
+    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartBuildingChildren(AppState appState, BrowseTree tree, BrowseNode node)
+    {
+        appState.Workflows.Start(nameof(BuildChildrenHandler), ct => appState.BuildChildrenHandler.HandleAsync(tree, node, ct));
+    }
+
     /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening"/>), then the load of the last one shown: the input began the request in its own
     /// frame, and only opening the files, which takes longer than a frame, waits for the edge. Nothing when

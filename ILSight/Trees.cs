@@ -432,44 +432,26 @@ public static class Trees
         tree.View.Refresh();
     }
 
-    /// <summary>Expands every assembly and the namespaces in it, building an assembly's children in the
-    /// background first when they are not built yet. Collapsing before they are built keeps it collapsed.</summary>
-    public static void ExpandNamespaces(BrowseTree tree)
+    /// <summary>Expands every assembly, and begins expanding the namespaces in each, which
+    /// <see cref="ExpandNamespacesHandler"/> finishes once the assembly's children are built. Collapsing before they
+    /// are built keeps them collapsed.</summary>
+    public static NamespaceExpansion ExpandNamespaces(BrowseTree tree)
     {
         var ticket = tree.Expansion.Begin();
-        foreach (var root in tree.Roots)
+        var roots = tree.Roots;
+        foreach (var root in roots)
         {
-            ExpandAssembly(tree, root, ticket);
+            tree.View.SetExpanded(root, true);
         }
 
         tree.View.Refresh();
+        return new NamespaceExpansion { Roots = roots, Ticket = ticket };
     }
 
-    private static void ExpandAssembly(BrowseTree tree, BrowseNode root, int ticket)
+    /// <summary>Expands the namespaces among <paramref name="children"/>, an assembly's.</summary>
+    public static void ExpandNamespacesIn(BrowseTree tree, IReadOnlyList<BrowseNode> children)
     {
-        Background.Start(tree.Work, nameof(ExpandAssemblyAsync), ExpandAssemblyAsync(tree, root, ticket), tree.ReportError);
-    }
-
-    private static async Task ExpandAssemblyAsync(BrowseTree tree, BrowseNode root, int ticket)
-    {
-        tree.View.SetExpanded(root, true);
-        var built = await Background.Wait(BrowseSessions.GetChildrenAsync(tree.Session, root));
-        if (tree.Expansion.IsStale(ticket))
-        {
-            return;
-        }
-
-        if (built is not Outcome<ChildrenState>.Ok ok)
-        {
-            return;
-        }
-
-        if (ok.Value is not ChildrenState.Ready loaded)
-        {
-            return;
-        }
-
-        foreach (var child in loaded.Children)
+        foreach (var child in children)
         {
             ExpandIfNamespace(tree, child);
         }
@@ -509,8 +491,8 @@ public static class Trees
     }
 
     /// <summary>The children shown under <paramref name="node"/>: those not hidden, with namespaces
-    /// nested when the tree nests them; while they are being built a loading row, which starts
-    /// building them, and a row saying why when they could not be.</summary>
+    /// nested when the tree nests them; while they are being built a loading row, which asks for them to
+    /// be built (<see cref="ChildBuilds"/>), and a row saying why when they could not be.</summary>
     public static TreeChildren<BrowseNode> GetChildren(BrowseTree tree, BrowseNode node)
     {
         var state = tree.NestsNamespaces ? BrowseSessions.PeekNestedChildren(tree.Session, node) : BrowseSessions.PeekChildren(tree.Session, node);
@@ -521,7 +503,7 @@ public static class Trees
             case ChildrenState.Failed failed:
                 return TreeChildren<BrowseNode>.Placeholder(CreateFailedRow(tree, failed.Error));
             case ChildrenState.Running or ChildrenState.Unloaded:
-                BuildChildren(tree, node);
+                tree.Builds.Ask(node);
                 return TreeChildren<BrowseNode>.Placeholder(CreateLoadingRow(tree));
             default:
                 throw new UnreachableException();
@@ -645,22 +627,5 @@ public static class Trees
             }
         }
         return nodes.Select(static n => n.Assembly.FilePath.Text).ToArray();
-    }
-
-    private static void BuildChildren(BrowseTree tree, BrowseNode node)
-    {
-        Background.Start(tree.Work, nameof(BuildChildrenAsync), BuildChildrenAsync(tree, node), tree.ReportError);
-    }
-
-    private static async Task BuildChildrenAsync(BrowseTree tree, BrowseNode node)
-    {
-        if (!tree.Building.Add(node))
-        {
-            return;
-        }
-
-        await Background.Wait(BrowseSessions.GetChildrenAsync(tree.Session, node));
-        tree.Building.Remove(node);
-        tree.View.Refresh();
     }
 }

@@ -67,6 +67,7 @@ internal static class AppRoot
         var bookmarks = new BookmarkInfrastructure(errors, assemblies, session);
         var analysis = new AnalysisInfrastructure(errors, assemblies);
         var exports = new ExportInfrastructure(errors, session);
+        var tree = new TreeInfrastructure(session);
         var viewCommands = new Queue<ViewCommand>();
         var appState = new AppState
         {
@@ -84,6 +85,8 @@ internal static class AppRoot
             BookmarkImporting = new BookmarkImporting(bookmarks),
             ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),
             SettingsSaving = new SettingsSaving(new SettingsSavingAdapter(errors)),
+            BuildChildrenHandler = new BuildChildrenHandler(tree),
+            ExpandNamespacesHandler = new ExpandNamespacesHandler(tree),
             ExportWriting = new ExportWriting(exports),
             SaveResourceHandler = new SaveResourceHandler(exports),
             ExtractPackageFileHandler = new ExtractPackageFileHandler(exports),
@@ -164,7 +167,7 @@ internal static class AppRoot
         var uiState = new UiState
         {
             AppCommands = appCommands,
-            Tree = new BrowseTree { Session = session, Work = work, ReportError = reportError },
+            Tree = new BrowseTree { Session = session },
             FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) },
             Search = Searches.CreateSearch(work, reportError, session),
             Omnibar = new Omnibar { Search = Searches.CreateSearch(work, reportError, session) },

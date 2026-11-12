@@ -207,6 +207,13 @@ internal static class AppFrames
         }
     }
 
+    /// <summary>Starts the work the screen asked for while it drew: the children of the tree's nodes it showed
+    /// loading.</summary>
+    internal static void StartAskedWork(UiState uiState, AppState appState)
+    {
+        Commands.StartBuildingChildren(appState, uiState.Tree);
+    }
+
     /// <summary>Keeps what the screen changed while it drew: the tabs keep where their views stand, and the
     /// settings keep what changed of the screen.</summary>
     internal static void KeepScreenChanges(UiState uiState, AppState appState)
@@ -267,6 +274,7 @@ internal static class AppFrames
     internal static void FinishFrame(Ui<UiState> ui, AppState appState, CodeFontFaces codeFonts)
     {
         KeepScreenChanges(ui.State, appState);
+        StartAskedWork(ui.State, appState);
         RunAppCommandsAndRedraw(ui, appState);
         RequestUpdateIfViewCommandsPending(ui, appState);
         SaveChangedSettings(ui, appState);

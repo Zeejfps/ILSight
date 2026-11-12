@@ -166,7 +166,7 @@ internal static class TreePaneView
             case 2:
                 if (DrawTool(ui, inMenu, "expand", icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
                 {
-                    Trees.ExpandNamespaces(tree);
+                    Commands.ExpandNamespacesLater(ui.State, tree, Trees.ExpandNamespaces(tree));
                 }
 
                 return;

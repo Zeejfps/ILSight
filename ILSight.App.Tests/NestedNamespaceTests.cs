@@ -67,7 +67,7 @@ public sealed class NestedNamespaceTests
         var ilsight = app.Node("ILSight");
         var fixtures = app.Node(AppStateDriver.FixturesNamespace);
 
-        Trees.ExpandNamespaces(tree);
+        Commands.StartExpandingNamespaces(app.AppState, tree, Trees.ExpandNamespaces(tree));
         app.Frames.WaitUntil(() => tree.View.IsExpanded(fixtures), Patience);
 
         Assert.All(EnclosingNamespaces, name => Assert.True(tree.View.IsExpanded(app.Node(name))));
@@ -85,7 +85,7 @@ public sealed class NestedNamespaceTests
     [Fact]
     public void Showing_public_api_a_namespace_of_internal_types_is_hidden_unless_a_namespace_nested_in_it_shows()
     {
-        var tree = new BrowseTree { Work = new BackgroundWork(), Session = TestSession.Shared, ReportError = static _ => { } };
+        var tree = new BrowseTree { Session = TestSession.Shared };
         var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
         var fixtures = root.Child(AppStateDriver.FixturesNamespace);
         var vault = root.Child(AppStateDriver.FixturesNamespace + ".Vault");

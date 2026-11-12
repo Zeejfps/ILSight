@@ -6,21 +6,17 @@ using ILSight.Core;
 namespace ILSight;
 
 /// <summary>A class because ZGF's ITreeModel demands the methods here, which forward. The browse tree over the
-/// open assemblies: its roots, the model the tree view reads and the view's expansion and selection. Children not built yet show a loading row while they
-/// are built in the background, and children that failed to build a row saying why.</summary>
+/// open assemblies: its roots, the model the tree view reads and the view's expansion and selection. Children not built yet show a loading row and are asked to
+/// be built, which the edge starts in the background, and children that failed to build a row saying why.</summary>
 public sealed class BrowseTree : ITreeModel<BrowseNode>
 {
     /// <summary>The browse tree whose nodes this shows.</summary>
     public required BrowseSession Session { get; init; }
 
-    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
-    public required BackgroundWork Work { get; init; }
-
-    /// <summary>Tells the user that something done in the background failed.</summary>
-    public required Action<AppProblem> ReportError { get; init; }
-
     public readonly ConditionalWeakTable<BrowseNode, BrowseNode[]> ShownChildren = new();
-    public readonly HashSet<BrowseNode> Building = new(ReferenceEqualityComparer.Instance);
+    /// <summary>The nodes whose children were asked to be built while the tree drew, and those being built.</summary>
+    public ChildBuilds Builds { get; } = new();
+
     public int RootsVersion = -1;
     public readonly UserIntent Expansion = new();
     public ApiVisibility Visibility = ApiVisibility.AllButCompilerGenerated;

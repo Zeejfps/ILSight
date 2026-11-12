@@ -113,11 +113,13 @@ internal sealed class AppStateDriver
 
     /// <summary>Does what a frame does before and after it draws: the screen follows the trees and the
     /// tabs and runs the commands the features queued for it, then tells the tabs where their views stand and
-    /// hands over what the settings keep of it, and the app runs what the screen asked of the app state.</summary>
+    /// hands over what the settings keep of it, the work it asked for while drawing starts, and the app runs what
+    /// the screen asked of the app state.</summary>
     public void NextFrame()
     {
         AppFrames.StartFrame(Ui, AppState);
         AppFrames.KeepScreenChanges(Ui, AppState);
+        AppFrames.StartAskedWork(Ui, AppState);
         QueuedCommands.RunAppCommands(Ui, AppState);
     }
 
