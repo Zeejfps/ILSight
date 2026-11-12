@@ -30,15 +30,22 @@ public sealed class LayoutPersistenceTests : IDisposable
         var d = AppStateDriver.Opened(_temp.Settings());
         var screen = d.Ui;
         OpenPanel(screen, DockView.Analyzer);
-        screen.Layout.Dock(DockPanels.Bookmarks, screen.Layout.GroupOf(DockPanels.Analyzer)!, DockEdge.Center);
+        var analyzer = screen.Layout.GroupOf(DockPanels.Analyzer);
+        Assert.NotNull(analyzer);
+        screen.Layout.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
         d.NextFrame();
         d.AppState.SettingsSaving.Save(d.AppState);
 
         var next = new AppStateDriver(_temp.Settings());
         var layout = next.Ui.Layout;
-        var documents = layout.GroupOf(DocumentPanels.GetPanel(next.Ui.Documents, next.AppState.Tabs.Active!))!;
-        var views = layout.GroupOf(DockPanels.Analyzer)!;
-        var split = ParentOf(layout.Root, views)!;
+        var active = next.AppState.Tabs.Active;
+        Assert.NotNull(active);
+        var documents = layout.GroupOf(DocumentPanels.GetPanel(next.Ui.Documents, active));
+        Assert.NotNull(documents);
+        var views = layout.GroupOf(DockPanels.Analyzer);
+        Assert.NotNull(views);
+        var split = ParentOf(layout.Root, views);
+        Assert.NotNull(split);
 
         Assert.Same(views, layout.GroupOf(DockPanels.Bookmarks));
         Assert.Equal(Direction.Vertical, split.Direction);
@@ -54,7 +61,9 @@ public sealed class LayoutPersistenceTests : IDisposable
         var screen = d.Ui;
         OpenSearch(screen);
         OpenPanel(screen, DockView.Analyzer);
-        screen.Layout.Dock(DockPanels.Search, screen.Layout.GroupOf(DockPanels.Analyzer)!, DockEdge.Center);
+        var analyzer = screen.Layout.GroupOf(DockPanels.Analyzer);
+        Assert.NotNull(analyzer);
+        screen.Layout.Dock(DockPanels.Search, analyzer, DockEdge.Center);
         d.NextFrame();
         d.AppState.SettingsSaving.Save(d.AppState);
 

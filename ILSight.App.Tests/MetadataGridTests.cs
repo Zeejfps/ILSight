@@ -20,13 +20,18 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 2400f);
         app.Show(Table(app, name), frames);
-        var tab = app.AppState.Tabs.Active!;
-        return (app, tab, tab.Grid!);
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var grid = tab.Grid;
+        Assert.NotNull(grid);
+        return (app, tab, grid);
     }
 
     private static MetadataGridState GridOf(AppDriver app, DocumentTab tab)
     {
-        return DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), tab.Grid!);
+        var grid = tab.Grid;
+        Assert.NotNull(grid);
+        return DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), grid);
     }
 
     private static (AppDriver App, DocumentTab Tab, MetadataGrid Grid, int Row) ShowGreeterRow()
@@ -71,8 +76,10 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 700f);
         app.Show(Table(app, "TypeDef"), 2);
-        var tab = app.AppState.Tabs.Active!;
-        var grid = tab.Grid!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var grid = tab.Grid;
+        Assert.NotNull(grid);
         var methodList = MetadataGrids.GetText(grid, 0, grid.Column("MethodList"));
 
         GridOf(app, tab).Scroll.X = 10000f;
@@ -91,8 +98,10 @@ public sealed class MetadataGridTests
 
         d.Show(d.Node("Metadata", "Tables"));
 
-        Assert.Null(d.AppState.Tabs.Active!.Grid);
-        Assert.StartsWith("// Tables", Documents.GetText(d.AppState.Tabs.Active.Document));
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        Assert.Null(tab.Grid);
+        Assert.StartsWith("// Tables", Documents.GetText(tab.Document));
     }
 
     [Fact]
@@ -123,7 +132,8 @@ public sealed class MetadataGridTests
         app.Frames.Click(TextBeside(app, baseType, "Greeter"), modifiers: KeyModifiers.Control);
         app.Settle(3);
 
-        var typeRefs = tab.Grid!;
+        var typeRefs = tab.Grid;
+        Assert.NotNull(typeRefs);
         Assert.Same(Table(app, "TypeRef"), tab.Node);
         Assert.Equal("Object", MetadataGrids.GetText(typeRefs, GridOf(app, tab).Selected, typeRefs.Column("Name")));
         app.TextRect("Object");
@@ -143,13 +153,15 @@ public sealed class MetadataGridTests
         app.Show(greeter, 3);
         Trees.RevealNode(app.Ui.Tree, greeter);
         app.Run(2);
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Show in metadata")).Frame();
         app.Settle(3);
 
-        var typeDefs = tab.Grid!;
+        var typeDefs = tab.Grid;
+        Assert.NotNull(typeDefs);
         Assert.Same(Table(app, "TypeDef"), tab.Node);
         Assert.Equal("Greeter", MetadataGrids.GetText(typeDefs, GridOf(app, tab).Selected, typeDefs.Column("Name")));
 
@@ -241,9 +253,13 @@ public sealed class MetadataGridTests
         var name = grid.Column("Name");
 
         app.Frames.ClickOn(Selector.WithText("Name"));
-        var ascending = GridOf(app, tab).Order!.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
+        var ascendingOrder = GridOf(app, tab).Order;
+        Assert.NotNull(ascendingOrder);
+        var ascending = ascendingOrder.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
         app.Frames.ClickOn(Selector.WithText("Name"));
-        var descending = GridOf(app, tab).Order!.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
+        var descendingOrder = GridOf(app, tab).Order;
+        Assert.NotNull(descendingOrder);
+        var descending = descendingOrder.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
 
         Assert.Equal(ascending.Order(StringComparer.CurrentCulture), ascending);
         Assert.Equal(descending.OrderDescending(StringComparer.CurrentCulture), descending);
@@ -318,7 +334,10 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 1800f, height: 1200f);
         app.Show(app.Node("Metadata", "COFF Header"), 3);
-        var grid = app.AppState.Tabs.Active!.Grid!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var grid = tab.Grid;
+        Assert.NotNull(grid);
         var row = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, grid.Column("Member")) == "Characteristics");
         var value = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Value")), "Characteristics");
 
@@ -391,8 +410,10 @@ public sealed class MetadataGridTests
         var app = AppDriver.Opened(width: 1800f, height: 900f);
         var table = app.Node("Debug Metadata (From portable PDB)", "Tables").Table("CustomDebugInformation");
         app.Show(table);
-        var tab = app.AppState.Tabs.Active!;
-        var grid = tab.Grid!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var grid = tab.Grid;
+        Assert.NotNull(grid);
         var kind = grid.Column("KindString");
         var options = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
 
@@ -481,8 +502,10 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 1800f, height: 900f);
         app.Show(app.Node("Debug Metadata (From portable PDB)", "Tables").Table("CustomDebugInformation"));
-        var tab = app.AppState.Tabs.Active!;
-        var grid = tab.Grid!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var grid = tab.Grid;
+        Assert.NotNull(grid);
         var state = GridOf(app, tab);
         var kind = grid.Column("KindString");
         var selected = Enumerable.Range(0, grid.RowCount - 1).First(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));

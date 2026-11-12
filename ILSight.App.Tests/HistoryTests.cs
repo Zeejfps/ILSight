@@ -20,9 +20,13 @@ public sealed class HistoryTests
 
     private static CodeViewPosition ScrollTo(AppDriver app, int topLine, TextPosition anchor, TextPosition caret)
     {
-        CodeViewWidget.RestorePosition(CodeOf(app, app.AppState.Tabs.Active!), new CodeViewPosition(topLine, 0f, anchor, caret));
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        CodeViewWidget.RestorePosition(CodeOf(app, tab), new CodeViewPosition(topLine, 0f, anchor, caret));
         app.Run(4);
-        return CodeOf(app, app.AppState.Tabs.Active!).Position;
+        var scrolled = app.AppState.Tabs.Active;
+        Assert.NotNull(scrolled);
+        return CodeOf(app, scrolled).Position;
     }
 
     private static CodeViewState CodeOf(AppDriver app, DocumentTab tab)
@@ -41,16 +45,19 @@ public sealed class HistoryTests
 
         app.GoBack();
         app.Settle(4);
-        var back = app.AppState.Tabs.Active!.Node!.Text;
-        var backPosition = CodeOf(app, app.AppState.Tabs.Active!).Position;
+        var backTab = app.AppState.Tabs.Active;
+        Assert.NotNull(backTab);
+        var back = backTab.Node?.Text;
+        var backPosition = CodeOf(app, backTab).Position;
         app.GoForward();
         app.Settle(4);
-        var forward = app.AppState.Tabs.Active!;
+        var forward = app.AppState.Tabs.Active;
+        Assert.NotNull(forward);
 
         Assert.Equal(20, outline.TopLine);
         Assert.Equal("Outline", back);
         Assert.Equal(outline, backPosition);
-        Assert.Equal("Greeter", forward.Node!.Text);
+        Assert.Equal("Greeter", forward.Node?.Text);
         Assert.Equal(greeter, CodeOf(app, forward).Position);
     }
 
@@ -87,19 +94,21 @@ public sealed class HistoryTests
     {
         var app = Opened();
         Show(app, "Outline");
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(tab.Document.SpanAt(line, column + "return ".Length).Reference);
         var before = ScrollTo(app, 25, new TextPosition(line, column), new TextPosition(line, column + 6));
 
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(4);
-        var followed = tab.Node!.Text;
+        Assert.NotNull(tab.Node);
+        var followed = tab.Node.Text;
         app.GoBack();
         app.Settle(4);
 
         Assert.StartsWith("First()", followed);
-        Assert.Equal("Outline", tab.Node!.Text);
+        Assert.Equal("Outline", tab.Node?.Text);
         Assert.Equal(before, CodeOf(app, tab).Position);
     }
 
@@ -136,9 +145,10 @@ public sealed class HistoryTests
         app.Settle(4);
         app.GoBack();
         app.Settle(4);
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
 
-        Assert.Equal("Outline", tab.Node!.Text);
+        Assert.Equal("Outline", tab.Node?.Text);
         Assert.Equal(DecompilationLanguage.IL, tab.Language);
         Assert.False(CodeOf(app, tab).HasSelection);
         Assert.Equal(0, CodeOf(app, tab).Position.TopLine);
@@ -157,7 +167,7 @@ public sealed class HistoryTests
 
         app.GoToEntry(first);
         app.Settle(4);
-        var back = app.AppState.Tabs.Active!.Node!.Text;
+        var back = app.AppState.Tabs.Active?.Node?.Text;
 
         Assert.Equal("Outline", back);
         Assert.Equal(first, history.CurrentIndex);
@@ -181,7 +191,7 @@ public sealed class HistoryTests
         app.Settle(4);
 
         Assert.True(greeter.Top > outline.Top);
-        Assert.Equal("Outline", app.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Outline", app.AppState.Tabs.Active?.Node?.Text);
         Assert.Equal(first, app.AppState.History.CurrentIndex);
     }
 
@@ -198,7 +208,7 @@ public sealed class HistoryTests
         app.Settle(4);
 
         Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Position.Top == row.Top && t.Inputs.Position.Left == row.Left);
-        Assert.Equal("Outline", app.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Outline", app.AppState.Tabs.Active?.Node?.Text);
     }
 
     [Fact]

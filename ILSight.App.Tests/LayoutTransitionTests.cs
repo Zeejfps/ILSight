@@ -57,7 +57,7 @@ public sealed class LayoutTransitionTests
 
         Assert.True(transition.IsMoving);
         var expected = DiagramLayouts.Lerp(before.Places[Car], after.Places[Car], Ease.OutCubic(0.5f));
-        var drawn = Diagrams.FindCardPlace(transition, Car)!.Value;
+        var drawn = Assert.NotNull(Diagrams.FindCardPlace(transition, Car));
         Assert.Equal(expected.X, drawn.X, 0.01f);
         Assert.Equal(expected.Y, drawn.Y, 0.01f);
         Diagrams.AdvanceTransition(transition, Past);

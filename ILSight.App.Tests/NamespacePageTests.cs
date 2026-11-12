@@ -8,7 +8,8 @@ public sealed class NamespacePageTests
         var app = AppDriver.Opened();
         var d = app.Driver;
         d.Show(d.Node(AppStateDriver.FixturesNamespace));
-        var tab = d.AppState.Tabs.Active!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("Greeter");
         var span = tab.Document.SpanAt(line, column);
         app.Run(3);
@@ -18,7 +19,8 @@ public sealed class NamespacePageTests
         d.Settle();
 
         Assert.False(span.IsDefinition);
-        Assert.Equal("Greeter", tab.Node!.Text);
+        Assert.NotNull(tab.Node);
+        Assert.Equal("Greeter", tab.Node.Text);
         Assert.Equal(NodeIcon.Class, tab.Node.Icon);
     }
 }

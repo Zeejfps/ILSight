@@ -129,7 +129,7 @@ public sealed class NestedNamespaceTests
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, farewell.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(1);
 
-        Assert.Same(farewell, app.AppState.Tabs.Active!.Node);
+        Assert.Same(farewell, app.AppState.Tabs.Active?.Node);
         Assert.Same(farewell, app.Ui.Tree.View.Selected);
         Assert.True(IsShownNested(app, farewell));
     }
@@ -147,7 +147,7 @@ public sealed class NestedNamespaceTests
         app.GoBack();
         app.Settle(1);
 
-        Assert.Same(greeter, app.AppState.Tabs.Active!.Node);
+        Assert.Same(greeter, app.AppState.Tabs.Active?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
         Assert.True(IsShownNested(app, greeter));
     }
@@ -158,7 +158,8 @@ public sealed class NestedNamespaceTests
         var app = OpenedNested();
         var outline = app.Fixture("Outline");
         app.Show(outline, 2);
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
         app.Show(app.Fixture("Greeter"), 2);
@@ -171,7 +172,7 @@ public sealed class NestedNamespaceTests
         var fixtures = app.Node(AppStateDriver.FixturesNamespace);
         Assert.Equal([new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace), new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.Outline")],
             bookmark.Place.Steps.Select(static s => s.Segment));
-        Assert.Same(outline, app.AppState.Tabs.Active!.Node);
+        Assert.Same(outline, app.AppState.Tabs.Active?.Node);
         Assert.Same(outline, app.Ui.Tree.View.Selected);
         Assert.True(app.Ui.Tree.View.IsExpanded(fixtures));
         Assert.Contains(fixtures, ShownChildren(app, app.Node()));
@@ -189,7 +190,7 @@ public sealed class NestedNamespaceTests
 
         var greeter = app.Fixture("Greeter");
         Assert.NotSame(before, app.Node("ILSight.App"));
-        Assert.Same(greeter, app.AppState.Tabs.Active!.Node);
+        Assert.Same(greeter, app.AppState.Tabs.Active?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
         Assert.True(IsShownNested(app, greeter));
     }
@@ -206,6 +207,6 @@ public sealed class NestedNamespaceTests
 
         Assert.Same(app.Node(), app.Ui.Tree.View.Selected);
         Assert.DoesNotContain(enclosing, ShownChildren(app, app.Node()));
-        Assert.Same(enclosing, app.AppState.Tabs.Active!.Node);
+        Assert.Same(enclosing, app.AppState.Tabs.Active?.Node);
     }
 }

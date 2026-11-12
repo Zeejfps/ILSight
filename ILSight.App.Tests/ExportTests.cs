@@ -153,7 +153,8 @@ public sealed class ExportTests : IDisposable
 
         var (fileName, filters) = app.Frames.FilePicker.LastSave;
         Assert.Equal("mainwindow.xaml", fileName);
-        Assert.Equal(["*.xaml"], filters![0].Patterns);
+        Assert.NotNull(filters);
+        Assert.Equal(["*.xaml"], filters[0].Patterns);
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", File.ReadAllText(path));
     }
 
@@ -185,7 +186,7 @@ public sealed class ExportTests : IDisposable
 
         Assert.True(second.IsCompleted);
         Assert.Equal(0, queue.WaitingCount);
-        Assert.Equal("Second", queue.Running!.Progress.Name);
+        Assert.Equal("Second", queue.Running?.Progress.Name);
     }
 
     [Fact]
@@ -200,7 +201,7 @@ public sealed class ExportTests : IDisposable
 
         Assert.True(queue.IsRunning);
         Assert.False(second.Token.IsCancellationRequested);
-        Assert.Equal("Second", queue.Running!.Progress.Name);
+        Assert.Equal("Second", queue.Running?.Progress.Name);
     }
 
     [Fact]
@@ -214,7 +215,7 @@ public sealed class ExportTests : IDisposable
 
         Assert.IsType<ExportWithdrawn>(second.Result);
         Assert.Equal(0, queue.WaitingCount);
-        Assert.Equal(first.Run, queue.Running!.Export.Run);
+        Assert.Equal(first.Run, queue.Running?.Export.Run);
     }
 
     [Fact]
@@ -259,7 +260,7 @@ public sealed class ExportTests : IDisposable
         start.Progress.Report(new ExportProgress("Fixtures", 1, 1, 0.75f));
         d.Pump();
 
-        Assert.Equal(0.75f, queue.Running!.Progress.Fraction);
+        Assert.Equal(0.75f, queue.Running?.Progress.Fraction);
     }
 
     [Fact]
@@ -273,7 +274,7 @@ public sealed class ExportTests : IDisposable
         start.Progress.Report(new ExportProgress("Fixtures", 1, 1, 0.4f));
         d.Pump();
 
-        Assert.Equal(0.6f, queue.Running!.Progress.Fraction);
+        Assert.Equal(0.6f, queue.Running?.Progress.Fraction);
     }
 
     [Fact]

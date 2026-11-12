@@ -43,7 +43,7 @@ public sealed class ExportsPanelTests : IDisposable
 
         var layout = d.Ui.Layout;
         Assert.True(layout.Contains(DockPanels.Exports));
-        Assert.Equal(DockPanels.Exports, layout.GroupOf(DockPanels.Exports)!.Active);
+        Assert.Equal(DockPanels.Exports, layout.GroupOf(DockPanels.Exports)?.Active);
         d.Settle();
     }
 
@@ -72,7 +72,8 @@ public sealed class ExportsPanelTests : IDisposable
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report")).Frame(2);
 
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         var shown = Assert.IsType<TabContent.Report>(tab.Content);
         Assert.Equal(path, Assert.Single(Assert.IsType<ExportEnd.Finished>(shown.Export.End).Written));
         Assert.Equal("Export report", DocumentsView.Tab(app.Ui, app.AppState.Tabs, tab).Title);
@@ -142,7 +143,7 @@ public sealed class ExportsPanelTests : IDisposable
         app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
 
         Assert.True(start.Token.IsCancellationRequested);
-        Assert.True(app.AppState.Export.Running!.IsCancelling);
+        Assert.True(app.AppState.Export.Running?.IsCancelling);
         Assert.True(app.Frames.Drew("C# project · Cancelling…"));
         app.StatusText("Cancelling…");
         start.EndTurn();
@@ -257,7 +258,9 @@ public sealed class ExportsPanelTests : IDisposable
         var d = AppStateDriver.Opened();
 
         SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
-        var run = d.AppState.Export.Running!.Export.Run;
+        var running = d.AppState.Export.Running;
+        Assert.NotNull(running);
+        var run = running.Export.Run;
         d.Settle();
 
         Assert.Equal(run, Assert.Single(d.AppState.FinishedExports).Run);
@@ -290,9 +293,12 @@ public sealed class ExportsPanelTests : IDisposable
         app.Run(2);
 
         var german = Strings.For(Locale.De);
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         Assert.Equal(german.ExportReportTitle, DocumentsView.Tab(app.Ui, app.AppState.Tabs, tab).Title);
-        Assert.Contains(german.ExportWritten, Documents.GetText(DocumentPanels.GetView(app.Ui.Documents, tab).Code.Document!));
+        var document = DocumentPanels.GetView(app.Ui.Documents, tab).Code.Document;
+        Assert.NotNull(document);
+        Assert.Contains(german.ExportWritten, Documents.GetText(document));
     }
 
     [Fact]
@@ -302,11 +308,13 @@ public sealed class ExportsPanelTests : IDisposable
         SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
         d.Settle();
         ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
-        var report = d.AppState.Tabs.Active!.Content;
+        var active = d.AppState.Tabs.Active;
+        Assert.NotNull(active);
+        var report = active.Content;
 
         d.AppState.Language = DecompilationLanguage.IL;
         d.Settle();
 
-        Assert.Same(report, d.AppState.Tabs.Active!.Content);
+        Assert.Same(report, d.AppState.Tabs.Active?.Content);
     }
 }

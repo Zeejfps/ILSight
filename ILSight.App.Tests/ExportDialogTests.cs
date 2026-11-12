@@ -541,7 +541,8 @@ public sealed class ExportDialogTests : IDisposable
     public void A_project_option_ticked_in_the_dialog_is_kept_for_the_next_export()
     {
         var app = AppDriver.Opened(height: 1400f);
-        var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces")!;
+        var nested = DecompilerToggles.FindToggle("UseNestedDirectoriesForNamespaces");
+        Assert.NotNull(nested);
         app.OpenExportSetup(null);
         app.Run(2);
 
@@ -588,7 +589,8 @@ public sealed class ExportDialogTests : IDisposable
     public void Resetting_the_decompiler_options_keeps_how_projects_are_exported()
     {
         var d = AppStateDriver.Opened();
-        var sdk = DecompilerToggles.FindToggle("UseSdkStyleProjectFormat")!;
+        var sdk = DecompilerToggles.FindToggle("UseSdkStyleProjectFormat");
+        Assert.NotNull(sdk);
         SetDecompilerToggle(d.AppState, sdk, !sdk.DefaultValue);
 
         ResetDecompilerToggles(d.AppState);

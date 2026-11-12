@@ -130,7 +130,7 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         Assert.Equal("Fixtures", Assert.Single(picker.Browser.Results).Id.Text);
-        Assert.Equal("Fixtures", picker.Browser.Selected!.Id.Text);
+        Assert.Equal("Fixtures", picker.Browser.Selected?.Id.Text);
         Assert.Equal("2.0.0", picker.Browser.Version?.Text);
         var choice = picker.Browser.Choice;
         Assert.NotNull(choice);
@@ -329,7 +329,9 @@ public sealed class NuGetPickerTests : IDisposable
 
         var failed = ReadDetails(picker, posted);
         _fake.Answer(DetailsUrl, """{ "catalogEntry": { "licenseExpression": "MIT" } }""");
-        picker.Browser.RetryDetails(picker.Browser.Selected!, PackageVersion.Parse("2.0.0")!);
+        var selected = picker.Browser.Selected;
+        Assert.NotNull(selected);
+        picker.Browser.RetryDetails(selected, Packages.Version("2.0.0"));
         var retried = ReadDetails(picker, posted);
 
         Assert.IsType<VersionDetails.Failed>(failed);
@@ -341,13 +343,17 @@ public sealed class NuGetPickerTests : IDisposable
     {
         VersionDetails? DetailsNow()
         {
-            return picker.Browser.EnsureDetails(picker.Browser.Selected!, PackageVersion.Parse("2.0.0")!);
+            var selected = picker.Browser.Selected;
+            Assert.NotNull(selected);
+            return picker.Browser.EnsureDetails(selected, Packages.Version("2.0.0"));
         }
         DetailsNow();
         var work = new BackgroundWork();
         AppFrames.StartFetching(new WorkflowRunner(work, new ErrorLog()), picker.Browser);
         Poll.Until(() => work.Outstanding.Count == 0, posted.Run);
-        return DetailsNow()!;
+        var details = DetailsNow();
+        Assert.NotNull(details);
+        return details;
     }
 
     [Fact]
@@ -397,7 +403,9 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         var details = ReadDetails(picker, posted);
-        var again = picker.Browser.EnsureDetails(picker.Browser.Selected!, PackageVersion.Parse("2.0.0")!);
+        var selected = picker.Browser.Selected;
+        Assert.NotNull(selected);
+        var again = picker.Browser.EnsureDetails(selected, Packages.Version("2.0.0"));
 
         Assert.Equal("MIT", Assert.IsType<VersionDetails.Read>(details).Details.License);
         Assert.Same(details, again);
@@ -605,7 +613,8 @@ public sealed class NuGetPickerTests : IDisposable
 
         picker.Open();
         app.Frames.WaitUntil(() => picker.Browser.Results.Count > 0, Patience);
-        var icon = picker.Browser.EnsureIcon(picker.Browser.Results[0])!;
+        var icon = picker.Browser.EnsureIcon(picker.Browser.Results[0]);
+        Assert.NotNull(icon);
         app.Frames.WaitUntil(() => icon.Shown != null, Patience);
         app.Run(2);
         var drawn = app.Frames.Canvas.Images.Any(i => i.Inputs.ImageId == icon.ImageId);
@@ -613,7 +622,7 @@ public sealed class NuGetPickerTests : IDisposable
         app.Run(2);
 
         Assert.True(drawn);
-        Assert.Equal(NuGetBrowser.IconPixels, icon.Shown!.Pixels.Width);
+        Assert.Equal(NuGetBrowser.IconPixels, icon.Shown?.Pixels.Width);
         Assert.False(app.Frames.Canvas.HasImage(icon.ImageId));
     }
 

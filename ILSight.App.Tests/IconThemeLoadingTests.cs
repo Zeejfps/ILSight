@@ -102,7 +102,7 @@ public sealed class IconThemeLoadingTests
 
         Assert.Empty(catalog.Errors);
         Assert.NotNull(theme.Icons.NodeClass.Svg);
-        Assert.True(theme.Icons.NodeClass.Svg!.UsesCurrentColor);
+        Assert.True(theme.Icons.NodeClass.Svg?.UsesCurrentColor);
         Assert.Equal("svg/class.svg", Assert.IsType<IconValue.Picture>(theme.Values["node.class"]).SvgPath);
         Assert.Equal("lucide", Assert.IsType<IconValue.Glyph>(theme.Values["node.method"]).Font);
     }

@@ -72,7 +72,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
 
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
-        Assert.Equal("Export report", DocumentsView.Tab(app.Ui, app.AppState.Tabs, app.AppState.Tabs.Active!).Title);
+        var active = app.AppState.Tabs.Active;
+        Assert.NotNull(active);
+        Assert.Equal("Export report", DocumentsView.Tab(app.Ui, app.AppState.Tabs, active).Title);
         var tabs = app.AppState.Tabs.Open.Count();
 
         app.Frames.Wait(1).DoubleClick(app.TextRect("Farewell")).Frame(2);
