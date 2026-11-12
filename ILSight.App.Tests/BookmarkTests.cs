@@ -57,13 +57,15 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, first, Names.Bookmark);
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         var bookmarks = d.AppState.Bookmarks;
+        var panel = new BookmarksPanel();
+        ItemSelections.Select(panel.Selection, bookmarks.Items[0], bookmarks.Items);
         d.TakeViewCommands();
 
-        var steppedTo = StepBookmark(d.AppState, bookmarks.Items[0], 1);
+        d.Start((a, ct) => BookmarksPanelView.StepAsync(panel, a, 1, ct));
         d.Settle();
         var commands = d.TakeViewCommands();
 
-        Assert.Same(bookmarks.Items[1], steppedTo);
+        Assert.Same(bookmarks.Items[1], panel.Selected);
         Assert.Contains(new ViewCommand.ShowTab(tab, Beside: null), commands);
         Assert.Contains(new ViewCommand.RevealLine(tab, line), commands);
         Assert.Contains(new ViewCommand.RevealNode(tab.Node!), commands);
@@ -111,7 +113,8 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         app.Show(app.Fixture("Greeter"), 3);
 
-        GoToBookmark(d.AppState, d.AppState.Bookmarks.Items[0]);
+        var bookmark = d.AppState.Bookmarks.Items[0];
+        d.Start((a, ct) => GoToBookmarkAsync(a, bookmark, ct));
         app.Settle(4);
 
         Assert.Equal("Outline", tab.Node!.Text);
@@ -278,7 +281,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2).Frame(90);
         Assert.Contains(app.Frames.TextRects(), t => t.Text.StartsWith(bookmark.Module + " "));
 
-        GoToBookmark(d.AppState, bookmark);
+        d.Start((a, ct) => GoToBookmarkAsync(a, bookmark, ct));
         app.Settle(4);
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
@@ -298,8 +301,8 @@ public sealed class BookmarkTests : IDisposable
         var bookmarks = d.AppState.Bookmarks;
         var panel = app.Ui.BookmarksPanel;
         var second = bookmarks.Items[1];
-        BookmarksPanelView.Step(panel, d.AppState, 1);
-        BookmarksPanelView.Step(panel, d.AppState, 1);
+        d.Start((a, ct) => BookmarksPanelView.StepAsync(panel, a, 1, ct));
+        d.Start((a, ct) => BookmarksPanelView.StepAsync(panel, a, 1, ct));
         app.Run(2);
 
         BookmarksPanelView.Remove(panel, bookmarks, bookmarks.Items[0]);
@@ -321,8 +324,8 @@ public sealed class BookmarkTests : IDisposable
         var bookmarks = d.AppState.Bookmarks;
         var panel = app.Ui.BookmarksPanel;
         var third = bookmarks.Items[2];
-        BookmarksPanelView.Step(panel, d.AppState, 1);
-        BookmarksPanelView.Step(panel, d.AppState, 1);
+        d.Start((a, ct) => BookmarksPanelView.StepAsync(panel, a, 1, ct));
+        d.Start((a, ct) => BookmarksPanelView.StepAsync(panel, a, 1, ct));
         app.Run(2);
 
         BookmarksPanelView.Remove(panel, bookmarks, bookmarks.Items[1]);

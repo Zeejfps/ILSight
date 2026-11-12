@@ -90,7 +90,8 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var d = Restored(WithBookmark($"\"Path\": {GreeterPath}"));
 
-        GoToBookmark(d.AppState, Assert.Single(d.AppState.Bookmarks.Items));
+        var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
+        d.Start((a, ct) => GoToBookmarkAsync(a, bookmark, ct));
         d.Settle();
 
         Assert.Same(d.Fixture("Greeter"), d.AppState.Tabs.Active?.Node);
@@ -128,7 +129,8 @@ public sealed class SavedPlacesTests : IDisposable
             """;
         var d = Restored(WithBookmark($"\"Path\": {missingPath}"));
 
-        GoToBookmark(d.AppState, Assert.Single(d.AppState.Bookmarks.Items));
+        var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
+        d.Start((a, ct) => GoToBookmarkAsync(a, bookmark, ct));
         d.Settle();
         var saved = Saved(d).GetProperty("Bookmarks")[0];
 

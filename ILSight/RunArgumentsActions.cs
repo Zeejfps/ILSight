@@ -30,8 +30,9 @@ public static class RunArgumentsActions
 
     /// <summary>Does what the arguments a later run handed over ask of the open window: decompiles
     /// to their language, switches to their list, added when there is none, clears the list, then opens
-    /// their files and shows what they name. The list's assemblies open while the files do.</summary>
-    public static Task ApplyArgumentsAsync(AppState appState, RunArguments arguments, CancellationToken ct)
+    /// their files and shows what they name. The list's assemblies open while the files do. Returns the load that
+    /// started in the tab showing it, for the edge to start.</summary>
+    public static async Task<DecompileTicket?> ApplyArgumentsAsync(AppState appState, RunArguments arguments, CancellationToken ct)
     {
         ReportIgnored(appState, arguments);
         if (arguments.Language is not null)
@@ -51,7 +52,8 @@ public static class RunArgumentsActions
         }
 
         var opening = OpenRequestedFilesAsync(appState, arguments.Files, ct);
-        return Task.WhenAll(switching, opening);
+        await Task.WhenAll(switching, opening);
+        return await opening;
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)
@@ -63,8 +65,8 @@ public static class RunArgumentsActions
     }
 
     /// <summary>Opens <paramref name="files"/>, then shows the namespace, type or member they
-    /// ask to navigate to, or else the last file opened.</summary>
-    public static Task OpenRequestedFilesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
+    /// ask to navigate to, or else the last file opened. Returns the load that started in the tab showing it.</summary>
+    public static Task<DecompileTicket?> OpenRequestedFilesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
     {
         if (files.NavigateTo is null)
         {

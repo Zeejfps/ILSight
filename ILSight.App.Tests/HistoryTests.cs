@@ -39,11 +39,11 @@ public sealed class HistoryTests
         Show(app, "Greeter");
         var greeter = ScrollTo(app, 3, new TextPosition(4, 0), new TextPosition(4, 6));
 
-        app.Start(GoBackAsync);
+        app.Start((a, ct) => GoBackAsync(a, ct));
         app.Settle(4);
         var back = app.AppState.Tabs.Active!.Node!.Text;
         var backPosition = CodeOf(app, app.AppState.Tabs.Active!).Position;
-        app.Start(GoForwardAsync);
+        app.Start((a, ct) => GoForwardAsync(a, ct));
         app.Settle(4);
         var forward = app.AppState.Tabs.Active!;
 
@@ -67,7 +67,7 @@ public sealed class HistoryTests
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
         app.Settle(4);
         var followed = tab.Node!.Text;
-        app.Start(GoBackAsync);
+        app.Start((a, ct) => GoBackAsync(a, ct));
         app.Settle(4);
 
         Assert.StartsWith("First()", followed);
@@ -85,7 +85,7 @@ public sealed class HistoryTests
 
         app.AppState.Language = DecompilationLanguage.IL;
         app.Settle(4);
-        app.Start(GoBackAsync);
+        app.Start((a, ct) => GoBackAsync(a, ct));
         app.Settle(4);
         var tab = app.AppState.Tabs.Active!;
 
@@ -145,7 +145,7 @@ public sealed class HistoryTests
         ClickBackDropdown(app);
         var row = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Outline").Inputs.Position;
 
-        app.Start(GoBackAsync);
+        app.Start((a, ct) => GoBackAsync(a, ct));
         app.Settle(4);
 
         Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Position.Top == row.Top && t.Inputs.Position.Left == row.Left);

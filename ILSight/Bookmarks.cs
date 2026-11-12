@@ -151,26 +151,16 @@ public static class Bookmarks
     }
 
     /// <summary>Shows the line <paramref name="bookmark"/> marks in the active tab, opening its
-    /// assembly first if it is not open, and records it in the history.</summary>
-    public static void GoToBookmark(AppState appState, Bookmark bookmark)
-    {
-        Background.Start(appState.Work, nameof(GoToBookmarkAsync), GoToBookmarkAsync(appState, bookmark), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task GoToBookmarkAsync(AppState appState, Bookmark bookmark)
+    /// assembly first if it is not open, and records it in the history. Returns the load that started in the tab, for
+    /// the edge that started this to start under the tab's work; null when none started.</summary>
+    public static async Task<DecompileTicket?> GoToBookmarkAsync(AppState appState, Bookmark bookmark, CancellationToken ct)
     {
         var destination = ChooseDestination(appState, inNewTab: false);
         var place = bookmark.Place;
         var assemblies = appState.Assemblies;
         var session = appState.Session;
-        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, place), CancellationToken.None);
-        var load = ShowBookmarkPlace(appState, bookmark, resolved, destination);
-        if (load is null)
-        {
-            return;
-        }
-
-        await appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, CancellationToken.None);
+        var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, place), ct);
+        return ShowBookmarkPlace(appState, bookmark, resolved, destination);
     }
 
     /// <summary>Shows the place <paramref name="resolved"/> found, or reports the bookmark gone. Returns the load it
@@ -204,20 +194,6 @@ public static class Bookmarks
     private static void ReportBookmarkGone(AppState appState, Bookmark bookmark, Exception? error)
     {
         Errors.Report(appState, new AppProblem.BookmarkGone(bookmark.Name, bookmark.Place, error));
-    }
-
-    /// <summary>Goes to the next enabled bookmark after <paramref name="from"/>, or the previous when
-    /// <paramref name="direction"/> is negative. Returns the bookmark gone to, or null when none is enabled.</summary>
-    public static Bookmark? StepBookmark(AppState appState, Bookmark? from, int direction)
-    {
-        var bookmark = appState.Bookmarks.FindNext(from, direction);
-        if (bookmark is null)
-        {
-            return null;
-        }
-
-        GoToBookmark(appState, bookmark);
-        return bookmark;
     }
 
     public static void ExportBookmarks(AppState appState, string path)

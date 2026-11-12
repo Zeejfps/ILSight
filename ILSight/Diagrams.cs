@@ -125,14 +125,15 @@ public static class Diagrams
     }
 
     /// <summary>Opens the code of <paramref name="target"/>, picked on <paramref name="diagram"/>, beside it,
-    /// in a new tab when <paramref name="inNewTab"/>; going back returns to the diagram.</summary>
-    public static Task OpenFromDiagramAsync(AppState appState, TypeDiagram diagram, CodeReference.Entity target, bool inNewTab,
+    /// in a new tab when <paramref name="inNewTab"/>; going back returns to the diagram. Returns the load that started
+    /// in the tab, as <see cref="NavigateHandler"/> does.</summary>
+    public static Task<DecompileTicket?> OpenFromDiagramAsync(AppState appState, TypeDiagram diagram, CodeReference.Entity target, bool inNewTab,
         CancellationToken ct)
     {
         var tab = FindTabShowing(appState, diagram);
         if (tab is null || tab.Content is not TabContent.Diagram shown)
         {
-            return Task.CompletedTask;
+            return Task.FromResult<DecompileTicket?>(null);
         }
 
         appState.History.RecordDiagram(shown.Types, shown.Title);

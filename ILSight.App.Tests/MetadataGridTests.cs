@@ -107,7 +107,7 @@ public sealed class MetadataGridTests
 
         app.AppState.Language = DecompilationLanguage.IL;
         app.Settle(2);
-        app.Start(GoBackAsync);
+        app.Start((a, ct) => GoBackAsync(a, ct));
         app.Settle(3);
 
         Assert.Same(Table(app, "TypeDef"), tab.Node);
@@ -129,7 +129,7 @@ public sealed class MetadataGridTests
         Assert.Equal("Object", MetadataGrids.GetText(typeRefs, GridOf(app, tab).Selected, typeRefs.Column("Name")));
         app.TextRect("Object");
 
-        app.Start(GoBackAsync);
+        app.Start((a, ct) => GoBackAsync(a, ct));
         app.Settle(3);
 
         Assert.Same(Table(app, "TypeDef"), tab.Node);
@@ -154,7 +154,7 @@ public sealed class MetadataGridTests
         Assert.Same(Table(app, "TypeDef"), tab.Node);
         Assert.Equal("Greeter", MetadataGrids.GetText(typeDefs, GridOf(app, tab).Selected, typeDefs.Column("Name")));
 
-        app.Start(GoBackAsync);
+        app.Start((a, ct) => GoBackAsync(a, ct));
         app.Settle(3);
 
         Assert.Same(greeter, tab.Node);

@@ -14,8 +14,6 @@ public sealed class GoToHistoryEntryHandlerTests
 
         public List<NodePath> LookedUp { get; } = [];
 
-        public List<DecompileTicket> Decompiled { get; } = [];
-
         public List<AppProblem> Reported { get; } = [];
 
         public void ReportError(AppProblem problem)
@@ -28,12 +26,6 @@ public sealed class GoToHistoryEntryHandlerTests
             LookedUp.Add(place);
             WhileLooking();
             return Task.FromResult(Found);
-        }
-
-        public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
-        {
-            Decompiled.Add(load);
-            return Task.CompletedTask;
         }
     }
 
@@ -59,11 +51,11 @@ public sealed class GoToHistoryEntryHandlerTests
         var back = d.AppState.History.CurrentIndex - 1;
         var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(greeter) };
 
-        await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
 
         Assert.Equal(PlaceOf(d.AppState, back), Assert.Single(lookup.LookedUp));
         Assert.Same(greeter, d.AppState.Tabs.Active?.Node);
-        Assert.Same(greeter, Assert.Single(lookup.Decompiled).Node);
+        Assert.Same(greeter, load?.Node);
         Assert.Equal(back, d.AppState.History.CurrentIndex);
         Assert.False(d.AppState.IsResolving);
         Assert.Empty(lookup.Reported);
@@ -77,13 +69,14 @@ public sealed class GoToHistoryEntryHandlerTests
         var back = d.AppState.History.CurrentIndex - 1;
         var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(null) };
 
-        await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
 
         var gone = Assert.IsType<AppProblem.HistoryPlaceGone>(Assert.Single(lookup.Reported));
         Assert.Equal(PlaceOf(d.AppState, back), gone.Place);
         Assert.Null(gone.Error);
         Assert.Same(farewell, d.AppState.Tabs.Active?.Node);
         Assert.False(d.AppState.IsResolving);
+        Assert.Null(load);
     }
 
     [Fact]
@@ -94,10 +87,11 @@ public sealed class GoToHistoryEntryHandlerTests
         var error = new IOException("unreadable");
         var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Failed(error) };
 
-        await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
 
         Assert.Same(error, Assert.IsType<AppProblem.HistoryPlaceGone>(Assert.Single(lookup.Reported)).Error);
         Assert.False(d.AppState.IsResolving);
+        Assert.Null(load);
     }
 
     [Fact]
@@ -108,11 +102,13 @@ public sealed class GoToHistoryEntryHandlerTests
         var foundLookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(found.Fixture("Greeter")), WhileLooking = () => found.AppState.Intent.Begin() };
         var missingLookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => missing.AppState.Intent.Begin() };
 
-        await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState, found.AppState.History.CurrentIndex - 1, CancellationToken.None);
-        await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState, missing.AppState.History.CurrentIndex - 1, CancellationToken.None);
+        var foundLoad = await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState, found.AppState.History.CurrentIndex - 1, CancellationToken.None);
+        var missingLoad = await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState, missing.AppState.History.CurrentIndex - 1, CancellationToken.None);
 
         Assert.Same(found.Fixture("Farewell"), found.AppState.Tabs.Active?.Node);
         Assert.Empty(foundLookup.Reported);
         Assert.Empty(missingLookup.Reported);
+        Assert.Null(foundLoad);
+        Assert.Null(missingLoad);
     }
 }

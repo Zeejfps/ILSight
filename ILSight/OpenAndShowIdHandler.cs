@@ -17,27 +17,18 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
         /// are none; null when none has it. Done without holding up the screen, cancelled with the opens; files that
         /// could not be opened come back as <see cref="Outcome{T}.Failed"/>.</summary>
         Task<Outcome<BrowseNode?>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct);
-
-        /// <summary>Brings in what <paramref name="load"/> started loading in its tab and shows it there, commanding
-        /// the view through <paramref name="viewCommands"/> where to stand in it.</summary>
-        Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct);
     }
 
     /// <summary>Opens the files at <paramref name="paths"/>, then shows the namespace, type or member
     /// <paramref name="idString"/> names, written as XML documentation ids are, looked for in the assemblies read
-    /// from them, or in every open one when there are none, returning once it is decompiled. Reports when none has
-    /// it, unless something else was asked for meanwhile.</summary>
-    public async Task HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
+    /// from them, or in every open one when there are none. Returns the load that started in the tab, for the edge
+    /// that started this to start under the tab's work; null when none started. Reports when none has it, unless
+    /// something else was asked for meanwhile.</summary>
+    public async Task<DecompileTicket?> HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
     {
         var ticket = appState.Intent.Begin();
         var found = await ports.OpenAndFindIdAsync(paths, idString, ct);
-        var load = ShowFound(appState, idString, found, ticket);
-        if (load is null)
-        {
-            return;
-        }
-
-        await ports.DecompileIntoTabAsync(appState.ViewCommands, load, ct);
+        return ShowFound(appState, idString, found, ticket);
     }
 
     /// <summary>Shows what the id names, when it was found and nothing else was asked for meanwhile, else reports

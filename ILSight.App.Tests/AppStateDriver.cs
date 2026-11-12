@@ -215,6 +215,22 @@ internal sealed class AppStateDriver
         appState.Workflows.Start(nameof(Start), ct => workflow(appState, ct));
     }
 
+    /// <summary>As <see cref="Start(Func{AppState, CancellationToken, Task})"/>, for a workflow that points a tab at
+    /// what it is to show: the load it returns is started once it ends, as the app's commands start it.</summary>
+    public void Start(Func<AppState, CancellationToken, Task<DecompileTicket?>> show)
+    {
+        var appState = AppState;
+        Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
+    }
+
+    /// <summary>As <see cref="Start(Func{AppState, CancellationToken, Task{DecompileTicket?}})"/>, for a workflow that
+    /// points several tabs.</summary>
+    public void Start(Func<AppState, CancellationToken, Task<List<DecompileTicket>>> show)
+    {
+        var appState = AppState;
+        Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
+    }
+
     /// <summary>Analyzes <paramref name="node"/> as the views do.</summary>
     public void Analyze(BrowseNode node)
     {

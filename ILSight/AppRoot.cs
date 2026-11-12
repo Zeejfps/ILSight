@@ -47,8 +47,8 @@ internal static class AppRoot
         var themes = Theming.CreateCatalog(BuiltInThemes.Files);
         var iconThemes = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
         var decompileIntoTab = new DecompileIntoTabHandler(new DecompileIntoTabHandlerAdapter(errors, session));
-        var navigation = new NavigationInfrastructure(errors, assemblies, session, opens, decompileIntoTab);
-        var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session, decompileIntoTab);
+        var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
+        var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session);
         var appState = new AppState
         {
             Work = work,

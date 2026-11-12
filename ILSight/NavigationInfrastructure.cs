@@ -3,21 +3,15 @@ using ILSight.Core.Metadata;
 
 namespace ILSight;
 
-/// <summary>Reaches the app's error reports, the open assemblies off the UI thread, and
-/// <paramref name="decompileIntoTab"/> to bring in what a tab was pointed at, for the navigation handlers.</summary>
-public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session, OpenRequests opens,
-    DecompileIntoTabHandler decompileIntoTab)
+/// <summary>Reaches the app's error reports and the open assemblies off the UI thread, for the navigation
+/// handlers.</summary>
+public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session, OpenRequests opens)
     : NavigateHandler.IPorts, ShowInMetadataHandler.IPorts, ShowInApiReferenceHandler.IPorts, OpenAndShowIdHandler.IPorts,
         GoToHistoryEntryHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
         Errors.Report(errors, problem);
-    }
-
-    public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
-    {
-        return decompileIntoTab.HandleAsync(viewCommands, load, ct);
     }
 
     /// <summary>Looks in the open assemblies on the thread pool and comes back on the UI thread, with whatever the

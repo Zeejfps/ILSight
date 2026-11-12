@@ -5,8 +5,8 @@ using static ILSight.Navigation;
 namespace ILSight;
 
 /// <summary>Opening assemblies into the list: files the user picked or dropped, and the assemblies one references.
-/// The workflows return once what they started is done, and reach the files and the user's error reports through
-/// <see cref="IPorts"/>.</summary>
+/// The workflows return once the files are open, with the load they started in a tab for the edge to start, and
+/// reach the files and the user's error reports through <see cref="IPorts"/>.</summary>
 public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
 {
     public interface IPorts
@@ -26,32 +26,22 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found in the open list,
         /// as <see cref="OpenFilesAsync"/> lists files.</summary>
         Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct);
-
-        /// <summary>Brings in what <paramref name="load"/> started loading in its tab and shows it there, commanding
-        /// the view through <paramref name="viewCommands"/> where to stand in it.</summary>
-        Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct);
     }
 
     /// <summary>Opens the files, then shows the last one opened, unless something else was asked for
-    /// meanwhile, returning once it is decompiled. Reports why opening failed, unless the opens were
-    /// cancelled.</summary>
-    public async Task OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
+    /// meanwhile. Returns the load that started in the tab, for the edge that started this to start under the tab's
+    /// work; null when none started. Reports why opening failed, unless the opens were cancelled.</summary>
+    public async Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
     {
         var files = paths.ToArray();
         if (files.Length == 0)
         {
-            return;
+            return null;
         }
 
         var ticket = appState.Intent.Begin();
         var opened = await ports.OpenFilesAsync(files, appState.Opens.Token, ct);
-        var load = ShowOpened(appState, opened, ticket);
-        if (load is null)
-        {
-            return;
-        }
-
-        await ports.DecompileIntoTabAsync(appState.ViewCommands, load, ct);
+        return ShowOpened(appState, opened, ticket);
     }
 
     /// <summary>Shows the last assembly opened, unless something else was asked for meanwhile, or reports why
@@ -93,14 +83,14 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
 
     /// <summary>Opens the file at <paramref name="path"/>, as a file dialog or a download names it; nothing
     /// when it is no absolute path.</summary>
-    public Task OpenAssemblyAsync(AppState appState, string path, CancellationToken ct)
+    public Task<DecompileTicket?> OpenAssemblyAsync(AppState appState, string path, CancellationToken ct)
     {
         return OpenFilesAtAsync(appState, [path], ct);
     }
 
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as
     /// <see cref="OpenAssembliesAsync"/> does; folders are left out.</summary>
-    public Task OpenDroppedFilesAsync(AppState appState, IReadOnlyList<string> paths, CancellationToken ct)
+    public Task<DecompileTicket?> OpenDroppedFilesAsync(AppState appState, IReadOnlyList<string> paths, CancellationToken ct)
     {
         var files = paths
             .Where(ports.IsFile)
@@ -108,7 +98,7 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         return OpenFilesAtAsync(appState, files, ct);
     }
 
-    private Task OpenFilesAtAsync(AppState appState, IEnumerable<string> paths, CancellationToken ct)
+    private Task<DecompileTicket?> OpenFilesAtAsync(AppState appState, IEnumerable<string> paths, CancellationToken ct)
     {
         var files = paths
             .Select(AssemblyPath.Parse)

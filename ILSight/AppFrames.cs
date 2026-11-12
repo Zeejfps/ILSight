@@ -155,7 +155,7 @@ internal static class AppFrames
     /// reloading. A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartRefreshing(AppState appState, List<NodePath> expanded)
     {
-        appState.Workflows.Start(nameof(AssemblyReloading.RefreshAssembliesAsync), ct => appState.AssemblyReloading.RefreshAssembliesAsync(appState, expanded, ct));
+        Commands.StartShowing(appState, nameof(AssemblyReloading.RefreshAssembliesAsync), ct => appState.AssemblyReloading.RefreshAssembliesAsync(appState, expanded, ct));
     }
 
     /// <summary>Opens the error dialog on the newest error whenever one is reported.</summary>
@@ -391,12 +391,14 @@ internal static class AppFrames
         appState.Workflows.StartUntilShutdown(appState.UserIconThemes.WatchAsync);
     }
 
-    /// <summary>Opens the active list, then <paramref name="files"/> while it opens, once the app is running.</summary>
-    internal static Task OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
+    /// <summary>Opens the active list, then <paramref name="files"/> while it opens, once the app is running. Returns
+    /// the load that started in the tab showing what the files ask for.</summary>
+    internal static async Task<DecompileTicket?> OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
     {
         var restoring = RestoreActiveAssemblyListAsync(appState, ct);
         var opening = OpenRequestedFilesAsync(appState, files, ct);
-        return Task.WhenAll(restoring, opening);
+        await Task.WhenAll(restoring, opening);
+        return await opening;
     }
 
     private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)

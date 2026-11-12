@@ -101,7 +101,7 @@ internal static class FrameworkPickerView
         return $"{t.PickerCount(shown)} · {t.PickerSelected(selected)}";
     }
 
-    private static Task OpenSelectedAsync(AppState appState, List<RuntimeAssembly> selected, CancellationToken ct)
+    private static Task<DecompileTicket?> OpenSelectedAsync(AppState appState, List<RuntimeAssembly> selected, CancellationToken ct)
     {
         var paths = selected
             .Select(a => a.FilePath);

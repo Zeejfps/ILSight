@@ -279,7 +279,7 @@ public sealed class AppStateTests
 
         d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), ct));
         d.Settle();
-        d.Start(GoBackAsync);
+        d.Start((a, ct) => GoBackAsync(a, ct));
         d.Settle();
 
         var shown = d.AppState.Tabs.Active!.Node!;
@@ -301,7 +301,7 @@ public sealed class AppStateTests
         var tab = d.AppState.Tabs.Active!;
         var document = tab.Document;
 
-        d.Start(GoBackAsync);
+        d.Start((a, ct) => GoBackAsync(a, ct));
         d.NextFrame();
 
         var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;

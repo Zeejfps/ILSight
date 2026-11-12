@@ -2,20 +2,14 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>Reaches the app's error reports, the file system, the open assemblies off the UI thread, and
-/// <paramref name="decompileIntoTab"/> to bring in what a tab was pointed at, for <see cref="AssemblyOpening"/>,
-/// <see cref="AssemblyReloading"/> and <see cref="OpenAssembliesAsReloadHandler"/>.</summary>
-public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session, DecompileIntoTabHandler decompileIntoTab)
+/// <summary>Reaches the app's error reports, the file system and the open assemblies off the UI thread, for
+/// <see cref="AssemblyOpening"/>, <see cref="AssemblyReloading"/> and <see cref="OpenAssembliesAsReloadHandler"/>.</summary>
+public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session)
     : AssemblyOpening.IPorts, AssemblyReloading.IPorts, OpenAssembliesAsReloadHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
         Errors.Report(errors, problem);
-    }
-
-    public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
-    {
-        return decompileIntoTab.HandleAsync(viewCommands, load, ct);
     }
 
     public bool IsFile(string path)

@@ -45,7 +45,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         RegisterFonts(host);
         RegisterChosenCodeFont(host);
         RegisterChosenIconFonts(host);
-        _appState.Workflows.Start(nameof(OpenStartupAssembliesAsync), ct => OpenStartupAssembliesAsync(_appState, _startupFiles, ct));
+        Commands.StartShowing(_appState, nameof(OpenStartupAssembliesAsync), ct => OpenStartupAssembliesAsync(_appState, _startupFiles, ct));
         StartRedrawingOnAssemblyChanges(host);
         RestoreAnalyses(_appState);
         WatchUserThemesOnStartup(_appState);
@@ -145,7 +145,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     {
         await foreach (var arguments in _inbox.Reader.ReadAllAsync())
         {
-            _appState.Workflows.Start(nameof(ApplyArgumentsAsync), ct => ApplyArgumentsAsync(_appState, arguments, ct));
+            Commands.StartShowing(_appState, nameof(ApplyArgumentsAsync), ct => ApplyArgumentsAsync(_appState, arguments, ct));
             UiState.FrontAsked = true;
         }
     }

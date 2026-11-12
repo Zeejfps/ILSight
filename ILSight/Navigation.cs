@@ -177,13 +177,13 @@ public static class Navigation
     }
 
     /// <summary>Goes to the history entry before the current one, as <see cref="GoToHistoryEntryHandler"/> does.</summary>
-    public static Task GoBackAsync(AppState appState, CancellationToken ct)
+    public static Task<DecompileTicket?> GoBackAsync(AppState appState, CancellationToken ct)
     {
         return appState.GoToHistoryEntryHandler.HandleAsync(appState, appState.History.CurrentIndex - 1, ct);
     }
 
     /// <summary>Goes to the history entry after the current one, as <see cref="GoToHistoryEntryHandler"/> does.</summary>
-    public static Task GoForwardAsync(AppState appState, CancellationToken ct)
+    public static Task<DecompileTicket?> GoForwardAsync(AppState appState, CancellationToken ct)
     {
         return appState.GoToHistoryEntryHandler.HandleAsync(appState, appState.History.CurrentIndex + 1, ct);
     }

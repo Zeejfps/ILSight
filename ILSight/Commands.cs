@@ -58,6 +58,31 @@ public static class Commands
             load.Work.Token);
     }
 
+    /// <summary>Starts bringing in each of <paramref name="loads"/>, as <see cref="StartDecompiling(AppState, DecompileTicket?)"/>
+    /// does: each on a token of its own, which newer work on its tab cancels.</summary>
+    public static void StartDecompiling(AppState appState, List<DecompileTicket> loads)
+    {
+        foreach (var load in loads)
+        {
+            StartDecompiling(appState, load);
+        }
+    }
+
+    /// <summary>Starts <paramref name="show"/> now, as <see cref="WorkflowRunner.Start"/> does, then the load it
+    /// pointed a tab at, if any (<see cref="StartDecompiling(AppState, DecompileTicket?)"/>): the workflow ends where
+    /// the tab shows it loading, since newer work on the tab cancels the load and not the workflow.</summary>
+    public static void StartShowing(AppState appState, string name, Func<CancellationToken, Task<DecompileTicket?>> show)
+    {
+        appState.Workflows.Start(name, async ct => StartDecompiling(appState, await show(ct)));
+    }
+
+    /// <summary>As <see cref="StartShowing(AppState, string, Func{CancellationToken, Task{DecompileTicket?}})"/>, for
+    /// a workflow that points several tabs, then starts each load.</summary>
+    public static void StartShowing(AppState appState, string name, Func<CancellationToken, Task<List<DecompileTicket>>> show)
+    {
+        appState.Workflows.Start(name, async ct => StartDecompiling(appState, await show(ct)));
+    }
+
     /// <summary>Asks for <paramref name="workflow"/> to be started over the app state once the frame is drawn, in its
     /// place among the commands queued, and counted in the app's background work as <paramref name="name"/> until it
     /// ends. It runs on the UI thread up to its first await before the next command does. Pass a <c>static</c>
@@ -75,6 +100,30 @@ public static class Commands
         uiState.AppCommands.Enqueue(CreateStart(name, subject, workflow));
     }
 
+    /// <summary>As <see cref="Start(UiState, string, AppWorkflow)"/>, for a workflow that points a tab at what it is to
+    /// show and returns the load it started there, which is started once the workflow ends
+    /// (<see cref="StartShowing(AppState, string, Func{CancellationToken, Task{DecompileTicket?}})"/>). Pass a
+    /// <c>static</c> lambda.</summary>
+    public static void Start(UiState uiState, string name, Func<AppState, CancellationToken, Task<DecompileTicket?>> show)
+    {
+        uiState.AppCommands.Enqueue(CreateShowing(name, show));
+    }
+
+    /// <summary>As <see cref="Start(UiState, string, Func{AppState, CancellationToken, Task{DecompileTicket?}})"/>, over
+    /// the app state and <paramref name="subject"/>. Pass a <c>static</c> lambda, handing it what it acts on as
+    /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
+    public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task<DecompileTicket?>> show)
+    {
+        uiState.AppCommands.Enqueue(CreateShowing(name, subject, show));
+    }
+
+    /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task{DecompileTicket?}})"/>,
+    /// for a workflow that points several tabs and returns each load it started.</summary>
+    public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task<List<DecompileTicket>>> show)
+    {
+        uiState.AppCommands.Enqueue(CreateShowing(name, subject, show));
+    }
+
     /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task})"/>, for a
     /// workflow that <paramref name="cancelledOnPurposeBy"/> cancels on purpose, such as the token of the work it was
     /// started as, which newer work or closing a dialog cancels: its token fires with it too, and ending cancelled
@@ -82,6 +131,30 @@ public static class Commands
     public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow, CancellationToken cancelledOnPurposeBy)
     {
         uiState.AppCommands.Enqueue(CreateStart(name, subject, workflow, cancelledOnPurposeBy));
+    }
+
+    private static AppCommand CreateShowing(string name, Func<AppState, CancellationToken, Task<DecompileTicket?>> show)
+    {
+        return appState =>
+        {
+            StartShowing(appState, name, ct => show(appState, ct));
+        };
+    }
+
+    private static AppCommand CreateShowing<T>(string name, T subject, Func<AppState, T, CancellationToken, Task<DecompileTicket?>> show)
+    {
+        return appState =>
+        {
+            StartShowing(appState, name, ct => show(appState, subject, ct));
+        };
+    }
+
+    private static AppCommand CreateShowing<T>(string name, T subject, Func<AppState, T, CancellationToken, Task<List<DecompileTicket>>> show)
+    {
+        return appState =>
+        {
+            StartShowing(appState, name, ct => show(appState, subject, ct));
+        };
     }
 
     private static AppCommand CreateStart(string name, AppWorkflow workflow)

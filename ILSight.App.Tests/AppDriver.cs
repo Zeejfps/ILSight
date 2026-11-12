@@ -76,6 +76,19 @@ internal sealed class AppDriver
         Driver.Start(workflow);
     }
 
+    /// <summary>Starts <paramref name="show"/> over the app state now, then the load it returns, as
+    /// <see cref="AppStateDriver.Start(Func{AppState, CancellationToken, Task{DecompileTicket?}})"/> does.</summary>
+    public void Start(Func<AppState, CancellationToken, Task<DecompileTicket?>> show)
+    {
+        Driver.Start(show);
+    }
+
+    /// <summary>Starts <paramref name="show"/> over the app state now, then each load it returns.</summary>
+    public void Start(Func<AppState, CancellationToken, Task<List<DecompileTicket>>> show)
+    {
+        Driver.Start(show);
+    }
+
 
     /// <summary>Waits until the UI is ready, with the background work done and a frame run after it, then runs
     /// <paramref name="frames"/> frames.</summary>

@@ -90,7 +90,7 @@ internal static class BookmarksPanelView
 
         if (body.Activated && panel.Renaming is null)
         {
-            Commands.Later(ui.State, selected, static (a, b) => GoToBookmark(a, b));
+            Commands.Start(ui.State, nameof(GoToBookmarkAsync), selected, static (a, b, ct) => GoToBookmarkAsync(a, b, ct));
         }
 
         if (body.EditRequested && panel.Cells.Column == NameColumn)
@@ -133,12 +133,12 @@ internal static class BookmarksPanelView
         {
             if (ui.IconButton("previous", ui.State.Icons.BookmarksPrevious, t.BookmarksPrevious, any))
             {
-                Commands.Later(ui.State, panel, static (a, p) => Step(p, a, -1));
+                Commands.Start(ui.State, nameof(StepAsync), panel, static (a, p, ct) => StepAsync(p, a, -1, ct));
             }
 
             if (ui.IconButton("next", ui.State.Icons.BookmarksNext, t.BookmarksNext, any))
             {
-                Commands.Later(ui.State, panel, static (a, p) => Step(p, a, 1));
+                Commands.Start(ui.State, nameof(StepAsync), panel, static (a, p, ct) => StepAsync(p, a, 1, ct));
             }
 
             ui.Separator(theme.IconSize);
@@ -261,7 +261,7 @@ internal static class BookmarksPanelView
         var followed = row.TextCell(LocationColumn, bookmark.Location, color, link: new UiIcon(ui.State.Icons.LinkBookmark), linkTooltip: t.BookmarksGoTo);
         if (followed)
         {
-            Commands.Later(ui.State, bookmark, static (a, b) => GoToBookmark(a, b));
+            Commands.Start(ui.State, nameof(GoToBookmarkAsync), bookmark, static (a, b, ct) => GoToBookmarkAsync(a, b, ct));
         }
     }
 
@@ -371,7 +371,7 @@ internal static class BookmarksPanelView
 
         if (ui.MenuItem(t.BookmarksGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.Later(ui.State, bookmark, static (a, b) => GoToBookmark(a, b));
+            Commands.Start(ui.State, nameof(GoToBookmarkAsync), bookmark, static (a, b, ct) => GoToBookmarkAsync(a, b, ct));
         }
 
         if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: panel.Cells.HasCell, id: "copy"))
@@ -450,17 +450,19 @@ internal static class BookmarksPanelView
         TakeRemoved(panel, bookmark, row.Value, bookmarks.Items);
     }
 
-    /// <summary>Goes to the next enabled bookmark after the selected one, or the previous when
-    /// <paramref name="direction"/> is negative, and selects it.</summary>
-    internal static void Step(BookmarksPanel panel, AppState appState, int direction)
+    /// <summary>Selects the next enabled bookmark after the selected one, or the previous when
+    /// <paramref name="direction"/> is negative, and goes to it (<see cref="GoToBookmarkAsync"/>), returning the load
+    /// that started in the tab; null when none is enabled.</summary>
+    internal static Task<DecompileTicket?> StepAsync(BookmarksPanel panel, AppState appState, int direction, CancellationToken ct)
     {
-        var bookmark = StepBookmark(appState, panel.Selected, direction);
+        var bookmark = appState.Bookmarks.FindNext(panel.Selected, direction);
         if (bookmark is null)
         {
-            return;
+            return Task.FromResult<DecompileTicket?>(null);
         }
 
         ItemSelections.Select(panel.Selection, bookmark, appState.Bookmarks.Items);
+        return GoToBookmarkAsync(appState, bookmark, ct);
     }
 
     private static void RenameInPlace(BookmarksPanel panel, Bookmark bookmark)

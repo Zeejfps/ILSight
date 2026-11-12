@@ -15,19 +15,16 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         /// screen (it may read an assembly from disk); a lookup that failed comes back as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
         Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct);
-
-        /// <summary>Brings in what <paramref name="load"/> started loading in its tab and shows it there, commanding
-        /// the view through <paramref name="viewCommands"/> where to stand in it.</summary>
-        Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct);
     }
 
-    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward, returning once
-    /// the node it recorded is decompiled; nothing when there is none there or it is the current one.</summary>
-    public async Task HandleAsync(AppState appState, int index, CancellationToken ct)
+    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward; nothing when
+    /// there is none there or it is the current one. Returns the load that started in the tab, for the edge that
+    /// started this to start under the tab's work; null when none started.</summary>
+    public async Task<DecompileTicket?> HandleAsync(AppState appState, int index, CancellationToken ct)
     {
         if (!CanGoTo(appState, index))
         {
-            return;
+            return null;
         }
 
         LeaveActiveTab(appState);
@@ -35,12 +32,13 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         switch (entry)
         {
             case HistoryEntry.Node node:
-                await RestoreAsync(appState, node, ct);
-                break;
+                return await ShowEntryAsync(appState, node, ct);
             case HistoryEntry.Diagram diagram:
                 BringDiagramToFront(appState, diagram.Shown);
-                break;
+                return null;
         }
+
+        return null;
     }
 
     private static bool CanGoTo(AppState appState, int index)
@@ -56,17 +54,6 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         }
 
         return index != appState.History.CurrentIndex;
-    }
-
-    private async Task RestoreAsync(AppState appState, HistoryEntry.Node entry, CancellationToken ct)
-    {
-        var load = await ShowEntryAsync(appState, entry, ct);
-        if (load is null)
-        {
-            return;
-        }
-
-        await ports.DecompileIntoTabAsync(appState.ViewCommands, load, ct);
     }
 
     /// <summary>Shows the node <paramref name="entry"/> recorded: the one the tab shows when it is still there, else
