@@ -11,7 +11,6 @@ using ILSight.FrameworkArea;
 using ILSight.UserArea;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
-using ILSight.DisplayOptionArea;
 using ILSight.MetadataGridArea;
 using ILSight.NuGetArea;
 using ILSight.SearchArea;

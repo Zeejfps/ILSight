@@ -12,7 +12,6 @@ using ILSight.CodeViewArea;
 using ILSight.BookmarkArea;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
-using ILSight.DisplayOptionArea;
 using ILSight.DiagramArea;
 using ILSight.SettingArea;
 

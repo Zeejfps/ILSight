@@ -1,5 +1,5 @@
 
-namespace ILSight.DisplayOptionArea;
+namespace ILSight;
 
 /// <summary>How the app is drawn, as a settings file can hold it. What it lacks, or holds as null, is
 /// as <see cref="DisplayOptions.Default"/> has it; a font size out of range is brought within it and the

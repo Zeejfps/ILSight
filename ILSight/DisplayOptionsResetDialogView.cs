@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using static ILSight.CodeDisplay;
 
-namespace ILSight.DisplayOptionArea;
+namespace ILSight;
 
 /// <summary>Asks whether to put every display option back to its default before they are reset.</summary>
 internal static class DisplayOptionsResetDialogView

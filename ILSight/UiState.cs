@@ -11,7 +11,6 @@ using ILSight.DocumentViewArea;
 using ILSight.ProcessArea;
 using ILSight.FrameworkArea;
 using ILSight.AssemblyListArea;
-using ILSight.DisplayOptionArea;
 using ILSight.NuGetArea;
 using ILSight.SearchArea;
 using ILSight.MainArea;

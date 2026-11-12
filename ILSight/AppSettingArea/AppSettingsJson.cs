@@ -7,7 +7,6 @@ using ILSight.Core.Diagrams;
 using ILSight.Core.Metadata;
 using ILSight.BookmarkArea;
 using ILSight.AssemblyListArea;
-using ILSight.DisplayOptionArea;
 using ILSight.NuGetArea;
 using ILSight.SettingArea;
 

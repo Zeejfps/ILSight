@@ -9,7 +9,6 @@ using TextOverflow = ZGF.Gui.Immediate.TextOverflow;
 using System.Text;
 using ILSight.BookmarkArea;
 using ILSight.CodeTooltipArea;
-using ILSight.DisplayOptionArea;
 
 namespace ILSight.CodeViewArea;
 

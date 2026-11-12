@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 
-namespace ILSight.DisplayOptionArea;
+namespace ILSight;
 
 /// <summary>How the app is drawn: the scale of the whole interface, 1 for 100%, and whether the window
 /// keeps the system's title bar, with the menus in a bar of their own, rather than the menus drawn in
