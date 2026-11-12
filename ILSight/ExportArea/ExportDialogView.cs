@@ -421,7 +421,7 @@ internal static class ExportDialogView
                 ui.TextField("folder", ref setup.Folder, t.ExportFolderPlaceholder, Sizing.Grow());
                 if (ui.Button(t.ExportBrowse, id: "browse"))
                 {
-                    ui.PickFolder(t.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
+                    PickFolder(ui, setup);
                 }
             }
             var files = FindFiles(ui, setup);
@@ -507,6 +507,21 @@ internal static class ExportDialogView
         }
     }
 
+    /// <summary>Asks for the folder to export to, kept once picked. Its own method, so that the closure is made only
+    /// the frame Browse is pressed.</summary>
+    private static void PickFolder(Ui<UiState> ui, ExportSetup setup)
+    {
+        ui.PickFolder(ui.State.Strings.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
+    }
+
+    /// <summary>Asks for the strong name key file, kept once picked. Its own method, so that the closure is made only
+    /// the frame Browse is pressed.</summary>
+    private static void PickKeyFile(Ui<UiState> ui, ExportSetup setup)
+    {
+        var t = ui.State.Strings;
+        ui.PickFile(t.ExportChooseKeyTitle, null, [new FileFilter(t.FileFilterSnk, ["*.snk"])], path => setup.StrongNameKeyFile = path);
+    }
+
     private static void Signing(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
@@ -517,7 +532,7 @@ internal static class ExportDialogView
             ui.TextField("key-file", ref setup.StrongNameKeyFile, t.ExportKeyFileNone, Sizing.Grow());
             if (ui.Button(t.ExportBrowse, id: "browse-key"))
             {
-                ui.PickFile(t.ExportChooseKeyTitle, null, [new FileFilter(t.FileFilterSnk, ["*.snk"])], path => setup.StrongNameKeyFile = path);
+                PickKeyFile(ui, setup);
             }
         }
         var files = FindFiles(ui, setup);

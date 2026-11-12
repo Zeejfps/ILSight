@@ -164,13 +164,28 @@ internal static class AppFrames
         var closed = browser.UntilClosed;
         foreach (var icon in browser.TakeIconsToFetch())
         {
-            workflows.Start(nameof(FetchNuGetIconHandler), ct => fetchIcon.HandleAsync(icon, ct), closed);
+            StartFetchingIcon(workflows, fetchIcon, icon, closed);
         }
 
         foreach (var details in browser.TakeDetailsToFetch())
         {
-            workflows.Start(nameof(ReadNuGetDetailsHandler), ct => readDetails.HandleAsync(browser, details, ct), closed);
+            StartReadingDetails(workflows, readDetails, browser, details, closed);
         }
+    }
+
+    /// <summary>Starts fetching <paramref name="icon"/>, on a token <paramref name="closed"/> cancels too. Its own
+    /// method, so that the closure is made only for an icon asked for.</summary>
+    private static void StartFetchingIcon(WorkflowRunner workflows, FetchNuGetIconHandler fetchIcon, PackageIconFetch icon, CancellationToken closed)
+    {
+        workflows.Start(nameof(FetchNuGetIconHandler), ct => fetchIcon.HandleAsync(icon, ct), closed);
+    }
+
+    /// <summary>Starts reading <paramref name="details"/>, on a token <paramref name="closed"/> cancels too. Its own
+    /// method, so that the closure is made only for details asked for.</summary>
+    private static void StartReadingDetails(WorkflowRunner workflows, ReadNuGetDetailsHandler readDetails, NuGetBrowser browser,
+        VersionDetailsFetch details, CancellationToken closed)
+    {
+        workflows.Start(nameof(ReadNuGetDetailsHandler), ct => readDetails.HandleAsync(browser, details, ct), closed);
     }
 
     /// <summary>Reads the open assemblies again, as F5 does, when the options that apply as they are read changed.</summary>

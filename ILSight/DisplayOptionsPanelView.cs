@@ -92,12 +92,19 @@ internal static class DisplayOptionsPanelView
 
     private static void ListInstalledFontsOnce(Ui<UiState> ui)
     {
-        var screen = ui.State;
-        if (!CodeDisplay.TryTakeListingRequest(screen.CodeFonts))
+        if (!CodeDisplay.TryTakeListingRequest(ui.State.CodeFonts))
         {
             return;
         }
 
+        ListInstalledFonts(ui);
+    }
+
+    /// <summary>Asks for the fonts installed, kept once listed. Its own method, so that the closure is made only the
+    /// frame the listing is asked for.</summary>
+    private static void ListInstalledFonts(Ui<UiState> ui)
+    {
+        var screen = ui.State;
         ui.ListSystemFonts(families => KeepInstalledFonts(screen, families));
     }
 
