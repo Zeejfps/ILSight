@@ -291,7 +291,7 @@ public static class SavedDocuments
         }
 
         var decompiles = await appState.ShowReopenedNodesHandler.HandleAsync(appState, nodes, ct);
-        return new TabLoads { Decompiles = decompiles, DiagramReads = diagramReads };
+        return TabLoads.From(decompiles, diagramReads);
     }
 
     /// <summary>Shows the diagram <paramref name="reopened"/> showed, adding the read of its cards to

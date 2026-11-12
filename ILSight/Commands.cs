@@ -107,15 +107,7 @@ public static class Commands
     /// (<see cref="ReopenDiagramHandler"/>) on a token that closing the diagram cancels too.</summary>
     public static void StartLoads(AppState appState, TabLoads loads)
     {
-        foreach (var load in loads.Decompiles)
-        {
-            StartDecompiling(appState, load);
-        }
-
-        foreach (var read in loads.DiagramReads)
-        {
-            StartReadingCards(appState, read);
-        }
+        loads.Switch(load => StartDecompiling(appState, load), read => StartReadingCards(appState, read));
     }
 
     private static void StartReadingCards(AppState appState, SavedDiagramRead read)

@@ -16,6 +16,14 @@ public sealed class AssembliesTests
         return Assert.IsType<AssemblyPath>(AssemblyPath.Parse(Path.Combine(Path.GetTempPath(), file)));
     }
 
+    /// <summary>The decompiles among <paramref name="loads"/>.</summary>
+    private static List<DecompileTicket> ListDecompiles(TabLoads loads)
+    {
+        var decompiles = new List<DecompileTicket>();
+        loads.Switch(decompiles.Add, static _ => { });
+        return decompiles;
+    }
+
     [Fact]
     public async Task OpenAssembliesAsync_FileOpened_ShowsItsRoot()
     {
@@ -237,7 +245,7 @@ public sealed class AssembliesTests
         Assert.Equal(location, Assert.IsType<AppProblem.GoneAfterReload>(Assert.Single(ports.Reported)).Location);
         Assert.Null(tab.Node);
         Assert.False(appState.IsReloading);
-        Assert.Empty(loads.Decompiles);
+        Assert.Empty(ListDecompiles(loads));
     }
 
     [Fact]
@@ -251,7 +259,7 @@ public sealed class AssembliesTests
 
         Assert.Same(error, Assert.IsType<AppProblem.AssembliesNotReloaded>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.IsReloading);
-        Assert.Empty(loads.Decompiles);
+        Assert.Empty(ListDecompiles(loads));
     }
 
     [Fact]
@@ -270,7 +278,7 @@ public sealed class AssembliesTests
         Assert.True(Assert.Single(ports.Stops).IsCancellationRequested);
         Assert.Empty(ports.Reported);
         Assert.False(appState.IsReloading);
-        Assert.Empty(loads.Decompiles);
+        Assert.Empty(ListDecompiles(loads));
     }
 
     [Fact]
@@ -284,7 +292,7 @@ public sealed class AssembliesTests
 
         Assert.Same(error, Assert.IsType<AppProblem.OpenFailed>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.IsReloading);
-        Assert.Empty(loads.Decompiles);
+        Assert.Empty(ListDecompiles(loads));
     }
 
     [Fact]
