@@ -95,6 +95,62 @@ public sealed class ComparisonTests
         Assert.False(navigation.IsResolving);
     }
 
+    /// <summary>A driver that opened the fixture assembly, then both versions of the sample library.</summary>
+    private static AppStateDriver OpenWithFixtures()
+    {
+        var d = AppStateDriver.Opened();
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], ct));
+        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
+        d.Settle();
+        return d;
+    }
+
+    [Fact]
+    public void Going_back_from_a_comparison_opened_after_two_places_returns_to_the_second()
+    {
+        var d = OpenWithFixtures();
+        d.Show(d.Fixture("Outline"));
+        d.Show(d.Fixture("Greeter"));
+        Compare(d, LeftPath, RightPath);
+
+        d.GoBack();
+        d.Settle();
+
+        Assert.Equal("Greeter", d.AppState.Navigation.ActiveTab?.Node?.Text);
+    }
+
+    [Fact]
+    public void Going_forward_to_a_comparison_brings_its_tab_to_the_front()
+    {
+        var d = OpenWithFixtures();
+        d.Show(d.Fixture("Greeter"));
+        Compare(d, LeftPath, RightPath);
+        var compared = d.AppState.Navigation.ActiveTab;
+        d.GoBack();
+        d.Settle();
+
+        d.GoForward();
+        d.Settle();
+
+        Assert.NotNull(compared);
+        Assert.Same(compared, d.AppState.Navigation.ActiveTab);
+    }
+
+    [Fact]
+    public void Closing_a_comparison_drops_it_from_the_history()
+    {
+        var d = OpenWithFixtures();
+        d.Show(d.Fixture("Greeter"));
+        Compare(d, LeftPath, RightPath);
+        var compared = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(compared);
+        Assert.Contains(d.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Comparison);
+
+        d.AppState.Navigation.CloseTab(compared);
+
+        Assert.DoesNotContain(d.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Comparison);
+    }
+
     [Fact]
     public void The_assemblies_keep_the_sides_they_were_picked_for_whatever_their_versions()
     {

@@ -3,6 +3,7 @@ using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.Core.Resources;
 using ILSight.AssemblyArea;
+using ILSight.ExportArea;
 
 namespace ILSight;
 
@@ -82,6 +83,9 @@ public sealed class DocumentTab
 
     /// <summary>The comparison the tab shows, or null while it shows none.</summary>
     public AssemblyComparison? Comparison => (Content as TabContent.Comparison)?.Assemblies;
+
+    /// <summary>The export's report the tab shows, or null while it shows none.</summary>
+    public ExportReport? Report => (Content as TabContent.Report)?.Export;
 
     /// <summary>Whether navigating from the tab may show what it is asked for in its place: not while it
     /// shows a diagram or a comparison, which are worked in rather than passed through.</summary>

@@ -9,10 +9,11 @@ using static ILSight.Decompilation;
 namespace ILSight;
 
 /// <summary>Moving through the code: the open tabs, the history of what they showed, the newest thing the user
-/// asked for and whether tabs preview, which change together and which it holds privately. Showing a node, a table
-/// row, a diagram or a comparison in a tab is a new intent (what was still being looked up for an older one is
-/// dropped), and a node's, a row's or a diagram's a place in the history, the place the active tab leaves keeping
-/// where its view stood; restoring a tab after a reload or a reopen is neither (<see cref="Restore"/>). Every change
+/// asked for and whether tabs preview, which change together and which it holds privately. Showing what the user asks
+/// for in a tab (a node, a table row, a diagram, a comparison or an export's report) is a new intent (what was still
+/// being looked up for an older one is dropped) and a place in the history, the place the active tab leaves keeping
+/// where its view stood; restoring a tab after a reload or a reopen is neither (<see cref="Restore"/>), and nor is
+/// the tab the screen opens for a panel of its own (<see cref="OpenEmptyTab"/>). Every change
 /// to the tabs, the history and the intent is one of its methods, and the views that show nodes take it and call them
 /// in the frame of their input. It reads the language and the decompiler options as values it is handed.
 /// What waits on a lookup is a handler of its own: <see cref="NavigateHandler"/>, <see cref="ShowInMetadataHandler"/>,
@@ -23,7 +24,7 @@ public sealed class Navigation
     /// <summary>The open document tabs.</summary>
     private readonly DocumentTabs _tabs = new();
 
-    /// <summary>Back and forward over the places and diagrams the tabs showed.</summary>
+    /// <summary>Back and forward over the places, diagrams, comparisons and reports the tabs showed.</summary>
     private readonly NavigationHistory _history = new();
 
     /// <summary>What the user last asked for, so that an answer to an older ask is dropped.</summary>
@@ -60,7 +61,7 @@ public sealed class Navigation
     /// nothing.</summary>
     public int TabChanges => _tabs.Changes;
 
-    /// <summary>The places and diagrams the tabs showed, oldest first.</summary>
+    /// <summary>The places, diagrams, comparisons and reports the tabs showed, oldest first.</summary>
     public IReadOnlyList<HistoryEntry> HistoryEntries => _history.Entries;
 
     /// <summary>Where in <see cref="HistoryEntries"/> the tabs are now.</summary>
@@ -419,7 +420,8 @@ public sealed class Navigation
     }
 
     /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, in the active tab while it shows
-    /// nothing, else in a new tab, kept open and made the tab the user works in: a new intent. Returns the tab.</summary>
+    /// nothing, else in a new tab, kept open and made the tab the user works in: a new intent, and the comparison a
+    /// place in the history. Returns the tab.</summary>
     public DocumentTab OpenComparison(AssemblyComparison comparison, string title)
     {
         _intent.Begin();
@@ -428,15 +430,20 @@ public sealed class Navigation
         Tabs.ShowComparison(tab, title, comparison);
         Tabs.Keep(_tabs, tab);
         Tabs.MakeActive(_tabs, tab);
+        _history.RecordComparison(comparison, title);
         return tab;
     }
 
-    /// <summary>Shows <paramref name="report"/> in a new tab, made the tab the user works in.</summary>
+    /// <summary>Shows <paramref name="report"/> in a new tab, made the tab the user works in: a new intent, and the
+    /// report a place in the history.</summary>
     public void ShowReport(ExportReport report)
     {
+        _intent.Begin();
+        LeaveActiveTab();
         var tab = OpenNewTab();
         Tabs.MakeActive(_tabs, tab);
         Tabs.ShowReport(tab, report);
+        _history.RecordReport(report);
     }
 
     /// <summary>Opens the tab the app starts with, empty and the tab the user works in.</summary>
@@ -474,8 +481,8 @@ public sealed class Navigation
     }
 
     /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing, unless it is closed already: a new intent,
-    /// and the diagram it shows dropped from the history. Returns whether it was the active tab, which leaves none
-    /// active until the view focuses another.</summary>
+    /// and the diagram, comparison or report it shows dropped from the history unless another tab shows it. Returns
+    /// whether it was the active tab, which leaves none active until the view focuses another.</summary>
     public ClosedTab CloseTab(DocumentTab tab)
     {
         if (!Tabs.IsOpen(_tabs, tab))
@@ -485,22 +492,63 @@ public sealed class Navigation
 
         _intent.Begin();
         var wasActive = tab == _tabs.Active;
-        ForgetDiagramOf(tab);
+        ForgetDocumentOf(tab);
         Tabs.Remove(_tabs, tab);
         return new ClosedTab { WasActive = wasActive };
     }
 
-    /// <summary>Drops the diagram <paramref name="tab"/> shows, which it is about to stop showing, from
-    /// the history.</summary>
-    private void ForgetDiagramOf(DocumentTab tab)
+    /// <summary>Drops the diagram, comparison or report <paramref name="tab"/> shows, which it is about to stop
+    /// showing, from the history, unless another open tab shows it too.</summary>
+    private void ForgetDocumentOf(DocumentTab tab)
     {
         var diagram = tab.Diagram;
-        if (diagram is null)
+        if (diagram is not null && !IsShownBesides(tab, diagram))
         {
-            return;
+            _history.ForgetDiagram(diagram);
         }
 
-        _history.ForgetDiagram(diagram);
+        var comparison = tab.Comparison;
+        if (comparison is not null && !IsShownBesides(tab, comparison))
+        {
+            _history.ForgetComparison(comparison);
+        }
+
+        var report = tab.Report;
+        if (report is not null && !IsShownBesides(tab, report))
+        {
+            _history.ForgetReport(report);
+        }
+    }
+
+    /// <summary>Whether an open tab other than <paramref name="tab"/> shows <paramref name="document"/>, a diagram, a
+    /// comparison or a report.</summary>
+    private bool IsShownBesides(DocumentTab tab, object document)
+    {
+        foreach (var other in _tabs.Open)
+        {
+            if (other != tab && IsShowing(other, document))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Whether <paramref name="tab"/> shows <paramref name="document"/>, a diagram, a comparison or a
+    /// report, the very one.</summary>
+    private static bool IsShowing(DocumentTab tab, object document)
+    {
+        if (ReferenceEquals(tab.Diagram, document))
+        {
+            return true;
+        }
+
+        if (ReferenceEquals(tab.Comparison, document))
+        {
+            return true;
+        }
+
+        return ReferenceEquals(tab.Report, document);
     }
 
     /// <summary>Closes every document tab but the active one, and empties that one; with no tab left
@@ -516,7 +564,7 @@ public sealed class Navigation
             CloseTab(tab);
         }
 
-        ForgetDiagramOf(kept);
+        ForgetDocumentOf(kept);
         Tabs.Clear(kept);
         Tabs.MakeActive(_tabs, kept);
     }
@@ -593,7 +641,13 @@ public sealed class Navigation
             case HistoryEntry.Node node:
                 return ShowEntry(node, assemblies, setup);
             case HistoryEntry.Diagram diagram:
-                BringDiagramToFront(diagram.Shown);
+                BringToFront(diagram.Shown);
+                return null;
+            case HistoryEntry.Comparison comparison:
+                BringToFront(comparison.Shown);
+                return null;
+            case HistoryEntry.Report report:
+                BringToFront(report.Shown);
                 return null;
         }
 
@@ -666,12 +720,12 @@ public sealed class Navigation
         return node;
     }
 
-    /// <summary>Brings the tab showing <paramref name="diagram"/> to the front, dropping what was being
-    /// navigated to meanwhile.</summary>
-    private void BringDiagramToFront(TypeDiagram diagram)
+    /// <summary>Brings the tab showing <paramref name="document"/>, the diagram, comparison or report of the history
+    /// entry gone to, to the front, dropping what was being navigated to meanwhile.</summary>
+    private void BringToFront(object document)
     {
         _intent.Begin();
-        var tab = FindTabShowing(diagram);
+        var tab = FindTabShowing(document);
         if (tab is null)
         {
             return;
@@ -681,11 +735,13 @@ public sealed class Navigation
         ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
-    private DocumentTab? FindTabShowing(TypeDiagram diagram)
+    /// <summary>The open tab showing <paramref name="document"/>, a diagram, a comparison or a report; null when none
+    /// does.</summary>
+    private DocumentTab? FindTabShowing(object document)
     {
         foreach (var tab in _tabs.Open)
         {
-            if (tab.Diagram == diagram)
+            if (IsShowing(tab, document))
             {
                 return tab;
             }

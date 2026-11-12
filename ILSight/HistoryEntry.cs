@@ -1,8 +1,11 @@
 using ILSight.Core;
+using ILSight.AssemblyArea;
+using ILSight.ExportArea;
 
 namespace ILSight;
 
-/// <summary>Something navigated to: a node's place, or a diagram.</summary>
+/// <summary>Something the user asked a tab to show: a node's place, a diagram, a comparison or an export's
+/// report.</summary>
 public abstract record HistoryEntry
 {
     private HistoryEntry()
@@ -31,4 +34,18 @@ public abstract record HistoryEntry
 
     /// <summary>A diagram worked in, under the title of its tab.</summary>
     public sealed record Diagram(TypeDiagram Shown, string Title) : HistoryEntry;
+
+    /// <summary>A comparison of two assemblies' APIs worked in, under the title of its tab.</summary>
+    public sealed record Comparison : HistoryEntry
+    {
+        public required AssemblyComparison Shown { get; init; }
+
+        public required string Title { get; init; }
+    }
+
+    /// <summary>An export's report, shown in a tab of its own.</summary>
+    public sealed record Report : HistoryEntry
+    {
+        public required ExportReport Shown { get; init; }
+    }
 }

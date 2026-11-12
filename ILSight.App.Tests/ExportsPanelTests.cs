@@ -302,6 +302,40 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
+    public void Showing_a_report_is_a_new_intent_that_refuses_what_was_still_being_looked_up()
+    {
+        var d = AppStateDriver.Opened();
+        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        d.Settle();
+        var lookup = d.AppState.Navigation.BeginResolving(inNewTab: false);
+
+        ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
+
+        Assert.True(d.AppState.Navigation.IsStale(lookup.Intent));
+        Assert.False(d.AppState.Navigation.IsResolving);
+    }
+
+    [Fact]
+    public void Going_back_to_a_report_brings_its_tab_to_the_front_and_closing_it_drops_it_from_the_history()
+    {
+        var d = AppStateDriver.Opened();
+        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        d.Settle();
+        ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
+        var report = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(report);
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
+
+        d.GoBack();
+        d.Settle();
+        var back = d.AppState.Navigation.ActiveTab;
+        d.AppState.Navigation.CloseTab(report);
+
+        Assert.Same(report, back);
+        Assert.DoesNotContain(d.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Report);
+    }
+
+    [Fact]
     public void The_report_tab_stays_as_it_is_when_the_language_changes()
     {
         var d = AppStateDriver.Opened();

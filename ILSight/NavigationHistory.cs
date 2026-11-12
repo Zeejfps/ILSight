@@ -1,9 +1,12 @@
 using ILSight.Core;
+using ILSight.AssemblyArea;
+using ILSight.ExportArea;
 
 namespace ILSight;
 
-/// <summary>Back/forward over the places and diagrams navigated to. Places are kept as paths so they
-/// outlive reloads and pin no assembly; a diagram is forgotten once its tab closes.</summary>
+/// <summary>Back/forward over the places, diagrams, comparisons and reports navigated to. Places are kept as paths
+/// so they outlive reloads and pin no assembly; a diagram, a comparison or a report is forgotten once no tab shows
+/// it.</summary>
 public sealed class NavigationHistory
 {
     private const int Capacity = 200;
@@ -69,6 +72,29 @@ public sealed class NavigationHistory
         _entries.Add(new HistoryEntry.Diagram(diagram, title));
     }
 
+    /// <summary>Records <paramref name="comparison"/>, titled <paramref name="title"/>, as worked in now, dropping what
+    /// was forward of the current entry.</summary>
+    public void RecordComparison(AssemblyComparison comparison, string title)
+    {
+        if (Current is HistoryEntry.Comparison current && current.Shown == comparison)
+        {
+            return;
+        }
+
+        _entries.Add(new HistoryEntry.Comparison { Shown = comparison, Title = title });
+    }
+
+    /// <summary>Records <paramref name="report"/> as shown now, dropping what was forward of the current entry.</summary>
+    public void RecordReport(ExportReport report)
+    {
+        if (Current is HistoryEntry.Report current && current.Shown == report)
+        {
+            return;
+        }
+
+        _entries.Add(new HistoryEntry.Report { Shown = report });
+    }
+
     /// <summary>Forgets every place.</summary>
     public void Clear()
     {
@@ -87,6 +113,45 @@ public sealed class NavigationHistory
             }
 
             if (entry.Shown != diagram)
+            {
+                continue;
+            }
+
+            _entries.RemoveAt(i);
+        }
+    }
+
+    /// <summary>Forgets <paramref name="comparison"/>, closed for good, as <see cref="ForgetDiagram"/> does.</summary>
+    public void ForgetComparison(AssemblyComparison comparison)
+    {
+        for (var i = _entries.Count - 1; i >= 0; i--)
+        {
+            if (_entries[i] is not HistoryEntry.Comparison entry)
+            {
+                continue;
+            }
+
+            if (entry.Shown != comparison)
+            {
+                continue;
+            }
+
+            _entries.RemoveAt(i);
+        }
+    }
+
+    /// <summary>Forgets <paramref name="report"/>, which no tab shows any more, as <see cref="ForgetDiagram"/>
+    /// does.</summary>
+    public void ForgetReport(ExportReport report)
+    {
+        for (var i = _entries.Count - 1; i >= 0; i--)
+        {
+            if (_entries[i] is not HistoryEntry.Report entry)
+            {
+                continue;
+            }
+
+            if (entry.Shown != report)
             {
                 continue;
             }

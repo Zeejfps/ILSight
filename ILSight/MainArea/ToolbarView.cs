@@ -231,7 +231,7 @@ internal static class ToolbarView
             using (ui.Id(i))
             {
                 var entry = entries[i];
-                var text = TextOf(entry);
+                var text = TextOf(ui.State.Strings, entry);
                 var icon = IconOf(ui.State, entry);
                 if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
@@ -242,12 +242,14 @@ internal static class ToolbarView
         }
     }
 
-    private static string TextOf(HistoryEntry entry)
+    private static string TextOf(Strings strings, HistoryEntry entry)
     {
         return entry switch
         {
             HistoryEntry.Node node => node.Place.Label,
             HistoryEntry.Diagram diagram => diagram.Title,
+            HistoryEntry.Comparison comparison => comparison.Title,
+            HistoryEntry.Report => strings.ExportReportTitle,
             _ => throw new UnreachableException(),
         };
     }
@@ -258,6 +260,7 @@ internal static class ToolbarView
         {
             HistoryEntry.Node node => NodeIcons.Icon(node.Icon, node.Accessibility, screen.NodeIconPalette, screen.Icons),
             HistoryEntry.Diagram => new UiIcon(screen.Icons.TabDiagram),
+            HistoryEntry.Comparison or HistoryEntry.Report => new UiIcon(screen.Icons.TabPage),
             _ => throw new UnreachableException(),
         };
     }
