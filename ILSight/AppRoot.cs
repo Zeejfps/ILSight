@@ -13,6 +13,8 @@ namespace ILSight;
 [Edge]
 internal static class AppRoot
 {
+    private const string LicensesFolder = "licenses";
+
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, over
     /// <paramref name="session"/>, told of what was wrong with the settings, with <paramref name="arguments"/>
     /// followed. The screen is built over this; the files they name open once the app runs.</summary>
@@ -175,6 +177,7 @@ internal static class AppRoot
             Omnibar = new Omnibar { Search = new Search() },
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
             Runtime = runtime,
+            ShippedLicenses = FindShippedLicenses(),
             Picker = new FrameworkPicker { Browser = new FrameworkBrowser(new FrameworkPickerAdapter(reportError, runtime)) },
             NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser(new NuGetBrowserAdapter(reportError, new NuGetClient(nuGetRequests))) },
             ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(new ProcessBrowserAdapter(reportError)) },
@@ -184,5 +187,17 @@ internal static class AppRoot
         };
         ScreenLayout.ConnectLayout(uiState);
         return uiState;
+    }
+
+    /// <summary>The folder of the licenses the app ships beside it; null when it ships none there.</summary>
+    private static string? FindShippedLicenses()
+    {
+        var folder = Path.Combine(AppContext.BaseDirectory, LicensesFolder);
+        if (!Directory.Exists(folder))
+        {
+            return null;
+        }
+
+        return folder;
     }
 }

@@ -175,6 +175,10 @@ public sealed class UiState : IUiState
     /// <summary>What this machine has installed.</summary>
     public required InstalledRuntime Runtime { get; init; }
 
+    /// <summary>The folder of the licenses the app ships beside it, which the about dialog opens; null when it
+    /// ships none there.</summary>
+    public required string? ShippedLicenses { get; init; }
+
     /// <summary>The dialog that picks the assembly to compare another with.</summary>
     public ComparisonPicker ComparisonPicker { get; } = new();
 

@@ -11,11 +11,8 @@ namespace ILSight;
 internal static class AboutDialogView
 {
     internal const string AppName = "ILSight";
-    private const string LicensesFolder = "licenses";
     private const float IconScale = 4f;
     private const float NameScale = 1.25f;
-
-    private static readonly string? ShippedLicenses = FindShippedLicenses();
 
     public static void Render(Ui<UiState> ui, AppState appState)
     {
@@ -208,7 +205,8 @@ internal static class AboutDialogView
     private static void LicensesButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
-        if (ShippedLicenses is null)
+        var licenses = ui.State.ShippedLicenses;
+        if (licenses is null)
         {
             return;
         }
@@ -216,18 +214,7 @@ internal static class AboutDialogView
         var icon = new UiIcon(ui.State.Icons.AboutOpenLicensesFolder);
         if (ui.Button(t.AboutLicenses, id: "about-licenses", variant: ButtonVariant.Neutral, icon: icon))
         {
-            ui.OpenFolder(ShippedLicenses);
+            ui.OpenFolder(licenses);
         }
-    }
-
-    private static string? FindShippedLicenses()
-    {
-        var folder = Path.Combine(AppContext.BaseDirectory, LicensesFolder);
-        if (!Directory.Exists(folder))
-        {
-            return null;
-        }
-
-        return folder;
     }
 }
