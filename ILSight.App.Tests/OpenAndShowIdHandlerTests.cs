@@ -4,34 +4,12 @@ namespace ILSight.App.Tests;
 
 public sealed class OpenAndShowIdHandlerTests
 {
-    /// <summary>Opens nothing and finds <see cref="Found"/>, doing <see cref="WhileOpening"/> meanwhile; keeps the
-    /// problems reported.</summary>
-    private sealed class FakeOpening : OpenAndShowIdHandler.IPorts
-    {
-        public required Outcome<BrowseNode?> Found { get; init; }
-
-        public Action WhileOpening { get; init; } = static () => { };
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<BrowseNode?>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
-        {
-            WhileOpening();
-            return Task.FromResult(Found);
-        }
-    }
-
     [Fact]
     public async Task HandleAsync_IdFound_ShowsTheNode()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var greeter = d.Fixture("Greeter");
-        var opening = new FakeOpening { Found = new Outcome<BrowseNode?>.Ok(greeter) };
+        var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(greeter) };
 
         var load = await new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None);
 
@@ -44,7 +22,7 @@ public sealed class OpenAndShowIdHandlerTests
     public async Task HandleAsync_IdNotFound_ReportsTheId()
     {
         var d = AppStateDriver.WithoutScreen();
-        var opening = new FakeOpening { Found = new Outcome<BrowseNode?>.Ok(null) };
+        var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
 
         var load = await new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Nowhere.Missing", CancellationToken.None);
 
@@ -59,8 +37,8 @@ public sealed class OpenAndShowIdHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.Tabs.Active?.Node;
         var appState = d.AppState;
-        var found = new FakeOpening { Found = new Outcome<BrowseNode?>.Ok(d.Fixture("Greeter")), WhileOpening = () => appState.Intent.Begin() };
-        var missing = new FakeOpening { Found = new Outcome<BrowseNode?>.Ok(null), WhileOpening = () => appState.Intent.Begin() };
+        var found = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(d.Fixture("Greeter")), WhileOpening = () => appState.Intent.Begin() };
+        var missing = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileOpening = () => appState.Intent.Begin() };
 
         var foundLoad = await new OpenAndShowIdHandler(found).HandleAsync(appState, [], "T:Greeter", CancellationToken.None);
         var missingLoad = await new OpenAndShowIdHandler(missing).HandleAsync(appState, [], "T:Nowhere.Missing", CancellationToken.None);
@@ -76,8 +54,8 @@ public sealed class OpenAndShowIdHandlerTests
     public async Task HandleAsync_OpeningFailed_ReportsItUnlessItWasCancelled()
     {
         var d = AppStateDriver.WithoutScreen();
-        var failed = new FakeOpening { Found = new Outcome<BrowseNode?>.Failed(new IOException("unreadable")) };
-        var cancelled = new FakeOpening { Found = new Outcome<BrowseNode?>.Failed(new OperationCanceledException()) };
+        var failed = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(new IOException("unreadable")) };
+        var cancelled = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(new OperationCanceledException()) };
 
         var failedLoad = await new OpenAndShowIdHandler(failed).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None);
         var cancelledLoad = await new OpenAndShowIdHandler(cancelled).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None);

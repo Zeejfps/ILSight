@@ -4,38 +4,6 @@ namespace ILSight.App.Tests;
 
 public sealed class BookmarkImportingTests
 {
-    /// <summary>Reads the file the test gave it, looks up places when the test says, lets the cancellation of the
-    /// token it was asked with through, as the adapter does; keeps what it was asked and the problems reported.</summary>
-    private sealed class FakeFiles : BookmarkImporting.IPorts
-    {
-        public required BookmarksRead File { get; init; }
-
-        public List<string> Read { get; } = [];
-
-        public List<TaskCompletionSource<Outcome<List<NodePath?>>>> Answers { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public BookmarksRead ReadBookmarks(string path)
-        {
-            Read.Add(path);
-            return File;
-        }
-
-        public Task<Outcome<List<NodePath?>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
-        {
-            var answer = new TaskCompletionSource<Outcome<List<NodePath?>>>();
-            ct.Register(() => answer.TrySetCanceled(ct));
-            Answers.Add(answer);
-            return answer.Task;
-        }
-    }
-
     private const string Path = "C:/bookmarks/exported.json";
 
     /// <summary>Two bookmarks, as a file keeps them, of the fixture Outline's "return First();" and "foreach"
@@ -70,7 +38,7 @@ public sealed class BookmarkImportingTests
     public async Task ImportAsync_NoBookmarksYet_TakesThoseFoundAtOnceAndReportsTheLost()
     {
         var file = TwoBookmarks();
-        var ports = new FakeFiles { File = FileOf(file) };
+        var ports = new FakeBookmarkImportingPorts { File = FileOf(file) };
         var bookmarks = new BookmarkList();
         var imports = new BookmarkImports();
 
@@ -92,7 +60,7 @@ public sealed class BookmarkImportingTests
     public async Task ImportAsync_BookmarksThere_WaitsForTheUserToSayHow()
     {
         var file = TwoBookmarks();
-        var ports = new FakeFiles { File = FileOf(file) };
+        var ports = new FakeBookmarkImportingPorts { File = FileOf(file) };
         var bookmarks = new BookmarkList();
         bookmarks.TryAdd(file[0]);
         var imports = new BookmarkImports();
@@ -111,7 +79,7 @@ public sealed class BookmarkImportingTests
     public async Task FinishImport_Replace_TakesThemAndReportsThoseLeftOut()
     {
         var file = TwoBookmarks();
-        var ports = new FakeFiles { File = FileOf([file[0], file[0], file[1]]) };
+        var ports = new FakeBookmarkImportingPorts { File = FileOf([file[0], file[0], file[1]]) };
         var bookmarks = new BookmarkList();
         bookmarks.TryAdd(file[1]);
         var imports = new BookmarkImports();
@@ -132,7 +100,7 @@ public sealed class BookmarkImportingTests
     [Fact]
     public async Task ImportAsync_NotBookmarksFile_ReportsItAndLooksUpNothing()
     {
-        var ports = new FakeFiles { File = new BookmarksRead.NotBookmarksFile() };
+        var ports = new FakeBookmarkImportingPorts { File = new BookmarksRead.NotBookmarksFile() };
         var bookmarks = new BookmarkList();
         var imports = new BookmarkImports();
 
@@ -147,7 +115,7 @@ public sealed class BookmarkImportingTests
     [Fact]
     public async Task ImportAsync_LookupFailed_ReportsTheFileNotImported()
     {
-        var ports = new FakeFiles { File = FileOf(TwoBookmarks()) };
+        var ports = new FakeBookmarkImportingPorts { File = FileOf(TwoBookmarks()) };
         var bookmarks = new BookmarkList();
         var imports = new BookmarkImports();
 

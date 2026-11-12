@@ -6,144 +6,6 @@ namespace ILSight.App.Tests;
 
 public sealed class AssembliesTests
 {
-    /// <summary>Answers each port member of <see cref="AssemblyOpening"/> with what the test set, doing
-    /// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, and the problems
-    /// reported.</summary>
-    private sealed class FakeOpeningPorts : AssemblyOpening.IPorts
-    {
-        public Outcome<LoadedAssembly?> Opened { get; init; } = new Outcome<LoadedAssembly?>.Ok(null);
-
-        public Outcome<List<LoadedModule>> ReferencesOpened { get; init; } = new Outcome<List<LoadedModule>>.Ok([]);
-
-        public IReadOnlyCollection<string> Files { get; init; } = [];
-
-        public Action WhileWorking { get; init; } = static () => { };
-
-        public List<string> Asked { get; } = [];
-
-        public List<IReadOnlyList<AssemblyPath>> OpenedPaths { get; } = [];
-
-        public List<CancellationToken> Stops { get; } = [];
-
-        public List<CancellationToken> Tokens { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public bool IsFile(string path)
-        {
-            return Files.Contains(path);
-        }
-
-        public Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
-        {
-            OpenedPaths.Add(paths);
-            Stops.Add(stop);
-            return AnswerAsync(nameof(OpenFilesAsync), Opened, ct);
-        }
-
-        public Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct)
-        {
-            Stops.Add(stop);
-            return AnswerAsync(nameof(OpenReferencesAsync), ReferencesOpened, ct);
-        }
-
-        private Task<T> AnswerAsync<T>(string member, T answer, CancellationToken ct)
-        {
-            Asked.Add(member);
-            Tokens.Add(ct);
-            WhileWorking();
-            return Task.FromResult(answer);
-        }
-    }
-
-    /// <summary>Answers each port member of <see cref="AssemblyReloading"/> with what the test set, doing
-    /// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, and the problems
-    /// reported.</summary>
-    private sealed class FakeReloadingPorts : AssemblyReloading.IPorts
-    {
-        public Outcome<PdbCheck> PdbChecked { get; init; } = new Outcome<PdbCheck>.Ok(PdbCheck.Matches);
-
-        public Func<LoadedAssembly, IReadOnlyList<NodePath>, Outcome<ReopenedFile>> ReadAgain { get; init; } =
-            static (_, _) => new Outcome<ReopenedFile>.Failed(new IOException("Reading again was not expected."));
-
-        public Func<IReadOnlyList<NodePath>, Outcome<ReloadedNodes>> Reopen { get; init; } =
-            static _ => new Outcome<ReloadedNodes>.Failed(new IOException("Reopening was not expected."));
-
-        public Action WhileWorking { get; init; } = static () => { };
-
-        public List<string> Asked { get; } = [];
-
-        public List<IReadOnlyList<AssemblyPath>> OpenedPaths { get; } = [];
-
-        public List<CancellationToken> Stops { get; } = [];
-
-        public List<CancellationToken> Tokens { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<PdbCheck>> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
-        {
-            return AnswerAsync(nameof(CheckPdbAsync), PdbChecked, ct);
-        }
-
-        public Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
-        {
-            return AnswerAsync(nameof(ReadAgainAsync), ReadAgain(item, places), ct);
-        }
-
-        public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
-            CancellationToken stop, CancellationToken ct)
-        {
-            OpenedPaths.Add(paths);
-            Stops.Add(stop);
-            return AnswerAsync(nameof(ReopenFilesAsync), Reopen(places), ct);
-        }
-
-        private Task<T> AnswerAsync<T>(string member, T answer, CancellationToken ct)
-        {
-            Asked.Add(member);
-            Tokens.Add(ct);
-            WhileWorking();
-            return Task.FromResult(answer);
-        }
-    }
-
-    /// <summary>Answers <see cref="OpenAssembliesAsReloadHandler"/>'s opening with what the test set, doing
-    /// <see cref="WhileWorking"/> before it answers; keeps the stop tokens it was asked with and the problems
-    /// reported.</summary>
-    private sealed class FakeOpeningAsReloadPorts : OpenAssembliesAsReloadHandler.IPorts
-    {
-        public required Outcome<LoadedAssembly?> Opened { get; init; }
-
-        public Action WhileWorking { get; init; } = static () => { };
-
-        public List<CancellationToken> Stops { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
-        {
-            Stops.Add(stop);
-            WhileWorking();
-            return Task.FromResult(Opened);
-        }
-    }
-
     private static LoadedModule FixturesOf(AppStateDriver d)
     {
         return d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
@@ -160,7 +22,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Greeter"));
         var fixtures = FixturesOf(d);
-        var ports = new FakeOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(fixtures) };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(fixtures) };
         using var shutdown = new CancellationTokenSource();
         var path = PathTo("Opened.dll");
 
@@ -180,8 +42,8 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.Tabs.Active?.Node;
         var error = new IOException("unreadable");
-        var failed = new FakeOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
-        var cancelled = new FakeOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new OperationCanceledException()) };
+        var failed = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
+        var cancelled = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new OperationCanceledException()) };
 
         var failedLoad = await new AssemblyOpening(failed).OpenAssembliesAsync(d.AppState, [PathTo("Failing.dll")], CancellationToken.None);
         var cancelledLoad = await new AssemblyOpening(cancelled).OpenAssembliesAsync(d.AppState, [PathTo("Cancelled.dll")], CancellationToken.None);
@@ -200,7 +62,7 @@ public sealed class AssembliesTests
         d.Show(d.Fixture("Greeter"));
         var shown = d.AppState.Tabs.Active?.Node;
         var appState = d.AppState;
-        var ports = new FakeOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)), WhileWorking = () => appState.Intent.Begin() };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)), WhileWorking = () => appState.Intent.Begin() };
 
         var load = await new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Opened.dll")], CancellationToken.None);
 
@@ -213,7 +75,7 @@ public sealed class AssembliesTests
     public async Task OpenAssembliesAsync_NoFiles_OpensNothing()
     {
         var d = AppStateDriver.WithoutScreen();
-        var ports = new FakeOpeningPorts();
+        var ports = new FakeAssemblyOpeningPorts();
 
         var load = await new AssemblyOpening(ports).OpenAssembliesAsync(d.AppState, [], CancellationToken.None);
 
@@ -227,7 +89,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.WithoutScreen();
         var file = PathTo("Dropped.dll");
         var folder = PathTo("Folder");
-        var ports = new FakeOpeningPorts { Files = [file.Text] };
+        var ports = new FakeAssemblyOpeningPorts { Files = [file.Text] };
 
         var load = await new AssemblyOpening(ports).OpenDroppedFilesAsync(d.AppState, [folder.Text, file.Text], CancellationToken.None);
 
@@ -241,8 +103,8 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var fixtures = FixturesOf(d);
         var error = new IOException("unreadable");
-        var failed = new FakeOpeningPorts { ReferencesOpened = new Outcome<List<LoadedModule>>.Failed(error) };
-        var cancelled = new FakeOpeningPorts { ReferencesOpened = new Outcome<List<LoadedModule>>.Failed(new OperationCanceledException()) };
+        var failed = new FakeAssemblyOpeningPorts { ReferencesOpened = new Outcome<List<LoadedModule>>.Failed(error) };
+        var cancelled = new FakeAssemblyOpeningPorts { ReferencesOpened = new Outcome<List<LoadedModule>>.Failed(new OperationCanceledException()) };
 
         await new AssemblyOpening(failed).OpenDependenciesAsync(d.AppState.Opens, fixtures, CancellationToken.None);
         await new AssemblyOpening(cancelled).OpenDependenciesAsync(d.AppState.Opens, fixtures, CancellationToken.None);
@@ -257,8 +119,8 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var fixtures = FixturesOf(d);
-        var otherBuild = new FakeReloadingPorts { PdbChecked = new Outcome<PdbCheck>.Ok(PdbCheck.OtherBuild) };
-        var failed = new FakeReloadingPorts { PdbChecked = new Outcome<PdbCheck>.Failed(new IOException("unreadable")) };
+        var otherBuild = new FakeAssemblyReloadingPorts { PdbChecked = new Outcome<PdbCheck>.Ok(PdbCheck.OtherBuild) };
+        var failed = new FakeAssemblyReloadingPorts { PdbChecked = new Outcome<PdbCheck>.Failed(new IOException("unreadable")) };
 
         var otherBuildLoads = await new AssemblyReloading(otherBuild).UsePdbAsync(d.AppState, fixtures, "other.pdb", CancellationToken.None);
         var failedLoads = await new AssemblyReloading(failed).UsePdbAsync(d.AppState, fixtures, "broken.pdb", CancellationToken.None);
@@ -280,7 +142,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var fixtures = FixturesOf(d);
         var error = new IOException("unreadable");
-        var ports = new FakeReloadingPorts { ReadAgain = (_, _) => new Outcome<ReopenedFile>.Failed(error) };
+        var ports = new FakeAssemblyReloadingPorts { ReadAgain = (_, _) => new Outcome<ReopenedFile>.Failed(error) };
         using var shutdown = new CancellationTokenSource();
 
         var loads = await new AssemblyReloading(ports).UsePdbAsync(d.AppState, fixtures, "matching.pdb", shutdown.Token);
@@ -298,7 +160,7 @@ public sealed class AssembliesTests
     public async Task SetTargetFrameworkAsync_FrameworkInUse_ReadsNothingAgain()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var ports = new FakeReloadingPorts();
+        var ports = new FakeAssemblyReloadingPorts();
 
         var loads = await new AssemblyReloading(ports).SetTargetFrameworkAsync(d.AppState, FixturesOf(d), null, CancellationToken.None);
 
@@ -315,7 +177,7 @@ public sealed class AssembliesTests
         var fixtures = FixturesOf(d);
         var tab = appState.Tabs.Active;
         Assert.NotNull(tab);
-        var ports = new FakeReloadingPorts { ReadAgain = (item, places) => ReadAgain(appState, item, places) };
+        var ports = new FakeAssemblyReloadingPorts { ReadAgain = (item, places) => ReadAgain(appState, item, places) };
 
         var loads = await new AssemblyReloading(ports).SetTargetFrameworkAsync(appState, fixtures, Frameworks.Net48, CancellationToken.None);
 
@@ -343,7 +205,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         var fixtures = FixturesOf(d);
-        var ports = new FakeReloadingPorts
+        var ports = new FakeAssemblyReloadingPorts
         {
             ReadAgain = (_, _) => new Outcome<ReopenedFile>.Failed(new IOException("unreadable")),
             WhileWorking = () => appState.Reopens.Start(fixtures.FilePath),
@@ -365,7 +227,7 @@ public sealed class AssembliesTests
         Assert.NotNull(tab);
         var location = tab.Location;
         Assert.NotNull(location);
-        var ports = new FakeReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = new BrowseNode?[places.Count] }) };
+        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = new BrowseNode?[places.Count] }) };
         using var shutdown = new CancellationTokenSource();
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState, [], shutdown.Token);
@@ -383,7 +245,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var error = new IOException("unreadable");
-        var ports = new FakeReloadingPorts { Reopen = _ => new Outcome<ReloadedNodes>.Failed(error) };
+        var ports = new FakeAssemblyReloadingPorts { Reopen = _ => new Outcome<ReloadedNodes>.Failed(error) };
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(d.AppState, [], CancellationToken.None);
 
@@ -397,7 +259,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
-        var ports = new FakeReloadingPorts
+        var ports = new FakeAssemblyReloadingPorts
         {
             Reopen = _ => new Outcome<ReloadedNodes>.Failed(new OperationCanceledException()),
             WhileWorking = () => d.Start(static (a, ct) => CloseAllAssembliesAsync(a, ct)),
@@ -416,7 +278,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.WithoutScreen();
         var error = new IOException("unreadable");
-        var ports = new FakeOpeningAsReloadPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
+        var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
 
         var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState, [PathTo("Listed.dll")], CancellationToken.None);
 
@@ -430,7 +292,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.WithoutScreen();
         var appState = d.AppState;
-        var ports = new FakeOpeningAsReloadPorts
+        var ports = new FakeOpenAssembliesAsReloadHandlerPorts
         {
             Opened = new Outcome<LoadedAssembly?>.Failed(new OperationCanceledException()),
 #pragma warning disable RL0807 // a newer reload only supersedes this one here: nothing runs under its ticket

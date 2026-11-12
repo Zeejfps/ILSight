@@ -4,31 +4,6 @@ namespace ILSight.App.Tests;
 
 public sealed class NavigateHandlerTests
 {
-    /// <summary>Finds <see cref="Found"/> for any reference, doing <see cref="WhileLooking"/> meanwhile; keeps the
-    /// references looked up and the problems reported.</summary>
-    private sealed class FakeLookup : NavigateHandler.IPorts
-    {
-        public required Outcome<BrowseNode?> Found { get; init; }
-
-        public Action WhileLooking { get; init; } = static () => { };
-
-        public List<CodeReference.Navigable> LookedUp { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<BrowseNode?>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
-        {
-            LookedUp.Add(reference);
-            WhileLooking();
-            return Task.FromResult(Found);
-        }
-    }
-
     [Fact]
     public async Task HandleAsync_ReferenceFound_ShowsItAndRecordsItInTheHistory()
     {
@@ -37,7 +12,7 @@ public sealed class NavigateHandlerTests
         var farewell = d.Fixture("Farewell");
         var reference = farewell.Definition;
         var resolvingWhileLooking = false;
-        var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => resolvingWhileLooking = appState.IsResolving };
+        var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => resolvingWhileLooking = appState.IsResolving };
 
         var load = await new NavigateHandler(lookup).HandleAsync(appState, reference, inNewTab: false, CancellationToken.None);
 
@@ -57,8 +32,8 @@ public sealed class NavigateHandlerTests
         var shown = d.AppState.Tabs.Active?.Node;
         var reference = d.Fixture("Farewell").Definition;
         var error = new IOException("unreadable");
-        var missing = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(null) };
-        var failed = new FakeLookup { Found = new Outcome<BrowseNode?>.Failed(error) };
+        var missing = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
+        var failed = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(error) };
 
         var missingLoad = await new NavigateHandler(missing).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
         var failedLoad = await new NavigateHandler(failed).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
@@ -80,8 +55,8 @@ public sealed class NavigateHandlerTests
         var appState = d.AppState;
         var shown = appState.Tabs.Active?.Node;
         var farewell = d.Fixture("Farewell");
-        var found = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => appState.Intent.Begin() };
-        var missing = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => appState.Intent.Begin() };
+        var found = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => appState.Intent.Begin() };
+        var missing = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => appState.Intent.Begin() };
 
         var foundLoad = await new NavigateHandler(found).HandleAsync(appState, farewell.Definition, inNewTab: false, CancellationToken.None);
         var missingLoad = await new NavigateHandler(missing).HandleAsync(appState, farewell.Definition, inNewTab: false, CancellationToken.None);

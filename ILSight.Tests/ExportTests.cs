@@ -17,31 +17,6 @@ public sealed class ExportTests : IDisposable
         _temp.Dispose();
     }
 
-    /// <summary>Every report, in the order they came, from whichever thread sent them.</summary>
-    private sealed class RecordedProgress : IProgress<ExportProgress>
-    {
-        private readonly List<ExportProgress> _reports = new();
-
-        public List<ExportProgress> Reports
-        {
-            get
-            {
-                lock (_reports)
-                {
-                    return _reports.ToList();
-                }
-            }
-        }
-
-        public void Report(ExportProgress value)
-        {
-            lock (_reports)
-            {
-                _reports.Add(value);
-            }
-        }
-    }
-
     [Fact]
     public void A_type_saves_as_the_code_it_shows()
     {

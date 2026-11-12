@@ -480,22 +480,6 @@ public sealed class AppStateTests
         Assert.Equal(["Search failed"], reported);
     }
 
-    /// <summary>A search's stream that yields nothing until it is told to fail, whatever cancels it.</summary>
-    private sealed class HeldSearch
-    {
-        private readonly TaskCompletionSource<IReadOnlyList<SearchResult>> _next = new();
-
-        public async IAsyncEnumerable<IReadOnlyList<SearchResult>> StreamAsync()
-        {
-            yield return await _next.Task;
-        }
-
-        public void Fail()
-        {
-            _next.SetException(new InvalidOperationException("The search broke."));
-        }
-    }
-
     [Fact]
     public void Search_selection_moves_by_keys_within_the_results()
     {

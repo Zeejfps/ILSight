@@ -4,24 +4,6 @@ namespace ILSight.App.Tests;
 
 public sealed class ShowReopenedNodesHandlerTests
 {
-    /// <summary>Looks up whatever places it is asked for when the test says, lets the cancellation of the token it
-    /// was asked with through, as the adapter does; keeps what it was asked.</summary>
-    private sealed class FakeLookup : ShowReopenedNodesHandler.IPorts
-    {
-        public List<IReadOnlyList<NodePath?>> Asked { get; } = [];
-
-        public List<TaskCompletionSource<Outcome<List<BrowseNode?>>>> Answers { get; } = [];
-
-        public Task<Outcome<List<BrowseNode?>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
-        {
-            var answer = new TaskCompletionSource<Outcome<List<BrowseNode?>>>();
-            ct.Register(() => answer.TrySetCanceled(ct));
-            Asked.Add(places);
-            Answers.Add(answer);
-            return answer.Task;
-        }
-    }
-
     /// <summary>A tab of <paramref name="d"/>'s reopened to wait for the fixture Greeter, as the saved documents
     /// keep it.</summary>
     private static WaitingNode WaitForGreeter(AppStateDriver d)
@@ -40,7 +22,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var waiting = WaitForGreeter(d);
         var greeter = d.Fixture("Greeter");
-        var ports = new FakeLookup();
+        var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, [waiting], CancellationToken.None);
         Assert.True(d.AppState.IsFindingDocuments);
@@ -60,7 +42,7 @@ public sealed class ShowReopenedNodesHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var waiting = WaitForGreeter(d);
-        var ports = new FakeLookup();
+        var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, [waiting], CancellationToken.None);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<BrowseNode?>>.Failed(new InvalidOperationException("Unreadable.")));
@@ -76,7 +58,7 @@ public sealed class ShowReopenedNodesHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var waiting = WaitForGreeter(d);
-        var ports = new FakeLookup();
+        var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, [waiting], CancellationToken.None);
         Tabs.Clear(waiting.Reopened.Tab);
@@ -91,7 +73,7 @@ public sealed class ShowReopenedNodesHandlerTests
     public async Task HandleAsync_NoneWaiting_LooksUpNothing()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var ports = new FakeLookup();
+        var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var loads = await new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, [], CancellationToken.None);
 

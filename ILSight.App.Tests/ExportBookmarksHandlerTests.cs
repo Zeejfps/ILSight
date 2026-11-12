@@ -2,28 +2,6 @@ namespace ILSight.App.Tests;
 
 public sealed class ExportBookmarksHandlerTests
 {
-    /// <summary>Writes nothing, answering as the test says; keeps what it was asked to write and the problems
-    /// reported.</summary>
-    private sealed class FakeFile : ExportBookmarksHandler.IPorts
-    {
-        public required BookmarksWriteResult Answer { get; init; }
-
-        public List<(string Path, List<BookmarkRecord> Records)> Written { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public BookmarksWriteResult WriteBookmarks(string path, List<BookmarkRecord> records)
-        {
-            Written.Add((path, records));
-            return Answer;
-        }
-    }
-
     private const string Path = "C:/bookmarks/exported.json";
 
     private static BookmarkList OutlineBookmarked()
@@ -40,7 +18,7 @@ public sealed class ExportBookmarksHandlerTests
     public void Handle_Written_WritesEachBookmarkAndReportsNothing()
     {
         var bookmarks = OutlineBookmarked();
-        var ports = new FakeFile { Answer = new BookmarksWriteResult.Written() };
+        var ports = new FakeExportBookmarksHandlerPorts { Answer = new BookmarksWriteResult.Written() };
 
         new ExportBookmarksHandler(ports).Handle(bookmarks, Path);
 
@@ -54,7 +32,7 @@ public sealed class ExportBookmarksHandlerTests
     public void Handle_WriteFailed_ReportsWhy()
     {
         var bookmarks = OutlineBookmarked();
-        var ports = new FakeFile { Answer = new BookmarksWriteResult.Failed { Reason = "Disk full." } };
+        var ports = new FakeExportBookmarksHandlerPorts { Answer = new BookmarksWriteResult.Failed { Reason = "Disk full." } };
 
         new ExportBookmarksHandler(ports).Handle(bookmarks, Path);
 

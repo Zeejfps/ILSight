@@ -5,28 +5,6 @@ namespace ILSight.App.Tests;
 
 public sealed class LayOutDiagramHandlerTests
 {
-    /// <summary>Lays out whatever it is asked to when the test says, lets the cancellation of the token it was asked
-    /// with through, as the adapter does; keeps what it was asked and the problems reported.</summary>
-    private sealed class FakeLayouts : LayOutDiagramHandler.IPorts
-    {
-        public List<TaskCompletionSource<Outcome<TypeLayout>>> Answers { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<TypeLayout>> ArrangeAsync(DiagramMeasures measures, CancellationToken ct)
-        {
-            var answer = new TaskCompletionSource<Outcome<TypeLayout>>();
-            ct.Register(() => answer.TrySetCanceled(ct));
-            Answers.Add(answer);
-            return answer.Task;
-        }
-    }
-
     private static DiagramMeasures MeasuresOf(params CodeReference.Entity[] types)
     {
         var cards = types
@@ -42,7 +20,7 @@ public sealed class LayOutDiagramHandlerTests
         var vehicle = d.Fixture("Vehicle").Definition;
         var car = d.Fixture("Car").Definition;
         var diagram = new TypeDiagram();
-        var ports = new FakeLayouts();
+        var ports = new FakeLayOutDiagramHandlerPorts();
         var handler = new LayOutDiagramHandler(ports);
         var older = Diagrams.StartLayout(diagram);
         Assert.NotNull(older);
@@ -71,7 +49,7 @@ public sealed class LayOutDiagramHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
-        var ports = new FakeLayouts();
+        var ports = new FakeLayOutDiagramHandlerPorts();
         var layout = Diagrams.StartLayout(diagram);
         Assert.NotNull(layout);
         var error = new InvalidOperationException("No room.");

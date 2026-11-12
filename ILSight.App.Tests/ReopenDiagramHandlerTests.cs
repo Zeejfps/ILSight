@@ -1,35 +1,9 @@
-using ILSight.Core;
 using ILSight.Core.Diagrams;
 
 namespace ILSight.App.Tests;
 
 public sealed class ReopenDiagramHandlerTests
 {
-    /// <summary>Reads whatever it is asked to when the test says, lets the cancellation of the token it was asked
-    /// with through, as the adapter does; keeps what it was asked and the problems reported.</summary>
-    private sealed class FakeCards : ReopenDiagramHandler.IPorts
-    {
-        public List<TaskCompletionSource<Outcome<List<TypeCard>>>> Answers { get; } = [];
-
-        public List<IReadOnlyList<TypeAnchor>> Asked { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<List<TypeCard>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
-        {
-            var answer = new TaskCompletionSource<Outcome<List<TypeCard>>>();
-            ct.Register(() => answer.TrySetCanceled(ct));
-            Asked.Add(types);
-            Answers.Add(answer);
-            return answer.Task;
-        }
-    }
-
     /// <summary>A tab of <paramref name="d"/>'s, reopened to wait for a diagram of the fixture Vehicle titled
     /// "Vehicle diagram", and the read of its cards that reopening it started.</summary>
     private static SavedDiagramRead Reopen(AppStateDriver d)
@@ -50,7 +24,7 @@ public sealed class ReopenDiagramHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var read = Reopen(d);
-        var ports = new FakeCards();
+        var ports = new FakeReopenDiagramHandlerPorts();
         var vehicle = TypeCards.Read(d.AppState.Assemblies, d.Fixture("Vehicle").Definition);
         Assert.NotNull(vehicle);
         Assert.True(read.Diagram.IsBusy);
@@ -71,7 +45,7 @@ public sealed class ReopenDiagramHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var read = Reopen(d);
-        var ports = new FakeCards();
+        var ports = new FakeReopenDiagramHandlerPorts();
 
         var reading = new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None);
         Tabs.Clear(read.Reopened.Tab);
@@ -87,7 +61,7 @@ public sealed class ReopenDiagramHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var read = Reopen(d);
-        var ports = new FakeCards();
+        var ports = new FakeReopenDiagramHandlerPorts();
         var error = new InvalidOperationException("Unreadable.");
 
         var reading = new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None);

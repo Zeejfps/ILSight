@@ -5,35 +5,13 @@ namespace ILSight.App.Tests;
 
 public sealed class ShowInMetadataHandlerTests
 {
-    /// <summary>Finds <see cref="Found"/> for any reference, doing <see cref="WhileLooking"/> meanwhile; keeps the
-    /// problems reported.</summary>
-    private sealed class FakeLookup : ShowInMetadataHandler.IPorts
-    {
-        public required Outcome<MetadataTarget?> Found { get; init; }
-
-        public Action WhileLooking { get; init; } = static () => { };
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<MetadataTarget?>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
-        {
-            WhileLooking();
-            return Task.FromResult(Found);
-        }
-    }
-
     [Fact]
     public async Task HandleAsync_RowFound_ShowsTheTableItIsIn()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var reference = d.Fixture("Greeter").Definition;
         var row = Assert.NotNull(NodeLookup.FindMetadataRow(d.AppState.Assemblies, d.AppState.Session, reference));
-        var lookup = new FakeLookup { Found = new Outcome<MetadataTarget?>.Ok(row) };
+        var lookup = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(row) };
 
         var load = await new ShowInMetadataHandler(lookup).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
 
@@ -50,8 +28,8 @@ public sealed class ShowInMetadataHandlerTests
         var shown = d.AppState.Tabs.Active?.Node;
         var reference = d.Fixture("Greeter").Definition;
         var error = new IOException("unreadable");
-        var missing = new FakeLookup { Found = new Outcome<MetadataTarget?>.Ok(null) };
-        var failed = new FakeLookup { Found = new Outcome<MetadataTarget?>.Failed(error) };
+        var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(null) };
+        var failed = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Failed(error) };
 
         var missingLoad = await new ShowInMetadataHandler(missing).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
         var failedLoad = await new ShowInMetadataHandler(failed).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
@@ -72,8 +50,8 @@ public sealed class ShowInMetadataHandlerTests
         var shown = appState.Tabs.Active?.Node;
         var reference = d.Fixture("Greeter").Definition;
         var row = NodeLookup.FindMetadataRow(appState.Assemblies, appState.Session, reference);
-        var found = new FakeLookup { Found = new Outcome<MetadataTarget?>.Ok(row), WhileLooking = () => appState.Intent.Begin() };
-        var missing = new FakeLookup { Found = new Outcome<MetadataTarget?>.Ok(null), WhileLooking = () => appState.Intent.Begin() };
+        var found = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(row), WhileLooking = () => appState.Intent.Begin() };
+        var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(null), WhileLooking = () => appState.Intent.Begin() };
 
         var foundLoad = await new ShowInMetadataHandler(found).HandleAsync(appState, reference, inNewTab: false, CancellationToken.None);
         var missingLoad = await new ShowInMetadataHandler(missing).HandleAsync(appState, reference, inNewTab: false, CancellationToken.None);

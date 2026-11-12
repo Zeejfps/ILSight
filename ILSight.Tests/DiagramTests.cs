@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using ILSight.Core;
 using ILSight.Core.Diagrams;
 
 namespace ILSight.Tests;
@@ -99,20 +98,12 @@ public sealed class DiagramTests : IDisposable
     [Fact]
     public void Progress_counts_up_to_every_type()
     {
-        var reports = new List<ExportProgress>();
-        var progress = new Progress(reports);
+        var progress = new RecordedProgress();
 
         ClassDiagrams.BuildModel(Trees.TestAssembly, progress, CancellationToken.None);
 
+        var reports = progress.Reports;
         Assert.Equal(1f, reports[^1].Fraction);
         Assert.True(reports.Count > 1);
-    }
-
-    private sealed class Progress(List<ExportProgress> reports) : IProgress<ExportProgress>
-    {
-        public void Report(ExportProgress value)
-        {
-            reports.Add(value);
-        }
     }
 }

@@ -4,31 +4,6 @@ namespace ILSight.App.Tests;
 
 public sealed class GoToHistoryEntryHandlerTests
 {
-    /// <summary>Finds <see cref="Found"/> for any place, doing <see cref="WhileLooking"/> meanwhile; keeps the
-    /// places looked up and the problems reported.</summary>
-    private sealed class FakeLookup : GoToHistoryEntryHandler.IPorts
-    {
-        public required Outcome<BrowseNode?> Found { get; init; }
-
-        public Action WhileLooking { get; init; } = static () => { };
-
-        public List<NodePath> LookedUp { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
-        {
-            LookedUp.Add(place);
-            WhileLooking();
-            return Task.FromResult(Found);
-        }
-    }
-
     /// <summary>A driver that showed Greeter, then Farewell in its place, so that going back to Greeter looks it up.</summary>
     private static AppStateDriver ShowGreeterThenFarewell()
     {
@@ -49,7 +24,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var d = ShowGreeterThenFarewell();
         var greeter = d.Fixture("Greeter");
         var back = d.AppState.History.CurrentIndex - 1;
-        var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(greeter) };
+        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(greeter) };
 
         var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
 
@@ -67,7 +42,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var d = ShowGreeterThenFarewell();
         var farewell = d.Fixture("Farewell");
         var back = d.AppState.History.CurrentIndex - 1;
-        var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(null) };
+        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
 
         var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
 
@@ -85,7 +60,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var d = ShowGreeterThenFarewell();
         var back = d.AppState.History.CurrentIndex - 1;
         var error = new IOException("unreadable");
-        var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Failed(error) };
+        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(error) };
 
         var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
 
@@ -99,8 +74,8 @@ public sealed class GoToHistoryEntryHandlerTests
     {
         var found = ShowGreeterThenFarewell();
         var missing = ShowGreeterThenFarewell();
-        var foundLookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(found.Fixture("Greeter")), WhileLooking = () => found.AppState.Intent.Begin() };
-        var missingLookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => missing.AppState.Intent.Begin() };
+        var foundLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(found.Fixture("Greeter")), WhileLooking = () => found.AppState.Intent.Begin() };
+        var missingLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => missing.AppState.Intent.Begin() };
 
         var foundLoad = await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState, found.AppState.History.CurrentIndex - 1, CancellationToken.None);
         var missingLoad = await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState, missing.AppState.History.CurrentIndex - 1, CancellationToken.None);

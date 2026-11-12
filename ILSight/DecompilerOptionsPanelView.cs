@@ -14,7 +14,6 @@ namespace ILSight;
 /// marked in their labels and the groups' titles, and a group's box then sets only the toggles shown.</summary>
 internal static class DecompilerOptionsPanelView
 {
-
     private static readonly DecompilerOptionSection[] Sections = BuildSections();
 
     private static readonly CSharpVersion Newest = Sections.Max(static s => FindVersion(s.Group) ?? 0);

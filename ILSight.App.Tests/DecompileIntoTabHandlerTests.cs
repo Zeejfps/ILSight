@@ -4,38 +4,6 @@ namespace ILSight.App.Tests;
 
 public sealed class DecompileIntoTabHandlerTests
 {
-    /// <summary>Decompiles whatever it is asked to when the test says, lets the cancellation of the token it was
-    /// asked with through, as the adapter does; keeps what it was asked and the problems reported.</summary>
-    private sealed class FakeDecompiler : DecompileIntoTabHandler.IPorts
-    {
-        public List<Request> Requests { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<NodeContent>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, CancellationToken ct)
-        {
-            var answer = new TaskCompletionSource<Outcome<NodeContent>>();
-            ct.Register(() => answer.TrySetCanceled(ct));
-            Requests.Add(new Request { Node = node, Language = language, Answer = answer });
-            return answer.Task;
-        }
-    }
-
-    /// <summary>What the handler asked the decompiler for, and where the test answers it.</summary>
-    private sealed record Request
-    {
-        public required BrowseNode Node { get; init; }
-
-        public required DecompilationLanguage Language { get; init; }
-
-        public required TaskCompletionSource<Outcome<NodeContent>> Answer { get; init; }
-    }
-
     private static readonly ViewPosition AtLineTen = ViewPosition.OfCode(new CodeViewPosition(10, 0f, default, default));
 
     /// <summary>Cancels <paramref name="shutdown"/> at once, on this thread, as the workflow runner does as the app
@@ -56,7 +24,7 @@ public sealed class DecompileIntoTabHandlerTests
         var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
         var tab = new DocumentTab();
         var viewCommands = new Queue<ViewCommand>();
-        var ports = new FakeDecompiler();
+        var ports = new FakeDecompileIntoTabHandlerPorts();
         var load = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.IL, DecompilerOptions.Default,
             new Arrival(AtLineTen));
         Assert.NotNull(load);
@@ -83,7 +51,7 @@ public sealed class DecompileIntoTabHandlerTests
         var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
         var tab = new DocumentTab();
         var viewCommands = new Queue<ViewCommand>();
-        var ports = new FakeDecompiler();
+        var ports = new FakeDecompileIntoTabHandlerPorts();
         var load = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.CSharp, DecompilerOptions.Default,
             new Arrival(AtLineTen));
         Assert.NotNull(load);
@@ -108,7 +76,7 @@ public sealed class DecompileIntoTabHandlerTests
         var farewell = d.Fixture("Farewell");
         var tab = new DocumentTab();
         var viewCommands = new Queue<ViewCommand>();
-        var ports = new FakeDecompiler();
+        var ports = new FakeDecompileIntoTabHandlerPorts();
         var handler = new DecompileIntoTabHandler(ports);
         var older = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.CSharp, DecompilerOptions.Default);
         Assert.NotNull(older);
@@ -137,7 +105,7 @@ public sealed class DecompileIntoTabHandlerTests
         var tabs = new DocumentTabs();
         var tab = Tabs.AddNew(tabs);
         var viewCommands = new Queue<ViewCommand>();
-        var ports = new FakeDecompiler();
+        var ports = new FakeDecompileIntoTabHandlerPorts();
         var load = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.CSharp, DecompilerOptions.Default);
         Assert.NotNull(load);
 
@@ -158,7 +126,7 @@ public sealed class DecompileIntoTabHandlerTests
         var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
         var tab = new DocumentTab();
         var viewCommands = new Queue<ViewCommand>();
-        var ports = new FakeDecompiler();
+        var ports = new FakeDecompileIntoTabHandlerPorts();
         var load = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.CSharp, DecompilerOptions.Default);
         Assert.NotNull(load);
         using var shutdown = new CancellationTokenSource();

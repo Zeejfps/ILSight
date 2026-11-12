@@ -1,6 +1,4 @@
-using Velopack;
 using ZGF.Desktop;
-using ZGF.Gui;
 using ZGF.Gui.Testing;
 using ILSight.Localization;
 using static ILSight.AppFrames;
@@ -18,85 +16,7 @@ public sealed class UpdateTests : IDisposable
         _temp.Dispose();
     }
 
-    /// <summary>A feed that answers from memory, and can be made to fail at any step.</summary>
-    private sealed class FakeFeed(string? newest) : AppUpdates.IPorts
-    {
-        public bool IsInstalledCopy { get; init; } = true;
-        public bool FailsToFind { get; init; }
-        public bool FailsToDownload { get; init; }
-        public bool FailsToApply { get; init; }
-        public int Finds { get; private set; }
-        public UpdateInfo? Downloaded { get; private set; }
-        public UpdateInfo? Applied { get; private set; }
-
-        public bool IsInstalled()
-        {
-            return IsInstalledCopy;
-        }
-
-        public Task<Outcome<UpdateInfo?>> LookUpUpdateAsync(CancellationToken ct)
-        {
-            Finds++;
-            if (FailsToFind)
-            {
-                return Task.FromResult<Outcome<UpdateInfo?>>(new Outcome<UpdateInfo?>.Failed(new HttpRequestException("Offline")));
-            }
-
-            if (newest is null)
-            {
-                return Task.FromResult<Outcome<UpdateInfo?>>(new Outcome<UpdateInfo?>.Ok(null));
-            }
-
-            return Task.FromResult<Outcome<UpdateInfo?>>(new Outcome<UpdateInfo?>.Ok(new UpdateInfo(new VelopackAsset { Version = SemanticVersion.Parse(newest) }, false)));
-        }
-
-        public Task<bool> TryDownloadAsync(UpdateInfo update, CancellationToken ct)
-        {
-            if (FailsToDownload)
-            {
-                return Task.FromResult(false);
-            }
-
-            Downloaded = update;
-            return Task.FromResult(true);
-        }
-
-        public Task<bool> TryApplyAfterExitAsync(UpdateInfo update, CancellationToken ct)
-        {
-            if (FailsToApply)
-            {
-                return Task.FromResult(false);
-            }
-
-            Applied = update;
-            return Task.FromResult(true);
-        }
-    }
-
-    /// <summary>As wide as the app's font draws Latin text, which the default 8px a character overstates:
-    /// the test of what fits has to go by what the window would show.</summary>
-    private sealed class AppFontWidths : ITextMeasurer
-    {
-        private const float CharacterWidth = 6.5f;
-        private const float LineHeight = 16f;
-
-        public float MeasureTextWidth(ReadOnlySpan<char> text, TextStyle style)
-        {
-            return text.Length * CharacterWidth;
-        }
-
-        public float MeasureTextPrefix(ReadOnlySpan<char> text, int prefixLength, TextStyle style)
-        {
-            return Math.Clamp(prefixLength, 0, text.Length) * CharacterWidth;
-        }
-
-        public float MeasureTextLineHeight(TextStyle style)
-        {
-            return LineHeight;
-        }
-    }
-
-    private static AppDriver Opened(FakeFeed feed, bool checkAutomatically = true, ITextMeasurer? measurer = null)
+    private static AppDriver Opened(FakeAppUpdatesPorts feed, bool checkAutomatically = true, ITextMeasurer? measurer = null)
     {
         var app = AppDriver.Opened(width: 1600f, measurer: measurer);
         app.AppState.Updates = new AppUpdates(feed);
@@ -124,7 +44,7 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void A_copy_that_is_not_installed_looks_for_nothing()
     {
-        var feed = new FakeFeed("9.0.0") { IsInstalledCopy = false };
+        var feed = new FakeAppUpdatesPorts("9.0.0") { IsInstalledCopy = false };
         var app = Opened(feed);
 
         CheckForUpdatesOnStartup(app.AppState);
@@ -139,7 +59,7 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void A_newer_version_found_at_startup_is_downloaded_and_offered_in_the_status_bar()
     {
-        var feed = new FakeFeed("9.0.0");
+        var feed = new FakeAppUpdatesPorts("9.0.0");
         var app = Opened(feed);
 
         CheckForUpdatesOnStartup(app.AppState);
@@ -153,7 +73,7 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void Turned_off_the_startup_check_looks_for_nothing()
     {
-        var feed = new FakeFeed("9.0.0");
+        var feed = new FakeAppUpdatesPorts("9.0.0");
         var app = Opened(feed, checkAutomatically: false);
 
         CheckForUpdatesOnStartup(app.AppState);
@@ -165,8 +85,8 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void A_startup_check_keeps_quiet_when_there_is_nothing_new_or_it_fails()
     {
-        var uneventful = Opened(new FakeFeed(null));
-        var failing = Opened(new FakeFeed("9.0.0") { FailsToFind = true });
+        var uneventful = Opened(new FakeAppUpdatesPorts(null));
+        var failing = Opened(new FakeAppUpdatesPorts("9.0.0") { FailsToFind = true });
 
         CheckForUpdatesOnStartup(uneventful.AppState);
         CheckForUpdatesOnStartup(failing.AppState);
@@ -179,7 +99,7 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void Asking_says_when_this_is_the_newest_version()
     {
-        var app = Opened(new FakeFeed(null));
+        var app = Opened(new FakeAppUpdatesPorts(null));
         OpenAbout(app);
 
         ClickCheckForUpdates(app);
@@ -194,7 +114,7 @@ public sealed class UpdateTests : IDisposable
     [InlineData(false, true)]
     public void Asking_says_when_the_check_or_the_download_failed_and_can_be_tried_again(bool failsToFind, bool failsToDownload)
     {
-        var app = Opened(new FakeFeed("9.0.0") { FailsToFind = failsToFind, FailsToDownload = failsToDownload });
+        var app = Opened(new FakeAppUpdatesPorts("9.0.0") { FailsToFind = failsToFind, FailsToDownload = failsToDownload });
         OpenAbout(app);
 
         ClickCheckForUpdates(app);
@@ -209,8 +129,8 @@ public sealed class UpdateTests : IDisposable
     [MemberData(nameof(AllLocales))]
     public void What_came_of_asking_leaves_the_about_dialog_as_tall_as_it_was(Locale locale)
     {
-        var uneventful = Opened(new FakeFeed(null), measurer: new AppFontWidths());
-        var failing = Opened(new FakeFeed("9.0.0") { FailsToFind = true }, measurer: new AppFontWidths());
+        var uneventful = Opened(new FakeAppUpdatesPorts(null), measurer: new AppFontWidths());
+        var failing = Opened(new FakeAppUpdatesPorts("9.0.0") { FailsToFind = true }, measurer: new AppFontWidths());
 
         var closeBefore = OpenAboutIn(uneventful, locale);
         OpenAboutIn(failing, locale);
@@ -256,7 +176,7 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void Restarting_starts_the_updater_and_then_closes_the_app()
     {
-        var feed = new FakeFeed("9.0.0");
+        var feed = new FakeAppUpdatesPorts("9.0.0");
         var app = Opened(feed);
         OpenAbout(app);
         ClickCheckForUpdates(app);
@@ -272,7 +192,7 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void A_restart_the_updater_could_not_start_leaves_the_app_open_and_says_so()
     {
-        var app = Opened(new FakeFeed("9.0.0") { FailsToApply = true });
+        var app = Opened(new FakeAppUpdatesPorts("9.0.0") { FailsToApply = true });
         OpenAbout(app);
         ClickCheckForUpdates(app);
         AwaitStatus<UpdateStatus.Ready>(app);

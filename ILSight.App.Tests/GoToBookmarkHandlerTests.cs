@@ -4,31 +4,6 @@ namespace ILSight.App.Tests;
 
 public sealed class GoToBookmarkHandlerTests
 {
-    /// <summary>Looks up whatever place it is asked for when the test says, lets the cancellation of the token it was
-    /// asked with through, as the adapter does; keeps what it was asked and the problems reported.</summary>
-    private sealed class FakeLookup : GoToBookmarkHandler.IPorts
-    {
-        public List<NodePath> Asked { get; } = [];
-
-        public List<TaskCompletionSource<Outcome<BrowseNode?>>> Answers { get; } = [];
-
-        public List<AppProblem> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(problem);
-        }
-
-        public Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
-        {
-            var answer = new TaskCompletionSource<Outcome<BrowseNode?>>();
-            ct.Register(() => answer.TrySetCanceled(ct));
-            Asked.Add(place);
-            Answers.Add(answer);
-            return answer.Task;
-        }
-    }
-
     /// <summary>A driver with no screen that shows the fixture Outline with its "return First();" line bookmarked,
     /// then the fixture Greeter; and the bookmark.</summary>
     private static (AppStateDriver Driver, Bookmark Bookmark) Bookmarked()
@@ -47,7 +22,7 @@ public sealed class GoToBookmarkHandlerTests
     {
         var (d, bookmark) = Bookmarked();
         var outline = d.Fixture("Outline");
-        var ports = new FakeLookup();
+        var ports = new FakeGoToBookmarkHandlerPorts();
         var history = d.AppState.History.Entries.Count;
 
         var going = new GoToBookmarkHandler(ports).HandleAsync(d.AppState, bookmark, CancellationToken.None);
@@ -68,7 +43,7 @@ public sealed class GoToBookmarkHandlerTests
     public async Task HandleAsync_PlaceGone_ReportsTheBookmarkGone()
     {
         var (d, bookmark) = Bookmarked();
-        var ports = new FakeLookup();
+        var ports = new FakeGoToBookmarkHandlerPorts();
 
         var going = new GoToBookmarkHandler(ports).HandleAsync(d.AppState, bookmark, CancellationToken.None);
         Assert.Single(ports.Answers).SetResult(new Outcome<BrowseNode?>.Ok(null));
@@ -85,7 +60,7 @@ public sealed class GoToBookmarkHandlerTests
     public async Task HandleAsync_SomethingElseAskedForMeanwhile_ShowsAndReportsNothing()
     {
         var (d, bookmark) = Bookmarked();
-        var ports = new FakeLookup();
+        var ports = new FakeGoToBookmarkHandlerPorts();
         var shown = d.AppState.Tabs.Active;
 
         var going = new GoToBookmarkHandler(ports).HandleAsync(d.AppState, bookmark, CancellationToken.None);

@@ -6,37 +6,7 @@ namespace ILSight.App.Tests;
 
 public sealed class FrameworkPickerTests
 {
-    /// <summary>A runtime that has <see cref="Assemblies"/>, or fails to be scanned with <see cref="Failure"/>;
-    /// counts the scans and keeps the titles of the problems reported.</summary>
-    private sealed class FakeRuntime : FrameworkBrowser.IPorts
-    {
-        public IReadOnlyList<RuntimeAssembly> Assemblies { get; init; } = [];
-
-        public Exception? Failure { get; set; }
-
-        public int Scans { get; private set; }
-
-        public List<string> Reported { get; } = [];
-
-        public void ReportError(AppProblem problem)
-        {
-            Reported.Add(ProblemTexts.Describe(Strings.En, problem).Title);
-        }
-
-        public Task<Outcome<IReadOnlyList<RuntimeAssembly>>> ListAssembliesAsync(CancellationToken ct)
-        {
-            Scans++;
-            var failure = Failure;
-            if (failure is not null)
-            {
-                return Task.FromResult<Outcome<IReadOnlyList<RuntimeAssembly>>>(new Outcome<IReadOnlyList<RuntimeAssembly>>.Failed(failure));
-            }
-
-            return Task.FromResult<Outcome<IReadOnlyList<RuntimeAssembly>>>(new Outcome<IReadOnlyList<RuntimeAssembly>>.Ok(Assemblies));
-        }
-    }
-
-    private static FrameworkPicker CreatePicker(FakeRuntime runtime)
+    private static FrameworkPicker CreatePicker(FakeFrameworkBrowserPorts runtime)
     {
         return new FrameworkPicker { Browser = new FrameworkBrowser(runtime) };
     }
@@ -56,7 +26,7 @@ public sealed class FrameworkPickerTests
     [Fact]
     public async Task A_failed_scan_ends_loading_with_an_error_and_reports_it()
     {
-        var runtime = new FakeRuntime { Failure = new InvalidDataException("no runtime") };
+        var runtime = new FakeFrameworkBrowserPorts { Failure = new InvalidDataException("no runtime") };
         var picker = CreatePicker(runtime);
 
         await OpenAsync(picker);
@@ -68,7 +38,7 @@ public sealed class FrameworkPickerTests
     [Fact]
     public async Task Opening_again_scans_again_only_after_a_failed_scan()
     {
-        var runtime = new FakeRuntime { Failure = new InvalidDataException("no runtime") };
+        var runtime = new FakeFrameworkBrowserPorts { Failure = new InvalidDataException("no runtime") };
         var picker = CreatePicker(runtime);
         await OpenAsync(picker);
         picker.IsOpen = false;
@@ -86,7 +56,7 @@ public sealed class FrameworkPickerTests
     [Fact]
     public async Task Opening_again_after_a_failed_scan_shows_it_scanning_from_that_frame()
     {
-        var runtime = new FakeRuntime { Failure = new InvalidDataException("no runtime") };
+        var runtime = new FakeFrameworkBrowserPorts { Failure = new InvalidDataException("no runtime") };
         var picker = CreatePicker(runtime);
         await OpenAsync(picker);
         picker.IsOpen = false;
@@ -104,7 +74,7 @@ public sealed class FrameworkPickerTests
     [Fact]
     public async Task The_filter_takes_focus_once_each_time_the_dialog_opens()
     {
-        var picker = CreatePicker(new FakeRuntime());
+        var picker = CreatePicker(new FakeFrameworkBrowserPorts());
 
         await OpenAsync(picker);
         var first = picker.Browser.TryTakeFilterFocus();
@@ -125,7 +95,7 @@ public sealed class FrameworkPickerTests
             new RuntimeAssembly("System.Net.Sockets", "Microsoft.NETCore.App", FakePath("b.dll")),
             new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll")),
         };
-        var picker = CreatePicker(new FakeRuntime { Assemblies = assemblies });
+        var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = assemblies });
         var list = new AssemblyList();
         await OpenAsync(picker);
         picker.Update(list);
@@ -142,7 +112,7 @@ public sealed class FrameworkPickerTests
     {
         var open = new RuntimeAssembly("Fixtures", "Microsoft.NETCore.App", PathOf(AppStateDriver.FixturePath));
         var other = new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll"));
-        var picker = CreatePicker(new FakeRuntime { Assemblies = [open, other] });
+        var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = [open, other] });
         var list = new AssemblyList();
         await OpenAsync(picker);
         picker.Update(list);
