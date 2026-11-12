@@ -181,8 +181,9 @@ internal static class NuGetPickerView
             return;
         }
 
-        foreach (var source in sources)
+        for (var sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
         {
+            var source = sources[sourceIndex];
             var current = source.Url.Text == picker.FeedUrl;
             if (ui.MenuRadioItem(source.Name, current, id: source.Url.Text))
             {

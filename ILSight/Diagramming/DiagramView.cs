@@ -612,8 +612,10 @@ internal static class DiagramView
             return;
         }
 
-        foreach (var route in layout.Routes)
+        var routes = layout.Routes;
+        for (var routeIndex = 0; routeIndex < routes.Count; routeIndex++)
         {
+            var route = routes[routeIndex];
             if (!ConnectsShownCards(diagram, route.Link))
             {
                 continue;
@@ -918,8 +920,10 @@ internal static class DiagramView
         var isDashed = link.Kind == TypeLinkKind.Implements;
         var dash = isDashed ? DashLength * frame.Zoom : 0f;
         var gap = isDashed ? GapLength * frame.Zoom : 0f;
-        foreach (var piece in link.Route.Pieces)
+        var pieces = link.Route.Pieces;
+        for (var pieceIndex = 0; pieceIndex < pieces.Count; pieceIndex++)
         {
+            var piece = pieces[pieceIndex];
             PaintPiece(p, frame, piece, color, stroke, dash, gap);
         }
 

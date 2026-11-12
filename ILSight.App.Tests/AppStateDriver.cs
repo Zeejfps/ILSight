@@ -209,14 +209,14 @@ internal sealed class AppStateDriver
     /// starts decompiling it there, without waiting for that.</summary>
     public void StartShowing(BrowseNode node, bool inNewTab = false)
     {
-        Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Language, AppState.DecompilerOptions, inNewTab));
+        Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Decompiler, inNewTab));
     }
 
     /// <summary>Goes to the history entry at <paramref name="index"/> as the toolbar does: in place, then starts the
     /// load or the lookup it left, as the app's commands start them, without waiting for them.</summary>
     public void GoToEntry(int index)
     {
-        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.Language, AppState.DecompilerOptions);
+        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.Decompiler);
         if (move is null)
         {
             return;

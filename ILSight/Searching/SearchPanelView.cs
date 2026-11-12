@@ -25,19 +25,19 @@ internal static class SearchPanelView
     private static readonly ConditionalWeakTable<Strings, string[]> Headers = new();
 
     /// <summary>The search panel. A result picked shows in <paramref name="navigation"/>'s tabs in this frame, in
-    /// <paramref name="language"/> with <paramref name="options"/>, in the preview tab while
+    /// <paramref name="setup"/>, in the preview tab while
     /// <see cref="Navigation.PreviewTabs"/>; only its decompile is queued.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options)
+    public static void Render(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
     {
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar(new Box { Gap = ui.Theme.Gap }))
         {
             KindsButton(ui);
-            Field(ui, navigation, language, options);
+            Field(ui, navigation, setup);
             ResultCount(ui, ui.State.Search);
         }
         ui.Separator();
-        Results(ui, navigation, language, options);
+        Results(ui, navigation, setup);
     }
 
     private static void KindsButton(Ui<UiState> ui)
@@ -140,7 +140,7 @@ internal static class SearchPanelView
         search.Kinds = kinds;
     }
 
-    private static void Field(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options)
+    private static void Field(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
     {
         var t = ui.State.Strings;
         var search = ui.State.Search;
@@ -163,7 +163,7 @@ internal static class SearchPanelView
             var row = PickSelected(search);
             if (row != null)
             {
-                Commands.DecompileLater(ui.State, navigation.ShowNode(row.Node, language, options));
+                Commands.DecompileLater(ui.State, navigation.ShowNode(row.Node, setup));
             }
 
             return;
@@ -219,7 +219,7 @@ internal static class SearchPanelView
         return t.SearchResults(count);
     }
 
-    private static void Results(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options)
+    private static void Results(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
     {
         var t = ui.State.Strings;
         var search = ui.State.Search;
@@ -236,7 +236,7 @@ internal static class SearchPanelView
                 sorting.Work.Token);
         }
 
-        ResultRows(ui, navigation, language, options, table);
+        ResultRows(ui, navigation, setup, table);
     }
 
     private const int NoColumn = -1;
@@ -270,7 +270,7 @@ internal static class SearchPanelView
         };
     }
 
-    private static void ResultRows(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options,
+    private static void ResultRows(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
         TableFrame table)
     {
         var search = ui.State.Search;
@@ -278,18 +278,18 @@ internal static class SearchPanelView
         ItemSelections.TakeFrom(search.Selection, search.Rows);
         for (var i = body.First; i < body.End; i++)
         {
-            ResultRow(ui, navigation, language, options, body, i);
+            ResultRow(ui, navigation, setup, body, i);
         }
 
         ItemSelections.TakeFrom(search.Selection, search.Rows);
         var selected = search.SelectedRow;
         if (body.Activated && selected != null)
         {
-            Commands.DecompileLater(ui.State, navigation.ShowNode(selected.Node, language, options, body.InNewTab));
+            Commands.DecompileLater(ui.State, navigation.ShowNode(selected.Node, setup, body.InNewTab));
         }
     }
 
-    private static void ResultRow(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options,
+    private static void ResultRow(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
         TableBody body, int index)
     {
         var theme = ui.Theme;
@@ -300,7 +300,7 @@ internal static class SearchPanelView
         {
             if (row.Interaction.Clicked)
             {
-                Commands.DecompileLater(ui.State, navigation.ShowNode(node, language, options));
+                Commands.DecompileLater(ui.State, navigation.ShowNode(node, setup));
             }
 
             NameCell(ui, row, result);

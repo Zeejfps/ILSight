@@ -563,7 +563,7 @@ public static class DocumentPanels
 
     /// <summary>Focuses the tab of the panel the layout focuses now, else the first group's front tab, among
     /// <paramref name="navigation"/>'s, as <see cref="FocusTab"/> does.</summary>
-    public static void FocusNextTab(UiState uiState, Navigation navigation, DecompilationLanguage language, DecompilerOptions options)
+    public static void FocusNextTab(UiState uiState, Navigation navigation, DecompilerSetup setup)
     {
         var next = DocumentPanels.FindTab(uiState.Documents, uiState.Layout.Focused);
         if (next is null)
@@ -576,7 +576,7 @@ public static class DocumentPanels
             return;
         }
 
-        FocusTab(uiState, navigation, language, options, next);
+        FocusTab(uiState, navigation, setup, next);
     }
 
     /// <summary>The tab in front of the first group, docked then floating, that has one in front.
@@ -625,14 +625,14 @@ public static class DocumentPanels
     /// <summary>Makes <paramref name="tab"/> <paramref name="navigation"/>'s active tab now, and asks for what it
     /// shows to be decompiled again, once the frame is drawn, when it was shown in another language than
     /// <paramref name="language"/> or with other options than <paramref name="options"/>.</summary>
-    private static void FocusTab(UiState uiState, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, DocumentTab tab)
+    private static void FocusTab(UiState uiState, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
     {
-        Commands.DecompileLater(uiState, navigation.FocusTab(tab, language, options));
+        Commands.DecompileLater(uiState, navigation.FocusTab(tab, setup));
     }
 
     /// <summary>Focuses another tab when the active one was closed by a feature, as <see cref="FocusNextTab"/> does,
     /// trying again only once the tabs or the layout changed since the last try found none.</summary>
-    public static void FocusNextTabIfNone(UiState uiState, Navigation navigation, DecompilationLanguage language, DecompilerOptions options)
+    public static void FocusNextTabIfNone(UiState uiState, Navigation navigation, DecompilerSetup setup)
     {
         if (navigation.ActiveTab is not null)
         {
@@ -646,7 +646,7 @@ public static class DocumentPanels
         }
 
         uiState.LastTabFocusTry = attempt;
-        FocusNextTab(uiState, navigation, language, options);
+        FocusNextTab(uiState, navigation, setup);
     }
 
     /// <summary>Docks <paramref name="tab"/>, an open tab, beside the tab <paramref name="beside"/> when it
@@ -666,7 +666,7 @@ public static class DocumentPanels
 
     /// <summary>Brings <paramref name="tab"/>'s panel to the front and makes it <paramref name="navigation"/>'s active
     /// tab, as <see cref="FocusTab"/> does.</summary>
-    public static void ActivateTab(UiState uiState, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, DocumentTab tab)
+    public static void ActivateTab(UiState uiState, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
     {
         if (!DocumentPanels.HasView(uiState.Documents, tab))
         {
@@ -674,12 +674,12 @@ public static class DocumentPanels
         }
 
         uiState.Layout.Activate(DocumentPanels.GetPanel(uiState.Documents, tab));
-        FocusTab(uiState, navigation, language, options, tab);
+        FocusTab(uiState, navigation, setup, tab);
     }
 
     /// <summary>Called after the documents are drawn: makes the tab the user last pressed, docked or brought to
     /// front <paramref name="navigation"/>'s active tab, as <see cref="FocusTab"/> does, unless it is.</summary>
-    public static void SyncActiveTab(UiState uiState, Navigation navigation, DecompilationLanguage language, DecompilerOptions options)
+    public static void SyncActiveTab(UiState uiState, Navigation navigation, DecompilerSetup setup)
     {
         var active = navigation.ActiveTab;
         FollowActiveTab(uiState, active);
@@ -694,7 +694,7 @@ public static class DocumentPanels
             return;
         }
 
-        FocusTab(uiState, navigation, language, options, tab);
+        FocusTab(uiState, navigation, setup, tab);
     }
 
     /// <summary>Takes <paramref name="active"/>, the app state's active tab, as the tab the views open beside.</summary>
@@ -705,7 +705,7 @@ public static class DocumentPanels
 
     /// <summary>Brings the next tab of the active tab's group to the front, or the previous one, as
     /// <see cref="ActivateTab"/> does.</summary>
-    public static void CycleTab(UiState uiState, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, int by)
+    public static void CycleTab(UiState uiState, Navigation navigation, DecompilerSetup setup, int by)
     {
         var active = uiState.ActiveTab;
         if (active is null)
@@ -734,7 +734,7 @@ public static class DocumentPanels
             return;
         }
 
-        ActivateTab(uiState, navigation, language, options, tab);
+        ActivateTab(uiState, navigation, setup, tab);
     }
 
     private static bool IsTabPanel(UiState uiState, string panel)
@@ -883,8 +883,10 @@ public static class DocumentPanels
     private static void DropClosedTabViews(UiState uiState, Navigation navigation)
     {
         var documents = uiState.Documents;
-        foreach (var tab in DocumentPanels.ListClosedTabs(documents, navigation))
+        var closed = DocumentPanels.ListClosedTabs(documents, navigation);
+        for (var i = 0; i < closed.Count; i++)
         {
+            var tab = closed[i];
             var panel = DocumentPanels.GetPanel(documents, tab);
             RemoveView(documents, tab);
             ClosePanel(uiState, panel);

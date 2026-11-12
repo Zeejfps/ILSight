@@ -157,53 +157,53 @@ public sealed class Navigation
     /// <paramref name="options"/>; reveals it in the tree and records it in the history. Returns the load it started
     /// in the tab, for <see cref="DecompileIntoTabHandler"/> to bring in; null when the tab shows the node
     /// already.</summary>
-    public DecompileTicket? ShowNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, bool inNewTab = false)
+    public DecompileTicket? ShowNode(BrowseNode node, DecompilerSetup setup, bool inNewTab = false)
     {
         _intent.Begin();
         LeaveActiveTab();
-        var load = ShowNodeIn(ChooseDestination(inNewTab), node, language, options);
-        _history.RecordPlace(node, language);
+        var load = ShowNodeIn(ChooseDestination(inNewTab), node, setup);
+        _history.RecordPlace(node, setup.Language);
         return load;
     }
 
     /// <summary>Shows <paramref name="node"/>, a lookup's answer, in the tab <paramref name="destination"/> leads to
     /// now, at <paramref name="target"/> when that is a bookmark's place, and records it in the history. Returns the
     /// load it started, as <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? ShowFoundNode(TabDestination destination, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    public DecompileTicket? ShowFoundNode(TabDestination destination, BrowseNode node, DecompilerSetup setup,
         Bookmark? target = null)
     {
         LeaveActiveTab();
-        var load = ShowNodeIn(destination, node, language, options, target: target);
-        _history.RecordPlace(node, language);
+        var load = ShowNodeIn(destination, node, setup, target: target);
+        _history.RecordPlace(node, setup.Language);
         return load;
     }
 
     /// <summary>Shows <paramref name="node"/>, found again at the place of the history entry gone to, in the tab
     /// <paramref name="destination"/> leads to now, at <paramref name="position"/>; the history stays at that entry.
     /// Returns the load it started, as <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? ShowHistoryPlace(TabDestination destination, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    public DecompileTicket? ShowHistoryPlace(TabDestination destination, BrowseNode node, DecompilerSetup setup,
         ViewPosition? position)
     {
-        return ShowNodeIn(destination, node, language, options, position);
+        return ShowNodeIn(destination, node, setup, position);
     }
 
     /// <summary>Shows <paramref name="node"/> again in <paramref name="tab"/>, which showed it before a reload or a
     /// reopen, at <paramref name="position"/>: no place in the history and no new intent, as the user asked for
     /// nothing. Returns the load it started in the tab, as <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? Restore(DocumentTab tab, BrowseNode node, DecompilationLanguage language, DecompilerOptions options, ViewPosition? position)
+    public DecompileTicket? Restore(DocumentTab tab, BrowseNode node, DecompilerSetup setup, ViewPosition? position)
     {
-        return StartDecompiling(ViewCommands, tab, node, language, options, new Arrival(position));
+        return StartDecompiling(ViewCommands, tab, node, setup.Language, setup.Options, new Arrival(position));
     }
 
     /// <summary>Shows <paramref name="node"/>, picked in the tree, as <see cref="ShowNode"/> does, unless
     /// a tab shows it already, which is brought to the front instead. Returns the load it started, as
     /// <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? PreviewNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options)
+    public DecompileTicket? PreviewNode(BrowseNode node, DecompilerSetup setup)
     {
         var showing = FindTabShowing(node);
         if (showing is null)
         {
-            return ShowNode(node, language, options);
+            return ShowNode(node, setup);
         }
         Tabs.MakeActive(_tabs, showing);
         ViewCommands.Enqueue(new ViewCommand.ShowTab(showing, Beside: null));
@@ -232,13 +232,13 @@ public sealed class Navigation
     /// <summary>Shows <paramref name="node"/>, opened from the tree, as <see cref="PreviewNode"/> does and
     /// keeps the tab showing it open; while tabs do not preview, as <see cref="ShowNode"/> does. Returns the load
     /// it started, as <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? OpenNode(BrowseNode node, DecompilationLanguage language, DecompilerOptions options)
+    public DecompileTicket? OpenNode(BrowseNode node, DecompilerSetup setup)
     {
         if (!_previewTabs)
         {
-            return ShowNode(node, language, options);
+            return ShowNode(node, setup);
         }
-        var load = PreviewNode(node, language, options);
+        var load = PreviewNode(node, setup);
         KeepActiveTabOpen();
         return load;
     }
@@ -281,7 +281,7 @@ public sealed class Navigation
     /// shows when it was shown in another language than <paramref name="language"/> or with other options than
     /// <paramref name="options"/>. Returns the load that started in the tab, for <see cref="DecompileIntoTabHandler"/>
     /// to bring in; null when none did.</summary>
-    public DecompileTicket? FocusTab(DocumentTab tab, DecompilationLanguage language, DecompilerOptions options)
+    public DecompileTicket? FocusTab(DocumentTab tab, DecompilerSetup setup)
     {
         if (!Tabs.IsOpen(_tabs, tab))
         {
@@ -290,7 +290,7 @@ public sealed class Navigation
 
         _intent.Begin();
         Tabs.MakeActive(_tabs, tab);
-        return StartDecompilingAgainIfOutdated(ViewCommands, tab, language, options);
+        return StartDecompilingAgainIfOutdated(ViewCommands, tab, setup.Language, setup.Options);
     }
 
     /// <summary>The assemblies an id is looked for in: those read from the files opened, a package's
@@ -310,17 +310,16 @@ public sealed class Navigation
 
     /// <summary>Shows the table row a metadata token leads to where <see cref="ShowNode"/> shows a
     /// node, and records it in the history. Returns the load it started, as <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? ShowMetadataTarget(MetadataTarget target, bool inNewTab, DecompilationLanguage language, DecompilerOptions options)
+    public DecompileTicket? ShowMetadataTarget(MetadataTarget target, bool inNewTab, DecompilerSetup setup)
     {
         _intent.Begin();
-        return ShowRowIn(ChooseDestination(inNewTab), target, language, options);
+        return ShowRowIn(ChooseDestination(inNewTab), target, setup);
     }
 
     /// <summary>Shows the table row <paramref name="address"/>, a link of the grid <paramref name="grid"/>
     /// shows, leads to among the nodes of <paramref name="session"/>, as <see cref="ShowMetadataTarget"/> does;
     /// nothing when it leads nowhere. Returns the load it started, as <see cref="ShowNode"/> does.</summary>
-    public DecompileTicket? ShowMetadataLink(BrowseSession session, BrowseNode grid, MetadataAddress address, bool inNewTab, DecompilationLanguage language,
-        DecompilerOptions options)
+    public DecompileTicket? ShowMetadataLink(BrowseSession session, BrowseNode grid, MetadataAddress address, bool inNewTab, DecompilerSetup setup)
     {
         var target = BrowseSessions.FindMetadataRow(session, grid, address);
         if (target is null)
@@ -328,17 +327,17 @@ public sealed class Navigation
             return null;
         }
 
-        return ShowMetadataTarget(target.Value, inNewTab, language, options);
+        return ShowMetadataTarget(target.Value, inNewTab, setup);
     }
 
     /// <summary>Shows the table row <paramref name="target"/> leads to in the tab <paramref name="destination"/>
     /// leads to now, and records it in the history. Returns the load it started, as <see cref="ShowNode"/>
     /// does.</summary>
-    public DecompileTicket? ShowRowIn(TabDestination destination, MetadataTarget target, DecompilationLanguage language, DecompilerOptions options)
+    public DecompileTicket? ShowRowIn(TabDestination destination, MetadataTarget target, DecompilerSetup setup)
     {
         LeaveActiveTab();
-        var load = ShowNodeIn(destination, target.Node, language, options, row: target.Row);
-        _history.RecordPlace(target.Node, language);
+        var load = ShowNodeIn(destination, target.Node, setup, row: target.Row);
+        _history.RecordPlace(target.Node, setup.Language);
         return load;
     }
 
@@ -552,15 +551,15 @@ public sealed class Navigation
     }
 
     /// <summary>Goes to the history entry before the current one, as <see cref="GoToEntry"/> does.</summary>
-    public HistoryMove? GoBack(AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
+    public HistoryMove? GoBack(AssemblyList assemblies, DecompilerSetup setup)
     {
-        return GoToEntry(_history.CurrentIndex - 1, assemblies, language, options);
+        return GoToEntry(_history.CurrentIndex - 1, assemblies, setup);
     }
 
     /// <summary>Goes to the history entry after the current one, as <see cref="GoToEntry"/> does.</summary>
-    public HistoryMove? GoForward(AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
+    public HistoryMove? GoForward(AssemblyList assemblies, DecompilerSetup setup)
     {
-        return GoToEntry(_history.CurrentIndex + 1, assemblies, language, options);
+        return GoToEntry(_history.CurrentIndex + 1, assemblies, setup);
     }
 
     /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward; nothing when there
@@ -570,7 +569,7 @@ public sealed class Navigation
     /// and its assembly in <paramref name="assemblies"/> is listed, else begins looking up the place the entry
     /// recorded, the app saying it is resolving. Returns what is left for the edge to start: the load the tab
     /// started, or the lookup (for <see cref="GoToHistoryEntryHandler"/>); null when nothing is.</summary>
-    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
+    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, DecompilerSetup setup)
     {
         if (!CanGoTo(index))
         {
@@ -582,7 +581,7 @@ public sealed class Navigation
         switch (entry)
         {
             case HistoryEntry.Node node:
-                return ShowEntry(node, assemblies, language, options);
+                return ShowEntry(node, assemblies, setup);
             case HistoryEntry.Diagram diagram:
                 BringDiagramToFront(diagram.Shown);
                 return null;
@@ -608,11 +607,11 @@ public sealed class Navigation
 
     /// <summary>Shows the node <paramref name="entry"/> recorded when the tab it shows in still shows it, else begins
     /// looking up the place it recorded. Returns the load or the lookup it started; null when neither did.</summary>
-    private HistoryMove? ShowEntry(HistoryEntry.Node entry, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options)
+    private HistoryMove? ShowEntry(HistoryEntry.Node entry, AssemblyList assemblies, DecompilerSetup setup)
     {
         var destination = ChooseDestination(inNewTab: false);
         var place = entry.Place;
-        var position = KeepPosition(entry.Position, entry.Language, language);
+        var position = KeepPosition(entry.Position, entry.Language, setup.Language);
         var shown = FindShownNode(assemblies, FindTab(destination), place);
         if (shown is null)
         {
@@ -620,7 +619,7 @@ public sealed class Navigation
         }
 
         _intent.Begin();
-        var load = ShowNodeIn(destination, shown, language, options, position);
+        var load = ShowNodeIn(destination, shown, setup, position);
         if (load is null)
         {
             return null;
@@ -717,21 +716,20 @@ public sealed class Navigation
     }
 
     /// <summary>Shows <paramref name="node"/> in the tab <paramref name="destination"/> leads to now, in
-    /// <paramref name="language"/> with <paramref name="options"/>, makes that tab active, and commands the view to
+    /// <paramref name="setup"/>, makes that tab active, and commands the view to
     /// bring it to the front and reveal the node in the tree. Returns the load it started in the tab, for
     /// <see cref="DecompileIntoTabHandler"/> to bring in; null when the tab shows the node already.</summary>
     private DecompileTicket? ShowNodeIn(
         TabDestination destination,
         BrowseNode node,
-        DecompilationLanguage language,
-        DecompilerOptions options,
+        DecompilerSetup setup,
         ViewPosition? position = null,
         Bookmark? target = null,
         int? row = null)
     {
         var shownIn = GetOrOpenTab(destination);
         Tabs.MakeActive(_tabs, shownIn);
-        var load = StartDecompiling(ViewCommands, shownIn, node, language, options, new Arrival(position, target, row));
+        var load = StartDecompiling(ViewCommands, shownIn, node, setup.Language, setup.Options, new Arrival(position, target, row));
         ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
         return load;
     }

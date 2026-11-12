@@ -83,7 +83,7 @@ public static class MainView
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
     {
         QueuedCommands.RunViewCommands(ui.State, appState);
-        SyncActiveTab(ui.State, appState.Navigation, appState.Language, appState.DecompilerOptions);
+        SyncActiveTab(ui.State, appState.Navigation, appState.Decompiler);
     }
 
     private static void UpdateSearches(Ui<UiState> ui, AppState appState)
@@ -161,10 +161,10 @@ public static class MainView
         switch (view)
         {
             case DockView.Assemblies:
-                TreePaneView.Render(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions);
+                TreePaneView.Render(ui, appState.Navigation, appState.Assemblies, appState.Decompiler);
                 break;
             case DockView.Search:
-                SearchPanelView.Render(ui, appState.Navigation, appState.Language, appState.DecompilerOptions);
+                SearchPanelView.Render(ui, appState.Navigation, appState.Decompiler);
                 break;
             case DockView.Bookmarks:
                 BookmarksPanelView.Render(ui, appState.Bookmarks, appState.Assemblies);
@@ -194,15 +194,16 @@ public static class MainView
             return;
         }
 
-        DocumentsView.Render(ui, appState.Navigation, appState.Session, appState.Assemblies, appState.Language, appState.DecompilerOptions,
+        DocumentsView.Render(ui, appState.Navigation, appState.Session, appState.Assemblies, appState.Decompiler,
             appState.Bookmarks, appState.Tooltips, tab);
     }
 
     private static void RemoveReleasedImages(Ui<UiState> ui)
     {
-        foreach (var image in DocumentPanels.TakeReleasedImages(ui.State.Documents))
+        var released = DocumentPanels.TakeReleasedImages(ui.State.Documents);
+        for (var i = 0; i < released.Count; i++)
         {
-            ui.RemoveImage(image);
+            ui.RemoveImage(released[i]);
         }
     }
 }

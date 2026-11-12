@@ -477,8 +477,10 @@ internal static class NuGetDetailsView
                 ui.Text(t.NugetNoDependencies, color: theme.TextMuted, size: theme.FontSizeSmall);
             }
 
-            foreach (var dependency in group.Dependencies)
+            var dependencies = group.Dependencies;
+            for (var dependencyIndex = 0; dependencyIndex < dependencies.Count; dependencyIndex++)
             {
+                var dependency = dependencies[dependencyIndex];
                 Dependency(ui, dependency);
             }
         }

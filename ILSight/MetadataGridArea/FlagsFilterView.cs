@@ -19,8 +19,10 @@ internal static class FlagsFilterView
         Hint(ui, filter);
         Describe(ui, filter);
         var shift = IsShiftHeld(ui);
-        foreach (var group in filter.Schema.MutexGroups)
+        var groups = filter.Schema.MutexGroups;
+        for (var groupIndex = 0; groupIndex < groups.Count; groupIndex++)
         {
+            var group = groups[groupIndex];
             MutexGroup(ui, filter, group, shift);
         }
 
@@ -80,8 +82,10 @@ internal static class FlagsFilterView
     {
         var chips = new List<FilterChip>(group.Values.Count + 1);
         chips.Add(new FilterChip(t.MetadataFilterAnyValue, null));
-        foreach (var value in group.Values)
+        var values = group.Values;
+        for (var valueIndex = 0; valueIndex < values.Count; valueIndex++)
         {
+            var value = values[valueIndex];
             chips.Add(new FilterChip(value.Label, value.Value));
         }
 
@@ -222,8 +226,10 @@ internal static class FlagsFilterView
         MatchModeRow(ui, filter);
         using (ui.Column(new Box { Gap = 0f }))
         {
-            foreach (var flag in filter.Schema.IndependentFlags)
+            var flags = filter.Schema.IndependentFlags;
+            for (var flagIndex = 0; flagIndex < flags.Count; flagIndex++)
             {
+                var flag = flags[flagIndex];
                 using (ui.Id(flag.Name))
                 using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center, Height = theme.RowHeight }))
                 {

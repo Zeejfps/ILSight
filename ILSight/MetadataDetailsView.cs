@@ -125,15 +125,19 @@ internal static class MetadataDetailsView
         var share = 1f / table.Headers.Count;
         using (ui.Row(new Box { Height = theme.RowHeight, Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            foreach (var header in table.Headers)
+            var headers = table.Headers;
+            for (var headerIndex = 0; headerIndex < headers.Count; headerIndex++)
             {
+                var header = headers[headerIndex];
                 ui.Text(header, new Box { Width = Sizing.Percent(share) }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
             }
         }
         using (ui.Scroll("details", new Box { Height = Sizing.Grow(), Gap = 0f }))
         {
-            foreach (var cells in table.Rows)
+            var rows = table.Rows;
+            for (var cellsIndex = 0; cellsIndex < rows.Count; cellsIndex++)
             {
+                var cells = rows[cellsIndex];
                 TableRow(ui, cells, share);
             }
         }
@@ -144,8 +148,9 @@ internal static class MetadataDetailsView
         var theme = ui.Theme;
         using (ui.Row(new Box { Height = theme.RowHeight, Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            foreach (var cell in cells)
+            for (var cellIndex = 0; cellIndex < cells.Count; cellIndex++)
             {
+                var cell = cells[cellIndex];
                 ui.Text(cell, new Box { Width = Sizing.Percent(share) }, overflow: TextOverflow.Ellipsis);
             }
         }

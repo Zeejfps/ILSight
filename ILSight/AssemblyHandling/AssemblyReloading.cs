@@ -288,7 +288,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             ReleaseGoneTab(tab, reloading.Location);
             return false;
         }
-        var load = appState.Navigation.Restore(tab, node, appState.Language, appState.DecompilerOptions, reloading.Position);
+        var load = appState.Navigation.Restore(tab, node, appState.Decompiler, reloading.Position);
         if (load is not null)
         {
             loads.Add(load);

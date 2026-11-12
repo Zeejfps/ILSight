@@ -49,7 +49,7 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
 
     private static DecompileTicket? ShowFound(AppState appState, BrowseNode found, TabDestination destination)
     {
-        return appState.Navigation.ShowFoundNode(destination, found, appState.Language, appState.DecompilerOptions);
+        return appState.Navigation.ShowFoundNode(destination, found, appState.Decompiler);
     }
 
     private void ReportUnresolved(CodeReference reference, Exception? error)

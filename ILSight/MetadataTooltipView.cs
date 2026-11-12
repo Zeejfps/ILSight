@@ -17,8 +17,10 @@ internal static class MetadataTooltipView
         }
         using (ui.Column(new Box { Gap = theme.GapTight }))
         {
-            foreach (var group in content.Groups)
+            var groups = content.Groups;
+            for (var groupIndex = 0; groupIndex < groups.Count; groupIndex++)
             {
+                var group = groups[groupIndex];
                 Group(ui, group);
             }
         }
@@ -54,8 +56,10 @@ internal static class MetadataTooltipView
         using (ui.Column(new Box { Gap = 0f }))
         {
             Header(ui, group);
-            foreach (var flag in group.Flags)
+            var flags = group.Flags;
+            for (var flagIndex = 0; flagIndex < flags.Count; flagIndex++)
             {
+                var flag = flags[flagIndex];
                 Flag(ui, flag);
             }
         }

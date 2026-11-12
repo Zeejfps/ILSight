@@ -55,7 +55,7 @@ internal static class AppFrames
         FollowActiveTab(uiState, appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
         SyncTabViews(uiState, appState.Navigation);
-        FocusNextTabIfNone(uiState, appState.Navigation, appState.Language, appState.DecompilerOptions);
+        FocusNextTabIfNone(uiState, appState.Navigation, appState.Decompiler);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         FollowExportSetup(uiState.ExportSetup, appState);

@@ -13,6 +13,26 @@ namespace ILSight.App.Tests;
 public sealed class AppStateTests
 {
     [Fact]
+    public void The_language_and_the_options_are_one_value_made_again_only_when_one_of_them_changes()
+    {
+        var d = AppStateDriver.WithoutScreen();
+        var appState = d.AppState;
+        var before = appState.Decompiler;
+        var other = before.Language == DecompilationLanguage.IL ? DecompilationLanguage.CSharp : DecompilationLanguage.IL;
+
+        appState.Language = before.Language;
+        appState.DecompilerOptions = before.Options with { };
+        var unchanged = appState.Decompiler;
+        appState.Language = other;
+        var changed = appState.Decompiler;
+
+        Assert.Same(before, unchanged);
+        Assert.NotSame(before, changed);
+        Assert.Equal(other, changed.Language);
+        Assert.Same(before.Options, changed.Options);
+    }
+
+    [Fact]
     public void A_driver_made_without_a_screen_has_none_to_give()
     {
         var d = AppStateDriver.WithoutScreen();
@@ -142,7 +162,7 @@ public sealed class AppStateTests
         var farewellPanel = DocumentPanels.GetPanel(d.Ui.Documents, farewell);
         var documents = d.Ui.Layout;
         documents.Dock(farewellPanel, documents.Root, DockEdge.Right);
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, greeter);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler, greeter);
         d.NextFrame();
 
         d.Show(d.Fixture("Outline"), inNewTab: true);
@@ -167,7 +187,7 @@ public sealed class AppStateTests
         var group = documents.GroupOf(greeterPanel);
         Assert.NotNull(group);
         documents.Dock(greeterPanel, group, DockEdge.Right);
-        SyncActiveTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions);
+        SyncActiveTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler);
         d.NextFrame();
 
         Assert.Equal(2, d.AppState.Navigation.OpenTabs.Count);
@@ -320,7 +340,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Navigation.OpenTabs[0]);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.Navigation.OpenTabs[0]);
         d.Settle();
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -350,7 +370,7 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.StartShowing(farewell);
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Navigation.OpenTabs[0]);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.Navigation.OpenTabs[0]);
         d.NextFrame();
         d.Settle();
 

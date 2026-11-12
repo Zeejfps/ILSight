@@ -59,7 +59,7 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
             case Outcome<LoadedAssembly?>.Ok ok when ok.Value is not null:
                 if (!appState.Navigation.IsStale(ticket))
                 {
-                    return appState.Navigation.ShowNode(BrowseSessions.EnsureRoot(appState.Session, ok.Value), appState.Language, appState.DecompilerOptions);
+                    return appState.Navigation.ShowNode(BrowseSessions.EnsureRoot(appState.Session, ok.Value), appState.Decompiler);
                 }
 
                 break;

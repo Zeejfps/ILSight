@@ -286,12 +286,12 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.Navigation.CanGoBack, id: "back"))
         {
-            Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions));
+            Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler));
         }
 
         if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.Navigation.CanGoForward, id: "forward"))
         {
-            Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions));
+            Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler));
         }
 
         ui.MenuSeparator();
@@ -425,8 +425,10 @@ internal static class MainMenuView
             return;
         }
 
-        foreach (var language in DecompilationLanguages.All)
+        var languages = DecompilationLanguages.All;
+        for (var i = 0; i < languages.Count; i++)
         {
+            var language = languages[i];
             var label = DecompilationLanguages.Label(language);
             if (ui.MenuRadioItem(label, current == language))
             {
@@ -453,8 +455,10 @@ internal static class MainMenuView
             return;
         }
 
-        foreach (var (locale, endonym) in Locales.All)
+        var locales = Locales.All;
+        for (var i = 0; i < locales.Count; i++)
         {
+            var (locale, endonym) = locales[i];
             if (ui.MenuRadioItem(endonym, current == locale))
             {
                 Commands.Later(ui.State, locale, static (a, l) => a.Locale = l);

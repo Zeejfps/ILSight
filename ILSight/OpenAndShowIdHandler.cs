@@ -40,7 +40,7 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
             case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
                 if (!appState.Navigation.IsStale(ticket))
                 {
-                    return appState.Navigation.ShowNode(ok.Value, appState.Language, appState.DecompilerOptions);
+                    return appState.Navigation.ShowNode(ok.Value, appState.Decompiler);
                 }
 
                 break;

@@ -51,7 +51,7 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
     private static DecompileTicket? ShowBookmarkedNode(AppState appState, Bookmark bookmark, BrowseNode node, TabDestination destination)
     {
         appState.Bookmarks.Resolve(bookmark, node);
-        return appState.Navigation.ShowFoundNode(destination, node, appState.Language, appState.DecompilerOptions, bookmark);
+        return appState.Navigation.ShowFoundNode(destination, node, appState.Decompiler, bookmark);
     }
 
     private void ReportBookmarkGone(Bookmark bookmark, Exception? error)

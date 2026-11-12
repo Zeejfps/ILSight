@@ -95,21 +95,21 @@ internal static class Shortcuts
         new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Navigation))),
         new(ReloadAll, static (ui, _) => Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, expanded, ct))),
         new(CloseTab, static (ui, _) => CloseActiveTab(ui.State)),
-        new(NextTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Language, appState.DecompilerOptions, 1)),
-        new(PreviousTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Language, appState.DecompilerOptions, -1)),
+        new(NextTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler, 1)),
+        new(PreviousTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler, -1)),
     ];
 
     /// <summary>Goes to the history entry before the current one in this frame, and asks for its load or lookup to be
     /// started once the frame is drawn.</summary>
     private static void GoBack(UiState screen, AppState appState)
     {
-        Commands.MoveLater(screen, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions));
+        Commands.MoveLater(screen, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler));
     }
 
     /// <summary>As <see cref="GoBack"/>, to the entry after the current one.</summary>
     private static void GoForward(UiState screen, AppState appState)
     {
-        Commands.MoveLater(screen, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions));
+        Commands.MoveLater(screen, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler));
     }
 
     /// <summary>Runs the app-wide shortcuts pressed this frame, and goes back and forward with the

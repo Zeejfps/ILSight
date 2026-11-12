@@ -235,8 +235,9 @@ internal static class CodeTooltipView
     {
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ParagraphGap }))
         {
-            foreach (var block in blocks)
+            for (var blockIndex = 0; blockIndex < blocks.Count; blockIndex++)
             {
+                var block = blocks[blockIndex];
                 RenderBlock(ui, shown, block);
             }
         }
@@ -280,8 +281,10 @@ internal static class CodeTooltipView
         var leadWidth = LeadWidth(ui, list);
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ItemGap }))
         {
-            foreach (var row in list.Rows)
+            var rows = list.Rows;
+            for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
             {
+                var row = rows[rowIndex];
                 RenderListRow(ui, shown, row, leadWidth);
             }
         }
@@ -292,8 +295,10 @@ internal static class CodeTooltipView
     private static float LeadWidth(Ui<UiState> ui, ListBlock list)
     {
         var widest = 0f;
-        foreach (var row in list.Rows)
+        var rows = list.Rows;
+        for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
         {
+            var row = rows[rowIndex];
             widest = MathF.Max(widest, ui.MeasureRuns(row.Lead));
         }
 

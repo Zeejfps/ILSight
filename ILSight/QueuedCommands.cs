@@ -181,7 +181,7 @@ internal static class QueuedCommands
         var becomesActive = focus || uiState.Layout.Focused == panel;
         if (becomesActive)
         {
-            Commands.StartDecompiling(appState, appState.Navigation.FocusTab(tab, appState.Language, appState.DecompilerOptions));
+            Commands.StartDecompiling(appState, appState.Navigation.FocusTab(tab, appState.Decompiler));
         }
     }
 
@@ -193,6 +193,6 @@ internal static class QueuedCommands
             return;
         }
 
-        FocusNextTab(uiState, appState.Navigation, appState.Language, appState.DecompilerOptions);
+        FocusNextTab(uiState, appState.Navigation, appState.Decompiler);
     }
 }

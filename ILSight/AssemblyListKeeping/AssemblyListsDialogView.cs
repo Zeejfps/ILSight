@@ -392,8 +392,9 @@ internal static class AssemblyListsDialogView
             ui.MenuItem(t.ListsNoPresets, enabled: false);
         }
 
-        foreach (var preset in presets)
+        for (var presetIndex = 0; presetIndex < presets.Count; presetIndex++)
         {
+            var preset = presets[presetIndex];
             var count = t.ListsCount(preset.Paths.Count);
             if (ui.MenuItem(preset.Name, detail: count))
             {

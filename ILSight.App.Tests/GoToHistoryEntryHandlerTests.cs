@@ -22,7 +22,7 @@ public sealed class GoToHistoryEntryHandlerTests
     /// and takes the lookup of its place that this began, since the tab no longer shows it.</summary>
     private static HistoryMove.LookUp GoTo(AppState appState, int index)
     {
-        var move = appState.Navigation.GoToEntry(index, appState.Assemblies, appState.Language, appState.DecompilerOptions);
+        var move = appState.Navigation.GoToEntry(index, appState.Assemblies, appState.Decompiler);
         return Assert.IsType<HistoryMove.LookUp>(move);
     }
 
