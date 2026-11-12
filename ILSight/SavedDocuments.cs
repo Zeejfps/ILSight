@@ -278,30 +278,34 @@ public static class SavedDocuments
     }
 
     /// <summary>Shows again what the reopened tabs still waiting showed, now that the open list's assemblies
-    /// are listed: finds their nodes in the background, showing each or that it is gone, and reads the
-    /// cards of their diagrams.</summary>
-    internal static void ShowReopenedDocuments(AppState appState)
+    /// are listed: shows their diagrams and comparisons, then finds their nodes without holding up the screen
+    /// (<see cref="ShowReopenedNodesHandler"/>), showing each or that it is gone. Returns the loads that started in
+    /// the tabs, the reading of the diagrams' cards among them, for the edge that started this to start.</summary>
+    internal static async Task<TabLoads> ShowReopenedDocumentsAsync(AppState appState, CancellationToken ct)
     {
         var nodes = new List<WaitingNode>();
+        var diagramReads = new List<SavedDiagramRead>();
         foreach (var reopened in ListWaiting(appState.Reopened))
         {
-            ShowReopened(appState, reopened, nodes);
+            ShowReopened(appState, reopened, nodes, diagramReads);
         }
 
-        FindReopenedNodes(appState, nodes);
+        var decompiles = await appState.ShowReopenedNodesHandler.HandleAsync(appState, nodes, ct);
+        return new TabLoads { Decompiles = decompiles, DiagramReads = diagramReads };
     }
 
-    /// <summary>Reads the diagram <paramref name="reopened"/> showed, or adds its node to
-    /// <paramref name="nodes"/>, to be found with the others.</summary>
-    private static void ShowReopened(AppState appState, ReopenedTab reopened, List<WaitingNode> nodes)
+    /// <summary>Shows the diagram <paramref name="reopened"/> showed, adding the read of its cards to
+    /// <paramref name="diagramReads"/>, or adds its node to <paramref name="nodes"/>, to be found with the
+    /// others.</summary>
+    private static void ShowReopened(AppState appState, ReopenedTab reopened, List<WaitingNode> nodes, List<SavedDiagramRead> diagramReads)
     {
         switch (reopened.Record)
         {
             case NodeDocumentRecord node:
-                nodes.Add(new WaitingNode(reopened, node, FindListedPlace(appState, node)));
+                nodes.Add(new WaitingNode { Reopened = reopened, Record = node, Place = FindListedPlace(appState, node) });
                 break;
             case DiagramDocumentRecord diagram:
-                ReadReopenedDiagram(appState, ReopenDiagram(appState, reopened, diagram));
+                AddRead(diagramReads, ReopenDiagram(appState, reopened, diagram));
                 break;
             case ComparisonDocumentRecord comparison:
                 ReopenComparison(appState, reopened, comparison);
@@ -309,17 +313,14 @@ public static class SavedDocuments
         }
     }
 
-    /// <summary>Brings in the cards <paramref name="read"/> started reading in the background; nothing when it is
-    /// null.</summary>
-    private static void ReadReopenedDiagram(AppState appState, SavedDiagramRead? read)
+    private static void AddRead(List<SavedDiagramRead> diagramReads, SavedDiagramRead? read)
     {
         if (read is null)
         {
             return;
         }
 
-        Background.Start(appState.Work, nameof(ReopenDiagramHandler), appState.ReopenDiagramHandler.HandleAsync(appState.Reopened, read, CancellationToken.None),
-            problem => Errors.Report(appState, problem));
+        diagramReads.Add(read);
     }
 
     /// <summary>Where <paramref name="node"/> was, when its file is open in the list; else null, as the
@@ -334,104 +335,5 @@ public static class SavedDocuments
         return node.Location;
     }
 
-    private static void FindReopenedNodes(AppState appState, List<WaitingNode> nodes)
-    {
-        Background.Start(appState.Work, nameof(FindReopenedNodesAsync), FindReopenedNodesAsync(appState, nodes), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task FindReopenedNodesAsync(AppState appState, List<WaitingNode> nodes)
-    {
-        if (nodes.Count == 0)
-        {
-            return;
-        }
-
-        var places = nodes.ConvertAll(static n => n.Place);
-        appState.Reopened.Finding++;
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var found = await Background.Run(() => FindNodes(assemblies, session, places));
-        appState.Reopened.Finding--;
-        var shown = found switch
-        {
-            Outcome<List<BrowseNode?>>.Ok ok => ok.Value,
-            Outcome<List<BrowseNode?>>.Failed => places.ConvertAll(static _ => (BrowseNode?)null),
-            _ => throw new UnreachableException(),
-        };
-        var loads = new List<Task>();
-        for (var i = 0; i < nodes.Count; i++)
-        {
-            var load = ShowReopenedNode(appState, nodes[i], shown[i]);
-            if (load is not null)
-            {
-                loads.Add(appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, CancellationToken.None));
-            }
-        }
-
-        await Task.WhenAll(loads);
-    }
-
-    private static List<BrowseNode?> FindNodes(AssemblyList list, BrowseSession session, List<NodePath?> places)
-    {
-        return places.ConvertAll(p => FindNode(list, session, p));
-    }
-
-    private static BrowseNode? FindNode(AssemblyList list, BrowseSession session, NodePath? place)
-    {
-        if (place is null)
-        {
-            return null;
-        }
-
-        return NodeLookup.FindListed(list, session, place);
-    }
-
-    /// <summary>Shows <paramref name="node"/>, found where the waiting tab's node was, back where its view
-    /// stood when it was shown in the language the app shows now, or that it is gone; unless the tab
-    /// was pointed elsewhere or closed meanwhile. Returns the load it started in the tab; null when it started
-    /// none.</summary>
-    private static DecompileTicket? ShowReopenedNode(AppState appState, WaitingNode waiting, BrowseNode? node)
-    {
-        if (!TryFinishWaiting(appState.Reopened, waiting.Reopened))
-        {
-            return null;
-        }
-
-        var tab = waiting.Reopened.Tab;
-        if (!Tabs.IsOpen(appState.Tabs, tab))
-        {
-            return null;
-        }
-
-        if (node is null)
-        {
-            Tabs.ShowGone(tab, waiting.Record.Location);
-            return null;
-        }
-        var position = FindSavedPosition(appState, waiting.Record);
-        var load = StartDecompiling(appState.ViewCommands, tab, node, appState.Language, appState.DecompilerOptions, new Arrival(position));
-        RevealIfActive(appState, tab, node);
-        return load;
-    }
-
-    private static ViewPosition? FindSavedPosition(AppState appState, NodeDocumentRecord saved)
-    {
-        return Navigation.KeepPosition(saved.View, saved.Language, appState.Language);
-    }
-
-    private static void RevealIfActive(AppState appState, DocumentTab tab, BrowseNode node)
-    {
-        if (tab != appState.Tabs.Active)
-        {
-            return;
-        }
-
-        appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
-    }
-
     private sealed record SavedTab(DocumentTab Tab, DocumentRecord Record);
-
-    /// <summary>A reopened tab waiting for the node <see cref="Record"/> kept, at <see cref="Place"/> while
-    /// its file is listed.</summary>
-    private sealed record WaitingNode(ReopenedTab Reopened, NodeDocumentRecord Record, NodePath? Place);
 }

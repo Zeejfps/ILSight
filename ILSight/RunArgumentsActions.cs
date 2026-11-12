@@ -30,9 +30,9 @@ public static class RunArgumentsActions
 
     /// <summary>Does what the arguments a later run handed over ask of the open window: decompiles
     /// to their language, switches to their list, added when there is none, clears the list, then opens
-    /// their files and shows what they name. The list's assemblies open while the files do. Returns the load that
-    /// started in the tab showing it, for the edge to start.</summary>
-    public static async Task<DecompileTicket?> ApplyArgumentsAsync(AppState appState, RunArguments arguments, CancellationToken ct)
+    /// their files and shows what they name. The list's assemblies open while the files do. Returns the loads that
+    /// started in the tabs, the one showing what the files name among them, for the edge to start.</summary>
+    public static async Task<TabLoads> ApplyArgumentsAsync(AppState appState, RunArguments arguments, CancellationToken ct)
     {
         ReportIgnored(appState, arguments);
         if (arguments.Language is not null)
@@ -40,20 +40,21 @@ public static class RunArgumentsActions
             appState.Language = arguments.Language.Value;
         }
 
-        var switching = Task.CompletedTask;
+        var switching = Task.FromResult(TabLoads.None);
         if (arguments.AssemblyList is not null)
         {
             switching = OpenAssemblyListNamedAsync(appState, arguments.AssemblyList, ct);
         }
 
+        var clearing = Task.FromResult(TabLoads.None);
         if (arguments.ClearList)
         {
-            CloseAllAssemblies(appState);
+            clearing = CloseAllAssembliesAsync(appState, ct);
         }
 
         var opening = OpenRequestedFilesAsync(appState, arguments.Files, ct);
-        await Task.WhenAll(switching, opening);
-        return await opening;
+        await Task.WhenAll(switching, clearing, opening);
+        return (await switching).With(await clearing).With(await opening);
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)

@@ -52,7 +52,7 @@ internal static class AssemblyListDeleteDialogView
 
     /// <summary>Removes the list named <paramref name="name"/> and picks the open list, which takes its
     /// place when it was open.</summary>
-    private static Task DeleteAsync(AssemblyListsDialog dialog, AppState appState, string name, CancellationToken ct)
+    private static Task<TabLoads> DeleteAsync(AssemblyListsDialog dialog, AppState appState, string name, CancellationToken ct)
     {
         var deleting = DeleteAssemblyListAsync(appState, name, ct);
         AssemblyLists.PickList(dialog, appState.Lists, appState.Lists.Active);

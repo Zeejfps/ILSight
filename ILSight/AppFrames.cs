@@ -392,13 +392,14 @@ internal static class AppFrames
     }
 
     /// <summary>Opens the active list, then <paramref name="files"/> while it opens, once the app is running. Returns
-    /// the load that started in the tab showing what the files ask for.</summary>
-    internal static async Task<DecompileTicket?> OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
+    /// the loads that started in the tabs: those reopened from the list's saved documents, and the one showing what
+    /// the files ask for.</summary>
+    internal static async Task<TabLoads> OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
     {
         var restoring = RestoreActiveAssemblyListAsync(appState, ct);
         var opening = OpenRequestedFilesAsync(appState, files, ct);
         await Task.WhenAll(restoring, opening);
-        return await opening;
+        return (await restoring).With(await opening);
     }
 
     private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)

@@ -22,22 +22,23 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
     }
 
     /// <summary>Opens <paramref name="paths"/> as a reload does, so that another reload or clearing the list
-    /// stops it, and the settings are saved once it is done.</summary>
-    public async Task HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
+    /// stops it, then shows what the tabs reopened from the saved documents showed, and the settings are saved once
+    /// the files are open. Returns the loads that started in the tabs, for the edge that started this to start.</summary>
+    public async Task<TabLoads> HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
     {
         var ticket = appState.Reload.Start();
         var opened = await ports.OpenFilesAsync(paths, ticket.Token, ct);
-        FinishOpeningAsReload(appState, opened, ticket);
+        return await FinishOpeningAsReloadAsync(appState, opened, ticket, ct);
     }
 
-    private void FinishOpeningAsReload(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket)
+    private async Task<TabLoads> FinishOpeningAsReloadAsync(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket, CancellationToken ct)
     {
         if (!appState.Reload.TryFinish(ticket))
         {
-            return;
+            return TabLoads.None;
         }
 
-        ShowReopenedDocuments(appState);
+        var reopened = ShowReopenedDocumentsAsync(appState, ct);
         switch (outcome)
         {
             case Outcome<LoadedAssembly?>.Ok:
@@ -49,5 +50,7 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
             default:
                 throw new UnreachableException();
         }
+
+        return await reopened;
     }
 }

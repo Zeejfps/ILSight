@@ -75,6 +75,9 @@ public sealed class AppState
     /// <summary>Opens the pages of the .NET API reference types and members have.</summary>
     public required ShowInApiReferenceHandler ShowInApiReferenceHandler { get; init; }
 
+    /// <summary>Shows again the nodes the tabs reopened from the open list's saved documents wait for.</summary>
+    public required ShowReopenedNodesHandler ShowReopenedNodesHandler { get; init; }
+
     /// <summary>Goes to the lines bookmarks mark.</summary>
     public required GoToBookmarkHandler GoToBookmarkHandler { get; init; }
 

@@ -89,6 +89,12 @@ internal sealed class AppDriver
         Driver.Start(show);
     }
 
+    /// <summary>Starts <paramref name="show"/> over the app state now, then each load it returns.</summary>
+    public void Start(Func<AppState, CancellationToken, Task<TabLoads>> show)
+    {
+        Driver.Start(show);
+    }
+
 
     /// <summary>Waits until the UI is ready, with the background work done and a frame run after it, then runs
     /// <paramref name="frames"/> frames.</summary>

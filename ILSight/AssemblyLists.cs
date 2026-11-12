@@ -11,8 +11,9 @@ public static class AssemblyLists
 {
     /// <summary>Opens the open list's assemblies as the app starts, as a reload, so that the list is
     /// saved whole until they are all open, then shows what the tabs reopened from its documents showed.
-    /// Files that are gone or fail to load stay listed as failed.</summary>
-    public static Task RestoreActiveAssemblyListAsync(AppState appState, CancellationToken ct)
+    /// Files that are gone or fail to load stay listed as failed. Returns the loads that started in the tabs, for the
+    /// edge that started this to start.</summary>
+    public static Task<TabLoads> RestoreActiveAssemblyListAsync(AppState appState, CancellationToken ct)
     {
         appState.Assemblies.Pdbs.Use(appState.Lists.ActivePdbs);
         appState.Assemblies.TargetFrameworks.Use(appState.Lists.ActiveFrameworks);
@@ -72,13 +73,14 @@ public static class AssemblyLists
 
     /// <summary>Opens the list named <paramref name="name"/> in place of the open one, with the
     /// analyses and documents it had. The assemblies, documents, history and analyses of the one before go, kept
-    /// with it for when it opens again.</summary>
-    public static Task SwitchAssemblyListAsync(AppState appState, string name, CancellationToken ct)
+    /// with it for when it opens again. Returns the loads that started in the tabs, for the edge that started this to
+    /// start.</summary>
+    public static Task<TabLoads> SwitchAssemblyListAsync(AppState appState, string name, CancellationToken ct)
     {
         RememberActiveAssemblyList(appState);
         if (!appState.Lists.TryActivate(name))
         {
-            return Task.CompletedTask;
+            return Task.FromResult(TabLoads.None);
         }
 
         return OpenActiveListAsync(appState, ct);
@@ -86,7 +88,7 @@ public static class AssemblyLists
 
     /// <summary>Opens the list named <paramref name="name"/> in place of the open one, as
     /// <see cref="SwitchAssemblyListAsync"/> does, adding an empty one by that name when there is none.</summary>
-    public static Task OpenAssemblyListNamedAsync(AppState appState, string name, CancellationToken ct)
+    public static Task<TabLoads> OpenAssemblyListNamedAsync(AppState appState, string name, CancellationToken ct)
     {
         if (!appState.Lists.HasList(name))
         {
@@ -97,16 +99,17 @@ public static class AssemblyLists
     }
 
     /// <summary>Opens the active list's assemblies in place of the open ones, with its documents and analyses; the
-    /// analyses start being found while the assemblies open.</summary>
-    private static Task OpenActiveListAsync(AppState appState, CancellationToken ct)
+    /// analyses start being found while the assemblies open. Returns the loads that started in the tabs.</summary>
+    private static async Task<TabLoads> OpenActiveListAsync(AppState appState, CancellationToken ct)
     {
-        CloseAllAssemblies(appState);
+        var closing = CloseAllAssembliesAsync(appState, ct);
         ReopenDocuments(appState);
         appState.History.Clear();
         var restoring = RestoreActiveAssemblyListAsync(appState, ct);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         RestoreAnalyses(appState);
-        return restoring;
+        var loads = await Task.WhenAll(closing, restoring);
+        return loads[0].With(loads[1]);
     }
 
     /// <summary>Adds an empty list named <paramref name="name"/>, or numbered when that is taken,
@@ -132,15 +135,15 @@ public static class AssemblyLists
     }
 
     /// <summary>Removes the list named <paramref name="name"/>. When it was open, the list that takes
-    /// its place opens.</summary>
-    public static Task DeleteAssemblyListAsync(AppState appState, string name, CancellationToken ct)
+    /// its place opens. Returns the loads that started in the tabs, for the edge that started this to start.</summary>
+    public static Task<TabLoads> DeleteAssemblyListAsync(AppState appState, string name, CancellationToken ct)
     {
         var wasActive = string.Equals(name, appState.Lists.Active, StringComparison.OrdinalIgnoreCase);
         RememberActiveAssemblyList(appState);
         appState.Lists.Remove(name);
         if (!wasActive)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(TabLoads.None);
         }
 
         return OpenActiveListAsync(appState, ct);

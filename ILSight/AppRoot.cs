@@ -61,6 +61,7 @@ internal static class AppRoot
             ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),
             OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
             GoToBookmarkHandler = new GoToBookmarkHandler(navigation),
+            ShowReopenedNodesHandler = new ShowReopenedNodesHandler(navigation),
             BookmarkImporting = new BookmarkImporting(bookmarks),
             ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),
             DiagramGrowing = new DiagramGrowing(diagrams),

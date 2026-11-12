@@ -4,10 +4,10 @@ using ILSight.Core.Metadata;
 namespace ILSight;
 
 /// <summary>Reaches the app's error reports and the open assemblies off the UI thread, for the navigation
-/// handlers and <see cref="GoToBookmarkHandler"/>.</summary>
+/// handlers, <see cref="GoToBookmarkHandler"/> and <see cref="ShowReopenedNodesHandler"/>.</summary>
 public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session, OpenRequests opens)
     : NavigateHandler.IPorts, ShowInMetadataHandler.IPorts, ShowInApiReferenceHandler.IPorts, OpenAndShowIdHandler.IPorts,
-        GoToHistoryEntryHandler.IPorts, GoToBookmarkHandler.IPorts
+        GoToHistoryEntryHandler.IPorts, GoToBookmarkHandler.IPorts, ShowReopenedNodesHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
@@ -31,6 +31,33 @@ public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assem
     public async Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
     {
         return await Background.Wait(Task.Run(() => NodeLookup.Find(assemblies, session, place), ct));
+    }
+
+    /// <summary>Looks among the listed assemblies on the thread pool and comes back on the UI thread, with whatever
+    /// the lookup threw as <see cref="Outcome{T}.Failed"/>, except the cancellation of <paramref name="ct"/>, which it
+    /// lets through.</summary>
+    public async Task<Outcome<List<BrowseNode?>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
+    {
+        var found = await Background.Wait(Task.Run(() => LookUpListedPlaces(places), ct));
+        ct.ThrowIfCancellationRequested();
+        return found;
+    }
+
+    private List<BrowseNode?> LookUpListedPlaces(IReadOnlyList<NodePath?> places)
+    {
+        return places
+            .Select(LookUpListedPlace)
+            .ToList();
+    }
+
+    private BrowseNode? LookUpListedPlace(NodePath? place)
+    {
+        if (place is null)
+        {
+            return null;
+        }
+
+        return NodeLookup.FindListed(assemblies, session, place);
     }
 
     /// <summary>Looks on the thread pool and comes back on the UI thread, with whatever the lookup threw as

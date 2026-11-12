@@ -375,7 +375,7 @@ public sealed class AssembliesTests
         Assert.Equal(location, Assert.IsType<AppProblem.GoneAfterReload>(Assert.Single(ports.Reported)).Location);
         Assert.Null(tab.Node);
         Assert.False(appState.IsReloading);
-        Assert.Empty(loads);
+        Assert.Empty(loads.Decompiles);
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public sealed class AssembliesTests
 
         Assert.Same(error, Assert.IsType<AppProblem.AssembliesNotReloaded>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.IsReloading);
-        Assert.Empty(loads);
+        Assert.Empty(loads.Decompiles);
     }
 
     [Fact]
@@ -400,7 +400,7 @@ public sealed class AssembliesTests
         var ports = new FakeReloadingPorts
         {
             Reopen = _ => new Outcome<Reloaded>.Failed(new OperationCanceledException()),
-            WhileWorking = () => CloseAllAssemblies(appState),
+            WhileWorking = () => d.Start(static (a, ct) => CloseAllAssembliesAsync(a, ct)),
         };
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState, [], CancellationToken.None);
@@ -408,7 +408,7 @@ public sealed class AssembliesTests
         Assert.True(Assert.Single(ports.Stops).IsCancellationRequested);
         Assert.Empty(ports.Reported);
         Assert.False(appState.IsReloading);
-        Assert.Empty(loads);
+        Assert.Empty(loads.Decompiles);
     }
 
     [Fact]
@@ -418,10 +418,11 @@ public sealed class AssembliesTests
         var error = new IOException("unreadable");
         var ports = new FakeOpeningAsReloadPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
 
-        await new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState, [PathTo("Listed.dll")], CancellationToken.None);
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState, [PathTo("Listed.dll")], CancellationToken.None);
 
         Assert.Same(error, Assert.IsType<AppProblem.OpenFailed>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.IsReloading);
+        Assert.Empty(loads.Decompiles);
     }
 
     [Fact]
@@ -437,9 +438,10 @@ public sealed class AssembliesTests
 #pragma warning restore RL0807
         };
 
-        await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState, [PathTo("Listed.dll")], CancellationToken.None);
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState, [PathTo("Listed.dll")], CancellationToken.None);
 
         Assert.True(Assert.Single(ports.Stops).IsCancellationRequested);
         Assert.Empty(ports.Reported);
+        Assert.Same(TabLoads.None, loads);
     }
 }
