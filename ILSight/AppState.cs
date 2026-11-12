@@ -75,6 +75,15 @@ public sealed class AppState
     /// <summary>Opens the pages of the .NET API reference types and members have.</summary>
     public required ShowInApiReferenceHandler ShowInApiReferenceHandler { get; init; }
 
+    /// <summary>Grows diagrams by the cards of types: one shown with its neighbours, and those a card links to.</summary>
+    public required DiagramGrowing DiagramGrowing { get; init; }
+
+    /// <summary>Brings in the cards of the diagrams reopened from the open list's saved documents.</summary>
+    public required ReopenDiagramHandler ReopenDiagramHandler { get; init; }
+
+    /// <summary>Lays out diagrams as their cards are measured.</summary>
+    public required LayOutDiagramHandler LayOutDiagramHandler { get; init; }
+
     /// <summary>Opens files and shows what an id names among them, as a command line asks.</summary>
     public required OpenAndShowIdHandler OpenAndShowIdHandler { get; init; }
 

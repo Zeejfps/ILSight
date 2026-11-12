@@ -42,7 +42,16 @@ internal static class DiagramFaces
         var faces = Measure(ui, view, diagram);
         Diagrams.KeepFaces(view, key, faces);
         view.MeasuredVersion = diagram.Version;
-        Commands.Later(ui.State, (diagram, measures: MeasuresOf(ui, diagram, faces)), static (a, s) => Diagrams.LayOutDiagram(a, s.diagram, s.measures));
+        LayOutLater(ui.State, diagram, MeasuresOf(ui, diagram, faces));
+    }
+
+    /// <summary>Asks for <paramref name="diagram"/> to be laid out once the frame is drawn, its cards and labels as
+    /// large as <paramref name="measures"/> says, cancelling the layout in flight (<see cref="Diagrams.StartLayout"/>),
+    /// on a token a newer layout and closing the diagram cancel.</summary>
+    internal static void LayOutLater(UiState uiState, TypeDiagram diagram, DiagramMeasures measures)
+    {
+        Commands.StartLater(uiState, nameof(LayOutDiagramHandler), (diagram, measures), static (_, s) => Diagrams.StartLayout(s.diagram),
+            static (a, s, layout, ct) => a.LayOutDiagramHandler.HandleAsync(s.diagram, layout, s.measures, ct), static layout => layout.Token);
     }
 
     private static FaceKey KeyOf(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)

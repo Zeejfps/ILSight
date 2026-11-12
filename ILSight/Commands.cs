@@ -44,6 +44,34 @@ public static class Commands
         };
     }
 
+    /// <summary>Asks for <paramref name="start"/> to be done to the app state and <paramref name="subject"/> once the
+    /// frame is drawn, and for the work it started, if any, to be run then as <paramref name="run"/>, counted in the
+    /// app's background work as <paramref name="name"/> until it ends, on a token that what
+    /// <paramref name="cancelledOnPurposeBy"/> picks of that work cancels too: the canceller the state change made,
+    /// such as a diagram it started reading cards for, which closing it cancels (R009). Nothing runs when
+    /// <paramref name="start"/> started nothing. Pass <c>static</c> lambdas, handing them what they act on as
+    /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
+    public static void StartLater<T, TWork>(UiState uiState, string name, T subject, Func<AppState, T, TWork?> start,
+        Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy) where TWork : class
+    {
+        uiState.AppCommands.Enqueue(CreateStartLater(name, subject, start, run, cancelledOnPurposeBy));
+    }
+
+    private static AppCommand CreateStartLater<T, TWork>(string name, T subject, Func<AppState, T, TWork?> start,
+        Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy) where TWork : class
+    {
+        return appState =>
+        {
+            var work = start(appState, subject);
+            if (work is null)
+            {
+                return;
+            }
+
+            appState.Workflows.Start(name, ct => run(appState, subject, work, ct), cancelledOnPurposeBy(work));
+        };
+    }
+
     /// <summary>Starts bringing in what <paramref name="load"/> started loading in its tab
     /// (<see cref="DecompileIntoTabHandler"/>) now, counted in the app's background work until it ends, on a token
     /// that newer work on the tab and closing it cancel too; nothing when no load started.</summary>

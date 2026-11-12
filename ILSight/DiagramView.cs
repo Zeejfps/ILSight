@@ -758,6 +758,24 @@ internal static class DiagramView
         Commands.Start(ui.State, nameof(OpenFromDiagramAsync), (diagram, reference, inNewTab), static (a, s, ct) => OpenFromDiagramAsync(a, s.diagram, s.reference, s.inNewTab, ct));
     }
 
+    /// <summary>Asks for the type <paramref name="type"/> points at to be shown on the diagram the user last worked
+    /// in once the frame is drawn, on a new one titled <paramref name="newTitle"/> when none is open
+    /// (<see cref="Diagrams.ShowInDiagram"/>), and for its card and those of its neighbours to be read then, on a
+    /// token closing the diagram cancels.</summary>
+    internal static void ShowInDiagramLater(UiState uiState, CodeReference.Entity type, string newTitle)
+    {
+        Commands.StartLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => ShowInDiagram(a, s.type, s.newTitle),
+            static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token);
+    }
+
+    /// <summary>As <see cref="ShowInDiagramLater"/>, on a new diagram titled <paramref name="title"/>
+    /// (<see cref="Diagrams.ShowInNewDiagram"/>).</summary>
+    internal static void ShowInNewDiagramLater(UiState uiState, CodeReference.Entity type, string title)
+    {
+        Commands.StartLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => ShowInNewDiagram(a, s.type, s.title),
+            static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token);
+    }
+
     private static void CardMenu(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
         using var menu = ui.ContextMenu(MenuId);
@@ -809,12 +827,14 @@ internal static class DiagramView
         var t = ui.State.Strings;
         if (HasLinks(card, IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: HasMissingBases(diagram, card), id: "add-bases"))
         {
-            Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandBases(a, s.diagram, s.card));
+            Commands.Start(ui.State, nameof(DiagramGrowing.ExpandBasesAsync), (diagram, card), static (a, s, ct) => a.DiagramGrowing.ExpandBasesAsync(s.diagram, s.card, ct),
+                diagram.Token);
         }
 
         if (HasLinks(card, IsInterfaceLink) && ui.MenuItem(t.DiagramAddInterfaces, enabled: HasMissingInterfaces(diagram, card), id: "add-interfaces"))
         {
-            Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandInterfaces(a, s.diagram, s.card));
+            Commands.Start(ui.State, nameof(DiagramGrowing.ExpandInterfacesAsync), (diagram, card),
+                static (a, s, ct) => a.DiagramGrowing.ExpandInterfacesAsync(s.diagram, s.card, ct), diagram.Token);
         }
 
         if (card.CanHaveDerived)
@@ -822,13 +842,15 @@ internal static class DiagramView
             var derivedItem = DerivedItemOf(ui, card);
             if (ui.MenuItem(derivedItem, id: "add-derived"))
             {
-                Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandDerived(a, s.diagram, s.card));
+                Commands.Start(ui.State, nameof(DiagramGrowing.ExpandDerivedAsync), (diagram, card),
+                    static (a, s, ct) => a.DiagramGrowing.ExpandDerivedAsync(s.diagram, s.card, ct), diagram.Token);
             }
         }
 
         if (HasLinks(card, IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: HasMissingHeld(diagram, card), id: "add-held"))
         {
-            Commands.Later(ui.State, (diagram, card), static (a, s) => ExpandHeld(a, s.diagram, s.card));
+            Commands.Start(ui.State, nameof(DiagramGrowing.ExpandHeldAsync), (diagram, card), static (a, s, ct) => a.DiagramGrowing.ExpandHeldAsync(s.diagram, s.card, ct),
+                diagram.Token);
         }
     }
 

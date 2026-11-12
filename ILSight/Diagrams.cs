@@ -7,9 +7,10 @@ using static ILSight.Navigation;
 
 namespace ILSight;
 
-/// <summary>Diagrams of types, each in a tab of its own: showing a type on one, growing it along the
-/// types' relations, taking cards off it, and laying it out in the background. Cards are read in the
-/// background too, and dropped when their diagram is closed meanwhile.</summary>
+/// <summary>Diagrams of types, each in a tab of its own: showing a type on one, taking cards off it, and what the
+/// diagram and its view hold. Showing a type, reopening a diagram and laying one out start the work they need,
+/// returned for the edge to run (<see cref="DiagramGrowing"/>, <see cref="ReopenDiagramHandler"/>,
+/// <see cref="LayOutDiagramHandler"/>), whose results are dropped when their diagram is closed meanwhile.</summary>
 public static class Diagrams
 {
     /// <summary>Whether <paramref name="fold"/> shows what it holds in <paramref name="view"/>.</summary>
@@ -103,18 +104,18 @@ public static class Diagrams
 
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is
     /// directly related to, on the diagram the user last worked in, brought to the front; on a new one
-    /// when none is open, titled <paramref name="newTitle"/>.</summary>
-    public static void ShowInDiagram(AppState appState, CodeReference.Entity type, string newTitle)
+    /// when none is open, titled <paramref name="newTitle"/>. Returns the read of their cards it started, for the
+    /// edge to start (<see cref="DiagramGrowing.AddWithNeighboursAsync"/>) on a token closing the diagram cancels.</summary>
+    public static NeighboursRead ShowInDiagram(AppState appState, CodeReference.Entity type, string newTitle)
     {
         var tab = appState.Tabs.Diagram;
         if (tab is null || tab.Content is not TabContent.Diagram shown)
         {
-            ShowInNewDiagram(appState, type, newTitle);
-            return;
+            return ShowInNewDiagram(appState, type, newTitle);
         }
         BringToFront(appState, tab);
         appState.History.RecordDiagram(shown.Types, shown.Title);
-        AddWithNeighbours(appState, tab, shown.Types, type);
+        return StartReadingWithNeighbours(tab, shown.Types, type);
     }
 
     private static void BringToFront(AppState appState, DocumentTab tab)
@@ -141,8 +142,9 @@ public static class Diagrams
     }
 
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is
-    /// directly related to, on a new diagram: in the active tab while it shows nothing, else in a new tab.</summary>
-    public static void ShowInNewDiagram(AppState appState, CodeReference.Entity type, string title)
+    /// directly related to, on a new diagram: in the active tab while it shows nothing, else in a new tab. Returns
+    /// the read of their cards it started, as <see cref="ShowInDiagram"/> does.</summary>
+    public static NeighboursRead ShowInNewDiagram(AppState appState, CodeReference.Entity type, string title)
     {
         LeaveActiveTab(appState);
         var tab = GetOrOpenEmptyTab(appState);
@@ -151,76 +153,15 @@ public static class Diagrams
         Tabs.Keep(appState.Tabs, tab);
         Tabs.MakeActive(appState.Tabs, tab);
         appState.History.RecordDiagram(diagram, title);
-        AddWithNeighbours(appState, tab, diagram, type);
+        return StartReadingWithNeighbours(tab, diagram, type);
     }
 
-    /// <summary>Reads the card of <paramref name="type"/> and its neighbours in the background, adds them to
-    /// <paramref name="diagram"/>, which <paramref name="tab"/> shows, taking the type's assembly as one of its
-    /// own, then commands the view to focus the card.</summary>
-    private static void AddWithNeighbours(AppState appState, DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type)
+    /// <summary>Counts the read of the card of <paramref name="type"/> and its neighbours, for
+    /// <paramref name="diagram"/>, which <paramref name="tab"/> shows, as started.</summary>
+    private static NeighboursRead StartReadingWithNeighbours(DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type)
     {
-        Background.Start(appState.Work, nameof(AddWithNeighboursAsync), AddWithNeighboursAsync(appState, tab, diagram, type), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task AddWithNeighboursAsync(AppState appState, DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type)
-    {
-        var token = diagram.Token;
-        Diagrams.StartReading(diagram);
-        var assemblies = appState.Assemblies;
-        var read = await Background.Run(() => TypeCards.ReadWithNeighbours(assemblies, type, token));
-        Diagrams.FinishReading(diagram);
-        if (diagram.IsClosed)
-        {
-            return;
-        }
-
-        switch (read)
-        {
-            case Outcome<List<TypeCard>>.Ok ok:
-                TakeHome(appState, tab, diagram, type, ok.Value);
-                break;
-            case Outcome<List<TypeCard>>.Failed failed:
-                ReportUnreadable(appState, type, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    private static void TakeHome(AppState appState, DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type, List<TypeCard> cards)
-    {
-        if (cards.Count == 0)
-        {
-            ReportUnreadable(appState, type, null);
-            return;
-        }
-        Diagrams.TakeHome(diagram, cards[0]);
-        Diagrams.AddCards(diagram, cards);
-        appState.ViewCommands.Enqueue(new ViewCommand.FocusCard(tab, cards[0].Type));
-    }
-
-    private static void ReportUnreadable(AppState appState, CodeReference.Entity type, Exception? error)
-    {
-        Errors.Report(appState, new AppProblem.TypeNotDiagrammed(type, error));
-    }
-
-    /// <summary>Adds to <paramref name="diagram"/> the types <paramref name="card"/> derives from, or, for an
-    /// interface, the interfaces it extends.</summary>
-    public static void ExpandBases(AppState appState, TypeDiagram diagram, TypeCard card)
-    {
-        AddCards(appState, diagram, card, ListMissing(diagram, card, IsBaseLink));
-    }
-
-    /// <summary>Adds to <paramref name="diagram"/> the interfaces <paramref name="card"/> implements.</summary>
-    public static void ExpandInterfaces(AppState appState, TypeDiagram diagram, TypeCard card)
-    {
-        AddCards(appState, diagram, card, ListMissing(diagram, card, IsInterfaceLink));
-    }
-
-    /// <summary>Adds to <paramref name="diagram"/> the types <paramref name="card"/>'s properties hold.</summary>
-    public static void ExpandHeld(AppState appState, TypeDiagram diagram, TypeCard card)
-    {
-        AddCards(appState, diagram, card, ListMissing(diagram, card, IsHeldLink));
+        StartReading(diagram);
+        return new NeighboursRead { Tab = tab, Diagram = diagram, Type = type };
     }
 
     /// <summary>Whether <paramref name="card"/> derives from or extends a type <paramref name="diagram"/>
@@ -262,7 +203,7 @@ public static class Diagrams
 
     /// <summary>The types <paramref name="card"/> links to as <paramref name="isKind"/> picks that
     /// <paramref name="diagram"/> does not show, each once.</summary>
-    private static List<CodeReference.Entity> ListMissing(TypeDiagram diagram, TypeCard card, Func<TypeLink, bool> isKind)
+    public static List<CodeReference.Entity> ListMissing(TypeDiagram diagram, TypeCard card, Func<TypeLink, bool> isKind)
     {
         return card.Links
             .Where(isKind)
@@ -272,114 +213,28 @@ public static class Diagrams
             .ToList();
     }
 
-    /// <summary>Reads the cards of <paramref name="types"/>, which <paramref name="card"/> links to, in the
-    /// background and adds them to <paramref name="diagram"/>.</summary>
-    private static void AddCards(AppState appState, TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types)
-    {
-        Background.Start(appState.Work, nameof(AddCardsAsync), AddCardsAsync(appState, diagram, card, types), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task AddCardsAsync(AppState appState, TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types)
-    {
-        if (types.Count == 0)
-        {
-            return;
-        }
-
-        Diagrams.StartReading(diagram);
-        var assemblies = appState.Assemblies;
-        var read = await Background.Run(() => ReadCards(assemblies, types));
-        FinishAdding(appState, diagram, card, read);
-    }
-
-    private static List<TypeCard> ReadCards(AssemblyList list, List<CodeReference.Entity> types)
-    {
-        return types
-            .Select(t => TypeCards.Read(list, t))
-            .OfType<TypeCard>()
-            .ToList();
-    }
-
-    /// <summary>Searches the open assemblies in the background for the types deriving from
-    /// <paramref name="card"/>, or implementing it, and adds them to <paramref name="diagram"/>.</summary>
-    public static void ExpandDerived(AppState appState, TypeDiagram diagram, TypeCard card)
-    {
-        Background.Start(appState.Work, nameof(ExpandDerivedAsync), ExpandDerivedAsync(appState, diagram, card), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task ExpandDerivedAsync(AppState appState, TypeDiagram diagram, TypeCard card)
-    {
-        var token = diagram.Token;
-        Diagrams.StartReading(diagram);
-        var assemblies = appState.Assemblies;
-        var type = card.Type;
-        var read = await Background.Run(() => TypeCards.ReadDerived(assemblies, type, token));
-        FinishAdding(appState, diagram, card, read);
-    }
-
-    /// <summary>Adds the cards a read of the types related to <paramref name="card"/> found to
-    /// <paramref name="diagram"/>, unless it was closed meanwhile; reports a read that failed.</summary>
-    private static void FinishAdding(AppState appState, TypeDiagram diagram, TypeCard card, Outcome<List<TypeCard>> read)
-    {
-        Diagrams.FinishReading(diagram);
-        if (diagram.IsClosed)
-        {
-            return;
-        }
-
-        switch (read)
-        {
-            case Outcome<List<TypeCard>>.Ok ok:
-                Diagrams.AddCards(diagram, ok.Value);
-                break;
-            case Outcome<List<TypeCard>>.Failed failed:
-                ReportUnreadable(appState, card.Type, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
     /// <summary>Takes the card of <paramref name="type"/> off <paramref name="diagram"/>.</summary>
     public static void RemoveFromDiagram(AppState appState, TypeDiagram diagram, CodeReference.Entity type)
     {
         RemoveCard(diagram, type);
     }
 
-    /// <summary>Shows the diagram <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in,
-    /// the assemblies it names its own, and reads in the background the cards of its types still found,
-    /// which it adds unless the tab was pointed elsewhere or the diagram closed meanwhile.</summary>
-    internal static void ReopenDiagram(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
-    {
-        Background.Start(appState.Work, nameof(ReopenDiagramAsync), ReopenDiagramAsync(appState, reopened, saved), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task ReopenDiagramAsync(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
+    /// <summary>Shows the diagram <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in, the
+    /// assemblies it names its own, and has the tab wait on for the cards of its types still found. Returns the read
+    /// of those cards it started, for the edge to start (<see cref="ReopenDiagramHandler"/>) on a token closing the
+    /// diagram cancels; null when the tab waits no more, as when it was pointed elsewhere.</summary>
+    internal static SavedDiagramRead? ReopenDiagram(AppState appState, ReopenedTab reopened, DiagramDocumentRecord saved)
     {
         if (!reopened.IsWaiting)
         {
-            return;
+            return null;
         }
 
         var tab = reopened.Tab;
         var diagram = ShowSavedDiagram(appState, tab, saved);
-        var reading = SavedDocuments.WaitFor(appState.Reopened, tab, saved);
-        Diagrams.StartReading(diagram);
-        var assemblies = appState.Assemblies;
-        var types = saved.Types;
-        var read = await Background.Run(() => ReadCards(assemblies, types));
-        Diagrams.FinishReading(diagram);
-        if (!SavedDocuments.TryFinishWaiting(appState.Reopened, reading))
-        {
-            return;
-        }
-
-        if (diagram.IsClosed)
-        {
-            return;
-        }
-
-        AddSavedCards(appState, diagram, read, saved);
+        var waiting = SavedDocuments.WaitFor(appState.Reopened, tab, saved);
+        StartReading(diagram);
+        return new SavedDiagramRead { Reopened = waiting, Diagram = diagram, Saved = saved };
     }
 
     private static TypeDiagram ShowSavedDiagram(AppState appState, DocumentTab tab, DiagramDocumentRecord saved)
@@ -416,72 +271,17 @@ public static class Diagrams
         Tabs.MakeActive(appState.Tabs, tab);
     }
 
-    private static List<TypeCard> ReadCards(AssemblyList list, List<TypeAnchor> types)
-    {
-        return types
-            .Select(t => TypeCards.Read(list, t))
-            .OfType<TypeCard>()
-            .ToList();
-    }
-
-    private static void AddSavedCards(AppState appState, TypeDiagram diagram, Outcome<List<TypeCard>> read, DiagramDocumentRecord saved)
-    {
-        switch (read)
-        {
-            case Outcome<List<TypeCard>>.Ok ok:
-                Diagrams.AddCards(diagram, ok.Value);
-                break;
-            case Outcome<List<TypeCard>>.Failed failed:
-                ReportUnreadableDiagram(appState, saved, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    private static void ReportUnreadableDiagram(AppState appState, DiagramDocumentRecord saved, Exception error)
-    {
-        Errors.Report(appState, new AppProblem.DiagramNotReopened(saved.Title ?? string.Empty, error));
-    }
-
-    /// <summary>Lays out <paramref name="diagram"/> in the background, its cards and labels as large as
-    /// <paramref name="measures"/> says, cancelling the layout in flight, and holds the layout unless
-    /// another was started meanwhile or the diagram was closed.</summary>
-    public static void LayOutDiagram(AppState appState, TypeDiagram diagram, DiagramMeasures measures)
-    {
-        Background.Start(appState.Work, nameof(LayOutDiagramAsync), LayOutDiagramAsync(appState, diagram, measures), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task LayOutDiagramAsync(AppState appState, TypeDiagram diagram, DiagramMeasures measures)
+    /// <summary>Starts laying out <paramref name="diagram"/>, cancelling the layout in flight, whose result is then
+    /// dropped. Returns the work the layout runs as, for the edge to start (<see cref="LayOutDiagramHandler"/>) on a
+    /// token a newer layout and closing the diagram cancel; null when the diagram is closed.</summary>
+    public static WorkTicket? StartLayout(TypeDiagram diagram)
     {
         if (diagram.IsClosed)
         {
-            return;
+            return null;
         }
 
-        var ticket = diagram.Work.Start();
-        var laidOut = await Background.Run(() => DiagramLayouts.Arrange(measures, ticket.Token));
-        if (!diagram.Work.TryFinish(ticket))
-        {
-            return;
-        }
-
-        switch (laidOut)
-        {
-            case Outcome<TypeLayout>.Ok ok:
-                Diagrams.ShowLayout(diagram, ok.Value);
-                break;
-            case Outcome<TypeLayout>.Failed failed:
-                ReportLayoutFailure(appState, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    private static void ReportLayoutFailure(AppState appState, Exception error)
-    {
-        Errors.Report(appState, new AppProblem.DiagramNotLaidOut(error));
+        return diagram.Work.Start();
     }
 
     public static bool HasCard(TypeDiagram diagram, CodeReference.Entity type)

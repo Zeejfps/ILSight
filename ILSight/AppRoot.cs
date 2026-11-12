@@ -49,6 +49,7 @@ internal static class AppRoot
         var decompileIntoTab = new DecompileIntoTabHandler(new DecompileIntoTabHandlerAdapter(errors, session));
         var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
         var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session);
+        var diagrams = new DiagramInfrastructure(errors, assemblies);
         var appState = new AppState
         {
             Work = work,
@@ -58,6 +59,9 @@ internal static class AppRoot
             ShowInMetadataHandler = new ShowInMetadataHandler(navigation),
             ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),
             OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
+            DiagramGrowing = new DiagramGrowing(diagrams),
+            ReopenDiagramHandler = new ReopenDiagramHandler(diagrams),
+            LayOutDiagramHandler = new LayOutDiagramHandler(diagrams),
             GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
             AssemblyOpening = new AssemblyOpening(assemblyList),
             AssemblyReloading = new AssemblyReloading(assemblyList),

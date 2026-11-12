@@ -301,12 +301,25 @@ public static class SavedDocuments
                 nodes.Add(new WaitingNode(reopened, node, FindListedPlace(appState, node)));
                 break;
             case DiagramDocumentRecord diagram:
-                ReopenDiagram(appState, reopened, diagram);
+                ReadReopenedDiagram(appState, ReopenDiagram(appState, reopened, diagram));
                 break;
             case ComparisonDocumentRecord comparison:
                 ReopenComparison(appState, reopened, comparison);
                 break;
         }
+    }
+
+    /// <summary>Brings in the cards <paramref name="read"/> started reading in the background; nothing when it is
+    /// null.</summary>
+    private static void ReadReopenedDiagram(AppState appState, SavedDiagramRead? read)
+    {
+        if (read is null)
+        {
+            return;
+        }
+
+        Background.Start(appState.Work, nameof(ReopenDiagramHandler), appState.ReopenDiagramHandler.HandleAsync(appState.Reopened, read, CancellationToken.None),
+            problem => Errors.Report(appState, problem));
     }
 
     /// <summary>Where <paramref name="node"/> was, when its file is open in the list; else null, as the

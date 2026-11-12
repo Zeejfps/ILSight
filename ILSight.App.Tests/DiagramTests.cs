@@ -23,9 +23,17 @@ public sealed class DiagramTests
 
     private static TypeDiagram ShowInNew(AppStateDriver d, string type)
     {
-        ShowInNewDiagram(d.AppState, TypeOf(d, type), Names.Diagram(TypeOf(d, type)));
+        DiagramView.ShowInNewDiagramLater(d.Ui, TypeOf(d, type), Names.Diagram(TypeOf(d, type)));
         d.Settle();
         return d.AppState.Tabs.Active!.Diagram!;
+    }
+
+    /// <summary>Shows the fixture <paramref name="type"/> on the diagram last worked in, as the views ask for it, and
+    /// waits until its cards are in.</summary>
+    private static void ShowIn(AppStateDriver d, string type)
+    {
+        DiagramView.ShowInDiagramLater(d.Ui, TypeOf(d, type), Names.Diagram(TypeOf(d, type)));
+        d.Settle();
     }
 
     private static List<DocumentTab> ListDiagramTabs(AppStateDriver d)
@@ -40,8 +48,7 @@ public sealed class DiagramTests
     {
         var d = AppStateDriver.Opened();
 
-        ShowInDiagram(d.AppState, TypeOf(d, "Vehicle"), Names.Diagram(TypeOf(d, "Vehicle")));
-        d.Settle();
+        ShowIn(d, "Vehicle");
 
         var tab = d.AppState.Tabs.Active!;
         Assert.Equal("Vehicle diagram", tab.Title);
@@ -69,13 +76,11 @@ public sealed class DiagramTests
     public void Showing_another_type_in_the_diagram_adds_it_to_the_same_tab_brought_to_the_front()
     {
         var d = AppStateDriver.Opened();
-        ShowInDiagram(d.AppState, TypeOf(d, "Vehicle"), Names.Diagram(TypeOf(d, "Vehicle")));
-        d.Settle();
+        ShowIn(d, "Vehicle");
         var diagramTab = d.AppState.Tabs.Active!;
         d.Show(d.Fixture("Greeter"));
 
-        ShowInDiagram(d.AppState, TypeOf(d, "Counter"), Names.Diagram(TypeOf(d, "Counter")));
-        d.Settle();
+        ShowIn(d, "Counter");
 
         Assert.Same(diagramTab, d.AppState.Tabs.Active);
         Assert.Single(ListDiagramTabs(d));
@@ -89,8 +94,7 @@ public sealed class DiagramTests
         var first = ShowInNew(d, "Vehicle");
 
         var second = ShowInNew(d, "Greeter");
-        ShowInDiagram(d.AppState, TypeOf(d, "Counter"), Names.Diagram(TypeOf(d, "Counter")));
-        d.Settle();
+        ShowIn(d, "Counter");
 
         Assert.Equal(2, ListDiagramTabs(d).Count);
         Assert.Equal(["Counter", "Greeter"], CardNames(second));
@@ -119,9 +123,9 @@ public sealed class DiagramTests
         Assert.Equal(["Car", "IDriven", "Vehicle"], CardNames(diagram));
         var vehicle = Diagrams.FindCard(diagram, TypeOf(d, "Vehicle"))!;
 
-        ExpandHeld(d.AppState, diagram, vehicle);
+        d.Start((a, ct) => a.DiagramGrowing.ExpandHeldAsync(diagram, vehicle, ct));
         d.Settle();
-        ExpandDerived(d.AppState, diagram, vehicle);
+        d.Start((a, ct) => a.DiagramGrowing.ExpandDerivedAsync(diagram, vehicle, ct));
         d.Settle();
 
         Assert.Equal(["Bike", "Car", "Garage", "IDriven", "Vehicle"], CardNames(diagram));
@@ -138,7 +142,7 @@ public sealed class DiagramTests
         var breakdown = diagram.Cards[0];
         Assert.True(HasMissingBases(diagram, breakdown));
 
-        ExpandBases(d.AppState, diagram, breakdown);
+        d.Start((a, ct) => a.DiagramGrowing.ExpandBasesAsync(diagram, breakdown, ct));
         d.Settle();
 
         Assert.Equal(["Breakdown", "Exception"], CardNames(diagram));
@@ -154,7 +158,8 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         var diagram = ShowInNew(d, "IDriven");
 
-        ExpandDerived(d.AppState, diagram, diagram.Cards[0]);
+        var idriven = diagram.Cards[0];
+        d.Start((a, ct) => a.DiagramGrowing.ExpandDerivedAsync(diagram, idriven, ct));
         d.Settle();
 
         Assert.Equal(["Car", "IDriven"], CardNames(diagram));
@@ -186,8 +191,8 @@ public sealed class DiagramTests
         var first = new DiagramMeasures(all, []);
         var second = new DiagramMeasures([all[0]], []);
 
-        LayOutDiagram(d.AppState, diagram, first);
-        LayOutDiagram(d.AppState, diagram, second);
+        DiagramFaces.LayOutLater(d.Ui, diagram, first);
+        DiagramFaces.LayOutLater(d.Ui, diagram, second);
         d.Settle();
 
         Assert.Single(diagram.Layout!.Places);
@@ -198,7 +203,8 @@ public sealed class DiagramTests
     public void Closing_a_diagram_drops_what_it_was_reading()
     {
         var d = AppStateDriver.Opened();
-        ShowInNewDiagram(d.AppState, TypeOf(d, "Vehicle"), Names.Diagram(TypeOf(d, "Vehicle")));
+        DiagramView.ShowInNewDiagramLater(d.Ui, TypeOf(d, "Vehicle"), Names.Diagram(TypeOf(d, "Vehicle")));
+        d.NextFrame();
         var tab = d.AppState.Tabs.Active!;
         var diagram = tab.Diagram!;
 
@@ -216,8 +222,7 @@ public sealed class DiagramTests
     {
         var d = AppStateDriver.Opened();
         d.TurnOffPreviewTabs();
-        ShowInNewDiagram(d.AppState, TypeOf(d, "Vehicle"), Names.Diagram(TypeOf(d, "Vehicle")));
-        d.Settle();
+        ShowInNew(d, "Vehicle");
         var tab = d.AppState.Tabs.Active!;
 
         var greeter = TypeOf(d, "Greeter");
@@ -235,7 +240,7 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         var member = d.Fixture("Greeter").Child("Twice() : int").Definition;
 
-        ShowInNewDiagram(d.AppState, member, Names.Diagram(member));
+        DiagramView.ShowInNewDiagramLater(d.Ui, member, Names.Diagram(member));
         d.Settle();
 
         var error = Assert.Single(d.AppState.Errors.Entries);

@@ -106,10 +106,10 @@ internal static class DocumentsView
                 Commands.Start(ui.State, nameof(ShowInApiReferenceHandler), reference.Entity, static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct));
                 break;
             case CodeViewIntent.ShowInDiagram diagram:
-                Commands.Later(ui.State, (type: diagram.Type, title: t.DiagramTitle(diagram.Type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));
+                DiagramView.ShowInDiagramLater(ui.State, diagram.Type, t.DiagramTitle(diagram.Type.Name));
                 break;
             case CodeViewIntent.ShowInNewDiagram diagram:
-                Commands.Later(ui.State, (type: diagram.Type, title: t.DiagramTitle(diagram.Type.Name)), static (a, s) => ShowInNewDiagram(a, s.type, s.title));
+                DiagramView.ShowInNewDiagramLater(ui.State, diagram.Type, t.DiagramTitle(diagram.Type.Name));
                 break;
             default:
                 throw new UnreachableException();

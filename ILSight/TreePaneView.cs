@@ -518,12 +518,12 @@ internal static class TreePaneView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeShowInDiagram, id: "show-in-diagram"))
         {
-            Commands.Later(ui.State, (type, title: t.DiagramTitle(type.Name)), static (a, s) => ShowInDiagram(a, s.type, s.title));
+            DiagramView.ShowInDiagramLater(ui.State, type, t.DiagramTitle(type.Name));
         }
 
         if (ui.MenuItem(t.TreeShowInNewDiagram, id: "show-in-new-diagram"))
         {
-            Commands.Later(ui.State, (type, title: t.DiagramTitle(type.Name)), static (a, s) => ShowInNewDiagram(a, s.type, s.title));
+            DiagramView.ShowInNewDiagramLater(ui.State, type, t.DiagramTitle(type.Name));
         }
     }
 
