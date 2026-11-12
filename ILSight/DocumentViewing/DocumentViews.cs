@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.DocumentViewing;
 
 /// <summary>How each open tab is shown, found by the tab or by the panel it is docked as: each tab with a
 /// view has a panel of its own, and a new panel is never one a saved document was docked as. The images of

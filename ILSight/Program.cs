@@ -1,5 +1,6 @@
 using Velopack;
 using ZGF.AppUtils;
+using ILSight.Commanding;
 
 namespace ILSight;
 

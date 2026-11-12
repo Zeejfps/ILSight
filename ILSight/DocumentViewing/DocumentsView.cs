@@ -8,11 +8,12 @@ using ILSight.CodeView;
 using ILSight.Bookmarking;
 using ILSight.CodeTooltipping;
 using ILSight.Omnibars;
+using ILSight.Commanding;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.CodeDisplay;
 using static ILSight.Diagrams;
 
-namespace ILSight;
+namespace ILSight.DocumentViewing;
 
 /// <summary>An open document's tab content: its omnibar over its code, grid or picture, or a hint while
 /// it shows nothing.</summary>

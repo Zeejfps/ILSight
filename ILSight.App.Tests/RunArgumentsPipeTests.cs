@@ -1,6 +1,7 @@
 using System.IO.Pipes;
 using System.Threading.Channels;
 using ILSight.Core;
+using ILSight.Commanding;
 
 namespace ILSight.App.Tests;
 

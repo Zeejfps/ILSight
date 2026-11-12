@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.IO.Pipes;
 using System.Text;
 using ZGF.Desktop;
+using ILSight.Commanding;
 
 namespace ILSight;
 

@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Commanding;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.CodeDisplay;
 

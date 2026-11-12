@@ -2,6 +2,7 @@ using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Testing;
 using ILSight.Core;
+using ILSight.Commanding;
 
 namespace ILSight.App.Tests;
 

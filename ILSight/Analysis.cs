@@ -4,6 +4,7 @@ using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Analysis;
+using ILSight.Commanding;
 
 namespace ILSight;
 

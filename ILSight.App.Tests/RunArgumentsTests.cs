@@ -1,5 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
+using ILSight.Commanding;
 using static ILSight.RunArgumentsActions;
 using static ILSight.Settings;
 using static ILSight.App.Tests.TestPaths;

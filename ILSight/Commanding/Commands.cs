@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.CodeTooltipping;
 
-namespace ILSight;
+namespace ILSight.Commanding;
 
 [Edge]
 public static class Commands

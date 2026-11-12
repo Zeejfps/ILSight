@@ -6,6 +6,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
 using ILSight.Core.Processes;
 using ILSight.Localization;
+using ILSight.Commanding;
 using static ILSight.ProcessPicking;
 
 namespace ILSight;

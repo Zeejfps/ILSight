@@ -7,6 +7,7 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.CodeView;
 using ILSight.CodeTooltipping;
+using ILSight.Commanding;
 
 namespace ILSight.App.Tests;
 

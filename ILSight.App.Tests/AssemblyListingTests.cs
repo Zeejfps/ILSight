@@ -2,6 +2,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
+using ILSight.Commanding;
 using static ILSight.AssemblyLists;
 using static ILSight.Docking;
 using static ILSight.Settings;

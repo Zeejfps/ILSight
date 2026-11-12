@@ -4,6 +4,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
+using ILSight.Commanding;
 
 namespace ILSight;
 

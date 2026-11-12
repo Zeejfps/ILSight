@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Localization;
 
-namespace ILSight;
+namespace ILSight.DocumentViewing;
 
 public static class TabPlaceholders
 {

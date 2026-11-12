@@ -2,6 +2,7 @@ using System.Threading.Channels;
 using ZGF.AppUtils;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
+using ILSight.Commanding;
 using static ILSight.Analysis;
 using static ILSight.AppFrames;
 using static ILSight.Appearance;

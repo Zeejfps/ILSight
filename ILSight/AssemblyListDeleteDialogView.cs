@@ -1,5 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.Commanding;
 using static ILSight.AssemblyLists;
 
 namespace ILSight;

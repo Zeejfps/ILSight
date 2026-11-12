@@ -5,6 +5,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Exporting;
+using ILSight.Commanding;
 using static ILSight.Dialogs;
 using static ILSight.DocumentPanels;
 using static ILSight.Exporting.Exports;

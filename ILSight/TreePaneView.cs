@@ -6,6 +6,7 @@ using ILSight.Core;
 using ILSight.Core.Analysis;
 using ILSight.Localization;
 using ILSight.Exporting;
+using ILSight.Commanding;
 using static ILSight.Assemblies;
 using static ILSight.Diagrams;
 using static ILSight.ScreenLayout;

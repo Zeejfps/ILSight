@@ -12,6 +12,7 @@ using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingsFormat;
 using ILSight.CodeView;
 using ILSight.DiagramViewport;
+using ILSight.DocumentViewing;
 
 namespace ILSight.App.Tests;
 

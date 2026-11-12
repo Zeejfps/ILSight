@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Exporting;
+using ILSight.DocumentViewing;
 using static ILSight.Exporting.Exports;
 using static ILSight.Exporting.ExportCommands;
 using static ILSight.ScreenLayout;

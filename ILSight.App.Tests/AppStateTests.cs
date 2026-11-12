@@ -2,6 +2,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using ILSight.CodeView;
+using ILSight.DocumentViewing;
 using static ILSight.Assemblies;
 using static ILSight.Docking;
 using static ILSight.DocumentPanels;

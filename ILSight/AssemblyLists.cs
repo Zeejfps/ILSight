@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using ILSight.Core;
+using ILSight.Commanding;
 using static ILSight.Analysis;
 using static ILSight.Assemblies;
 using static ILSight.SavedDocuments;

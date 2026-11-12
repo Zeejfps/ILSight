@@ -6,6 +6,8 @@ using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.CodeView;
+using ILSight.Commanding;
+using ILSight.DocumentViewing;
 using static ILSight.Bookmarking.Bookmarks;
 
 namespace ILSight.Bookmarking;

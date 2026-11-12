@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Commanding;
 
 /// <summary>Reads and writes command lines. All that is known of the options and arguments the app takes
 /// is here.</summary>

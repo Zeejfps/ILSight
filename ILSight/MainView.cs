@@ -6,6 +6,8 @@ using ILSight.Localization;
 using ILSight.Exporting;
 using ILSight.Bookmarking;
 using ILSight.ComparisonPicking;
+using ILSight.Commanding;
+using ILSight.DocumentViewing;
 using static ILSight.DocumentPanels;
 
 namespace ILSight;

@@ -2,6 +2,8 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Analysis;
+using ILSight.Commanding;
+using ILSight.DocumentViewing;
 using static ILSight.Analysis;
 using static ILSight.Navigation;
 using static ILSight.ScreenLayout;

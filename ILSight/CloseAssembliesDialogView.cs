@@ -2,6 +2,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
+using ILSight.Commanding;
 using static ILSight.AssemblyClosing;
 using static ILSight.Assemblies;
 

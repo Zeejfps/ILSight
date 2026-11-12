@@ -8,6 +8,8 @@ using ILSight.Core.Diagrams;
 using ZGF.KeyboardModule;
 using ILSight.CodeTooltipping;
 using ILSight.DiagramViewport;
+using ILSight.Commanding;
+using ILSight.DocumentViewing;
 using static ILSight.Diagrams;
 using static ILSight.Navigation;
 

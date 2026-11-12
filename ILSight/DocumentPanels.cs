@@ -3,6 +3,8 @@ using ILSight.Core;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 using ILSight.CodeView;
+using ILSight.Commanding;
+using ILSight.DocumentViewing;
 
 namespace ILSight;
 

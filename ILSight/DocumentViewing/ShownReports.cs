@@ -2,7 +2,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Exporting;
 
-namespace ILSight;
+namespace ILSight.DocumentViewing;
 
 /// <summary>The export reports documents show, written out once per report and language.</summary>
 internal static class ShownReports

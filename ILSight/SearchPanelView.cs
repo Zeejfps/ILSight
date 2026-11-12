@@ -5,6 +5,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.Commanding;
 
 using static ILSight.ScreenLayout;
 
