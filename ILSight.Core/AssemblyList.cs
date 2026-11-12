@@ -32,7 +32,7 @@ public sealed class AssemblyList
     public int Generation => Now.Generation;
 
     /// <summary>What this machine has installed, which references that nothing else answers fall back on.</summary>
-    public InstalledRuntime Runtime { get; internal init; } = new();
+    public required InstalledRuntime Runtime { get; init; }
 
     /// <summary>The portable PDBs picked for assemblies, which they read in place of the ones they find
     /// themselves.</summary>

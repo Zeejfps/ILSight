@@ -251,7 +251,7 @@ public sealed class MetadataTests
     [Fact]
     public void The_debug_directory_shows_the_embedded_pdb_the_assembly_already_loaded()
     {
-        var assembly = new AssemblyList().Open(Trees.EmbeddedPdbPath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.EmbeddedPdbPath);
         var atRoot = FolderOf(assembly.Root.Child("Debug Metadata (Embedded)"));
 
         var directory = Metadata(assembly).Child("Debug Directory");
@@ -449,7 +449,7 @@ public sealed class MetadataTests
     [Fact]
     public void CoreLibs_relationship_tables_hold_the_rows_the_metadata_reader_decodes()
     {
-        var corelib = new AssemblyList().OpenModule(Trees.CoreLibPath);
+        var corelib = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.CoreLibPath);
         var md = corelib.File.Metadata;
         var types = md.TypeDefinitions.Select(t => (Handle: t, Type: md.GetTypeDefinition(t))).ToArray();
         var fields = md.FieldDefinitions.Select(f => (Handle: f, Field: md.GetFieldDefinition(f))).ToArray();
@@ -508,7 +508,7 @@ public sealed class MetadataTests
     public void The_edit_and_continue_tables_list_each_logged_change_and_mapped_token()
     {
         using var temp = new TempDir();
-        var assembly = new AssemblyList().Open(WriteEditAndContinueAssembly(temp));
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(WriteEditAndContinueAssembly(temp));
         var type = MetadataTokens.GetToken(MetadataTokens.TypeDefinitionHandle(1));
 
         var log = Grid(Table(assembly, "EncLog"));
@@ -549,7 +549,7 @@ public sealed class MetadataTests
     [Fact]
     public void CoreLibs_tables_and_heaps_read()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var corelib = list.Open(Trees.CoreLibPath);
 
         foreach (var node in Metadata(corelib).Child("Tables").Children.Concat(Metadata(corelib).Children.Where(c => c.Is(MetadataGridRole.Heap))))

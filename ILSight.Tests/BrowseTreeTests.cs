@@ -116,7 +116,7 @@ public sealed class BrowseTreeTests
     [Fact]
     public void A_derived_type_expands_to_the_types_deriving_from_it_in_turn()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var corelib = list.Open(Trees.CoreLibPath);
         var exception = corelib.Root.Child("System").Child("Exception");
 
@@ -208,7 +208,7 @@ public sealed class BrowseTreeTests
     [Fact]
     public void CoreLib_builds_its_tree()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLib = list.Open(Trees.CoreLibPath);
 
         var generic = coreLib.Root.Child("System.Collections.Generic");

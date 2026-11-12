@@ -7,7 +7,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void Opening_the_same_file_twice_returns_the_same_assembly()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
 
         var first = list.OpenModule(Trees.TestAssemblyPath);
         var folder = Path.GetDirectoryName(Trees.TestAssemblyPath) ?? throw new InvalidOperationException($"The test assembly's path names no folder: '{Trees.TestAssemblyPath}'.");
@@ -22,7 +22,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void An_assembly_read_again_takes_its_place_in_the_list_with_what_is_picked_for_it_now()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var first = list.Open(Trees.TestAssemblyPath);
         var second = list.Open(typeof(AssemblyList).Assembly.Location);
         list.TargetFrameworks.Pick(first.FilePath, Frameworks.Net48);
@@ -41,7 +41,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void An_assembly_read_again_after_it_was_closed_is_not_listed()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(Trees.TestAssemblyPath);
         var fresh = AssemblyListing.ReadAgain(list, assembly);
         AssemblyListing.CloseAssembly(list, assembly);
@@ -53,7 +53,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void An_open_cancelled_before_it_lists_the_assembly_leaves_the_list_as_it_was()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var cancelled = new CancellationTokenSource();
         cancelled.Cancel();
 
@@ -66,7 +66,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void An_assembly_found_by_work_started_before_a_clear_is_neither_listed_nor_kept_after_it()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var before = list.Generation;
         AssemblyListing.CloseAll(list);
 
@@ -81,7 +81,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void Open_and_close_update_the_snapshot_paths_version_and_listeners()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var changes = 0;
         list.Changed += () => changes++;
 
@@ -103,7 +103,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void A_closed_assembly_reopens_as_a_new_object()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var first = list.Open(Trees.TestAssemblyPath);
 
         AssemblyListing.CloseAssembly(list, first);
@@ -116,7 +116,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void Files_that_cannot_be_read_stay_listed_as_failed()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var temp = new TempDir();
         var text = temp.Write("text.dll", "not a PE file");
 
@@ -134,7 +134,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void A_failed_file_shows_why_it_failed_and_has_no_children()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var temp = new TempDir();
         var text = temp.Write("text.dll", "not a PE file");
 
@@ -151,7 +151,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void A_failed_file_that_loads_when_opened_again_takes_its_place()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var temp = new TempDir();
         var path = temp.Write("late.dll", "not a PE file yet");
         var failed = list.Open(path);
@@ -169,7 +169,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void Closing_a_failed_file_takes_it_off_the_list()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var temp = new TempDir();
         var failed = list.Open(temp.PathOf("missing.dll"));
 
@@ -181,7 +181,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void A_node_path_to_a_failed_file_finds_its_root()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var temp = new TempDir();
         var failed = list.Open(temp.PathOf("missing.dll"));
 
@@ -191,7 +191,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void Runtime_assemblies_list_the_managed_framework_assemblies()
     {
-        var all = RuntimeAssemblies.ListAssemblies(TestRuntime.Installed);
+        var all = RuntimeFolders.ScanAssemblies(TestRuntime.Installed.Directories);
 
         Assert.Equal(Path.GetDirectoryName(Trees.CoreLibPath), RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0]);
         Assert.Contains(all, a => a.Name == "System.Private.CoreLib" && a.Framework == "Microsoft.NETCore.App");
@@ -216,8 +216,8 @@ public sealed class AssemblyListTests
         Runtime("11.0.0-preview.1");
         Directory.CreateDirectory(temp.PathOf(Path.Combine("shared", "Microsoft.NETCore.App", "10.0.9")));
 
-        Assert.Equal(newest, RuntimeAssemblies.FindInstalledRuntime([Path.Combine(root, "missing"), root], 10));
-        Assert.Equal(Path.Combine(root, "shared", "Microsoft.NETCore.App", "11.0.0-preview.1"), RuntimeAssemblies.FindInstalledRuntime([root], 12));
+        Assert.Equal(newest, RuntimeFolders.FindInstalledRuntime([Path.Combine(root, "missing"), root], 10));
+        Assert.Equal(Path.Combine(root, "shared", "Microsoft.NETCore.App", "11.0.0-preview.1"), RuntimeFolders.FindInstalledRuntime([root], 12));
     }
 
     [Fact]
@@ -255,7 +255,7 @@ public sealed class AssemblyListTests
         var running = Environment.Version;
         var name = $"Microsoft.NETCore.App {running.Major}.{running.Minor}.";
 
-        var preset = AssemblyListPresets.ListInstalled(TestRuntime.Installed).FirstOrDefault(p => p.Name.StartsWith(name, StringComparison.Ordinal));
+        var preset = AssemblyListPresets.FindInstalled().FirstOrDefault(p => p.Name.StartsWith(name, StringComparison.Ordinal));
 
         Assert.NotNull(preset);
         Assert.Contains(preset.Paths, p => p.FileName == "System.Runtime.dll");
@@ -297,7 +297,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void Sorting_orders_the_list_by_name_failed_files_among_them()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var temp = new TempDir();
         var coreLib = list.Open(Trees.CoreLibPath);
         var missing = list.Open(temp.PathOf("Missing.dll"));
@@ -317,7 +317,7 @@ public sealed class AssemblyListTests
     [Fact]
     public async Task A_reader_sees_what_is_listed_and_what_loaded_of_one_moment()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var stop = new CancellationTokenSource();
         var reader = Task.Run(() =>
         {
@@ -342,7 +342,7 @@ public sealed class AssemblyListTests
     [Fact]
     public async Task Concurrent_opens_and_reads_agree_on_one_assembly_per_file()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var paths = new[] { Trees.TestAssemblyPath, typeof(AssemblyList).Assembly.Location, Trees.CoreLibPath };
 
         var opened = await Task.WhenAll(Enumerable.Range(0, 24).Select(i => Task.Run(() =>
@@ -363,7 +363,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void What_takes_reading_is_read_once_whichever_thread_asks_first()
     {
-        var assembly = new AssemblyList().OpenModule(Trees.TestAssemblyPath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.TestAssemblyPath);
 
         var read = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8)
             .Select(_ => (TypeSystem: LoadedAssemblies.EnsureTypeSystem(assembly), Usage: LoadedAssemblies.EnsureReferenceUsage(assembly), Symbols: LoadedAssemblies.EnsureDebugSymbols(assembly)))
@@ -377,7 +377,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void A_module_s_main_module_is_that_of_the_type_system_it_read()
     {
-        var assembly = new AssemblyList().OpenModule(Trees.TestAssemblyPath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.TestAssemblyPath);
 
         var main = LoadedAssemblies.EnsureMainModule(assembly);
 
@@ -388,7 +388,7 @@ public sealed class AssemblyListTests
     [Fact]
     public void Asking_a_package_made_some_other_way_for_its_assemblies_fails_loudly()
     {
-        var bundle = new AssemblyList().Open(Trees.TestAssemblyPath);
+        var bundle = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
         var package = new LoadedPackage
         {
             List = bundle.List,

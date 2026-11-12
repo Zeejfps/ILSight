@@ -78,7 +78,7 @@ internal static class AppRoot
     /// reach the world through, before anything is restored into it.</summary>
     private static AppState CreateAppState(AppSettings settings, BrowseSession session)
     {
-        var assemblies = new AssemblyList();
+        var assemblies = new AssemblyList { Runtime = new InstalledRuntime { Directories = RuntimeFolders.FindDirectories() } };
         var errors = new ErrorLog();
         var work = new BackgroundWork();
         var opens = new OpenRequests();
@@ -204,7 +204,6 @@ internal static class AppRoot
             Search = new Search(),
             Omnibar = new Omnibar { Search = new Search() },
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
-            Runtime = runtime,
             ShippedLicenses = FindShippedLicenses(),
             Picker = new FrameworkPicker { Browser = new FrameworkBrowser(new FrameworkPickerAdapter(reportError, runtime)) },
             NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser(new NuGetBrowserAdapter(reportError, new NuGetClient(nuGetRequests))) },

@@ -15,12 +15,8 @@ public static class AssemblyListPresets
 
     private static readonly HashSet<string> LowerCaseAssemblies = new(StringComparer.OrdinalIgnoreCase) { "mscorlib.dll", "netstandard.dll" };
 
-    public static IReadOnlyList<AssemblyListPreset> ListInstalled(InstalledRuntime runtime)
-    {
-        return runtime.Presets.Value;
-    }
-
-    internal static ImmutableArray<AssemblyListPreset> FindInstalled()
+    /// <summary>The presets this machine offers, read from the installed frameworks' folders and the GAC.</summary>
+    public static IReadOnlyList<AssemblyListPreset> FindInstalled()
     {
         var presets = new List<AssemblyListPreset>();
         var root = FindDotNetRoot();
@@ -30,12 +26,12 @@ public static class AssemblyListPresets
         }
 
         presets.AddRange(FindGacPresets());
-        return presets.ToImmutableArray();
+        return presets;
     }
 
     private static string? FindDotNetRoot()
     {
-        return RuntimeAssemblies.DotNetRoots()
+        return RuntimeFolders.DotNetRoots()
             .FirstOrDefault(HasSharedFrameworks);
     }
 

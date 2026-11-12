@@ -13,7 +13,7 @@ public sealed class LoadOptionsTests
     /// <summary>A list that reads with <paramref name="options"/>, having opened the test assembly.</summary>
     private static (AssemblyList List, LoadedModule Assembly) OpenWith(DecompilerOptions options)
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         AssemblyListing.TryChangeLoadOptions(list, options);
         return (list, list.OpenModule(Trees.TestAssemblyPath));
     }
@@ -35,7 +35,7 @@ public sealed class LoadOptionsTests
     [Fact]
     public void Load_options_report_a_change_only_when_they_differ_from_those_in_use()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var off = Off(DecompilerToggle.AutoLoadAssemblyReferences);
 
         var unchanged = AssemblyListing.TryChangeLoadOptions(list, DecompilerOptions.Default);
@@ -50,7 +50,7 @@ public sealed class LoadOptionsTests
     [Fact]
     public void An_assembly_read_before_the_load_options_changed_is_not_kept()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var generation = list.Generation;
         AssemblyListing.TryChangeLoadOptions(list, Off(DecompilerToggle.ApplyWindowsRuntimeProjections));
 
@@ -64,7 +64,7 @@ public sealed class LoadOptionsTests
     [Fact]
     public void Load_options_left_as_they_are_keep_what_was_read()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var generation = list.Generation;
 
         AssemblyListing.TryChangeLoadOptions(list, DecompilerOptions.Default);

@@ -6,7 +6,7 @@ public sealed class ExpandNamespacesHandlerTests
 {
     private static (BrowseTree Tree, BrowseNode Root) OpenedTree()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var root = list.Open(AppStateDriver.FixturePath).Root;
         var tree = new BrowseTree { Session = TestSession.Shared };
         Trees.TrySyncRoots(tree, list);

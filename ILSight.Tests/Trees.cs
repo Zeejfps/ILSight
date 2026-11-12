@@ -6,7 +6,7 @@ internal static class Trees
 {
     public const string FixturesNamespace = "ILSight.Tests.Fixtures";
 
-    private static readonly Lazy<LoadedModule> s_testAssembly = new(() => new AssemblyList().OpenModule(TestAssemblyPath));
+    private static readonly Lazy<LoadedModule> s_testAssembly = new(() => new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(TestAssemblyPath));
     private static readonly Lazy<DecompiledDocument> s_calculatorCSharp = new(() => TestAssembly.Calculator().Decompile(DecompilationLanguage.CSharp));
     private static readonly Lazy<DecompiledDocument> s_calculatorIL = new(() => TestAssembly.Calculator().Decompile(DecompilationLanguage.IL));
 
@@ -75,7 +75,7 @@ internal static class Trees
 
     public static (AssemblyList List, LoadedModule Assembly) OpenTestAssembly()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         return (list, list.OpenModule(TestAssemblyPath));
     }
 

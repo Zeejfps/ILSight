@@ -15,7 +15,7 @@ public sealed class CodeViewTooltipTests
 
     private static CodeViewDriver Farewell()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var type = typeof(Farewell);
         Assert.NotNull(type.Namespace);
         var node = list.Open(type.Assembly.Location).Root.Child(type.Namespace, type.Name);

@@ -13,7 +13,7 @@ public sealed class ApiDiffTests
 
     private static (AssemblyList List, LoadedModule Left, LoadedModule Right) OpenBoth()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var left = list.OpenModule(Trees.ApiDiffOlderPath);
         var right = list.OpenModule(Trees.ApiDiffNewerPath);
         return (list, left, right);

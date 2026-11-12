@@ -304,6 +304,7 @@
   "lists.new": "Новый список",
   "lists.add_preset": "Добавить готовый",
   "lists.no_presets": "Платформы не найдены",
+  "lists.looking_for_presets": "Поиск установленных платформ…",
   "lists.duplicate": "Дублировать",
   "lists.rename": "Переименовать",
   "lists.delete": "Удалить",

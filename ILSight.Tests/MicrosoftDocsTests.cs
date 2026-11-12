@@ -9,7 +9,7 @@ public sealed class MicrosoftDocsTests
     [Fact]
     public void Namespaces_types_and_members_open_their_pages_of_the_api_reference()
     {
-        var coreLib = new AssemblyList().Open(Trees.CoreLibPath);
+        var coreLib = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.CoreLibPath);
         var generic = coreLib.Root.Child("System.Collections.Generic");
         var list = generic.Child("List<T>");
         var dictionary = generic.Child("Dictionary<TKey, TValue>");

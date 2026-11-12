@@ -12,7 +12,7 @@ public sealed class ForwardedTypeTests
     [Fact]
     public void A_facade_lists_the_types_it_forwards_in_their_namespaces()
     {
-        var facade = new AssemblyList().Open(RuntimeFile("System.Runtime.dll"));
+        var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
 
         var generic = facade.Root.Child("System.Collections.Generic");
         var list = generic.Child("IList<>");
@@ -31,7 +31,7 @@ public sealed class ForwardedTypeTests
     [Fact]
     public void A_namespace_sorts_its_forwarded_types_by_name_then_by_how_many_type_parameters_they_have()
     {
-        var facade = new AssemblyList().Open(RuntimeFile("System.Runtime.dll"));
+        var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
 
         var labels = facade.Root.Child("System").Children.Select(c => c.Text).ToList();
 
@@ -45,7 +45,7 @@ public sealed class ForwardedTypeTests
     [Fact]
     public void A_forwarded_type_goes_to_its_definition_however_many_forwards_away()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var netstandard = list.Open(RuntimeFile("netstandard.dll"));
         var forwarded = netstandard.Root.Child("System.Collections.Generic").Child("List<>");
 
@@ -62,7 +62,7 @@ public sealed class ForwardedTypeTests
     [Fact]
     public void A_forwarded_type_reads_as_where_it_is_forwarded_to_with_a_link_to_its_definition()
     {
-        var facade = new AssemblyList().Open(RuntimeFile("System.Runtime.dll"));
+        var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
         var forwarded = facade.Root.Child("System.Collections.Generic").Child("IList<>");
 
         var document = forwarded.Decompile(DecompilationLanguage.CSharp);

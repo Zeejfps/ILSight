@@ -87,7 +87,7 @@ public sealed class NestedNamespaceTests
     public void Showing_public_api_a_namespace_of_internal_types_is_hidden_unless_a_namespace_nested_in_it_shows()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
+        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
         var fixtures = root.Child(AppStateDriver.FixturesNamespace);
         var vault = root.Child(AppStateDriver.FixturesNamespace + ".Vault");
         var door = root.Child(AppStateDriver.FixturesNamespace + ".Vault.Door");

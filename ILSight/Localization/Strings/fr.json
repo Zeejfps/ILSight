@@ -304,6 +304,7 @@
   "lists.new": "Nouvelle liste",
   "lists.add_preset": "Ajouter préconfigurée",
   "lists.no_presets": "Aucun framework trouvé",
+  "lists.looking_for_presets": "Recherche des frameworks installés…",
   "lists.duplicate": "Dupliquer",
   "lists.rename": "Renommer",
   "lists.delete": "Supprimer",

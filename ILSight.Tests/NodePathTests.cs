@@ -9,7 +9,7 @@ public sealed class NodePathTests
     {
         var (_, assembly) = Trees.OpenTestAssembly();
         var add = assembly.Calculator().Child("Add(T) : void");
-        var empty = new AssemblyList();
+        var empty = new AssemblyList { Runtime = TestRuntime.Installed };
 
         Assert.Null(empty.FindListedNode(BrowseNodes.GetPath(add)));
         Assert.Empty(empty.Listed);
@@ -51,10 +51,10 @@ public sealed class NodePathTests
     {
         using var temp = new TempDir();
         var copy = temp.Copy(Trees.TestAssemblyPath, "fixture.dll");
-        var path = BrowseNodes.GetPath(new AssemblyList().Open(copy).Calculator());
+        var path = BrowseNodes.GetPath(new AssemblyList { Runtime = TestRuntime.Installed }.Open(copy).Calculator());
         File.Delete(copy);
 
-        Assert.Null(new AssemblyList().FindNode(path));
+        Assert.Null(new AssemblyList { Runtime = TestRuntime.Installed }.FindNode(path));
     }
 
     [Fact]

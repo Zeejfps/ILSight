@@ -12,7 +12,7 @@ public sealed class BrowseTreeTests
     {
         var d = new AppStateDriver();
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
+        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
 
         var first = tree.GetChildren(root);
 
@@ -32,7 +32,7 @@ public sealed class BrowseTreeTests
         using var temp = new TempDir();
         var d = new AppStateDriver();
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = new AssemblyList().Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(temp)).Root;
+        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(temp)).Root;
         var container = root.Child("Resources", BrokenAssemblies.AvaloniaContainer);
 
         tree.GetChildren(container);
@@ -52,7 +52,7 @@ public sealed class BrowseTreeTests
     public void An_assembly_spins_while_it_is_reopened()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var assembly = new AssemblyList().Open(AppStateDriver.FixturePath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
         var reopens = new Reopens();
         Trees.ShowReopening(tree, reopens.Files);
         var idle = tree.Row(assembly.Root).Spinning;
@@ -69,7 +69,7 @@ public sealed class BrowseTreeTests
     {
         var d = new AppStateDriver();
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
+        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
         var ns = root.Child(AppStateDriver.FixturesNamespace);
         var secret = ns.Child("Hidden", "Secret() : int");
         Trees.ShowApi(tree, ApiVisibility.PublicOnly);
@@ -86,7 +86,7 @@ public sealed class BrowseTreeTests
     public void Compiler_generated_members_show_only_when_everything_is_shown()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
+        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
         var counter = root.Child(AppStateDriver.FixturesNamespace, "Counter");
         var backingField = counter.Child("<Count>k__BackingField : int");
 
@@ -118,7 +118,7 @@ public sealed class BrowseTreeTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static WeakReference FilterAndClose(BrowseTree tree)
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(AppStateDriver.FixturePath);
         var root = assembly.Root;
         _ = root.Children;

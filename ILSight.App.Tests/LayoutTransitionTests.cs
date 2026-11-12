@@ -10,7 +10,7 @@ public sealed class LayoutTransitionTests
     private const float HalfWay = 0.15f;
     private const float Past = 1f;
 
-    private static readonly Lazy<LoadedAssembly> s_fixtures = new(() => new AssemblyList().Open(AppStateDriver.FixturePath));
+    private static readonly Lazy<LoadedAssembly> s_fixtures = new(() => new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath));
 
     private static CodeReference.Entity TypeOf(string type)
     {

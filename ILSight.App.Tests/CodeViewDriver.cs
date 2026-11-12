@@ -212,7 +212,7 @@ internal sealed class CodeViewDriver
     /// <summary>A document of <paramref name="type"/> decompiled through an assembly list of its own.</summary>
     public static DecompiledDocument Decompile(Type type)
     {
-        var assembly = new AssemblyList().Open(type.Assembly.Location);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(type.Assembly.Location);
         Assert.NotNull(type.Namespace);
         var node = assembly.Root.Child(type.Namespace, type.Name);
         return node.Decompile(DecompilationLanguage.CSharp);

@@ -50,7 +50,7 @@ public sealed class DebugSymbolsTests
     public void A_picked_pdb_is_checked_against_the_build_the_assembly_names()
     {
         using var temp = new TempDir();
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var test = list.OpenModule(Trees.TestAssemblyPath);
         var sample = list.OpenModule(Trees.SampleAppPath);
         var windows = temp.Write("windows.pdb", Encoding.ASCII.GetBytes("Microsoft C/C++ MSF 7.00\r\n\u001aDS\0\0\0"));
@@ -68,7 +68,7 @@ public sealed class DebugSymbolsTests
     {
         using var temp = new TempDir();
         var copy = temp.Copy(Trees.TestAssemblyPath, Path.GetFileName(Trees.TestAssemblyPath));
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var before = LoadedAssemblies.EnsureDebugSymbols(list.OpenModule(copy));
 
         list.Pdbs.Pick(AssemblyPath.Of(copy), TestPdbPath);
@@ -87,7 +87,7 @@ public sealed class DebugSymbolsTests
     [Fact]
     public void Closing_an_assembly_forgets_the_pdb_picked_for_it()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var test = list.Open(Trees.TestAssemblyPath);
         list.Pdbs.Pick(test.FilePath, TestPdbPath);
 

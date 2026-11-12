@@ -176,7 +176,7 @@ public sealed class NavigationTests
     [Fact]
     public void Hidden_compiler_generated_entities_fall_back_to_the_nearest_visible_ancestor()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLib = list.Open(Trees.CoreLibPath);
         var lambdaOwner = coreLib.Root.Child("System.Collections.Generic").Child("List<T>");
         var document = lambdaOwner.Child("Count : int").Decompile(DecompilationLanguage.IL);

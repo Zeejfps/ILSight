@@ -26,7 +26,7 @@ public sealed class PresentationTests
     [Fact]
     public void Every_node_of_a_tree_draws_the_icon_its_subject_names_and_the_tree_draws_many()
     {
-        var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
+        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
         var pending = new Queue<BrowseNode>([root]);
         var seen = new HashSet<NodeIcon>();
 
@@ -53,7 +53,7 @@ public sealed class PresentationTests
     {
         using var temp = new TempDir();
         var copy = temp.Copy(AppStateDriver.FixturePath, Path.Combine("copy", Path.GetFileName(AppStateDriver.FixturePath)));
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var original = list.Open(AppStateDriver.FixturePath);
         var duplicate = list.Open(copy);
         var tree = new BrowseTree { Session = TestSession.Shared };
@@ -75,7 +75,7 @@ public sealed class PresentationTests
     [Fact]
     public void An_assembly_listed_once_reads_as_its_name_alone()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(AppStateDriver.FixturePath);
         var tree = new BrowseTree { Session = TestSession.Shared };
         Trees.TrySyncRoots(tree, list);
@@ -86,7 +86,7 @@ public sealed class PresentationTests
     [Fact]
     public void An_assembly_row_shows_its_version_and_framework_as_muted_secondary_text()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(AppStateDriver.FixturePath);
         var tree = new BrowseTree { Session = TestSession.Shared };
         Trees.TrySyncRoots(tree, list);
@@ -101,7 +101,7 @@ public sealed class PresentationTests
     [Fact]
     public void Non_public_nodes_carry_an_accessibility_overlay_in_the_palette_color_and_dimmed_text()
     {
-        var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
+        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
         var ns = root.Child(AppStateDriver.FixturesNamespace);
         var privateField = ns.Child("Outline").Children.Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
         var tree = new BrowseTree { Session = TestSession.Shared };
@@ -124,7 +124,7 @@ public sealed class PresentationTests
     [Fact]
     public void Types_and_members_show_their_metadata_tokens_in_the_chosen_format_while_assemblies_keep_their_identity()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(AppStateDriver.FixturePath);
         var greeter = assembly.Root.Child(AppStateDriver.FixturesNamespace, "Greeter");
         var member = greeter.Children.First(c => c.Token is not null);
@@ -147,7 +147,7 @@ public sealed class PresentationTests
     {
         var runtimeFolder = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? throw new InvalidOperationException($"CoreLib's path names no folder: '{typeof(object).Assembly.Location}'.");
         var runtime = Path.Combine(runtimeFolder, "System.Runtime.dll");
-        var facade = new AssemblyList().Open(runtime);
+        var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(runtime);
         var forwarded = facade.Root.Child("System").Children.First(c => c.Text == "Object");
         var tree = new BrowseTree { Session = TestSession.Shared };
 
@@ -162,7 +162,7 @@ public sealed class PresentationTests
     [Fact]
     public void A_type_used_from_a_reference_shows_the_type_reference_icon_and_its_namespace()
     {
-        var assembly = new AssemblyList().Open(AppStateDriver.FixturePath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
         var used = assembly.Root.Child("References").Children
             .SelectMany(r => r.Children)
             .Where(c => c.Icon == NodeIcon.ReferencedTypes)
@@ -180,7 +180,7 @@ public sealed class PresentationTests
     [Fact]
     public void A_non_public_type_says_its_accessibility_in_its_tooltip()
     {
-        var root = new AssemblyList().Open(AppStateDriver.FixturePath).Root;
+        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
         var hidden = root.Child(AppStateDriver.FixturesNamespace, "Hidden");
         var tree = new BrowseTree { Session = TestSession.Shared };
 

@@ -7,7 +7,7 @@ root = true
 
 # R001: this codebase's own static services (they hold shared state and do effects). Reached through a class's port;
 # RL0101 reports their use outside adapters, tests and infrastructure files, like DateTime.Now.
-rulelab.ambient_types = ILSight.Background, ILSight.Errors, ILSight.WorkflowRunner, ILSight.Core.Processes.RunningProcesses, ILSight.Core.Diagrams.ClassDiagrams, ILSight.Core.AtomicFile, ILSight.Core.NuGetConfigs, ILSight.Core.NuGetClient, ILSight.Core.AssemblyExport, ILSight.Core.CodeFiles, ILSight.Core.PackageExtraction, ILSight.Core.PdbFiles
+rulelab.ambient_types = ILSight.Background, ILSight.Errors, ILSight.WorkflowRunner, ILSight.Core.Processes.RunningProcesses, ILSight.Core.Diagrams.ClassDiagrams, ILSight.Core.AtomicFile, ILSight.Core.NuGetConfigs, ILSight.Core.NuGetClient, ILSight.Core.AssemblyExport, ILSight.Core.CodeFiles, ILSight.Core.PackageExtraction, ILSight.Core.PdbFiles, ILSight.Core.AssemblyListPresets, ILSight.Core.RuntimeFolders
 # R003: immediate-mode widget functions (they take ZGF's Ui) draw and return "activated" by the framework's convention.
 rulelab.widget_context_types = ZGF.Gui.Immediate.Ui
 

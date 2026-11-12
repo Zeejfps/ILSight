@@ -74,7 +74,7 @@ public sealed class SearchTests
     [Fact]
     public async Task Results_stream_in_batches_and_stop_on_cancellation()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         list.Open(Trees.CoreLibPath);
         using var cancellation = new CancellationTokenSource();
         var batches = 0;

@@ -247,7 +247,7 @@ public sealed class ResourceTests
 
     private static BrowseNode MainWindowBaml()
     {
-        var assembly = new AssemblyList().Open(Trees.SampleAppPath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.SampleAppPath);
         return Resources(assembly).Child("SampleApp.g.resources").Child("mainwindow.baml");
     }
 
@@ -282,7 +282,7 @@ public sealed class ResourceTests
     [Fact]
     public void Avalonia_assets_unpack_into_the_tree_under_their_paths()
     {
-        var assembly = new AssemblyList().Open(Trees.AvaloniaSamplePath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.AvaloniaSamplePath);
         var container = Resources(assembly).Child("!AvaloniaResources");
 
         var entries = container.Children.Select(static c => (c.Text, c.IsImage)).ToList();

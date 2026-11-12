@@ -15,7 +15,7 @@ public sealed class BrowseSessionTests : IDisposable
     public void Children_are_built_once_and_every_caller_gets_the_same_ones()
     {
         var session = new BrowseSession();
-        var root = BrowseSessions.EnsureRoot(session, new AssemblyList().Open(Trees.TestAssemblyPath));
+        var root = BrowseSessions.EnsureRoot(session, new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
 
         var waits = Enumerable.Range(0, 8).Select(_ => BrowseSessions.GetChildrenAsync(session, root)).ToArray();
         var blocking = Enumerable.Range(0, 8).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.GetChildren(session, root)).ToArray();
@@ -29,7 +29,7 @@ public sealed class BrowseSessionTests : IDisposable
     public async Task Cancelling_a_wait_leaves_the_build_running_for_the_others()
     {
         var session = new BrowseSession();
-        var root = BrowseSessions.EnsureRoot(session, new AssemblyList().Open(Trees.TestAssemblyPath));
+        var root = BrowseSessions.EnsureRoot(session, new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => BrowseSessions.GetChildrenAsync(session, root, new CancellationToken(canceled: true)));
         var state = await BrowseSessions.GetChildrenAsync(session, root);
@@ -41,7 +41,7 @@ public sealed class BrowseSessionTests : IDisposable
     public void Children_that_fail_to_build_say_why_once_and_count_as_children()
     {
         var session = new BrowseSession();
-        var assembly = new AssemblyList().Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(_temp));
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(_temp));
         var resources = BrowseSessions.ListChildren(session, BrowseSessions.EnsureRoot(session, assembly)).Single(c => c.Subject is NodeSubject.Resources);
         var container = Assert.Single(BrowseSessions.ListChildren(session, resources));
 
@@ -56,7 +56,7 @@ public sealed class BrowseSessionTests : IDisposable
     [Fact]
     public void Each_session_builds_a_tree_of_its_own()
     {
-        var assembly = new AssemblyList().Open(Trees.TestAssemblyPath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
         var first = new BrowseSession();
         var second = new BrowseSession();
 

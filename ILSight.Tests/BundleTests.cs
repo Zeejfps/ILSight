@@ -24,7 +24,7 @@ public sealed class BundleTests
     public void A_single_file_bundle_opens_as_a_package_of_its_files()
     {
         using var temp = new TempDir();
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
 
         var bundle = list.Open(WriteBundle(temp));
 
@@ -41,7 +41,7 @@ public sealed class BundleTests
     public void A_compressed_assembly_in_a_bundle_decompiles_and_finds_the_assembly_beside_it()
     {
         using var temp = new TempDir();
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var bundle = list.Open(WriteBundle(temp));
         var assembly = list.Assemblies.Single(a => a.Name == TestAssemblyName);
 
@@ -57,7 +57,7 @@ public sealed class BundleTests
     public void A_file_of_a_bundle_that_is_no_assembly_shows_its_contents()
     {
         using var temp = new TempDir();
-        var bundle = new AssemblyList().Open(WriteBundle(temp));
+        var bundle = new AssemblyList { Runtime = TestRuntime.Installed }.Open(WriteBundle(temp));
 
         var deps = bundle.Root.Child("App.deps.json");
 
@@ -69,7 +69,7 @@ public sealed class BundleTests
     {
         using var temp = new TempDir();
         var path = WriteBundle(temp, ("Broken.dll", [1, 2, 3], false, 1_000_000));
-        var bundle = Assert.IsType<LoadedPackage>(new AssemblyList().Open(path));
+        var bundle = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
 
         var broken = bundle.Root.Child("Broken.dll");
 
@@ -82,7 +82,7 @@ public sealed class BundleTests
     {
         using var temp = new TempDir();
         var path = WriteBundle(temp, ("Broken.dll", [1, 2, 3], false, 1_000_000), ("App.deps.json", Encoding.UTF8.GetBytes("{}"), false, 0));
-        var bundle = Assert.IsType<LoadedPackage>(new AssemblyList().Open(path));
+        var bundle = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
         var target = temp.PathOf("out");
 
         var extracted = PackageExtraction.ExtractFolder(bundle.Package, FolderOf(bundle.Root), target);
@@ -99,7 +99,7 @@ public sealed class BundleTests
         using var temp = new TempDir();
         var path = temp.Write("Host.exe", Encoding.ASCII.GetBytes("MZ this is no bundle and no assembly"));
 
-        var failed = new AssemblyList().Open(path);
+        var failed = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
 
         Assert.IsType<FailedAssembly>(failed);
     }

@@ -304,6 +304,7 @@
   "lists.new": "新列表",
   "lists.add_preset": "添加预配置",
   "lists.no_presets": "未找到框架",
+  "lists.looking_for_presets": "正在查找已安装的框架…",
   "lists.duplicate": "复制",
   "lists.rename": "重命名",
   "lists.delete": "删除",

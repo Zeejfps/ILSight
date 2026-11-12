@@ -566,12 +566,30 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
+    public void The_frame_the_preset_menu_opens_in_says_the_frameworks_are_looked_for_until_they_come()
+    {
+        var app = OpenedDialog();
+
+        app.Frames.ClickOn(Selector.WithText("Add preconfigured"));
+        app.Frames.WaitUntil(() => app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets), Patience);
+        var lookedForBeforeShown = app.Ui.Presets.Found is null;
+        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, Patience);
+        app.Frames.Frame(2);
+
+        Assert.True(lookedForBeforeShown);
+        Assert.False(app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets));
+        Assert.True(app.Frames.Drew(AssemblyListPresets.FindInstalled()[0].Name));
+    }
+
+    [Fact]
     public void A_preconfigured_list_holds_an_installed_frameworks_assemblies_and_is_named_in_place_without_switching_to_it()
     {
         var app = OpenedDialog();
-        var preset = AssemblyListPresets.ListInstalled(new InstalledRuntime())[0];
+        var preset = AssemblyListPresets.FindInstalled()[0];
 
-        app.Frames.ClickOn(Selector.WithText("Add preconfigured")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Add preconfigured"));
+        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, Patience);
+        app.Frames.Frame(2);
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, preset.Name)).Frame(2);
 
         Assert.Equal(preset.Name, Assert.IsType<ListsDialogMode.Renaming>(app.Ui.ListsDialog.Mode).List);

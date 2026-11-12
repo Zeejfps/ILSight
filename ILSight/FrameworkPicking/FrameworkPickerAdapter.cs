@@ -7,6 +7,10 @@ namespace ILSight.FrameworkPicking;
 /// cancellation of the token the call was given, which it lets through.</summary>
 internal sealed class FrameworkPickerAdapter(Action<AppProblem> reportError, InstalledRuntime runtime) : FrameworkBrowser.IPorts
 {
+    /// <summary>The runtime's assemblies, scanned once, the first time they are asked for, and again the next time
+    /// when the scan failed.</summary>
+    private readonly Lazy<IReadOnlyList<RuntimeAssembly>> _assemblies = new(() => RuntimeFolders.ScanAssemblies(runtime.Directories), LazyThreadSafetyMode.PublicationOnly);
+
     public void ReportError(AppProblem problem)
     {
         reportError(problem);
@@ -16,7 +20,7 @@ internal sealed class FrameworkPickerAdapter(Action<AppProblem> reportError, Ins
     /// <see cref="Outcome{T}.Failed"/>.</summary>
     public async Task<Outcome<IReadOnlyList<RuntimeAssembly>>> ListAssembliesAsync(CancellationToken ct)
     {
-        var scanned = await Background.Wait(Task.Run(() => RuntimeAssemblies.ListAssemblies(runtime), ct));
+        var scanned = await Background.Wait(Task.Run(() => _assemblies.Value, ct));
         ct.ThrowIfCancellationRequested();
         return scanned;
     }

@@ -376,7 +376,8 @@ internal static class AssemblyListsDialogView
     }
 
     /// <summary>The frameworks installed here, each with how many assemblies it holds; picking one adds
-    /// a list of them, picked to be named. The frameworks are looked for the first time the menu opens.</summary>
+    /// a list of them, picked to be named. The frameworks are looked for the first time the menu opens, by the frame
+    /// edge right after this draw, and the menu says so until they come.</summary>
     private static void PresetMenu(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -386,7 +387,15 @@ internal static class AssemblyListsDialogView
             return;
         }
 
-        var presets = AssemblyListPresets.ListInstalled(ui.State.Runtime);
+        var scan = ui.State.Presets;
+        var presets = scan.Found;
+        if (presets is null)
+        {
+            scan.AskForPresets();
+            ui.MenuItem(t.ListsLookingForPresets, enabled: false);
+            return;
+        }
+
         if (presets.Count == 0)
         {
             ui.MenuItem(t.ListsNoPresets, enabled: false);

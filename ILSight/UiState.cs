@@ -184,7 +184,9 @@ public sealed class UiState : IUiState
     public required FrameworkPicker Picker { get; init; }
 
     /// <summary>What this machine has installed.</summary>
-    public required InstalledRuntime Runtime { get; init; }
+    /// <summary>The ready-made lists this machine offers, looked for the first time the lists dialog's menu
+    /// opens.</summary>
+    public PresetScan Presets { get; } = new();
 
     /// <summary>The folder of the licenses the app ships beside it, which the about dialog opens; null when it
     /// ships none there.</summary>

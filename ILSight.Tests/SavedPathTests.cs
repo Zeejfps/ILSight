@@ -37,7 +37,7 @@ public sealed class SavedPathTests : IDisposable
     public void A_path_to_a_node_of_each_kind_finds_it_again_in_another_list_that_reopened_its_file(string kind)
     {
         var node = Sample(kind);
-        var reopened = new AssemblyList();
+        var reopened = new AssemblyList { Runtime = TestRuntime.Installed };
         AssemblyListing.Open(reopened, BrowseNodes.GetPath(node).FilePath);
 
         var found = reopened.FindNode(BrowseNodes.GetPath(node));
@@ -52,7 +52,7 @@ public sealed class SavedPathTests : IDisposable
     {
         var failed = Sample("FailedAssembly");
 
-        Assert.Null(new AssemblyList().FindNode(BrowseNodes.GetPath(failed)));
+        Assert.Null(new AssemblyList { Runtime = TestRuntime.Installed }.FindNode(BrowseNodes.GetPath(failed)));
     }
 
     /// <summary>A node of <paramref name="kind"/>, in a file left in place for another list to open.</summary>
@@ -70,7 +70,7 @@ public sealed class SavedPathTests : IDisposable
 
     private static LoadedAssembly Open(string path)
     {
-        return new AssemblyList().Open(path);
+        return new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
     }
 
     /// <summary>The name of the kind of <paramref name="node"/>.</summary>

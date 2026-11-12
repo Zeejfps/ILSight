@@ -47,7 +47,7 @@ public sealed class AnalyzerTests
     public void A_failed_analysis_tells_why_in_its_row_and_reports_the_whole_error()
     {
         var d = AppStateDriver.Opened();
-        var elsewhere = new AssemblyList().Open(AppStateDriver.FixturePath).Root.Child(AppStateDriver.FixturesNamespace, "Outline");
+        var elsewhere = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root.Child(AppStateDriver.FixturesNamespace, "Outline");
         var symbol = Core.Analysis.Analyzers.Of(elsewhere);
         Assert.NotNull(symbol);
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol).Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };

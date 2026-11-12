@@ -235,7 +235,7 @@ public sealed class DecompilationTests
     [Fact]
     public void Runtime_assemblies_take_their_xml_documentation_from_the_reference_pack()
     {
-        var coreLib = new AssemblyList().Open(Trees.CoreLibPath);
+        var coreLib = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.CoreLibPath);
 
         var empty = coreLib.Root.Child("System", "String", "Empty : string").Decompile(DecompilationLanguage.CSharp);
 
@@ -309,7 +309,7 @@ public sealed class DecompilationTests
     [Fact]
     public void Folders_and_resources_decompile_to_summaries()
     {
-        var coreLib = new AssemblyList().Open(Trees.CoreLibPath);
+        var coreLib = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.CoreLibPath);
 
         var references = Trees.TestAssembly.Root.Child("References").Decompile(DecompilationLanguage.CSharp);
         var resources = coreLib.Root.Child("Resources");
@@ -335,7 +335,7 @@ public sealed class DecompilationTests
     [Fact]
     public async Task Concurrent_decompiles_match_sequential_ones()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLib = list.Open(Trees.CoreLibPath);
         var types = coreLib.Root.Child("System.Collections.Generic").Children.Take(12).ToArray();
         var languages = new[] { DecompilationLanguage.CSharp, DecompilationLanguage.IL };
@@ -353,7 +353,7 @@ public sealed class DecompilationTests
     {
         using var temp = new TempDir();
         var corrupt = temp.Write("corrupt.dll", WithBrokenAttribute(File.ReadAllBytes(Trees.TestAssemblyPath), "Describe"));
-        var describe = new AssemblyList().Open(corrupt).Calculator().Child("Describe() : string");
+        var describe = new AssemblyList { Runtime = TestRuntime.Installed }.Open(corrupt).Calculator().Child("Describe() : string");
 
         var il = describe.Decompile(DecompilationLanguage.IL);
         var csharp = describe.Decompile(DecompilationLanguage.CSharp);
@@ -377,7 +377,7 @@ public sealed class DecompilationTests
             using var writer = new StreamWriter(archive.CreateEntry("readme.txt").Open());
             writer.Write("Read me");
         }
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var roots = new[] { Trees.TestAssemblyPath, Trees.SampleAppPath, package }
             .Select(p => list.Open(p).Root);
 

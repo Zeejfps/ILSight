@@ -19,7 +19,7 @@ public sealed class PathIdentityTests : IDisposable
 
     private static BrowseNode Root(string path)
     {
-        return new AssemblyList().Open(path).Root;
+        return new AssemblyList { Runtime = TestRuntime.Installed }.Open(path).Root;
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class PathIdentityTests : IDisposable
         };
         File.Copy(Trees.PathsAfterPath, path, overwrite: true);
 
-        var after = new AssemblyList();
+        var after = new AssemblyList { Runtime = TestRuntime.Installed };
         after.Open(path);
         var found = places.Select(p => after.FindNode(BrowseNodes.GetPath(p))).ToArray();
 
@@ -129,7 +129,7 @@ public sealed class PathIdentityTests : IDisposable
         var shape = lib.Children.Single(static c => c.Subject is NodeSubject.Module).Child(Namespace, "Shape");
         WritePackage(path, withNotes: true);
 
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var found = new[] { list.FindNode(BrowseNodes.GetPath(lib)), list.FindNode(BrowseNodes.GetPath(shape)) };
 
         Assert.Equal(["net10.0", "Shape"], found.Select(static f => f?.Text));
@@ -143,7 +143,7 @@ public sealed class PathIdentityTests : IDisposable
         Assert.Equal(2, nodes.Length);
         Assert.Equal(nodes[0].Text, nodes[1].Text);
         Assert.NotEqual(BrowseNodes.GetPath(nodes[0]), BrowseNodes.GetPath(nodes[1]));
-        var reopened = new AssemblyList();
+        var reopened = new AssemblyList { Runtime = TestRuntime.Installed };
         reopened.Open(path);
 
         var found = nodes.Select(n => reopened.FindNode(BrowseNodes.GetPath(n))).ToArray();

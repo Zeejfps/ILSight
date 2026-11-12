@@ -53,7 +53,7 @@ public sealed class TargetFrameworkTests
     [Fact]
     public void An_assembly_for_dotnet_framework_resolves_its_references_for_dotnet_framework_not_the_running_runtime()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var detected = list.OpenModule(Trees.TestAssemblyPath);
         var reference = AssemblyNameReference.Parse("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
         var onCore = detected.Resolver.FindAssemblyFile(reference);
@@ -74,7 +74,7 @@ public sealed class TargetFrameworkTests
     [Fact]
     public void An_assembly_resolves_against_the_framework_picked_for_it_once_it_is_opened_again()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var detected = list.OpenModule(Trees.TestAssemblyPath);
 
         list.TargetFrameworks.Pick(detected.FilePath, Frameworks.Net48);
@@ -91,7 +91,7 @@ public sealed class TargetFrameworkTests
     [Fact]
     public void Closing_an_assembly_forgets_the_framework_picked_for_it()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(Trees.TestAssemblyPath);
         list.TargetFrameworks.Pick(assembly.FilePath, Frameworks.Net48);
 

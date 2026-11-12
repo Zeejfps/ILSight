@@ -11,7 +11,7 @@ public sealed class WebCilTests
     [Fact]
     public void A_webcil_module_opens_as_an_assembly_and_decompiles()
     {
-        var assembly = new AssemblyList().Open(Trees.WebCilSamplePath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
         var counter = assembly.Root.Child("SampleApp").Child("Counter").Decompile(DecompilationLanguage.CSharp);
 
@@ -25,7 +25,7 @@ public sealed class WebCilTests
     [Fact]
     public void A_webcil_module_shows_its_metadata_without_pe_headers()
     {
-        var assembly = new AssemblyList().Open(Trees.WebCilSamplePath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
         var metadata = assembly.Root.Child("Metadata").Children;
 
@@ -36,7 +36,7 @@ public sealed class WebCilTests
     [Fact]
     public void A_webcil_module_offers_no_pdb_to_generate()
     {
-        var assembly = new AssemblyList().OpenModule(Trees.WebCilSamplePath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.WebCilSamplePath);
 
         Assert.False(LoadedAssemblies.CanGeneratePdb(assembly));
     }
@@ -44,7 +44,7 @@ public sealed class WebCilTests
     [Fact]
     public void The_summary_of_a_webcil_module_leaves_out_the_architecture()
     {
-        var assembly = new AssemblyList().Open(Trees.WebCilSamplePath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
         var summary = Documents.GetText(assembly.Root.Decompile(DecompilationLanguage.CSharp));
 
@@ -58,7 +58,7 @@ public sealed class WebCilTests
         using var temp = new TempDir();
         var path = temp.Write("dotnet.native.wasm", WebAssemblyHeader);
 
-        var failed = new AssemblyList().Open(path);
+        var failed = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
 
         Assert.IsType<FailedAssembly>(failed);
     }

@@ -9,7 +9,7 @@ public sealed class ModuleReferenceTests
     {
         var path = RuntimeAssemblies.Find(TestRuntime.Installed, name);
         Assert.NotNull(path);
-        var assembly = new AssemblyList().Open(path);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
         return assembly.Root.Child("References");
     }
 
@@ -90,7 +90,7 @@ public sealed class ModuleReferenceTests
     public void A_stub_generated_for_an_import_is_named_and_goes_as_the_method_declaring_it()
     {
         var qcall = CoreLibReferences().Child("QCall");
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLibPath = RuntimeAssemblies.Find(TestRuntime.Installed, "System.Private.CoreLib");
         Assert.NotNull(coreLibPath);
         var coreLib = list.Open(coreLibPath);

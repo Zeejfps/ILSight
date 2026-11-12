@@ -395,6 +395,26 @@ public static class Commands
             run => StartComparing(appState, run), restore => StartRestoringAnalyses(appState, restore));
     }
 
+    /// <summary>Starts looking for the ready-made lists this machine offers, when the lists dialog's menu asked for them
+    /// while it drew, off the UI thread (it reads the installed frameworks' folders), as a workflow of its own; the
+    /// presets found go to <paramref name="scan"/>.</summary>
+    public static void StartScanningPresets(WorkflowRunner workflows, PresetScan scan)
+    {
+        if (!scan.TryStart())
+        {
+            return;
+        }
+
+        StartScan(workflows, scan);
+    }
+
+    /// <summary>Starts the scan <see cref="StartScanningPresets"/> took; apart, so a frame that starts none makes no
+    /// closure.</summary>
+    private static void StartScan(WorkflowRunner workflows, PresetScan scan)
+    {
+        workflows.Start(nameof(AssemblyListPresets.FindInstalled), async ct => scan.Take(await Task.Run(AssemblyListPresets.FindInstalled, ct)));
+    }
+
     /// <summary>Starts finding the nodes <paramref name="lookup"/>'s reopened tabs wait for
     /// (<see cref="ShowReopenedNodesHandler"/>) as a workflow of its own, then each load it points a tab at.</summary>
     private static void StartFindingNodes(AppState appState, ReopenedNodesLookup lookup)

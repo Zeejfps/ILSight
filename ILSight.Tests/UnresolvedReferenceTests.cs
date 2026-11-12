@@ -21,7 +21,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
 
     private (AssemblyList List, LoadedModule Assembly) OpenAlone()
     {
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         return (list, list.OpenModule(_temp.Copy(Trees.TestAssemblyPath, "ILSight.Tests.dll")));
     }
 

@@ -97,7 +97,7 @@ public sealed class FrameworkPickerTests
             new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll")),
         };
         var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = assemblies });
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         await OpenAsync(picker);
         picker.Update(list);
 
@@ -114,7 +114,7 @@ public sealed class FrameworkPickerTests
         var open = new RuntimeAssembly("Fixtures", "Microsoft.NETCore.App", PathOf(AppStateDriver.FixturePath));
         var other = new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll"));
         var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = [open, other] });
-        var list = new AssemblyList();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
         await OpenAsync(picker);
         picker.Update(list);
         Assert.Equal([open, other], picker.Browser.Filtered);
