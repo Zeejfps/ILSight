@@ -1,6 +1,6 @@
 using ZGF.Desktop;
 using ZGF.Gui.Testing;
-using ILSight.MainScreen;
+using ILSight.MainArea;
 using static ILSight.ILSightAppArea.AppFrames;
 
 namespace ILSight.App.Tests;

@@ -3,7 +3,7 @@ using System.Globalization;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.BuiltInArea;
-using ILSight.MainScreen;
+using ILSight.MainArea;
 using static ILSight.ScreenLayout;
 
 namespace ILSight.App.Tests;

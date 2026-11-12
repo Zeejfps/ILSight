@@ -1,5 +1,5 @@
 
-using ILSight.NuGet;
+using ILSight.NuGetArea;
 
 namespace ILSight;
 

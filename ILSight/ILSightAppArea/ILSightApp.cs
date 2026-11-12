@@ -3,7 +3,7 @@ using ZGF.AppUtils;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.CommandArea;
-using ILSight.MainScreen;
+using ILSight.MainArea;
 using static ILSight.Analysis;
 using static ILSight.ILSightAppArea.AppFrames;
 using static ILSight.ILSightAppArea.Appearance;

@@ -7,7 +7,7 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.BuiltInArea;
 using ILSight.Searching;
-using ILSight.MainScreen;
+using ILSight.MainArea;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;

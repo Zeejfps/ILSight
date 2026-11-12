@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.FrameworkPicking;
+using ILSight.FrameworkArea;
 
 namespace ILSight.App.Tests;
 

@@ -6,7 +6,7 @@ using ILSight.Core.Metadata;
 using ILSight.CodeViewArea;
 using ILSight.BookmarkArea;
 using ILSight.CodeTooltipArea;
-using ILSight.Omnibars;
+using ILSight.OmnibarArea;
 using ILSight.CommandArea;
 using ILSight.MetadataGridArea;
 using ILSight.DiagramArea;

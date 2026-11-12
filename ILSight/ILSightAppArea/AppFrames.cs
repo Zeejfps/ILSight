@@ -5,7 +5,7 @@ using ILSight.Core.Processes;
 using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.ProcessBrowsing;
-using ILSight.NuGet;
+using ILSight.NuGetArea;
 using ILSight.AssemblyArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.CodeDisplay;
