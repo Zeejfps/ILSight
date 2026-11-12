@@ -16,7 +16,7 @@ public static class Theming
     /// <summary>A theme of these colors, with the UI theme in the app's compact metrics.</summary>
     public static AppTheme CreateTheme(UiTheme ui, CodeViewPalette code, NodeIconPalette icons)
     {
-        return new AppTheme(MakeCompact(ui), code, icons);
+        return new AppTheme { Ui = MakeCompact(ui), Code = code, Icons = icons };
     }
 
     private static UiTheme MakeCompact(UiTheme theme)
@@ -81,7 +81,7 @@ public static class Theming
     {
         if (root.Type is null)
         {
-            catalog.AddError(new ThemeError(root.File, 0, ThemeProblem.NoType));
+            catalog.AddError(new ThemeError { File = root.File, Line = 0, Problem = ThemeProblem.NoType });
             return null;
         }
         return catalog.GetBuiltInContents(GetIdOfType(root.Type.Value));
@@ -161,7 +161,13 @@ public static class Theming
         AddMissing(missing, IconsSection, NodeIconPalette.ColorKeys, icons);
         if (missing.Count > 0)
         {
-            errors.Add(new ThemeError(file, 0, ThemeProblem.MissingColors, Detail: string.Join(KeySeparator, missing)));
+            errors.Add(new ThemeError
+            {
+                File = file,
+                Line = 0,
+                Problem = ThemeProblem.MissingColors,
+                Detail = string.Join(KeySeparator, missing),
+            });
             return null;
         }
         return Theming.CreateTheme(UiTheme.FromColors(ui), CodeViewPalette.FromColors(code), NodeIconPalette.FromColors(icons));
@@ -190,7 +196,14 @@ public static class Theming
                 colors[key] = color;
                 return;
             }
-            errors.Add(new ThemeError(value.File, value.Line, ThemeProblem.UnknownPaletteName, section + "." + key, value.Text));
+            errors.Add(new ThemeError
+            {
+                File = value.File,
+                Line = value.Line,
+                Problem = ThemeProblem.UnknownPaletteName,
+                Subject = section + "." + key,
+                Detail = value.Text,
+            });
         }
     }
 
@@ -315,7 +328,14 @@ public static class Theming
     {
         if (!merged.Fonts.TryGetValue(glyph.Font, out var font))
         {
-            errors.Add(new ThemeError(glyph.File, glyph.Line, ThemeProblem.UnknownFont, IconsPrefix + key, glyph.Font));
+            errors.Add(new ThemeError
+            {
+                File = glyph.File,
+                Line = glyph.Line,
+                Problem = ThemeProblem.UnknownFont,
+                Subject = IconsPrefix + key,
+                Detail = glyph.Font,
+            });
             return null;
         }
         if (font is not IconFont.Loaded loaded)
@@ -326,7 +346,14 @@ public static class Theming
         if (!loaded.Characters.Contains(glyph.Codepoint))
         {
             var codepoint = glyph.Codepoint.ToString(CodepointFormat, CultureInfo.InvariantCulture);
-            errors.Add(new ThemeError(glyph.File, glyph.Line, ThemeProblem.MissingGlyph, IconsPrefix + key, codepoint));
+            errors.Add(new ThemeError
+            {
+                File = glyph.File,
+                Line = glyph.Line,
+                Problem = ThemeProblem.MissingGlyph,
+                Subject = IconsPrefix + key,
+                Detail = codepoint,
+            });
             return null;
         }
         var text = char.ConvertFromUtf32(glyph.Codepoint);
@@ -551,7 +578,14 @@ public static class Theming
 
     internal static void AddJsonError(ThemeJson json, int line, ThemeProblem problem, string subject = "", string detail = "")
     {
-        json.FoundErrors.Add(new ThemeError(json.File, line, problem, subject, detail));
+        json.FoundErrors.Add(new ThemeError
+        {
+            File = json.File,
+            Line = line,
+            Problem = problem,
+            Subject = subject,
+            Detail = detail,
+        });
     }
 
     private const string TypeKey = "type";
@@ -593,7 +627,13 @@ public static class Theming
             return;
         }
 
-        theme.Contents = new ThemeContents(theme.Palette, theme.Ui, theme.Code, theme.Icons);
+        theme.Contents = new ThemeContents
+        {
+            Palette = theme.Palette,
+            Ui = theme.Ui,
+            Code = theme.Code,
+            Icons = theme.Icons,
+        };
     }
 
     private static void ReadThemeKey(ThemeFile theme, ref Utf8JsonReader reader, string key, int line)
@@ -678,7 +718,7 @@ public static class Theming
             Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownParent, parent);
             return;
         }
-        theme.Extends = new ThemeParent<ThemeFile>(id, line);
+        theme.Extends = new ThemeParent<ThemeFile> { Id = id, Line = line };
     }
 
     /// <summary>Reads the palette, whose colors must be written out, not named.</summary>
@@ -703,7 +743,7 @@ public static class Theming
                 continue;
             }
 
-            theme.Palette[name] = new ThemeValue(color, theme.File, nameLine);
+            theme.Palette[name] = new ThemeValue { Text = color, File = theme.File, Line = nameLine };
         }
     }
 
@@ -735,7 +775,7 @@ public static class Theming
             return;
         }
 
-        var value = new ThemeValue(text, theme.File, line);
+        var value = new ThemeValue { Text = text, File = theme.File, Line = line };
         if (!value.IsPaletteName && !IsValidColor(theme, key, text, line))
         {
             return;

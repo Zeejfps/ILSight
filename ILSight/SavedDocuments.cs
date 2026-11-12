@@ -19,7 +19,7 @@ public static class SavedDocuments
     public static ReopenedTab WaitFor(ReopenedTabs tabs, DocumentTab tab, DocumentRecord record)
     {
         tabs.Tabs.RemoveAll(r => r.Tab == tab);
-        var reopened = new ReopenedTab(tab, record, tab.Version);
+        var reopened = new ReopenedTab { Tab = tab, Record = record, Version = tab.Version };
         tabs.Tabs.Add(reopened);
         return reopened;
     }
@@ -174,7 +174,7 @@ public static class SavedDocuments
         var waiting = FindWaiting(session.Reopened, tab);
         if (waiting is not null)
         {
-            return new SavedTab(tab, KeepWaiting(waiting, panel));
+            return new SavedTab { Tab = tab, Record = KeepWaiting(waiting, panel) };
         }
 
         if (panel is null)
@@ -188,7 +188,7 @@ public static class SavedDocuments
             return null;
         }
 
-        return new SavedTab(tab, record);
+        return new SavedTab { Tab = tab, Record = record };
     }
 
     private static TabPanel? FindTabPanel(ViewSettings view, DocumentTab tab)
@@ -375,5 +375,10 @@ public static class SavedDocuments
         return node.Location;
     }
 
-    private sealed record SavedTab(DocumentTab Tab, DocumentRecord Record);
+    private sealed record SavedTab
+    {
+        public required DocumentTab Tab { get; init; }
+
+        public required DocumentRecord Record { get; init; }
+    }
 }

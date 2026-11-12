@@ -524,7 +524,7 @@ public sealed class MetadataGridTests
         MetadataGridWidget.MeasureTallRows(state, 10f, 0f);
 
         Assert.Equal([new TallRow(1, 30f), new TallRow(3, 20f)], state.TallRows);
-        Assert.Equal(new RowHeights(30f, 0f), state.TallRowsByIndex[1]);
+        Assert.Equal(new RowHeights { Cells = 30f, Details = 0f }, state.TallRowsByIndex[1]);
     }
 
     [Fact]

@@ -36,7 +36,11 @@ public sealed class AssemblyListingTests
         using var temp = new TempDir();
         var other = typeof(AppState).Assembly.Location;
         var settings = temp.Settings();
-        settings.AssemblyLists = [new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath), PathOf(other)])];
+        settings.AssemblyLists = [new AssemblyListRecord
+        {
+            Name = SavedAssemblyLists.DefaultName,
+            Assemblies = [PathOf(AppStateDriver.FixturePath), PathOf(other)],
+        }];
         var d = new AppStateDriver(settings);
 
         d.Start(AppStateDriver.OpenAtStartupAsync);
@@ -53,7 +57,11 @@ public sealed class AssemblyListingTests
         using var temp = new TempDir();
         var gone = temp.PathOf("gone.dll");
         var settings = temp.Settings();
-        settings.AssemblyLists = [new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(gone), PathOf(AppStateDriver.FixturePath)])];
+        settings.AssemblyLists = [new AssemblyListRecord
+        {
+            Name = SavedAssemblyLists.DefaultName,
+            Assemblies = [PathOf(gone), PathOf(AppStateDriver.FixturePath)],
+        }];
         var d = new AppStateDriver(settings);
 
         d.Start(AppStateDriver.OpenAtStartupAsync);

@@ -28,10 +28,10 @@ public sealed class UserThemesTests
 
     private static ThemeFolderEvent Lost(string reason)
     {
-        return new ThemeFolderEvent(ThemeFolderEventKind.Lost, reason);
+        return new ThemeFolderEvent { Kind = ThemeFolderEventKind.Lost, Reason = reason };
     }
 
-    private static readonly ThemeFolderEvent Changed = new(ThemeFolderEventKind.Changed);
+    private static readonly ThemeFolderEvent Changed = new ThemeFolderEvent { Kind = ThemeFolderEventKind.Changed };
 
     [Fact]
     public void ReadThemes_ThemeFileUnreadable_ReportsItUnderItsFileOnce()
@@ -67,7 +67,14 @@ public sealed class UserThemesTests
         themes.ReadThemes();
 
         var problem = Assert.IsType<AppProblem.ThemeFileProblems>(Assert.Single(ports.Reported));
-        Assert.Contains(new ThemeError(PathOf("mine"), 3, ThemeProblem.AssetUnreadable, "fonts.m", "mine.ttf"), problem.Errors);
+        Assert.Contains(new ThemeError
+        {
+            File = PathOf("mine"),
+            Line = 3,
+            Problem = ThemeProblem.AssetUnreadable,
+            Subject = "fonts.m",
+            Detail = "mine.ttf",
+        }, problem.Errors);
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, themes.Themes.GetTheme(ThemeId<IconThemeFile>.Of("mine")).Icons.NodeClass);
         Assert.Contains(nameof(ports.ReadNamedFiles), ports.Asked);
     }
@@ -262,7 +269,13 @@ public sealed class UserThemesTests
     [Fact]
     public async Task WatchAsync_WatchStopped_Ends()
     {
-        var ports = new FakeUserThemesPorts<ThemeFile, ThemeContents, AppTheme> { Changes = new Queue<ThemeFolderEvent>([new ThemeFolderEvent(ThemeFolderEventKind.Stopped)]) };
+        var ports = new FakeUserThemesPorts<ThemeFile, ThemeContents, AppTheme>
+        {
+            Changes = new Queue<ThemeFolderEvent>([new ThemeFolderEvent
+            {
+                Kind = ThemeFolderEventKind.Stopped,
+            }]),
+        };
 
         await Create(ports).WatchAsync(CancellationToken.None);
 

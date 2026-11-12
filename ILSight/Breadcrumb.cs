@@ -32,7 +32,7 @@ public sealed class Breadcrumb
         }
 
         return Trees.ListPathTo(tree, node)
-            .Select(n => new Crumb(n, GetCrumbLabel(n, tree)))
+            .Select(n => new Crumb { Node = n, Label = GetCrumbLabel(n, tree) })
             .ToArray();
     }
 

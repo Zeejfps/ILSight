@@ -31,7 +31,7 @@ public sealed class ExportQueue
         _lastRun++;
         var run = new ExportRun(_lastRun);
         var started = new TaskCompletionSource<ExportTurn>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _waiting.Add(new Turn(new QueuedExport(run, job), started));
+        _waiting.Add(new Turn { Export = new QueuedExport { Run = run, Job = job }, Started = started });
         if (!IsRunning)
         {
             StartNext();
@@ -75,13 +75,18 @@ public sealed class ExportQueue
         var run = export.Run;
         var active = new Active
         {
-            Shown = new RunningExport(export, new ExportProgress
+            Shown = new RunningExport
             {
-                Name = export.Job.Name,
-                Part = 1,
-                Parts = 1,
-                Fraction = null,
-            }, false),
+                Export = export,
+                Progress = new ExportProgress
+                {
+                    Name = export.Job.Name,
+                    Part = 1,
+                    Parts = 1,
+                    Fraction = null,
+                },
+                IsCancelling = false,
+            },
         };
         _running = active;
         var progress = new Progress<ExportProgress>(p => TakeProgress(run, p));
@@ -155,7 +160,12 @@ public sealed class ExportQueue
         return running;
     }
 
-    private sealed record Turn(QueuedExport Export, TaskCompletionSource<ExportTurn> Started);
+    private sealed record Turn
+    {
+        public required QueuedExport Export { get; init; }
+
+        public required TaskCompletionSource<ExportTurn> Started { get; init; }
+    }
 
     /// <summary>The running export as shown, with the source of the token that cancels it.</summary>
     private sealed class Active

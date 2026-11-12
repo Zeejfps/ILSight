@@ -201,7 +201,7 @@ internal ref struct MetadataGridFrame
                 var target = MetadataGrids.FindLink(Grid, State.Selected, State.CurrentColumn);
                 if (target is not null)
                 {
-                    result = new MetadataGridResult(target, null, false);
+                    result = new MetadataGridResult { Target = target, Definition = null, InNewTab = false };
                 }
             }
         }
@@ -346,7 +346,7 @@ internal ref struct MetadataGridFrame
             return;
         }
 
-        _result = new MetadataGridResult(null, definition, inNewTab);
+        _result = new MetadataGridResult { Target = null, Definition = definition, InNewTab = inNewTab };
     }
 
     private void Cell(TableRow cells, int row, int c)
@@ -380,7 +380,7 @@ internal ref struct MetadataGridFrame
             expanded: expanded);
         if (followed)
         {
-            _result = new MetadataGridResult(target, null, false);
+            _result = new MetadataGridResult { Target = target, Definition = null, InNewTab = false };
         }
 
         Tooltip(row, c, cellId);
@@ -464,19 +464,19 @@ internal ref struct MetadataGridFrame
         Ui.MenuSeparator();
         if (target is not null && Ui.MenuItem(Strings.MetadataGoToToken, Shortcuts.GoToToken, id: "go-to-token"))
         {
-            result = new MetadataGridResult(target, null, false);
+            result = new MetadataGridResult { Target = target, Definition = null, InNewTab = false };
         }
 
         if (definition != null)
         {
             if (Ui.MenuItem(Strings.CodeGoToDefinition, Shortcuts.Enter, id: "go-to-definition"))
             {
-                result = new MetadataGridResult(null, definition, false);
+                result = new MetadataGridResult { Target = null, Definition = definition, InNewTab = false };
             }
 
             if (Ui.MenuItem(Strings.CodeOpenInNewTab, id: "open-in-new-tab"))
             {
-                result = new MetadataGridResult(null, definition, true);
+                result = new MetadataGridResult { Target = null, Definition = definition, InNewTab = true };
             }
         }
         return result;

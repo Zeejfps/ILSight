@@ -438,7 +438,13 @@ public static class Exports
     /// <summary>The export the dialog asks for.</summary>
     public static ExportRequest CreateRequest(ExportSetup setup)
     {
-        return new ExportRequest(setup.Folder.Trim(), ListIncludedProjects(setup), GetExtras(setup), setup.SolutionFileName);
+        return new ExportRequest
+        {
+            Folder = setup.Folder.Trim(),
+            Projects = ListIncludedProjects(setup),
+            Extras = GetExtras(setup),
+            SolutionFileName = setup.SolutionFileName,
+        };
     }
 
     /// <summary>The ticked assemblies as the projects to export, in the dialog's order.</summary>

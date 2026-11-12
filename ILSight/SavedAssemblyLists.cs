@@ -144,7 +144,15 @@ public sealed class SavedAssemblyLists
     public List<AssemblyListRecord> ToRecords()
     {
         return _lists
-            .Select(static l => new AssemblyListRecord(l.Name, l.Paths.ToList(), l.Analyzed.ToList(), SavePicks(l.Pdbs), SaveFrameworks(l.Frameworks), l.Documents))
+            .Select(static l => new AssemblyListRecord
+            {
+                Name = l.Name,
+                Assemblies = l.Paths.ToList(),
+                Analyzed = l.Analyzed.ToList(),
+                Pdbs = SavePicks(l.Pdbs),
+                Frameworks = SaveFrameworks(l.Frameworks),
+                Documents = l.Documents,
+            })
             .ToList();
     }
 

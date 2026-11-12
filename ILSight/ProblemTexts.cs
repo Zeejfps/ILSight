@@ -22,7 +22,7 @@ public static class ProblemTexts
     public static ProblemText Describe(Strings t, AppProblem problem)
     {
         var (title, details) = Words(t, problem);
-        return new ProblemText(title, details.Trim());
+        return ProblemText.FromWords(title, details.Trim());
     }
 
     private static (string Title, string Details) Words(Strings t, AppProblem problem)

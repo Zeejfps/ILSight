@@ -66,7 +66,7 @@ public static class IconTheming
     /// <summary>The asset that couldn't be read, with why.</summary>
     public static IconAsset CreateFailedAsset(ThemeProblem problem, string detail)
     {
-        return new IconAsset(null, problem, detail);
+        return new IconAsset { Bytes = null, Problem = problem, Detail = detail };
     }
 
     /// <summary>The icon theme the app is drawn with: the chosen one as resolved, or the reference one while
@@ -151,7 +151,7 @@ public static class IconTheming
             return;
         }
 
-        theme.Contents = new IconThemeContents(theme.Fonts, theme.Icons);
+        theme.Contents = new IconThemeContents { Fonts = theme.Fonts, Icons = theme.Icons };
     }
 
     private static void ReadThemeKey(IconThemeFile theme, ref Utf8JsonReader reader, string key, int line)
@@ -202,7 +202,7 @@ public static class IconTheming
             Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownParent, parent);
             return;
         }
-        theme.Extends = new ThemeParent<IconThemeFile>(id, line);
+        theme.Extends = new ThemeParent<IconThemeFile> { Id = id, Line = line };
     }
 
     private static void ReadFonts(IconThemeFile theme, ref Utf8JsonReader reader, int line)
@@ -282,7 +282,14 @@ public static class IconTheming
     }
 
     /// <summary>The fields of an icon as written, each null when left out.</summary>
-    private readonly record struct IconFields(string? Font, string? Glyph, string? Svg);
+    private readonly record struct IconFields
+    {
+        public string? Font { get; init; }
+
+        public string? Glyph { get; init; }
+
+        public string? Svg { get; init; }
+    }
 
     private static IconFields ReadIconFields(IconThemeFile theme, ref Utf8JsonReader reader, string subject)
     {
@@ -314,7 +321,9 @@ public static class IconTheming
     /// for a key wins.</summary>
     private static void TakeIcon(IconThemeFile theme, string key, string subject, IconFields fields, int line)
     {
-        var (font, glyph, svg) = fields;
+        var font = fields.Font;
+        var glyph = fields.Glyph;
+        var svg = fields.Svg;
         if (svg is not null && font is null && glyph is null)
         {
             theme.NamedPictures[key] = new ThemeNamedFile { Path = svg, Subject = subject, Line = line };

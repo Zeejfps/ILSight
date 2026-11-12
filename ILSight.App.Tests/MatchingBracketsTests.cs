@@ -7,12 +7,24 @@ public sealed class MatchingBracketsTests
 {
     private static BracketPair? Find(DecompiledDocument document, int line, int column)
     {
-        return MatchingBrackets.Find(new CodeViewState(), document, new TextPosition(line, column));
+        return MatchingBrackets.Find(new CodeViewState(), document, new TextPosition { Line = line, Column = column });
     }
 
     private static BracketPair Pair(int openLine, int openColumn, int closeLine, int closeColumn)
     {
-        return new BracketPair(new TextPosition(openLine, openColumn), new TextPosition(closeLine, closeColumn));
+        return new BracketPair
+        {
+            Open = new TextPosition
+            {
+                Line = openLine,
+                Column = openColumn,
+            },
+            Close = new TextPosition
+            {
+                Line = closeLine,
+                Column = closeColumn,
+            },
+        };
     }
 
     [Theory]

@@ -26,7 +26,13 @@ public sealed class HistoryTests
     {
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        CodeViewWidget.RestorePosition(CodeOf(app, tab), new CodeViewPosition(topLine, 0f, anchor, caret));
+        CodeViewWidget.RestorePosition(CodeOf(app, tab), new CodeViewPosition
+        {
+            TopLine = topLine,
+            ScrollX = 0f,
+            Anchor = anchor,
+            Caret = caret,
+        });
         app.Run(4);
         var scrolled = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(scrolled);
@@ -43,9 +49,9 @@ public sealed class HistoryTests
     {
         var app = Opened();
         Show(app, "Outline");
-        var outline = ScrollTo(app, 20, new TextPosition(21, 4), new TextPosition(22, 8));
+        var outline = ScrollTo(app, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         Show(app, "Greeter");
-        var greeter = ScrollTo(app, 3, new TextPosition(4, 0), new TextPosition(4, 6));
+        var greeter = ScrollTo(app, 3, new TextPosition { Line = 4, Column = 0 }, new TextPosition { Line = 4, Column = 6 });
 
         app.GoBack();
         app.Settle(4);
@@ -103,7 +109,8 @@ public sealed class HistoryTests
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(tab.Document.SpanAt(line, column + "return ".Length).Reference);
-        var before = ScrollTo(app, 25, new TextPosition(line, column), new TextPosition(line, column + 6));
+        var before = ScrollTo(app, 25,
+            new TextPosition { Line = line, Column = column }, new TextPosition { Line = line, Column = column + 6 });
 
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(4);
@@ -122,11 +129,25 @@ public sealed class HistoryTests
     {
         var app = Opened();
         Show(app, "Outline");
-        ScrollTo(app, 20, new TextPosition(21, 4), new TextPosition(22, 8));
+        ScrollTo(app, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
-        var scrolled = new CodeViewPosition(25, 0f, new TextPosition(line, column), new TextPosition(line, column + 6));
+        var scrolled = new CodeViewPosition
+        {
+            TopLine = 25,
+            ScrollX = 0f,
+            Anchor = new TextPosition
+            {
+                Line = line,
+                Column = column,
+            },
+            Caret = new TextPosition
+            {
+                Line = line,
+                Column = column + 6,
+            },
+        };
         CodeViewWidget.RestorePosition(CodeOf(app, tab), scrolled);
 
         app.Driver.Show(app.Fixture("Greeter"));
@@ -144,7 +165,7 @@ public sealed class HistoryTests
     {
         var app = Opened();
         Show(app, "Outline");
-        ScrollTo(app, 20, new TextPosition(21, 4), new TextPosition(22, 8));
+        ScrollTo(app, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         Show(app, "Greeter");
 
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);

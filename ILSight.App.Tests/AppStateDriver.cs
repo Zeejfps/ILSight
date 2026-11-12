@@ -72,7 +72,7 @@ internal sealed class AppStateDriver
     /// (<see cref="AppFrames.OpenStartupAssembliesAsync"/>).</summary>
     public static Task<TabLoads> OpenAtStartupAsync(AppState appState, CancellationToken ct)
     {
-        return AppFrames.OpenStartupAssembliesAsync(appState, new FilesToOpen([], null), ct);
+        return AppFrames.OpenStartupAssembliesAsync(appState, new FilesToOpen { Paths = [], NavigateTo = null }, ct);
     }
 
     /// <summary>A driver that has opened the fixture assembly.</summary>

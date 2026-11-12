@@ -159,8 +159,12 @@ public sealed class TargetFrameworkTests
         var settings = temp.Settings();
         settings.AssemblyLists =
         [
-            new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)],
-                Frameworks: new Dictionary<AssemblyPath, string> { [PathOf(AppStateDriver.FixturePath)] = Net48.Text }),
+            new AssemblyListRecord
+            {
+                Name = SavedAssemblyLists.DefaultName,
+                Assemblies = [PathOf(AppStateDriver.FixturePath)],
+                Frameworks = new Dictionary<AssemblyPath, string> { [PathOf(AppStateDriver.FixturePath)] = Net48.Text },
+            },
         ];
         var d = new AppStateDriver(settings);
 
@@ -177,8 +181,12 @@ public sealed class TargetFrameworkTests
         var settings = temp.Settings();
         settings.AssemblyLists =
         [
-            new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)],
-                Frameworks: new Dictionary<AssemblyPath, string> { [PathOf(AppStateDriver.FixturePath)] = @"C:\symbols\Fixtures.pdb" }),
+            new AssemblyListRecord
+            {
+                Name = SavedAssemblyLists.DefaultName,
+                Assemblies = [PathOf(AppStateDriver.FixturePath)],
+                Frameworks = new Dictionary<AssemblyPath, string> { [PathOf(AppStateDriver.FixturePath)] = @"C:\symbols\Fixtures.pdb" },
+            },
         ];
         var d = new AppStateDriver(settings);
 

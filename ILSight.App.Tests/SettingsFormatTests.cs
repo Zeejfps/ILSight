@@ -157,18 +157,22 @@ public sealed class SettingsFormatTests : IDisposable
         {
             AssemblyLists =
             [
-                new AssemblyListRecord("Work", [A, B],
-                    [new CodeAnchor
+                new AssemblyListRecord
+                {
+                    Name = "Work",
+                    Assemblies = [A, B],
+                    Analyzed = [new CodeAnchor
                     {
                         Kind = CodeAnchorKind.Statement,
                         FilePath = A,
                         Token = 0x06000001,
                         ILOffset = 7,
                     }],
-                    new Dictionary<AssemblyPath, string> { [A] = Rooted("Fixture/A.pdb") },
-                    new Dictionary<AssemblyPath, string> { [B] = ".NETCoreApp,Version=v8.0" },
-                    ExpectedDocuments()),
-                new AssemblyListRecord("Play", [B], []),
+                    Pdbs = new Dictionary<AssemblyPath, string> { [A] = Rooted("Fixture/A.pdb") },
+                    Frameworks = new Dictionary<AssemblyPath, string> { [B] = ".NETCoreApp,Version=v8.0" },
+                    Documents = ExpectedDocuments(),
+                },
+                new AssemblyListRecord { Name = "Play", Assemblies = [B], Analyzed = [] },
             ],
             ActiveAssemblyList = "Work",
             Theme = ThemeId<ThemeFile>.Of("monokai"),
@@ -237,8 +241,22 @@ public sealed class SettingsFormatTests : IDisposable
 
     private static DocumentsRecord ExpectedDocuments()
     {
-        var code = ViewPosition.OfCode(new CodeViewPosition(12, 3.5f, new TextPosition(13, 2), new TextPosition(14, 5)));
-        var grid = ViewPosition.OfGrid(new GridPosition(4, 1.5f, 6, 2));
+        var code = ViewPosition.OfCode(new CodeViewPosition
+        {
+            TopLine = 12,
+            ScrollX = 3.5f,
+            Anchor = new TextPosition
+            {
+                Line = 13,
+                Column = 2,
+            },
+            Caret = new TextPosition
+            {
+                Line = 14,
+                Column = 5,
+            },
+        });
+        var grid = ViewPosition.OfGrid(new GridPosition { TopRow = 4, ScrollX = 1.5f, Row = 6, Column = 2 });
         var view = new DiagramViewRecord
         {
             X = 10.5f,

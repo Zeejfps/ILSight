@@ -336,9 +336,19 @@ internal static class DecompilerOptionsPanelView
         var language = all.Where(static t => t.Group is DecompilerToggleGroup.Language)
             .GroupBy(static t => t.Group)
             .OrderByDescending(static g => FindVersion(g.Key))
-            .Select(static g => new DecompilerOptionSection(GetKey(g.Key), g.Key, g.ToArray()));
+            .Select(static g => new DecompilerOptionSection
+            {
+                Key = GetKey(g.Key),
+                Group = g.Key,
+                Toggles = g.ToArray(),
+            });
         var rest = new DecompilerToggleGroup[] { new DecompilerToggleGroup.Other(), new DecompilerToggleGroup.FSharp() }
-            .Select(group => new DecompilerOptionSection(GetKey(group), group, all.Where(t => t.Group == group).ToArray()))
+            .Select(group => new DecompilerOptionSection
+            {
+                Key = GetKey(group),
+                Group = group,
+                Toggles = all.Where(t => t.Group == group).ToArray(),
+            })
             .Where(static s => s.Toggles.Length > 0);
         return language.Concat(rest).ToArray();
     }

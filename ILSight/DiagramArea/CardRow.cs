@@ -4,14 +4,24 @@ namespace ILSight.DiagramArea;
 
 /// <summary>A row of a card at the diagram's own size: what it shows, how tall it is and how far in its
 /// content starts, its text, where it starts below the card's top, and how wide its text is.</summary>
-public readonly record struct CardRow(
-    CardRowContent Content,
-    float Height,
-    float Indent,
-    string Text,
-    float Top = 0f,
-    float TextWidth = 0f)
+public readonly record struct CardRow
 {
+    public required CardRowContent Content { get; init; }
+
+    public required float Height { get; init; }
+
+    public required float Indent { get; init; }
+
+    public required string Text { get; init; }
+
+    public float Top { get; init; } = 0f;
+
+    public float TextWidth { get; init; } = 0f;
+
+    public CardRow()
+    {
+    }
+
     public float Bottom => Top + Height;
 
     /// <summary>The type or member whose code a click on the row opens, or null for a row that opens none.</summary>

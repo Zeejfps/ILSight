@@ -127,13 +127,15 @@ internal static class SettingsJson
 
     private static AssemblyListJson Write(AssemblyListRecord list)
     {
-        return new AssemblyListJson(
-            list.Name,
-            WritePaths(list.Assemblies),
-            list.Analyzed?.Select(static CodeAnchorJson? (a) => Write(a)).ToList(),
-            WritePicks(list.Pdbs),
-            WritePicks(list.Frameworks),
-            list.Documents is null ? null : Write(list.Documents));
+        return new AssemblyListJson
+        {
+            Name = list.Name,
+            Assemblies = WritePaths(list.Assemblies),
+            Analyzed = list.Analyzed?.Select(static CodeAnchorJson? (a) => Write(a)).ToList(),
+            Pdbs = WritePicks(list.Pdbs),
+            Frameworks = WritePicks(list.Frameworks),
+            Documents = list.Documents is null ? null : Write(list.Documents),
+        };
     }
 
     /// <summary>The list, without blank paths and picks or documents missing what they show; null
@@ -145,8 +147,15 @@ internal static class SettingsJson
             return null;
         }
 
-        return new AssemblyListRecord(json.Name, ListPaths(json.Assemblies), ListAnchors(json.Analyzed),
-            ParsePicks(json.Pdbs), ParsePicks(json.Frameworks), json.Documents is null ? null : Parse(json.Documents, file, field));
+        return new AssemblyListRecord
+        {
+            Name = json.Name,
+            Assemblies = ListPaths(json.Assemblies),
+            Analyzed = ListAnchors(json.Analyzed),
+            Pdbs = ParsePicks(json.Pdbs),
+            Frameworks = ParsePicks(json.Frameworks),
+            Documents = json.Documents is null ? null : Parse(json.Documents, file, field),
+        };
     }
 
     private static Dictionary<string, string?>? WritePicks(Dictionary<AssemblyPath, string>? picks)
@@ -685,7 +694,13 @@ internal static class SettingsJson
 
     private static CodeViewPosition Parse(CodeViewPositionJson json)
     {
-        return new CodeViewPosition(json.TopLine, json.ScrollX, Parse(json.Anchor), Parse(json.Caret));
+        return new CodeViewPosition
+        {
+            TopLine = json.TopLine,
+            ScrollX = json.ScrollX,
+            Anchor = Parse(json.Anchor),
+            Caret = Parse(json.Caret),
+        };
     }
 
     private static TextPositionJson Write(TextPosition position)
@@ -695,7 +710,7 @@ internal static class SettingsJson
 
     private static TextPosition Parse(TextPositionJson json)
     {
-        return new TextPosition(json.Line, json.Column);
+        return new TextPosition { Line = json.Line, Column = json.Column };
     }
 
     private static GridPositionJson Write(GridPosition position)
@@ -711,7 +726,7 @@ internal static class SettingsJson
 
     private static GridPosition Parse(GridPositionJson json)
     {
-        return new GridPosition(json.TopRow, json.ScrollX, json.Row, json.Column);
+        return new GridPosition { TopRow = json.TopRow, ScrollX = json.ScrollX, Row = json.Row, Column = json.Column };
     }
 
     private static ComparisonViewRecord Parse(ComparisonViewJson json)
@@ -1223,7 +1238,11 @@ internal static class SettingsJson
             return;
         }
 
-        lists.Add(new AssemblyListRecord(SavedAssemblyLists.DefaultName, SettingsJson.ListPaths(unnamed)));
+        lists.Add(new AssemblyListRecord
+        {
+            Name = SavedAssemblyLists.DefaultName,
+            Assemblies = SettingsJson.ListPaths(unnamed),
+        });
     }
 
     /// <summary>Gives the analyses saved before each list kept its own to the open list, unless it has some.</summary>
@@ -1236,7 +1255,11 @@ internal static class SettingsJson
 
         if (lists.Count == 0)
         {
-            lists.Add(new AssemblyListRecord(SavedAssemblyLists.DefaultName, new List<AssemblyPath>()));
+            lists.Add(new AssemblyListRecord
+            {
+                Name = SavedAssemblyLists.DefaultName,
+                Assemblies = new List<AssemblyPath>(),
+            });
         }
 
         var index = GetActiveListIndex(lists, active);

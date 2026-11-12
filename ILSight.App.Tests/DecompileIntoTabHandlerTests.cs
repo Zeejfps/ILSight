@@ -5,7 +5,13 @@ namespace ILSight.App.Tests;
 
 public sealed class DecompileIntoTabHandlerTests
 {
-    private static readonly ViewPosition AtLineTen = ViewPosition.OfCode(new CodeViewPosition(10, 0f, default, default));
+    private static readonly ViewPosition AtLineTen = ViewPosition.OfCode(new CodeViewPosition
+    {
+        TopLine = 10,
+        ScrollX = 0f,
+        Anchor = default,
+        Caret = default,
+    });
 
     /// <summary>Cancels <paramref name="shutdown"/> at once, on this thread, as the workflow runner does as the app
     /// shuts down, so that the handler goes on here rather than through the test's posted actions.</summary>

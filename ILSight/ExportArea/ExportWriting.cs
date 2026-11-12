@@ -88,8 +88,29 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
         var elapsed = ports.MeasureSince(started);
         var folderExists = ports.FolderExists(job.Folder);
         return outcome.Match(
-            done => complete(new ExportReport(run, job, new ExportEnd.Finished { Written = [], Problems = [] }, elapsed, folderExists), done.Value),
-            _ => new ExportReport(run, job, new ExportEnd.Cancelled(), elapsed, folderExists),
-            failed => new ExportReport(run, job, new ExportEnd.Failed { Subject = subject, Error = failed.Error }, elapsed, folderExists));
+            done => complete(new ExportReport
+            {
+                Run = run,
+                Job = job,
+                End = new ExportEnd.Finished { Written = [], Problems = [] },
+                Elapsed = elapsed,
+                FolderExists = folderExists,
+            }, done.Value),
+            _ => new ExportReport
+            {
+                Run = run,
+                Job = job,
+                End = new ExportEnd.Cancelled(),
+                Elapsed = elapsed,
+                FolderExists = folderExists,
+            },
+            failed => new ExportReport
+            {
+                Run = run,
+                Job = job,
+                End = new ExportEnd.Failed { Subject = subject, Error = failed.Error },
+                Elapsed = elapsed,
+                FolderExists = folderExists,
+            });
     }
 }

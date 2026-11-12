@@ -16,8 +16,14 @@ public sealed class ThemeFolderWatch
     private const int QuietMilliseconds = 200;
     private const string RemovedReason = "The folder was removed or renamed.";
 
-    private static readonly Task<ThemeFolderEvent> Changed = Task.FromResult(new ThemeFolderEvent(ThemeFolderEventKind.Changed));
-    private static readonly Task<ThemeFolderEvent> Stopped = Task.FromResult(new ThemeFolderEvent(ThemeFolderEventKind.Stopped));
+    private static readonly Task<ThemeFolderEvent> Changed = Task.FromResult(new ThemeFolderEvent
+    {
+        Kind = ThemeFolderEventKind.Changed,
+    });
+    private static readonly Task<ThemeFolderEvent> Stopped = Task.FromResult(new ThemeFolderEvent
+    {
+        Kind = ThemeFolderEventKind.Stopped,
+    });
 
     /// <summary>What the file system's threads and the UI thread share, reachable only holding its lock.</summary>
     private readonly Guarded<Shared> _held = new(new Shared());
@@ -151,7 +157,7 @@ public sealed class ThemeFolderWatch
         if (loss is not null)
         {
             shared.PendingLoss = null;
-            return Task.FromResult(new ThemeFolderEvent(ThemeFolderEventKind.Lost, loss));
+            return Task.FromResult(new ThemeFolderEvent { Kind = ThemeFolderEventKind.Lost, Reason = loss });
         }
 
         if (shared.Watcher is null)
@@ -173,7 +179,7 @@ public sealed class ThemeFolderWatch
     public void Stop()
     {
         var waiter = CloseWatch(null);
-        waiter?.TrySetResult(new ThemeFolderEvent(ThemeFolderEventKind.Stopped));
+        waiter?.TrySetResult(new ThemeFolderEvent { Kind = ThemeFolderEventKind.Stopped });
     }
 
     /// <summary>Lets go of the watcher and its timer and drops what is pending, keeping
@@ -241,7 +247,7 @@ public sealed class ThemeFolderWatch
     private void LoseWatch(FileSystemWatcher watcher, string reason)
     {
         var waiter = CloseWatch(reason, watcher);
-        waiter?.TrySetResult(new ThemeFolderEvent(ThemeFolderEventKind.Lost, reason));
+        waiter?.TrySetResult(new ThemeFolderEvent { Kind = ThemeFolderEventKind.Lost, Reason = reason });
     }
 
     private static bool IsWatchReplaced(Shared shared, FileSystemWatcher? lost)
@@ -279,7 +285,7 @@ public sealed class ThemeFolderWatch
                 shared.IsChangePending = true;
             }
         }
-        waiter?.TrySetResult(new ThemeFolderEvent(ThemeFolderEventKind.Changed));
+        waiter?.TrySetResult(new ThemeFolderEvent { Kind = ThemeFolderEventKind.Changed });
     }
 
     /// <summary>What is watching, who waits to be told, and what happened while no one did.</summary>

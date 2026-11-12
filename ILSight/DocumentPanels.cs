@@ -98,7 +98,7 @@ public static class DocumentPanels
         var panels = new List<TabPanel>();
         foreach (var (tab, view) in documents.Views)
         {
-            panels.Add(new TabPanel(tab, view.Panel, SaveView(tab, view)));
+            panels.Add(new TabPanel { Tab = tab, Panel = view.Panel, View = SaveView(tab, view) });
         }
 
         return panels;
@@ -641,7 +641,7 @@ public static class DocumentPanels
             return;
         }
 
-        var attempt = new TabFocusTry(uiState.Layout.Changes, navigation.OpenTabs.Count);
+        var attempt = new TabFocusTry { LayoutChanges = uiState.Layout.Changes, TabCount = navigation.OpenTabs.Count };
         if (attempt == uiState.LastTabFocusTry)
         {
             return;

@@ -12,7 +12,12 @@ internal static class FlagsFilterView
 {
     public const float ContentWidth = 440f;
 
-    private readonly record struct FilterChip(string Label, uint? Value);
+    private readonly record struct FilterChip
+    {
+        public required string Label { get; init; }
+
+        public required uint? Value { get; init; }
+    }
 
     public static void Render(Ui<UiState> ui, FilterState filter)
     {
@@ -81,12 +86,12 @@ internal static class FlagsFilterView
     private static List<FilterChip> ListChips(MutexGroup group, Strings t)
     {
         var chips = new List<FilterChip>(group.Values.Count + 1);
-        chips.Add(new FilterChip(t.MetadataFilterAnyValue, null));
+        chips.Add(new FilterChip { Label = t.MetadataFilterAnyValue, Value = null });
         var values = group.Values;
         for (var valueIndex = 0; valueIndex < values.Count; valueIndex++)
         {
             var value = values[valueIndex];
-            chips.Add(new FilterChip(value.Label, value.Value));
+            chips.Add(new FilterChip { Label = value.Label, Value = value.Value });
         }
 
         return chips;

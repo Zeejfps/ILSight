@@ -126,7 +126,11 @@ public static class MatchingBrackets
 
                     if (depth == 0)
                     {
-                        return new BracketPair(open, new TextPosition(index, column));
+                        return new BracketPair
+                        {
+                            Open = open,
+                            Close = new TextPosition { Line = index, Column = column },
+                        };
                     }
 
                     depth--;
@@ -173,7 +177,11 @@ public static class MatchingBrackets
 
                     if (depth == 0)
                     {
-                        return new BracketPair(new TextPosition(index, column), close);
+                        return new BracketPair
+                        {
+                            Open = new TextPosition { Line = index, Column = column },
+                            Close = close,
+                        };
                     }
 
                     depth--;

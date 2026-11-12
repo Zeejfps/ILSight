@@ -42,12 +42,16 @@ internal static class CodeText
         }
 
         var line = Math.Clamp(position.Line, 0, lines.Length - 1);
-        return new TextPosition(line, Math.Clamp(position.Column, 0, lines[line].Text.Length));
+        return new TextPosition { Line = line, Column = Math.Clamp(position.Column, 0, lines[line].Text.Length) };
     }
 
     public static TextPosition End(DecompiledDocument document)
     {
-        return document.Lines.Length == 0 ? default : new TextPosition(document.Lines.Length - 1, document.Lines[^1].Text.Length);
+        return document.Lines.Length == 0 ? default : new TextPosition
+        {
+            Line = document.Lines.Length - 1,
+            Column = document.Lines[^1].Text.Length,
+        };
     }
 
     public static (TextPosition Start, TextPosition End) WordAt(DecompiledDocument document, TextPosition at)

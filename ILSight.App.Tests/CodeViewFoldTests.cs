@@ -155,7 +155,9 @@ public sealed class CodeViewFoldTests
         view.Frames.Release().Frame();
         view.Key(Shortcuts.Copy);
 
-        Assert.Equal(CodeText.Between(document, new TextPosition(first - 1, 0), new TextPosition(end, 4)), view.Frames.Clipboard.Text);
+        Assert.Equal(
+            CodeText.Between(document, new TextPosition { Line = first - 1, Column = 0 }, new TextPosition { Line = end, Column = 4 }),
+            view.Frames.Clipboard.Text);
         Assert.Contains("int total = 0;", view.Frames.Clipboard.Text);
     }
 
@@ -203,7 +205,13 @@ public sealed class CodeViewFoldTests
         var view = Outline(height: 200f);
         var document = view.Document;
         var target = document.GetPosition("public string Second()").Line;
-        CodeViewWidget.RestorePosition(view.State, new CodeViewPosition(target, 0f, default, default));
+        CodeViewWidget.RestorePosition(view.State, new CodeViewPosition
+        {
+            TopLine = target,
+            ScrollX = 0f,
+            Anchor = default,
+            Caret = default,
+        });
         view.Run(2);
         var before = view.State.Position.TopLine;
 

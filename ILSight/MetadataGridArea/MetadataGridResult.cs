@@ -4,7 +4,14 @@ using ILSight.Core.Metadata;
 namespace ILSight.MetadataGridArea;
 
 /// <summary>What the user asked of a <see cref="MetadataGridWidget.RenderMetadataGrid"/> this frame.</summary>
-/// <param name="Target">The table row a token cell leads to.</param>
-/// <param name="Definition">What a row stands for in the code, to decompile.</param>
-/// <param name="InNewTab">Whether to show either in a new tab.</param>
-public readonly record struct MetadataGridResult(MetadataAddress? Target, CodeReference.Navigable? Definition, bool InNewTab);
+public readonly record struct MetadataGridResult
+{
+    /// <summary>The table row a token cell leads to.</summary>
+    public required MetadataAddress? Target { get; init; }
+
+    /// <summary>What a row stands for in the code, to decompile.</summary>
+    public required CodeReference.Navigable? Definition { get; init; }
+
+    /// <summary>Whether to show either in a new tab.</summary>
+    public required bool InNewTab { get; init; }
+}

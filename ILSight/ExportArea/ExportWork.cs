@@ -30,7 +30,12 @@ public abstract record ExportWork
 
         public required string File { get; init; }
 
-        public override ExportJob Job => new ExportJob(Node.Text, CodeKindOf(Language), FolderOf(File));
+        public override ExportJob Job => new ExportJob
+        {
+            Name = Node.Text,
+            Kind = CodeKindOf(Language),
+            Folder = FolderOf(File),
+        };
 
         public override string Subject => Node.Text;
     }
@@ -47,7 +52,12 @@ public abstract record ExportWork
 
         public required ProjectExtras Extras { get; init; }
 
-        public override ExportJob Job => new ExportJob(Path.GetFileNameWithoutExtension(ProjectFile), ExportKind.Project, FolderOf(ProjectFile));
+        public override ExportJob Job => new ExportJob
+        {
+            Name = Path.GetFileNameWithoutExtension(ProjectFile),
+            Kind = ExportKind.Project,
+            Folder = FolderOf(ProjectFile),
+        };
 
         public override string Subject => Assembly.Name;
     }
@@ -64,7 +74,12 @@ public abstract record ExportWork
 
         public required ProjectExtras Extras { get; init; }
 
-        public override ExportJob Job => new ExportJob(Path.GetFileNameWithoutExtension(SolutionFile), ExportKind.Solution, FolderOf(SolutionFile));
+        public override ExportJob Job => new ExportJob
+        {
+            Name = Path.GetFileNameWithoutExtension(SolutionFile),
+            Kind = ExportKind.Solution,
+            Folder = FolderOf(SolutionFile),
+        };
 
         public override string Subject => "";
     }
@@ -78,7 +93,12 @@ public abstract record ExportWork
 
         public required string File { get; init; }
 
-        public override ExportJob Job => new ExportJob(Assembly.Name, ExportKind.Pdb, FolderOf(File));
+        public override ExportJob Job => new ExportJob
+        {
+            Name = Assembly.Name,
+            Kind = ExportKind.Pdb,
+            Folder = FolderOf(File),
+        };
 
         public override string Subject => Assembly.Name;
     }
@@ -93,7 +113,12 @@ public abstract record ExportWork
 
         public required string Folder { get; init; }
 
-        public override ExportJob Job => new ExportJob(Path.GetFileName(Folder), ExportKind.Pdbs, Folder);
+        public override ExportJob Job => new ExportJob
+        {
+            Name = Path.GetFileName(Folder),
+            Kind = ExportKind.Pdbs,
+            Folder = Folder,
+        };
 
         public override string Subject => "";
     }
@@ -106,7 +131,12 @@ public abstract record ExportWork
 
         public required string Folder { get; init; }
 
-        public override ExportJob Job => new ExportJob(Assembly.Name, ExportKind.Diagram, Folder);
+        public override ExportJob Job => new ExportJob
+        {
+            Name = Assembly.Name,
+            Kind = ExportKind.Diagram,
+            Folder = Folder,
+        };
 
         public override string Subject => Assembly.Name;
     }
@@ -121,7 +151,7 @@ public abstract record ExportWork
 
         public required string Folder { get; init; }
 
-        public override ExportJob Job => new ExportJob(Name, ExportKind.Files, Folder);
+        public override ExportJob Job => new ExportJob { Name = Name, Kind = ExportKind.Files, Folder = Folder };
 
         public override string Subject => Name;
     }

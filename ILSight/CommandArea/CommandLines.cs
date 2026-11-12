@@ -65,10 +65,22 @@ public static class CommandLines
 
     private static CommandLine Finish(Reader reader)
     {
-        var launch = new LaunchConfig(reader.SettingsPath, reader.RenderBackend, reader.NewInstance);
-        var files = new FilesToOpen(reader.AssemblyPaths, reader.NavigateTo);
-        var arguments = new RunArguments(reader.Language, reader.AssemblyList, reader.ClearList, files, reader.Ignored);
-        return new CommandLine(launch, arguments);
+        var launch = new LaunchConfig
+        {
+            SettingsPath = reader.SettingsPath,
+            RenderBackend = reader.RenderBackend,
+            NewInstance = reader.NewInstance,
+        };
+        var files = new FilesToOpen { Paths = reader.AssemblyPaths, NavigateTo = reader.NavigateTo };
+        var arguments = new RunArguments
+        {
+            Language = reader.Language,
+            AssemblyList = reader.AssemblyList,
+            ClearList = reader.ClearList,
+            Files = files,
+            Ignored = reader.Ignored,
+        };
+        return new CommandLine { Launch = launch, Arguments = arguments };
     }
 
     private static void Read(Reader reader, string arg)

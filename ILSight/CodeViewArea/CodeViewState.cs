@@ -54,7 +54,13 @@ public sealed class CodeViewState
             }
 
             var top = RowHeight > 0f && Folds.RowCount > 0 ? CodeFolding.GetLineAt(Folds, CodeFolding.ClampRow(Folds, CodeViewWidget.GetRowAt(ScrollY, RowHeight))) : 0;
-            return new CodeViewPosition(top, ScrollX, Selection.Anchor, Selection.Caret);
+            return new CodeViewPosition
+            {
+                TopLine = top,
+                ScrollX = ScrollX,
+                Anchor = Selection.Anchor,
+                Caret = Selection.Caret,
+            };
         }
     }
 

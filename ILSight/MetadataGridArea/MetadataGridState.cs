@@ -89,7 +89,7 @@ public sealed class MetadataGridState
             var topRow = RowHeight > 0f ? (int)(Scroll.Y / RowHeight) : 0;
             int? row = Selected == None ? null : Selected;
             int? column = CurrentColumn == None ? null : CurrentColumn;
-            return new GridPosition(topRow, Scroll.X, row, column);
+            return new GridPosition { TopRow = topRow, ScrollX = Scroll.X, Row = row, Column = column };
         }
     }
 

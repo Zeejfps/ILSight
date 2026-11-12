@@ -43,10 +43,18 @@ public sealed class CodeCaretTests
         var document = Folded();
         var folds = FoldsOf(document, collapsed: true);
 
-        Assert.Equal(new TextPosition(5, 0), CodeCaret.StepRight(document, folds, new TextPosition(0, 8), byWord: false));
-        Assert.Equal(new TextPosition(0, 8), CodeCaret.StepLeft(document, folds, new TextPosition(5, 0), byWord: false));
-        Assert.Equal(new TextPosition(0, 0), CodeCaret.StepLeft(document, folds, new TextPosition(0, 0), byWord: false));
-        Assert.Equal(new TextPosition(5, 6), CodeCaret.StepRight(document, folds, new TextPosition(5, 6), byWord: false));
+        Assert.Equal(
+            new TextPosition { Line = 5, Column = 0 },
+            CodeCaret.StepRight(document, folds, new TextPosition { Line = 0, Column = 8 }, byWord: false));
+        Assert.Equal(
+            new TextPosition { Line = 0, Column = 8 },
+            CodeCaret.StepLeft(document, folds, new TextPosition { Line = 5, Column = 0 }, byWord: false));
+        Assert.Equal(
+            new TextPosition { Line = 0, Column = 0 },
+            CodeCaret.StepLeft(document, folds, new TextPosition { Line = 0, Column = 0 }, byWord: false));
+        Assert.Equal(
+            new TextPosition { Line = 5, Column = 6 },
+            CodeCaret.StepRight(document, folds, new TextPosition { Line = 5, Column = 6 }, byWord: false));
     }
 
     [Fact]
@@ -55,8 +63,12 @@ public sealed class CodeCaretTests
         var document = Folded();
         var folds = FoldsOf(document, collapsed: false);
 
-        Assert.Equal(new TextPosition(2, 8), CodeCaret.StepRight(document, folds, new TextPosition(2, 4), byWord: true));
-        Assert.Equal(new TextPosition(2, 4), CodeCaret.StepLeft(document, folds, new TextPosition(2, 8), byWord: true));
+        Assert.Equal(
+            new TextPosition { Line = 2, Column = 8 },
+            CodeCaret.StepRight(document, folds, new TextPosition { Line = 2, Column = 4 }, byWord: true));
+        Assert.Equal(
+            new TextPosition { Line = 2, Column = 4 },
+            CodeCaret.StepLeft(document, folds, new TextPosition { Line = 2, Column = 8 }, byWord: true));
     }
 
     [Fact]
@@ -66,11 +78,21 @@ public sealed class CodeCaretTests
         var open = FoldsOf(document, collapsed: false);
         var shut = FoldsOf(document, collapsed: true);
 
-        Assert.Equal(new TextPosition(2, 10), CodeCaret.MoveRows(document, open, new TextPosition(3, 7), -1, 10));
-        Assert.Equal(new TextPosition(1, 1), CodeCaret.MoveRows(document, open, new TextPosition(2, 10), -1, 10));
-        Assert.Equal(new TextPosition(5, 3), CodeCaret.MoveRows(document, shut, new TextPosition(0, 3), 1, 3));
-        Assert.Equal(new TextPosition(0, 0), CodeCaret.MoveRows(document, shut, new TextPosition(0, 3), -1, 3));
-        Assert.Equal(new TextPosition(5, 6), CodeCaret.MoveRows(document, shut, new TextPosition(5, 1), 1, 1));
+        Assert.Equal(
+            new TextPosition { Line = 2, Column = 10 },
+            CodeCaret.MoveRows(document, open, new TextPosition { Line = 3, Column = 7 }, -1, 10));
+        Assert.Equal(
+            new TextPosition { Line = 1, Column = 1 },
+            CodeCaret.MoveRows(document, open, new TextPosition { Line = 2, Column = 10 }, -1, 10));
+        Assert.Equal(
+            new TextPosition { Line = 5, Column = 3 },
+            CodeCaret.MoveRows(document, shut, new TextPosition { Line = 0, Column = 3 }, 1, 3));
+        Assert.Equal(
+            new TextPosition { Line = 0, Column = 0 },
+            CodeCaret.MoveRows(document, shut, new TextPosition { Line = 0, Column = 3 }, -1, 3));
+        Assert.Equal(
+            new TextPosition { Line = 5, Column = 6 },
+            CodeCaret.MoveRows(document, shut, new TextPosition { Line = 5, Column = 1 }, 1, 1));
     }
 
     [Fact]
@@ -78,9 +100,15 @@ public sealed class CodeCaretTests
     {
         var document = Folded();
 
-        Assert.Equal(new TextPosition(2, 4), CodeCaret.GetLineStart(document, new TextPosition(2, 9)));
-        Assert.Equal(new TextPosition(2, 0), CodeCaret.GetLineStart(document, new TextPosition(2, 4)));
-        Assert.Equal(new TextPosition(2, 14), CodeCaret.GetLineEnd(document, new TextPosition(2, 4)));
+        Assert.Equal(
+            new TextPosition { Line = 2, Column = 4 },
+            CodeCaret.GetLineStart(document, new TextPosition { Line = 2, Column = 9 }));
+        Assert.Equal(
+            new TextPosition { Line = 2, Column = 0 },
+            CodeCaret.GetLineStart(document, new TextPosition { Line = 2, Column = 4 }));
+        Assert.Equal(
+            new TextPosition { Line = 2, Column = 14 },
+            CodeCaret.GetLineEnd(document, new TextPosition { Line = 2, Column = 4 }));
     }
 
     [Fact]
@@ -94,8 +122,12 @@ public sealed class CodeCaretTests
         builder.MarkFoldEnd();
         var document = DocumentWriting.BuildDocument(builder, "fold");
 
-        Assert.Equal(new TextPosition(0, 1), CodeCaret.GetEnd(document, FoldsOf(document, collapsed: true)));
-        Assert.Equal(new TextPosition(1, 1), CodeCaret.GetEnd(document, FoldsOf(document, collapsed: false)));
+        Assert.Equal(
+            new TextPosition { Line = 0, Column = 1 },
+            CodeCaret.GetEnd(document, FoldsOf(document, collapsed: true)));
+        Assert.Equal(
+            new TextPosition { Line = 1, Column = 1 },
+            CodeCaret.GetEnd(document, FoldsOf(document, collapsed: false)));
     }
 
     [Fact]
@@ -106,16 +138,16 @@ public sealed class CodeCaretTests
 
         view.Key(KeyboardKey.DownArrow).Frame();
         view.Key(KeyboardKey.RightArrow).Frame();
-        Assert.Equal(new TextPosition(2, 3), view.State.Selection.Caret);
+        Assert.Equal(new TextPosition { Line = 2, Column = 3 }, view.State.Selection.Caret);
         Assert.False(view.State.HasSelection);
 
         view.Key(KeyboardKey.RightArrow, KeyModifiers.Shift).Frame();
         view.Key(KeyboardKey.RightArrow, KeyModifiers.Shift).Frame();
-        Assert.Equal(new TextPosition(2, 3), view.State.Selection.Start);
-        Assert.Equal(new TextPosition(2, 5), view.State.Selection.End);
+        Assert.Equal(new TextPosition { Line = 2, Column = 3 }, view.State.Selection.Start);
+        Assert.Equal(new TextPosition { Line = 2, Column = 5 }, view.State.Selection.End);
 
         view.Key(KeyboardKey.LeftArrow).Frame();
-        Assert.Equal(new TextPosition(2, 3), view.State.Selection.Caret);
+        Assert.Equal(new TextPosition { Line = 2, Column = 3 }, view.State.Selection.Caret);
         Assert.False(view.State.HasSelection);
     }
 
@@ -126,7 +158,7 @@ public sealed class CodeCaretTests
         view.Click(2, 3);
         view.Run();
         var caret = view.State.Frame.Caret;
-        Assert.Equal(new TextPosition(2, 3), caret);
+        Assert.Equal(new TextPosition { Line = 2, Column = 3 }, caret);
 
         view.Frames.Wait(0.6);
         view.Run();
@@ -160,7 +192,7 @@ public sealed class CodeCaretTests
 
         view.Key(Shortcut.Command(KeyboardKey.End)).Frame();
 
-        Assert.Equal(new TextPosition(199, 8), view.State.Selection.Caret);
+        Assert.Equal(new TextPosition { Line = 199, Column = 8 }, view.State.Selection.Caret);
         Assert.Contains(view.DrawnText(), d => d.Text == "line 199");
     }
 }

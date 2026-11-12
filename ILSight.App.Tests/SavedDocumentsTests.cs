@@ -78,7 +78,13 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static CodeViewPosition ScrollTo(AppDriver app, DocumentTab tab, int topLine, TextPosition anchor, TextPosition caret)
     {
-        CodeViewWidget.RestorePosition(CodeOf(app, tab), new CodeViewPosition(topLine, 0f, anchor, caret));
+        CodeViewWidget.RestorePosition(CodeOf(app, tab), new CodeViewPosition
+        {
+            TopLine = topLine,
+            ScrollX = 0f,
+            Anchor = anchor,
+            Caret = caret,
+        });
         app.Run(4);
         return CodeOf(app, tab).Position;
     }
@@ -150,7 +156,12 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static AppSettings SettingsWith(DocumentsRecord documents)
     {
-        var list = new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)], Documents: documents);
+        var list = new AssemblyListRecord
+        {
+            Name = SavedAssemblyLists.DefaultName,
+            Assemblies = [PathOf(AppStateDriver.FixturePath)],
+            Documents = documents,
+        };
         return new AppSettings { AssemblyLists = [list] };
     }
 
@@ -194,7 +205,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var file = _temp.PathOf("settings.json");
         var before = File.ReadAllText(file);
 
-        var position = ScrollTo(app, outline, 20, new TextPosition(21, 4), new TextPosition(22, 8));
+        var position = ScrollTo(app, outline, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         app.Run(3);
         Assert.Equal(before, File.ReadAllText(file));
 
@@ -215,7 +226,8 @@ public sealed class SavedDocumentsTests : IDisposable
         var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.AppState.Navigation.KeepTabOpen(outline);
-        var outlinePosition = ScrollTo(app, outline, 20, new TextPosition(21, 4), new TextPosition(22, 8));
+        var outlinePosition = ScrollTo(app, outline, 20,
+            new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
@@ -244,7 +256,8 @@ public sealed class SavedDocumentsTests : IDisposable
         var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.AppState.Navigation.KeepTabOpen(outline);
-        var outlinePosition = ScrollTo(app, outline, 20, new TextPosition(21, 4), new TextPosition(22, 8));
+        var outlinePosition = ScrollTo(app, outline, 20,
+            new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
         var greeter = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(greeter);
@@ -339,7 +352,17 @@ public sealed class SavedDocumentsTests : IDisposable
         var documents = Assert.Single(settings.AssemblyLists).Documents;
         Assert.NotNull(documents);
         var saved = documents.Tabs.OfType<NodeDocumentRecord>().Single(t => t.View?.Grid is not null);
-        var older = saved with { View = ViewPosition.OfCode(new CodeViewPosition(row, 0f, default, new TextPosition(row, 1))) };
+        var older = saved with { View = ViewPosition.OfCode(new CodeViewPosition
+        {
+            TopLine = row,
+            ScrollX = 0f,
+            Anchor = default,
+            Caret = new TextPosition
+            {
+                Line = row,
+                Column = 1,
+            },
+        }) };
         documents.Tabs[documents.Tabs.IndexOf(saved)] = older;
 
         var next = new AppDriver(height: 360f, settings: settings);
@@ -518,13 +541,18 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var settings = _temp.Settings();
         List<DocumentRecord> tabs = [HandTab("document-1", "First"), HandTab("document-1", "Twin"), HandTab(DockPanels.Assemblies, "Tree")];
-        settings.AssemblyLists.Add(new AssemblyListRecord("Hand", [], Documents: new DocumentsRecord
+        settings.AssemblyLists.Add(new AssemblyListRecord
         {
-            Tabs = tabs,
-            Active = null,
-            Preview = null,
-            Layout = null,
-        }));
+            Name = "Hand",
+            Assemblies = [],
+            Documents = new DocumentsRecord
+            {
+                Tabs = tabs,
+                Active = null,
+                Preview = null,
+                Layout = null,
+            },
+        });
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
 
         var documents = _temp.Settings().AssemblyLists.Single(static l => l.Name == "Hand").Documents;

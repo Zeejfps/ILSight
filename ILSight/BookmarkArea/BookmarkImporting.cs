@@ -68,7 +68,11 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 
     private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, List<NodePath?> places, string file)
     {
-        var found = records.Zip(places, static (record, place) => new FoundBookmark(record, place)).ToList();
+        var found = records.Zip(places, static (record, place) => new FoundBookmark
+        {
+            Record = record,
+            Place = place,
+        }).ToList();
         ReportLostBookmarks(found, file);
         var imported = found
             .Select(CreateBookmark)
@@ -160,5 +164,10 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
     }
 
     /// <summary>A bookmark read, and where it was found.</summary>
-    private sealed record FoundBookmark(BookmarkRecord Record, NodePath? Place);
+    private sealed record FoundBookmark
+    {
+        public required BookmarkRecord Record { get; init; }
+
+        public required NodePath? Place { get; init; }
+    }
 }

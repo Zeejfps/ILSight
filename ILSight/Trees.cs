@@ -589,7 +589,7 @@ public static class Trees
             var nodes = group.ToList();
             if (nodes.Count == 1)
             {
-                labels[nodes[0]] = new RootLabel(nodes[0].Assembly.Name, nodes[0].Assembly.Name);
+                labels[nodes[0]] = new RootLabel { Title = nodes[0].Assembly.Name, Row = nodes[0].Assembly.Name };
                 continue;
             }
             var versions = nodes.Select(static n => n.Assembly.Version?.ToString() ?? "").ToArray();
@@ -598,7 +598,11 @@ public static class Trees
             {
                 for (var i = 0; i < nodes.Count; i++)
                 {
-                    labels[nodes[i]] = new RootLabel(nodes[i].Assembly.NameAndVersion, nodes[i].Assembly.Name);
+                    labels[nodes[i]] = new RootLabel
+                    {
+                        Title = nodes[i].Assembly.NameAndVersion,
+                        Row = nodes[i].Assembly.Name,
+                    };
                 }
 
                 continue;
@@ -607,7 +611,7 @@ public static class Trees
             for (var i = 0; i < nodes.Count; i++)
             {
                 var label = $"{nodes[i].Assembly.Name} ({hints[i]})";
-                labels[nodes[i]] = new RootLabel(label, label);
+                labels[nodes[i]] = new RootLabel { Title = label, Row = label };
             }
         }
         return labels;

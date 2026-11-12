@@ -57,7 +57,15 @@ internal static class DiagramFaces
     private static FaceKey KeyOf(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
         var theme = ui.Theme;
-        return new FaceKey(diagram.Version, view.FoldsVersion, view.ShowsHiddenMembers, theme.FontSize, theme.FontFamily, ui.State.Strings);
+        return new FaceKey
+        {
+            DiagramVersion = diagram.Version,
+            FoldsVersion = view.FoldsVersion,
+            ShowsHiddenMembers = view.ShowsHiddenMembers,
+            FontSize = theme.FontSize,
+            FontFamily = theme.FontFamily,
+            Strings = ui.State.Strings,
+        };
     }
 
     private static List<CardFace> Measure(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
@@ -83,17 +91,30 @@ internal static class DiagramFaces
         }
 
         var width = MathF.Max(MinWidth, stack.Width + RightPadding);
-        return new CardFace(card, stack.Rows, width, stack.Top + BottomPadding, headerHeight);
+        return new CardFace
+        {
+            Card = card,
+            Rows = stack.Rows,
+            Width = width,
+            Height = stack.Top + BottomPadding,
+            HeaderHeight = headerHeight,
+        };
     }
 
     private static void AddHeader(RowStack stack, TypeCard card)
     {
-        AddRow(stack, new CardRow(new CardRowContent.Name
+        AddRow(stack, new CardRow
         {
-            Icon = NodeIcons.Of(card.Shape),
-            Accessibility = card.Accessibility,
-            Type = card.Type,
-        }, stack.RowHeight + NameRowExtra, Padding, card.Name));
+            Content = new CardRowContent.Name
+            {
+                Icon = NodeIcons.Of(card.Shape),
+                Accessibility = card.Accessibility,
+                Type = card.Type,
+            },
+            Height = stack.RowHeight + NameRowExtra,
+            Indent = Padding,
+            Text = card.Name,
+        });
         var stereotype = StereotypeOf(card.Stereotype);
         if (stereotype is null)
         {
@@ -101,7 +122,13 @@ internal static class DiagramFaces
         }
 
         var indent = Padding + stack.IconSize + IconGap;
-        AddRow(stack, new CardRow(new CardRowContent.Stereotype(), stack.RowHeight, indent, stereotype));
+        AddRow(stack, new CardRow
+        {
+            Content = new CardRowContent.Stereotype(),
+            Height = stack.RowHeight,
+            Indent = indent,
+            Text = stereotype,
+        });
     }
 
     private static string? StereotypeOf(TypeStereotype stereotype)
@@ -173,11 +200,17 @@ internal static class DiagramFaces
 
         var isOpen = Diagrams.IsFoldOpen(view, fold);
         var text = $"{title} ({members.Count})";
-        AddRow(stack, new CardRow(new CardRowContent.Fold
+        AddRow(stack, new CardRow
         {
-            Part = fold,
-            IsOpen = isOpen,
-        }, stack.RowHeight, Padding, text));
+            Content = new CardRowContent.Fold
+            {
+                Part = fold,
+                IsOpen = isOpen,
+            },
+            Height = stack.RowHeight,
+            Indent = Padding,
+            Text = text,
+        });
         if (!isOpen)
         {
             return;
@@ -191,12 +224,18 @@ internal static class DiagramFaces
 
     private static CardRow MemberRow(RowStack stack, CardMember member)
     {
-        return new CardRow(new CardRowContent.Member
+        return new CardRow
         {
-            Icon = NodeIcons.Of(member.Shape),
-            Accessibility = member.Accessibility,
-            Reference = member.Reference,
-        }, stack.RowHeight, Padding + ChevronWidth, member.Text);
+            Content = new CardRowContent.Member
+            {
+                Icon = NodeIcons.Of(member.Shape),
+                Accessibility = member.Accessibility,
+                Reference = member.Reference,
+            },
+            Height = stack.RowHeight,
+            Indent = Padding + ChevronWidth,
+            Text = member.Text,
+        };
     }
 
     private static DiagramMeasures MeasuresOf(Ui<UiState> ui, TypeDiagram diagram, List<CardFace> faces)

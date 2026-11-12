@@ -17,7 +17,7 @@ internal static class EmbeddedIconAssets
             return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
         }
 
-        return new IconAsset(EmbeddedAssets.LoadBytes(resources, path));
+        return new IconAsset { Bytes = EmbeddedAssets.LoadBytes(resources, path) };
     }
 
     /// <summary>The resources of <paramref name="resources"/> a built-in theme names, <paramref name="named"/>, each

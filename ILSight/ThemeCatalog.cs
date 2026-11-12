@@ -80,7 +80,13 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
     {
         if (_files.ContainsKey(file.Id))
         {
-            AddError(new ThemeError(file.File, 0, ThemeProblem.IdTaken, file.Id.Text));
+            AddError(new ThemeError
+            {
+                File = file.File,
+                Line = 0,
+                Problem = ThemeProblem.IdTaken,
+                Subject = file.Id.Text,
+            });
             return;
         }
         AddThemeFile(file);
@@ -185,12 +191,24 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
     {
         if (!_files.TryGetValue(extends.Id, out var parent))
         {
-            AddError(new ThemeError(child.File, extends.Line, ThemeProblem.UnknownParent, extends.Id.Text));
+            AddError(new ThemeError
+            {
+                File = child.File,
+                Line = extends.Line,
+                Problem = ThemeProblem.UnknownParent,
+                Subject = extends.Id.Text,
+            });
             return null;
         }
         if (chain.Contains(parent))
         {
-            AddError(new ThemeError(child.File, extends.Line, ThemeProblem.ExtendsCycle, Detail: DescribeCycle(chain, parent)));
+            AddError(new ThemeError
+            {
+                File = child.File,
+                Line = extends.Line,
+                Problem = ThemeProblem.ExtendsCycle,
+                Detail = DescribeCycle(chain, parent),
+            });
             return null;
         }
         return parent;

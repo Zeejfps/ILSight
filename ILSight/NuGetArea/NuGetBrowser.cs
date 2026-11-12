@@ -357,7 +357,13 @@ public sealed class NuGetBrowser
             DropResults();
             return null;
         }
-        var wanted = new FeedSearch(NuGetFeeds.GetListedSource(setup, source), _typedQuery.Text, includePrerelease, RequestedPage);
+        var wanted = new FeedSearch
+        {
+            Feed = NuGetFeeds.GetListedSource(setup, source),
+            Query = _typedQuery.Text,
+            IncludePrerelease = includePrerelease,
+            Page = RequestedPage,
+        };
         if (IsNewSearch(wanted))
         {
             RequestedPage = 0;
@@ -594,7 +600,7 @@ public sealed class NuGetBrowser
         }
 
         var feed = _shown.Search.Feed;
-        var key = new VersionDetailsKey(feed.Url, package.Id, version);
+        var key = new VersionDetailsKey { Feed = feed.Url, Id = package.Id, Version = version };
         if (_details.TryGetValue(key, out var details))
         {
             return details;
@@ -614,7 +620,7 @@ public sealed class NuGetBrowser
             return;
         }
 
-        _details.Remove(new VersionDetailsKey(_shown.Search.Feed.Url, package.Id, version));
+        _details.Remove(new VersionDetailsKey { Feed = _shown.Search.Feed.Url, Id = package.Id, Version = version });
     }
 
     /// <summary>The icons asked for since this was last asked, each for a fetch of its own
@@ -809,7 +815,7 @@ public sealed class NuGetBrowser
     /// <summary>Shows the page found in place of the one shown.</summary>
     private SearchRun.Found ShowFoundPage(FeedSearch searched, FeedPage page)
     {
-        _shown = new ShownPage(searched, page);
+        _shown = new ShownPage { Search = searched, Found = page };
         ItemSelections.Clear(Selection);
         if (page.Packages.Count > 0)
         {
@@ -833,7 +839,12 @@ public sealed class NuGetBrowser
     }
 
     /// <summary>The page of packages shown, and the search that found it.</summary>
-    private sealed record ShownPage(FeedSearch Search, FeedPage Found);
+    private sealed record ShownPage
+    {
+        public required FeedSearch Search { get; init; }
+
+        public required FeedPage Found { get; init; }
+    }
 
     /// <summary>Whether the user's NuGet.Config is read yet.</summary>
     private abstract record SetupState

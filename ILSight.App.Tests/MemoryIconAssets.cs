@@ -42,7 +42,7 @@ internal sealed class MemoryIconAssets
     {
         if (_files.TryGetValue(path, out var bytes))
         {
-            return new IconAsset(bytes, Family: "memory:" + path);
+            return new IconAsset { Bytes = bytes, Family = "memory:" + path };
         }
 
         return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);

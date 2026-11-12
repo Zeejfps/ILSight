@@ -311,7 +311,7 @@ internal static class OmnibarView
         var picked = ChildRows(ui, menu, shown, listId);
         if (submitted)
         {
-            picked = new PickedChild(menu.Selection.Item, IsCommandHeld(ui));
+            picked = new PickedChild { Node = menu.Selection.Item, InNewTab = IsCommandHeld(ui) };
         }
 
         var node = picked.Node;
@@ -362,7 +362,12 @@ internal static class OmnibarView
     }
 
     /// <summary>A child picked from the list, and whether it is to open in a new tab.</summary>
-    private readonly record struct PickedChild(BrowseNode? Node, bool InNewTab);
+    private readonly record struct PickedChild
+    {
+        public required BrowseNode? Node { get; init; }
+
+        public required bool InNewTab { get; init; }
+    }
 
     /// <summary>The children listed, as tall as up to <see cref="MenuRows"/> of them; returns the one
     /// clicked, if any.</summary>
@@ -370,7 +375,7 @@ internal static class OmnibarView
     {
         var rowHeight = ui.Theme.RowHeight;
         var height = Math.Min(shown.Count, MenuRows) * rowHeight;
-        var picked = new PickedChild(null, false);
+        var picked = new PickedChild { Node = null, InNewTab = false };
         ItemSelections.ShowIn(menu.Selection, shown);
         using (var list = ui.SelectableList(listId, shown.Count, menu.Selection.Rows, rowHeight, new Box { Width = Sizing.Grow(), Height = height },
                    keys: false, selectOnClick: true))
@@ -400,15 +405,15 @@ internal static class OmnibarView
         RecordChildPath(ui, row.Interaction.Id, label);
         if (row.Interaction.Clicked)
         {
-            return new PickedChild(child, IsCommandHeld(ui));
+            return new PickedChild { Node = child, InNewTab = IsCommandHeld(ui) };
         }
 
         if (row.Interaction.ClickedWith(PointerButton.Middle))
         {
-            return new PickedChild(child, true);
+            return new PickedChild { Node = child, InNewTab = true };
         }
 
-        return new PickedChild(null, false);
+        return new PickedChild { Node = null, InNewTab = false };
     }
 
     /// <summary>Has tests find a child's row by its label, as <c>child/#Greeter</c>.</summary>
@@ -439,7 +444,7 @@ internal static class OmnibarView
         var clicked = Suggestions(ui, omnibar, fieldId);
         if (submitted)
         {
-            clicked = new PickedMatch(omnibar.FindSuggestionToShow(), IsCommandHeld(ui));
+            clicked = new PickedMatch { Match = omnibar.FindSuggestionToShow(), InNewTab = IsCommandHeld(ui) };
         }
 
         var match = clicked.Match;
@@ -491,13 +496,18 @@ internal static class OmnibarView
     }
 
     /// <summary>A match picked from the suggestions, and whether it is to open in a new tab.</summary>
-    private readonly record struct PickedMatch(SearchResult? Match, bool InNewTab);
+    private readonly record struct PickedMatch
+    {
+        public required SearchResult? Match { get; init; }
+
+        public required bool InNewTab { get; init; }
+    }
 
     /// <summary>The best matches of the query under the box, as wide as it, or a note while there are
     /// none yet or none at all; nothing while the box is empty. Returns the match clicked, if any.</summary>
     private static PickedMatch Suggestions(Ui<UiState> ui, Omnibar omnibar, int fieldId)
     {
-        var picked = new PickedMatch(null, false);
+        var picked = new PickedMatch { Match = null, InNewTab = false };
         if (omnibar.Search.Query.Length == 0)
         {
             return picked;
@@ -560,15 +570,15 @@ internal static class OmnibarView
         }
         if (i.Clicked)
         {
-            return new PickedMatch(match, IsCommandHeld(ui));
+            return new PickedMatch { Match = match, InNewTab = IsCommandHeld(ui) };
         }
 
         if (i.ClickedWith(PointerButton.Middle))
         {
-            return new PickedMatch(match, true);
+            return new PickedMatch { Match = match, InNewTab = true };
         }
 
-        return new PickedMatch(null, false);
+        return new PickedMatch { Match = null, InNewTab = false };
     }
 
     /// <summary>Has tests find a suggestion by its text, as <c>suggestion/#Farewell</c>, as a list item that is

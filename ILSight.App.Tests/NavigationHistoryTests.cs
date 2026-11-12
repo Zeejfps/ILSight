@@ -51,6 +51,20 @@ public sealed class NavigationHistoryTests
 
     private static ViewPosition AtLine(int line)
     {
-        return ViewPosition.OfCode(new CodeViewPosition(line, 0f, new TextPosition(line, 0), new TextPosition(line, 0)));
+        return ViewPosition.OfCode(new CodeViewPosition
+        {
+            TopLine = line,
+            ScrollX = 0f,
+            Anchor = new TextPosition
+            {
+                Line = line,
+                Column = 0,
+            },
+            Caret = new TextPosition
+            {
+                Line = line,
+                Column = 0,
+            },
+        });
     }
 }

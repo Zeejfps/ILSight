@@ -76,7 +76,7 @@ internal sealed class FakeUserThemesPorts<TFile, TContents, TTheme> : UserThemes
             return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
         }
 
-        return new IconAsset(bytes, Family: "memory:" + path);
+        return new IconAsset { Bytes = bytes, Family = "memory:" + path };
     }
 
     public bool TryMakeFolder(string folder, [NotNullWhen(false)] out string? reason)

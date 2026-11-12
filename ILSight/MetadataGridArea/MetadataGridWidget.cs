@@ -443,7 +443,7 @@ public static class MetadataGridWidget
         }
 
         var below = row == state.Selected ? details : 0f;
-        state.TallRowsByIndex[index] = new RowHeights(cells, below);
+        state.TallRowsByIndex[index] = new RowHeights { Cells = cells, Details = below };
         state.TallRows.Add(new TallRow(index, cells + below));
     }
 

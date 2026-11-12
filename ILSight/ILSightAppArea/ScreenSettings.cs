@@ -51,23 +51,25 @@ public static class ScreenSettings
 
     internal static ViewSources CaptureViewSources(UiState uiState)
     {
-        return new ViewSources(
-            uiState.BookmarkColumns.Changes,
-            uiState.SearchColumns.Changes,
-            uiState.ExportColumns.Changes,
-            uiState.FoldedOptionGroups.Revision,
-            uiState.Search.Kinds,
-            uiState.MetadataFilters.Revision,
-            uiState.ExportSetup.Window.Changes,
-            uiState.Layout.Changes,
-            uiState.Display,
-            uiState.NuGetPicker.Browser.SearchChanges,
-            uiState.NuGetPicker.Window.Changes,
-            uiState.ProcessPicker.Window.Changes,
-            uiState.ProcessColumns.Changes,
-            uiState.ProcessModuleColumns.Changes,
-            uiState.Closer.Window.Changes,
-            uiState.Documents.Revision);
+        return new ViewSources
+        {
+            BookmarkColumns = uiState.BookmarkColumns.Changes,
+            SearchColumns = uiState.SearchColumns.Changes,
+            ExportColumns = uiState.ExportColumns.Changes,
+            FoldedOptionGroups = uiState.FoldedOptionGroups.Revision,
+            SearchKinds = uiState.Search.Kinds,
+            FlagsFilters = uiState.MetadataFilters.Revision,
+            ExportWindow = uiState.ExportSetup.Window.Changes,
+            Layout = uiState.Layout.Changes,
+            Display = uiState.Display,
+            NuGetSearch = uiState.NuGetPicker.Browser.SearchChanges,
+            NuGetWindow = uiState.NuGetPicker.Window.Changes,
+            ProcessWindow = uiState.ProcessPicker.Window.Changes,
+            ProcessColumns = uiState.ProcessColumns.Changes,
+            ProcessModuleColumns = uiState.ProcessModuleColumns.Changes,
+            CloseWindow = uiState.Closer.Window.Changes,
+            Documents = uiState.Documents.Revision,
+        };
     }
 
     private static ViewSettings CreateViewSettings(UiState uiState)

@@ -105,7 +105,12 @@ public sealed class RunArgumentsTests
     {
         var commandLine = CommandLines.Parse(["--settings= other.json ", "--gl", "--newinstance", "--language=IL"]);
 
-        Assert.Equal(new LaunchConfig(FullFilePath.Of(Path.GetFullPath("other.json")), RenderBackendKind.OpenGl, NewInstance: true), commandLine.Launch);
+        Assert.Equal(new LaunchConfig
+        {
+            SettingsPath = FullFilePath.Of(Path.GetFullPath("other.json")),
+            RenderBackend = RenderBackendKind.OpenGl,
+            NewInstance = true,
+        }, commandLine.Launch);
         Assert.Equal(DecompilationLanguage.IL, commandLine.Arguments.Language);
         Assert.Empty(commandLine.Arguments.Ignored);
     }
@@ -177,7 +182,11 @@ public sealed class RunArgumentsTests
     public void A_list_named_that_there_is_none_of_is_added_and_opened_empty()
     {
         using var temp = new TempDir();
-        var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), $"--list={Other}");
+        var d = Start(SettingsWith(temp, new AssemblyListRecord
+        {
+            Name = SavedAssemblyLists.DefaultName,
+            Assemblies = [PathOf(AppStateDriver.FixturePath)],
+        }), $"--list={Other}");
 
         Assert.Equal(Other, d.AppState.Lists.Active);
         Assert.Empty(d.AppState.Assemblies.ListFilePaths());
@@ -189,8 +198,8 @@ public sealed class RunArgumentsTests
     {
         using var temp = new TempDir();
         var settings = SettingsWith(temp,
-            new AssemblyListRecord(SavedAssemblyLists.DefaultName, []),
-            new AssemblyListRecord(Other, [PathOf(AppStateDriver.FixturePath)]));
+            new AssemblyListRecord { Name = SavedAssemblyLists.DefaultName, Assemblies = [] },
+            new AssemblyListRecord { Name = Other, Assemblies = [PathOf(AppStateDriver.FixturePath)] });
 
         var d = Start(settings, "--list=other", OtherAssembly);
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
@@ -205,7 +214,11 @@ public sealed class RunArgumentsTests
     public void Clearing_the_list_opens_only_the_files_named_and_saves_the_list_with_them()
     {
         using var temp = new TempDir();
-        var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), "--clear-list", OtherAssembly);
+        var d = Start(SettingsWith(temp, new AssemblyListRecord
+        {
+            Name = SavedAssemblyLists.DefaultName,
+            Assemblies = [PathOf(AppStateDriver.FixturePath)],
+        }), "--clear-list", OtherAssembly);
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         Assert.Equal([OtherAssembly], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));

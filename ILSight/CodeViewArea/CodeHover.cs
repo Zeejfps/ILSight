@@ -46,7 +46,11 @@ internal readonly struct CodeHover
     }
 
     /// <summary>The span under the pointer, or null.</summary>
-    public CodeSpanAt? Span => _place == Place.Text && _span is not null ? new CodeSpanAt(_line, _span.Value) : null;
+    public CodeSpanAt? Span => _place == Place.Text && _span is not null ? new CodeSpanAt
+    {
+        Line = _line,
+        Span = _span.Value,
+    } : null;
 
     /// <summary>The collapsed fold whose chip is under the pointer, or null.</summary>
     public int? Chip => _place == Place.Text ? _fold : null;

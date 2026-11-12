@@ -81,22 +81,29 @@ internal static class Shortcuts
 
     /// <summary>An app-wide shortcut and what it does; one that works <see cref="WhileTyping"/> runs
     /// even while a text field has focus.</summary>
-    private readonly record struct Binding(Shortcut Keys, Action<Ui<UiState>, AppState> Run, bool WhileTyping = false);
+    private readonly record struct Binding
+    {
+        public required Shortcut Keys { get; init; }
+
+        public required Action<Ui<UiState>, AppState> Run { get; init; }
+
+        public bool WhileTyping { get; init; }
+    }
 
     private static readonly Binding[] Bindings =
     [
-        new(Search, static (ui, _) => OpenSearch(ui.State), WhileTyping: true),
-        new(OmnibarSearch, static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping: true),
-        new(Back, static (ui, appState) => GoBack(ui.State, appState), WhileTyping: true),
-        new(Forward, static (ui, appState) => GoForward(ui.State, appState), WhileTyping: true),
-        new(Open, static (ui, appState) => MainMenuView.OpenFile(ui, appState.Navigation)),
-        new(Settings, static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping: true),
-        new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language)),
-        new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Navigation))),
-        new(ReloadAll, static (ui, _) => Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct))),
-        new(CloseTab, static (ui, _) => CloseActiveTab(ui.State)),
-        new(NextTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, 1)),
-        new(PreviousTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, -1)),
+        new Binding { Keys = Search, Run = static (ui, _) => OpenSearch(ui.State), WhileTyping = true },
+        new Binding { Keys = OmnibarSearch, Run = static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping = true },
+        new Binding { Keys = Back, Run = static (ui, appState) => GoBack(ui.State, appState), WhileTyping = true },
+        new Binding { Keys = Forward, Run = static (ui, appState) => GoForward(ui.State, appState), WhileTyping = true },
+        new Binding { Keys = Open, Run = static (ui, appState) => MainMenuView.OpenFile(ui, appState.Navigation) },
+        new Binding { Keys = Settings, Run = static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping = true },
+        new Binding { Keys = SaveCode, Run = static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language) },
+        new Binding { Keys = Export, Run = static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Navigation)) },
+        new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct)) },
+        new Binding { Keys = CloseTab, Run = static (ui, _) => CloseActiveTab(ui.State) },
+        new Binding { Keys = NextTab, Run = static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, 1) },
+        new Binding { Keys = PreviousTab, Run = static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, -1) },
     ];
 
     /// <summary>Goes to the history entry before the current one in this frame, and asks for its load or lookup to be

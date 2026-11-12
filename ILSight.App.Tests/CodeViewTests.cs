@@ -260,10 +260,10 @@ public sealed class CodeViewTests
         view.Key(KeyboardKey.F3, KeyModifiers.Shift);
         var back = (view.Frames.Drew("3 of 4"), view.State.Selection.Start);
 
-        Assert.Equal((true, new TextPosition(3, 0)), first);
-        Assert.Equal((true, new TextPosition(3, 4)), second);
-        Assert.Equal((true, new TextPosition(0, 0)), wrapped);
-        Assert.Equal((true, new TextPosition(3, 0)), back);
+        Assert.Equal((true, new TextPosition { Line = 3, Column = 0 }), first);
+        Assert.Equal((true, new TextPosition { Line = 3, Column = 4 }), second);
+        Assert.Equal((true, new TextPosition { Line = 0, Column = 0 }), wrapped);
+        Assert.Equal((true, new TextPosition { Line = 3, Column = 0 }), back);
     }
 
     [Fact]

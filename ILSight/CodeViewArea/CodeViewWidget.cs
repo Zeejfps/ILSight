@@ -193,7 +193,7 @@ public static class CodeViewWidget
             var at = text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
             while (at >= 0)
             {
-                matches.Add(new TextPosition(line, at));
+                matches.Add(new TextPosition { Line = line, Column = at });
                 at = text.IndexOf(query, at + query.Length, StringComparison.OrdinalIgnoreCase);
             }
         }
@@ -341,7 +341,7 @@ public static class CodeViewWidget
                 var column = (int)MathF.Round((x - rect.X - textLeft + state.LaidOutScrollX) / advance);
                 if (row.Index < 0)
                 {
-                    return CodeText.Clamp(document, new TextPosition(0, 0));
+                    return CodeText.Clamp(document, new TextPosition { Line = 0, Column = 0 });
                 }
 
                 if (row.Index >= folds.RowCount)
@@ -354,9 +354,9 @@ public static class CodeViewWidget
                 if (fold is not null && column > document.Lines[line].Text.Length)
                 {
                     var end = document.Folds[fold.Value].EndLine;
-                    return new TextPosition(end, document.Lines[end].Text.Length);
+                    return new TextPosition { Line = end, Column = document.Lines[end].Text.Length };
                 }
-                return CodeText.Clamp(document, new TextPosition(line, column));
+                return CodeText.Clamp(document, new TextPosition { Line = line, Column = column });
             }
 
             var pointer = ui.Input.Pointer;
@@ -484,7 +484,12 @@ public static class CodeViewWidget
                 ui.Focus(focusId, takesText: false);
                 var onDefinition = hoverSpan is not null && hovered.IsDefinition;
                 int? menuLine = hasRect ? PositionAt(pointer.X, pointer.Y).Line : null;
-                state.Menu = new CodeMenuTarget(hoverReference, onDefinition, menuLine);
+                state.Menu = new CodeMenuTarget
+                {
+                    Reference = hoverReference,
+                    OnDefinition = onDefinition,
+                    Line = menuLine,
+                };
                 ui.OpenContextMenu("menu");
             }
 
@@ -518,7 +523,7 @@ public static class CodeViewWidget
             }
             if (tooltips is not null && hasRect)
             {
-                var under = new HoveredSpan(hoverSpan, rect.X + textLeft, rect.Y);
+                var under = new HoveredSpan { Span = hoverSpan, TextX = rect.X + textLeft, TextY = rect.Y };
                 var followed = ReferenceTooltip(ui, state, document, tooltips, codeId, under, advance, rowHeight);
                 if (followed is not null)
                 {
@@ -535,7 +540,7 @@ public static class CodeViewWidget
             intent = picked;
         }
 
-        return new CodeViewResult(intent, zoom);
+        return new CodeViewResult { Intent = intent, Zoom = zoom };
     }
 
     /// <summary>How many digits wide the line numbers are, at least three; none when they are hidden.</summary>
@@ -646,7 +651,14 @@ public static class CodeViewWidget
     }
 
     /// <summary>The span under the pointer and where the view's text starts on screen.</summary>
-    private readonly record struct HoveredSpan(CodeSpanAt? Span, float TextX, float TextY);
+    private readonly record struct HoveredSpan
+    {
+        public required CodeSpanAt? Span { get; init; }
+
+        public required float TextX { get; init; }
+
+        public required float TextY { get; init; }
+    }
 
     /// <summary>The tooltip of the type or member under the pointer, under its span once it has
     /// been looked up.</summary>
@@ -894,7 +906,7 @@ public static class CodeViewWidget
         var line = Math.Clamp(reveal.Line, 0, Math.Max(0, document.Lines.Length - 1));
         RevealFolds(state, line);
         state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.GetRowOf(state.Folds, line), rowHeight) - viewport / 3f);
-        state.Flash = new CodeFlash(line, ui.RealTime);
+        state.Flash = new CodeFlash { Line = line, From = ui.RealTime };
         state.Pending = null;
         ui.RequestUpdate();
     }
@@ -1155,7 +1167,7 @@ public static class CodeViewWidget
         var column = goal is not null && goal.Value.At == state.Selection.Caret ? goal.Value.Column : caret.Column;
         var to = CodeCaret.MoveRows(document, state.Folds, caret, rows, column);
         PutCaret(state, to, extend);
-        state.Goal = new CaretGoal(to, column);
+        state.Goal = new CaretGoal { At = to, Column = column };
     }
 
     private static void PutCaret(CodeViewState state, TextPosition to, bool extend)
@@ -1259,7 +1271,15 @@ public static class CodeViewWidget
     private static CodeHtmlStyle CopyStyleOf(Ui<UiState> ui, CodeViewFrame frame)
     {
         var family = CodeDisplay.GetFontName(ui.State.Display.Font);
-        return new CodeHtmlStyle(frame.Palette, frame.Background, frame.ErrorText, family, frame.FontSize, frame.RowHeight);
+        return new CodeHtmlStyle
+        {
+            Palette = frame.Palette,
+            Background = frame.Background,
+            ErrorText = frame.ErrorText,
+            FontFamily = family,
+            FontSize = frame.FontSize,
+            LineHeight = frame.RowHeight,
+        };
     }
 
     private static void FindBar(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, int focusId, int findId)

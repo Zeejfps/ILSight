@@ -40,7 +40,11 @@ public sealed class AppSettingsTests : IDisposable
     public void Saved_settings_load_back_and_leave_no_temporary_file()
     {
         var settings = AppRoot.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
-        settings.AssemblyLists = [new AssemblyListRecord("Work", [FakePath("a.dll"), FakePath("b.dll")]), new AssemblyListRecord("Play", [FakePath("c.dll")])];
+        settings.AssemblyLists =
+        [
+            new AssemblyListRecord { Name = "Work", Assemblies = [FakePath("a.dll"), FakePath("b.dll")] },
+            new AssemblyListRecord { Name = "Play", Assemblies = [FakePath("c.dll")] },
+        ];
         settings.ActiveAssemblyList = "Play";
         settings.Language = DecompilationLanguage.IL;
         var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
@@ -698,9 +702,13 @@ public sealed class AppSettingsTests : IDisposable
     public void Saving_replaces_the_whole_file()
     {
         var settings = AppRoot.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
-        settings.AssemblyLists = Enumerable.Range(0, 200).Select(i => new AssemblyListRecord($"list-{i}", [])).ToList();
+        settings.AssemblyLists = Enumerable.Range(0, 200).Select(i => new AssemblyListRecord
+        {
+            Name = $"list-{i}",
+            Assemblies = [],
+        }).ToList();
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
-        settings.AssemblyLists = [new AssemblyListRecord("one", [])];
+        settings.AssemblyLists = [new AssemblyListRecord { Name = "one", Assemblies = [] }];
 
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
 

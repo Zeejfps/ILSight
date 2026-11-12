@@ -60,7 +60,7 @@ internal static class MetadataDetailsView
     {
         var lines = text.Split('\n');
         var longest = lines.Max(static l => l.TrimEnd('\r').Length);
-        return new TextSize(lines.Length, longest);
+        return new TextSize { Lines = lines.Length, Longest = longest };
     }
 
     /// <summary>How tall a text is in a code view <paramref name="width"/> wide: a code line per
@@ -110,7 +110,7 @@ internal static class MetadataDetailsView
         }
 
         var document = Documents.CreateFromText(title, text);
-        shown = new DetailText(document, new CodeViewState());
+        shown = new DetailText { Document = document, View = new CodeViewState() };
         texts.Texts[row] = shown;
         return shown;
     }

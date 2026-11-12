@@ -13,6 +13,11 @@ public sealed class PackageIcon
     /// <summary>Shows <paramref name="pixels"/> as the icon from now on.</summary>
     public void Show(ResourceImage pixels)
     {
-        Shown = new ShownIcon(ImageId, pixels, ResourceImages.IsDarkOnClear(pixels));
+        Shown = new ShownIcon
+        {
+            ImageId = ImageId,
+            Pixels = pixels,
+            IsDarkOnClear = ResourceImages.IsDarkOnClear(pixels),
+        };
     }
 }

@@ -24,7 +24,7 @@ internal static class CodeCaret
         }
 
         var above = CodeFolding.GetLineAt(folds, new CodeRow(row.Index - 1));
-        return new TextPosition(above, document.Lines[above].Text.Length);
+        return new TextPosition { Line = above, Column = document.Lines[above].Text.Length };
     }
 
     /// <summary>One character right of <paramref name="at"/>, or a word with <paramref name="byWord"/>; from the
@@ -43,7 +43,7 @@ internal static class CodeCaret
             return at;
         }
 
-        return new TextPosition(next, 0);
+        return new TextPosition { Line = next, Column = 0 };
     }
 
     /// <summary><paramref name="rows"/> rows below <paramref name="at"/>, above when negative, at the column of
@@ -59,17 +59,17 @@ internal static class CodeCaret
         var target = CodeFolding.GetRowOf(folds, at.Line).Index + rows;
         if (target < 0)
         {
-            return new TextPosition(CodeFolding.GetLineAt(folds, new CodeRow(0)), 0);
+            return new TextPosition { Line = CodeFolding.GetLineAt(folds, new CodeRow(0)), Column = 0 };
         }
 
         if (target >= folds.RowCount)
         {
             var last = CodeFolding.GetLineAt(folds, new CodeRow(folds.RowCount - 1));
-            return new TextPosition(last, document.Lines[last].Text.Length);
+            return new TextPosition { Line = last, Column = document.Lines[last].Text.Length };
         }
         var line = CodeFolding.GetLineAt(folds, new CodeRow(target));
         var text = document.Lines[line].Text;
-        return new TextPosition(line, TextBoundaries.Snap(text, Math.Min(goal, text.Length)));
+        return new TextPosition { Line = line, Column = TextBoundaries.Snap(text, Math.Min(goal, text.Length)) };
     }
 
     /// <summary>Where Home goes from <paramref name="at"/>: the first character of its line that is not a space,
@@ -105,6 +105,6 @@ internal static class CodeCaret
         }
 
         var last = CodeFolding.GetLineAt(folds, new CodeRow(folds.RowCount - 1));
-        return new TextPosition(last, document.Lines[last].Text.Length);
+        return new TextPosition { Line = last, Column = document.Lines[last].Text.Length };
     }
 }

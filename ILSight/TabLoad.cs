@@ -320,7 +320,7 @@ public sealed class TabLoad
             return null;
         }
 
-        _arrival = new Arrival(Navigation.KeepPosition(Position, _language, language));
+        _arrival = new Arrival { Position = Navigation.KeepPosition(Position, _language, language) };
         _language = language;
         _options = options;
         _content = new TabContent.Loading(node);

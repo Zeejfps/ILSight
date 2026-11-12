@@ -198,7 +198,7 @@ public sealed class Navigation
     /// nothing. Returns the load it started in the tab, as <see cref="ShowNode"/> does.</summary>
     public DecompileTicket? Restore(DocumentTab tab, BrowseNode node, DecompilerSetup setup, ViewPosition? position)
     {
-        return StartDecompiling(tab, node, setup, new Arrival(position));
+        return StartDecompiling(tab, node, setup, new Arrival { Position = position });
     }
 
     /// <summary>Shows <paramref name="node"/>, picked in the tree, as <see cref="ShowNode"/> does, unless
@@ -1029,7 +1029,7 @@ public sealed class Navigation
     /// <paramref name="inNewTab"/>.</summary>
     public TabDestination ChooseDestination(bool inNewTab)
     {
-        return new TabDestination(_tabs.Active, inNewTab);
+        return new TabDestination { Origin = _tabs.Active, InNewTab = inNewTab };
     }
 
     /// <summary>Shows <paramref name="node"/> in the tab <paramref name="destination"/> leads to now, in
@@ -1046,7 +1046,12 @@ public sealed class Navigation
     {
         var shownIn = GetOrOpenTab(destination);
         Tabs.MakeActive(_tabs, shownIn);
-        var load = StartDecompiling(shownIn, node, setup, new Arrival(position, target, row));
+        var load = StartDecompiling(shownIn, node, setup, new Arrival
+        {
+            Position = position,
+            Target = target,
+            Row = row,
+        });
         ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
         return load;
     }

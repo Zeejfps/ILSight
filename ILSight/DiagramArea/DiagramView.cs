@@ -637,11 +637,18 @@ internal static class DiagramView
         var label = DiagramFaces.LabelOf(route.Link);
         if (label is null)
         {
-            return new DrawnLink(route.Link, shape, null, 0f, 0f);
+            return new DrawnLink { Link = route.Link, Route = shape, Label = null, LabelWidth = 0f, LabelHeight = 0f };
         }
 
         var size = DiagramFaces.MeasureLabel(ui, label);
-        return new DrawnLink(route.Link, shape, label, size.Width, size.Height);
+        return new DrawnLink
+        {
+            Link = route.Link,
+            Route = shape,
+            Label = label,
+            LabelWidth = size.Width,
+            LabelHeight = size.Height,
+        };
     }
 
     /// <summary>The cards the layout drawn places, each where it is drawn now.</summary>
@@ -663,7 +670,13 @@ internal static class DiagramView
             }
 
             var isSelected = card.Type == view.Selected;
-            frame.Cards.Add(new DrawnCard(face, place.Value, isSelected, HoveredRowOf(face, hit)));
+            frame.Cards.Add(new DrawnCard
+            {
+                Face = face,
+                Place = place.Value,
+                IsSelected = isSelected,
+                HoveredRow = HoveredRowOf(face, hit),
+            });
         }
     }
 

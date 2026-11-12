@@ -119,10 +119,10 @@ public sealed class SavedAssemblyListsTests
         var lists = new SavedAssemblyLists();
         List<AssemblyListRecord> records =
         [
-            new(" ", [FakePath("x.dll")]),
-            new("Work", [FakePath("a.dll")]),
-            new("work", [FakePath("b.dll")]),
-            new("Play", [FakePath("c.dll")]),
+            new AssemblyListRecord { Name = " ", Assemblies = [FakePath("x.dll")] },
+            new AssemblyListRecord { Name = "Work", Assemblies = [FakePath("a.dll")] },
+            new AssemblyListRecord { Name = "work", Assemblies = [FakePath("b.dll")] },
+            new AssemblyListRecord { Name = "Play", Assemblies = [FakePath("c.dll")] },
         ];
 
         lists.Restore(records, "play");

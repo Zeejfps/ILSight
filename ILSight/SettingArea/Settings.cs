@@ -57,20 +57,22 @@ public static class Settings
 
     internal static SavedSources CaptureSavedSources(AppState appState)
     {
-        return new SavedSources(
-            appState.Assemblies.Version,
-            appState.Lists.Revision,
-            appState.Bookmarks.Revision,
-            appState.Analyzer.Revision,
-            appState.Navigation.TabChanges,
-            appState.ViewSettingsChanges,
-            appState.Theme,
-            appState.IconTheme,
-            appState.Decompiler.Setup.Language,
-            appState.Decompiler.Setup.Options,
-            appState.ApiVisibility,
-            appState.Locale,
-            appState.IsUpdateCheckAutomatic);
+        return new SavedSources
+        {
+            Assemblies = appState.Assemblies.Version,
+            Lists = appState.Lists.Revision,
+            Bookmarks = appState.Bookmarks.Revision,
+            Analyzer = appState.Analyzer.Revision,
+            Documents = appState.Navigation.TabChanges,
+            View = appState.ViewSettingsChanges,
+            Theme = appState.Theme,
+            IconTheme = appState.IconTheme,
+            Language = appState.Decompiler.Setup.Language,
+            DecompilerOptions = appState.Decompiler.Setup.Options,
+            ApiVisibility = appState.ApiVisibility,
+            Locale = appState.Locale,
+            CheckForUpdates = appState.IsUpdateCheckAutomatic,
+        };
     }
 
     /// <summary>The settings as the app state and the screen it was handed hold them now, to be written

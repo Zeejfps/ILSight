@@ -31,7 +31,14 @@ internal static class ExportsPanelView
 
     /// <summary>What every row of a frame needs: the list it is in, for focus and scrolling, the
     /// menu its rows open, resolved outside their id scopes, and whether the panel is narrow.</summary>
-    private readonly record struct Rows(int ListId, int MenuId, bool Narrow);
+    private readonly record struct Rows
+    {
+        public required int ListId { get; init; }
+
+        public required int MenuId { get; init; }
+
+        public required bool Narrow { get; init; }
+    }
 
     public static void Render(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished)
     {
@@ -45,7 +52,7 @@ internal static class ExportsPanelView
             return;
         }
         var listId = ui.GetId(ListKey);
-        var rows = new Rows(listId, ui.GetId(MenuId), IsNarrow(ui, listId));
+        var rows = new Rows { ListId = listId, MenuId = ui.GetId(MenuId), Narrow = IsNarrow(ui, listId) };
         HandleKeys(ui, queue, finished, rows);
         using (ui.Scroll(rows.ListId, new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground }))
         {

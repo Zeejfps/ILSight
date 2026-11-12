@@ -18,13 +18,13 @@ public sealed class CodeSelection : TextSelection<DecompiledDocument, TextPositi
 
     protected override (TextPosition Start, TextPosition End) BlockAt(DecompiledDocument document, TextPosition at)
     {
-        var first = new TextPosition(CodeFolding.GetVisibleLine(Folds, at.Line), 0);
+        var first = new TextPosition { Line = CodeFolding.GetVisibleLine(Folds, at.Line), Column = 0 };
         var next = CodeFolding.GetNextLine(Folds, first.Line);
         if (next >= document.Lines.Length)
         {
             return (first, CodeText.End(document));
         }
 
-        return (first, new TextPosition(next, 0));
+        return (first, new TextPosition { Line = next, Column = 0 });
     }
 }

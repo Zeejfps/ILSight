@@ -43,7 +43,7 @@ public static class IconAssetFolders
             return IconTheming.CreateFailedAsset(ThemeProblem.AssetOutsideFolder, path);
         }
 
-        return new IconAsset(File.ReadAllBytes(full), Family: FamilyPrefix + full);
+        return new IconAsset { Bytes = File.ReadAllBytes(full), Family = FamilyPrefix + full };
     }
 
     /// <summary>True for what reading a file can throw, a path with characters no path may hold included.</summary>

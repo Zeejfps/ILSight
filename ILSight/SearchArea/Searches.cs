@@ -56,7 +56,12 @@ public static class Searches
     private static void Restart(Search search, AssemblyList assemblies)
     {
         search.Runs.CancelAll();
-        var searched = new SearchedQuery(search.Typed.Text, search.Kinds, assemblies.Version);
+        var searched = new SearchedQuery
+        {
+            Query = search.Typed.Text,
+            Kinds = search.Kinds,
+            Version = assemblies.Version,
+        };
         search.LastSearched = searched;
         search.Rows.Clear();
         search.Unsearched.Clear();

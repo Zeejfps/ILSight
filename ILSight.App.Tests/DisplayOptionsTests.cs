@@ -156,7 +156,7 @@ public sealed class DisplayOptionsTests
 
         view.Key(KeyboardKey.Home).Frame();
 
-        Assert.Equal(new TextPosition(0, 0), view.State.Selection.Caret);
+        Assert.Equal(new TextPosition { Line = 0, Column = 0 }, view.State.Selection.Caret);
         Assert.Equal("a", view.State.Frame.Highlight?.Name);
     }
 
@@ -168,7 +168,7 @@ public sealed class DisplayOptionsTests
         view.Key(KeyboardKey.End).Frame();
         view.Key(KeyboardKey.LeftArrow).Frame();
 
-        Assert.Equal(new TextPosition(0, 9), view.State.Selection.Caret);
+        Assert.Equal(new TextPosition { Line = 0, Column = 9 }, view.State.Selection.Caret);
 
         Assert.Equal("a", view.State.Frame.Highlight?.Name);
     }
