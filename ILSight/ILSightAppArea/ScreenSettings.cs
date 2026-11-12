@@ -72,22 +72,24 @@ public static class ScreenSettings
 
     private static ViewSettings CreateViewSettings(UiState uiState)
     {
-        return new ViewSettings(
-            uiState.BookmarkColumns.Weights.ToList(),
-            uiState.SearchColumns.Weights.ToList(),
-            uiState.ExportColumns.Weights.ToList(),
-            OptionFolds.ListInOrder(uiState.FoldedOptionGroups),
-            uiState.Search.Kinds,
-            MetadataGridWidget.ListSaved(uiState.MetadataFilters),
-            uiState.ExportSetup.Window.Bounds,
-            uiState.Layout.CopyArrangement(),
-            uiState.Display,
-            uiState.NuGetPicker.Browser.KeptSearch,
-            uiState.NuGetPicker.Window.Bounds,
-            uiState.ProcessPicker.Window.Bounds,
-            uiState.ProcessColumns.Weights.ToList(),
-            uiState.ProcessModuleColumns.Weights.ToList(),
-            uiState.Closer.Window.Bounds,
-            DocumentPanels.SavePanels(uiState.Documents));
+        return new ViewSettings
+        {
+            BookmarkColumns = uiState.BookmarkColumns.Weights.ToList(),
+            SearchColumns = uiState.SearchColumns.Weights.ToList(),
+            ExportColumns = uiState.ExportColumns.Weights.ToList(),
+            FoldedOptionGroups = OptionFolds.ListInOrder(uiState.FoldedOptionGroups),
+            SearchKinds = uiState.Search.Kinds,
+            FlagsFilters = MetadataGridWidget.ListSaved(uiState.MetadataFilters),
+            ExportWindow = uiState.ExportSetup.Window.Bounds,
+            Layout = uiState.Layout.CopyArrangement(),
+            Display = uiState.Display,
+            NuGet = uiState.NuGetPicker.Browser.KeptSearch,
+            NuGetWindow = uiState.NuGetPicker.Window.Bounds,
+            ProcessWindow = uiState.ProcessPicker.Window.Bounds,
+            ProcessColumns = uiState.ProcessColumns.Weights.ToList(),
+            ProcessModuleColumns = uiState.ProcessModuleColumns.Weights.ToList(),
+            CloseWindow = uiState.Closer.Window.Bounds,
+            Tabs = DocumentPanels.SavePanels(uiState.Documents),
+        };
     }
 }

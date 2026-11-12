@@ -9,18 +9,33 @@ namespace ILSight.BookmarkArea;
 /// which ILSpy skips; a record without a location finds one through
 /// <see cref="BookmarkViewState.SelectedTreeNodePath"/>.
 /// </summary>
-public sealed record BookmarkRecord(
-    string Name,
-    bool Enabled,
-    AssemblyPath FileName,
-    string AssemblyFullName,
-    string ModuleName,
-    uint Token,
-    BookmarkKind Kind,
-    int ILOffset,
-    int LineNumber,
-    string MemberName,
-    string? LocationNodeName,
-    BookmarkViewState? ViewState,
-    NodePath? Location = null,
-    DecompilationLanguage? Language = null);
+public sealed record BookmarkRecord
+{
+    public required string Name { get; init; }
+
+    public required bool Enabled { get; init; }
+
+    public required AssemblyPath FileName { get; init; }
+
+    public required string AssemblyFullName { get; init; }
+
+    public required string ModuleName { get; init; }
+
+    public required uint Token { get; init; }
+
+    public required BookmarkKind Kind { get; init; }
+
+    public required int ILOffset { get; init; }
+
+    public required int LineNumber { get; init; }
+
+    public required string MemberName { get; init; }
+
+    public required string? LocationNodeName { get; init; }
+
+    public required BookmarkViewState? ViewState { get; init; }
+
+    public NodePath? Location { get; init; }
+
+    public DecompilationLanguage? Language { get; init; }
+}

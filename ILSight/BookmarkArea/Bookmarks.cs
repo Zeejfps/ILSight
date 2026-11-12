@@ -264,26 +264,38 @@ public static class Bookmarks
     /// <summary>This bookmark as ILSpy's bookmarks file holds it, with this app's place and language.</summary>
     public static BookmarkRecord CreateRecord(Bookmark bookmark)
     {
-        return new BookmarkRecord(
-        bookmark.Name,
-        bookmark.Enabled,
-        bookmark.Anchor?.FilePath ?? bookmark.Place.FilePath,
-        bookmark.ILSpy.AssemblyFullName,
-        bookmark.ILSpy.ModuleName,
-        bookmark.ILSpy.Token,
-        bookmark.Anchor?.Kind switch
+        return new BookmarkRecord
         {
-            CodeAnchorKind.Definition => BookmarkKind.Token,
-            CodeAnchorKind.Statement => BookmarkKind.Body,
-            _ => BookmarkKind.Line,
-        },
-        bookmark.Anchor is not null && bookmark.Anchor.Value.Kind == CodeAnchorKind.Statement ? bookmark.Anchor.Value.ILOffset : 0,
-        bookmark.Line + 1,
-        bookmark.ILSpy.MemberName,
-        bookmark.ILSpy.LocationNodeName,
-        bookmark.ViewState ?? new BookmarkViewState(1, 0, 0d, 0d, null, null, null, bookmark.ILSpy.TreePath?.ToList()),
-        bookmark.Place,
-        bookmark.Language);
+            Name = bookmark.Name,
+            Enabled = bookmark.Enabled,
+            FileName = bookmark.Anchor?.FilePath ?? bookmark.Place.FilePath,
+            AssemblyFullName = bookmark.ILSpy.AssemblyFullName,
+            ModuleName = bookmark.ILSpy.ModuleName,
+            Token = bookmark.ILSpy.Token,
+            Kind = bookmark.Anchor?.Kind switch
+            {
+                CodeAnchorKind.Definition => BookmarkKind.Token,
+                CodeAnchorKind.Statement => BookmarkKind.Body,
+                _ => BookmarkKind.Line,
+            },
+            ILOffset = bookmark.Anchor is not null && bookmark.Anchor.Value.Kind == CodeAnchorKind.Statement ? bookmark.Anchor.Value.ILOffset : 0,
+            LineNumber = bookmark.Line + 1,
+            MemberName = bookmark.ILSpy.MemberName,
+            LocationNodeName = bookmark.ILSpy.LocationNodeName,
+            ViewState = bookmark.ViewState ?? new BookmarkViewState
+            {
+                Version = 1,
+                CaretOffset = 0,
+                VerticalOffset = 0d,
+                HorizontalOffset = 0d,
+                FoldingChecksum = null,
+                ExpandedFoldings = null,
+                RenderedLayoutSettings = null,
+                SelectedTreeNodePath = bookmark.ILSpy.TreePath?.ToList(),
+            },
+            Location = bookmark.Place,
+            Language = bookmark.Language,
+        };
     }
 
     /// <summary>Whether <paramref name="other"/> marks the same line: the same anchor, or for one

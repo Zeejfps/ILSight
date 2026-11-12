@@ -352,8 +352,21 @@ public sealed class SavedDocumentsTests : IDisposable
     [Fact]
     public void A_tab_whose_node_is_gone_after_a_restart_says_so_in_its_panel()
     {
-        var missing = new NodeDocumentRecord(MissingPanel, "Missing", FixturePlace("Missing"), DecompilationLanguage.CSharp, null);
-        var d = new AppStateDriver(SettingsWith(new DocumentsRecord([missing], MissingPanel, null, null)));
+        var missing = new NodeDocumentRecord
+        {
+            Panel = MissingPanel,
+            Title = "Missing",
+            Location = FixturePlace("Missing"),
+            Language = DecompilationLanguage.CSharp,
+            View = null,
+        };
+        var d = new AppStateDriver(SettingsWith(new DocumentsRecord
+        {
+            Tabs = [missing],
+            Active = MissingPanel,
+            Preview = null,
+            Layout = null,
+        }));
 
         d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
@@ -368,8 +381,21 @@ public sealed class SavedDocumentsTests : IDisposable
     [Fact]
     public void Clearing_the_list_before_it_reopens_settles_its_tabs_rather_than_leaving_them_reloading()
     {
-        var greeter = new NodeDocumentRecord(MissingPanel, "Greeter", FixturePlace("Greeter"), DecompilationLanguage.CSharp, null);
-        var d = new AppStateDriver(SettingsWith(new DocumentsRecord([greeter], MissingPanel, null, null)));
+        var greeter = new NodeDocumentRecord
+        {
+            Panel = MissingPanel,
+            Title = "Greeter",
+            Location = FixturePlace("Greeter"),
+            Language = DecompilationLanguage.CSharp,
+            View = null,
+        };
+        var d = new AppStateDriver(SettingsWith(new DocumentsRecord
+        {
+            Tabs = [greeter],
+            Active = MissingPanel,
+            Preview = null,
+            Layout = null,
+        }));
 
         d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Change(static a => a.ListSession.CloseAllAssemblies());
@@ -383,8 +409,21 @@ public sealed class SavedDocumentsTests : IDisposable
     public void A_diagram_comes_back_without_the_types_no_longer_found_and_is_the_one_shown_types_go_to()
     {
         var vehicle = FixtureType("Vehicle");
-        var saved = new DiagramDocumentRecord(DiagramPanel, "Vehicle diagram", [vehicle, FixtureType("Missing")], [PathOf(AppStateDriver.FixturePath)], null);
-        var d = new AppStateDriver(SettingsWith(new DocumentsRecord([saved], DiagramPanel, null, null)));
+        var saved = new DiagramDocumentRecord
+        {
+            Panel = DiagramPanel,
+            Title = "Vehicle diagram",
+            Types = [vehicle, FixtureType("Missing")],
+            HomeAssemblies = [PathOf(AppStateDriver.FixturePath)],
+            View = null,
+        };
+        var d = new AppStateDriver(SettingsWith(new DocumentsRecord
+        {
+            Tabs = [saved],
+            Active = DiagramPanel,
+            Preview = null,
+            Layout = null,
+        }));
 
         d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
@@ -479,7 +518,13 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var settings = _temp.Settings();
         List<DocumentRecord> tabs = [HandTab("document-1", "First"), HandTab("document-1", "Twin"), HandTab(DockPanels.Assemblies, "Tree")];
-        settings.AssemblyLists.Add(new AssemblyListRecord("Hand", [], Documents: new DocumentsRecord(tabs, null, null, null)));
+        settings.AssemblyLists.Add(new AssemblyListRecord("Hand", [], Documents: new DocumentsRecord
+        {
+            Tabs = tabs,
+            Active = null,
+            Preview = null,
+            Layout = null,
+        }));
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
 
         var documents = _temp.Settings().AssemblyLists.Single(static l => l.Name == "Hand").Documents;
@@ -491,7 +536,14 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static NodeDocumentRecord HandTab(string panel, string title)
     {
-        return new NodeDocumentRecord(panel, title, NodePath.From(PathOf(AppStateDriver.FixturePath), []), DecompilationLanguage.CSharp, null);
+        return new NodeDocumentRecord
+        {
+            Panel = panel,
+            Title = title,
+            Location = NodePath.From(PathOf(AppStateDriver.FixturePath), []),
+            Language = DecompilationLanguage.CSharp,
+            View = null,
+        };
     }
 
     [Fact]

@@ -213,7 +213,7 @@ public sealed class NuGetBrowserTests
         Assert.Equal("Fixtures", Assert.Single(picker.Browser.Results).Id.Text);
         Assert.Equal("Fixtures", picker.Browser.Selected?.Id.Text);
         Assert.False(picker.Browser.IsSearching);
-        Assert.Equal(new SavedNuGetSearch(FeedUrl, false), picker.Browser.KeptSearch);
+        Assert.Equal(new SavedNuGetSearch { FeedUrl = FeedUrl, IncludePrerelease = false }, picker.Browser.KeptSearch);
         Assert.Null(picker.Update(now: 11));
         Assert.Empty(ports.Reported);
     }

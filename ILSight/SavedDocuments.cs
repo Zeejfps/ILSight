@@ -161,7 +161,7 @@ public static class SavedDocuments
         var active = FindSavedPanel(saved, session.Navigation.ActiveTab);
         var preview = FindSavedPanel(saved, session.Navigation.PreviewTab);
         var layout = ArrangeSaved(view.Layout, records);
-        return new DocumentsRecord(records, active, preview, layout);
+        return new DocumentsRecord { Tabs = records, Active = active, Preview = preview, Layout = layout };
     }
 
     private static SavedTab? SaveTab(OpenListSession session, ViewSettings view, DocumentTab tab)
@@ -233,7 +233,14 @@ public static class SavedDocuments
             return null;
         }
 
-        return new NodeDocumentRecord(panel.Panel, tab.Title, location, tab.Load.Language, tab.Load.PositionToReopen);
+        return new NodeDocumentRecord
+        {
+            Panel = panel.Panel,
+            Title = tab.Title,
+            Location = location,
+            Language = tab.Load.Language,
+            View = tab.Load.PositionToReopen,
+        };
     }
 
     private static DiagramDocumentRecord SaveDiagram(DocumentTab tab, TypeDiagram diagram, TabPanel panel)
@@ -241,14 +248,28 @@ public static class SavedDocuments
         var types = Diagrams.ListAnchors(diagram);
         var homes = diagram.HomeAssemblies.ToList();
         var view = panel.View as TabPanelView.Diagram;
-        return new DiagramDocumentRecord(panel.Panel, tab.Title, types, homes, view?.View);
+        return new DiagramDocumentRecord
+        {
+            Panel = panel.Panel,
+            Title = tab.Title,
+            Types = types,
+            HomeAssemblies = homes,
+            View = view?.View,
+        };
     }
 
     private static ComparisonDocumentRecord SaveComparison(DocumentTab tab, AssemblyComparison comparison, TabPanel panel)
     {
         var view = panel.View as TabPanelView.Comparison;
-        return new ComparisonDocumentRecord(panel.Panel, tab.Title, comparison.LeftPath, comparison.RightPath, comparison.Scope,
-            view?.View);
+        return new ComparisonDocumentRecord
+        {
+            Panel = panel.Panel,
+            Title = tab.Title,
+            LeftPath = comparison.LeftPath,
+            RightPath = comparison.RightPath,
+            Scope = comparison.Scope,
+            View = view?.View,
+        };
     }
 
     private static string? FindSavedPanel(List<SavedTab> saved, DocumentTab? tab)

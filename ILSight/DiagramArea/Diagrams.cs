@@ -44,7 +44,14 @@ public static class Diagrams
     public static DiagramViewRecord SaveView(DiagramViewState view)
     {
         var corner = view.Camera.Corner;
-        return new DiagramViewRecord(corner.X, corner.Y, view.Camera.Zoom, view.FlippedFolds.ToList(), view.ShowsHiddenMembers);
+        return new DiagramViewRecord
+        {
+            X = corner.X,
+            Y = corner.Y,
+            Zoom = view.Camera.Zoom,
+            Folds = view.FlippedFolds.ToList(),
+            ShowsHiddenMembers = view.ShowsHiddenMembers,
+        };
     }
 
     /// <summary>Returns the view to how <paramref name="saved"/> says it was, which the first layout then

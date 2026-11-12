@@ -18,7 +18,7 @@ public static class CodeDisplay
             return null;
         }
 
-        return new CodeFont(family.Name, regular.File.Path, regular.File.FaceIndex);
+        return new CodeFont { Family = family.Name, Path = regular.File.Path, FaceIndex = regular.File.FaceIndex };
     }
 
     /// <summary>The size code is drawn at in <paramref name="theme"/>.</summary>

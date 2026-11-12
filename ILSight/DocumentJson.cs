@@ -9,4 +9,9 @@ namespace ILSight;
 [JsonDerivedType(typeof(NodeDocumentJson), "node")]
 [JsonDerivedType(typeof(DiagramDocumentJson), "diagram")]
 [JsonDerivedType(typeof(ComparisonDocumentJson), "comparison")]
-internal abstract record DocumentJson(string? Panel, string? Title);
+internal abstract record DocumentJson
+{
+    public string? Panel { get; init; }
+
+    public string? Title { get; init; }
+}

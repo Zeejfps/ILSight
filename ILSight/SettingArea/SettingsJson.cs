@@ -68,33 +68,35 @@ internal static class SettingsJson
 
     public static SettingsFile Write(AppSettings settings)
     {
-        return new SettingsFile(
-            settings.AssemblyLists.ConvertAll(Write),
-            settings.ActiveAssemblyList,
-            settings.Theme.Text,
-            settings.IconTheme.Text,
-            settings.Language,
-            Write(settings.Decompiler),
-            settings.FoldedOptionGroups,
-            settings.Display is null ? null : Write(settings.Display),
-            settings.Locale,
-            settings.ApiVisibility,
-            settings.CheckForUpdates,
-            settings.SearchKinds,
-            settings.Layout is null ? null : DockJson.Write(settings.Layout),
-            settings.Bookmarks.ConvertAll(Write),
-            settings.BookmarkColumns,
-            settings.SearchColumns,
-            settings.ExportColumns,
-            WriteFilters(settings.FlagsFilters),
-            WriteWindow(settings.Window),
-            WriteWindow(settings.ExportWindow),
-            settings.NuGet is null ? null : Write(settings.NuGet),
-            WriteWindow(settings.NuGetWindow),
-            WriteWindow(settings.ProcessWindow),
-            settings.ProcessColumns,
-            settings.ProcessModuleColumns,
-            WriteWindow(settings.CloseWindow));
+        return new SettingsFile
+        {
+            AssemblyLists = settings.AssemblyLists.ConvertAll(Write),
+            ActiveAssemblyList = settings.ActiveAssemblyList,
+            Theme = settings.Theme.Text,
+            IconTheme = settings.IconTheme.Text,
+            Language = settings.Language,
+            Decompiler = Write(settings.Decompiler),
+            FoldedOptionGroups = settings.FoldedOptionGroups,
+            Display = settings.Display is null ? null : Write(settings.Display),
+            Locale = settings.Locale,
+            ApiVisibility = settings.ApiVisibility,
+            CheckForUpdates = settings.CheckForUpdates,
+            SearchKinds = settings.SearchKinds,
+            Layout = settings.Layout is null ? null : DockJson.Write(settings.Layout),
+            Bookmarks = settings.Bookmarks.ConvertAll(Write),
+            BookmarkColumns = settings.BookmarkColumns,
+            SearchColumns = settings.SearchColumns,
+            ExportColumns = settings.ExportColumns,
+            FlagsFilters = WriteFilters(settings.FlagsFilters),
+            Window = WriteWindow(settings.Window),
+            ExportWindow = WriteWindow(settings.ExportWindow),
+            NuGet = settings.NuGet is null ? null : Write(settings.NuGet),
+            NuGetWindow = WriteWindow(settings.NuGetWindow),
+            ProcessWindow = WriteWindow(settings.ProcessWindow),
+            ProcessColumns = settings.ProcessColumns,
+            ProcessModuleColumns = settings.ProcessModuleColumns,
+            CloseWindow = WriteWindow(settings.CloseWindow),
+        };
     }
 
     private static Dictionary<string, SavedFilterStateJson?>? WriteFilters(Dictionary<string, SavedFilterState>? filters)
@@ -176,7 +178,13 @@ internal static class SettingsJson
         var json = AppSettingsJson.Default.DocumentJson;
         var tabs = documents.Tabs.ConvertAll(t => JsonSerializer.SerializeToElement(Write(t), json));
         var layout = documents.Layout is null ? null : DockJson.Write(documents.Layout);
-        return new DocumentsJson(tabs, documents.Active, documents.Preview, layout);
+        return new DocumentsJson
+        {
+            Tabs = tabs,
+            Active = documents.Active,
+            Preview = documents.Preview,
+            Layout = layout,
+        };
     }
 
     /// <summary>The documents, without tabs missing what they show, docked as a view, or docked as
@@ -195,7 +203,13 @@ internal static class SettingsJson
             .Where(static t => !DockPanels.IsView(t.Panel))
             .DistinctBy(static t => t.Panel)
             .ToList();
-        return new DocumentsRecord(tabs, json.Active, json.Preview, ParseLayout(json.Layout, file, field));
+        return new DocumentsRecord
+        {
+            Tabs = tabs,
+            Active = json.Active,
+            Preview = json.Preview,
+            Layout = ParseLayout(json.Layout, file, field),
+        };
     }
 
     private static DocumentRecord? ParseTab(JsonElement tab, SettingsReader file, string field)
@@ -253,10 +267,16 @@ internal static class SettingsJson
     {
         var code = node.View?.Code;
         var grid = node.View?.Grid;
-        return new NodeDocumentJson(node.Panel, node.Title, node.Location.FilePath.Text,
-            Write(node.Location), node.Language,
-            code is null ? null : Write(code.Value),
-            grid is null ? null : Write(grid.Value));
+        return new NodeDocumentJson
+        {
+            Panel = node.Panel,
+            Title = node.Title,
+            FilePath = node.Location.FilePath.Text,
+            Path = Write(node.Location),
+            Language = node.Language,
+            Position = code is null ? null : Write(code.Value),
+            GridPosition = grid is null ? null : Write(grid.Value),
+        };
     }
 
     private static DocumentRecord? Parse(NodeDocumentJson json, Action leaveOut)
@@ -278,7 +298,14 @@ internal static class SettingsJson
             return null;
         }
 
-        return new NodeDocumentRecord(json.Panel, json.Title, location, json.Language, ParseView(json.Position, json.GridPosition));
+        return new NodeDocumentRecord
+        {
+            Panel = json.Panel,
+            Title = json.Title,
+            Location = location,
+            Language = json.Language,
+            View = ParseView(json.Position, json.GridPosition),
+        };
     }
 
     /// <summary>The view's place as the file keeps it: a code view's, else a grid's, else none.</summary>
@@ -299,12 +326,14 @@ internal static class SettingsJson
 
     private static DiagramDocumentJson Write(DiagramDocumentRecord diagram)
     {
-        return new DiagramDocumentJson(
-            diagram.Panel,
-            diagram.Title,
-            diagram.Types.Select(static TypeAnchorJson? (t) => Write(t)).ToList(),
-            diagram.HomeAssemblies is null ? null : WritePaths(diagram.HomeAssemblies),
-            diagram.View is null ? null : Write(diagram.View));
+        return new DiagramDocumentJson
+        {
+            Panel = diagram.Panel,
+            Title = diagram.Title,
+            Types = diagram.Types.Select(static TypeAnchorJson? (t) => Write(t)).ToList(),
+            HomeAssemblies = diagram.HomeAssemblies is null ? null : WritePaths(diagram.HomeAssemblies),
+            View = diagram.View is null ? null : Write(diagram.View),
+        };
     }
 
     private static DocumentRecord? Parse(DiagramDocumentJson json)
@@ -316,18 +345,27 @@ internal static class SettingsJson
 
         var types = json.Types.OfType<TypeAnchorJson>().Select(static t => Parse(t)).OfType<TypeAnchor>().ToList();
         var homes = json.HomeAssemblies is null ? null : ListPaths(json.HomeAssemblies);
-        return new DiagramDocumentRecord(json.Panel, json.Title, types, homes, json.View is null ? null : Parse(json.View));
+        return new DiagramDocumentRecord
+        {
+            Panel = json.Panel,
+            Title = json.Title,
+            Types = types,
+            HomeAssemblies = homes,
+            View = json.View is null ? null : Parse(json.View),
+        };
     }
 
     private static ComparisonDocumentJson Write(ComparisonDocumentRecord comparison)
     {
-        return new ComparisonDocumentJson(
-            comparison.Panel,
-            comparison.Title,
-            comparison.LeftPath.Text,
-            comparison.RightPath.Text,
-            comparison.Scope,
-            comparison.View is null ? null : new ComparisonViewJson(comparison.View.OnlyDifferences));
+        return new ComparisonDocumentJson
+        {
+            Panel = comparison.Panel,
+            Title = comparison.Title,
+            LeftPath = comparison.LeftPath.Text,
+            RightPath = comparison.RightPath.Text,
+            Scope = comparison.Scope,
+            View = comparison.View is null ? null : new ComparisonViewJson(comparison.View.OnlyDifferences),
+        };
     }
 
     private static DocumentRecord? Parse(ComparisonDocumentJson json)
@@ -344,7 +382,15 @@ internal static class SettingsJson
             return null;
         }
 
-        return new ComparisonDocumentRecord(json.Panel, json.Title, left, right, json.Scope, json.View is null ? null : Parse(json.View));
+        return new ComparisonDocumentRecord
+        {
+            Panel = json.Panel,
+            Title = json.Title,
+            LeftPath = left,
+            RightPath = right,
+            Scope = json.Scope,
+            View = json.View is null ? null : Parse(json.View),
+        };
     }
 
     private static List<string?> WritePaths(List<AssemblyPath> paths)
@@ -400,8 +446,15 @@ internal static class SettingsJson
     /// <summary><paramref name="place"/> as the files keep it.</summary>
     private static SavedPathJson Write(NodePath place)
     {
-        return new SavedPathJson(SavedPathJson.CurrentVersion,
-            place.Steps.Select(static SavedPathStepJson? (s) => new SavedPathStepJson(SavedPlaces.Write(s.Segment), s.Label)).ToList());
+        return new SavedPathJson
+        {
+            Version = SavedPathJson.CurrentVersion,
+            Steps = place.Steps.Select(static SavedPathStepJson? (s) => new SavedPathStepJson
+            {
+                Step = SavedPlaces.Write(s.Segment),
+                Label = s.Label,
+            }).ToList(),
+        };
     }
 
     /// <summary>The path down from the root of the file at <paramref name="filePath"/>; null when it
@@ -450,21 +503,23 @@ internal static class SettingsJson
 
     public static BookmarkJson Write(BookmarkRecord bookmark)
     {
-        return new BookmarkJson(
-            bookmark.Name,
-            bookmark.Enabled,
-            bookmark.FileName.Text,
-            bookmark.AssemblyFullName,
-            bookmark.ModuleName,
-            bookmark.Token,
-            bookmark.Kind,
-            bookmark.ILOffset,
-            bookmark.LineNumber,
-            bookmark.MemberName,
-            bookmark.LocationNodeName,
-            bookmark.ViewState is null ? null : Write(bookmark.ViewState),
-            bookmark.Language,
-            bookmark.Location is null ? null : Write(bookmark.Location));
+        return new BookmarkJson
+        {
+            Name = bookmark.Name,
+            Enabled = bookmark.Enabled,
+            FileName = bookmark.FileName.Text,
+            AssemblyFullName = bookmark.AssemblyFullName,
+            ModuleName = bookmark.ModuleName,
+            Token = bookmark.Token,
+            Kind = bookmark.Kind,
+            ILOffset = bookmark.ILOffset,
+            LineNumber = bookmark.LineNumber,
+            MemberName = bookmark.MemberName,
+            LocationNodeName = bookmark.LocationNodeName,
+            ViewState = bookmark.ViewState is null ? null : Write(bookmark.ViewState),
+            Language = bookmark.Language,
+            Path = bookmark.Location is null ? null : Write(bookmark.Location),
+        };
     }
 
     /// <summary>The bookmark, with what the file lacks filled in; null without the absolute path of an
@@ -483,30 +538,55 @@ internal static class SettingsJson
         }
 
         var location = FindLocation(path, json.Path, leaveOutPlace);
-        return new BookmarkRecord(json.Name ?? "", json.Enabled, path, json.AssemblyFullName ?? "", json.ModuleName ?? path.FileName,
-            json.Token, json.Kind, json.ILOffset, json.LineNumber, json.MemberName ?? "", json.LocationNodeName,
-            json.ViewState is null ? null : Parse(json.ViewState), location, json.Language);
+        return new BookmarkRecord
+        {
+            Name = json.Name ?? "",
+            Enabled = json.Enabled,
+            FileName = path,
+            AssemblyFullName = json.AssemblyFullName ?? "",
+            ModuleName = json.ModuleName ?? path.FileName,
+            Token = json.Token,
+            Kind = json.Kind,
+            ILOffset = json.ILOffset,
+            LineNumber = json.LineNumber,
+            MemberName = json.MemberName ?? "",
+            LocationNodeName = json.LocationNodeName,
+            ViewState = json.ViewState is null ? null : Parse(json.ViewState),
+            Location = location,
+            Language = json.Language,
+        };
     }
 
     private static BookmarkViewStateJson Write(BookmarkViewState view)
     {
-        return new BookmarkViewStateJson(
-            view.Version,
-            view.CaretOffset,
-            view.VerticalOffset,
-            view.HorizontalOffset,
-            view.FoldingChecksum,
-            view.ExpandedFoldings?.Select(static BookmarkFoldingRangeJson? (f) => Write(f)).ToList(),
-            view.RenderedLayoutSettings is null ? null : Write(view.RenderedLayoutSettings),
-            view.SelectedTreeNodePath is null ? null : new List<string?>(view.SelectedTreeNodePath));
+        return new BookmarkViewStateJson
+        {
+            Version = view.Version,
+            CaretOffset = view.CaretOffset,
+            VerticalOffset = view.VerticalOffset,
+            HorizontalOffset = view.HorizontalOffset,
+            FoldingChecksum = view.FoldingChecksum,
+            ExpandedFoldings = view.ExpandedFoldings?.Select(static BookmarkFoldingRangeJson? (f) => Write(f)).ToList(),
+            RenderedLayoutSettings = view.RenderedLayoutSettings is null ? null : Write(view.RenderedLayoutSettings),
+            SelectedTreeNodePath = view.SelectedTreeNodePath is null ? null : new List<string?>(view.SelectedTreeNodePath),
+        };
     }
 
     /// <summary>The view state, without missing foldings; a tree path missing a step is no path.</summary>
     private static BookmarkViewState Parse(BookmarkViewStateJson json)
     {
         var foldings = json.ExpandedFoldings?.OfType<BookmarkFoldingRangeJson>().Select(static f => Parse(f)).ToList();
-        return new BookmarkViewState(json.Version, json.CaretOffset, json.VerticalOffset, json.HorizontalOffset, json.FoldingChecksum, foldings,
-            json.RenderedLayoutSettings is null ? null : Parse(json.RenderedLayoutSettings), ParseTreePath(json.SelectedTreeNodePath));
+        return new BookmarkViewState
+        {
+            Version = json.Version,
+            CaretOffset = json.CaretOffset,
+            VerticalOffset = json.VerticalOffset,
+            HorizontalOffset = json.HorizontalOffset,
+            FoldingChecksum = json.FoldingChecksum,
+            ExpandedFoldings = foldings,
+            RenderedLayoutSettings = json.RenderedLayoutSettings is null ? null : Parse(json.RenderedLayoutSettings),
+            SelectedTreeNodePath = ParseTreePath(json.SelectedTreeNodePath),
+        };
     }
 
     private static List<string>? ParseTreePath(List<string?>? path)
@@ -527,43 +607,53 @@ internal static class SettingsJson
 
     private static BookmarkFoldingRangeJson Write(BookmarkFoldingRange range)
     {
-        return new BookmarkFoldingRangeJson(range.Start, range.End);
+        return new BookmarkFoldingRangeJson { Start = range.Start, End = range.End };
     }
 
     private static BookmarkFoldingRange Parse(BookmarkFoldingRangeJson json)
     {
-        return new BookmarkFoldingRange(json.Start, json.End);
+        return new BookmarkFoldingRange { Start = json.Start, End = json.End };
     }
 
     private static BookmarkRenderedLayoutSettingsJson Write(BookmarkRenderedLayoutSettings settings)
     {
-        return new BookmarkRenderedLayoutSettingsJson(
-            settings.FoldBraces,
-            settings.ExpandXmlDocumentationComments,
-            settings.ExpandMemberDefinitions,
-            settings.ExpandUsingDeclarations,
-            settings.ShowDebugInfo,
-            settings.IndentationUseTabs,
-            settings.IndentationSize,
-            settings.IndentationTabSize);
+        return new BookmarkRenderedLayoutSettingsJson
+        {
+            FoldBraces = settings.FoldBraces,
+            ExpandXmlDocumentationComments = settings.ExpandXmlDocumentationComments,
+            ExpandMemberDefinitions = settings.ExpandMemberDefinitions,
+            ExpandUsingDeclarations = settings.ExpandUsingDeclarations,
+            ShowDebugInfo = settings.ShowDebugInfo,
+            IndentationUseTabs = settings.IndentationUseTabs,
+            IndentationSize = settings.IndentationSize,
+            IndentationTabSize = settings.IndentationTabSize,
+        };
     }
 
     private static BookmarkRenderedLayoutSettings Parse(BookmarkRenderedLayoutSettingsJson json)
     {
-        return new BookmarkRenderedLayoutSettings(
-            json.FoldBraces,
-            json.ExpandXmlDocumentationComments,
-            json.ExpandMemberDefinitions,
-            json.ExpandUsingDeclarations,
-            json.ShowDebugInfo,
-            json.IndentationUseTabs,
-            json.IndentationSize,
-            json.IndentationTabSize);
+        return new BookmarkRenderedLayoutSettings
+        {
+            FoldBraces = json.FoldBraces,
+            ExpandXmlDocumentationComments = json.ExpandXmlDocumentationComments,
+            ExpandMemberDefinitions = json.ExpandMemberDefinitions,
+            ExpandUsingDeclarations = json.ExpandUsingDeclarations,
+            ShowDebugInfo = json.ShowDebugInfo,
+            IndentationUseTabs = json.IndentationUseTabs,
+            IndentationSize = json.IndentationSize,
+            IndentationTabSize = json.IndentationTabSize,
+        };
     }
 
     private static CodeAnchorJson Write(CodeAnchor anchor)
     {
-        return new CodeAnchorJson(anchor.Kind, anchor.FilePath.Text, anchor.Token, anchor.ILOffset);
+        return new CodeAnchorJson
+        {
+            Kind = anchor.Kind,
+            FilePath = anchor.FilePath.Text,
+            Token = anchor.Token,
+            ILOffset = anchor.ILOffset,
+        };
     }
 
     private static CodeAnchor? Parse(CodeAnchorJson json)
@@ -584,7 +674,13 @@ internal static class SettingsJson
 
     private static CodeViewPositionJson Write(CodeViewPosition position)
     {
-        return new CodeViewPositionJson(position.TopLine, position.ScrollX, Write(position.Anchor), Write(position.Caret));
+        return new CodeViewPositionJson
+        {
+            TopLine = position.TopLine,
+            ScrollX = position.ScrollX,
+            Anchor = Write(position.Anchor),
+            Caret = Write(position.Caret),
+        };
     }
 
     private static CodeViewPosition Parse(CodeViewPositionJson json)
@@ -594,7 +690,7 @@ internal static class SettingsJson
 
     private static TextPositionJson Write(TextPosition position)
     {
-        return new TextPositionJson(position.Line, position.Column);
+        return new TextPositionJson { Line = position.Line, Column = position.Column };
     }
 
     private static TextPosition Parse(TextPositionJson json)
@@ -604,7 +700,13 @@ internal static class SettingsJson
 
     private static GridPositionJson Write(GridPosition position)
     {
-        return new GridPositionJson(position.TopRow, position.ScrollX, position.Row, position.Column);
+        return new GridPositionJson
+        {
+            TopRow = position.TopRow,
+            ScrollX = position.ScrollX,
+            Row = position.Row,
+            Column = position.Column,
+        };
     }
 
     private static GridPosition Parse(GridPositionJson json)
@@ -619,7 +721,7 @@ internal static class SettingsJson
 
     private static TypeAnchorJson Write(TypeAnchor anchor)
     {
-        return new TypeAnchorJson(anchor.AssemblyPath.Text, anchor.FullName);
+        return new TypeAnchorJson { AssemblyPath = anchor.AssemblyPath.Text, FullName = anchor.FullName };
     }
 
     private static TypeAnchor? Parse(TypeAnchorJson json)
@@ -640,21 +742,39 @@ internal static class SettingsJson
 
     private static DiagramViewJson Write(DiagramViewRecord view)
     {
-        return new DiagramViewJson(view.X, view.Y, view.Zoom,
-            view.Folds?.Select(static CardFoldJson? (f) => Write(f)).ToList(), view.ShowsHiddenMembers);
+        return new DiagramViewJson
+        {
+            X = view.X,
+            Y = view.Y,
+            Zoom = view.Zoom,
+            Folds = view.Folds?.Select(static CardFoldJson? (f) => Write(f)).ToList(),
+            ShowsHiddenMembers = view.ShowsHiddenMembers,
+        };
     }
 
     private static DiagramViewRecord Parse(DiagramViewJson json)
     {
         var folds = json.Folds?.OfType<CardFoldJson>().Select(static f => Parse(f)).OfType<CardFold>().ToList();
-        return new DiagramViewRecord(json.X, json.Y, json.Zoom, folds, json.ShowsHiddenMembers);
+        return new DiagramViewRecord
+        {
+            X = json.X,
+            Y = json.Y,
+            Zoom = json.Zoom,
+            Folds = folds,
+            ShowsHiddenMembers = json.ShowsHiddenMembers,
+        };
     }
 
     private static CardFoldJson Write(CardFold fold)
     {
         return fold.Match(
-            own: static own => new CardFoldJson(Write(own.Card), own.Section, null),
-            inherited: static inherited => new CardFoldJson(Write(inherited.Card), null, inherited.From));
+            own: static own => new CardFoldJson { Card = Write(own.Card), Section = own.Section, InheritedFrom = null },
+            inherited: static inherited => new CardFoldJson
+            {
+                Card = Write(inherited.Card),
+                Section = null,
+                InheritedFrom = inherited.From,
+            });
     }
 
     internal static CardFold? Parse(CardFoldJson json)
@@ -685,7 +805,7 @@ internal static class SettingsJson
 
     private static NuGetSearchJson Write(SavedNuGetSearch search)
     {
-        return new NuGetSearchJson(search.FeedUrl, search.IncludePrerelease);
+        return new NuGetSearchJson { FeedUrl = search.FeedUrl, IncludePrerelease = search.IncludePrerelease };
     }
 
     public static SavedNuGetSearch? Parse(NuGetSearchJson json)
@@ -695,44 +815,48 @@ internal static class SettingsJson
             return null;
         }
 
-        return new SavedNuGetSearch(json.FeedUrl, json.IncludePrerelease);
+        return new SavedNuGetSearch { FeedUrl = json.FeedUrl, IncludePrerelease = json.IncludePrerelease };
     }
 
     private static DisplayOptionsJson Write(DisplayOptions options)
     {
-        return new DisplayOptionsJson(
-            options.FontSize?.Points,
-            options.ShowLineNumbers,
-            options.HighlightCurrentLine,
-            options.HighlightMatchingBrackets,
-            options.HighlightUsagesAtCaret,
-            options.ShowOmnibar,
-            options.UiScale,
-            options.Font is null ? null : Write(options.Font),
-            options.TreeTokens,
-            options.ShowEmptyMetadataTables,
-            options.NestedNamespaces,
-            options.SystemTitleBar,
-            options.PreviewTabs);
+        return new DisplayOptionsJson
+        {
+            FontSize = options.FontSize?.Points,
+            ShowLineNumbers = options.ShowLineNumbers,
+            HighlightCurrentLine = options.HighlightCurrentLine,
+            HighlightMatchingBrackets = options.HighlightMatchingBrackets,
+            HighlightUsagesAtCaret = options.HighlightUsagesAtCaret,
+            ShowOmnibar = options.ShowOmnibar,
+            UiScale = options.UiScale,
+            Font = options.Font is null ? null : Write(options.Font),
+            TreeTokens = options.TreeTokens,
+            ShowEmptyMetadataTables = options.ShowEmptyMetadataTables,
+            NestedNamespaces = options.NestedNamespaces,
+            SystemTitleBar = options.SystemTitleBar,
+            PreviewTabs = options.PreviewTabs,
+        };
     }
 
     public static DisplayOptions Parse(DisplayOptionsJson json)
     {
         var d = DisplayOptions.Default;
-        var options = new DisplayOptions(
-            null,
-            json.ShowLineNumbers ?? d.ShowLineNumbers,
-            json.HighlightCurrentLine ?? d.HighlightCurrentLine,
-            json.HighlightMatchingBrackets ?? d.HighlightMatchingBrackets,
-            json.HighlightUsagesAtCaret ?? d.HighlightUsagesAtCaret,
-            json.ShowOmnibar ?? d.ShowOmnibar,
-            json.UiScale ?? d.UiScale,
-            json.Font is null ? null : Parse(json.Font),
-            json.TreeTokens ?? d.TreeTokens,
-            json.ShowEmptyMetadataTables ?? d.ShowEmptyMetadataTables,
-            json.NestedNamespaces ?? d.NestedNamespaces,
-            json.SystemTitleBar ?? d.SystemTitleBar,
-            json.PreviewTabs ?? d.PreviewTabs);
+        var options = new DisplayOptions
+        {
+            FontSize = null,
+            ShowLineNumbers = json.ShowLineNumbers ?? d.ShowLineNumbers,
+            HighlightCurrentLine = json.HighlightCurrentLine ?? d.HighlightCurrentLine,
+            HighlightMatchingBrackets = json.HighlightMatchingBrackets ?? d.HighlightMatchingBrackets,
+            HighlightUsagesAtCaret = json.HighlightUsagesAtCaret ?? d.HighlightUsagesAtCaret,
+            ShowOmnibar = json.ShowOmnibar ?? d.ShowOmnibar,
+            UiScale = json.UiScale ?? d.UiScale,
+            Font = json.Font is null ? null : Parse(json.Font),
+            TreeTokens = json.TreeTokens ?? d.TreeTokens,
+            ShowEmptyMetadataTables = json.ShowEmptyMetadataTables ?? d.ShowEmptyMetadataTables,
+            NestedNamespaces = json.NestedNamespaces ?? d.NestedNamespaces,
+            SystemTitleBar = json.SystemTitleBar ?? d.SystemTitleBar,
+            PreviewTabs = json.PreviewTabs ?? d.PreviewTabs,
+        };
         var scaled = CodeDisplay.SnapUiScale(options, options.UiScale);
         if (json.FontSize is null)
         {
@@ -744,7 +868,7 @@ internal static class SettingsJson
 
     private static CodeFontJson Write(CodeFont font)
     {
-        return new CodeFontJson(font.Family, font.Path, font.FaceIndex);
+        return new CodeFontJson { Family = font.Family, Path = font.Path, FaceIndex = font.FaceIndex };
     }
 
     private static CodeFont? Parse(CodeFontJson json)
@@ -754,12 +878,16 @@ internal static class SettingsJson
             return null;
         }
 
-        return new CodeFont(json.Family, json.Path, json.FaceIndex);
+        return new CodeFont { Family = json.Family, Path = json.Path, FaceIndex = json.FaceIndex };
     }
 
     private static DecompilerOptionsJson Write(DecompilerOptions options)
     {
-        return new DecompilerOptionsJson(options.LanguageVersion, options.Changes.ToDictionary(static c => c.Key.Name, static c => c.Value));
+        return new DecompilerOptionsJson
+        {
+            LanguageVersion = options.LanguageVersion,
+            Toggles = options.Changes.ToDictionary(static c => c.Key.Name, static c => c.Value),
+        };
     }
 
     /// <summary>The options, a toggle at its default taken as not set; a toggle the decompiler does not
@@ -787,7 +915,14 @@ internal static class SettingsJson
 
     private static WindowBoundsJson Write(WindowBounds bounds)
     {
-        return new WindowBoundsJson(bounds.X, bounds.Y, bounds.Width, bounds.Height, bounds.Maximized);
+        return new WindowBoundsJson
+        {
+            X = bounds.X,
+            Y = bounds.Y,
+            Width = bounds.Width,
+            Height = bounds.Height,
+            Maximized = bounds.Maximized,
+        };
     }
 
     public static WindowBounds Parse(WindowBoundsJson json)
@@ -798,7 +933,7 @@ internal static class SettingsJson
     private static SavedFilterStateJson Write(SavedFilterState filter)
     {
         var groups = filter.Groups?.ToDictionary(static g => g.Key, static uint[]? (g) => g.Value);
-        return new SavedFilterStateJson(groups, filter.Flags, filter.Mode);
+        return new SavedFilterStateJson { Groups = groups, Flags = filter.Flags, Mode = filter.Mode };
     }
 
     public static SavedFilterState Parse(SavedFilterStateJson json)

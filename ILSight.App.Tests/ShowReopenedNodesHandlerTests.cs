@@ -9,7 +9,14 @@ public sealed class ShowReopenedNodesHandlerTests
     private static WaitingNode WaitForGreeter(AppStateDriver d)
     {
         var place = d.Fixture("Greeter").Path;
-        var record = new NodeDocumentRecord("document-9", "Greeter", place, DecompilationLanguage.CSharp, null);
+        var record = new NodeDocumentRecord
+        {
+            Panel = "document-9",
+            Title = "Greeter",
+            Location = place,
+            Language = DecompilationLanguage.CSharp,
+            View = null,
+        };
         var tab = d.AppState.Navigation.OpenReopenedTab();
         d.AppState.Navigation.WaitForNode(tab, place, record.Title, record.Language);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);

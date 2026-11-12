@@ -12,7 +12,9 @@ public sealed class SettingsReadingTests
     {
         var ports = new FakeSettingsReadingPorts();
 
-        var (settings, problem) = new SettingsReading(ports).ReadFile(SettingsFile);
+        var read = new SettingsReading(ports).ReadFile(SettingsFile);
+        var settings = read.Settings;
+        var problem = read.Problem;
 
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Equal(SettingsFile, settings.FilePath);
@@ -25,7 +27,9 @@ public sealed class SettingsReadingTests
     {
         var ports = new FakeSettingsReadingPorts { Answer = new SettingsFileText.NotRead("Locked.") };
 
-        var (settings, problem) = new SettingsReading(ports).ReadFile(SettingsFile);
+        var read = new SettingsReading(ports).ReadFile(SettingsFile);
+        var settings = read.Settings;
+        var problem = read.Problem;
 
         var notRead = Assert.IsType<SettingsProblem.NotRead>(problem);
         Assert.Equal("Locked.", notRead.Detail);
@@ -39,7 +43,9 @@ public sealed class SettingsReadingTests
     {
         var ports = new FakeSettingsReadingPorts { Answer = new SettingsFileText.Text("{ not json"), KeepAnswer = new SettingsKept.NotSaved() };
 
-        var (settings, problem) = new SettingsReading(ports).ReadFile(SettingsFile);
+        var read = new SettingsReading(ports).ReadFile(SettingsFile);
+        var settings = read.Settings;
+        var problem = read.Problem;
 
         Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotJson>(problem).Kept);
         Assert.False(settings.CanSaveOverFile);
@@ -50,7 +56,9 @@ public sealed class SettingsReadingTests
     {
         var ports = new FakeSettingsReadingPorts { Answer = new SettingsFileText.Text("""{ "Language": 42, "CheckForUpdates": false }""") };
 
-        var (settings, problem) = new SettingsReading(ports).ReadFile(SettingsFile);
+        var read = new SettingsReading(ports).ReadFile(SettingsFile);
+        var settings = read.Settings;
+        var problem = read.Problem;
 
         Assert.Equal(["Language"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.False(settings.CheckForUpdates);
@@ -62,7 +70,9 @@ public sealed class SettingsReadingTests
     {
         var ports = new FakeSettingsReadingPorts { Answer = new SettingsFileText.Text("""{ "CheckForUpdates": false }""") };
 
-        var (settings, problem) = new SettingsReading(ports).ReadFile(SettingsFile);
+        var read = new SettingsReading(ports).ReadFile(SettingsFile);
+        var settings = read.Settings;
+        var problem = read.Problem;
 
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.False(settings.CheckForUpdates);

@@ -38,7 +38,7 @@ public sealed class DisplayOptionsTests
     public void Hidden_line_numbers_are_not_drawn_and_the_text_moves_left()
     {
         var numbered = Showing(CodeViewDriver.Numbered(5), DisplayOptions.Default);
-        var hidden = Showing(CodeViewDriver.Numbered(5), new DisplayOptions(ShowLineNumbers: false));
+        var hidden = Showing(CodeViewDriver.Numbered(5), new DisplayOptions { ShowLineNumbers = false });
 
         Assert.Contains(numbered.Frames.Canvas.GlyphRuns, r => r.Text == "1");
         Assert.DoesNotContain(hidden.Frames.Canvas.GlyphRuns, r => r.Text == "1");
@@ -49,7 +49,7 @@ public sealed class DisplayOptionsTests
     [Fact]
     public void Code_is_drawn_at_the_chosen_font_size_in_taller_rows()
     {
-        var view = Showing(CodeViewDriver.Numbered(5), new DisplayOptions(FontSize: CodeFontSize.Clamp(24f)));
+        var view = Showing(CodeViewDriver.Numbered(5), new DisplayOptions { FontSize = CodeFontSize.Clamp(24f) });
 
         var run = view.Frames.Canvas.GlyphRuns.First(r => r.Text == "line 0");
         Assert.Equal(24f, run.Style.FontSize.Value);
@@ -99,7 +99,7 @@ public sealed class DisplayOptionsTests
     [Fact]
     public void The_caret_line_is_highlighted_when_asked()
     {
-        var view = Showing(CodeViewDriver.Numbered(5), new DisplayOptions(HighlightCurrentLine: true));
+        var view = Showing(CodeViewDriver.Numbered(5), new DisplayOptions { HighlightCurrentLine = true });
 
         view.Click(2, 1);
         view.Run();
@@ -151,7 +151,7 @@ public sealed class DisplayOptionsTests
     [Fact]
     public void Usages_follow_the_caret_when_asked()
     {
-        var view = ClickedOnB(new DisplayOptions(HighlightUsagesAtCaret: true));
+        var view = ClickedOnB(new DisplayOptions { HighlightUsagesAtCaret = true });
         Assert.Equal("b", view.State.Frame.Highlight?.Name);
 
         view.Key(KeyboardKey.Home).Frame();
@@ -163,7 +163,7 @@ public sealed class DisplayOptionsTests
     [Fact]
     public void A_caret_just_after_a_name_marks_its_usages()
     {
-        var view = ClickedOnB(new DisplayOptions(HighlightUsagesAtCaret: true));
+        var view = ClickedOnB(new DisplayOptions { HighlightUsagesAtCaret = true });
 
         view.Key(KeyboardKey.End).Frame();
         view.Key(KeyboardKey.LeftArrow).Frame();
@@ -176,7 +176,7 @@ public sealed class DisplayOptionsTests
     [Fact]
     public void A_caret_off_any_name_marks_nothing_when_usages_follow_it()
     {
-        var view = ClickedOnB(new DisplayOptions(HighlightUsagesAtCaret: true));
+        var view = ClickedOnB(new DisplayOptions { HighlightUsagesAtCaret = true });
 
         view.Key(KeyboardKey.DownArrow).Frame();
 
@@ -241,8 +241,15 @@ public sealed class DisplayOptionsTests
     {
         using var temp = new TempDir();
         var app = new AppDriver(settings: temp.Settings());
-        var font = new CodeFont("Test Mono", temp.Write("mono.ttf", FontBytes), 0);
-        var options = new DisplayOptions(FontSize: CodeFontSize.Clamp(20f), ShowLineNumbers: false, HighlightCurrentLine: true, Font: font, TreeTokens: TokenFormat.Decimal);
+        var font = new CodeFont { Family = "Test Mono", Path = temp.Write("mono.ttf", FontBytes), FaceIndex = 0 };
+        var options = new DisplayOptions
+        {
+            FontSize = CodeFontSize.Clamp(20f),
+            ShowLineNumbers = false,
+            HighlightCurrentLine = true,
+            Font = font,
+            TreeTokens = TokenFormat.Decimal,
+        };
 
         SetDisplayOptions(app.Ui, options);
         app.Run();
@@ -277,7 +284,12 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("Line numbers")).Frame();
         app.Frames.ClickOn(Selector.WithText("Highlight current line")).Frame();
 
-        var changed = new DisplayOptions(FontSize: CodeFontSize.Clamp(size + 1f), ShowLineNumbers: false, HighlightCurrentLine: true);
+        var changed = new DisplayOptions
+        {
+            FontSize = CodeFontSize.Clamp(size + 1f),
+            ShowLineNumbers = false,
+            HighlightCurrentLine = true,
+        };
         Assert.Equal(changed, app.Ui.Display);
         Assert.True(IsBold(app, "Line numbers"));
         Assert.False(IsBold(app, "UI scale"));
@@ -491,7 +503,12 @@ public sealed class DisplayOptionsTests
         var file = temp.Write("long.ttf", EmbeddedAssets.LoadBytes(typeof(ILSightApp).Assembly, "JetBrainsMono-Regular.ttf"));
         var app = AppDriver.Opened(width: 3000f);
         OpenPanel(app.Ui, DockView.DisplayOptions);
-        CodeDisplay.SetCodeFont(app.Ui, new CodeFont("A monospaced font with a name far too long to show whole", file, 0));
+        CodeDisplay.SetCodeFont(app.Ui, new CodeFont
+        {
+            Family = "A monospaced font with a name far too long to show whole",
+            Path = file,
+            FaceIndex = 0,
+        });
         app.Run(2);
 
         var controls = FilledWith(app, app.Theme.Control);
@@ -674,7 +691,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame();
         app.Frames.ClickOn(Selector.WithText("Consolas")).Frame(2);
 
-        Assert.Equal(new CodeFont("Consolas", path, 0), app.Ui.Display.Font);
+        Assert.Equal(new CodeFont { Family = "Consolas", Path = path, FaceIndex = 0 }, app.Ui.Display.Font);
         Assert.Equal(MonoFonts.Code, app.Frames.RegisteredFonts[^1].Family);
         Assert.Equal(FontBytes, app.Frames.RegisteredFonts[^1].Data);
         Assert.True(IsBold(app, "Font"));
@@ -692,7 +709,7 @@ public sealed class DisplayOptionsTests
         using var temp = new TempDir();
         var app = AppDriver.Opened(width: 1600f);
 
-        SetCodeFont(app.Ui, new CodeFont("Gone Mono", temp.PathOf("gone.ttf"), 0));
+        SetCodeFont(app.Ui, new CodeFont { Family = "Gone Mono", Path = temp.PathOf("gone.ttf"), FaceIndex = 0 });
         app.Run(2);
 
         Assert.Null(app.Ui.Display.Font);

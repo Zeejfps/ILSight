@@ -127,22 +127,24 @@ public static class Settings
     /// <summary>What <paramref name="settings"/> kept of the screen.</summary>
     public static ViewSettings ReadViewSettings(AppSettings settings)
     {
-        return new ViewSettings(
-            settings.BookmarkColumns,
-            settings.SearchColumns,
-            settings.ExportColumns,
-            settings.FoldedOptionGroups,
-            settings.SearchKinds,
-            settings.FlagsFilters,
-            settings.ExportWindow,
-            settings.Layout,
-            settings.Display,
-            settings.NuGet,
-            settings.NuGetWindow,
-            settings.ProcessWindow,
-            settings.ProcessColumns,
-            settings.ProcessModuleColumns,
-            settings.CloseWindow,
-            Tabs: null);
+        return new ViewSettings
+        {
+            BookmarkColumns = settings.BookmarkColumns,
+            SearchColumns = settings.SearchColumns,
+            ExportColumns = settings.ExportColumns,
+            FoldedOptionGroups = settings.FoldedOptionGroups,
+            SearchKinds = settings.SearchKinds,
+            FlagsFilters = settings.FlagsFilters,
+            ExportWindow = settings.ExportWindow,
+            Layout = settings.Layout,
+            Display = settings.Display,
+            NuGet = settings.NuGet,
+            NuGetWindow = settings.NuGetWindow,
+            ProcessWindow = settings.ProcessWindow,
+            ProcessColumns = settings.ProcessColumns,
+            ProcessModuleColumns = settings.ProcessModuleColumns,
+            CloseWindow = settings.CloseWindow,
+            Tabs = null,
+        };
     }
 }

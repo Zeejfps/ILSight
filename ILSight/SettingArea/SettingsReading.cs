@@ -21,10 +21,12 @@ public sealed class SettingsReading(SettingsReading.IPorts ports)
     /// <summary>The settings in the file at <paramref name="file"/>, and what was wrong with it.</summary>
     public SettingsLoadResult ReadFile(FullFilePath file)
     {
-        var (settings, problem) = ReadSettings(file);
+        var read = ReadSettings(file);
+        var settings = read.Settings;
+        var problem = read.Problem;
         settings.FilePath = file;
         settings.CanSaveOverFile = CanSaveOverFile(problem);
-        return new SettingsLoadResult(settings, problem);
+        return new SettingsLoadResult { Settings = settings, Problem = problem };
     }
 
     /// <summary>Whether the settings may be saved over the file: not when it could not be read whole and could not
@@ -39,17 +41,25 @@ public sealed class SettingsReading(SettingsReading.IPorts ports)
     {
         var read = ports.ReadSettingsText(file);
         return read.Match(
-            none: _ => new SettingsLoadResult(new AppSettings(), new SettingsProblem.None()),
+            none: _ => new SettingsLoadResult { Settings = new AppSettings(), Problem = new SettingsProblem.None() },
             text: text => ReadText(file, text.Content),
-            notRead: notRead => new SettingsLoadResult(new AppSettings(), new SettingsProblem.NotRead(notRead.Detail, ports.KeepUnreadable(file))));
+            notRead: notRead => new SettingsLoadResult
+            {
+                Settings = new AppSettings(),
+                Problem = new SettingsProblem.NotRead(notRead.Detail, ports.KeepUnreadable(file)),
+            });
     }
 
     private SettingsLoadResult ReadText(FullFilePath file, string text)
     {
         var content = SettingsJson.ParseSettingsText(text);
         return content.Match(
-            notJson: notJson => new SettingsLoadResult(new AppSettings(), new SettingsProblem.NotJson(notJson.Detail, ports.KeepUnreadable(file))),
-            empty: _ => new SettingsLoadResult(new AppSettings(), new SettingsProblem.Empty()),
+            notJson: notJson => new SettingsLoadResult
+            {
+                Settings = new AppSettings(),
+                Problem = new SettingsProblem.NotJson(notJson.Detail, ports.KeepUnreadable(file)),
+            },
+            empty: _ => new SettingsLoadResult { Settings = new AppSettings(), Problem = new SettingsProblem.Empty() },
             values: values => ReadValues(file, values));
     }
 
@@ -57,9 +67,13 @@ public sealed class SettingsReading(SettingsReading.IPorts ports)
     {
         if (values.LeftOut.Count == 0)
         {
-            return new SettingsLoadResult(values.Settings, values.LayoutProblem);
+            return new SettingsLoadResult { Settings = values.Settings, Problem = values.LayoutProblem };
         }
 
-        return new SettingsLoadResult(values.Settings, new SettingsProblem.ValuesLeftOut(values.LeftOut, ports.KeepUnreadable(file)));
+        return new SettingsLoadResult
+        {
+            Settings = values.Settings,
+            Problem = new SettingsProblem.ValuesLeftOut(values.LeftOut, ports.KeepUnreadable(file)),
+        };
     }
 }

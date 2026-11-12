@@ -266,7 +266,11 @@ public sealed class NuGetPickerTests : IDisposable
 
         Assert.True(wait > 0);
         Assert.Contains(OtherIndexUrl, _fake.Requested);
-        Assert.Equal(new SavedNuGetSearch(OtherIndexUrl, false), picker.Browser.KeptSearch);
+        Assert.Equal(new SavedNuGetSearch
+        {
+            FeedUrl = OtherIndexUrl,
+            IncludePrerelease = false,
+        }, picker.Browser.KeptSearch);
     }
 
     [Fact]
@@ -292,7 +296,7 @@ public sealed class NuGetPickerTests : IDisposable
         var posted = PostedActions.OfThisTest();
         _fake.AnswerIndexAt(OtherIndexUrl);
 
-        var picker = OpenPicker(posted, new SavedNuGetSearch(OtherIndexUrl, IncludePrerelease: true));
+        var picker = OpenPicker(posted, new SavedNuGetSearch { FeedUrl = OtherIndexUrl, IncludePrerelease = true });
 
         Assert.Equal(OtherIndexUrl, picker.FeedUrl);
         Assert.DoesNotContain(FakeFeed.IndexUrl, _fake.Requested);

@@ -34,7 +34,7 @@ public static class BookmarkFile
     {
         var json = AppSettingsJson.Default.BookmarkJson;
         var written = bookmarks.ConvertAll(b => JsonSerializer.SerializeToElement(SettingsJson.Write(b), json));
-        return new BookmarkFileJson(CurrentVersion, written);
+        return new BookmarkFileJson { Version = CurrentVersion, Bookmarks = written };
     }
 
     /// <summary>The bookmarks in the file at <paramref name="path"/> that name an assembly file, as

@@ -54,7 +54,11 @@ internal sealed class AppStateDriver
 
     private static SettingsLoadResult NoProblem(AppSettings? settings)
     {
-        return new SettingsLoadResult(settings ?? new AppSettings(), new SettingsProblem.None());
+        return new SettingsLoadResult
+        {
+            Settings = settings ?? new AppSettings(),
+            Problem = new SettingsProblem.None(),
+        };
     }
 
     /// <summary>A driver over the app state and screen the app starts with, from <paramref name="loadResult"/>

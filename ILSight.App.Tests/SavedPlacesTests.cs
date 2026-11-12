@@ -35,7 +35,9 @@ public sealed class SavedPlacesTests : IDisposable
 
     private (AppStateDriver, SettingsProblem) RestoredWith(string json)
     {
-        var (settings, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(_temp.Write("settings.json", json)));
+        var read = AppRoot.ReadSettingsFile(FullFilePath.Of(_temp.Write("settings.json", json)));
+        var settings = read.Settings;
+        var problem = read.Problem;
         var d = new AppStateDriver(settings);
         d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();

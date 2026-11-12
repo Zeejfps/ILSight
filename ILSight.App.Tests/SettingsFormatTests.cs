@@ -26,7 +26,11 @@ public sealed class SettingsFormatTests : IDisposable
     private static readonly AssemblyPath A = PathOf(Rooted("Fixture/A.dll"));
     private static readonly AssemblyPath B = PathOf(Rooted("Fixture/B.dll"));
     private static readonly TypeAnchor Calculator = new TypeAnchor { AssemblyPath = A, FullName = "Ns.Calculator" };
-    private static readonly TypeAnchorJson CalculatorJson = new(A.Text, "Ns.Calculator");
+    private static readonly TypeAnchorJson CalculatorJson = new TypeAnchorJson
+    {
+        AssemblyPath = A.Text,
+        FullName = "Ns.Calculator",
+    };
 
     private readonly TempDir _temp = new();
 
@@ -50,7 +54,12 @@ public sealed class SettingsFormatTests : IDisposable
     [Fact]
     public void A_saved_fold_of_a_section_is_a_cards_own()
     {
-        var fold = SettingsJson.Parse(new CardFoldJson(CalculatorJson, MemberSection.Methods, null));
+        var fold = SettingsJson.Parse(new CardFoldJson
+        {
+            Card = CalculatorJson,
+            Section = MemberSection.Methods,
+            InheritedFrom = null,
+        });
 
         Assert.Equal(new CardFold.Own(Calculator, MemberSection.Methods), fold);
     }
@@ -58,7 +67,12 @@ public sealed class SettingsFormatTests : IDisposable
     [Fact]
     public void A_saved_fold_of_a_base_type_is_what_a_card_inherits()
     {
-        var fold = SettingsJson.Parse(new CardFoldJson(CalculatorJson, null, "Base"));
+        var fold = SettingsJson.Parse(new CardFoldJson
+        {
+            Card = CalculatorJson,
+            Section = null,
+            InheritedFrom = "Base",
+        });
 
         Assert.Equal(new CardFold.Inherited(Calculator, "Base"), fold);
     }
@@ -66,13 +80,23 @@ public sealed class SettingsFormatTests : IDisposable
     [Fact]
     public void A_saved_fold_naming_both_a_section_and_a_base_type_is_none()
     {
-        Assert.Null(SettingsJson.Parse(new CardFoldJson(CalculatorJson, MemberSection.Methods, "Base")));
+        Assert.Null(SettingsJson.Parse(new CardFoldJson
+        {
+            Card = CalculatorJson,
+            Section = MemberSection.Methods,
+            InheritedFrom = "Base",
+        }));
     }
 
     [Fact]
     public void A_saved_fold_naming_neither_a_section_nor_a_base_type_is_none()
     {
-        Assert.Null(SettingsJson.Parse(new CardFoldJson(CalculatorJson, null, null)));
+        Assert.Null(SettingsJson.Parse(new CardFoldJson
+        {
+            Card = CalculatorJson,
+            Section = null,
+            InheritedFrom = null,
+        }));
     }
 
     [Fact]
@@ -80,7 +104,9 @@ public sealed class SettingsFormatTests : IDisposable
     {
         var path = _temp.Write(SettingsFixture, Fixture(SettingsFixture));
 
-        var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(path));
+        var read = AppRoot.ReadSettingsFile(FullFilePath.Of(path));
+        var loaded = read.Settings;
+        var problem = read.Problem;
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));
 
@@ -150,8 +176,27 @@ public sealed class SettingsFormatTests : IDisposable
             Language = DecompilationLanguage.IL,
             Decompiler = DecompilerToggles.SetToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }, braces, false),
             FoldedOptionGroups = ["Other"],
-            Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, true, false, 1.25f, new CodeFont("Mono", @"C:\Fonts\Mono.ttf", 1),
-                TokenFormat.Hex, true, true, true, false),
+            Display = new DisplayOptions
+            {
+                FontSize = CodeFontSize.Clamp(14f),
+                ShowLineNumbers = false,
+                HighlightCurrentLine = true,
+                HighlightMatchingBrackets = false,
+                HighlightUsagesAtCaret = true,
+                ShowOmnibar = false,
+                UiScale = 1.25f,
+                Font = new CodeFont
+                {
+                    Family = "Mono",
+                    Path = @"C:\Fonts\Mono.ttf",
+                    FaceIndex = 1,
+                },
+                TreeTokens = TokenFormat.Hex,
+                ShowEmptyMetadataTables = true,
+                NestedNamespaces = true,
+                SystemTitleBar = true,
+                PreviewTabs = false,
+            },
             Locale = Locale.De,
             ApiVisibility = ApiVisibility.All,
             SearchKinds = SearchKinds.Types | SearchKinds.Literals,
@@ -181,7 +226,7 @@ public sealed class SettingsFormatTests : IDisposable
             },
             Window = new WindowBounds(10, 20, 1200, 800, true),
             ExportWindow = new WindowBounds(30, 40, 900, 600, false),
-            NuGet = new SavedNuGetSearch("https://api.nuget.org/v3/index.json", true),
+            NuGet = new SavedNuGetSearch { FeedUrl = "https://api.nuget.org/v3/index.json", IncludePrerelease = true },
             NuGetWindow = new WindowBounds(50, 60, 700, 500, false),
             ProcessWindow = new WindowBounds(70, 80, 900, 600, false),
             ProcessColumns = [2f, 1f, 3f, 1f],
@@ -194,17 +239,49 @@ public sealed class SettingsFormatTests : IDisposable
     {
         var code = ViewPosition.OfCode(new CodeViewPosition(12, 3.5f, new TextPosition(13, 2), new TextPosition(14, 5)));
         var grid = ViewPosition.OfGrid(new GridPosition(4, 1.5f, 6, 2));
-        var view = new DiagramViewRecord(10.5f, -20.25f, 1.5f, [new CardFold.Own(Calculator, MemberSection.Methods), new CardFold.Inherited(Calculator, "Base")], true);
+        var view = new DiagramViewRecord
+        {
+            X = 10.5f,
+            Y = -20.25f,
+            Zoom = 1.5f,
+            Folds = [new CardFold.Own(Calculator, MemberSection.Methods), new CardFold.Inherited(Calculator, "Base")],
+            ShowsHiddenMembers = true,
+        };
         DocumentRecord[] tabs =
         [
-            new NodeDocumentRecord("document-1", "Calculator", CalculatorPlace(), DecompilationLanguage.IL, code),
-            new NodeDocumentRecord("document-2", "Other", OtherPlace(), DecompilationLanguage.ILWithCSharp, grid),
-            new DiagramDocumentRecord("document-3", "Diagram", [Calculator, new TypeAnchor
+            new NodeDocumentRecord
             {
-                AssemblyPath = B,
-                FullName = "Ns.Other",
-            }], [A], view),
-            new ComparisonDocumentRecord("document-4", "Comparison", A, B, ApiScope.AllDeclared, new ComparisonViewRecord(true)),
+                Panel = "document-1",
+                Title = "Calculator",
+                Location = CalculatorPlace(),
+                Language = DecompilationLanguage.IL,
+                View = code,
+            },
+            new NodeDocumentRecord
+            {
+                Panel = "document-2",
+                Title = "Other",
+                Location = OtherPlace(),
+                Language = DecompilationLanguage.ILWithCSharp,
+                View = grid,
+            },
+            new DiagramDocumentRecord
+            {
+                Panel = "document-3",
+                Title = "Diagram",
+                Types = [Calculator, new TypeAnchor { AssemblyPath = B, FullName = "Ns.Other" }],
+                HomeAssemblies = [A],
+                View = view,
+            },
+            new ComparisonDocumentRecord
+            {
+                Panel = "document-4",
+                Title = "Comparison",
+                LeftPath = A,
+                RightPath = B,
+                Scope = ApiScope.AllDeclared,
+                View = new ComparisonViewRecord(true),
+            },
         ];
         var layout = new DockLayout
         {
@@ -217,19 +294,72 @@ public sealed class SettingsFormatTests : IDisposable
             Windows = [new DockWindow { Id = 4, Root = new DockGroup { Id = 5, Panels = ["document-4"], Active = "document-4" }, X = 5f, Y = 6f, Width = 400f, Height = 300f }],
             NextId = 6,
         };
-        return new DocumentsRecord(tabs.ToList(), "document-3", "document-4", layout);
+        return new DocumentsRecord
+        {
+            Tabs = tabs.ToList(),
+            Active = "document-3",
+            Preview = "document-4",
+            Layout = layout,
+        };
     }
 
     private static List<BookmarkRecord> ExpectedBookmarks()
     {
-        var view = new BookmarkViewState(2, 100, 50.5, 7.25, 1234, [new BookmarkFoldingRange(1, 9)],
-            new BookmarkRenderedLayoutSettings(true, true, true, true, true, true, 8, 6), ["A", "Ns", "Calculator"]);
+        var view = new BookmarkViewState
+        {
+            Version = 2,
+            CaretOffset = 100,
+            VerticalOffset = 50.5,
+            HorizontalOffset = 7.25,
+            FoldingChecksum = 1234,
+            ExpandedFoldings = [new BookmarkFoldingRange { Start = 1, End = 9 }],
+            RenderedLayoutSettings = new BookmarkRenderedLayoutSettings
+            {
+                FoldBraces = true,
+                ExpandXmlDocumentationComments = true,
+                ExpandMemberDefinitions = true,
+                ExpandUsingDeclarations = true,
+                ShowDebugInfo = true,
+                IndentationUseTabs = true,
+                IndentationSize = 8,
+                IndentationTabSize = 6,
+            },
+            SelectedTreeNodePath = ["A", "Ns", "Calculator"],
+        };
         return
         [
-            new BookmarkRecord("Mark", true, A, "A, Version=1.0.0.0", "A.dll", 0x06000002, BookmarkKind.Body, 12, 34,
-                "Ns.Calculator.Add", "Add(int, int) : int", view, CalculatorPlace(), DecompilationLanguage.IL),
-            new BookmarkRecord("Old", true, B, "B, Version=2.0.0.0", "B.dll", 0x02000003, BookmarkKind.Line, 5, 56,
-                "Ns.Other", "Other", null),
+            new BookmarkRecord
+            {
+                Name = "Mark",
+                Enabled = true,
+                FileName = A,
+                AssemblyFullName = "A, Version=1.0.0.0",
+                ModuleName = "A.dll",
+                Token = 0x06000002,
+                Kind = BookmarkKind.Body,
+                ILOffset = 12,
+                LineNumber = 34,
+                MemberName = "Ns.Calculator.Add",
+                LocationNodeName = "Add(int, int) : int",
+                ViewState = view,
+                Location = CalculatorPlace(),
+                Language = DecompilationLanguage.IL,
+            },
+            new BookmarkRecord
+            {
+                Name = "Old",
+                Enabled = true,
+                FileName = B,
+                AssemblyFullName = "B, Version=2.0.0.0",
+                ModuleName = "B.dll",
+                Token = 0x02000003,
+                Kind = BookmarkKind.Line,
+                ILOffset = 5,
+                LineNumber = 56,
+                MemberName = "Ns.Other",
+                LocationNodeName = "Other",
+                ViewState = null,
+            },
         ];
     }
 

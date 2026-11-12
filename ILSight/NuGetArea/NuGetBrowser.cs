@@ -792,7 +792,11 @@ public sealed class NuGetBrowser
     /// <summary>Has the settings keep the feed searched and whether prereleases count, once either changed.</summary>
     private void KeepSearched(FeedSearch searched)
     {
-        var kept = new SavedNuGetSearch(searched.Feed.Url.Text, searched.IncludePrerelease);
+        var kept = new SavedNuGetSearch
+        {
+            FeedUrl = searched.Feed.Url.Text,
+            IncludePrerelease = searched.IncludePrerelease,
+        };
         if (kept == KeptSearch)
         {
             return;

@@ -252,7 +252,7 @@ public static class CodeViewWidget
         return phase < CaretBlinkSeconds;
     }
 
-    private static readonly DisplayOptions Plain = new(HighlightMatchingBrackets: false);
+    private static readonly DisplayOptions Plain = new DisplayOptions { HighlightMatchingBrackets = false };
 
     private const float FlashSeconds = 1.2f;
     private const float AutoScrollSpeed = 12f;

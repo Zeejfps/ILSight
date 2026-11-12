@@ -224,7 +224,11 @@ public sealed class RunArgumentsTests
     private static AppStateDriver Start(AppSettings settings, params string[] args)
     {
         var arguments = CommandLines.Parse(args).Arguments;
-        var d = AppStateDriver.Started(new SettingsLoadResult(settings, new SettingsProblem.None()), arguments);
+        var d = AppStateDriver.Started(new SettingsLoadResult
+        {
+            Settings = settings,
+            Problem = new SettingsProblem.None(),
+        }, arguments);
         d.Start((a, ct) => AppFrames.OpenStartupAssembliesAsync(a, arguments.Files, ct));
         d.RunUntil(() => AreListed(d.AppState, arguments.Files.Paths));
         d.Settle();
