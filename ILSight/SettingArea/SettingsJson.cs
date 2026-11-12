@@ -46,7 +46,12 @@ internal static class SettingsJson
         {
             return value.Deserialize(type);
         }
-        catch (Exception e) when (e is JsonException or NotSupportedException)
+        catch (JsonException)
+        {
+            LeaveOut(file, field);
+            return default;
+        }
+        catch (NotSupportedException)
         {
             LeaveOut(file, field);
             return default;
@@ -877,7 +882,11 @@ internal static class SettingsJson
         {
             fields = JsonSerializer.Deserialize(text, AppSettingsJson.Default.DictionaryStringJsonElement);
         }
-        catch (Exception e) when (e is JsonException or NotSupportedException)
+        catch (JsonException e)
+        {
+            return new SettingsTextContent.NotJson(e.Message);
+        }
+        catch (NotSupportedException e)
         {
             return new SettingsTextContent.NotJson(e.Message);
         }

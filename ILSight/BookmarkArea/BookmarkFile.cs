@@ -20,7 +20,11 @@ public static class BookmarkFile
             File.Move(temporary, path, overwrite: true);
             return new BookmarksWriteResult.Written();
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (IOException e)
+        {
+            return new BookmarksWriteResult.Failed { Reason = $"{path}{Environment.NewLine}{e.Message}" };
+        }
+        catch (UnauthorizedAccessException e)
         {
             return new BookmarksWriteResult.Failed { Reason = $"{path}{Environment.NewLine}{e.Message}" };
         }
@@ -48,7 +52,19 @@ public static class BookmarkFile
 
             return ReadEach(file.Bookmarks);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
+        catch (IOException e)
+        {
+            return new BookmarksRead.Failed { Reason = $"{path}{Environment.NewLine}{e.Message}" };
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return new BookmarksRead.Failed { Reason = $"{path}{Environment.NewLine}{e.Message}" };
+        }
+        catch (JsonException e)
+        {
+            return new BookmarksRead.Failed { Reason = $"{path}{Environment.NewLine}{e.Message}" };
+        }
+        catch (NotSupportedException e)
         {
             return new BookmarksRead.Failed { Reason = $"{path}{Environment.NewLine}{e.Message}" };
         }
@@ -75,7 +91,11 @@ public static class BookmarkFile
                     read.Add(bookmark);
                 }
             }
-            catch (Exception e) when (e is JsonException or NotSupportedException)
+            catch (JsonException e)
+            {
+                problems.Add(new BookmarkEntryProblem.NotABookmark { Entry = entry, Detail = e.Message });
+            }
+            catch (NotSupportedException e)
             {
                 problems.Add(new BookmarkEntryProblem.NotABookmark { Entry = entry, Detail = e.Message });
             }

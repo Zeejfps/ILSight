@@ -28,7 +28,19 @@ public static class IconAssetFolders
         {
             return ReadInside(root, path);
         }
-        catch (Exception e) when (IsReadFailure(e))
+        catch (IOException e)
+        {
+            return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, $"{path}: {e.Message}");
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, $"{path}: {e.Message}");
+        }
+        catch (ArgumentException e)
+        {
+            return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, $"{path}: {e.Message}");
+        }
+        catch (NotSupportedException e)
         {
             return IconTheming.CreateFailedAsset(ThemeProblem.AssetUnreadable, $"{path}: {e.Message}");
         }
@@ -46,11 +58,6 @@ public static class IconAssetFolders
     }
 
     /// <summary>True for what reading a file can throw, a path with characters no path may hold included.</summary>
-    private static bool IsReadFailure(Exception e)
-    {
-        return e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException;
-    }
-
     /// <summary>The full path of <paramref name="path"/> inside the folder; null when it is absolute or
     /// leaves the folder.</summary>
     private static string? Resolve(string root, string path)

@@ -33,7 +33,23 @@ public static class RunArgumentsPipe
             var token = timeout.Token;
             return Task.Run(() => TrySendAsync(address, arguments, token)).GetAwaiter().GetResult();
         }
-        catch (Exception e) when (IsBroken(e))
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+        catch (InvalidDataException)
         {
             return false;
         }
@@ -240,7 +256,19 @@ public static class RunArgumentsPipe
             {
                 return;
             }
-            catch (Exception e) when (RunArgumentsPipe.IsBroken(e))
+            catch (IOException)
+            {
+                await WaitForBrokenPipeAsync(token);
+            }
+            catch (TimeoutException)
+            {
+                await WaitForBrokenPipeAsync(token);
+            }
+            catch (OperationCanceledException)
+            {
+                await WaitForBrokenPipeAsync(token);
+            }
+            catch (InvalidDataException)
             {
                 await WaitForBrokenPipeAsync(token);
             }

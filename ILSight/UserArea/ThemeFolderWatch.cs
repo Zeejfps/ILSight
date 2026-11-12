@@ -40,10 +40,29 @@ public sealed class ThemeFolderWatch
             reason = null;
             return true;
         }
-        catch (Exception e) when (IsWatchFailure(e))
+        catch (IOException e)
         {
-            Stop();
-            reason = DescribeWatchFailure(folder, e.Message);
+            reason = StopFailed(folder, e);
+            return false;
+        }
+        catch (ArgumentException e)
+        {
+            reason = StopFailed(folder, e);
+            return false;
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            reason = StopFailed(folder, e);
+            return false;
+        }
+        catch (PlatformNotSupportedException e)
+        {
+            reason = StopFailed(folder, e);
+            return false;
+        }
+        catch (Win32Exception e)
+        {
+            reason = StopFailed(folder, e);
             return false;
         }
     }
@@ -109,9 +128,11 @@ public sealed class ThemeFolderWatch
         return removalWatcher;
     }
 
-    private static bool IsWatchFailure(Exception e)
+    /// <summary>Stops watching after starting failed, and says why.</summary>
+    private string StopFailed(string folder, Exception e)
     {
-        return e is IOException or ArgumentException or UnauthorizedAccessException or PlatformNotSupportedException or Win32Exception;
+        Stop();
+        return DescribeWatchFailure(folder, e.Message);
     }
 
     private static string DescribeWatchFailure(string folder, string message)
