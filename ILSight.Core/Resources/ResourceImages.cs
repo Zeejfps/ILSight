@@ -130,47 +130,68 @@ public static class ResourceImages
     }
 
     /// <summary>The picture in <paramref name="data"/>, recognized by its content rather than its
-    /// name. Throws <see cref="InvalidDataException"/> when it is no picture this can decode.</summary>
-    internal static ResourceImage DecodeImage(byte[] data)
+    /// name; <see cref="ResourceImageRead.Unreadable"/> when it is no picture this can decode, or one the decoders fail
+    /// on.</summary>
+    internal static ResourceImageRead DecodeImage(byte[] data)
     {
+        ResourceImage? image;
         try
         {
-            ReadOnlySpan<byte> span = data;
-            if (span.StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G']))
-            {
-                return DecodePng(data);
-            }
-
-            if (span.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8]))
-            {
-                return DecodeJpeg(data);
-            }
-
-            if (span.StartsWith("BM"u8))
-            {
-                return DecodeBitmap(span, "BMP");
-            }
-
-            if (span.StartsWith("GIF8"u8))
-            {
-                return Gif.Decode(span);
-            }
-
-            if (span.Length >= 6 && span[0] == 0 && span[1] == 0 && span[2] is 1 or 2)
-            {
-                return DecodeIcon(span);
-            }
-
-            if (SvgPicture.IsSvg(data))
-            {
-                return SvgPicture.Rasterize(data);
-            }
+            image = DecodeKnown(data);
         }
-        catch (Exception e) when (e is not InvalidDataException and not OutOfMemoryException)
+        catch (InvalidDataException e)
         {
-            throw new InvalidDataException($"The picture cannot be read: {e.Message}", e);
+            return new ResourceImageRead.Unreadable { Why = e.Message };
         }
-        throw new InvalidDataException("This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.");
+        catch (Exception e) when (e is not OperationCanceledException and not OutOfMemoryException)
+        {
+            return new ResourceImageRead.Unreadable { Why = $"The picture cannot be read: {e.Message}" };
+        }
+
+        if (image is null)
+        {
+            return new ResourceImageRead.Unreadable { Why = "This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture." };
+        }
+
+        return new ResourceImageRead.Decoded { Image = image };
+    }
+
+    /// <summary>The picture in <paramref name="data"/>, decoded by the format its first bytes name; null when they name
+    /// none of these.</summary>
+    private static ResourceImage? DecodeKnown(byte[] data)
+    {
+        ReadOnlySpan<byte> span = data;
+        if (span.StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G']))
+        {
+            return DecodePng(data);
+        }
+
+        if (span.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8]))
+        {
+            return DecodeJpeg(data);
+        }
+
+        if (span.StartsWith("BM"u8))
+        {
+            return DecodeBitmap(span, "BMP");
+        }
+
+        if (span.StartsWith("GIF8"u8))
+        {
+            return Gif.Decode(span);
+        }
+
+        if (span.Length >= 6 && span[0] == 0 && span[1] == 0 && span[2] is 1 or 2)
+        {
+            return DecodeIcon(span);
+        }
+
+        if (SvgPicture.IsSvg(data))
+        {
+            return SvgPicture.Rasterize(data);
+        }
+
+        return null;
     }
 
     private static ResourceImage DecodePng(byte[] data)

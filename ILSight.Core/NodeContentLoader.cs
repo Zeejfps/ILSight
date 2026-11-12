@@ -63,21 +63,30 @@ public static class NodeContentLoader
             return new NodeContent.Code(Decompile(session, node, language, options, cancellationToken));
         }
 
+        var read = ReadImage(node);
+        return read.Match<NodeContent>(
+            decoded => GetPicture(session, node, decoded.Image, language, options, cancellationToken),
+            unreadable => new NodeContent.Code(NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken, unreadable.Why)));
+    }
+
+    /// <summary>The picture <paramref name="node"/>'s resource holds, or why it can't be read: the decompiler reads its
+    /// bytes, and the decoders the picture in them.</summary>
+    private static ResourceImageRead ReadImage(BrowseNode node)
+    {
         try
         {
-            return GetImage(session, node, language, options, cancellationToken);
+            return ResourceImages.DecodeImage(BrowseNodes.ReadResource(node));
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new NodeContent.Code(NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken, e.Message));
+            return new ResourceImageRead.Unreadable { Why = e.Message };
         }
     }
 
     /// <summary>The picture, with the markup it is stored as when it is drawn from shapes.</summary>
-    private static NodeContent.Picture GetImage(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken cancellationToken)
+    private static NodeContent.Picture GetPicture(BrowseSession session, BrowseNode node, ResourceImage image, DecompilationLanguage language,
+        DecompilerOptions options, CancellationToken cancellationToken)
     {
-        var image = ResourceImages.DecodeImage(BrowseNodes.ReadResource(node));
         if (!image.IsVector)
         {
             return new NodeContent.Picture(image);

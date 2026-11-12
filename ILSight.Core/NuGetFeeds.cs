@@ -297,7 +297,8 @@ public static class NuGetFeeds
         try
         {
             var bytes = await ReadIconBytesAsync(icons, url, cancellationToken).ConfigureAwait(false);
-            return ResourceImages.FitInto(ResourceImages.DecodeImage(bytes), side);
+            var read = ResourceImages.DecodeImage(bytes);
+            return read.Match(decoded => ResourceImages.FitInto(decoded.Image, side), static unreadable => throw new InvalidDataException(unreadable.Why));
         }
         finally
         {

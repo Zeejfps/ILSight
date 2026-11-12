@@ -29,7 +29,7 @@ public sealed class ResourceTests
     [InlineData("pointer.cur", "CUR")]
     public void Pictures_decode_to_their_pixels(string name, string format)
     {
-        var image = ResourceImages.DecodeImage(Fixture(name));
+        var image = Assert.IsType<ResourceImageRead.Decoded>(ResourceImages.DecodeImage(Fixture(name))).Image;
 
         Assert.Equal((2, 2, format), (image.Width, image.Height, image.Format));
         Assert.Equal(Expected, image.Rgba);
@@ -38,7 +38,7 @@ public sealed class ResourceTests
     [Fact]
     public void A_bitmap_without_alpha_is_opaque()
     {
-        var image = ResourceImages.DecodeImage(Fixture("logo.bmp"));
+        var image = Assert.IsType<ResourceImageRead.Decoded>(ResourceImages.DecodeImage(Fixture("logo.bmp"))).Image;
 
         Assert.Equal((2, 2, "BMP"), (image.Width, image.Height, image.Format));
         Assert.Equal(Expected[..12], image.Rgba[..12]);
@@ -48,7 +48,7 @@ public sealed class ResourceTests
     [Fact]
     public void A_gif_decodes_its_first_frame()
     {
-        var image = ResourceImages.DecodeImage(Fixture("red.gif"));
+        var image = Assert.IsType<ResourceImageRead.Decoded>(ResourceImages.DecodeImage(Fixture("red.gif"))).Image;
 
         Assert.Equal((1, 1, "GIF"), (image.Width, image.Height, image.Format));
         Assert.Equal([255, 0, 0, 255], image.Rgba);
@@ -60,7 +60,7 @@ public sealed class ResourceTests
         var pixels = Enumerable.Repeat(unchecked((int)0x2040A0FF), 16 * 16).ToArray();
         var data = JpegSharp.Api.Jpeg.Encode(JpegSharp.Api.JpegImage.CreateFromRgba8888(16, 16, pixels));
 
-        var image = ResourceImages.DecodeImage(data);
+        var image = Assert.IsType<ResourceImageRead.Decoded>(ResourceImages.DecodeImage(data)).Image;
 
         Assert.Equal((16, 16, "JPEG"), (image.Width, image.Height, image.Format));
         Assert.InRange(image.Rgba[2], 0x90, 0xB0);
@@ -70,7 +70,7 @@ public sealed class ResourceTests
     [Fact]
     public void An_svg_draws_at_its_own_size()
     {
-        var image = ResourceImages.DecodeImage(Fixture("shape.svg"));
+        var image = Assert.IsType<ResourceImageRead.Decoded>(ResourceImages.DecodeImage(Fixture("shape.svg"))).Image;
 
         Assert.Equal((4, 2, "SVG"), (image.Width, image.Height, image.Format));
         Assert.Equal([255, 0, 0, 255], image.Rgba[..4]);
@@ -115,8 +115,8 @@ public sealed class ResourceTests
     {
         var blob = Fixture("blob.bin");
 
-        Assert.Throws<InvalidDataException>(() => ResourceImages.DecodeImage(blob));
-        Assert.Throws<InvalidDataException>(() => ResourceImages.DecodeImage([0x89, (byte)'P', (byte)'N', (byte)'G', 1, 2]));
+        Assert.IsType<ResourceImageRead.Unreadable>(ResourceImages.DecodeImage(blob));
+        Assert.IsType<ResourceImageRead.Unreadable>(ResourceImages.DecodeImage([0x89, (byte)'P', (byte)'N', (byte)'G', 1, 2]));
     }
 
     [Fact]
