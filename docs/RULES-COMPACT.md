@@ -7,15 +7,21 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
   rule on purpose: `#pragma warning disable RLxxxx // reason`. This file is the judgment the build can't make.
 - **Edges** are where the framework hands control to the app: `Main` / the composition root, a UI's command
   dispatcher, an HTTP endpoint or middleware, a worker loop, an `async void` event handler, tests; in a frame-driven
-  UI, the frame edge before the draw and the commands the draw queues (the draw is not an edge). Only edges start
-  work (and create its token, linked to whatever may cancel it on purpose; a deadline is a timeout, not on purpose),
-  catch everything (R009) and build and wire use cases and adapters (R001's composition root). Mark each edge type
-  with the project's own `[Edge]`
+  UI, the frame edge around the draw (before it and right after it) and the commands the draw queues (the draw is not
+  an edge). Only edges start work (and create its token, linked to whatever may cancel it on purpose; a deadline is a
+  timeout, not on purpose), catch everything (R009) and build and wire use cases and adapters (R001's composition
+  root). Mark each edge type with the project's own `[Edge]`
   attribute (declare `EdgeAttribute`): it moves with the type when a file is split, a file name in `.editorconfig`
   doesn't. `rulelab.infrastructure = true` is for a folder whose every file is edge or I/O code.
 - **Tests** follow R002, R003, R005, R007, R008, R010, R012, R013 (test methods needn't take a token) and R009's ban on empty
   catches; not the others. Name tests the way the codebase already does (one convention per codebase); a new codebase
   uses `Method_Scenario_Expected`. Assertion helpers carry `[DoesNotReturnIf(false)]` so they narrow nulls.
+  **A missing value fails the test:** `?.` goes straight into an assertion only where null fails it (`Equal` /
+  `Same` / `StartsWith` against a value that can't be null); before `Null`, `NotEqual`, `NotSame`, `DoesNotContain`,
+  `IsNotType`, an expected value that may be null, or `?? false` / `== true`, assert it present (`Assert.NotNull`).
+  **What null would mean picks the form:** what the code under test produces is asserted (`Assert.NotNull`); a fact
+  the test fixes itself (a fixture, a path, a reflected member, text it parses) is `?? throw` with a message naming
+  it, wherever it sits, taken before the act (inside `Assert.Throws`' lambda its throw passes for the subject's).
 
 ## R001: A decision-making class reaches the outside world through one port
 
@@ -30,10 +36,14 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   takes its port) takes it as a parameter: `TryUpdateAsync(Feed feed, FeedUpdate.IPorts ports, ct)`. The port is an
   interface, not a record of functions (the build checks none of a delegate's name or token). Take the parts of the
   application state the function uses, not the whole state; only an edge or a function that works on all of it
-  (saving a session) takes it. Passing the state on to a callee doesn't count: **narrow from the bottom up**, callees
-  first, then the caller. A caller converted before its callee keeps passing the state on as before, until the callee
-  is narrowed (convert it next); never through a port member carrying the whole state, which narrows nothing (its
-  test still builds the state, and a fake besides) and which RL0105 reports when the state holds a listed service.
+  (saving a session) takes it, and **work on the whole state is an edge's**: a use case whose change it must follow
+  ends and the edge's step runs it (an autosave of what changed), or the use case hands it back (R010), never through
+  a port member carrying the state (RL0105) or an adapter holding it (wired after both are built); a change spanning
+  many parts but not all takes them or the type that holds them. Passing the state on to a callee doesn't count:
+  **narrow from the bottom up**, callees first, then the caller. A caller converted before its callee keeps passing
+  the state on as before, until the callee is narrowed (convert it next); never through a port member carrying the
+  whole state, which narrows nothing (its test still builds the state, and a fake besides) and which RL0105 reports
+  when the state holds a listed service.
 - Name port members for what the class needs (`FindOrderAsync`, `Now`, `LogOrderConfirmed`). Their signatures carry
   values: no `DbContext`, `IQueryable`, `HttpClient` or `ILogger`, and no type that holds one (a library's feed object
   keeping an `HttpClient`). Pass what the class decides with (`PackageSource`); the adapter keeps the library's
@@ -45,7 +55,11 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
 - The codebase's own services that do effects or hold shared state (a job runner like `Background.Start`, an
   error log like `Errors.Report`, a cache) are dependencies too: through the port, called by the adapter. List
   them as `rulelab.ambient_types` in `.editorconfig`. Built-in primitives (`Task.Run`, `await`, `CancellationToken`)
-  are used directly.
+  are used directly. **Across projects too:** I/O code a library declares for another project's adapters is listed
+  (the library's build sees no adapter): RL0101 skips its own I/O and the code only it uses, and reports its use
+  outside adapters, the root, tests and edges in every project. A listed type is I/O only: a member others call for
+  what it knows goes to its concept (R004). Not a folder marked `rulelab.infrastructure` (edge code; decision code
+  calling it goes unreported).
 - **Where an effect comes from doesn't change whose it is:** a static, a method on an object passed in
   (`state.Intent.ResolveAsync(...)`), or a delegate handed in to do part of the job. Put it on the port. Reading and
   writing plain data on an object passed in, and calling its pure methods (`bookmarks.IsMarked(name)`), is not an
@@ -72,7 +86,8 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
 - **Configuration becomes initial values:** the root reads the settings into a value first, then builds each object
   with its configured values (`required init` / constructor, no default of its own on the object, so a forgotten one
   is CS9035). Settings code never sets values on live objects; a setting changed at runtime is a command on its
-  object, and saving reads the live values back into a settings value.
+  object (where a rule spans it and other state, the type keeping that rule: `navigation.UsePreviewTabs(false)` keeps
+  the preview tab), and saving reads the live values back into a settings value.
 - **Adapters** (`<Class>Adapter`) implement the port with real infrastructure. No branching on business data; branching
   that translates the infrastructure (a 404 → `null`, a unique-key violation → "already exists") belongs there, and so
   does calling another use case the root built for a port member that asks for it. The test: **would a second adapter
@@ -90,7 +105,7 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
 
 ## R002: Prove non-null; never assert it
 
-Build: RL0201 (`!`), RL0202 (`== null`), RL0203 (nullable suppressions).
+Build: RL0201 (`!`), RL0202 (`== null`), RL0203 (nullable suppressions), RL0204 (`?.` into an assertion a missing value can pass).
 
 - Narrow a field into a local: `var connection = _connection; if (connection is null) { throw ...; }`, then use `connection`.
 - Decide what null means. A bug: `?? throw new InvalidOperationException("Connection string 'Orders' is not configured.")`.
@@ -201,6 +216,13 @@ Take the first match:
   type), a calculation a static method on its concept. Only what one caller decides for itself (its own policy: how it
   words its status line) stays its private method; moved out and public, another feature picked it up and said
   "reloaded" for files it opened. One that reaches the port is a step: its callers share it and are one class.
+- **The type that keeps a rule across parts holds every part privately, a setting the rule spans included** (turning
+  previews off keeps the preview tab: the type holds the setting and changes it by its method; values the changes
+  only read stay values). Every change to the parts is its method: the ones the rule exempts named for what they are
+  (`navigation.Restore(tab, node)`: no history, no new intent), other kinds under the rule through it (a diagram
+  opened in a tab), and a step callers take before their I/O (`intent.BeginOpening(paths)`), not a static on the use
+  case nor the ticket's. Not public parts for the exceptions, nor a second type over the same parts: a diagram opened
+  through the tabs was taken away by a late lookup.
 
 ## R005: Data goes in through `required init` properties
 
@@ -358,6 +380,10 @@ port member returning a sequence that isn't its own iterator).
 Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100 / 103 / 110.
 
 - If a caller can't be async (an attribute, a constructor), move the async work out of it; never block on a task.
+- **Clean-up that must finish whatever stopped the work is disposal:** `DisposeAsync` (no token, as `IAsyncDisposable`
+  has none) under `await using`, which runs on every way out. Not a method a catch calls (a failure it doesn't name
+  skipped it: a buffer lost, a drain failing unobserved), not a token the clean-up takes (it runs because that token
+  was cancelled; passed on, its wait ended at once).
 - Work that must outlive the request goes on a queue (an outbox), not a detached task; so does what must follow an
   effect that can't be undone (R009).
 - Only an edge starts work. Features return a `Task` their caller awaits; one that starts its own work returns before
@@ -365,22 +391,31 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   **A workflow awaits only what its own later steps need:** work it starts that nothing after it needs (a reload's
   lookup of the reopened tabs' nodes) is handed back to the edge as a kind of its own (R008). Awaited, it held back the
   loads handed back with it (a tab whose code was ready said "loading") and its cancellation lost them; recorded as
-  pending for the frame edge it works a frame later, which is the form for work a draw finds.
+  pending for the frame edge it works a frame later, which is the form for work a draw finds. **Work handed back
+  partway** (clearing the list hands back the lookup of the tabs it left waiting) isn't held by a later wait (opening
+  files): the workflow ends there, and the edge starts that work and the rest as a workflow of its own. Held, the tabs
+  said "waiting" until the files opened, and for good when opening was cancelled. Not a sink the edge passes in (left
+  empty, `_ => { }`, it drops the work unchecked).
 - **Frame-driven UIs** (the draw isn't an edge): the input's frame shows the input taken and nothing it made untrue
   as current. Split each workflow at its first wait: what it changes before waiting (cached answers included) changes
   in the input's frame, what it can't know yet shows as under way ("loading") in place of what it replaces, and only
-  the waits are queued, taking what the change returned
+  the waits are queued, taking what the change returned (an input that adds something shows it under way where it will
+  appear: "Shop.dll (loading)"; a change nobody sees, a new intent, doesn't show the input taken)
   (`var ticket = downloads.Start(id); commands.Queue(ct => download.HandleAsync(downloads, ticket, ct));`); the frame
   edge starts every queued command, even after a failed draw, and the ticket is `[MustUse]` (R008). A wait is
   anything that can take longer than a frame: I/O, and CPU work that grows with the user's data (sorting their list,
   parsing their file: queued, run off the UI thread with `Task.Run`; in the frame, a 3,000,000-row sort froze it for
   half a second); bounded work stays in the frame. Work found while drawing (icons, details) is recorded as
-  pending on its owner, once per item, and an edge starts it (the frame edge before the next draw, or one queued
-  command): one workflow for a batch the port takes, else one per item.
+  pending on its owner, once per item, and an edge starts it: the frame edge right after that draw (the frame it was
+  found in, as one queued command), or before the next draw (which the draw then asks for); one workflow for a batch
+  the port takes, else one per item.
 - **A draw takes what its input changes** (R001 point 8): the parts, and where the change keeps a rule across several
   (the active tab, its history, the newest intent), the type that holds them, made if missing (R004), with what the
-  change only reads (the language) as values. Not the whole state below the draw's root, and not a command queued only
-  for want of the parts (a frame late). Handed the whole state or the parts, a bookmarks panel written later moved the
+  change only reads (the language) as values, however many parts it spans (switching the session's list); only work
+  on every part (saving the session) is an edge's (R001). Not the whole state below the draw's root, and not a command
+  queued only for want of the parts (a frame late). Values the views only read and pass on together (language and
+  options) are one value, kept on their owner and made when one changes (0 bytes a frame; made per frame, one object a
+  frame; a struct's default threw, R005). Handed the whole state or the parts, a bookmarks panel written later moved the
   tab past the history and the intent, and a late lookup overtook it; the type keeps the rule (`DEMO_CS0122`).
 - **Screen state the edge reads back after the draw** (where a tab's view stands) is kept with the content the view
   drew: the view records the version it drew (the tab counts its changes), and the read-back stores it on the tab
@@ -416,7 +451,9 @@ Build: suggestions only, RL1101 (a loop doing low-level work between steps), RL1
   }
   ```
 - Don't move an `if` or a loop into a helper just to hide it. Don't split a stateful leaf loop into helpers sharing
-  `ref`. If extracted steps would share mutable state, compute an intermediate value first.
+  `ref`. If extracted steps would share mutable state, compute an intermediate value first. Values that travel
+  together through many calls are one value (on a hot path, kept on their owner and made when one changes; a class,
+  not a struct whose default is invalid).
 - Lower levels return what they found (`T?`, a result union); they don't send email, log business events or read
   config on their own account. Direction follows who asked: running delegates the caller passes in (`Match`,
   comparers) is fine, and so is an adapter carrying out a port member its use case named for another use case's work
