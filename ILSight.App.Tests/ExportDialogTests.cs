@@ -7,12 +7,17 @@ using ILSight.AssemblyArea;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
+using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
 public sealed class ExportDialogTests : IDisposable
 {
     private static readonly string SecondPath = typeof(KeyboardKey).Assembly.Location;
+
+    /// <summary>A small assembly, which exports in a moment: the fixture assembly is this test assembly, whose project
+    /// and PDB take seconds each.</summary>
+    private static readonly string SampleAppPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
 
     private readonly TempDir _temp = new();
 
@@ -31,6 +36,16 @@ public sealed class ExportDialogTests : IDisposable
         var d = AppStateDriver.Opened();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
+        d.Settle();
+        return d;
+    }
+
+    /// <summary>A driver that has opened only the sample app, so what it exports is written in a moment.</summary>
+    private static AppStateDriver OpenedSample()
+    {
+        var d = new AppStateDriver();
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
+        d.RunUntil(() => d.AppState.Assemblies.IsListed(PathOf(SampleAppPath)));
         d.Settle();
         return d;
     }
@@ -207,7 +222,7 @@ public sealed class ExportDialogTests : IDisposable
     [Fact]
     public void One_ticked_assembly_exports_as_a_project_straight_into_the_folder()
     {
-        var d = AppStateDriver.Opened();
+        var d = OpenedSample();
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
@@ -223,7 +238,10 @@ public sealed class ExportDialogTests : IDisposable
     [Fact]
     public void Several_ticked_assemblies_export_as_a_solution_with_a_folder_per_project()
     {
-        var d = OpenedTwo();
+        var d = OpenedSample();
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
+        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
+        d.Settle();
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
@@ -499,8 +517,10 @@ public sealed class ExportDialogTests : IDisposable
     [Fact]
     public void Ctrl_Shift_E_opens_the_dialog_and_Export_starts_it()
     {
-        var app = AppDriver.Opened();
-        app.Run(2);
+        var app = new AppDriver();
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(PathOf(SampleAppPath)), AppStateDriver.Patience);
+        app.Settle(2);
 
         app.Frames.Key(Shortcuts.Export).Frame(2);
         Assert.True(app.Ui.ExportSetup.IsOpen);
@@ -582,7 +602,7 @@ public sealed class ExportDialogTests : IDisposable
     [Fact]
     public void A_pdb_asked_for_in_the_dialog_is_written_beside_the_project_and_reported()
     {
-        var d = AppStateDriver.Opened();
+        var d = OpenedSample();
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
@@ -591,7 +611,7 @@ public sealed class ExportDialogTests : IDisposable
         d.StartExport();
         d.Settle();
 
-        var pdb = _temp.PathOf(Fixtures(d).PdbFileName);
+        var pdb = _temp.PathOf(Assert.Single(d.AppState.Assemblies.Assemblies).PdbFileName);
         Assert.True(File.Exists(pdb));
         Assert.Contains(pdb, Assert.IsType<ExportEnd.Finished>(Assert.Single(d.AppState.FinishedExports).End).Written);
     }
