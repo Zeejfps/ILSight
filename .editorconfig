@@ -98,7 +98,7 @@ dotnet_diagnostic.RL1307.severity = suggestion
 # R011's checks are suggestions while their precision is measured (RULES.md R011).
 dotnet_diagnostic.RL1101.severity = suggestion
 dotnet_diagnostic.RL1102.severity = suggestion
-dotnet_diagnostic.RL1103.severity = warning
+dotnet_diagnostic.RL1103.severity = error
 
 # Test code (RULES.md Scope): R001, R004 and R011 checks skip it, and test methods needn't take a token.
 [{ILSight.Tests,ILSight.App.Tests}/**.cs]
