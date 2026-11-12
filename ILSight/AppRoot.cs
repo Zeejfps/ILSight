@@ -50,6 +50,7 @@ internal static class AppRoot
         var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
         var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session);
         var diagrams = new DiagramInfrastructure(errors, assemblies);
+        var bookmarks = new BookmarkInfrastructure(errors, assemblies, session);
         var appState = new AppState
         {
             Work = work,
@@ -59,6 +60,9 @@ internal static class AppRoot
             ShowInMetadataHandler = new ShowInMetadataHandler(navigation),
             ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),
             OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
+            GoToBookmarkHandler = new GoToBookmarkHandler(navigation),
+            BookmarkImporting = new BookmarkImporting(bookmarks),
+            ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),
             DiagramGrowing = new DiagramGrowing(diagrams),
             ReopenDiagramHandler = new ReopenDiagramHandler(diagrams),
             LayOutDiagramHandler = new LayOutDiagramHandler(diagrams),

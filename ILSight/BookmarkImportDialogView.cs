@@ -33,24 +33,24 @@ internal static class BookmarkImportDialogView
                 {
                     if (ui.Button(t.BookmarksImportCancel, id: "import-cancel", variant: ButtonVariant.Ghost))
                     {
-                        Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, null));
+                        Commands.Later(ui.State, import, static (a, i) => a.BookmarkImporting.FinishImport(a.Bookmarks, a.Imports, i, null));
                     }
 
                     if (ui.Button(t.BookmarksImportReplace, id: "import-replace"))
                     {
-                        Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, BookmarkImportMode.Replace));
+                        Commands.Later(ui.State, import, static (a, i) => a.BookmarkImporting.FinishImport(a.Bookmarks, a.Imports, i, BookmarkImportMode.Replace));
                     }
 
                     if (ui.Button(t.BookmarksImportMerge, id: "import-merge", variant: ButtonVariant.Primary))
                     {
-                        Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, BookmarkImportMode.Merge));
+                        Commands.Later(ui.State, import, static (a, i) => a.BookmarkImporting.FinishImport(a.Bookmarks, a.Imports, i, BookmarkImportMode.Merge));
                     }
                 }
             }
         }
         if (!open)
         {
-            Commands.Later(ui.State, import, static (a, i) => FinishBookmarkImport(a, i, null));
+            Commands.Later(ui.State, import, static (a, i) => a.BookmarkImporting.FinishImport(a.Bookmarks, a.Imports, i, null));
         }
     }
 }

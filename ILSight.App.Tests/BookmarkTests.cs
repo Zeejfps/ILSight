@@ -114,7 +114,7 @@ public sealed class BookmarkTests : IDisposable
         app.Show(app.Fixture("Greeter"), 3);
 
         var bookmark = d.AppState.Bookmarks.Items[0];
-        d.Start((a, ct) => GoToBookmarkAsync(a, bookmark, ct));
+        d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         app.Settle(4);
 
         Assert.Equal("Outline", tab.Node!.Text);
@@ -281,7 +281,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2).Frame(90);
         Assert.Contains(app.Frames.TextRects(), t => t.Text.StartsWith(bookmark.Module + " "));
 
-        d.Start((a, ct) => GoToBookmarkAsync(a, bookmark, ct));
+        d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         app.Settle(4);
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
@@ -425,6 +425,25 @@ public sealed class BookmarkTests : IDisposable
         Assert.Equal([1f, 1f, 4f, 1f], restored);
     }
 
+    /// <summary>Imports the bookmarks in the file at <paramref name="path"/> as the bookmarks panel asks for it.</summary>
+    private static void ImportBookmarks(AppStateDriver d, string path)
+    {
+        d.Start((a, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, path, ct));
+    }
+
+    /// <summary>Takes the bookmarks <paramref name="import"/> waits with as <paramref name="mode"/> says, as the
+    /// import dialog asks for it.</summary>
+    private static void FinishBookmarkImport(AppStateDriver d, PendingImport import, BookmarkImportMode? mode)
+    {
+        d.AppState.BookmarkImporting.FinishImport(d.AppState.Bookmarks, d.AppState.Imports, import, mode);
+    }
+
+    /// <summary>Exports the bookmarks to the file at <paramref name="path"/> as the bookmarks panel asks for it.</summary>
+    private static void ExportBookmarks(AppStateDriver d, string path)
+    {
+        d.AppState.ExportBookmarksHandler.Handle(d.AppState.Bookmarks, path);
+    }
+
     private string Exported(params string[] lines)
     {
         return ExportedAs("exported.json", lines);
@@ -440,7 +459,7 @@ public sealed class BookmarkTests : IDisposable
             ToggleBookmark(d.AppState, tab, tab.Document.GetPosition(text).Line, Names.Bookmark);
         }
 
-        ExportBookmarks(d.AppState, path);
+        ExportBookmarks(d, path);
         Assert.Empty(d.AppState.Errors.Entries);
         return path;
     }
@@ -451,7 +470,7 @@ public sealed class BookmarkTests : IDisposable
         var path = Exported("return First();", "foreach");
         var (d, tab, line) = OutlineAt("return First();");
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
 
         Assert.Null(d.AppState.Imports.Asking);
@@ -468,14 +487,14 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         bookmarks.Rename(bookmarks.Items[0], "Mine");
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
         var asked = d.AppState.Imports.Asking;
-        FinishBookmarkImport(d.AppState, asked!, BookmarkImportMode.Merge);
+        FinishBookmarkImport(d, asked!, BookmarkImportMode.Merge);
         var merged = bookmarks.Items.Select(b => b.Name).ToList();
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
-        FinishBookmarkImport(d.AppState, d.AppState.Imports.Asking!, BookmarkImportMode.Replace);
+        FinishBookmarkImport(d, d.AppState.Imports.Asking!, BookmarkImportMode.Replace);
 
         Assert.NotNull(asked);
         Assert.Equal(["Mine", "Bookmark 2"], merged);
@@ -491,13 +510,13 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, line) = OutlineAt("return First();");
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
 
-        ImportBookmarks(d.AppState, first);
-        ImportBookmarks(d.AppState, second);
+        ImportBookmarks(d, first);
+        ImportBookmarks(d, second);
         d.Settle();
         var asked = d.AppState.Imports.Asking!;
-        FinishBookmarkImport(d.AppState, asked, BookmarkImportMode.Merge);
+        FinishBookmarkImport(d, asked, BookmarkImportMode.Merge);
         var next = d.AppState.Imports.Asking!;
-        FinishBookmarkImport(d.AppState, next, BookmarkImportMode.Merge);
+        FinishBookmarkImport(d, next, BookmarkImportMode.Merge);
 
         Assert.NotSame(asked, next);
         Assert.Equal(3, d.AppState.Bookmarks.Items.Count);
@@ -511,7 +530,7 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, line) = OutlineAt("return First();");
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
 
         Assert.Single(d.AppState.Bookmarks.Items);
@@ -546,7 +565,7 @@ public sealed class BookmarkTests : IDisposable
         var path = _temp.PathOf("missing.json");
         var d = new AppStateDriver();
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
 
         Assert.Empty(d.AppState.Bookmarks.Items);
@@ -624,7 +643,7 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, line) = OutlineAt("return First();");
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
 
-        ExportBookmarks(d.AppState, path);
+        ExportBookmarks(d, path);
         using var json = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
         var root = json.RootElement;
         var entry = root.GetProperty("Bookmarks")[0];
@@ -652,7 +671,7 @@ public sealed class BookmarkTests : IDisposable
                              Record("Bookmark1", "Line", TokenOf("Third"), 0, 3, Fixtures + ".Outline"));
         var (d, tab, line) = OutlineAt("return First();");
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
         var bookmarks = d.AppState.Bookmarks.Items;
         var marked = d.AppState.Bookmarks.ListMarkedLines(tab.Document, tab.Node!);
@@ -673,7 +692,7 @@ public sealed class BookmarkTests : IDisposable
         var path = ILSpyFile(twins);
         var d = new AppStateDriver();
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
 
         Assert.Equal("First", Assert.Single(d.AppState.Bookmarks.Items).Name);
@@ -687,9 +706,9 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, line) = OutlineAt("return First();");
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
-        FinishBookmarkImport(d.AppState, d.AppState.Imports.Asking!, BookmarkImportMode.Merge);
+        FinishBookmarkImport(d, d.AppState.Imports.Asking!, BookmarkImportMode.Merge);
 
         Assert.Single(d.AppState.Bookmarks.Items);
         Assert.Empty(d.AppState.Errors.Entries);
@@ -702,7 +721,7 @@ public sealed class BookmarkTests : IDisposable
                              Record("Kept", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline"));
         var d = new AppStateDriver();
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
 
         Assert.Equal("Kept", Assert.Single(d.AppState.Bookmarks.Items).Name);
@@ -730,7 +749,7 @@ public sealed class BookmarkTests : IDisposable
         var path = ILSpyFile(unreadablePlace);
         var d = new AppStateDriver();
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
 
         Assert.Equal("Placed", Assert.Single(d.AppState.Bookmarks.Items).Name);
@@ -746,7 +765,7 @@ public sealed class BookmarkTests : IDisposable
         var path = ILSpyFile(Record("Moved", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Renamed") + "," + gone);
         var d = new AppStateDriver();
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
 
         var moved = Assert.Single(d.AppState.Bookmarks.Items);
@@ -761,7 +780,7 @@ public sealed class BookmarkTests : IDisposable
         var path = ILSpyFile(Record("Rebuilt", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Renamed", memberName: Fixtures + ".Outline.Removed"));
         var d = new AppStateDriver();
 
-        ImportBookmarks(d.AppState, path);
+        ImportBookmarks(d, path);
         d.Settle();
 
         Assert.Empty(d.AppState.Bookmarks.Items);

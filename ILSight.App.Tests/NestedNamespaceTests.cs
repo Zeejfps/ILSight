@@ -166,7 +166,7 @@ public sealed class NestedNamespaceTests
         Nest(app, false);
         Trees.CollapseTree(app.Ui.Tree);
 
-        app.Start((a, ct) => GoToBookmarkAsync(a, bookmark, ct));
+        app.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         app.Settle(1);
 
         var fixtures = app.Node(AppStateDriver.FixturesNamespace);

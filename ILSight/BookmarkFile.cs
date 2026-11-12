@@ -8,9 +8,6 @@ public static class BookmarkFile
 {
     public const int CurrentVersion = 1;
 
-    /// <summary>The name offered for a new export.</summary>
-    public const string SuggestedName = "ILSight.Bookmarks.json";
-
     /// <summary>Writes <paramref name="bookmarks"/> to <paramref name="path"/>, replacing the file
     /// whole.</summary>
     public static BookmarksWriteResult Write(string path, List<BookmarkRecord> bookmarks)

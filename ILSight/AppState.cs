@@ -75,6 +75,15 @@ public sealed class AppState
     /// <summary>Opens the pages of the .NET API reference types and members have.</summary>
     public required ShowInApiReferenceHandler ShowInApiReferenceHandler { get; init; }
 
+    /// <summary>Goes to the lines bookmarks mark.</summary>
+    public required GoToBookmarkHandler GoToBookmarkHandler { get; init; }
+
+    /// <summary>Imports bookmarks from files, this app's or the real ILSpy's.</summary>
+    public required BookmarkImporting BookmarkImporting { get; init; }
+
+    /// <summary>Exports the bookmarks to a file the real ILSpy reads.</summary>
+    public required ExportBookmarksHandler ExportBookmarksHandler { get; init; }
+
     /// <summary>Grows diagrams by the cards of types: one shown with its neighbours, and those a card links to.</summary>
     public required DiagramGrowing DiagramGrowing { get; init; }
 

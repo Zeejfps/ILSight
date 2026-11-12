@@ -3,70 +3,64 @@ namespace ILSight.App.Tests;
 public sealed class UserIntentTests
 {
     [Fact]
-    public async Task ResolveAsync_LookupFindsThePlace_IsFoundAndStopsResolving()
+    public void EndResolving_LookupFoundThePlace_IsFoundAndStopsResolving()
     {
         var intent = new UserIntent();
+        var ticket = intent.BeginResolving();
+        Assert.True(intent.IsResolving);
 
-        var resolved = await intent.ResolveAsync(static () => "place", CancellationToken.None);
+        var resolved = intent.EndResolving<string>(ticket, new Outcome<string?>.Ok("place"));
 
         Assert.Equal("place", Assert.IsType<Resolution<string>.Found>(resolved).Value);
         Assert.False(intent.IsResolving);
     }
 
     [Fact]
-    public async Task ResolveAsync_LookupFindsNothing_IsMissing()
+    public void EndResolving_LookupFoundNothing_IsMissing()
     {
         var intent = new UserIntent();
+        var ticket = intent.BeginResolving();
 
-        var resolved = await intent.ResolveAsync(static () => (string?)null, CancellationToken.None);
+        var resolved = intent.EndResolving<string>(ticket, new Outcome<string?>.Ok(null));
 
         Assert.IsType<Resolution<string>.Missing>(resolved);
         Assert.False(intent.IsResolving);
     }
 
     [Fact]
-    public async Task ResolveAsync_LookupThrows_IsFailedWithTheError()
+    public void EndResolving_LookupFailed_IsFailedWithTheError()
     {
         var intent = new UserIntent();
         var error = new InvalidOperationException("unreadable");
+        var ticket = intent.BeginResolving();
 
-        var resolved = await intent.ResolveAsync<string>(() => throw error, CancellationToken.None);
+        var resolved = intent.EndResolving<string>(ticket, new Outcome<string?>.Failed(error));
 
         Assert.Same(error, Assert.IsType<Resolution<string>.Failed>(resolved).Error);
         Assert.False(intent.IsResolving);
     }
 
     [Fact]
-    public async Task ResolveAsync_ValueTypeLookup_FindsTheValueOrNothing()
+    public void EndResolving_ValueTypeLookup_FindsTheValueOrNothing()
     {
         var intent = new UserIntent();
 
-        var found = await intent.ResolveAsync(static () => (int?)7, CancellationToken.None);
-        var missing = await intent.ResolveAsync(static () => (int?)null, CancellationToken.None);
+        var found = intent.EndResolving<int>(intent.BeginResolving(), new Outcome<int?>.Ok(7));
+        var missing = intent.EndResolving<int>(intent.BeginResolving(), new Outcome<int?>.Ok(null));
 
         Assert.Equal(7, Assert.IsType<Resolution<int>.Found>(found).Value);
         Assert.IsType<Resolution<int>.Missing>(missing);
     }
 
     [Fact]
-    public async Task ResolveAsync_AnotherRequestBeginsMeanwhile_IsStaleAndLeavesThatRequestAlone()
+    public void EndResolving_AnotherRequestBeganMeanwhile_IsStaleAndLeavesThatRequestAlone()
     {
         var intent = new UserIntent();
-        using var started = new ManualResetEventSlim();
-        using var release = new ManualResetEventSlim();
-
-        var resolving = intent.ResolveAsync(() =>
-        {
-            started.Set();
-            release.Wait();
-            return "place";
-        }, CancellationToken.None);
-        started.Wait();
-        Assert.True(intent.IsResolving);
+        var ticket = intent.BeginResolving();
         var next = intent.Begin();
         intent.StartResolving(next);
-        release.Set();
-        var resolved = await resolving;
+
+        var resolved = intent.EndResolving<string>(ticket, new Outcome<string?>.Ok("place"));
 
         Assert.IsType<Resolution<string>.Stale>(resolved);
         Assert.True(intent.IsResolving);

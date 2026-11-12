@@ -4,10 +4,10 @@ using ILSight.Core.Metadata;
 namespace ILSight;
 
 /// <summary>Reaches the app's error reports and the open assemblies off the UI thread, for the navigation
-/// handlers.</summary>
+/// handlers and <see cref="GoToBookmarkHandler"/>.</summary>
 public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session, OpenRequests opens)
     : NavigateHandler.IPorts, ShowInMetadataHandler.IPorts, ShowInApiReferenceHandler.IPorts, OpenAndShowIdHandler.IPorts,
-        GoToHistoryEntryHandler.IPorts
+        GoToHistoryEntryHandler.IPorts, GoToBookmarkHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {

@@ -61,27 +61,6 @@ public sealed class UserIntent
         return TakeResolution(ticket, outcome.Match(static ok => FoundOrMissing(ok.Value), static failed => new Resolution<T>.Failed(failed.Error)));
     }
 
-    /// <summary>Begins a request that finds a place with <paramref name="lookup"/> in the background,
-    /// resolving until it is done; the lookup's null means the place is not there. Stale when another
-    /// request has begun meanwhile. <paramref name="ct"/> keeps the lookup from starting.</summary>
-    public Task<Resolution<T>> ResolveAsync<T>(Func<T?> lookup, CancellationToken ct) where T : class
-    {
-        return RunLookupAsync(() => FoundOrMissing(lookup()), ct);
-    }
-
-    /// <inheritdoc cref="ResolveAsync{T}(Func{T}, CancellationToken)"/>
-    public Task<Resolution<T>> ResolveAsync<T>(Func<T?> lookup, CancellationToken ct) where T : struct
-    {
-        return RunLookupAsync(() => FoundOrMissing(lookup()), ct);
-    }
-
-    private async Task<Resolution<T>> RunLookupAsync<T>(Func<Resolution<T>> lookup, CancellationToken ct)
-    {
-        var ticket = BeginResolving();
-        var outcome = await Background.Wait(Task.Run(lookup, ct));
-        return TakeResolution(ticket, outcome.Match(static ok => ok.Value, static failed => new Resolution<T>.Failed(failed.Error)));
-    }
-
     /// <summary><paramref name="resolution"/>, unless another request began since <paramref name="ticket"/>: then
     /// stale, the request begun since left resolving as it is.</summary>
     private Resolution<T> TakeResolution<T>(int ticket, Resolution<T> resolution)

@@ -26,6 +26,17 @@ public static class Settings
         ReportLeftOutBookmarks(appState, leftOutBookmarks);
     }
 
+    /// <summary>Says how many of the bookmarks the settings keep were left out because another marks the same line.</summary>
+    private static void ReportLeftOutBookmarks(AppState appState, int leftOut)
+    {
+        if (leftOut == 0)
+        {
+            return;
+        }
+
+        Errors.Report(appState, new AppProblem.BookmarksLeftOut(leftOut));
+    }
+
     /// <summary>The folder <paramref name="name"/> beside <paramref name="settingsFile"/>; null while the
     /// settings are kept in memory only.</summary>
     public static string? FindFolderBeside(FullFilePath? settingsFile, string name)

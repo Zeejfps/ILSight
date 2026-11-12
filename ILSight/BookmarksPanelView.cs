@@ -15,6 +15,10 @@ internal static class BookmarksPanelView
     public const int ListId = 0x424D524B;
 
     private const string MenuId = "bookmark-menu";
+
+    /// <summary>The name offered for a new export.</summary>
+    private const string SuggestedExportName = "ILSight.Bookmarks.json";
+
     private const int MarkColumn = 0;
     internal const int NameColumn = 1;
     private const int LocationColumn = 2;
@@ -90,7 +94,7 @@ internal static class BookmarksPanelView
 
         if (body.Activated && panel.Renaming is null)
         {
-            Commands.Start(ui.State, nameof(GoToBookmarkAsync), selected, static (a, b, ct) => GoToBookmarkAsync(a, b, ct));
+            Commands.Start(ui.State, nameof(GoToBookmarkHandler), selected, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a, b, ct));
         }
 
         if (body.EditRequested && panel.Cells.Column == NameColumn)
@@ -164,14 +168,14 @@ internal static class BookmarksPanelView
     {
         var t = ui.State.Strings;
         var screen = ui.State;
-        ui.PickSaveFile(t.BookmarksExportTitle, null, BookmarkFile.SuggestedName, Filters(t), path => Commands.Later(screen, path, static (a, p) => ExportBookmarks(a, p)));
+        ui.PickSaveFile(t.BookmarksExportTitle, null, SuggestedExportName, Filters(t), path => Commands.Later(screen, path, static (a, p) => a.ExportBookmarksHandler.Handle(a.Bookmarks, p)));
     }
 
     private static void PickImportFile(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
         var screen = ui.State;
-        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Later(screen, path, static (a, p) => ImportBookmarks(a, p)));
+        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(screen, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
     }
 
     /// <summary>What <paramref name="column"/> shows of <paramref name="bookmark"/>; nothing for the
@@ -261,7 +265,7 @@ internal static class BookmarksPanelView
         var followed = row.TextCell(LocationColumn, bookmark.Location, color, link: new UiIcon(ui.State.Icons.LinkBookmark), linkTooltip: t.BookmarksGoTo);
         if (followed)
         {
-            Commands.Start(ui.State, nameof(GoToBookmarkAsync), bookmark, static (a, b, ct) => GoToBookmarkAsync(a, b, ct));
+            Commands.Start(ui.State, nameof(GoToBookmarkHandler), bookmark, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a, b, ct));
         }
     }
 
@@ -371,7 +375,7 @@ internal static class BookmarksPanelView
 
         if (ui.MenuItem(t.BookmarksGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.Start(ui.State, nameof(GoToBookmarkAsync), bookmark, static (a, b, ct) => GoToBookmarkAsync(a, b, ct));
+            Commands.Start(ui.State, nameof(GoToBookmarkHandler), bookmark, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a, b, ct));
         }
 
         if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: panel.Cells.HasCell, id: "copy"))
@@ -451,7 +455,7 @@ internal static class BookmarksPanelView
     }
 
     /// <summary>Selects the next enabled bookmark after the selected one, or the previous when
-    /// <paramref name="direction"/> is negative, and goes to it (<see cref="GoToBookmarkAsync"/>), returning the load
+    /// <paramref name="direction"/> is negative, and goes to it (<see cref="GoToBookmarkHandler"/>), returning the load
     /// that started in the tab; null when none is enabled.</summary>
     internal static Task<DecompileTicket?> StepAsync(BookmarksPanel panel, AppState appState, int direction, CancellationToken ct)
     {
@@ -462,7 +466,7 @@ internal static class BookmarksPanelView
         }
 
         ItemSelections.Select(panel.Selection, bookmark, appState.Bookmarks.Items);
-        return GoToBookmarkAsync(appState, bookmark, ct);
+        return appState.GoToBookmarkHandler.HandleAsync(appState, bookmark, ct);
     }
 
     private static void RenameInPlace(BookmarksPanel panel, Bookmark bookmark)
