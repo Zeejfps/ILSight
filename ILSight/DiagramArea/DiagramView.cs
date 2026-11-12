@@ -641,11 +641,11 @@ internal static class DiagramView
         var label = DiagramFaces.LabelOf(route.Link);
         if (label is null)
         {
-            return new DrawnLink(route.Link.Kind, shape, null, 0f, 0f);
+            return new DrawnLink(route.Link, shape, null, 0f, 0f);
         }
 
         var size = DiagramFaces.MeasureLabel(ui, label);
-        return new DrawnLink(route.Link.Kind, shape, label, size.Width, size.Height);
+        return new DrawnLink(route.Link, shape, label, size.Width, size.Height);
     }
 
     /// <summary>The cards the layout drawn places, each where it is drawn now.</summary>
@@ -913,11 +913,11 @@ internal static class DiagramView
     /// that say what it has, the types its properties hold, in the color of data.</summary>
     private static void PaintLink(UiPainter p, DiagramFrame frame, DrawnLink link)
     {
-        var isHeld = IsHeld(link.Kind);
+        var isHeld = link.Link.IsHeld;
         var color = isHeld ? frame.Palette.Data : frame.Palette.Type;
         var width = isHeld ? HasALineWidth : IsALineWidth;
         var stroke = MathF.Max(1f, width * frame.Zoom);
-        var isDashed = link.Kind == TypeLinkKind.Implements;
+        var isDashed = link.Link is TypeLink.Implements;
         var dash = isDashed ? DashLength * frame.Zoom : 0f;
         var gap = isDashed ? GapLength * frame.Zoom : 0f;
         var pieces = link.Route.Pieces;
@@ -948,7 +948,7 @@ internal static class DiagramView
         var tip = ToScreen(p, frame, link.Route.Tip);
         var tail = ToScreen(p, frame, GetArrowTail(link.Route));
         var length = MathF.Sqrt(tip.DistanceSqTo(tail));
-        if (IsHeld(link.Kind))
+        if (link.Link.IsHeld)
         {
             p.OpenArrowhead(tip, tail, length, OpenArrowWidth * frame.Zoom, stroke, color);
             return;
@@ -984,11 +984,6 @@ internal static class DiagramView
         }
 
         return route.Pieces[^1].End;
-    }
-
-    private static bool IsHeld(TypeLinkKind kind)
-    {
-        return kind is TypeLinkKind.HoldsOne or TypeLinkKind.HoldsMany;
     }
 
     /// <summary>The label of a link as a tag bordered in its color.</summary>

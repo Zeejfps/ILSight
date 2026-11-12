@@ -98,19 +98,19 @@ public sealed class TypeCardTests
         var lion = Card("Lion");
         var keeper = Card("Keeper");
 
-        Assert.Contains(new TypeLink(Zoo("Lion"), Zoo("Animal"), TypeLinkKind.Inherits), lion.Links);
-        Assert.Contains(new TypeLink(Zoo("Lion"), Zoo("IFeeds"), TypeLinkKind.Implements), lion.Links);
+        Assert.Contains(new TypeLink.Inherits { From = Zoo("Lion"), To = Zoo("Animal") }, lion.Links);
+        Assert.Contains(new TypeLink.Implements { From = Zoo("Lion"), To = Zoo("IFeeds") }, lion.Links);
         Assert.Equal(
         [
-            new TypeLink(Zoo("Keeper"), Zoo("Animal"), TypeLinkKind.HoldsMany, "Animals"),
-            new TypeLink(Zoo("Keeper"), Zoo("Enclosure"), TypeLinkKind.HoldsOne, "Home"),
+            new TypeLink.HoldsMany { From = Zoo("Keeper"), To = Zoo("Animal"), Property = "Animals" },
+            new TypeLink.HoldsOne { From = Zoo("Keeper"), To = Zoo("Enclosure"), Property = "Home" },
         ], keeper.Links);
     }
 
     [Fact]
     public void Built_in_types_and_the_bases_every_type_has_are_no_links()
     {
-        Assert.Equal([new TypeLink(Zoo("Animal"), Zoo("Keeper"), TypeLinkKind.HoldsOne, "Keeper")], Card("Animal").Links);
+        Assert.Equal([new TypeLink.HoldsOne { From = Zoo("Animal"), To = Zoo("Keeper"), Property = "Keeper" }], Card("Animal").Links);
         Assert.Empty(Card("Enclosure").Links);
     }
 

@@ -72,9 +72,9 @@ public sealed class DiagramTests
         var diagram = ShowInNew(d, "Vehicle");
 
         Assert.Equal(4, diagram.Links.Count);
-        Assert.Contains(new TypeLink(TypeOf(d, "Car"), TypeOf(d, "Vehicle"), TypeLinkKind.Inherits), diagram.Links);
-        Assert.Contains(new TypeLink(TypeOf(d, "Garage"), TypeOf(d, "Vehicle"), TypeLinkKind.HoldsMany, "Vehicles"), diagram.Links);
-        Assert.Contains(new TypeLink(TypeOf(d, "Vehicle"), TypeOf(d, "Garage"), TypeLinkKind.HoldsOne, "Garage"), diagram.Links);
+        Assert.Contains(new TypeLink.Inherits { From = TypeOf(d, "Car"), To = TypeOf(d, "Vehicle") }, diagram.Links);
+        Assert.Contains(new TypeLink.HoldsMany { From = TypeOf(d, "Garage"), To = TypeOf(d, "Vehicle"), Property = "Vehicles" }, diagram.Links);
+        Assert.Contains(new TypeLink.HoldsOne { From = TypeOf(d, "Vehicle"), To = TypeOf(d, "Garage"), Property = "Garage" }, diagram.Links);
         Assert.DoesNotContain(diagram.Links, l => l.To == TypeOf(d, "IDriven"));
     }
 
@@ -138,8 +138,8 @@ public sealed class DiagramTests
         d.Settle();
 
         Assert.Equal(["Bike", "Car", "Garage", "IDriven", "Vehicle"], CardNames(diagram));
-        Assert.Contains(new TypeLink(TypeOf(d, "Bike"), TypeOf(d, "Vehicle"), TypeLinkKind.Inherits), diagram.Links);
-        Assert.Contains(new TypeLink(TypeOf(d, "Car"), TypeOf(d, "IDriven"), TypeLinkKind.Implements), diagram.Links);
+        Assert.Contains(new TypeLink.Inherits { From = TypeOf(d, "Bike"), To = TypeOf(d, "Vehicle") }, diagram.Links);
+        Assert.Contains(new TypeLink.Implements { From = TypeOf(d, "Car"), To = TypeOf(d, "IDriven") }, diagram.Links);
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public sealed class DiagramTests
 
         Assert.Equal(["Breakdown", "Exception"], CardNames(diagram));
         Assert.False(HasMissingBases(diagram, breakdown));
-        Assert.Contains(diagram.Links, static l => l.Kind == TypeLinkKind.Inherits);
+        Assert.Contains(diagram.Links, static l => l is TypeLink.Inherits);
         Assert.False(Diagrams.IsHome(diagram, diagram.Cards[1].AssemblyPath));
         Assert.True(Diagrams.IsHome(diagram, breakdown.AssemblyPath));
     }
@@ -172,7 +172,7 @@ public sealed class DiagramTests
         d.Settle();
 
         Assert.Equal(["Car", "IDriven"], CardNames(diagram));
-        Assert.Equal([new TypeLink(TypeOf(d, "Car"), TypeOf(d, "IDriven"), TypeLinkKind.Implements)], diagram.Links);
+        Assert.Equal([new TypeLink.Implements { From = TypeOf(d, "Car"), To = TypeOf(d, "IDriven") }], diagram.Links);
     }
 
     [Fact]

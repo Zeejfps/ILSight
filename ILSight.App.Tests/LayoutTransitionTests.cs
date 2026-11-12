@@ -19,7 +19,7 @@ public sealed class LayoutTransitionTests
 
     private static readonly CodeReference.Entity Car = TypeOf("Car");
     private static readonly CodeReference.Entity Vehicle = TypeOf("Vehicle");
-    private static readonly TypeLink CarIsVehicle = new(Car, Vehicle, TypeLinkKind.Inherits);
+    private static readonly TypeLink CarIsVehicle = new TypeLink.Inherits { From = Car, To = Vehicle };
 
     private static TypeLayout Arrange(float vehicleHeight, bool withCar = true)
     {

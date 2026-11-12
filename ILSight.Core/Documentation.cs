@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -106,7 +107,7 @@ internal static class Documentation
         }
         if (!loose.IsEmpty && !sections.Any(IsSummary))
         {
-            sections.Add(new DocSection(DocSectionKind.Summary, null, Documentation.FinishBlocks(loose)));
+            sections.Add(new DocSection.Summary { Blocks = Documentation.FinishBlocks(loose) });
         }
 
         return sections
@@ -141,16 +142,24 @@ internal static class Documentation
 
         var text = new DocText();
         AddChildren(text, element);
-        return new DocSection(kind.Value, LabelOf(element, kind.Value), Documentation.FinishBlocks(text));
+        var blocks = Documentation.FinishBlocks(text);
+        return kind.Value switch
+        {
+            DocSectionKind.Summary => new DocSection.Summary { Blocks = blocks },
+            DocSectionKind.TypeParameter => new DocSection.TypeParameter { Blocks = blocks, Name = NameOf(element) },
+            DocSectionKind.Parameter => new DocSection.Parameter { Blocks = blocks, Name = NameOf(element) },
+            DocSectionKind.Returns => new DocSection.Returns { Blocks = blocks },
+            DocSectionKind.Value => new DocSection.Value { Blocks = blocks },
+            DocSectionKind.Exception => new DocSection.Exception { Blocks = blocks, Name = ExceptionLabel(element) },
+            DocSectionKind.Remarks => new DocSection.Remarks { Blocks = blocks },
+            DocSectionKind.Example => new DocSection.Example { Blocks = blocks },
+            _ => throw new UnreachableException($"No documentation section of kind {kind.Value}."),
+        };
     }
 
-    private static DocRun? LabelOf(XmlDocumentationElement element, DocSectionKind kind)
+    /// <summary>The parameter or type parameter a <c>param</c> or <c>typeparam</c> element names, as code.</summary>
+    private static DocRun? NameOf(XmlDocumentationElement element)
     {
-        if (kind == DocSectionKind.Exception)
-        {
-            return ExceptionLabel(element);
-        }
-
         var name = element.GetAttribute("name");
         if (name is null)
         {

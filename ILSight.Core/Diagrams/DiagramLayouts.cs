@@ -113,7 +113,7 @@ public static class DiagramLayouts
 
         var edge = new Edge(source, target) { UserData = link.Link };
         edge.EdgeGeometry.TargetArrowhead = new Arrowhead { Length = TypeLayout.ArrowLength };
-        if (IsHeld(link.Link.Kind))
+        if (link.Link.IsHeld)
         {
             edge.EdgeGeometry.SourceArrowhead = new Arrowhead { Length = TypeLayout.DiamondLength };
         }
@@ -124,11 +124,6 @@ public static class DiagramLayouts
         }
 
         return edge;
-    }
-
-    private static bool IsHeld(TypeLinkKind kind)
-    {
-        return kind is TypeLinkKind.HoldsOne or TypeLinkKind.HoldsMany;
     }
 
     private static bool HasLabel(MeasuredLink link)

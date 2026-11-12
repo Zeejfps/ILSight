@@ -19,9 +19,9 @@ public sealed class TypeLayoutTests
     private static readonly CodeReference.Entity Parrot = Zoo("Parrot");
     private static readonly CodeReference.Entity Keeper = Zoo("Keeper");
 
-    private static readonly TypeLink LionIsAnimal = new(Lion, Animal, TypeLinkKind.Inherits);
-    private static readonly TypeLink ParrotIsAnimal = new(Parrot, Animal, TypeLinkKind.Inherits);
-    private static readonly TypeLink KeeperHoldsAnimals = new(Keeper, Animal, TypeLinkKind.HoldsMany, "Animals");
+    private static readonly TypeLink LionIsAnimal = new TypeLink.Inherits { From = Lion, To = Animal };
+    private static readonly TypeLink ParrotIsAnimal = new TypeLink.Inherits { From = Parrot, To = Animal };
+    private static readonly TypeLink KeeperHoldsAnimals = new TypeLink.HoldsMany { From = Keeper, To = Animal, Property = "Animals" };
 
     private static DiagramMeasures Zoo4()
     {
@@ -147,7 +147,7 @@ public sealed class TypeLayoutTests
     [Fact]
     public void A_type_holding_itself_is_routed_as_a_loop()
     {
-        var self = new TypeLink(Keeper, Keeper, TypeLinkKind.HoldsOne, "Next");
+        var self = new TypeLink.HoldsOne { From = Keeper, To = Keeper, Property = "Next" };
         var measures = new DiagramMeasures([new MeasuredCard(Keeper, 100f, 50f)], [new MeasuredLink(self, 30f, 14f)]);
 
         var layout = DiagramLayouts.Arrange(measures);

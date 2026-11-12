@@ -220,17 +220,11 @@ internal static class DiagramFaces
     /// when it holds many; null for a link that holds nothing.</summary>
     public static string? LabelOf(TypeLink link)
     {
-        if (link.Label is null)
-        {
-            return null;
-        }
-
-        if (link.Kind != TypeLinkKind.HoldsMany)
-        {
-            return link.Label;
-        }
-
-        return link.Label + ManyMark;
+        return link.Match<string?>(
+            inherits: static _ => null,
+            implements: static _ => null,
+            holdsOne: static one => one.Property,
+            holdsMany: static many => many.Property + ManyMark);
     }
 
     private static void AddRow(RowStack stack, CardRow row)

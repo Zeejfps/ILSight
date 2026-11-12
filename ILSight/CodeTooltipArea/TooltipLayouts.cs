@@ -59,10 +59,16 @@ internal static class TooltipLayouts
     private static List<TooltipGroup> BuildGroups(TooltipStyles styles, Strings t, IReadOnlyList<DocSection> sections)
     {
         var groups = new List<TooltipGroup>();
+        DocSectionKind? groupKind = null;
         foreach (var section in sections)
         {
-            var group = GroupFor(groups, styles, t, section.Kind);
-            group.Entries.Add(EntryOf(styles, section));
+            if (section.Kind != groupKind)
+            {
+                groups.Add(GroupOf(styles, t, section.Kind));
+                groupKind = section.Kind;
+            }
+
+            groups[^1].Entries.Add(EntryOf(styles, section));
         }
 
         return groups;
@@ -155,19 +161,11 @@ internal static class TooltipLayouts
         }
     }
 
-    /// <summary>The group a section of <paramref name="kind"/> joins: the last one when it is of the
-    /// same kind, else a new one under the kind's heading.</summary>
-    private static TooltipGroup GroupFor(List<TooltipGroup> groups, TooltipStyles styles, Strings t, DocSectionKind kind)
+    /// <summary>A new group for the sections of <paramref name="kind"/>, under the kind's heading.</summary>
+    private static TooltipGroup GroupOf(TooltipStyles styles, Strings t, DocSectionKind kind)
     {
-        if (groups.Count > 0 && groups[^1].Kind == kind)
-        {
-            return groups[^1];
-        }
-
         var heading = HeadingRuns(styles, t, kind);
-        var group = new TooltipGroup { Kind = kind, Heading = heading, Shape = ShapeOf(kind) };
-        groups.Add(group);
-        return group;
+        return new TooltipGroup { Heading = heading, Shape = ShapeOf(kind) };
     }
 
     private static IReadOnlyList<RichTextRun>? HeadingRuns(TooltipStyles styles, Strings t, DocSectionKind kind)

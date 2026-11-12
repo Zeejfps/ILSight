@@ -282,7 +282,7 @@ public static class TypeCards
             return null;
         }
 
-        return new TypeLink(from, to, relation.Kind, relation.Label);
+        return relation.ToLink(from, to);
     }
 
     /// <summary>The types <paramref name="type"/> derives from, implements and holds in its own
@@ -310,7 +310,7 @@ public static class TypeCards
                 continue;
             }
 
-            relations.Add(new Relation(definition, BaseLinkKindOf(type, definition), null));
+            relations.Add(new Relation(definition, BaseLinkOf(type, definition)));
         }
     }
 
@@ -320,19 +320,19 @@ public static class TypeCards
     }
 
     /// <summary>An interface implemented by a class or struct, else a type derived from or extended.</summary>
-    private static TypeLinkKind BaseLinkKindOf(ITypeDefinition type, ITypeDefinition baseType)
+    private static Func<CodeReference.Entity, CodeReference.Entity, TypeLink> BaseLinkOf(ITypeDefinition type, ITypeDefinition baseType)
     {
         if (!TypeFacts.IsInterface(baseType))
         {
-            return TypeLinkKind.Inherits;
+            return static (from, to) => new TypeLink.Inherits { From = from, To = to };
         }
 
         if (TypeFacts.IsInterface(type))
         {
-            return TypeLinkKind.Inherits;
+            return static (from, to) => new TypeLink.Inherits { From = from, To = to };
         }
 
-        return TypeLinkKind.Implements;
+        return static (from, to) => new TypeLink.Implements { From = from, To = to };
     }
 
     private static void AddHeld(List<Relation> relations, ITypeDefinition type)
@@ -359,7 +359,7 @@ public static class TypeCards
     {
         if (TypeFacts.TryGetElementType(property, out var elementType))
         {
-            return HeldRelation(elementType, TypeLinkKind.HoldsMany, property.Name);
+            return HeldRelation(elementType, (from, to) => new TypeLink.HoldsMany { From = from, To = to, Property = property.Name });
         }
 
         var type = property.ReturnType;
@@ -368,10 +368,10 @@ public static class TypeCards
             type = underlying;
         }
 
-        return HeldRelation(type, TypeLinkKind.HoldsOne, property.Name);
+        return HeldRelation(type, (from, to) => new TypeLink.HoldsOne { From = from, To = to, Property = property.Name });
     }
 
-    private static Relation? HeldRelation(IType type, TypeLinkKind kind, string label)
+    private static Relation? HeldRelation(IType type, Func<CodeReference.Entity, CodeReference.Entity, TypeLink> toLink)
     {
         var definition = type.GetDefinition();
         if (definition is null)
@@ -384,7 +384,7 @@ public static class TypeCards
             return null;
         }
 
-        return new Relation(definition, kind, label);
+        return new Relation(definition, toLink);
     }
 
     /// <summary>The types of <paramref name="type"/>'s own module it is related to, either way: those it
@@ -403,7 +403,7 @@ public static class TypeCards
             .ToList();
     }
 
-    /// <summary>A type <see cref="Target"/> another is related to as <see cref="Kind"/> says, through the
-    /// property named <see cref="Label"/> when it holds it.</summary>
-    private readonly record struct Relation(ITypeDefinition Target, TypeLinkKind Kind, string? Label);
+    /// <summary>A type <see cref="Target"/> another is related to, and the link <see cref="ToLink"/> makes
+    /// between the two once both are found.</summary>
+    private readonly record struct Relation(ITypeDefinition Target, Func<CodeReference.Entity, CodeReference.Entity, TypeLink> ToLink);
 }

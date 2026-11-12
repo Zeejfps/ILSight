@@ -157,19 +157,19 @@ public static class Diagrams
     /// <summary>Whether <paramref name="link"/> leads to a type derived from or extended.</summary>
     public static bool IsBaseLink(TypeLink link)
     {
-        return link.Kind == TypeLinkKind.Inherits;
+        return link is TypeLink.Inherits;
     }
 
     /// <summary>Whether <paramref name="link"/> leads to an interface implemented.</summary>
     public static bool IsInterfaceLink(TypeLink link)
     {
-        return link.Kind == TypeLinkKind.Implements;
+        return link is TypeLink.Implements;
     }
 
     /// <summary>Whether <paramref name="link"/> leads to a type held in a property.</summary>
     public static bool IsHeldLink(TypeLink link)
     {
-        return link.Kind is TypeLinkKind.HoldsOne or TypeLinkKind.HoldsMany;
+        return link.IsHeld;
     }
 
     /// <summary>The types <paramref name="card"/> links to as <paramref name="isKind"/> picks that

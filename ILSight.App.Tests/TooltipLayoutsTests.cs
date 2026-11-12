@@ -142,12 +142,12 @@ public sealed class TooltipLayoutsTests
     [Fact]
     public void Build_SectionsOfOneKindInARow_ShareAGroupUnderTheKindsHeading()
     {
-        var sections = new[]
+        var sections = new DocSection[]
         {
-            new DocSection(DocSectionKind.Summary, null, [Paragraph("Composes a greeting.")]),
-            new DocSection(DocSectionKind.Parameter, new DocRun("greeting", DocStyle.Plain), [Paragraph("What to say.")]),
-            new DocSection(DocSectionKind.Parameter, new DocRun("name", DocStyle.Plain), [Paragraph("Who to.")]),
-            new DocSection(DocSectionKind.Exception, new DocRun("ArgumentException", DocStyle.Plain), [Paragraph("When empty.")]),
+            new DocSection.Summary { Blocks = [Paragraph("Composes a greeting.")] },
+            new DocSection.Parameter { Name = new DocRun("greeting", DocStyle.Plain), Blocks = [Paragraph("What to say.")] },
+            new DocSection.Parameter { Name = new DocRun("name", DocStyle.Plain), Blocks = [Paragraph("Who to.")] },
+            new DocSection.Exception { Name = new DocRun("ArgumentException", DocStyle.Plain), Blocks = [Paragraph("When empty.")] },
         };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Compose(), null, sections));
@@ -170,7 +170,7 @@ public sealed class TooltipLayoutsTests
             new DocListItem([], [new DocRun("Then this.", DocStyle.Plain)]),
         };
         var list = new DocBlock.List(DocListKind.Number, null, items);
-        var summary = new DocSection(DocSectionKind.Summary, null, [list]);
+        var summary = new DocSection.Summary { Blocks = [list] };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Plain("Steps"), null, summary));
 
@@ -187,7 +187,7 @@ public sealed class TooltipLayoutsTests
         var header = new DocListItem([new DocRun("Value", DocStyle.Plain)], [new DocRun("Meaning", DocStyle.Plain)]);
         var item = new DocListItem([new DocRun("0", DocStyle.Plain)], [new DocRun("None.", DocStyle.Plain)]);
         var table = new DocBlock.List(DocListKind.Table, header, [item]);
-        var remarks = new DocSection(DocSectionKind.Remarks, null, [table, new DocBlock.Code("var x = 0;")]);
+        var remarks = new DocSection.Remarks { Blocks = [table, new DocBlock.Code("var x = 0;")] };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Plain("Flags"), null, remarks));
 
