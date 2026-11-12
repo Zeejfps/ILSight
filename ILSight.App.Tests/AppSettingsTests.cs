@@ -39,7 +39,9 @@ public sealed class AppSettingsTests : IDisposable
         settings.AssemblyLists = [new AssemblyListRecord("Work", [FakePath("a.dll"), FakePath("b.dll")]), new AssemblyListRecord("Play", [FakePath("c.dll")])];
         settings.ActiveAssemblyList = "Play";
         settings.Language = DecompilationLanguage.IL;
-        settings.Decompiler = DecompilerToggles.SetToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp7_3 }, DecompilerToggles.FindToggle("AlwaysUseBraces")!, false);
+        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
+        Assert.NotNull(braces);
+        settings.Decompiler = DecompilerToggles.SetToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp7_3 }, braces, false);
         settings.FoldedOptionGroups = ["Other"];
 
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
@@ -74,13 +76,16 @@ public sealed class AppSettingsTests : IDisposable
         var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(Written("""{ "Decompiler": { "Toggles": { "NoSuchToggle": true, "AlwaysUseBraces": false } } }""")));
 
         Assert.Equal(["Decompiler"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
-        Assert.Equal(DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggles.FindToggle("AlwaysUseBraces")!, false), loaded.Decompiler);
+        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
+        Assert.NotNull(braces);
+        Assert.Equal(DecompilerToggles.SetToggle(DecompilerOptions.Default, braces, false), loaded.Decompiler);
     }
 
     [Fact]
     public void A_decompiler_toggle_saved_at_its_default_loads_as_not_set()
     {
-        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces")!;
+        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
+        Assert.NotNull(braces);
         var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(Written($$"""{ "Decompiler": { "Toggles": { "AlwaysUseBraces": {{(braces.DefaultValue ? "true" : "false")}} } } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
@@ -96,7 +101,8 @@ public sealed class AppSettingsTests : IDisposable
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
 
         var loaded = AppRoot.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
-        var config = loaded.Window!.Value.ApplyTo(new StartupConfig { WindowWidth = 1400, WindowHeight = 900, WindowTitle = "ILSight" });
+        var window = Assert.NotNull(loaded.Window);
+        var config = window.ApplyTo(new StartupConfig { WindowWidth = 1400, WindowHeight = 900, WindowTitle = "ILSight" });
 
         Assert.Equal(new WindowBounds(-1200, 80, 1600, 1000, true), loaded.Window);
         Assert.Equal((-1200, 80, 1600, 1000, true), (config.WindowX, config.WindowY, config.WindowWidth, config.WindowHeight, config.StartMaximized));
@@ -178,8 +184,12 @@ public sealed class AppSettingsTests : IDisposable
               "Analyzed": [ { "Kind": "Definition", "FilePath": "{{AInJson}}", "Token": 33554434 } ] }
             """))).Settings;
 
-        Assert.Empty(loaded.AssemblyLists[0].Analyzed!);
-        var analyzed = Assert.Single(loaded.AssemblyLists[1].Analyzed!);
+        var workAnalyzed = loaded.AssemblyLists[0].Analyzed;
+        Assert.NotNull(workAnalyzed);
+        Assert.Empty(workAnalyzed);
+        var playAnalyzed = loaded.AssemblyLists[1].Analyzed;
+        Assert.NotNull(playAnalyzed);
+        var analyzed = Assert.Single(playAnalyzed);
         Assert.Equal(new CodeAnchor(CodeAnchorKind.Definition, PathOf(A), 33554434), analyzed);
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));
         Assert.False(JsonDocument.Parse(File.ReadAllText(SettingsFile)).RootElement.TryGetProperty("Analyzed", out _));
@@ -313,7 +323,8 @@ public sealed class AppSettingsTests : IDisposable
         Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         var list = Assert.Single(loaded.AssemblyLists);
         Assert.Equal("Work", list.Name);
-        Assert.Equal("document-2", Assert.Single(list.Documents!.Tabs).Panel);
+        Assert.NotNull(list.Documents);
+        Assert.Equal("document-2", Assert.Single(list.Documents.Tabs).Panel);
     }
 
     [Fact]
@@ -338,7 +349,8 @@ public sealed class AppSettingsTests : IDisposable
         var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(Written(json)));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        Assert.Equal(fontSize, loaded.Display!.FontSize?.Points);
+        Assert.NotNull(loaded.Display);
+        Assert.Equal(fontSize, loaded.Display.FontSize?.Points);
         Assert.Equal(uiScale, loaded.Display.UiScale);
     }
 
@@ -352,7 +364,8 @@ public sealed class AppSettingsTests : IDisposable
             """)));
 
         Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
-        var documents = Assert.Single(loaded.AssemblyLists).Documents!;
+        var documents = Assert.Single(loaded.AssemblyLists).Documents;
+        Assert.NotNull(documents);
         Assert.Single(documents.Tabs);
         Assert.Null(documents.Layout);
     }
@@ -367,10 +380,13 @@ public sealed class AppSettingsTests : IDisposable
             """)));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        var filter = Assert.Single(loaded.FlagsFilters!).Value;
-        Assert.Equal(["Layout"], filter.Groups!.Keys);
-        var view = Assert.Single(loaded.Bookmarks).ViewState!;
-        Assert.Equal([new BookmarkFoldingRange(1, 2)], view.ExpandedFoldings!);
+        Assert.NotNull(loaded.FlagsFilters);
+        var filter = Assert.Single(loaded.FlagsFilters).Value;
+        Assert.NotNull(filter.Groups);
+        Assert.Equal(["Layout"], filter.Groups.Keys);
+        var view = Assert.Single(loaded.Bookmarks).ViewState;
+        Assert.NotNull(view);
+        Assert.Equal([new BookmarkFoldingRange(1, 2)], view.ExpandedFoldings);
         Assert.Null(view.SelectedTreeNodePath);
     }
 
@@ -392,8 +408,10 @@ public sealed class AppSettingsTests : IDisposable
         Assert.IsType<SettingsProblem.None>(problem);
         var list = Assert.Single(loaded.AssemblyLists);
         Assert.Equal([A], list.Assemblies.Select(static p => p.Text));
-        Assert.Empty(list.Analyzed!);
-        var diagram = Assert.IsType<DiagramDocumentRecord>(Assert.Single(list.Documents!.Tabs));
+        Assert.NotNull(list.Analyzed);
+        Assert.Empty(list.Analyzed);
+        Assert.NotNull(list.Documents);
+        var diagram = Assert.IsType<DiagramDocumentRecord>(Assert.Single(list.Documents.Tabs));
         Assert.Empty(diagram.Types);
         var bookmark = Assert.Single(loaded.Bookmarks);
         Assert.Equal(("", "a.dll", ""), (bookmark.Name, bookmark.ModuleName, bookmark.MemberName));
@@ -464,7 +482,8 @@ public sealed class AppSettingsTests : IDisposable
         var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { "NextId": 7 } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        AssertEmptyGroup(loaded.Layout!.Root);
+        Assert.NotNull(loaded.Layout);
+        AssertEmptyGroup(loaded.Layout.Root);
         Assert.Empty(loaded.Layout.Windows);
         Assert.Equal(7, loaded.Layout.NextId);
     }
@@ -475,7 +494,8 @@ public sealed class AppSettingsTests : IDisposable
         var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        AssertEmptyGroup(loaded.Layout!.Root);
+        Assert.NotNull(loaded.Layout);
+        AssertEmptyGroup(loaded.Layout.Root);
         Assert.Empty(loaded.Layout.Windows);
         Assert.Equal(1, loaded.Layout.NextId);
     }
@@ -486,7 +506,8 @@ public sealed class AppSettingsTests : IDisposable
         var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { "Windows": [ { "Id": 4, "X": 10, "Width": 300 } ] } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        var window = Assert.Single(loaded.Layout!.Windows);
+        Assert.NotNull(loaded.Layout);
+        var window = Assert.Single(loaded.Layout.Windows);
         Assert.Equal((4, 10f, 300f), (window.Id, window.X, window.Width));
         AssertEmptyGroup(window.Root);
     }
@@ -500,7 +521,7 @@ public sealed class AppSettingsTests : IDisposable
             """)));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
+        var split = Assert.IsType<DockSplit>(loaded.Layout?.Root);
         AssertEmptyGroup(split.First);
         Assert.Equal(["search"], Assert.IsType<DockGroup>(split.Second).Panels);
         Assert.Equal(0.25f, split.Ratio);
@@ -515,7 +536,7 @@ public sealed class AppSettingsTests : IDisposable
             """)));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
+        var split = Assert.IsType<DockSplit>(loaded.Layout?.Root);
         Assert.Equal(["search"], Assert.IsType<DockGroup>(split.First).Panels);
         AssertEmptyGroup(split.Second);
     }
@@ -526,7 +547,7 @@ public sealed class AppSettingsTests : IDisposable
         var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { "Root": { "kind": "split", "Id": 1 } } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
+        var split = Assert.IsType<DockSplit>(loaded.Layout?.Root);
         AssertEmptyGroup(split.First);
         AssertEmptyGroup(split.Second);
     }
@@ -541,7 +562,7 @@ public sealed class AppSettingsTests : IDisposable
             """)));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        var split = Assert.IsType<DockSplit>(loaded.Layout!.Root);
+        var split = Assert.IsType<DockSplit>(loaded.Layout?.Root);
         Assert.Equal(0.5f, split.Ratio);
         Assert.Equal(Direction.Vertical, split.Direction);
     }
@@ -552,7 +573,7 @@ public sealed class AppSettingsTests : IDisposable
         var (loaded, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(Written("""{ "Layout": { "Root": { "kind": "group", "Id": 3, "Active": "search" } } }""")));
 
         Assert.IsType<SettingsProblem.None>(problem);
-        var group = Assert.IsType<DockGroup>(loaded.Layout!.Root);
+        var group = Assert.IsType<DockGroup>(loaded.Layout?.Root);
         Assert.Empty(group.Panels);
         Assert.Equal((3, "search"), (group.Id, group.Active));
     }
@@ -580,7 +601,9 @@ public sealed class AppSettingsTests : IDisposable
             """)));
 
         Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
-        Assert.Equal("document-2", Assert.Single(Assert.Single(loaded.AssemblyLists).Documents!.Tabs).Panel);
+        var documents = Assert.Single(loaded.AssemblyLists).Documents;
+        Assert.NotNull(documents);
+        Assert.Equal("document-2", Assert.Single(documents.Tabs).Panel);
     }
 
     private static void AssertEmptyGroup(DockNode node)

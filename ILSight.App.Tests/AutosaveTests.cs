@@ -176,7 +176,8 @@ public sealed class AutosaveTests : IDisposable
         next.Settle();
         next.Pump();
 
-        var saved = _temp.Settings().AssemblyLists.Single().Analyzed!;
+        var saved = _temp.Settings().AssemblyLists.Single().Analyzed;
+        Assert.NotNull(saved);
         Assert.Equal(2, saved.Count);
     }
 
@@ -185,7 +186,9 @@ public sealed class AutosaveTests : IDisposable
     {
         var d = AppStateDriver.Opened(_temp.Settings());
         d.Show(d.Fixture("Outline"));
-        var document = d.AppState.Tabs.Active!.Document;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var document = tab.Document;
         var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
 
@@ -196,7 +199,9 @@ public sealed class AutosaveTests : IDisposable
         d.Pump();
 
         Assert.Equal(0, savedWhileFinding);
-        Assert.Single(_temp.Settings().AssemblyLists.Single().Analyzed!);
+        var saved = _temp.Settings().AssemblyLists.Single().Analyzed;
+        Assert.NotNull(saved);
+        Assert.Single(saved);
     }
 
     [Fact]
@@ -207,7 +212,8 @@ public sealed class AutosaveTests : IDisposable
         first.Pump();
         var settings = _temp.Settings();
         var list = settings.AssemblyLists.Single();
-        var anchor = list.Analyzed!.Single();
+        Assert.NotNull(list.Analyzed);
+        var anchor = list.Analyzed.Single();
         settings.AssemblyLists[0] = list with { Analyzed = [anchor with { Token = anchor.Token + 0xFFFF }] };
         TempSettings.Save(settings);
 

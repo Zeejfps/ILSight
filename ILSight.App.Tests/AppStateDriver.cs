@@ -181,7 +181,7 @@ internal sealed class AppStateDriver
         Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, FixturePath, ct));
         RunUntil(() => AppState.Tabs.Active?.Node?.Icon == NodeIcon.Assembly);
         Settle();
-        return Assert.IsType<LoadedModule>(AppState.Tabs.Active!.Node!.Assembly);
+        return Assert.IsType<LoadedModule>(AppState.Tabs.Active?.Node?.Assembly);
     }
 
     /// <summary>The listed node at the labels under the fixture assembly's root.</summary>

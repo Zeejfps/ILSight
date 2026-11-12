@@ -47,7 +47,8 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var elsewhere = new AssemblyList().Open(AppStateDriver.FixturePath).Root.Child(AppStateDriver.FixturesNamespace, "Outline");
-        var symbol = Core.Analysis.Analyzers.Of(elsewhere)!;
+        var symbol = Core.Analysis.Analyzers.Of(elsewhere);
+        Assert.NotNull(symbol);
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol).Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
 
         Commands.StartAnalysis(d.AppState, StartRun(kind));
@@ -105,7 +106,7 @@ public sealed class AnalyzerTests
         d.Settle();
         AnalyzerPanelView.Analyze(app.Ui.Analyzer, app.AppState, caller.Symbol);
 
-        Assert.StartsWith("Third()", d.AppState.Tabs.Active!.Node!.Text);
+        Assert.StartsWith("Third()", d.AppState.Tabs.Active?.Node?.Text);
         Assert.Equal(2, analyzer.Roots.Count);
         Assert.Same(analyzer.Roots[1], app.Ui.Analyzer.View.Selected);
     }
@@ -167,7 +168,9 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Outline"));
-        var document = d.AppState.Tabs.Active!.Document;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var document = tab.Document;
         var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
         d.TakeViewCommands();
@@ -183,7 +186,9 @@ public sealed class AnalyzerTests
     private static CodeReference.Entity ReferenceTo(AppStateDriver d, string type, string text, int offset = 0)
     {
         d.Show(d.Fixture(type));
-        var document = d.AppState.Tabs.Active!.Document;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var document = tab.Document;
         var (line, column) = document.GetPosition(text);
         return Assert.IsType<CodeReference.Entity>(document.SpanAt(line, column + offset).Reference);
     }
@@ -245,7 +250,8 @@ public sealed class AnalyzerTests
 
         Assert.Equal(2, analyzer.Roots.Count);
         Assert.Same(analyzer.Found()[0], first);
-        Assert.Equal([new ViewCommand.ShowAnalysis(first!)], d.TakeViewCommands());
+        Assert.NotNull(first);
+        Assert.Equal([new ViewCommand.ShowAnalysis(first)], d.TakeViewCommands());
     }
 
     [Fact]
@@ -318,7 +324,8 @@ public sealed class AnalyzerTests
 
     private static AnalyzerKindNode NewKind(AppStateDriver d)
     {
-        var symbol = Core.Analysis.Analyzers.Of(First(d))!;
+        var symbol = Core.Analysis.Analyzers.Of(First(d));
+        Assert.NotNull(symbol);
         return new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol)[0] };
     }
 
@@ -334,7 +341,8 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var running = RunningKind(d);
-        var work = running.Work!;
+        var work = running.Work;
+        Assert.NotNull(work);
         var symbol = new AnalyzerSymbolNode { Symbol = running.Subject, Children = [running] };
 
         CancelNode(symbol);
@@ -347,7 +355,9 @@ public sealed class AnalyzerTests
     public void Cancelling_a_symbol_whose_children_were_never_listed_leaves_them_unlisted()
     {
         var d = AppStateDriver.Opened();
-        var symbol = new AnalyzerSymbolNode { Symbol = Core.Analysis.Analyzers.Of(First(d))! };
+        var analyzed = Core.Analysis.Analyzers.Of(First(d));
+        Assert.NotNull(analyzed);
+        var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 
         CancelNode(symbol);
 
@@ -361,8 +371,10 @@ public sealed class AnalyzerTests
         var kind = RunningKind(d);
         var nested = RunningKind(d);
         kind.Found.Add(new AnalyzerSymbolNode { Symbol = kind.Subject, Children = [nested] });
-        var work = kind.Work!;
-        var nestedWork = nested.Work!;
+        var work = kind.Work;
+        Assert.NotNull(work);
+        var nestedWork = nested.Work;
+        Assert.NotNull(nestedWork);
 
         CancelNode(kind);
 
@@ -436,7 +448,9 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var rows = NewRows();
-        var symbol = new AnalyzerSymbolNode { Symbol = Core.Analysis.Analyzers.Of(First(d))! };
+        var analyzed = Core.Analysis.Analyzers.Of(First(d));
+        Assert.NotNull(analyzed);
+        var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 
         Assert.True(rows.HasChildren(symbol));
         Assert.NotEmpty(ListChildren(rows, symbol));

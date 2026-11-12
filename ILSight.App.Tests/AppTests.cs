@@ -63,7 +63,8 @@ public sealed class AppTests
         app.Settle();
 
         var tab = Assert.Single(app.AppState.Tabs.Open);
-        Assert.Equal("Greeter", tab.Node!.Text);
+        Assert.NotNull(tab.Node);
+        Assert.Equal("Greeter", tab.Node.Text);
         Assert.True(app.Ui.Tree.View.IsExpanded(tab.Node));
     }
 
@@ -72,8 +73,10 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened();
         app.Run(2);
-        var shown = app.AppState.Tabs.Active!;
-        var label = Trees.GetLabel(app.Ui.Tree, shown.Node!);
+        var shown = app.AppState.Tabs.Active;
+        Assert.NotNull(shown);
+        Assert.NotNull(shown.Node);
+        var label = Trees.GetLabel(app.Ui.Tree, shown.Node);
         var tab = app.Frames.TextRects()
             .Where(t => t.Text == label)
             .Select(t => t.Rect)
@@ -88,7 +91,7 @@ public sealed class AppTests
 
         var shownPanel = DocumentPanels.GetPanel(app.Ui.Documents, shown);
         Assert.Same(layout.GroupOf(DockPanels.Assemblies), layout.GroupOf(shownPanel));
-        Assert.Equal(shownPanel, layout.GroupOf(shownPanel)!.Active);
+        Assert.Equal(shownPanel, layout.GroupOf(shownPanel)?.Active);
         Assert.IsType<DockGroup>(layout.Root);
         Assert.Same(shown, app.AppState.Tabs.Active);
     }
@@ -148,7 +151,7 @@ public sealed class AppTests
         app.Run(2);
 
         Assert.True(app.Ui.ErrorDialog.IsOpen);
-        Assert.Equal("Cannot save broken.dll", app.Ui.ErrorDialog.SelectedError!.Words().Title);
+        Assert.Equal("Cannot save broken.dll", app.Ui.ErrorDialog.SelectedError?.Words().Title);
 
         app.Frames.ClickOn(Selector.WithText("Copy"));
         Assert.Equal(app.AppState.Errors.Entries[1].Words().FullText, app.Frames.Clipboard.Text);
@@ -195,7 +198,7 @@ public sealed class AppTests
         app.Run(2);
 
         Assert.True(app.Ui.ErrorDialog.IsOpen);
-        Assert.Equal("Cannot save second.dll", app.Ui.ErrorDialog.SelectedError!.Words().Title);
+        Assert.Equal("Cannot save second.dll", app.Ui.ErrorDialog.SelectedError?.Words().Title);
     }
 
     [Fact]
@@ -208,7 +211,7 @@ public sealed class AppTests
         app.Settle();
 
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Language);
-        Assert.Equal(DecompilationLanguage.IL, app.AppState.Tabs.Active!.Language);
+        Assert.Equal(DecompilationLanguage.IL, app.AppState.Tabs.Active?.Language);
     }
 
     [Fact]
@@ -221,10 +224,12 @@ public sealed class AppTests
         app.Settle(1);
 
         Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Language);
-        Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Tabs.Active!.Language);
+        Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Tabs.Active?.Language);
         Assert.True(app.Frames.Drew("IL with C#"));
         Assert.True(app.Frames.Drew("C# 14.0 / VS 2026"));
-        Assert.Contains(app.AppState.Tabs.Active!.Document.Lines, l => l.Text.TrimStart().StartsWith("// return ", StringComparison.Ordinal));
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        Assert.Contains(tab.Document.Lines, l => l.Text.TrimStart().StartsWith("// return ", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -238,7 +243,7 @@ public sealed class AppTests
         app.Settle(1);
 
         Assert.Equal(CSharpVersion.CSharp5, app.AppState.DecompilerOptions.LanguageVersion);
-        Assert.Equal(CSharpVersion.CSharp5, app.AppState.Tabs.Active!.Options.LanguageVersion);
+        Assert.Equal(CSharpVersion.CSharp5, app.AppState.Tabs.Active?.Options.LanguageVersion);
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == "C# 5.0 / VS 2012");
 
         app.Frames.ClickOn(Selector.WithText("IL"));
@@ -263,7 +268,9 @@ public sealed class AppTests
         var app = AppDriver.Opened(width: 1600f);
         app.Show(app.Fixture("Greeter"), 1);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp1));
-        Assert.DoesNotContain("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
+        var shown = app.AppState.Tabs.Active;
+        Assert.NotNull(shown);
+        Assert.DoesNotContain("string.Concat", Documents.GetText(shown.Document));
 
         app.Frames.ClickOn(Selector.WithText("View"));
         app.Frames.ClickOn(Selector.WithText("Panels"));
@@ -271,14 +278,20 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/StringConcat"));
         app.Settle(1);
 
-        Assert.False(DecompilerToggles.IsOn(app.AppState.DecompilerOptions, DecompilerToggles.FindToggle("StringConcat")!));
-        Assert.Contains("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
+        var stringConcat = DecompilerToggles.FindToggle("StringConcat");
+        Assert.NotNull(stringConcat);
+        Assert.False(DecompilerToggles.IsOn(app.AppState.DecompilerOptions, stringConcat));
+        var ticked = app.AppState.Tabs.Active;
+        Assert.NotNull(ticked);
+        Assert.Contains("string.Concat", Documents.GetText(ticked.Document));
 
         app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/reset"));
         app.Settle(1);
 
         Assert.Equal(DecompilerOptions.Default, app.AppState.DecompilerOptions);
-        Assert.DoesNotContain("string.Concat", Documents.GetText(app.AppState.Tabs.Active!.Document));
+        var reset = app.AppState.Tabs.Active;
+        Assert.NotNull(reset);
+        Assert.DoesNotContain("string.Concat", Documents.GetText(reset.Document));
     }
 
     [Fact]
@@ -287,13 +300,17 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.AppState.Language = DecompilationLanguage.IL;
         app.Show(app.Fixture("Outline"), 1);
-        var named = Documents.GetText(app.AppState.Tabs.Active!.Document);
+        var outline = app.AppState.Tabs.Active;
+        Assert.NotNull(outline);
+        var named = Documents.GetText(outline.Document);
 
         SetDecompilerToggle(app.AppState, DecompilerToggle.UseDebugSymbols, false);
         app.Settle(1);
 
         Assert.Contains("int32 total", named);
-        Assert.DoesNotContain("int32 total", Documents.GetText(app.AppState.Tabs.Active!.Document));
+        var disassembled = app.AppState.Tabs.Active;
+        Assert.NotNull(disassembled);
+        Assert.DoesNotContain("int32 total", Documents.GetText(disassembled.Document));
     }
 
     [Fact]
@@ -397,7 +414,7 @@ public sealed class AppTests
         app.Frames.Key(KeyboardKey.Enter).Frame();
         app.Settle();
 
-        Assert.Same(app.Ui.Search.Rows[1].Node, app.AppState.Tabs.Active!.Node);
+        Assert.Same(app.Ui.Search.Rows[1].Node, app.AppState.Tabs.Active?.Node);
     }
 
     [Fact]
@@ -430,7 +447,9 @@ public sealed class AppTests
         var app = Searching("Greet", moreRowsThan: 2);
         var search = app.Ui.Search;
         Searches.Select(search, search.Rows[search.Rows.Count - 1]);
-        var selected = search.SelectedRow!.Node;
+        var selectedRow = search.SelectedRow;
+        Assert.NotNull(selectedRow);
+        var selected = selectedRow.Node;
         var names = search.Rows.Select(r => r.Text).ToList();
         Assert.Equal(SearchSort.Relevance, search.Sorting.Asked.Sort);
         Assert.Equal(search.Rows.Select(r => r.Fitness).OrderDescending(), search.Rows.Select(r => r.Fitness));
@@ -438,20 +457,20 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
         Assert.Equal(names.Order(StringComparer.OrdinalIgnoreCase), search.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.SelectedRow!.Node);
+        Assert.Same(selected, search.SelectedRow?.Node);
         Assert.True(app.Frames.Drew(Text(Icons.SortAscending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
         Assert.Equal(names.OrderDescending(StringComparer.OrdinalIgnoreCase), search.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.SelectedRow!.Node);
+        Assert.Same(selected, search.SelectedRow?.Node);
         Assert.True(app.Frames.Drew(Text(Icons.SortDescending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
         Assert.Equal(SearchSort.Relevance, search.Sorting.Asked.Sort);
         Assert.Equal(names, search.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.SelectedRow!.Node);
+        Assert.Same(selected, search.SelectedRow?.Node);
 
         app.Frames.ClickOn(Selector.WithText("Assembly")).Frame();
         app.RunOut();
@@ -512,8 +531,10 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened();
         app.Run(2);
-        var shown = app.AppState.Tabs.Active!;
-        var label = Trees.GetLabel(app.Ui.Tree, shown.Node!);
+        var shown = app.AppState.Tabs.Active;
+        Assert.NotNull(shown);
+        Assert.NotNull(shown.Node);
+        var label = Trees.GetLabel(app.Ui.Tree, shown.Node);
         var documentTab = app.Frames.TextRects()
             .Where(t => t.Text == label)
             .Select(t => t.Rect)
@@ -521,7 +542,7 @@ public sealed class AppTests
         var assembliesTab = app.TextRect("Assemblies");
 
         Assert.True(WasIconDrawnBefore(app, Icons.PanelAssemblies, assembliesTab));
-        Assert.True(WasIconDrawnBefore(app, NodeIcons.Glyph(NodeIcons.Of(shown.Node!.Subject), Icons), documentTab));
+        Assert.True(WasIconDrawnBefore(app, NodeIcons.Glyph(NodeIcons.Of(shown.Node.Subject), Icons), documentTab));
     }
 
     [Fact]
@@ -660,7 +681,8 @@ public sealed class AppTests
     {
         var app = ExpandedTree(until: "Hidden");
 
-        var secondary = NodeText.Secondary(app.Node())!;
+        var secondary = NodeText.Secondary(app.Node());
+        Assert.NotNull(secondary);
         Assert.True(app.TextRect(secondary).X > app.TextRect(app.AppState.Assemblies.Assemblies[0].Name).Right);
         Assert.True(app.Frames.Drew(Text(Icons.OverlayInternal)));
     }

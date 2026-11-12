@@ -37,7 +37,9 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         var app = AppDriver.Opened();
         OpenPanel(app.Ui, DockView.Bookmarks);
         app.Settle(2);
-        app.Ui.Layout.Close(DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!));
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        app.Ui.Layout.Close(DocumentPanels.GetPanel(app.Ui.Documents, tab));
         app.Settle(5);
 
         app.Frames.Canvas.Recording = false;
@@ -57,7 +59,9 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         app.Settle(2);
         app.Show(app.Fixture("Greeter"), 2);
         app.Settle(5);
-        var panel = DocumentPanels.GetPanel(app.Ui.Documents, app.AppState.Tabs.Active!);
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
         app.Ui.Omnibar.OpenMenu(panel, app.Node(AppStateDriver.FixturesNamespace), app.Fixture("Greeter"));
         app.Settle(5);
 
@@ -66,7 +70,9 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => app.Run());
 
         output.WriteLine($"crumb menu open: {allocated:N0} B/frame allocated");
-        Assert.NotEmpty(app.Ui.Omnibar.Menu!.Shown);
+        var menu = app.Ui.Omnibar.Menu;
+        Assert.NotNull(menu);
+        Assert.NotEmpty(menu.Shown);
         Assert.Equal(0, allocated);
     }
 

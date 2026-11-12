@@ -55,7 +55,9 @@ public sealed class AssemblyMenuTests
         app.PickFromTreeMenu("Greeter", "Show in .NET API reference");
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Hidden"), PointerButton.Right).Frame();
 
-        Assert.Equal([MicrosoftDocs.FindPage(greeter)!], app.Frames.OpenedUrls);
+        var page = MicrosoftDocs.FindPage(greeter);
+        Assert.NotNull(page);
+        Assert.Equal([page], app.Frames.OpenedUrls);
         Assert.EndsWith("/ilsight.app.tests.fixtures.greeter", app.Frames.OpenedUrls[0]);
         Assert.True(app.Frames.Drew("Copy full name"));
         Assert.False(app.Frames.Drew("Show in .NET API reference"));
@@ -67,7 +69,9 @@ public sealed class AssemblyMenuTests
         var app = AppDriver.Opened();
         app.Show(app.Fixture("Greeter"), 2);
         app.Settle(2);
-        var document = app.AppState.Tabs.Active!.Document;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var document = tab.Document;
         var references = document.SpansOf()
             .Select(s => s.Span.Reference)
             .OfType<CodeReference.Entity>()
