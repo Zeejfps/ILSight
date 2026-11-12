@@ -147,7 +147,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             return [];
         }
 
-        appState.SettingsSaving.Save(appState);
         switch (outcome)
         {
             case Outcome<ReopenedFile>.Ok ok:
@@ -239,9 +238,9 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
     }
 
-    /// <summary>Shows each tab's place again and what the tabs reopened from the saved documents showed, and saves
-    /// the settings, the nodes those wait for still to be found. Returns the loads it started in the tabs, the lookup of
-    /// those nodes among them.</summary>
+    /// <summary>Shows each tab's place again and what the tabs reopened from the saved documents showed, the nodes
+    /// those wait for still to be found. Returns the loads it started in the tabs, the lookup of those nodes among
+    /// them.</summary>
     private TabLoads ShowReloaded(AppState appState, ReloadedNodes reloaded, int intent, List<ReloadingTab> tabs)
     {
         appState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes(reloaded.Expanded));
@@ -252,7 +251,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
 
         var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
-        appState.SettingsSaving.Save(appState);
         return TabLoads.None.With(loads).With(reopened);
     }
 

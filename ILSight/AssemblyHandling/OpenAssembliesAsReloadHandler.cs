@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 using static ILSight.SavedDocuments;
 
@@ -22,8 +21,8 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
 
     /// <summary>Opens <paramref name="paths"/> as the reload <paramref name="ticket"/> started (in the frame it was
     /// asked in), so that another reload or clearing the list stops it, then shows what the tabs reopened from the
-    /// saved documents showed, and the settings are saved once the files are open. Returns the loads that started in
-    /// the tabs, for the edge that started this to start.</summary>
+    /// saved documents showed. Returns the loads that started in the tabs, for the edge that started this to start.
+    /// The frame edge's autosave saves what changed once the reload has ended.</summary>
     public async Task<TabLoads> HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, ReloadTicket ticket, CancellationToken ct)
     {
         var opened = await ports.OpenFilesAsync(paths, ticket.Token, ct);
@@ -38,16 +37,9 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
         }
 
         var reopened = ShowReopenedDocuments(appState.Tabs, appState.Reopened, appState.Assemblies);
-        switch (outcome)
+        if (outcome is Outcome<LoadedAssembly?>.Failed failed)
         {
-            case Outcome<LoadedAssembly?>.Ok:
-                appState.SettingsSaving.Save(appState);
-                break;
-            case Outcome<LoadedAssembly?>.Failed failed:
-                ports.ReportError(new AppProblem.OpenFailed(failed.Error));
-                break;
-            default:
-                throw new UnreachableException();
+            ports.ReportError(new AppProblem.OpenFailed(failed.Error));
         }
 
         return reopened;

@@ -262,6 +262,22 @@ public sealed class AssembliesTests
     }
 
     [Fact]
+    public async Task RefreshAssembliesAsync_Reloaded_LeavesSavingToTheAutosave()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var appState = d.AppState;
+        appState.SettingsSaving.Save(appState);
+        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = new BrowseNode?[places.Count] }) };
+
+        var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState, [], CancellationToken.None);
+
+        Assert.Empty(ListDecompiles(loads));
+        Assert.False(appState.IsReloading);
+        Assert.NotEqual(SettingsKeeping.Settings.CaptureSavedSources(appState), appState.LastSaved);
+        Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, d.Now));
+    }
+
+    [Fact]
     public async Task RefreshAssembliesAsync_ReopeningFailed_ReportsIt()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
@@ -306,6 +322,39 @@ public sealed class AssembliesTests
         Assert.Same(error, Assert.IsType<AppProblem.OpenFailed>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.IsReloading);
         Assert.Empty(ListDecompiles(loads));
+    }
+
+    [Fact]
+    public async Task HandleAsync_OpenedAsReload_LeavesSavingWhatChangedToTheAutosave()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var appState = d.AppState;
+        appState.SettingsSaving.Save(appState);
+        appState.Locale = Locale.De;
+        var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)) };
+
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState, [PathTo("Listed.dll")], appState.Reload.Start(), CancellationToken.None);
+
+        Assert.Empty(ListDecompiles(loads));
+        Assert.False(appState.IsReloading);
+        Assert.NotEqual(SettingsKeeping.Settings.CaptureSavedSources(appState), appState.LastSaved);
+        Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, d.Now));
+    }
+
+    [Fact]
+    public async Task HandleAsync_OpeningAsReloadFailed_LeavesSavingWhatChangedToTheAutosave()
+    {
+        var d = AppStateDriver.WithoutScreen();
+        var appState = d.AppState;
+        appState.SettingsSaving.Save(appState);
+        appState.Locale = Locale.De;
+        var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new IOException("unreadable")) };
+
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState, [PathTo("Listed.dll")], appState.Reload.Start(), CancellationToken.None);
+
+        Assert.Empty(ListDecompiles(loads));
+        Assert.False(appState.IsReloading);
+        Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, d.Now));
     }
 
     [Fact]
