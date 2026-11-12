@@ -4,6 +4,7 @@ using ZGF.Gui.Testing;
 using ILSight.Core;
 using ILSight.Commanding;
 using ILSight.AppSettingsFormat;
+using ILSight.AppHosting;
 
 namespace ILSight.App.Tests;
 

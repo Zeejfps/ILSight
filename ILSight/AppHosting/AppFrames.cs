@@ -10,16 +10,16 @@ using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.CodeDisplay;
 using static ILSight.Decompilation;
 using static ILSight.Settings;
-using static ILSight.Appearance;
+using static ILSight.AppHosting.Appearance;
 using static ILSight.DocumentPanels;
 
-using static ILSight.RunArgumentsActions;
+using static ILSight.AppHosting.RunArgumentsActions;
 using static ILSight.IconTheming;
-using static ILSight.ScreenSettings;
+using static ILSight.AppHosting.ScreenSettings;
 using static ILSight.Theming;
 using static ILSight.Trees;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>What the app does around each frame, keeping the app state and the screen in step.</summary>
 [Edge]

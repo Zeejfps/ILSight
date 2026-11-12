@@ -8,6 +8,7 @@ using ILSight.Core.Processes;
 using ILSight.Localization;
 using ILSight.Commanding;
 using ILSight.UserState;
+using ILSight.AppHosting;
 using static ILSight.ProcessBrowsing.ProcessPicking;
 
 namespace ILSight.ProcessBrowsing;

@@ -3,7 +3,8 @@ using ILSight.Core;
 using ILSight.Commanding;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
-using static ILSight.RunArgumentsActions;
+using ILSight.AppHosting;
+using static ILSight.AppHosting.RunArgumentsActions;
 using static ILSight.Settings;
 using static ILSight.App.Tests.TestPaths;
 

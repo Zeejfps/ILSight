@@ -1,5 +1,6 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
+using ILSight.AppHosting;
 
 namespace ILSight;
 

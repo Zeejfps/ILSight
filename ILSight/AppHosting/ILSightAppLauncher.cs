@@ -4,7 +4,7 @@ using ILSight.SettingsFormat;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 [Edge]
 public static class ILSightAppLauncher

@@ -2,6 +2,7 @@ using System.IO.Pipes;
 using System.Threading.Channels;
 using ILSight.Core;
 using ILSight.Commanding;
+using ILSight.AppHosting;
 
 namespace ILSight.App.Tests;
 

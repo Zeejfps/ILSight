@@ -16,6 +16,7 @@ using ILSight.DisplayChoices;
 using ILSight.MetadataGridArea;
 using ILSight.NuGet;
 using ILSight.Searching;
+using ILSight.AppHosting;
 
 namespace ILSight;
 

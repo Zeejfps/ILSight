@@ -1,7 +1,7 @@
 using static ILSight.Assemblies;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>Doing what the arguments of a run ask: those the app starts with, and those later runs hand the
 /// window already open; and what to tell of the ones ignored, which the edge that takes them tells.</summary>

@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>Where a run's arguments go.</summary>
 public static class RunArgumentsRouting

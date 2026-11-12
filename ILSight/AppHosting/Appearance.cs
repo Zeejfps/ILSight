@@ -1,6 +1,6 @@
 using ILSight.Localization;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>The screen's colors, icons and strings.</summary>
 public static class Appearance

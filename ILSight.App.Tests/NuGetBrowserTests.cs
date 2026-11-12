@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Resources;
 using ILSight.NuGet;
+using ILSight.AppHosting;
 using static ILSight.NuGet.NuGetBrowser;
 
 namespace ILSight.App.Tests;

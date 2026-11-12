@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>The faces code is drawn with, as <see cref="MonoFonts.Code"/>: the bundled one, and each
 /// installed font chosen this session, read from its file once.</summary>

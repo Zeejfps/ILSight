@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using ILSight.Exporting;
 using ILSight.MetadataGridArea;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>What the settings keep of the screen: taking it when it changed, to be saved with the app state's settings.</summary>
 public static class ScreenSettings

@@ -6,6 +6,7 @@ using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.Commanding;
 using ILSight.UserState;
+using ILSight.AppHosting;
 
 namespace ILSight.NuGet;
 

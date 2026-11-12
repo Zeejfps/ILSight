@@ -4,15 +4,15 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.Commanding;
 using static ILSight.Analysis;
-using static ILSight.AppFrames;
-using static ILSight.Appearance;
-using static ILSight.RunArgumentsActions;
+using static ILSight.AppHosting.AppFrames;
+using static ILSight.AppHosting.Appearance;
+using static ILSight.AppHosting.RunArgumentsActions;
 using static ILSight.IconTheming;
 using static ILSight.Settings;
-using static ILSight.ScreenSettings;
+using static ILSight.AppHosting.ScreenSettings;
 using static ILSight.Theming;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>A class because ZGF's ImmediateGuiApp, its base class, calls it for each step of the app's life. The
 /// app: keeps the app state and the screen in step around each frame, through <see cref="AppFrames"/>, and
