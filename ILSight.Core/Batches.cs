@@ -17,18 +17,10 @@ internal static class Batches
         var channel = Channel.CreateUnbounded<T>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var token = stop.Token;
-        var producing = Task.Run(() =>
-        {
-            try
-            {
-                produce(item => channel.Writer.TryWrite(item), token);
-                channel.Writer.TryComplete();
-            }
-            catch (Exception e)
-            {
-                channel.Writer.TryComplete(e);
-            }
-        }, CancellationToken.None);
+        var producing = Task.Run(() => produce(item => channel.Writer.TryWrite(item), token), CancellationToken.None);
+        // The stream ends when producing does, with what it threw when it failed.
+        var ending = producing.ContinueWith(done => channel.Writer.TryComplete(done.Exception?.InnerException), CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
         try
         {
@@ -56,7 +48,7 @@ internal static class Batches
         finally
         {
             stop.Cancel();
-            await producing.ConfigureAwait(false);
+            await ending.ConfigureAwait(false);
         }
     }
 }
