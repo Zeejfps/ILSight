@@ -20,14 +20,14 @@ public sealed class AssemblyMenuTests
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/sort-list")).Frame(2);
 
-        var sorted = AssemblyListing.ListFilePaths(app.AppState.Assemblies);
+        var sorted = app.AppState.Assemblies.ListFilePaths();
         Assert.Equal([AppStateDriver.FixturePath, missing, CoreLibPath], sorted.Select(static p => p.Text));
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-failed")).Frame(2);
 
         var roots = app.Ui.Tree.Roots;
         Assert.Equal([AppStateDriver.FixturePath, CoreLibPath], roots.Select(r => r.Assembly.FilePath.Text));
-        Assert.False(AssemblyListing.AnyFailedToLoad(app.AppState.Assemblies));
+        Assert.False(app.AppState.Assemblies.HasFailedAssemblies);
     }
 
     [Fact]

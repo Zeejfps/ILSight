@@ -180,7 +180,7 @@ public sealed class RunArgumentsTests
         var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), $"--list={Other}");
 
         Assert.Equal(Other, d.AppState.Lists.Active);
-        Assert.Empty(AssemblyListing.ListFilePaths(d.AppState.Assemblies));
+        Assert.Empty(d.AppState.Assemblies.ListFilePaths());
         Assert.Equal([AppStateDriver.FixturePath], d.AppState.Lists.GetPaths(SavedAssemblyLists.DefaultName).Select(static p => p.Text));
     }
 
@@ -197,7 +197,7 @@ public sealed class RunArgumentsTests
 
         AssemblyPath[] opened = [PathOf(AppStateDriver.FixturePath), PathOf(OtherAssembly)];
         Assert.Equal(Other, d.AppState.Lists.Active);
-        Assert.Equal(opened.OrderBy(static p => p.Text), AssemblyListing.ListFilePaths(d.AppState.Assemblies).OrderBy(static p => p.Text));
+        Assert.Equal(opened.OrderBy(static p => p.Text), d.AppState.Assemblies.ListFilePaths().OrderBy(static p => p.Text));
         Assert.Equal(Other, temp.Settings().ActiveAssemblyList);
     }
 
@@ -208,7 +208,7 @@ public sealed class RunArgumentsTests
         var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), "--clear-list", OtherAssembly);
         d.AppState.SettingsSaving.Save(d.AppState);
 
-        Assert.Equal([OtherAssembly], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
+        Assert.Equal([OtherAssembly], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
         Assert.Equal([OtherAssembly], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
     }
 
@@ -233,6 +233,6 @@ public sealed class RunArgumentsTests
 
     private static bool AreListed(AppState appState, List<AssemblyPath> paths)
     {
-        return paths.All(path => AssemblyListing.IsListed(appState.Assemblies, path));
+        return paths.All(path => appState.Assemblies.IsListed(path));
     }
 }

@@ -46,7 +46,7 @@ public static class AssemblyLists
             return;
         }
 
-        lists.RememberActivePaths(AssemblyListing.ListFilePaths(session.Assemblies));
+        lists.RememberActivePaths(session.Assemblies.ListFilePaths());
         lists.RememberActivePdbs(session.Assemblies.Pdbs.All);
         lists.RememberActiveFrameworks(session.Assemblies.TargetFrameworks.All);
     }

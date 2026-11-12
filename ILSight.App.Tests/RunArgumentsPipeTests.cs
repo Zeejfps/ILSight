@@ -121,7 +121,7 @@ public sealed class RunArgumentsPipeTests
         app.Settle(1);
 
         Assert.Equal("Greet(int) : string", app.AppState.Navigation.ActiveTab?.Node?.Text);
-        Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(app.AppState.Assemblies).Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], app.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
 
     [Fact]

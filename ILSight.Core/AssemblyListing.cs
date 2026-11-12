@@ -14,52 +14,6 @@ namespace ILSight.Core;
 /// holding the list's lock, and it reads no file while holding that.</summary>
 public static class AssemblyListing
 {
-    /// <summary>Whether the list holds <paramref name="assembly"/>, or the package it was read out of.</summary>
-    public static bool IsListed(AssemblyList list, LoadedAssembly assembly)
-    {
-        return list.Now.Listed.Contains(assembly.ListedItem);
-    }
-
-    /// <summary>Whether any file on the list failed to load. It reads the snapshot's array itself, as
-    /// <see cref="AssemblyList.Listed"/> boxes it, so that asking every frame allocates nothing.</summary>
-    public static bool AnyFailedToLoad(AssemblyList list)
-    {
-        var listed = list.Now.Listed;
-        for (var i = 0; i < listed.Length; i++)
-        {
-            if (listed[i] is FailedAssembly)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// <summary>True when the assembly or package at <paramref name="filePath"/> is listed and loaded.</summary>
-    public static bool IsListed(AssemblyList list, AssemblyPath filePath)
-    {
-        var listed = list.Now.Listed;
-        for (var i = 0; i < listed.Length; i++)
-        {
-            if (listed[i] is FailedAssembly)
-            {
-                continue;
-            }
-
-            if (listed[i].FilePath.Equals(filePath))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// <summary>The open files' paths, in order, failed ones included, for persisting the list.</summary>
-    public static IReadOnlyList<AssemblyPath> ListFilePaths(AssemblyList list)
-    {
-        return list.Now.Listed.Select(a => a.FilePath).ToArray();
-    }
-
     /// <summary>Opens the assembly at <paramref name="path"/>, or returns it if already open. Its type
     /// system starts loading in the background. A file that is missing or not a .NET assembly is listed
     /// all the same, as a <see cref="FailedAssembly"/>, and the assembly takes its place

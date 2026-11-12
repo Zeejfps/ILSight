@@ -394,7 +394,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.SwitchList(Other);
         d.Settle();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(AppStateDriver.FixturePath)], ct));
-        d.RunUntil(() => AssemblyListing.ListFilePaths(d.AppState.Assemblies).Contains(PathOf(AppStateDriver.FixturePath)));
+        d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(PathOf(AppStateDriver.FixturePath)));
         d.Settle();
         d.Show(d.Fixture("Farewell"));
 

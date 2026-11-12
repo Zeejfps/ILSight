@@ -676,8 +676,8 @@ public sealed class Navigation
         return entry.Match(
             static _ => true,
             diagram => FindDiagramTab(diagram.Id) is not null || IsAnyListed(assemblies, diagram.HomeAssemblies) || IsAnyTypeListed(assemblies, diagram.Types),
-            comparison => FindComparisonTab(comparison.Id) is not null || AssemblyListing.IsListed(assemblies, comparison.LeftPath)
-                || AssemblyListing.IsListed(assemblies, comparison.RightPath),
+            comparison => FindComparisonTab(comparison.Id) is not null || assemblies.IsListed(comparison.LeftPath)
+                || assemblies.IsListed(comparison.RightPath),
             report => FindReportTab(report.Run) is not null || FindFinished(finished, report.Run) is not null);
     }
 
@@ -685,7 +685,7 @@ public sealed class Navigation
     {
         foreach (var path in paths)
         {
-            if (AssemblyListing.IsListed(assemblies, path))
+            if (assemblies.IsListed(path))
             {
                 return true;
             }
@@ -697,7 +697,7 @@ public sealed class Navigation
     {
         foreach (var type in types)
         {
-            if (AssemblyListing.IsListed(assemblies, type.AssemblyPath))
+            if (assemblies.IsListed(type.AssemblyPath))
             {
                 return true;
             }
@@ -777,7 +777,7 @@ public sealed class Navigation
             return null;
         }
 
-        if (!AssemblyListing.IsListed(assemblies, node.Root.Assembly))
+        if (!assemblies.IsListed(node.Root.Assembly))
         {
             return null;
         }

@@ -90,7 +90,7 @@ internal static class QueuedCommands
 
     private static void RevealIfListed(UiState uiState, AppState appState, BrowseNode node)
     {
-        if (!AssemblyListing.IsListed(appState.Assemblies, node.Root.Assembly))
+        if (!appState.Assemblies.IsListed(node.Root.Assembly))
         {
             return;
         }
@@ -101,7 +101,7 @@ internal static class QueuedCommands
     private static void ExpandListed(UiState uiState, AppState appState, IReadOnlyList<BrowseNode> nodes)
     {
         var listed = nodes
-            .Where(n => AssemblyListing.IsListed(appState.Assemblies, n.Root.Assembly))
+            .Where(n => appState.Assemblies.IsListed(n.Root.Assembly))
             .ToList();
         Trees.ExpandNodes(uiState.Tree, listed);
     }

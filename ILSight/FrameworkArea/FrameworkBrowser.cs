@@ -100,7 +100,7 @@ public sealed class FrameworkBrowser(FrameworkBrowser.IPorts ports)
 
         _listedVersion = assemblies.Version;
         _listed.Clear();
-        _listed.UnionWith(AssemblyListing.ListFilePaths(assemblies));
+        _listed.UnionWith(assemblies.ListFilePaths());
         _appliedFilter = null;
     }
 

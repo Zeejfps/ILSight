@@ -52,4 +52,53 @@ public sealed class AssemblyList
 
     /// <summary>Whether resolving a reference reads its assembly from a file, rather than only finding one listed.</summary>
     internal bool LoadsReferences => Now.ReadOptions.LoadsReferences;
+
+    /// <summary>Whether the list holds <paramref name="assembly"/>, or the package it was read out of.</summary>
+    public bool IsListed(LoadedAssembly assembly)
+    {
+        return Now.Listed.Contains(assembly.ListedItem);
+    }
+
+    /// <summary>Whether any file on the list failed to load. It reads the snapshot's array itself, as
+    /// <see cref="AssemblyList.Listed"/> boxes it, so that asking every frame allocates nothing.</summary>
+    public bool HasFailedAssemblies
+    {
+        get
+        {
+            var listed = Now.Listed;
+            for (var i = 0; i < listed.Length; i++)
+            {
+                if (listed[i] is FailedAssembly)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>True when the assembly or package at <paramref name="filePath"/> is listed and loaded.</summary>
+    public bool IsListed(AssemblyPath filePath)
+    {
+        var listed = Now.Listed;
+        for (var i = 0; i < listed.Length; i++)
+        {
+            if (listed[i] is FailedAssembly)
+            {
+                continue;
+            }
+
+            if (listed[i].FilePath.Equals(filePath))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>The open files' paths, in order, failed ones included, for persisting the list.</summary>
+    public IReadOnlyList<AssemblyPath> ListFilePaths()
+    {
+        return Now.Listed.Select(a => a.FilePath).ToArray();
+    }
 }

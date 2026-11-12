@@ -292,7 +292,7 @@ public sealed class BookmarkTests : IDisposable
         d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         app.Settle(4);
 
-        Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
         Assert.Equal("Outline", d.AppState.Navigation.ActiveTab?.Node?.Text);
     }
 

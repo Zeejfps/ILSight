@@ -50,7 +50,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             return [];
         }
         var assemblies = session.Assemblies;
-        if (!AssemblyListing.IsListed(assemblies, assembly))
+        if (!assemblies.IsListed(assembly))
         {
             return [];
         }
@@ -68,7 +68,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         TargetFrameworkId? framework, CancellationToken ct)
     {
         var assemblies = session.Assemblies;
-        if (!AssemblyListing.IsListed(assemblies, assembly))
+        if (!assemblies.IsListed(assembly))
         {
             return Task.FromResult<List<DecompileTicket>>([]);
         }

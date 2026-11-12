@@ -200,7 +200,7 @@ internal static class TreePaneView
 
                 return;
             case 8:
-                if (DrawTool(ui, inMenu, "close-failed", icons.AssembliesCloseFailed, t.TreeCloseFailed, AssemblyListing.AnyFailedToLoad(assemblies)))
+                if (DrawTool(ui, inMenu, "close-failed", icons.AssembliesCloseFailed, t.TreeCloseFailed, assemblies.HasFailedAssemblies))
                 {
                     Commands.Later(ui.State, static a => a.ListSession.CloseFailedAssemblies());
                 }
@@ -263,7 +263,7 @@ internal static class TreePaneView
     /// scrolls to it and focuses the tree.</summary>
     private static void SelectOpenedNode(Ui<UiState> ui, AssemblyList assemblies, BrowseNode node)
     {
-        if (!AssemblyListing.IsListed(assemblies, node.Root.Assembly))
+        if (!assemblies.IsListed(node.Root.Assembly))
         {
             return;
         }

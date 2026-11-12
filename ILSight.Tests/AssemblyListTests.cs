@@ -90,7 +90,7 @@ public sealed class AssemblyListTests
         var core = list.Open(typeof(AssemblyList).Assembly.Location);
 
         Assert.Single(snapshot);
-        Assert.Equal([Trees.TestAssemblyPath, typeof(AssemblyList).Assembly.Location], AssemblyListing.ListFilePaths(list).Select(static p => p.Text));
+        Assert.Equal([Trees.TestAssemblyPath, typeof(AssemblyList).Assembly.Location], list.ListFilePaths().Select(static p => p.Text));
         Assert.Equal(2, list.Version);
 
         AssemblyListing.CloseAssembly(list, tests);
@@ -126,7 +126,7 @@ public sealed class AssemblyListTests
         Assert.IsType<FailedAssembly>(notPe);
         Assert.IsType<FailedAssembly>(missing);
         Assert.Equal([notPe, missing], list.Listed);
-        Assert.Equal([text, text + ".missing"], AssemblyListing.ListFilePaths(list).Select(static p => p.Text));
+        Assert.Equal([text, text + ".missing"], list.ListFilePaths().Select(static p => p.Text));
         Assert.Empty(list.Assemblies);
         Assert.Same(notPe, list.Open(text));
     }

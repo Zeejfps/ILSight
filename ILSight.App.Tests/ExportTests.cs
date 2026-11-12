@@ -32,7 +32,7 @@ public sealed class ExportTests : IDisposable
     {
         var d = new AppStateDriver();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
-        d.RunUntil(() => AssemblyListing.IsListed(d.AppState.Assemblies, PathOf(SampleAppPath)));
+        d.RunUntil(() => d.AppState.Assemblies.IsListed(PathOf(SampleAppPath)));
         d.Settle();
         return d;
     }
@@ -102,7 +102,7 @@ public sealed class ExportTests : IDisposable
     {
         var app = new AppDriver();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
-        app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)), Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(PathOf(SampleAppPath)), Patience);
         app.Settle(2);
         app.Frames.FilePicker.Answer = _temp.Path;
 
