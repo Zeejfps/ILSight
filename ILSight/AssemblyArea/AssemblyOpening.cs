@@ -17,10 +17,11 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         bool IsFile(string path);
 
         /// <summary>Lists the files at <paramref name="paths"/> in the open list, in order, those that fail to load
-        /// as failed, and gives the last one listed, or null for none. Done without holding up the screen, and
+        /// as failed, and gives the root node of the last one listed, or null for none. Done without holding up the
+        /// screen, and
         /// stopped between files once <paramref name="stop"/> fires; what that threw comes back as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct);
+        Task<Outcome<BrowseNode?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct);
 
         /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found in the open list,
         /// as <see cref="OpenFilesAsync"/> lists files.</summary>
@@ -52,21 +53,21 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
 
     /// <summary>Shows the last assembly opened, unless something else was asked for meanwhile, or reports why
     /// opening failed. Returns the load it started in the tab; null when it started none.</summary>
-    private DecompileTicket? ShowOpened(AppState appState, Outcome<LoadedAssembly?> outcome, int ticket)
+    private DecompileTicket? ShowOpened(AppState appState, Outcome<BrowseNode?> outcome, int ticket)
     {
         appState.Navigation.EndOpening(ticket);
         switch (outcome)
         {
-            case Outcome<LoadedAssembly?>.Ok ok when ok.Value is not null:
+            case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
                 if (!appState.Navigation.IsStale(ticket))
                 {
-                    return appState.Navigation.ShowNode(BrowseSessions.EnsureRoot(appState.Session, ok.Value), appState.Decompiler.Setup);
+                    return appState.Navigation.ShowNode(ok.Value, appState.Decompiler.Setup);
                 }
 
                 break;
-            case Outcome<LoadedAssembly?>.Ok:
+            case Outcome<BrowseNode?>.Ok:
                 break;
-            case Outcome<LoadedAssembly?>.Failed failed:
+            case Outcome<BrowseNode?>.Failed failed:
                 ReportOpenFailure(failed.Error);
                 break;
             default:

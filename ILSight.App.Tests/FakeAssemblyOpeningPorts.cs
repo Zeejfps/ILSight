@@ -8,7 +8,7 @@ namespace ILSight.App.Tests;
 /// reported.</summary>
 internal sealed class FakeAssemblyOpeningPorts : AssemblyOpening.IPorts
 {
-    public Outcome<LoadedAssembly?> Opened { get; init; } = new Outcome<LoadedAssembly?>.Ok(null);
+    public Outcome<BrowseNode?> Opened { get; init; } = new Outcome<BrowseNode?>.Ok(null);
 
     public Outcome<List<LoadedModule>> ReferencesOpened { get; init; } = new Outcome<List<LoadedModule>>.Ok([]);
 
@@ -36,7 +36,7 @@ internal sealed class FakeAssemblyOpeningPorts : AssemblyOpening.IPorts
         return Files.Contains(path);
     }
 
-    public Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
+    public Task<Outcome<BrowseNode?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
     {
         OpenedPaths.Add(paths);
         Stops.Add(stop);

@@ -25,6 +25,24 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         return await Background.Wait(Task.Run(() => OpenFiles(paths, stop), ct));
     }
 
+    /// <summary>Opens as <see cref="OpenFilesAsync"/> does, and gives the root node of the last file listed, which
+    /// opening shows.</summary>
+    async Task<Outcome<BrowseNode?>> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
+    {
+        var opened = await OpenFilesAsync(paths, stop, ct);
+        return opened.Match<Outcome<BrowseNode?>>(ok => new Outcome<BrowseNode?>.Ok(FindRoot(ok.Value)), static failed => new Outcome<BrowseNode?>.Failed(failed.Error));
+    }
+
+    private BrowseNode? FindRoot(LoadedAssembly? item)
+    {
+        if (item is null)
+        {
+            return null;
+        }
+
+        return BrowseSessions.EnsureRoot(session, item);
+    }
+
     /// <inheritdoc cref="OpenFilesAsync"/>
     public async Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct)
     {

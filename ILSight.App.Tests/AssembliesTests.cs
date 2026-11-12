@@ -38,7 +38,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Greeter"));
         var fixtures = FixturesOf(d);
-        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(fixtures) };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(BrowseSessions.EnsureRoot(d.AppState.Session, fixtures)) };
         using var shutdown = new CancellationTokenSource();
         var path = PathTo("Opened.dll");
 
@@ -61,8 +61,8 @@ public sealed class AssembliesTests
         var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var error = new IOException("unreadable");
-        var failed = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
-        var cancelled = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new OperationCanceledException()) };
+        var failed = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Failed(error) };
+        var cancelled = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Failed(new OperationCanceledException()) };
 
         var failedLoad = await new AssemblyOpening(failed).OpenAssembliesAsync(d.AppState, [PathTo("Failing.dll")], CancellationToken.None);
         var cancelledLoad = await new AssemblyOpening(cancelled).OpenAssembliesAsync(d.AppState, [PathTo("Cancelled.dll")], CancellationToken.None);
@@ -82,7 +82,7 @@ public sealed class AssembliesTests
         var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var appState = d.AppState;
-        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)), WhileWorking = () => appState.Navigation.BeginRequest() };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(BrowseSessions.EnsureRoot(d.AppState.Session, FixturesOf(d))), WhileWorking = () => appState.Navigation.BeginRequest() };
 
         var load = await new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Opened.dll")], CancellationToken.None);
 
