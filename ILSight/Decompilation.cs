@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Bookmarking;
 
 namespace ILSight;
 

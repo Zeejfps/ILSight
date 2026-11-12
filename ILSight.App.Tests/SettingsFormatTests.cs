@@ -10,6 +10,8 @@ using ILSight.Core.Metadata;
 using ILSight.Localization;
 using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingsFormat;
+using ILSight.CodeView;
+using ILSight.Bookmarking;
 
 namespace ILSight.App.Tests;
 

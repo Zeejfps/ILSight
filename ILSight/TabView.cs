@@ -1,3 +1,5 @@
+using ILSight.CodeView;
+
 namespace ILSight;
 
 /// <summary>How one open tab is shown: the panel it is docked as, the path its omnibar shows, its code view

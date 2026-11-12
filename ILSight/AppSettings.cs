@@ -4,6 +4,7 @@ using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.Localization;
 using ILSight.SettingsFormat;
+using ILSight.Bookmarking;
 
 namespace ILSight;
 

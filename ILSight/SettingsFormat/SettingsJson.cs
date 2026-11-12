@@ -5,6 +5,8 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Metadata;
+using ILSight.CodeView;
+using ILSight.Bookmarking;
 
 namespace ILSight.SettingsFormat;
 

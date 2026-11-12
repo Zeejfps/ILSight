@@ -1,6 +1,7 @@
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.Exporting;
 using static ILSight.Analysis;
 using static ILSight.Navigation;
 using static ILSight.Settings;

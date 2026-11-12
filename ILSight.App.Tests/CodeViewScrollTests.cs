@@ -4,6 +4,7 @@ using ZGF.Gui.Immediate.Testing;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
+using ILSight.CodeView;
 
 namespace ILSight.App.Tests;
 

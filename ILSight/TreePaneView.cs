@@ -5,6 +5,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Analysis;
 using ILSight.Localization;
+using ILSight.Exporting;
 using static ILSight.Assemblies;
 using static ILSight.Diagrams;
 using static ILSight.Navigation;

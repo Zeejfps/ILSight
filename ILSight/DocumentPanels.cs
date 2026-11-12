@@ -2,6 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
+using ILSight.CodeView;
 
 namespace ILSight;
 

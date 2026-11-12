@@ -4,9 +4,10 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.Exporting;
 using static ILSight.Dialogs;
 using static ILSight.DocumentPanels;
-using static ILSight.Exports;
+using static ILSight.Exporting.Exports;
 using static ILSight.Navigation;
 using static ILSight.ScreenLayout;
 

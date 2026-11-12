@@ -1,7 +1,7 @@
 using ILSight.Core;
 using System.Text.Json;
 using static ILSight.AssemblyLists;
-using static ILSight.Bookmarks;
+using static ILSight.Bookmarking.Bookmarks;
 using ILSight.SettingsFormat;
 
 namespace ILSight.App.Tests;

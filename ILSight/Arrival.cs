@@ -1,3 +1,5 @@
+using ILSight.Bookmarking;
+
 namespace ILSight;
 
 /// <summary>Where a tab's view stands once what it shows arrives: back at <see cref="Position"/>, else on

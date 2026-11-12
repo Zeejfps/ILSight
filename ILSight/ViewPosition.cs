@@ -1,3 +1,5 @@
+using ILSight.CodeView;
+
 namespace ILSight;
 
 /// <summary>Where a tab's view stood: a code view's position or a grid's. A struct with a case for each, as

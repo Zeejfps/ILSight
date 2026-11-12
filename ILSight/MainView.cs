@@ -3,6 +3,8 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.Exporting;
+using ILSight.Bookmarking;
 using static ILSight.DocumentPanels;
 
 namespace ILSight;

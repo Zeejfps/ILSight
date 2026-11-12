@@ -1,3 +1,5 @@
+using ILSight.Bookmarking;
+
 namespace ILSight.App.Tests;
 
 /// <summary>Writes nothing, answering as the test says; keeps what it was asked to write and the problems

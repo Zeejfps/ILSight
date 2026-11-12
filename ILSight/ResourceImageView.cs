@@ -4,7 +4,8 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Resources;
 using ILSight.Localization;
-using static ILSight.Exports;
+using ILSight.Bookmarking;
+using static ILSight.Exporting.Exports;
 
 namespace ILSight;
 

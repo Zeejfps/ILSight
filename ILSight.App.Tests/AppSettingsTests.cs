@@ -7,6 +7,7 @@ using ILSight.Core;
 using static ILSight.Settings;
 using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingsFormat;
+using ILSight.Bookmarking;
 
 namespace ILSight.App.Tests;
 

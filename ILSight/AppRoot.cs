@@ -2,6 +2,7 @@ using System.Globalization;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.Bookmarking;
 
 namespace ILSight;
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Diagnostics;
 using System.Globalization;
 using ZGF.Gui.Immediate;
+using ILSight.CodeView;
 
 namespace ILSight;
 

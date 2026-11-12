@@ -1,6 +1,7 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.CodeView;
 using static ILSight.Assemblies;
 using static ILSight.Docking;
 using static ILSight.Navigation;

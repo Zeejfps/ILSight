@@ -1,3 +1,5 @@
+using ILSight.Bookmarking;
+
 namespace ILSight.App.Tests;
 
 public sealed class ExportBookmarksHandlerTests

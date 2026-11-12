@@ -1,5 +1,5 @@
 using ILSight.Core;
-using static ILSight.Bookmarks;
+using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.CodeDisplay;
 using static ILSight.Navigation;
 

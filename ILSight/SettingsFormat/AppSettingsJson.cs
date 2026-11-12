@@ -6,6 +6,7 @@ using ILSight.Core.Comparison;
 using ILSight.Core.Diagrams;
 using ILSight.Core.Metadata;
 using ILSight.Localization;
+using ILSight.Bookmarking;
 
 namespace ILSight.SettingsFormat;
 

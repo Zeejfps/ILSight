@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.Exports;
+using ILSight.Exporting;
+using static ILSight.Exporting.Exports;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
 

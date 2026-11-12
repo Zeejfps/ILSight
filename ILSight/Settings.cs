@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ZGF.Desktop;
 using ILSight.Core;
 using static ILSight.AssemblyLists;
-using static ILSight.Bookmarks;
+using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.SavedDocuments;
 using ILSight.SettingsFormat;
 

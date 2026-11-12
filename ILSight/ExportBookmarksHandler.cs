@@ -1,3 +1,5 @@
+using ILSight.Bookmarking;
+
 namespace ILSight;
 
 /// <summary>Exports the bookmarks to a file the real ILSpy reads, through <see cref="IPorts"/>, and reports a file

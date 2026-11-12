@@ -2,6 +2,9 @@ using System.Reflection;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
+using ILSight.CodeView;
+using ILSight.Exporting;
+using ILSight.Bookmarking;
 using static ILSight.Settings;
 using static ILSight.ScreenLayout;
 

@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.Exporting;
 using static ILSight.Navigation;
 using static ILSight.App.Tests.BuiltInGlyphs;
 

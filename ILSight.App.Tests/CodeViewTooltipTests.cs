@@ -1,6 +1,7 @@
 using ZGF.Gui.Immediate;
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
+using ILSight.CodeView;
 
 namespace ILSight.App.Tests;
 
