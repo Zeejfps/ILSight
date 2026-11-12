@@ -40,10 +40,69 @@ public static class BrowseNodes
         };
     }
 
-    /// <summary>The bytes of the resource the node stands for; null for a node of anything else.</summary>
-    internal static ResourceData? FindResourceData(BrowseNode node)
+    /// <summary>The name of what a node of <paramref name="subject"/>, read from <paramref name="assembly"/> and
+    /// labelled <paramref name="text"/>, stands for: a module's assembly's, a type's or member's own, else the
+    /// label.</summary>
+    private static string GetName(NodeSubject subject, LoadedAssembly assembly, string text)
     {
-        return node.Subject switch
+        if (subject is NodeSubject.Module)
+        {
+            return assembly.Name;
+        }
+
+        if (subject is NodeSubject.TypeDefinition type)
+        {
+            return type.Definition.Symbol.Name;
+        }
+
+        if (subject is NodeSubject.MemberDefinition member)
+        {
+            return member.Definition.Symbol.Name;
+        }
+
+        return text;
+    }
+
+    /// <summary>Whether a node of <paramref name="subject"/> shows decompiled code (<see cref="NodeContentLoader.GetContentAsync"/>),
+    /// which changes with the language and options, rather than a grid, a picture or why the file failed to load,
+    /// which do not. Told by what the subject is, reading nothing.</summary>
+    private static bool IsCode(NodeSubject subject)
+    {
+        return !HasGrid(subject) && subject is not NodeSubject.FailedAssembly && !IsImage(subject);
+    }
+
+    /// <summary>Whether a node of <paramref name="subject"/> shows a grid: a metadata header, directory, table or
+    /// heap's, or a <c>.resources</c> file's entries.</summary>
+    private static bool HasGrid(NodeSubject subject)
+    {
+        if (subject is NodeSubject.MetadataTable table)
+        {
+            return table.Value.Part is MetadataPart.Grid or MetadataPart.DebugDirectory;
+        }
+
+        if (subject is NodeSubject.ResourceContainer container)
+        {
+            return container.Value.Contents is ContainerContents.ResourcesFile;
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether a node of <paramref name="subject"/> stands for a picture.</summary>
+    internal static bool IsImage(NodeSubject subject)
+    {
+        return subject switch
+        {
+            NodeSubject.ResourceEntry entry => entry.Value.IsImage,
+            NodeSubject.PackageFile file => file.Value.IsImage,
+            _ => false,
+        };
+    }
+
+    /// <summary>The bytes of the resource a node of <paramref name="subject"/> stands for; null for one of anything else.</summary>
+    internal static ResourceData? FindResourceData(NodeSubject subject)
+    {
+        return subject switch
         {
             NodeSubject.ResourceContainer container => ResourceNodes.CreateData(container.Value),
             NodeSubject.ResourceEntry entry => ResourceNodes.CreateData(entry.Value),
@@ -190,6 +249,9 @@ public static class BrowseNodes
             Reference = NodeDefinitions.ReferenceOf(subject),
             Activation = NodeDefinitions.GetActivation(subject),
             CanHaveChildren = CanHaveChildren(subject),
+            Name = GetName(subject, assembly, text),
+            IsCode = IsCode(subject),
+            ResourceFileName = FindResourceData(subject)?.FileName,
         };
     }
 
@@ -200,15 +262,9 @@ public static class BrowseNodes
         return RequireResource(node).ReadData();
     }
 
-    /// <summary>The name a saved copy of the resource <paramref name="node"/> stands for is offered under.</summary>
-    public static string GetResourceFileName(BrowseNode node)
-    {
-        return RequireResource(node).FileName;
-    }
-
     private static ResourceData RequireResource(BrowseNode node)
     {
-        return FindResourceData(node) ?? throw new InvalidOperationException($"{node.Text} is no resource.");
+        return FindResourceData(node.Subject) ?? throw new InvalidOperationException($"{node.Text} is no resource.");
     }
 
     /// <summary>The node of <paramref name="type"/>, under <paramref name="parent"/>; null for a type with

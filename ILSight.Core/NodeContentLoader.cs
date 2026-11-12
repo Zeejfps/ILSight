@@ -32,18 +32,6 @@ public static class NodeContentLoader
         return NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken);
     }
 
-    /// <summary>Whether <see cref="GetContentAsync"/> gives decompiled code, which changes with the language
-    /// and options, rather than a grid, a picture or why the file failed to load, which do not.</summary>
-    public static bool DependsOnLanguage(BrowseNode node)
-    {
-        return GridOf(node) is null && !IsFailedFile(node) && !IsImage(node);
-    }
-
-    private static bool IsFailedFile(BrowseNode node)
-    {
-        return node.Subject is NodeSubject.FailedAssembly;
-    }
-
     /// <summary>The grid <paramref name="node"/> shows: a metadata header, directory, table or heap's, or a
     /// <c>.resources</c> file's entries; null for a node that shows none.</summary>
     private static MetadataGrid? GridOf(BrowseNode node)
@@ -61,20 +49,6 @@ public static class NodeContentLoader
         return null;
     }
 
-    /// <summary>The name a file of <paramref name="node"/>'s code in <paramref name="language"/> is
-    /// offered under: the node's name, made safe for a file name, with the language's extension.</summary>
-    public static string SuggestCodeFileName(BrowseNode node, DecompilationLanguage language)
-    {
-        var name = IsModule(node) ? node.Assembly.Name : BrowseNodes.FindEntity(node)?.Name ?? node.Text;
-        var extension = DecompilationLanguages.IsIL(language) ? ".il" : ".cs";
-        return WholeProjectDecompiler.CleanUpFileName(name, extension);
-    }
-
-    private static bool IsModule(BrowseNode node)
-    {
-        return node.Subject is NodeSubject.Module;
-    }
-
     private static NodeContent GetContent(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken)
     {
@@ -84,7 +58,7 @@ public static class NodeContentLoader
             return new NodeContent.Table(grid);
         }
 
-        if (!IsImage(node))
+        if (!BrowseNodes.IsImage(node.Subject))
         {
             return new NodeContent.Code(Decompile(session, node, language, options, cancellationToken));
         }
@@ -97,16 +71,6 @@ public static class NodeContentLoader
         {
             return new NodeContent.Code(NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken, e.Message));
         }
-    }
-
-    private static bool IsImage(BrowseNode node)
-    {
-        return node.Subject switch
-        {
-            NodeSubject.ResourceEntry entry => entry.Value.IsImage,
-            NodeSubject.PackageFile file => file.Value.IsImage,
-            _ => false,
-        };
     }
 
     /// <summary>The picture, with the markup it is stored as when it is drawn from shapes.</summary>
@@ -181,7 +145,7 @@ public static class NodeContentLoader
     /// <summary>A comment a resource, describing each that <paramref name="node"/> lists.</summary>
     private static SummaryInfo.Comments DescribeResources(BrowseSession session, BrowseNode node)
     {
-        return new SummaryInfo.Comments(BrowseSessions.ListChildren(session, node).Select(static c => BrowseNodes.FindResourceData(c)).OfType<ResourceData>().Select(static r => r.Description).ToList());
+        return new SummaryInfo.Comments(BrowseSessions.ListChildren(session, node).Select(static c => BrowseNodes.FindResourceData(c.Subject)).OfType<ResourceData>().Select(static r => r.Description).ToList());
     }
 
     /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists.</summary>
@@ -218,7 +182,7 @@ public static class NodeContentLoader
 
     private static string DescribePackageChild(BrowseNode child)
     {
-        var file = BrowseNodes.FindResourceData(child);
+        var file = BrowseNodes.FindResourceData(child.Subject);
         if (file is not null)
         {
             return file.Description;

@@ -1,3 +1,4 @@
+using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using System.Reflection.Metadata.Ecma335;
 using System.Diagnostics;
 using ICSharpCode.Decompiler.TypeSystem;
@@ -67,6 +68,24 @@ public sealed class BrowseNode
 
     /// <summary>Whether the node may have children, guessed when it was made without building them.</summary>
     public required bool CanHaveChildren { get; init; }
+
+    /// <summary>The name of what the node stands for: a module's assembly's, a type's or member's own (without its
+    /// signature), else the node's label.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>Whether the node's content is decompiled code, which changes with the language and options, rather
+    /// than a grid, a picture or why its file failed to load, which do not.</summary>
+    public required bool IsCode { get; init; }
+
+    /// <summary>The file name a resource the node stands for is saved under; null for a node of anything else.</summary>
+    public required string? ResourceFileName { get; init; }
+
+    /// <summary>The file name the node's code is saved under in <paramref name="language"/>.</summary>
+    public string SuggestCodeFileName(DecompilationLanguage language)
+    {
+        var extension = DecompilationLanguages.IsIL(language) ? ".il" : ".cs";
+        return WholeProjectDecompiler.CleanUpFileName(Name, extension);
+    }
 
     /// <summary>The module the node is read from; null for a node of a package's folders and files.</summary>
     internal LoadedModule? SourceModule => Assembly as LoadedModule;

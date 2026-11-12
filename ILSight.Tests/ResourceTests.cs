@@ -127,9 +127,9 @@ public sealed class ResourceTests
 
         Assert.True(resources.Child("logo.png").IsImage);
         Assert.IsType<NodeContent.Picture>(resources.Child("red.gif").Content());
-        Assert.False(NodeContentLoader.DependsOnLanguage(resources.Child("red.gif")));
+        Assert.False(resources.Child("red.gif").IsCode);
         Assert.IsType<NodeContent.Code>(resources.Child("sample.xml").Content());
-        Assert.True(NodeContentLoader.DependsOnLanguage(resources.Child("sample.xml")));
+        Assert.True(resources.Child("sample.xml").IsCode);
         Assert.IsType<NodeSubject.ResourceContainer>(resources.Child("Mixed.resources").Subject);
         Assert.All(resources.Children, c => Assert.True(c.HasResource));
 
@@ -146,7 +146,7 @@ public sealed class ResourceTests
 
         var document = Assert.IsType<NodeContent.Code>(broken.Content(DecompilationLanguage.IL)).Document;
 
-        Assert.False(NodeContentLoader.DependsOnLanguage(broken));
+        Assert.False(broken.IsCode);
         Assert.Equal("// This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.", document.Lines[0].Text);
         Assert.Equal(SpanKind.Comment, document.Lines[0].Spans[0].Kind);
         Assert.Contains("not a picture", Documents.GetText(document));
@@ -226,10 +226,10 @@ public sealed class ResourceTests
 
         Assert.True(file.HasResource);
         Assert.Equal(Fixture("Mixed.resources"), BrowseNodes.ReadResource(file));
-        Assert.Equal("Mixed.resources", BrowseNodes.GetResourceFileName(file));
+        Assert.Equal("Mixed.resources", file.ResourceFileName);
         Assert.True(file.HasChildren);
         Assert.IsType<NodeContent.Table>(file.Content(DecompilationLanguage.IL));
-        Assert.False(NodeContentLoader.DependsOnLanguage(file));
+        Assert.False(file.IsCode);
         Assert.Null(file.FolderInPackage);
     }
 
@@ -241,7 +241,7 @@ public sealed class ResourceTests
         var document = Assert.IsType<NodeContent.Code>(baml.Content(DecompilationLanguage.IL)).Document;
 
         Assert.False(baml.IsImage);
-        Assert.True(NodeContentLoader.DependsOnLanguage(baml));
+        Assert.True(baml.IsCode);
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", Documents.GetText(document));
     }
 
@@ -269,7 +269,7 @@ public sealed class ResourceTests
 
         var saved = Encoding.UTF8.GetString(BrowseNodes.ReadResource(baml));
 
-        Assert.Equal("mainwindow.xaml", BrowseNodes.GetResourceFileName(baml));
+        Assert.Equal("mainwindow.xaml", baml.ResourceFileName);
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", saved);
     }
 

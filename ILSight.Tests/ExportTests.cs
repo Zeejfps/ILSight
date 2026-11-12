@@ -102,9 +102,9 @@ public sealed class ExportTests : IDisposable
     {
         var calculator = Trees.TestAssembly.Calculator();
 
-        Assert.Equal("Calculator.cs", NodeContentLoader.SuggestCodeFileName(calculator, DecompilationLanguage.CSharp));
-        Assert.Equal("Calculator.il", NodeContentLoader.SuggestCodeFileName(calculator, DecompilationLanguage.IL));
-        Assert.Equal("ILSight.Tests.cs", NodeContentLoader.SuggestCodeFileName(Trees.TestAssembly.Root, DecompilationLanguage.CSharp));
+        Assert.Equal("Calculator.cs", calculator.SuggestCodeFileName(DecompilationLanguage.CSharp));
+        Assert.Equal("Calculator.il", calculator.SuggestCodeFileName(DecompilationLanguage.IL));
+        Assert.Equal("ILSight.Tests.cs", Trees.TestAssembly.Root.SuggestCodeFileName(DecompilationLanguage.CSharp));
         Assert.Equal("ILSight.Tests.pdb", Trees.TestAssembly.PdbFileName);
     }
 

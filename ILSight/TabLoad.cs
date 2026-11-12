@@ -263,7 +263,7 @@ public sealed class TabLoad
             return false;
         }
 
-        if (!NodeContentLoader.DependsOnLanguage(node))
+        if (!node.IsCode)
         {
             return true;
         }
@@ -294,7 +294,7 @@ public sealed class TabLoad
             return null;
         }
 
-        if (!NodeContentLoader.DependsOnLanguage(node))
+        if (!node.IsCode)
         {
             return null;
         }

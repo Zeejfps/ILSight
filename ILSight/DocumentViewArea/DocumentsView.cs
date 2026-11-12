@@ -54,7 +54,7 @@ internal static class DocumentsView
             case TabContent.Comparison comparison:
                 ComparisonView.Render(ui, navigation, assemblies, tab, comparison.Assemblies);
                 break;
-            case TabContent.Loading loading when !NodeContentLoader.DependsOnLanguage(loading.Node):
+            case TabContent.Loading loading when !loading.Node.IsCode:
                 Hint(ui, t.MetadataLoading);
                 break;
             case TabContent.Code or TabContent.Report or TabContent.Loading or TabContent.Failed or TabContent.Reloading

@@ -590,7 +590,7 @@ internal static class TreePaneView
             return false;
         }
 
-        return NodeContentLoader.DependsOnLanguage(node);
+        return node.IsCode;
     }
 
     /// <summary>What only an assembly's node offers: exporting it, its PDBs, a diagram of it, comparing it

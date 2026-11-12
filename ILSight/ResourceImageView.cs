@@ -159,7 +159,7 @@ internal static class ResourceImageView
     public static void PickExport(Ui<UiState> ui, BrowseNode node)
     {
         var t = ui.State.Strings;
-        var fileName = BrowseNodes.GetResourceFileName(node);
+        var fileName = node.ResourceFileName ?? throw new InvalidOperationException($"{node.Text} is no resource.");
         var screen = ui.State;
         ui.PickSaveFile(t.ResourceExportTitle, null, fileName, ExportFilters(t, fileName),
             path => Commands.Later(screen, (node, path), static (a, s) => SaveResource(a, s.node, s.path)));

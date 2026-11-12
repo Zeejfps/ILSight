@@ -29,7 +29,7 @@ public static class Exports
             return true;
         }
 
-        return NodeContentLoader.DependsOnLanguage(node);
+        return node.IsCode;
     }
 
     /// <summary>Queues the export <paramref name="job"/> and brings the exports panel to the front, where it waits,

@@ -34,7 +34,7 @@ internal static class SaveDialogs
     {
         var t = ui.State.Strings;
         var screen = ui.State;
-        var fileName = NodeContentLoader.SuggestCodeFileName(node, language);
+        var fileName = node.SuggestCodeFileName(language);
         ui.PickSaveFile(t.ExportSaveCodeTitle, null, fileName, CodeFilters(t, language),
             path => Commands.Later(screen, (node, path), static (a, s) => SaveCode(a, s.node, s.path)));
     }
