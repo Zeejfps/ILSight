@@ -6,6 +6,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
+using ILSight.BuiltInAssets;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;

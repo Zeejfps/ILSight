@@ -1,7 +1,7 @@
 using System.Reflection;
 using ZGF.AppUtils;
 
-namespace ILSight;
+namespace ILSight.BuiltInAssets;
 
 /// <summary>The fonts and pictures of a built-in icon theme: resources embedded in the app, named by
 /// their resource names. Each font is drawn as the family of its id.</summary>

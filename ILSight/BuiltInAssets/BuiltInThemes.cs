@@ -1,7 +1,7 @@
 using System.Reflection;
 using ZGF.AppUtils;
 
-namespace ILSight;
+namespace ILSight.BuiltInAssets;
 
 /// <summary>The themes that ship inside the app, read once from its embedded theme files: the default
 /// dark and light ones first, then the other dark ones and the other light ones, each by id.</summary>

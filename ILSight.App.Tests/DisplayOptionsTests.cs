@@ -6,6 +6,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
+using ILSight.BuiltInAssets;
 using static ILSight.CodeDisplay;
 using static ILSight.ScreenLayout;
 using static ILSight.Settings;

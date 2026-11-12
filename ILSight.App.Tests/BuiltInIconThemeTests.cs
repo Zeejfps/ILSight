@@ -1,3 +1,5 @@
+using ILSight.BuiltInAssets;
+
 namespace ILSight.App.Tests;
 
 public sealed class BuiltInIconThemeTests

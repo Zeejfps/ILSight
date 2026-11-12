@@ -4,6 +4,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Bookmarking;
 using ILSight.Exporting;
+using ILSight.BuiltInAssets;
 
 namespace ILSight;
 

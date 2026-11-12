@@ -1,5 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
+using ILSight.BuiltInAssets;
 
 namespace ILSight.CodeView;
 

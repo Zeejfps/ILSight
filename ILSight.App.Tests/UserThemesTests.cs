@@ -1,3 +1,5 @@
+using ILSight.BuiltInAssets;
+
 namespace ILSight.App.Tests;
 
 /// <summary>The user's themes over a fake port: what reading them, making their folder, writing a custom theme and

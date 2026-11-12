@@ -1,4 +1,5 @@
 using ZGF.Gui.Immediate;
+using ILSight.BuiltInAssets;
 
 namespace ILSight.App.Tests;
 

@@ -1,6 +1,7 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.BuiltInAssets;
 
 namespace ILSight.App.Tests;
 

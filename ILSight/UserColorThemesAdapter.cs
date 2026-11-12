@@ -1,3 +1,5 @@
+using ILSight.BuiltInAssets;
+
 namespace ILSight;
 
 /// <summary>The seam around the user's color themes folder, for <see cref="UserThemes{TFile, TContents, TTheme}"/>

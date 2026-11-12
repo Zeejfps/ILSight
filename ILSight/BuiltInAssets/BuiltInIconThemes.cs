@@ -1,7 +1,7 @@
 using System.Reflection;
 using ZGF.AppUtils;
 
-namespace ILSight;
+namespace ILSight.BuiltInAssets;
 
 /// <summary>The icon themes that ship inside the app, read once from its embedded icon theme files: the
 /// reference <c>lucide</c> theme first, then the others by id.</summary>

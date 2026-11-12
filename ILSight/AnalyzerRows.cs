@@ -1,6 +1,7 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Localization;
+using ILSight.BuiltInAssets;
 
 namespace ILSight;
 

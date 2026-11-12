@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using ZGF.Gui.Immediate;
+using ILSight.BuiltInAssets;
 
 namespace ILSight.App.Tests;
 

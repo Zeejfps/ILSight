@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using ZGF.Gui.Immediate;
 using ILSight.CodeView;
+using ILSight.BuiltInAssets;
 
 namespace ILSight.App.Tests;
 

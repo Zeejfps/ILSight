@@ -5,6 +5,7 @@ using ILSight.Localization;
 using ILSight.CodeView;
 using ILSight.Exporting;
 using ILSight.Bookmarking;
+using ILSight.BuiltInAssets;
 
 namespace ILSight;
 
