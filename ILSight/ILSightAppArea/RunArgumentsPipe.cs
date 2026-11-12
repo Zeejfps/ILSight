@@ -12,6 +12,7 @@ namespace ILSight.ILSightAppArea;
 /// right to come to the front, so that one window serves them all. Only the user who started the
 /// receiver can reach it.
 /// </summary>
+[Edge]
 public static class RunArgumentsPipe
 {
     private const int IntBytes = 4;
@@ -31,7 +32,9 @@ public static class RunArgumentsPipe
         {
             using var timeout = new CancellationTokenSource(HandOverTimeout);
             var token = timeout.Token;
+#pragma warning disable VSTHRD002 // The entry thread must stay its own for the window loop and has nothing to do until the arguments are handed over; the hand-over runs on the thread pool.
             return Task.Run(() => TrySendAsync(address, arguments, token)).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
         }
         catch (IOException)
         {
@@ -166,7 +169,9 @@ public static class RunArgumentsPipe
     {
         var claimed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var receiver = StartReceiver(address, r => RunArgumentsPipe.ClaimAndServe(r, claimed));
+#pragma warning disable VSTHRD002 // The entry thread must stay its own and has nothing to do until the role's thread answers; that thread sets the answer, its continuations run asynchronously.
         var isClaimed = claimed.Task.GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
         if (isClaimed)
         {
             return receiver;
@@ -222,7 +227,9 @@ public static class RunArgumentsPipe
     {
         try
         {
+#pragma warning disable VSTHRD002 // Only the thread that took the role's named Mutex may release it, and holding it is this thread's job; the serving's continuations run on the thread pool.
             ServeAsync(receiver, receiver.Stop.Token).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
         }
         finally
         {
