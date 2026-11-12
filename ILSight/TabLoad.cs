@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 
 namespace ILSight;
@@ -67,48 +66,65 @@ public sealed class TabLoad
 
     /// <summary>The node shown, or null while the load waits for its place to be found again, or the node no longer
     /// exists.</summary>
-    public BrowseNode? Node => _content switch
-    {
-        TabContent.Loading loading => loading.Node,
-        TabContent.Code code => code.Node,
-        TabContent.Table table => table.Node,
-        TabContent.Picture picture => picture.Node,
-        TabContent.Failed failed => failed.Node,
-        TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison or TabContent.Reloading
-            or TabContent.Reopening or TabContent.Gone => null,
-        _ => throw new UnreachableException(),
-    };
+    public BrowseNode? Node => _content.Match<BrowseNode?>(
+        empty: static _ => null,
+        loading: static loading => loading.Node,
+        code: static code => code.Node,
+        table: static table => table.Node,
+        picture: static picture => picture.Node,
+        report: static _ => null,
+        diagram: static _ => null,
+        comparison: static _ => null,
+        failed: static failed => failed.Node,
+        reloading: static _ => null,
+        reopening: static _ => null,
+        gone: static _ => null);
 
     /// <summary>Where the load points: the path of its node, or while the node is away the path it is found again by
     /// or no longer exists at; outlives reloads of the assembly. Null when the load is of no node.</summary>
-    public NodePath? Location => _content switch
-    {
-        TabContent.Reloading reloading => reloading.Location,
-        TabContent.Gone gone => gone.Location,
-        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node is null ? null : Node.Path,
-        TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison or TabContent.Reopening => null,
-        _ => throw new UnreachableException(),
-    };
+    public NodePath? Location => _content.Match<NodePath?>(
+        empty: static _ => null,
+        loading: static loading => loading.Node.Path,
+        code: static code => code.Node.Path,
+        table: static table => table.Node.Path,
+        picture: static picture => picture.Node.Path,
+        report: static _ => null,
+        diagram: static _ => null,
+        comparison: static _ => null,
+        failed: static failed => failed.Node.Path,
+        reloading: static reloading => reloading.Location,
+        reopening: static _ => null,
+        gone: static gone => gone.Location);
 
     /// <summary>The code, document or markup the load shows, or an empty document while it shows none.</summary>
-    public DecompiledDocument Document => _content switch
-    {
-        TabContent.Code code => code.Document,
-        TabContent.Picture picture => picture.Source ?? DecompiledDocument.Empty,
-        TabContent.Empty or TabContent.Loading or TabContent.Table or TabContent.Report or TabContent.Diagram or TabContent.Comparison
-            or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone => DecompiledDocument.Empty,
-        _ => throw new UnreachableException(),
-    };
+    public DecompiledDocument Document => _content.Match(
+        empty: static _ => DecompiledDocument.Empty,
+        loading: static _ => DecompiledDocument.Empty,
+        code: static code => code.Document,
+        table: static _ => DecompiledDocument.Empty,
+        picture: static picture => picture.Source ?? DecompiledDocument.Empty,
+        report: static _ => DecompiledDocument.Empty,
+        diagram: static _ => DecompiledDocument.Empty,
+        comparison: static _ => DecompiledDocument.Empty,
+        failed: static _ => DecompiledDocument.Empty,
+        reloading: static _ => DecompiledDocument.Empty,
+        reopening: static _ => DecompiledDocument.Empty,
+        gone: static _ => DecompiledDocument.Empty);
 
     /// <summary>The name of the node shown, kept while the node is away; null when the load is of no node.</summary>
-    public string? Title => _content switch
-    {
-        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node is null ? null : NodeText.Name(Node),
-        TabContent.Reloading reloading => reloading.Title,
-        TabContent.Gone gone => gone.Title,
-        TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison or TabContent.Reopening => null,
-        _ => throw new UnreachableException(),
-    };
+    public string? Title => _content.Match<string?>(
+        empty: static _ => null,
+        loading: static loading => NodeText.Name(loading.Node),
+        code: static code => NodeText.Name(code.Node),
+        table: static table => NodeText.Name(table.Node),
+        picture: static picture => NodeText.Name(picture.Node),
+        report: static _ => null,
+        diagram: static _ => null,
+        comparison: static _ => null,
+        failed: static failed => NodeText.Name(failed.Node),
+        reloading: static reloading => reloading.Title,
+        reopening: static _ => null,
+        gone: static gone => gone.Title);
 
     public DecompilationLanguage Language => _language;
 

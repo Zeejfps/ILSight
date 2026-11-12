@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ILSight.DiagramArea;
 
 /// <summary>What a press on a diagram landed on: nothing, in the space between the cards; a card, off its
@@ -16,5 +18,17 @@ public abstract record DiagramHit
     public sealed record Row(CardFace Face, int Index) : DiagramHit
     {
         public CardRow Value => Face.Rows[Index];
+    }
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<Nothing, TResult> nothing, Func<Card, TResult> card, Func<Row, TResult> row)
+    {
+        return this switch
+        {
+            Nothing c => nothing(c),
+            Card c => card(c),
+            Row c => row(c),
+            _ => throw new UnreachableException($"DiagramHit.Match does not handle {GetType().Name}."),
+        };
     }
 }

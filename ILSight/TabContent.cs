@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.Core.Resources;
@@ -55,4 +56,79 @@ public abstract record TabContent
     /// <summary>The reloaded assemblies hold nothing at <see cref="Location"/> any more; <see cref="Title"/>
     /// is the node's name as it was last known, if it was.</summary>
     public sealed record Gone(NodePath Location, string? Title) : TabContent;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<Empty, TResult> empty, Func<Loading, TResult> loading, Func<Code, TResult> code,
+        Func<Table, TResult> table, Func<Picture, TResult> picture, Func<Report, TResult> report,
+        Func<Diagram, TResult> diagram, Func<Comparison, TResult> comparison, Func<Failed, TResult> failed,
+        Func<Reloading, TResult> reloading, Func<Reopening, TResult> reopening, Func<Gone, TResult> gone)
+    {
+        return this switch
+        {
+            Empty c => empty(c),
+            Loading c => loading(c),
+            Code c => code(c),
+            Table c => table(c),
+            Picture c => picture(c),
+            Report c => report(c),
+            Diagram c => diagram(c),
+            Comparison c => comparison(c),
+            Failed c => failed(c),
+            Reloading c => reloading(c),
+            Reopening c => reopening(c),
+            Gone c => gone(c),
+            _ => throw new UnreachableException($"TabContent.Match does not handle {GetType().Name}."),
+        };
+    }
+
+    /// <summary>Does what the handler of whichever case this is does with it and <paramref name="state"/>, which it
+    /// is handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
+    public void Switch<TState>(TState state, Action<TState, Empty> empty, Action<TState, Loading> loading,
+        Action<TState, Code> code, Action<TState, Table> table, Action<TState, Picture> picture,
+        Action<TState, Report> report, Action<TState, Diagram> diagram, Action<TState, Comparison> comparison,
+        Action<TState, Failed> failed, Action<TState, Reloading> reloading, Action<TState, Reopening> reopening,
+        Action<TState, Gone> gone)
+    {
+        switch (this)
+        {
+            case Empty c:
+                empty(state, c);
+                return;
+            case Loading c:
+                loading(state, c);
+                return;
+            case Code c:
+                code(state, c);
+                return;
+            case Table c:
+                table(state, c);
+                return;
+            case Picture c:
+                picture(state, c);
+                return;
+            case Report c:
+                report(state, c);
+                return;
+            case Diagram c:
+                diagram(state, c);
+                return;
+            case Comparison c:
+                comparison(state, c);
+                return;
+            case Failed c:
+                failed(state, c);
+                return;
+            case Reloading c:
+                reloading(state, c);
+                return;
+            case Reopening c:
+                reopening(state, c);
+                return;
+            case Gone c:
+                gone(state, c);
+                return;
+            default:
+                throw new UnreachableException($"TabContent.Switch does not handle {GetType().Name}.");
+        }
+    }
 }

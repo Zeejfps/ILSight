@@ -84,4 +84,20 @@ public abstract record HistoryEntry
             _ => throw new UnreachableException($"HistoryEntry.Match does not handle {GetType().Name}."),
         };
     }
+
+    /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
+    /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
+    public TResult Match<TState, TResult>(TState state, Func<TState, Node, TResult> node,
+        Func<TState, Diagram, TResult> diagram, Func<TState, Comparison, TResult> comparison,
+        Func<TState, Report, TResult> report)
+    {
+        return this switch
+        {
+            Node c => node(state, c),
+            Diagram c => diagram(state, c),
+            Comparison c => comparison(state, c),
+            Report c => report(state, c),
+            _ => throw new UnreachableException($"HistoryEntry.Match does not handle {GetType().Name}."),
+        };
+    }
 }

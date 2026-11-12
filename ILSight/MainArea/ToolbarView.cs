@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
@@ -251,14 +250,11 @@ internal static class ToolbarView
 
     private static string TextOf(Strings strings, HistoryEntry entry)
     {
-        return entry switch
-        {
-            HistoryEntry.Node node => node.Place.Label,
-            HistoryEntry.Diagram diagram => diagram.Title,
-            HistoryEntry.Comparison comparison => comparison.Title,
-            HistoryEntry.Report => strings.ExportReportTitle,
-            _ => throw new UnreachableException(),
-        };
+        return entry.Match(strings,
+            static (_, node) => node.Place.Label,
+            static (_, diagram) => diagram.Title,
+            static (_, comparison) => comparison.Title,
+            static (strings, _) => strings.ExportReportTitle);
     }
 
     /// <summary><paramref name="text"/>, the label of <paramref name="entry"/>, which can't be shown, with why: what it
@@ -290,12 +286,10 @@ internal static class ToolbarView
 
     private static UiIcon IconOf(UiState screen, HistoryEntry entry)
     {
-        return entry switch
-        {
-            HistoryEntry.Node node => NodeIcons.Icon(node.Icon, node.Accessibility, screen.NodeIconPalette, screen.Icons),
-            HistoryEntry.Diagram => new UiIcon(screen.Icons.TabDiagram),
-            HistoryEntry.Comparison or HistoryEntry.Report => new UiIcon(screen.Icons.TabPage),
-            _ => throw new UnreachableException(),
-        };
+        return entry.Match(screen,
+            static (screen, node) => NodeIcons.Icon(node.Icon, node.Accessibility, screen.NodeIconPalette, screen.Icons),
+            static (screen, _) => new UiIcon(screen.Icons.TabDiagram),
+            static (screen, _) => new UiIcon(screen.Icons.TabPage),
+            static (screen, _) => new UiIcon(screen.Icons.TabPage));
     }
 }

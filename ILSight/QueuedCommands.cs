@@ -25,48 +25,20 @@ internal static class QueuedCommands
 
     private static void Run(ViewCommand command, UiState uiState, AppState appState)
     {
-        switch (command)
-        {
-            case ViewCommand.ShowTab show:
-                ShowTabIfOpen(uiState, appState, show.Tab, show.Beside);
-                break;
-            case ViewCommand.ShowReopened show:
-                ShowReopenedIfOpen(uiState, appState, show.Tabs, show.Layout);
-                break;
-            case ViewCommand.OpenPanel open:
-                OpenPanel(uiState, open.View);
-                break;
-            case ViewCommand.RevealNode reveal:
-                RevealIfListed(uiState, appState, reveal.Node);
-                break;
-            case ViewCommand.ExpandNodes expand:
-                ExpandListed(uiState, appState, expand.Nodes);
-                break;
-            case ViewCommand.ShowAnalysis show:
-                ShowAnalysis(uiState, appState, show.Root);
-                break;
-            case ViewCommand.RestoreView restore:
-                RestoreView(uiState, appState, restore.Tab, restore.Position);
-                break;
-            case ViewCommand.RevealLine reveal:
-                RevealLine(uiState, appState, reveal.Tab, reveal.Line);
-                break;
-            case ViewCommand.RevealRow reveal:
-                RevealRow(uiState, appState, reveal.Tab, reveal.Row);
-                break;
-            case ViewCommand.FocusCard focus:
-                FocusCard(uiState, appState, focus.Tab, focus.Type);
-                break;
-            case ViewCommand.OpenWebPage open:
-                uiState.WebPagesToOpen.Enqueue(open.Url);
-                break;
-            case ViewCommand.OpenFile open:
-                uiState.FilesToOpen.Enqueue(open.Path);
-                break;
-            case ViewCommand.Quit:
-                uiState.QuitAsked = true;
-                break;
-        }
+        command.Switch((uiState, appState),
+            showTab: static (s, show) => ShowTabIfOpen(s.uiState, s.appState, show.Tab, show.Beside),
+            showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState, s.appState, show.Tabs, show.Layout),
+            openPanel: static (s, open) => OpenPanel(s.uiState, open.View),
+            restoreView: static (s, restore) => RestoreView(s.uiState, s.appState, restore.Tab, restore.Position),
+            revealLine: static (s, reveal) => RevealLine(s.uiState, s.appState, reveal.Tab, reveal.Line),
+            revealRow: static (s, reveal) => RevealRow(s.uiState, s.appState, reveal.Tab, reveal.Row),
+            revealNode: static (s, reveal) => RevealIfListed(s.uiState, s.appState, reveal.Node),
+            expandNodes: static (s, expand) => ExpandListed(s.uiState, s.appState, expand.Nodes),
+            focusCard: static (s, focus) => FocusCard(s.uiState, s.appState, focus.Tab, focus.Type),
+            showAnalysis: static (s, show) => ShowAnalysis(s.uiState, s.appState, show.Root),
+            openWebPage: static (s, open) => s.uiState.WebPagesToOpen.Enqueue(open.Url),
+            quit: static (s, _) => s.uiState.QuitAsked = true,
+            openFile: static (s, open) => s.uiState.FilesToOpen.Enqueue(open.Path));
     }
 
     private static void ShowTabIfOpen(UiState uiState, AppState appState, DocumentTab tab, DocumentTab? beside)

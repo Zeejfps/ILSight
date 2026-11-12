@@ -1,6 +1,5 @@
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
-using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 using ILSight.DiagramCameraArea;
@@ -17,12 +16,9 @@ public static class Diagrams
     public static bool IsFoldOpen(DiagramViewState view, CardFold fold)
     {
         var flipped = view.FlippedFolds.Contains(fold);
-        return fold switch
-        {
-            CardFold.Own => !flipped,
-            CardFold.Inherited => flipped,
-            _ => throw new UnreachableException(),
-        };
+        return fold.Match(flipped,
+            own: static (flipped, _) => !flipped,
+            inherited: static (flipped, _) => flipped);
     }
 
     /// <summary>Opens <paramref name="fold"/> when it is folded, and folds it when it is open.</summary>

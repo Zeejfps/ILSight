@@ -688,20 +688,20 @@ public sealed class Navigation
     {
         LeaveActiveTab();
         var entry = _history.MoveToEntry(index);
-        switch (entry)
+        if (entry is null)
         {
-            case HistoryEntry.Node node:
-                return ShowEntry(node, assemblies, setup);
-            case HistoryEntry.Diagram diagram:
-                return ShowDiagramPlace(diagram);
-            case HistoryEntry.Comparison comparison:
-                return ShowComparisonPlace(comparison, assemblies);
-            case HistoryEntry.Report report:
-                ShowReportPlace(report, finished);
-                return null;
+            return null;
         }
 
-        return null;
+        return entry.Match(
+            node => ShowEntry(node, assemblies, setup),
+            diagram => ShowDiagramPlace(diagram),
+            comparison => ShowComparisonPlace(comparison, assemblies),
+            report =>
+            {
+                ShowReportPlace(report, finished);
+                return null;
+            });
     }
 
     /// <summary>The index of the entry at <paramref name="index"/>, or of the first after it on in the same direction,

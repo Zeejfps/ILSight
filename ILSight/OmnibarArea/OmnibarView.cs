@@ -106,14 +106,15 @@ internal static class OmnibarView
     /// <summary>The tools of what the tab shows that no node stands for: a diagram's or a comparison's.</summary>
     private static void ContentTools(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab)
     {
-        switch (tab.Content)
+        if (tab.Content is TabContent.Diagram)
         {
-            case TabContent.Diagram:
-                DiagramView.Tools(ui, tab);
-                break;
-            case TabContent.Comparison comparison:
-                ComparisonView.Tools(ui, assemblies, tab, comparison.Assemblies);
-                break;
+            DiagramView.Tools(ui, tab);
+            return;
+        }
+
+        if (tab.Content is TabContent.Comparison comparison)
+        {
+            ComparisonView.Tools(ui, assemblies, tab, comparison.Assemblies);
         }
     }
 

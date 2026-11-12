@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ZGF.Desktop;
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
@@ -345,13 +344,10 @@ internal static class DiagramView
 
     private static CardFace? FaceOf(DiagramHit hit)
     {
-        return hit switch
-        {
-            DiagramHit.Nothing => null,
-            DiagramHit.Card card => card.Face,
-            DiagramHit.Row row => row.Face,
-            _ => throw new UnreachableException(),
-        };
+        return hit.Match<CardFace?>(
+            static _ => null,
+            static card => card.Face,
+            static row => row.Face);
     }
 
     private static CardRow? RowOf(DiagramHit hit)
@@ -1060,25 +1056,19 @@ internal static class DiagramView
 
         var left = card.X + row.Indent * frame.Zoom;
         var underlined = isHovered && row.IsLink;
-        switch (row.Content)
-        {
-            case CardRowContent.Name name:
-                PaintIcon(p, frame, rect, left, name.Icon, name.Accessibility);
-                PaintTextAfterIcon(p, frame, rect, left, row, frame.Theme.Text, bold: true, underlined);
-                break;
-            case CardRowContent.Stereotype:
-                PaintText(p, frame, rect, left, row.Text, frame.Theme.TextMuted, family: TextFonts.Italic);
-                break;
-            case CardRowContent.Fold fold:
-                PaintFold(p, frame, rect, left, row, fold.IsOpen);
-                break;
-            case CardRowContent.Member member:
-                PaintIcon(p, frame, rect, left, member.Icon, member.Accessibility);
-                PaintTextAfterIcon(p, frame, rect, left, row, frame.Theme.Text, bold: false, underlined);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        row.Content.Switch((p, frame, rect, left, row, underlined),
+            name: static (s, name) => PaintIconRow(s.p, s.frame, s.rect, s.left, s.row, name.Icon, name.Accessibility, bold: true, s.underlined),
+            stereotype: static (s, _) => PaintText(s.p, s.frame, s.rect, s.left, s.row.Text, s.frame.Theme.TextMuted, family: TextFonts.Italic),
+            fold: static (s, fold) => PaintFold(s.p, s.frame, s.rect, s.left, s.row, fold.IsOpen),
+            member: static (s, member) => PaintIconRow(s.p, s.frame, s.rect, s.left, s.row, member.Icon, member.Accessibility, bold: false, s.underlined));
+    }
+
+    /// <summary>A row of a type's or a member's icon and its text after it, bold for a type's name.</summary>
+    private static void PaintIconRow(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, NodeIcon icon,
+        NodeAccessibility accessibility, bool bold, bool underlined)
+    {
+        PaintIcon(p, frame, rect, left, icon, accessibility);
+        PaintTextAfterIcon(p, frame, rect, left, row, frame.Theme.Text, bold, underlined);
     }
 
     private static void PaintTextAfterIcon(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, uint color, bool bold, bool underlined)

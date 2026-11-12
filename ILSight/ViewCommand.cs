@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.ILSightAppArea;
@@ -54,4 +55,59 @@ public abstract record ViewCommand
 
     /// <summary>Open the file at <see cref="Path"/> in the app the OS opens its kind of file with.</summary>
     public sealed record OpenFile(string Path) : ViewCommand;
+
+    /// <summary>Does what the handler of whichever case this is does with it and <paramref name="state"/>, which it
+    /// is handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
+    public void Switch<TState>(TState state, Action<TState, ShowTab> showTab, Action<TState, ShowReopened> showReopened,
+        Action<TState, OpenPanel> openPanel, Action<TState, RestoreView> restoreView,
+        Action<TState, RevealLine> revealLine, Action<TState, RevealRow> revealRow,
+        Action<TState, RevealNode> revealNode, Action<TState, ExpandNodes> expandNodes,
+        Action<TState, FocusCard> focusCard, Action<TState, ShowAnalysis> showAnalysis,
+        Action<TState, OpenWebPage> openWebPage, Action<TState, Quit> quit, Action<TState, OpenFile> openFile)
+    {
+        switch (this)
+        {
+            case ShowTab c:
+                showTab(state, c);
+                return;
+            case ShowReopened c:
+                showReopened(state, c);
+                return;
+            case OpenPanel c:
+                openPanel(state, c);
+                return;
+            case RestoreView c:
+                restoreView(state, c);
+                return;
+            case RevealLine c:
+                revealLine(state, c);
+                return;
+            case RevealRow c:
+                revealRow(state, c);
+                return;
+            case RevealNode c:
+                revealNode(state, c);
+                return;
+            case ExpandNodes c:
+                expandNodes(state, c);
+                return;
+            case FocusCard c:
+                focusCard(state, c);
+                return;
+            case ShowAnalysis c:
+                showAnalysis(state, c);
+                return;
+            case OpenWebPage c:
+                openWebPage(state, c);
+                return;
+            case Quit c:
+                quit(state, c);
+                return;
+            case OpenFile c:
+                openFile(state, c);
+                return;
+            default:
+                throw new UnreachableException($"ViewCommand.Switch does not handle {GetType().Name}.");
+        }
+    }
 }

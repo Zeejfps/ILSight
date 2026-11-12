@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
@@ -328,14 +327,17 @@ public static class DocumentPanels
 
     private static TabPanelView SaveView(DocumentTab tab, TabView view)
     {
-        return tab.Content switch
+        if (tab.Content is TabContent.Diagram)
         {
-            TabContent.Diagram => new TabPanelView.Diagram(Diagrams.SaveView(view.Diagram)),
-            TabContent.Comparison => new TabPanelView.Comparison(Comparisons.SaveRowsView(view.Comparison)),
-            TabContent.Empty or TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Report
-                or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone => new TabPanelView.None(),
-            _ => throw new UnreachableException(),
-        };
+            return new TabPanelView.Diagram(Diagrams.SaveView(view.Diagram));
+        }
+
+        if (tab.Content is TabContent.Comparison)
+        {
+            return new TabPanelView.Comparison(Comparisons.SaveRowsView(view.Comparison));
+        }
+
+        return new TabPanelView.None();
     }
 
     /// <summary>The view of <paramref name="grid"/>: the one kept for it, or a new one when the tab

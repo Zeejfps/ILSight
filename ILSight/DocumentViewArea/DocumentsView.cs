@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
@@ -35,35 +34,34 @@ internal static class DocumentsView
 
     private static void Content(Ui<UiState> ui, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilerSetup setup, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
-        var t = ui.State.Strings;
         DocumentPanels.RecordShown(DocumentPanels.GetView(ui.State.Documents, tab), tab);
-        switch (tab.Content)
+        tab.Content.Switch((ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
+            empty: static (s, _) => Hint(s.ui, s.ui.State.Strings.DocumentsHint),
+            loading: static (s, loading) => RenderLoading(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, loading),
+            code: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            table: static (s, table) => RenderGrid(s.ui, s.navigation, s.session, s.setup, s.tab, table.Grid),
+            picture: static (s, picture) => ResourceImageView.Render(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, picture),
+            report: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            diagram: static (s, diagram) => DiagramView.Render(s.ui, s.navigation, s.tooltips, s.tab, diagram.Types),
+            comparison: static (s, comparison) => ComparisonView.Render(s.ui, s.navigation, s.assemblies, s.tab, comparison.Assemblies),
+            failed: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            reloading: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            reopening: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            gone: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab));
+    }
+
+    /// <summary>The code view of <paramref name="tab"/>, whose node <paramref name="loading"/> is on its way, or a
+    /// hint while a node that shows a grid or a picture is.</summary>
+    private static void RenderLoading(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab,
+        TabContent.Loading loading)
+    {
+        if (!loading.Node.IsCode)
         {
-            case TabContent.Empty:
-                Hint(ui, t.DocumentsHint);
-                break;
-            case TabContent.Picture picture:
-                ResourceImageView.Render(ui, navigation, bookmarks, tooltips, tab, picture);
-                break;
-            case TabContent.Table table:
-                RenderGrid(ui, navigation, session, setup, tab, table.Grid);
-                break;
-            case TabContent.Diagram diagram:
-                DiagramView.Render(ui, navigation, tooltips, tab, diagram.Types);
-                break;
-            case TabContent.Comparison comparison:
-                ComparisonView.Render(ui, navigation, assemblies, tab, comparison.Assemblies);
-                break;
-            case TabContent.Loading loading when !loading.Node.IsCode:
-                Hint(ui, t.MetadataLoading);
-                break;
-            case TabContent.Code or TabContent.Report or TabContent.Loading or TabContent.Failed or TabContent.Reloading
-                or TabContent.Reopening or TabContent.Gone:
-                RenderCode(ui, navigation, bookmarks, tooltips, tab);
-                break;
-            default:
-                throw new UnreachableException();
+            Hint(ui, ui.State.Strings.MetadataLoading);
+            return;
         }
+
+        RenderCode(ui, navigation, bookmarks, tooltips, tab);
     }
 
     private static void RenderGrid(Ui<UiState> ui, Navigation navigation, BrowseSession session, DecompilerSetup setup,
@@ -103,33 +101,16 @@ internal static class DocumentsView
     /// <summary>Does what the user asked the code view of <paramref name="tab"/> to do.</summary>
     private static void Act(Ui<UiState> ui, Navigation navigation, DocumentTab tab, CodeViewIntent intent)
     {
-        var t = ui.State.Strings;
-        switch (intent)
-        {
-            case CodeViewIntent.Navigate navigate:
-                Commands.FollowLater(ui.State, navigate.Target, navigation.BeginResolving(navigate.InNewTab));
-                break;
-            case CodeViewIntent.ToggleBookmark toggle:
-                Commands.Later(ui.State, (screen: ui.State, tab, line: toggle.Line, t), static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t));
-                break;
-            case CodeViewIntent.Analyze analyze:
-                Commands.AnalyzeLater(ui.State, analyze.Entity);
-                break;
-            case CodeViewIntent.ShowInMetadata metadata:
-                Commands.ShowInMetadataLater(ui.State, metadata.Target, navigation.BeginResolving(inNewTab: false));
-                break;
-            case CodeViewIntent.ShowInApiReference reference:
-                Commands.Start(ui.State, nameof(ShowInApiReferenceHandler), reference.Entity, static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct));
-                break;
-            case CodeViewIntent.ShowInDiagram diagram:
-                DiagramView.ShowInDiagramLater(ui.State, diagram.Type, t.DiagramTitle(diagram.Type.Name));
-                break;
-            case CodeViewIntent.ShowInNewDiagram diagram:
-                DiagramView.ShowInNewDiagramLater(ui.State, diagram.Type, t.DiagramTitle(diagram.Type.Name));
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        intent.Switch((ui, navigation, tab),
+            navigate: static (s, navigate) => Commands.FollowLater(s.ui.State, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
+            toggleBookmark: static (s, toggle) => Commands.Later(s.ui.State, (screen: s.ui.State, s.tab, line: toggle.Line, t: s.ui.State.Strings),
+                static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t)),
+            analyze: static (s, analyze) => Commands.AnalyzeLater(s.ui.State, analyze.Entity),
+            showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.ui.State, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
+            showInApiReference: static (s, reference) => Commands.Start(s.ui.State, nameof(ShowInApiReferenceHandler), reference.Entity,
+                static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct)),
+            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.ui.State, diagram.Type, s.ui.State.Strings.DiagramTitle(diagram.Type.Name)),
+            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.ui.State, diagram.Type, s.ui.State.Strings.DiagramTitle(diagram.Type.Name)));
     }
 
     private static void Zoom(UiState uiState, CodeZoom zoom)

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
@@ -252,34 +251,26 @@ internal ref struct MetadataGridFrame
         }
 
         State.Pending = null;
-        switch (pending)
-        {
-            case PendingGridScroll.Restore restore:
-                ArriveAtRestored(body, rowHeight, restore.Position);
-                break;
-            case PendingGridScroll.Reveal reveal:
-                ArriveAtRevealed(body, rowHeight, reveal.Row);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        pending.Switch((state: State, body, rowHeight),
+            reveal: static (s, reveal) => ArriveAtRevealed(s.state, s.body, s.rowHeight, reveal.Row),
+            restore: static (s, restore) => ArriveAtRestored(s.state, s.body, s.rowHeight, restore.Position));
     }
 
-    private void ArriveAtRestored(TableBody body, float rowHeight, GridPosition restore)
+    private static void ArriveAtRestored(MetadataGridState state, TableBody body, float rowHeight, GridPosition restore)
     {
-        State.Scroll.X = restore.ScrollX;
+        state.Scroll.X = restore.ScrollX;
         body.ScrollTo(restore.TopRow * rowHeight);
         var row = restore.Row;
         if (row is not null)
         {
-            MetadataGridWidget.SelectCell(State, row.Value, restore.Column ?? MetadataGridState.None);
+            MetadataGridWidget.SelectCell(state, row.Value, restore.Column ?? MetadataGridState.None);
         }
     }
 
-    private void ArriveAtRevealed(TableBody body, float rowHeight, int row)
+    private static void ArriveAtRevealed(MetadataGridState state, TableBody body, float rowHeight, int row)
     {
-        MetadataGridWidget.SelectCell(State, row, State.CurrentColumn);
-        var index = MetadataGridWidget.GetIndexOf(State, row);
+        MetadataGridWidget.SelectCell(state, row, state.CurrentColumn);
+        var index = MetadataGridWidget.GetIndexOf(state, row);
         if (index < 0)
         {
             return;

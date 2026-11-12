@@ -21,13 +21,31 @@ public static class TabPlaceholders
     /// <summary>What the note for <paramref name="content"/> says.</summary>
     internal static string Write(Strings t, TabContent content)
     {
-        return content switch
+        if (content is TabContent.Loading)
         {
-            TabContent.Loading => t.DocumentDecompiling,
-            TabContent.Failed failed => t.DocumentDecompilationFailed(failed.Message),
-            TabContent.Reloading or TabContent.Reopening => t.DocumentReloading,
-            TabContent.Gone gone => t.DocumentGone(gone.Location.Label),
-            _ => throw new UnreachableException(),
-        };
+            return t.DocumentDecompiling;
+        }
+
+        if (content is TabContent.Failed failed)
+        {
+            return t.DocumentDecompilationFailed(failed.Message);
+        }
+
+        if (content is TabContent.Reloading)
+        {
+            return t.DocumentReloading;
+        }
+
+        if (content is TabContent.Reopening)
+        {
+            return t.DocumentReloading;
+        }
+
+        if (content is TabContent.Gone gone)
+        {
+            return t.DocumentGone(gone.Location.Label);
+        }
+
+        throw new UnreachableException($"A tab showing {content.GetType().Name} has no placeholder note.");
     }
 }

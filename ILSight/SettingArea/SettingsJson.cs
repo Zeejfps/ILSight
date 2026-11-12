@@ -652,12 +652,9 @@ internal static class SettingsJson
 
     private static CardFoldJson Write(CardFold fold)
     {
-        return fold switch
-        {
-            CardFold.Own own => new CardFoldJson(Write(own.Card), own.Section, null),
-            CardFold.Inherited inherited => new CardFoldJson(Write(inherited.Card), null, inherited.From),
-            _ => throw new UnreachableException(),
-        };
+        return fold.Match(
+            own: static own => new CardFoldJson(Write(own.Card), own.Section, null),
+            inherited: static inherited => new CardFoldJson(Write(inherited.Card), null, inherited.From));
     }
 
     internal static CardFold? Parse(CardFoldJson json)
