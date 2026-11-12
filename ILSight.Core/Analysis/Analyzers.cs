@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Analysis;
@@ -10,6 +11,10 @@ namespace ILSight.Core.Analysis;
 /// </summary>
 public static class Analyzers
 {
+    /// <summary>The library's symbol of each <see cref="AnalysisSymbol"/> described here, kept against it, so it lives as
+    /// long as the handle does.</summary>
+    private static readonly ConditionalWeakTable<AnalysisSymbol, ISymbol> Symbols = new();
+
     private static readonly AnalysisKind[] Kinds =
     [
         new AnalysisKind { Name = AnalysisName.AppliedTo, Order = 10, Prepare = AttributeAppliedToAnalyzer.Prepare },
@@ -127,7 +132,7 @@ public static class Analyzers
     {
         return Batches.StreamAsync<AnalysisSymbol>((emit, token) =>
         {
-            var run = kind.Prepare(symbol.Symbol);
+            var run = kind.Prepare(GetSymbol(symbol));
             if (run is null)
             {
                 throw new ArgumentException($"The analysis {kind.Name} does not apply to {symbol.Label}.", nameof(kind));
@@ -155,26 +160,66 @@ public static class Analyzers
             case IEntity entity:
                 return DescribeEntity(entity);
             case IModule module:
-                return new AnalysisSymbol
-                {
-                    Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName,
-                    Location = module.MetadataFile?.FileName ?? "",
-                    Reference = module.MetadataFile is not null ? CodeReferences.CreateAssembly(module.AssemblyName, AssemblyPath.Of(module.MetadataFile.FileName)) : null,
-                    Kinds = ListKinds(module), Accessors = [],
-                };
+                return Keep(DescribeModule(module), module);
             default:
                 return null;
         }
     }
 
-    private static AnalysisSymbol DescribeEntity(IEntity entity)
+    private static AnalysisSymbol DescribeModule(IModule module)
     {
+        var file = module.MetadataFile is null ? null : AssemblyPath.Of(module.MetadataFile.FileName);
         return new AnalysisSymbol
         {
-            Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity),
+            Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName,
+            Location = module.MetadataFile?.FileName ?? "",
+            Reference = file is not null ? CodeReferences.CreateAssembly(module.AssemblyName, file) : null,
+            Kinds = ListKinds(module), Accessors = [], File = file, Definition = null,
+        };
+    }
+
+    private static AnalysisSymbol DescribeEntity(IEntity entity)
+    {
+        var file = entity.ParentModule?.MetadataFile;
+        var path = file is null ? null : AssemblyPath.Of(file.FileName);
+        var described = new AnalysisSymbol
+        {
+            Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity),
             Location = Where(entity), Reference = CodeReferences.Find(entity), Kinds = ListKinds(entity),
             Accessors = Members.Accessors(entity).Select(static m => DescribeEntity(m)).ToArray(),
+            File = path, Definition = DefinitionOf(entity, path),
         };
+        return Keep(described, entity);
+    }
+
+    /// <summary>Where <paramref name="entity"/>, in the file at <paramref name="path"/>, is defined; null when it has
+    /// no token or is in no file.</summary>
+    private static CodeAnchor? DefinitionOf(IEntity entity, AssemblyPath? path)
+    {
+        if (path is null || entity.MetadataToken.IsNil)
+        {
+            return null;
+        }
+
+        return new CodeAnchor(CodeAnchorKind.Definition, path, MetadataTokens.GetToken(entity.MetadataToken));
+    }
+
+    /// <summary><paramref name="described"/>, with the library's <paramref name="symbol"/> kept against it.</summary>
+    private static AnalysisSymbol Keep(AnalysisSymbol described, ISymbol symbol)
+    {
+        Symbols.Add(described, symbol);
+        return described;
+    }
+
+    /// <summary>The library's symbol kept against <paramref name="symbol"/>; throws for one not described here.</summary>
+    private static ISymbol GetSymbol(AnalysisSymbol symbol)
+    {
+        if (!Symbols.TryGetValue(symbol, out var kept))
+        {
+            throw new InvalidOperationException($"'{symbol.Label}' was not described by {nameof(Analyzers)}.");
+        }
+
+        return kept;
     }
 
     private static string Where(IEntity entity)
