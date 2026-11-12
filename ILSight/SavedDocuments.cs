@@ -61,37 +61,37 @@ public static class SavedDocuments
     /// showed until the list's assemblies are listed; makes the one that was active and the one that was
     /// the preview tab so again; and commands the view to dock them where they were. With none kept, closes
     /// every tab but the active one, which then shows nothing.</summary>
-    public static void ReopenDocuments(AppState appState)
+    public static void ReopenDocuments(SavedAssemblyLists lists, OpenListSession session)
     {
-        appState.Reopened.Tabs.Clear();
-        var saved = appState.Lists.ActiveDocuments;
+        session.Reopened.Tabs.Clear();
+        var saved = lists.ActiveDocuments;
         if (saved is null)
         {
-            appState.Navigation.CloseDocuments();
+            session.Navigation.CloseDocuments();
             return;
         }
-        ReopenTabs(appState, saved);
+        ReopenTabs(session, saved);
     }
 
-    private static void ReopenTabs(AppState appState, DocumentsRecord saved)
+    private static void ReopenTabs(OpenListSession session, DocumentsRecord saved)
     {
         if (saved.Tabs.Count == 0)
         {
-            appState.Navigation.CloseDocuments();
+            session.Navigation.CloseDocuments();
             return;
         }
-        appState.Navigation.CloseAllTabs();
-        var reopened = saved.Tabs.ConvertAll(r => ReopenTab(appState, r));
-        MakeSavedActive(appState, reopened, saved.Active);
-        MakeSavedPreview(appState, reopened, saved.Preview);
-        appState.ViewCommands.Enqueue(new ViewCommand.ShowReopened(reopened, saved.Layout));
+        session.Navigation.CloseAllTabs();
+        var reopened = saved.Tabs.ConvertAll(r => ReopenTab(session, r));
+        MakeSavedActive(session, reopened, saved.Active);
+        MakeSavedPreview(session, reopened, saved.Preview);
+        session.Navigation.ViewCommands.Enqueue(new ViewCommand.ShowReopened(reopened, saved.Layout));
     }
 
-    private static ReopenedTab ReopenTab(AppState appState, DocumentRecord record)
+    private static ReopenedTab ReopenTab(OpenListSession session, DocumentRecord record)
     {
-        var tab = appState.Navigation.OpenReopenedTab();
+        var tab = session.Navigation.OpenReopenedTab();
         WaitForSaved(tab, record);
-        return WaitFor(appState.Reopened, tab, record);
+        return WaitFor(session.Reopened, tab, record);
     }
 
     private static void WaitForSaved(DocumentTab tab, DocumentRecord record)
@@ -111,7 +111,7 @@ public static class SavedDocuments
     }
 
     /// <summary>Makes the tab reopened from the one docked as <paramref name="panel"/> active, else the first.</summary>
-    private static void MakeSavedActive(AppState appState, List<ReopenedTab> reopened, string? panel)
+    private static void MakeSavedActive(OpenListSession session, List<ReopenedTab> reopened, string? panel)
     {
         var active = FindReopened(reopened, panel);
         if (active is null)
@@ -119,10 +119,10 @@ public static class SavedDocuments
             active = reopened[0];
         }
 
-        appState.Navigation.RestoreActiveTab(active.Tab);
+        session.Navigation.RestoreActiveTab(active.Tab);
     }
 
-    private static void MakeSavedPreview(AppState appState, List<ReopenedTab> reopened, string? panel)
+    private static void MakeSavedPreview(OpenListSession session, List<ReopenedTab> reopened, string? panel)
     {
         var preview = FindReopened(reopened, panel);
         if (preview is null)
@@ -130,7 +130,7 @@ public static class SavedDocuments
             return;
         }
 
-        appState.Navigation.RestorePreviewTab(preview.Tab);
+        session.Navigation.RestorePreviewTab(preview.Tab);
     }
 
     private static ReopenedTab? FindReopened(List<ReopenedTab> reopened, string? panel)
@@ -146,10 +146,10 @@ public static class SavedDocuments
     /// <summary>The open tabs as the settings keep them with the open list: each docked tab showing a node
     /// or a diagram, and each still waiting for what it was reopened to show, with the active and the
     /// preview tab and how their panels are arranged. Null when no tab is kept.</summary>
-    internal static DocumentsRecord? SaveDocuments(AppState appState)
+    internal static DocumentsRecord? SaveDocuments(OpenListSession session, ViewSettings view)
     {
-        var saved = appState.Navigation
-            .OpenTabs.Select(t => SaveTab(appState, t))
+        var saved = session.Navigation
+            .OpenTabs.Select(t => SaveTab(session, view, t))
             .OfType<SavedTab>()
             .ToList();
         if (saved.Count == 0)
@@ -158,16 +158,16 @@ public static class SavedDocuments
         }
 
         var records = saved.ConvertAll(static s => s.Record);
-        var active = FindSavedPanel(saved, appState.Navigation.ActiveTab);
-        var preview = FindSavedPanel(saved, appState.Navigation.PreviewTab);
-        var layout = ArrangeSaved(appState.View.Layout, records);
+        var active = FindSavedPanel(saved, session.Navigation.ActiveTab);
+        var preview = FindSavedPanel(saved, session.Navigation.PreviewTab);
+        var layout = ArrangeSaved(view.Layout, records);
         return new DocumentsRecord(records, active, preview, layout);
     }
 
-    private static SavedTab? SaveTab(AppState appState, DocumentTab tab)
+    private static SavedTab? SaveTab(OpenListSession session, ViewSettings view, DocumentTab tab)
     {
-        var panel = FindTabPanel(appState, tab);
-        var waiting = FindWaiting(appState.Reopened, tab);
+        var panel = FindTabPanel(view, tab);
+        var waiting = FindWaiting(session.Reopened, tab);
         if (waiting is not null)
         {
             return new SavedTab(tab, KeepWaiting(waiting, panel));
@@ -187,9 +187,9 @@ public static class SavedDocuments
         return new SavedTab(tab, record);
     }
 
-    private static TabPanel? FindTabPanel(AppState appState, DocumentTab tab)
+    private static TabPanel? FindTabPanel(ViewSettings view, DocumentTab tab)
     {
-        foreach (var panel in appState.View.Tabs ?? [])
+        foreach (var panel in view.Tabs ?? [])
         {
             if (panel.Tab == tab)
             {

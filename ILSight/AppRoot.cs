@@ -97,7 +97,15 @@ internal static class AppRoot
         var appState = new AppState
         {
             ViewCommands = viewCommands,
-            Navigation = new Navigation { ViewCommands = viewCommands, PreviewTabs = (settings.Display ?? DisplayOptions.Default).PreviewTabs },
+            ListSession = new OpenListSession
+            {
+                Assemblies = assemblies,
+                Analyzer = new AnalyzerTree(),
+                Navigation = new Navigation { ViewCommands = viewCommands, PreviewTabs = (settings.Display ?? DisplayOptions.Default).PreviewTabs },
+                Reopened = new ReopenedTabs(),
+                Reload = new Reload(),
+                Opens = opens,
+            },
             Work = work,
             Workflows = new WorkflowRunner(work, errors),
             DecompileIntoTabHandler = decompileIntoTab,
@@ -129,12 +137,10 @@ internal static class AppRoot
             AssemblyOpening = new AssemblyOpening(assemblyList),
             AssemblyReloading = new AssemblyReloading(assemblyList),
             OpenAssembliesAsReloadHandler = new OpenAssembliesAsReloadHandler(assemblyList),
-            Opens = opens,
             Session = session,
             SettingsPlace = settingsPlace,
             View = Settings.ReadViewSettings(settings),
             Window = settings.Window,
-            Assemblies = assemblies,
             Errors = errors,
             Tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version },
             Themes = themes,

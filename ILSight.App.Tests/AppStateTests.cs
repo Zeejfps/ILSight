@@ -61,7 +61,7 @@ public sealed class AppStateTests
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.StartShowing(d.Fixture("Greeter"));
 
-        d.Change(CloseAllAssemblies);
+        d.Change(static a => CloseAllAssemblies(a.ListSession));
         d.NextFrame();
 
         Assert.False(d.Ui.Tree.View.HasSelection);
@@ -84,7 +84,7 @@ public sealed class AppStateTests
         var table = grid.Grid;
         Assert.NotNull(table);
         var rows = table.RowCount;
-        d.Change(CloseAllAssemblies);
+        d.Change(static a => CloseAllAssemblies(a.ListSession));
         d.NextFrame();
         var lineBefore = DocumentPanels.GetView(d.Ui.Documents, code).Code.Pending;
         var rowBefore = DocumentPanels.GetGridState(DocumentPanels.GetView(d.Ui.Documents, grid), table).Pending;

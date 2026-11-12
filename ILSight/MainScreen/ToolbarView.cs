@@ -132,7 +132,7 @@ internal static class ToolbarView
 
         foreach (var name in lists.Names)
         {
-            ListItem(ui, appState, name);
+            ListItem(ui, appState.Lists, appState.ListSession, appState.View, name);
         }
 
         ui.MenuSeparator();
@@ -169,17 +169,17 @@ internal static class ToolbarView
     }
 
     /// <summary>The menu item of the list named <paramref name="name"/>; picked, the list is switched to in this
-    /// frame (<see cref="AssemblyLists.SwitchAssemblyList"/>, over the whole session), and only opening its files is
-    /// queued. The picker drawn above shows the list next frame, which this asks for.</summary>
-    private static void ListItem(Ui<UiState> ui, AppState appState, string name)
+    /// frame (<see cref="AssemblyLists.SwitchAssemblyList"/>, over the open list's session), and only opening its files
+    /// is queued. The picker drawn above shows the list next frame, which this asks for.</summary>
+    private static void ListItem(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
-        var active = name == appState.Lists.Active;
+        var active = name == lists.Active;
         if (!ui.MenuRadioItem(name, active, id: ListItemPrefix + name))
         {
             return;
         }
 
-        Commands.OpenListLater(ui.State, SwitchAssemblyList(appState, name));
+        Commands.OpenListLater(ui.State, SwitchAssemblyList(lists, session, view, name));
         ui.RequestUpdate();
     }
 

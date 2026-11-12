@@ -360,7 +360,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var d = new AppStateDriver(SettingsWith(new DocumentsRecord([greeter], MissingPanel, null, null)));
 
         d.Start(RestoreActiveAssemblyListAsync);
-        d.Change(CloseAllAssemblies);
+        d.Change(static a => CloseAllAssemblies(a.ListSession));
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);

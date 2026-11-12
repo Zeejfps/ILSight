@@ -47,7 +47,7 @@ public static class RunArgumentsActions
         var clearing = TabLoads.None;
         if (arguments.ClearList)
         {
-            clearing = CloseAllAssemblies(appState);
+            clearing = CloseAllAssemblies(appState.ListSession);
         }
 
         var opening = OpenRequestedFilesAsync(appState, arguments.Files, ct);

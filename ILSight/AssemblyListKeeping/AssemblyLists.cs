@@ -16,18 +16,19 @@ public static class AssemblyLists
     /// edge that started this to start.</summary>
     public static Task<TabLoads> RestoreActiveAssemblyListAsync(AppState appState, CancellationToken ct)
     {
-        var opening = BeginRestoringActiveAssemblyList(appState);
+        var opening = BeginRestoringActiveAssemblyList(appState.Lists, appState.ListSession);
         return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState, opening.Paths, opening.Reload, ct);
     }
 
     /// <summary>Uses what the open list picked for its assemblies and begins reopening them as a reload, the app saying
     /// it is reloading. Returns the files to open and the reload.</summary>
-    private static (IReadOnlyList<AssemblyPath> Paths, ReloadTicket Reload) BeginRestoringActiveAssemblyList(AppState appState)
+    private static (IReadOnlyList<AssemblyPath> Paths, ReloadTicket Reload) BeginRestoringActiveAssemblyList(SavedAssemblyLists lists,
+        OpenListSession session)
     {
-        appState.Assemblies.Pdbs.Use(appState.Lists.ActivePdbs);
-        appState.Assemblies.TargetFrameworks.Use(appState.Lists.ActiveFrameworks);
-        var paths = appState.Lists.ActivePaths.ToList();
-        return (paths, appState.Reload.Start());
+        session.Assemblies.Pdbs.Use(lists.ActivePdbs);
+        session.Assemblies.TargetFrameworks.Use(lists.ActiveFrameworks);
+        var paths = lists.ActivePaths.ToList();
+        return (paths, session.Reload.Start());
     }
 
     /// <summary>Opens the list named <paramref name="name"/> as the app starts, in place of the one the
@@ -46,7 +47,7 @@ public static class AssemblyLists
 
         appState.Analyzer.ClearRoots();
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
-        ReopenDocuments(appState);
+        ReopenDocuments(appState.Lists, appState.ListSession);
     }
 
     /// <summary>Takes every assembly, and what was picked for it, off the open list before the app starts opening it.</summary>
@@ -59,25 +60,26 @@ public static class AssemblyLists
 
     /// <summary>Records the open assemblies and what was picked for them as the open list's, unless
     /// they are being reopened, when the list still holds them all.</summary>
-    public static void RememberOpenAssemblies(AppState appState)
+    public static void RememberOpenAssemblies(SavedAssemblyLists lists, OpenListSession session)
     {
-        if (appState.IsReloading)
+        if (session.Reload.IsRunning)
         {
             return;
         }
 
-        appState.Lists.RememberActivePaths(AssemblyListing.ListFilePaths(appState.Assemblies));
-        appState.Lists.RememberActivePdbs(appState.Assemblies.Pdbs.All);
-        appState.Lists.RememberActiveFrameworks(appState.Assemblies.TargetFrameworks.All);
+        lists.RememberActivePaths(AssemblyListing.ListFilePaths(session.Assemblies));
+        lists.RememberActivePdbs(session.Assemblies.Pdbs.All);
+        lists.RememberActiveFrameworks(session.Assemblies.TargetFrameworks.All);
     }
 
-    /// <summary>Records the open assemblies, the analyses and the documents as the open list's.</summary>
-    internal static void RememberActiveAssemblyList(AppState appState)
+    /// <summary>Records the open assemblies, the analyses and the documents, docked as <paramref name="view"/> says, as
+    /// the open list's.</summary>
+    internal static void RememberActiveAssemblyList(SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
-        RememberOpenAssemblies(appState);
-        var analyzed = appState.Analyzer.ListSavedAnalyses();
-        appState.Lists.RememberActiveAnalyses(analyzed);
-        appState.Lists.RememberActiveDocuments(SaveDocuments(appState));
+        RememberOpenAssemblies(lists, session);
+        var analyzed = session.Analyzer.ListSavedAnalyses();
+        lists.RememberActiveAnalyses(analyzed);
+        lists.RememberActiveDocuments(SaveDocuments(session, view));
     }
 
     /// <summary>Opens the list named <paramref name="name"/> in place of the open one, with the
@@ -86,7 +88,7 @@ public static class AssemblyLists
     /// this to start.</summary>
     public static Task<TabLoads> SwitchAssemblyListAsync(AppState appState, string name, CancellationToken ct)
     {
-        return OpenWholeListAsync(appState, SwitchAssemblyList(appState, name), ct);
+        return OpenWholeListAsync(appState, SwitchAssemblyList(appState.Lists, appState.ListSession, appState.View, name), ct);
     }
 
     /// <summary>As <see cref="OpenListAsync"/>, for a workflow that hands the finding of the list's analyses back with
@@ -107,15 +109,15 @@ public static class AssemblyLists
     /// it for when it opens again; its documents reopen waiting for their places, its analyses wait to be found, and
     /// its assemblies begin reopening as a reload. Returns what is left for the edge to open
     /// (<see cref="OpenListAsync"/>); null when there is no list by that name.</summary>
-    public static ListOpening? SwitchAssemblyList(AppState appState, string name)
+    public static ListOpening? SwitchAssemblyList(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
-        RememberActiveAssemblyList(appState);
-        if (!appState.Lists.TryActivate(name))
+        RememberActiveAssemblyList(lists, session, view);
+        if (!lists.TryActivate(name))
         {
             return null;
         }
 
-        return BeginOpeningActiveList(appState);
+        return BeginOpeningActiveList(lists, session);
     }
 
     /// <summary>Opens the list named <paramref name="name"/> in place of the open one, as
@@ -132,14 +134,14 @@ public static class AssemblyLists
 
     /// <summary>Puts the active list's documents and analyses in place of the open ones, each waiting, and begins
     /// reopening its assemblies in place of the open ones. Returns what is left to open.</summary>
-    private static ListOpening BeginOpeningActiveList(AppState appState)
+    private static ListOpening BeginOpeningActiveList(SavedAssemblyLists lists, OpenListSession session)
     {
-        var closing = CloseAllAssemblies(appState);
-        ReopenDocuments(appState);
-        appState.Navigation.ClearHistory();
-        var (paths, reload) = BeginRestoringActiveAssemblyList(appState);
-        appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
-        var analyses = Analysis.BeginRestoring(appState.Analyzer, appState.Assemblies);
+        var closing = CloseAllAssemblies(session);
+        ReopenDocuments(lists, session);
+        session.Navigation.ClearHistory();
+        var (paths, reload) = BeginRestoringActiveAssemblyList(lists, session);
+        session.Analyzer.AddPending(lists.ActiveAnalyses);
+        var analyses = Analysis.BeginRestoring(session.Analyzer, session.Assemblies);
         return new ListOpening { Paths = paths, Reload = reload, Closing = closing, Analyses = analyses };
     }
 
@@ -176,7 +178,7 @@ public static class AssemblyLists
     /// numbered when that is taken, leaving the open one open, and returns the name the copy got.</summary>
     public static string DuplicateAssemblyList(AppState appState, string source, string name)
     {
-        RememberActiveAssemblyList(appState);
+        RememberActiveAssemblyList(appState.Lists, appState.ListSession, appState.View);
         return appState.Lists.Duplicate(source, name);
     }
 
@@ -184,23 +186,23 @@ public static class AssemblyLists
     /// its place opens. Returns the loads that started in the tabs, for the edge that started this to start.</summary>
     public static Task<TabLoads> DeleteAssemblyListAsync(AppState appState, string name, CancellationToken ct)
     {
-        return OpenWholeListAsync(appState, DeleteAssemblyList(appState, name), ct);
+        return OpenWholeListAsync(appState, DeleteAssemblyList(appState.Lists, appState.ListSession, appState.View, name), ct);
     }
 
     /// <summary>Removes the list named <paramref name="name"/>; when it was open, makes the list that takes its place
     /// the open one, as <see cref="SwitchAssemblyList"/> does. Returns what is left for the edge to open; null when it
     /// was not open.</summary>
-    public static ListOpening? DeleteAssemblyList(AppState appState, string name)
+    public static ListOpening? DeleteAssemblyList(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
-        var wasActive = string.Equals(name, appState.Lists.Active, StringComparison.OrdinalIgnoreCase);
-        RememberActiveAssemblyList(appState);
-        appState.Lists.Remove(name);
+        var wasActive = string.Equals(name, lists.Active, StringComparison.OrdinalIgnoreCase);
+        RememberActiveAssemblyList(lists, session, view);
+        lists.Remove(name);
         if (!wasActive)
         {
             return null;
         }
 
-        return BeginOpeningActiveList(appState);
+        return BeginOpeningActiveList(lists, session);
     }
 
     /// <summary>Opens the dialog with the open list of <paramref name="lists"/> picked.</summary>

@@ -33,7 +33,10 @@ public sealed class AppState
     /// <summary>The main window as it was left: as the settings held it until the app closes.</summary>
     public WindowBounds? Window;
 
-    public required AssemblyList Assemblies { get; init; }
+    /// <summary>What the open list holds while it is open, which switching lists changes together.</summary>
+    public required OpenListSession ListSession { get; init; }
+
+    public AssemblyList Assemblies => ListSession.Assemblies;
 
     /// <summary>The browse tree of the assemblies: their roots, the children built so far and the
     /// nodes of their types and members.</summary>
@@ -44,13 +47,14 @@ public sealed class AppState
 
     /// <summary>The open tabs, the history of what they showed and the newest thing asked for, which change
     /// together: showing a node is one of its methods.</summary>
-    public required Navigation Navigation { get; init; }
-    public Reload Reload { get; } = new();
+    public Navigation Navigation => ListSession.Navigation;
+
+    public Reload Reload => ListSession.Reload;
 
     /// <summary>The files of the list being read again one at a time, as when another framework or
     /// PDB is picked for an assembly.</summary>
     public Reopens Reopens { get; } = new();
-    public required OpenRequests Opens { get; init; }
+    public OpenRequests Opens => ListSession.Opens;
 
     /// <summary>What the settings were saved from the last time, to save again only when it changed.</summary>
     public SavedSources LastSaved { get; set; }
@@ -60,7 +64,7 @@ public sealed class AppState
     public BookmarkList Bookmarks { get; } = new();
 
     /// <summary>The symbols being analyzed and what the analyses found.</summary>
-    public AnalyzerTree Analyzer { get; } = new();
+    public AnalyzerTree Analyzer => ListSession.Analyzer;
 
     public required ErrorLog Errors { get; init; }
 
@@ -165,7 +169,7 @@ public sealed class AppState
     /// <summary>Whether the app looks for a newer version when it starts.</summary>
     public required bool IsUpdateCheckAutomatic { get; set; }
     /// <summary>The tabs reopened from the open list's saved documents that wait for what they showed.</summary>
-    public ReopenedTabs Reopened { get; } = new();
+    public ReopenedTabs Reopened => ListSession.Reopened;
 
     /// <summary>The declarations and documentation shown when hovering types and members in code.</summary>
     public required CodeTooltips Tooltips { get; init; }

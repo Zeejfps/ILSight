@@ -22,7 +22,10 @@ internal static class AssemblyListsDialogView
     private const string MenuId = "lists-menu";
     private const string PresetMenuId = "presets";
 
-    public static void Render(Ui<UiState> ui, SavedAssemblyLists lists)
+    /// <summary>The dialog over the named lists. A list activated is switched to in this frame, over
+    /// <paramref name="session"/>, the documents of the one left kept docked as <paramref name="view"/> says
+    /// (<see cref="AssemblyLists.SwitchAssemblyList"/>); only opening its files is queued.</summary>
+    public static void Render(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
         var t = ui.State.Strings;
         var dialog = ui.State.ListsDialog;
@@ -41,9 +44,9 @@ internal static class AssemblyListsDialogView
             }
 
             Toolbar(ui, lists);
-            Rows(ui, lists);
+            Rows(ui, lists, session, view);
             RenameProblem(ui, lists);
-            ContextMenu(ui, lists);
+            ContextMenu(ui, lists, session, view);
             Footer(ui);
         }
         if (!open)
@@ -87,7 +90,7 @@ internal static class AssemblyListsDialogView
 
     /// <summary>A row per list. Enter activates the picked one; a double-click renames it, as F2 does,
     /// and Delete asks to delete it. Picking another row keeps the name being typed, if it may be kept.</summary>
-    private static void Rows(Ui<UiState> ui, SavedAssemblyLists lists)
+    private static void Rows(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
@@ -111,7 +114,7 @@ internal static class AssemblyListsDialogView
             var doubleClicked = false;
             for (var i = list.First; i < list.End; i++)
             {
-                doubleClicked |= Row(ui, lists, list, listId, i, names[i]);
+                doubleClicked |= Row(ui, lists, session, view, list, listId, i, names[i]);
             }
 
             if (list.Focused)
@@ -121,7 +124,7 @@ internal static class AssemblyListsDialogView
 
             if (list.Activated)
             {
-                ActOnRow(ui, names[list.Index], doubleClicked);
+                ActOnRow(ui, lists, session, view, names[list.Index], doubleClicked);
             }
 
             if (list.ContextMenuRequested)
@@ -138,7 +141,8 @@ internal static class AssemblyListsDialogView
     /// <summary>A check mark when the list is the active one, its name, or the box renaming it, how
     /// many assemblies it holds, and its Activate button, disabled on the active list. True when the
     /// row was double-clicked.</summary>
-    private static bool Row(Ui<UiState> ui, SavedAssemblyLists lists, ListScope list, int listId, int index, string name)
+    private static bool Row(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, ListScope list, int listId, int index,
+        string name)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
@@ -161,7 +165,7 @@ internal static class AssemblyListsDialogView
             ui.Text(t.ListsCount(count), color: theme.TextMuted, size: theme.FontSizeSmall);
             if (ui.Button(t.ListsActivate, enabled: !active, id: "activate", variant: ButtonVariant.Ghost))
             {
-                Commands.SwitchListLater(ui.State, name);
+                Switch(ui, lists, session, view, name);
             }
 
             return row.Interaction.DoubleClicked;
@@ -251,14 +255,22 @@ internal static class AssemblyListsDialogView
     }
 
     /// <summary>A double-click renames the row; Enter activates it.</summary>
-    private static void ActOnRow(Ui<UiState> ui, string name, bool doubleClicked)
+    private static void ActOnRow(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name, bool doubleClicked)
     {
         if (doubleClicked)
         {
             AssemblyLists.StartRenaming(ui.State.ListsDialog, name);
             return;
         }
-        Commands.SwitchListLater(ui.State, name);
+        Switch(ui, lists, session, view, name);
+    }
+
+    /// <summary>Switches to the list named <paramref name="name"/> in this frame and queues opening its files. The rows
+    /// drawn above show it as the active list next frame, which this asks for.</summary>
+    private static void Switch(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
+    {
+        Commands.OpenListLater(ui.State, SwitchAssemblyList(lists, session, view, name));
+        ui.RequestUpdate();
     }
 
     /// <summary>Keeps the name being typed when another row is picked, and drops a deletion being asked about.</summary>
@@ -303,7 +315,7 @@ internal static class AssemblyListsDialogView
         return t.ListsNameTaken;
     }
 
-    private static void ContextMenu(Ui<UiState> ui, SavedAssemblyLists lists)
+    private static void ContextMenu(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -317,17 +329,17 @@ internal static class AssemblyListsDialogView
             return;
         }
 
-        MenuItems(ui, lists, picked);
+        MenuItems(ui, lists, session, view, picked);
     }
 
-    private static void MenuItems(Ui<UiState> ui, SavedAssemblyLists lists, string picked)
+    private static void MenuItems(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string picked)
     {
         var t = ui.State.Strings;
         var dialog = ui.State.ListsDialog;
         var active = picked == lists.Active;
         if (ui.MenuItem(t.ListsActivate, enabled: !active, id: "activate"))
         {
-            Commands.SwitchListLater(ui.State, picked);
+            Switch(ui, lists, session, view, picked);
         }
 
         if (ui.MenuItem(t.ListsRename, Shortcuts.Rename, id: "rename"))
@@ -401,7 +413,7 @@ internal static class AssemblyListsDialogView
     /// <summary>Opens the dialog with the open list picked, its assemblies counted as they are now.</summary>
     internal static void Open(AssemblyListsDialog dialog, AppState appState)
     {
-        RememberOpenAssemblies(appState);
+        RememberOpenAssemblies(appState.Lists, appState.ListSession);
         AssemblyLists.OpenListsDialog(dialog, appState.Lists);
     }
 

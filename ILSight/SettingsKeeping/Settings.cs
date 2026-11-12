@@ -21,7 +21,7 @@ public static class Settings
         appState.Lists.Restore(settings.AssemblyLists, settings.ActiveAssemblyList);
         var leftOutBookmarks = appState.Bookmarks.Restore(settings.Bookmarks);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
-        ReopenDocuments(appState);
+        ReopenDocuments(appState.Lists, appState.ListSession);
         appState.LastSaved = CaptureSavedSources(appState);
         if (leftOutBookmarks == 0)
         {

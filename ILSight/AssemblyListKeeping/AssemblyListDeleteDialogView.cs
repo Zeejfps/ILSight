@@ -9,7 +9,10 @@ namespace ILSight.AssemblyListKeeping;
 /// which list opens in its place when it is the active one.</summary>
 internal static class AssemblyListDeleteDialogView
 {
-    public static void Render(Ui<UiState> ui, SavedAssemblyLists lists)
+    /// <summary>The question over the lists dialog. Deleting the open list switches to the one taking its place in this
+    /// frame, over <paramref name="session"/>, as <see cref="AssemblyLists.DeleteAssemblyList"/> does; only opening its
+    /// files is queued.</summary>
+    public static void Render(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
@@ -40,7 +43,8 @@ internal static class AssemblyListDeleteDialogView
 
                     if (ui.Button(t.ListsDeleteConfirm, id: "delete-confirm", variant: ButtonVariant.Primary))
                     {
-                        Commands.Later(ui.State, (dialog, name), static (a, s) => Commands.StartOpeningList(a, Delete(s.dialog, a, s.name)));
+                        Commands.OpenListLater(ui.State, Delete(dialog, lists, session, view, name));
+                        ui.RequestUpdate();
                     }
                 }
             }
@@ -53,10 +57,10 @@ internal static class AssemblyListDeleteDialogView
 
     /// <summary>Removes the list named <paramref name="name"/> and picks the open list, which takes its
     /// place when it was open. Returns what is left to open of it then; null when it was not open.</summary>
-    private static ListOpening? Delete(AssemblyListsDialog dialog, AppState appState, string name)
+    private static ListOpening? Delete(AssemblyListsDialog dialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
-        var opening = DeleteAssemblyList(appState, name);
-        AssemblyLists.PickList(dialog, appState.Lists, appState.Lists.Active);
+        var opening = DeleteAssemblyList(lists, session, view, name);
+        AssemblyLists.PickList(dialog, lists, lists.Active);
         return opening;
     }
 }

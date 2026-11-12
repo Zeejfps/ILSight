@@ -180,7 +180,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// Returns the loads that started in the tabs.</summary>
     public async Task<TabLoads> RefreshAssembliesAsync(AppState appState, IReadOnlyList<NodePath> expanded, CancellationToken ct)
     {
-        RememberOpenAssemblies(appState);
+        RememberOpenAssemblies(appState.Lists, appState.ListSession);
         var intent = appState.Navigation.BeginRequest();
         var ticket = appState.Reload.Start();
 

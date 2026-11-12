@@ -259,13 +259,6 @@ public static class Commands
         };
     }
 
-    /// <summary>Asks for the list named <paramref name="name"/> to be switched to once the frame is drawn
-    /// (<see cref="AssemblyLists.SwitchAssemblyList"/>), and its files opened then (<see cref="StartOpeningList"/>).</summary>
-    public static void SwitchListLater(UiState uiState, string name)
-    {
-        Later(uiState, name, static (a, n) => StartOpeningList(a, AssemblyLists.SwitchAssemblyList(a, n)));
-    }
-
     /// <summary>Starts opening the assemblies of the list <paramref name="opening"/> began opening
     /// (<see cref="AssemblyLists.OpenListAsync"/>) now, then the loads that started in the tabs, and beside it the
     /// finding of the list's analyses (<see cref="StartRestoringAnalyses"/>); nothing when it is null.</summary>

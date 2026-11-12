@@ -299,7 +299,7 @@ public sealed class AssembliesTests
         var ports = new FakeAssemblyReloadingPorts
         {
             Reopen = _ => new Outcome<ReloadedNodes>.Failed(new OperationCanceledException()),
-            WhileWorking = () => d.Change(CloseAllAssemblies),
+            WhileWorking = () => d.Change(static a => CloseAllAssemblies(a.ListSession)),
         };
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState, [], CancellationToken.None);

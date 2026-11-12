@@ -303,7 +303,7 @@ public sealed class AnalyzerTests
 
         analyzer.RemoveRoot(analyzer.Roots[0]);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
-        d.Change(CloseAllAssemblies);
+        d.Change(static a => CloseAllAssemblies(a.ListSession));
 
         Assert.Equal(["Greeter"], left);
         Assert.Empty(analyzer.Roots);

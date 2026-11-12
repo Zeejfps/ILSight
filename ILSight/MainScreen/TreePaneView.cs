@@ -209,7 +209,7 @@ internal static class TreePaneView
             case 9:
                 if (DrawTool(ui, inMenu, "clear-list", icons.AssembliesClearList, t.TreeClearList, any))
                 {
-                    Commands.Later(ui.State, static a => Commands.StartLoads(a, CloseAllAssemblies(a)));
+                    Commands.Later(ui.State, static a => Commands.StartLoads(a, CloseAllAssemblies(a.ListSession)));
                 }
 
                 return;

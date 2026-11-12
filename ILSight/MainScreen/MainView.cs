@@ -42,8 +42,8 @@ public static class MainView
         NuGetPickerView.Render(ui);
         ProcessPickerView.Render(ui, appState.Navigation);
         CloseAssembliesDialogView.Render(ui, appState.Assemblies);
-        AssemblyListsDialogView.Render(ui, appState.Lists);
-        AssemblyListDeleteDialogView.Render(ui, appState.Lists);
+        AssemblyListsDialogView.Render(ui, appState.Lists, appState.ListSession, appState.View);
+        AssemblyListDeleteDialogView.Render(ui, appState.Lists, appState.ListSession, appState.View);
         BookmarkImportDialogView.Render(ui, appState.Imports);
         LayoutResetDialogView.Render(ui);
         DisplayOptionsResetDialogView.Render(ui);
