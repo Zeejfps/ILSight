@@ -269,11 +269,12 @@ internal sealed class AppDriver
     /// <summary>Double-clicks where a press reaches the node <paramref name="selector"/> names.</summary>
     public UiFrames DoubleClickOn(Selector selector)
     {
-        var at = Frames.Target(selector) switch
+        var target = Frames.Target(selector);
+        if (target is TargetResult.Hittable hittable)
         {
-            TargetResult.Hittable hittable => hittable.At,
-            var other => throw new InvalidOperationException($"Cannot double-click {selector}: {other}"),
-        };
-        return Frames.DoubleClick(at.X, at.Y);
+            return Frames.DoubleClick(hittable.At.X, hittable.At.Y);
+        }
+
+        throw new InvalidOperationException($"Cannot double-click {selector}: {target}");
     }
 }
