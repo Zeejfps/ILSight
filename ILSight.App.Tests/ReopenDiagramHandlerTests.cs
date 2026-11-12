@@ -9,7 +9,7 @@ public sealed class ReopenDiagramHandlerTests
     /// "Vehicle diagram", and the read of its cards that reopening it started.</summary>
     private static SavedDiagramRead Reopen(AppStateDriver d)
     {
-        var vehicle = TypeCards.Read(d.AppState.Assemblies, d.Fixture("Vehicle").Definition);
+        var vehicle = TestWaits.Wait(() => TypeCards.ReadAsync(d.AppState.Assemblies, d.Fixture("Vehicle").Definition, CancellationToken.None));
         Assert.NotNull(vehicle);
         var saved = new DiagramDocumentRecord("document-1", "Vehicle diagram", [vehicle.Anchor], null, null);
         var tab = d.AppState.Navigation.OpenReopenedTab();
@@ -26,7 +26,7 @@ public sealed class ReopenDiagramHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var read = Reopen(d);
         var ports = new FakeReopenDiagramHandlerPorts();
-        var vehicle = TypeCards.Read(d.AppState.Assemblies, d.Fixture("Vehicle").Definition);
+        var vehicle = TestWaits.Wait(() => TypeCards.ReadAsync(d.AppState.Assemblies, d.Fixture("Vehicle").Definition, CancellationToken.None));
         Assert.NotNull(vehicle);
         Assert.True(read.Diagram.IsBusy);
 

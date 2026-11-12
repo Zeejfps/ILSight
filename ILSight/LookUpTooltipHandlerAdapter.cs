@@ -9,7 +9,7 @@ public sealed class LookUpTooltipHandlerAdapter(AssemblyList assemblies) : LookU
 {
     public async Task<Outcome<CodeTooltip?>> DescribeReferenceAsync(CodeReference.Entity reference, CancellationToken ct)
     {
-        var described = await Background.Wait(Task.Run(() => AssemblyListing.DescribeReference(assemblies, reference), ct));
+        var described = await Background.Wait(Task.Run(() => AssemblyListing.DescribeReferenceAsync(assemblies, reference, ct), ct));
         ct.ThrowIfCancellationRequested();
         return described;
     }

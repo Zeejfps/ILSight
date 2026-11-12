@@ -20,7 +20,7 @@ public static class AssemblySearch
         SearchQuery query, CancellationToken cancellationToken = default)
     {
         var searched = assemblies.ToImmutableArray();
-        return Batches.StreamAsync<SearchFind>((emit, token) =>
+        return Batches.StreamAsync<SearchFind>(async (emit, token) =>
         {
             if (!query.CanFind)
             {
@@ -30,7 +30,7 @@ public static class AssemblySearch
             var search = new Search { Session = session, Query = query, Emit = emit, CancellationToken = token };
             foreach (var assembly in searched)
             {
-                var why = AssemblySearch.TrySearchAssembly(search, assembly);
+                var why = await AssemblySearch.TrySearchAssemblyAsync(search, assembly, token);
                 if (why is not null)
                 {
                     emit(new SearchFind.Unsearched { Assembly = assembly, Why = why });
@@ -39,13 +39,23 @@ public static class AssemblySearch
         }, cancellationToken);
     }
 
-    /// <summary>Searches <paramref name="assembly"/>; why the library failed on it, else null. Cancellation asked for
-    /// goes through.</summary>
-    private static string? TrySearchAssembly(Search search, LoadedModule assembly)
+    /// <summary>Searches <paramref name="assembly"/> once the read of its type system ended; why the library failed on
+    /// it (that read, or the search), else null. Cancellation asked for goes through.</summary>
+    private static async Task<string?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, CancellationToken ct)
+    {
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, search.CancellationToken);
+        return await read.Match(
+            r => TrySearchAssemblyAsync(search, assembly, r.TypeSystem.MainModule, ct),
+            static u => Task.FromResult<string?>(u.Thrown.SourceException.Message));
+    }
+
+    /// <summary>Searches <paramref name="assembly"/>, whose type system read is <paramref name="main"/>'s; why the
+    /// library failed on it, else null. Cancellation asked for goes through.</summary>
+    private static async Task<string?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
     {
         try
         {
-            SearchAssembly(search, assembly);
+            await SearchAssemblyAsync(search, assembly, main, ct);
             return null;
         }
         catch (OperationCanceledException) when (search.CancellationToken.IsCancellationRequested)
@@ -71,7 +81,7 @@ public static class AssemblySearch
         public readonly HashSet<BrowseNode> Found = new(ReferenceEqualityComparer.Instance);
 }
 
-        private static void SearchAssembly(Search search, LoadedModule assembly)
+        private static async Task SearchAssemblyAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
         {
             if (search.Query.InAssembly is not null && !IsInAssembly(assembly, search.Query.InAssembly))
         {
@@ -79,22 +89,22 @@ public static class AssemblySearch
         }
 
         var kinds = search.Query.Kinds;
-            Scan(kinds, SearchKinds.Assemblies, a => MatchAssembly(search, a), assembly);
-            Scan(kinds, SearchKinds.Namespaces, a => ScanNamespaces(search, a), assembly);
-            Scan(kinds, SearchKinds.TypesAndMembers, a => ScanEntities(search, a), assembly);
-            Scan(kinds, SearchKinds.Tokens, a => FindToken(search, a), assembly);
-            Scan(kinds, SearchKinds.Literals, a => ScanLiterals(search, a), assembly);
-            Scan(kinds, SearchKinds.Resources, a => ScanResources(search, a), assembly);
+            await ScanAsync(kinds, SearchKinds.Assemblies, a => MatchAssemblyAsync(search, a, ct), assembly, ct);
+            await ScanAsync(kinds, SearchKinds.Namespaces, a => ScanNamespacesAsync(search, a, ct), assembly, ct);
+            await ScanAsync(kinds, SearchKinds.TypesAndMembers, a => ScanEntitiesAsync(search, a, main, ct), assembly, ct);
+            await ScanAsync(kinds, SearchKinds.Tokens, a => FindTokenAsync(search, a, main, ct), assembly, ct);
+            await ScanAsync(kinds, SearchKinds.Literals, a => ScanLiteralsAsync(search, a, main, ct), assembly, ct);
+            await ScanAsync(kinds, SearchKinds.Resources, a => ScanResourcesAsync(search, a, ct), assembly, ct);
         }
 
-        private static void Scan(SearchKinds kinds, SearchKinds wanted, Action<LoadedModule> scan, LoadedModule assembly)
+        private static async Task ScanAsync(SearchKinds kinds, SearchKinds wanted, Func<LoadedModule, Task> scan, LoadedModule assembly, CancellationToken ct)
         {
             if ((kinds & wanted) == 0)
         {
             return;
         }
 
-        scan(assembly);
+        await scan(assembly);
         }
 
         private static bool IsInAssembly(LoadedModule assembly, string scope)
@@ -108,7 +118,7 @@ public static class AssemblySearch
         return search.Query.InNamespace is null || (search.Query.InNamespace.Length == 0 ? ns.Length == 0 : ns.Contains(search.Query.InNamespace, StringComparison.OrdinalIgnoreCase));
     }
 
-        private static void ScanEntities(Search search, LoadedModule assembly)
+        private static async Task ScanEntitiesAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
         {
             var reader = LoadedAssemblies.GetFile(assembly).Metadata;
             var kinds = search.Query.Kinds;
@@ -130,28 +140,28 @@ public static class AssemblySearch
             var typeName = search.Query.FullName ? ReadTypeName(search, reader, typeHandle) : ReadTypeLabel(search, reader, typeHandle);
                 if (types && SearchQueries.IsMatch(search.Query, typeName))
             {
-                AddResult(search, assembly, typeHandle);
+                await AddResultAsync(search, assembly, main, typeHandle, ct);
             }
 
             if (fields)
                 {
                     foreach (var handle in type.GetFields())
                 {
-                    MatchMember(search, assembly, typeName, ReadName(search, reader, reader.GetFieldDefinition(handle).Name), handle);
+                    await MatchMemberAsync(search, assembly, main, typeName, ReadName(search, reader, reader.GetFieldDefinition(handle).Name), handle, ct);
                 }
             }
                 if (properties)
                 {
                     foreach (var handle in type.GetProperties())
                 {
-                    MatchMember(search, assembly, typeName, ReadName(search, reader, reader.GetPropertyDefinition(handle).Name), handle);
+                    await MatchMemberAsync(search, assembly, main, typeName, ReadName(search, reader, reader.GetPropertyDefinition(handle).Name), handle, ct);
                 }
             }
                 if (events)
                 {
                     foreach (var handle in type.GetEvents())
                 {
-                    MatchMember(search, assembly, typeName, ReadName(search, reader, reader.GetEventDefinition(handle).Name), handle);
+                    await MatchMemberAsync(search, assembly, main, typeName, ReadName(search, reader, reader.GetEventDefinition(handle).Name), handle, ct);
                 }
             }
                 if (methods)
@@ -161,18 +171,18 @@ public static class AssemblySearch
                         var method = reader.GetMethodDefinition(handle);
                         if (!reader.StringComparer.StartsWith(method.Name, "."))
                     {
-                        MatchMember(search, assembly, typeName, AddTypeParameters(search, reader, ReadName(search, reader, method.Name), method.GetGenericParameters(), 0), handle);
+                        await MatchMemberAsync(search, assembly, main, typeName, AddTypeParameters(search, reader, ReadName(search, reader, method.Name), method.GetGenericParameters(), 0), handle, ct);
                     }
                 }
                 }
             }
         }
 
-        private static void MatchMember(Search search, LoadedModule assembly, string typeName, string name, EntityHandle handle)
+        private static async Task MatchMemberAsync(Search search, LoadedModule assembly, MetadataModule main, string typeName, string name, EntityHandle handle, CancellationToken ct)
         {
             if (SearchQueries.IsMatch(search.Query, search.Query.FullName ? typeName + "." + name : name))
         {
-            AddResult(search, assembly, handle);
+            await AddResultAsync(search, assembly, main, handle, ct);
         }
     }
 
@@ -250,7 +260,7 @@ public static class AssemblySearch
             }
         }
 
-        private static void ScanLiterals(Search search, LoadedModule assembly)
+        private static async Task ScanLiteralsAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
         {
             var file = LoadedAssemblies.GetFile(assembly);
             var reader = file.Metadata;
@@ -281,7 +291,7 @@ public static class AssemblySearch
                 }
                 if (HasMatchInBody(search, body, reader, literal))
             {
-                AddResultOrAncestor(search, assembly, handle);
+                await AddResultOrAncestorAsync(search, assembly, main, handle, ct);
             }
         }
             foreach (var handle in reader.FieldDefinitions)
@@ -310,7 +320,7 @@ public static class AssemblySearch
                 var value = blob.ReadConstant(constant.TypeCode);
                 if (IsConstantMatch(search, value, literal))
             {
-                AddResult(search, assembly, handle);
+                await AddResultAsync(search, assembly, main, handle, ct);
             }
         }
         }
@@ -442,7 +452,7 @@ public static class AssemblySearch
             };
     }
 
-        private static void FindToken(Search search, LoadedModule assembly)
+        private static async Task FindTokenAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
         {
             var term = SearchQueries.FindSingleTerm(search.Query);
             if (term is null)
@@ -479,24 +489,25 @@ public static class AssemblySearch
             var row = MetadataTokens.GetRowNumber(handle);
             if (row >= 1 && row <= rows)
         {
-            AddResultOrAncestor(search, assembly, handle);
+            await AddResultOrAncestorAsync(search, assembly, main, handle, ct);
         }
     }
 
-        private static void ScanResources(Search search, LoadedModule assembly)
+        private static async Task ScanResourcesAsync(Search search, LoadedModule assembly, CancellationToken ct)
         {
-            foreach (var child in BrowseSessions.ListChildren(search.Session, BrowseSessions.EnsureRoot(search.Session, assembly)))
+            var root = await BrowseSessions.EnsureRootAsync(search.Session, assembly, search.CancellationToken);
+            foreach (var child in await BrowseSessions.ListChildrenAsync(search.Session, root, search.CancellationToken))
             {
                 if (child.Subject is NodeSubject.Resources)
             {
-                ScanResources(search, child);
+                await ScanResourcesAsync(search, child, ct);
             }
         }
         }
 
-        private static void ScanResources(Search search, BrowseNode parent)
+        private static async Task ScanResourcesAsync(Search search, BrowseNode parent, CancellationToken ct)
         {
-            foreach (var node in BrowseSessions.ListChildren(search.Session, parent))
+            foreach (var node in await BrowseSessions.ListChildrenAsync(search.Session, parent, search.CancellationToken))
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
                 if (SearchQueries.IsMatch(search.Query, node.Text))
@@ -506,12 +517,12 @@ public static class AssemblySearch
 
             if (search.Session.HasChildren(node))
             {
-                ScanResources(search, node);
+                await ScanResourcesAsync(search, node, ct);
             }
         }
         }
 
-        private static void MatchAssembly(Search search, LoadedModule assembly)
+        private static async Task MatchAssemblyAsync(Search search, LoadedModule assembly, CancellationToken ct)
         {
             var matches = search.Query.AssemblyName switch
             {
@@ -521,13 +532,14 @@ public static class AssemblySearch
             };
             if (matches)
         {
-            AddResult(search, BrowseSessions.EnsureRoot(search.Session, assembly), assembly.FilePath.Text);
+            AddResult(search, await BrowseSessions.EnsureRootAsync(search.Session, assembly, search.CancellationToken), assembly.FilePath.Text);
         }
     }
 
-        private static void ScanNamespaces(Search search, LoadedModule assembly)
+        private static async Task ScanNamespacesAsync(Search search, LoadedModule assembly, CancellationToken ct)
         {
-            foreach (var node in BrowseSessions.ListChildren(search.Session, BrowseSessions.EnsureRoot(search.Session, assembly)))
+            var root = await BrowseSessions.EnsureRootAsync(search.Session, assembly, search.CancellationToken);
+            foreach (var node in await BrowseSessions.ListChildrenAsync(search.Session, root, search.CancellationToken))
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
                 if (IsNamespaceFound(search, node))
@@ -554,9 +566,9 @@ public static class AssemblySearch
         return IsInNamespace(search, ns.Value.Name) && SearchQueries.IsMatch(search.Query, node.Text);
         }
 
-        private static void AddResult(Search search, LoadedModule assembly, EntityHandle handle)
+        private static async Task AddResultAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle, CancellationToken ct)
         {
-            var node = FindNode(search, assembly, handle);
+            var node = await FindNodeAsync(search, assembly, main, handle, ct);
             if (node is null)
         {
             return;
@@ -574,12 +586,12 @@ public static class AssemblySearch
         }
     }
 
-        private static void AddResultOrAncestor(Search search, LoadedModule assembly, EntityHandle handle)
+        private static async Task AddResultOrAncestorAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle, CancellationToken ct)
         {
             BrowseNode? node;
             try
             {
-                node = BrowseSessions.FindOrAncestor(search.Session, assembly, handle);
+                node = await BrowseSessions.FindOrAncestorAsync(search.Session, assembly, main, handle, search.CancellationToken);
             }
             catch (BadImageFormatException)
             {
@@ -619,11 +631,11 @@ public static class AssemblySearch
         return node;
         }
 
-        private static BrowseNode? FindNode(Search search, LoadedModule assembly, EntityHandle handle)
+        private static async Task<BrowseNode?> FindNodeAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle, CancellationToken ct)
         {
             try
             {
-                return BrowseSessions.FindNode(search.Session, assembly, handle);
+                return await BrowseSessions.FindNodeAsync(search.Session, assembly, main, handle, search.CancellationToken);
             }
             catch (BadImageFormatException)
             {

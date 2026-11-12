@@ -16,7 +16,7 @@ public sealed class AnalysisTests
         var symbol = node.Analysis;
         Assert.NotNull(symbol);
         return Analyzers.RunAsync(list, symbol, symbol.Kinds.Single(k => Analyzers.GetHeader(k) == header))
-            .ToBlockingEnumerable().SelectMany(static b => b).ToList();
+            .ToBlockingEnumerable().SelectMany(static b => b).Select(static f => Assert.IsType<AnalysisFind.Found>(f).Symbol).ToList();
     }
 
     [Fact]
@@ -75,5 +75,28 @@ public sealed class AnalysisTests
         Assert.Contains("Circle", users);
         Assert.Contains(implementations, l => l.StartsWith("Area"));
         Assert.Contains(accessors, l => l.StartsWith("get_Area"));
+    }
+
+    [Fact]
+    public async Task An_analysis_over_a_module_the_library_cannot_read_shows_the_others_results_and_names_it()
+    {
+        using var temp = new TempDir();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var core = list.OpenModule(typeof(AssemblyList).Assembly.Location);
+        list.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath));
+        var symbol = core.Root.Child("ILSight.Core", "AssemblyPath").Analysis;
+        Assert.NotNull(symbol);
+        var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
+
+        var found = new List<AnalysisFind>();
+        await foreach (var batch in Analyzers.RunAsync(list, symbol, usedBy, CancellationToken.None))
+        {
+            found.AddRange(batch);
+        }
+
+        Assert.Contains(found, static f => f is AnalysisFind.Found);
+        var unreadable = Assert.IsType<AnalysisFind.Unreadable>(Assert.Single(found, static f => f is AnalysisFind.Unreadable));
+        Assert.Equal("UnreadableTypes.dll", unreadable.Name);
+        Assert.NotEmpty(unreadable.Why);
     }
 }

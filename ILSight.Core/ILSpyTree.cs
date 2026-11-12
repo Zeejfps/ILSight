@@ -79,21 +79,21 @@ public static class ILSpyTree
     /// node of the entity with metadata <paramref name="token"/>, when its full name is
     /// <paramref name="memberName"/>, or its nearest ancestor. Loads the assembly without listing it; null
     /// when it cannot be opened or has neither.</summary>
-    public static BrowseNode? Locate(AssemblyList list, BrowseSession session, AssemblyPath filePath, IReadOnlyList<string>? treePath, uint token,
-        string memberName)
+    public static async Task<BrowseNode?> LocateAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath, IReadOnlyList<string>? treePath,
+        uint token, string memberName, CancellationToken ct)
     {
         if (treePath is not null && treePath.Count > 0)
         {
-            var found = Find(list, session, treePath);
+            var found = await FindAsync(list, session, treePath, ct);
             if (found is not null)
             {
                 return found;
             }
         }
-        return FindEntity(list, session, filePath, token, memberName);
+        return await FindEntityAsync(list, session, filePath, token, memberName, ct);
     }
 
-    private static BrowseNode? Find(AssemblyList list, BrowseSession session, IReadOnlyList<string> path)
+    private static async Task<BrowseNode?> FindAsync(AssemblyList list, BrowseSession session, IReadOnlyList<string> path, CancellationToken ct)
     {
         var filePath = AssemblyPath.Parse(path[0]);
         if (filePath is null)
@@ -107,11 +107,11 @@ public static class ILSpyTree
             return null;
         }
 
-        var node = BrowseSessions.EnsureRoot(session, assembly);
+        var node = await BrowseSessions.EnsureRootAsync(session, assembly, ct);
         for (var i = 1; i < path.Count; i++)
         {
             BrowseNode? next = null;
-            foreach (var child in BrowseSessions.ListChildren(session, node))
+            foreach (var child in await BrowseSessions.ListChildrenAsync(session, node, ct))
             {
                 var name = NameOf(child);
                 if (name != path[i])
@@ -135,7 +135,8 @@ public static class ILSpyTree
     /// <summary>The node of the entity <paramref name="token"/> names, or its nearest ancestor; null when
     /// the entity is not the one called <paramref name="memberName"/>, as after a rebuild the token can name
     /// another.</summary>
-    private static BrowseNode? FindEntity(AssemblyList list, BrowseSession session, AssemblyPath filePath, uint token, string memberName)
+    private static async Task<BrowseNode?> FindEntityAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath, uint token, string memberName,
+        CancellationToken ct)
     {
         if (token == 0)
         {
@@ -148,7 +149,16 @@ public static class ILSpyTree
             return null;
         }
 
-        var entity = Resolve(assembly, (int)token);
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+        return await read.Match(
+            r => FindEntityAsync(session, assembly, r.TypeSystem.MainModule, token, memberName, ct),
+            static _ => Task.FromResult<BrowseNode?>(null));
+    }
+
+    private static async Task<BrowseNode?> FindEntityAsync(BrowseSession session, LoadedModule assembly, MetadataModule main, uint token, string memberName,
+        CancellationToken ct)
+    {
+        var entity = Resolve(main, (int)token);
         if (entity is null || entity.FullName != memberName)
         {
             return null;
@@ -156,7 +166,7 @@ public static class ILSpyTree
 
         try
         {
-            return BrowseSessions.FindOrAncestor(session, assembly, entity.MetadataToken);
+            return await BrowseSessions.FindOrAncestorAsync(session, assembly, main, entity.MetadataToken, ct);
         }
         catch (ArgumentException)
         {
@@ -168,11 +178,11 @@ public static class ILSpyTree
         }
     }
 
-    private static IEntity? Resolve(LoadedModule assembly, int token)
+    private static IEntity? Resolve(MetadataModule main, int token)
     {
         try
         {
-            return LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(MetadataTokens.EntityHandle(token));
+            return main.ResolveEntity(MetadataTokens.EntityHandle(token));
         }
         catch (ArgumentException)
         {

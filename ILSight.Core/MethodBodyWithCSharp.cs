@@ -5,6 +5,7 @@ using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.Disassembler;
 using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.Metadata;
+using ICSharpCode.Decompiler.TypeSystem;
 using SequencePoint = ICSharpCode.Decompiler.DebugInfo.SequencePoint;
 
 namespace ILSight.Core;
@@ -21,6 +22,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private const string CommentPrefix = "// ";
 
     private readonly LoadedModule _assembly;
+    private readonly DecompilerTypeSystem _typeSystem;
     private readonly DecompilerSettings _settings;
     private readonly CancellationToken _cancellationToken;
     private List<SequencePoint> _points = [];
@@ -28,10 +30,13 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private string? _failure;
     private int _next;
 
-    public MethodBodyWithCSharp(ITextOutput output, LoadedModule assembly, DecompilerSettings settings, CancellationToken cancellationToken)
+    /// <param name="typeSystem">The type system of <paramref name="assembly"/>, as the unit writing read it.</param>
+    public MethodBodyWithCSharp(ITextOutput output, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerSettings settings,
+        CancellationToken cancellationToken)
         : base(output, cancellationToken)
     {
         _assembly = assembly;
+        _typeSystem = typeSystem;
         _settings = settings;
         _cancellationToken = cancellationToken;
     }
@@ -53,7 +58,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     /// keeps why for the first instruction to say.</summary>
     private void DecompileToCSharp(MethodDefinitionHandle handle)
     {
-        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = _assembly };
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = _assembly, TypeSystem = _typeSystem };
         var points = TryWriteCSharp(handle, builder);
         if (points is null)
         {
@@ -70,7 +75,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     {
         try
         {
-            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _settings, _cancellationToken);
+            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _typeSystem, _settings, _cancellationToken);
             var syntaxTree = decompiler.Decompile(handle);
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
             return decompiler.CreateSequencePoints(syntaxTree);

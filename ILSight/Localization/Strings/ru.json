@@ -530,6 +530,7 @@
   "bookmarks.import_cancel": "Отмена",
   "analyzer.loading": "Загрузка…",
   "analyzer.hint": "Щёлкните тип или член правой кнопкой и выберите «Анализировать» или выделите его в дереве и нажмите {shortcut}.",
+  "analyzer.unreadable": "{name}: не удалось прочитать ({why})",
   "analyzer.clear": "Очистить",
   "analyzer.remove": "Удалить",
   "analyzer.remove_analysis": "Удалить анализ",

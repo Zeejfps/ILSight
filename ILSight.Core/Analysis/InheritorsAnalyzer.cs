@@ -31,7 +31,7 @@ internal static class InheritorsAnalyzer<T> where T : class, IMember
             yield break;
         }
 
-        foreach (var type in AnalyzerScope.Create(context.AssemblyList, analyzed).GetTypes(context.CancellationToken))
+        foreach (var type in AnalyzerScope.Create(context, analyzed).GetTypes(context.CancellationToken))
         {
             var baseTypes = type.GetAllBaseTypeDefinitions();
             if (!baseTypes.Any(t => Members.IsSame(t, declaring)))

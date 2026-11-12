@@ -9,18 +9,18 @@ internal static class SessionQueries
 {
     extension(LoadedAssembly assembly)
     {
-        public BrowseNode Root => BrowseSessions.EnsureRoot(TestSession.Shared, assembly);
+        public BrowseNode Root => TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(TestSession.Shared, assembly));
 
         public BrowseNode? FindNode(NodePath path)
         {
-            return BrowseSessions.FindNode(TestSession.Shared, assembly, path);
+            return TestWaits.Wait(() => BrowseSessions.FindNodeAsync(TestSession.Shared, assembly, path));
         }
     }
 
     extension(BrowseNode node)
     {
-        /// <summary>The children, built on this thread when nobody built them yet; none when they failed.</summary>
-        public IReadOnlyList<BrowseNode> Children => BrowseSessions.ListChildren(TestSession.Shared, node);
+        /// <summary>The children, built when nobody built them yet; none when they failed.</summary>
+        public IReadOnlyList<BrowseNode> Children => TestWaits.Wait(() => BrowseSessions.ListChildrenAsync(TestSession.Shared, node));
 
         public bool HasChildren => TestSession.Shared.HasChildren(node);
 
@@ -29,7 +29,7 @@ internal static class SessionQueries
         /// <summary>Builds the node's children; fails the test when they can't be built.</summary>
         public void EnsureChildren()
         {
-            Assert.IsType<ChildrenState.Ready>(BrowseSessions.GetChildren(TestSession.Shared, node));
+            Assert.IsType<ChildrenState.Ready>(TestWaits.Wait(() => BrowseSessions.GetChildrenAsync(TestSession.Shared, node)));
         }
 
         public IReadOnlyList<BrowseNode> InnerNamespaces => TestSession.Shared.ListInnerNamespaces(node);
@@ -97,27 +97,27 @@ internal static class SessionQueries
     {
         public BrowseNode? FindNode(NodePath path)
         {
-            return NodeLookup.Find(list, TestSession.Shared, path);
+            return TestWaits.Wait(() => NodeLookup.FindAsync(list, TestSession.Shared, path, CancellationToken.None));
         }
 
         public BrowseNode? FindNode(CodeReference.Navigable reference)
         {
-            return NodeLookup.Find(list, TestSession.Shared, reference);
+            return TestWaits.Wait(() => NodeLookup.FindAsync(list, TestSession.Shared, reference, CancellationToken.None));
         }
 
         public BrowseNode? FindListedNode(NodePath path)
         {
-            return NodeLookup.FindListed(list, TestSession.Shared, path);
+            return TestWaits.Wait(() => NodeLookup.FindListedAsync(list, TestSession.Shared, path, CancellationToken.None));
         }
 
         public BrowseNode? FindNodeById(string idString, IEnumerable<LoadedModule> assemblies)
         {
-            return NodeLookup.FindById(TestSession.Shared, idString, assemblies);
+            return TestWaits.Wait(() => NodeLookup.FindByIdAsync(TestSession.Shared, idString, assemblies, CancellationToken.None));
         }
 
         public MetadataTarget? FindMetadataRow(CodeReference.Navigable reference)
         {
-            return NodeLookup.FindMetadataRow(list, TestSession.Shared, reference);
+            return TestWaits.Wait(() => NodeLookup.FindMetadataRowAsync(list, TestSession.Shared, reference, CancellationToken.None));
         }
 
         public IAsyncEnumerable<IReadOnlyList<SearchFind>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default)

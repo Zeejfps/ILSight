@@ -14,10 +14,12 @@ public sealed class CompareAssembliesHandlerAdapter(ErrorLog errors) : CompareAs
         Errors.Report(errors, problem);
     }
 
+    /// <summary>Compares on the thread pool once the reads of both assemblies' type systems ended, and comes back on the
+    /// UI thread; an assembly the library could not read fails the comparison, saying why.</summary>
     public async Task<Outcome<ApiDiff>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken ct)
     {
-        var compared = await Background.Wait(Task.Run(() => ApiEntries.Compare(left, right, scope, ct), ct));
+        var compared = await Background.Wait(Task.Run(() => ApiEntries.CompareAsync(left, right, scope, ct), ct));
         ct.ThrowIfCancellationRequested();
-        return compared;
+        return Outcome<ApiDiff>.FromTypeSystemWork(compared);
     }
 }

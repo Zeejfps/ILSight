@@ -14,24 +14,23 @@ public sealed class BrowseSessionTests : IDisposable
     }
 
     [Fact]
-    public void Children_are_built_once_and_every_caller_gets_the_same_ones()
+    public async Task Children_are_built_once_and_every_caller_gets_the_same_ones()
     {
         var session = new BrowseSession();
-        var root = BrowseSessions.EnsureRoot(session, new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
+        var root = session.EnsureRoot(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
 
-        var waits = Enumerable.Range(0, 8).Select(_ => BrowseSessions.GetChildrenAsync(session, root)).ToArray();
-        var blocking = Enumerable.Range(0, 8).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.GetChildren(session, root)).ToArray();
-        var waited = Task.WhenAll(waits).GetAwaiter().GetResult();
+        var waits = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.GetChildrenAsync(session, root)).ToArray();
+        var waited = await Task.WhenAll(waits);
 
         var children = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(root)).Children;
-        Assert.All(waited.Concat(blocking), s => Assert.Same(children, Assert.IsType<ChildrenState.Ready>(s).Children));
+        Assert.All(waited, s => Assert.Same(children, Assert.IsType<ChildrenState.Ready>(s).Children));
     }
 
     [Fact]
     public async Task The_caller_that_starts_a_build_awaits_it_to_its_end_even_when_cancelled()
     {
         var session = new BrowseSession();
-        var root = BrowseSessions.EnsureRoot(session, new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
+        var root = (await BrowseSessions.EnsureRootAsync(session, new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath)));
 
         var started = await BrowseSessions.GetChildrenAsync(session, root, new CancellationToken(canceled: true));
         var state = await BrowseSessions.GetChildrenAsync(session, root);
@@ -41,30 +40,30 @@ public sealed class BrowseSessionTests : IDisposable
     }
 
     [Fact]
-    public void Children_that_fail_to_build_say_why_once_and_count_as_children()
+    public async Task Children_that_fail_to_build_say_why_once_and_count_as_children()
     {
         var session = new BrowseSession();
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(_temp));
-        var resources = BrowseSessions.ListChildren(session, BrowseSessions.EnsureRoot(session, assembly)).Single(c => c.Subject is NodeSubject.Resources);
-        var container = Assert.Single(BrowseSessions.ListChildren(session, resources));
+        var resources = (await BrowseSessions.ListChildrenAsync(session, (await BrowseSessions.EnsureRootAsync(session, assembly)))).Single(c => c.Subject is NodeSubject.Resources);
+        var container = Assert.Single((await BrowseSessions.ListChildrenAsync(session, resources)));
 
-        var failed = Assert.IsType<ChildrenState.Failed>(BrowseSessions.GetChildren(session, container));
+        var failed = Assert.IsType<ChildrenState.Failed>((await BrowseSessions.GetChildrenAsync(session, container)));
 
         Assert.IsType<InvalidDataException>(failed.Error);
-        Assert.Same(failed, BrowseSessions.GetChildren(session, container));
+        Assert.Same(failed, (await BrowseSessions.GetChildrenAsync(session, container)));
         Assert.True(session.HasChildren(container));
-        Assert.Empty(BrowseSessions.ListChildren(session, container));
+        Assert.Empty((await BrowseSessions.ListChildrenAsync(session, container)));
     }
 
     [Fact]
-    public void Each_session_builds_a_tree_of_its_own()
+    public async Task Each_session_builds_a_tree_of_its_own()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
         var first = new BrowseSession();
         var second = new BrowseSession();
 
         Assert.Same(first.EnsureRoot(assembly), first.EnsureRoot(assembly));
-        Assert.Same(first.EnsureRoot(assembly), BrowseSessions.EnsureRoot(first, assembly));
+        Assert.Same(first.EnsureRoot(assembly), (await BrowseSessions.EnsureRootAsync(first, assembly)));
         Assert.NotSame(first.EnsureRoot(assembly), second.EnsureRoot(assembly));
         Assert.IsType<ChildrenState.Unloaded>(second.PeekChildren(first.EnsureRoot(assembly)));
     }
@@ -83,35 +82,35 @@ public sealed class BrowseSessionTests : IDisposable
 
     /// <summary>A fresh session's metadata folder of the test assembly, its header grids and "Tables" node built, the
     /// tables not yet.</summary>
-    private static (BrowseNode Header, BrowseNode Tables) MetadataHeaderAndTables(BrowseSession session)
+    private static async Task<(BrowseNode Header, BrowseNode Tables)> MetadataHeaderAndTablesAsync(BrowseSession session)
     {
         var root = session.EnsureRoot(Trees.TestAssembly);
-        var metadata = BrowseSessions.ListChildren(session, root).First(static c => c.Subject is NodeSubject.Metadata);
-        var parts = BrowseSessions.ListChildren(session, metadata);
+        var metadata = (await BrowseSessions.ListChildrenAsync(session, root)).First(static c => c.Subject is NodeSubject.Metadata);
+        var parts = (await BrowseSessions.ListChildrenAsync(session, metadata));
         return (parts.First(static c => c.Text == "DOS Header"), parts.Single(static c => c.Subject is NodeSubject.MetadataTables));
     }
 
     [Fact]
-    public void A_link_of_a_header_grid_makes_the_tables_from_the_image_and_keeps_them_as_the_tree_lists_them()
+    public async Task A_link_of_a_header_grid_makes_the_tables_from_the_image_and_keeps_them_as_the_tree_lists_them()
     {
         var session = new BrowseSession();
-        var (header, tables) = MetadataHeaderAndTables(session);
+        var (header, tables) = await MetadataHeaderAndTablesAsync(session);
         var before = session.PeekChildren(tables);
 
         var target = Assert.IsType<MetadataTarget>(session.FindMetadataRow(header, new MetadataAddress(TableIndex.TypeDef, 1)));
 
         Assert.IsType<ChildrenState.Unloaded>(before);
-        var typeDefs = BrowseSessions.ListChildren(session, tables).Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef);
+        var typeDefs = (await BrowseSessions.ListChildrenAsync(session, tables)).Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef);
         Assert.Same(typeDefs, target.Node);
         Assert.Equal(1, target.Row);
     }
 
     [Fact]
-    public void A_link_of_a_table_grid_leads_to_the_row_among_the_tables_built()
+    public async Task A_link_of_a_table_grid_leads_to_the_row_among_the_tables_built()
     {
         var session = new BrowseSession();
-        var (_, tables) = MetadataHeaderAndTables(session);
-        var built = BrowseSessions.ListChildren(session, tables);
+        var (_, tables) = await MetadataHeaderAndTablesAsync(session);
+        var built = (await BrowseSessions.ListChildrenAsync(session, tables));
         var methods = built.Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.MethodDef);
 
         var target = Assert.IsType<MetadataTarget>(session.FindMetadataRow(methods, new MetadataAddress(TableIndex.TypeDef, 0)));
@@ -121,10 +120,10 @@ public sealed class BrowseSessionTests : IDisposable
     }
 
     [Fact]
-    public void The_tables_a_link_makes_show_what_a_node_made_from_their_subject_shows()
+    public async Task The_tables_a_link_makes_show_what_a_node_made_from_their_subject_shows()
     {
         var session = new BrowseSession();
-        var (header, tables) = MetadataHeaderAndTables(session);
+        var (header, tables) = await MetadataHeaderAndTablesAsync(session);
         Assert.NotNull(session.FindMetadataRow(header, new MetadataAddress(TableIndex.TypeDef, 0)));
 
         var made = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(tables)).Children;

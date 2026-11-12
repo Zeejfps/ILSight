@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ICSharpCode.Decompiler.TypeSystem;
 using ILSight.Core.Analysis;
 
@@ -15,11 +16,21 @@ internal static class DerivedTypes
         return !type.IsSealed && type.Kind is TypeKind.Class or TypeKind.Interface;
     }
 
-    public static List<ITypeDefinition> Find(AssemblyList list, ITypeDefinition type, CancellationToken cancellationToken)
+    /// <summary>The reads of the type systems of the modules the search for <paramref name="type"/>'s derived types,
+    /// in <paramref name="module"/>, can reach, each awaited (<see cref="AnalyzerScope.ReadReachableAsync"/>).</summary>
+    public static Task<ModuleTypeSystems> ReadReachableAsync(LoadedModule module, CancellationToken cancellationToken)
     {
-        var context = new AnalyzerContext { AssemblyList = list, CancellationToken = cancellationToken };
+        return AnalyzerScope.ReadReachableAsync(module.List, module, cancellationToken);
+    }
+
+    /// <summary>The types deriving from <paramref name="type"/> among <paramref name="typeSystems"/>, the reads of the
+    /// modules the search can reach (<see cref="ReadReachableAsync"/>); those the library could not read and the search
+    /// reached are noted in <paramref name="unreadable"/>.</summary>
+    public static List<ITypeDefinition> Find(AssemblyList list, ModuleTypeSystems typeSystems, ConcurrentDictionary<LoadedModule, UnreadableModule> unreadable,
+        ITypeDefinition type, CancellationToken cancellationToken)
+    {
         var found = new List<ITypeDefinition>();
-        foreach (var candidate in AnalyzerScope.Create(list, type).GetTypes(cancellationToken))
+        foreach (var candidate in AnalyzerScope.Create(list, typeSystems, unreadable, type).GetTypes(cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (NamesAsBase(candidate, type))

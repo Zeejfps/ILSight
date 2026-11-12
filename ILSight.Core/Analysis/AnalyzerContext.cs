@@ -1,5 +1,6 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
+using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.Metadata;
@@ -7,12 +8,20 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Analysis;
 
-/// <summary>What an analysis runs against: the open assemblies and cancellation.</summary>
+/// <summary>What an analysis runs against: the open assemblies, the type systems of the modules it can reach, read
+/// before it began, and cancellation.</summary>
 public sealed class AnalyzerContext
 {
     private (MetadataFile File, EntityHandle Handle, CodeMappingInfo Mapping)? _mapping;
 
     public required AssemblyList AssemblyList { get; init; }
+
+    /// <summary>The reads of the type systems of the modules the analysis can reach, each awaited before it began
+    /// (<see cref="AnalyzerScope.ReadReachableAsync"/>).</summary>
+    public required ModuleTypeSystems TypeSystems { get; init; }
+
+    /// <summary>The modules the analysis reached that the library could not read, to name beside its results.</summary>
+    internal ConcurrentDictionary<LoadedModule, UnreadableModule> Unreadable { get; } = new();
 
     public CancellationToken CancellationToken { get; internal init; }
 

@@ -29,18 +29,20 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
     /// opening shows.</summary>
     async Task<Outcome<BrowseNode?>> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
     {
-        var opened = await OpenFilesAsync(paths, stop, ct);
-        return opened.Match<Outcome<BrowseNode?>>(ok => new Outcome<BrowseNode?>.Ok(FindRoot(ok.Value)), static failed => new Outcome<BrowseNode?>.Failed(failed.Error));
+        return await Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, stop, ct), ct));
     }
 
-    private BrowseNode? FindRoot(LoadedAssembly? item)
+    /// <summary>Lists the files, those that fail to load as failed, and gives the root of the last, or null for
+    /// none.</summary>
+    private async Task<BrowseNode?> OpenFilesAndFindRootAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
     {
-        if (item is null)
+        var last = OpenFiles(paths, stop);
+        if (last is null)
         {
             return null;
         }
 
-        return BrowseSessions.EnsureRoot(session, item);
+        return await BrowseSessions.EnsureRootAsync(session, last, ct);
     }
 
     /// <inheritdoc cref="OpenFilesAsync"/>
@@ -60,14 +62,14 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
     /// <see cref="Outcome{T}.Failed"/>.</summary>
     public async Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => ReadAgain(item, places), ct));
+        return await Background.Wait(Task.Run(() => ReadItemAgainAsync(item, places, ct), ct));
     }
 
     /// <inheritdoc cref="OpenFilesAsync"/>
     public async Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
         IReadOnlyList<NodePath> places, CancellationToken stop, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => ReopenFiles(paths, expanded, places, stop), ct));
+        return await Background.Wait(Task.Run(() => ReopenFilesAsync(paths, expanded, places, stop), ct));
     }
 
     /// <summary>Lists the files, those that fail to load as failed, and returns the last.</summary>
@@ -82,20 +84,23 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         return last;
     }
 
-    private ReopenedFile ReadAgain(LoadedAssembly item, IReadOnlyList<NodePath> places)
+    private async Task<ReopenedFile> ReadItemAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
         var fresh = AssemblyListing.ReadAgain(assemblies, item);
-        EnsureChildrenAsLoaded(BrowseSessions.EnsureRoot(session, item), BrowseSessions.EnsureRoot(session, fresh.Item));
-        var placeNodes = places
-            .Select(p => BrowseSessions.FindNode(session, fresh.Item, p))
-            .ToArray();
+        var old = await BrowseSessions.EnsureRootAsync(session, item, ct);
+        await EnsureChildrenAsLoadedAsync(old, await BrowseSessions.EnsureRootAsync(session, fresh.Item, ct), ct);
+        var placeNodes = new BrowseNode?[places.Count];
+        for (var i = 0; i < placeNodes.Length; i++)
+        {
+            placeNodes[i] = await BrowseSessions.FindNodeAsync(session, fresh.Item, places[i], ct);
+        }
         return new ReopenedFile { Fresh = fresh, Places = placeNodes };
     }
 
     /// <summary>Loads the children of each node under <paramref name="fresh"/> whose counterpart under
     /// <paramref name="old"/> has them loaded, so that the tree can show the fresh nodes as it showed
     /// the old ones.</summary>
-    private void EnsureChildrenAsLoaded(BrowseNode old, BrowseNode fresh)
+    private async Task EnsureChildrenAsLoadedAsync(BrowseNode old, BrowseNode fresh, CancellationToken ct)
     {
         var oldChildren = session.PeekChildren(old);
         if (oldChildren is not ChildrenState.Ready loaded)
@@ -103,7 +108,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
             return;
         }
 
-        var built = BrowseSessions.GetChildren(session, fresh);
+        var built = await BrowseSessions.GetChildrenAsync(session, fresh, ct);
         if (built is not ChildrenState.Ready)
         {
             // A fresh node whose children failed to build has none to carry the old ones' over to.
@@ -115,33 +120,33 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
             var counterpart = session.FindLoadedChildLike(fresh, child);
             if (counterpart is not null)
             {
-                EnsureChildrenAsLoaded(child, counterpart);
+                await EnsureChildrenAsLoadedAsync(child, counterpart, ct);
             }
         }
     }
 
-    private ReloadedNodes ReopenFiles(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
+    private async Task<ReloadedNodes> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
         CancellationToken stop)
     {
         OpenFiles(paths, stop);
-        var expandedNodes = GetExpandedNodes(expanded, stop);
-        var placeNodes = FindNodes(places, stop);
+        var expandedNodes = await GetExpandedNodesAsync(expanded, stop);
+        var placeNodes = await FindNodesAsync(places, stop);
         return new ReloadedNodes { Expanded = expandedNodes, Places = placeNodes };
     }
 
-    private List<BrowseNode> GetExpandedNodes(IReadOnlyList<NodePath> expanded, CancellationToken stop)
+    private async Task<List<BrowseNode>> GetExpandedNodesAsync(IReadOnlyList<NodePath> expanded, CancellationToken stop)
     {
         var nodes = new List<BrowseNode>();
         foreach (var path in expanded)
         {
             stop.ThrowIfCancellationRequested();
-            var node = NodeLookup.Find(assemblies, session, path);
+            var node = await NodeLookup.FindAsync(assemblies, session, path, stop);
             if (node is null)
             {
                 continue;
             }
 
-            var built = BrowseSessions.GetChildren(session, node);
+            var built = await BrowseSessions.GetChildrenAsync(session, node, stop);
             if (built is not ChildrenState.Ready)
             {
                 // A node whose children failed to build has none to show expanded.
@@ -153,13 +158,13 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         return nodes;
     }
 
-    private BrowseNode?[] FindNodes(IReadOnlyList<NodePath> places, CancellationToken stop)
+    private async Task<BrowseNode?[]> FindNodesAsync(IReadOnlyList<NodePath> places, CancellationToken stop)
     {
         var found = new BrowseNode?[places.Count];
         for (var i = 0; i < found.Length; i++)
         {
             stop.ThrowIfCancellationRequested();
-            found[i] = NodeLookup.Find(assemblies, session, places[i]);
+            found[i] = await NodeLookup.FindAsync(assemblies, session, places[i], stop);
         }
         return found;
     }

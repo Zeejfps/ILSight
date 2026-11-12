@@ -20,7 +20,7 @@ internal static class TypeInstantiatedByAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition type, AnalyzerContext context)
     {
-        return AnalyzerScope.Create(context.AssemblyList, type).FindMembersWithCode(
+        return AnalyzerScope.Create(context, type).FindMembersWithCode(
             method => method.ParentModule is MetadataModule module
                 && MethodBodies.HasToken(MethodBodies.Find(method), (opCode, token) => Instantiates(module, opCode, token, type)),
             context.CancellationToken);

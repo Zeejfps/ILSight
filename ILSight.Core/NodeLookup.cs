@@ -1,3 +1,4 @@
+using ICSharpCode.Decompiler.TypeSystem;
 using System.Reflection.Metadata;
 using ILSight.Core.Metadata;
 
@@ -11,7 +12,7 @@ public static class NodeLookup
     /// <summary>The node <paramref name="path"/> names, opening and listing its assembly if it is not
     /// open and its file still exists, or the root of a file listed as failed. Null if the file cannot
     /// be opened or no longer has that node.</summary>
-    public static BrowseNode? Find(AssemblyList list, BrowseSession session, NodePath path)
+    public static async Task<BrowseNode?> FindAsync(AssemblyList list, BrowseSession session, NodePath path, CancellationToken ct)
     {
         try
         {
@@ -21,7 +22,7 @@ public static class NodeLookup
                 return null;
             }
 
-            return BrowseSessions.FindNode(session, item, path);
+            return await BrowseSessions.FindNodeAsync(session, item, path, ct);
         }
         catch (BadImageFormatException)
         {
@@ -36,7 +37,7 @@ public static class NodeLookup
     /// <summary>The node <paramref name="path"/> leads to in an assembly the list holds now, or null when
     /// it holds none at that path or the node is no longer there. Opens and lists nothing, so a lookup
     /// that outlives a switch to another list leaves the new list as it is.</summary>
-    public static BrowseNode? FindListed(AssemblyList list, BrowseSession session, NodePath path)
+    public static async Task<BrowseNode?> FindListedAsync(AssemblyList list, BrowseSession session, NodePath path, CancellationToken ct)
     {
         var item = AssemblyListing.FindListedLoaded(list, path.FilePath);
         if (item is null)
@@ -46,7 +47,7 @@ public static class NodeLookup
 
         try
         {
-            return BrowseSessions.FindNode(session, item, path);
+            return await BrowseSessions.FindNodeAsync(session, item, path, ct);
         }
         catch (BadImageFormatException)
         {
@@ -62,11 +63,11 @@ public static class NodeLookup
     /// defines it if it is not open yet and its file can be found. For an entity hidden from the tree,
     /// such as a compiler-generated one, the nearest visible ancestor. Null if the reference cannot be
     /// resolved.</summary>
-    public static BrowseNode? Find(AssemblyList list, BrowseSession session, CodeReference.Navigable reference)
+    public static async Task<BrowseNode?> FindAsync(AssemblyList list, BrowseSession session, CodeReference.Navigable reference, CancellationToken ct)
     {
         try
         {
-            var (assembly, handle) = AssemblyListing.ResolveListed(list, reference);
+            var (assembly, handle) = await AssemblyListing.ResolveListedAsync(list, reference, ct);
             if (assembly is null)
             {
                 return null;
@@ -74,10 +75,13 @@ public static class NodeLookup
 
             if (handle.Kind == HandleKind.AssemblyDefinition)
             {
-                return BrowseSessions.EnsureRoot(session, assembly);
+                return await BrowseSessions.EnsureRootAsync(session, assembly, ct);
             }
 
-            return BrowseSessions.FindOrAncestor(session, assembly, handle);
+            var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+            return await read.Match(
+                r => BrowseSessions.FindOrAncestorAsync(session, assembly, r.TypeSystem.MainModule, handle, ct),
+                static _ => Task.FromResult<BrowseNode?>(null));
         }
         catch (BadImageFormatException)
         {
@@ -93,17 +97,18 @@ public static class NodeLookup
     /// of a type or member, or an assembly's own row, opening and listing the assembly that defines it
     /// as <see cref="Find(AssemblyList, BrowseSession, CodeReference.Navigable)"/> does. Null if the
     /// reference cannot be resolved.</summary>
-    public static MetadataTarget? FindMetadataRow(AssemblyList list, BrowseSession session, CodeReference.Navigable reference)
+    public static async Task<MetadataTarget?> FindMetadataRowAsync(AssemblyList list, BrowseSession session, CodeReference.Navigable reference,
+        CancellationToken ct)
     {
         try
         {
-            var (assembly, handle) = AssemblyListing.ResolveListed(list, reference);
+            var (assembly, handle) = await AssemblyListing.ResolveListedAsync(list, reference, ct);
             if (assembly is null)
             {
                 return null;
             }
 
-            return BrowseSessions.FindMetadataRow(session, assembly, handle);
+            return await BrowseSessions.FindMetadataRowAsync(session, assembly, handle, ct);
         }
         catch (BadImageFormatException)
         {
@@ -118,11 +123,14 @@ public static class NodeLookup
     /// <summary>The node of the namespace, type or member <paramref name="idString"/> names, written as
     /// XML documentation ids are, such as <c>T:System.String</c>, in the first of <paramref name="assemblies"/>
     /// that defines it; null when none does.</summary>
-    public static BrowseNode? FindById(BrowseSession session, string idString, IEnumerable<LoadedModule> assemblies)
+    public static async Task<BrowseNode?> FindByIdAsync(BrowseSession session, string idString, IEnumerable<LoadedModule> assemblies, CancellationToken ct)
     {
         foreach (var assembly in assemblies)
         {
-            var node = FindById(session, idString, assembly);
+            var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+            var node = await read.Match(
+                r => FindByIdAsync(session, idString, assembly, r.TypeSystem.MainModule, ct),
+                static _ => Task.FromResult<BrowseNode?>(null));
             if (node is not null)
             {
                 return node;
@@ -131,11 +139,12 @@ public static class NodeLookup
         return null;
     }
 
-    private static BrowseNode? FindById(BrowseSession session, string idString, LoadedModule assembly)
+    private static async Task<BrowseNode?> FindByIdAsync(BrowseSession session, string idString, LoadedModule assembly, MetadataModule main,
+        CancellationToken ct)
     {
         try
         {
-            return BrowseSessions.FindById(session, assembly, idString);
+            return await BrowseSessions.FindByIdAsync(session, assembly, main, idString, ct);
         }
         catch (BadImageFormatException)
         {

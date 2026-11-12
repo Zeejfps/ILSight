@@ -6,7 +6,7 @@ public sealed class CodeTooltipTests
 {
     private static CodeTooltip TooltipOf(AssemblyList list, BrowseNode node)
     {
-        var tooltip = AssemblyListing.DescribeReference(list, node.Definition);
+        var tooltip = TestWaits.Wait(() => AssemblyListing.DescribeReferenceAsync(list, node.Definition, CancellationToken.None));
         Assert.NotNull(tooltip);
         return tooltip;
     }
@@ -240,13 +240,13 @@ public sealed class CodeTooltipTests
     }
 
     [Fact]
-    public void A_reference_into_another_assembly_is_described_without_listing_it()
+    public async Task A_reference_into_another_assembly_is_described_without_listing_it()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
         var document = assembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item)")];
 
-        var tooltip = AssemblyListing.DescribeReference(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference));
+        var tooltip = await AssemblyListing.DescribeReferenceAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None);
         Assert.NotNull(tooltip);
 
         Assert.StartsWith("public void List<T>.Add(T item)", tooltip.Signature.Line.Text);

@@ -226,10 +226,26 @@ public static class ApiEntries
     }
 
     /// <summary>Compares the API of <paramref name="left"/> with that of <paramref name="right"/>, taking in
-    /// what <paramref name="scope"/> says. Reads both assemblies' types: call it off the UI thread.</summary>
-    public static ApiDiff Compare(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken cancellationToken)
+    /// what <paramref name="scope"/> says, once the reads of both assemblies' type systems ended; the first the library
+    /// could not read, when it could not, with nothing compared. Reads both assemblies' types: call it off the UI
+    /// thread.</summary>
+    public static async Task<TypeSystemWork<ApiDiff>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken cancellationToken)
     {
-        var namespaces = CompareNamespaces(LoadedAssemblies.EnsureMainModule(left), LoadedAssemblies.EnsureMainModule(right), scope, cancellationToken);
+        var reads = await LoadedAssemblies.ReadTypeSystemsAsync([left, right], cancellationToken);
+        if (reads.Unreadable.Count > 0)
+        {
+            return new TypeSystemWork<ApiDiff>.Unreadable { Module = reads.Unreadable[0] };
+        }
+
+        var diff = Compare(left, reads.Read[LoadedAssemblies.GetFile(left)].MainModule, right, reads.Read[LoadedAssemblies.GetFile(right)].MainModule, scope,
+            cancellationToken);
+        return new TypeSystemWork<ApiDiff>.Done { Value = diff };
+    }
+
+    private static ApiDiff Compare(LoadedModule left, MetadataModule leftMain, LoadedModule right, MetadataModule rightMain, ApiScope scope,
+        CancellationToken cancellationToken)
+    {
+        var namespaces = CompareNamespaces(leftMain, rightMain, scope, cancellationToken);
         return new ApiDiff
         {
             LeftName = left.NameAndVersion,

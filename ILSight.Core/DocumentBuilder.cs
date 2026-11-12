@@ -23,6 +23,10 @@ internal sealed class DocumentBuilder : ITextOutput
     public readonly Stack<OpenFold> OpenFolds = new();
     public readonly List<(OpenFold Start, int EndLine)> Folds = new();
     public LoadedModule? Assembly { get; internal init; }
+
+    /// <summary>The type system of <see cref="Assembly"/>, as the unit writing awaited its read before it began; null
+    /// when there is none to read with, or the library could not read it.</summary>
+    public DecompilerTypeSystem? TypeSystem { get; internal init; }
     internal int LineFirstSpan;
     internal int IndentLevel;
     internal bool LineStarted;

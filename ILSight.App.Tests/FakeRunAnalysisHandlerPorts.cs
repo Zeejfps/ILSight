@@ -6,7 +6,7 @@ namespace ILSight.App.Tests;
 /// <summary>Finds <see cref="Found"/>, one entry at a time, for any analysis; keeps the problems reported.</summary>
 internal sealed class FakeRunAnalysisHandlerPorts : RunAnalysisHandler.IPorts
 {
-    public required IReadOnlyList<Outcome<IReadOnlyList<AnalysisSymbol>>> Found { get; init; }
+    public required IReadOnlyList<Outcome<IReadOnlyList<AnalysisFind>>> Found { get; init; }
 
     public List<AppProblem> Reported { get; } = [];
 
@@ -15,7 +15,7 @@ internal sealed class FakeRunAnalysisHandlerPorts : RunAnalysisHandler.IPorts
         Reported.Add(problem);
     }
 
-    public async IAsyncEnumerable<Outcome<IReadOnlyList<AnalysisSymbol>>> RunAsync(AnalysisSymbol subject, AnalysisKind kind, [EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<Outcome<IReadOnlyList<AnalysisFind>>> RunAsync(AnalysisSymbol subject, AnalysisKind kind, [EnumeratorCancellation] CancellationToken ct)
     {
         foreach (var found in Found)
         {

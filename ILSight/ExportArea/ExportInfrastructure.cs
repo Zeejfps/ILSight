@@ -30,46 +30,38 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
         Errors.Report(errors, problem);
     }
 
+    /// <remarks>A module the library could not read, for code that reads it, fails the export, saying why.</remarks>
     public Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => WriteCodeFile(work, token), start, ct);
-    }
-
-    private string WriteCodeFile(ExportWork.CodeFile work, CancellationToken ct)
-    {
-        CodeFiles.Save(session, work.Node, work.Language, work.Options, work.File, ct);
-        return work.File;
+        return RunOverTypeSystemAsync(token => CodeFiles.SaveAsync(session, work.Node, work.Language, work.Options, work.File, token), start, ct);
     }
 
     public Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => AssemblyExport.ExportProject(work.Assembly, work.Options, work.ProjectFile, work.Extras, start.Progress, token), start, ct);
+        return RunAsync(token => AssemblyExport.ExportProjectAsync(work.Assembly, work.Options, work.ProjectFile, work.Extras, start.Progress, token), start, ct);
     }
 
     public Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => AssemblyExport.ExportSolution(work.Projects, work.Options, work.SolutionFile, work.Extras, start.Progress, token), start, ct);
+        return RunAsync(token => AssemblyExport.ExportSolutionAsync(work.Projects, work.Options, work.SolutionFile, work.Extras, start.Progress, token), start,
+            ct);
     }
 
+    /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
     public Task<ExportOutcome<string>> WritePdbAsync(ExportWork.Pdb work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => WritePdb(work, start.Progress, token), start, ct);
-    }
-
-    private static string WritePdb(ExportWork.Pdb work, IProgress<ExportProgress> progress, CancellationToken ct)
-    {
-        AssemblyExport.GeneratePdb(work.Assembly, work.Options, work.File, progress, ct);
-        return work.File;
+        return RunOverTypeSystemAsync(token => AssemblyExport.GeneratePdbAsync(work.Assembly, work.Options, work.File, start.Progress, token), start, ct);
     }
 
     public Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => AssemblyExport.GeneratePdbs(work.Assemblies, work.Options, work.Folder, start.Progress, token), start, ct);
+        return RunAsync(token => AssemblyExport.GeneratePdbsAsync(work.Assemblies, work.Options, work.Folder, start.Progress, token), start, ct);
     }
 
+    /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
     public Task<ExportOutcome<string>> WriteDiagramAsync(ExportWork.Diagram work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => ClassDiagrams.Write(work.Assembly, work.Folder, start.Progress, token), start, ct);
+        return RunOverTypeSystemAsync(token => ClassDiagrams.WriteAsync(work.Assembly, work.Folder, start.Progress, token), start, ct);
     }
 
     public Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportStart start, CancellationToken ct)
@@ -87,6 +79,28 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
         var outcome = await Background.Run(() => work(token));
         ct.ThrowIfCancellationRequested();
         return outcome.Match(static ok => new ExportOutcome<T>.Done(ok.Value), failed => Translate<T>(failed.Error, start));
+    }
+
+    /// <inheritdoc cref="RunAsync{T}(Func{CancellationToken, T}, ExportStart, CancellationToken)"/>
+    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, Task<T>> work, ExportStart start, CancellationToken ct)
+    {
+        using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
+        var token = link.Token;
+        var outcome = await Background.Wait(Task.Run(() => work(token), CancellationToken.None));
+        ct.ThrowIfCancellationRequested();
+        return outcome.Match(static ok => new ExportOutcome<T>.Done(ok.Value), failed => Translate<T>(failed.Error, start));
+    }
+
+    /// <summary>Runs <paramref name="work"/> over a module's type system as <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportStart, CancellationToken)"/>
+    /// does; a module the library could not read fails it, saying why.</summary>
+    private static async Task<ExportOutcome<T>> RunOverTypeSystemAsync<T>(Func<CancellationToken, Task<TypeSystemWork<T>>> work, ExportStart start,
+        CancellationToken ct)
+    {
+        var outcome = await RunAsync(work, start, ct);
+        return outcome.Match(
+            static done => done.Value.Match<ExportOutcome<T>>(static d => new ExportOutcome<T>.Done(d.Value), static u => new ExportOutcome<T>.Failed(u.Module.Why)),
+            static stopped => new ExportOutcome<T>.Stopped(),
+            static failed => new ExportOutcome<T>.Failed(failed.Error));
     }
 
     /// <summary>What <paramref name="error"/>, which an export's work ended with, means: it stopped when it is the

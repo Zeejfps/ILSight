@@ -1,5 +1,6 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
+using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
@@ -20,6 +21,15 @@ internal sealed class AnalyzerScope
 
     public required IReadOnlyList<LoadedModule> Assemblies { get; init; }
 
+    /// <summary>The reads of the type systems of the modules the scope can reach, awaited before it was made
+    /// (<see cref="ReadReachableAsync"/>): it scans those read, and notes those the library could not read in
+    /// <see cref="Unreadable"/>.</summary>
+    public required ModuleTypeSystems TypeSystems { get; init; }
+
+    /// <summary>The modules of the scope the library could not read, noted as the scan reaches them, for the analysis
+    /// to name beside what the others gave.</summary>
+    public required ConcurrentDictionary<LoadedModule, UnreadableModule> Unreadable { get; init; }
+
     public required Accessibility EffectiveAccessibility { get; init; }
 
     /// <summary>Whether the analyzed symbol is reachable only from inside <see cref="TypeScope"/>.</summary>
@@ -27,14 +37,33 @@ internal sealed class AnalyzerScope
 
     public required ITypeDefinition TypeScope { get; init; }
 
-    /// <summary>Where the symbols related to <paramref name="entity"/>, of the assemblies of <paramref name="list"/>, can be.</summary>
-    public static AnalyzerScope Create(AssemblyList list, IEntity entity)
+    /// <summary>The reads of the type systems of every module a scope over <paramref name="list"/> can reach, each
+    /// awaited: the listed modules', and <paramref name="own"/>'s, the module the analyzed symbol is in.</summary>
+    public static Task<ModuleTypeSystems> ReadReachableAsync(AssemblyList list, LoadedModule own, CancellationToken ct)
+    {
+        return LoadedAssemblies.ReadTypeSystemsAsync(list.Assemblies.Append(own).Distinct(), ct);
+    }
+
+    /// <summary>Where the symbols related to <paramref name="entity"/>, of the assemblies of the context's list, can be,
+    /// scanning the type systems the context read.</summary>
+    public static AnalyzerScope Create(AnalyzerContext context, IEntity entity)
+    {
+        return Create(context.AssemblyList, context.TypeSystems, context.Unreadable, entity);
+    }
+
+    /// <summary>Where the symbols related to <paramref name="entity"/>, of the assemblies of <paramref name="list"/>, can be,
+    /// scanning <paramref name="typeSystems"/>, and noting in <paramref name="unreadable"/> the modules it reaches that the
+    /// library could not read.</summary>
+    public static AnalyzerScope Create(AssemblyList list, ModuleTypeSystems typeSystems, ConcurrentDictionary<LoadedModule, UnreadableModule> unreadable,
+        IEntity entity)
     {
         DetermineEffectiveAccessibility(entity, out var typeScope, out var accessibility);
         return new AnalyzerScope
         {
             List = list,
             Assemblies = list.Assemblies,
+            TypeSystems = typeSystems,
+            Unreadable = unreadable,
             EffectiveAccessibility = accessibility,
             TypeScope = typeScope,
             IsLocal = accessibility.LessThanOrEqual(Accessibility.Private),
@@ -56,9 +85,46 @@ internal sealed class AnalyzerScope
         return GetReferencingModules(DecompilerFacts.GetMetadataFile(TypeScope), ct);
     }
 
-    public DecompilerTypeSystem GetTypeSystem(MetadataFile module)
+    /// <summary>The type system of <paramref name="module"/> as read; null for one the library could not read, which is
+    /// noted in <see cref="Unreadable"/>.</summary>
+    public DecompilerTypeSystem? FindTypeSystem(MetadataFile module)
     {
-        return AssemblyListing.EnsureTypeSystemOf(List, module);
+        var read = TypeSystems.Read.GetValueOrDefault(module);
+        if (read is not null)
+        {
+            return read;
+        }
+
+        NoteUnreadable(module);
+        return null;
+    }
+
+    private void NoteUnreadable(MetadataFile module)
+    {
+        foreach (var unreadable in TypeSystems.Unreadable)
+        {
+            if (LoadedAssemblies.IsReadFrom(unreadable.Module, module))
+            {
+                Unreadable.TryAdd(unreadable.Module, unreadable);
+                return;
+            }
+        }
+
+        throw new InvalidOperationException($"The type system of {module.FileName} was not read before the scope scanned it.");
+    }
+
+    /// <summary>The type systems of the scope's modules the library could read, in the order of
+    /// <see cref="GetModules"/>; those it could not are noted in <see cref="Unreadable"/>.</summary>
+    public IEnumerable<DecompilerTypeSystem> ListTypeSystems(CancellationToken ct)
+    {
+        foreach (var module in GetModules(ct))
+        {
+            var typeSystem = FindTypeSystem(module);
+            if (typeSystem is not null)
+            {
+                yield return typeSystem;
+            }
+        }
     }
 
     public IEnumerable<ITypeDefinition> GetTypes(CancellationToken ct)
@@ -72,9 +138,9 @@ internal sealed class AnalyzerScope
         }
         else
         {
-            foreach (var module in GetModules(ct))
+            foreach (var typeSystem in ListTypeSystems(ct))
             {
-                foreach (var type in GetTypeSystem(module).MainModule.TypeDefinitions)
+                foreach (var type in typeSystem.MainModule.TypeDefinitions)
                 {
                     yield return type;
                 }

@@ -362,27 +362,18 @@ public sealed class AssemblyListTests
     }
 
     [Fact]
-    public void What_takes_reading_is_read_once_whichever_thread_asks_first()
+    public async Task What_takes_reading_is_read_once_whichever_thread_asks_first()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.TestAssemblyPath);
 
         var read = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8)
-            .Select(_ => (TypeSystem: LoadedAssemblies.EnsureTypeSystem(assembly), Usage: LoadedAssemblies.EnsureReferenceUsage(assembly), Symbols: LoadedAssemblies.EnsureDebugSymbols(assembly)))
+            .Select(_ => (TypeSystem: LoadedAssemblies.ReadTypeSystemAsync(assembly, CancellationToken.None), Usage: LoadedAssemblies.EnsureReferenceUsage(assembly), Symbols: LoadedAssemblies.EnsureDebugSymbols(assembly)))
             .ToList();
+        var typeSystems = await Task.WhenAll(read.Select(static r => r.TypeSystem));
 
-        Assert.Single(read.Select(r => r.TypeSystem).Distinct());
+        Assert.Single(typeSystems.Select(static t => Assert.IsType<TypeSystemRead.Read>(t).TypeSystem).Distinct());
         Assert.Single(read.Select(r => r.Usage).Distinct());
         Assert.Single(read.Select(r => r.Symbols).Distinct());
-    }
-
-    [Fact]
-    public void A_module_s_main_module_is_that_of_the_type_system_it_read()
-    {
-        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.TestAssemblyPath);
-
-        var main = LoadedAssemblies.EnsureMainModule(assembly);
-
-        Assert.Same(LoadedAssemblies.EnsureTypeSystem(assembly).MainModule, main);
     }
 
     [Fact]

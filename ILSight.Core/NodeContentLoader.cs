@@ -20,16 +20,16 @@ public static class NodeContentLoader
     public static Task<NodeContent> GetContentAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken = default)
     {
-        return Task.Run(() => GetContent(session, node, language, options, cancellationToken), cancellationToken);
+        return Task.Run(() => ReadContentAsync(session, node, language, options, cancellationToken), cancellationToken);
     }
 
-    /// <summary>Decompiles <paramref name="node"/> with <paramref name="options"/>, which only C# reads.
-    /// Throws <see cref="OperationCanceledException"/> when cancelled; any other failure becomes a
-    /// document describing it.</summary>
-    public static DecompiledDocument Decompile(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken cancellationToken = default)
+    /// <summary>Decompiles <paramref name="node"/> with <paramref name="options"/>, which only C# reads, once the read
+    /// of its module's type system ended. Throws <see cref="OperationCanceledException"/> when cancelled; any other
+    /// failure becomes a document describing it.</summary>
+    public static async Task<DecompiledDocument> DecompileAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
+        DecompilerOptions options, CancellationToken cancellationToken = default)
     {
-        return NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken);
+        return await NodeDecompiler.DecompileAsync(await RequestOfAsync(session, node, cancellationToken), language, options, cancellationToken);
     }
 
     /// <summary>The grid <paramref name="node"/> shows: a metadata header, directory, table or heap's, or a
@@ -49,7 +49,7 @@ public static class NodeContentLoader
         return null;
     }
 
-    private static NodeContent GetContent(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    private static async Task<NodeContent> ReadContentAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken)
     {
         var grid = GridOf(node);
@@ -60,13 +60,21 @@ public static class NodeContentLoader
 
         if (!BrowseNodes.IsImage(node.Subject))
         {
-            return new NodeContent.Code(Decompile(session, node, language, options, cancellationToken));
+            return new NodeContent.Code(await DecompileAsync(session, node, language, options, cancellationToken));
         }
 
         var read = ReadImage(node);
-        return read.Match<NodeContent>(
-            decoded => GetPicture(session, node, decoded.Image, language, options, cancellationToken),
-            unreadable => new NodeContent.Code(NodeDecompiler.Decompile(RequestOf(session, node), language, options, cancellationToken, unreadable.Why)));
+        return await read.Match(
+            decoded => GetPictureAsync(session, node, decoded.Image, language, options, cancellationToken),
+            unreadable => DecompileWithNoteAsync(session, node, language, options, unreadable.Why, cancellationToken));
+    }
+
+    /// <summary><paramref name="node"/>'s document, after <paramref name="note"/> as a comment.</summary>
+    private static async Task<NodeContent> DecompileWithNoteAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
+        DecompilerOptions options, string note, CancellationToken cancellationToken)
+    {
+        var request = await RequestOfAsync(session, node, cancellationToken);
+        return new NodeContent.Code(await NodeDecompiler.DecompileAsync(request, language, options, cancellationToken, note));
     }
 
     /// <summary>The picture <paramref name="node"/>'s resource holds, or why it can't be read: the decompiler reads its
@@ -84,7 +92,7 @@ public static class NodeContentLoader
     }
 
     /// <summary>The picture, with the markup it is stored as when it is drawn from shapes.</summary>
-    private static NodeContent.Picture GetPicture(BrowseSession session, BrowseNode node, ResourceImage image, DecompilationLanguage language,
+    private static async Task<NodeContent> GetPictureAsync(BrowseSession session, BrowseNode node, ResourceImage image, DecompilationLanguage language,
         DecompilerOptions options, CancellationToken cancellationToken)
     {
         if (!image.IsVector)
@@ -92,23 +100,85 @@ public static class NodeContentLoader
             return new NodeContent.Picture(image);
         }
 
-        var source = Decompile(session, node, language, options, cancellationToken);
+        var source = await DecompileAsync(session, node, language, options, cancellationToken);
         return new NodeContent.Picture(image, source);
     }
 
     /// <summary>What saving <paramref name="node"/>'s code writes: for an assembly its whole module, for a namespace all
     /// its types, else what the node shows.</summary>
-    internal static CodeExport ToCodeExport(BrowseSession session, BrowseNode node)
+    internal static async Task<CodeExport> ToCodeExportAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
     {
-        return node.Subject switch
+        if (node.Subject is NodeSubject.Module module)
         {
-            NodeSubject.Module module => new CodeExport.WholeModule(module.Value),
-            NodeSubject.Namespace ns => new CodeExport.Namespace(ns.Value.Module, ns.Value.Name, NodeDefinitions.GetTypes(ns.Value)),
-            _ => new CodeExport.Document(RequestOf(session, node)),
-        };
+            return new CodeExport.WholeModule(module.Value);
+        }
+
+        if (node.Subject is NodeSubject.Namespace ns)
+        {
+            return new CodeExport.Namespace(ns.Value.Module, ns.Value.Name, NodeDefinitions.GetTypes(ns.Value));
+        }
+
+        return new CodeExport.Document(await RequestOfAsync(session, node, ct));
     }
 
-    private static DocumentRequest RequestOf(BrowseSession session, BrowseNode node)
+    /// <summary>What decompiling <paramref name="node"/> asks for, with the children a summary of it lists, built on
+    /// the way.</summary>
+    private static async Task<DocumentRequest> RequestOfAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
+    {
+        var children = await ListSummarizedChildrenAsync(session, node, ct);
+        return RequestOf(node, children);
+    }
+
+    /// <summary>The children a summary of <paramref name="node"/> lists, each with the children it lists in turn: those
+    /// of a package, resources, references, base and derived types, namespaces and the types used from a reference;
+    /// none for a node whose document lists none.</summary>
+    private static async Task<SummarizedChildren> ListSummarizedChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
+    {
+        if (!IsSummarizedWithChildren(node.Subject))
+        {
+            return SummarizedChildren.None;
+        }
+
+        var children = await BrowseSessions.ListChildrenAsync(session, node, ct);
+        var nested = new Dictionary<BrowseNode, SummarizedChildren>(ReferenceEqualityComparer.Instance);
+        foreach (var child in children)
+        {
+            if (child.Subject is NodeSubject.TypeReference)
+            {
+                nested[child] = await ListSummarizedChildrenAsync(session, child, ct);
+            }
+        }
+        return new SummarizedChildren { Children = children, Nested = nested };
+    }
+
+    /// <summary>Whether a summary of a node of <paramref name="subject"/> lists its children.</summary>
+    private static bool IsSummarizedWithChildren(NodeSubject subject)
+    {
+        if (subject is NodeSubject.ResourceContainer container)
+        {
+            return container.Value.Contents is ContainerContents.AvaloniaAssets;
+        }
+
+        return subject is NodeSubject.Package or NodeSubject.Resources or NodeSubject.References or NodeSubject.ReferencedTypes
+            or NodeSubject.TypeReference or NodeSubject.ModuleReference or NodeSubject.BaseTypes or NodeSubject.DerivedTypes
+            or NodeSubject.Namespace;
+    }
+
+    /// <summary>The children a summary lists, built before it is written, and the children each of them lists in
+    /// turn.</summary>
+    private sealed class SummarizedChildren
+    {
+        public static SummarizedChildren None { get; } = new SummarizedChildren
+        {
+            Children = [], Nested = new Dictionary<BrowseNode, SummarizedChildren>(),
+        };
+
+        public required IReadOnlyList<BrowseNode> Children { get; init; }
+
+        public required IReadOnlyDictionary<BrowseNode, SummarizedChildren> Nested { get; init; }
+    }
+
+    private static DocumentRequest RequestOf(BrowseNode node, SummarizedChildren children)
     {
         return node.Subject switch
         {
@@ -117,11 +187,11 @@ public static class NodeContentLoader
             NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
                 or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
                 or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType =>
-                new DocumentRequest.Summary(SummaryOf(session, node), node.SourceModule, node.Text, node.FullName),
-            NodeSubject.Resources => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
+                new DocumentRequest.Summary(SummaryOf(node, children), node.SourceModule, node.Text, node.FullName),
+            NodeSubject.Resources => new DocumentRequest.Summary(DescribeResources(children), node.SourceModule, node.Text, node.FullName),
             NodeSubject.ResourceContainer container => container.Value.Contents switch
             {
-                ContainerContents.AvaloniaAssets => new DocumentRequest.Summary(DescribeResources(session, node), node.SourceModule, node.Text, node.FullName),
+                ContainerContents.AvaloniaAssets => new DocumentRequest.Summary(DescribeResources(children), node.SourceModule, node.Text, node.FullName),
                 ContainerContents.ResourcesFile => ResourceRequest(node, ResourceNodes.CreateData(container.Value)),
                 _ => throw new UnreachableException(),
             },
@@ -135,12 +205,12 @@ public static class NodeContentLoader
             NodeSubject.MetadataTables tables => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListTablesLines(tables.Folder)), node.SourceModule, node.Text,
                 node.FullName),
             NodeSubject.MetadataTable table => new DocumentRequest.Summary(new SummaryInfo.Comments(MetadataTables.ListPartLines(table.Value)), node.SourceModule, node.Text, node.FullName),
-            NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(BrowseSessions.ListChildren(session, node).Select(DescribePackageChild).ToList()), null,
+            NodeSubject.Package => new DocumentRequest.Summary(new SummaryInfo.Comments(children.Children.Select(DescribePackageChild).ToList()), null,
                 node.Text, node.FullName),
             NodeSubject.PackageFile file => ResourceRequest(node, ResourceNodes.CreateData(file.Value)),
             NodeSubject.Module module => new DocumentRequest.ModulePreview(module.Value, node.Text, node.FullName),
             NodeSubject.FailedAssembly failed => new DocumentRequest.Failure(failed.Value, node.Text, node.FullName),
-            NodeSubject.Namespace => new DocumentRequest.Summary(new SummaryInfo.Namespace(node.Text, ListNamespaceEntries(session, node)), node.SourceModule,
+            NodeSubject.Namespace => new DocumentRequest.Summary(new SummaryInfo.Namespace(node.Text, ListNamespaceEntries(children)), node.SourceModule,
                 node.Text, node.FullName),
             _ => throw new UnreachableException(),
         };
@@ -151,30 +221,31 @@ public static class NodeContentLoader
         return new DocumentRequest.Resource(node.SourceModule, resource.Description, resource.ReadData, node.Text, node.FullName);
     }
 
-    /// <summary>A comment a resource, describing each that <paramref name="node"/> lists.</summary>
-    private static SummaryInfo.Comments DescribeResources(BrowseSession session, BrowseNode node)
+    /// <summary>A comment a resource, describing each that <paramref name="children"/> lists.</summary>
+    private static SummaryInfo.Comments DescribeResources(SummarizedChildren children)
     {
-        return new SummaryInfo.Comments(BrowseSessions.ListChildren(session, node).Select(static c => BrowseNodes.FindResourceData(c.Subject)).OfType<ResourceData>().Select(static r => r.Description).ToList());
+        return new SummaryInfo.Comments(children.Children.Select(static c => BrowseNodes.FindResourceData(c.Subject)).OfType<ResourceData>().Select(static r => r.Description).ToList());
     }
 
-    /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists.</summary>
-    private static SummaryInfo SummaryOf(BrowseSession session, BrowseNode node)
+    /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists of
+    /// <paramref name="children"/>.</summary>
+    private static SummaryInfo SummaryOf(BrowseNode node, SummarizedChildren children)
     {
         return node.Subject switch
         {
             NodeSubject.References => new SummaryInfo.References(
-                ChildrenAbout<NodeSubject.AssemblyReference>(session, node).Select(static r => new SummaryLink(r.FullName, NodeDefinitions.FindTarget(r.Subject))).ToList(),
-                ChildrenAbout<NodeSubject.ModuleReference>(session, node).Select(static m => m.Text).ToList()),
+                ChildrenAbout<NodeSubject.AssemblyReference>(children).Select(static r => new SummaryLink(r.FullName, NodeDefinitions.FindTarget(r.Subject))).ToList(),
+                ChildrenAbout<NodeSubject.ModuleReference>(children).Select(static m => m.Text).ToList()),
             NodeSubject.AssemblyReference reference => new SummaryInfo.AssemblyReference(reference.Value.Module, reference.Value.Reference),
-            NodeSubject.ReferencedTypes => new SummaryInfo.Used(ListUsed(session, node)),
-            NodeSubject.TypeReference or NodeSubject.MemberReference => new SummaryInfo.Used([UsedOf(session, node)]),
+            NodeSubject.ReferencedTypes => new SummaryInfo.Used(ListUsed(children)),
+            NodeSubject.TypeReference or NodeSubject.MemberReference => new SummaryInfo.Used([UsedOf(node, children)]),
             NodeSubject.ModuleReference module => new SummaryInfo.ModuleReference(module.Value.Name, module.Value.ContainsMetadata,
-                ChildrenAbout<NodeSubject.ImportedMethod>(session, node).Select(static i => new SummaryLink(i.FullName, NodeDefinitions.FindTarget(i.Subject))).ToList()),
+                ChildrenAbout<NodeSubject.ImportedMethod>(children).Select(static i => new SummaryLink(i.FullName, NodeDefinitions.FindTarget(i.Subject))).ToList()),
             NodeSubject.ImportedMethod import => new SummaryInfo.ImportedMethod(new SummaryLink(node.FullName, NodeDefinitions.FindTarget(node.Subject)), import.Value.EntryPoint,
                 import.Value.ModuleName),
             NodeSubject.ForwardedType forwarded => new SummaryInfo.ForwardedType(forwarded.Value.FullName, NodeDefinitions.FindTarget(node.Subject), forwarded.Value.Destination),
             NodeSubject.BaseTypes or NodeSubject.DerivedTypes =>
-                new SummaryInfo.Types(BrowseSessions.ListChildren(session, node).Select(static c => new SummaryLink(c.Text, NodeDefinitions.FindTarget(c.Subject))).ToList()),
+                new SummaryInfo.Types(children.Children.Select(static c => new SummaryLink(c.Text, NodeDefinitions.FindTarget(c.Subject))).ToList()),
             NodeSubject.BaseType or NodeSubject.DerivedType => new SummaryInfo.Types([new SummaryLink(node.Text, NodeDefinitions.FindTarget(node.Subject))]),
             NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.Resources or NodeSubject.ResourceContainer
                 or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
@@ -184,9 +255,9 @@ public static class NodeContentLoader
     }
 
     /// <summary>The children of <paramref name="node"/> that stand for a <typeparamref name="TSubject"/>.</summary>
-    private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(BrowseSession session, BrowseNode node) where TSubject : NodeSubject
+    private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(SummarizedChildren children) where TSubject : NodeSubject
     {
-        return BrowseSessions.ListChildren(session, node).Where(static c => c.Subject is TSubject);
+        return children.Children.Where(static c => c.Subject is TSubject);
     }
 
     private static string DescribePackageChild(BrowseNode child)
@@ -206,10 +277,10 @@ public static class NodeContentLoader
     }
 
     /// <summary>The types the namespace defines and forwards, but those the compiler made up.</summary>
-    private static List<NamespaceEntry> ListNamespaceEntries(BrowseSession session, BrowseNode ns)
+    private static List<NamespaceEntry> ListNamespaceEntries(SummarizedChildren children)
     {
         var entries = new List<NamespaceEntry>();
-        foreach (var child in BrowseSessions.ListChildren(session, ns))
+        foreach (var child in children.Children)
         {
             var visibility = child.Visibility;
             if (visibility.IsCompilerGenerated)
@@ -231,19 +302,21 @@ public static class NodeContentLoader
     }
 
     /// <summary>The types and members <paramref name="node"/> lists as used from a reference.</summary>
-    private static List<UsedEntry> ListUsed(BrowseSession session, BrowseNode node)
+    private static List<UsedEntry> ListUsed(SummarizedChildren children)
     {
-        return BrowseSessions.ListChildren(session, node)
-            .Select(c => UsedOf(session, c))
+        return children.Children
+            .Select(c => UsedOf(c, children.Nested.GetValueOrDefault(c) ?? SummarizedChildren.None))
             .ToList();
     }
 
-    private static UsedEntry UsedOf(BrowseSession session, BrowseNode node)
+    /// <summary>What a summary says of <paramref name="node"/>, used from a reference, and of
+    /// <paramref name="children"/>, the children it lists.</summary>
+    private static UsedEntry UsedOf(BrowseNode node, SummarizedChildren children)
     {
         return node.Subject switch
         {
             NodeSubject.ForwardedType forwarded => new UsedEntry.Forwarded(ForwardedLineOf(node, forwarded)),
-            NodeSubject.TypeReference type => new UsedEntry.Type(type.Value.FullName, NodeDefinitions.FindTarget(node.Subject), ListUsed(session, node)),
+            NodeSubject.TypeReference type => new UsedEntry.Type(type.Value.FullName, NodeDefinitions.FindTarget(node.Subject), ListUsed(children)),
             NodeSubject.MemberReference member => new UsedEntry.Member(node.Text, UsedMemberSpan(NodeDefinitions.GetDeclared(member.Value)), NodeDefinitions.FindTarget(node.Subject)),
             _ => throw new UnreachableException(),
         };

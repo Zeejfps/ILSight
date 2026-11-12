@@ -43,7 +43,7 @@ internal static class MethodUsedByAnalyzer
             yield return parent;
         }
 
-        var users = AnalyzerScope.Create(context.AssemblyList, analyzed).FindMembersWithCode(
+        var users = AnalyzerScope.Create(context, analyzed).FindMembersWithCode(
             method => method.ParentModule is MetadataModule module
                 && MethodBodies.HasToken(MethodBodies.Find(method), (opCode, token) => References(module, opCode, token)),
             context.CancellationToken);

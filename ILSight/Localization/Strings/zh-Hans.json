@@ -530,6 +530,7 @@
   "bookmarks.import_cancel": "取消",
   "analyzer.loading": "正在加载…",
   "analyzer.hint": "右键单击类型或成员并选择“分析”，或在树中选中它后按 {shortcut}。",
+  "analyzer.unreadable": "{name}：无法读取（{why}）",
   "analyzer.clear": "清除",
   "analyzer.remove": "移除",
   "analyzer.remove_analysis": "移除分析",

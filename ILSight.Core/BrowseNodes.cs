@@ -198,8 +198,48 @@ public static class BrowseNodes
         };
     }
 
-    /// <summary>Builds the children in ILSpy's order; the <see cref="BrowseSession"/> calls it once.</summary>
-    internal static BrowseNode[] CreateChildren(BrowseNode parent)
+    /// <summary>The module whose type system building the children of a node of <paramref name="subject"/> reads: a
+    /// module's own, a type reference's or a module reference's module; null for any other.</summary>
+    internal static LoadedModule? FindModuleReadForChildren(NodeSubject subject)
+    {
+        if (subject is NodeSubject.Module module)
+        {
+            return module.Value;
+        }
+
+        if (subject is NodeSubject.TypeReference type)
+        {
+            return type.Value.Module;
+        }
+
+        if (subject is NodeSubject.ModuleReference reference)
+        {
+            return reference.Value.Module;
+        }
+
+        return null;
+    }
+
+    /// <summary>The module of the type whose derived types are the children of a node of <paramref name="subject"/>;
+    /// null for any other.</summary>
+    internal static LoadedModule? FindDerivedTypesModule(NodeSubject subject)
+    {
+        if (subject is NodeSubject.DerivedTypes derivedTypes)
+        {
+            return derivedTypes.Type.Module;
+        }
+
+        if (subject is NodeSubject.DerivedType derived)
+        {
+            return derived.Value.Module;
+        }
+
+        return null;
+    }
+
+    /// <summary>Builds the children in ILSpy's order, with <paramref name="reads"/>, what the build reads, awaited before
+    /// it began; the <see cref="BrowseSession"/> calls it once.</summary>
+    internal static BrowseNode[] CreateChildren(BrowseNode parent, ChildrenReads reads)
     {
         return parent.Subject switch
         {
@@ -208,18 +248,18 @@ public static class BrowseNodes
             NodeSubject.References references => ReferenceNodes.ListAssemblyReferences(references.Owner, parent).Concat(ReferenceNodes.ListModuleReferences(references.Owner, parent)).ToArray(),
             NodeSubject.AssemblyReference reference => ReferenceNodes.ListReferenceContents(parent, reference.Value),
             NodeSubject.ReferencedTypes types => ReferenceNodes.ListUsedTypes(parent, types.Reference),
-            NodeSubject.TypeReference type => ReferenceNodes.ListUsedOf(parent, type.Value),
-            NodeSubject.ModuleReference module => ReferenceNodes.ListImports(parent, module.Value),
+            NodeSubject.TypeReference type => ReferenceNodes.ListUsedOf(parent, type.Value, reads.RequireMain()),
+            NodeSubject.ModuleReference module => ReferenceNodes.ListImports(parent, module.Value, reads.RequireMain()),
             NodeSubject.BaseTypes baseTypes => EntityNodes.ListBaseTypes(parent, baseTypes.Type),
-            NodeSubject.DerivedTypes derivedTypes => EntityNodes.FindDerivedTypes(derivedTypes.Type.Module, parent, NodeDefinitions.GetSymbol(derivedTypes.Type)),
-            NodeSubject.DerivedType derived => EntityNodes.FindDerivedTypes(derived.Value.Module, parent, NodeDefinitions.GetSymbol(derived.Value)),
+            NodeSubject.DerivedTypes derivedTypes => EntityNodes.FindDerivedTypes(derivedTypes.Type.Module, parent, NodeDefinitions.GetSymbol(derivedTypes.Type), reads),
+            NodeSubject.DerivedType derived => EntityNodes.FindDerivedTypes(derived.Value.Module, parent, NodeDefinitions.GetSymbol(derived.Value), reads),
             NodeSubject.Resources resources => ResourceNodes.ListResources(parent, resources.Owner),
             NodeSubject.ResourceContainer container => ResourceNodes.ListEntries(parent, container.Value),
             NodeSubject.Metadata metadata => MetadataNodes.ListMetadata(parent, metadata.Value),
             NodeSubject.MetadataTables tables => MetadataTableNodes.List(parent, tables.Folder),
             NodeSubject.MetadataTable table => table.Value.Part is MetadataPart.DebugDirectory directory ? MetadataNodes.ListDebugEntries(parent, table.Value.Module, directory.File) : [],
             NodeSubject.Package package => PackageNodes.ListPackageFolder(parent, package.Value),
-            NodeSubject.Module module => ModuleNodes.ListModule(parent, module.Value),
+            NodeSubject.Module module => ModuleNodes.ListModule(parent, module.Value, reads.RequireMain()),
             NodeSubject.Namespace ns => ModuleNodes.ListNamespace(parent, ns.Value),
             NodeSubject.MemberReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseType
                 or NodeSubject.ResourceEntry or NodeSubject.PackageFile or NodeSubject.FailedAssembly => [],

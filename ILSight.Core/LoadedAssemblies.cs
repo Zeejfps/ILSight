@@ -223,50 +223,59 @@ public static class LoadedAssemblies
         return GetLibrary(module).DebugSymbols.Value;
     }
 
-    /// <summary>The assembly's type system, waiting for its read when it is under way, and beginning it when it has not
-    /// begun. Throws again what the library threw reading it, as every asker does.</summary>
-    public static DecompilerTypeSystem EnsureTypeSystem(LoadedModule module)
-    {
-        var read = GetLibrary(module).TypeSystem.ReadAsync(CancellationToken.None).GetAwaiter().GetResult();
-        return read.Match(static r => r.TypeSystem, ThrowAgain);
-    }
-
-    /// <summary>Begins reading the assembly's type system ahead of its first use, which takes the same read's outcome;
-    /// ends when the read does, throwing nothing for a module the library fails on (its first use shows that). Only
-    /// <paramref name="ct"/> being cancelled before the read began ends it early.</summary>
-    public static Task ReadTypeSystemAsync(LoadedModule module, CancellationToken ct)
+    /// <summary>The read of the assembly's type system: begun by whoever asks first (the frame edge, reading it ahead of
+    /// its first use, or that use), on the thread pool, and kept, so every asker takes the same outcome: the type system,
+    /// or what the library threw on the module. A unit whose sync read needs it awaits this before that read starts,
+    /// matches it once and hands its sync code the type system. Only <paramref name="ct"/> being cancelled before the
+    /// read began ends it early.</summary>
+    public static Task<TypeSystemRead> ReadTypeSystemAsync(LoadedModule module, CancellationToken ct)
     {
         return GetLibrary(module).TypeSystem.ReadAsync(ct);
     }
 
-    private static DecompilerTypeSystem ThrowAgain(TypeSystemRead.Unreadable unreadable)
+    /// <summary>Awaits the read of <paramref name="module"/>'s type system, then does <paramref name="work"/> with it on
+    /// the thread the read ends on; for a module the library could not read, says why and does nothing.</summary>
+    internal static async Task<TypeSystemWork<T>> WithTypeSystemAsync<T>(LoadedModule module, Func<DecompilerTypeSystem, T> work, CancellationToken ct)
     {
-        unreadable.Thrown.Throw();
-        throw new UnreachableException();
+        var read = await ReadTypeSystemAsync(module, ct);
+        return read.Match<TypeSystemWork<T>>(
+            r => new TypeSystemWork<T>.Done { Value = work(r.TypeSystem) },
+            u => new TypeSystemWork<T>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } });
     }
 
-    /// <summary>The module of the type system this assembly's metadata is read into, waiting for its read as
-    /// <see cref="EnsureTypeSystem"/> does; null when the library could not read it (its first use says why).</summary>
-    internal static MetadataModule? FindMainModule(LoadedModule module)
+    /// <summary>The reads of <paramref name="modules"/>' type systems, each awaited and matched once: those read, and
+    /// those the library could not read, with what it threw, in the order given.</summary>
+    internal static async Task<ModuleTypeSystems> ReadTypeSystemsAsync(IEnumerable<LoadedModule> modules, CancellationToken ct)
     {
-        var read = GetLibrary(module).TypeSystem.ReadAsync(CancellationToken.None).GetAwaiter().GetResult();
-        return read.Match<MetadataModule?>(static r => r.TypeSystem.MainModule, static _ => null);
+        var read = new Dictionary<MetadataFile, DecompilerTypeSystem>();
+        var unreadable = new List<UnreadableModule>();
+        foreach (var module in modules)
+        {
+            var outcome = await ReadTypeSystemAsync(module, ct);
+            var typeSystem = outcome.Match<DecompilerTypeSystem?>(static r => r.TypeSystem, u => NoteUnreadable(unreadable, module, u));
+            if (typeSystem is not null)
+            {
+                read[GetFile(module)] = typeSystem;
+            }
+        }
+        return new ModuleTypeSystems { Read = read, Unreadable = unreadable };
     }
 
-    /// <summary>The module of the type system this assembly's metadata is read into, read the first time.</summary>
-    public static MetadataModule EnsureMainModule(LoadedModule module)
+    private static DecompilerTypeSystem? NoteUnreadable(List<UnreadableModule> unreadable, LoadedModule module, TypeSystemRead.Unreadable read)
     {
-        return EnsureTypeSystem(module).MainModule;
+        unreadable.Add(new UnreadableModule { Module = module, Why = read.Thrown.SourceException });
+        return null;
     }
 
-    /// <summary>The type system decompiling with <paramref name="settings"/> reads: the assembly's own
-    /// unless they turn language features on or off that it models.</summary>
-    internal static DecompilerTypeSystem EnsureTypeSystemFor(LoadedModule module, DecompilerSettings settings)
+    /// <summary>The type system decompiling with <paramref name="settings"/> reads: <paramref name="typeSystem"/>, the
+    /// assembly's own as read, unless they turn language features on or off that it models; then the one made for
+    /// them, made the first time on this thread, inside the caller's read.</summary>
+    internal static DecompilerTypeSystem ChooseTypeSystemFor(LoadedModule module, DecompilerTypeSystem typeSystem, DecompilerSettings settings)
     {
         var options = DecompilerTypeSystem.GetOptions(settings);
         if (options == DefaultTypeSystemOptions)
         {
-            return EnsureTypeSystem(module);
+            return typeSystem;
         }
 
         var library = GetLibrary(module);

@@ -28,19 +28,22 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assembl
     /// member name lead.</summary>
     public async Task<Outcome<List<NodePath?>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
     {
-        var found = await Background.Wait(Task.Run(() => LookUpPlaces(records), ct));
+        var found = await Background.Wait(Task.Run(() => FindPlacesAsync(records, ct), ct));
         ct.ThrowIfCancellationRequested();
         return found;
     }
 
-    private List<NodePath?> LookUpPlaces(IReadOnlyList<BookmarkRecord> records)
+    private async Task<List<NodePath?>> FindPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
     {
-        return records
-            .Select(FindPlace)
-            .ToList();
+        var places = new List<NodePath?>(records.Count);
+        foreach (var record in records)
+        {
+            places.Add(await FindPlaceAsync(record, ct));
+        }
+        return places;
     }
 
-    private NodePath? FindPlace(BookmarkRecord record)
+    private async Task<NodePath?> FindPlaceAsync(BookmarkRecord record, CancellationToken ct)
     {
         if (record.Location is not null)
         {
@@ -48,7 +51,7 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assembl
         }
 
         var treePath = record.ViewState?.SelectedTreeNodePath;
-        var node = ILSpyTree.Locate(assemblies, session, record.FileName, treePath, record.Token, record.MemberName);
+        var node = await ILSpyTree.LocateAsync(assemblies, session, record.FileName, treePath, record.Token, record.MemberName, ct);
         if (node is null)
         {
             return null;

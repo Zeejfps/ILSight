@@ -471,4 +471,16 @@ public sealed class DecompilationTests
         Assert.False(copy.HasChanges);
         Assert.Equal(DecompilerOptions.Default, copy);
     }
+
+    [Fact]
+    public void A_module_the_library_cannot_read_shows_why_as_its_document()
+    {
+        using var temp = new TempDir();
+        var module = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath));
+
+        var document = module.Root.Decompile(DecompilationLanguage.CSharp);
+
+        Assert.NotNull(document.Error);
+        Assert.StartsWith("// Error decompiling", document.Lines[0].Text);
+    }
 }

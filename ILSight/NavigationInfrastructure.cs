@@ -21,26 +21,26 @@ public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assem
     /// lookup threw as <see cref="Outcome{T}.Failed"/>.</summary>
     public async Task<Outcome<BrowseNode?>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => NodeLookup.Find(assemblies, session, reference), ct));
+        return await Background.Wait(Task.Run(() => NodeLookup.FindAsync(assemblies, session, reference, ct), ct));
     }
 
     /// <inheritdoc cref="LookUpReferenceAsync"/>
     public async Task<Outcome<MetadataTarget?>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => NodeLookup.FindMetadataRow(assemblies, session, reference), ct));
+        return await Background.Wait(Task.Run(() => NodeLookup.FindMetadataRowAsync(assemblies, session, reference, ct), ct));
     }
 
     /// <inheritdoc cref="LookUpReferenceAsync"/>
     public async Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => NodeLookup.Find(assemblies, session, place), ct));
+        return await Background.Wait(Task.Run(() => NodeLookup.FindAsync(assemblies, session, place, ct), ct));
     }
 
     /// <summary>Looks among the listed assemblies on the thread pool, opening nothing, and comes back on the UI thread,
     /// with whatever the lookup threw as <see cref="Outcome{T}.Failed"/>.</summary>
     public async Task<Outcome<BrowseNode?>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => NodeLookup.FindListed(assemblies, session, place), ct));
+        return await Background.Wait(Task.Run(() => NodeLookup.FindListedAsync(assemblies, session, place, ct), ct));
     }
 
     /// <summary>Looks among the listed assemblies on the thread pool and comes back on the UI thread, with whatever
@@ -48,33 +48,36 @@ public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assem
     /// lets through.</summary>
     public async Task<Outcome<List<BrowseNode?>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
     {
-        var found = await Background.Wait(Task.Run(() => LookUpListedPlaces(places), ct));
+        var found = await Background.Wait(Task.Run(() => FindListedPlacesAsync(places, ct), ct));
         ct.ThrowIfCancellationRequested();
         return found;
     }
 
-    private List<BrowseNode?> LookUpListedPlaces(IReadOnlyList<NodePath?> places)
+    private async Task<List<BrowseNode?>> FindListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
     {
-        return places
-            .Select(LookUpListedPlace)
-            .ToList();
+        var found = new List<BrowseNode?>(places.Count);
+        foreach (var place in places)
+        {
+            found.Add(await FindListedPlaceAsync(place, ct));
+        }
+        return found;
     }
 
-    private BrowseNode? LookUpListedPlace(NodePath? place)
+    private async Task<BrowseNode?> FindListedPlaceAsync(NodePath? place, CancellationToken ct)
     {
         if (place is null)
         {
             return null;
         }
 
-        return NodeLookup.FindListed(assemblies, session, place);
+        return await NodeLookup.FindListedAsync(assemblies, session, place, ct);
     }
 
     /// <summary>Looks on the thread pool and comes back on the UI thread, with whatever the lookup threw as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
     public async Task<Outcome<string?>> LookUpApiReferencePageAsync(CodeReference.Entity reference, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => AssemblyListing.FindApiReferencePage(assemblies, reference), ct));
+        return await Background.Wait(Task.Run(() => AssemblyListing.FindApiReferencePageAsync(assemblies, reference, ct), ct));
     }
 
     /// <summary>Opens and looks on the thread pool, the opening cancelled with the opens under way now, and comes
@@ -82,10 +85,10 @@ public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assem
     public async Task<Outcome<BrowseNode?>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
     {
         var opening = opens.Token;
-        return await Background.Wait(Task.Run(() => OpenAndFindId(paths, idString, opening), ct));
+        return await Background.Wait(Task.Run(() => OpenAndLookUpIdAsync(paths, idString, opening), ct));
     }
 
-    private BrowseNode? OpenAndFindId(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken opening)
+    private async Task<BrowseNode?> OpenAndLookUpIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken opening)
     {
         var opened = new List<LoadedAssembly>();
         foreach (var path in paths)
@@ -94,6 +97,6 @@ public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assem
         }
 
         var scope = Navigation.ListIdScope(assemblies, opened);
-        return NodeLookup.FindById(session, idString, scope);
+        return await NodeLookup.FindByIdAsync(session, idString, scope, opening);
     }
 }

@@ -14,7 +14,7 @@ internal static class ModuleNodes
     /// <summary>The metadata, the debug metadata when there is some, the references and the resources,
     /// then every namespace a type is in or a name nests in, flat and sorted by name, each knowing the
     /// one it nests in.</summary>
-    internal static BrowseNode[] ListModule(BrowseNode parent, LoadedModule module)
+    internal static BrowseNode[] ListModule(BrowseNode parent, LoadedModule module, MetadataModule main)
     {
         var file = LoadedAssemblies.GetFile(module);
         var result = new List<BrowseNode> { MetadataNodes.CreateMetadataFolder(module, parent, file, "Metadata") };
@@ -31,7 +31,7 @@ internal static class ModuleNodes
         }
 
         var byNamespace = new Dictionary<string, List<ITypeDefinition>>(StringComparer.Ordinal);
-        foreach (var type in LoadedAssemblies.EnsureMainModule(module).TopLevelTypeDefinitions)
+        foreach (var type in main.TopLevelTypeDefinitions)
         {
             if (Members.IsMissing(type))
             {

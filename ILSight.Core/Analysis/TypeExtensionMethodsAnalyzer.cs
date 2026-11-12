@@ -24,7 +24,7 @@ internal static class TypeExtensionMethodsAnalyzer
             yield break;
         }
 
-        foreach (var type in AnalyzerScope.Create(context.AssemblyList, analyzed).GetTypes(context.CancellationToken))
+        foreach (var type in AnalyzerScope.Create(context, analyzed).GetTypes(context.CancellationToken))
         {
             if (!type.HasExtensions)
             {

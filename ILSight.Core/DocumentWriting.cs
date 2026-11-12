@@ -66,12 +66,13 @@ internal static class DocumentWriting
             return names;
         }
 
-        var main = LoadedAssemblies.FindMainModule(module);
-        if (main is null)
+        var typeSystem = builder.TypeSystem;
+        if (typeSystem is null)
         {
             return names;
         }
 
+        var main = typeSystem.MainModule;
         foreach (var token in tokens)
         {
             var entity = ResolveEntity(main, token);
@@ -565,7 +566,8 @@ internal static class DocumentWriting
     private static IEntity? ResolveDefinition(DocumentBuilder builder, MetadataFile metadata, EntityHandle handle)
     {
         var assembly = builder.Assembly;
-        if (assembly is null)
+        var typeSystem = builder.TypeSystem;
+        if (assembly is null || typeSystem is null)
         {
             return null;
         }
@@ -578,7 +580,7 @@ internal static class DocumentWriting
 
         try
         {
-            return Definitions.Resolve(LoadedAssemblies.EnsureMainModule(builder.Assembly), handle);
+            return Definitions.Resolve(typeSystem.MainModule, handle);
         }
         catch (BadImageFormatException)
         {

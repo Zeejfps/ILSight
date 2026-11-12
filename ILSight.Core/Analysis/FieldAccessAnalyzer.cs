@@ -22,7 +22,7 @@ internal static class FieldAccessAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(FieldAccessKind kind, IField field, AnalyzerContext context)
     {
-        return AnalyzerScope.Create(context.AssemblyList, field).FindMembersWithCode(method => Accesses(kind, method, field, context), context.CancellationToken);
+        return AnalyzerScope.Create(context, field).FindMembersWithCode(method => Accesses(kind, method, field, context), context.CancellationToken);
     }
 
     private static bool Accesses(FieldAccessKind kind, IMethod method, IField field, AnalyzerContext context)

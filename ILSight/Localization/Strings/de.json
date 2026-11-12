@@ -530,6 +530,7 @@
   "bookmarks.import_cancel": "Abbrechen",
   "analyzer.loading": "Wird geladen…",
   "analyzer.hint": "Klicken Sie mit der rechten Maustaste auf einen Typ oder Member und wählen Sie „Analysieren“, oder wählen Sie ihn in der Struktur aus und drücken Sie {shortcut}.",
+  "analyzer.unreadable": "{name}: konnte nicht gelesen werden ({why})",
   "analyzer.clear": "Leeren",
   "analyzer.remove": "Entfernen",
   "analyzer.remove_analysis": "Analyse entfernen",

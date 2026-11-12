@@ -530,6 +530,7 @@
   "bookmarks.import_cancel": "취소",
   "analyzer.loading": "로드 중…",
   "analyzer.hint": "형식이나 멤버를 마우스 오른쪽 단추로 클릭하고 [분석]을 선택하거나, 트리에서 선택한 후 {shortcut}를 누르세요.",
+  "analyzer.unreadable": "{name}: 읽을 수 없습니다 ({why})",
   "analyzer.clear": "지우기",
   "analyzer.remove": "제거",
   "analyzer.remove_analysis": "분석 제거",

@@ -26,7 +26,7 @@ public sealed class MicrosoftDocsTests
     }
 
     [Fact]
-    public void A_reference_in_code_finds_the_page_of_its_definition_but_not_of_a_private_member_or_a_local()
+    public async Task A_reference_in_code_finds_the_page_of_its_definition_but_not_of_a_private_member_or_a_local()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
         var document = assembly.Calculator().Decompile(DecompilationLanguage.CSharp);
@@ -34,8 +34,8 @@ public sealed class MicrosoftDocsTests
         var add = assembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var item = add.SpansOf().First(s => s.Text == "item").Span.Reference;
 
-        Assert.Equal(ApiReference + "system.collections.generic.list-1.add", AssemblyListing.FindApiReferencePage(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference)));
-        Assert.Null(AssemblyListing.FindApiReferencePage(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("_items").Reference)));
+        Assert.Equal(ApiReference + "system.collections.generic.list-1.add", await AssemblyListing.FindApiReferencePageAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None));
+        Assert.Null(await AssemblyListing.FindApiReferencePageAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("_items").Reference), CancellationToken.None));
         Assert.IsType<CodeReference.Local>(item);
         Assert.DoesNotContain(list.Listed, a => a.Name == "System.Private.CoreLib");
     }

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Diagrams;
@@ -9,9 +10,9 @@ public static class TypeCards
 {
     /// <summary>The card of the type <paramref name="type"/> points at; null when it points at no type,
     /// or that cannot be resolved.</summary>
-    public static TypeCard? Read(AssemblyList list, CodeReference.Entity type)
+    public static async Task<TypeCard?> ReadAsync(AssemblyList list, CodeReference.Entity type, CancellationToken ct)
     {
-        var definition = AssemblyListing.FindTypeDefinition(list, type);
+        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, ct);
         if (definition is null)
         {
             return null;
@@ -23,9 +24,9 @@ public static class TypeCards
     /// <summary>The card of the type <paramref name="type"/> points at, then the cards of the types of its
     /// own assembly it is directly related to: those it derives from, implements or holds, and those
     /// deriving from it or implementing it. None when it points at no type.</summary>
-    public static List<TypeCard> ReadWithNeighbours(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
+    public static async Task<List<TypeCard>> ReadWithNeighboursAsync(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
-        var definition = AssemblyListing.FindTypeDefinition(list, type);
+        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, cancellationToken);
         if (definition is null)
         {
             return [];
@@ -52,9 +53,9 @@ public static class TypeCards
 
     /// <summary>The card of the type <paramref name="anchor"/> names; null when its assembly cannot be
     /// read or no longer defines it.</summary>
-    public static TypeCard? Read(AssemblyList list, TypeAnchor anchor)
+    public static async Task<TypeCard?> ReadAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
     {
-        var definition = AssemblyListing.FindTypeDefinition(list, anchor);
+        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, anchor, ct);
         if (definition is null)
         {
             return null;
@@ -64,20 +65,32 @@ public static class TypeCards
     }
 
     /// <summary>The cards of the types deriving directly from, or implementing, the type
-    /// <paramref name="type"/> points at, among the assemblies <paramref name="list"/> holds now.</summary>
-    public static List<TypeCard> ReadDerived(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
+    /// <paramref name="type"/> points at, among the assemblies <paramref name="list"/> holds now, once the reads of
+    /// the type systems the search can reach ended; a module the search reached that the library could not read, with
+    /// no cards, when there is one.</summary>
+    public static async Task<TypeSystemWork<List<TypeCard>>> ReadDerivedAsync(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
-        var definition = AssemblyListing.FindTypeDefinition(list, type);
+        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, cancellationToken);
         if (definition is null)
         {
-            return [];
+            return new TypeSystemWork<List<TypeCard>>.Done { Value = [] };
         }
 
-        return DerivedTypes.Find(list, definition, cancellationToken)
+        var module = AssemblyListing.GetLoadedFrom(list, DecompilerFacts.GetMetadataFile(definition));
+        var reachable = await DerivedTypes.ReadReachableAsync(module, cancellationToken);
+        var unreadable = new ConcurrentDictionary<LoadedModule, UnreadableModule>();
+        var cards = DerivedTypes.Find(list, reachable, unreadable, definition, cancellationToken)
             .Where(IsShown)
             .Select(Read)
             .OfType<TypeCard>()
             .ToList();
+        var first = unreadable.Values.FirstOrDefault();
+        if (first is not null)
+        {
+            return new TypeSystemWork<List<TypeCard>>.Unreadable { Module = first };
+        }
+
+        return new TypeSystemWork<List<TypeCard>>.Done { Value = cards };
     }
 
     /// <summary>The card of <paramref name="type"/>; null when it has no metadata file or token to be
@@ -85,7 +98,7 @@ public static class TypeCards
     internal static TypeCard? Read(ITypeDefinition type)
     {
         var reference = CodeReferences.Find(type);
-        if (reference == null)
+        if (reference is null)
         {
             return null;
         }

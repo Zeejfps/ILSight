@@ -530,6 +530,7 @@
   "bookmarks.import_cancel": "キャンセル",
   "analyzer.loading": "読み込み中…",
   "analyzer.hint": "型またはメンバーを右クリックして [分析] を選ぶか、ツリーで選択して {shortcut} を押します。",
+  "analyzer.unreadable": "{name}: 読み込めませんでした ({why})",
   "analyzer.clear": "クリア",
   "analyzer.remove": "削除",
   "analyzer.remove_analysis": "分析を削除",

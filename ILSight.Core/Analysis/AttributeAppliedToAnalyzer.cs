@@ -27,11 +27,10 @@ internal static class AttributeAppliedToAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition attributeType, AnalyzerContext context)
     {
-        var scope = AnalyzerScope.Create(context.AssemblyList, attributeType);
+        var scope = AnalyzerScope.Create(context, attributeType);
         var known = attributeType.IsBuiltinAttribute();
-        var found = scope.GetModules(context.CancellationToken).SelectMany(module =>
+        var found = scope.ListTypeSystems(context.CancellationToken).SelectMany(ts =>
         {
-            var ts = scope.GetTypeSystem(module);
             context.CancellationToken.ThrowIfCancellationRequested();
             return known.IsCustomAttribute() ? CustomAppliedTo(attributeType, ts) : BuiltinAppliedTo(known, ts);
         });

@@ -530,6 +530,7 @@
   "bookmarks.import_cancel": "Annuler",
   "analyzer.loading": "Chargement…",
   "analyzer.hint": "Cliquez avec le bouton droit sur un type ou un membre et choisissez Analyser, ou sélectionnez-le dans l’arborescence et appuyez sur {shortcut}.",
+  "analyzer.unreadable": "{name} : la lecture a échoué ({why})",
   "analyzer.clear": "Effacer",
   "analyzer.remove": "Retirer",
   "analyzer.remove_analysis": "Retirer l'analyse",

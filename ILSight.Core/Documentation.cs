@@ -415,17 +415,19 @@ internal static class Documentation
         return new DocListItem(Documentation.FinishInline(term), Documentation.FinishInline(description));
     }
 
-    public static CodeTooltip CreateTooltip(IEntity entity, LoadedModule assembly)
+    /// <summary>What hovering <paramref name="entity"/> of <paramref name="assembly"/>, whose type system is
+    /// <paramref name="typeSystem"/> as read, explains.</summary>
+    public static CodeTooltip CreateTooltip(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem)
     {
-        var signature = WriteSignature(entity, assembly);
+        var signature = WriteSignature(entity, assembly, typeSystem);
         var sections = Read(entity);
         return new CodeTooltip(signature, FindContainer(entity), sections);
     }
 
-    private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly)
+    private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem)
     {
         var settings = Settings.Create();
-        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly };
+        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly, TypeSystem = typeSystem };
         TokenWriter writer = new TextTokenWriter(output, settings);
         writer = TokenWriter.InsertRequiredSpaces(writer);
         writer = new HighlightingTokenWriter(writer, output);
@@ -433,13 +435,13 @@ internal static class Documentation
         var ambience = new CSharpAmbience { ConversionFlags = SignatureFlags };
         ambience.ConvertSymbol(entity, parameters, settings.CSharpFormattingOptions);
         var line = DocumentWriting.BuildDocument(output, entity.Name).Lines[0];
-        var constraints = WriteConstraints(entity, assembly, settings);
+        var constraints = WriteConstraints(entity, assembly, typeSystem, settings);
         return new CodeSignature(line, parameters.Starts, constraints);
     }
 
     /// <summary>The <c>where</c> clauses of the entity's own type parameters, highlighted as code,
     /// one a line; none when it has no constraints.</summary>
-    private static IReadOnlyList<DocumentLine> WriteConstraints(IEntity entity, LoadedModule assembly, DecompilerSettings settings)
+    private static IReadOnlyList<DocumentLine> WriteConstraints(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerSettings settings)
     {
         var builder = new TypeSystemAstBuilder
         {
@@ -454,7 +456,7 @@ internal static class Documentation
             return [];
         }
 
-        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly };
+        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly, TypeSystem = typeSystem };
         TokenWriter writer = new TextTokenWriter(output, settings);
         writer = TokenWriter.InsertRequiredSpaces(writer);
         writer = new HighlightingTokenWriter(writer, output);

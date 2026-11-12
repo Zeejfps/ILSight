@@ -92,18 +92,41 @@ public static class Analyzers
     }
 
     /// <summary>The type or member <paramref name="definition"/> names, loading its assembly's file
-    /// without listing it; null when the file or the entity is gone.</summary>
-    public static AnalysisSymbol? Find(AssemblyList list, CodeAnchor definition)
+    /// without listing it, once the read of its type system ended; null when the file or the entity is gone, or the
+    /// library could not read the file.</summary>
+    public static async Task<AnalysisSymbol?> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
+    {
+        var assembly = TryLoad(list, definition);
+        if (assembly is null)
+        {
+            return null;
+        }
+
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+        return read.Match(r => Find(r.TypeSystem.MainModule, definition), static _ => null);
+    }
+
+    private static LoadedModule? TryLoad(AssemblyList list, CodeAnchor definition)
     {
         try
         {
-            var assembly = AssemblyListing.TryLoadAssembly(list, definition.FilePath);
-            if (assembly is null)
-            {
-                return null;
-            }
+            return AssemblyListing.TryLoadAssembly(list, definition.FilePath);
+        }
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+    }
 
-            var entity = LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
+    private static AnalysisSymbol? Find(MetadataModule main, CodeAnchor definition)
+    {
+        try
+        {
+            var entity = main.ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
             return entity is not null ? Describe(entity) : null;
         }
         catch (ArgumentException)
@@ -118,10 +141,6 @@ public static class Analyzers
         {
             return null;
         }
-        catch (IOException)
-        {
-            return null;
-        }
     }
 
     /// <summary>The analyses that apply to <paramref name="symbol"/>, in the order they are offered.</summary>
@@ -131,21 +150,24 @@ public static class Analyzers
     }
 
     /// <summary>Runs <paramref name="kind"/> on <paramref name="symbol"/> over the open assemblies on
-    /// the thread pool, yielding results in batches as they are found. Results come sorted when the
-    /// analysis asks for it, after all are found.</summary>
-    public static IAsyncEnumerable<IReadOnlyList<AnalysisSymbol>> RunAsync(AssemblyList list, AnalysisSymbol symbol, AnalysisKind kind,
+    /// the thread pool, once the reads of the type systems of the modules it can reach ended, yielding results in
+    /// batches as they are found, and after them each module it reached that the library could not read. Results come
+    /// sorted when the analysis asks for it, after all are found.</summary>
+    public static IAsyncEnumerable<IReadOnlyList<AnalysisFind>> RunAsync(AssemblyList list, AnalysisSymbol symbol, AnalysisKind kind,
         CancellationToken cancellationToken = default)
     {
-        return Batches.StreamAsync<AnalysisSymbol>((emit, token) =>
+        return Batches.StreamAsync<AnalysisFind>(async (emit, token) =>
         {
-            var run = kind.Prepare(GetSymbol(symbol));
+            var entity = GetSymbol(symbol);
+            var run = kind.Prepare(entity);
             if (run is null)
             {
                 throw new ArgumentException($"The analysis {kind.Name} does not apply to {symbol.Label}.", nameof(kind));
             }
 
-            var found = run(new AnalyzerContext { AssemblyList = list, CancellationToken = token })
-                            .Select(Describe).OfType<AnalysisSymbol>();
+            var reads = await AnalyzerScope.ReadReachableAsync(list, OwnModuleOf(list, entity), token);
+            var context = new AnalyzerContext { AssemblyList = list, TypeSystems = reads, CancellationToken = token };
+            var found = run(context).Select(Describe).OfType<AnalysisSymbol>();
             if (kind.SortsResults)
             {
                 found = found.OrderBy(static s => s.Label, StringComparer.OrdinalIgnoreCase);
@@ -154,9 +176,31 @@ public static class Analyzers
             foreach (var result in found)
             {
                 token.ThrowIfCancellationRequested();
-                emit(result);
+                emit(new AnalysisFind.Found { Symbol = result });
+            }
+
+            foreach (var unreadable in context.Unreadable.Values.OrderBy(static u => u.Module.FilePath.FileName, StringComparer.OrdinalIgnoreCase))
+            {
+                emit(new AnalysisFind.Unreadable { Name = unreadable.Module.FilePath.FileName, Why = unreadable.Why.Message });
             }
         }, cancellationToken);
+    }
+
+    /// <summary>The module of <paramref name="list"/> the analyzed <paramref name="symbol"/> is in, or is.</summary>
+    private static LoadedModule OwnModuleOf(AssemblyList list, ISymbol symbol)
+    {
+        var file = symbol switch
+        {
+            IModule module => module.MetadataFile,
+            IEntity entity => entity.ParentModule?.MetadataFile,
+            _ => null,
+        };
+        if (file is null)
+        {
+            throw new InvalidOperationException($"{symbol.Name} is in no module to analyze.");
+        }
+
+        return AssemblyListing.GetLoadedFrom(list, file);
     }
 
     private static AnalysisSymbol? Describe(ISymbol symbol)

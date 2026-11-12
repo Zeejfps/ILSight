@@ -6,7 +6,7 @@ namespace ILSight.Core;
 
 /// <summary>What reading a module's type system came to: the type system, or what the library threw on the module,
 /// caught where it was thrown.</summary>
-internal abstract record TypeSystemRead
+public abstract record TypeSystemRead
 {
     private TypeSystemRead()
     {

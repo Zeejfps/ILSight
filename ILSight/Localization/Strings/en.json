@@ -541,6 +541,7 @@
   "bookmarks.import_cancel": "Cancel",
   "analyzer.loading": "Loading…",
   "analyzer.hint": "Right-click a type or member and pick Analyze, or select it in the tree and press {shortcut}.",
+  "analyzer.unreadable": "{name}: couldn't be read ({why})",
   "analyzer.clear": "Clear",
   "analyzer.remove": "Remove",
   "analyzer.remove_analysis": "Remove analysis",

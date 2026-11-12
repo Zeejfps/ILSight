@@ -18,64 +18,64 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_type_saves_as_the_code_it_shows()
+    public async Task A_type_saves_as_the_code_it_shows()
     {
         var calculator = Trees.TestAssembly.Calculator();
         var path = _temp.PathOf("Calculator.cs");
 
-        CodeFiles.Save(TestSession.Shared, calculator, DecompilationLanguage.CSharp, DecompilerOptions.Default, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(await CodeFiles.SaveAsync(TestSession.Shared, calculator, DecompilationLanguage.CSharp, DecompilerOptions.Default, path));
 
         var shown = Documents.GetText(Trees.CalculatorDocument(DecompilationLanguage.CSharp));
-        Assert.Equal(shown, File.ReadAllText(path));
+        Assert.Equal(shown, await File.ReadAllTextAsync(path));
     }
 
     [Fact]
-    public void A_namespace_saves_all_its_types()
+    public async Task A_namespace_saves_all_its_types()
     {
         var fixtures = Trees.TestAssembly.Fixtures();
         var path = _temp.PathOf("Fixtures.cs");
 
-        CodeFiles.Save(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, path));
 
-        var code = File.ReadAllText(path);
+        var code = await File.ReadAllTextAsync(path);
         Assert.Contains("public class Calculator<T>", code);
         Assert.Contains("class Circle", code);
     }
 
     [Fact]
-    public void A_namespace_saves_in_IL_with_its_CSharp_as_plain_comments()
+    public async Task A_namespace_saves_in_IL_with_its_CSharp_as_plain_comments()
     {
         var path = _temp.PathOf("Fixtures.il");
 
-        CodeFiles.Save(TestSession.Shared, Trees.TestAssembly.Fixtures(), DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(await CodeFiles.SaveAsync(TestSession.Shared, Trees.TestAssembly.Fixtures(), DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, path));
 
-        var code = File.ReadAllText(path);
+        var code = await File.ReadAllTextAsync(path);
         Assert.Contains("// double grown = Radius;", code);
         Assert.Contains("IL_0001: ldarg.0", code);
     }
 
     [Fact]
-    public void An_assembly_saves_its_whole_module_in_IL()
+    public async Task An_assembly_saves_its_whole_module_in_IL()
     {
         var path = _temp.PathOf("Tests.il");
 
-        CodeFiles.Save(TestSession.Shared, Trees.TestAssembly.Root, DecompilationLanguage.IL, DecompilerOptions.Default, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(await CodeFiles.SaveAsync(TestSession.Shared, Trees.TestAssembly.Root, DecompilationLanguage.IL, DecompilerOptions.Default, path));
 
-        var code = File.ReadAllText(path);
+        var code = await File.ReadAllTextAsync(path);
         Assert.Contains(".assembly ILSight.Tests", code);
         Assert.Contains("ILSight.Tests.Fixtures.Calculator`1", code);
     }
 
     [Fact]
-    public void An_assembly_shows_its_attributes_alone_but_saves_its_whole_module_in_CSharp()
+    public async Task An_assembly_shows_its_attributes_alone_but_saves_its_whole_module_in_CSharp()
     {
         var root = Trees.TestAssembly.Root;
         var path = _temp.PathOf("Tests.cs");
 
-        CodeFiles.Save(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(await CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, path));
 
         var shown = Documents.GetText(root.Decompile(DecompilationLanguage.CSharp));
-        var saved = File.ReadAllText(path);
+        var saved = await File.ReadAllTextAsync(path);
         Assert.Contains("[assembly: AssemblyProduct(\"ILSight.Tests\")]", shown);
         Assert.DoesNotContain("class Calculator<T>", shown);
         Assert.Contains("[assembly: AssemblyProduct(\"ILSight.Tests\")]", saved);
@@ -83,15 +83,15 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_namespace_shows_its_types_declarations_but_saves_their_code()
+    public async Task A_namespace_shows_its_types_declarations_but_saves_their_code()
     {
         var fixtures = Trees.TestAssembly.Fixtures();
         var path = _temp.PathOf("Fixtures.cs");
 
-        CodeFiles.Save(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, path));
 
         var shown = Documents.GetText(fixtures.Decompile(DecompilationLanguage.CSharp));
-        var saved = File.ReadAllText(path);
+        var saved = await File.ReadAllTextAsync(path);
         Assert.Contains("internal sealed class Circle", shown);
         Assert.DoesNotContain("double grown = Radius;", shown);
         Assert.Contains("double grown = Radius;", saved);
@@ -109,31 +109,31 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void An_assembly_exports_as_a_project_with_a_file_per_type()
+    public async Task An_assembly_exports_as_a_project_with_a_file_per_type()
     {
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        var exported = AssemblyExport.ExportProject(Trees.TestAssembly, DecompilerOptions.Default, projectPath);
+        var exported = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath);
 
         Assert.Equal(projectPath, exported.ProjectPath);
-        Assert.Contains("<Project", File.ReadAllText(projectPath));
+        Assert.Contains("<Project", await File.ReadAllTextAsync(projectPath));
         var folder = Path.GetDirectoryName(projectPath) ?? throw new InvalidOperationException($"The project's path names no folder: '{projectPath}'.");
         var files = Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories);
         Assert.Contains(files, f => Path.GetFileName(f) == "Calculator.cs");
     }
 
     [Fact]
-    public void Baml_exports_as_xaml_pages_beside_their_code_behind()
+    public async Task Baml_exports_as_xaml_pages_beside_their_code_behind()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.SampleAppPath);
         var projectPath = _temp.PathOf(Path.Combine("Sample", "SampleApp.csproj"));
 
-        AssemblyExport.ExportProject(assembly, DecompilerOptions.Default, projectPath);
+        await AssemblyExport.ExportProjectAsync(assembly, DecompilerOptions.Default, projectPath);
 
         var folder = Path.GetDirectoryName(projectPath) ?? throw new InvalidOperationException($"The project's path names no folder: '{projectPath}'.");
-        var project = File.ReadAllText(projectPath);
-        var window = File.ReadAllText(Path.Combine(folder, "SampleApp", "MainWindow.xaml"));
-        var codeBehind = File.ReadAllText(Path.Combine(folder, "SampleApp", "MainWindow.cs"));
+        var project = await File.ReadAllTextAsync(projectPath);
+        var window = await File.ReadAllTextAsync(Path.Combine(folder, "SampleApp", "MainWindow.xaml"));
+        var codeBehind = await File.ReadAllTextAsync(Path.Combine(folder, "SampleApp", "MainWindow.cs"));
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", window);
         Assert.Contains($"<Page Include=\"{Path.Combine("SampleApp", "MainWindow.xaml")}\"", project);
         Assert.Contains($"<ApplicationDefinition Include=\"{Path.Combine("SampleApp", "App.xaml")}\"", project);
@@ -142,26 +142,26 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_solution_holds_a_project_of_each_assembly_in_a_folder_of_its_own()
+    public async Task A_solution_holds_a_project_of_each_assembly_in_a_folder_of_its_own()
     {
         var solutionPath = _temp.PathOf("All.sln");
 
-        var exported = AssemblyExport.ExportSolution(ExportNames.NameProjects([Trees.TestAssembly]), DecompilerOptions.Default, solutionPath);
+        var exported = await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly]), DecompilerOptions.Default, solutionPath);
 
         var project = Assert.Single(exported);
         Assert.Equal(_temp.PathOf(Path.Combine("ILSight.Tests", "ILSight.Tests.csproj")), project.ProjectPath);
         Assert.True(File.Exists(project.ProjectPath));
-        Assert.Contains("ILSight.Tests.csproj", File.ReadAllText(solutionPath));
+        Assert.Contains("ILSight.Tests.csproj", await File.ReadAllTextAsync(solutionPath));
     }
 
     [Fact]
-    public void A_generated_pdb_embeds_the_decompiled_code()
+    public async Task A_generated_pdb_embeds_the_decompiled_code()
     {
         var assembly = Trees.TestAssembly;
         var path = _temp.PathOf("Tests.pdb");
 
         Assert.True(assembly.CanGeneratePdb);
-        AssemblyExport.GeneratePdb(assembly, DecompilerOptions.Default, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(await AssemblyExport.GeneratePdbAsync(assembly, DecompilerOptions.Default, path));
 
         using var stream = File.OpenRead(path);
         using var provider = MetadataReaderProvider.FromPortablePdbStream(stream);
@@ -171,12 +171,12 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_project_export_reports_its_files_as_it_writes_them()
+    public async Task A_project_export_reports_its_files_as_it_writes_them()
     {
         var progress = new RecordedProgress();
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        AssemblyExport.ExportProject(Trees.TestAssembly, DecompilerOptions.Default, projectPath, progress: progress);
+        await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, progress: progress);
 
         var reports = progress.Reports;
         Assert.Equal(new ExportProgress("ILSight.Tests", 1, 1, 0f), reports[0]);
@@ -184,12 +184,12 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_solution_reports_each_project_as_a_part_of_the_whole()
+    public async Task A_solution_reports_each_project_as_a_part_of_the_whole()
     {
         var progress = new RecordedProgress();
         var solutionPath = _temp.PathOf("All.sln");
 
-        AssemblyExport.ExportSolution(ExportNames.NameProjects([Trees.TestAssembly, Trees.TestAssembly]), DecompilerOptions.Default, solutionPath, progress: progress);
+        await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly, Trees.TestAssembly]), DecompilerOptions.Default, solutionPath, progress: progress);
 
         Assert.Contains(progress.Reports, r => r is { Part: 1, Parts: 2 });
         Assert.Contains(progress.Reports, r => r is { Part: 2, Parts: 2, Fraction: 0.5f });
@@ -197,16 +197,16 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_solution_puts_each_project_in_a_folder_named_as_the_project()
+    public async Task A_solution_puts_each_project_in_a_folder_named_as_the_project()
     {
         var solutionPath = _temp.PathOf("All.sln");
         SolutionProject[] projects = [new(Trees.TestAssembly, "Renamed")];
 
-        var exported = AssemblyExport.ExportSolution(projects, DecompilerOptions.Default, solutionPath);
+        var exported = await AssemblyExport.ExportSolutionAsync(projects, DecompilerOptions.Default, solutionPath);
 
         var project = Assert.Single(exported);
         Assert.Equal(_temp.PathOf(Path.Combine("Renamed", "Renamed.csproj")), project.ProjectPath);
-        Assert.Contains(Path.Combine("Renamed", "Renamed.csproj"), File.ReadAllText(solutionPath));
+        Assert.Contains(Path.Combine("Renamed", "Renamed.csproj"), await File.ReadAllTextAsync(solutionPath));
     }
 
     [Fact]
@@ -242,27 +242,27 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_cancelled_save_leaves_no_file_behind()
+    public async Task A_cancelled_save_leaves_no_file_behind()
     {
         var path = _temp.PathOf("Tests.cs");
         using var cancel = new CancellationTokenSource();
-        cancel.Cancel();
+        await cancel.CancelAsync();
 
-        Assert.ThrowsAny<OperationCanceledException>(() =>
-            CodeFiles.Save(TestSession.Shared, Trees.TestAssembly.Root, DecompilationLanguage.CSharp, DecompilerOptions.Default, path, cancel.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            CodeFiles.SaveAsync(TestSession.Shared, Trees.TestAssembly.Root, DecompilationLanguage.CSharp, DecompilerOptions.Default, path, cancel.Token));
 
         Assert.Empty(Directory.EnumerateFileSystemEntries(_temp.Path));
     }
 
     [Fact]
-    public void A_cancelled_project_export_stops()
+    public async Task A_cancelled_project_export_stops()
     {
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
         using var cancel = new CancellationTokenSource();
-        cancel.Cancel();
+        await cancel.CancelAsync();
 
-        Assert.ThrowsAny<OperationCanceledException>(() =>
-            AssemblyExport.ExportProject(Trees.TestAssembly, DecompilerOptions.Default, projectPath, cancellationToken: cancel.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, cancellationToken: cancel.Token));
     }
 
     private static readonly Guid EmbeddedSource = new("0E8A571B-6926-466E-B4AD-8AB04611F5FE");
@@ -280,11 +280,11 @@ public sealed class ExportTests : IDisposable
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void A_project_gets_a_pdb_beside_it_with_or_without_the_sources_in_it(bool embed)
+    public async Task A_project_gets_a_pdb_beside_it_with_or_without_the_sources_in_it(bool embed)
     {
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        var exported = AssemblyExport.ExportProject(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras(Pdb: true, EmbedSourcesInPdb: embed));
+        var exported = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras(Pdb: true, EmbedSourcesInPdb: embed));
 
         var pdb = Assert.IsType<ProjectPdb.Written>(exported.Pdb);
         Assert.Equal(_temp.PathOf(Path.Combine("Project", "ILSight.Tests.pdb")), pdb.Path);
@@ -292,15 +292,15 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_strong_name_key_is_copied_into_the_project_and_signs_it()
+    public async Task A_strong_name_key_is_copied_into_the_project_and_signs_it()
     {
         var key = _temp.Write("keys/signing.snk", [1, 2, 3]);
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        AssemblyExport.ExportProject(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras(StrongNameKeyFile: key));
+        await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras(StrongNameKeyFile: key));
 
         Assert.True(File.Exists(_temp.PathOf(Path.Combine("Project", "signing.snk"))));
-        Assert.Contains("signing.snk", File.ReadAllText(projectPath));
+        Assert.Contains("signing.snk", await File.ReadAllTextAsync(projectPath));
     }
 
     [Fact]

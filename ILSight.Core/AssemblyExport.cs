@@ -1,3 +1,4 @@
+using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.DebugInfo;
@@ -14,17 +15,17 @@ public static class AssemblyExport
     /// <paramref name="projectPath"/>, with its code and resources in the folder beside it, and
     /// writes what <paramref name="extras"/> asks for besides.</summary>
     /// <exception cref="ArgumentException"><paramref name="projectPath"/> is no absolute path of a file.</exception>
-    public static ExportedProject ExportProject(LoadedModule assembly, DecompilerOptions options, string projectPath, ProjectExtras? extras = null,
+    public static async Task<ExportedProject> ExportProjectAsync(LoadedModule assembly, DecompilerOptions options, string projectPath, ProjectExtras? extras = null,
         IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var part = Part(progress, assembly, 0, WholeExport);
-        return ExportProject(assembly, options, FullFilePath.Of(projectPath), extras ?? ProjectExtras.None, part, cancellationToken);
+        return await ExportProjectAsync(assembly, options, FullFilePath.Of(projectPath), extras ?? ProjectExtras.None, part, cancellationToken);
     }
 
     /// <summary>Exports the project, then the PDB when one is asked for; each takes half of the
     /// part's share of the export.</summary>
-    private static ExportedProject ExportProject(LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath, ProjectExtras extras,
-        PartProgress? part, CancellationToken cancellationToken)
+    private static async Task<ExportedProject> ExportProjectAsync(LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath,
+        ProjectExtras extras, PartProgress? part, CancellationToken cancellationToken)
     {
         var (projectPart, pdbPart) = SplitForPdb(part, extras.Pdb);
         var project = WriteProject(assembly, options, projectPath, extras.StrongNameKeyFile, projectPart, cancellationToken);
@@ -33,7 +34,7 @@ public static class AssemblyExport
             return project;
         }
 
-        return WithPdb(project, options, projectPath.Folder, extras.EmbedSourcesInPdb, pdbPart, cancellationToken);
+        return await WithPdbAsync(project, options, projectPath.Folder, extras.EmbedSourcesInPdb, pdbPart, cancellationToken);
     }
 
     private static (PartProgress? Project, PartProgress? Pdb) SplitForPdb(PartProgress? part, bool pdb)
@@ -76,10 +77,10 @@ public static class AssemblyExport
 
     /// <summary><paramref name="project"/> with a portable PDB of its assembly written beside it, or
     /// with why it could not be.</summary>
-    private static ExportedProject WithPdb(ExportedProject project, DecompilerOptions options, string folder, bool embedSources,
+    private static async Task<ExportedProject> WithPdbAsync(ExportedProject project, DecompilerOptions options, string folder, bool embedSources,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
-        var failure = TryGeneratePdb(project.Assembly, options, folder, embedSources, progress, cancellationToken);
+        var failure = await TryGeneratePdbAsync(project.Assembly, options, folder, embedSources, progress, cancellationToken);
         if (failure is not null)
         {
             return project with { Pdb = new ProjectPdb.Failed(failure) };
@@ -93,7 +94,7 @@ public static class AssemblyExport
     /// named as the project, beside <paramref name="solutionPath"/>, then writes the solution that
     /// holds them.</summary>
     /// <exception cref="ArgumentException"><paramref name="solutionPath"/> is no absolute path of a file.</exception>
-    public static List<ExportedProject> ExportSolution(IReadOnlyList<SolutionProject> projects, DecompilerOptions options, string solutionPath,
+    public static async Task<List<ExportedProject>> ExportSolutionAsync(IReadOnlyList<SolutionProject> projects, DecompilerOptions options, string solutionPath,
         ProjectExtras? extras = null, IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var withExtras = extras ?? ProjectExtras.None;
@@ -107,7 +108,7 @@ public static class AssemblyExport
             var project = projects[i];
             var projectPath = FullFilePath.Of(ExportNames.ProjectPathIn(folder, project.Name));
             var part = Part(progress, project.Assembly, i, bounds);
-            exported.Add(ExportProject(project.Assembly, options, projectPath, withExtras, part, cancellationToken));
+            exported.Add(await ExportProjectAsync(project.Assembly, options, projectPath, withExtras, part, cancellationToken));
         }
         var items = exported.ConvertAll(ToSolutionItem);
         SolutionCreator.WriteSolutionFile(solutionPath, items);
@@ -123,19 +124,24 @@ public static class AssemblyExport
     /// <summary>Decompiles <paramref name="assembly"/> and writes a portable PDB at <paramref name="path"/>
     /// that maps its IL to that code, with the code embedded. The file is replaced only once the PDB
     /// is whole.</summary>
-    public static void GeneratePdb(LoadedModule assembly, DecompilerOptions options, string path,
+    /// <remarks>Once the read of the assembly's type system ended: for an assembly the library could not read, says so
+    /// and writes nothing.</remarks>
+    public static Task<TypeSystemWork<string>> GeneratePdbAsync(LoadedModule assembly, DecompilerOptions options, string path,
         IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        GeneratePdb(assembly, options, path, embedSources: true, Part(progress, assembly, 0, WholeExport), cancellationToken);
+        var part = Part(progress, assembly, 0, WholeExport);
+        return LoadedAssemblies.WithTypeSystemAsync(assembly, typeSystem => GeneratePdb(assembly, typeSystem, options, path, embedSources: true, part,
+            cancellationToken), cancellationToken);
     }
 
-    private static void GeneratePdb(LoadedModule assembly, DecompilerOptions options, string path, bool embedSources,
+    private static string GeneratePdb(LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path, bool embedSources,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
-        var decompiler = NodeDecompiler.CreateCSharpDecompiler(assembly, settings, cancellationToken);
+        var decompiler = NodeDecompiler.CreateCSharpDecompiler(assembly, typeSystem, settings, cancellationToken);
         var writer = new PortablePdbWriter { Progress = progress, EmbedSourceFiles = embedSources };
         AtomicFile.Write(path, stream => writer.WritePdb(PortableExecutableOf(assembly), decompiler, settings, stream));
+        return path;
     }
 
     private static PEFile PortableExecutableOf(LoadedModule assembly)
@@ -151,7 +157,7 @@ public static class AssemblyExport
 
     /// <summary>Writes a portable PDB of each of <paramref name="assemblies"/> into
     /// <paramref name="folder"/>, named after the assembly, and lists the ones it could not.</summary>
-    public static List<PdbFailure> GeneratePdbs(IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options, string folder,
+    public static async Task<List<PdbFailure>> GeneratePdbsAsync(IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options, string folder,
         IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var bounds = PartBounds(assemblies);
@@ -161,7 +167,7 @@ public static class AssemblyExport
             cancellationToken.ThrowIfCancellationRequested();
             var assembly = assemblies[i];
             var part = Part(progress, assembly, i, bounds);
-            var failure = TryGeneratePdb(assembly, options, folder, embedSources: true, part, cancellationToken);
+            var failure = await TryGeneratePdbAsync(assembly, options, folder, embedSources: true, part, cancellationToken);
             if (failure is not null)
             {
                 failures.Add(failure);
@@ -170,7 +176,9 @@ public static class AssemblyExport
         return failures;
     }
 
-    private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerOptions options, string folder, bool embedSources,
+    /// <summary>Writes a portable PDB of <paramref name="assembly"/> into <paramref name="folder"/>, once the read of its
+    /// type system ended; why it could not, the library failing on it among the reasons, else null.</summary>
+    private static async Task<PdbFailure?> TryGeneratePdbAsync(LoadedModule assembly, DecompilerOptions options, string folder, bool embedSources,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
         if (!assembly.CanGeneratePdb)
@@ -178,10 +186,19 @@ public static class AssemblyExport
             return new PdbFailure.NoDebugEntry(assembly);
         }
 
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, cancellationToken);
+        return read.Match(
+            r => TryGeneratePdb(assembly, r.TypeSystem, options, folder, embedSources, progress, cancellationToken),
+            u => new PdbFailure.NotWritten(assembly, new ExportError(u.Thrown.SourceException.Message, u.Thrown.SourceException.ToString())));
+    }
+
+    private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string folder,
+        bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
+    {
         var path = Path.Combine(folder, assembly.PdbFileName);
         try
         {
-            GeneratePdb(assembly, options, path, embedSources, progress, cancellationToken);
+            GeneratePdb(assembly, typeSystem, options, path, embedSources, progress, cancellationToken);
             return null;
         }
         catch (Exception e) when (e is not OperationCanceledException)

@@ -26,7 +26,7 @@ public sealed class ILSpyTreeTests
     }
 
     [Fact]
-    public void Every_type_and_member_is_found_again_by_its_path()
+    public async Task Every_type_and_member_is_found_again_by_its_path()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
@@ -38,12 +38,12 @@ public sealed class ILSpyTreeTests
                 continue;
             }
 
-            Assert.Equal(node.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "")));
+            Assert.Equal(node.Path, PathOf(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "", CancellationToken.None)));
         }
     }
 
     [Fact]
-    public void A_bookmark_without_a_tree_path_is_found_by_its_token()
+    public async Task A_bookmark_without_a_tree_path_is_found_by_its_token()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
         var calculator = assembly.Calculator();
@@ -53,21 +53,21 @@ public sealed class ILSpyTreeTests
         var name = calculator.EntityFullName;
         Assert.NotNull(name);
 
-        Assert.Equal(calculator.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, token, name)));
-        Assert.Equal(calculator.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, name)));
-        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name));
+        Assert.Equal(calculator.Path, PathOf(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, name, CancellationToken.None)));
+        Assert.Equal(calculator.Path, PathOf(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, name, CancellationToken.None)));
+        Assert.Null(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name, CancellationToken.None));
     }
 
     [Fact]
-    public void A_token_that_names_an_entity_of_another_name_finds_nothing()
+    public async Task A_token_that_names_an_entity_of_another_name_finds_nothing()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
         var definedToken = assembly.Calculator().Token;
         Assert.NotNull(definedToken);
         var token = (uint)definedToken.Value;
 
-        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed"));
-        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, ""));
+        Assert.Null(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed", CancellationToken.None));
+        Assert.Null(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, "", CancellationToken.None));
     }
 
     [Fact]

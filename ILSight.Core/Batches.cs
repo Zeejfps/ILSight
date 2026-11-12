@@ -11,7 +11,7 @@ internal static class Batches
     /// batches: all that arrived since the last batch, at most one batch per interval. A failure of
     /// <paramref name="produce"/> ends the stream with it; leaving the stream early cancels it, and
     /// the stream ends once it has stopped.</summary>
-    public static async IAsyncEnumerable<IReadOnlyList<T>> StreamAsync<T>(Action<Action<T>, CancellationToken> produce,
+    public static async IAsyncEnumerable<IReadOnlyList<T>> StreamAsync<T>(Func<Action<T>, CancellationToken, Task> produce,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var channel = Channel.CreateUnbounded<T>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });

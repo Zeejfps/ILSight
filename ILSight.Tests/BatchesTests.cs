@@ -14,6 +14,7 @@ public sealed class BatchesTests
             token.WaitHandle.WaitOne();
             Thread.Sleep(TimeSpan.FromMilliseconds(100));
             stopped.Set();
+            return Task.CompletedTask;
         }, CancellationToken.None);
 
         await foreach (var batch in stream)

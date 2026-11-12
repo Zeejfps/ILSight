@@ -29,13 +29,22 @@ public static partial class ClassDiagrams
 
     /// <summary>Writes the diagrammer of <paramref name="assembly"/> into <paramref name="folder"/>,
     /// creating it, and returns the path of its page.</summary>
-    public static string Write(LoadedModule assembly, string folder, IProgress<ExportProgress>? progress = null,
+    /// <remarks>Once the read of the assembly's type system ended: for an assembly the library could not read, says so
+    /// and writes nothing.</remarks>
+    public static Task<TypeSystemWork<string>> WriteAsync(LoadedModule assembly, string folder, IProgress<ExportProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        var model = BuildModel(assembly, progress, cancellationToken);
+        return LoadedAssemblies.WithTypeSystemAsync(assembly, typeSystem => Write(assembly, typeSystem.MainModule, folder, progress, cancellationToken),
+            cancellationToken);
+    }
+
+    private static string Write(LoadedModule assembly, MetadataModule main, string folder, IProgress<ExportProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        var model = BuildModel(assembly, main, progress, cancellationToken);
         Directory.CreateDirectory(folder);
         var page = Path.Combine(folder, PageFileName);
-        File.WriteAllText(page, WritePage(assembly, model));
+        File.WriteAllText(page, WritePage(main, model));
         foreach (var asset in Assets)
         {
             CopyAsset(asset, folder);
@@ -46,9 +55,9 @@ public static partial class ClassDiagrams
 
     /// <summary>The model of every type of <paramref name="assembly"/> but compiler-generated ones and
     /// those nested in them, by namespace and then by full name.</summary>
-    internal static DiagramModel BuildModel(LoadedModule assembly, IProgress<ExportProgress>? progress, CancellationToken cancellationToken)
+    internal static DiagramModel BuildModel(LoadedModule assembly, MetadataModule main, IProgress<ExportProgress>? progress, CancellationToken cancellationToken)
     {
-        var picked = LoadedAssemblies.EnsureMainModule(assembly).TypeDefinitions
+        var picked = main.TypeDefinitions
             .Where(static t => !t.IsCompilerGeneratedOrIsInCompilerGeneratedClass())
             .ToArray();
         var names = CreateNames(picked);
@@ -80,10 +89,9 @@ public static partial class ClassDiagrams
         return byId;
     }
 
-    private static string WritePage(LoadedModule assembly, DiagramModel model)
+    private static string WritePage(MetadataModule module, DiagramModel model)
     {
         var json = JsonSerializer.Serialize(model, DiagramJson.Default.DiagramModel);
-        var module = LoadedAssemblies.EnsureMainModule(assembly);
         return ReadAsset(TemplateName)
             .Replace("{{SourceAssemblyName}}", WebUtility.HtmlEncode(module.AssemblyName))
             .Replace("{{SourceAssemblyVersion}}", WebUtility.HtmlEncode(module.AssemblyVersion.ToString()))

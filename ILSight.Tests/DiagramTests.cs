@@ -1,3 +1,5 @@
+using ICSharpCode.Decompiler.TypeSystem;
+using ILSight.Core;
 using System.Text.RegularExpressions;
 using ILSight.Core.Diagrams;
 
@@ -7,7 +9,14 @@ public sealed class DiagramTests : IDisposable
 {
     private const string FixturesNamespace = "ILSight.Tests.Fixtures";
 
-    private static readonly Lazy<DiagramModel> s_model = new(() => ClassDiagrams.BuildModel(Trees.TestAssembly, null, CancellationToken.None));
+    private static readonly Lazy<DiagramModel> s_model = new(() => ClassDiagrams.BuildModel(Trees.TestAssembly, MainOf(Trees.TestAssembly), null, CancellationToken.None));
+
+    /// <summary>The main module of <paramref name="module"/>'s type system, as read.</summary>
+    private static MetadataModule MainOf(LoadedModule module)
+    {
+        var read = TestWaits.Wait(() => LoadedAssemblies.ReadTypeSystemAsync(module, CancellationToken.None));
+        return Assert.IsType<TypeSystemRead.Read>(read).TypeSystem.MainModule;
+    }
 
     private readonly TempDir _temp = new();
 
@@ -24,17 +33,17 @@ public sealed class DiagramTests : IDisposable
     }
 
     [Fact]
-    public void The_diagrammer_is_written_as_a_page_with_its_script_styles_and_icon()
+    public async Task The_diagrammer_is_written_as_a_page_with_its_script_styles_and_icon()
     {
         var folder = _temp.PathOf("diagram");
 
-        var page = ClassDiagrams.Write(Trees.TestAssembly, folder);
+        var page = Assert.IsType<TypeSystemWork<string>.Done>(await ClassDiagrams.WriteAsync(Trees.TestAssembly, folder)).Value;
 
         Assert.Equal(Path.Combine(folder, ClassDiagrams.PageFileName), page);
         Assert.True(File.Exists(Path.Combine(folder, "script.js")));
         Assert.True(File.Exists(Path.Combine(folder, "styles.css")));
         Assert.True(File.Exists(Path.Combine(folder, "ILSpy.ico")));
-        var html = File.ReadAllText(page);
+        var html = await File.ReadAllTextAsync(page);
         Assert.DoesNotMatch(new Regex(@"\{\{\w+\}\}"), html);
         Assert.Contains("<title>ILSight.Tests class diagrammer - ILSpy</title>", html);
         Assert.Contains("\"TypesByNamespace\":{", html);
@@ -87,12 +96,12 @@ public sealed class DiagramTests : IDisposable
     }
 
     [Fact]
-    public void Building_stops_when_cancelled()
+    public async Task Building_stops_when_cancelled()
     {
         using var cancel = new CancellationTokenSource();
-        cancel.Cancel();
+        await cancel.CancelAsync();
 
-        Assert.Throws<OperationCanceledException>(() => ClassDiagrams.Write(Trees.TestAssembly, _temp.PathOf("cancelled"), null, cancel.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ClassDiagrams.WriteAsync(Trees.TestAssembly, _temp.PathOf("cancelled"), null, cancel.Token));
         Assert.False(Directory.Exists(_temp.PathOf("cancelled")));
     }
 
@@ -101,7 +110,7 @@ public sealed class DiagramTests : IDisposable
     {
         var progress = new RecordedProgress();
 
-        ClassDiagrams.BuildModel(Trees.TestAssembly, progress, CancellationToken.None);
+        ClassDiagrams.BuildModel(Trees.TestAssembly, MainOf(Trees.TestAssembly), progress, CancellationToken.None);
 
         var reports = progress.Reports;
         Assert.Equal(1f, reports[^1].Fraction);

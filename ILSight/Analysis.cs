@@ -98,7 +98,7 @@ public static class Analysis
 
     /// <summary>Adds <paramref name="found"/>, what <paramref name="run"/> found so far, to its analysis, and notes in
     /// <paramref name="analyzer"/> that it found more; nothing once the run was stopped.</summary>
-    public static void AddFound(AnalyzerTree analyzer, AnalysisRun run, IReadOnlyList<AnalysisSymbol> found)
+    public static void AddFound(AnalyzerTree analyzer, AnalysisRun run, IReadOnlyList<AnalysisFind> found)
     {
         var kind = run.Kind;
         if (kind.Work != run.Work)
@@ -130,10 +130,10 @@ public static class Analysis
         analyzer.NoteFindings();
     }
 
-    private static List<AnalyzerNode> CreateNodes(IReadOnlyList<AnalysisSymbol> symbols)
+    private static List<AnalyzerNode> CreateNodes(IReadOnlyList<AnalysisFind> found)
     {
-        return symbols
-            .Select(static s => (AnalyzerNode)new AnalyzerSymbolNode { Symbol = s })
+        return found
+            .Select(static f => f.Match<AnalyzerNode>(static s => new AnalyzerSymbolNode { Symbol = s.Symbol }, static u => new AnalyzerMessageNode { Unreadable = u }))
             .ToList();
     }
 
@@ -423,7 +423,7 @@ public static class Analysis
         {
             AnalyzerSymbolNode symbol => symbol.Symbol.Label,
             AnalyzerKindNode kind => AnalyzerText.Header(rows.Strings, kind.Kind),
-            AnalyzerMessageNode message => message.Error ?? rows.Strings.AnalyzerLoading,
+            AnalyzerMessageNode message => GetMessageText(rows, message),
             AnalyzerPendingNode => rows.Strings.AnalyzerLoading,
             _ => throw new UnreachableException(),
         };
@@ -454,6 +454,13 @@ public static class Analysis
 
     private static TreeRow CreateMessageRow(AnalyzerRows rows, AnalyzerMessageNode message)
     {
+        var unreadable = message.Unreadable;
+        if (unreadable is not null)
+        {
+            var warning = new UiIcon(rows.Icons.StatusError, rows.Theme.Warning);
+            return new TreeRow(rows.Strings.AnalyzerUnreadable(unreadable.Name, unreadable.Why), warning, rows.Theme.Warning);
+        }
+
         if (message.Error is null)
         {
             return CreateLoadingRow(rows);
@@ -461,6 +468,18 @@ public static class Analysis
 
         var icon = new UiIcon(rows.Icons.StatusError, rows.Theme.Danger);
         return new TreeRow(message.Error, icon, rows.Theme.Danger);
+    }
+
+    /// <summary>What the row of <paramref name="message"/> says.</summary>
+    private static string GetMessageText(AnalyzerRows rows, AnalyzerMessageNode message)
+    {
+        var unreadable = message.Unreadable;
+        if (unreadable is not null)
+        {
+            return rows.Strings.AnalyzerUnreadable(unreadable.Name, unreadable.Why);
+        }
+
+        return message.Error ?? rows.Strings.AnalyzerLoading;
     }
 
     private static TreeRow CreateLoadingRow(AnalyzerRows rows)

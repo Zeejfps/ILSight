@@ -43,17 +43,17 @@ internal static class NodeQueries
 
     public static NodeContent Content(this BrowseNode node, DecompilationLanguage language = DecompilationLanguage.CSharp)
     {
-        return NodeContentLoader.GetContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default).GetAwaiter().GetResult();
+        return TestWaits.Wait(() => NodeContentLoader.GetContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default));
     }
 
     public static DecompiledDocument Decompile(this BrowseNode node, DecompilationLanguage language, CancellationToken cancellationToken = default)
     {
-        return NodeContentLoader.Decompile(TestSession.Shared, node, language, DecompilerOptions.Default, cancellationToken);
+        return TestWaits.Wait(() => NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, DecompilerOptions.Default, cancellationToken));
     }
 
     public static DecompiledDocument Decompile(this BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken = default)
     {
-        return NodeContentLoader.Decompile(TestSession.Shared, node, language, options, cancellationToken);
+        return TestWaits.Wait(() => NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, options, cancellationToken));
     }
 }

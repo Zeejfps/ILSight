@@ -23,7 +23,8 @@ public sealed class CompareAssembliesHandlerTests
 
     private static ApiDiff Diff(ComparisonRun run)
     {
-        return ApiEntries.Compare(run.Left, run.Right, run.Scope, CancellationToken.None);
+        var compared = TestWaits.Wait(() => ApiEntries.CompareAsync(run.Left, run.Right, run.Scope, CancellationToken.None));
+        return Assert.IsType<TypeSystemWork<ApiDiff>.Done>(compared).Value;
     }
 
     [Fact]

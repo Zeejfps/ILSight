@@ -530,6 +530,7 @@
   "bookmarks.import_cancel": "Cancelar",
   "analyzer.loading": "Cargando…",
   "analyzer.hint": "Haz clic con el botón derecho en un tipo o miembro y elige Analizar, o selecciónalo en el árbol y pulsa {shortcut}.",
+  "analyzer.unreadable": "{name}: no se pudo leer ({why})",
   "analyzer.clear": "Borrar",
   "analyzer.remove": "Quitar",
   "analyzer.remove_analysis": "Quitar análisis",

@@ -18,28 +18,30 @@ public sealed class DiagramInfrastructure(ErrorLog errors, AssemblyList assembli
 
     public async Task<Outcome<List<TypeCard>>> ReadWithNeighboursAsync(CodeReference.Entity type, CancellationToken ct)
     {
-        var read = await Background.Wait(Task.Run(() => TypeCards.ReadWithNeighbours(assemblies, type, ct), ct));
+        var read = await Background.Wait(Task.Run(() => TypeCards.ReadWithNeighboursAsync(assemblies, type, ct), ct));
         ct.ThrowIfCancellationRequested();
         return read;
     }
 
     public async Task<Outcome<List<TypeCard>>> ReadCardsAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)
     {
-        var read = await Background.Wait(Task.Run(() => ReadCards(types), ct));
+        var read = await Background.Wait(Task.Run(() => ReadEachCardAsync(types, ct), ct));
         ct.ThrowIfCancellationRequested();
         return read;
     }
 
+    /// <summary>Reads on the thread pool once the reads of the type systems the search can reach ended; a module the
+    /// search reached that the library could not read fails the read, saying why.</summary>
     public async Task<Outcome<List<TypeCard>>> ReadDerivedAsync(CodeReference.Entity type, CancellationToken ct)
     {
-        var read = await Background.Wait(Task.Run(() => TypeCards.ReadDerived(assemblies, type, ct), ct));
+        var read = await Background.Wait(Task.Run(() => TypeCards.ReadDerivedAsync(assemblies, type, ct), ct));
         ct.ThrowIfCancellationRequested();
-        return read;
+        return Outcome<List<TypeCard>>.FromTypeSystemWork(read);
     }
 
     public async Task<Outcome<List<TypeCard>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
     {
-        var read = await Background.Wait(Task.Run(() => ReadCards(types), ct));
+        var read = await Background.Wait(Task.Run(() => ReadEachCardAsync(types, ct), ct));
         ct.ThrowIfCancellationRequested();
         return read;
     }
@@ -51,19 +53,31 @@ public sealed class DiagramInfrastructure(ErrorLog errors, AssemblyList assembli
         return laidOut;
     }
 
-    private List<TypeCard> ReadCards(IReadOnlyList<CodeReference.Entity> types)
+    private async Task<List<TypeCard>> ReadEachCardAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)
     {
-        return types
-            .Select(t => TypeCards.Read(assemblies, t))
-            .OfType<TypeCard>()
-            .ToList();
+        var cards = new List<TypeCard>();
+        foreach (var type in types)
+        {
+            AddRead(cards, await TypeCards.ReadAsync(assemblies, type, ct));
+        }
+        return cards;
     }
 
-    private List<TypeCard> ReadCards(IReadOnlyList<TypeAnchor> types)
+    private async Task<List<TypeCard>> ReadEachCardAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
     {
-        return types
-            .Select(t => TypeCards.Read(assemblies, t))
-            .OfType<TypeCard>()
-            .ToList();
+        var cards = new List<TypeCard>();
+        foreach (var type in types)
+        {
+            AddRead(cards, await TypeCards.ReadAsync(assemblies, type, ct));
+        }
+        return cards;
+    }
+
+    private static void AddRead(List<TypeCard> cards, TypeCard? card)
+    {
+        if (card is not null)
+        {
+            cards.Add(card);
+        }
     }
 }

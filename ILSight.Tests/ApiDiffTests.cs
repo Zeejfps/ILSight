@@ -22,7 +22,8 @@ public sealed class ApiDiffTests
     private static ApiDiff Compare(ApiScope scope)
     {
         var opened = s_opened.Value;
-        return ApiEntries.Compare(opened.Left, opened.Right, scope, CancellationToken.None);
+        var compared = TestWaits.Wait(() => ApiEntries.CompareAsync(opened.Left, opened.Right, scope, CancellationToken.None));
+        return Assert.IsType<TypeSystemWork<ApiDiff>.Done>(compared).Value;
     }
 
     private static ApiEntry Entry(ApiDiff diff, params ReadOnlySpan<string> path)
@@ -287,12 +288,12 @@ public sealed class ApiDiffTests
     }
 
     [Fact]
-    public void A_cancelled_comparison_stops()
+    public async Task A_cancelled_comparison_stops()
     {
         var opened = s_opened.Value;
         using var cancelled = new CancellationTokenSource();
-        cancelled.Cancel();
+        await cancelled.CancelAsync();
 
-        Assert.Throws<OperationCanceledException>(() => ApiEntries.Compare(opened.Left, opened.Right, ApiScope.PublicApi, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ApiEntries.CompareAsync(opened.Left, opened.Right, ApiScope.PublicApi, cancelled.Token));
     }
 }

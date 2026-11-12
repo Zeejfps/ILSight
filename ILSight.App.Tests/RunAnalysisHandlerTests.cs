@@ -21,9 +21,9 @@ public sealed class RunAnalysisHandlerTests
         return run;
     }
 
-    private static Outcome<IReadOnlyList<AnalysisSymbol>> Batch(params AnalysisSymbol[] symbols)
+    private static Outcome<IReadOnlyList<AnalysisFind>> Batch(params AnalysisSymbol[] symbols)
     {
-        return new Outcome<IReadOnlyList<AnalysisSymbol>>.Ok(symbols);
+        return new Outcome<IReadOnlyList<AnalysisFind>>.Ok(symbols.Select(static s => (AnalysisFind)new AnalysisFind.Found { Symbol = s }).ToList());
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class RunAnalysisHandlerTests
         var error = new InvalidOperationException("unreadable");
         var ports = new FakeRunAnalysisHandlerPorts
         {
-            Found = [Batch(SymbolOf(d, "Farewell")), new Outcome<IReadOnlyList<AnalysisSymbol>>.Failed(error)],
+            Found = [Batch(SymbolOf(d, "Farewell")), new Outcome<IReadOnlyList<AnalysisFind>>.Failed(error)],
         };
 
         await new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None);

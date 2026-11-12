@@ -1,3 +1,4 @@
+using ILSight.Core;
 using System.Diagnostics;
 
 namespace ILSight;
@@ -12,6 +13,15 @@ public abstract record Outcome<T>
     public sealed record Ok(T Value) : Outcome<T>;
 
     public sealed record Failed(Exception Error) : Outcome<T>;
+
+    /// <summary>What work over a module's type system run in the background gave: its value, or the error it failed
+    /// with, the library's on a module it could not read among them.</summary>
+    public static Outcome<T> FromTypeSystemWork(Outcome<TypeSystemWork<T>> work)
+    {
+        return work.Match(
+            static ok => ok.Value.Match<Outcome<T>>(static done => new Ok(done.Value), static unreadable => new Failed(unreadable.Module.Why)),
+            static failed => new Failed(failed.Error));
+    }
 
     public TResult Match<TResult>(Func<Ok, TResult> ok, Func<Failed, TResult> failed)
     {

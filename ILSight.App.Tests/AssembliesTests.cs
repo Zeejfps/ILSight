@@ -39,7 +39,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Greeter"));
         var fixtures = FixturesOf(d);
-        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(BrowseSessions.EnsureRoot(d.AppState.Session, fixtures)) };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures))) };
         using var shutdown = new CancellationTokenSource();
         var path = PathTo("Opened.dll");
 
@@ -48,7 +48,7 @@ public sealed class AssembliesTests
         Assert.Equal(path, Assert.Single(Assert.Single(ports.OpenedPaths)));
         Assert.Equal(d.AppState.Opens.Token, Assert.Single(ports.Stops));
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
-        Assert.Same(BrowseSessions.EnsureRoot(d.AppState.Session, fixtures), d.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures)), d.AppState.Navigation.ActiveTab?.Node);
         Assert.Empty(ports.Reported);
         var active = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
@@ -83,7 +83,7 @@ public sealed class AssembliesTests
         var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var appState = d.AppState;
-        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(BrowseSessions.EnsureRoot(d.AppState.Session, FixturesOf(d))), WhileWorking = () => appState.Navigation.BeginRequest() };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(d.AppState.Session, FixturesOf(d)))), WhileWorking = () => appState.Navigation.BeginRequest() };
 
         var load = await new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Opened.dll")], CancellationToken.None);
 
@@ -205,7 +205,7 @@ public sealed class AssembliesTests
         var fresh = Assert.Single(appState.Assemblies.Assemblies, a => a.FilePath.Text == AppStateDriver.FixturePath);
         Assert.NotSame(fixtures, fresh);
         Assert.Equal(Frameworks.Net48, appState.Assemblies.TargetFrameworks.All[fixtures.FilePath]);
-        Assert.Same(BrowseSessions.EnsureRoot(appState.Session, fresh), tab.Node);
+        Assert.Same(TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(appState.Session, fresh)), tab.Node);
         Assert.False(appState.IsReopening);
         Assert.Empty(ports.Reported);
         Assert.Same(tab, Assert.Single(loads).Tab);
@@ -234,7 +234,7 @@ public sealed class AssembliesTests
     {
         var fresh = AssemblyListing.ReadAgain(appState.Assemblies, item);
         var found = places
-            .Select(p => BrowseSessions.FindNode(appState.Session, fresh.Item, p))
+            .Select(p => TestWaits.Wait(() => BrowseSessions.FindNodeAsync(appState.Session, fresh.Item, p)))
             .ToArray();
         return new Outcome<ReopenedFile>.Ok(new ReopenedFile { Fresh = fresh, Places = found });
     }

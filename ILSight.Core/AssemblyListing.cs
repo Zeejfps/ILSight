@@ -171,7 +171,8 @@ public static class AssemblyListing
     /// <summary>The listed assembly that defines what <paramref name="reference"/> points at, and the
     /// handle of its definition there: the assembly's own handle for an assembly. A null assembly
     /// when it cannot be resolved or listed.</summary>
-    internal static (LoadedModule? Assembly, EntityHandle Handle) ResolveListed(AssemblyList list, CodeReference.Navigable reference)
+    internal static async Task<(LoadedModule? Assembly, EntityHandle Handle)> ResolveListedAsync(AssemblyList list, CodeReference.Navigable reference,
+        CancellationToken ct)
     {
         var generation = list.Generation;
         var owner = TryLoadAssembly(list, reference.FilePath, generation);
@@ -180,13 +181,13 @@ public static class AssemblyListing
             return default;
         }
 
-        var (assembly, handle) = ResolveTarget(list, owner, reference, generation);
+        var (assembly, handle) = await ResolveTargetAsync(list, owner, reference, generation, ct);
         if (assembly is null)
         {
             return default;
         }
 
-        if (!TryList(list, assembly, generation))
+        if (!TryList(list, assembly, generation, ct))
         {
             return default;
         }
@@ -194,12 +195,13 @@ public static class AssemblyListing
         return (assembly, handle);
     }
 
-    private static (LoadedModule? Assembly, EntityHandle Handle) ResolveTarget(AssemblyList list, LoadedModule owner, CodeReference.Navigable reference, int generation)
+    private static async Task<(LoadedModule? Assembly, EntityHandle Handle)> ResolveTargetAsync(AssemblyList list, LoadedModule owner,
+        CodeReference.Navigable reference, int generation, CancellationToken ct)
     {
         switch (reference)
         {
             case CodeReference.Entity entity:
-                return ResolveDefinition(list, owner, entity.Handle, generation);
+                return await ResolveDefinitionAsync(list, owner, entity.Handle, generation, ct);
             case CodeReference.Assembly assembly:
                 if (assembly.Referenced is null)
                 {
@@ -218,17 +220,17 @@ public static class AssemblyListing
     /// the type or member it points at. Null when it cannot be resolved. Loads the files it needs without listing them, and reads documentation files:
     /// call it off the UI thread.
     /// </summary>
-    public static CodeTooltip? DescribeReference(AssemblyList list, CodeReference.Entity reference)
+    public static async Task<CodeTooltip?> DescribeReferenceAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
     {
         try
         {
-            var (entity, assembly) = ResolveEntity(list, reference);
-            if (entity is null || assembly is null)
+            var resolved = await ResolveEntityAsync(list, reference, ct);
+            if (resolved is null)
             {
                 return null;
             }
 
-            return Documentation.CreateTooltip(entity, assembly);
+            return Documentation.CreateTooltip(resolved.Entity, resolved.Assembly, resolved.TypeSystem);
         }
         catch (BadImageFormatException)
         {
@@ -245,17 +247,17 @@ public static class AssemblyListing
     /// points at, as <see cref="MicrosoftDocs.FindPage(BrowseNode)"/> names it. Null for what is not
     /// visible outside its assembly, or when it cannot be resolved. Loads the files it needs without listing them: call it off the UI thread.
     /// </summary>
-    public static string? FindApiReferencePage(AssemblyList list, CodeReference.Entity reference)
+    public static async Task<string?> FindApiReferencePageAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
     {
         try
         {
-            var (entity, _) = ResolveEntity(list, reference);
-            if (entity is null)
+            var resolved = await ResolveEntityAsync(list, reference, ct);
+            if (resolved is null)
             {
                 return null;
             }
 
-            return MicrosoftDocs.FindPage(entity);
+            return MicrosoftDocs.FindPage(resolved.Entity);
         }
         catch (BadImageFormatException)
         {
@@ -270,7 +272,7 @@ public static class AssemblyListing
     /// <summary>The definition of the type <paramref name="reference"/> points at, loading the assembly
     /// that defines it without listing it; null when it points at no type, or cannot be resolved.
     /// Call it off the UI thread.</summary>
-    internal static ITypeDefinition? FindTypeDefinition(AssemblyList list, CodeReference.Entity reference)
+    internal static async Task<ITypeDefinition?> FindTypeDefinitionAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
     {
         if (reference.Kind != EntityKind.Type)
         {
@@ -279,8 +281,8 @@ public static class AssemblyListing
 
         try
         {
-            var (entity, _) = ResolveEntity(list, reference);
-            return entity as ITypeDefinition;
+            var resolved = await ResolveEntityAsync(list, reference, ct);
+            return resolved?.Entity as ITypeDefinition;
         }
         catch (BadImageFormatException)
         {
@@ -295,7 +297,7 @@ public static class AssemblyListing
     /// <summary>The definition of the type <paramref name="anchor"/> names, loading the assembly that
     /// defines it without listing it; null when its file cannot be read or no longer defines it. Call it
     /// off the UI thread.</summary>
-    internal static ITypeDefinition? FindTypeDefinition(AssemblyList list, TypeAnchor anchor)
+    internal static async Task<ITypeDefinition?> FindTypeDefinitionAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
     {
         try
         {
@@ -305,7 +307,8 @@ public static class AssemblyListing
                 return null;
             }
 
-            return LoadedAssemblies.EnsureMainModule(assembly).GetTypeDefinition(new FullTypeName(anchor.FullName));
+            var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+            return read.Match<ITypeDefinition?>(r => r.TypeSystem.MainModule.GetTypeDefinition(new FullTypeName(anchor.FullName)), static _ => null);
         }
         catch (BadImageFormatException)
         {
@@ -317,24 +320,49 @@ public static class AssemblyListing
         }
     }
 
-    /// <summary>The type or member <paramref name="reference"/> points at and the assembly that defines
-    /// it, loading that assembly without listing it; nulls when it cannot be resolved.</summary>
-    private static (IEntity? Entity, LoadedModule? Assembly) ResolveEntity(AssemblyList list, CodeReference.Entity entity)
+    /// <summary>The type or member <paramref name="entity"/> points at, the assembly that defines it and that
+    /// assembly's type system, loading the assembly without listing it, once the reads of the type systems the
+    /// resolving reads ended; null when it cannot be resolved, or the library could not read an assembly on the
+    /// way.</summary>
+    private static async Task<ResolvedEntity?> ResolveEntityAsync(AssemblyList list, CodeReference.Entity entity, CancellationToken ct)
     {
         var generation = list.Generation;
         var owner = TryLoadAssembly(list, entity.FilePath, generation);
         if (owner is null)
         {
-            return default;
+            return null;
         }
 
-        var (assembly, handle) = ResolveDefinition(list, owner, entity.Handle, generation);
+        var (assembly, handle) = await ResolveDefinitionAsync(list, owner, entity.Handle, generation, ct);
         if (assembly is null)
         {
-            return default;
+            return null;
         }
 
-        return (LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(handle), assembly);
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+        return read.Match(r => Resolve(r.TypeSystem, assembly, handle), static _ => null);
+    }
+
+    /// <summary>A type or member a reference was resolved to, the assembly that defines it, and that assembly's type
+    /// system as read.</summary>
+    private sealed class ResolvedEntity
+    {
+        public required IEntity Entity { get; init; }
+
+        public required LoadedModule Assembly { get; init; }
+
+        public required DecompilerTypeSystem TypeSystem { get; init; }
+    }
+
+    private static ResolvedEntity? Resolve(DecompilerTypeSystem typeSystem, LoadedModule assembly, EntityHandle handle)
+    {
+        var resolved = typeSystem.MainModule.ResolveEntity(handle);
+        if (resolved is null)
+        {
+            return null;
+        }
+
+        return new ResolvedEntity { Entity = resolved, Assembly = assembly, TypeSystem = typeSystem };
     }
 
     /// <summary>The listed item <paramref name="path"/> names: its assembly, opened and listed if it is not
@@ -402,13 +430,8 @@ public static class AssemblyListing
         }
     }
 
-    /// <summary>The type system of the assembly loaded from <paramref name="module"/>.</summary>
-    internal static DecompilerTypeSystem EnsureTypeSystemOf(AssemblyList list, MetadataFile module)
-    {
-        return LoadedAssemblies.EnsureTypeSystem(GetLoadedFrom(list, module));
-    }
-
-    private static LoadedModule GetLoadedFrom(AssemblyList list, MetadataFile module)
+    /// <summary>The module of the list read from <paramref name="module"/>; throws for one it did not read.</summary>
+    internal static LoadedModule GetLoadedFrom(AssemblyList list, MetadataFile module)
     {
         using (var held = list.State.Enter())
         {
@@ -688,7 +711,8 @@ public static class AssemblyListing
         return null;
     }
 
-    private static (LoadedModule? Assembly, EntityHandle Handle) ResolveDefinition(AssemblyList list, LoadedModule owner, EntityHandle handle, int generation)
+    private static async Task<(LoadedModule? Assembly, EntityHandle Handle)> ResolveDefinitionAsync(AssemblyList list, LoadedModule owner, EntityHandle handle,
+        int generation, CancellationToken ct)
     {
         switch (handle.Kind)
         {
@@ -697,7 +721,14 @@ public static class AssemblyListing
                 return (owner, handle);
         }
 
-        var definition = Definitions.Resolve(LoadedAssemblies.EnsureMainModule(owner), handle);
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(owner, ct);
+        var main = read.Match<MetadataModule?>(static r => r.TypeSystem.MainModule, static _ => null);
+        if (main is null)
+        {
+            return (null, default);
+        }
+
+        var definition = Definitions.Resolve(main, handle);
         if (definition is null)
         {
             return (null, default);

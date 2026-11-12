@@ -161,10 +161,9 @@ internal static class ReferenceNodes
 
     /// <summary>The types nested in the used type and the members of it the module uses, each sorted by
     /// label; a member used under several type arguments once, and overloads whose labels match each.</summary>
-    internal static BrowseNode[] ListUsedOf(BrowseNode parent, TypeReferenceInfo type)
+    internal static BrowseNode[] ListUsedOf(BrowseNode parent, TypeReferenceInfo type, MetadataModule module)
     {
         var usage = LoadedAssemblies.EnsureReferenceUsage(type.Module);
-        var module = LoadedAssemblies.EnsureMainModule(type.Module);
         var nested = ForwardedTypes.ListTypesIn(usage, type.Handle)
             .Select(h => CreateUsedType(parent, type.Module, h))
             .OrderBy(n => n.Text, NaturalStringComparer.Instance)
@@ -284,9 +283,8 @@ internal static class ReferenceNodes
     }
 
     /// <summary>The methods imported from the module, sorted by label, then by the type declaring each.</summary>
-    internal static BrowseNode[] ListImports(BrowseNode parent, ModuleReferenceInfo module)
+    internal static BrowseNode[] ListImports(BrowseNode parent, ModuleReferenceInfo module, MetadataModule typeSystem)
     {
-        var typeSystem = LoadedAssemblies.EnsureMainModule(module.Module);
         var imports = new List<ImportedMethodInfo>();
         foreach (var handle in module.Imports)
         {

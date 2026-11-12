@@ -78,7 +78,7 @@ public sealed class PackageTests
     }
 
     [Fact]
-    public void A_reference_into_a_package_file_itself_finds_nothing_rather_than_failing()
+    public async Task A_reference_into_a_package_file_itself_finds_nothing_rather_than_failing()
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
@@ -87,9 +87,9 @@ public sealed class PackageTests
 
         Assert.Null(list.FindNode(type));
         Assert.Null(list.FindMetadataRow(type));
-        Assert.Null(AssemblyListing.DescribeReference(list, type));
-        Assert.Null(AssemblyListing.FindApiReferencePage(list, type));
-        Assert.Null(AssemblyListing.FindTypeDefinition(list, type));
+        Assert.Null(await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None));
+        Assert.Null(await AssemblyListing.FindApiReferencePageAsync(list, type, CancellationToken.None));
+        Assert.Null(await AssemblyListing.FindTypeDefinitionAsync(list, type, CancellationToken.None));
         Assert.Null(list.FindMetadataRow(CodeReferences.CreateAssembly("Sample", AssemblyPath.Of(path))));
     }
 
@@ -231,6 +231,7 @@ public sealed class PackageTests
         var callers = Analyzers.RunAsync(list, symbol, usedBy)
             .ToBlockingEnumerable()
             .SelectMany(static b => b)
+            .Select(static f => Assert.IsType<AnalysisFind.Found>(f).Symbol)
             .ToList();
 
         var plus = Assert.Single(callers);

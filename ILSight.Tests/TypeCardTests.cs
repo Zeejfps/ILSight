@@ -18,7 +18,7 @@ public sealed class TypeCardTests
 
     private static TypeCard Card(string type)
     {
-        var card = TypeCards.Read(List, Zoo(type));
+        var card = TestWaits.Wait(() => TypeCards.ReadAsync(List, Zoo(type), CancellationToken.None));
         Assert.NotNull(card);
         return card;
     }
@@ -124,39 +124,39 @@ public sealed class TypeCardTests
     }
 
     [Fact]
-    public void A_type_reads_with_the_types_of_its_assembly_it_is_related_to_either_way()
+    public async Task A_type_reads_with_the_types_of_its_assembly_it_is_related_to_either_way()
     {
-        var cards = TypeCards.ReadWithNeighbours(List, Zoo("Animal"), CancellationToken.None);
+        var cards = await TypeCards.ReadWithNeighboursAsync(List, Zoo("Animal"), CancellationToken.None);
 
         Assert.Equal("Animal", cards[0].Name);
         Assert.Equal(["Keeper", "Lion", "Parrot"], NamesOf(cards.Skip(1)).Order());
     }
 
     [Fact]
-    public void The_types_deriving_from_a_class_or_implementing_an_interface_are_found_among_the_open_assemblies()
+    public async Task The_types_deriving_from_a_class_or_implementing_an_interface_are_found_among_the_open_assemblies()
     {
-        var derived = TypeCards.ReadDerived(List, Zoo("Animal"), CancellationToken.None);
-        var implementing = TypeCards.ReadDerived(List, Zoo("IFeeds"), CancellationToken.None);
+        var derived = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadDerivedAsync(List, Zoo("Animal"), CancellationToken.None));
+        var implementing = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadDerivedAsync(List, Zoo("IFeeds"), CancellationToken.None));
 
-        Assert.Equal(["Lion", "Parrot"], NamesOf(derived).Order());
-        Assert.Equal(["Lion"], NamesOf(implementing));
+        Assert.Equal(["Lion", "Parrot"], NamesOf(derived.Value).Order());
+        Assert.Equal(["Lion"], NamesOf(implementing.Value));
     }
 
     [Fact]
-    public void Finding_derived_types_stops_when_cancelled()
+    public async Task Finding_derived_types_stops_when_cancelled()
     {
         using var cancel = new CancellationTokenSource();
-        cancel.Cancel();
+        await cancel.CancelAsync();
 
-        Assert.ThrowsAny<OperationCanceledException>(() => TypeCards.ReadDerived(List, Zoo("Animal"), cancel.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => TypeCards.ReadDerivedAsync(List, Zoo("Animal"), cancel.Token));
     }
 
     [Fact]
-    public void A_reference_to_a_member_reads_as_no_card()
+    public async Task A_reference_to_a_member_reads_as_no_card()
     {
         var name = s_opened.Value.Assembly.Root.Child(ZooNamespace, "Animal", "Name : string").Definition;
 
-        Assert.Null(TypeCards.Read(List, name));
-        Assert.Empty(TypeCards.ReadWithNeighbours(List, name, CancellationToken.None));
+        Assert.Null(await TypeCards.ReadAsync(List, name, CancellationToken.None));
+        Assert.Empty(await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None));
     }
 }

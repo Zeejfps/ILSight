@@ -17,7 +17,7 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
 
     /// <summary>Runs the analysis on the thread pool, each batch read there and brought back on the UI thread; the
     /// first read that throws ends the sequence with what it threw.</summary>
-    public async IAsyncEnumerable<Outcome<IReadOnlyList<AnalysisSymbol>>> RunAsync(AnalysisSymbol subject, AnalysisKind kind,
+    public async IAsyncEnumerable<Outcome<IReadOnlyList<AnalysisFind>>> RunAsync(AnalysisSymbol subject, AnalysisKind kind,
         [EnumeratorCancellation] CancellationToken ct)
     {
         await using var batches = Analyzers.RunAsync(assemblies, subject, kind, ct).GetAsyncEnumerator(ct);
@@ -30,7 +30,7 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
             }
 
             yield return next;
-            if (next is Outcome<IReadOnlyList<AnalysisSymbol>>.Failed)
+            if (next is Outcome<IReadOnlyList<AnalysisFind>>.Failed)
             {
                 yield break;
             }
@@ -38,26 +38,30 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
     }
 
     /// <summary>The next batch of <paramref name="batches"/>, or what reading it threw; null at the end.</summary>
-    private static async Task<Outcome<IReadOnlyList<AnalysisSymbol>>?> ReadNextAsync(IAsyncEnumerator<IReadOnlyList<AnalysisSymbol>> batches,
+    private static async Task<Outcome<IReadOnlyList<AnalysisFind>>?> ReadNextAsync(IAsyncEnumerator<IReadOnlyList<AnalysisFind>> batches,
         CancellationToken ct)
     {
         var moved = await Background.Wait(batches.MoveNextAsync().AsTask());
         ct.ThrowIfCancellationRequested();
-        return moved.Match<Outcome<IReadOnlyList<AnalysisSymbol>>?>(
-            ok => ok.Value ? new Outcome<IReadOnlyList<AnalysisSymbol>>.Ok(batches.Current) : null,
-            static failed => new Outcome<IReadOnlyList<AnalysisSymbol>>.Failed(failed.Error));
+        return moved.Match<Outcome<IReadOnlyList<AnalysisFind>>?>(
+            ok => ok.Value ? new Outcome<IReadOnlyList<AnalysisFind>>.Ok(batches.Current) : null,
+            static failed => new Outcome<IReadOnlyList<AnalysisFind>>.Failed(failed.Error));
     }
 
-    /// <summary>Finds them on the thread pool and comes back on the UI thread.</summary>
+    /// <summary>Finds them on the thread pool, each once the read of its assembly's type system ended, and comes back
+    /// on the UI thread.</summary>
     public async Task<Outcome<List<AnalysisSymbol?>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => FindAnalyzed(analyzed), ct));
+        return await Background.Wait(Task.Run(() => FindAnalyzedAsync(analyzed, ct), ct));
     }
 
-    private List<AnalysisSymbol?> FindAnalyzed(IReadOnlyList<CodeAnchor> analyzed)
+    private async Task<List<AnalysisSymbol?>> FindAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
     {
-        return analyzed
-            .Select(a => Analyzers.Find(assemblies, a))
-            .ToList();
+        var found = new List<AnalysisSymbol?>(analyzed.Count);
+        foreach (var anchor in analyzed)
+        {
+            found.Add(await Analyzers.FindAsync(assemblies, anchor, ct));
+        }
+        return found;
     }
 }
