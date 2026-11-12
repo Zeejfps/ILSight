@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight;
 
 /// <summary>What the user last asked for. Each request takes a ticket; background work started for
@@ -36,6 +38,19 @@ public sealed class UserIntent
     public void StopResolving()
     {
         _resolving = NoTicket;
+    }
+
+    /// <summary>Begins a request to open <paramref name="paths"/>: what was still being looked up for an older request
+    /// is dropped. Returns the files with the request's ticket; null, beginning nothing, when there are none.</summary>
+    public FileOpening? BeginOpening(IEnumerable<AssemblyPath> paths)
+    {
+        var files = paths.ToArray();
+        if (files.Length == 0)
+        {
+            return null;
+        }
+
+        return new FileOpening { Paths = files, Intent = Begin() };
     }
 
     /// <summary>Begins a request that finds a place in the background: it is resolving until

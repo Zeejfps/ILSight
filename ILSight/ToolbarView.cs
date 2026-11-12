@@ -45,7 +45,7 @@ internal static class ToolbarView
                 var openTip = ui.Memo("open-tip", t, static s => s.ToolbarOpen(Shortcuts.Open));
                 if (ui.IconButton("open", ui.State.Icons.ToolbarOpen, openTip, variant: ButtonVariant.Neutral))
                 {
-                    MainMenuView.OpenFile(ui);
+                    MainMenuView.OpenFile(ui, appState.Intent);
                 }
 
                 var searchTip = ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search));

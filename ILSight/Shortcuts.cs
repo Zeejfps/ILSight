@@ -86,7 +86,7 @@ internal static class Shortcuts
         new(OmnibarSearch, static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping: true),
         new(Back, static (ui, appState) => GoBack(ui.State, appState), WhileTyping: true),
         new(Forward, static (ui, appState) => GoForward(ui.State, appState), WhileTyping: true),
-        new(Open, static (ui, _) => MainMenuView.OpenFile(ui)),
+        new(Open, static (ui, appState) => MainMenuView.OpenFile(ui, appState.Intent)),
         new(Settings, static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping: true),
         new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language)),
         new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs))),

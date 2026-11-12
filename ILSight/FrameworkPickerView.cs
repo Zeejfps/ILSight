@@ -23,7 +23,7 @@ internal static class FrameworkPickerView
         Commands.Start(uiState, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct));
     }
 
-    public static void Render(Ui<UiState> ui, AssemblyList assemblies)
+    public static void Render(Ui<UiState> ui, UserIntent intent, AssemblyList assemblies)
     {
         var t = ui.State.Strings;
         var picker = ui.State.Picker;
@@ -87,7 +87,7 @@ internal static class FrameworkPickerView
 
         if (open && browser.HasSelection)
         {
-            Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssembliesAsync), browser.ListSelected(), static (a, selected, ct) => OpenSelectedAsync(a, selected, ct));
+            Commands.OpenFilesLater(ui.State, intent.BeginOpening(ListPaths(browser.ListSelected())));
             close = true;
         }
         if (close)
@@ -101,11 +101,11 @@ internal static class FrameworkPickerView
         return $"{t.PickerCount(shown)} · {t.PickerSelected(selected)}";
     }
 
-    private static Task<DecompileTicket?> OpenSelectedAsync(AppState appState, List<RuntimeAssembly> selected, CancellationToken ct)
+    private static List<AssemblyPath> ListPaths(List<RuntimeAssembly> selected)
     {
-        var paths = selected
-            .Select(a => a.FilePath);
-        return appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, ct);
+        return selected
+            .Select(static a => a.FilePath)
+            .ToList();
     }
 
     /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>

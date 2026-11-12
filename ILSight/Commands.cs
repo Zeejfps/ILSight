@@ -74,6 +74,20 @@ public static class Commands
         Start(uiState, nameof(ShowInMetadataHandler), (reference, lookup), static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a, s.reference, s.lookup, ct));
     }
 
+    /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn
+    /// (<see cref="AssemblyOpening"/>), then the load of the last one shown: the input began the request in its own
+    /// frame, and only opening the files, which takes longer than a frame, waits for the edge. Nothing when
+    /// <paramref name="opening"/> is null.</summary>
+    public static void OpenFilesLater(UiState uiState, FileOpening? opening)
+    {
+        if (opening is null)
+        {
+            return;
+        }
+
+        Start(uiState, nameof(AssemblyOpening.OpenAssembliesAsync), opening, static (a, o, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, o, ct));
+    }
+
     /// <summary>Asks for the assemblies of the list <paramref name="opening"/> began opening to be opened once the frame
     /// is drawn (<see cref="AssemblyLists.OpenListAsync"/>), then the loads that started in the tabs: the draw switched
     /// the list in the frame of its input, and only opening its files, which takes longer than a frame, waits for the

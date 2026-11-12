@@ -447,6 +447,25 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
+    public void The_frame_a_file_is_picked_to_open_in_drops_what_was_still_being_looked_up()
+    {
+        var app = AppDriver.Opened();
+        var other = typeof(AppState).Assembly.Location;
+        var resolving = app.AppState.Navigation.BeginResolving(inNewTab: false);
+        app.Run(2);
+        var saidResolving = app.Frames.Drew(app.Ui.Strings.StatusResolving);
+
+        app.Frames.FilePicker.Answer = other;
+        app.Frames.Key(Shortcuts.Open).Frame();
+        app.Frames.Frame();
+
+        Assert.True(saidResolving);
+        Assert.False(app.Frames.Drew(app.Ui.Strings.StatusResolving));
+        Assert.True(app.AppState.Intent.IsStale(resolving.Intent));
+        app.Frames.WaitUntil(() => AssemblyListing.ListFilePaths(app.AppState.Assemblies).Contains(PathOf(other)), Patience);
+    }
+
+    [Fact]
     public void Files_dropped_while_a_dialog_is_open_stay_closed()
     {
         var app = AppDriver.Opened();

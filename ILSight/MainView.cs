@@ -28,10 +28,10 @@ public static class MainView
             ui.Separator();
             StatusBarView.Render(ui, appState);
         }
-        FrameworkPickerView.Render(ui, appState.Assemblies);
+        FrameworkPickerView.Render(ui, appState.Intent, appState.Assemblies);
         ComparisonPickerView.Render(ui, appState.Navigation, appState.Assemblies);
         NuGetPickerView.Render(ui);
-        ProcessPickerView.Render(ui);
+        ProcessPickerView.Render(ui, appState.Intent);
         CloseAssembliesDialogView.Render(ui, appState.Assemblies);
         AssemblyListsDialogView.Render(ui, appState.Lists);
         AssemblyListDeleteDialogView.Render(ui, appState.Lists);

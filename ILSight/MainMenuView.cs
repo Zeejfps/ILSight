@@ -203,7 +203,9 @@ internal static class MainMenuView
         }
     }
 
-    public static void OpenFile(Ui<UiState> ui)
+    /// <summary>Asks which file to open; the file picked begins a request in <paramref name="intent"/> as it is
+    /// answered, and only opening it is queued.</summary>
+    public static void OpenFile(Ui<UiState> ui, UserIntent intent)
     {
         var t = ui.State.Strings;
         var screen = ui.State;
@@ -212,7 +214,18 @@ internal static class MainMenuView
             new(t.FileFilterAssembliesAndPackages, ["*.dll", "*.exe", "*.winmd", "*.wasm", "*.nupkg", "*.zip"]),
             new(t.FileFilterAll, ["*.*"]),
         ];
-        ui.PickFile(t.FileOpenTitle, null, filters, path => Commands.Start(screen, nameof(AssemblyOpening.OpenAssemblyAsync), path, static (a, p, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, p, ct)));
+        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(screen, intent, path));
+    }
+
+    private static void OpenPicked(UiState screen, UserIntent intent, string path)
+    {
+        var file = AssemblyPath.Parse(path);
+        if (file is null)
+        {
+            return;
+        }
+
+        Commands.OpenFilesLater(screen, intent.BeginOpening([file]));
     }
 
     private static void FileMenu(Ui<UiState> ui, AppState appState)
@@ -221,7 +234,7 @@ internal static class MainMenuView
         var icons = ui.State.Icons;
         if (ui.MenuItem(t.FileOpen, Shortcuts.Open, id: "open", icon: new UiIcon(icons.FileOpen)))
         {
-            OpenFile(ui);
+            OpenFile(ui, appState.Intent);
         }
 
         if (ui.MenuItem(t.FileOpenFromFramework, id: "open-from-framework", icon: new UiIcon(icons.FileOpenFromFramework)))

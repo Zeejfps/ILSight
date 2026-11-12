@@ -45,9 +45,9 @@ internal static class NuGetPickerView
         DialogWindows.Settle(picker.Window, ui.Input.IsDown(PointerButton.Left));
     }
 
-    /// <summary>Asks for the package the dialog downloaded to be opened once the frame is drawn, and closes
-    /// the dialog; nothing until a download is in.</summary>
-    internal static void OpenDownloaded(Ui<UiState> ui, NuGetPicker picker)
+    /// <summary>Begins a request in <paramref name="intent"/> to open the package the dialog downloaded, asks for it to
+    /// be opened once the frame is drawn, and closes the dialog; nothing until a download is in.</summary>
+    internal static void OpenDownloaded(Ui<UiState> ui, UserIntent intent, NuGetPicker picker)
     {
         var path = picker.Browser.TakeDownloaded();
         if (path is null)
@@ -55,7 +55,12 @@ internal static class NuGetPickerView
             return;
         }
 
-        Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssemblyAsync), path, static (a, p, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, p, ct));
+        var file = AssemblyPath.Parse(path);
+        if (file is not null)
+        {
+            Commands.OpenFilesLater(ui.State, intent.BeginOpening([file]));
+        }
+
         picker.IsOpen = false;
     }
 

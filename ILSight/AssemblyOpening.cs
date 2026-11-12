@@ -30,17 +30,24 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     /// <summary>Opens the files, then shows the last one opened, unless something else was asked for
     /// meanwhile. Returns the load that started in the tab, for the edge that started this to start under the tab's
     /// work; null when none started. Reports why opening failed, unless the opens were cancelled.</summary>
-    public async Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
+    public Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
     {
-        var files = paths.ToArray();
-        if (files.Length == 0)
+        var opening = appState.Intent.BeginOpening(paths);
+        if (opening is null)
         {
-            return null;
+            return Task.FromResult<DecompileTicket?>(null);
         }
 
-        var ticket = appState.Intent.Begin();
-        var opened = await ports.OpenFilesAsync(files, appState.Opens.Token, ct);
-        return ShowOpened(appState, opened, ticket);
+        return OpenAssembliesAsync(appState, opening, ct);
+    }
+
+    /// <summary>Opens the files of the request <paramref name="opening"/> began (in the frame it was asked in), then
+    /// shows the last one opened, as <see cref="OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, CancellationToken)"/>
+    /// does.</summary>
+    public async Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, FileOpening opening, CancellationToken ct)
+    {
+        var opened = await ports.OpenFilesAsync(opening.Paths, appState.Opens.Token, ct);
+        return ShowOpened(appState, opened, opening.Intent);
     }
 
     /// <summary>Shows the last assembly opened, unless something else was asked for meanwhile, or reports why
