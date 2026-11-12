@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Localization;
 
-namespace ILSight.NuGetBrowsing;
+namespace ILSight.NuGet;
 
 /// <summary>What the "open from NuGet" dialog's list says while it has no packages to show, with what
 /// to do about it: wait while the config is read or the search runs, type a feed URL, retry a failed

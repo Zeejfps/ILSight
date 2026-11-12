@@ -1,4 +1,5 @@
-using ILSight.NuGetBrowsing;
+
+using ILSight.NuGet;
 
 namespace ILSight;
 

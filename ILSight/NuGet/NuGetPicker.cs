@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight.NuGetBrowsing;
+namespace ILSight.NuGet;
 
 /// <summary>
 /// The "open from NuGet" dialog as its widgets bind it: whether it is open, where its window is, the

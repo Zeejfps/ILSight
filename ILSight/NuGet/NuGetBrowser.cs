@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Resources;
 
-namespace ILSight.NuGetBrowsing;
+namespace ILSight.NuGet;
 
 /// <summary>
 /// What the "open from NuGet" dialog found and fetched, and the rules it keeps: the user's NuGet.Config,

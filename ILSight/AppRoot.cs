@@ -13,8 +13,8 @@ using ILSight.UserState;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
-using ILSight.NuGetBrowsing;
 using ILSight.MetadataGridArea;
+using ILSight.NuGet;
 
 namespace ILSight;
 

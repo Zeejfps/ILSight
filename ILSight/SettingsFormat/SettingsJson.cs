@@ -10,7 +10,7 @@ using ILSight.Bookmarking;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
-using ILSight.NuGetBrowsing;
+using ILSight.NuGet;
 
 namespace ILSight.SettingsFormat;
 

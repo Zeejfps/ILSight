@@ -7,7 +7,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 
-namespace ILSight.NuGetBrowsing;
+namespace ILSight.NuGet;
 
 /// <summary>
 /// The selected package's details beside the "open from NuGet" dialog's list: its icon, id and

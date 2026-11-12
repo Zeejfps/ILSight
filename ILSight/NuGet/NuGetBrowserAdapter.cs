@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Resources;
 
-namespace ILSight.NuGetBrowsing;
+namespace ILSight.NuGet;
 
 /// <summary>Reaches the NuGet feeds through <paramref name="client"/>, which keeps the feeds and icons it speaks
 /// to, the package cache and the user's NuGet.Config off the UI thread, and the app's error reports, for

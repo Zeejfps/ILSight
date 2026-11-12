@@ -7,7 +7,7 @@ using ZGF.KeyboardModule;
 using ILSight.Commanding;
 using ILSight.UserState;
 
-namespace ILSight.NuGetBrowsing;
+namespace ILSight.NuGet;
 
 /// <summary>
 /// The "open from NuGet" dialog, in a window of its own: the query, whether prereleases count and the feed on top; a page of

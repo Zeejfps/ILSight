@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight.NuGetBrowsing;
+namespace ILSight.NuGet;
 
 /// <summary>A download <see cref="NuGetBrowser.StartDownload"/> started, for <see cref="NuGetBrowser.DownloadAsync"/> to
 /// run: the package and version, the feed it was found in and the cache it goes to, and the work it runs as, which
