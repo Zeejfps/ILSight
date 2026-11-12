@@ -11,11 +11,11 @@ public sealed class NodePathTests
         var add = assembly.Calculator().Child("Add(T) : void");
         var empty = new AssemblyList { Runtime = TestRuntime.Installed };
 
-        Assert.Null(empty.FindListedNode(BrowseNodes.GetPath(add)));
+        Assert.Null(empty.FindListedNode(add.Path));
         Assert.Empty(empty.Listed);
 
         var (listing, _) = Trees.OpenTestAssembly();
-        Assert.Equal(add.Text, listing.FindListedNode(BrowseNodes.GetPath(add))?.Text);
+        Assert.Equal(add.Text, listing.FindListedNode(add.Path)?.Text);
     }
 
     [Fact]
@@ -25,11 +25,11 @@ public sealed class NodePathTests
         var add = assembly.Calculator().Child("Add(T) : void");
         var (fresh, _) = Trees.OpenTestAssembly();
 
-        var found = fresh.FindNode(BrowseNodes.GetPath(add));
+        var found = fresh.FindNode(add.Path);
 
         Assert.NotNull(found);
         Assert.NotSame(add, found);
-        Assert.Equal(BrowseNodes.GetPath(add), BrowseNodes.GetPath(found));
+        Assert.Equal(add.Path, found.Path);
         Assert.Equal(add.Text, found.Text);
         Assert.Contains(found.Assembly, fresh.Assemblies);
     }
@@ -40,10 +40,10 @@ public sealed class NodePathTests
         var (_, a) = Trees.OpenTestAssembly();
         var (_, b) = Trees.OpenTestAssembly();
 
-        Assert.Equal(BrowseNodes.GetPath(a.Calculator()), BrowseNodes.GetPath(b.Calculator()));
-        Assert.Equal(BrowseNodes.GetPath(a.Calculator()).GetHashCode(), BrowseNodes.GetPath(b.Calculator()).GetHashCode());
-        Assert.NotEqual(BrowseNodes.GetPath(a.Calculator()), BrowseNodes.GetPath(a.Fixtures()));
-        Assert.Equal(BrowseNodes.GetPath(a.Root), BrowseNodes.GetPath(b.Root));
+        Assert.Equal(a.Calculator().Path, b.Calculator().Path);
+        Assert.Equal(a.Calculator().Path.GetHashCode(), b.Calculator().Path.GetHashCode());
+        Assert.NotEqual(a.Calculator().Path, a.Fixtures().Path);
+        Assert.Equal(a.Root.Path, b.Root.Path);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public sealed class NodePathTests
     {
         using var temp = new TempDir();
         var copy = temp.Copy(Trees.TestAssemblyPath, "fixture.dll");
-        var path = BrowseNodes.GetPath(new AssemblyList { Runtime = TestRuntime.Installed }.Open(copy).Calculator());
+        var path = new AssemblyList { Runtime = TestRuntime.Installed }.Open(copy).Calculator().Path;
         File.Delete(copy);
 
         Assert.Null(new AssemblyList { Runtime = TestRuntime.Installed }.FindNode(path));

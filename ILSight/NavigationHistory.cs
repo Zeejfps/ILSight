@@ -32,7 +32,7 @@ public sealed class NavigationHistory
     /// <summary>Records a new place, dropping what was forward of the current one.</summary>
     public void RecordPlace(BrowseNode node, DecompilationLanguage language)
     {
-        var place = BrowseNodes.GetPath(node);
+        var place = node.Path;
         if (IsCurrentPlace(place))
         {
             return;

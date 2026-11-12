@@ -96,7 +96,7 @@ public sealed class TargetFrameworkTests
         Assert.Same(sample, SampleOf(app.AppState));
         var selected = tree.View.Selected;
         Assert.NotNull(selected);
-        Assert.Equal(BrowseNodes.GetPath(greeter), BrowseNodes.GetPath(selected));
+        Assert.Equal(greeter.Path, selected.Path);
         Assert.NotSame(greeter, tree.View.Selected);
         Assert.Same(FixturesOf(app.AppState), app.AppState.Navigation.ActiveTab?.Node?.Assembly);
         Assert.Empty(app.AppState.Errors.Entries);

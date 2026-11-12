@@ -379,7 +379,7 @@ public sealed class AssembliesTests
     public async Task HandleAsync_TabsWaitingForNodes_HandsBackTheLookupOfThemUnstarted()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var place = BrowseNodes.GetPath(d.Fixture("Greeter"));
+        var place = d.Fixture("Greeter").Path;
         var record = new NodeDocumentRecord("document-9", "Greeter", place, DecompilationLanguage.CSharp, null);
         var tab = d.AppState.Navigation.OpenReopenedTab();
         d.AppState.Navigation.WaitForNode(tab, place, record.Title, record.Language);

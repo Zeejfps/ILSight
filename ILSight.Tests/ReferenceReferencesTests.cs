@@ -53,7 +53,7 @@ public sealed class ReferenceReferencesTests
         var (list, assembly) = Trees.OpenTestAssembly();
         var coreLib = RuntimeReference(assembly).Child(CoreLib);
 
-        var found = list.FindNode(BrowseNodes.GetPath(coreLib));
+        var found = list.FindNode(coreLib.Path);
 
         Assert.Same(coreLib, found);
         Assert.Same(assembly.Root, coreLib.Root);

@@ -189,9 +189,9 @@ public sealed class BrowseTreeTests
         var (list, assembly) = Trees.OpenTestAssembly();
         var add = assembly.Calculator().Child("Add(T) : void");
 
-        Assert.Same(add, list.FindNode(BrowseNodes.GetPath(add)));
-        Assert.Same(add, list.FindListedNode(BrowseNodes.GetPath(add)));
-        Assert.Same(assembly.Root, list.FindNode(BrowseNodes.GetPath(assembly.Root)));
+        Assert.Same(add, list.FindNode(add.Path));
+        Assert.Same(add, list.FindListedNode(add.Path));
+        Assert.Same(assembly.Root, list.FindNode(assembly.Root.Path));
     }
 
     [Fact]

@@ -90,7 +90,7 @@ public sealed class BookmarkList
     /// so that it is saved with the labels the node shows now.</summary>
     public void Resolve(Bookmark bookmark, BrowseNode node)
     {
-        bookmark.MoveTo(BrowseNodes.GetPath(node));
+        bookmark.MoveTo(node.Path);
         _items.NoteChange();
     }
 
@@ -212,7 +212,7 @@ public sealed class BookmarkList
     public IReadOnlyDictionary<int, bool> ListMarkedLines(DecompiledDocument document, BrowseNode node)
     {
         var marks = _marksByDocument.GetOrCreateValue(document);
-        var place = BrowseNodes.GetPath(node);
+        var place = node.Path;
         if (marks.Revision == Revision && Equals(marks.Place, place))
         {
             return marks.Lines;

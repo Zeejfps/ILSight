@@ -171,7 +171,7 @@ internal static class ReferenceNodes
             .Cast<BrowseNode>();
         var members = ForwardedTypes.ListMembersOf(usage, type.Handle)
             .Select(h => CreateUsedMember(parent, type.Module, h, ResolveDeclared(module, h)))
-            .DistinctBy(n => BrowseNodes.FindSegment(n))
+            .DistinctBy(n => n.Segment)
             .OrderBy(n => n.Text, NaturalStringComparer.Instance);
         return nested
             .Concat(members)

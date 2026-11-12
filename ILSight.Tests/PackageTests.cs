@@ -127,7 +127,7 @@ public sealed class PackageTests
         Assert.Empty(list.Assemblies.Intersect(old));
         var root = TestAssemblyRoot(fresh.Root.Child(LibFolder));
         Assert.Same(list.Assemblies[1], root.Assembly);
-        Assert.Same(root, list.FindNode(BrowseNodes.GetPath(old[1].Root)));
+        Assert.Same(root, list.FindNode(old[1].Root.Path));
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public sealed class PackageTests
         var first = new AssemblyList { Runtime = TestRuntime.Installed };
         var calculator = TestAssemblyRoot(first.Open(packagePath).Root.Child(LibFolder)).Assembly.Calculator();
 
-        var path = BrowseNodes.GetPath(calculator);
+        var path = calculator.Path;
         var second = new AssemblyList { Runtime = TestRuntime.Installed };
         var found = second.FindNode(path);
 

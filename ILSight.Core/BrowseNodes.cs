@@ -174,32 +174,22 @@ public static class BrowseNodes
     internal static BrowseNode Create(BrowseNode? parent, NodeSubject subject, BrowseNode? enclosingNamespace = null)
     {
         var text = GetText(subject);
+        var assembly = GetAssembly(subject);
+        var segment = parent is null ? null : NodeDefinitions.FindPathSegment(subject);
         return new BrowseNode
         {
-            Assembly = GetAssembly(subject),
+            Assembly = assembly,
             Parent = parent,
             Text = text,
             Subject = subject,
             EnclosingNamespace = enclosingNamespace,
+            Segment = segment,
+            Path = NodeDefinitions.ExtendPath(parent, assembly, segment, text),
             FullName = ComposeFullName(subject, text),
             Visibility = NodeDefinitions.GetVisibility(subject),
             Reference = NodeDefinitions.ReferenceOf(subject),
             Activation = NodeDefinitions.GetActivation(subject),
         };
-    }
-
-    /// <summary>Where <paramref name="node"/> sits, for finding it again after its assembly is reloaded,
-    /// worked out the first time. Two threads doing that at once work out the same path, of which one stays.</summary>
-    public static NodePath GetPath(BrowseNode node)
-    {
-        return node.PathMemo ??= NodeDefinitions.GetPath(node);
-    }
-
-    /// <summary>What <paramref name="node"/> is among its siblings, as a path names it; null for the root of
-    /// a tree. Worked out the first time, as <see cref="GetPath"/> is.</summary>
-    internal static NodePathSegment? FindSegment(BrowseNode node)
-    {
-        return node.SegmentMemo ??= NodeDefinitions.FindPathSegment(node.Subject);
     }
 
     /// <summary>The bytes of the resource <paramref name="node"/> stands for, as a saved copy holds them: for

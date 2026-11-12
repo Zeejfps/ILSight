@@ -5,19 +5,18 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core;
 
 /// <summary>
-/// A node of the browse tree: what it stands for and where it sits. Its children are built and kept by
-/// a <see cref="BrowseSession"/>, so the same entity is the same node object for as long as its
-/// <see cref="Assembly"/> lives: make one only through <see cref="BrowseNodes"/>, as the session does. All
-/// of <see cref="BrowseNodes"/> is thread-safe, and a node changes after it is made only as
-/// <see cref="PathMemo"/> and <see cref="SegmentMemo"/> fill.
+/// A node of the browse tree: what it stands for and where it sits, and the values it shows, read from the library's
+/// objects when it was made. Its children are built and kept by a <see cref="BrowseSession"/>, so the same entity is
+/// the same node object for as long as its <see cref="Assembly"/> lives: make one only through
+/// <see cref="BrowseNodes"/>, as the session does. A node never changes after it is made.
 /// </summary>
 public sealed class BrowseNode
 {
-    /// <summary>Where this node sits, once <see cref="BrowseNodes.GetPath"/> worked it out.</summary>
-    internal NodePath? PathMemo;
+    /// <summary>Where this node sits, for finding it again after its assembly is reloaded.</summary>
+    public required NodePath Path { get; init; }
 
-    /// <summary>What the node is among its siblings, once <see cref="BrowseNodes.FindSegment"/> worked it out.</summary>
-    internal NodePathSegment? SegmentMemo;
+    /// <summary>What the node is among its siblings, as a path names it; null for the root of a tree.</summary>
+    public required NodePathSegment? Segment { get; init; }
 
     /// <summary>The label: a name, or for members an ILSpy-style signature such as <c>Add(T) : void</c>.</summary>
     public required string Text { get; init; }

@@ -100,7 +100,7 @@ public sealed class AnchorTests
     public void A_path_rebuilt_from_its_segments_names_the_same_node()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var path = BrowseNodes.GetPath(assembly.Calculator().Child("Add(T) : void"));
+        var path = assembly.Calculator().Child("Add(T) : void").Path;
 
         var rebuilt = NodePath.From(path.FilePath, path.Steps.ToList());
 

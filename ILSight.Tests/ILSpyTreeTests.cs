@@ -6,7 +6,7 @@ public sealed class ILSpyTreeTests
 {
     private static NodePath? PathOf(BrowseNode? node)
     {
-        return node is null ? null : BrowseNodes.GetPath(node);
+        return node is null ? null : node.Path;
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public sealed class ILSpyTreeTests
                 continue;
             }
 
-            Assert.Equal(BrowseNodes.GetPath(node), PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "")));
+            Assert.Equal(node.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "")));
         }
     }
 
@@ -49,8 +49,8 @@ public sealed class ILSpyTreeTests
         var calculator = assembly.Calculator();
         var info = ILSpyTree.Describe(calculator, null);
 
-        Assert.Equal(BrowseNodes.GetPath(calculator), PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, info.Token, info.MemberName)));
-        Assert.Equal(BrowseNodes.GetPath(calculator), PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, ["no such file"], info.Token, info.MemberName)));
+        Assert.Equal(calculator.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, info.Token, info.MemberName)));
+        Assert.Equal(calculator.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, ["no such file"], info.Token, info.MemberName)));
         Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, info.MemberName));
     }
 

@@ -85,7 +85,7 @@ public sealed class TabLoad
     {
         TabContent.Reloading reloading => reloading.Location,
         TabContent.Gone gone => gone.Location,
-        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node is null ? null : BrowseNodes.GetPath(Node),
+        TabContent.Loading or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Failed => Node is null ? null : Node.Path,
         TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison or TabContent.Reopening => null,
         _ => throw new UnreachableException(),
     };

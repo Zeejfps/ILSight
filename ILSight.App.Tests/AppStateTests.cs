@@ -259,7 +259,7 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(d.Fixture("Greeter"));
-        var expanded = new List<NodePath> { BrowseNodes.GetPath(d.Node()), BrowseNodes.GetPath(d.Node(AppStateDriver.FixturesNamespace)) };
+        var expanded = new List<NodePath> { d.Node().Path, d.Node(AppStateDriver.FixturesNamespace).Path };
         d.TakeViewCommands();
 
         d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct));
@@ -267,7 +267,7 @@ public sealed class AppStateTests
         var commands = d.TakeViewCommands();
 
         var expand = Assert.Single(commands.OfType<ViewCommand.ExpandNodes>());
-        Assert.Equal(expanded, expand.Nodes.Select(n => BrowseNodes.GetPath(n)));
+        Assert.Equal(expanded, expand.Nodes.Select(n => n.Path));
         Assert.Same(d.Node(), expand.Nodes[0]);
         Assert.Contains(new ViewCommand.RevealNode(d.Fixture("Greeter")), commands);
     }

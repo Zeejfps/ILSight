@@ -54,6 +54,6 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assembl
             return null;
         }
 
-        return BrowseNodes.GetPath(node);
+        return node.Path;
     }
 }

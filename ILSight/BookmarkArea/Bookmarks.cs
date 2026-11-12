@@ -172,7 +172,7 @@ public static class Bookmarks
     /// <summary>The bookmark made in the document of <paramref name="node"/>.</summary>
     public static Bookmark CreateAt(BrowseNode node, DecompilationLanguage language, int line, CodeAnchor? anchor, string name, ILSpyBookmarkInfo ilspy)
     {
-        return CreateBookmark(BrowseNodes.GetPath(node), language, line, anchor, name, ilspy, null, true);
+        return CreateBookmark(node.Path, language, line, anchor, name, ilspy, null, true);
     }
 
     /// <summary>The bookmark <paramref name="record"/> describes, made in the document of <paramref name="place"/>.</summary>
@@ -237,7 +237,7 @@ public static class Bookmarks
             return null;
         }
 
-        var place = BrowseNodes.GetPath(node);
+        var place = node.Path;
         if (!bookmark.Place.Equals(place) || bookmark.Line >= document.Lines.Length)
         {
             return null;

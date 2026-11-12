@@ -245,7 +245,7 @@ public static class BrowseSessions
             return null;
         }
 
-        var segment = BrowseNodes.FindSegment(other);
+        var segment = other.Segment;
         if (segment is null)
         {
             return null;
@@ -261,7 +261,7 @@ public static class BrowseSessions
         BrowseNode? found = null;
         foreach (var child in children)
         {
-            var childSegment = BrowseNodes.FindSegment(child);
+            var childSegment = child.Segment;
             if (!segment.Equals(childSegment))
             {
                 continue;

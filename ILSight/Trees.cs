@@ -410,7 +410,7 @@ public static class Trees
                     continue;
                 }
 
-                paths.Add(BrowseNodes.GetPath(node));
+                paths.Add(node.Path);
                 var children = BrowseSessions.PeekChildren(tree.Session, node);
                 if (children is ChildrenState.Ready loaded)
                 {

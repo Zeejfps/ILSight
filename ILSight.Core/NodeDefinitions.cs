@@ -226,25 +226,28 @@ public static class NodeDefinitions
         return navigate.Target;
     }
 
-    /// <summary>The path to <paramref name="node"/> from the root of its tree: for a node of an assembly
-    /// read out of a package, from the package's root, through one step naming the assembly's file.</summary>
-    public static NodePath GetPath(BrowseNode node)
+    /// <summary>The path of a node made under <paramref name="parent"/>, read from <paramref name="assembly"/>, which
+    /// <paramref name="segment"/> names among its siblings, labelled <paramref name="text"/>: the parent's path and a
+    /// step; for the root of a tree, its file's; for an entry of a package, its file's in the package's.</summary>
+    internal static NodePath ExtendPath(BrowseNode? parent, LoadedAssembly assembly, NodePathSegment? segment, string text)
     {
-        var steps = new List<NodePathStep>();
-        var n = node;
-        while (n.Parent is not null)
+        if (parent is null)
         {
-            var segment = BrowseNodes.FindSegment(n) ?? throw new UnreachableException();
-            steps.Add(new NodePathStep(segment, n.Text));
-            if (segment.IsPackageEntry)
-            {
-                n = n.Root;
-                break;
-            }
-            n = n.Parent;
+            return new NodePath { FilePath = assembly.FilePath, Steps = [] };
         }
-        steps.Reverse();
-        return new NodePath { FilePath = n.Assembly.FilePath, Steps = steps.ToImmutableArray() };
+
+        if (segment is null)
+        {
+            throw new UnreachableException($"'{text}' sits under '{parent.Text}' but no segment names it.");
+        }
+
+        var step = new NodePathStep(segment, text);
+        if (segment.IsPackageEntry)
+        {
+            return new NodePath { FilePath = parent.Root.Assembly.FilePath, Steps = [step] };
+        }
+
+        return new NodePath { FilePath = parent.Path.FilePath, Steps = parent.Path.Steps.Add(step) };
     }
 
     /// <summary>The text of <paramref name="path"/>: its file, then the label of each step.</summary>

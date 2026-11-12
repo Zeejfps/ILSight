@@ -38,13 +38,13 @@ public sealed class SavedPathTests : IDisposable
     {
         var node = Sample(kind);
         var reopened = new AssemblyList { Runtime = TestRuntime.Installed };
-        AssemblyListing.Open(reopened, BrowseNodes.GetPath(node).FilePath);
+        AssemblyListing.Open(reopened, node.Path.FilePath);
 
-        var found = reopened.FindNode(BrowseNodes.GetPath(node));
+        var found = reopened.FindNode(node.Path);
 
         Assert.NotNull(found);
         Assert.NotSame(node, found);
-        Assert.Equal((kind, node.Text, BrowseNodes.GetPath(node)), (KindOf(found), found.Text, BrowseNodes.GetPath(found)));
+        Assert.Equal((kind, node.Text, node.Path), (KindOf(found), found.Text, found.Path));
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class SavedPathTests : IDisposable
     {
         var failed = Sample("FailedAssembly");
 
-        Assert.Null(new AssemblyList { Runtime = TestRuntime.Installed }.FindNode(BrowseNodes.GetPath(failed)));
+        Assert.Null(new AssemblyList { Runtime = TestRuntime.Installed }.FindNode(failed.Path));
     }
 
     /// <summary>A node of <paramref name="kind"/>, in a file left in place for another list to open.</summary>

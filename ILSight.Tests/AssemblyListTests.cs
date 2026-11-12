@@ -35,7 +35,7 @@ public sealed class AssemblyListTests
         Assert.True(replaced);
         Assert.Equal([fresh, second], list.Listed);
         Assert.Equal("net48", Assert.IsType<LoadedModule>(fresh).FrameworkMoniker);
-        Assert.Same(fresh, list.FindNode(BrowseNodes.GetPath(first.Root))?.Assembly);
+        Assert.Same(fresh, list.FindNode(first.Root.Path)?.Assembly);
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public sealed class AssemblyListTests
         using var temp = new TempDir();
         var failed = list.Open(temp.PathOf("missing.dll"));
 
-        Assert.Same(failed.Root, list.FindNode(BrowseNodes.GetPath(failed.Root)));
+        Assert.Same(failed.Root, list.FindNode(failed.Root.Path));
     }
 
     [Fact]

@@ -82,9 +82,9 @@ public sealed class NestedNamespaceTests
         var ilsight = Trees.TestAssembly.Root.Child("ILSight");
         var (fresh, _) = Trees.OpenTestAssembly();
 
-        var found = fresh.FindNode(BrowseNodes.GetPath(ilsight));
+        var found = fresh.FindNode(ilsight.Path);
 
-        Assert.Equal([new NodePathSegment.Namespace("ILSight")], BrowseNodes.GetPath(ilsight).Steps.Select(static s => s.Segment));
+        Assert.Equal([new NodePathSegment.Namespace("ILSight")], ilsight.Path.Steps.Select(static s => s.Segment));
         Assert.NotNull(found);
         Assert.True(Assert.IsType<NodeSubject.Namespace>(found.Subject).Value.IsEnclosingOnly);
         Assert.Equal("ILSight", found.Text);
