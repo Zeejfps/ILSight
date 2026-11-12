@@ -22,6 +22,10 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
   **What null would mean picks the form:** what the code under test produces is asserted (`Assert.NotNull`); a fact
   the test fixes itself (a fixture, a path, a reflected member, text it parses) is `?? throw` with a message naming
   it, wherever it sits, taken before the act (inside `Assert.Throws`' lambda its throw passes for the subject's).
+  **Tests drive what the app runs:** a test acts through what the app's code calls (an edge's command or input, a use
+  case's public method). A production member only tests call is deleted and its tests drive the edge instead; where
+  its composition is the one the app should run, the edge calls it. Not moved into the test driver: a copy of the
+  edge's composition passed while the edge left tabs "waiting" for good.
 
 ## R001: A decision-making class reaches the outside world through one port
 
@@ -208,7 +212,7 @@ Take the first match:
   error. Needing a port member the others don't is not the test. Knowledge shared by use cases lives on the type it's
   about. Test through public methods; never add an interface only to fake it.
 - A helper lives with the code that uses it: when only one area calls it, it belongs there; when its last caller
-  moves, it moves too; with no callers left, delete it.
+  moves, it moves too; with no callers left, delete it (a test is no caller that keeps it).
 - A helper that reaches no port is not a step, and where it lives follows what it knows, not how many call it.
   Knowledge of a rule or a concept goes where step 1 puts it, even with one caller today (not private to a use case: a
   later caller can't reach it and skips the rule; not public on it: code with no I/O would be handed the use case): a
@@ -223,6 +227,21 @@ Take the first match:
   opened in a tab), and a step callers take before their I/O (`intent.BeginOpening(paths)`), not a static on the use
   case nor the ticket's. Not public parts for the exceptions, nor a second type over the same parts: a diagram opened
   through the tabs was taken away by a late lookup.
+- **Which changes the rule covers is read from what it is for**, not from the shapes its parts have: every kind of
+  document the user asks for is a new intent and a place in the history, so a kind with no history entry (a
+  comparison, a report) gets one; what nobody asked for (a tab the screen opens for its own panel) is named and changes
+  neither. With entries for nodes and diagrams only, Back skipped the place before a comparison and a late lookup
+  replaced a report; with every tab opening a new intent, the screen's own tab dropped the user's lookup.
+- **The parts end where the rule does, and the type keeps its rule against what it hands out.** Its parts are what
+  the rule decides with (which document each tab is, the active tab, history, intent): it holds privately each part
+  some member of which could make the rule false, and makes those changes its methods. An object keeping a rule of its
+  own, none of whose members can break the type's, it may hand out (get-only), used directly with no forwarders. An
+  object carrying both rules' state is split by rule: a tab's load (loading, loaded, failed, gone, another language;
+  only the newest lands) is the load's type, handed out; which document the tab is stays the navigation's. A carrier of
+  the parts a wide change spans (R010) passes the same test: a rule across two parts (an analysis is of an assembly on
+  the list) is kept by the type holding both, not by functions over the carrier (closing through the list alone left
+  the analysis, on ILSight too). Not every part private (a forwarder for each read: 78 on ILSight's session), not the
+  parts as parameters.
 
 ## R005: Data goes in through `required init` properties
 
@@ -415,7 +434,8 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   on every part (saving the session) is an edge's (R001). Not the whole state below the draw's root, and not a command
   queued only for want of the parts (a frame late). Values the views only read and pass on together (language and
   options) are one value, kept on their owner and made when one changes (0 bytes a frame; made per frame, one object a
-  frame; a struct's default threw, R005). Handed the whole state or the parts, a bookmarks panel written later moved the
+  frame; a struct's default threw, R005). The type holding the parts hands out only parts that can't break a rule
+  across them (R004). Handed the whole state or the parts, a bookmarks panel written later moved the
   tab past the history and the intent, and a late lookup overtook it; the type keeps the rule (`DEMO_CS0122`).
 - **Screen state the edge reads back after the draw** (where a tab's view stands) is kept with the content the view
   drew: the view records the version it drew (the tab counts its changes), and the read-back stores it on the tab
@@ -435,12 +455,18 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
 
 ## R011: One level of abstraction per method; calls only go down
 
-Build: suggestions only, RL1101 (a loop doing low-level work between steps), RL1102 (a condition in mechanics between steps).
+Build: suggestions only, RL1101 (a loop doing low-level work between steps), RL1102 (a condition in mechanics between steps),
+RL1103 (in a draw or an `[Edge]` type, a capturing lambda whose closure is allocated on paths that never make it).
 
 - A method's body is its steps, in the words one level below its name. Mechanics (index loops, arithmetic, string
   building, LINQ) live in a method named for what it computes, on the concept it's about (`Pricing.CalculateTotal`);
   only the caller's own policy (how it words its outcome) is the caller's private method (R004). Naming a step never
   needs a lambda or LINQ: on a hot path (per frame) the named method holds the loop and allocates nothing.
+- **A capturing lambda is made only on the path that needs it:** C# allocates its closure where what it captures
+  comes into scope (a parameter: when the method is called), so a lambda behind an `if` or after an early `return`
+  allocates on every call (24 bytes a frame at ILSight's frame edge). On a hot path, put it in a method of its own
+  called on that path, or make it `static` and hand it its state. A local declared on the path also works, until an
+  edit captures a parameter too.
 - `if` and `foreach` are fine at any level when the condition is a named question and each branch or iteration is a
   step. Comparing one value with a constant counts as a named question.
   ```csharp

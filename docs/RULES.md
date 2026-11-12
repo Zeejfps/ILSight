@@ -56,6 +56,14 @@ Test conventions:
   method reported `Assert.NotNull() Failure: Value is null` from a statement and `Method 'Circle.Area' not found.` from
   a field; `?? throw` on the subject's null reported an error, like a broken setup; a misnamed fixture taken inside
   `Assert.Throws`' lambda passed).
+- **Tests drive what the app runs.** A test acts through what the app's code calls: an edge's command or input, a use
+  case's public method. A production member only tests call is deleted, and its tests drive the edge that does the same
+  for the app; where its composition is the one the app should run, the edge calls it instead of composing its own (one
+  composition). Not moved into the test driver: a copy of the edge's composition tests the copy (R004 S20, ILSight's
+  `SwitchAssemblyListAsync`, verified: through the workflow only tests called, and through the driver's copy of the
+  edge, the test passed while a change to the frame edge left the tabs "waiting" for good; through the edge, it failed.
+  The workflow also held the lookup until the files opened, so its tests checked behaviour the app doesn't have).
+  Whether only tests call a member takes a view across projects (one compilation sees no test's call).
 - **Test data uses object initializers** (R005), so every value in a fixture is labelled.
 - **Shared helpers live in one place** (a shared test project), not copied into each test project.
 
@@ -99,13 +107,13 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306: also `bool CloseTab`, `bool Set`), a `Get*` returning -1 or `default` of a struct (RL0307) | whether a name is a verb; choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) or travel through the codebase's own parameters (-1 for "no row"); a `TrySet` that should count changes; a placeholder returned to fill a generic `T` |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
 | R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806); suggestion while measured: a dropped value of a type marked `[MustUse]`, a `Task<T>` of one taken as a plain `Task` included (RL0807) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case); which types leave state stuck when dropped (the marker is put by hand); a value passed to code that ignores it; whether a value carrying several kinds of work makes its consumer handle each (a handler per kind) |
-| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122); whether a rule's type holds every part the rule spans, a setting included, and names the changes it exempts |
+| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122); whether a rule's type holds every part the rule spans, a setting included, and names the changes it exempts; which changes its rule covers (read from what the rule is for, every kind of document included); where its parts end (what a caller could break the rule through, in what it hands out); production members only tests call (another project's calls) |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
 | R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters or listed services use: I/O code they share), the composition root, tests and edge code (`[Edge]` types, `rulelab.infrastructure` folders) (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; a decision that relied on an object's identity once the port passes values (a key's hand-written `Equals` without `GetHashCode` is CS8851); ports, adapters, what counts as a decision (would a second adapter of the port repeat the branch?); a caller converted before its callee (passes the state on, no port member carrying it); whole-state work called outside an edge; which of a library's types are I/O code another project's adapters use (listed by hand: one compilation sees no other project's uses) |
 | R006 | – | all, including whether an input is read all-or-nothing or leniently |
 | R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849); a job runner listed in `rulelab.ambient_types` started from a draw (RL0101); an I/O step called without what its state change returned (the compiler: CS1503 / CS7036); edge code outside a type marked `[Edge]` (RL0101, RL0102, RL0902 report it, and say so); a shortcut past the type that keeps a rule across the parts a draw changes (the compiler, once the type holds them: CS0122) | parallel queries on one `DbContext`; moving async work out of sync-only callers; what the input's frame must show (and where a workflow's first wait is); what a draw takes (the parts it changes, or the type that keeps their rule; never the whole state below the draw's root); work started from a draw by other means; state drawn before the widget that changes it; whether a frame follows a change in a UI that draws on demand; where the edge's read-back of the screen is kept, and whether its key is unique across every owner the store holds; follow-up work no later step needs, awaited instead of handed back, or work handed back partway held by a later wait; clean-up a catch runs instead of `DisposeAsync` |
 | R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestions while measured: an adapter's catch that turns cancellation into a result (RL0903), an adapter's port member returning a sequence that isn't its own iterator (RL0904), a dropped ticket handed back (RL0807) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object leaving an adapter; another call to a stream's source inside its loop; cancellation turned into a result without a catch (an awaiter or continuation); whether a workflow's token is linked to everything that cancels it on purpose, and to nothing else (a deadline is a timeout), and a canceller found partway handed back to the edge; where an effect can't be undone, and whether what follows it is one transaction or a durable record's |
-| R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
+| R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102; in a draw or an `[Edge]` type, a capturing lambda whose closure is allocated on paths that never make it, RL1103) | whether a call goes up a level; what the levels are; whether code is a hot path (code a frame runs outside draws and edge types, per-row loops) |
 | R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
 | R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303), a nested type that is a unit of its own: code that uses none of its container's private members, a type code outside its container names or reaches through members, or code on its container's private members that code outside makes (RL1305); suggestions while measured: a top-level shape only one type uses (RL1304), a namespace named like a type (RL1306), a nested type its container keeps in a field and calls while it reaches the container's private members (RL1307); generated code doesn't count | whether a group has parts and gets a folder, and where a type goes (by its name: its first concept, a plural as its singular, a use case's by what it acts on; else by its users, composition roots aside); whether a nested type's private reach is its container's own operation (made and handed out, not held); narrowing a member to its users (another project's calls aren't seen); how to split a class that was split across files (by what each part knows, R004); whether code is a test's input |
 
@@ -972,7 +980,8 @@ Work top to bottom and take the first match.
 - **Where a type's code lives is R013:** one type per file, and a class too big for one file is split here, by what each
   part knows, not across files by topic with `partial`.
 - **A helper lives with the code that uses it.** When only one area calls it, it belongs to that area (knowledge in
-  one place): when its last caller moves, it moves too, and a helper with no callers left is deleted. Left behind, it
+  one place): when its last caller moves, it moves too, and a helper with no callers left is deleted (a test is no
+  caller that keeps production code: Scope, "Tests drive what the app runs"). Left behind, it
   is the first place the next reader looks for that area's knowledge, and the wrong one. (A stated convention, not
   measured: the compiler's IDE0051 reports a private member nobody calls, and found none here; a helper used from one
   other area needs a whole-solution view, like the seam test.)
@@ -1013,6 +1022,38 @@ Work top to bottom and take the first match.
   restoring recorded no history and let the lookup the user asked for land, and the shortcut doesn't compile
   (`DEMO_CS0122`). With the setting passed to each change, a panel holding the older value opened a second tab, a
   preview, while previews were off; held by the type, every change read the one value.
+- **Which changes the rule covers is read from what the rule is for, not from the shapes its parts happen to have.**
+  Navigation's rule is about what the user asks the tabs to show: whatever kind of document the user asks for is a new
+  intent and a place in the history, so a kind the history has no entry for gets one (a comparison, an export report),
+  not a new intent alone, or nothing. What nobody asked for (a tab the screen opens for a panel of its own, a reload
+  showing again what was shown) changes neither, named for what it is; so not every tab opening either. In testing
+  (S17), with history entries for nodes and diagrams only (ILSight's), Back from a comparison opened after Invoice and
+  Order skipped Order, Back from code followed out of the comparison skipped the comparison, and a report the user
+  opened while a lookup ran was replaced by the lookup's answer; with every tab opening a new intent, a panel's tab the
+  screen opened dropped the lookup the user had asked for; with an entry for every kind the user asks for, all four
+  were right.
+- **The rule's parts end where the rule does, and the type keeps its rule against what it hands out.** Its parts are
+  the state the rule decides with (navigation: which document each tab is, which tab is active, the history, the newest
+  intent). A caller can change whatever it is handed, so the type holds privately each part some member of which could
+  make its rule false, exposes what readers need of it, and makes each change its method. An object it holds that keeps
+  a rule of its own, and none of whose members can make the type's rule false, it may hand out (a get-only property),
+  and readers use it directly: no member of the type forwards to it. An object carrying state of both rules is split by
+  rule: how far a tab's load got (loading, loaded, failed, gone, decompiled again in another language; only the newest
+  load lands) is the load's type, which the navigation hands out; which document the tab is stays the navigation's. A
+  type made to carry the parts a wide change spans (R010 "A draw takes what its input changes") is held to the same
+  test: a rule across two of its parts (an analysis is of an assembly on the list) is kept by the type that holds both
+  privately, not by functions over the carrier, which a caller handed one part goes around.
+  In testing (S18, ILSight's tab handed out with static helpers over its fields), a language switch written later
+  without the load's check showed Invoice's code under Order's title, and a header feature pointing the tab at the base
+  type through a helper of the tab went past the intent, so a late lookup took the tab from it; with every change of a
+  load the navigation's method, both were right, but a load's workflow took the whole navigation (8 public members)
+  instead of the load (4); split by rule, both right and the workflow took the load (`DEMO_CS0200` for the place). In
+  S19 (ILSight's `OpenListSession`, every part public), the close dialog, handed the list, closed an assembly through
+  it alone: its analysis stayed and its tab still showed it (on a copy of ILSight, closing every listed assembly
+  through `CloseAssemblies(list, items)` left the analysis, 1 before and 1 after); every part private was right but
+  made one forwarding member of each read or change (on ILSight, 78 members reached through the session's parts by
+  name, and 170 places hand a part whole to a function); the parts as parameters were right only where a caller is
+  handed every part. The parts the rule needs private, the rest handed out, was right with no forwarder for the tabs.
 
 ### Framework-facing state
 
@@ -1096,6 +1137,9 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 - [ ] Use cases share a class only when they share a step; one that shares none has its own class and port.
 - [ ] A helper that reaches no port lives on the type whose rule it keeps (or the concept it computes), even with one caller; only its one caller's own policy (its wording, its choices) is a private method of that caller.
 - [ ] A type that keeps a rule across parts holds them all privately, a setting the rule spans included; every change to them is its method, the ones the rule exempts named for what they are (`Restore`), and a step callers take before their I/O (beginning a request) is one of them.
+- [ ] Which changes the rule covers is read from what it is for: every kind the user asks for (a comparison, a report) is under it, with the shape it needs (a history entry); what nobody asked for (the screen's own tab) is named and left out.
+- [ ] The rule's parts are what it decides with; it hands out only objects none of whose members can make its rule false (each keeping its own rule, used directly), holds the others privately, and splits an object that carries state of two rules (a tab's load from which document the tab is). A carrier of parts is held to the same test.
+- [ ] No production member only tests call: tests drive what the app runs (Scope).
 - [ ] No type only forwards calls (adapters excepted).
 - [ ] No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` names.
 - [ ] No interface with a single implementation, except R001 ports.
@@ -2140,7 +2184,9 @@ draw or right after it, or from a **command** the draw queues, which the frame l
   values. Not the whole app state below the draw's root (the root view, which hands each view its parts, is where it
   stops), and not a command queued only because the view lacks the parts (a frame late). However many parts a change
   spans (switching the session's list: its assemblies, tabs, history and analyses), it takes them or the type that
-  holds them; only work on every part (saving the session) is whole-state work, which an edge runs (R001 point 8).
+  holds them, which hands out only parts none of whose members can break a rule across them (R004 step 3: "The rule's
+  parts end where the rule does"); only work on every part (saving the session) is whole-state work, which an edge
+  runs (R001 point 8).
   Values the views only read and pass on together (the language and the decompiler's options) are one value, kept on
   the type that owns them and made again only when one of them changes (R011 point 4: S08, nothing allocated a frame;
   made each frame, an object a frame; a struct, R005's invalid default, threw on a tab not shown yet).
@@ -2267,6 +2313,17 @@ A level is a vocabulary, not a kind of statement:
    lambda or LINQ: on a hot path (per frame, per row), the named method holds the same loop. In testing, a toolbar's
    width step named as a method with a loop allocated nothing per frame, as it did inline; the same step written with
    LINQ allocated 48 bytes a frame (S07).
+   **A capturing lambda is made only on the path that needs it.** C# allocates a lambda's closure where what it
+   captures comes into scope (a parameter: when the method is called; a local: where its block begins), not where the
+   lambda is written, so one behind an `if`, or after a `return` that skips it, allocates on every call. On a hot path,
+   make it in a method of its own, called on that path, or a `static` lambda handed its state where the API takes one.
+   In testing (S09, ILSight's frame edge, which starts the preset scan the one frame a menu asks for it), the guard and
+   then the lambda allocated 24 bytes every frame, and so did the lambda inside the `if`; a method of its own and a
+   static lambda allocated nothing; a local declared on the path also nothing, until an edit made the lambda read a
+   parameter too, which compiled silently and put the 24 bytes back. RL1103 suggests it in code a frame runs: draws
+   (methods taking a type in `rulelab.widget_context_types`) and `[Edge]` types. On ILSight, 5 of its 11 findings ran
+   every frame, in 4 methods none of its frame-allocation tests covered (24 bytes a frame each, measured; one commented
+   "allocates nothing while nothing is asked for"); reported everywhere, 3 of 164 did.
    ```csharp
    public async Task<decimal> PlaceOrderAsync(IReadOnlyList<CartLine> lines, Customer customer, CancellationToken ct)
    {
@@ -2339,6 +2396,7 @@ Tests are exempt (Scope): a test sets up data, calls, and asserts in one method 
 - [ ] No helper exists only to hide an `if` or a loop around a single call.
 - [ ] Leaf algorithms aren't split into helpers that share `ref` state.
 - [ ] Values that travel together through many calls are one value; on a hot path it is kept on their owner and made when one changes, and it is a class.
+- [ ] On a hot path, a lambda that captures is made on every path through what it captures, or in a method of its own called on the path that needs it (or `static`, handed its state).
 - [ ] Lower-level code returns what it found; it never decides, or starts on its own account, a use case, a notification
       or a policy (caller-supplied delegates, and an adapter carrying out the port member its use case asked for,
       excepted).
