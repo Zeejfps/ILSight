@@ -4,7 +4,7 @@ using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.CodeView;
 
-namespace ILSight;
+namespace ILSight.MetadataArea;
 
 /// <summary>What is decoded from a metadata grid's selected row, shown under it: a text in a code view,
 /// or a table.</summary>

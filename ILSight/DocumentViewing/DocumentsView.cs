@@ -10,6 +10,7 @@ using ILSight.Omnibars;
 using ILSight.Commanding;
 using ILSight.MetadataGridArea;
 using ILSight.Diagramming;
+using ILSight.MetadataArea;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.CodeDisplay;
 using static ILSight.Diagramming.Diagrams;

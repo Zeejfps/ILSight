@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.MetadataArea;
 
 /// <summary>The decoded texts under the rows of the metadata grid shown, each measured and turned into
 /// a document once.</summary>

@@ -1,6 +1,6 @@
 using ILSight.Core.Metadata;
 
-namespace ILSight;
+namespace ILSight.MetadataArea;
 
 /// <summary>The flags filters of the metadata grids: one per kind of row and column, shared by every
 /// grid of that kind in any assembly, as ILSpy's are, and kept between runs.</summary>

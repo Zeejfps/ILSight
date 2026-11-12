@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core.Metadata;
 
-namespace ILSight;
+namespace ILSight.MetadataArea;
 
 /// <summary>What hovering a metadata grid's cell explains: text, or a flags value broken down into its
 /// groups.</summary>

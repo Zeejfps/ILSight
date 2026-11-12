@@ -4,6 +4,7 @@ using ILSight.AssemblyListKeeping;
 using ILSight.Searching;
 using ILSight.Diagramming;
 using ILSight.AssemblyHandling;
+using ILSight.MetadataArea;
 
 namespace ILSight.Commanding;
 

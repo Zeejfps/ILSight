@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Metadata;
 
-namespace ILSight;
+namespace ILSight.MetadataArea;
 
 /// <summary>Shows the metadata table row that defines what a reference points at.</summary>
 public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)

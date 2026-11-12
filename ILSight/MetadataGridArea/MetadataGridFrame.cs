@@ -4,6 +4,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 using ZGF.KeyboardModule;
+using ILSight.MetadataArea;
 
 namespace ILSight.MetadataGridArea;
 

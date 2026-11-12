@@ -6,6 +6,7 @@ using ILSight.Core.Metadata;
 using ZGF.KeyboardModule;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using ILSight.MetadataGridArea;
+using ILSight.MetadataArea;
 
 namespace ILSight.App.Tests;
 

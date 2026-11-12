@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.Bookmarking;
+using ILSight.MetadataArea;
 
 namespace ILSight;
 

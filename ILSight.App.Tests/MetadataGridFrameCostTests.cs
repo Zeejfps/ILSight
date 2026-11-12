@@ -4,6 +4,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ZGF.Gui.Immediate.Testing;
 using ILSight.Core.Metadata;
 using ILSight.MetadataGridArea;
+using ILSight.MetadataArea;
 
 namespace ILSight.App.Tests;
 

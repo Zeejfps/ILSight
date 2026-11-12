@@ -1,5 +1,6 @@
 using ILSight.Core;
 using ILSight.Core.Metadata;
+using ILSight.MetadataArea;
 
 namespace ILSight.App.Tests;
 
