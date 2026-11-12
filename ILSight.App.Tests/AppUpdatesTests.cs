@@ -210,6 +210,20 @@ public sealed class AppUpdatesTests
     }
 
     [Fact]
+    public async Task RestartToUpdateAsync_UpdaterStartedAsTheTokenWasCancelled_StillAsksTheAppToClose()
+    {
+        var ports = new FakePorts { Find = static _ => FoundAsync("9.0.0") };
+        var updates = await CreateReadyAsync(ports);
+        var viewCommands = new Queue<ViewCommand>();
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+
+        await RestartAsync(updates, viewCommands, cancelled.Token);
+
+        Assert.IsType<ViewCommand.Quit>(Assert.Single(viewCommands));
+    }
+
+    [Fact]
     public async Task RestartToUpdateAsync_UpdaterNotStarted_LeavesTheAppOpenAndSaysSo()
     {
         var ports = new FakePorts { Find = static _ => FoundAsync("9.0.0"), Applies = false };

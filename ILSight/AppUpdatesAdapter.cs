@@ -37,10 +37,18 @@ public sealed class AppUpdatesAdapter : AppUpdates.IPorts
         return downloaded is Outcome.Done;
     }
 
+    /// <summary>Starting the updater can't be undone, and the app must quit after it (R009): <paramref name="ct"/> stops
+    /// the call only before the updater starts. Once it has started, the answer is that it did, whatever the token,
+    /// so that the app quits into the update rather than leave an updater waiting for an exit.</summary>
     public async Task<bool> TryApplyAfterExitAsync(UpdateInfo update, CancellationToken ct)
     {
         var started = await Background.Wait(Task.Run(() => _manager.Value.WaitExitThenApplyUpdates(update, silent: false, restart: true), ct));
+        if (started is Outcome.Done)
+        {
+            return true;
+        }
+
         ct.ThrowIfCancellationRequested();
-        return started is Outcome.Done;
+        return false;
     }
 }
