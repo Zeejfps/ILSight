@@ -15,11 +15,12 @@ public readonly struct BackgroundWorkAwaiter<T>(Task<T> task) : INotifyCompletio
 
     public Outcome<T> GetResult()
     {
-        if (task.IsCompletedSuccessfully)
+        var ended = task;
+        if (ended.IsCompletedSuccessfully)
         {
-            return new Outcome<T>.Ok(task.Result);
+            return new Outcome<T>.Ok(ended.Result);
         }
 
-        return new Outcome<T>.Failed(BackgroundAwaiting.GetError(task));
+        return new Outcome<T>.Failed(BackgroundAwaiting.GetError(ended));
     }
 }
