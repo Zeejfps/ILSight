@@ -10,8 +10,7 @@ public sealed class AssemblyListTests
         var list = new AssemblyList();
 
         var first = list.OpenModule(Trees.TestAssemblyPath);
-        var folder = Path.GetDirectoryName(Trees.TestAssemblyPath);
-        Assert.NotNull(folder);
+        var folder = Path.GetDirectoryName(Trees.TestAssemblyPath) ?? throw new InvalidOperationException($"The test assembly's path names no folder: '{Trees.TestAssemblyPath}'.");
         var second = list.Open(Path.Combine(folder, ".", Path.GetFileName(Trees.TestAssemblyPath)));
 
         Assert.Same(first, second);

@@ -117,8 +117,7 @@ public sealed class ExportTests : IDisposable
 
         Assert.Equal(projectPath, exported.ProjectPath);
         Assert.Contains("<Project", File.ReadAllText(projectPath));
-        var folder = Path.GetDirectoryName(projectPath);
-        Assert.NotNull(folder);
+        var folder = Path.GetDirectoryName(projectPath) ?? throw new InvalidOperationException($"The project's path names no folder: '{projectPath}'.");
         var files = Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories);
         Assert.Contains(files, f => Path.GetFileName(f) == "Calculator.cs");
     }
@@ -131,8 +130,7 @@ public sealed class ExportTests : IDisposable
 
         AssemblyExport.ExportProject(assembly, DecompilerOptions.Default, projectPath);
 
-        var folder = Path.GetDirectoryName(projectPath);
-        Assert.NotNull(folder);
+        var folder = Path.GetDirectoryName(projectPath) ?? throw new InvalidOperationException($"The project's path names no folder: '{projectPath}'.");
         var project = File.ReadAllText(projectPath);
         var window = File.ReadAllText(Path.Combine(folder, "SampleApp", "MainWindow.xaml"));
         var codeBehind = File.ReadAllText(Path.Combine(folder, "SampleApp", "MainWindow.cs"));

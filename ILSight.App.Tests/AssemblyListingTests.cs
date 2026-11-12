@@ -448,8 +448,7 @@ public sealed class AssemblyListingTests
         var app = AppDriver.Opened();
         app.Run(2);
         var other = typeof(AppState).Assembly.Location;
-        var folder = Path.GetDirectoryName(other);
-        Assert.NotNull(folder);
+        var folder = Path.GetDirectoryName(other) ?? throw new InvalidOperationException($"The app assembly's path names no folder: '{other}'.");
 
         app.Frames.DropFiles(folder, other).Frame();
         app.Frames.WaitUntil(() => AssemblyListing.ListFilePaths(app.AppState.Assemblies).Contains(PathOf(other)), Patience);

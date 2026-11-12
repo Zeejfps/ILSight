@@ -145,8 +145,7 @@ public sealed class PresentationTests
     [Fact]
     public void A_forwarded_type_row_shows_the_forward_icon_and_the_assembly_it_is_forwarded_to()
     {
-        var runtimeFolder = Path.GetDirectoryName(typeof(object).Assembly.Location);
-        Assert.NotNull(runtimeFolder);
+        var runtimeFolder = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? throw new InvalidOperationException($"CoreLib's path names no folder: '{typeof(object).Assembly.Location}'.");
         var runtime = Path.Combine(runtimeFolder, "System.Runtime.dll");
         var facade = new AssemblyList().Open(runtime);
         var forwarded = facade.Root.Child("System").Children.First(c => c.Text == "Object");

@@ -144,8 +144,7 @@ public sealed class NuGetPickerTests : IDisposable
     {
         var posted = PostedActions.OfThisTest();
         var picker = OpenPicker(posted);
-        var older = PackageVersion.Parse("1.0.0");
-        Assert.NotNull(older);
+        var older = Packages.Version("1.0.0");
 
         picker.Browser.PickVersion(older);
 
@@ -161,8 +160,7 @@ public sealed class NuGetPickerTests : IDisposable
     {
         var posted = PostedActions.OfThisTest();
         var picker = OpenPicker(posted);
-        var unlisted = PackageVersion.Parse("9.9.9");
-        Assert.NotNull(unlisted);
+        var unlisted = Packages.Version("9.9.9");
 
         Assert.Throws<ArgumentException>(() => picker.Browser.PickVersion(unlisted));
 
@@ -445,8 +443,7 @@ public sealed class NuGetPickerTests : IDisposable
         _fake.Answer(FakeFeed.PackagesUrl + "fixtures/1.0.0/fixtures.1.0.0.nupkg", [1, 2, 3]);
         var picker = OpenPicker(posted);
 
-        var older = PackageVersion.Parse("1.0.0");
-        Assert.NotNull(older);
+        var older = Packages.Version("1.0.0");
         picker.Browser.PickVersion(older);
         StartDownload(picker);
         Poll.Until(() => !picker.Browser.IsDownloading, posted.Run);
