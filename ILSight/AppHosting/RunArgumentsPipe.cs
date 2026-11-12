@@ -5,7 +5,7 @@ using System.Text;
 using ZGF.Desktop;
 using ILSight.Commanding;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>
 /// What a run and the receiver say to each other. A run sends its arguments and lends the receiver the

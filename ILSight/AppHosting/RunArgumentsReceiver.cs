@@ -1,7 +1,7 @@
 using System.IO.Pipes;
 using System.Threading.Channels;
 
-namespace ILSight;
+namespace ILSight.AppHosting;
 
 /// <summary>
 /// The role of taking the arguments later runs send. One run at a time at an address holds it; the
