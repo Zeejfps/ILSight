@@ -18,7 +18,7 @@ using static ILSight.Trees;
 namespace ILSight;
 
 /// <summary>What the app does around each frame, keeping the app state and the screen in step.</summary>
-internal static partial class AppFrames
+internal static class AppFrames
 {
     /// <summary>Has the screen, just created over <paramref name="appState"/>, follow what the app state was
     /// restored with: the tabs reopened from the open list's documents docked where they were, any other tab in
@@ -28,7 +28,7 @@ internal static partial class AppFrames
     {
         DocumentPanels.SkipPanels(uiState.Documents, appState.Lists.ListDocumentPanels());
         FollowActiveTab(uiState, appState.Tabs.Active);
-        RunViewCommands(uiState, appState);
+        QueuedCommands.RunViewCommands(uiState, appState);
         ShowInRestoredDocuments(uiState, appState.Tabs);
     }
 
@@ -46,7 +46,7 @@ internal static partial class AppFrames
         UsePreviewTabs(appState, uiState.Display.PreviewTabs);
         FollowTabContent(uiState);
         FollowActiveTab(uiState, appState.Tabs.Active);
-        RunViewCommands(uiState, appState);
+        QueuedCommands.RunViewCommands(uiState, appState);
         SyncTabViews(uiState, appState.Tabs);
         FocusNextTabIfNone(uiState, appState.Tabs);
         FollowLoadOptions(uiState, appState);
@@ -351,7 +351,7 @@ internal static partial class AppFrames
             return;
         }
 
-        RunAppCommands(ui.State, appState);
+        QueuedCommands.RunAppCommands(ui.State, appState);
         ui.RequestUpdate();
     }
 

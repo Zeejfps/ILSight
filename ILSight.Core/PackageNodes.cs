@@ -1,105 +1,64 @@
-using ILSight.Core.Resources;
-
 namespace ILSight.Core;
 
-/// <summary>A folder of a listed package, labelled <see cref="Label"/>: the package's root, labelled with
-/// its file's name, or a folder in it, which when it holds nothing but one folder is merged with it into
-/// one, labelled with both names, <c>lib/net8.0</c>, and listing the deeper one's contents.</summary>
-public sealed class PackageFolderInfo
+internal static class PackageNodes
 {
-    public required LoadedPackage Package { get; init; }
-
-    /// <summary>The first of the folders merged into one, the folder itself when none are.</summary>
-    public required PackageFolder Outermost { get; init; }
-
-    /// <summary>The folder whose contents it lists.</summary>
-    public required PackageFolder Folder { get; init; }
-
-    public required string Label { get; init; }
-
-    /// <summary>Whether this is the package's root, standing for the package itself.</summary>
-    public bool IsRoot => ReferenceEquals(Folder, Package.Package.Root);
-
-    public string FullName => IsRoot ? Package.FilePath.Text : Folder.FullName;
-}
-
-internal static class PackageFolders
-{
-    /// <summary>Whether the folder at <paramref name="path"/> is the one at <paramref name="folder"/> or in it.</summary>
-    public static bool IsWithin(string path, string folder)
+    /// <summary>The root of a listed package or bundle's tree.</summary>
+    internal static BrowseNode CreatePackageRoot(LoadedPackage package)
     {
-        if (path == folder)
-        {
-            return true;
-        }
-
-        return path.StartsWith(folder + "/", StringComparison.Ordinal);
+        return BrowseNodes.Create(null, new NodeSubject.Package { Value = PackageFolders.CreateRootFolder(package) });
     }
 
-    /// <summary>The path of the folder holding the entry at <paramref name="path"/>; empty at the root.</summary>
-    public static string FolderOf(string path)
+    /// <summary>The folder's folders, then its files. An assembly file is the root of that assembly's tree,
+    /// read out of the package now, so that it shows as the assembly it is; any other file is shown as a
+    /// resource is.</summary>
+    internal static BrowseNode[] ListPackageFolder(BrowseNode parent, PackageFolderInfo folder)
     {
-        var at = path.LastIndexOf('/');
-        if (at < 0)
+        var package = folder.Package;
+        var children = new List<BrowseNode>();
+        foreach (var child in folder.Folder.Folders)
         {
-            return "";
+            children.Add(BrowseNodes.Create(parent, new NodeSubject.Package { Value = CreateMergedFolder(package, child) }));
         }
 
-        return path.Substring(0, at);
+        foreach (var file in folder.Folder.Files)
+        {
+            children.Add(CreateFileNode(parent, package, file));
+        }
+
+        return children.ToArray();
     }
 
-    /// <summary>Whether the folder at <paramref name="path"/>, from the package's root, is one of those
-    /// merged into this one.</summary>
-    internal static bool ShowsFolder(PackageFolderInfo info, string path)
+    /// <summary>The folder, merged with each folder it holds when that is all it holds.</summary>
+    private static PackageFolderInfo CreateMergedFolder(LoadedPackage package, PackageFolder folder)
     {
-        if (!PackageFolders.IsWithin(info.Folder.FullName, path))
+        var shown = folder;
+        var label = folder.Name;
+        while (HoldsOnlyOneFolder(shown))
+        {
+            shown = shown.Folders[0];
+            label = $"{label}/{shown.Name}";
+        }
+        return new PackageFolderInfo { Package = package, Outermost = folder, Folder = shown, Label = label };
+    }
+
+    private static bool HoldsOnlyOneFolder(PackageFolder folder)
+    {
+        if (folder.Files.Count != 0)
         {
             return false;
         }
 
-        return PackageFolders.IsWithin(path, info.Outermost.FullName);
+        return folder.Folders.Count == 1;
     }
 
-    internal static PackageFolderInfo CreateRootFolder(LoadedPackage package)
+    private static BrowseNode CreateFileNode(BrowseNode parent, LoadedPackage package, PackageFile file)
     {
-        return new PackageFolderInfo { Package = package, Outermost = package.Package.Root, Folder = package.Package.Root, Label = package.FilePath.FileName };
-    }
-}
-
-/// <summary>A file of a package that is no assembly: shown as text, a picture or its bytes, read out of
-/// the package when needed.</summary>
-public sealed class PackageFileInfo
-{
-    public required LoadedPackage Package { get; init; }
-
-    public required PackageFile File { get; init; }
-
-    /// <summary>Whether it is shown as a picture, being named as one is.</summary>
-    public bool IsImage => ResourceImages.IsImageName(File.Name);
-
-    public string Description => $"{File.FullName} ({File.Length} bytes)";
-
-    public string FileName => File.Name;
-}
-
-internal static class PackageContents
-{
-    private static readonly string[] AssemblyExtensions = [".dll", ".exe", ".winmd"];
-
-    public static bool IsAssemblyName(string name)
-    {
-        foreach (var extension in AssemblyExtensions)
+        var assembly = PackageContents.IsAssemblyName(file.Name) ? LoadedAssemblies.FindAssembly(package.Package, LoadedAssemblies.EnsureAssemblies(package), file) : null;
+        if (assembly is null)
         {
-            if (name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
+            return BrowseNodes.Create(parent, new NodeSubject.PackageFile { Value = new PackageFileInfo { Package = package, File = file } });
         }
-        return false;
-    }
 
-    public static byte[] ReadFileData(PackageFileInfo info)
-    {
-        return AssemblyPackages.ReadFile(info.Package.Package, info.File);
+        return ModuleNodes.CreateModuleRoot(assembly, parent);
     }
 }

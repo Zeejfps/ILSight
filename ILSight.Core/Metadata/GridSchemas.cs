@@ -1,0 +1,242 @@
+// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using ICSharpCode.Decompiler;
+using ICSharpCode.Decompiler.IL;
+using ICSharpCode.Decompiler.Metadata;
+
+namespace ILSight.Core.Metadata;
+
+/// <summary>Building a <see cref="GridSchema"/> a column at a time. A table's starts with its RID and Token.</summary>
+public static class GridSchemas
+{
+    private static IReadOnlyList<object> ListRows<TRow>(Func<IEnumerable<TRow>> rows)
+    {
+        var loaded = new List<object>();
+        foreach (var row in rows())
+        {
+            if (row is null)
+            {
+                throw new UnreachableException("A grid's rows are the rows of a metadata table or heap, which are never null.");
+            }
+
+            loaded.Add(row);
+        }
+        return loaded;
+    }
+
+    /// <summary><paramref name="row"/> as the <typeparamref name="TRow"/> it is. A grid's rows are erased to
+    /// <see cref="object"/> so that one grid can list any kind; each is handed back only to the columns and
+    /// details of the schema that read it, so it is always of that schema's row type.</summary>
+    private static TRow GetRow<TRow>(object row)
+    {
+        if (row is not TRow typed)
+        {
+            throw new UnreachableException($"A {row.GetType().Name} row was handed to a schema of {typeof(TRow).Name} rows, though a grid hands each row only to the schema that read it.");
+        }
+
+        return typed;
+    }
+
+    /// <summary>A schema named <paramref name="key"/> of what <paramref name="rows"/> reads from <paramref name="file"/>.</summary>
+    public static GridSchema<TRow> CreateGrid<TRow>(string key, MetadataFile file, Func<IEnumerable<TRow>> rows)
+    {
+        return new GridSchema<TRow> { Key = key, Table = null, File = file, ReadRows = () => ListRows(rows) };
+    }
+
+    /// <summary>The schema of <paramref name="table"/> of <paramref name="file"/>, which <paramref name="rows"/> reads.</summary>
+    public static GridSchema<TRow> CreateTable<TRow>(TableIndex table, MetadataFile file, Func<IEnumerable<TRow>> rows)
+    {
+        var schema = new GridSchema<TRow> { Key = table.ToString(), Table = table, File = file, ReadRows = () => ListRows(rows) };
+        AddColumn(schema, "RID", null, (_, rid) => rid, null);
+        AddColumn(schema, "Token", "X8", (_, rid) => (int)table << 24 | rid, null);
+        return schema;
+    }
+
+    /// <summary><paramref name="schema"/>, with what <paramref name="columns"/> adds to it.</summary>
+    public static GridSchema<TRow> AddColumns<TRow>(GridSchema<TRow> schema, Action<GridSchema<TRow>> columns)
+    {
+        columns(schema);
+        return schema;
+    }
+
+    /// <summary>A column of what <paramref name="get"/> reads, in <paramref name="format"/>.</summary>
+    public static void AddValue<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchema<TRow> schema, string name, Func<TRow, T> get, string? format = null,
+        Func<TRow, object?>? tooltip = null)
+    {
+        AddColumn(schema, name, format, (r, _) => get(r), tooltip is null ? null : (r, _) => tooltip(r));
+    }
+
+    /// <summary>Where each row of <paramref name="table"/>, which <paramref name="schema"/> lists, starts in the file.</summary>
+    public static void AddOffset<TRow>(GridSchema<TRow> schema, TableIndex table)
+    {
+        var metadata = schema.File.Metadata;
+        var start = schema.File.MetadataOffset + metadata.GetTableMetadataOffset(table);
+        var size = metadata.GetTableRowSize(table);
+        AddColumn(schema, "Offset", "X8", (_, rid) => start + size * (rid - 1), null);
+    }
+
+    /// <summary>A string of the #Strings heap, explained by its offset.</summary>
+    public static void AddString<TRow>(GridSchema<TRow> schema, string name, Func<TRow, StringHandle> get)
+    {
+        var file = schema.File;
+        AddValue(schema, name, r => file.Metadata.GetString(get(r)),
+            tooltip: r => $"{MetadataTokens.GetHeapOffset(get(r)):X} \"{file.Metadata.GetString(get(r))}\"");
+    }
+
+    /// <summary>The row's name: a <see cref="AddString"/> column the row is known by.</summary>
+    public static void AddName<TRow>(GridSchema<TRow> schema, Func<TRow, StringHandle> get)
+    {
+        schema.NameColumn = schema.Columns.Count;
+        AddString(schema, "Name", get);
+    }
+
+    /// <summary>A token that links to its row, explained by what it points at unless
+    /// <paramref name="tooltip"/> says otherwise.</summary>
+    public static void AddHandle<TRow>(GridSchema<TRow> schema, string name, Func<TRow, EntityHandle> get, Func<TRow, object?>? tooltip = null)
+    {
+        var file = schema.File;
+        AddColumn(schema, name, "X8", (r, _) => MetadataTokens.GetToken(get(r)),
+            tooltip is null ? (r, _) => Describe(file, get(r)) : (r, _) => tooltip(r), isToken: true);
+    }
+
+    /// <summary>The start of a run of rows of <paramref name="table"/>, as a token, explained by the
+    /// row it starts at or, for an empty run, by <paramref name="empty"/>.</summary>
+    public static void AddList<TRow>(GridSchema<TRow> schema, string name, TableIndex table, Func<TRow, int> get, Func<TRow, EntityHandle> first, string empty)
+    {
+        var file = schema.File;
+        AddColumn(schema, name, "X8", (r, _) => (int)table << 24 | get(r),
+            (r, _) =>
+            {
+                var handle = first(r);
+                return handle.IsNil ? empty : Describe(file, handle);
+            }, isToken: true);
+    }
+
+    /// <summary>The offset of a blob in the #Blob heap.</summary>
+    public static void AddBlob<TRow>(GridSchema<TRow> schema, string name, Func<TRow, BlobHandle> get, Func<TRow, object?>? tooltip = null)
+    {
+        AddValue(schema, name, r => MetadataTokens.GetHeapOffset(get(r)), "X8", tooltip);
+    }
+
+    /// <summary>The offset of a signature blob, explained by what <paramref name="decode"/> reads from the
+    /// blob, else by the row of <paramref name="table"/>, which <paramref name="schema"/> lists, it is the
+    /// signature of.</summary>
+    public static void AddSignature<TRow>(GridSchema<TRow> schema, TableIndex table, string name, Func<TRow, BlobHandle> get, Func<TRow, string?>? decode = null)
+    {
+        AddColumn(schema, name, "X8", (r, _) => MetadataTokens.GetHeapOffset(get(r)), (r, rid) => ExplainSignature(schema.File, r, MetadataTokens.EntityHandle(table, rid), decode), isToken: false);
+    }
+
+    private static string? ExplainSignature<TRow>(MetadataFile file, TRow row, EntityHandle handle, Func<TRow, string?>? decode)
+    {
+        var decoded = Decode(row, decode);
+        if (decoded is not null)
+        {
+            return decoded;
+        }
+
+        return Describe(file, handle);
+    }
+
+    private static string? Decode<TRow>(TRow row, Func<TRow, string?>? decode)
+    {
+        if (decode is null)
+        {
+            return null;
+        }
+
+        return decode(row);
+    }
+
+    /// <summary>The index of a GUID in the #GUID heap, explained by the GUID unless
+    /// <paramref name="tooltip"/> says otherwise.</summary>
+    public static void AddGuid<TRow>(GridSchema<TRow> schema, string name, Func<TRow, GuidHandle> get, Func<TRow, object?>? tooltip = null)
+    {
+        var file = schema.File;
+        AddValue(schema, name, r => MetadataTokens.GetHeapOffset(get(r)), "X8",
+            tooltip ?? (r =>
+            {
+                var handle = get(r);
+                return handle.IsNil ? null : file.Metadata.GetGuid(handle).ToString();
+            }));
+    }
+
+    /// <summary>What is shown under a selected row.</summary>
+    public static void SetDetails<TRow>(GridSchema<TRow> schema, Func<TRow, MetadataRowDetails?> get)
+    {
+        schema.Details = r => get(GetRow<TRow>(r));
+    }
+
+    private static void AddColumn<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchema<TRow> schema, string name, string? format, Func<TRow, int, T> value,
+        Func<TRow, int, object?>? tooltip, bool isToken = false)
+    {
+        var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+        var numeric = type.IsEnum || Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
+        var flags = FlagsSchemaInferer.IsFlags(typeof(T)) ? FlagsSchemaInferer.For(typeof(T)) : null;
+        schema.Columns.Add(new GridColumn(new MetadataColumn(name, isToken, numeric, flags), format,
+            (r, rid) => value(GetRow<TRow>(r), rid),
+            tooltip is null ? null : (r, rid) => tooltip(GetRow<TRow>(r), rid)));
+    }
+
+    /// <summary>
+    /// What the entity <paramref name="handle"/> points at is, e.g. <c>(AssemblyReference) System.Runtime, ...</c>;
+    /// null for a nil handle.
+    /// </summary>
+    public static string? Describe(MetadataFile module, EntityHandle handle)
+    {
+        if (handle.IsNil)
+        {
+            return null;
+        }
+
+        ITextOutput output = new PlainTextOutput();
+        var context = new MetadataGenericContext(default(TypeDefinitionHandle), module.Metadata);
+        var metadata = module.Metadata;
+        switch (handle.Kind)
+        {
+            case HandleKind.ModuleDefinition:
+                output.Write(metadata.GetString(metadata.GetModuleDefinition().Name));
+                output.Write(" (this module)");
+                break;
+            case HandleKind.ModuleReference:
+                output.Write(metadata.GetString(metadata.GetModuleReference((ModuleReferenceHandle)handle).Name));
+                break;
+            case HandleKind.AssemblyReference:
+                output.Write(new ICSharpCode.Decompiler.Metadata.AssemblyReference(module, (AssemblyReferenceHandle)handle).ToString());
+                break;
+            case HandleKind.Parameter:
+                var param = metadata.GetParameter((ParameterHandle)handle);
+                output.Write(param.SequenceNumber + " - " + metadata.GetString(param.Name));
+                break;
+            case HandleKind.EventDefinition:
+                output.Write(metadata.GetString(metadata.GetEventDefinition((EventDefinitionHandle)handle).Name));
+                break;
+            case HandleKind.PropertyDefinition:
+                output.Write(metadata.GetString(metadata.GetPropertyDefinition((PropertyDefinitionHandle)handle).Name));
+                break;
+            case HandleKind.AssemblyDefinition:
+                output.Write(metadata.GetString(metadata.GetAssemblyDefinition().Name));
+                output.Write(" (this assembly)");
+                break;
+            case HandleKind.AssemblyFile:
+                output.Write(metadata.GetString(metadata.GetAssemblyFile((AssemblyFileHandle)handle).Name));
+                break;
+            case HandleKind.GenericParameter:
+                output.Write(metadata.GetString(metadata.GetGenericParameter((GenericParameterHandle)handle).Name));
+                break;
+            case HandleKind.ManifestResource:
+                output.Write(metadata.GetString(metadata.GetManifestResource((ManifestResourceHandle)handle).Name));
+                break;
+            case HandleKind.Document:
+                output.Write(metadata.GetString(metadata.GetDocument((DocumentHandle)handle).Name));
+                break;
+            default:
+                handle.WriteTo(module, output, context);
+                break;
+        }
+        return "(" + handle.Kind + ") " + output;
+    }
+}

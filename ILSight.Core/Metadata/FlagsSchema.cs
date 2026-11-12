@@ -1,8 +1,5 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
-using System;
-using System.Collections.Generic;
-
 namespace ILSight.Core.Metadata
 {
 	/// <summary>
@@ -15,21 +12,4 @@ namespace ILSight.Core.Metadata
 		Type EnumType,
 		IReadOnlyList<MutexGroup> MutexGroups,
 		IReadOnlyList<IndependentFlag> IndependentFlags);
-
-	/// <summary>
-	/// One sub-range of an enum carved out by a <c>*Mask</c> field. A row's value carries
-	/// exactly one of <see cref="Values"/>, isolated by ANDing with <see cref="Mask"/>.
-	/// </summary>
-	public sealed record MutexGroup(
-		string Name,
-		uint Mask,
-		IReadOnlyList<MutexValue> Values);
-
-	public sealed record MutexValue(string Label, uint Value);
-
-	/// <summary>
-	/// One single-bit flag whose presence is independent of any mutex group. Filtering on
-	/// these is tri-state (don't care / required / excluded).
-	/// </summary>
-	public sealed record IndependentFlag(string Name, uint Bit);
 }

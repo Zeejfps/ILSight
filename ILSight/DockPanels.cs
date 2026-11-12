@@ -5,18 +5,6 @@ using ILSight.Localization;
 
 namespace ILSight;
 
-/// <summary>A view of the main window's dock space besides the open documents.</summary>
-public enum DockView
-{
-    Assemblies,
-    Search,
-    Bookmarks,
-    Analyzer,
-    DecompilerOptions,
-    DisplayOptions,
-    Exports,
-}
-
 /// <summary>The views of the main window's dock space besides the open documents, which share it
 /// with them as tabs, and the layout they start in. The layout knows every panel by name: a view by
 /// the name below, a document by the name its tab was given.</summary>

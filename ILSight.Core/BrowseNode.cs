@@ -3,18 +3,6 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core;
 
-/// <summary>The declared accessibility of the entity a <see cref="BrowseNode"/> stands for.</summary>
-public enum NodeAccessibility
-{
-    None,
-    Public,
-    Protected,
-    ProtectedInternal,
-    Internal,
-    PrivateProtected,
-    Private,
-}
-
 /// <summary>
 /// A node of the browse tree: what it stands for and where it sits. Its children are built and kept by
 /// a <see cref="BrowseSession"/>, so the same entity is the same node object for as long as its

@@ -2,17 +2,9 @@
 
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler;
-using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Analysis;
-
-internal enum FieldAccessKind
-{
-    Read,
-    Write,
-    AddressOf,
-}
 
 /// <summary>Finds the members whose code, compiler-generated parts included, accesses a field in
 /// one particular way.</summary>

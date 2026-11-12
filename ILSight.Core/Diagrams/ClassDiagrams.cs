@@ -9,6 +9,7 @@ using System.Net;
 using System.Text.Json;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.TypeSystem;
+using System.Text.Json.Serialization;
 
 namespace ILSight.Core.Diagrams;
 
@@ -304,7 +305,7 @@ public static partial class ClassDiagrams
     /// <summary>A reference to <paramref name="type"/>, labelled with <paramref name="propertyName"/>
     /// for a property's relation, else with the closed generic type for a base type. Records the type
     /// as an outside reference when the diagram leaves it out.</summary>
-    internal static DiagramReference ReferTo(DiagramNames naming, IType type, string? propertyName = null)
+    private static DiagramReference ReferTo(DiagramNames naming, IType type, string? propertyName = null)
     {
         var (id, openGeneric) = IdentifyType(naming, type);
         var referred = openGeneric ?? type;
@@ -921,4 +922,12 @@ public static partial class ClassDiagrams
 
     [GeneratedRegex(@"[ \t]+")]
     private static partial Regex HorizontalSpace();
+
+    [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonSerializable(typeof(DiagramModel))]
+    private sealed partial class DiagramJson : JsonSerializerContext;
+
+    /// <summary>A reference from one type of a diagram to another: the id it points to, and the label it
+    /// is drawn with, when it has one.</summary>
+    private readonly record struct DiagramReference(string To, string? Label);
 }

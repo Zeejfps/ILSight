@@ -1,10 +1,6 @@
-using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 
 namespace ILSight;
-
-/// <summary>Where a bracket and the one matching it are in a document.</summary>
-public readonly record struct BracketPair(TextPosition Open, TextPosition Close);
 
 /// <summary>The bracket at a code view's caret, or just before it, and the one that matches it,
 /// looked up again only when the caret or the document changes. Brackets in strings and comments

@@ -6,62 +6,6 @@ using ICSharpCode.Decompiler.Solution;
 
 namespace ILSight.Core;
 
-/// <summary>Something the decompiler could not handle: what it was doing, and the full error.</summary>
-public sealed record ExportError(string Message, string Details);
-
-/// <summary>An assembly decompiled into a C# project: the project file, what could not be
-/// decompiled, which the project holds as error comments instead, and what came of its PDB.</summary>
-public sealed record ExportedProject(LoadedModule Assembly, string ProjectPath, IReadOnlyList<ExportError> Errors, ProjectId Id)
-{
-    public ProjectPdb Pdb { get; internal init; } = new ProjectPdb.NotAsked();
-}
-
-/// <summary>What came of the PDB of an exported project.</summary>
-public abstract record ProjectPdb
-{
-    private ProjectPdb()
-    {
-    }
-
-    public sealed record NotAsked : ProjectPdb;
-
-    public sealed record Written(string Path) : ProjectPdb;
-
-    public sealed record Failed(PdbFailure Failure) : ProjectPdb;
-}
-
-/// <summary>What a project export writes besides the project: the strong-name key it copies into
-/// the project and signs with, and a portable PDB beside the project, with the decompiled sources
-/// embedded or not.</summary>
-public sealed record ProjectExtras(string? StrongNameKeyFile = null, bool Pdb = false, bool EmbedSourcesInPdb = true)
-{
-    public static ProjectExtras None { get; } = new();
-}
-
-/// <summary>An assembly to export as a project of a solution, under <see cref="Name"/>, which is
-/// also the name of the folder the project goes in.</summary>
-public sealed record SolutionProject(LoadedModule Assembly, string Name);
-
-/// <summary>An assembly no PDB was written for, and why.</summary>
-public abstract record PdbFailure
-{
-    private PdbFailure()
-    {
-    }
-
-    public abstract LoadedModule Assembly { get; init; }
-
-    /// <summary>Its debug directory names no PDB for one to match.</summary>
-    public sealed record NoDebugEntry(LoadedModule Assembly) : PdbFailure;
-
-    public sealed record NotWritten(LoadedModule Assembly, ExportError Error) : PdbFailure;
-}
-
-/// <summary>How far an export has got: it works on part <see cref="Part"/> of <see cref="Parts"/>,
-/// named <see cref="Name"/>, and has done <see cref="Fraction"/> of the whole export, from 0 to 1,
-/// or an unknown share when null.</summary>
-public readonly record struct ExportProgress(string Name, int Part, int Parts, float? Fraction);
-
 /// <summary>Writing assemblies out as C# projects, solutions and portable PDBs, reporting how far
 /// it has got and stopping when cancelled.</summary>
 public static class AssemblyExport

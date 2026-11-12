@@ -5,9 +5,6 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>How a root reads: as tabs show it, and as its row does.</summary>
-internal readonly record struct RootLabel(string Title, string Row);
-
 /// <summary>A class because ZGF's ITreeModel demands the methods here, which forward. The browse tree over the
 /// open assemblies: its roots, the model the tree view reads and the view's expansion and selection. Children not built yet show a loading row while they
 /// are built in the background, and children that failed to build a row saying why.</summary>

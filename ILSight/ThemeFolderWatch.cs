@@ -5,23 +5,6 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>How a wait on the themes folder ended.</summary>
-public enum ThemeFolderEventKind
-{
-    /// <summary>Watching stopped, or was not running.</summary>
-    Stopped,
-
-    /// <summary>The watched files changed.</summary>
-    Changed,
-
-    /// <summary>The system stopped telling of changes, as when the folder was removed; nothing is watched since.</summary>
-    Lost,
-}
-
-/// <summary>What <see cref="ThemeFolderWatch.NextChangeAsync"/> completes with; <see cref="Reason"/> says why
-/// a watch was <see cref="ThemeFolderEventKind.Lost"/>.</summary>
-public readonly record struct ThemeFolderEvent(ThemeFolderEventKind Kind, string Reason = "");
-
 /// <summary>Watches a folder of the user's themes for changes to the files of the kinds it is made for,
 /// such as the theme files of the themes folder. <see cref="NextChangeAsync"/> completes once those files
 /// changed and then stayed quiet for a moment, so the several writes of one save count once, or once the

@@ -6,18 +6,6 @@ using ZGF.KeyboardModule;
 
 namespace ILSight;
 
-/// <summary>A label as a search last marked it: its runs for <see cref="Text"/> in <see cref="Style"/> while the
-/// search was <see cref="Query"/>, null when no word of it was in the text. Kept per label between frames, so the
-/// runs are the same list while nothing changes, as rich text wants.</summary>
-internal sealed class MarkedLabel
-{
-    public bool HasValue;
-    public string Text = "";
-    public string Query = "";
-    public TextStyle? Style;
-    public IReadOnlyList<RichTextRun>? Runs;
-}
-
 /// <summary>The search over the decompiler and display options: the field at the top of each panel, which
 /// one, and what it matches. An option matches when every word of the search is in its name, its
 /// description or its section's heading, whatever the case and accents; where they are in its name and
@@ -129,7 +117,7 @@ internal static class OptionSearch
 
     /// <summary><paramref name="text"/> as runs in <paramref name="style"/> with the hits of <paramref name="query"/>
     /// marked, kept in <paramref name="label"/> while they stay the same; null when it has none, as without a search.</summary>
-    public static IReadOnlyList<RichTextRun>? EnsureMarkedRuns(MarkedLabel label, CultureInfo culture, string query, string text, TextStyle style)
+    private static IReadOnlyList<RichTextRun>? EnsureMarkedRuns(MarkedLabel label, CultureInfo culture, string query, string text, TextStyle style)
     {
         if (label.HasValue && ReferenceEquals(label.Style, style) && string.Equals(label.Text, text, StringComparison.Ordinal)
             && string.Equals(label.Query, query, StringComparison.Ordinal))
@@ -196,5 +184,17 @@ internal static class OptionSearch
                 query = "";
             }
         }
+    }
+
+    /// <summary>A label as a search last marked it: its runs for <see cref="Text"/> in <see cref="Style"/> while the
+    /// search was <see cref="Query"/>, null when no word of it was in the text. Kept per label between frames, so the
+    /// runs are the same list while nothing changes, as rich text wants.</summary>
+    private sealed class MarkedLabel
+    {
+        public bool HasValue;
+        public string Text = "";
+        public string Query = "";
+        public TextStyle? Style;
+        public IReadOnlyList<RichTextRun>? Runs;
     }
 }

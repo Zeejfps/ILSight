@@ -4,85 +4,6 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Analysis;
 
-/// <summary>What an analysis finds, which names it in the interface.</summary>
-public enum AnalysisName
-{
-    AppliedTo,
-    ImplementedBy,
-    OverriddenBy,
-    ReadBy,
-    AssignedBy,
-    AddressTakenBy,
-    Implements,
-    Overrides,
-    UsedBy,
-    Uses,
-    ExposedBy,
-    ExtensionMethods,
-    InstantiatedBy,
-}
-
-/// <summary>One way of relating a symbol to others, such as "Used By", as ILSpy's analyzer
-/// offers it: its name and its place among the others.</summary>
-public sealed class AnalysisKind
-{
-    public required AnalysisName Name { get; init; }
-
-    public required int Order { get; init; }
-
-    public required Analyzer Prepare { get; init; }
-
-    /// <summary>Whether its results read best sorted by label, so come only once all are found.</summary>
-    internal bool SortsResults { get; init; }
-}
-
-/// <summary>A type, member or assembly an analysis is about or found: what a row shows for it and
-/// how to go to it.</summary>
-public sealed class AnalysisSymbol
-{
-    public required ISymbol Symbol { get; init; }
-
-    /// <summary>What it is: an assembly, or a type or member of some shape.</summary>
-    public required SymbolShape Shape { get; init; }
-
-    public required NodeAccessibility Accessibility { get; init; }
-
-    /// <summary>Its name as the tree would show it.</summary>
-    public required string Label { get; init; }
-
-    /// <summary>Where it is: the declaring type, or for a type its namespace, and the assembly.</summary>
-    public required string Location { get; init; }
-
-    /// <summary>What to navigate to it by; null when it cannot be shown.</summary>
-    public required CodeReference.Navigable? Reference { get; init; }
-
-    /// <summary>Its assembly file and metadata token, to find it again with
-    /// <see cref="Analyzers.Find"/> in a later run; null for an assembly.</summary>
-    public CodeAnchor? Definition
-    {
-        get
-        {
-            if (Symbol is not IEntity entity || entity.MetadataToken.IsNil)
-            {
-                return null;
-            }
-
-            var file = entity.ParentModule?.MetadataFile;
-            if (file is null)
-            {
-                return null;
-            }
-
-            return new CodeAnchor(CodeAnchorKind.Definition, AssemblyPath.Of(file.FileName), MetadataTokens.GetToken(entity.MetadataToken));
-        }
-    }
-
-    public override string ToString()
-    {
-        return Label;
-    }
-}
-
 /// <summary>
 /// ILSpy's analyzer over the open assemblies: the analyses that apply to a symbol, and their
 /// results, found by ILSpy's own analyzers.
@@ -250,5 +171,116 @@ public static class Analyzers
         }
 
         return container.Length == 0 ? assembly : $"{container} ({assembly})";
+    }
+
+    /// <summary>Shows the members of kind <typeparamref name="T"/> that implement an interface member,
+    /// or with <paramref name="overrides"/> those that override a class member.</summary>
+    private static class InheritorsAnalyzer<T> where T : class, IMember
+    {
+        public static AnalysisRun? Prepare(bool overrides, ISymbol? symbol)
+        {
+            if (symbol is not T member || !Applies(overrides, member))
+            {
+                return null;
+            }
+
+            return context => Analyze(overrides, member, context);
+        }
+
+        private static bool Applies(bool overrides, T member)
+        {
+            return overrides
+            ? member.IsOverridable && member.DeclaringType.Kind != TypeKind.Interface
+            : member.DeclaringType.Kind == TypeKind.Interface;
+        }
+
+        private static IEnumerable<ISymbol> Analyze(bool overrides, T analyzed, AnalyzerContext context)
+        {
+            var declaring = analyzed.DeclaringTypeDefinition;
+            if (declaring is null || declaring.ParentModule?.MetadataFile is null)
+            {
+                yield break;
+            }
+
+            foreach (var type in AnalyzerHelpers.GetTypesInScope(AnalyzerHelpers.GetScope(context, analyzed), context.CancellationToken))
+            {
+                var baseTypes = type.GetAllBaseTypeDefinitions();
+                if (!baseTypes.Any(t => AnalyzerHelpers.IsSame(t, declaring)))
+                {
+                    continue;
+                }
+
+                foreach (var member in type.Members.OfType<T>())
+                {
+                    if (overrides && !member.IsOverride)
+                    {
+                        continue;
+                    }
+
+                    var baseMembers = InheritanceHelper.GetBaseMembers(member, !overrides);
+                    if (baseMembers.Any(m => AnalyzerHelpers.IsSame(m, analyzed)))
+                    {
+                        yield return member;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>Shows the interface members a class or struct member implements.</summary>
+    private static class MemberImplementsInterfaceAnalyzer
+    {
+        public static AnalysisRun? Prepare(ISymbol? symbol)
+        {
+            if (symbol is not IMember { SymbolKind: SymbolKind.Event or SymbolKind.Indexer or SymbolKind.Method or SymbolKind.Property, IsStatic: false } member
+                || member.DeclaringTypeDefinition?.Kind is not (TypeKind.Class or TypeKind.Struct))
+            {
+                return null;
+            }
+
+            return _ => Analyze(member);
+        }
+
+        private static IEnumerable<ISymbol> Analyze(IMember member)
+        {
+            return InheritanceHelper.GetBaseMembers(member, includeImplementedInterfaces: true)
+                .Where(m => m.DeclaringTypeDefinition?.Kind == TypeKind.Interface);
+        }
+    }
+
+    /// <summary>Shows the base members a member overrides, up its override chain.</summary>
+    private static class MemberOverridesAnalyzer
+    {
+        public static AnalysisRun? Prepare(ISymbol? symbol)
+        {
+            if (symbol is not IMember { SymbolKind: SymbolKind.Event or SymbolKind.Indexer or SymbolKind.Method or SymbolKind.Property, IsOverride: true } member)
+            {
+                return null;
+            }
+
+            return _ => Analyze(member);
+        }
+
+        private static IEnumerable<ISymbol> Analyze(IMember member)
+        {
+            var visited = new HashSet<IMember>();
+            while (member.IsOverride)
+            {
+                member = member.MemberDefinition;
+                if (!visited.Add(member))
+                {
+                    break;
+                }
+
+                var baseMember = InheritanceHelper.GetBaseMember(member);
+                if (baseMember is null)
+                {
+                    break;
+                }
+
+                yield return baseMember;
+                member = baseMember;
+            }
+        }
     }
 }

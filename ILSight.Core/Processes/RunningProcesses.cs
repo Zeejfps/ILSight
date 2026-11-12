@@ -7,68 +7,6 @@ using System.Text;
 
 namespace ILSight.Core.Processes;
 
-/// <summary>The id the operating system gives a process.</summary>
-public readonly record struct ProcessId(int Value)
-{
-    public override string ToString()
-    {
-        return Value.ToString();
-    }
-}
-
-/// <summary>What a runtime says of itself over its diagnostics endpoint. A runtime older than .NET 6 names
-/// neither its entry assembly nor its version.</summary>
-public sealed record ProcessInfo
-{
-    public required string? CommandLine { get; init; }
-
-    /// <summary>As the runtime names it, e.g. <c>arm64</c>.</summary>
-    public required string? Architecture { get; init; }
-
-    /// <summary>The entry assembly's simple name, e.g. <c>MyApp</c>.</summary>
-    public required string? EntryAssemblyName { get; init; }
-
-    /// <summary>The runtime's version, e.g. <c>10.0.0</c>.</summary>
-    public required string? RuntimeVersion { get; init; }
-}
-
-/// <summary>A running .NET process, found by its diagnostics endpoint: its id and name, and what its runtime
-/// said of itself, or null when it didn't answer, as one suspended at startup or shutting down doesn't.</summary>
-public sealed record RunningProcess(ProcessId Id, string Name, ProcessInfo? Info);
-
-/// <summary>A module a process has loaded: one whose file can be opened, or one with no file to open, loaded
-/// from bytes, made at run time, or in a file this user can't see.</summary>
-public abstract record RunningModule
-{
-    private RunningModule()
-    {
-    }
-
-    /// <summary>The file name of a module on disk; the assembly's simple name of one in memory.</summary>
-    public abstract string Name { get; init; }
-
-    public sealed record OnDisk(string Name, AssemblyPath Path) : RunningModule;
-
-    public sealed record InMemory(string Name) : RunningModule;
-}
-
-/// <summary>What asking a process for its modules came to.</summary>
-public abstract record ModuleListing
-{
-    private ModuleListing()
-    {
-    }
-
-    /// <summary>The modules, sorted by name.</summary>
-    public sealed record Listed(IReadOnlyList<RunningModule> Modules) : ModuleListing;
-
-    /// <summary>The process could not be asked: it is gone, refused, or didn't answer in time.</summary>
-    public sealed record Unreachable(string Detail) : ModuleListing;
-
-    /// <summary>The process answered with what could not be read.</summary>
-    public sealed record Unreadable(string Detail) : ModuleListing;
-}
-
 /// <summary>
 /// The running .NET processes and the modules loaded in them. A CoreCLR runtime (.NET Core 3.0 on) opens a
 /// diagnostics endpoint, as <c>dotnet-trace ps</c> finds them: a named pipe <c>dotnet-diagnostic-{pid}</c>

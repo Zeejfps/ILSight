@@ -1,9 +1,5 @@
 namespace ILSight;
 
-/// <summary>Bookmarks read from a file, waiting for the user to say whether they replace the ones
-/// there are or merge in beside them.</summary>
-public sealed record PendingImport(IReadOnlyList<Bookmark> Bookmarks);
-
 /// <summary>The bookmark imports under way: how many are still finding their bookmarks' places, and
 /// those waiting, oldest first, for the user to say how to take their bookmarks. Each waits with its
 /// own bookmarks, and the user is asked about one at a time.</summary>

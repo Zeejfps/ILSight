@@ -1,13 +1,5 @@
 namespace ILSight;
 
-/// <summary>A tab reopened from what the settings kept of it, <see cref="Record"/>, while it was at
-/// <see cref="Version"/>.</summary>
-public sealed record ReopenedTab(DocumentTab Tab, DocumentRecord Record, int Version)
-{
-    /// <summary>Whether the tab still waits for what it was reopened to show: it was not pointed elsewhere since.</summary>
-    public bool IsWaiting => Tab.Version == Version;
-}
-
 /// <summary>The tabs reopened from the open list's saved documents that wait for what they showed to be
 /// found again, each with what the settings kept of it. A tab pointed elsewhere since waits no more.</summary>
 public sealed class ReopenedTabs

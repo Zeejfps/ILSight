@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ZGF.Desktop;
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
@@ -7,6 +6,7 @@ using ILSight.Core.Metadata;
 using ZGF.KeyboardModule;
 using static ILSight.Navigation;
 using static ILSight.App.Tests.BuiltInGlyphs;
+using ILSight.SettingsFormat;
 
 namespace ILSight.App.Tests;
 

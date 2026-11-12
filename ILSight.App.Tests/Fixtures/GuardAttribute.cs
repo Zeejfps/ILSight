@@ -1,0 +1,15 @@
+#pragma warning disable SYSLIB0003
+
+using System.Security;
+using System.Security.Permissions;
+
+namespace ILSight.App.Tests.Fixtures;
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class GuardAttribute(SecurityAction action) : CodeAccessSecurityAttribute(action)
+{
+    public override IPermission? CreatePermission()
+    {
+        return null;
+    }
+}

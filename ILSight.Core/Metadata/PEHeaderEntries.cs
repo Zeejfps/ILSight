@@ -1,8 +1,6 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
 using static ILSight.Core.Metadata.GridSchemas;
-using System;
-using System.Collections.Generic;
 using System.Reflection.PortableExecutable;
 
 using ICSharpCode.Decompiler.Metadata;
@@ -249,9 +247,9 @@ namespace ILSight.Core.Metadata
 				});
 			});
 		}
-	}
 
-	/// <summary>One row of a PE header: <see cref="Value"/> is <see cref="Size"/> bytes at
-	/// <see cref="Offset"/>, and <see cref="Flags"/> breaks a flags value down.</summary>
-	internal sealed record Entry(int Offset, object? Value, int Size, string Member, string Meaning, FlagsSchema? Flags = null);
+        /// <summary>One row of a PE header: <see cref="Value"/> is <see cref="Size"/> bytes at
+        /// <see cref="Offset"/>, and <see cref="Flags"/> breaks a flags value down.</summary>
+        private sealed record Entry(int Offset, object? Value, int Size, string Member, string Meaning, FlagsSchema? Flags = null);
+	}
 }

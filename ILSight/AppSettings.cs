@@ -1,9 +1,9 @@
-using System.Text.Json;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.Localization;
+using ILSight.SettingsFormat;
 
 namespace ILSight;
 

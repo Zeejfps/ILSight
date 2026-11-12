@@ -1,20 +1,9 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace ILSight.Core.Metadata
 {
-	public enum TriState { DontCare, Required, Excluded }
-
-	public enum MatchMode { All, Any }
-
-	/// <summary>What a <see cref="FilterState"/> constrains, to keep between runs: the values each
-	/// narrowed group allows and the flags not left don't-care, by name.</summary>
-	public sealed record SavedFilterState(Dictionary<string, uint[]>? Groups, Dictionary<string, TriState>? Flags, MatchMode Mode);
-
 	/// <summary>
 	/// Mutable per-column user state for the schema-driven flag filter. The popup UI
 	/// pokes at this; <see cref="FilterStatePresenter.MatchesFilter"/> applies it to a row's value. <c>null</c> in

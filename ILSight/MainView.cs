@@ -71,7 +71,7 @@ public static class MainView
     /// the tab the user last pressed, docked or brought to front to become the active one.</summary>
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
     {
-        AppFrames.RunViewCommands(ui.State, appState);
+        QueuedCommands.RunViewCommands(ui.State, appState);
         SyncActiveTab(ui.State, appState.Tabs.Active);
     }
 

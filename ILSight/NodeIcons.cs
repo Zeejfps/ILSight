@@ -6,68 +6,6 @@ using ILSight.Core.Metadata;
 
 namespace ILSight;
 
-/// <summary>The icon a row shows for what it stands for, drawn as the icon theme draws its <c>node.*</c>
-/// key: worked out from a node's subject, or from the kind a saved place or a result names.</summary>
-public enum NodeIcon
-{
-    Assembly,
-    ReferencesFolder,
-    AssemblyReference,
-    ResourcesFolder,
-    Resource,
-    Namespace,
-    Class,
-    Interface,
-    Struct,
-    Enum,
-    Delegate,
-    Record,
-    RecordStruct,
-    BaseTypes,
-    BaseType,
-    Field,
-    Constant,
-    Property,
-    Indexer,
-    Event,
-    Method,
-    Constructor,
-    Operator,
-    Metadata,
-    MetadataHeader,
-    MetadataDirectory,
-    MetadataTables,
-    MetadataTable,
-    MetadataHeap,
-    DerivedTypes,
-    DerivedType,
-    ResourcesFile,
-    ResourceImage,
-    FailedAssembly,
-    ForwardedType,
-    Package,
-    PackageFolder,
-    Bundle,
-    ReferencedTypes,
-    TypeReference,
-    MethodReference,
-    FieldReference,
-    PropertyReference,
-    EventReference,
-    ModuleReference,
-    ImportedMethod,
-}
-
-/// <summary>What a node kind's icon means, which picks its color from a <see cref="NodeIconPalette"/>.</summary>
-public enum NodeIconRole
-{
-    Neutral,
-    Type,
-    Method,
-    Data,
-    Error,
-}
-
 /// <summary>Each node kind's icon, drawn as the icon theme draws its <c>node.*</c> key, and the role
 /// that colors it.</summary>
 public static class NodeIcons
@@ -332,29 +270,4 @@ public static class NodeIcons
     {
         ui.Icon(Icon(kind, accessibility, ui.State.NodeIconPalette, ui.State.Icons));
     }
-}
-
-/// <summary>The colors node icons are drawn in, one per <see cref="NodeIconRole"/>: muted hues
-/// shared with the editor's syntax colors, so color supplements the pictogram rather than
-/// carrying meaning alone.</summary>
-[ThemeColors]
-public sealed partial class NodeIconPalette
-{
-    public required uint Neutral { get; init; }
-    public required uint Type { get; init; }
-    public required uint Method { get; init; }
-    public required uint Data { get; init; }
-    public required uint Error { get; init; }
-
-    /// <summary>The color of the accessibility overlay on non-public nodes' icons.</summary>
-    public required uint Restricted { get; init; }
-
-    public uint this[NodeIconRole role] => role switch
-    {
-        NodeIconRole.Type => Type,
-        NodeIconRole.Method => Method,
-        NodeIconRole.Data => Data,
-        NodeIconRole.Error => Error,
-        _ => Neutral,
-    };
 }

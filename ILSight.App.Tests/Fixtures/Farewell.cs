@@ -18,11 +18,3 @@ public class Farewell
         return greeting + name + repetitions + shout;
     }
 }
-
-internal sealed class Hidden
-{
-    public int Secret()
-    {
-        return 42;
-    }
-}

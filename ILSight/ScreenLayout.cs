@@ -99,7 +99,7 @@ public static class ScreenLayout
     private static string OpenActiveTabPanel(UiState uiState)
     {
         var panel = DocumentPanels.CreatePanel(uiState.Documents);
-        Commands.Later(uiState, (uiState, panel), static (a, s) => AppFrames.OpenTabIn(s.uiState, a, s.panel, focus: true));
+        Commands.Later(uiState, (uiState, panel), static (a, s) => QueuedCommands.OpenTabIn(s.uiState, a, s.panel, focus: true));
         return panel;
     }
 }

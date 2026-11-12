@@ -107,4 +107,29 @@ public sealed class AnchorTests
         Assert.Equal(path, rebuilt);
         Assert.Same(assembly.Calculator().Child("Add(T) : void"), list.FindNode(rebuilt));
     }
+
+    /// <summary>A test of what holds only where <see cref="AssemblyPath"/> ignores case; skipped elsewhere.</summary>
+    private sealed class CaseInsensitivePathsFactAttribute : FactAttribute
+    {
+        public CaseInsensitivePathsFactAttribute()
+        {
+            Skip = CaseInsensitivePaths.SkipReason;
+        }
+    }
+
+    /// <summary>A theory of what holds only where <see cref="AssemblyPath"/> ignores case; skipped elsewhere.</summary>
+    private sealed class CaseInsensitivePathsTheoryAttribute : TheoryAttribute
+    {
+        public CaseInsensitivePathsTheoryAttribute()
+        {
+            Skip = CaseInsensitivePaths.SkipReason;
+        }
+    }
+
+    private static class CaseInsensitivePaths
+    {
+        /// <summary>Why a test of paths that ignore case cannot run here, or null when it can.</summary>
+        public static string? SkipReason =>
+            AssemblyPath.Comparison == StringComparison.OrdinalIgnoreCase ? null : "Paths on this OS are compared by case.";
+    }
 }

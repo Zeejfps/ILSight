@@ -4,23 +4,6 @@ using ILSight.Core.Metadata;
 
 namespace ILSight;
 
-/// <summary>Where a metadata grid is to go once it is laid out: to a row selected and scrolled into view, or
-/// back to where it stood.</summary>
-internal abstract record PendingGridScroll
-{
-    private PendingGridScroll()
-    {
-    }
-
-    public sealed record Reveal(int Row) : PendingGridScroll;
-
-    public sealed record Restore(GridPosition Position) : PendingGridScroll;
-}
-
-/// <summary>How tall a row of a metadata grid is: its <paramref name="Cells"/>, and the
-/// <paramref name="Details"/> shown under it.</summary>
-internal readonly record struct RowHeights(float Cells, float Details);
-
 /// <summary>Everything a <see cref="MetadataGridWidget.MetadataGridView"/> keeps between frames of one
 /// grid: the columns' widths, the sort and text filters, the selected cell and the text selected in it,
 /// the scroll and the selected row's decoded details. Made for the grid a tab shows, and made anew when

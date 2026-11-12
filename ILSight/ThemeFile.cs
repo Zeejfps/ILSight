@@ -1,33 +1,4 @@
-using System.Text.Json;
-using ZGF.Gui.Immediate;
-
 namespace ILSight;
-
-/// <summary>Whether a theme is drawn dark or light. A theme that extends no other takes the code and
-/// icon colors of the built-in theme of its type.</summary>
-public enum ThemeType
-{
-    Dark,
-    Light,
-}
-
-/// <summary>A color as a theme file writes it, a <c>#RRGGBB</c> or <c>#RRGGBBAA</c> color or a palette
-/// name, with the file and line it is written on.</summary>
-public readonly record struct ThemeValue(string Text, string File, int Line)
-{
-    public bool IsPaletteName => !Text.StartsWith(ThemeFile.ColorPrefix);
-}
-
-/// <summary>What a readable theme file sets: its palette, and its <c>ui</c>, <c>code</c> and <c>icons</c> colors by key.</summary>
-/// <param name="Palette">The named colors the other sections can use, by name.</param>
-/// <param name="Ui">The colors of <see cref="UiTheme"/>, by key.</param>
-/// <param name="Code">The colors of <see cref="CodeViewPalette"/>, by key.</param>
-/// <param name="Icons">The colors of <see cref="NodeIconPalette"/>, by key.</param>
-public sealed record ThemeContents(
-    IReadOnlyDictionary<string, ThemeValue> Palette,
-    IReadOnlyDictionary<string, ThemeValue> Ui,
-    IReadOnlyDictionary<string, ThemeValue> Code,
-    IReadOnlyDictionary<string, ThemeValue> Icons);
 
 /// <summary>One theme file as it is written, without the themes it extends: its name and type, the theme
 /// it extends, its palette and its <c>ui</c>, <c>code</c> and <c>icons</c> colors by key, read as

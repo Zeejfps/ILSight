@@ -8,14 +8,6 @@ using System.Xml.Linq;
 
 namespace ILSight.Core.Resources;
 
-/// <summary>The syntax a text resource is colored in.</summary>
-internal enum ResourceSyntax
-{
-    Plain,
-    Xml,
-    Json,
-}
-
 /// <summary>
 /// Tells text resources from binary ones as ILSpy does, picks the syntax to color them in by name
 /// or by content, and writes them to a document colored in it.

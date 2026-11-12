@@ -336,7 +336,7 @@ public static class ApiEntries
 
         return own + Count(entry.Children, change);
     }
-}
 
-/// <summary>A type or member taken into a comparison, with the reference it is opened by.</summary>
-internal readonly record struct Compared(IEntity Entity, CodeReference.Entity Reference);
+    /// <summary>A type or member taken into a comparison, with the reference it is opened by.</summary>
+    private readonly record struct Compared(IEntity Entity, CodeReference.Entity Reference);
+}

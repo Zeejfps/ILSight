@@ -1,27 +1,7 @@
-using ZGF.Geometry;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 
 namespace ILSight;
-
-/// <summary>What a press on a diagram landed on: nothing, in the space between the cards; a card, off its
-/// rows; or a row of a card.</summary>
-public abstract record DiagramHit
-{
-    private DiagramHit()
-    {
-    }
-
-    public sealed record Nothing : DiagramHit;
-
-    public sealed record Card(CardFace Face) : DiagramHit;
-
-    /// <summary>The row <see cref="Index"/> of <see cref="Face"/>.</summary>
-    public sealed record Row(CardFace Face, int Index) : DiagramHit
-    {
-        public CardRow Value => Face.Rows[Index];
-    }
-}
 
 /// <summary>How a tab shows its diagram: where it looks and how near, the card selected, which parts of the
 /// cards are open, whether members hidden from other assemblies show, the layout it moves to, the cards'

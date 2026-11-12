@@ -3,13 +3,6 @@ using ILSight.Core.Analysis;
 
 namespace ILSight;
 
-/// <summary>Which themes a theme problem is about.</summary>
-public enum ThemeKind
-{
-    Color,
-    Icon,
-}
-
 /// <summary>Something that went wrong, worth telling the user, as what happened rather than words, for
 /// the screen to tell in the chosen language. A <c>Reason</c> is as the system said it.</summary>
 public abstract record AppProblem

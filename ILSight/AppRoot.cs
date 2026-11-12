@@ -143,4 +143,44 @@ internal static class AppRoot
         ScreenLayout.ConnectLayout(uiState);
         return uiState;
     }
+
+    /// <summary>Reaches the decompiler over the browse tree on the thread pool, and the app's error reports, for
+    /// <see cref="DecompileIntoTabHandler"/>.</summary>
+    private sealed class DecompileIntoTabHandlerAdapter(ErrorLog errors, BrowseSession session) : DecompileIntoTabHandler.IPorts
+    {
+        public void ReportError(AppProblem problem)
+        {
+            Errors.Report(errors, problem);
+        }
+
+        /// <summary>Makes it on the thread pool and comes back on the UI thread, with whatever making it threw as
+        /// <see cref="Outcome{T}.Failed"/>, the decompiler's lazy reads of a corrupt file among them, except the
+        /// cancellation of <paramref name="ct"/>, which it lets through.</summary>
+        public async Task<Outcome<NodeContent>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, CancellationToken ct)
+        {
+            var loaded = await Background.Wait(NodeContentLoader.GetContentAsync(session, node, language, options, ct));
+            ct.ThrowIfCancellationRequested();
+            return loaded;
+        }
+    }
+
+    /// <summary>Reaches the runtime installed on this machine, and the app's error reports, for
+    /// <see cref="FrameworkBrowser"/>. What the scan throws comes back as <see cref="Outcome{T}.Failed"/>, except the
+    /// cancellation of the token the call was given, which it lets through.</summary>
+    private sealed class FrameworkPickerAdapter(Action<AppProblem> reportError, InstalledRuntime runtime) : FrameworkBrowser.IPorts
+    {
+        public void ReportError(AppProblem problem)
+        {
+            reportError(problem);
+        }
+
+        /// <summary>Scans on the thread pool and comes back on the UI thread, with whatever the scan threw as
+        /// <see cref="Outcome{T}.Failed"/>.</summary>
+        public async Task<Outcome<IReadOnlyList<RuntimeAssembly>>> ListAssembliesAsync(CancellationToken ct)
+        {
+            var scanned = await Background.Wait(Task.Run(() => RuntimeAssemblies.ListAssemblies(runtime), ct));
+            ct.ThrowIfCancellationRequested();
+            return scanned;
+        }
+    }
 }

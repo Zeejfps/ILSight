@@ -1,0 +1,118 @@
+using ILSight.Core;
+
+namespace ILSight.App.Tests;
+
+public sealed class GoToHistoryEntryHandlerTests
+{
+    /// <summary>Finds <see cref="Found"/> for any place, doing <see cref="WhileLooking"/> meanwhile; keeps the
+    /// places looked up and the problems reported.</summary>
+    private sealed class FakeLookup : GoToHistoryEntryHandler.IPorts
+    {
+        public required Outcome<BrowseNode?> Found { get; init; }
+
+        public Action WhileLooking { get; init; } = static () => { };
+
+        public List<NodePath> LookedUp { get; } = [];
+
+        public List<DecompileTicket> Decompiled { get; } = [];
+
+        public List<AppProblem> Reported { get; } = [];
+
+        public void ReportError(AppProblem problem)
+        {
+            Reported.Add(problem);
+        }
+
+        public Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
+        {
+            LookedUp.Add(place);
+            WhileLooking();
+            return Task.FromResult(Found);
+        }
+
+        public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
+        {
+            Decompiled.Add(load);
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>A driver that showed Greeter, then Farewell in its place, so that going back to Greeter looks it up.</summary>
+    private static AppStateDriver ShowGreeterThenFarewell()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        d.Show(d.Fixture("Greeter"));
+        d.Show(d.Fixture("Farewell"));
+        return d;
+    }
+
+    private static NodePath PlaceOf(AppState appState, int index)
+    {
+        return Assert.IsType<HistoryEntry.Node>(appState.History.Entries[index]).Place;
+    }
+
+    [Fact]
+    public async Task HandleAsync_PlaceFound_ShowsItAndMovesToTheEntry()
+    {
+        var d = ShowGreeterThenFarewell();
+        var greeter = d.Fixture("Greeter");
+        var back = d.AppState.History.CurrentIndex - 1;
+        var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(greeter) };
+
+        await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+
+        Assert.Equal(PlaceOf(d.AppState, back), Assert.Single(lookup.LookedUp));
+        Assert.Same(greeter, d.AppState.Tabs.Active?.Node);
+        Assert.Same(greeter, Assert.Single(lookup.Decompiled).Node);
+        Assert.Equal(back, d.AppState.History.CurrentIndex);
+        Assert.False(d.AppState.IsResolving);
+        Assert.Empty(lookup.Reported);
+    }
+
+    [Fact]
+    public async Task HandleAsync_PlaceGone_ReportsThePlaceGone()
+    {
+        var d = ShowGreeterThenFarewell();
+        var farewell = d.Fixture("Farewell");
+        var back = d.AppState.History.CurrentIndex - 1;
+        var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(null) };
+
+        await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+
+        var gone = Assert.IsType<AppProblem.HistoryPlaceGone>(Assert.Single(lookup.Reported));
+        Assert.Equal(PlaceOf(d.AppState, back), gone.Place);
+        Assert.Null(gone.Error);
+        Assert.Same(farewell, d.AppState.Tabs.Active?.Node);
+        Assert.False(d.AppState.IsResolving);
+    }
+
+    [Fact]
+    public async Task HandleAsync_LookupFailed_ReportsThePlaceGoneWithTheError()
+    {
+        var d = ShowGreeterThenFarewell();
+        var back = d.AppState.History.CurrentIndex - 1;
+        var error = new IOException("unreadable");
+        var lookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Failed(error) };
+
+        await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+
+        Assert.Same(error, Assert.IsType<AppProblem.HistoryPlaceGone>(Assert.Single(lookup.Reported)).Error);
+        Assert.False(d.AppState.IsResolving);
+    }
+
+    [Fact]
+    public async Task HandleAsync_SomethingElseAskedForMeanwhile_NeitherShowsNorReports()
+    {
+        var found = ShowGreeterThenFarewell();
+        var missing = ShowGreeterThenFarewell();
+        var foundLookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(found.Fixture("Greeter")), WhileLooking = () => found.AppState.Intent.Begin() };
+        var missingLookup = new FakeLookup { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => missing.AppState.Intent.Begin() };
+
+        await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState, found.AppState.History.CurrentIndex - 1, CancellationToken.None);
+        await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState, missing.AppState.History.CurrentIndex - 1, CancellationToken.None);
+
+        Assert.Same(found.Fixture("Farewell"), found.AppState.Tabs.Active?.Node);
+        Assert.Empty(foundLookup.Reported);
+        Assert.Empty(missingLookup.Reported);
+    }
+}

@@ -2,22 +2,6 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>Something navigated to: a node's place, or a diagram.</summary>
-public abstract record HistoryEntry
-{
-    private HistoryEntry()
-    {
-    }
-
-    /// <summary>A place navigated to, the icon and accessibility its node showed, the language it was shown
-    /// in, and where its view stood when it was left.</summary>
-    public sealed record Node(NodePath Place, NodeIcon Icon, NodeAccessibility Accessibility, DecompilationLanguage Language, ViewPosition? Position)
-        : HistoryEntry;
-
-    /// <summary>A diagram worked in, under the title of its tab.</summary>
-    public sealed record Diagram(TypeDiagram Shown, string Title) : HistoryEntry;
-}
-
 /// <summary>Back/forward over the places and diagrams navigated to. Places are kept as paths so they
 /// outlive reloads and pin no assembly; a diagram is forgotten once its tab closes.</summary>
 public sealed class NavigationHistory

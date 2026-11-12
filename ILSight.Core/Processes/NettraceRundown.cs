@@ -5,22 +5,6 @@ using System.Text;
 
 namespace ILSight.Core.Processes;
 
-/// <summary>A module as a runtime's rundown reports it: the paths it gives, either of which may be empty,
-/// and the simple name of the assembly that holds it, when the rundown named that too.</summary>
-internal sealed record RundownModule(string IlPath, string NativePath, string? AssemblyName);
-
-/// <summary>What reading a rundown's trace came to: the modules it reports, or why it could not be read.</summary>
-internal abstract record RundownRead
-{
-    private RundownRead()
-    {
-    }
-
-    public sealed record Read(IReadOnlyList<RundownModule> Modules) : RundownRead;
-
-    public sealed record Corrupt(string Detail) : RundownRead;
-}
-
 /// <summary>
 /// Reads the modules out of the nettrace stream of an EventPipe rundown (the container format is
 /// microsoft/perfview's, src/TraceEvent/EventPipe). No general nettrace reader: it walks the

@@ -4,10 +4,6 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Diagrams;
 
-/// <summary>A reference from one type of a diagram to another: the id it points to, and the label it
-/// is drawn with, when it has one.</summary>
-internal readonly record struct DiagramReference(string To, string? Label);
-
 /// <summary>The ids and display names of the types a diagram draws and refers to. Ids are unique
 /// across the diagram and safe in a DOM id; types outside the diagram that it refers to are
 /// recorded with their display names.</summary>

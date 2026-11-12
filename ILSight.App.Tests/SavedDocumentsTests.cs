@@ -10,6 +10,7 @@ using static ILSight.Diagrams;
 using static ILSight.DocumentPanels;
 using static ILSight.Navigation;
 using static ILSight.App.Tests.TestPaths;
+using ILSight.SettingsFormat;
 
 namespace ILSight.App.Tests;
 

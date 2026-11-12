@@ -3,10 +3,6 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>The column Up and Down keep the caret to, <see cref="Column"/>, while it stands at <see cref="At"/>,
-/// where the last of them left it; once it moves any other way the goal is stale.</summary>
-internal readonly record struct CaretGoal(TextPosition At, int Column);
-
 /// <summary>Where the keys move a code view's caret to, over the rows its folds leave: a collapsed fold is a
 /// row of its own, its first line, and the lines it hides are stepped over.</summary>
 internal static class CodeCaret

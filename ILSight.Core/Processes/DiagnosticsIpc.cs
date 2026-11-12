@@ -8,32 +8,6 @@ using System.Text;
 
 namespace ILSight.Core.Processes;
 
-/// <summary>Where a runtime's diagnostics endpoint listens: a Unix domain socket on Linux and macOS, a
-/// named pipe on Windows.</summary>
-internal abstract record DiagnosticsEndpoint
-{
-    private DiagnosticsEndpoint()
-    {
-    }
-
-    public sealed record UnixSocket(string Path) : DiagnosticsEndpoint;
-
-    public sealed record NamedPipe(string Name) : DiagnosticsEndpoint;
-}
-
-/// <summary>How a runtime answered one command: with the command's payload, or by refusing it with an
-/// HRESULT, as an older runtime refuses a command it doesn't know.</summary>
-internal abstract record IpcResponse
-{
-    private IpcResponse()
-    {
-    }
-
-    public sealed record Ok(byte[] Payload) : IpcResponse;
-
-    public sealed record Rejected(int HResult) : IpcResponse;
-}
-
 /// <summary>
 /// The CoreCLR diagnostics IPC protocol (dotnet/diagnostics, documentation/design-docs/ipc-protocol.md),
 /// spoken to one runtime. A message is a 20-byte header (the 14-byte magic <c>DOTNET_IPC_V1\0</c>, a u16
@@ -153,7 +127,7 @@ internal static class DiagnosticsIpc
     /// <summary>One response, read off <paramref name="stream"/>. For a streaming command, as EventPipe's,
     /// what follows the sized message stays in the stream for the caller.</summary>
     /// <exception cref="IOException">What came back is no response of the protocol.</exception>
-    public static async Task<IpcResponse> ReadResponseAsync(Stream stream, CancellationToken cancellationToken)
+    private static async Task<IpcResponse> ReadResponseAsync(Stream stream, CancellationToken cancellationToken)
     {
         var header = new byte[HeaderSize];
         await stream.ReadExactlyAsync(header, cancellationToken).ConfigureAwait(false);
@@ -433,5 +407,18 @@ internal static class DiagnosticsIpc
             default:
                 throw new InvalidOperationException($"Unknown endpoint {endpoint}.");
         }
+    }
+
+    /// <summary>How a runtime answered one command: with the command's payload, or by refusing it with an
+    /// HRESULT, as an older runtime refuses a command it doesn't know.</summary>
+    private abstract record IpcResponse
+    {
+        private IpcResponse()
+        {
+        }
+
+        public sealed record Ok(byte[] Payload) : IpcResponse;
+
+        public sealed record Rejected(int HResult) : IpcResponse;
     }
 }

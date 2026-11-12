@@ -1,54 +1,7 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using static ILSight.Exports;
 
 namespace ILSight;
-
-/// <summary>An open assembly as the export dialog lists it: whether it is exported, and the name of
-/// its project.</summary>
-public sealed class ExportChoice
-{
-    public required LoadedModule Assembly { get; init; }
-    public bool Included;
-    public required string Name;
-}
-
-/// <summary>What keeps an export from starting.</summary>
-public abstract record ExportBlocker
-{
-    private ExportBlocker()
-    {
-    }
-
-    public sealed record NoAssembly : ExportBlocker;
-
-    public sealed record NoFolder : ExportBlocker;
-
-    public sealed record NamelessProject : ExportBlocker;
-
-    /// <summary>Two ticked assemblies take the project name <see cref="Name"/>.</summary>
-    public sealed record Clash(string Name) : ExportBlocker;
-
-    public sealed record KeyFileMissing : ExportBlocker;
-}
-
-/// <summary>What the disk says about the folder and key file an export names: looked up where the
-/// dialog is shown and the export started, so what keeps it from starting is decided without a disk.</summary>
-public readonly record struct ExportFileFacts
-{
-    /// <summary>Whether the folder already holds files, which the export may replace.</summary>
-    public required bool FolderHoldsFiles { get; init; }
-
-    /// <summary>Whether a key file is named that is not there.</summary>
-    public required bool IsKeyFileMissing { get; init; }
-}
-
-/// <summary>The export dialog's pages: what is exported and how, or which assemblies.</summary>
-public enum ExportPage
-{
-    Main,
-    Choose,
-}
 
 /// <summary>
 /// What the export dialog asks for: which open assemblies to export, under which project names,

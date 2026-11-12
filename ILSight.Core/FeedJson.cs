@@ -10,7 +10,7 @@ namespace ILSight.Core;
 /// entry, and the service index. What a feed leaves out reads as empty, 0 or null. A package or resource
 /// of another shape is left out on its own; an answer of another shape cannot be read.
 /// </summary>
-internal static class FeedJson
+internal static partial class FeedJson
 {
     /// <summary>The year a feed dates a version it unlisted.</summary>
     private const int UnlistedYear = 1900;
@@ -230,110 +230,104 @@ internal static class FeedJson
     {
         return new FeedResource(json.Type is null ? [] : json.Type.Items, WebUrl.Parse(json.Id));
     }
-}
 
-/// <summary>A version's registration: when it was listed, and its catalog entry, inline or as the URL of one.</summary>
-internal sealed record FeedRegistration(DateTimeOffset? Published, JsonElement? CatalogEntry);
+    private sealed record SearchPageJson(long? TotalHits, List<JsonElement>? Data);
 
-/// <summary>A resource a service index lists: the types it is of, and its URL when it is a web URL.</summary>
-internal sealed record FeedResource(IReadOnlyList<string> Types, WebUrl? Url);
+    private sealed record PackageJson(
+        string? Id,
+        string? Version,
+        string? Description,
+        TextListJson? Authors,
+        string? IconUrl,
+        long? TotalDownloads,
+        bool? Verified,
+        TextListJson? Owners,
+        TextListJson? Tags,
+        string? ProjectUrl,
+        string? LicenseUrl,
+        List<JsonElement>? Vulnerabilities,
+        List<VersionJson?>? Versions);
 
-internal sealed record SearchPageJson(long? TotalHits, List<JsonElement>? Data);
+    private sealed record VersionJson(string? Version, long? Downloads, [property: JsonPropertyName("@id")] string? Id);
 
-internal sealed record PackageJson(
-    string? Id,
-    string? Version,
-    string? Description,
-    TextListJson? Authors,
-    string? IconUrl,
-    long? TotalDownloads,
-    bool? Verified,
-    TextListJson? Owners,
-    TextListJson? Tags,
-    string? ProjectUrl,
-    string? LicenseUrl,
-    List<JsonElement>? Vulnerabilities,
-    List<VersionJson?>? Versions);
+    private sealed record RegistrationJson(string? Published, JsonElement? CatalogEntry);
 
-internal sealed record VersionJson(string? Version, long? Downloads, [property: JsonPropertyName("@id")] string? Id);
+    private sealed record CatalogEntryJson(
+        string? Published,
+        string? LicenseExpression,
+        string? LicenseUrl,
+        string? ProjectUrl,
+        long? PackageSize,
+        List<DependencyGroupJson?>? DependencyGroups,
+        DeprecationJson? Deprecation,
+        List<VulnerabilityJson?>? Vulnerabilities);
 
-internal sealed record RegistrationJson(string? Published, JsonElement? CatalogEntry);
+    private sealed record DependencyGroupJson(string? TargetFramework, List<DependencyJson?>? Dependencies);
 
-internal sealed record CatalogEntryJson(
-    string? Published,
-    string? LicenseExpression,
-    string? LicenseUrl,
-    string? ProjectUrl,
-    long? PackageSize,
-    List<DependencyGroupJson?>? DependencyGroups,
-    DeprecationJson? Deprecation,
-    List<VulnerabilityJson?>? Vulnerabilities);
+    private sealed record DependencyJson(string? Id, string? Range);
 
-internal sealed record DependencyGroupJson(string? TargetFramework, List<DependencyJson?>? Dependencies);
+    private sealed record DeprecationJson(TextListJson? Reasons, string? Message, AlternatePackageJson? AlternatePackage);
 
-internal sealed record DependencyJson(string? Id, string? Range);
+    private sealed record AlternatePackageJson(string? Id);
 
-internal sealed record DeprecationJson(TextListJson? Reasons, string? Message, AlternatePackageJson? AlternatePackage);
+    /// <summary>A vulnerability, whose severity a feed may give as a number or as its digits.</summary>
+    private sealed record VulnerabilityJson(string? AdvisoryUrl, JsonElement? Severity);
 
-internal sealed record AlternatePackageJson(string? Id);
+    private sealed record ServiceIndexJson(List<JsonElement>? Resources);
 
-/// <summary>A vulnerability, whose severity a feed may give as a number or as its digits.</summary>
-internal sealed record VulnerabilityJson(string? AdvisoryUrl, JsonElement? Severity);
+    private sealed record ResourceJson([property: JsonPropertyName("@id")] string? Id, [property: JsonPropertyName("@type")] TextListJson? Type);
 
-internal sealed record ServiceIndexJson(List<JsonElement>? Resources);
+    /// <summary>Text a feed may give as one string or as a list of strings; what else a list holds is left out.</summary>
+    [JsonConverter(typeof(TextListConverter))]
+    private sealed record TextListJson(IReadOnlyList<string> Items);
 
-internal sealed record ResourceJson([property: JsonPropertyName("@id")] string? Id, [property: JsonPropertyName("@type")] TextListJson? Type);
-
-/// <summary>Text a feed may give as one string or as a list of strings; what else a list holds is left out.</summary>
-[JsonConverter(typeof(TextListConverter))]
-internal sealed record TextListJson(IReadOnlyList<string> Items);
-
-internal sealed class TextListConverter : JsonConverter<TextListJson>
-{
-    public override TextListJson Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    private sealed class TextListConverter : JsonConverter<TextListJson>
     {
-        if (reader.TokenType == JsonTokenType.String)
-        {
-            return new TextListJson([reader.GetString() ?? ""]);
-        }
-
-        if (reader.TokenType != JsonTokenType.StartArray)
-        {
-            throw new JsonException("Expected a string or a list of them.");
-        }
-
-        var items = new List<string>();
-        while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+        public override TextListJson Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.String)
             {
-                items.Add(reader.GetString() ?? "");
+                return new TextListJson([reader.GetString() ?? ""]);
             }
-            else
+
+            if (reader.TokenType != JsonTokenType.StartArray)
             {
-                reader.Skip();
+                throw new JsonException("Expected a string or a list of them.");
             }
-        }
-        return new TextListJson(items);
-    }
 
-    public override void Write(Utf8JsonWriter writer, TextListJson value, JsonSerializerOptions options)
-    {
-        writer.WriteStartArray();
-        foreach (var item in value.Items)
+            var items = new List<string>();
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+            {
+                if (reader.TokenType == JsonTokenType.String)
+                {
+                    items.Add(reader.GetString() ?? "");
+                }
+                else
+                {
+                    reader.Skip();
+                }
+            }
+            return new TextListJson(items);
+        }
+
+        public override void Write(Utf8JsonWriter writer, TextListJson value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(item);
+            writer.WriteStartArray();
+            foreach (var item in value.Items)
+            {
+                writer.WriteStringValue(item);
+            }
+
+            writer.WriteEndArray();
         }
-
-        writer.WriteEndArray();
     }
-}
 
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, NumberHandling = JsonNumberHandling.AllowReadingFromString)]
-[JsonSerializable(typeof(SearchPageJson))]
-[JsonSerializable(typeof(PackageJson))]
-[JsonSerializable(typeof(RegistrationJson))]
-[JsonSerializable(typeof(CatalogEntryJson))]
-[JsonSerializable(typeof(ServiceIndexJson))]
-[JsonSerializable(typeof(ResourceJson))]
-internal sealed partial class FeedJsonContext : JsonSerializerContext;
+    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, NumberHandling = JsonNumberHandling.AllowReadingFromString)]
+    [JsonSerializable(typeof(SearchPageJson))]
+    [JsonSerializable(typeof(PackageJson))]
+    [JsonSerializable(typeof(RegistrationJson))]
+    [JsonSerializable(typeof(CatalogEntryJson))]
+    [JsonSerializable(typeof(ServiceIndexJson))]
+    [JsonSerializable(typeof(ResourceJson))]
+    private sealed partial class FeedJsonContext : JsonSerializerContext;
+}

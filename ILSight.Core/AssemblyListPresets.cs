@@ -3,9 +3,6 @@ using ICSharpCode.Decompiler.Metadata;
 
 namespace ILSight.Core;
 
-/// <summary>A ready-made assembly list offered to add: the assemblies of a framework installed here.</summary>
-public sealed record AssemblyListPreset(string Name, IReadOnlyList<AssemblyPath> Paths);
-
 /// <summary>The ready-made assembly lists this machine offers: one per installed shared framework and
 /// feature version, of its newest patch (<c>Microsoft.NETCore.App 9.0.3</c>), newest first, then on
 /// Windows the .NET Framework lists found in the GAC.</summary>

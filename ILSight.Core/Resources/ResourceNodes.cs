@@ -9,12 +9,6 @@ using MetadataResource = ICSharpCode.Decompiler.Metadata.Resource;
 
 namespace ILSight.Core.Resources;
 
-/// <summary>A resource's bytes, which can be read to save them.</summary>
-/// <param name="Description">What the resource is, as a resources folder lists it.</param>
-/// <param name="FileName">The name a saved copy is offered under.</param>
-/// <param name="ReadData">What a saved copy holds, read only when asked for.</param>
-internal sealed record ResourceData(string Description, string FileName, Func<byte[]> ReadData);
-
 internal static class ResourceNodes
 {
     public static ResourceData CreateData(ResourceEntryInfo entry)
@@ -131,5 +125,60 @@ internal static class ResourceNodes
     internal static ResourceContainerInfo CreateAvaloniaAssets(LoadedModule module, MetadataResource resource)
     {
         return new ResourceContainerInfo { Module = module, Resource = resource, Contents = new ContainerContents.AvaloniaAssets() };
+    }
+
+    /// <summary>The module's manifest resources, sorted by name.</summary>
+    internal static BrowseNode[] ListResources(BrowseNode parent, LoadedModule module)
+    {
+        return module.File.Resources
+            .OrderBy(r => r.Name, NaturalStringComparer.Instance)
+            .Select(r => BrowseNodes.Create(parent, CreateSubject(module, r)))
+            .ToArray();
+    }
+
+    /// <summary>What a manifest resource stands for: the entries of a <c>.resources</c> file or of
+    /// Avalonia's asset container, or the resource itself.</summary>
+    private static NodeSubject CreateSubject(LoadedModule module, MetadataResource resource)
+    {
+        if (AvaloniaResources.IsContainerName(resource.Name))
+        {
+            return new NodeSubject.ResourceContainer { Value = ResourceNodes.CreateAvaloniaAssets(module, resource) };
+        }
+
+        if (resource.Name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+        {
+            return new NodeSubject.ResourceContainer { Value = ResourceNodes.CreateResourcesFile(module, resource) };
+        }
+
+        return new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = module, Name = resource.Name, Source = new ResourceSource.Manifest(resource) } };
+    }
+
+    /// <summary>The entries of a container: a <c>.resources</c> file's byte and stream entries, its BAML
+    /// among them, or Avalonia's assets, sorted by their paths.</summary>
+    internal static BrowseNode[] ListEntries(BrowseNode parent, ResourceContainerInfo container)
+    {
+        return container.Contents switch
+        {
+            ContainerContents.ResourcesFile file => file.Entries.Value
+                .Select(e => e.Value switch
+                {
+                    byte[] bytes => CreateEntry(parent, container.Module, e.Key, bytes),
+                    MemoryStream stream => CreateEntry(parent, container.Module, e.Key, stream.ToArray()),
+                    _ => (BrowseNode?)null,
+                })
+                .OfType<BrowseNode>()
+                .ToArray(),
+            ContainerContents.AvaloniaAssets => AvaloniaResources.ReadEntries(ResourceNodes.ReadData(container))
+                .OrderBy(e => e.Path, NaturalStringComparer.Instance)
+                .Select(e => BrowseNodes.Create(parent, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
+                .ToArray(),
+            _ => throw new System.Diagnostics.UnreachableException(),
+        };
+    }
+
+    private static BrowseNode CreateEntry(BrowseNode parent, LoadedModule module, string name, byte[] data)
+    {
+        ResourceSource source = Baml.IsBamlName(name) ? new ResourceSource.Baml(data) : new ResourceSource.Entry(data);
+        return BrowseNodes.Create(parent, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = module, Name = name, Source = source } });
     }
 }
