@@ -7,6 +7,7 @@ using ILSight.Core;
 using ILSight.Core.Diagrams;
 using ZGF.KeyboardModule;
 using ILSight.CodeTooltipping;
+using ILSight.DiagramViewport;
 using static ILSight.Diagrams;
 using static ILSight.Navigation;
 

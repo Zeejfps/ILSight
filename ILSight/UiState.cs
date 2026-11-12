@@ -6,6 +6,8 @@ using ILSight.CodeView;
 using ILSight.Exporting;
 using ILSight.Bookmarking;
 using ILSight.BuiltInAssets;
+using ILSight.ComparisonPicking;
+using ILSight.Omnibars;
 
 namespace ILSight;
 

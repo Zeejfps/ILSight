@@ -6,6 +6,7 @@ using ILSight.Bookmarking;
 using ILSight.Exporting;
 using ILSight.BuiltInAssets;
 using ILSight.CodeTooltipping;
+using ILSight.Omnibars;
 
 namespace ILSight;
 

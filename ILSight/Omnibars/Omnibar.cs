@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Omnibars;
 
 /// <summary>The bar over each document, one for all of them: which document's bar searches instead of
 /// showing its path, the best matches it suggests, and the list of a crumb's children open under it.

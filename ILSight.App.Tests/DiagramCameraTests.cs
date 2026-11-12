@@ -1,5 +1,6 @@
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
+using ILSight.DiagramViewport;
 
 namespace ILSight.App.Tests;
 

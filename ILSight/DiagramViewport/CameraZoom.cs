@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.DiagramViewport;
 
 /// <summary>How near a diagram is looked at: between a tenth of its own size and four times it, and its own
 /// size when nothing was set.</summary>

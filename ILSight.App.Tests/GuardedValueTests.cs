@@ -1,3 +1,5 @@
+using ILSight.DiagramViewport;
+
 namespace ILSight.App.Tests;
 
 /// <summary>A value kept valid by its own type stays valid whichever way it was made, and that includes the

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.ComparisonPicking;
 
 /// <summary>What the "compare with" dialog offers, and the rules it keeps: the assembly to compare, and the other
 /// open assemblies whose API it can be compared with, those of its name first, filtered by name or path, one of

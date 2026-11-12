@@ -5,7 +5,7 @@ using ILSight.Localization;
 using ZGF.KeyboardModule;
 using static ILSight.Comparisons;
 
-namespace ILSight;
+namespace ILSight.ComparisonPicking;
 
 /// <summary>The "compare with" dialog: a filter over the open assemblies the one to compare can be compared
 /// with, each with its version, framework and file; Enter, a double-click or Compare compares with the

@@ -7,7 +7,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
 
-namespace ILSight;
+namespace ILSight.Omnibars;
 
 /// <summary>The bar over a document: the path to what it shows, a crumb per node with an arrow after it
 /// that lists the node's children, or the tools of a diagram or comparison it shows, and a search button; or, while it searches, the search box with the

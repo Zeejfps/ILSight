@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Omnibars;
 
 /// <summary>The children of one crumb of a document's omnibar, listed under it while it is open: those
 /// whose name holds the filter typed, the crumb after it on the path selected once they are built. Opening,

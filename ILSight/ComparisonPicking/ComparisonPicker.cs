@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.ComparisonPicking;
 
 /// <summary>The "compare with" dialog as its widgets bind it: the filter typed; and <see cref="Choice"/>, the
 /// assembly to compare and those offered to compare it with, which keeps its own rules.</summary>

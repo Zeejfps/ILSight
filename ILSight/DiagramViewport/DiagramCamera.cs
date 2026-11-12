@@ -1,6 +1,6 @@
 using ZGF.Geometry;
 
-namespace ILSight;
+namespace ILSight.DiagramViewport;
 
 /// <summary>Where a diagram is looked at from and how near: the point of the diagram at the top-left of
 /// the view, and the zoom. <see cref="Changes"/> counts the moves: each step of the zoom, the wheel, a fit

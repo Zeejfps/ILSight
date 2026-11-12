@@ -3,6 +3,7 @@ using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
+using ILSight.DiagramViewport;
 
 namespace ILSight;
 

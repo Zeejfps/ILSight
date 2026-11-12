@@ -1,7 +1,7 @@
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
 
-namespace ILSight;
+namespace ILSight.DiagramViewport;
 
 public static class DiagramCameras
 {
