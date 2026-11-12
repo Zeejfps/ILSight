@@ -71,7 +71,7 @@ desktop_exec() {
     desktop_string "\"$quoted\""
 }
 
-# Writes the menu entry the app itself keeps up to date on launch (ILSight/LinuxMenu.cs, through
+# Writes the menu entry the app itself keeps up to date on launch (ILSight/Program.cs, through
 # ZGF's LinuxDesktopEntry); the two must stay identical, or every launch rewrites it.
 # StartupWMClass is the window title: GLFW uses it for WM_CLASS when no class hint is set,
 # and that is what lets the desktop match the open window to this entry.
