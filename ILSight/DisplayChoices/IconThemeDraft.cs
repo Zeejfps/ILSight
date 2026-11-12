@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
-namespace ILSight;
+namespace ILSight.DisplayChoices;
 
 /// <summary>The text of a new icon theme file that extends another and lists every icon key, each
 /// commented out as drawn now. An icon left commented follows the parent; uncommenting a line changes

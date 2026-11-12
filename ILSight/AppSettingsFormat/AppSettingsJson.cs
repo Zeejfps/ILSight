@@ -9,6 +9,7 @@ using ILSight.Localization;
 using ILSight.Bookmarking;
 using ILSight.SettingsFormat;
 using ILSight.AssemblyListKeeping;
+using ILSight.DisplayChoices;
 
 namespace ILSight.AppSettingsFormat;
 

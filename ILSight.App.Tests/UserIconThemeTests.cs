@@ -10,6 +10,7 @@ using ILSight.SettingsFormat;
 using ILSight.BuiltInAssets;
 using ILSight.UserState;
 using ILSight.AppSettingsFormat;
+using ILSight.DisplayChoices;
 
 namespace ILSight.App.Tests;
 

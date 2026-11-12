@@ -1,5 +1,6 @@
 using ZGF.Fonts;
 using ZGF.Gui.Immediate;
+using ILSight.DisplayChoices;
 
 namespace ILSight;
 

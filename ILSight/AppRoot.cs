@@ -12,6 +12,7 @@ using ILSight.FrameworkPicking;
 using ILSight.UserState;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
+using ILSight.DisplayChoices;
 
 namespace ILSight;
 

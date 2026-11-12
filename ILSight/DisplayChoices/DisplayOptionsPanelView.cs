@@ -9,7 +9,7 @@ using static ILSight.CodeDisplay;
 using static ILSight.IconTheming;
 using static ILSight.Theming;
 
-namespace ILSight;
+namespace ILSight.DisplayChoices;
 
 /// <summary>How the app is drawn, as settings cards: the interface's theme, icon theme, scale, language and title bar, then the
 /// code's font size and switches for line numbers, the current line's highlight, matching brackets and the omnibar,

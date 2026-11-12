@@ -9,6 +9,7 @@ using ILSight.SettingsFormat;
 using ILSight.CodeView;
 using ILSight.BuiltInAssets;
 using ILSight.AppSettingsFormat;
+using ILSight.DisplayChoices;
 
 namespace ILSight.App.Tests;
 

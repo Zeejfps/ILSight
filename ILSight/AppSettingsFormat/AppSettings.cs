@@ -6,6 +6,7 @@ using ILSight.Localization;
 using ILSight.SettingsFormat;
 using ILSight.Bookmarking;
 using ILSight.AssemblyListKeeping;
+using ILSight.DisplayChoices;
 
 namespace ILSight.AppSettingsFormat;
 

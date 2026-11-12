@@ -12,6 +12,7 @@ using ILSight.DocumentViewing;
 using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
 using ILSight.AssemblyListKeeping;
+using ILSight.DisplayChoices;
 
 namespace ILSight;
 

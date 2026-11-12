@@ -11,6 +11,7 @@ using ILSight.Bookmarking;
 using ILSight.Commanding;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
+using ILSight.DisplayChoices;
 
 namespace ILSight.App.Tests;
 
