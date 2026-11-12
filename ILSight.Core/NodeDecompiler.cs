@@ -344,10 +344,10 @@ internal static class NodeDecompiler
         switch (member)
         {
             case IMethod { IsConstructor: true } ctor when ctor.DeclaringType.IsReferenceType != false:
-                decompiler.AstTransforms.Add(new MemberSelection.Constructor { Kept = ctor });
+                decompiler.AstTransforms.Add(new ConstructorSelection { Kept = ctor });
                 return decompiler.Decompile(MemberSelection.FieldsAndConstructors(declaring, ctor.IsStatic));
             case IField { IsConst: false } field:
-                decompiler.AstTransforms.Add(new MemberSelection.Field { Kept = field });
+                decompiler.AstTransforms.Add(new FieldSelection { Kept = field });
                 return decompiler.Decompile(MemberSelection.FieldsAndConstructors(declaring, field.IsStatic));
             default:
                 return decompiler.Decompile(member.MetadataToken);

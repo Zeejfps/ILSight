@@ -80,7 +80,7 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestions while measured: an adapter's catch that turns cancellation into a result (RL0903), an adapter's port member returning a sequence that isn't its own iterator (RL0904), a dropped ticket handed back (RL0807) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object leaving an adapter; another call to a stream's source inside its loop; cancellation turned into a result without a catch (an awaiter or continuation); whether a workflow's token is linked to everything that cancels it on purpose, and to nothing else (a deadline is a timeout), and a canceller found partway handed back to the edge; where an effect can't be undone, and whether what follows it is one transaction or a durable record's |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
 | R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
-| R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303), a nested type that is a unit of its own: code that uses none of its container's private members, or a type code outside its container names (RL1305); suggestions while measured: a top-level shape only one type uses (RL1304), a namespace named like a type (RL1306), a nested type its container keeps in a field and calls while it reaches the container's private members (RL1307); generated code doesn't count | whether a group has parts and gets a folder, and which of nested names is its seed (the longest whose group holds the parts); whether a nested type's private reach is its container's own operation (handed out, not held); narrowing a member to its users (another project's calls aren't seen); how to split a class that was split across files (by what each part knows, R004); whether code is a test's input |
+| R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303), a nested type that is a unit of its own: code that uses none of its container's private members, a type code outside its container names or reaches through members, or code on its container's private members that code outside makes (RL1305); suggestions while measured: a top-level shape only one type uses (RL1304), a namespace named like a type (RL1306), a nested type its container keeps in a field and calls while it reaches the container's private members (RL1307); generated code doesn't count | whether a group has parts and gets a folder, and where a type goes (by its name: its first concept, a plural as its singular, a use case's by what it acts on; else by its users, composition roots aside); whether a nested type's private reach is its container's own operation (made and handed out, not held); narrowing a member to its users (another project's calls aren't seen); how to split a class that was split across files (by what each part knows, R004); whether code is a test's input |
 
 To break a rule on purpose, suppress it with the reason written down:
 `#pragma warning disable RL0802 // Deliberate: demonstrates the discarded-result trap`, or on a member
@@ -2311,8 +2311,9 @@ if (!string.IsNullOrEmpty(nickname)) { ... }       // narrows: [NotNullWhen(fals
 
 **Rule.** Each file declares one top-level type and is named after it (`Order.cs`). Related types share a folder (and
 its namespace), not a file; a group gets a folder of its own when it has parts its names don't show, and the folder is
-named for the group, never like a type. A type is nested in another only when it is that type's part: privately, a
-shape (it declares no methods) that only that type uses, or code that works on that type's private members; publicly,
+named for the group, never like a type; each type goes by its name, else by its users. A type is nested in another only
+when it is that type's part: privately, a shape (it declares no methods) that only that type uses, or code that works
+on that type's private members as what it makes and hands out; publicly,
 the contract it declares for others to name through it (a union's cases, a use case's `IPorts`). A type with code of
 its own has its own file, even when one type uses it. A type is written in one place: `partial` only where a tool writes
 the other half (a source generator: `[GeneratedRegex]`, `[LibraryImport]`, a `JsonSerializerContext`, a UI framework's
@@ -2334,19 +2335,36 @@ code of its own brings the same bug back (S05).
    `Result{T}.cs`); types that share a name and differ in arity (`Result` and `Result<T>`) share it. A file of top-level
    statements holds nothing else.
 2. **Related types share a folder, not a file; a group with parts gets a folder.** A group is the types named for one
-   concept (`CodeView*`) and its parts: the types only the group uses, whatever their names (add every type whose users
-   are all in the group, and repeat). When a group has parts, it gets a folder, so they are seen with it: in ILSight,
-   `CodeView*` finds 6 of the 22 types a code-view folder holds (its caret, folds, selection, ...). A group with no
-   parts, whose types all carry its name and are used across the app (ILSight's `Theme*`: 16 of 17), stays where its
-   users are: a folder would add a `using` to each file that uses it (24) and show nothing a name search doesn't. A type
-   several groups use stays in the folder above them; a project's root holds what the whole app shares and the
-   composition root. The namespace follows the folder.
-   **When names nest** (`Code*` holds `CodeView*`; names compared by their words, so `Diagrams` is not a `Diagram*`
-   name), the group's name is the longest whose group holds the parts: a shorter one seeds a group of its own only for
-   parts the longer ones miss. What a shorter name adds besides is named for it and used across the app, a group with
-   no parts, which stays put. On ILSight's use graph (all four projects), `CodeView*` gathers 8 types and 4 parts, and
-   `Code*` the same 4 with 20 more types, each used from outside the group (62 outside users instead of 46); the same
-   test picks `DiagramView` over `Diagram` and `MetadataGrid` over `Metadata`.
+   concept (`CodeView*`) and its parts: the types only the group uses, whatever their names. When a group has parts, it
+   gets a folder, so they are seen with it: in ILSight, `CodeView*` finds 8 of the 27 types the code view's folder
+   holds (its caret, folds, selection, ...). A group with no parts, whose types all carry its name and are used across
+   the app (ILSight's `Theme*`), stays where its users are: a folder would add a `using` to each file that uses it and
+   show nothing a name search doesn't. The namespace follows the folder. Each type is placed by its name, else by its
+   users, so the rule is applied one type at a time, from its name and its references; no whole-project graph is
+   needed (on ILSight the whole-project pass's layout is what this gives type by type: 0 of 468 types move):
+   - **By its name**, when it is named for a group with a folder. Its concept is what its name starts with, compared by
+     words, a plural as its singular (`Bookmarks` is a `Bookmark*` name), the longest that has a folder
+     (`CodeViewWidget` goes in `CodeView/`, not `Code/`). A thing's name starts with its concept; an action's name (a
+     use case's, R003) starts with its verb, and its concept is what it acts on: `ExportBookmarksHandler` is
+     `Bookmark*`'s, `ExportQueue` is `Export*`'s (of ILSight's 12 use cases named for an action, 8 work with types named
+     for their object, 1 with types named for its verb). A shared suffix (`*Json`, `*View`, `*Handler`) names a role every
+     concept has, not a group: a format's DTO named for a concept is that concept's (`CodeViewPositionJson` goes in
+     `CodeView/`; on ILSight, keeping the settings format's 30 types in one folder instead changed no measured cost).
+     The name decides even when one other group alone uses the type (`MainView`, used only by `ILSightApp`, is
+     `Main*`'s): a name changes when its type does, the uses whenever a caller is added.
+   - **Else by its users**: the folder they are all in (the folders of nested names count as the shorter's: a type only
+     `Diagram/` and `DiagramView/` use goes in `Diagram/`); a type several folders use stays in the folder above them.
+     Its users are the types that use it (point 4), except **composition roots**: the app's, which builds every adapter
+     and use case (R001), and every test (Scope: a test is one), which builds and checks what it tests. "Only the root
+     uses it" or "only its group and its test use it" marks a role, not a concept: of the 11 adapters ILSight's `AppRoot`
+     builds, the 6 only it uses are the 6 no test builds; counted, a test would move the part it tests out of its group
+     (12 of the 26 types in ILSight's `CodeView/`), and 151 of its 468 app types would be placed by whether a test uses
+     them.
+   - **A concept gets a folder when it gets a part**: a type the second step puts with the concept's named types.
+     Folders sit side by side, one level below the project's root, never one inside another: C# shows a nested
+     namespace the types around it, not the other way round, and a group uses its parts, so nesting saves no `using`
+     (S09: `DEMO_CS0246`), and a folder inside a folder claims types that aren't the outer group's. The project's root
+     holds what the whole app shares and the composition root.
 3. **A folder is named for its group, never like a type**: not like a type in it, nor like one in a namespace around
    it. A namespace hides a type of its name from the code around it: a folder named after its main type makes every
    caller outside write `SettingsJson.SettingsJson.Read` (the plain call finds the namespace: `DEMO_CS0234`), and one
@@ -2358,18 +2376,24 @@ code of its own brings the same bug back (S05).
    names it, and by every type that reaches it through another type's members (a property, parameter or return type:
    the composition root that sets `search.Stream` with a method group uses `SearchStream`, though it never writes the
    name). The compiler's test: nested `private` in its one user, does everything still compile? A type a member shows to
-   others can't be private there (`DEMO_CS0053`), so it has its own file. Narrow first: a member only its own type calls
+   others can't be private there (`DEMO_CS0053`), so it has its own file. Here a test's use counts (a test can't name a
+   private nested type); it only doesn't make a group's parts (point 2). Narrow first: a member only its own type calls
    is private, and the types it carried may then be that type's alone (S04). Nested, private, go:
    - **shapes** only that type uses: types that declare no methods (records and DTOs, computed properties included;
      enums, interfaces, delegates): a helper record (S03), the wire DTOs only a format's reader uses with their
      serializer context (S02);
-   - **code that works on its container's private members**, the container's own operation: what the container hands
-     out for others to call (a scope it returns, an enumerator, a progress callback it passes to a library, a test's
-     fake it gives the code under test). Not code the container keeps in a field and calls to do part of its own work:
-     that is the container split in two by topic, as a split class is (S05's tab strip, which the workspace held and
-     forwarded to, broke the workspace's rule). On ILSight, of the 9 nested types with code that reach their
-     container's privates, 7 are handed out (3 lock scopes, a progress callback, 3 tests' fakes) and 2 are a union's
-     cases; none is held. S05's strip is (RL1307).
+   - **code that works on its container's private members**, the container's own operation: what the container makes
+     and hands out for others to call (a scope it returns, an enumerator, a progress callback it passes to a library, a
+     test's fake it gives the code under test). Not code the container keeps in a field and calls to do part of its own
+     work: that is the container split in two by topic, as a split class is (S05's tab strip, which the workspace held
+     and forwarded to, broke the workspace's rule). Nor code that others make (`new Container.Nested { ... }`): what
+     reaches the container's private members is then the maker's, unchecked (S10: an editor made a nested caret move one
+     past the end of the line, the move set the private caret to it, and the next read threw; made and handed out by the
+     document, or in its own file reaching the caret through the document's method, the caret stayed in the text,
+     verified). It gets its own file, with the private members only it uses (ILSight's `MemberSelection.Constructor`
+     and `.Field`, which `NodeDecompiler` makes, and their `KeepConstructor` and `KeepField`). On ILSight, of the 9
+     nested types with code that reach their container's privates, 7 are handed out (3 lock scopes, a progress
+     callback, 3 tests' fakes), none is held, and those 2 are made outside. S05's strip is held (RL1307).
 
    Nested, **public**, go the contract a type declares for others to name through it: **a union's cases** (R008: callers
    build and match them, `Outcome.Failed`) and **a use case's `IPorts`** (R001: its adapter implements it,
@@ -2421,11 +2445,13 @@ the DTOs nested in the reader); S06's group with a converter from 1 to 3. An edi
 of one folder instead of one file (not measured). A union with many cases stays one file: its cases are nested (R008
 S09's 24 cases; ILSight's `NodeSubject`). A collaborator moved out of its container needs a name that says what it is
 without the container's: ILSight's three test fakes named `FakeLookup` would collide in one namespace. A group's folder
-adds a `using` to each file outside that uses it (ILSight's code view: 9 files).
+adds a `using` to each file outside that uses it: ILSight's 26 groups with parts add 452 against a flat project, 198 of
+them in tests (counting tests' uses, 13 groups would add 294, the tested parts left outside their groups).
 
 **Enforcement.** RL1301 reports a second top-level type in a file, RL1302 a file named after none of its types, RL1303
 a type declared in two or more hand-written places, RL1305 a nested type that is a unit of its own (code that uses none
-of its containers' private members, or a type code outside its container names; a union's cases and `IPorts` aside).
+of its containers' private members; a type code outside its container names, or reaches through members without naming
+it; code on its container's private members that code outside makes; a union's cases and `IPorts` aside).
 Suggestions while measured: RL1304, a top-level shape that only one type names and none of its members shows (another
 project's uses, a test's, aren't seen), RL1306, a namespace named like a type in it or around it, and RL1307, a nested
 type with code that reaches its container's private members while the container keeps it in a field or property. Code a tool
@@ -2434,17 +2460,21 @@ generated doesn't count. Files whose layout is itself data opt out of the layout
 fixtures). Measured: on the sandbox 6 findings in 3 files for RL1301 / RL1302, and 3 nested collaborators and a type
 named outside its container for RL1305, all real; on ILSight 486 for RL1301-RL1303 and 53 for RL1305 (and 1 in its
 fixtures, where the option belongs), no false alarms; RL1304 found 2 there, one named by a test; RL1307 0 there (of its 9
-nested types that reach their container's privates, 7 are handed out and 2 are a union's cases) and S05's strip in the
-sandbox. Not checked: whether a group has parts (its seed is a name,
-the longest that holds the parts), and whether a member could be narrowed: another project's calls aren't seen, and on
+nested types that reach their container's privates, 7 are handed out and 2 are made outside) and S05's strip in the
+sandbox. Reached through members and made outside, RL1305 found 4 more in the sandbox's measuring tools (records their
+callers read through `var`, now files) and, on ILSight, `MemberSelection`'s 2 at its HEAD and 5 of the 7 nested types
+its layout pass had moved by hand (a sixth follows in the next round; the seventh only a test reaches, another project).
+Not checked: whether a group has parts and where a type goes (by its name, else by its users, composition roots aside),
+which is judged one type at a time but for a whole project at once takes its use graph, and a folder is a project-wide
+move; and whether a member could be narrowed: another project's calls aren't seen, and on
 ILSight 430 of the 597 members whose own project calls them only from their own type are called from another project
 (the app calls the core's, the tests both), while both production assemblies show their internals to the tests.
 
 ### Checklist
 
 - [ ] Each file declares one top-level type and is named after it (types that differ only in arity share it).
-- [ ] Related types share a folder, not a file; a group with parts (types only it uses) has its folder, named for the group and like no type; of nested names, the longest that holds the parts seeds it.
-- [ ] Nested types are their container's parts: private, shapes only it uses and code that works on its private members as what it hands out (a scope, an enumerator, a callback), never code it keeps and calls; public, a union's cases and a use case's `IPorts`; any other type with code of its own, or that others name, has its own file (members narrowed to their users first).
+- [ ] Related types share a folder, not a file; a group with parts (types only it uses) has its folder, named for the group and like no type; a type goes by its name (its first concept, by words, a plural as its singular, the longest with a folder; a use case's by what it acts on; a suffix is a role) even when another group alone uses it, else by its users (all in one folder: there; else the folder above them), composition roots (the app's and the tests) aside; folders sit side by side.
+- [ ] Nested types are their container's parts: private, shapes only it uses and code that works on its private members as what it makes and hands out (a scope, an enumerator, a callback), never code it keeps and calls or code others make; public, a union's cases and a use case's `IPorts`; any other type with code of its own, or that others name or reach through members, has its own file (members narrowed to their users first).
 - [ ] A helper only one file uses that can't be nested (extension methods) is a `file` type.
 - [ ] `partial` appears only where a tool writes the other half; no type is written by hand in two places.
 - [ ] A class too big for one file is split into types by what each knows (R004), not into files by topic.

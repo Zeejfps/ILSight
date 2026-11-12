@@ -452,30 +452,44 @@ return `bool` in a condition).
 
 Build: RL1301 (a second top-level type in a file), RL1302 (a file named after none of its types), RL1303 (a type
 written in two or more hand-written places), RL1305 (a nested type that is a unit of its own: code that uses none of
-its container's private members, or a type code outside its container names); suggestions: RL1304 (a top-level shape
-only one type uses), RL1306 (a namespace named like a type), RL1307 (a nested type its container keeps in a field and
-calls, reaching the container's private members). Generated code doesn't count.
+its container's private members; a type code outside its container names, or reaches through members; code on its
+container's private members that code outside makes); suggestions: RL1304 (a top-level shape only one type uses),
+RL1306 (a namespace named like a type), RL1307 (a nested type its container keeps in a field and calls, reaching the
+container's private members). Generated code doesn't count.
 
 - One top-level type per file, named after it (`Order.cs`; `Result` and `Result<T>` share `Result.cs`). Related types
   share a folder and its namespace, not a file.
 - **A group with parts gets a folder.** A group is the types named for a concept (`CodeView*`) plus its parts: types
-  only the group uses, whatever their names (repeat: any type whose users are all inside). A group with parts gets a
-  folder, where they're seen with it; a group with none (every type named for it and used across the app: `Theme*`)
-  stays put, since a folder would add a `using` to each user for nothing. Types several groups use stay in the folder
-  above them. The folder is named for its group (`SettingsFormat/`, `CodeView/`, `Exporting/`), never like a type in
-  it or in a namespace around it: the namespace hides that type (`SettingsJson.Read` finds the namespace). When names
-  nest (`Code*` holds `CodeView*`, compared by words), the longest whose group holds the parts is the seed; a shorter
-  one only for parts the longer miss (what it adds is used across the app: no parts).
+  only the group uses, whatever their names. A group with parts gets a folder, where they're seen with it; a group with
+  none (every type named for it and used across the app: `Theme*`) stays put, since a folder would add a `using` to
+  each user for nothing. Place one type at a time, from its name and its references (no whole-project graph):
+  - **by its name**, when it's named for a group with a folder: the concept its name starts with, by words, a plural
+    as its singular (`Bookmarks` is a `Bookmark*` name), the longest with a folder (`CodeViewWidget`: `CodeView/`). A
+    use case's name starts with its verb: its concept is what it acts on (`ExportBookmarksHandler` is `Bookmark*`'s,
+    `ExportQueue` `Export*`'s). A suffix (`*Json`, `*View`, `*Handler`) is a role, not a group: `CodeViewPositionJson`
+    goes in `CodeView/`. The name decides even when one other group alone uses the type (`MainView`, only
+    `ILSightApp`'s, is `Main*`'s): names change with the type, uses with every caller;
+  - **else by its users**: the folder they're all in (nested names' folders count as the shorter's), else the folder
+    above them. Composition roots' uses don't count: the app's (it builds every adapter and use case, R001) and every
+    test's (a test is one, Scope): "only the root, or only it and its test, use it" marks a role, not a concept;
+  - a concept gets a folder when it gets a part (a type the second step puts with its named types). Folders sit side by
+    side, never one inside another (a nested namespace gives the outer group no `using`). The project's root keeps what
+    the whole app shares and the composition root.
+
+  The folder is named for its group (`SettingsFormat/`, `CodeView/`, `Exporting/`), never like a type in it or in a
+  namespace around it: the namespace hides that type (`SettingsJson.Read` finds the namespace).
 - **"Uses" means names it or reaches it through another type's members** (a property, parameter or return type others
   call). The test: nested `private` in its one user, does everything compile? Narrow members first (one only its own
   type calls is private). Nested, private, go its user's **parts**: shapes that declare no methods (records, DTOs,
   enums, interfaces, delegates; a format's DTOs with their serializer context), and code that works on its container's
-  private members as what the container hands out (a lock's scope it returns, an enumerator, a progress callback it
-  passes on), never code the container keeps in a field and calls (its own code split in two by topic). Nested, **public**, go the contract a type declares for others to
-  name through it: a union's cases (R008) and a use case's `IPorts` (R001: its adapter implements it). Any other type
-  with code of its own (a sub-view, one analyzer of a set, a converter, a test's fake), or that others name, has its own
-  file even with one user: nested, it reaches the user's private state (a nested tab strip broke the workspace's rule)
-  and doubles the file. A group used through one type is placed member by member; the shapes a moved type names go
+  private members as what the container makes and hands out (a lock's scope it returns, an enumerator, a progress
+  callback it passes on), never code the container keeps in a field and calls (its own code split in two by topic), nor
+  code others make (`new Container.Nested`: the maker's values reach the private state unchecked; it gets its own file,
+  with the private members only it uses). Nested, **public**, go the contract a type declares for others to name
+  through it: a union's cases (R008) and a use case's `IPorts` (R001: its adapter implements it). Any other type
+  with code of its own (a sub-view, one analyzer of a set, a converter, a test's fake), or that others name or reach
+  through members, has its own file even with one user: nested, it reaches the user's private state (a nested tab strip
+  broke the workspace's rule) and doubles the file. A group used through one type is placed member by member; the shapes a moved type names go
   with it. Narrowing is judgement: no per-project check sees another project's calls (on ILSight, 430 of 597
   candidates are called from one).
 - A helper only this file uses that can't be nested (extension methods need a top-level static class) is a `file` type.
