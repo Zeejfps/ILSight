@@ -11,6 +11,7 @@ using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
+using ILSight.Diagramming;
 
 namespace ILSight.SettingsFormat;
 

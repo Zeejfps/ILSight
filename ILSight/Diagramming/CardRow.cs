@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>A row of a card at the diagram's own size: what it shows, how tall it is and how far in its
 /// content starts, its text, where it starts below the card's top, and how wide its text is.</summary>

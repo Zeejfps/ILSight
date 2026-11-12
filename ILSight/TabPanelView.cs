@@ -1,3 +1,5 @@
+using ILSight.Diagramming;
+
 namespace ILSight;
 
 /// <summary>How a docked tab's diagram or comparison is viewed, or none for a tab showing neither.</summary>

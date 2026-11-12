@@ -4,6 +4,7 @@ using ZGF.Geometry;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
+using ILSight.Diagramming;
 using static ILSight.Docking;
 using static ILSight.App.Tests.BuiltInGlyphs;
 

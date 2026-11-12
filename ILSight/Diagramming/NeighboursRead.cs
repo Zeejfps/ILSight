@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>A read <see cref="Diagrams.ShowInDiagram"/> started, for <see cref="DiagramGrowing.AddWithNeighboursAsync"/>
 /// to bring in: the type to show and the types of its assembly it is directly related to, on the diagram the tab

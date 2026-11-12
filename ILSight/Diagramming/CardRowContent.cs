@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>What a row of a card shows, with what only that kind of row has.</summary>
 public abstract record CardRowContent

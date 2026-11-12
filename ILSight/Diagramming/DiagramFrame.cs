@@ -2,7 +2,7 @@ using ZGF.Geometry;
 using ZGF.Gui.Immediate;
 using ILSight.BuiltInAssets;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>What one frame of a diagram is painted from, refilled each frame: the links, then the cards
 /// over them, in the diagram's coordinates, drawn from <see cref="Corner"/> at <see cref="Zoom"/>.</summary>

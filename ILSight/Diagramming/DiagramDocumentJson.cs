@@ -1,4 +1,6 @@
-namespace ILSight.SettingsFormat;
+using ILSight.SettingsFormat;
+
+namespace ILSight.Diagramming;
 
 internal sealed record DiagramDocumentJson(
     string? Panel,

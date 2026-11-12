@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>Growing diagrams by the cards of types: a type shown with the types of its assembly it is directly related
 /// to, and the types a card links to. The cards are read through <see cref="IPorts"/>, without holding up the screen,

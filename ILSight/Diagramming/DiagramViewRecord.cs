@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>How a diagram was viewed, as the settings keep it: the point of it at the view's top-left and
 /// the zoom, the parts of its cards folded or opened against how they start, and whether members hidden

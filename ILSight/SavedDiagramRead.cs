@@ -1,3 +1,5 @@
+using ILSight.Diagramming;
+
 namespace ILSight;
 
 /// <summary>A read <see cref="Diagrams.ReopenDiagram"/> started, for <see cref="ReopenDiagramHandler"/> to bring in:

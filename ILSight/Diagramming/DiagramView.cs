@@ -10,10 +10,10 @@ using ILSight.CodeTooltipping;
 using ILSight.DiagramViewport;
 using ILSight.Commanding;
 using ILSight.DocumentViewing;
-using static ILSight.Diagrams;
+using static ILSight.Diagramming.Diagrams;
 using static ILSight.Navigation;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>A diagram's tab: the cards and the links between them, under the bar over the document, which
 /// holds its zoom, fit and member filter.

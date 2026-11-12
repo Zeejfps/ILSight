@@ -1,6 +1,6 @@
 using ILSight.Localization;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>What a diagram's card faces are measured for: the cards, which parts of them are open, whether
 /// members hidden from other assemblies show, the font and the language.</summary>

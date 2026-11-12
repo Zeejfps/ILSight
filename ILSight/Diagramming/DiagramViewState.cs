@@ -2,7 +2,7 @@ using ILSight.Core;
 using ILSight.Core.Diagrams;
 using ILSight.DiagramViewport;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>How a tab shows its diagram: where it looks and how near, the card selected, which parts of the
 /// cards are open, whether members hidden from other assemblies show, the layout it moves to, the cards'

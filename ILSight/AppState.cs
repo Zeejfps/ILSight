@@ -7,6 +7,7 @@ using ILSight.Bookmarking;
 using ILSight.CodeTooltipping;
 using ILSight.UserState;
 using ILSight.Searching;
+using ILSight.Diagramming;
 
 namespace ILSight;
 

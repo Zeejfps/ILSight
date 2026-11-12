@@ -2,6 +2,7 @@ using ILSight.Core;
 using ILSight.CodeTooltipping;
 using ILSight.AssemblyListKeeping;
 using ILSight.Searching;
+using ILSight.Diagramming;
 
 namespace ILSight.Commanding;
 

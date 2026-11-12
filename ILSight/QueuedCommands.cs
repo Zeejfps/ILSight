@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Commanding;
 using static ILSight.Analysis;
-using static ILSight.Diagrams;
+using static ILSight.Diagramming.Diagrams;
 using static ILSight.Docking;
 using static ILSight.DocumentPanels;
 using static ILSight.ScreenLayout;

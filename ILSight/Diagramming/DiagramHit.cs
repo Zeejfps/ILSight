@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>What a press on a diagram landed on: nothing, in the space between the cards; a card, off its
 /// rows; or a row of a card.</summary>

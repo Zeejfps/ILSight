@@ -7,6 +7,7 @@ using ILSight.Commanding;
 using ILSight.DocumentViewing;
 using ILSight.MetadataGridArea;
 using ILSight.Searching;
+using ILSight.Diagramming;
 
 namespace ILSight;
 

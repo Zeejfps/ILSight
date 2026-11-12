@@ -1,6 +1,6 @@
 using ZGF.Geometry;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>A card as one frame draws it: its face, the top-left of it on the diagram, whether it is
 /// selected, and the row the pointer is on, or -1.</summary>

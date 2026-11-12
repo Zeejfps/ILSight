@@ -1,9 +1,10 @@
 using System.Diagnostics;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
+using ILSight.Diagramming;
 using static ILSight.Comparisons;
 using static ILSight.Decompilation;
-using static ILSight.Diagrams;
+using static ILSight.Diagramming.Diagrams;
 using static ILSight.Docking;
 
 namespace ILSight;

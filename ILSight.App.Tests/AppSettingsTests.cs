@@ -12,6 +12,7 @@ using ILSight.Commanding;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
+using ILSight.Diagramming;
 
 namespace ILSight.App.Tests;
 

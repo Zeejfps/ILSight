@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>Brings in the cards of a diagram reopened from the open list's saved documents
 /// (<see cref="Diagrams.ReopenDiagram"/>), reading them through <see cref="IPorts"/> without holding up the screen,

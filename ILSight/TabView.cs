@@ -1,5 +1,6 @@
 using ILSight.CodeView;
 using ILSight.MetadataGridArea;
+using ILSight.Diagramming;
 
 namespace ILSight;
 

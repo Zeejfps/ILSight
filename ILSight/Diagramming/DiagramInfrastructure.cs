@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>Reaches the app's error reports, and the open assemblies and the layout off the UI thread, for
 /// <see cref="DiagramGrowing"/>, <see cref="ReopenDiagramHandler"/> and <see cref="LayOutDiagramHandler"/>. Each read

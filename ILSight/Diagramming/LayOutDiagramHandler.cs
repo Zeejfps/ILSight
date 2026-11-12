@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core.Diagrams;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>Lays out a diagram (<see cref="Diagrams.StartLayout"/>) through <see cref="IPorts"/>, without holding up
 /// the screen, and holds the layout unless another was started meanwhile or the diagram was closed.</summary>

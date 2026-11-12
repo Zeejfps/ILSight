@@ -1,6 +1,6 @@
 using ILSight.Core.Diagrams;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>A link as one frame draws it: how it relates its types, its route on the diagram, and its label
 /// with the label's size at the diagram's own size, when it has one.</summary>

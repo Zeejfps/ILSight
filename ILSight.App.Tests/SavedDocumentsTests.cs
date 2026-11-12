@@ -6,7 +6,7 @@ using ILSight.Core;
 using ILSight.Core.Diagrams;
 using static ILSight.Assemblies;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
-using static ILSight.Diagrams;
+using static ILSight.Diagramming.Diagrams;
 using static ILSight.DocumentPanels;
 using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingsFormat;
@@ -16,6 +16,7 @@ using ILSight.DocumentViewing;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.MetadataGridArea;
+using ILSight.Diagramming;
 
 namespace ILSight.App.Tests;
 

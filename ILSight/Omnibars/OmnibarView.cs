@@ -7,6 +7,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.Commanding;
+using ILSight.Diagramming;
 
 namespace ILSight.Omnibars;
 

@@ -5,7 +5,7 @@ using ILSight.Core;
 using ILSight.Core.Diagrams;
 using ILSight.DiagramViewport;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>Diagrams of types, each in a tab of its own: showing a type on one, taking cards off it, and what the
 /// diagram and its view hold. Showing a type, reopening a diagram and laying one out start the work they need,

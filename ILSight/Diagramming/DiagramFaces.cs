@@ -5,7 +5,7 @@ using ILSight.Core.Diagrams;
 using ILSight.Localization;
 using ILSight.Commanding;
 
-namespace ILSight;
+namespace ILSight.Diagramming;
 
 /// <summary>The faces of a diagram's cards as the screen's fonts draw them, measured again whenever the
 /// cards, their open parts, the member filter, the font or the language change, with a new layout of the

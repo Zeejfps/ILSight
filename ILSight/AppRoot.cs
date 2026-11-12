@@ -18,6 +18,7 @@ using ILSight.NuGet;
 using ILSight.Searching;
 using ILSight.AppHosting;
 using ILSight.MainScreen;
+using ILSight.Diagramming;
 
 namespace ILSight;
 
