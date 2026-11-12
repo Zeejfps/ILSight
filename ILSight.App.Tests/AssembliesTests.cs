@@ -433,7 +433,9 @@ public sealed class AssembliesTests
         var ports = new FakeOpeningAsReloadPorts
         {
             Opened = new Outcome<LoadedAssembly?>.Failed(new OperationCanceledException()),
+#pragma warning disable RL0807 // a newer reload only supersedes this one here: nothing runs under its ticket
             WhileWorking = () => appState.Reload.Start(),
+#pragma warning restore RL0807
         };
 
         await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState, [PathTo("Listed.dll")], CancellationToken.None);

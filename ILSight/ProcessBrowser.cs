@@ -29,6 +29,7 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
 
     /// <summary>A listing <see cref="StartListing"/> started, for <see cref="ListModulesAsync"/> to run: the
     /// process, and the work it runs as, which picking another process or closing the dialog cancels.</summary>
+    [MustUse]
     public sealed class ListingTicket
     {
         public required RunningProcess Process { get; init; }

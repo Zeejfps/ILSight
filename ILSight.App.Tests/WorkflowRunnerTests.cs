@@ -138,7 +138,9 @@ public sealed class WorkflowRunnerTests
             given = ct;
             return Task.Delay(Timeout.Infinite, ct);
         }, latest.Start().Token);
+#pragma warning disable RL0807 // the newer work only cancels the older one here: nothing runs under its ticket
         latest.Start();
+#pragma warning restore RL0807
         await WaitUntilEndedAsync(work);
 
         Assert.True(given.IsCancellationRequested);

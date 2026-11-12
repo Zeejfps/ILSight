@@ -2,6 +2,7 @@ namespace ILSight;
 
 /// <summary>Given for one piece of work <see cref="LatestWork"/> started, to cancel it and to tell whether it was
 /// overtaken.</summary>
+[MustUse]
 public sealed class WorkTicket
 {
     private readonly CancellationTokenSource _work;

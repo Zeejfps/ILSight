@@ -918,6 +918,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
     /// <summary>A search <see cref="StartSearch"/> started, for <see cref="SearchAsync"/> to run: what it asks,
     /// and the work it runs as, which a newer search or closing the dialog cancels.</summary>
+    [MustUse]
     public sealed class SearchTicket
     {
         public required FeedSearch Search { get; init; }
@@ -928,6 +929,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     /// <summary>A download <see cref="StartDownload"/> started, for <see cref="DownloadAsync"/> to run: the
     /// package and version, the feed it was found in and the cache it goes to, and the work it runs as, which
     /// closing the dialog cancels.</summary>
+    [MustUse]
     public sealed class DownloadTicket
     {
         /// <summary>The package and version, as the dialog and a failure name them.</summary>

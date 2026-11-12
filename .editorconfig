@@ -66,6 +66,7 @@ dotnet_diagnostic.RL0803.severity = warning
 dotnet_diagnostic.RL0804.severity = warning
 dotnet_diagnostic.RL0805.severity = warning
 dotnet_diagnostic.RL0806.severity = warning
+dotnet_diagnostic.RL0807.severity = error
 dotnet_diagnostic.RL0901.severity = warning
 dotnet_diagnostic.RL0902.severity = warning
 dotnet_diagnostic.RL1001.severity = warning
