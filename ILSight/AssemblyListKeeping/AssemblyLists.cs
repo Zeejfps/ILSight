@@ -91,8 +91,9 @@ public static class AssemblyLists
         return OpenWholeListAsync(appState, SwitchAssemblyList(appState.Lists, appState.ListSession, appState.View, name), ct);
     }
 
-    /// <summary>As <see cref="OpenListAsync"/>, for a workflow that hands the finding of the list's analyses back with
-    /// the loads, rather than having the edge start it beside the opening.</summary>
+    /// <summary>As <see cref="OpenListAsync"/>, for a workflow that hands back the loads closing the list before left and
+    /// the finding of the list's analyses with the opening's loads, rather than having the edge start them beside the
+    /// opening.</summary>
     private static async Task<TabLoads> OpenWholeListAsync(AppState appState, ListOpening? opening, CancellationToken ct)
     {
         var loads = await OpenListAsync(appState, opening, ct);
@@ -101,7 +102,7 @@ public static class AssemblyLists
             return loads;
         }
 
-        return loads.With(opening.Analyses);
+        return opening.Closing.With(loads).With(opening.Analyses);
     }
 
     /// <summary>Makes the list named <paramref name="name"/> the open one, with the analyses and documents it had,
@@ -120,16 +121,16 @@ public static class AssemblyLists
         return BeginOpeningActiveList(lists, session);
     }
 
-    /// <summary>Opens the list named <paramref name="name"/> in place of the open one, as
-    /// <see cref="SwitchAssemblyListAsync"/> does, adding an empty one by that name when there is none.</summary>
-    public static Task<TabLoads> OpenAssemblyListNamedAsync(AppState appState, string name, CancellationToken ct)
+    /// <summary>Makes the list named <paramref name="name"/> the open one, as <see cref="SwitchAssemblyList"/> does,
+    /// adding an empty one by that name when there is none. Returns what is left for the edge to open.</summary>
+    public static ListOpening? SwitchToListNamed(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
-        if (!appState.Lists.HasList(name))
+        if (!lists.HasList(name))
         {
-            appState.Lists.Add(name);
+            lists.Add(name);
         }
 
-        return SwitchAssemblyListAsync(appState, name, ct);
+        return SwitchAssemblyList(lists, session, view, name);
     }
 
     /// <summary>Puts the active list's documents and analyses in place of the open ones, each waiting, and begins
@@ -147,8 +148,9 @@ public static class AssemblyLists
 
     /// <summary>Opens the assemblies of the list <paramref name="opening"/> began opening, as the reload it holds;
     /// nothing when it is null. Finding the list's analyses is not this one's: the edge starts it beside this
-    /// (<see cref="Commands.StartOpeningList"/>). Returns the loads that started in the tabs, those closing the list
-    /// before it started first, for the edge that started this to start.</summary>
+    /// (<see cref="Commands.StartOpeningList"/>), and nor are the loads closing the list before it left: the edge
+    /// starts them before this, which they need not wait for. Returns the loads that started in the tabs, for the edge
+    /// that started this to start.</summary>
     public static async Task<TabLoads> OpenListAsync(AppState appState, ListOpening? opening, CancellationToken ct)
     {
         if (opening is null)
@@ -156,8 +158,7 @@ public static class AssemblyLists
             return TabLoads.None;
         }
 
-        var restoring = appState.OpenAssembliesAsReloadHandler.HandleAsync(appState, opening.Paths, opening.Reload, ct);
-        return opening.Closing.With(await restoring);
+        return await appState.OpenAssembliesAsReloadHandler.HandleAsync(appState, opening.Paths, opening.Reload, ct);
     }
 
     /// <summary>Adds an empty list named <paramref name="name"/>, or numbered when that is taken,

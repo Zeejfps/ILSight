@@ -259,9 +259,10 @@ public static class Commands
         };
     }
 
-    /// <summary>Starts opening the assemblies of the list <paramref name="opening"/> began opening
-    /// (<see cref="AssemblyLists.OpenListAsync"/>) now, then the loads that started in the tabs, and beside it the
-    /// finding of the list's analyses (<see cref="StartRestoringAnalyses"/>); nothing when it is null.</summary>
+    /// <summary>Starts the loads closing the list before left (the lookup of the tabs it left waiting), opening the
+    /// assemblies of the list <paramref name="opening"/> began opening (<see cref="AssemblyLists.OpenListAsync"/>), then
+    /// the loads that started in the tabs, and beside it the finding of the list's analyses
+    /// (<see cref="StartRestoringAnalyses"/>), each now and none waiting for another; nothing when it is null.</summary>
     public static void StartOpeningList(AppState appState, ListOpening? opening)
     {
         if (opening is null)
@@ -269,6 +270,7 @@ public static class Commands
             return;
         }
 
+        StartLoads(appState, opening.Closing);
         StartShowing(appState, nameof(AssemblyLists.OpenListAsync), ct => AssemblyLists.OpenListAsync(appState, opening, ct));
         StartRestoringAnalyses(appState, opening.Analyses);
     }

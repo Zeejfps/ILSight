@@ -27,34 +27,6 @@ public static class RunArgumentsActions
         }
     }
 
-    /// <summary>Does what the arguments a later run handed over ask of the open window: decompiles
-    /// to their language, switches to their list, added when there is none, clears the list, then opens
-    /// their files and shows what they name. The list's assemblies open while the files do. Returns the loads that
-    /// started in the tabs, the one showing what the files name among them, for the edge to start.</summary>
-    public static async Task<TabLoads> ApplyArgumentsAsync(AppState appState, RunArguments arguments, CancellationToken ct)
-    {
-        if (arguments.Language is not null)
-        {
-            appState.Language = arguments.Language.Value;
-        }
-
-        var switching = Task.FromResult(TabLoads.None);
-        if (arguments.AssemblyList is not null)
-        {
-            switching = OpenAssemblyListNamedAsync(appState, arguments.AssemblyList, ct);
-        }
-
-        var clearing = TabLoads.None;
-        if (arguments.ClearList)
-        {
-            clearing = CloseAllAssemblies(appState.ListSession);
-        }
-
-        var opening = OpenRequestedFilesAsync(appState, arguments.Files, ct);
-        await Task.WhenAll(switching, opening);
-        return (await switching).With(clearing).With(await opening);
-    }
-
     /// <summary>What to tell the user of the arguments of <paramref name="arguments"/> that were ignored, or null when
     /// none was.</summary>
     public static AppProblem? FindIgnored(RunArguments arguments)

@@ -7,7 +7,9 @@ using ILSight.MainScreen;
 using static ILSight.Analysis;
 using static ILSight.AppHosting.AppFrames;
 using static ILSight.AppHosting.Appearance;
+using ILSight.AssemblyListKeeping;
 using static ILSight.AppHosting.RunArgumentsActions;
+using static ILSight.AssemblyHandling.Assemblies;
 using static ILSight.IconTheming;
 using static ILSight.SettingsKeeping.Settings;
 using static ILSight.AppHosting.ScreenSettings;
@@ -149,9 +151,37 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         await foreach (var arguments in _inbox.Reader.ReadAllAsync(ct))
         {
             ReportIgnored(arguments);
-            Commands.StartShowing(_appState, nameof(ApplyArgumentsAsync), ct => ApplyArgumentsAsync(_appState, arguments, ct));
+            ApplyArguments(arguments);
             UiState.FrontAsked = true;
         }
+    }
+
+    /// <summary>Does what the arguments a later run handed over ask of the open window: decompiles to their language,
+    /// switches to their list (added when there is none), clears the list, then opens their files and shows what they
+    /// name. Each change is made here, in that order, and the work each hands back starts at once as a workflow of its
+    /// own: the list's assemblies opening and the finding of its analyses, the lookup of the tabs clearing the list left
+    /// waiting, and opening the files. None waits for another: the tabs left waiting say what is gone while the files
+    /// open.</summary>
+    private void ApplyArguments(RunArguments arguments)
+    {
+        var appState = _appState;
+        if (arguments.Language is not null)
+        {
+            appState.Language = arguments.Language.Value;
+        }
+
+        if (arguments.AssemblyList is not null)
+        {
+            Commands.StartOpeningList(appState, AssemblyLists.SwitchToListNamed(appState.Lists, appState.ListSession, appState.View, arguments.AssemblyList));
+        }
+
+        if (arguments.ClearList)
+        {
+            Commands.StartLoads(appState, CloseAllAssemblies(appState.ListSession));
+        }
+
+        var files = arguments.Files;
+        Commands.StartShowing(appState, nameof(OpenRequestedFilesAsync), ct => OpenRequestedFilesAsync(appState, files, ct));
     }
 
     /// <summary>Tells the user of the arguments of <paramref name="arguments"/> that were ignored, if any.</summary>
