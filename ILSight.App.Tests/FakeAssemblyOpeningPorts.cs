@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 
 namespace ILSight.App.Tests;
 

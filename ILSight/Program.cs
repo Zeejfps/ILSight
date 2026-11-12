@@ -1,7 +1,7 @@
 using Velopack;
 using ZGF.AppUtils;
 using ILSight.Commanding;
-using ILSight.AppHosting;
+using ILSight.ILSightAppArea;
 
 namespace ILSight;
 

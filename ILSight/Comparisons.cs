@@ -3,7 +3,7 @@ using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Comparison;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 
 namespace ILSight;
 

@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.Bookmarking;
+using ILSight.BookmarkArea;
 
 namespace ILSight.App.Tests;
 

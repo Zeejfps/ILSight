@@ -1,6 +1,6 @@
 using ILSight.Core;
 using ILSight.CodeView;
-using ILSight.AppHosting;
+using ILSight.ILSightAppArea;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;

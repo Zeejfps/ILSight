@@ -5,8 +5,8 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.Commanding;
-using ILSight.AppHosting;
-using ILSight.AssemblyHandling;
+using ILSight.ILSightAppArea;
+using ILSight.AssemblyArea;
 using static ILSight.Exporting.Exports;
 using static ILSight.Preferences;
 

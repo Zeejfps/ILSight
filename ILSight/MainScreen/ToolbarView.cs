@@ -4,8 +4,8 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Commanding;
-using ILSight.AssemblyListKeeping;
-using static ILSight.AssemblyListKeeping.AssemblyLists;
+using ILSight.AssemblyListArea;
+using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 

@@ -7,7 +7,7 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using TextOverflow = ZGF.Gui.Immediate.TextOverflow;
 using System.Text;
-using ILSight.Bookmarking;
+using ILSight.BookmarkArea;
 using ILSight.CodeTooltipping;
 using ILSight.DisplayChoices;
 

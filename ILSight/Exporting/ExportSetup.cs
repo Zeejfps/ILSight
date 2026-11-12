@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 
 namespace ILSight.Exporting;
 

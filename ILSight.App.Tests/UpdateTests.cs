@@ -1,7 +1,7 @@
 using ZGF.Desktop;
 using ZGF.Gui.Testing;
 using ILSight.MainScreen;
-using static ILSight.AppHosting.AppFrames;
+using static ILSight.ILSightAppArea.AppFrames;
 
 namespace ILSight.App.Tests;
 

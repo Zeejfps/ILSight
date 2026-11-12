@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using ILSight.AppSettingsFormat;
+using ILSight.AppSettingArea;
 
 namespace ILSight.SettingsKeeping;
 

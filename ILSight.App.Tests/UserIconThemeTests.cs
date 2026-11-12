@@ -7,7 +7,7 @@ using static ILSight.ScreenLayout;
 using static ILSight.SettingsKeeping.Settings;
 using ILSight.BuiltInAssets;
 using ILSight.UserState;
-using ILSight.AppSettingsFormat;
+using ILSight.AppSettingArea;
 using ILSight.DisplayChoices;
 
 namespace ILSight.App.Tests;

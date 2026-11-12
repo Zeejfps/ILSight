@@ -4,7 +4,7 @@ using ILSight.CodeView;
 using ILSight.DocumentViewing;
 using ILSight.MetadataGridArea;
 using ILSight.Searching;
-using static ILSight.AssemblyHandling.Assemblies;
+using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.Docking;
 using static ILSight.DocumentPanels;
 

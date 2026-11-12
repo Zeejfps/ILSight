@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.AppSettingsFormat;
-using static ILSight.AssemblyListKeeping.AssemblyLists;
+using ILSight.AppSettingArea;
+using static ILSight.AssemblyListArea.AssemblyLists;
 
 namespace ILSight.SettingsKeeping;
 

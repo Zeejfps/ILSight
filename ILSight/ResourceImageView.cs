@@ -3,7 +3,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Resources;
-using ILSight.Bookmarking;
+using ILSight.BookmarkArea;
 using ILSight.CodeTooltipping;
 using ILSight.Commanding;
 using ILSight.DocumentViewing;

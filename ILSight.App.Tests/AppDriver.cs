@@ -3,8 +3,8 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Testing;
 using ILSight.Core;
 using ILSight.Commanding;
-using ILSight.AppSettingsFormat;
-using ILSight.AppHosting;
+using ILSight.AppSettingArea;
+using ILSight.ILSightAppArea;
 
 namespace ILSight.App.Tests;
 

@@ -1,9 +1,9 @@
 using ILSight.Core;
 using ILSight.CodeTooltipping;
-using ILSight.AssemblyListKeeping;
+using ILSight.AssemblyListArea;
 using ILSight.Searching;
 using ILSight.Diagramming;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 using ILSight.MetadataArea;
 
 namespace ILSight.Commanding;

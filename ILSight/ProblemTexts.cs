@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.Bookmarking;
+using ILSight.BookmarkArea;
 using ILSight.SettingsKeeping;
 
 namespace ILSight;

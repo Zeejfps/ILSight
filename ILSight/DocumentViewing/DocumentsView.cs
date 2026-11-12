@@ -4,14 +4,14 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.CodeView;
-using ILSight.Bookmarking;
+using ILSight.BookmarkArea;
 using ILSight.CodeTooltipping;
 using ILSight.Omnibars;
 using ILSight.Commanding;
 using ILSight.MetadataGridArea;
 using ILSight.Diagramming;
 using ILSight.MetadataArea;
-using static ILSight.Bookmarking.Bookmarks;
+using static ILSight.BookmarkArea.Bookmarks;
 using static ILSight.CodeDisplay;
 using static ILSight.Diagramming.Diagrams;
 

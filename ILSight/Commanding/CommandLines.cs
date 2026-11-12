@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.AppSettingsFormat;
+using ILSight.AppSettingArea;
 
 namespace ILSight.Commanding;
 

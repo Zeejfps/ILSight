@@ -1,6 +1,6 @@
 using ILSight.Core;
 using ILSight.Core.Comparison;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 
 namespace ILSight;
 

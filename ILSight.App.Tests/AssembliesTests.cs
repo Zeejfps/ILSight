@@ -1,7 +1,7 @@
 using ILSight.Core;
-using ILSight.AssemblyHandling;
-using static ILSight.AssemblyHandling.Assemblies;
-using static ILSight.AssemblyHandling.AssemblyReloading;
+using ILSight.AssemblyArea;
+using static ILSight.AssemblyArea.Assemblies;
+using static ILSight.AssemblyArea.AssemblyReloading;
 
 namespace ILSight.App.Tests;
 

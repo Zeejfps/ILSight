@@ -7,8 +7,8 @@ using ILSight.Core.Analysis;
 using ILSight.Exporting;
 using ILSight.Commanding;
 using ILSight.Diagramming;
-using ILSight.AssemblyHandling;
-using static ILSight.AssemblyHandling.Assemblies;
+using ILSight.AssemblyArea;
+using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.Diagramming.Diagrams;
 using static ILSight.ScreenLayout;
 

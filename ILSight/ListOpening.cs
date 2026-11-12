@@ -1,6 +1,6 @@
 using ILSight.Core;
 using ILSight.Commanding;
-using ILSight.AssemblyListKeeping;
+using ILSight.AssemblyListArea;
 
 namespace ILSight;
 

@@ -5,7 +5,7 @@ using ILSight.Core;
 using ILSight.Core.Comparison;
 using ILSight.Commanding;
 using ILSight.DocumentViewing;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 using static ILSight.Comparisons;
 
 namespace ILSight;

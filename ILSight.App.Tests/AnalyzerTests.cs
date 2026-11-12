@@ -6,7 +6,7 @@ using ZGF.KeyboardModule;
 using ILSight.CodeView;
 using ILSight.Commanding;
 using static ILSight.Analysis;
-using static ILSight.AssemblyHandling.Assemblies;
+using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;

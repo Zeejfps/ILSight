@@ -1,11 +1,11 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Commanding;
-using ILSight.AppSettingsFormat;
-using ILSight.AssemblyListKeeping;
-using ILSight.AppHosting;
+using ILSight.AppSettingArea;
+using ILSight.AssemblyListArea;
+using ILSight.ILSightAppArea;
 using ILSight.SettingsKeeping;
-using static ILSight.AppHosting.RunArgumentsActions;
+using static ILSight.ILSightAppArea.RunArgumentsActions;
 using static ILSight.SettingsKeeping.Settings;
 using static ILSight.App.Tests.TestPaths;
 

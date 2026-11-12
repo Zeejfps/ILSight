@@ -3,7 +3,7 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.Exporting;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;

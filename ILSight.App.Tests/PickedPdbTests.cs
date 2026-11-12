@@ -1,6 +1,6 @@
 using ILSight.Core;
-using static ILSight.AssemblyHandling.Assemblies;
-using static ILSight.AssemblyListKeeping.AssemblyLists;
+using static ILSight.AssemblyArea.Assemblies;
+using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.SettingsKeeping.Settings;
 using static ILSight.App.Tests.TestPaths;
 

@@ -2,7 +2,7 @@ using System.IO.Compression;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.NuGet;
-using ILSight.AppHosting;
+using ILSight.ILSightAppArea;
 
 namespace ILSight.App.Tests;
 

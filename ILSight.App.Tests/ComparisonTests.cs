@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.Core.Comparison;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 using static ILSight.Comparisons;
 using static ILSight.Docking;
 using static ILSight.App.Tests.TestPaths;

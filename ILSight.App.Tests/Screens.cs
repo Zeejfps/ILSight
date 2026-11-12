@@ -1,4 +1,4 @@
-using ILSight.AppSettingsFormat;
+using ILSight.AppSettingArea;
 
 namespace ILSight.App.Tests;
 

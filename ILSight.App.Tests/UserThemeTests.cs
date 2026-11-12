@@ -6,7 +6,7 @@ using static ILSight.SettingsKeeping.Settings;
 using static ILSight.Theming;
 using ILSight.CodeView;
 using ILSight.BuiltInAssets;
-using ILSight.AppSettingsFormat;
+using ILSight.AppSettingArea;
 using ILSight.DisplayChoices;
 
 namespace ILSight.App.Tests;

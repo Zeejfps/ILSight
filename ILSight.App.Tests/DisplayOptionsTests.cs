@@ -8,7 +8,7 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.BuiltInAssets;
 using ILSight.DisplayChoices;
-using ILSight.AppHosting;
+using ILSight.ILSightAppArea;
 using static ILSight.CodeDisplay;
 using static ILSight.ScreenLayout;
 using static ILSight.SettingsKeeping.Settings;

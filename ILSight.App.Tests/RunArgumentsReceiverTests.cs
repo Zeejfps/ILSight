@@ -1,6 +1,6 @@
 using ILSight.Core;
 using ILSight.Commanding;
-using ILSight.AppHosting;
+using ILSight.ILSightAppArea;
 
 namespace ILSight.App.Tests;
 

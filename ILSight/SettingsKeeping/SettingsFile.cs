@@ -1,9 +1,9 @@
 using ILSight.Core;
-using ILSight.AppSettingsFormat;
-using ILSight.AssemblyListKeeping;
+using ILSight.AppSettingArea;
+using ILSight.AssemblyListArea;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
-using ILSight.Bookmarking;
+using ILSight.BookmarkArea;
 
 namespace ILSight.SettingsKeeping;
 

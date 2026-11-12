@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using ZGF.Desktop;
 using ILSight.Core;
-using static ILSight.AssemblyListKeeping.AssemblyLists;
-using static ILSight.Bookmarking.Bookmarks;
+using static ILSight.AssemblyListArea.AssemblyLists;
+using static ILSight.BookmarkArea.Bookmarks;
 using static ILSight.SavedDocuments;
-using ILSight.AppSettingsFormat;
+using ILSight.AppSettingArea;
 
 namespace ILSight.SettingsKeeping;
 

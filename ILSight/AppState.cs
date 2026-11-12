@@ -2,12 +2,12 @@ using ZGF.Gui.Immediate;
 using ZGF.Desktop;
 using ILSight.Core;
 using ILSight.Exporting;
-using ILSight.Bookmarking;
+using ILSight.BookmarkArea;
 using ILSight.CodeTooltipping;
 using ILSight.UserState;
 using ILSight.Searching;
 using ILSight.Diagramming;
-using ILSight.AssemblyHandling;
+using ILSight.AssemblyArea;
 using ILSight.SettingsKeeping;
 using ILSight.MetadataArea;
 
@@ -249,7 +249,7 @@ public sealed class AppState
     /// <summary>True while a reference or a history entry is being found in the background.</summary>
     public bool IsResolving => Navigation.IsResolving;
 
-    /// <summary>True while <see cref="ILSight.AssemblyHandling.AssemblyReloading.RefreshAssembliesAsync"/> reopens the assemblies.</summary>
+    /// <summary>True while <see cref="ILSight.AssemblyArea.AssemblyReloading.RefreshAssembliesAsync"/> reopens the assemblies.</summary>
     public bool IsReloading => Reload.IsRunning;
 
     /// <summary>True while a file of the list is read again, the list still holding it as it was.</summary>
