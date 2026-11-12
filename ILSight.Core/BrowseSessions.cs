@@ -448,40 +448,6 @@ public static class BrowseSessions
         return new MetadataTarget(table, row);
     }
 
-    /// <summary>The table node and row that <paramref name="address"/>, a link of the grid
-    /// <paramref name="grid"/> shows, leads to, among the tables of the metadata the grid lists; null
-    /// when <paramref name="grid"/> lists no metadata, or that metadata lists no such table.</summary>
-    public static MetadataTarget? FindMetadataRow(BrowseSession session, BrowseNode grid, MetadataAddress address)
-    {
-        var folder = FindMetadataFolder(grid);
-        if (folder is null)
-        {
-            return null;
-        }
-
-        var table = FindTable(session, folder, address.Table);
-        if (table is null)
-        {
-            return null;
-        }
-
-        return new MetadataTarget(table, address.Row);
-    }
-
-    /// <summary>The "Metadata" folder <paramref name="node"/> belongs to.</summary>
-    private static BrowseNode? FindMetadataFolder(BrowseNode node)
-    {
-        for (var parent = node.Parent; parent is not null; parent = parent.Parent)
-        {
-            var metadata = FindMetadata(parent);
-            if (metadata is not null)
-            {
-                return parent;
-            }
-        }
-        return null;
-    }
-
     /// <summary>Whether <paramref name="node"/> is the folder of <paramref name="file"/>'s metadata.</summary>
     private static bool IsMetadataOf(BrowseNode node, ICSharpCode.Decompiler.Metadata.MetadataFile file)
     {

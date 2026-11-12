@@ -1,3 +1,5 @@
+using System.Reflection.Metadata.Ecma335;
+using ILSight.Core.Metadata;
 using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using System.Diagnostics;
@@ -40,6 +42,127 @@ public sealed class BrowseSession
         }
 
         return OtherRoots.GetValue(item, static a => BrowseRoots.Create(a));
+    }
+
+    /// <summary>The table node and row that <paramref name="address"/>, a link of the grid <paramref name="grid"/> shows,
+    /// leads to, among the tables of the metadata the grid lists; null when <paramref name="grid"/> lists no metadata, or
+    /// that metadata lists no such table. Reads this session's nodes of the grid's metadata folder: for a table's grid
+    /// they are built (the grid's node is one of the folder's tables); for another grid of the folder (a header's), the
+    /// tables are made now from the image in memory, a node per table a file can have, and kept as the folder's tables.
+    /// Never waits: null while another thread builds them, and for an image that isn't in memory.</summary>
+    public MetadataTarget? FindMetadataRow(BrowseNode grid, MetadataAddress address)
+    {
+        var folder = FindMetadataFolder(grid);
+        if (folder is null)
+        {
+            return null;
+        }
+
+        var tables = FindBuiltChild(folder.Value.Node, static c => c.Subject is NodeSubject.MetadataTables);
+        if (tables is null)
+        {
+            return null;
+        }
+
+        var listed = EnsureTables(tables, folder.Value.Info);
+        var table = FindTable(listed, address.Table);
+        if (table is null)
+        {
+            return null;
+        }
+
+        return new MetadataTarget(table, address.Row);
+    }
+
+    /// <summary>The "Metadata" folder <paramref name="node"/> belongs to, and what it lists.</summary>
+    private static (BrowseNode Node, MetadataFolderInfo Info)? FindMetadataFolder(BrowseNode node)
+    {
+        for (var parent = node.Parent; parent is not null; parent = parent.Parent)
+        {
+            if (parent.Subject is NodeSubject.Metadata metadata)
+            {
+                return (parent, metadata.Value);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The first of <paramref name="node"/>'s built children that <paramref name="match"/> picks; null when its
+    /// children aren't built or none is picked.</summary>
+    private BrowseNode? FindBuiltChild(BrowseNode node, Func<BrowseNode, bool> match)
+    {
+        var children = PeekChildren(node);
+        if (children is not ChildrenState.Ready ready)
+        {
+            return null;
+        }
+
+        return ready.Children.FirstOrDefault(match);
+    }
+
+    /// <summary>The node listing the rows of <paramref name="table"/> among <paramref name="tables"/>; null when none
+    /// does.</summary>
+    private static BrowseNode? FindTable(IReadOnlyList<BrowseNode> tables, TableIndex table)
+    {
+        foreach (var node in tables)
+        {
+            if (node.Subject is NodeSubject.MetadataTable part && part.Value.ListedTable == table)
+            {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The children of <paramref name="tables"/>, a metadata folder's "Tables" node: those built, else made now
+    /// from <paramref name="folder"/>'s image in memory and kept, as the tree's build keeps them (a read that fails is
+    /// kept as their failure, which the tree shows). None while another thread builds them, after a failed build, and
+    /// for an image that isn't in memory.</summary>
+    private IReadOnlyList<BrowseNode> EnsureTables(BrowseNode tables, MetadataFolderInfo folder)
+    {
+        var slot = Children.GetValue(tables, static _ => new Guarded<ChildrenState>(ChildrenState.NotLoaded));
+        TaskCompletionSource<ChildrenState> building;
+        using (var held = slot.Enter())
+        {
+            if (held.Value is ChildrenState.Ready ready)
+            {
+                return ready.Children;
+            }
+
+            if (held.Value != ChildrenState.NotLoaded)
+            {
+                return [];
+            }
+
+            if (!folder.Module.IsImageInMemory)
+            {
+                return [];
+            }
+
+            building = new TaskCompletionSource<ChildrenState>(TaskCreationOptions.RunContinuationsAsynchronously);
+            held.Value = new ChildrenState.Running(building.Task);
+        }
+
+        var state = BuildTables(tables, folder);
+        using (var held = slot.Enter())
+        {
+            held.Value = state;
+        }
+
+        building.SetResult(state);
+        return state is ChildrenState.Ready built ? built.Children : [];
+    }
+
+    private static ChildrenState BuildTables(BrowseNode tables, MetadataFolderInfo folder)
+    {
+        try
+        {
+            return new ChildrenState.Ready(MetadataTableNodes.List(tables, folder));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new ChildrenState.Failed(e);
+        }
     }
 
     /// <summary>Where <paramref name="node"/>'s children stand now; never blocks or builds them.</summary>

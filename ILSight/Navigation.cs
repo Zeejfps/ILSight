@@ -363,7 +363,7 @@ public sealed class Navigation
     /// nothing when it leads nowhere. Returns the load it started, as <see cref="ShowNode"/> does.</summary>
     public DecompileTicket? ShowMetadataLink(BrowseSession session, BrowseNode grid, MetadataAddress address, bool inNewTab, DecompilerSetup setup)
     {
-        var target = BrowseSessions.FindMetadataRow(session, grid, address);
+        var target = session.FindMetadataRow(grid, address);
         if (target is null)
         {
             return null;

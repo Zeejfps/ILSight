@@ -216,7 +216,7 @@ public static class BrowseNodes
             NodeSubject.Resources resources => ResourceNodes.ListResources(parent, resources.Owner),
             NodeSubject.ResourceContainer container => ResourceNodes.ListEntries(parent, container.Value),
             NodeSubject.Metadata metadata => MetadataNodes.ListMetadata(parent, metadata.Value),
-            NodeSubject.MetadataTables tables => MetadataNodes.ListTables(parent, tables.Folder),
+            NodeSubject.MetadataTables tables => MetadataTableNodes.List(parent, tables.Folder),
             NodeSubject.MetadataTable table => table.Value.Part is MetadataPart.DebugDirectory directory ? MetadataNodes.ListDebugEntries(parent, table.Value.Module, directory.File) : [],
             NodeSubject.Package package => PackageNodes.ListPackageFolder(parent, package.Value),
             NodeSubject.Module module => ModuleNodes.ListModule(parent, module.Value),

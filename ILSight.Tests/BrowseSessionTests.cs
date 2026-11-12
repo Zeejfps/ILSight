@@ -1,4 +1,6 @@
+using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
+using ILSight.Core.Metadata;
 
 namespace ILSight.Tests;
 
@@ -79,6 +81,62 @@ public sealed class BrowseSessionTests : IDisposable
         AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.FailedAssembly { Value = failed }), session.EnsureRoot(failed));
     }
 
+    /// <summary>A fresh session's metadata folder of the test assembly, its header grids and "Tables" node built, the
+    /// tables not yet.</summary>
+    private static (BrowseNode Header, BrowseNode Tables) MetadataHeaderAndTables(BrowseSession session)
+    {
+        var root = session.EnsureRoot(Trees.TestAssembly);
+        var metadata = BrowseSessions.ListChildren(session, root).First(static c => c.Subject is NodeSubject.Metadata);
+        var parts = BrowseSessions.ListChildren(session, metadata);
+        return (parts.First(static c => c.Text == "DOS Header"), parts.Single(static c => c.Subject is NodeSubject.MetadataTables));
+    }
+
+    [Fact]
+    public void A_link_of_a_header_grid_makes_the_tables_from_the_image_and_keeps_them_as_the_tree_lists_them()
+    {
+        var session = new BrowseSession();
+        var (header, tables) = MetadataHeaderAndTables(session);
+        var before = session.PeekChildren(tables);
+
+        var target = Assert.IsType<MetadataTarget>(session.FindMetadataRow(header, new MetadataAddress(TableIndex.TypeDef, 1)));
+
+        Assert.IsType<ChildrenState.Unloaded>(before);
+        var typeDefs = BrowseSessions.ListChildren(session, tables).Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef);
+        Assert.Same(typeDefs, target.Node);
+        Assert.Equal(1, target.Row);
+    }
+
+    [Fact]
+    public void A_link_of_a_table_grid_leads_to_the_row_among_the_tables_built()
+    {
+        var session = new BrowseSession();
+        var (_, tables) = MetadataHeaderAndTables(session);
+        var built = BrowseSessions.ListChildren(session, tables);
+        var methods = built.Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.MethodDef);
+
+        var target = Assert.IsType<MetadataTarget>(session.FindMetadataRow(methods, new MetadataAddress(TableIndex.TypeDef, 0)));
+
+        Assert.Same(built.Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef), target.Node);
+        Assert.Equal(0, target.Row);
+    }
+
+    [Fact]
+    public void The_tables_a_link_makes_show_what_a_node_made_from_their_subject_shows()
+    {
+        var session = new BrowseSession();
+        var (header, tables) = MetadataHeaderAndTables(session);
+        Assert.NotNull(session.FindMetadataRow(header, new MetadataAddress(TableIndex.TypeDef, 0)));
+
+        var made = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(tables)).Children;
+
+        Assert.NotEmpty(made);
+        Assert.All(made, node =>
+        {
+            AssertShowsTheSame(BrowseNodes.Create(tables, node.Subject), node);
+            Assert.Equal(BrowseNodes.Create(tables, node.Subject).Segment, node.Segment);
+        });
+    }
+
     private static void AssertShowsTheSame(BrowseNode expected, BrowseNode actual)
     {
         Assert.Equal(expected.Path, actual.Path);
@@ -94,5 +152,7 @@ public sealed class BrowseSessionTests : IDisposable
         Assert.Equal(expected.Name, actual.Name);
         Assert.Equal(expected.IsCode, actual.IsCode);
         Assert.Equal(expected.ResourceFileName, actual.ResourceFileName);
+        Assert.Equal(expected.ILSpyName, actual.ILSpyName);
+        Assert.Equal(expected.EntityFullName, actual.EntityFullName);
     }
 }

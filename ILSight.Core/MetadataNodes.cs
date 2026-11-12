@@ -48,29 +48,6 @@ internal static class MetadataNodes
         result.Add(CreatePart(parent, MetadataTables.CreateGridPart(folder.Module, folder.File, header.Key, new MetadataPartKey.Header(which), MetadataGridRole.Header, header)));
     }
 
-    /// <summary>A node per table: the grid of its rows. An empty table, whose grid cannot always be read,
-    /// and a table ILSpy does not list show only how many rows there are.</summary>
-    internal static BrowseNode[] ListTables(BrowseNode parent, MetadataFolderInfo folder)
-    {
-        var file = folder.File;
-        var result = new List<BrowseNode>();
-        foreach (var index in Enum.GetValues<TableIndex>())
-        {
-            var rows = file.Metadata.GetTableRowCount(index);
-            var schema = rows == 0 ? null : MetadataTables.Create(index, file);
-            if (schema is null)
-            {
-                result.Add(CreatePart(parent, MetadataTables.CreateRowCountPart(folder.Module, file, index, rows)));
-            }
-            else
-            {
-                result.Add(CreatePart(parent, MetadataTables.CreateGridPart(folder.Module, file, $"{(byte)index:X2} {index} ({rows})", new MetadataPartKey.Table(index),
-                    MetadataGridRole.Table, schema)));
-            }
-        }
-        return result.ToArray();
-    }
-
     /// <summary>The entries of the debug directory: what ILSpy decodes of each, else its raw bytes; the
     /// embedded PDB as the metadata folder of the debug metadata the module already loaded.</summary>
     internal static BrowseNode[] ListDebugEntries(BrowseNode parent, LoadedModule module, PEFile file)
