@@ -4,7 +4,6 @@ using ILSight.Localization;
 using ILSight.CodeView;
 using static ILSight.Assemblies;
 using static ILSight.Docking;
-using static ILSight.Navigation;
 using static ILSight.DocumentPanels;
 
 namespace ILSight.App.Tests;
@@ -280,7 +279,7 @@ public sealed class AppStateTests
 
         d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), ct));
         d.Settle();
-        d.Start((a, ct) => GoBackAsync(a, ct));
+        d.GoBack();
         d.Settle();
 
         var shown = d.AppState.Tabs.Active!.Node!;
@@ -302,7 +301,7 @@ public sealed class AppStateTests
         var tab = d.AppState.Tabs.Active!;
         var document = tab.Document;
 
-        d.Start((a, ct) => GoBackAsync(a, ct));
+        d.GoBack();
         d.NextFrame();
 
         var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;

@@ -1,9 +1,9 @@
 using ILSight.Core;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
-/// <summary>Goes back and forward through the history: to the place an entry recorded, or the diagram it showed.</summary>
+/// <summary>Goes back and forward through the history to a place the tab no longer shows: looks the place up and
+/// shows what is there.</summary>
 public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports)
 {
     public interface IPorts
@@ -17,89 +17,15 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct);
     }
 
-    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward; nothing when
-    /// there is none there or it is the current one. Returns the load that started in the tab, for the edge that
-    /// started this to start under the tab's work; null when none started.</summary>
-    public async Task<DecompileTicket?> HandleAsync(AppState appState, int index, CancellationToken ct)
+    /// <summary>Looks up the place <paramref name="lookup"/> is for, which going to a history entry began
+    /// (<see cref="Navigation.GoToEntry"/>, in the frame it was asked in) since the tab no longer shows it, then shows
+    /// the node found there at the place the view stood. Returns the load that started in the tab, for the edge that
+    /// started this to start under the tab's work; null when none started. Reports the place gone; drops it when
+    /// something else was asked for meanwhile.</summary>
+    public async Task<DecompileTicket?> HandleAsync(AppState appState, HistoryMove.LookUp lookup, CancellationToken ct)
     {
-        if (!CanGoTo(appState, index))
-        {
-            return null;
-        }
-
-        appState.Navigation.LeaveActiveTab();
-        var entry = appState.History.MoveToEntry(index);
-        switch (entry)
-        {
-            case HistoryEntry.Node node:
-                return await ShowEntryAsync(appState, node, ct);
-            case HistoryEntry.Diagram diagram:
-                BringDiagramToFront(appState, diagram.Shown);
-                return null;
-        }
-
-        return null;
-    }
-
-    private static bool CanGoTo(AppState appState, int index)
-    {
-        if (index < 0)
-        {
-            return false;
-        }
-
-        if (index >= appState.History.Entries.Count)
-        {
-            return false;
-        }
-
-        return index != appState.History.CurrentIndex;
-    }
-
-    /// <summary>Shows the node <paramref name="entry"/> recorded: the one the tab shows when it is still there, else
-    /// the one found at its place, or reports the place gone. Returns the load it started in the tab; null when it
-    /// started none.</summary>
-    private async Task<DecompileTicket?> ShowEntryAsync(AppState appState, HistoryEntry.Node entry, CancellationToken ct)
-    {
-        var destination = appState.Navigation.ChooseDestination(inNewTab: false);
-        var place = entry.Place;
-        var position = KeepPosition(entry.Position, entry.Language, appState.Language);
-        var shown = FindShownNode(appState, appState.Navigation.FindTab(destination, appState.PreviewTabs), place);
-        if (shown is not null)
-        {
-            appState.Intent.Begin();
-            return appState.Navigation.ShowNodeIn(destination, shown, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, position);
-        }
-
-        var ticket = appState.Intent.BeginResolving();
-        var found = await ports.LookUpPlaceAsync(place, ct);
-        return ShowHistoryPlace(appState, place, position, appState.Intent.EndResolving(ticket, found), destination);
-    }
-
-    private static BrowseNode? FindShownNode(AppState appState, DocumentTab? tab, NodePath place)
-    {
-        if (tab is null)
-        {
-            return null;
-        }
-
-        var node = tab.Node;
-        if (node is null)
-        {
-            return null;
-        }
-
-        if (!place.Equals(tab.Location))
-        {
-            return null;
-        }
-
-        if (!AssemblyListing.IsListed(appState.Assemblies, node.Root.Assembly))
-        {
-            return null;
-        }
-
-        return node;
+        var found = await ports.LookUpPlaceAsync(lookup.Place, ct);
+        return ShowHistoryPlace(appState, lookup.Place, lookup.Position, appState.Intent.EndResolving(lookup.Ticket.Intent, found), lookup.Ticket.Destination);
     }
 
     private DecompileTicket? ShowHistoryPlace(AppState appState, NodePath place, ViewPosition? position, Resolution<BrowseNode> resolved,
@@ -123,20 +49,5 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
     private void ReportHistoryPlaceGone(NodePath place, Exception? error)
     {
         ports.ReportError(new AppProblem.HistoryPlaceGone(place, error));
-    }
-
-    /// <summary>Brings the tab showing <paramref name="diagram"/> to the front, dropping what was being
-    /// navigated to meanwhile.</summary>
-    private static void BringDiagramToFront(AppState appState, TypeDiagram diagram)
-    {
-        appState.Intent.Begin();
-        var tab = appState.Navigation.FindTabShowing(diagram);
-        if (tab is null)
-        {
-            return;
-        }
-
-        Tabs.MakeActive(appState.Tabs, tab);
-        appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 }

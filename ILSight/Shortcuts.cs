@@ -4,7 +4,6 @@ using ZGF.KeyboardModule;
 using ILSight.Exporting;
 using static ZGF.Desktop.ShortcutModifiers;
 using static ILSight.Exporting.Exports;
-using static ILSight.Navigation;
 using static ILSight.DocumentPanels;
 using static ILSight.ScreenLayout;
 
@@ -85,8 +84,8 @@ internal static class Shortcuts
     [
         new(Search, static (ui, _) => OpenSearch(ui.State), WhileTyping: true),
         new(OmnibarSearch, static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping: true),
-        new(Back, static (ui, _) => Commands.Start(ui.State, nameof(GoBackAsync), static (a, ct) => GoBackAsync(a, ct)), WhileTyping: true),
-        new(Forward, static (ui, _) => Commands.Start(ui.State, nameof(GoForwardAsync), static (a, ct) => GoForwardAsync(a, ct)), WhileTyping: true),
+        new(Back, static (ui, appState) => GoBack(ui.State, appState), WhileTyping: true),
+        new(Forward, static (ui, appState) => GoForward(ui.State, appState), WhileTyping: true),
         new(Open, static (ui, _) => MainMenuView.OpenFile(ui)),
         new(Settings, static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping: true),
         new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Tabs, appState.Language)),
@@ -97,6 +96,19 @@ internal static class Shortcuts
         new(PreviousTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Language, appState.DecompilerOptions, -1)),
     ];
 
+    /// <summary>Goes to the history entry before the current one in this frame, and asks for its load or lookup to be
+    /// started once the frame is drawn.</summary>
+    private static void GoBack(UiState screen, AppState appState)
+    {
+        Commands.MoveLater(screen, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
+    }
+
+    /// <summary>As <see cref="GoBack"/>, to the entry after the current one.</summary>
+    private static void GoForward(UiState screen, AppState appState)
+    {
+        Commands.MoveLater(screen, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
+    }
+
     /// <summary>Runs the app-wide shortcuts pressed this frame, and goes back and forward with the
     /// pointer's side buttons.</summary>
     public static void Handle(Ui<UiState> ui, AppState appState)
@@ -104,12 +116,12 @@ internal static class Shortcuts
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
         {
-            Commands.Start(ui.State, nameof(GoBackAsync), static (a, ct) => GoBackAsync(a, ct));
+            GoBack(ui.State, appState);
         }
 
         if (input.WasPressed(PointerButton.Forward))
         {
-            Commands.Start(ui.State, nameof(GoForwardAsync), static (a, ct) => GoForwardAsync(a, ct));
+            GoForward(ui.State, appState);
         }
 
         foreach (var binding in Bindings)

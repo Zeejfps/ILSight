@@ -1,6 +1,5 @@
 using ILSight.Core;
 using ILSight.CodeView;
-using static ILSight.Navigation;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
@@ -40,11 +39,11 @@ public sealed class HistoryTests
         Show(app, "Greeter");
         var greeter = ScrollTo(app, 3, new TextPosition(4, 0), new TextPosition(4, 6));
 
-        app.Start((a, ct) => GoBackAsync(a, ct));
+        app.GoBack();
         app.Settle(4);
         var back = app.AppState.Tabs.Active!.Node!.Text;
         var backPosition = CodeOf(app, app.AppState.Tabs.Active!).Position;
-        app.Start((a, ct) => GoForwardAsync(a, ct));
+        app.GoForward();
         app.Settle(4);
         var forward = app.AppState.Tabs.Active!;
 
@@ -53,6 +52,34 @@ public sealed class HistoryTests
         Assert.Equal(outline, backPosition);
         Assert.Equal("Greeter", forward.Node!.Text);
         Assert.Equal(greeter, CodeOf(app, forward).Position);
+    }
+
+    [Fact]
+    public void The_frame_back_is_pressed_in_says_the_app_is_resolving_the_place_its_tab_left()
+    {
+        var app = Opened();
+        Show(app, "Outline");
+        Show(app, "Greeter");
+
+        app.Frames.Key(Shortcuts.Back).Frame();
+
+        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
+        app.Settle(4);
+        Assert.Equal("Outline", app.AppState.Tabs.Active?.Node?.Text);
+    }
+
+    [Fact]
+    public void The_frame_back_is_pressed_in_shows_the_tab_that_still_shows_the_entry()
+    {
+        var app = Opened();
+        Show(app, "Outline");
+        var outline = app.AppState.Tabs.Active ?? throw new InvalidOperationException("No tab is active.");
+        app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
+
+        app.Frames.Key(Shortcuts.Back).Frame();
+
+        Assert.True(app.Frames.Drew(BrowseNodes.GetFullName(app.Fixture("Outline"))));
+        Assert.Same(outline, app.AppState.Tabs.Active);
     }
 
     [Fact]
@@ -68,7 +95,7 @@ public sealed class HistoryTests
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(4);
         var followed = tab.Node!.Text;
-        app.Start((a, ct) => GoBackAsync(a, ct));
+        app.GoBack();
         app.Settle(4);
 
         Assert.StartsWith("First()", followed);
@@ -90,7 +117,7 @@ public sealed class HistoryTests
         app.Driver.Show(app.Fixture("Greeter"));
         AppFrames.KeepScreenChanges(app.Ui, app.AppState);
         app.Settle(4);
-        app.Start((a, ct) => GoBackAsync(a, ct));
+        app.GoBack();
         app.Settle(4);
 
         Assert.Equal("Outline", tab.Node?.Text);
@@ -107,7 +134,7 @@ public sealed class HistoryTests
 
         app.AppState.Language = DecompilationLanguage.IL;
         app.Settle(4);
-        app.Start((a, ct) => GoBackAsync(a, ct));
+        app.GoBack();
         app.Settle(4);
         var tab = app.AppState.Tabs.Active!;
 
@@ -128,7 +155,7 @@ public sealed class HistoryTests
         Show(app, "Outline");
         var count = history.Entries.Count;
 
-        app.Start((a, ct) => a.GoToHistoryEntryHandler.HandleAsync(a, first, ct));
+        app.GoToEntry(first);
         app.Settle(4);
         var back = app.AppState.Tabs.Active!.Node!.Text;
 
@@ -167,7 +194,7 @@ public sealed class HistoryTests
         ClickBackDropdown(app);
         var row = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Outline").Inputs.Position;
 
-        app.Start((a, ct) => GoBackAsync(a, ct));
+        app.GoBack();
         app.Settle(4);
 
         Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Position.Top == row.Top && t.Inputs.Position.Left == row.Left);

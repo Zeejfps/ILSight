@@ -224,16 +224,126 @@ public sealed class Navigation
         return new ResolveTicket { Intent = Intent.BeginResolving(), Destination = destination };
     }
 
-    /// <summary>Goes to the history entry before the current one, as <see cref="GoToHistoryEntryHandler"/> does.</summary>
-    public static Task<DecompileTicket?> GoBackAsync(AppState appState, CancellationToken ct)
+    /// <summary>Goes to the history entry before the current one, as <see cref="GoToEntry"/> does.</summary>
+    public HistoryMove? GoBack(AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
     {
-        return appState.GoToHistoryEntryHandler.HandleAsync(appState, appState.History.CurrentIndex - 1, ct);
+        return GoToEntry(History.CurrentIndex - 1, assemblies, language, options, previewTabs);
     }
 
-    /// <summary>Goes to the history entry after the current one, as <see cref="GoToHistoryEntryHandler"/> does.</summary>
-    public static Task<DecompileTicket?> GoForwardAsync(AppState appState, CancellationToken ct)
+    /// <summary>Goes to the history entry after the current one, as <see cref="GoToEntry"/> does.</summary>
+    public HistoryMove? GoForward(AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
     {
-        return appState.GoToHistoryEntryHandler.HandleAsync(appState, appState.History.CurrentIndex + 1, ct);
+        return GoToEntry(History.CurrentIndex + 1, assemblies, language, options, previewTabs);
+    }
+
+    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward; nothing when there
+    /// is none there or it is the current one. The active tab leaves its entry, and a new intent begins: a diagram's
+    /// entry brings the tab showing the diagram to the front; a node's entry shows its node in the tab it shows in,
+    /// at the place the view stood when it is still good in <paramref name="language"/>, when that tab still shows it
+    /// and its assembly in <paramref name="assemblies"/> is listed, else begins looking up the place the entry
+    /// recorded, the app saying it is resolving. Returns what is left for the edge to start: the load the tab
+    /// started, or the lookup (for <see cref="GoToHistoryEntryHandler"/>); null when nothing is.</summary>
+    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
+    {
+        if (!CanGoTo(index))
+        {
+            return null;
+        }
+
+        LeaveActiveTab();
+        var entry = History.MoveToEntry(index);
+        switch (entry)
+        {
+            case HistoryEntry.Node node:
+                return ShowEntry(node, assemblies, language, options, previewTabs);
+            case HistoryEntry.Diagram diagram:
+                BringDiagramToFront(diagram.Shown);
+                return null;
+        }
+
+        return null;
+    }
+
+    private bool CanGoTo(int index)
+    {
+        if (index < 0)
+        {
+            return false;
+        }
+
+        if (index >= History.Entries.Count)
+        {
+            return false;
+        }
+
+        return index != History.CurrentIndex;
+    }
+
+    /// <summary>Shows the node <paramref name="entry"/> recorded when the tab it shows in still shows it, else begins
+    /// looking up the place it recorded. Returns the load or the lookup it started; null when neither did.</summary>
+    private HistoryMove? ShowEntry(HistoryEntry.Node entry, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
+        bool previewTabs)
+    {
+        var destination = ChooseDestination(inNewTab: false);
+        var place = entry.Place;
+        var position = KeepPosition(entry.Position, entry.Language, language);
+        var shown = FindShownNode(assemblies, FindTab(destination, previewTabs), place);
+        if (shown is null)
+        {
+            return new HistoryMove.LookUp { Place = place, Position = position, Ticket = BeginResolving(inNewTab: false) };
+        }
+
+        Intent.Begin();
+        var load = ShowNodeIn(destination, shown, language, options, previewTabs, position);
+        if (load is null)
+        {
+            return null;
+        }
+
+        return new HistoryMove.Decompile { Load = load };
+    }
+
+    /// <summary>The node <paramref name="tab"/> shows when it is at <paramref name="place"/> and its assembly is
+    /// listed in <paramref name="assemblies"/>; else null.</summary>
+    private static BrowseNode? FindShownNode(AssemblyList assemblies, DocumentTab? tab, NodePath place)
+    {
+        if (tab is null)
+        {
+            return null;
+        }
+
+        var node = tab.Node;
+        if (node is null)
+        {
+            return null;
+        }
+
+        if (!place.Equals(tab.Location))
+        {
+            return null;
+        }
+
+        if (!AssemblyListing.IsListed(assemblies, node.Root.Assembly))
+        {
+            return null;
+        }
+
+        return node;
+    }
+
+    /// <summary>Brings the tab showing <paramref name="diagram"/> to the front, dropping what was being
+    /// navigated to meanwhile.</summary>
+    private void BringDiagramToFront(TypeDiagram diagram)
+    {
+        Intent.Begin();
+        var tab = FindTabShowing(diagram);
+        if (tab is null)
+        {
+            return;
+        }
+
+        ILSight.Tabs.MakeActive(Tabs, tab);
+        ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
     internal DocumentTab? FindTabShowing(TypeDiagram diagram)

@@ -74,6 +74,36 @@ public static class Commands
         Start(uiState, nameof(ShowInMetadataHandler), (reference, lookup), static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a, s.reference, s.lookup, ct));
     }
 
+    /// <summary>Asks for what going to a history entry left, <paramref name="move"/>, to be started once the frame is
+    /// drawn (<see cref="StartMoving"/>): the draw went to the entry in the frame of its input, and only the load or the
+    /// lookup, which take longer than a frame, wait for the edge. Allocates nothing when it left nothing.</summary>
+    public static void MoveLater(UiState uiState, HistoryMove? move)
+    {
+        if (move is null)
+        {
+            return;
+        }
+
+        uiState.AppCommands.Enqueue(CreateMove(move));
+    }
+
+    private static AppCommand CreateMove(HistoryMove move)
+    {
+        return appState =>
+        {
+            StartMoving(appState, move);
+        };
+    }
+
+    /// <summary>Starts what going to a history entry left, <paramref name="move"/>, now: the load of the node the tab
+    /// shows again (<see cref="StartDecompiling(AppState, DecompileTicket?)"/>), or the lookup of the place the entry
+    /// recorded (<see cref="GoToHistoryEntryHandler"/>) as a workflow, then the load it points the tab at.</summary>
+    public static void StartMoving(AppState appState, HistoryMove move)
+    {
+        move.Switch(load => StartDecompiling(appState, load),
+            lookup => StartShowing(appState, nameof(GoToHistoryEntryHandler), ct => appState.GoToHistoryEntryHandler.HandleAsync(appState, lookup, ct)));
+    }
+
     /// <summary>Asks for the comparison <paramref name="run"/> started, if any, to be run once the frame is drawn
     /// (<see cref="StartComparing"/>): the draw changed the comparison in the frame of its input, and only comparing,
     /// which takes longer than a frame, waits for the edge. Allocates nothing when none started.</summary>

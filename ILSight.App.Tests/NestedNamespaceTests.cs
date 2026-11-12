@@ -1,7 +1,6 @@
 using ILSight.Core;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.CodeDisplay;
-using static ILSight.Navigation;
 
 namespace ILSight.App.Tests;
 
@@ -145,7 +144,7 @@ public sealed class NestedNamespaceTests
         Nest(app, true);
         Trees.CollapseTree(app.Ui.Tree);
 
-        app.Start((a, ct) => GoBackAsync(a, ct));
+        app.GoBack();
         app.Settle(1);
 
         Assert.Same(greeter, app.AppState.Tabs.Active!.Node);

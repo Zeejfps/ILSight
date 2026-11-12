@@ -5,7 +5,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using static ILSight.AssemblyLists;
-using static ILSight.Navigation;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 
@@ -63,12 +62,12 @@ internal static class ToolbarView
                 {
                     if (back.Clicked)
                     {
-                        Commands.Start(ui.State, nameof(GoBackAsync), static (a, ct) => GoBackAsync(a, ct));
+                        Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
                     }
 
                     if (back.IsOpen)
                     {
-                        HistoryItems(ui, appState.History, -1);
+                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, -1);
                     }
                 }
                 using (var forward = ui.SplitIconButton("forward", ui.State.Icons.ToolbarForward,
@@ -77,12 +76,12 @@ internal static class ToolbarView
                 {
                     if (forward.Clicked)
                     {
-                        Commands.Start(ui.State, nameof(GoForwardAsync), static (a, ct) => GoForwardAsync(a, ct));
+                        Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
                     }
 
                     if (forward.IsOpen)
                     {
-                        HistoryItems(ui, appState.History, 1);
+                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, 1);
                     }
                 }
             }
@@ -213,8 +212,13 @@ internal static class ToolbarView
         return ui.Row(new Box { Width = Sizing.Fit(), Gap = ui.Theme.Gap, AlignY = Align.Center });
     }
 
-    private static void HistoryItems(Ui<UiState> ui, NavigationHistory history, int direction)
+    /// <summary>The entries of <paramref name="navigation"/>'s history before the current one, or after it when
+    /// <paramref name="direction"/> is positive; the one picked is gone to in this frame, and only its load or lookup is
+    /// queued.</summary>
+    private static void HistoryItems(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
+        bool previewTabs, int direction)
     {
+        var history = navigation.History;
         var entries = history.Entries;
         for (var i = history.CurrentIndex + direction; i >= 0 && i < entries.Count; i += direction)
         {
@@ -225,7 +229,7 @@ internal static class ToolbarView
                 var icon = IconOf(ui.State, entry);
                 if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
-                    Commands.Start(ui.State, nameof(GoToHistoryEntryHandler), i, static (a, index, ct) => a.GoToHistoryEntryHandler.HandleAsync(a, index, ct));
+                    Commands.MoveLater(ui.State, navigation.GoToEntry(i, assemblies, language, options, previewTabs));
                     return;
                 }
             }

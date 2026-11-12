@@ -18,6 +18,14 @@ public sealed class GoToHistoryEntryHandlerTests
         return Assert.IsType<HistoryEntry.Node>(appState.History.Entries[index]).Place;
     }
 
+    /// <summary>Goes to the history entry at <paramref name="index"/>, as the toolbar does in the frame it is picked in,
+    /// and takes the lookup of its place that this began, since the tab no longer shows it.</summary>
+    private static HistoryMove.LookUp GoTo(AppState appState, int index)
+    {
+        var move = appState.Navigation.GoToEntry(index, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
+        return Assert.IsType<HistoryMove.LookUp>(move);
+    }
+
     [Fact]
     public async Task HandleAsync_PlaceFound_ShowsItAndMovesToTheEntry()
     {
@@ -26,7 +34,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var back = d.AppState.History.CurrentIndex - 1;
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(greeter) };
 
-        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
 
         Assert.Equal(PlaceOf(d.AppState, back), Assert.Single(lookup.LookedUp));
         Assert.Same(greeter, d.AppState.Tabs.Active?.Node);
@@ -44,7 +52,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var back = d.AppState.History.CurrentIndex - 1;
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
 
-        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
 
         var gone = Assert.IsType<AppProblem.HistoryPlaceGone>(Assert.Single(lookup.Reported));
         Assert.Equal(PlaceOf(d.AppState, back), gone.Place);
@@ -62,7 +70,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var error = new IOException("unreadable");
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(error) };
 
-        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, back, CancellationToken.None);
+        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
 
         Assert.Same(error, Assert.IsType<AppProblem.HistoryPlaceGone>(Assert.Single(lookup.Reported)).Error);
         Assert.False(d.AppState.IsResolving);
@@ -77,8 +85,8 @@ public sealed class GoToHistoryEntryHandlerTests
         var foundLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(found.Fixture("Greeter")), WhileLooking = () => found.AppState.Intent.Begin() };
         var missingLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => missing.AppState.Intent.Begin() };
 
-        var foundLoad = await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState, found.AppState.History.CurrentIndex - 1, CancellationToken.None);
-        var missingLoad = await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState, missing.AppState.History.CurrentIndex - 1, CancellationToken.None);
+        var foundLoad = await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState, GoTo(found.AppState, found.AppState.History.CurrentIndex - 1), CancellationToken.None);
+        var missingLoad = await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState, GoTo(missing.AppState, missing.AppState.History.CurrentIndex - 1), CancellationToken.None);
 
         Assert.Same(found.Fixture("Farewell"), found.AppState.Tabs.Active?.Node);
         Assert.Empty(foundLookup.Reported);

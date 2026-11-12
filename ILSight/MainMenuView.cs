@@ -8,7 +8,6 @@ using ILSight.Exporting;
 using static ILSight.Dialogs;
 using static ILSight.DocumentPanels;
 using static ILSight.Exporting.Exports;
-using static ILSight.Navigation;
 using static ILSight.ScreenLayout;
 
 namespace ILSight;
@@ -270,12 +269,12 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.History.CanGoBack, id: "back"))
         {
-            Commands.Start(ui.State, nameof(GoBackAsync), static (a, ct) => GoBackAsync(a, ct));
+            Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
         }
 
         if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.History.CanGoForward, id: "forward"))
         {
-            Commands.Start(ui.State, nameof(GoForwardAsync), static (a, ct) => GoForwardAsync(a, ct));
+            Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs));
         }
 
         ui.MenuSeparator();

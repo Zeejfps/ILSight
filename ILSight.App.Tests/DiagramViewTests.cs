@@ -5,7 +5,6 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 using static ILSight.Docking;
-using static ILSight.Navigation;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
@@ -233,11 +232,11 @@ public sealed class DiagramViewTests
         var code = app.AppState.Tabs.Active!;
         Assert.NotEqual(diagram, code);
 
-        app.Start((a, ct) => GoBackAsync(a, ct));
+        app.GoBack();
         app.Settle(2);
         Assert.Equal(diagram, app.AppState.Tabs.Active);
 
-        app.Start((a, ct) => GoForwardAsync(a, ct));
+        app.GoForward();
         app.Settle(2);
         Assert.Equal("Mileage() : int", app.AppState.Tabs.Active!.Node!.Text);
     }

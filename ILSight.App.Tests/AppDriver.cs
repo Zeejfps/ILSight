@@ -70,6 +70,24 @@ internal sealed class AppDriver
         Frames.Frame(frames);
     }
 
+    /// <summary>Goes to the history entry at <paramref name="index"/>, as <see cref="AppStateDriver.GoToEntry"/> does.</summary>
+    public void GoToEntry(int index)
+    {
+        Driver.GoToEntry(index);
+    }
+
+    /// <summary>Goes back in the history, as <see cref="AppStateDriver.GoBack"/> does.</summary>
+    public void GoBack()
+    {
+        Driver.GoBack();
+    }
+
+    /// <summary>Goes forward in the history, as <see cref="AppStateDriver.GoForward"/> does.</summary>
+    public void GoForward()
+    {
+        Driver.GoForward();
+    }
+
     /// <summary>Starts <paramref name="workflow"/> over the app state now, as <see cref="AppStateDriver.Start"/> does.</summary>
     public void Start(Func<AppState, CancellationToken, Task> workflow)
     {

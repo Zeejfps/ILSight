@@ -207,6 +207,31 @@ internal sealed class AppStateDriver
         Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Language, AppState.DecompilerOptions, AppState.PreviewTabs, inNewTab));
     }
 
+    /// <summary>Goes to the history entry at <paramref name="index"/> as the toolbar does: in place, then starts the
+    /// load or the lookup it left, as the app's commands start them, without waiting for them.</summary>
+    public void GoToEntry(int index)
+    {
+        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.Language, AppState.DecompilerOptions, AppState.PreviewTabs);
+        if (move is null)
+        {
+            return;
+        }
+
+        Commands.StartMoving(AppState, move);
+    }
+
+    /// <summary>Goes to the history entry before the current one, as <see cref="GoToEntry"/> does.</summary>
+    public void GoBack()
+    {
+        GoToEntry(AppState.History.CurrentIndex - 1);
+    }
+
+    /// <summary>Goes to the history entry after the current one, as <see cref="GoToEntry"/> does.</summary>
+    public void GoForward()
+    {
+        GoToEntry(AppState.History.CurrentIndex + 1);
+    }
+
     /// <summary>Starts <paramref name="workflow"/> over the app state now, as the app starts the workflows the screen
     /// asks for: it runs up to its first await before this returns, and is counted in the background work, which
     /// <see cref="Settle"/> waits out, until it ends.</summary>
