@@ -9,7 +9,14 @@ internal abstract record NamespaceEntry
     {
     }
 
-    public sealed record Declared(ITypeDefinition Type, string Label, CodeReference? Reference) : NamespaceEntry;
+    public sealed record Declared : NamespaceEntry
+    {
+        public required ITypeDefinition Type { get; init; }
+
+        public required string Label { get; init; }
+
+        public required CodeReference? Reference { get; init; }
+    }
 
     public sealed record Forwarded(ForwardedLine Line) : NamespaceEntry;
 

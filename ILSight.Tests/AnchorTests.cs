@@ -55,7 +55,11 @@ public sealed class AnchorTests
     [CaseInsensitivePathsFact]
     public void A_type_anchor_is_the_same_whatever_the_case_of_its_path()
     {
-        var anchor = new TypeAnchor(AssemblyPath.Of(Path.GetFullPath("/Lib/A.dll")), "N.Outer+Inner`1");
+        var anchor = new TypeAnchor
+        {
+            AssemblyPath = AssemblyPath.Of(Path.GetFullPath("/Lib/A.dll")),
+            FullName = "N.Outer+Inner`1",
+        };
 
         Assert.Equal(anchor, anchor with { AssemblyPath = AssemblyPath.Of(Path.GetFullPath("/lib/a.DLL")) });
         Assert.Equal(anchor.GetHashCode(), (anchor with { AssemblyPath = AssemblyPath.Of(Path.GetFullPath("/lib/a.DLL")) }).GetHashCode());
@@ -64,7 +68,11 @@ public sealed class AnchorTests
     [Fact]
     public void A_type_anchor_differs_from_one_whose_name_differs_only_in_case()
     {
-        var anchor = new TypeAnchor(AssemblyPath.Of(Path.GetFullPath("/Lib/A.dll")), "N.Outer+Inner`1");
+        var anchor = new TypeAnchor
+        {
+            AssemblyPath = AssemblyPath.Of(Path.GetFullPath("/Lib/A.dll")),
+            FullName = "N.Outer+Inner`1",
+        };
 
         Assert.NotEqual(anchor, anchor with { FullName = "n.outer+inner`1" });
     }

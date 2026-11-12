@@ -118,6 +118,13 @@ internal static class ILLexer
                 return;
             }
         }
-        output.Add(new DocumentSpan(start, end - start, kind, null, false));
+        output.Add(new DocumentSpan
+        {
+            Start = start,
+            Length = end - start,
+            Kind = kind,
+            Reference = null,
+            IsDefinition = false,
+        });
     }
 }

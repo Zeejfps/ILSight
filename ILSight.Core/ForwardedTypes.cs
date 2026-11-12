@@ -57,7 +57,15 @@ internal static class ForwardedTypes
         }
 
         var destination = metadata.GetAssemblyReference((AssemblyReferenceHandle)exported.Implementation);
-        return new ForwardedType(handle, name.Namespace, label, name.Name, name.TypeParameterCount, metadata.GetString(destination.Name));
+        return new ForwardedType
+        {
+            Handle = handle,
+            Namespace = name.Namespace,
+            Label = label,
+            SortName = name.Name,
+            Arity = name.TypeParameterCount,
+            Destination = metadata.GetString(destination.Name),
+        };
     }
 
     /// <summary>The name with a slot for each type parameter, as <c>typeof</c> writes an open generic

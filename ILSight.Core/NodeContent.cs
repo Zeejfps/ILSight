@@ -17,7 +17,12 @@ public abstract record NodeContent
     public sealed record Table(MetadataGrid Grid) : NodeContent;
 
     /// <summary>A picture, and for one stored as markup, such as SVG, that markup as a document.</summary>
-    public sealed record Picture(ResourceImage Image, DecompiledDocument? Source = null) : NodeContent;
+    public sealed record Picture : NodeContent
+    {
+        public required ResourceImage Image { get; init; }
+
+        public DecompiledDocument? Source { get; init; }
+    }
 
     public TResult Match<TResult>(Func<Code, TResult> code, Func<Table, TResult> table, Func<Picture, TResult> picture)
     {

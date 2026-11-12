@@ -92,9 +92,24 @@ public sealed class FrameworkPickerTests
     {
         var assemblies = new[]
         {
-            new RuntimeAssembly("System.Net.Http", "Microsoft.NETCore.App", FakePath("a.dll")),
-            new RuntimeAssembly("System.Net.Sockets", "Microsoft.NETCore.App", FakePath("b.dll")),
-            new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll")),
+            new RuntimeAssembly
+            {
+                Name = "System.Net.Http",
+                Framework = "Microsoft.NETCore.App",
+                FilePath = FakePath("a.dll"),
+            },
+            new RuntimeAssembly
+            {
+                Name = "System.Net.Sockets",
+                Framework = "Microsoft.NETCore.App",
+                FilePath = FakePath("b.dll"),
+            },
+            new RuntimeAssembly
+            {
+                Name = "System.Text.Json",
+                Framework = "Microsoft.NETCore.App",
+                FilePath = FakePath("c.dll"),
+            },
         };
         var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = assemblies });
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
@@ -111,8 +126,18 @@ public sealed class FrameworkPickerTests
     [Fact]
     public async Task Assemblies_already_open_are_not_offered()
     {
-        var open = new RuntimeAssembly("Fixtures", "Microsoft.NETCore.App", PathOf(AppStateDriver.FixturePath));
-        var other = new RuntimeAssembly("System.Text.Json", "Microsoft.NETCore.App", FakePath("c.dll"));
+        var open = new RuntimeAssembly
+        {
+            Name = "Fixtures",
+            Framework = "Microsoft.NETCore.App",
+            FilePath = PathOf(AppStateDriver.FixturePath),
+        };
+        var other = new RuntimeAssembly
+        {
+            Name = "System.Text.Json",
+            Framework = "Microsoft.NETCore.App",
+            FilePath = FakePath("c.dll"),
+        };
         var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = [open, other] });
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         await OpenAsync(picker);

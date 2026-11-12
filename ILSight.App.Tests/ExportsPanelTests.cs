@@ -233,7 +233,7 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened();
         OpenPanel(app.Ui, DockView.Exports);
         var start = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Both")).Turn);
-        start.Progress.Report(new ExportProgress("Fixtures", 2, 4, 0.5f));
+        start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 4, Fraction = 0.5f });
         app.Run(2);
 
         Assert.True(app.Frames.Drew("C# project · Assembly 2 of 4 · Fixtures"));

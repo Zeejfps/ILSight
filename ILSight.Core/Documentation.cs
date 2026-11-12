@@ -174,7 +174,7 @@ internal static class Documentation
             return null;
         }
 
-        return new DocRun(name, DocStyle.Code);
+        return new DocRun { Text = name, Style = DocStyle.Code };
     }
 
     /// <summary>The exception an <c>exception</c> element is about, by its short name: the text
@@ -307,7 +307,7 @@ internal static class Documentation
         }
 
         var reference = entity is not null ? CodeReferences.Find(entity) : null;
-        return new DocRun(name, DocStyle.Reference, reference);
+        return new DocRun { Text = name, Style = DocStyle.Reference, Reference = reference };
     }
 
     private static string ShortName(IEntity? entity, string cref)
@@ -379,7 +379,7 @@ internal static class Documentation
                 items.Add(ReadListItem(child));
             }
         }
-        Documentation.AddList(text, new DocBlock.List(ListKindOf(list), header, items));
+        Documentation.AddList(text, new DocBlock.List { Kind = ListKindOf(list), Header = header, Items = items });
     }
 
     private static DocListKind ListKindOf(XmlDocumentationElement list)
@@ -412,7 +412,11 @@ internal static class Documentation
                 AddInline(description, part);
             }
         }
-        return new DocListItem(Documentation.FinishInline(term), Documentation.FinishInline(description));
+        return new DocListItem
+        {
+            Term = Documentation.FinishInline(term),
+            Description = Documentation.FinishInline(description),
+        };
     }
 
     /// <summary>What hovering <paramref name="entity"/> of <paramref name="assembly"/>, whose type system is
@@ -421,7 +425,7 @@ internal static class Documentation
     {
         var signature = WriteSignature(entity, assembly, typeSystem);
         var sections = Read(entity);
-        return new CodeTooltip(signature, FindContainer(entity), sections);
+        return new CodeTooltip { Signature = signature, Container = FindContainer(entity), Sections = sections };
     }
 
     private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem)
@@ -436,7 +440,7 @@ internal static class Documentation
         ambience.ConvertSymbol(entity, parameters, settings.CSharpFormattingOptions);
         var line = DocumentWriting.BuildDocument(output, entity.Name).Lines[0];
         var constraints = WriteConstraints(entity, assembly, typeSystem, settings);
-        return new CodeSignature(line, parameters.Starts, constraints);
+        return new CodeSignature { Line = line, ParameterStarts = parameters.Starts, Constraints = constraints };
     }
 
     /// <summary>The <c>where</c> clauses of the entity's own type parameters, highlighted as code,
@@ -481,7 +485,12 @@ internal static class Documentation
         var declaring = entity.DeclaringTypeDefinition;
         if (declaring is not null)
         {
-            return new CodeContainer(GetKeyword(declaring), EntityText.FullName(declaring), false);
+            return new CodeContainer
+            {
+                Keyword = GetKeyword(declaring),
+                Name = EntityText.FullName(declaring),
+                IsNamespace = false,
+            };
         }
 
         if (entity.Namespace.Length == 0)
@@ -489,7 +498,7 @@ internal static class Documentation
             return null;
         }
 
-        return new CodeContainer(NamespaceKeyword, entity.Namespace, true);
+        return new CodeContainer { Keyword = NamespaceKeyword, Name = entity.Namespace, IsNamespace = true };
     }
 
     private static string GetKeyword(ITypeDefinition type)
@@ -517,7 +526,7 @@ internal static class Documentation
             return;
         }
 
-        doc.Runs.Add(new DocRun(collapsed, style, reference));
+        doc.Runs.Add(new DocRun { Text = collapsed, Style = style, Reference = reference });
     }
 
     /// <summary>Adds <paramref name="code"/> as a block of its own, lines kept and their common
@@ -575,7 +584,7 @@ internal static class Documentation
 
             if (joined.Count > 0)
             {
-                joined.Add(new DocRun(" ", DocStyle.Plain));
+                joined.Add(new DocRun { Text = " ", Style = DocStyle.Plain });
             }
 
             joined.AddRange(paragraph.Runs);

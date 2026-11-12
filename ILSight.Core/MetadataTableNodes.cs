@@ -48,7 +48,15 @@ internal static class MetadataTableNodes
             Subject = new NodeSubject.MetadataTable { Value = part },
             EnclosingNamespace = null,
             Segment = segment,
-            Path = new NodePath { FilePath = parent.Path.FilePath, Steps = parent.Path.Steps.Add(new NodePathStep(segment, text)) },
+            Path = new NodePath
+            {
+                FilePath = parent.Path.FilePath,
+                Steps = parent.Path.Steps.Add(new NodePathStep
+                {
+                    Segment = segment,
+                    Label = text,
+                }),
+            },
             FullName = text,
             Visibility = NodeVisibility.Open,
             Reference = null,

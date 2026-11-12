@@ -181,7 +181,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         var theme = app.Theme;
         OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
-        running.Progress.Report(new ExportProgress("Fixtures", 1, 1, 0.5f));
+        running.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.5f });
         app.Run(2);
 
         var name = app.TextRect("Running");

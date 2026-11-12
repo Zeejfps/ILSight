@@ -13,7 +13,14 @@ internal abstract record CodeExport
 
     public sealed record WholeModule(LoadedModule Module) : CodeExport;
 
-    public sealed record Namespace(LoadedModule Module, string Name, IReadOnlyList<ITypeDefinition> Types) : CodeExport;
+    public sealed record Namespace : CodeExport
+    {
+        public required LoadedModule Module { get; init; }
+
+        public required string Name { get; init; }
+
+        public required IReadOnlyList<ITypeDefinition> Types { get; init; }
+    }
 
     public sealed record Document(DocumentRequest Request) : CodeExport;
 

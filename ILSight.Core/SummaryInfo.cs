@@ -12,19 +12,55 @@ internal abstract record SummaryInfo
     /// <summary>A comment a line; an empty line is left blank. Read as they are written.</summary>
     public sealed record Comments(IEnumerable<string> Lines) : SummaryInfo;
 
-    public sealed record Namespace(string Name, IReadOnlyList<NamespaceEntry> Entries) : SummaryInfo;
+    public sealed record Namespace : SummaryInfo
+    {
+        public required string Name { get; init; }
 
-    public sealed record ForwardedType(string FullName, CodeReference? Target, string? Destination) : SummaryInfo;
+        public required IReadOnlyList<NamespaceEntry> Entries { get; init; }
+    }
+
+    public sealed record ForwardedType : SummaryInfo
+    {
+        public required string FullName { get; init; }
+
+        public required CodeReference? Target { get; init; }
+
+        public required string? Destination { get; init; }
+    }
 
     /// <summary>A references folder: its assemblies, then its modules.</summary>
-    public sealed record References(IReadOnlyList<SummaryLink> Assemblies, IReadOnlyList<string> Modules) : SummaryInfo;
+    public sealed record References : SummaryInfo
+    {
+        public required IReadOnlyList<SummaryLink> Assemblies { get; init; }
 
-    public sealed record ModuleReference(string Name, bool ContainsMetadata, IReadOnlyList<SummaryLink> Imports) : SummaryInfo;
+        public required IReadOnlyList<string> Modules { get; init; }
+    }
 
-    public sealed record ImportedMethod(SummaryLink Method, string EntryPoint, string ModuleName) : SummaryInfo;
+    public sealed record ModuleReference : SummaryInfo
+    {
+        public required string Name { get; init; }
 
-    /// <summary>A reference of <paramref name="Module"/>, with where it resolves from.</summary>
-    public sealed record AssemblyReference(LoadedModule Module, ICSharpCode.Decompiler.Metadata.AssemblyReference Reference) : SummaryInfo;
+        public required bool ContainsMetadata { get; init; }
+
+        public required IReadOnlyList<SummaryLink> Imports { get; init; }
+    }
+
+    public sealed record ImportedMethod : SummaryInfo
+    {
+        public required SummaryLink Method { get; init; }
+
+        public required string EntryPoint { get; init; }
+
+        public required string ModuleName { get; init; }
+    }
+
+    /// <summary>A reference of <see cref="Module"/>, with where it resolves from.</summary>
+    public sealed record AssemblyReference : SummaryInfo
+    {
+        public required LoadedModule Module { get; init; }
+
+        public required ICSharpCode.Decompiler.Metadata.AssemblyReference Reference { get; init; }
+    }
 
     /// <summary>What an assembly uses from a reference, each type with what is used of it under it.</summary>
     public sealed record Used(IReadOnlyList<UsedEntry> Entries) : SummaryInfo;

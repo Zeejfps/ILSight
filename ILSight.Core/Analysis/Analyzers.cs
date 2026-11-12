@@ -264,7 +264,12 @@ public static class Analyzers
             return null;
         }
 
-        return new CodeAnchor(CodeAnchorKind.Definition, path, MetadataTokens.GetToken(entity.MetadataToken));
+        return new CodeAnchor
+        {
+            Kind = CodeAnchorKind.Definition,
+            FilePath = path,
+            Token = MetadataTokens.GetToken(entity.MetadataToken),
+        };
     }
 
     /// <summary><paramref name="described"/>, with the library's <paramref name="symbol"/> kept against it.</summary>

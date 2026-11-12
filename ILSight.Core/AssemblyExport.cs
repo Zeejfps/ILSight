@@ -63,9 +63,9 @@ public static class AssemblyExport
         using var projectFile = new StreamWriter(projectPath.Text);
         var id = decompiler.DecompileProject(LoadedAssemblies.GetFile(assembly), folder, projectFile, cancellationToken);
         var errors = decompiler.Errors
-            .Select(static e => new ExportError(e.Message, e.ToString()))
+            .Select(static e => new ExportError { Message = e.Message, Details = e.ToString() })
             .ToList();
-        return new ExportedProject(assembly, projectPath.Text, errors, id);
+        return new ExportedProject { Assembly = assembly, ProjectPath = projectPath.Text, Errors = errors, Id = id };
     }
 
     private static WholeProjectDecompiler CreateProjectDecompiler(LoadedModule assembly, DecompilerOptions options, CancellationToken cancellationToken)
@@ -183,13 +183,21 @@ public static class AssemblyExport
     {
         if (!assembly.CanGeneratePdb)
         {
-            return new PdbFailure.NoDebugEntry(assembly);
+            return new PdbFailure.NoDebugEntry { Assembly = assembly };
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, cancellationToken);
         return read.Match(
             r => TryGeneratePdb(assembly, r.TypeSystem, options, folder, embedSources, progress, cancellationToken),
-            u => new PdbFailure.NotWritten(assembly, new ExportError(u.Thrown.SourceException.Message, u.Thrown.SourceException.ToString())));
+            u => new PdbFailure.NotWritten
+            {
+                Assembly = assembly,
+                Error = new ExportError
+                {
+                    Message = u.Thrown.SourceException.Message,
+                    Details = u.Thrown.SourceException.ToString(),
+                },
+            });
     }
 
     private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string folder,
@@ -203,7 +211,11 @@ public static class AssemblyExport
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new PdbFailure.NotWritten(assembly, new ExportError(e.Message, e.ToString()));
+            return new PdbFailure.NotWritten
+            {
+                Assembly = assembly,
+                Error = new ExportError { Message = e.Message, Details = e.ToString() },
+            };
         }
     }
 
@@ -267,7 +279,13 @@ public static class AssemblyExport
 
     private static void StartPart(PartProgress part)
     {
-        part.Progress.Report(new ExportProgress(part.Name, part.Part, part.Parts, part.From));
+        part.Progress.Report(new ExportProgress
+        {
+            Name = part.Name,
+            Part = part.Part,
+            Parts = part.Parts,
+            Fraction = part.From,
+        });
     }
 
     /// <summary>The span of <paramref name="part"/> cut in two, for two steps that each take half of it.</summary>
@@ -282,7 +300,13 @@ public static class AssemblyExport
     private static void ReportPart(PartProgress part, DecompilationProgress value)
     {
         var fraction = GetFractionAt(part, value.UnitsCompleted, value.TotalUnits);
-        part.Progress.Report(new ExportProgress(part.Name, part.Part, part.Parts, fraction));
+        part.Progress.Report(new ExportProgress
+        {
+            Name = part.Name,
+            Part = part.Part,
+            Parts = part.Parts,
+            Fraction = fraction,
+        });
     }
 
     private static float GetFractionAt(PartProgress part, int done, int total)

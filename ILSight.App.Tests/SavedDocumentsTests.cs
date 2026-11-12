@@ -156,7 +156,11 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static TypeAnchor FixtureType(string name)
     {
-        return new TypeAnchor(PathOf(AppStateDriver.FixturePath), $"{AppStateDriver.FixturesNamespace}.{name}");
+        return new TypeAnchor
+        {
+            AssemblyPath = PathOf(AppStateDriver.FixturePath),
+            FullName = $"{AppStateDriver.FixturesNamespace}.{name}",
+        };
     }
 
     /// <summary>Where the fixture type <paramref name="name"/> is, as this build saves it.</summary>
@@ -164,8 +168,16 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         return NodePath.From(PathOf(AppStateDriver.FixturePath),
         [
-            new NodePathStep(new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace), AppStateDriver.FixturesNamespace),
-            new NodePathStep(new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.{name}"), name),
+            new NodePathStep
+            {
+                Segment = new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace),
+                Label = AppStateDriver.FixturesNamespace,
+            },
+            new NodePathStep
+            {
+                Segment = new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.{name}"),
+                Label = name,
+            },
         ]);
     }
 

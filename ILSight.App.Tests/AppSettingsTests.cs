@@ -194,7 +194,12 @@ public sealed class AppSettingsTests : IDisposable
         var playAnalyzed = loaded.AssemblyLists[1].Analyzed;
         Assert.NotNull(playAnalyzed);
         var analyzed = Assert.Single(playAnalyzed);
-        Assert.Equal(new CodeAnchor(CodeAnchorKind.Definition, PathOf(A), 33554434), analyzed);
+        Assert.Equal(new CodeAnchor
+        {
+            Kind = CodeAnchorKind.Definition,
+            FilePath = PathOf(A),
+            Token = 33554434,
+        }, analyzed);
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));
         Assert.False(JsonDocument.Parse(File.ReadAllText(SettingsFile)).RootElement.TryGetProperty("Analyzed", out _));
     }

@@ -69,8 +69,18 @@ public sealed class CodeTooltipTests
         var point = TooltipOf(list, assembly.Fixtures().Child("Point"));
 
         Assert.Equal("public enum Calculator<T>.Mode", mode.Signature.Line.Text);
-        Assert.Equal(new CodeContainer("class", "ILSight.Tests.Fixtures.Calculator<T>", false), mode.Container);
-        Assert.Equal(new CodeContainer("namespace", "ILSight.Tests.Fixtures", true), calculator.Container);
+        Assert.Equal(new CodeContainer
+        {
+            Keyword = "class",
+            Name = "ILSight.Tests.Fixtures.Calculator<T>",
+            IsNamespace = false,
+        }, mode.Container);
+        Assert.Equal(new CodeContainer
+        {
+            Keyword = "namespace",
+            Name = "ILSight.Tests.Fixtures",
+            IsNamespace = true,
+        }, calculator.Container);
         Assert.Equal("namespace", point.Container?.Keyword);
     }
 
@@ -250,7 +260,12 @@ public sealed class CodeTooltipTests
         Assert.NotNull(tooltip);
 
         Assert.StartsWith("public void List<T>.Add(T item)", tooltip.Signature.Line.Text);
-        Assert.Equal(new CodeContainer("class", "System.Collections.Generic.List<T>", false), tooltip.Container);
+        Assert.Equal(new CodeContainer
+        {
+            Keyword = "class",
+            Name = "System.Collections.Generic.List<T>",
+            IsNamespace = false,
+        }, tooltip.Container);
         Assert.NotEmpty(Section(tooltip, DocSectionKind.Summary).Blocks);
         Assert.Equal([assembly], list.Assemblies);
     }

@@ -207,13 +207,23 @@ public static class NodeDefinitions
     /// <summary>How visible a definition is, compiler-generated when the compiler made it up or what holds it.</summary>
     internal static NodeVisibility GetDefinitionVisibility(IEntity entity)
     {
-        return new NodeVisibility(EntityText.Map(entity.Accessibility), EntityText.IsPublicApi(entity), Members.IsOrSitsInCompilerGenerated(entity));
+        return new NodeVisibility
+        {
+            Accessibility = EntityText.Map(entity.Accessibility),
+            IsPublicApi = EntityText.IsPublicApi(entity),
+            IsCompilerGenerated = Members.IsOrSitsInCompilerGenerated(entity),
+        };
     }
 
     /// <summary>How visible a type another node points at is: as declared, and never compiler-generated.</summary>
     internal static NodeVisibility GetReferencedVisibility(IEntity entity)
     {
-        return new NodeVisibility(EntityText.Map(entity.Accessibility), EntityText.IsPublicApi(entity), false);
+        return new NodeVisibility
+        {
+            Accessibility = EntityText.Map(entity.Accessibility),
+            IsPublicApi = EntityText.IsPublicApi(entity),
+            IsCompilerGenerated = false,
+        };
     }
 
     /// <summary>How visible what a node of <paramref name="subject"/> stands for is.</summary>
@@ -221,7 +231,12 @@ public static class NodeDefinitions
     {
         return subject.Match(
             module: static _ => NodeVisibility.Open,
-            @namespace: static ns => new NodeVisibility(NodeAccessibility.None, ns.Value.IsPublicApi, ns.Value.IsCompilerGenerated),
+            @namespace: static ns => new NodeVisibility
+            {
+                Accessibility = NodeAccessibility.None,
+                IsPublicApi = ns.Value.IsPublicApi,
+                IsCompilerGenerated = ns.Value.IsCompilerGenerated,
+            },
             failedAssembly: static _ => NodeVisibility.Open,
             typeDefinition: static type => type.Definition.Visibility,
             memberDefinition: static member => member.Definition.Visibility,
@@ -253,7 +268,12 @@ public static class NodeDefinitions
     private static NodeVisibility GetResourceVisibility(ICSharpCode.Decompiler.Metadata.Resource resource)
     {
         var (isPublic, accessibility) = ResourceNodes.Visibility(resource);
-        return new NodeVisibility(accessibility, isPublic, false);
+        return new NodeVisibility
+        {
+            Accessibility = accessibility,
+            IsPublicApi = isPublic,
+            IsCompilerGenerated = false,
+        };
     }
 
     /// <summary>What activating a node of <paramref name="subject"/> does.</summary>
@@ -322,7 +342,7 @@ public static class NodeDefinitions
             throw new UnreachableException($"'{text}' sits under '{parent.Text}' but no segment names it.");
         }
 
-        var step = new NodePathStep(segment, text);
+        var step = new NodePathStep { Segment = segment, Label = text };
         if (segment.IsPackageEntry)
         {
             return new NodePath { FilePath = parent.Root.Assembly.FilePath, Steps = [step] };

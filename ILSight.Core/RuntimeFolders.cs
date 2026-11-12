@@ -192,7 +192,7 @@ public static class RuntimeFolders
                 }
 
                 seen.Add(name);
-            result.Add(new RuntimeAssembly(name, framework, path));
+            result.Add(new RuntimeAssembly { Name = name, Framework = framework, FilePath = path });
         }
         }
 

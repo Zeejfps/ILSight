@@ -112,7 +112,11 @@ public static class AssemblyListing
                 return false;
             }
 
-            held.Snapshot = now with { ReadOptions = new AssemblyLoadOptions(loadsReferences, readerOptions), Generation = now.Generation + 1 };
+            held.Snapshot = now with { ReadOptions = new AssemblyLoadOptions
+            {
+                LoadsReferences = loadsReferences,
+                ReaderOptions = readerOptions,
+            }, Generation = now.Generation + 1 };
         }
         return true;
     }

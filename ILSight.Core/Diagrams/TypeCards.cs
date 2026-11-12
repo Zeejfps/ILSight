@@ -106,7 +106,7 @@ public static class TypeCards
         return new TypeCard
         {
             Type = reference,
-            Anchor = new TypeAnchor(reference.FilePath, type.ReflectionName),
+            Anchor = new TypeAnchor { AssemblyPath = reference.FilePath, FullName = type.ReflectionName },
             Name = EntityText.Label(type),
             FullName = EntityText.FullName(type),
             AssemblyPath = reference.FilePath,

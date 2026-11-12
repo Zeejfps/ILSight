@@ -9,12 +9,15 @@ public abstract record PdbFailure
     {
     }
 
-    public abstract LoadedModule Assembly { get; init; }
+    public required LoadedModule Assembly { get; init; }
 
     /// <summary>Its debug directory names no PDB for one to match.</summary>
-    public sealed record NoDebugEntry(LoadedModule Assembly) : PdbFailure;
+    public sealed record NoDebugEntry : PdbFailure;
 
-    public sealed record NotWritten(LoadedModule Assembly, ExportError Error) : PdbFailure;
+    public sealed record NotWritten : PdbFailure
+    {
+        public required ExportError Error { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<NoDebugEntry, TResult> noDebugEntry, Func<NotWritten, TResult> notWritten)

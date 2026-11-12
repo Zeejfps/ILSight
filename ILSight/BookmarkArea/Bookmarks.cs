@@ -162,8 +162,15 @@ public static class Bookmarks
         }
 
         var location = place.EntityFullName ?? place.ILSpyName;
-        return new ILSpyBookmarkInfo(assembly.FullName, assembly.FilePath.FileName, token, entityName ?? location ?? place.Text, location,
-            ListILSpyPath(place));
+        return new ILSpyBookmarkInfo
+        {
+            AssemblyFullName = assembly.FullName,
+            ModuleName = assembly.FilePath.FileName,
+            Token = token,
+            MemberName = entityName ?? location ?? place.Text,
+            LocationNodeName = location,
+            TreePath = ListILSpyPath(place),
+        };
     }
 
     /// <summary>The full name of the entity <paramref name="anchor"/> names in <paramref name="document"/> when it is
@@ -226,12 +233,30 @@ public static class Bookmarks
     {
         CodeAnchor? anchor = record.Kind switch
         {
-            BookmarkKind.Token => new CodeAnchor(CodeAnchorKind.Definition, record.FileName, (int)record.Token),
-            BookmarkKind.Body => new CodeAnchor(CodeAnchorKind.Statement, record.FileName, (int)record.Token, record.ILOffset),
+            BookmarkKind.Token => new CodeAnchor
+            {
+                Kind = CodeAnchorKind.Definition,
+                FilePath = record.FileName,
+                Token = (int)record.Token,
+            },
+            BookmarkKind.Body => new CodeAnchor
+            {
+                Kind = CodeAnchorKind.Statement,
+                FilePath = record.FileName,
+                Token = (int)record.Token,
+                ILOffset = record.ILOffset,
+            },
             _ => null,
         };
-        var ilspy = new ILSpyBookmarkInfo(record.AssemblyFullName, record.ModuleName, record.Token,
-            record.MemberName, record.LocationNodeName, record.ViewState?.SelectedTreeNodePath);
+        var ilspy = new ILSpyBookmarkInfo
+        {
+            AssemblyFullName = record.AssemblyFullName,
+            ModuleName = record.ModuleName,
+            Token = record.Token,
+            MemberName = record.MemberName,
+            LocationNodeName = record.LocationNodeName,
+            TreePath = record.ViewState?.SelectedTreeNodePath,
+        };
         return CreateBookmark(place, record.Language ?? DecompilationLanguage.CSharp, Math.Max(0, record.LineNumber - 1), anchor,
             record.Name, ilspy, record.ViewState, record.Enabled);
     }

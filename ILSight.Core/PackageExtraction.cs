@@ -21,14 +21,20 @@ public static class PackageExtraction
         for (var i = 0; i < files.Count; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            progress?.Report(new ExportProgress(folder.Name, 1, 1, (float)i / files.Count));
+            progress?.Report(new ExportProgress
+            {
+                Name = folder.Name,
+                Part = 1,
+                Parts = 1,
+                Fraction = (float)i / files.Count,
+            });
             var failure = TryExtract(package, files[i], folder, root, written);
             if (failure is not null)
             {
                 failures.Add(failure);
             }
         }
-        return new ExtractedFiles(written, failures);
+        return new ExtractedFiles { Written = written, Failures = failures };
     }
 
     private static ExtractFailure? TryExtract(AssemblyPackage package, PackageFile file, PackageFolder folder, string root, List<string> written)
@@ -38,7 +44,7 @@ public static class PackageExtraction
             var path = FindTargetPath(file, folder, root);
             if (path is null)
             {
-                return new ExtractFailure.OutsideFolder(file);
+                return new ExtractFailure.OutsideFolder { File = file };
             }
 
             WriteFile(package, file, path);
@@ -113,6 +119,10 @@ public static class PackageExtraction
 
     private static ExtractFailure NotWritten(PackageFile file, Exception e)
     {
-        return new ExtractFailure.NotWritten(file, new ExportError(e.Message, e.ToString()));
+        return new ExtractFailure.NotWritten
+        {
+            File = file,
+            Error = new ExportError { Message = e.Message, Details = e.ToString() },
+        };
     }
 }

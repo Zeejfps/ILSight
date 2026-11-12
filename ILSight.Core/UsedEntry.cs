@@ -8,9 +8,23 @@ internal abstract record UsedEntry
     {
     }
 
-    public sealed record Type(string FullName, CodeReference? Target, IReadOnlyList<UsedEntry> Used) : UsedEntry;
+    public sealed record Type : UsedEntry
+    {
+        public required string FullName { get; init; }
 
-    public sealed record Member(string Label, SpanKind Kind, CodeReference? Target) : UsedEntry;
+        public required CodeReference? Target { get; init; }
+
+        public required IReadOnlyList<UsedEntry> Used { get; init; }
+    }
+
+    public sealed record Member : UsedEntry
+    {
+        public required string Label { get; init; }
+
+        public required SpanKind Kind { get; init; }
+
+        public required CodeReference? Target { get; init; }
+    }
 
     public sealed record Forwarded(ForwardedLine Line) : UsedEntry;
 

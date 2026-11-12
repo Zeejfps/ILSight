@@ -140,7 +140,13 @@ public static partial class ClassDiagrams
     private static void CountBuilt(BuiltTypes built)
     {
         built.Done++;
-        built.Progress?.Report(new ExportProgress(built.AssemblyName, 0, 1, (float)built.Done / built.Total));
+        built.Progress?.Report(new ExportProgress
+        {
+            Name = built.AssemblyName,
+            Part = 0,
+            Parts = 1,
+            Fraction = (float)built.Done / built.Total,
+        });
     }
 
     /// <summary>The names and ids of <paramref name="picked"/>, the types of a diagram.</summary>

@@ -427,7 +427,12 @@ public static class Exports
     {
         var key = setup.StrongNameKeyFile.Trim();
         var keyFile = key.Length == 0 ? null : key;
-        return new ProjectExtras(keyFile, setup.GeneratePdb, setup.EmbedSourcesInPdb);
+        return new ProjectExtras
+        {
+            StrongNameKeyFile = keyFile,
+            Pdb = setup.GeneratePdb,
+            EmbedSourcesInPdb = setup.EmbedSourcesInPdb,
+        };
     }
 
     /// <summary>The export the dialog asks for.</summary>
@@ -441,7 +446,7 @@ public static class Exports
     {
         return setup.Choices
             .Where(static c => c.Included)
-            .Select(static c => new SolutionProject(c.Assembly, c.Name.Trim()))
+            .Select(static c => new SolutionProject { Assembly = c.Assembly, Name = c.Name.Trim() })
             .ToList();
     }
 }

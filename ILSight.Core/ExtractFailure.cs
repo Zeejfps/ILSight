@@ -9,12 +9,15 @@ public abstract record ExtractFailure
     {
     }
 
-    public abstract PackageFile File { get; init; }
+    public required PackageFile File { get; init; }
 
     /// <summary>Its path would have put it outside the folder extracted into.</summary>
-    public sealed record OutsideFolder(PackageFile File) : ExtractFailure;
+    public sealed record OutsideFolder : ExtractFailure;
 
-    public sealed record NotWritten(PackageFile File, ExportError Error) : ExtractFailure;
+    public sealed record NotWritten : ExtractFailure
+    {
+        public required ExportError Error { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<OutsideFolder, TResult> outsideFolder, Func<NotWritten, TResult> notWritten)

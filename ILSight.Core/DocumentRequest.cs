@@ -6,36 +6,62 @@ namespace ILSight.Core;
 /// failure to write it is reported as one of <see cref="FullName"/>.</summary>
 internal abstract record DocumentRequest
 {
-    private DocumentRequest(string title, string fullName)
+    private DocumentRequest()
     {
-        Title = title;
-        FullName = fullName;
     }
 
-    public string Title { get; }
+    public required string Title { get; init; }
 
-    public string FullName { get; }
+    public required string FullName { get; init; }
 
     /// <summary>A module's summary and attributes, not its types.</summary>
-    public sealed record ModulePreview(LoadedModule Module, string Title, string FullName) : DocumentRequest(Title, FullName);
+    public sealed record ModulePreview : DocumentRequest
+    {
+        public required LoadedModule Module { get; init; }
+    }
 
-    public sealed record Type(DefinedType Definition, string Title, string FullName) : DocumentRequest(Title, FullName);
+    public sealed record Type : DocumentRequest
+    {
+        public required DefinedType Definition { get; init; }
+    }
 
-    public sealed record Member(DefinedMember Definition, string Title, string FullName) : DocumentRequest(Title, FullName);
+    public sealed record Member : DocumentRequest
+    {
+        public required DefinedMember Definition { get; init; }
+    }
 
-    /// <summary>What a node without code of its own lists, read from <paramref name="Module"/>, or
+    /// <summary>What a node without code of its own lists, read from <see cref="Module"/>, or
     /// from none for a package's.</summary>
-    public sealed record Summary(SummaryInfo Info, LoadedModule? Module, string Title, string FullName) : DocumentRequest(Title, FullName);
+    public sealed record Summary : DocumentRequest
+    {
+        public required SummaryInfo Info { get; init; }
 
-    /// <summary>A resource as its text, or a hex dump of its bytes, which <paramref name="Read"/> reads.</summary>
-    public sealed record Resource(LoadedModule? Module, string Description, Func<byte[]> Read, string Title, string FullName)
-        : DocumentRequest(Title, FullName);
+        public required LoadedModule? Module { get; init; }
+    }
+
+    /// <summary>A resource as its text, or a hex dump of its bytes, which <see cref="Read"/> reads.</summary>
+    public sealed record Resource : DocumentRequest
+    {
+        public required LoadedModule? Module { get; init; }
+
+        public required string Description { get; init; }
+
+        public required Func<byte[]> Read { get; init; }
+    }
 
     /// <summary>WPF's compiled XAML, as the XAML it was compiled from.</summary>
-    public sealed record Baml(LoadedModule Module, byte[] Data, string Title, string FullName) : DocumentRequest(Title, FullName);
+    public sealed record Baml : DocumentRequest
+    {
+        public required LoadedModule Module { get; init; }
+
+        public required byte[] Data { get; init; }
+    }
 
     /// <summary>Why a listed file could not be read.</summary>
-    public sealed record Failure(FailedAssembly Assembly, string Title, string FullName) : DocumentRequest(Title, FullName);
+    public sealed record Failure : DocumentRequest
+    {
+        public required FailedAssembly Assembly { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<ModulePreview, TResult> modulePreview, Func<Type, TResult> type,

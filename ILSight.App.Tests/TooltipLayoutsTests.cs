@@ -31,7 +31,14 @@ public sealed class TooltipLayoutsTests
         var start = 0;
         foreach (var (text, kind) in parts)
         {
-            spans.Add(new DocumentSpan(start, text.Length, kind, null, false));
+            spans.Add(new DocumentSpan
+            {
+                Start = start,
+                Length = text.Length,
+                Kind = kind,
+                Reference = null,
+                IsDefinition = false,
+            });
             start += text.Length;
         }
 
@@ -52,17 +59,17 @@ public sealed class TooltipLayoutsTests
             ("string", SpanKind.Keyword), (" ", SpanKind.Plain), ("Compose", SpanKind.Method), ("(", SpanKind.Plain),
             ("string", SpanKind.Keyword), (" ", SpanKind.Plain), ("greeting", SpanKind.Parameter), (", ", SpanKind.Plain),
             ("string", SpanKind.Keyword), (" ", SpanKind.Plain), ("name", SpanKind.Parameter), (")", SpanKind.Plain));
-        return new CodeSignature(line, [15, 32], []);
+        return new CodeSignature { Line = line, ParameterStarts = [15, 32], Constraints = [] };
     }
 
     private static CodeTooltip Tooltip(CodeSignature signature, CodeContainer? container = null, params DocSection[] sections)
     {
-        return new CodeTooltip(signature, container, sections);
+        return new CodeTooltip { Signature = signature, Container = container, Sections = sections };
     }
 
     private static CodeSignature Plain(string text)
     {
-        return new CodeSignature(Line((text, SpanKind.Plain)), [], []);
+        return new CodeSignature { Line = Line((text, SpanKind.Plain)), ParameterStarts = [], Constraints = [] };
     }
 
     private static string TextOf(IReadOnlyList<RichTextRun> runs)
@@ -72,7 +79,7 @@ public sealed class TooltipLayoutsTests
 
     private static DocBlock.Paragraph Paragraph(string text)
     {
-        return new DocBlock.Paragraph([new DocRun(text, DocStyle.Plain)]);
+        return new DocBlock.Paragraph([new DocRun { Text = text, Style = DocStyle.Plain }]);
     }
 
     [Fact]
@@ -100,7 +107,12 @@ public sealed class TooltipLayoutsTests
     [Fact]
     public void Build_Constraints_DropTheirIndentation()
     {
-        var signature = new CodeSignature(Line(("class Box<T>", SpanKind.Plain)), [], [Line(("    ", SpanKind.Plain), ("where T : class", SpanKind.Plain))]);
+        var signature = new CodeSignature
+        {
+            Line = Line(("class Box<T>", SpanKind.Plain)),
+            ParameterStarts = [],
+            Constraints = [Line(("    ", SpanKind.Plain), ("where T : class", SpanKind.Plain))],
+        };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(signature));
 
@@ -110,7 +122,7 @@ public sealed class TooltipLayoutsTests
     [Fact]
     public void Build_InAType_WordsTheContainerWithItsKeywordAndNameAsCode()
     {
-        var container = new CodeContainer("class", "Fixtures.Farewell", IsNamespace: false);
+        var container = new CodeContainer { Keyword = "class", Name = "Fixtures.Farewell", IsNamespace = false };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Plain("Say()"), container));
 
@@ -123,7 +135,7 @@ public sealed class TooltipLayoutsTests
     [Fact]
     public void Build_InANamespace_ColorsTheNameAsANamespace()
     {
-        var container = new CodeContainer("namespace", "Fixtures", IsNamespace: true);
+        var container = new CodeContainer { Keyword = "namespace", Name = "Fixtures", IsNamespace = true };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Plain("Farewell"), container));
 
@@ -145,9 +157,33 @@ public sealed class TooltipLayoutsTests
         var sections = new DocSection[]
         {
             new DocSection.Summary { Blocks = [Paragraph("Composes a greeting.")] },
-            new DocSection.Parameter { Name = new DocRun("greeting", DocStyle.Plain), Blocks = [Paragraph("What to say.")] },
-            new DocSection.Parameter { Name = new DocRun("name", DocStyle.Plain), Blocks = [Paragraph("Who to.")] },
-            new DocSection.Exception { Name = new DocRun("ArgumentException", DocStyle.Plain), Blocks = [Paragraph("When empty.")] },
+            new DocSection.Parameter
+            {
+                Name = new DocRun
+                {
+                    Text = "greeting",
+                    Style = DocStyle.Plain,
+                },
+                Blocks = [Paragraph("What to say.")],
+            },
+            new DocSection.Parameter
+            {
+                Name = new DocRun
+                {
+                    Text = "name",
+                    Style = DocStyle.Plain,
+                },
+                Blocks = [Paragraph("Who to.")],
+            },
+            new DocSection.Exception
+            {
+                Name = new DocRun
+                {
+                    Text = "ArgumentException",
+                    Style = DocStyle.Plain,
+                },
+                Blocks = [Paragraph("When empty.")],
+            },
         };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Compose(), null, sections));
@@ -166,10 +202,22 @@ public sealed class TooltipLayoutsTests
     {
         var items = new[]
         {
-            new DocListItem([new DocRun("First", DocStyle.Plain)], [new DocRun("comes first.", DocStyle.Plain)]),
-            new DocListItem([], [new DocRun("Then this.", DocStyle.Plain)]),
+            new DocListItem
+            {
+                Term = [new DocRun
+                {
+                    Text = "First",
+                    Style = DocStyle.Plain,
+                }],
+                Description = [new DocRun
+                {
+                    Text = "comes first.",
+                    Style = DocStyle.Plain,
+                }],
+            },
+            new DocListItem { Term = [], Description = [new DocRun { Text = "Then this.", Style = DocStyle.Plain }] },
         };
-        var list = new DocBlock.List(DocListKind.Number, null, items);
+        var list = new DocBlock.List { Kind = DocListKind.Number, Header = null, Items = items };
         var summary = new DocSection.Summary { Blocks = [list] };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Plain("Steps"), null, summary));
@@ -184,9 +232,33 @@ public sealed class TooltipLayoutsTests
     [Fact]
     public void Build_TableWithAHeader_SetsTheHeaderRowInTheHeadingStyle()
     {
-        var header = new DocListItem([new DocRun("Value", DocStyle.Plain)], [new DocRun("Meaning", DocStyle.Plain)]);
-        var item = new DocListItem([new DocRun("0", DocStyle.Plain)], [new DocRun("None.", DocStyle.Plain)]);
-        var table = new DocBlock.List(DocListKind.Table, header, [item]);
+        var header = new DocListItem
+        {
+            Term = [new DocRun
+            {
+                Text = "Value",
+                Style = DocStyle.Plain,
+            }],
+            Description = [new DocRun
+            {
+                Text = "Meaning",
+                Style = DocStyle.Plain,
+            }],
+        };
+        var item = new DocListItem
+        {
+            Term = [new DocRun
+            {
+                Text = "0",
+                Style = DocStyle.Plain,
+            }],
+            Description = [new DocRun
+            {
+                Text = "None.",
+                Style = DocStyle.Plain,
+            }],
+        };
+        var table = new DocBlock.List { Kind = DocListKind.Table, Header = header, Items = [item] };
         var remarks = new DocSection.Remarks { Blocks = [table, new DocBlock.Code("var x = 0;")] };
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Plain("Flags"), null, remarks));

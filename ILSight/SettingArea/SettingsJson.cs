@@ -445,7 +445,7 @@ internal static class SettingsJson
             return null;
         }
 
-        return new NodePathStep(segment, json.Label);
+        return new NodePathStep { Segment = segment, Label = json.Label };
     }
 
     public static BookmarkJson Write(BookmarkRecord bookmark)
@@ -579,7 +579,7 @@ internal static class SettingsJson
             return null;
         }
 
-        return new CodeAnchor(json.Kind, path, json.Token, json.ILOffset);
+        return new CodeAnchor { Kind = json.Kind, FilePath = path, Token = json.Token, ILOffset = json.ILOffset };
     }
 
     private static CodeViewPositionJson Write(CodeViewPosition position)
@@ -635,7 +635,7 @@ internal static class SettingsJson
             return null;
         }
 
-        return new TypeAnchor(path, json.FullName);
+        return new TypeAnchor { AssemblyPath = path, FullName = json.FullName };
     }
 
     private static DiagramViewJson Write(DiagramViewRecord view)

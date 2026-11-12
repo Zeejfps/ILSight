@@ -78,7 +78,7 @@ public static class AssemblyListPresets
                 continue;
             }
 
-            presets.Add(new AssemblyListPreset($"{framework} {version.Label}", PathsOf(paths)));
+            presets.Add(new AssemblyListPreset { Name = $"{framework} {version.Label}", Paths = PathsOf(paths) });
         }
         return presets;
     }
@@ -117,7 +117,7 @@ public static class AssemblyListPresets
             return null;
         }
 
-        return new InstalledVersion(directory, label, number);
+        return new InstalledVersion { Directory = directory, Label = label, Number = number };
     }
 
     /// <summary>The framework assemblies in <paramref name="directory"/>, by name, told apart from the
@@ -175,7 +175,7 @@ public static class AssemblyListPresets
                 continue;
             }
 
-            presets.Add(new AssemblyListPreset(name, PathsOf(paths)));
+            presets.Add(new AssemblyListPreset { Name = name, Paths = PathsOf(paths) });
         }
         return presets;
     }
@@ -258,5 +258,12 @@ public static class AssemblyListPresets
         ]),
     ];
 
-    private sealed record InstalledVersion(string Directory, string Label, Version Number);
+    private sealed record InstalledVersion
+    {
+        public required string Directory { get; init; }
+
+        public required string Label { get; init; }
+
+        public required Version Number { get; init; }
+    }
 }

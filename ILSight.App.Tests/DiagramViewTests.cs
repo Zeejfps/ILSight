@@ -85,7 +85,11 @@ public sealed class DiagramViewTests
     public void A_cards_own_members_start_open_and_what_it_inherits_starts_folded_and_a_click_flips_either_by_value()
     {
         var view = new DiagramViewState();
-        var card = new TypeAnchor(AssemblyPath.Of(AppStateDriver.FixturePath), "Ns.Calculator");
+        var card = new TypeAnchor
+        {
+            AssemblyPath = AssemblyPath.Of(AppStateDriver.FixturePath),
+            FullName = "Ns.Calculator",
+        };
         CardFold[] own = [new CardFold.Own(card, MemberSection.Methods), new CardFold.Own(card, MemberSection.Methods)];
         CardFold[] inherited = [new CardFold.Inherited(card, "Base"), new CardFold.Inherited(card, "Base")];
 

@@ -25,7 +25,7 @@ public sealed class SettingsFormatTests : IDisposable
 
     private static readonly AssemblyPath A = PathOf(Rooted("Fixture/A.dll"));
     private static readonly AssemblyPath B = PathOf(Rooted("Fixture/B.dll"));
-    private static readonly TypeAnchor Calculator = new(A, "Ns.Calculator");
+    private static readonly TypeAnchor Calculator = new TypeAnchor { AssemblyPath = A, FullName = "Ns.Calculator" };
     private static readonly TypeAnchorJson CalculatorJson = new(A.Text, "Ns.Calculator");
 
     private readonly TempDir _temp = new();
@@ -132,7 +132,13 @@ public sealed class SettingsFormatTests : IDisposable
             AssemblyLists =
             [
                 new AssemblyListRecord("Work", [A, B],
-                    [new CodeAnchor(CodeAnchorKind.Statement, A, 0x06000001, 7)],
+                    [new CodeAnchor
+                    {
+                        Kind = CodeAnchorKind.Statement,
+                        FilePath = A,
+                        Token = 0x06000001,
+                        ILOffset = 7,
+                    }],
                     new Dictionary<AssemblyPath, string> { [A] = Rooted("Fixture/A.pdb") },
                     new Dictionary<AssemblyPath, string> { [B] = ".NETCoreApp,Version=v8.0" },
                     ExpectedDocuments()),
@@ -193,7 +199,11 @@ public sealed class SettingsFormatTests : IDisposable
         [
             new NodeDocumentRecord("document-1", "Calculator", CalculatorPlace(), DecompilationLanguage.IL, code),
             new NodeDocumentRecord("document-2", "Other", OtherPlace(), DecompilationLanguage.ILWithCSharp, grid),
-            new DiagramDocumentRecord("document-3", "Diagram", [Calculator, new TypeAnchor(B, "Ns.Other")], [A], view),
+            new DiagramDocumentRecord("document-3", "Diagram", [Calculator, new TypeAnchor
+            {
+                AssemblyPath = B,
+                FullName = "Ns.Other",
+            }], [A], view),
             new ComparisonDocumentRecord("document-4", "Comparison", A, B, ApiScope.AllDeclared, new ComparisonViewRecord(true)),
         ];
         var layout = new DockLayout
@@ -227,8 +237,8 @@ public sealed class SettingsFormatTests : IDisposable
     {
         return NodePath.From(A,
         [
-            new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
-            new NodePathStep(new NodePathSegment.Definition("T:Ns.Calculator"), "Calculator"),
+            new NodePathStep { Segment = new NodePathSegment.Namespace("Ns"), Label = "Ns" },
+            new NodePathStep { Segment = new NodePathSegment.Definition("T:Ns.Calculator"), Label = "Calculator" },
         ]);
     }
 
@@ -236,8 +246,8 @@ public sealed class SettingsFormatTests : IDisposable
     {
         return NodePath.From(B,
         [
-            new NodePathStep(new NodePathSegment.Namespace("Ns"), "Ns"),
-            new NodePathStep(new NodePathSegment.Definition("T:Ns.Other"), "Other"),
+            new NodePathStep { Segment = new NodePathSegment.Namespace("Ns"), Label = "Ns" },
+            new NodePathStep { Segment = new NodePathSegment.Definition("T:Ns.Other"), Label = "Other" },
         ]);
     }
 }

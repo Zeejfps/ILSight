@@ -14,7 +14,12 @@ internal static class DebugSymbolFiles
     private const string EmbeddedDescription = "Embedded in this assembly";
     private const string BesideDescription = "Loaded from portable PDB: ";
 
-    private sealed record PdbImage(string Path, byte[] Image);
+    private sealed record PdbImage
+    {
+        public required string Path { get; init; }
+
+        public required byte[] Image { get; init; }
+    }
 
     /// <summary>Whether a portable PDB can be generated for <paramref name="file"/>: only when its debug
     /// directory names a PDB, which the generated one must match.</summary>
@@ -146,14 +151,14 @@ internal static class DebugSymbolFiles
         var image = TryReadFile(named, package);
         if (image is not null)
         {
-            return new PdbImage(named, image);
+            return new PdbImage { Path = named, Image = image };
         }
 
         var sibling = Path.ChangeExtension(assemblyPath, DebugSymbols.PdbExtension);
         image = TryReadFile(sibling, package);
         if (image is not null)
         {
-            return new PdbImage(sibling, image);
+            return new PdbImage { Path = sibling, Image = image };
         }
 
         return null;

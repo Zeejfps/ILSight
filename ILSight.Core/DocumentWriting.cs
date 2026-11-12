@@ -329,7 +329,13 @@ internal static class DocumentWriting
         var anchors = new Dictionary<int, CodeAnchor>(builder.MarkedStatements.Count);
         foreach (var (line, (method, offset)) in builder.MarkedStatements)
         {
-            anchors[line] = new CodeAnchor(CodeAnchorKind.Statement, method.FilePath, MetadataTokens.GetToken(method.Handle), offset);
+            anchors[line] = new CodeAnchor
+            {
+                Kind = CodeAnchorKind.Statement,
+                FilePath = method.FilePath,
+                Token = MetadataTokens.GetToken(method.Handle),
+                ILOffset = offset,
+            };
         }
 
         return anchors;
@@ -341,7 +347,14 @@ internal static class DocumentWriting
 
     public static void MarkFoldStart(DocumentBuilder builder, string collapsedText = DefaultFoldText, bool defaultCollapsed = false, bool isDefinition = false)
     {
-        builder.OpenFolds.Push(new OpenFold(builder.Lines.Count, builder.LineStarted ? builder.Line.Length : 0, collapsedText, defaultCollapsed, isDefinition));
+        builder.OpenFolds.Push(new OpenFold
+        {
+            Line = builder.Lines.Count,
+            Column = builder.LineStarted ? builder.Line.Length : 0,
+            Text = collapsedText,
+            DefaultCollapsed = defaultCollapsed,
+            IsDefinition = isDefinition,
+        });
     }
 
     public static void MarkFoldEnd(DocumentBuilder builder)
@@ -389,7 +402,14 @@ internal static class DocumentWriting
                 : !brace ? "…"
                 : openingLine > header ? "{ … }"
                 : "… " + lines[endLine].Text.Trim();
-            regions.Add(new FoldRegion(header, endLine, text, start.DefaultCollapsed, start.IsDefinition));
+            regions.Add(new FoldRegion
+            {
+                StartLine = header,
+                EndLine = endLine,
+                CollapsedText = text,
+                DefaultCollapsed = start.DefaultCollapsed,
+                IsDefinition = start.IsDefinition,
+            });
         }
         regions.Sort(static (a, b) => a.StartLine != b.StartLine ? a.StartLine.CompareTo(b.StartLine) : b.EndLine.CompareTo(a.EndLine));
 
@@ -511,7 +531,14 @@ internal static class DocumentWriting
                 return;
             }
         }
-        builder.Spans.Add(new DocumentSpan(start, text.Length, kind, reference, isDefinition));
+        builder.Spans.Add(new DocumentSpan
+        {
+            Start = start,
+            Length = text.Length,
+            Kind = kind,
+            Reference = reference,
+            IsDefinition = isDefinition,
+        });
     }
 
     private static void LexILLine(DocumentBuilder builder)

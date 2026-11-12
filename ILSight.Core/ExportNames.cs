@@ -46,7 +46,7 @@ public static class ExportNames
         foreach (var assembly in assemblies)
         {
             var name = ReserveProjectName(taken, assembly.Name);
-            projects.Add(new SolutionProject(assembly, name));
+            projects.Add(new SolutionProject { Assembly = assembly, Name = name });
         }
         return projects;
     }

@@ -73,7 +73,16 @@ public sealed class ExportQueue
         _waiting.RemoveAt(0);
         var export = turn.Export;
         var run = export.Run;
-        var active = new Active { Shown = new RunningExport(export, new ExportProgress(export.Job.Name, 1, 1, null), false) };
+        var active = new Active
+        {
+            Shown = new RunningExport(export, new ExportProgress
+            {
+                Name = export.Job.Name,
+                Part = 1,
+                Parts = 1,
+                Fraction = null,
+            }, false),
+        };
         _running = active;
         var progress = new Progress<ExportProgress>(p => TakeProgress(run, p));
         turn.Started.SetResult(new ExportStart(run, progress, () => EndTurn(run), active.Cancel.Token));

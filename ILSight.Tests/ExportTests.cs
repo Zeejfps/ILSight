@@ -179,7 +179,7 @@ public sealed class ExportTests : IDisposable
         await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, progress: progress);
 
         var reports = progress.Reports;
-        Assert.Equal(new ExportProgress("ILSight.Tests", 1, 1, 0f), reports[0]);
+        Assert.Equal(new ExportProgress { Name = "ILSight.Tests", Part = 1, Parts = 1, Fraction = 0f }, reports[0]);
         Assert.Contains(reports, r => r.Fraction == 1f);
     }
 
@@ -200,7 +200,7 @@ public sealed class ExportTests : IDisposable
     public async Task A_solution_puts_each_project_in_a_folder_named_as_the_project()
     {
         var solutionPath = _temp.PathOf("All.sln");
-        SolutionProject[] projects = [new(Trees.TestAssembly, "Renamed")];
+        SolutionProject[] projects = [new SolutionProject { Assembly = Trees.TestAssembly, Name = "Renamed" }];
 
         var exported = await AssemblyExport.ExportSolutionAsync(projects, DecompilerOptions.Default, solutionPath);
 
@@ -284,7 +284,11 @@ public sealed class ExportTests : IDisposable
     {
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        var exported = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras(Pdb: true, EmbedSourcesInPdb: embed));
+        var exported = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras
+        {
+            Pdb = true,
+            EmbedSourcesInPdb = embed,
+        });
 
         var pdb = Assert.IsType<ProjectPdb.Written>(exported.Pdb);
         Assert.Equal(_temp.PathOf(Path.Combine("Project", "ILSight.Tests.pdb")), pdb.Path);
@@ -297,7 +301,10 @@ public sealed class ExportTests : IDisposable
         var key = _temp.Write("keys/signing.snk", [1, 2, 3]);
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras(StrongNameKeyFile: key));
+        await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras
+        {
+            StrongNameKeyFile = key,
+        });
 
         Assert.True(File.Exists(_temp.PathOf(Path.Combine("Project", "signing.snk"))));
         Assert.Contains("signing.snk", await File.ReadAllTextAsync(projectPath));

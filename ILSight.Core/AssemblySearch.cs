@@ -679,7 +679,16 @@ public static class AssemblySearch
             return;
         }
 
-        search.Emit(new SearchFind.Hit { Result = new SearchResult(node, node.Text, location, GetFitness(node)) });
+        search.Emit(new SearchFind.Hit
+        {
+            Result = new SearchResult
+            {
+                Node = node,
+                Text = node.Text,
+                Location = location,
+                Fitness = GetFitness(node),
+            },
+        });
         }
 
         private static float GetFitness(BrowseNode node)

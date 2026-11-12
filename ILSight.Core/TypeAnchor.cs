@@ -6,4 +6,9 @@ namespace ILSight.Core;
 /// <see cref="CodeReference"/> it names the type by what it is rather than where its row is, so it
 /// finds the type again after the app restarts or the assembly is rebuilt.
 /// </summary>
-public readonly record struct TypeAnchor(AssemblyPath AssemblyPath, string FullName);
+public readonly record struct TypeAnchor
+{
+    public required AssemblyPath AssemblyPath { get; init; }
+
+    public required string FullName { get; init; }
+}

@@ -240,13 +240,19 @@ public sealed class ExportTests : IDisposable
         var d = new AppStateDriver();
         var queue = d.AppState.Export;
         var first = Assert.IsType<ExportStart>(await queue.Enter(TestJobs.Named("First")).Turn);
-        first.Progress.Report(new ExportProgress("First", 1, 1, 0.5f));
+        first.Progress.Report(new ExportProgress { Name = "First", Part = 1, Parts = 1, Fraction = 0.5f });
         first.EndTurn();
         Assert.True(queue.Enter(TestJobs.Named("Second")).Turn.IsCompletedSuccessfully);
 
         d.Pump();
 
-        Assert.Equal(new ExportProgress("Second", 1, 1, null), queue.Running?.Progress);
+        Assert.Equal(new ExportProgress
+        {
+            Name = "Second",
+            Part = 1,
+            Parts = 1,
+            Fraction = null,
+        }, queue.Running?.Progress);
     }
 
     [Fact]
@@ -256,7 +262,7 @@ public sealed class ExportTests : IDisposable
         var queue = d.AppState.Export;
         var start = Assert.IsType<ExportStart>(await queue.Enter(TestJobs.Named("Fixtures")).Turn);
 
-        start.Progress.Report(new ExportProgress("Fixtures", 1, 1, 0.75f));
+        start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.75f });
         d.Pump();
 
         Assert.Equal(0.75f, queue.Running?.Progress.Fraction);
@@ -269,8 +275,8 @@ public sealed class ExportTests : IDisposable
         var queue = d.AppState.Export;
         var start = Assert.IsType<ExportStart>(await queue.Enter(TestJobs.Named("Fixtures")).Turn);
 
-        start.Progress.Report(new ExportProgress("Fixtures", 1, 1, 0.6f));
-        start.Progress.Report(new ExportProgress("Fixtures", 1, 1, 0.4f));
+        start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.6f });
+        start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.4f });
         d.Pump();
 
         Assert.Equal(0.6f, queue.Running?.Progress.Fraction);
@@ -315,7 +321,7 @@ public sealed class ExportTests : IDisposable
         var app = AppDriver.Opened();
         var start = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Fixtures")).Turn);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Later")).Turn.IsCompleted);
-        start.Progress.Report(new ExportProgress("Fixtures", 2, 3, 0.5f));
+        start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 3, Fraction = 0.5f });
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Exporting 2/3 · Fixtures"));
