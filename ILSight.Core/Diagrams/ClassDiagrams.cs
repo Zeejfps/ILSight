@@ -840,7 +840,15 @@ public static partial class ClassDiagrams
         {
             return new DiagramDocs { Provider = XmlDocLoader.LoadDocumentation(file) };
         }
-        catch (Exception e) when (e is XmlException or IOException or UnauthorizedAccessException)
+        catch (XmlException)
+        {
+            return new DiagramDocs { Provider = null };
+        }
+        catch (IOException)
+        {
+            return new DiagramDocs { Provider = null };
+        }
+        catch (UnauthorizedAccessException)
         {
             return new DiagramDocs { Provider = null };
         }
@@ -908,7 +916,15 @@ public static partial class ClassDiagrams
         {
             return provider.GetDocumentation(entity);
         }
-        catch (Exception e) when (e is XmlException or IOException or UnauthorizedAccessException)
+        catch (XmlException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
         {
             return null;
         }

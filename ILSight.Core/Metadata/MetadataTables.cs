@@ -508,7 +508,11 @@ internal static class MetadataTables
             var value = metadata.GetBlobReader(constant.Value).ReadConstant(constant.TypeCode);
             return LiteralText(value);
         }
-        catch (Exception e) when (e is BadImageFormatException or ArgumentOutOfRangeException)
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (ArgumentOutOfRangeException)
         {
             return null;
         }

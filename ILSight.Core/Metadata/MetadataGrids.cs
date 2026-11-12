@@ -78,7 +78,15 @@ public static class MetadataGrids
         {
             result = details(grid.Rows[row]);
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            result = null;
+        }
+        catch (ArgumentException)
+        {
+            result = null;
+        }
+        catch (InvalidOperationException)
         {
             result = null;
         }
@@ -147,7 +155,15 @@ public static class MetadataGrids
                 ? ExplainFlags(info.Column.Flags, FindValue(grid, row, column))
                 : info.Tooltip?.Invoke(grid.Rows[row], row + 1);
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            value = null;
+        }
+        catch (ArgumentException)
+        {
+            value = null;
+        }
+        catch (InvalidOperationException)
         {
             value = null;
         }
@@ -357,7 +373,15 @@ public static class MetadataGrids
         {
             actual = Convert.ToInt64(value, CultureInfo.InvariantCulture);
         }
-        catch (Exception e) when (e is InvalidCastException or OverflowException or FormatException)
+        catch (InvalidCastException)
+        {
+            return null;
+        }
+        catch (OverflowException)
+        {
+            return null;
+        }
+        catch (FormatException)
         {
             return null;
         }
@@ -377,7 +401,15 @@ public static class MetadataGrids
         {
             return grid.GridColumns[column].Value(grid.Rows[row], row + 1);
         }
-        catch (Exception e) when (IsUnreadable(e))
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
         {
             return null;
         }
@@ -385,10 +417,6 @@ public static class MetadataGrids
 
     /// <summary>Whether <paramref name="e"/> is how metadata that cannot be read fails, which leaves
     /// its cell empty.</summary>
-    private static bool IsUnreadable(Exception e)
-    {
-        return e is BadImageFormatException or ArgumentException or InvalidOperationException;
-    }
 
     private static string FormatValue(object? value, string? format)
     {

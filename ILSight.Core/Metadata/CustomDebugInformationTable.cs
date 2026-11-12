@@ -122,7 +122,11 @@ internal static class CustomDebugInformationTable
         {
             return Parse(metadata, row, ref reader);
         }
-        catch (Exception ex) when (ex is BadImageFormatException or InvalidDataException)
+        catch (BadImageFormatException)
+        {
+            return new MetadataRowDetails.Text(metadata.GetBlobReader(row.Value).ToHexString(), null);
+        }
+        catch (InvalidDataException)
         {
             return new MetadataRowDetails.Text(metadata.GetBlobReader(row.Value).ToHexString(), null);
         }

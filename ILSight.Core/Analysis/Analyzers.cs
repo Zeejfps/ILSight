@@ -95,7 +95,19 @@ public static class Analyzers
             var entity = LoadedAssemblies.EnsureMainModule(assembly).ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
             return entity is not null ? Describe(entity) : null;
         }
-        catch (Exception e) when (e is ArgumentException or BadImageFormatException or InvalidOperationException or IOException)
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }
