@@ -21,12 +21,12 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
         Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct);
     }
 
-    /// <summary>Opens <paramref name="paths"/> as a reload does, so that another reload or clearing the list
-    /// stops it, then shows what the tabs reopened from the saved documents showed, and the settings are saved once
-    /// the files are open. Returns the loads that started in the tabs, for the edge that started this to start.</summary>
-    public async Task<TabLoads> HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
+    /// <summary>Opens <paramref name="paths"/> as the reload <paramref name="ticket"/> started (in the frame it was
+    /// asked in), so that another reload or clearing the list stops it, then shows what the tabs reopened from the
+    /// saved documents showed, and the settings are saved once the files are open. Returns the loads that started in
+    /// the tabs, for the edge that started this to start.</summary>
+    public async Task<TabLoads> HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, ReloadTicket ticket, CancellationToken ct)
     {
-        var ticket = appState.Reload.Start();
         var opened = await ports.OpenFilesAsync(paths, ticket.Token, ct);
         return FinishOpeningAsReload(appState, opened, ticket);
     }

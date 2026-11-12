@@ -33,7 +33,7 @@ internal static class ToolbarView
         {
             using (Group(ui))
             {
-                ListPicker(ui, appState.Lists);
+                ListPicker(ui, appState);
                 if (ui.IconButton("manage-lists", ui.State.Icons.ToolbarManageLists, t.ListsManage, variant: ButtonVariant.Neutral))
                 {
                     Commands.Later(ui.State, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
@@ -118,9 +118,10 @@ internal static class ToolbarView
 
     /// <summary>The open assembly list's name, opening a menu of every list to switch to, and of the
     /// dialog that manages them. As wide as the longest name, within limits.</summary>
-    private static void ListPicker(Ui<UiState> ui, SavedAssemblyLists lists)
+    private static void ListPicker(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Strings;
+        var lists = appState.Lists;
         var width = ListPickerWidth(ui, lists);
         using var menu = ui.SelectButton("list", lists.Active, width, t.ListsPick, revision: lists.Count);
         if (!menu.IsOpen)
@@ -130,7 +131,7 @@ internal static class ToolbarView
 
         foreach (var name in lists.Names)
         {
-            ListItem(ui, lists, name);
+            ListItem(ui, appState, name);
         }
 
         ui.MenuSeparator();
@@ -166,15 +167,19 @@ internal static class ToolbarView
         public float Width;
     }
 
-    private static void ListItem(Ui<UiState> ui, SavedAssemblyLists lists, string name)
+    /// <summary>The menu item of the list named <paramref name="name"/>; picked, the list is switched to in this
+    /// frame (<see cref="AssemblyLists.SwitchAssemblyList"/>, over the whole session), and only opening its files is
+    /// queued. The picker drawn above shows the list next frame, which this asks for.</summary>
+    private static void ListItem(Ui<UiState> ui, AppState appState, string name)
     {
-        var active = name == lists.Active;
+        var active = name == appState.Lists.Active;
         if (!ui.MenuRadioItem(name, active, id: ListItemPrefix + name))
         {
             return;
         }
 
-        Commands.Start(ui.State, nameof(SwitchAssemblyListAsync), name, static (a, list, ct) => SwitchAssemblyListAsync(a, list, ct));
+        Commands.OpenListLater(ui.State, SwitchAssemblyList(appState, name));
+        ui.RequestUpdate();
     }
 
     private static Segment<DecompilationLanguage>[] Languages(Strings t)

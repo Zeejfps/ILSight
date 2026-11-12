@@ -64,6 +64,24 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
+    public void The_frame_a_list_is_picked_in_from_the_toolbar_says_the_app_is_reloading_and_empties_the_tree()
+    {
+        var app = AppDriver.Opened();
+        app.AppState.Lists.Add(Other);
+        var fixtures = app.Fixture("Greeter").Root.Text;
+        app.Run(2);
+
+        app.Frames.ClickOn(Selector.WithText(SavedAssemblyLists.DefaultName));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, Other));
+
+        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusReloading));
+        Assert.False(app.Frames.Drew(fixtures));
+        app.Settle(2);
+        Assert.Equal(Other, app.AppState.Lists.Active);
+        Assert.Empty(app.AppState.Assemblies.Listed);
+    }
+
+    [Fact]
     public void Switching_lists_keeps_the_analyses_of_the_last_run_still_being_found_with_their_list()
     {
         using var temp = new TempDir();

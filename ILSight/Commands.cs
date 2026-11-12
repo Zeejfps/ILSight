@@ -74,6 +74,20 @@ public static class Commands
         Start(uiState, nameof(ShowInMetadataHandler), (reference, lookup), static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a, s.reference, s.lookup, ct));
     }
 
+    /// <summary>Asks for the assemblies of the list <paramref name="opening"/> began opening to be opened once the frame
+    /// is drawn (<see cref="AssemblyLists.OpenListAsync"/>), then the loads that started in the tabs: the draw switched
+    /// the list in the frame of its input, and only opening its files, which takes longer than a frame, waits for the
+    /// edge. Nothing when <paramref name="opening"/> is null.</summary>
+    public static void OpenListLater(UiState uiState, ListOpening? opening)
+    {
+        if (opening is null)
+        {
+            return;
+        }
+
+        Start(uiState, nameof(AssemblyLists.OpenListAsync), opening, static (a, o, ct) => AssemblyLists.OpenListAsync(a, o, ct));
+    }
+
     /// <summary>Asks for what going to a history entry left, <paramref name="move"/>, to be started once the frame is
     /// drawn (<see cref="StartMoving"/>): the draw went to the entry in the frame of its input, and only the load or the
     /// lookup, which take longer than a frame, wait for the edge. Allocates nothing when it left nothing.</summary>
