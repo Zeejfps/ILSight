@@ -4,7 +4,8 @@ using ILSight.Core.Metadata;
 namespace ILSight.Tests;
 
 /// <summary>The tree of <see cref="TestSession.Shared"/> read as members of what it holds: an assembly's
-/// root, a node's children, and the nodes a list's paths, references and ids name.</summary>
+/// root, a node's children, and the nodes a list's paths, references and ids name; a lookup that meets a module
+/// that could not be read fails the test (<see cref="LookupQueries"/>).</summary>
 internal static class SessionQueries
 {
     extension(LoadedAssembly assembly)
@@ -13,7 +14,7 @@ internal static class SessionQueries
 
         public BrowseNode? FindNode(NodePath path)
         {
-            return TestWaits.Wait(() => BrowseSessions.FindNodeAsync(TestSession.Shared, assembly, path));
+            return TestWaits.Wait(() => BrowseSessions.FindNodeAsync(TestSession.Shared, assembly, path)).FoundOrNull;
         }
     }
 
@@ -97,27 +98,27 @@ internal static class SessionQueries
     {
         public BrowseNode? FindNode(NodePath path)
         {
-            return TestWaits.Wait(() => NodeLookup.FindAsync(list, TestSession.Shared, path, CancellationToken.None));
+            return TestWaits.Wait(() => NodeLookup.FindAsync(list, TestSession.Shared, path, CancellationToken.None)).FoundOrNull;
         }
 
         public BrowseNode? FindNode(CodeReference.Navigable reference)
         {
-            return TestWaits.Wait(() => NodeLookup.FindAsync(list, TestSession.Shared, reference, CancellationToken.None));
+            return TestWaits.Wait(() => NodeLookup.FindAsync(list, TestSession.Shared, reference, CancellationToken.None)).FoundOrNull;
         }
 
         public BrowseNode? FindListedNode(NodePath path)
         {
-            return TestWaits.Wait(() => NodeLookup.FindListedAsync(list, TestSession.Shared, path, CancellationToken.None));
+            return TestWaits.Wait(() => NodeLookup.FindListedAsync(list, TestSession.Shared, path, CancellationToken.None)).FoundOrNull;
         }
 
         public BrowseNode? FindNodeById(string idString, IEnumerable<LoadedModule> assemblies)
         {
-            return TestWaits.Wait(() => NodeLookup.FindByIdAsync(TestSession.Shared, idString, assemblies, CancellationToken.None));
+            return TestWaits.Wait(() => NodeLookup.FindByIdAsync(TestSession.Shared, idString, assemblies, CancellationToken.None)).FoundOrNull;
         }
 
         public MetadataTarget? FindMetadataRow(CodeReference.Navigable reference)
         {
-            return TestWaits.Wait(() => NodeLookup.FindMetadataRowAsync(list, TestSession.Shared, reference, CancellationToken.None));
+            return TestWaits.Wait(() => NodeLookup.FindMetadataRowAsync(list, TestSession.Shared, reference, CancellationToken.None)).FoundValueOrNull;
         }
 
         public IAsyncEnumerable<IReadOnlyList<SearchFind>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default)

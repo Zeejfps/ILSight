@@ -146,14 +146,8 @@ public sealed class Navigation
     }
 
     /// <summary>What finding a place for <paramref name="ticket"/> came to, as
-    /// <see cref="UserIntent.EndResolving{T}(int, Outcome{T})"/> says.</summary>
-    public Resolution<T> EndResolving<T>(int ticket, Outcome<T?> outcome) where T : class
-    {
-        return _intent.EndResolving(ticket, outcome);
-    }
-
-    /// <inheritdoc cref="EndResolving{T}(int, Outcome{T})"/>
-    public Resolution<T> EndResolving<T>(int ticket, Outcome<T?> outcome) where T : struct
+    /// <see cref="UserIntent.EndResolving{T}(int, Outcome{Lookup{T}})"/> says.</summary>
+    public Resolution<T> EndResolving<T>(int ticket, Outcome<Lookup<T>> outcome) where T : notnull
     {
         return _intent.EndResolving(ticket, outcome);
     }
@@ -385,7 +379,7 @@ public sealed class Navigation
 
     /// <summary>Begins a request whose place a lookup finds, asked for from the active tab: what was still being
     /// looked up for an older request is dropped, and the app says it is resolving until the lookup's answer is taken
-    /// (<see cref="EndResolving{T}(int, Outcome{T})"/>). What it finds shows in a new tab when
+    /// (<see cref="EndResolving{T}(int, Outcome{Lookup{T}})"/>). What it finds shows in a new tab when
     /// <paramref name="inNewTab"/>, else where <see cref="FindTab"/> leads then. Returns the ticket the lookup's answer
     /// is shown by.</summary>
     public ResolveTicket BeginResolving(bool inNewTab)

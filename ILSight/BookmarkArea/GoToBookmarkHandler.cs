@@ -8,13 +8,14 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the place a bookmark marks is gone.</summary>
+        /// <summary>Tells the user the place a bookmark marks is gone, or in a module that could not be read.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>The node at <paramref name="place"/>, null when it is gone, looked for without holding up the
+        /// <summary>The node at <paramref name="place"/>; not found when it is gone, unreadable when in a module whose
+        /// type system the library could not read; looked for without holding up the
         /// screen (it may read an assembly from disk); a lookup that failed comes back as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct);
+        Task<Outcome<Lookup<BrowseNode>>> LookUpPlaceAsync(NodePath place, CancellationToken ct);
     }
 
     /// <summary>Shows the line <paramref name="bookmark"/> marks in the active tab, opening its assembly first if it
@@ -38,6 +39,11 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
             _ =>
             {
                 ReportBookmarkGone(bookmark, null);
+                return null;
+            },
+            unreadable =>
+            {
+                ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
                 return null;
             },
             failed =>

@@ -7,7 +7,7 @@ namespace ILSight;
 /// the cancellation of the token the call was given, which it lets through.</summary>
 public sealed class LookUpTooltipHandlerAdapter(AssemblyList assemblies) : LookUpTooltipHandler.IPorts
 {
-    public async Task<Outcome<CodeTooltip?>> DescribeReferenceAsync(CodeReference.Entity reference, CancellationToken ct)
+    public async Task<Outcome<Lookup<CodeTooltip>>> DescribeReferenceAsync(CodeReference.Entity reference, CancellationToken ct)
     {
         var described = await Background.Wait(Task.Run(() => AssemblyListing.DescribeReferenceAsync(assemblies, reference, ct), ct));
         ct.ThrowIfCancellationRequested();

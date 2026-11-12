@@ -6,7 +6,7 @@ public sealed class CodeTooltipTests
 {
     private static CodeTooltip TooltipOf(AssemblyList list, BrowseNode node)
     {
-        var tooltip = TestWaits.Wait(() => AssemblyListing.DescribeReferenceAsync(list, node.Definition, CancellationToken.None));
+        var tooltip = TestWaits.Wait(() => AssemblyListing.DescribeReferenceAsync(list, node.Definition, CancellationToken.None)).FoundOrNull;
         Assert.NotNull(tooltip);
         return tooltip;
     }
@@ -256,7 +256,7 @@ public sealed class CodeTooltipTests
         var document = assembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item)")];
 
-        var tooltip = await AssemblyListing.DescribeReferenceAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None);
+        var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None)).FoundOrNull;
         Assert.NotNull(tooltip);
 
         Assert.StartsWith("public void List<T>.Add(T item)", tooltip.Signature.Line.Text);

@@ -211,9 +211,9 @@ public static class Analysis
     }
 
     /// <summary>Turns each of <paramref name="restoring"/> into the analysis of the symbol found for it, in order, or
-    /// removes it when none was.</summary>
+    /// removes it when none was, or its symbol is in a module whose type system the library could not read.</summary>
     public static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, IReadOnlyList<AnalyzerPendingNode> restoring,
-        List<AnalysisSymbol?> found)
+        List<Lookup<AnalysisSymbol>> found)
     {
         for (var i = 0; i < restoring.Count; i++)
         {
@@ -230,14 +230,14 @@ public static class Analysis
         }
     }
 
-    private static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, AnalysisSymbol? symbol)
+    private static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, Lookup<AnalysisSymbol> found)
     {
-        if (symbol is null)
+        if (found is not Lookup<AnalysisSymbol>.Found symbol)
         {
             analyzer.RemoveRoot(root);
             return;
         }
-        ResolveAnalysis(analyzer, viewCommands, root, symbol);
+        ResolveAnalysis(analyzer, viewCommands, root, symbol.Value);
     }
 
     public static void SetRowStyle(AnalyzerRows rows, UiTheme theme, NodeIconPalette iconColors, AppIcons icons, Strings strings)

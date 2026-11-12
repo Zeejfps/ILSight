@@ -6,7 +6,7 @@ namespace ILSight.App.Tests;
 /// references looked up and the problems reported.</summary>
 internal sealed class FakeNavigateHandlerPorts : NavigateHandler.IPorts
 {
-    public required Outcome<BrowseNode?> Found { get; init; }
+    public required Outcome<Lookup<BrowseNode>> Found { get; init; }
 
     public Action WhileLooking { get; init; } = static () => { };
 
@@ -19,7 +19,7 @@ internal sealed class FakeNavigateHandlerPorts : NavigateHandler.IPorts
         Reported.Add(problem);
     }
 
-    public Task<Outcome<BrowseNode?>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
+    public Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
     {
         LookedUp.Add(reference);
         WhileLooking();

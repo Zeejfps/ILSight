@@ -8,13 +8,14 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the place an entry recorded is gone.</summary>
+        /// <summary>Tells the user the place an entry recorded is gone, or in a module that could not be read.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>The node at <paramref name="place"/> among the listed assemblies, null when it is gone, looked for
-        /// without holding up the screen (it may build children); opens and lists nothing. A lookup that failed comes
-        /// back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<BrowseNode?>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct);
+        /// <summary>The node at <paramref name="place"/> among the listed assemblies; not found when it is gone,
+        /// unreadable when in a module whose type system the library could not read; looked for without holding up the
+        /// screen (it may build children); opens and lists nothing. A lookup that failed comes back as
+        /// <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<Lookup<BrowseNode>>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct);
     }
 
     /// <summary>Looks up the place <paramref name="lookup"/> is for, which going to a history entry began
@@ -36,6 +37,11 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
             _ =>
             {
                 ReportHistoryPlaceGone(place, null);
+                return null;
+            },
+            unreadable =>
+            {
+                ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
                 return null;
             },
             failed =>

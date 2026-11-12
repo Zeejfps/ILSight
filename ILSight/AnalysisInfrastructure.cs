@@ -50,14 +50,14 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
 
     /// <summary>Finds them on the thread pool, each once the read of its assembly's type system ended, and comes back
     /// on the UI thread.</summary>
-    public async Task<Outcome<List<AnalysisSymbol?>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
+    public async Task<Outcome<List<Lookup<AnalysisSymbol>>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
     {
         return await Background.Wait(Task.Run(() => FindAnalyzedAsync(analyzed, ct), ct));
     }
 
-    private async Task<List<AnalysisSymbol?>> FindAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
+    private async Task<List<Lookup<AnalysisSymbol>>> FindAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
     {
-        var found = new List<AnalysisSymbol?>(analyzed.Count);
+        var found = new List<Lookup<AnalysisSymbol>>(analyzed.Count);
         foreach (var anchor in analyzed)
         {
             found.Add(await Analyzers.FindAsync(assemblies, anchor, ct));

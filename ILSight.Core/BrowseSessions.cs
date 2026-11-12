@@ -229,49 +229,68 @@ public static class BrowseSessions
     }
 
     /// <summary>The node <paramref name="path"/> leads to from <paramref name="item"/>'s root, when it is
-    /// the item of the list the path starts at; else, or when nothing is there, null. May build the
-    /// children on the way: call it off the UI thread.</summary>
-    public static async Task<BrowseNode?> FindNodeAsync(BrowseSession session, LoadedAssembly item, NodePath path, CancellationToken ct = default)
+    /// the item of the list the path starts at; else, or when nothing is there, not found; unreadable when a step lists
+    /// the children of a module whose type system the library could not read. May build the children on the way: call
+    /// it off the UI thread.</summary>
+    public static async Task<Lookup<BrowseNode>> FindNodeAsync(BrowseSession session, LoadedAssembly item, NodePath path, CancellationToken ct = default)
     {
         if (!path.FilePath.Equals(item.FilePath))
         {
-            return null;
+            return new Lookup<BrowseNode>.NotFound();
         }
 
         return await FollowStepsAsync(session, await EnsureRootAsync(session, item, ct), path.Steps, ct);
     }
 
-    /// <summary>The node <paramref name="steps"/> lead to from <paramref name="root"/>; null when a step
-    /// names no child, or more than one.</summary>
-    private static async Task<BrowseNode?> FollowStepsAsync(BrowseSession session, BrowseNode root, ImmutableArray<NodePathStep> steps, CancellationToken ct)
+    /// <summary>The node <paramref name="steps"/> lead to from <paramref name="root"/>; not found when a step
+    /// names no child, or more than one; unreadable as <see cref="ListReadableChildrenAsync"/> says.</summary>
+    private static async Task<Lookup<BrowseNode>> FollowStepsAsync(BrowseSession session, BrowseNode root, ImmutableArray<NodePathStep> steps,
+        CancellationToken ct)
     {
-        var node = root;
+        Lookup<BrowseNode> reached = new Lookup<BrowseNode>.Found { Value = root };
         foreach (var step in steps)
         {
             var segment = step.Segment;
-            var next = await FindStepAsync(session, node, segment, ct);
-            if (next is null)
-            {
-                return null;
-            }
-
-            node = next;
+            reached = await reached.ThenFindAsync((node, c) => FindStepAsync(session, node, segment, c), ct);
         }
-        return node;
+        return reached;
     }
 
     /// <summary>The child of <paramref name="node"/> <paramref name="segment"/> names: an entry of a package by its
     /// full path, else the one child it names.</summary>
-    private static async Task<BrowseNode?> FindStepAsync(BrowseSession session, BrowseNode node, NodePathSegment segment, CancellationToken ct)
+    private static async Task<Lookup<BrowseNode>> FindStepAsync(BrowseSession session, BrowseNode node, NodePathSegment segment, CancellationToken ct)
     {
         if (segment.IsPackageEntry)
         {
-            return await FindInPackageAsync(session, node, segment, ct);
+            return Lookup.FromNullable(await FindInPackageAsync(session, node, segment, ct));
         }
 
-        return BrowseSession.FindChild(await ListChildrenAsync(session, node, ct), segment);
+        var children = await ListReadableChildrenAsync(session, node, ct);
+        return children.Match(
+            done => Lookup.FromNullable(BrowseSession.FindChild(done.Value, segment)),
+            static unreadable => new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module });
     }
 
+    /// <summary>The children of <paramref name="node"/>, as <see cref="ListChildrenAsync"/> lists them, once the read
+    /// of the type system their build reads ended (a module's, a type reference's or a module reference's module);
+    /// that module, with why, when the library could not read it, and no children.</summary>
+    internal static async Task<TypeSystemWork<IReadOnlyList<BrowseNode>>> ListReadableChildrenAsync(BrowseSession session, BrowseNode node,
+        CancellationToken ct)
+    {
+        var module = BrowseNodes.FindModuleReadForChildren(node.Subject);
+        if (module is null)
+        {
+            return new TypeSystemWork<IReadOnlyList<BrowseNode>>.Done { Value = await ListChildrenAsync(session, node, ct) };
+        }
+
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(module, ct);
+        return await read.Match<Task<TypeSystemWork<IReadOnlyList<BrowseNode>>>>(
+            async _ => new TypeSystemWork<IReadOnlyList<BrowseNode>>.Done { Value = await ListChildrenAsync(session, node, ct) },
+            u => Task.FromResult<TypeSystemWork<IReadOnlyList<BrowseNode>>>(new TypeSystemWork<IReadOnlyList<BrowseNode>>.Unreadable
+            {
+                Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException },
+            }));
+    }
     /// <summary>The entry of the package whose root is <paramref name="packageRoot"/> that
     /// <paramref name="segment"/> names by its full path, wherever the folders holding it were merged.</summary>
     private static async Task<BrowseNode?> FindInPackageAsync(BrowseSession session, BrowseNode packageRoot, NodePathSegment segment, CancellationToken ct)
@@ -448,30 +467,41 @@ public static class BrowseSessions
     }
 
     /// <summary>The row <paramref name="handle"/> names in <paramref name="module"/>'s own metadata
-    /// tables, or null when it names no table row or the tables could not be read.</summary>
-    internal static async Task<MetadataTarget?> FindMetadataRowAsync(BrowseSession session, LoadedModule module, EntityHandle handle, CancellationToken ct)
+    /// tables; not found when it names no table row or the tables could not be read; unreadable when the library could
+    /// not read the module's type system, which listing the module's folders reads.</summary>
+    internal static async Task<Lookup<MetadataTarget>> FindMetadataRowAsync(BrowseSession session, LoadedModule module, EntityHandle handle,
+        CancellationToken ct)
     {
         if (!MetadataTokens.TryGetTableIndex(handle.Kind, out var index))
         {
-            return null;
+            return new Lookup<MetadataTarget>.NotFound();
         }
 
-        var file = LoadedAssemblies.GetFile(module);
-        var metadata = (await ListChildrenAsync(session, await EnsureRootAsync(session, module, ct), ct))
-            .FirstOrDefault(f => IsMetadataOf(f, file));
+        var folders = await ListReadableChildrenAsync(session, await EnsureRootAsync(session, module, ct), ct);
+        return await folders.Match(
+            done => FindRowAsync(session, done.Value, LoadedAssemblies.GetFile(module), index, handle, ct),
+            static unreadable => Task.FromResult<Lookup<MetadataTarget>>(new Lookup<MetadataTarget>.Unreadable { Module = unreadable.Module }));
+    }
+
+    /// <summary>The row <paramref name="handle"/> names in the table <paramref name="index"/> of the folder of
+    /// <paramref name="file"/>'s metadata among <paramref name="folders"/>; not found when none lists it.</summary>
+    private static async Task<Lookup<MetadataTarget>> FindRowAsync(BrowseSession session, IReadOnlyList<BrowseNode> folders,
+        ICSharpCode.Decompiler.Metadata.MetadataFile file, TableIndex index, EntityHandle handle, CancellationToken ct)
+    {
+        var metadata = folders.FirstOrDefault(f => IsMetadataOf(f, file));
         if (metadata is null)
         {
-            return null;
+            return new Lookup<MetadataTarget>.NotFound();
         }
 
         var table = await FindTableAsync(session, metadata, index, ct);
         if (table is null)
         {
-            return null;
+            return new Lookup<MetadataTarget>.NotFound();
         }
 
         var row = MetadataTokens.GetRowNumber(handle) - 1;
-        return new MetadataTarget { Node = table, Row = row };
+        return new Lookup<MetadataTarget>.Found { Value = new MetadataTarget { Node = table, Row = row } };
     }
 
     /// <summary>Whether <paramref name="node"/> is the folder of <paramref name="file"/>'s metadata.</summary>

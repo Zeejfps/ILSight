@@ -46,6 +46,11 @@ public static class TabPlaceholders
             return t.DocumentGone(gone.Location.Label);
         }
 
+        if (content is TabContent.Unreadable unreadable)
+        {
+            return t.DocumentUnreadable(unreadable.Module, unreadable.Why);
+        }
+
         throw new UnreachableException($"A tab showing {content.GetType().Name} has no placeholder note.");
     }
 }

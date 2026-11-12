@@ -28,7 +28,7 @@ public sealed class GoToBookmarkHandlerTests
 
         var going = new GoToBookmarkHandler(ports).HandleAsync(d.AppState, bookmark, CancellationToken.None);
         Assert.True(d.AppState.IsResolving);
-        Assert.Single(ports.Answers).SetResult(new Outcome<BrowseNode?>.Ok(outline));
+        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(outline)));
         var load = await going;
 
         Assert.Equal([bookmark.Place], ports.Asked);
@@ -47,7 +47,7 @@ public sealed class GoToBookmarkHandlerTests
         var ports = new FakeGoToBookmarkHandlerPorts();
 
         var going = new GoToBookmarkHandler(ports).HandleAsync(d.AppState, bookmark, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<BrowseNode?>.Ok(null));
+        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)));
         var load = await going;
 
         Assert.Null(load);
@@ -66,7 +66,7 @@ public sealed class GoToBookmarkHandlerTests
 
         var going = new GoToBookmarkHandler(ports).HandleAsync(d.AppState, bookmark, CancellationToken.None);
         d.AppState.Navigation.BeginRequest();
-        Assert.Single(ports.Answers).SetResult(new Outcome<BrowseNode?>.Ok(d.Fixture("Outline")));
+        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(d.Fixture("Outline"))));
         var load = await going;
 
         Assert.Null(load);

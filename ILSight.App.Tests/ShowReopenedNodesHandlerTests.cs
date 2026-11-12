@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.DocumentViewArea;
 
 namespace ILSight.App.Tests;
 
@@ -33,7 +34,7 @@ public sealed class ShowReopenedNodesHandlerTests
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
         Assert.True(d.AppState.IsFindingDocuments);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<BrowseNode?>>.Ok([greeter]));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Found { Value = greeter }]));
         var loads = await showing;
 
         Assert.Equal([waiting.Place], Assert.Single(ports.Asked));
@@ -52,12 +53,34 @@ public sealed class ShowReopenedNodesHandlerTests
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<BrowseNode?>>.Failed(new InvalidOperationException("Unreadable.")));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Failed(new InvalidOperationException("Unreadable.")));
         var loads = await showing;
 
         Assert.Empty(loads);
         Assert.IsType<TabContent.Gone>(waiting.Reopened.Tab.Content);
         Assert.False(d.AppState.IsFindingDocuments);
+    }
+
+    [Fact]
+    public async Task HandleAsync_PlaceInAModuleThatCouldNotBeRead_ShowsTheTabSayingWhichAndWhy()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var waiting = WaitForGreeter(d);
+        var module = d.AppState.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var unreadable = new UnreadableModule { Module = module, Why = new BadImageFormatException("Bad namespace.") };
+        var ports = new FakeShowReopenedNodesHandlerPorts();
+
+        var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Unreadable { Module = unreadable }]));
+        var loads = await showing;
+
+        Assert.Empty(loads);
+        var content = Assert.IsType<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
+        Assert.Equal(waiting.Place, content.Location);
+        Assert.Equal(module.FilePath.FileName, content.Module);
+        Assert.Equal("Bad namespace.", content.Why);
+        Assert.Equal($"{module.FilePath.FileName} couldn't be read (Bad namespace.).", TabPlaceholders.Write(Strings.For(Locale.En), content));
+        Assert.Equal(waiting.Place, waiting.Reopened.Tab.Location);
     }
 
     [Fact]
@@ -69,7 +92,7 @@ public sealed class ShowReopenedNodesHandlerTests
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
         d.AppState.Navigation.RestoreDiagram(waiting.Reopened.Tab, new TypeDiagram(), "Other diagram");
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<BrowseNode?>>.Ok([d.Fixture("Greeter")]));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Found { Value = d.Fixture("Greeter") }]));
         var loads = await showing;
 
         Assert.Empty(loads);

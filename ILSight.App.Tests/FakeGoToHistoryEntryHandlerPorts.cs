@@ -6,7 +6,7 @@ namespace ILSight.App.Tests;
 /// places looked up and the problems reported.</summary>
 internal sealed class FakeGoToHistoryEntryHandlerPorts : GoToHistoryEntryHandler.IPorts
 {
-    public required Outcome<BrowseNode?> Found { get; init; }
+    public required Outcome<Lookup<BrowseNode>> Found { get; init; }
 
     public Action WhileLooking { get; init; } = static () => { };
 
@@ -19,7 +19,7 @@ internal sealed class FakeGoToHistoryEntryHandlerPorts : GoToHistoryEntryHandler
         Reported.Add(problem);
     }
 
-    public Task<Outcome<BrowseNode?>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct)
+    public Task<Outcome<Lookup<BrowseNode>>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct)
     {
         LookedUp.Add(place);
         WhileLooking();

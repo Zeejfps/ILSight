@@ -16,14 +16,14 @@ public sealed class DiagramInfrastructure(ErrorLog errors, AssemblyList assembli
         Errors.Report(errors, problem);
     }
 
-    public async Task<Outcome<List<TypeCard>>> ReadWithNeighboursAsync(CodeReference.Entity type, CancellationToken ct)
+    public async Task<Outcome<TypeSystemWork<List<TypeCard>>>> ReadWithNeighboursAsync(CodeReference.Entity type, CancellationToken ct)
     {
         var read = await Background.Wait(Task.Run(() => TypeCards.ReadWithNeighboursAsync(assemblies, type, ct), ct));
         ct.ThrowIfCancellationRequested();
         return read;
     }
 
-    public async Task<Outcome<List<TypeCard>>> ReadCardsAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)
+    public async Task<Outcome<List<Lookup<TypeCard>>>> ReadCardsAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)
     {
         var read = await Background.Wait(Task.Run(() => ReadEachCardAsync(types, ct), ct));
         ct.ThrowIfCancellationRequested();
@@ -39,7 +39,7 @@ public sealed class DiagramInfrastructure(ErrorLog errors, AssemblyList assembli
         return Outcome<List<TypeCard>>.FromTypeSystemWork(read);
     }
 
-    public async Task<Outcome<List<TypeCard>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
+    public async Task<Outcome<List<Lookup<TypeCard>>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
     {
         var read = await Background.Wait(Task.Run(() => ReadEachCardAsync(types, ct), ct));
         ct.ThrowIfCancellationRequested();
@@ -53,31 +53,23 @@ public sealed class DiagramInfrastructure(ErrorLog errors, AssemblyList assembli
         return laidOut;
     }
 
-    private async Task<List<TypeCard>> ReadEachCardAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)
+    private async Task<List<Lookup<TypeCard>>> ReadEachCardAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)
     {
-        var cards = new List<TypeCard>();
+        var cards = new List<Lookup<TypeCard>>();
         foreach (var type in types)
         {
-            AddRead(cards, await TypeCards.ReadAsync(assemblies, type, ct));
+            cards.Add(await TypeCards.ReadAsync(assemblies, type, ct));
         }
         return cards;
     }
 
-    private async Task<List<TypeCard>> ReadEachCardAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
+    private async Task<List<Lookup<TypeCard>>> ReadEachCardAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
     {
-        var cards = new List<TypeCard>();
+        var cards = new List<Lookup<TypeCard>>();
         foreach (var type in types)
         {
-            AddRead(cards, await TypeCards.ReadAsync(assemblies, type, ct));
+            cards.Add(await TypeCards.ReadAsync(assemblies, type, ct));
         }
         return cards;
-    }
-
-    private static void AddRead(List<TypeCard> cards, TypeCard? card)
-    {
-        if (card is not null)
-        {
-            cards.Add(card);
-        }
     }
 }

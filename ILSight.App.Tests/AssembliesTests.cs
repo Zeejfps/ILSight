@@ -267,7 +267,7 @@ public sealed class AssembliesTests
         Assert.NotNull(tab);
         var location = tab.Location;
         Assert.NotNull(location);
-        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = new BrowseNode?[places.Count] }) };
+        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Lookup<BrowseNode>)new Lookup<BrowseNode>.NotFound()).ToArray() }) };
         using var shutdown = new CancellationTokenSource();
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, [], shutdown.Token);
@@ -286,7 +286,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
-        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = new BrowseNode?[places.Count] }) };
+        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Lookup<BrowseNode>)new Lookup<BrowseNode>.NotFound()).ToArray() }) };
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, [], CancellationToken.None);
 

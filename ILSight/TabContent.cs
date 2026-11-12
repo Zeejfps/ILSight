@@ -103,11 +103,27 @@ public abstract record TabContent
         public required string? Title { get; init; }
     }
 
+    /// <summary>The node at <see cref="Location"/> is in <see cref="Module"/>, a file whose type system the library
+    /// could not read, for <see cref="Why"/>, so it was not found again; <see cref="Title"/> is the node's name as it
+    /// was last known, if it was.</summary>
+    public sealed record Unreadable : TabContent
+    {
+        public required NodePath Location { get; init; }
+
+        public required string? Title { get; init; }
+
+        /// <summary>The module's file name.</summary>
+        public required string Module { get; init; }
+
+        public required string Why { get; init; }
+    }
+
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<Empty, TResult> empty, Func<Loading, TResult> loading, Func<Code, TResult> code,
         Func<Table, TResult> table, Func<Picture, TResult> picture, Func<Report, TResult> report,
         Func<Diagram, TResult> diagram, Func<Comparison, TResult> comparison, Func<Failed, TResult> failed,
-        Func<Reloading, TResult> reloading, Func<Reopening, TResult> reopening, Func<Gone, TResult> gone)
+        Func<Reloading, TResult> reloading, Func<Reopening, TResult> reopening, Func<Gone, TResult> gone,
+        Func<Unreadable, TResult> unreadable)
     {
         return this switch
         {
@@ -123,6 +139,7 @@ public abstract record TabContent
             Reloading c => reloading(c),
             Reopening c => reopening(c),
             Gone c => gone(c),
+            Unreadable c => unreadable(c),
             _ => throw new UnreachableException($"TabContent.Match does not handle {GetType().Name}."),
         };
     }
@@ -133,7 +150,7 @@ public abstract record TabContent
         Action<TState, Code> code, Action<TState, Table> table, Action<TState, Picture> picture,
         Action<TState, Report> report, Action<TState, Diagram> diagram, Action<TState, Comparison> comparison,
         Action<TState, Failed> failed, Action<TState, Reloading> reloading, Action<TState, Reopening> reopening,
-        Action<TState, Gone> gone)
+        Action<TState, Gone> gone, Action<TState, Unreadable> unreadable)
     {
         switch (this)
         {
@@ -172,6 +189,9 @@ public abstract record TabContent
                 return;
             case Gone c:
                 gone(state, c);
+                return;
+            case Unreadable c:
+                unreadable(state, c);
                 return;
             default:
                 throw new UnreachableException($"TabContent.Switch does not handle {GetType().Name}.");

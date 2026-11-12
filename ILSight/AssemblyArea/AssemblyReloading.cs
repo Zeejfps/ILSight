@@ -181,7 +181,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
         for (var i = 0; i < tabs.Count; i++)
         {
-            TryShowAgain(navigation, decompiler, tabs[i], reopened.Places[i], loads);
+            TryShowAgain(navigation, decompiler, tabs[i], reopened.Places[i], loads, out _);
         }
         return loads;
     }
@@ -270,10 +270,10 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return TabLoads.None.With(loads).With(reopened);
     }
 
-    private void ReshowTab(Navigation navigation, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadingTab reloading, BrowseNode? node,
-        int intent, List<DecompileTicket> loads)
+    private void ReshowTab(Navigation navigation, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadingTab reloading,
+        Lookup<BrowseNode> place, int intent, List<DecompileTicket> loads)
     {
-        if (!TryShowAgain(navigation, decompiler, reloading, node, loads))
+        if (!TryShowAgain(navigation, decompiler, reloading, place, loads, out var node))
         {
             return;
         }
@@ -284,12 +284,14 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
     }
 
-    /// <summary>Shows <paramref name="node"/>, the tab's place found again, in the tab, or that its place
-    /// is gone, unless the tab was closed or shows something else now. True when it shows the node, adding the
-    /// load it started in the tab to <paramref name="loads"/>.</summary>
-    private bool TryShowAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node,
-        List<DecompileTicket> loads)
+    /// <summary>Shows the node <paramref name="place"/> found, the tab's place found again, in the tab, or that its
+    /// place is gone, or in a module that could not be read, unless the tab was closed or shows something else now.
+    /// True when it shows the <paramref name="node"/>, adding the load it started in the tab to
+    /// <paramref name="loads"/>.</summary>
+    private bool TryShowAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, Lookup<BrowseNode> place,
+        List<DecompileTicket> loads, [NotNullWhen(true)] out BrowseNode? node)
     {
+        node = null;
         var tab = reloading.Tab;
         if (!navigation.IsOpen(tab))
         {
@@ -301,11 +303,23 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             return false;
         }
 
+        node = place.Match<BrowseNode?>(
+            static found => found.Value,
+            _ =>
+            {
+                ReleaseGoneTab(tab, reloading.Location);
+                return null;
+            },
+            unreadable =>
+            {
+                ReleaseUnreadableTab(tab, reloading.Location, unreadable.Module);
+                return null;
+            });
         if (node is null)
         {
-            ReleaseGoneTab(tab, reloading.Location);
             return false;
         }
+
         var load = navigation.Restore(tab, node, decompiler, reloading.Position);
         if (load is not null)
         {
@@ -319,6 +333,12 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     {
         tab.Load.ShowGone(location);
         ports.ReportError(new AppProblem.GoneAfterReload(location));
+    }
+
+    private void ReleaseUnreadableTab(DocumentTab tab, NodePath location, UnreadableModule unreadable)
+    {
+        tab.Load.ShowUnreadable(location, unreadable);
+        ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
     }
 
     /// <summary>A tab whose place is being found again, as it was when that started.</summary>

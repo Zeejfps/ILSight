@@ -26,16 +26,16 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assembl
     /// <see cref="Outcome{T}.Failed"/>, except the cancellation of <paramref name="ct"/>, which it lets through. A
     /// record with this app's place is where it says; one of the real ILSpy's is where ILSpy's tree path, token or
     /// member name lead.</summary>
-    public async Task<Outcome<List<NodePath?>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
+    public async Task<Outcome<List<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
     {
         var found = await Background.Wait(Task.Run(() => FindPlacesAsync(records, ct), ct));
         ct.ThrowIfCancellationRequested();
         return found;
     }
 
-    private async Task<List<NodePath?>> FindPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
+    private async Task<List<Lookup<NodePath>>> FindPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
     {
-        var places = new List<NodePath?>(records.Count);
+        var places = new List<Lookup<NodePath>>(records.Count);
         foreach (var record in records)
         {
             places.Add(await FindPlaceAsync(record, ct));
@@ -43,20 +43,15 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assembl
         return places;
     }
 
-    private async Task<NodePath?> FindPlaceAsync(BookmarkRecord record, CancellationToken ct)
+    private async Task<Lookup<NodePath>> FindPlaceAsync(BookmarkRecord record, CancellationToken ct)
     {
         if (record.Location is not null)
         {
-            return record.Location;
+            return new Lookup<NodePath>.Found { Value = record.Location };
         }
 
         var treePath = record.ViewState?.SelectedTreeNodePath;
         var node = await ILSpyTree.LocateAsync(assemblies, session, record.FileName, treePath, record.Token, record.MemberName, ct);
-        if (node is null)
-        {
-            return null;
-        }
-
-        return node.Path;
+        return node.Select(static n => n.Path);
     }
 }

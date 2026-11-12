@@ -8,13 +8,14 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the reference leads nowhere.</summary>
+        /// <summary>Tells the user the reference leads nowhere, or into a module that could not be read.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>The metadata table row that defines what <paramref name="reference"/> points at, null when it
-        /// leads nowhere, looked for without holding up the screen (it may read an assembly from disk); a lookup
+        /// <summary>The metadata table row that defines what <paramref name="reference"/> points at; not found when
+        /// it leads nowhere, unreadable when into a module whose type system the library could not read; looked for
+        /// without holding up the screen (it may read an assembly from disk); a lookup
         /// that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<MetadataTarget?>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct);
+        Task<Outcome<Lookup<MetadataTarget>>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct);
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background for the request <paramref name="ticket"/>
@@ -37,6 +38,11 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
             _ =>
             {
                 ReportUnresolved(reference, null);
+                return null;
+            },
+            unreadable =>
+            {
+                ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
                 return null;
             },
             failed =>

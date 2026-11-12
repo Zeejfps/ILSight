@@ -42,6 +42,7 @@ public static class ProblemTexts
             unresolved: p => (t.ErrorResolve(p.Reference.Name), Failure(p.Error, t.ErrorNoDefinition(p.Reference))),
             historyPlaceGone: p => (t.ErrorGoBack(p.Place.Label), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
             bookmarkGone: p => (t.ErrorGoToBookmark(p.Bookmark), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
+            moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
             notBookmarksFile: p => (t.ErrorImportBookmarks(Path.GetFileName(p.Path)), $"{p.Path}{Environment.NewLine}{t.ErrorNotBookmarksFile}"),

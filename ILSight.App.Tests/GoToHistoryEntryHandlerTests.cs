@@ -32,7 +32,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var d = ShowGreeterThenFarewell();
         var greeter = d.Fixture("Greeter");
         var back = d.AppState.Navigation.HistoryIndex - 1;
-        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(greeter) };
+        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
 
         var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
 
@@ -50,7 +50,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var d = ShowGreeterThenFarewell();
         var farewell = d.Fixture("Farewell");
         var back = d.AppState.Navigation.HistoryIndex - 1;
-        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
+        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
 
         var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
 
@@ -68,7 +68,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var d = ShowGreeterThenFarewell();
         var back = d.AppState.Navigation.HistoryIndex - 1;
         var error = new IOException("unreadable");
-        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(error) };
+        var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
         var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
 
@@ -82,8 +82,8 @@ public sealed class GoToHistoryEntryHandlerTests
     {
         var found = ShowGreeterThenFarewell();
         var missing = ShowGreeterThenFarewell();
-        var foundLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(found.Fixture("Greeter")), WhileLooking = () => found.AppState.Navigation.BeginRequest() };
-        var missingLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => missing.AppState.Navigation.BeginRequest() };
+        var foundLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(found.Fixture("Greeter"))), WhileLooking = () => found.AppState.Navigation.BeginRequest() };
+        var missingLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileLooking = () => missing.AppState.Navigation.BeginRequest() };
 
         var foundLoad = await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState, GoTo(found.AppState, found.AppState.Navigation.HistoryIndex - 1), CancellationToken.None);
         var missingLoad = await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState, GoTo(missing.AppState, missing.AppState.Navigation.HistoryIndex - 1), CancellationToken.None);

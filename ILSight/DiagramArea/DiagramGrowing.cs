@@ -5,23 +5,26 @@ namespace ILSight.DiagramArea;
 
 /// <summary>Growing diagrams by the cards of types: a type shown with the types of its assembly it is directly related
 /// to, and the types a card links to. The cards are read through <see cref="IPorts"/>, without holding up the screen,
-/// and dropped when their diagram was closed meanwhile; a type that cannot be read is reported.</summary>
+/// and dropped when their diagram was closed meanwhile; a type that cannot be read is reported, and so is a module
+/// that could not be read a type is in.</summary>
 public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user a type could not be shown on a diagram.</summary>
+        /// <summary>Tells the user a type could not be shown on a diagram, or is in a module that could not be
+        /// read.</summary>
         void ReportError(AppProblem problem);
 
         /// <summary>The card of <paramref name="type"/>, first, and those of the types of its assembly it is directly
-        /// related to, read without holding up the screen; empty when it is no type that can be read. A read that
-        /// failed comes back as <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let
-        /// through.</summary>
-        Task<Outcome<List<TypeCard>>> ReadWithNeighboursAsync(CodeReference.Entity type, CancellationToken ct);
+        /// related to, read without holding up the screen; empty when it is no type that can be read; the module, with
+        /// why, when it is in one whose type system the library could not read. A read that failed comes back as
+        /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let through.</summary>
+        Task<Outcome<TypeSystemWork<List<TypeCard>>>> ReadWithNeighboursAsync(CodeReference.Entity type, CancellationToken ct);
 
-        /// <summary>The cards of those of <paramref name="types"/> that can be read, as
+        /// <summary>The card of each of <paramref name="types"/>, in order: not found for one that is no type that can
+        /// be read, unreadable for one in a module whose type system the library could not read; read as
         /// <see cref="ReadWithNeighboursAsync"/> reads them.</summary>
-        Task<Outcome<List<TypeCard>>> ReadCardsAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct);
+        Task<Outcome<List<Lookup<TypeCard>>>> ReadCardsAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct);
 
         /// <summary>The cards of the types of the open assemblies deriving from <paramref name="type"/>, or
         /// implementing it, as <see cref="ReadWithNeighboursAsync"/> reads them.</summary>
@@ -44,7 +47,9 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         }
 
         cards.Switch(
-            ok => TakeHome(viewCommands, read, ok.Value),
+            ok => ok.Value.Switch(
+                done => TakeHome(viewCommands, read, done.Value),
+                unreadable => ReportModuleUnreadable(unreadable.Module)),
             failed => ReportUnreadable(read.Type, failed.Error));
     }
 
@@ -122,8 +127,38 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
             failed => ReportUnreadable(card.Type, failed.Error));
     }
 
+    /// <summary>Adds the cards a read of the types <paramref name="card"/> links to found to
+    /// <paramref name="diagram"/>, unless it was closed meanwhile, and names each module that could not be read one of
+    /// those types is in; reports a read that failed.</summary>
+    private void FinishAdding(TypeDiagram diagram, TypeCard card, Outcome<List<Lookup<TypeCard>>> read)
+    {
+        Diagrams.FinishReading(diagram);
+        if (diagram.IsClosed)
+        {
+            return;
+        }
+
+        read.Switch(
+            ok => AddFound(diagram, ok.Value),
+            failed => ReportUnreadable(card.Type, failed.Error));
+    }
+
+    private void AddFound(TypeDiagram diagram, List<Lookup<TypeCard>> cards)
+    {
+        Diagrams.AddCards(diagram, Lookup.ListFound(cards));
+        foreach (var unreadable in Lookup.ListUnreadable(cards))
+        {
+            ReportModuleUnreadable(unreadable);
+        }
+    }
+
     private void ReportUnreadable(CodeReference.Entity type, Exception? error)
     {
         ports.ReportError(new AppProblem.TypeNotDiagrammed { Type = type, Error = error });
+    }
+
+    private void ReportModuleUnreadable(UnreadableModule unreadable)
+    {
+        ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
     }
 }

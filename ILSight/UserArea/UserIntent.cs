@@ -73,7 +73,7 @@ public sealed class UserIntent
     }
 
     /// <summary>Begins a request that finds a place in the background: it is resolving until
-    /// <see cref="EndResolving{T}(int, Outcome{T})"/> takes what was found for the ticket this returns.</summary>
+    /// <see cref="EndResolving{T}(int, Outcome{Lookup{T}})"/> takes what was found for the ticket this returns.</summary>
     public int BeginResolving()
     {
         var ticket = Begin();
@@ -82,17 +82,11 @@ public sealed class UserIntent
     }
 
     /// <summary>What finding a place for <paramref name="ticket"/>, begun by <see cref="BeginResolving"/>, came to:
-    /// the lookup's <paramref name="outcome"/>, whose null means the place is not there; stale, leaving the request
-    /// begun since alone, when another one has begun meanwhile. Stops resolving unless stale.</summary>
-    public Resolution<T> EndResolving<T>(int ticket, Outcome<T?> outcome) where T : class
+    /// the lookup in <paramref name="outcome"/>, found, not found, or unreadable; stale, leaving the request begun since
+    /// alone, when another one has begun meanwhile. Stops resolving unless stale.</summary>
+    public Resolution<T> EndResolving<T>(int ticket, Outcome<Lookup<T>> outcome) where T : notnull
     {
-        return TakeResolution(ticket, outcome.Match(static ok => FoundOrMissing(ok.Value), static failed => new Resolution<T>.Failed(failed.Error)));
-    }
-
-    /// <inheritdoc cref="EndResolving{T}(int, Outcome{T})"/>
-    public Resolution<T> EndResolving<T>(int ticket, Outcome<T?> outcome) where T : struct
-    {
-        return TakeResolution(ticket, outcome.Match(static ok => FoundOrMissing(ok.Value), static failed => new Resolution<T>.Failed(failed.Error)));
+        return TakeResolution(ticket, outcome.Match(static ok => Resolve(ok.Value), static failed => new Resolution<T>.Failed(failed.Error)));
     }
 
     /// <summary><paramref name="resolution"/>, unless another request began since <paramref name="ticket"/>: then
@@ -108,23 +102,11 @@ public sealed class UserIntent
         return resolution;
     }
 
-    private static Resolution<T> FoundOrMissing<T>(T? value) where T : class
+    private static Resolution<T> Resolve<T>(Lookup<T> lookup) where T : notnull
     {
-        if (value is null)
-        {
-            return new Resolution<T>.Missing();
-        }
-
-        return new Resolution<T>.Found(value);
-    }
-
-    private static Resolution<T> FoundOrMissing<T>(T? value) where T : struct
-    {
-        if (value is null)
-        {
-            return new Resolution<T>.Missing();
-        }
-
-        return new Resolution<T>.Found(value.Value);
+        return lookup.Match<Resolution<T>>(
+            static found => new Resolution<T>.Found(found.Value),
+            static _ => new Resolution<T>.Missing(),
+            static unreadable => new Resolution<T>.Unreadable { Module = unreadable.Module });
     }
 }

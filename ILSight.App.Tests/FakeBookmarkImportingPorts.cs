@@ -11,7 +11,7 @@ internal sealed class FakeBookmarkImportingPorts : BookmarkImporting.IPorts
 
     public List<string> Read { get; } = [];
 
-    public List<TaskCompletionSource<Outcome<List<NodePath?>>>> Answers { get; } = [];
+    public List<TaskCompletionSource<Outcome<List<Lookup<NodePath>>>>> Answers { get; } = [];
 
     public List<AppProblem> Reported { get; } = [];
 
@@ -26,9 +26,9 @@ internal sealed class FakeBookmarkImportingPorts : BookmarkImporting.IPorts
         return File;
     }
 
-    public Task<Outcome<List<NodePath?>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
+    public Task<Outcome<List<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
     {
-        var answer = new TaskCompletionSource<Outcome<List<NodePath?>>>();
+        var answer = new TaskCompletionSource<Outcome<List<Lookup<NodePath>>>>();
         ct.Register(() => answer.TrySetCanceled(ct));
         Answers.Add(answer);
         return answer.Task;

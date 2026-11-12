@@ -8,13 +8,14 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the reference leads nowhere.</summary>
+        /// <summary>Tells the user the reference leads nowhere, or into a module that could not be read.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>The node <paramref name="reference"/> leads to, null when it leads nowhere, looked for without
+        /// <summary>The node <paramref name="reference"/> leads to; not found when it leads nowhere, unreadable when
+        /// into a module whose type system the library could not read; looked for without
         /// holding up the screen (it may read an assembly from disk); a lookup that failed comes back as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<BrowseNode?>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct);
+        Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct);
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background (it may load an assembly) for the request
@@ -37,6 +38,11 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
             _ =>
             {
                 ReportUnresolved(reference, null);
+                return null;
+            },
+            unreadable =>
+            {
+                ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
                 return null;
             },
             failed =>

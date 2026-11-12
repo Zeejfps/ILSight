@@ -333,6 +333,7 @@
   "document.decompilation_failed": "Decompilation failed: {message}",
   "document.reloading": "Reloading…",
   "document.gone": "{location} is gone after reloading.",
+  "document.unreadable": "{name} couldn't be read ({why}).",
 
   "code.copy": "Copy",
 
@@ -352,6 +353,7 @@
   "code.tooltip_remarks": "Remarks",
   "code.tooltip_example": "Example",
   "code.tooltip_container": "in {kind} {name}",
+  "code.tooltip_unreadable": "{name} couldn't be read ({why})",
   "metadata.loading": "Loading…",
   "metadata.copy_row": "Copy row",
   "metadata.go_to_token": "Go to token",
@@ -688,6 +690,7 @@
   "error.no_api_reference_page_details": "Only namespaces and the types and members visible outside their assembly have one.",
   "error.go_back": "Cannot go back to {place}",
   "error.no_longer_there": "{place} is no longer there.",
+  "error.module_unreadable": "{name} couldn't be read",
   "error.decompile": "Cannot decompile {name}",
   "error.analyze": "Cannot analyze {name} ({analysis})",
   "error.scan_runtime": "Cannot scan the runtime's assemblies",

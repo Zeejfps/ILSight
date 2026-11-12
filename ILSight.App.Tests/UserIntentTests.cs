@@ -1,3 +1,4 @@
+using ILSight.Core;
 using ILSight.UserArea;
 
 namespace ILSight.App.Tests;
@@ -11,7 +12,7 @@ public sealed class UserIntentTests
         var ticket = intent.BeginResolving();
         Assert.True(intent.IsResolving);
 
-        var resolved = intent.EndResolving<string>(ticket, new Outcome<string?>.Ok("place"));
+        var resolved = intent.EndResolving<string>(ticket, new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>("place")));
 
         Assert.Equal("place", Assert.IsType<Resolution<string>.Found>(resolved).Value);
         Assert.False(intent.IsResolving);
@@ -23,7 +24,7 @@ public sealed class UserIntentTests
         var intent = new UserIntent();
         var ticket = intent.BeginResolving();
 
-        var resolved = intent.EndResolving<string>(ticket, new Outcome<string?>.Ok(null));
+        var resolved = intent.EndResolving<string>(ticket, new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>(null)));
 
         Assert.IsType<Resolution<string>.Missing>(resolved);
         Assert.False(intent.IsResolving);
@@ -36,7 +37,7 @@ public sealed class UserIntentTests
         var error = new InvalidOperationException("unreadable");
         var ticket = intent.BeginResolving();
 
-        var resolved = intent.EndResolving<string>(ticket, new Outcome<string?>.Failed(error));
+        var resolved = intent.EndResolving<string>(ticket, new Outcome<Lookup<string>>.Failed(error));
 
         Assert.Same(error, Assert.IsType<Resolution<string>.Failed>(resolved).Error);
         Assert.False(intent.IsResolving);
@@ -47,8 +48,8 @@ public sealed class UserIntentTests
     {
         var intent = new UserIntent();
 
-        var found = intent.EndResolving<int>(intent.BeginResolving(), new Outcome<int?>.Ok(7));
-        var missing = intent.EndResolving<int>(intent.BeginResolving(), new Outcome<int?>.Ok(null));
+        var found = intent.EndResolving<int>(intent.BeginResolving(), new Outcome<Lookup<int>>.Ok(Lookup.FromNullable<int>(7)));
+        var missing = intent.EndResolving<int>(intent.BeginResolving(), new Outcome<Lookup<int>>.Ok(Lookup.FromNullable<int>(null)));
 
         Assert.Equal(7, Assert.IsType<Resolution<int>.Found>(found).Value);
         Assert.IsType<Resolution<int>.Missing>(missing);
@@ -62,7 +63,7 @@ public sealed class UserIntentTests
         var next = intent.Begin();
         intent.StartResolving(next);
 
-        var resolved = intent.EndResolving<string>(ticket, new Outcome<string?>.Ok("place"));
+        var resolved = intent.EndResolving<string>(ticket, new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>("place")));
 
         Assert.IsType<Resolution<string>.Stale>(resolved);
         Assert.True(intent.IsResolving);

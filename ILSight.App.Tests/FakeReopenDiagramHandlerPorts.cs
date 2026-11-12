@@ -8,7 +8,7 @@ namespace ILSight.App.Tests;
 /// with through, as the adapter does; keeps what it was asked and the problems reported.</summary>
 internal sealed class FakeReopenDiagramHandlerPorts : ReopenDiagramHandler.IPorts
 {
-    public List<TaskCompletionSource<Outcome<List<TypeCard>>>> Answers { get; } = [];
+    public List<TaskCompletionSource<Outcome<List<Lookup<TypeCard>>>>> Answers { get; } = [];
 
     public List<IReadOnlyList<TypeAnchor>> Asked { get; } = [];
 
@@ -19,9 +19,9 @@ internal sealed class FakeReopenDiagramHandlerPorts : ReopenDiagramHandler.IPort
         Reported.Add(problem);
     }
 
-    public Task<Outcome<List<TypeCard>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
+    public Task<Outcome<List<Lookup<TypeCard>>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)
     {
-        var answer = new TaskCompletionSource<Outcome<List<TypeCard>>>();
+        var answer = new TaskCompletionSource<Outcome<List<Lookup<TypeCard>>>>();
         ct.Register(() => answer.TrySetCanceled(ct));
         Asked.Add(types);
         Answers.Add(answer);

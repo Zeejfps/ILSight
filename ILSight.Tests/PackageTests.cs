@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using ICSharpCode.Decompiler.TypeSystem;
 using ILSight.Core;
 using ILSight.Core.Analysis;
 
@@ -87,9 +88,9 @@ public sealed class PackageTests
 
         Assert.Null(list.FindNode(type));
         Assert.Null(list.FindMetadataRow(type));
-        Assert.Null(await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None));
-        Assert.Null(await AssemblyListing.FindApiReferencePageAsync(list, type, CancellationToken.None));
-        Assert.Null(await AssemblyListing.FindTypeDefinitionAsync(list, type, CancellationToken.None));
+        Assert.IsType<Lookup<CodeTooltip>.NotFound>(await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None));
+        Assert.IsType<Lookup<string>.NotFound>(await AssemblyListing.FindApiReferencePageAsync(list, type, CancellationToken.None));
+        Assert.IsType<Lookup<ITypeDefinition>.NotFound>(await AssemblyListing.FindTypeDefinitionAsync(list, type, CancellationToken.None));
         Assert.Null(list.FindMetadataRow(CodeReferences.CreateAssembly("Sample", AssemblyPath.Of(path))));
     }
 

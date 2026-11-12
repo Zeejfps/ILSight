@@ -171,35 +171,39 @@ public static class AssemblyListing
         }
         return listed;
     }
-
     /// <summary>The listed assembly that defines what <paramref name="reference"/> points at, and the
-    /// handle of its definition there: the assembly's own handle for an assembly. A null assembly
-    /// when it cannot be resolved or listed.</summary>
-    internal static async Task<(LoadedModule? Assembly, EntityHandle Handle)> ResolveListedAsync(AssemblyList list, CodeReference.Navigable reference,
-        CancellationToken ct)
+    /// handle of its definition there: the assembly's own handle for an assembly. Not found when it cannot be resolved
+    /// or listed; unreadable when resolving it reads the type system of a module the library could not read.</summary>
+    internal static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveListedAsync(AssemblyList list,
+        CodeReference.Navigable reference, CancellationToken ct)
     {
         var generation = list.Generation;
         var owner = TryLoadAssembly(list, reference.FilePath, generation);
         if (owner is null)
         {
-            return default;
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
         }
 
-        var (assembly, handle) = await ResolveTargetAsync(list, owner, reference, generation, ct);
-        if (assembly is null)
-        {
-            return default;
-        }
-
-        if (!TryList(list, assembly, generation, ct))
-        {
-            return default;
-        }
-
-        return (assembly, handle);
+        var resolved = await ResolveTargetAsync(list, owner, reference, generation, ct);
+        return resolved.Match<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>(
+            found => ListResolved(list, found, generation, ct),
+            static notFound => notFound,
+            static unreadable => unreadable);
     }
 
-    private static async Task<(LoadedModule? Assembly, EntityHandle Handle)> ResolveTargetAsync(AssemblyList list, LoadedModule owner,
+    /// <summary><paramref name="resolved"/>, once its assembly is listed; not found when it cannot be.</summary>
+    private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ListResolved(AssemblyList list,
+        Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Found resolved, int generation, CancellationToken ct)
+    {
+        if (!TryList(list, resolved.Value.Assembly, generation, ct))
+        {
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
+        }
+
+        return resolved;
+    }
+
+    private static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveTargetAsync(AssemblyList list, LoadedModule owner,
         CodeReference.Navigable reference, int generation, CancellationToken ct)
     {
         switch (reference)
@@ -209,142 +213,157 @@ public static class AssemblyListing
             case CodeReference.Assembly assembly:
                 if (assembly.Referenced is null)
                 {
-                    return (owner, EntityHandle.AssemblyDefinition);
+                    return Found(owner, EntityHandle.AssemblyDefinition);
                 }
 
                 var target = LoadedAssemblies.GetResolver(owner).ResolveAssembly(new AssemblyReference(LoadedAssemblies.GetFile(owner), assembly.Referenced.Value));
-                return (target, EntityHandle.AssemblyDefinition);
+                if (target is null)
+                {
+                    return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
+                }
+
+                return Found(target, EntityHandle.AssemblyDefinition);
             default:
                 throw new UnreachableException();
         }
     }
 
+    private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> Found(LoadedModule assembly, EntityHandle handle)
+    {
+        return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Found { Value = (assembly, handle) };
+    }
+
     /// <summary>
     /// What hovering <paramref name="reference"/> explains: the declaration and XML documentation of
-    /// the type or member it points at. Null when it cannot be resolved. Loads the files it needs without listing them, and reads documentation files:
-    /// call it off the UI thread.
+    /// the type or member it points at. Not found when it cannot be resolved; unreadable when the library could not
+    /// read the type system of an assembly resolving it reads. Loads the files it needs without listing them, and
+    /// reads documentation files: call it off the UI thread.
     /// </summary>
-    public static async Task<CodeTooltip?> DescribeReferenceAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
+    public static async Task<Lookup<CodeTooltip>> DescribeReferenceAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
     {
         try
         {
             var resolved = await ResolveEntityAsync(list, reference, ct);
-            if (resolved is null)
-            {
-                return null;
-            }
-
-            return Documentation.CreateTooltip(resolved.Entity, resolved.Assembly, resolved.TypeSystem);
+            return resolved.Select(static r => Documentation.CreateTooltip(r.Entity, r.Assembly, r.TypeSystem));
         }
         catch (BadImageFormatException)
         {
-            return null;
+            return new Lookup<CodeTooltip>.NotFound();
         }
         catch (IOException)
         {
-            return null;
+            return new Lookup<CodeTooltip>.NotFound();
         }
     }
 
     /// <summary>
     /// The page of the .NET API reference about the type or member <paramref name="reference"/>
-    /// points at, as <see cref="MicrosoftDocs.FindPage(BrowseNode)"/> names it. Null for what is not
-    /// visible outside its assembly, or when it cannot be resolved. Loads the files it needs without listing them: call it off the UI thread.
+    /// points at, as <see cref="MicrosoftDocs.FindPage(BrowseNode)"/> names it. Not found for what is not
+    /// visible outside its assembly, or when it cannot be resolved; unreadable as
+    /// <see cref="DescribeReferenceAsync"/> says. Loads the files it needs without listing them: call it off the UI
+    /// thread.
     /// </summary>
-    public static async Task<string?> FindApiReferencePageAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
+    public static async Task<Lookup<string>> FindApiReferencePageAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
     {
         try
         {
             var resolved = await ResolveEntityAsync(list, reference, ct);
-            if (resolved is null)
-            {
-                return null;
-            }
-
-            return MicrosoftDocs.FindPage(resolved.Entity);
+            return resolved.Match(
+                static found => Lookup.FromNullable(MicrosoftDocs.FindPage(found.Value.Entity)),
+                static _ => new Lookup<string>.NotFound(),
+                static unreadable => new Lookup<string>.Unreadable { Module = unreadable.Module });
         }
         catch (BadImageFormatException)
         {
-            return null;
+            return new Lookup<string>.NotFound();
         }
         catch (IOException)
         {
-            return null;
+            return new Lookup<string>.NotFound();
         }
     }
 
     /// <summary>The definition of the type <paramref name="reference"/> points at, loading the assembly
-    /// that defines it without listing it; null when it points at no type, or cannot be resolved.
-    /// Call it off the UI thread.</summary>
-    internal static async Task<ITypeDefinition?> FindTypeDefinitionAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
+    /// that defines it without listing it; not found when it points at no type, or cannot be resolved; unreadable as
+    /// <see cref="DescribeReferenceAsync"/> says. Call it off the UI thread.</summary>
+    internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
     {
         if (reference.Kind != EntityKind.Type)
         {
-            return null;
+            return new Lookup<ITypeDefinition>.NotFound();
         }
 
         try
         {
             var resolved = await ResolveEntityAsync(list, reference, ct);
-            return resolved?.Entity as ITypeDefinition;
+            return resolved.Match(
+                static found => Lookup.FromNullable(found.Value.Entity as ITypeDefinition),
+                static _ => new Lookup<ITypeDefinition>.NotFound(),
+                static unreadable => new Lookup<ITypeDefinition>.Unreadable { Module = unreadable.Module });
         }
         catch (BadImageFormatException)
         {
-            return null;
+            return new Lookup<ITypeDefinition>.NotFound();
         }
         catch (IOException)
         {
-            return null;
+            return new Lookup<ITypeDefinition>.NotFound();
         }
     }
 
     /// <summary>The definition of the type <paramref name="anchor"/> names, loading the assembly that
-    /// defines it without listing it; null when its file cannot be read or no longer defines it. Call it
-    /// off the UI thread.</summary>
-    internal static async Task<ITypeDefinition?> FindTypeDefinitionAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
+    /// defines it without listing it; not found when its file cannot be read or no longer defines it; unreadable when
+    /// the library could not read its type system. Call it off the UI thread.</summary>
+    internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
     {
         try
         {
             var assembly = TryLoadAssembly(list, anchor.AssemblyPath);
             if (assembly is null)
             {
-                return null;
+                return new Lookup<ITypeDefinition>.NotFound();
             }
 
             var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
-            return read.Match<ITypeDefinition?>(r => r.TypeSystem.MainModule.GetTypeDefinition(new FullTypeName(anchor.FullName)), static _ => null);
+            return read.Match(
+                r => Lookup.FromNullable(r.TypeSystem.MainModule.GetTypeDefinition(new FullTypeName(anchor.FullName))),
+                u => Lookup.FromUnreadable<ITypeDefinition>(assembly, u));
         }
         catch (BadImageFormatException)
         {
-            return null;
+            return new Lookup<ITypeDefinition>.NotFound();
         }
         catch (IOException)
         {
-            return null;
+            return new Lookup<ITypeDefinition>.NotFound();
         }
     }
 
     /// <summary>The type or member <paramref name="entity"/> points at, the assembly that defines it and that
     /// assembly's type system, loading the assembly without listing it, once the reads of the type systems the
-    /// resolving reads ended; null when it cannot be resolved, or the library could not read an assembly on the
-    /// way.</summary>
-    private static async Task<ResolvedEntity?> ResolveEntityAsync(AssemblyList list, CodeReference.Entity entity, CancellationToken ct)
+    /// resolving reads ended; not found when it cannot be resolved, unreadable when the library could not read an
+    /// assembly on the way.</summary>
+    private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(AssemblyList list, CodeReference.Entity entity, CancellationToken ct)
     {
         var generation = list.Generation;
         var owner = TryLoadAssembly(list, entity.FilePath, generation);
         if (owner is null)
         {
-            return null;
+            return new Lookup<ResolvedEntity>.NotFound();
         }
 
-        var (assembly, handle) = await ResolveDefinitionAsync(list, owner, entity.Handle, generation, ct);
-        if (assembly is null)
-        {
-            return null;
-        }
+        var definition = await ResolveDefinitionAsync(list, owner, entity.Handle, generation, ct);
+        return await definition.ThenFindAsync(static (found, c) => ResolveEntityAsync(found.Assembly, found.Handle, c), ct);
+    }
 
+    /// <summary>The type or member <paramref name="handle"/> defines in <paramref name="assembly"/>, once the read of
+    /// its type system ended.</summary>
+    private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(LoadedModule assembly, EntityHandle handle, CancellationToken ct)
+    {
         var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
-        return read.Match(r => Resolve(r.TypeSystem, assembly, handle), static _ => null);
+        return read.Match(
+            r => Lookup.FromNullable(Resolve(r.TypeSystem, assembly, handle)),
+            u => Lookup.FromUnreadable<ResolvedEntity>(assembly, u));
     }
 
     /// <summary>A type or member a reference was resolved to, the assembly that defines it, and that assembly's type
@@ -715,30 +734,41 @@ public static class AssemblyListing
         return null;
     }
 
-    private static async Task<(LoadedModule? Assembly, EntityHandle Handle)> ResolveDefinitionAsync(AssemblyList list, LoadedModule owner, EntityHandle handle,
-        int generation, CancellationToken ct)
+    /// <summary>The assembly that defines what <paramref name="handle"/> names in <paramref name="owner"/>, and the
+    /// handle of its definition there; not found when it resolves to nothing that can be loaded, unreadable when the
+    /// library could not read the type system of <paramref name="owner"/>, which a reference is resolved in.</summary>
+    private static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveDefinitionAsync(AssemblyList list, LoadedModule owner,
+        EntityHandle handle, int generation, CancellationToken ct)
     {
         switch (handle.Kind)
         {
             case HandleKind.TypeDefinition or HandleKind.MethodDefinition or HandleKind.FieldDefinition
                 or HandleKind.PropertyDefinition or HandleKind.EventDefinition:
-                return (owner, handle);
+                return Found(owner, handle);
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(owner, ct);
-        var main = read.Match<MetadataModule?>(static r => r.TypeSystem.MainModule, static _ => null);
-        if (main is null)
-        {
-            return (null, default);
-        }
+        return read.Match(
+            r => ResolveDefinition(list, r.TypeSystem.MainModule, handle, generation),
+            u => Lookup.FromUnreadable<(LoadedModule Assembly, EntityHandle Handle)>(owner, u));
+    }
 
+    private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ResolveDefinition(AssemblyList list, MetadataModule main, EntityHandle handle,
+        int generation)
+    {
         var definition = Definitions.Resolve(main, handle);
         if (definition is null)
         {
-            return (null, default);
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
         }
 
-        return (TryLoadAssembly(list, AssemblyPath.Of(DecompilerFacts.GetMetadataFile(definition).FileName), generation), definition.MetadataToken);
+        var assembly = TryLoadAssembly(list, AssemblyPath.Of(DecompilerFacts.GetMetadataFile(definition).FileName), generation);
+        if (assembly is null)
+        {
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
+        }
+
+        return Found(assembly, definition.MetadataToken);
     }
 
     /// <summary>What <paramref name="path"/> holds: an assembly, a package, or an assembly in a

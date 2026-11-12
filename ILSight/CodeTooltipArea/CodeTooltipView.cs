@@ -45,6 +45,28 @@ internal static class CodeTooltipView
     /// long documentation scrolled.</summary>
     public static readonly TooltipLook Look = new(MaxWidth, new Spacing(0f, 0f), Align.Start, Interactive: true, MaxHeight: MaxHeight);
 
+    /// <summary>Records what <paramref name="shown"/> shows: the tooltip, or that the module the type or member is in
+    /// could not be read, and why; returns the link clicked in it this frame, if one was.</summary>
+    public static RichTextClick Render(Ui<UiState> ui, Lookup<CodeTooltip> shown)
+    {
+        return shown.Match<Ui<UiState>, RichTextClick>(ui,
+            static (u, found) => Render(u, found.Value),
+            static (_, _) => default,
+            static (u, unreadable) => RenderUnreadable(u, unreadable.Module));
+    }
+
+    /// <summary>Records that <paramref name="unreadable"/>, the module the hovered type or member is in, could not be
+    /// read, and why, where the tooltip's declaration would be.</summary>
+    private static RichTextClick RenderUnreadable(Ui<UiState> ui, UnreadableModule unreadable)
+    {
+        using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
+        {
+            var text = ui.State.Strings.CodeTooltipUnreadable(unreadable.Module.FilePath.FileName, unreadable.Why.Message);
+            ui.Text(text, color: ui.Theme.Warning, wrap: true);
+        }
+        return default;
+    }
+
     /// <summary>Records the tooltip and returns the link clicked in it this frame, if one was.</summary>
     public static RichTextClick Render(Ui<UiState> ui, CodeTooltip tooltip)
     {

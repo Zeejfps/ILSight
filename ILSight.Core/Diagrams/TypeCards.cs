@@ -8,30 +8,31 @@ namespace ILSight.Core.Diagrams;
 /// without listing them: call them off the UI thread.</summary>
 public static class TypeCards
 {
-    /// <summary>The card of the type <paramref name="type"/> points at; null when it points at no type,
-    /// or that cannot be resolved.</summary>
-    public static async Task<TypeCard?> ReadAsync(AssemblyList list, CodeReference.Entity type, CancellationToken ct)
+    /// <summary>The card of the type <paramref name="type"/> points at; not found when it points at no type,
+    /// or that cannot be resolved; unreadable when the library could not read the type system of an assembly
+    /// resolving it reads.</summary>
+    public static async Task<Lookup<TypeCard>> ReadAsync(AssemblyList list, CodeReference.Entity type, CancellationToken ct)
     {
         var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, ct);
-        if (definition is null)
-        {
-            return null;
-        }
-
-        return Read(definition);
+        return ReadFound(definition);
     }
 
     /// <summary>The card of the type <paramref name="type"/> points at, then the cards of the types of its
     /// own assembly it is directly related to: those it derives from, implements or holds, and those
-    /// deriving from it or implementing it. None when it points at no type.</summary>
-    public static async Task<List<TypeCard>> ReadWithNeighboursAsync(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
+    /// deriving from it or implementing it. None when it points at no type; the module, with why, when the library
+    /// could not read the type system of an assembly resolving it reads.</summary>
+    public static async Task<TypeSystemWork<List<TypeCard>>> ReadWithNeighboursAsync(AssemblyList list, CodeReference.Entity type,
+        CancellationToken cancellationToken)
     {
         var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, cancellationToken);
-        if (definition is null)
-        {
-            return [];
-        }
+        return definition.Match<TypeSystemWork<List<TypeCard>>>(
+            found => new TypeSystemWork<List<TypeCard>>.Done { Value = ReadWithNeighbours(found.Value, cancellationToken) },
+            static _ => new TypeSystemWork<List<TypeCard>>.Done { Value = [] },
+            static unreadable => new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module });
+    }
 
+    private static List<TypeCard> ReadWithNeighbours(ITypeDefinition definition, CancellationToken cancellationToken)
+    {
         var card = Read(definition);
         if (card is null)
         {
@@ -51,17 +52,21 @@ public static class TypeCards
         return cards;
     }
 
-    /// <summary>The card of the type <paramref name="anchor"/> names; null when its assembly cannot be
-    /// read or no longer defines it.</summary>
-    public static async Task<TypeCard?> ReadAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
+    /// <summary>The card of the type <paramref name="anchor"/> names; not found when its assembly cannot be
+    /// read or no longer defines it; unreadable when the library could not read the assembly's type system.</summary>
+    public static async Task<Lookup<TypeCard>> ReadAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
     {
         var definition = await AssemblyListing.FindTypeDefinitionAsync(list, anchor, ct);
-        if (definition is null)
-        {
-            return null;
-        }
+        return ReadFound(definition);
+    }
 
-        return Read(definition);
+    /// <summary>The card of the type <paramref name="definition"/> found; not found or unreadable as it is.</summary>
+    private static Lookup<TypeCard> ReadFound(Lookup<ITypeDefinition> definition)
+    {
+        return definition.Match(
+            static found => Lookup.FromNullable(Read(found.Value)),
+            static _ => new Lookup<TypeCard>.NotFound(),
+            static unreadable => new Lookup<TypeCard>.Unreadable { Module = unreadable.Module });
     }
 
     /// <summary>The cards of the types deriving directly from, or implementing, the type
@@ -71,11 +76,14 @@ public static class TypeCards
     public static async Task<TypeSystemWork<List<TypeCard>>> ReadDerivedAsync(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
         var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, cancellationToken);
-        if (definition is null)
-        {
-            return new TypeSystemWork<List<TypeCard>>.Done { Value = [] };
-        }
+        return await definition.Match(
+            found => ReadDerivedAsync(list, found.Value, cancellationToken),
+            static _ => Task.FromResult<TypeSystemWork<List<TypeCard>>>(new TypeSystemWork<List<TypeCard>>.Done { Value = [] }),
+            static unreadable => Task.FromResult<TypeSystemWork<List<TypeCard>>>(new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module }));
+    }
 
+    private static async Task<TypeSystemWork<List<TypeCard>>> ReadDerivedAsync(AssemblyList list, ITypeDefinition definition, CancellationToken cancellationToken)
+    {
         var module = AssemblyListing.GetLoadedFrom(list, DecompilerFacts.GetMetadataFile(definition));
         var reachable = await DerivedTypes.ReadReachableAsync(module, cancellationToken);
         var unreadable = new ConcurrentDictionary<LoadedModule, UnreadableModule>();

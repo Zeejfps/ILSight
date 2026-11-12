@@ -7,7 +7,7 @@ namespace ILSight.App.Tests;
 /// problems reported.</summary>
 internal sealed class FakeRestoreAnalysesHandlerPorts : RestoreAnalysesHandler.IPorts
 {
-    public required Outcome<List<AnalysisSymbol?>> Found { get; init; }
+    public required Outcome<List<Lookup<AnalysisSymbol>>> Found { get; init; }
 
     public Action WhileLooking { get; init; } = static () => { };
 
@@ -18,7 +18,7 @@ internal sealed class FakeRestoreAnalysesHandlerPorts : RestoreAnalysesHandler.I
         Reported.Add(problem);
     }
 
-    public Task<Outcome<List<AnalysisSymbol?>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
+    public Task<Outcome<List<Lookup<AnalysisSymbol>>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
     {
         WhileLooking();
         return Task.FromResult(Found);

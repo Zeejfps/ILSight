@@ -19,7 +19,7 @@ public sealed class LookUpTooltipHandlerTests
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = AskForGreeter(d, tooltips);
         var tooltip = TestWaits.Wait(() => AssemblyListing.DescribeReferenceAsync(assemblies, lookup.Reference, CancellationToken.None));
-        var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<CodeTooltip?>.Ok(tooltip) };
+        var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Ok(tooltip) };
 
         await new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None);
 
@@ -35,12 +35,28 @@ public sealed class LookUpTooltipHandlerTests
         var assemblies = d.AppState.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = AskForGreeter(d, tooltips);
-        var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<CodeTooltip?>.Failed(new InvalidDataException("unreadable")) };
+        var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Failed(new InvalidDataException("unreadable")) };
 
         await new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None);
 
         Assert.True(tooltips.TryGetTooltip(lookup.Reference, out var kept));
-        Assert.Null(kept);
+        Assert.IsType<Lookup<CodeTooltip>.NotFound>(kept);
+    }
+
+    [Fact]
+    public async Task HandleAsync_InAModuleThatCouldNotBeRead_KeepsThatToShowInPlace()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var assemblies = d.AppState.Assemblies;
+        var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
+        var lookup = AskForGreeter(d, tooltips);
+        var module = assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var unreadable = new Lookup<CodeTooltip>.Unreadable { Module = new UnreadableModule { Module = module, Why = new BadImageFormatException("Bad namespace.") } };
+        var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Ok(unreadable) };
+
+        await new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None);
+
+        Assert.Same(unreadable, tooltips.FindShown(lookup.Reference));
     }
 
     [Fact]

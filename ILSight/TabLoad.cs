@@ -78,7 +78,8 @@ public sealed class TabLoad
         failed: static failed => failed.Node,
         reloading: static _ => null,
         reopening: static _ => null,
-        gone: static _ => null);
+        gone: static _ => null,
+        unreadable: static _ => null);
 
     /// <summary>Where the load points: the path of its node, or while the node is away the path it is found again by
     /// or no longer exists at; outlives reloads of the assembly. Null when the load is of no node.</summary>
@@ -94,7 +95,8 @@ public sealed class TabLoad
         failed: static failed => failed.Node.Path,
         reloading: static reloading => reloading.Location,
         reopening: static _ => null,
-        gone: static gone => gone.Location);
+        gone: static gone => gone.Location,
+        unreadable: static unreadable => unreadable.Location);
 
     /// <summary>The code, document or markup the load shows, or an empty document while it shows none.</summary>
     public DecompiledDocument Document => _content.Match(
@@ -109,7 +111,8 @@ public sealed class TabLoad
         failed: static _ => DecompiledDocument.Empty,
         reloading: static _ => DecompiledDocument.Empty,
         reopening: static _ => DecompiledDocument.Empty,
-        gone: static _ => DecompiledDocument.Empty);
+        gone: static _ => DecompiledDocument.Empty,
+        unreadable: static _ => DecompiledDocument.Empty);
 
     /// <summary>The name of the node shown, kept while the node is away; null when the load is of no node.</summary>
     public string? Title => _content.Match<string?>(
@@ -124,7 +127,8 @@ public sealed class TabLoad
         failed: static failed => NodeText.Name(failed.Node),
         reloading: static reloading => reloading.Title,
         reopening: static _ => null,
-        gone: static gone => gone.Title);
+        gone: static gone => gone.Title,
+        unreadable: static unreadable => unreadable.Title);
 
     public DecompilationLanguage Language => _language;
 
@@ -250,6 +254,19 @@ public sealed class TabLoad
     public void ShowGone(NodePath location)
     {
         ReleaseNode(new TabContent.Gone { Location = location, Title = Title });
+    }
+
+    /// <summary>Lets go of the node, whose place at <paramref name="location"/> is in <paramref name="unreadable"/>,
+    /// a module whose type system the library could not read, cancelling what was in flight.</summary>
+    public void ShowUnreadable(NodePath location, UnreadableModule unreadable)
+    {
+        ReleaseNode(new TabContent.Unreadable
+        {
+            Location = location,
+            Title = Title,
+            Module = unreadable.Module.FilePath.FileName,
+            Why = unreadable.Why.Message,
+        });
     }
 
     private void ReleaseNode(TabContent content)

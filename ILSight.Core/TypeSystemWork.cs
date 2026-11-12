@@ -30,4 +30,20 @@ public abstract record TypeSystemWork<T>
             _ => throw new UnreachableException($"TypeSystemWork.Match does not handle {GetType().Name}."),
         };
     }
+
+    /// <summary>Does what the handler of whichever case this is does with it.</summary>
+    public void Switch(Action<Done> done, Action<Unreadable> unreadable)
+    {
+        switch (this)
+        {
+            case Done c:
+                done(c);
+                return;
+            case Unreadable c:
+                unreadable(c);
+                return;
+            default:
+                throw new UnreachableException($"TypeSystemWork.Switch does not handle {GetType().Name}.");
+        }
+    }
 }

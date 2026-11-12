@@ -13,7 +13,7 @@ public sealed class DiagramGrowingTests
 
     private static TypeCard CardOf(AppStateDriver d, string type)
     {
-        var card = TestWaits.Wait(() => TypeCards.ReadAsync(d.AppState.Assemblies, TypeOf(d, type), CancellationToken.None));
+        var card = TestWaits.Wait(() => TypeCards.ReadAsync(d.AppState.Assemblies, TypeOf(d, type), CancellationToken.None)).FoundOrNull;
         Assert.NotNull(card);
         return card;
     }

@@ -6,7 +6,7 @@ namespace ILSight.App.Tests;
 /// problems reported.</summary>
 internal sealed class FakeOpenAndShowIdHandlerPorts : OpenAndShowIdHandler.IPorts
 {
-    public required Outcome<BrowseNode?> Found { get; init; }
+    public required Outcome<Lookup<BrowseNode>> Found { get; init; }
 
     public Action WhileOpening { get; init; } = static () => { };
 
@@ -17,7 +17,7 @@ internal sealed class FakeOpenAndShowIdHandlerPorts : OpenAndShowIdHandler.IPort
         Reported.Add(problem);
     }
 
-    public Task<Outcome<BrowseNode?>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
+    public Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
     {
         WhileOpening();
         return Task.FromResult(Found);

@@ -32,7 +32,7 @@ public sealed class RestoreAnalysesHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var restore = WaitForGreeterAndFarewell(d);
         var greeter = SymbolOf(d, "Greeter");
-        var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<AnalysisSymbol?>>.Ok([greeter, null]) };
+        var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Ok([new Lookup<AnalysisSymbol>.Found { Value = greeter }, new Lookup<AnalysisSymbol>.NotFound()]) };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
 
@@ -47,7 +47,7 @@ public sealed class RestoreAnalysesHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var restore = WaitForGreeterAndFarewell(d);
         var error = new IOException("unreadable");
-        var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<AnalysisSymbol?>>.Failed(error) };
+        var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Failed(error) };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
 
@@ -62,7 +62,7 @@ public sealed class RestoreAnalysesHandlerTests
         var restore = WaitForGreeterAndFarewell(d);
         var ports = new FakeRestoreAnalysesHandlerPorts
         {
-            Found = new Outcome<List<AnalysisSymbol?>>.Failed(new IOException("unreadable")),
+            Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Failed(new IOException("unreadable")),
             WhileLooking = () => d.AppState.Assemblies.CloseAll(),
         };
 
@@ -82,7 +82,7 @@ public sealed class RestoreAnalysesHandlerTests
         var assembly = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var ports = new FakeRestoreAnalysesHandlerPorts
         {
-            Found = new Outcome<List<AnalysisSymbol?>>.Ok([greeter, farewell]),
+            Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Ok([new Lookup<AnalysisSymbol>.Found { Value = greeter }, new Lookup<AnalysisSymbol>.Found { Value = farewell }]),
             WhileLooking = () => d.AppState.ListSession.CloseAssemblies([assembly]),
         };
 
@@ -105,7 +105,7 @@ public sealed class RestoreAnalysesHandlerTests
         analyzer.AddPending([greeter.Definition ?? throw new InvalidOperationException("Greeter has no definition.")]);
         var restore = Analysis.BeginRestoring(analyzer, d.AppState.Assemblies);
         Assert.NotNull(restore);
-        var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<AnalysisSymbol?>>.Ok([greeter]) };
+        var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Ok([new Lookup<AnalysisSymbol>.Found { Value = greeter }]) };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
 

@@ -11,7 +11,7 @@ public sealed class AnalyzeReferenceHandlerTests
         var analyzer = d.AppState.Analyzer;
         var greeter = d.Fixture("Greeter");
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
-        var ports = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(greeter) };
+        var ports = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
         d.TakeViewCommands();
 
         await new AnalyzeReferenceHandler(ports).HandleAsync(analyzer, d.AppState.ViewCommands, pending, CancellationToken.None);
@@ -29,8 +29,8 @@ public sealed class AnalyzeReferenceHandlerTests
         var analyzer = d.AppState.Analyzer;
         var reference = d.Fixture("Greeter").Definition;
         var error = new IOException("unreadable");
-        var missing = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
-        var failed = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(error) };
+        var missing = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
+        var failed = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
         await new AnalyzeReferenceHandler(missing).HandleAsync(analyzer, d.AppState.ViewCommands, Analysis.BeginAnalyzing(analyzer, reference), CancellationToken.None);
         await new AnalyzeReferenceHandler(failed).HandleAsync(analyzer, d.AppState.ViewCommands, Analysis.BeginAnalyzing(analyzer, reference), CancellationToken.None);
@@ -47,7 +47,7 @@ public sealed class AnalyzeReferenceHandlerTests
         var analyzer = d.AppState.Analyzer;
         var greeter = d.Fixture("Greeter");
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
-        var ports = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(new IOException("unreadable")), WhileLooking = () => analyzer.RemoveRoot(pending.Root) };
+        var ports = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new IOException("unreadable")), WhileLooking = () => analyzer.RemoveRoot(pending.Root) };
 
         await new AnalyzeReferenceHandler(ports).HandleAsync(analyzer, d.AppState.ViewCommands, pending, CancellationToken.None);
 
@@ -65,7 +65,7 @@ public sealed class AnalyzeReferenceHandlerTests
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
         var ports = new FakeAnalyzeReferenceHandlerPorts
         {
-            Found = new Outcome<BrowseNode?>.Ok(greeter),
+            Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)),
             WhileLooking = () => d.AppState.ListSession.CloseAssemblies([assembly]),
         };
         d.TakeViewCommands();

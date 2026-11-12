@@ -89,7 +89,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         var fresh = AssemblyListing.ReadAgain(assemblies, item);
         var old = await BrowseSessions.EnsureRootAsync(session, item, ct);
         await EnsureChildrenAsLoadedAsync(old, await BrowseSessions.EnsureRootAsync(session, fresh.Item, ct), ct);
-        var placeNodes = new BrowseNode?[places.Count];
+        var placeNodes = new Lookup<BrowseNode>[places.Count];
         for (var i = 0; i < placeNodes.Length; i++)
         {
             placeNodes[i] = await BrowseSessions.FindNodeAsync(session, fresh.Item, places[i], ct);
@@ -140,12 +140,15 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         foreach (var path in expanded)
         {
             stop.ThrowIfCancellationRequested();
-            var node = await NodeLookup.FindAsync(assemblies, session, path, stop);
-            if (node is null)
+            var found = await NodeLookup.FindAsync(assemblies, session, path, stop);
+            if (found is not Lookup<BrowseNode>.Found listed)
             {
+                // A node that is gone, or in a module that could not be read, which shows that where the tree lists
+                // it, is not shown expanded.
                 continue;
             }
 
+            var node = listed.Value;
             var built = await BrowseSessions.GetChildrenAsync(session, node, stop);
             if (built is not ChildrenState.Ready)
             {
@@ -158,9 +161,9 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         return nodes;
     }
 
-    private async Task<BrowseNode?[]> FindNodesAsync(IReadOnlyList<NodePath> places, CancellationToken stop)
+    private async Task<Lookup<BrowseNode>[]> FindNodesAsync(IReadOnlyList<NodePath> places, CancellationToken stop)
     {
-        var found = new BrowseNode?[places.Count];
+        var found = new Lookup<BrowseNode>[places.Count];
         for (var i = 0; i < found.Length; i++)
         {
             stop.ThrowIfCancellationRequested();

@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight.App.Tests;
 
 public sealed class ShowInApiReferenceHandlerTests
@@ -7,7 +9,7 @@ public sealed class ShowInApiReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.TakeViewCommands();
-        var reference = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<string?>.Ok("https://learn.microsoft.com/dotnet/api/greeter") };
+        var reference = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>("https://learn.microsoft.com/dotnet/api/greeter")) };
 
         await new ShowInApiReferenceHandler(reference).HandleAsync(d.AppState.ViewCommands, d.Fixture("Greeter").Definition, CancellationToken.None);
 
@@ -22,8 +24,8 @@ public sealed class ShowInApiReferenceHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         d.TakeViewCommands();
         var hidden = d.Fixture("Hidden").Definition;
-        var none = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<string?>.Ok(null) };
-        var failed = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<string?>.Failed(new IOException("unreadable")) };
+        var none = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>(null)) };
+        var failed = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Failed(new IOException("unreadable")) };
 
         await new ShowInApiReferenceHandler(none).HandleAsync(d.AppState.ViewCommands, hidden, CancellationToken.None);
         await new ShowInApiReferenceHandler(failed).HandleAsync(d.AppState.ViewCommands, hidden, CancellationToken.None);

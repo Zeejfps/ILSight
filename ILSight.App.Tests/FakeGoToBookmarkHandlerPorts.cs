@@ -9,7 +9,7 @@ internal sealed class FakeGoToBookmarkHandlerPorts : GoToBookmarkHandler.IPorts
 {
     public List<NodePath> Asked { get; } = [];
 
-    public List<TaskCompletionSource<Outcome<BrowseNode?>>> Answers { get; } = [];
+    public List<TaskCompletionSource<Outcome<Lookup<BrowseNode>>>> Answers { get; } = [];
 
     public List<AppProblem> Reported { get; } = [];
 
@@ -18,9 +18,9 @@ internal sealed class FakeGoToBookmarkHandlerPorts : GoToBookmarkHandler.IPorts
         Reported.Add(problem);
     }
 
-    public Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
+    public Task<Outcome<Lookup<BrowseNode>>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
     {
-        var answer = new TaskCompletionSource<Outcome<BrowseNode?>>();
+        var answer = new TaskCompletionSource<Outcome<Lookup<BrowseNode>>>();
         ct.Register(() => answer.TrySetCanceled(ct));
         Asked.Add(place);
         Answers.Add(answer);

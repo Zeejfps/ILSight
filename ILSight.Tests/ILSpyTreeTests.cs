@@ -38,7 +38,7 @@ public sealed class ILSpyTreeTests
                 continue;
             }
 
-            Assert.Equal(node.Path, PathOf(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "", CancellationToken.None)));
+            Assert.Equal(node.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "", CancellationToken.None)).FoundOrNull));
         }
     }
 
@@ -53,9 +53,9 @@ public sealed class ILSpyTreeTests
         var name = calculator.EntityFullName;
         Assert.NotNull(name);
 
-        Assert.Equal(calculator.Path, PathOf(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, name, CancellationToken.None)));
-        Assert.Equal(calculator.Path, PathOf(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, name, CancellationToken.None)));
-        Assert.Null(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name, CancellationToken.None));
+        Assert.Equal(calculator.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, name, CancellationToken.None)).FoundOrNull));
+        Assert.Equal(calculator.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, name, CancellationToken.None)).FoundOrNull));
+        Assert.IsType<Lookup<BrowseNode>.NotFound>(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name, CancellationToken.None));
     }
 
     [Fact]
@@ -66,8 +66,8 @@ public sealed class ILSpyTreeTests
         Assert.NotNull(definedToken);
         var token = (uint)definedToken.Value;
 
-        Assert.Null(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed", CancellationToken.None));
-        Assert.Null(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, "", CancellationToken.None));
+        Assert.IsType<Lookup<BrowseNode>.NotFound>(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed", CancellationToken.None));
+        Assert.IsType<Lookup<BrowseNode>.NotFound>(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, "", CancellationToken.None));
     }
 
     [Fact]

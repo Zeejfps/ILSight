@@ -725,7 +725,7 @@ internal static class DiagramView
         FollowLink(ui, navigation, diagram, click);
     }
 
-    private static CodeTooltip? FindTooltip(CodeTooltips tooltips, bool isPanning, DiagramHit hit)
+    private static Lookup<CodeTooltip>? FindTooltip(CodeTooltips tooltips, bool isPanning, DiagramHit hit)
     {
         if (isPanning)
         {
@@ -744,11 +744,10 @@ internal static class DiagramView
             return null;
         }
 
-        tooltips.TryGetTooltip(target, out var tooltip);
-        return tooltip;
+        return tooltips.FindShown(target);
     }
 
-    private static int PartOf(CodeTooltip? tooltip, DiagramHit hit)
+    private static int PartOf(Lookup<CodeTooltip>? tooltip, DiagramHit hit)
     {
         if (tooltip == null)
         {

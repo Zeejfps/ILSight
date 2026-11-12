@@ -47,7 +47,8 @@ internal static class DocumentsView
             failed: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             reloading: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             reopening: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            gone: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab));
+            gone: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            unreadable: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab));
     }
 
     /// <summary>The code view of <paramref name="tab"/>, whose node <paramref name="loading"/> is on its way, or a
@@ -148,7 +149,8 @@ internal static class DocumentsView
     /// <summary>Whether <paramref name="content"/> is shown as a note saying why there is no code.</summary>
     private static bool IsNote(TabContent content)
     {
-        return content is TabContent.Loading or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone;
+        return content is TabContent.Loading or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone
+            or TabContent.Unreadable;
     }
 
     /// <summary>Toggles the bookmark on <paramref name="line"/>, selecting the one made, or passing the

@@ -8,11 +8,11 @@ internal sealed class FakeShowReopenedNodesHandlerPorts : ShowReopenedNodesHandl
 {
     public List<IReadOnlyList<NodePath?>> Asked { get; } = [];
 
-    public List<TaskCompletionSource<Outcome<List<BrowseNode?>>>> Answers { get; } = [];
+    public List<TaskCompletionSource<Outcome<List<Lookup<BrowseNode>>>>> Answers { get; } = [];
 
-    public Task<Outcome<List<BrowseNode?>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
+    public Task<Outcome<List<Lookup<BrowseNode>>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
     {
-        var answer = new TaskCompletionSource<Outcome<List<BrowseNode?>>>();
+        var answer = new TaskCompletionSource<Outcome<List<Lookup<BrowseNode>>>>();
         ct.Register(() => answer.TrySetCanceled(ct));
         Asked.Add(places);
         Answers.Add(answer);

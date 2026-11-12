@@ -34,8 +34,8 @@ public sealed class MicrosoftDocsTests
         var add = assembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
         var item = add.SpansOf().First(s => s.Text == "item").Span.Reference;
 
-        Assert.Equal(ApiReference + "system.collections.generic.list-1.add", await AssemblyListing.FindApiReferencePageAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None));
-        Assert.Null(await AssemblyListing.FindApiReferencePageAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("_items").Reference), CancellationToken.None));
+        Assert.Equal(ApiReference + "system.collections.generic.list-1.add", (await AssemblyListing.FindApiReferencePageAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None)).FoundOrNull);
+        Assert.IsType<Lookup<string>.NotFound>(await AssemblyListing.FindApiReferencePageAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("_items").Reference), CancellationToken.None));
         Assert.IsType<CodeReference.Local>(item);
         Assert.DoesNotContain(list.Listed, a => a.Name == "System.Private.CoreLib");
     }

@@ -1,5 +1,6 @@
 using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
+using ILSight.Core.Diagrams;
 using ILSight.Core.Metadata;
 
 namespace ILSight.Tests;
@@ -205,5 +206,33 @@ public sealed class NavigationTests
         Assert.Contains(add, uses);
         Assert.Contains(items, uses);
         Assert.Contains(".method", document.Lines[Assert.NotNull(Documents.FindDefinitionLine(document, add))].Text);
+    }
+
+    [Fact]
+    public async Task Lookups_into_a_module_whose_types_cannot_be_read_name_it_rather_than_find_nothing()
+    {
+        using var temp = new TempDir();
+        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath));
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var session = TestSession.Shared;
+        var type = CodeReferences.CreateEntity(EntityKind.Type, "Circle", path, MetadataTokens.TypeDefinitionHandle(2));
+        var (_, healthy) = Trees.OpenTestAssembly();
+        var place = new NodePath { FilePath = path, Steps = healthy.Fixtures().Path.Steps };
+
+        var node = await NodeLookup.FindAsync(list, session, type, CancellationToken.None);
+        var row = await NodeLookup.FindMetadataRowAsync(list, session, type, CancellationToken.None);
+        var atPlace = await NodeLookup.FindAsync(list, session, place, CancellationToken.None);
+        var tooltip = await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None);
+        var card = await TypeCards.ReadAsync(list, type, CancellationToken.None);
+        var module = Assert.IsType<LoadedModule>(Assert.Single(list.Assemblies));
+        var byId = await NodeLookup.FindByIdAsync(session, "T:ILSight.Tests.Fixtures.Circle", [module], CancellationToken.None);
+
+        Assert.Equal("UnreadableTypes.dll", Assert.IsType<Lookup<BrowseNode>.Unreadable>(node).Module.Module.FilePath.FileName);
+        Assert.NotEmpty(Assert.IsType<Lookup<BrowseNode>.Unreadable>(node).Module.Why.Message);
+        Assert.Same(module, Assert.IsType<Lookup<MetadataTarget>.Unreadable>(row).Module.Module);
+        Assert.Same(module, Assert.IsType<Lookup<BrowseNode>.Unreadable>(atPlace).Module.Module);
+        Assert.Same(module, Assert.IsType<Lookup<CodeTooltip>.Unreadable>(tooltip).Module.Module);
+        Assert.Same(module, Assert.IsType<Lookup<TypeCard>.Unreadable>(card).Module.Module);
+        Assert.Same(module, Assert.IsType<Lookup<BrowseNode>.Unreadable>(byId).Module.Module);
     }
 }

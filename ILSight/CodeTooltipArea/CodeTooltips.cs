@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
 
 namespace ILSight.CodeTooltipArea;
@@ -9,7 +10,7 @@ namespace ILSight.CodeTooltipArea;
 /// </summary>
 public sealed class CodeTooltips
 {
-    private readonly Dictionary<CodeReference.Entity, CodeTooltip?> _found = new();
+    private readonly Dictionary<CodeReference.Entity, Lookup<CodeTooltip>> _found = new();
     private readonly HashSet<CodeReference.Entity> _pending = new();
     private readonly List<TooltipLookup> _asked = [];
     private int _version;
@@ -29,9 +30,10 @@ public sealed class CodeTooltips
     /// <summary>Whether lookups were asked for that have not been started yet.</summary>
     public bool HasAsked => _asked.Count > 0;
 
-    /// <summary>Whether the lookup of <paramref name="reference"/> is done, with its <paramref name="tooltip"/>, null
-    /// when it has none. Asks for the lookup the first time.</summary>
-    public bool TryGetTooltip(CodeReference.Entity reference, out CodeTooltip? tooltip)
+    /// <summary>Whether the lookup of <paramref name="reference"/> is done, with what it found,
+    /// <paramref name="tooltip"/>: the tooltip, none, or the module it is in that could not be read. Asks for the
+    /// lookup the first time.</summary>
+    public bool TryGetTooltip(CodeReference.Entity reference, [NotNullWhen(true)] out Lookup<CodeTooltip>? tooltip)
     {
         ForgetIfStale();
         if (_found.TryGetValue(reference, out tooltip))
@@ -45,6 +47,19 @@ public sealed class CodeTooltips
         }
 
         return false;
+    }
+
+    /// <summary>What the tooltip of <paramref name="reference"/> shows once its lookup is done: the tooltip, or the
+    /// module it is in that could not be read; null while it is looked up, and when it has none. Asks for the lookup
+    /// the first time.</summary>
+    public Lookup<CodeTooltip>? FindShown(CodeReference.Entity reference)
+    {
+        if (!TryGetTooltip(reference, out var tooltip))
+        {
+            return null;
+        }
+
+        return tooltip.Match<Lookup<CodeTooltip>?>(static found => found, static _ => null, static unreadable => unreadable);
     }
 
     private void ForgetIfStale()
@@ -70,7 +85,7 @@ public sealed class CodeTooltips
 
     /// <summary>Keeps <paramref name="tooltip"/>, what <paramref name="lookup"/> found, unless the open assemblies
     /// changed since it was asked for.</summary>
-    public void Finish(TooltipLookup lookup, CodeTooltip? tooltip)
+    public void Finish(TooltipLookup lookup, Lookup<CodeTooltip> tooltip)
     {
         if (lookup.Version != _version)
         {

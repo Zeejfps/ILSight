@@ -6,5 +6,5 @@ namespace ILSight;
 /// for, kept while the pointer crosses over to another part until that part's tooltip shows.</summary>
 internal sealed class KeptTooltip
 {
-    public (CodeTooltip Tooltip, int Part)? Kept { get; set; }
+    public (Lookup<CodeTooltip> Tooltip, int Part)? Kept { get; set; }
 }

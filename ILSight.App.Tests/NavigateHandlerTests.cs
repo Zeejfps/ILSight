@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
 
 namespace ILSight.App.Tests;
@@ -12,7 +13,7 @@ public sealed class NavigateHandlerTests
         var farewell = d.Fixture("Farewell");
         var reference = farewell.Definition;
         var resolvingWhileLooking = false;
-        var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => resolvingWhileLooking = appState.IsResolving };
+        var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(farewell)), WhileLooking = () => resolvingWhileLooking = appState.IsResolving };
 
         var load = await new NavigateHandler(lookup).HandleAsync(appState, reference, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
 
@@ -35,8 +36,8 @@ public sealed class NavigateHandlerTests
         Assert.NotNull(shown);
         var reference = d.Fixture("Farewell").Definition;
         var error = new IOException("unreadable");
-        var missing = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
-        var failed = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(error) };
+        var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
+        var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
         var missingLoad = await new NavigateHandler(missing).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
         var failedLoad = await new NavigateHandler(failed).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
@@ -59,8 +60,8 @@ public sealed class NavigateHandlerTests
         var shown = appState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var farewell = d.Fixture("Farewell");
-        var found = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => appState.Navigation.BeginRequest() };
-        var missing = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => appState.Navigation.BeginRequest() };
+        var found = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(farewell)), WhileLooking = () => appState.Navigation.BeginRequest() };
+        var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileLooking = () => appState.Navigation.BeginRequest() };
 
         var foundLoad = await new NavigateHandler(found).HandleAsync(appState, farewell.Definition, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
         var missingLoad = await new NavigateHandler(missing).HandleAsync(appState, farewell.Definition, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
@@ -70,5 +71,46 @@ public sealed class NavigateHandlerTests
         Assert.Empty(found.Reported);
         Assert.Empty(missing.Reported);
         Assert.Null(missingLoad);
+    }
+
+    [Fact]
+    public void HandleAsync_ReferenceIntoAModuleWhoseTypesCannotBeRead_ReportsWhereTheUserIsWhichModuleAndWhy()
+    {
+        using var temp = new TempDir();
+        var path = BrokenAssemblies.WriteUnreadableTypeSystem(temp, AppStateDriver.FixturePath);
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var shown = d.AppState.Navigation.ActiveTab?.Node;
+        Assert.NotNull(shown);
+        var reference = CodeReferences.CreateEntity(EntityKind.Type, "Greeter", AssemblyPath.Of(path), MetadataTokens.TypeDefinitionHandle(2));
+
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Settle();
+
+        var reported = Assert.Single(d.AppState.Errors.Entries);
+        var problem = Assert.IsType<AppProblem.ModuleUnreadable>(reported.Problem);
+        Assert.Equal("UnreadableTypes.dll", problem.Module);
+        Assert.NotEmpty(problem.Why.Message);
+        Assert.StartsWith("UnreadableTypes.dll couldn't be read — ", reported.Words().Summary);
+        Assert.Same(shown, d.AppState.Navigation.ActiveTab?.Node);
+        Assert.False(d.AppState.IsResolving);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ReferenceIntoAModuleThatCouldNotBeRead_ReportsTheModuleNotTheReference()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = d.Fixture("Greeter");
+        var module = d.AppState.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var why = new BadImageFormatException("Bad namespace.");
+        var unreadable = new Lookup<BrowseNode>.Unreadable { Module = new UnreadableModule { Module = module, Why = why } };
+        var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(unreadable) };
+
+        var load = await new NavigateHandler(lookup).HandleAsync(d.AppState, greeter.Definition, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
+
+        var problem = Assert.IsType<AppProblem.ModuleUnreadable>(Assert.Single(lookup.Reported));
+        Assert.Equal(module.FilePath.FileName, problem.Module);
+        Assert.Same(why, problem.Why);
+        Assert.Null(load);
+        Assert.False(d.AppState.IsResolving);
     }
 }

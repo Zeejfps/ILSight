@@ -708,7 +708,7 @@ public static class CodeViewWidget
 
     /// <summary>The tooltip of the span under the pointer when it points at a type or member and
     /// its lookup is done; null otherwise, and while a press drags a selection.</summary>
-    private static CodeTooltip? TooltipOf(CodeViewState state, DecompiledDocument document, CodeTooltips tooltips, HoveredSpan hovered)
+    private static Lookup<CodeTooltip>? TooltipOf(CodeViewState state, DecompiledDocument document, CodeTooltips tooltips, HoveredSpan hovered)
     {
         var span = hovered.Span;
         if (span is null)
@@ -726,8 +726,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        tooltips.TryGetTooltip(entity, out var tooltip);
-        return tooltip;
+        return tooltips.FindShown(entity);
     }
 
     /// <summary>The hovered span, widened to the left by the tooltip's padding so the tooltip's

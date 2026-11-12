@@ -28,10 +28,10 @@ public sealed class BookmarkImportingTests
         return new BookmarksRead.Read { Bookmarks = records, Problems = [] };
     }
 
-    private static List<NodePath?> PlacesOf(IEnumerable<Bookmark> bookmarks)
+    private static List<Lookup<NodePath>> PlacesOf(IEnumerable<Bookmark> bookmarks)
     {
         return bookmarks
-            .Select(static NodePath? (b) => b.Place)
+            .Select(static Lookup<NodePath> (b) => new Lookup<NodePath>.Found { Value = b.Place })
             .ToList();
     }
 
@@ -45,7 +45,7 @@ public sealed class BookmarkImportingTests
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
         Assert.True(imports.IsFinding);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<NodePath?>>.Ok([file[0].Place, null]));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok([new Lookup<NodePath>.Found { Value = file[0].Place }, new Lookup<NodePath>.NotFound()]));
         await importing;
 
         Assert.Equal([Path], ports.Read);
@@ -67,7 +67,7 @@ public sealed class BookmarkImportingTests
         var imports = new BookmarkImports();
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<NodePath?>>.Ok(PlacesOf(file)));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok(PlacesOf(file)));
         await importing;
 
         Assert.NotNull(imports.Asking);
@@ -86,7 +86,7 @@ public sealed class BookmarkImportingTests
         var imports = new BookmarkImports();
         var importing = new BookmarkImporting(ports);
         var reading = importing.ImportAsync(bookmarks, imports, Path, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<NodePath?>>.Ok(PlacesOf([file[0], file[0], file[1]])));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok(PlacesOf([file[0], file[0], file[1]])));
         await reading;
         var asked = imports.Asking;
         Assert.NotNull(asked);
@@ -121,7 +121,7 @@ public sealed class BookmarkImportingTests
         var imports = new BookmarkImports();
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<NodePath?>>.Failed(new InvalidOperationException("Unreadable.")));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Failed(new InvalidOperationException("Unreadable.")));
         await importing;
 
         Assert.Equal("exported.json", Assert.IsType<AppProblem.BookmarksNotImported>(Assert.Single(ports.Reported)).File);

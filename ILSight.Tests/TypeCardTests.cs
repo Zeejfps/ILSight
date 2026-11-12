@@ -18,7 +18,7 @@ public sealed class TypeCardTests
 
     private static TypeCard Card(string type)
     {
-        var card = TestWaits.Wait(() => TypeCards.ReadAsync(List, Zoo(type), CancellationToken.None));
+        var card = TestWaits.Wait(() => TypeCards.ReadAsync(List, Zoo(type), CancellationToken.None)).FoundOrNull;
         Assert.NotNull(card);
         return card;
     }
@@ -126,7 +126,8 @@ public sealed class TypeCardTests
     [Fact]
     public async Task A_type_reads_with_the_types_of_its_assembly_it_is_related_to_either_way()
     {
-        var cards = await TypeCards.ReadWithNeighboursAsync(List, Zoo("Animal"), CancellationToken.None);
+        var read = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadWithNeighboursAsync(List, Zoo("Animal"), CancellationToken.None));
+        var cards = read.Value;
 
         Assert.Equal("Animal", cards[0].Name);
         Assert.Equal(["Keeper", "Lion", "Parrot"], NamesOf(cards.Skip(1)).Order());
@@ -156,7 +157,7 @@ public sealed class TypeCardTests
     {
         var name = s_opened.Value.Assembly.Root.Child(ZooNamespace, "Animal", "Name : string").Definition;
 
-        Assert.Null(await TypeCards.ReadAsync(List, name, CancellationToken.None));
-        Assert.Empty(await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None));
+        Assert.IsType<Lookup<TypeCard>.NotFound>(await TypeCards.ReadAsync(List, name, CancellationToken.None));
+        Assert.Empty(Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None)).Value);
     }
 }

@@ -83,6 +83,22 @@ public abstract record AppProblem
         public required Exception? Error { get; init; }
     }
 
+    /// <summary>What was asked for is in <see cref="Module"/>, a file whose type system the library could not read,
+    /// with <see cref="Why"/>, so it was not looked for.</summary>
+    public sealed record ModuleUnreadable : AppProblem
+    {
+        /// <summary>The module's file name.</summary>
+        public required string Module { get; init; }
+
+        public required Exception Why { get; init; }
+
+        /// <summary>The problem of <paramref name="unreadable"/>, which a lookup could not read.</summary>
+        public static ModuleUnreadable FromModule(UnreadableModule unreadable)
+        {
+            return new ModuleUnreadable { Module = unreadable.Module.FilePath.FileName, Why = unreadable.Why };
+        }
+    }
+
     public sealed record BookmarksNotExported(string Reason) : AppProblem;
 
     public sealed record BookmarksNotImported : AppProblem
@@ -236,7 +252,7 @@ public abstract record AppProblem
         Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored,
         Func<IdNotFound, TResult> idNotFound, Func<ArgumentsIgnored, TResult> argumentsIgnored,
         Func<NoApiReferencePage, TResult> noApiReferencePage, Func<Unresolved, TResult> unresolved,
-        Func<HistoryPlaceGone, TResult> historyPlaceGone, Func<BookmarkGone, TResult> bookmarkGone,
+        Func<HistoryPlaceGone, TResult> historyPlaceGone, Func<BookmarkGone, TResult> bookmarkGone, Func<ModuleUnreadable, TResult> moduleUnreadable,
         Func<BookmarksNotExported, TResult> bookmarksNotExported,
         Func<BookmarksNotImported, TResult> bookmarksNotImported, Func<NotBookmarksFile, TResult> notBookmarksFile,
         Func<ImportedBookmarksUnreadable, TResult> importedBookmarksUnreadable,
@@ -267,6 +283,7 @@ public abstract record AppProblem
             Unresolved c => unresolved(c),
             HistoryPlaceGone c => historyPlaceGone(c),
             BookmarkGone c => bookmarkGone(c),
+            ModuleUnreadable c => moduleUnreadable(c),
             BookmarksNotExported c => bookmarksNotExported(c),
             BookmarksNotImported c => bookmarksNotImported(c),
             NotBookmarksFile c => notBookmarksFile(c),

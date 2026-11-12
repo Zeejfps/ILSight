@@ -90,82 +90,80 @@ public static class ILSpyTree
     /// <summary>The node a bookmark ILSpy made in the assembly at <paramref name="filePath"/> sits
     /// in, as the bookmarks describe it for ILSpy (<see cref="ILSpyBookmarkInfo"/>): the node <paramref name="treePath"/> names, else the
     /// node of the entity with metadata <paramref name="token"/>, when its full name is
-    /// <paramref name="memberName"/>, or its nearest ancestor. Loads the assembly without listing it; null
-    /// when it cannot be opened or has neither.</summary>
-    public static async Task<BrowseNode?> LocateAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath, IReadOnlyList<string>? treePath,
-        uint token, string memberName, CancellationToken ct)
+    /// <paramref name="memberName"/>, or its nearest ancestor. Loads the assembly without listing it; not found
+    /// when it cannot be opened or has neither; unreadable when the library could not read the type system of the
+    /// module either is looked for in, and the other found nothing.</summary>
+    public static async Task<Lookup<BrowseNode>> LocateAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath,
+        IReadOnlyList<string>? treePath, uint token, string memberName, CancellationToken ct)
     {
+        Lookup<BrowseNode> byPath = new Lookup<BrowseNode>.NotFound();
         if (treePath is not null && treePath.Count > 0)
         {
-            var found = await FindAsync(list, session, treePath, ct);
-            if (found is not null)
+            byPath = await FindAsync(list, session, treePath, ct);
+            if (byPath is Lookup<BrowseNode>.Found)
             {
-                return found;
+                return byPath;
             }
         }
-        return await FindEntityAsync(list, session, filePath, token, memberName, ct);
+
+        var byToken = await FindEntityAsync(list, session, filePath, token, memberName, ct);
+        return byToken.Match<Lookup<BrowseNode>>(static found => found, _ => byPath, static unreadable => unreadable);
     }
 
-    private static async Task<BrowseNode?> FindAsync(AssemblyList list, BrowseSession session, IReadOnlyList<string> path, CancellationToken ct)
+    private static async Task<Lookup<BrowseNode>> FindAsync(AssemblyList list, BrowseSession session, IReadOnlyList<string> path, CancellationToken ct)
     {
         var filePath = AssemblyPath.Parse(path[0]);
         if (filePath is null)
         {
-            return null;
+            return new Lookup<BrowseNode>.NotFound();
         }
 
         var assembly = FindModule(list, filePath);
         if (assembly is null)
         {
-            return null;
+            return new Lookup<BrowseNode>.NotFound();
         }
 
-        var node = await BrowseSessions.EnsureRootAsync(session, assembly, ct);
+        Lookup<BrowseNode> reached = new Lookup<BrowseNode>.Found { Value = await BrowseSessions.EnsureRootAsync(session, assembly, ct) };
         for (var i = 1; i < path.Count; i++)
         {
-            BrowseNode? next = null;
-            foreach (var child in await BrowseSessions.ListChildrenAsync(session, node, ct))
-            {
-                var name = NameOf(child);
-                if (name != path[i])
-                {
-                    continue;
-                }
-
-                next = child;
-                break;
-            }
-            if (next is null)
-            {
-                return null;
-            }
-
-            node = next;
+            var name = path[i];
+            reached = await reached.ThenFindAsync((node, c) => FindChildAsync(session, node, name, c), ct);
         }
-        return node;
+        return reached;
     }
 
-    /// <summary>The node of the entity <paramref name="token"/> names, or its nearest ancestor; null when
+    /// <summary>The child of <paramref name="node"/> ILSpy's tree names <paramref name="name"/>, once the read of the
+    /// type system its children's build reads ended.</summary>
+    private static async Task<Lookup<BrowseNode>> FindChildAsync(BrowseSession session, BrowseNode node, string name, CancellationToken ct)
+    {
+        var children = await BrowseSessions.ListReadableChildrenAsync(session, node, ct);
+        return children.Match(
+            done => Lookup.FromNullable(done.Value.FirstOrDefault(child => NameOf(child) == name)),
+            static unreadable => new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module });
+    }
+
+    /// <summary>The node of the entity <paramref name="token"/> names, or its nearest ancestor; not found when
     /// the entity is not the one called <paramref name="memberName"/>, as after a rebuild the token can name
     /// another.</summary>
-    private static async Task<BrowseNode?> FindEntityAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath, uint token, string memberName,
-        CancellationToken ct)
+    private static async Task<Lookup<BrowseNode>> FindEntityAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath, uint token,
+        string memberName, CancellationToken ct)
     {
         if (token == 0)
         {
-            return null;
+            return new Lookup<BrowseNode>.NotFound();
         }
 
         var assembly = FindModule(list, filePath);
         if (assembly is null)
         {
-            return null;
+            return new Lookup<BrowseNode>.NotFound();
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
         return await read.Match(
-            r => FindEntityAsync(session, assembly, r.TypeSystem.MainModule, token, memberName, ct),
-            static _ => Task.FromResult<BrowseNode?>(null));
+            async r => Lookup.FromNullable(await FindEntityAsync(session, assembly, r.TypeSystem.MainModule, token, memberName, ct)),
+            u => Task.FromResult(Lookup.FromUnreadable<BrowseNode>(assembly, u)));
     }
 
     private static async Task<BrowseNode?> FindEntityAsync(BrowseSession session, LoadedModule assembly, MetadataModule main, uint token, string memberName,

@@ -8,7 +8,7 @@ namespace ILSight.App.Tests;
 /// problems reported.</summary>
 internal sealed class FakeShowInMetadataHandlerPorts : ShowInMetadataHandler.IPorts
 {
-    public required Outcome<MetadataTarget?> Found { get; init; }
+    public required Outcome<Lookup<MetadataTarget>> Found { get; init; }
 
     public Action WhileLooking { get; init; } = static () => { };
 
@@ -19,7 +19,7 @@ internal sealed class FakeShowInMetadataHandlerPorts : ShowInMetadataHandler.IPo
         Reported.Add(problem);
     }
 
-    public Task<Outcome<MetadataTarget?>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
+    public Task<Outcome<Lookup<MetadataTarget>>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
     {
         WhileLooking();
         return Task.FromResult(Found);

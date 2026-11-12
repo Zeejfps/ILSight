@@ -5,24 +5,27 @@ namespace ILSight;
 
 /// <summary>Analyzes again what was analyzed in the last run: finds the symbols of the roots restored from the saved
 /// analyses through <see cref="IPorts"/>, and turns each root into the analysis of its symbol, or removes it when its
-/// symbol is gone.</summary>
+/// symbol is gone, or in a module that could not be read, which is reported.</summary>
 public sealed class RestoreAnalysesHandler(RestoreAnalysesHandler.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the saved analyses could not be found.</summary>
+        /// <summary>Tells the user the saved analyses could not be found, or are in a module that could not be
+        /// read.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>The type or member each of <paramref name="analyzed"/> names, in order, null where it is gone,
-        /// found without holding up the screen by reading their assemblies' files without listing them; finding them
-        /// that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<List<AnalysisSymbol?>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct);
+        /// <summary>The type or member each of <paramref name="analyzed"/> names, in order: not found where it is
+        /// gone, unreadable where the library could not read its module's type system; found without holding up the
+        /// screen by reading their assemblies' files without listing them; finding them that failed comes back as
+        /// <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<List<Lookup<AnalysisSymbol>>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct);
     }
 
     /// <summary>Finds the symbols of the roots of <paramref name="restore"/> and turns each into the analysis of its
     /// symbol in <paramref name="analyzer"/>, which <paramref name="viewCommands"/> has the view show, or removes it
-    /// when its symbol is gone; drops them all when <paramref name="assemblies"/> was cleared meanwhile. Reports why
-    /// the symbols could not be found, and removes the roots then.</summary>
+    /// when its symbol is gone or in a module that could not be read, which it names; drops them all when
+    /// <paramref name="assemblies"/> was cleared meanwhile. Reports why the symbols could not be found, and removes the
+    /// roots then.</summary>
     public async Task HandleAsync(AnalyzerTree analyzer, AssemblyList assemblies, Queue<ViewCommand> viewCommands, AnalysesRestore restore,
         CancellationToken ct)
     {
@@ -36,6 +39,7 @@ public sealed class RestoreAnalysesHandler(RestoreAnalysesHandler.IPorts ports)
             ok =>
             {
                 Analysis.AnalyzeAgain(analyzer, viewCommands, restore.Roots, ok.Value);
+                ReportUnreadable(Lookup.ListUnreadable(ok.Value));
                 return null;
             },
             static failed => failed.Error);
@@ -46,5 +50,15 @@ public sealed class RestoreAnalysesHandler(RestoreAnalysesHandler.IPorts ports)
 
         ports.ReportError(new AppProblem.AnalysesNotRestored(error));
         Analysis.RemoveRoots(analyzer, restore.Roots);
+    }
+
+    /// <summary>Names each of <paramref name="unreadable"/>, the modules whose roots were removed as they could not be
+    /// read.</summary>
+    private void ReportUnreadable(List<UnreadableModule> unreadable)
+    {
+        foreach (var module in unreadable)
+        {
+            ports.ReportError(AppProblem.ModuleUnreadable.FromModule(module));
+        }
     }
 }

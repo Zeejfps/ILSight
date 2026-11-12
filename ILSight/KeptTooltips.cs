@@ -6,7 +6,7 @@ internal static class KeptTooltips
 {
     /// <summary>Keeps <paramref name="tooltip"/> for <paramref name="part"/>, unless there is none or the tooltip
     /// of another part, <paramref name="shownPart"/>, is still shown.</summary>
-    public static void Keep(KeptTooltip kept, CodeTooltip? tooltip, int part, int shownPart)
+    public static void Keep(KeptTooltip kept, Lookup<CodeTooltip>? tooltip, int part, int shownPart)
     {
         if (tooltip == null)
         {
@@ -22,7 +22,7 @@ internal static class KeptTooltips
     }
 
     /// <summary>The tooltip kept for <paramref name="shownPart"/>, or null.</summary>
-    public static CodeTooltip? Find(KeptTooltip kept, int shownPart)
+    public static Lookup<CodeTooltip>? Find(KeptTooltip kept, int shownPart)
     {
         if (kept.Kept is null)
         {

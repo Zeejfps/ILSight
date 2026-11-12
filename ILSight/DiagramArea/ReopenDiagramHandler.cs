@@ -6,18 +6,19 @@ namespace ILSight.DiagramArea;
 /// <summary>Brings in the cards of a diagram made again: one reopened from the open list's saved documents
 /// (<see cref="Diagrams.ReopenDiagram"/>), or one going back to it made again once no tab showed it
 /// (<see cref="Navigation.GoToEntry"/>). Reads them through <see cref="IPorts"/> without holding up the screen, and
-/// reports a diagram whose cards could not be read.</summary>
+/// reports a diagram whose cards could not be read, and names each module that could not be read a card is in.</summary>
 public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user a diagram could not be reopened.</summary>
+        /// <summary>Tells the user a diagram could not be reopened, or a module a card is in could not be read.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>The cards of those of <paramref name="types"/> still found in the open assemblies, read without
+        /// <summary>The card of each of <paramref name="types"/>, in order: not found for one the open assemblies no
+        /// longer have, unreadable for one in a module whose type system the library could not read; read without
         /// holding up the screen. A read that failed comes back as <see cref="Outcome{T}.Failed"/>; the cancellation
         /// of <paramref name="ct"/> is let through.</summary>
-        Task<Outcome<List<TypeCard>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct);
+        Task<Outcome<List<Lookup<TypeCard>>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct);
     }
 
     /// <summary>Brings in the cards <paramref name="read"/> started reading and adds them to its diagram, unless its
@@ -48,7 +49,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
 
     /// <summary>Adds the cards read to <paramref name="diagram"/>, titled <paramref name="title"/>, unless it was closed
     /// meanwhile, or reports why they could not be read.</summary>
-    private void TakeCards(TypeDiagram diagram, string title, Outcome<List<TypeCard>> cards)
+    private void TakeCards(TypeDiagram diagram, string title, Outcome<List<Lookup<TypeCard>>> cards)
     {
         if (diagram.IsClosed)
         {
@@ -56,7 +57,16 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
         }
 
         cards.Switch(
-            ok => Diagrams.AddCards(diagram, ok.Value),
+            ok => AddFound(diagram, ok.Value),
             failed => ports.ReportError(new AppProblem.DiagramNotReopened { Diagram = title, Error = failed.Error }));
+    }
+
+    private void AddFound(TypeDiagram diagram, List<Lookup<TypeCard>> cards)
+    {
+        Diagrams.AddCards(diagram, Lookup.ListFound(cards));
+        foreach (var unreadable in Lookup.ListUnreadable(cards))
+        {
+            ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
+        }
     }
 }

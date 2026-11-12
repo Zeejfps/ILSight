@@ -105,18 +105,18 @@ public static class Analyzers
     }
 
     /// <summary>The type or member <paramref name="definition"/> names, loading its assembly's file
-    /// without listing it, once the read of its type system ended; null when the file or the entity is gone, or the
-    /// library could not read the file.</summary>
-    public static async Task<AnalysisSymbol?> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
+    /// without listing it, once the read of its type system ended; not found when the file or the entity is gone,
+    /// unreadable when the library could not read the file.</summary>
+    public static async Task<Lookup<AnalysisSymbol>> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
     {
         var assembly = TryLoad(list, definition);
         if (assembly is null)
         {
-            return null;
+            return new Lookup<AnalysisSymbol>.NotFound();
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
-        return read.Match(r => Find(r.TypeSystem.MainModule, definition), static _ => null);
+        return read.Match(r => Lookup.FromNullable(Find(r.TypeSystem.MainModule, definition)), u => Lookup.FromUnreadable<AnalysisSymbol>(assembly, u));
     }
 
     private static LoadedModule? TryLoad(AssemblyList list, CodeAnchor definition)

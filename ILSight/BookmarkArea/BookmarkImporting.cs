@@ -5,7 +5,8 @@ namespace ILSight.BookmarkArea;
 /// <summary>Importing bookmarks from a file, this app's or the real ILSpy's: reads it and finds the place of each
 /// bookmark in the open assemblies through <see cref="IPorts"/>, then takes them at once when there are none yet, or
 /// waits for the user to say whether they replace or merge in beside those there are. Bookmarks whose place is not
-/// found are left out and reported, and so are those marking a line another marks already, when replacing.</summary>
+/// found are left out and reported, with each module that could not be read they are in named, and so are those
+/// marking a line another marks already, when replacing.</summary>
 public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 {
     public interface IPorts
@@ -18,9 +19,10 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         BookmarksRead ReadBookmarks(string path);
 
         /// <summary>The place in the open assemblies of the bookmark each of <paramref name="records"/> describes, in
-        /// the same order, null for one not found, looked for without holding up the screen. A lookup that failed
+        /// the same order: not found for one not there, unreadable for one in a module whose type system the library
+        /// could not read; looked for without holding up the screen. A lookup that failed
         /// comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<List<NodePath?>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct);
+        Task<Outcome<List<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct);
     }
 
     /// <summary>Reads the bookmarks in the file at <paramref name="path"/> and finds the place of each: takes them
@@ -55,7 +57,8 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         TakeImported(bookmarks, imports, records, found, file);
     }
 
-    private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, Outcome<List<NodePath?>> found, string file)
+    private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, Outcome<List<Lookup<NodePath>>> found,
+        string file)
     {
         found.Switch(
             ok => TakeImported(bookmarks, imports, records, ok.Value, file),
@@ -66,7 +69,8 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
             }));
     }
 
-    private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, List<NodePath?> places, string file)
+    private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, List<Lookup<NodePath>> places,
+        string file)
     {
         var found = records.Zip(places, static (record, place) => new FoundBookmark
         {
@@ -93,7 +97,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 
     private void ReportLostBookmarks(List<FoundBookmark> found, string file)
     {
-        var lost = found.FindAll(f => f.Place is null);
+        var lost = found.FindAll(static f => f.Place is not Lookup<NodePath>.Found);
         if (lost.Count == 0)
         {
             return;
@@ -101,6 +105,10 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 
         var lines = lost.ConvertAll(DescribeLostBookmark);
         ports.ReportError(new AppProblem.ImportedBookmarksLost { File = file, Lost = lines });
+        foreach (var unreadable in Lookup.ListUnreadable(lost.Select(static f => f.Place)))
+        {
+            ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
+        }
     }
 
     private static string DescribeLostBookmark(FoundBookmark lost)
@@ -113,12 +121,12 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
     /// <summary>The bookmark of <paramref name="found"/>, or null when its place wasn't found.</summary>
     private static Bookmark? CreateBookmark(FoundBookmark found)
     {
-        if (found.Place is null)
+        if (found.Place is not Lookup<NodePath>.Found place)
         {
             return null;
         }
 
-        return Bookmarks.CreateFromRecord(found.Record, found.Place);
+        return Bookmarks.CreateFromRecord(found.Record, place.Value);
     }
 
     /// <summary>Takes the bookmarks <paramref name="import"/> waits with into <paramref name="bookmarks"/> as
@@ -168,6 +176,6 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
     {
         public required BookmarkRecord Record { get; init; }
 
-        public required NodePath? Place { get; init; }
+        public required Lookup<NodePath> Place { get; init; }
     }
 }
