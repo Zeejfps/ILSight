@@ -1,11 +1,14 @@
+using System.Diagnostics;
 using ILSight.Core;
+using ILSight.Core.Comparison;
 using ILSight.AssemblyArea;
 using ILSight.ExportArea;
 
 namespace ILSight;
 
-/// <summary>Something the user asked a tab to show: a node's place, a diagram, a comparison or an export's
-/// report.</summary>
+/// <summary>Something the user asked a tab to show, held as a value naming its place, never the document itself, so
+/// that going back to it shows it again however its tab went: a node's place, a diagram's types as it was left, a
+/// comparison's assemblies and what it took in, or which export's report it was.</summary>
 public abstract record HistoryEntry
 {
     private HistoryEntry()
@@ -32,20 +35,53 @@ public abstract record HistoryEntry
         public required TabVersion? ShownAs { get; init; }
     }
 
-    /// <summary>A diagram worked in, under the title of its tab.</summary>
-    public sealed record Diagram(TypeDiagram Shown, string Title) : HistoryEntry;
-
-    /// <summary>A comparison of two assemblies' APIs worked in, under the title of its tab.</summary>
-    public sealed record Comparison : HistoryEntry
+    /// <summary>A diagram worked in, under the title of its tab: the id the navigation gave it, which finds the tab
+    /// still showing it, and its types and its own assemblies as it was left, which make it again once no tab
+    /// does.</summary>
+    public sealed record Diagram : HistoryEntry
     {
-        public required AssemblyComparison Shown { get; init; }
+        public required int Id { get; init; }
 
         public required string Title { get; init; }
+
+        public required IReadOnlyList<TypeAnchor> Types { get; init; }
+
+        public required IReadOnlyList<AssemblyPath> HomeAssemblies { get; init; }
     }
 
-    /// <summary>An export's report, shown in a tab of its own.</summary>
+    /// <summary>A comparison of two assemblies' APIs worked in, under the title of its tab: the id the navigation gave
+    /// it, which finds the tab still showing it, and the assemblies it compared and what it took in as it was left,
+    /// which compare them again once no tab does.</summary>
+    public sealed record Comparison : HistoryEntry
+    {
+        public required int Id { get; init; }
+
+        public required string Title { get; init; }
+
+        public required AssemblyPath LeftPath { get; init; }
+
+        public required AssemblyPath RightPath { get; init; }
+
+        public required ApiScope Scope { get; init; }
+    }
+
+    /// <summary>An export's report, shown in a tab of its own: which export it was, found again among the finished
+    /// ones while the exports panel has it.</summary>
     public sealed record Report : HistoryEntry
     {
-        public required ExportReport Shown { get; init; }
+        public required ExportRun Run { get; init; }
+    }
+
+    public TResult Match<TResult>(Func<Node, TResult> node, Func<Diagram, TResult> diagram, Func<Comparison, TResult> comparison,
+        Func<Report, TResult> report)
+    {
+        return this switch
+        {
+            Node n => node(n),
+            Diagram d => diagram(d),
+            Comparison c => comparison(c),
+            Report r => report(r),
+            _ => throw new UnreachableException($"HistoryEntry.Match does not handle {GetType().Name}."),
+        };
     }
 }

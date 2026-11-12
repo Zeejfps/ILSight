@@ -65,7 +65,7 @@ public static class Comparisons
     /// <paramref name="assemblies"/>, cancelling the comparison of it in flight, and returns what
     /// <see cref="CompareAssembliesHandler"/> needs to run it. Shows why, and returns null, when either is no longer
     /// open.</summary>
-    private static ComparisonRun? StartComparing(AssemblyList assemblies, AssemblyComparison comparison)
+    internal static ComparisonRun? StartComparing(AssemblyList assemblies, AssemblyComparison comparison)
     {
         var left = FindOpen(assemblies, comparison.LeftPath);
         if (left is null)

@@ -137,18 +137,46 @@ public sealed class ComparisonTests
     }
 
     [Fact]
-    public void Closing_a_comparison_drops_it_from_the_history()
+    public void Going_back_to_a_comparison_whose_tab_was_closed_compares_it_again_as_it_was_left()
+    {
+        var d = OpenWithFixtures();
+        var compared = Compare(d, LeftPath, RightPath);
+        d.StartComparing(SwapComparedAssemblies(d.AppState.Assemblies, compared));
+        d.Settle();
+        var tab = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        d.Show(d.Fixture("Greeter"), inNewTab: true);
+        d.Settle();
+        d.AppState.Navigation.CloseTab(tab);
+
+        d.GoBack();
+        d.Settle();
+
+        var again = d.AppState.Navigation.ActiveTab?.Comparison;
+        Assert.NotNull(again);
+        Assert.NotSame(compared, again);
+        Assert.Equal([RightPath, LeftPath], [again.LeftPath.Text, again.RightPath.Text]);
+        Assert.IsType<ComparisonResult.Compared>(again.Result);
+    }
+
+    [Fact]
+    public void Going_back_passes_over_a_comparison_whose_tab_was_closed_and_whose_assemblies_were_closed()
     {
         var d = OpenWithFixtures();
         d.Show(d.Fixture("Greeter"));
         Compare(d, LeftPath, RightPath);
-        var compared = d.AppState.Navigation.ActiveTab;
-        Assert.NotNull(compared);
-        Assert.Contains(d.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Comparison);
+        var tab = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Settle();
+        d.AppState.Navigation.CloseTab(tab);
+        d.AppState.ListSession.CloseAssemblies([Opened(d, LeftPath), Opened(d, RightPath)]);
 
-        d.AppState.Navigation.CloseTab(compared);
+        d.GoBack();
+        d.Settle();
 
-        Assert.DoesNotContain(d.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Comparison);
+        Assert.Equal("Greeter", d.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.DoesNotContain(d.AppState.Navigation.OpenTabs, static t => t.Comparison is not null);
     }
 
     [Fact]

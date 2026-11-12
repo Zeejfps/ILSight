@@ -308,11 +308,19 @@ public static class Commands
 
     /// <summary>Starts what going to a history entry left, <paramref name="move"/>, now: the load of the node the tab
     /// shows again (<see cref="StartDecompiling(AppState, DecompileTicket?)"/>), or the lookup of the place the entry
-    /// recorded (<see cref="GoToHistoryEntryHandler"/>) as a workflow, then the load it points the tab at.</summary>
+    /// recorded (<see cref="GoToHistoryEntryHandler"/>) as a workflow, then the load it points the tab at, or the read
+    /// of the cards of a diagram made again (<see cref="ReopenDiagramHandler"/>) on a token closing it cancels too, or
+    /// the run of a comparison made again (<see cref="StartComparing"/>).</summary>
     public static void StartMoving(AppState appState, HistoryMove move)
     {
         move.Switch(load => StartDecompiling(appState, load),
-            lookup => StartShowing(appState, nameof(GoToHistoryEntryHandler), ct => appState.GoToHistoryEntryHandler.HandleAsync(appState, lookup, ct)));
+            lookup => StartShowing(appState, nameof(GoToHistoryEntryHandler), ct => appState.GoToHistoryEntryHandler.HandleAsync(appState, lookup, ct)),
+            read => StartReadingPlace(appState, read), run => StartComparing(appState, run));
+    }
+
+    private static void StartReadingPlace(AppState appState, DiagramPlaceRead read)
+    {
+        appState.Workflows.Start(nameof(ReopenDiagramHandler), ct => appState.ReopenDiagramHandler.ShowPlaceAsync(read, ct), read.Diagram.Token);
     }
 
     /// <summary>Asks for the comparison <paramref name="run"/> started, if any, to be run once the frame is drawn

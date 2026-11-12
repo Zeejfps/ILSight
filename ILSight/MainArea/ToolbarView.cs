@@ -63,12 +63,12 @@ internal static class ToolbarView
                 {
                     if (back.Clicked)
                     {
-                        Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler.Setup));
+                        Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
                     }
 
                     if (back.IsOpen)
                     {
-                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Decompiler.Setup, -1);
+                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup, -1);
                     }
                 }
                 using (var forward = ui.SplitIconButton("forward", ui.State.Icons.ToolbarForward,
@@ -77,12 +77,12 @@ internal static class ToolbarView
                 {
                     if (forward.Clicked)
                     {
-                        Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler.Setup));
+                        Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
                     }
 
                     if (forward.IsOpen)
                     {
-                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Decompiler.Setup, 1);
+                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup, 1);
                     }
                 }
             }
@@ -222,7 +222,7 @@ internal static class ToolbarView
     /// <summary>The entries of <paramref name="navigation"/>'s history before the current one, or after it when
     /// <paramref name="direction"/> is positive; the one picked is gone to in this frame, and only its load or lookup is
     /// queued.</summary>
-    private static void HistoryItems(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
+    private static void HistoryItems(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, IReadOnlyList<ExportArea.ExportReport> finished, DecompilerSetup setup,
         int direction)
     {
         var entries = navigation.HistoryEntries;
@@ -235,7 +235,7 @@ internal static class ToolbarView
                 var icon = IconOf(ui.State, entry);
                 if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
-                    Commands.MoveLater(ui.State, navigation.GoToEntry(i, assemblies, setup));
+                    Commands.MoveLater(ui.State, navigation.GoToEntry(i, assemblies, finished, setup));
                     return;
                 }
             }

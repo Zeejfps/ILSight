@@ -1,12 +1,12 @@
 using ILSight.Core;
 using ILSight.AssemblyArea;
 using ILSight.ExportArea;
+using ILSight.DiagramArea;
 
 namespace ILSight;
 
-/// <summary>Back/forward over the places, diagrams, comparisons and reports navigated to. Places are kept as paths
-/// so they outlive reloads and pin no assembly; a diagram, a comparison or a report is forgotten once no tab shows
-/// it.</summary>
+/// <summary>Back/forward over the places, diagrams, comparisons and reports navigated to. Each is kept as a value
+/// naming its place, so it outlives reloads and closed tabs and pins no assembly and no document.</summary>
 public sealed class NavigationHistory
 {
     private const int Capacity = 200;
@@ -60,39 +60,57 @@ public sealed class NavigationHistory
         return node.Place.Equals(place);
     }
 
-    /// <summary>Records <paramref name="diagram"/>, titled <paramref name="title"/>, as worked in now,
-    /// dropping what was forward of the current entry.</summary>
-    public void RecordDiagram(TypeDiagram diagram, string title)
+    /// <summary>Records <paramref name="diagram"/>, given <paramref name="id"/> and titled <paramref name="title"/>, as
+    /// worked in now, as it stands, dropping what was forward of the current entry; as it stands now in place of how
+    /// it stood when it is the current entry already.</summary>
+    public void RecordDiagram(int id, TypeDiagram diagram, string title)
     {
-        if (Current is HistoryEntry.Diagram current && current.Shown == diagram)
+        var place = new HistoryEntry.Diagram
         {
+            Id = id,
+            Title = title,
+            Types = Diagrams.ListAnchors(diagram),
+            HomeAssemblies = diagram.HomeAssemblies.ToList(),
+        };
+        if (Current is HistoryEntry.Diagram current && current.Id == id)
+        {
+            _entries.TryReplaceCurrent(place);
             return;
         }
 
-        _entries.Add(new HistoryEntry.Diagram(diagram, title));
+        _entries.Add(place);
     }
 
-    /// <summary>Records <paramref name="comparison"/>, titled <paramref name="title"/>, as worked in now, dropping what
-    /// was forward of the current entry.</summary>
-    public void RecordComparison(AssemblyComparison comparison, string title)
+    /// <summary>Records <paramref name="comparison"/>, given <paramref name="id"/> and titled <paramref name="title"/>,
+    /// as worked in now, as <see cref="RecordDiagram"/> records a diagram.</summary>
+    public void RecordComparison(int id, AssemblyComparison comparison, string title)
     {
-        if (Current is HistoryEntry.Comparison current && current.Shown == comparison)
+        var place = new HistoryEntry.Comparison
         {
+            Id = id,
+            Title = title,
+            LeftPath = comparison.LeftPath,
+            RightPath = comparison.RightPath,
+            Scope = comparison.Scope,
+        };
+        if (Current is HistoryEntry.Comparison current && current.Id == id)
+        {
+            _entries.TryReplaceCurrent(place);
             return;
         }
 
-        _entries.Add(new HistoryEntry.Comparison { Shown = comparison, Title = title });
+        _entries.Add(place);
     }
 
     /// <summary>Records <paramref name="report"/> as shown now, dropping what was forward of the current entry.</summary>
     public void RecordReport(ExportReport report)
     {
-        if (Current is HistoryEntry.Report current && current.Shown == report)
+        if (Current is HistoryEntry.Report current && current.Run == report.Run)
         {
             return;
         }
 
-        _entries.Add(new HistoryEntry.Report { Shown = report });
+        _entries.Add(new HistoryEntry.Report { Run = report.Run });
     }
 
     /// <summary>Forgets every place.</summary>
@@ -101,63 +119,51 @@ public sealed class NavigationHistory
         _entries.Clear();
     }
 
-    /// <summary>Forgets <paramref name="diagram"/>, closed for good; the entry before a forgotten current
-    /// one becomes current.</summary>
-    public void ForgetDiagram(TypeDiagram diagram)
+    /// <summary>Keeps <paramref name="diagram"/>, given <paramref name="id"/>, as it stands as it is left, on each entry
+    /// of it, so that going back to it once no tab shows it makes it again as it was left.</summary>
+    public void KeepDiagram(int id, TypeDiagram diagram)
     {
-        for (var i = _entries.Count - 1; i >= 0; i--)
+        for (var i = 0; i < _entries.Count; i++)
         {
             if (_entries[i] is not HistoryEntry.Diagram entry)
             {
                 continue;
             }
 
-            if (entry.Shown != diagram)
+            if (entry.Id != id)
             {
                 continue;
             }
 
-            _entries.RemoveAt(i);
+            _entries.ReplaceAt(i, entry with { Types = Diagrams.ListAnchors(diagram), HomeAssemblies = diagram.HomeAssemblies.ToList() });
         }
     }
 
-    /// <summary>Forgets <paramref name="comparison"/>, closed for good, as <see cref="ForgetDiagram"/> does.</summary>
-    public void ForgetComparison(AssemblyComparison comparison)
+    /// <summary>Keeps <paramref name="comparison"/>, given <paramref name="id"/>, as it stands as it is left, on each
+    /// entry of it, as <see cref="KeepDiagram"/> does.</summary>
+    public void KeepComparison(int id, AssemblyComparison comparison)
     {
-        for (var i = _entries.Count - 1; i >= 0; i--)
+        for (var i = 0; i < _entries.Count; i++)
         {
             if (_entries[i] is not HistoryEntry.Comparison entry)
             {
                 continue;
             }
 
-            if (entry.Shown != comparison)
+            if (entry.Id != id)
             {
                 continue;
             }
 
-            _entries.RemoveAt(i);
+            _entries.ReplaceAt(i, entry with { LeftPath = comparison.LeftPath, RightPath = comparison.RightPath, Scope = comparison.Scope });
         }
     }
 
-    /// <summary>Forgets <paramref name="report"/>, which no tab shows any more, as <see cref="ForgetDiagram"/>
-    /// does.</summary>
-    public void ForgetReport(ExportReport report)
+    /// <summary>Puts <paramref name="entry"/>, the current one made again in a tab of its own, in place of the current
+    /// one.</summary>
+    public void ReplaceCurrent(HistoryEntry entry)
     {
-        for (var i = _entries.Count - 1; i >= 0; i--)
-        {
-            if (_entries[i] is not HistoryEntry.Report entry)
-            {
-                continue;
-            }
-
-            if (entry.Shown != report)
-            {
-                continue;
-            }
-
-            _entries.RemoveAt(i);
-        }
+        _entries.TryReplaceCurrent(entry);
     }
 
     /// <summary>Remembers where the view of the current place stands as it is left, and what of the tab it is left

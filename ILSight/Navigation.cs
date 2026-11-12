@@ -3,6 +3,7 @@ using ILSight.Core.Metadata;
 using ILSight.AssemblyArea;
 using ILSight.BookmarkArea;
 using ILSight.ExportArea;
+using ILSight.DiagramArea;
 using ILSight.UserArea;
 using static ILSight.Decompilation;
 
@@ -31,6 +32,9 @@ public sealed class Navigation
     private readonly UserIntent _intent = new();
 
     private bool _previewTabs;
+
+    /// <summary>The last id given to a diagram or a comparison shown in a tab; ids are never reused.</summary>
+    private int _documents;
 
     /// <summary>Where what the view is to do about a change (bring a tab to the front, reveal a node in the tree)
     /// is queued, for the screen to run before it draws next.</summary>
@@ -366,7 +370,7 @@ public sealed class Navigation
             return null;
         }
 
-        _history.RecordDiagram(shown.Types, shown.Title);
+        _history.RecordDiagram(shown.Id, shown.Types, shown.Title);
         return BeginResolving(inNewTab);
     }
 
@@ -378,7 +382,7 @@ public sealed class Navigation
         LeaveActiveTab();
         Tabs.MakeActive(_tabs, tab);
         ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
-        _history.RecordDiagram(shown.Types, shown.Title);
+        _history.RecordDiagram(shown.Id, shown.Types, shown.Title);
     }
 
     /// <summary>Shows <paramref name="diagram"/>, titled <paramref name="title"/>, in the active tab while it shows
@@ -389,10 +393,11 @@ public sealed class Navigation
         _intent.Begin();
         LeaveActiveTab();
         var tab = GetOrOpenEmptyTab();
-        _tabs.GetDocument(tab).ShowDiagram(diagram, title);
+        var id = ++_documents;
+        _tabs.GetDocument(tab).ShowDiagram(diagram, title, id);
         Tabs.Keep(_tabs, tab);
         Tabs.MakeActive(_tabs, tab);
-        _history.RecordDiagram(diagram, title);
+        _history.RecordDiagram(id, diagram, title);
         return tab;
     }
 
@@ -401,7 +406,7 @@ public sealed class Navigation
     /// is the active one.</summary>
     public void RestoreDiagram(DocumentTab tab, TypeDiagram diagram, string title)
     {
-        _tabs.GetDocument(tab).ShowDiagram(diagram, title);
+        _tabs.GetDocument(tab).ShowDiagram(diagram, title, ++_documents);
         if (tab != _tabs.Active)
         {
             return;
@@ -414,7 +419,7 @@ public sealed class Navigation
     /// <paramref name="tab"/>, which waited for it: no place in the history and no new intent.</summary>
     public void RestoreComparison(DocumentTab tab, AssemblyComparison comparison, string title)
     {
-        _tabs.GetDocument(tab).ShowComparison(comparison, title);
+        _tabs.GetDocument(tab).ShowComparison(comparison, title, ++_documents);
     }
 
     /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, in the active tab while it shows
@@ -425,10 +430,11 @@ public sealed class Navigation
         _intent.Begin();
         LeaveActiveTab();
         var tab = GetOrOpenEmptyTab();
-        _tabs.GetDocument(tab).ShowComparison(comparison, title);
+        var id = ++_documents;
+        _tabs.GetDocument(tab).ShowComparison(comparison, title, id);
         Tabs.Keep(_tabs, tab);
         Tabs.MakeActive(_tabs, tab);
-        _history.RecordComparison(comparison, title);
+        _history.RecordComparison(id, comparison, title);
         return tab;
     }
 
@@ -502,9 +508,9 @@ public sealed class Navigation
         Tabs.MakePreview(_tabs, tab);
     }
 
-    /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing, unless it is closed already: a new intent,
-    /// and the diagram, comparison or report it shows dropped from the history unless another tab shows it. Returns
-    /// whether it was the active tab, which leaves none active until the view focuses another.</summary>
+    /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing, unless it is closed already: a new intent.
+    /// The history keeps the diagram or comparison it shows as it is left, and going back to it shows it again.
+    /// Returns whether it was the active tab, which leaves none active until the view focuses another.</summary>
     public ClosedTab CloseTab(DocumentTab tab)
     {
         if (!Tabs.IsOpen(_tabs, tab))
@@ -514,63 +520,25 @@ public sealed class Navigation
 
         _intent.Begin();
         var wasActive = tab == _tabs.Active;
-        ForgetDocumentOf(tab);
+        KeepDocumentOf(tab);
         Tabs.Remove(_tabs, tab);
         return new ClosedTab { WasActive = wasActive };
     }
 
-    /// <summary>Drops the diagram, comparison or report <paramref name="tab"/> shows, which it is about to stop
-    /// showing, from the history, unless another open tab shows it too.</summary>
-    private void ForgetDocumentOf(DocumentTab tab)
+    /// <summary>Keeps the diagram or comparison <paramref name="tab"/> shows, as it stands as the tab leaves it, on its
+    /// history entries.</summary>
+    private void KeepDocumentOf(DocumentTab tab)
     {
-        var diagram = tab.Diagram;
-        if (diagram is not null && !IsShownBesides(tab, diagram))
+        var content = tab.Content;
+        if (content is TabContent.Diagram diagram)
         {
-            _history.ForgetDiagram(diagram);
+            _history.KeepDiagram(diagram.Id, diagram.Types);
         }
 
-        var comparison = tab.Comparison;
-        if (comparison is not null && !IsShownBesides(tab, comparison))
+        if (content is TabContent.Comparison comparison)
         {
-            _history.ForgetComparison(comparison);
+            _history.KeepComparison(comparison.Id, comparison.Assemblies);
         }
-
-        var report = tab.Report;
-        if (report is not null && !IsShownBesides(tab, report))
-        {
-            _history.ForgetReport(report);
-        }
-    }
-
-    /// <summary>Whether an open tab other than <paramref name="tab"/> shows <paramref name="document"/>, a diagram, a
-    /// comparison or a report.</summary>
-    private bool IsShownBesides(DocumentTab tab, object document)
-    {
-        foreach (var other in _tabs.Open)
-        {
-            if (other != tab && IsShowing(other, document))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// <summary>Whether <paramref name="tab"/> shows <paramref name="document"/>, a diagram, a comparison or a
-    /// report, the very one.</summary>
-    private static bool IsShowing(DocumentTab tab, object document)
-    {
-        if (ReferenceEquals(tab.Diagram, document))
-        {
-            return true;
-        }
-
-        if (ReferenceEquals(tab.Comparison, document))
-        {
-            return true;
-        }
-
-        return ReferenceEquals(tab.Report, document);
     }
 
     /// <summary>Closes every document tab but the active one, and empties that one; with no tab left
@@ -586,7 +554,7 @@ public sealed class Navigation
             CloseTab(tab);
         }
 
-        ForgetDocumentOf(kept);
+        KeepDocumentOf(kept);
         _tabs.GetDocument(kept).Clear();
         Tabs.MakeActive(_tabs, kept);
     }
@@ -631,48 +599,123 @@ public sealed class Navigation
     }
 
     /// <summary>Goes to the history entry before the current one, as <see cref="GoToEntry"/> does.</summary>
-    public HistoryMove? GoBack(AssemblyList assemblies, DecompilerSetup setup)
+    public HistoryMove? GoBack(AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
     {
-        return GoToEntry(_history.CurrentIndex - 1, assemblies, setup);
+        return GoToEntry(_history.CurrentIndex - 1, assemblies, finished, setup);
     }
 
     /// <summary>Goes to the history entry after the current one, as <see cref="GoToEntry"/> does.</summary>
-    public HistoryMove? GoForward(AssemblyList assemblies, DecompilerSetup setup)
+    public HistoryMove? GoForward(AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
     {
-        return GoToEntry(_history.CurrentIndex + 1, assemblies, setup);
+        return GoToEntry(_history.CurrentIndex + 1, assemblies, finished, setup);
     }
 
-    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward; nothing when there
-    /// is none there or it is the current one. The active tab leaves its entry, and a new intent begins: a diagram's
-    /// entry brings the tab showing the diagram to the front; a node's entry shows its node in the tab it shows in,
-    /// at the place the view stood when it is still good in <paramref name="language"/>, when that tab still shows it
-    /// and its assembly in <paramref name="assemblies"/> is listed, else begins looking up the place the entry
-    /// recorded, the app saying it is resolving. Returns what is left for the edge to start: the load the tab
-    /// started, or the lookup (for <see cref="GoToHistoryEntryHandler"/>); null when nothing is.</summary>
-    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, DecompilerSetup setup)
+    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward, passing over, on
+    /// in the same direction, each entry that names nothing open: a diagram or comparison no tab shows whose assemblies
+    /// are none of them listed in <paramref name="assemblies"/>, a report no tab shows whose export is not among
+    /// <paramref name="finished"/>. Nothing when there is none to go to or it is the current one. The active tab leaves
+    /// its entry, and a new intent begins: a diagram's, comparison's or report's entry brings the tab showing it to the
+    /// front, else shows it again in a tab of its own, made again from the entry; a node's entry shows its node in the
+    /// tab it shows in, at the place the view stood when it is still good in the language of <paramref name="setup"/>,
+    /// when that tab still shows it and its assembly is listed, else begins looking up the place the entry recorded,
+    /// the app saying it is resolving. Returns what is left for the edge to start: the load the tab started, the lookup
+    /// (for <see cref="GoToHistoryEntryHandler"/>), the read of a diagram's cards or the run of a comparison; null when
+    /// nothing is.</summary>
+    public HistoryMove? GoToEntry(int index, AssemblyList assemblies, IReadOnlyList<ExportReport> finished, DecompilerSetup setup)
+    {
+        var found = FindEntryToShow(index, assemblies, finished);
+        if (found is null)
+        {
+            return null;
+        }
+
+        LeaveActiveTab();
+        var entry = _history.MoveToEntry(found.Value);
+        switch (entry)
+        {
+            case HistoryEntry.Node node:
+                return ShowEntry(node, assemblies, setup);
+            case HistoryEntry.Diagram diagram:
+                return ShowDiagramPlace(diagram);
+            case HistoryEntry.Comparison comparison:
+                return ShowComparisonPlace(comparison, assemblies);
+            case HistoryEntry.Report report:
+                ShowReportPlace(report, finished);
+                return null;
+        }
+
+        return null;
+    }
+
+    /// <summary>The index of the entry at <paramref name="index"/>, or of the first after it on in the same direction,
+    /// that names something open; null when none does or <paramref name="index"/> is none to go to.</summary>
+    private int? FindEntryToShow(int index, AssemblyList assemblies, IReadOnlyList<ExportReport> finished)
     {
         if (!CanGoTo(index))
         {
             return null;
         }
 
-        LeaveActiveTab();
-        var entry = _history.MoveToEntry(index);
-        switch (entry)
+        var step = index < _history.CurrentIndex ? -1 : 1;
+        var entries = _history.Entries;
+        for (var i = index; i >= 0 && i < entries.Count; i += step)
         {
-            case HistoryEntry.Node node:
-                return ShowEntry(node, assemblies, setup);
-            case HistoryEntry.Diagram diagram:
-                BringToFront(diagram.Shown);
-                return null;
-            case HistoryEntry.Comparison comparison:
-                BringToFront(comparison.Shown);
-                return null;
-            case HistoryEntry.Report report:
-                BringToFront(report.Shown);
-                return null;
+            if (NamesAnythingOpen(entries[i], assemblies, finished))
+            {
+                return i;
+            }
         }
+        return null;
+    }
 
+    /// <summary>Whether going to <paramref name="entry"/> can show something: a node's always can (its place is
+    /// looked up); a diagram or comparison when a tab shows it or one of its assemblies is listed; a report when a tab
+    /// shows it or its export is among <paramref name="finished"/>.</summary>
+    private bool NamesAnythingOpen(HistoryEntry entry, AssemblyList assemblies, IReadOnlyList<ExportReport> finished)
+    {
+        return entry.Match(
+            static _ => true,
+            diagram => FindDiagramTab(diagram.Id) is not null || IsAnyListed(assemblies, diagram.HomeAssemblies) || IsAnyTypeListed(assemblies, diagram.Types),
+            comparison => FindComparisonTab(comparison.Id) is not null || AssemblyListing.IsListed(assemblies, comparison.LeftPath)
+                || AssemblyListing.IsListed(assemblies, comparison.RightPath),
+            report => FindReportTab(report.Run) is not null || FindFinished(finished, report.Run) is not null);
+    }
+
+    private static bool IsAnyListed(AssemblyList assemblies, IReadOnlyList<AssemblyPath> paths)
+    {
+        foreach (var path in paths)
+        {
+            if (AssemblyListing.IsListed(assemblies, path))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IsAnyTypeListed(AssemblyList assemblies, IReadOnlyList<TypeAnchor> types)
+    {
+        foreach (var type in types)
+        {
+            if (AssemblyListing.IsListed(assemblies, type.AssemblyPath))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>The finished export's report of <paramref name="run"/> among <paramref name="finished"/>; null when the
+    /// exports panel no longer has it.</summary>
+    private static ExportReport? FindFinished(IReadOnlyList<ExportReport> finished, ExportRun run)
+    {
+        foreach (var report in finished)
+        {
+            if (report.Run == run)
+            {
+                return report;
+            }
+        }
         return null;
     }
 
@@ -742,28 +785,141 @@ public sealed class Navigation
         return node;
     }
 
-    /// <summary>Brings the tab showing <paramref name="document"/>, the diagram, comparison or report of the history
-    /// entry gone to, to the front, dropping what was being navigated to meanwhile.</summary>
-    private void BringToFront(object document)
+    /// <summary>Brings the tab showing the diagram <paramref name="place"/> recorded to the front, else makes the
+    /// diagram again from it, as it was left, in the active tab while it shows nothing, else in a new tab, kept open and
+    /// made active, the entry then naming it. Returns the read of its cards, for the edge to start; null when a tab
+    /// showed it.</summary>
+    private HistoryMove? ShowDiagramPlace(HistoryEntry.Diagram place)
     {
+        var shown = FindDiagramTab(place.Id);
+        if (shown is not null)
+        {
+            BringToFront(shown);
+            return null;
+        }
+
         _intent.Begin();
-        var tab = FindTabShowing(document);
-        if (tab is null)
+        var diagram = new TypeDiagram();
+        Diagrams.TakeHomes(diagram, place.HomeAssemblies);
+        var id = ++_documents;
+        var tab = GetOrOpenEmptyTab();
+        _tabs.GetDocument(tab).ShowDiagram(diagram, place.Title, id);
+        Tabs.Keep(_tabs, tab);
+        Tabs.MakeActive(_tabs, tab);
+        _history.ReplaceCurrent(place with { Id = id });
+        Diagrams.StartReading(diagram);
+        return new HistoryMove.ReadCards { Read = new DiagramPlaceRead { Diagram = diagram, Types = place.Types, Title = place.Title } };
+    }
+
+    /// <summary>Brings the tab showing the comparison <paramref name="place"/> recorded to the front, else makes the
+    /// comparison again from it and compares its assemblies again among <paramref name="assemblies"/>, shown as
+    /// <see cref="ShowDiagramPlace"/> shows a diagram. Returns the comparison's run, for the edge to start; null when a
+    /// tab showed it or it shows why it can't run.</summary>
+    private HistoryMove? ShowComparisonPlace(HistoryEntry.Comparison place, AssemblyList assemblies)
+    {
+        var shown = FindComparisonTab(place.Id);
+        if (shown is not null)
+        {
+            BringToFront(shown);
+            return null;
+        }
+
+        _intent.Begin();
+        var comparison = new AssemblyComparison { LeftPath = place.LeftPath, RightPath = place.RightPath };
+        comparison.TakeInScope(place.Scope);
+        var id = ++_documents;
+        var tab = GetOrOpenEmptyTab();
+        _tabs.GetDocument(tab).ShowComparison(comparison, place.Title, id);
+        Tabs.Keep(_tabs, tab);
+        Tabs.MakeActive(_tabs, tab);
+        _history.ReplaceCurrent(place with { Id = id });
+        var run = Comparisons.StartComparing(assemblies, comparison);
+        if (run is null)
+        {
+            return null;
+        }
+
+        return new HistoryMove.Compare { Run = run };
+    }
+
+    /// <summary>Brings the tab showing the report <paramref name="place"/> recorded to the front, else shows the
+    /// report again, found among <paramref name="finished"/>, in a new tab, made active.</summary>
+    private void ShowReportPlace(HistoryEntry.Report place, IReadOnlyList<ExportReport> finished)
+    {
+        var shown = FindReportTab(place.Run);
+        if (shown is not null)
+        {
+            BringToFront(shown);
+            return;
+        }
+
+        var report = FindFinished(finished, place.Run);
+        if (report is null)
         {
             return;
         }
 
+        _intent.Begin();
+        var tab = OpenNewTab();
+        _tabs.GetDocument(tab).ShowReport(report);
+        Tabs.MakeActive(_tabs, tab);
+    }
+
+    /// <summary>Brings <paramref name="tab"/>, showing the diagram, comparison or report of the history entry gone to,
+    /// to the front, dropping what was being navigated to meanwhile.</summary>
+    private void BringToFront(DocumentTab tab)
+    {
+        _intent.Begin();
         Tabs.MakeActive(_tabs, tab);
         ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
-    /// <summary>The open tab showing <paramref name="document"/>, a diagram, a comparison or a report; null when none
-    /// does.</summary>
-    private DocumentTab? FindTabShowing(object document)
+    /// <summary>The open tab showing <paramref name="diagram"/>, the very one; null when none does.</summary>
+    private DocumentTab? FindTabShowing(TypeDiagram diagram)
     {
         foreach (var tab in _tabs.Open)
         {
-            if (IsShowing(tab, document))
+            if (tab.Diagram == diagram)
+            {
+                return tab;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The open tab showing the diagram given <paramref name="id"/>; null when none does.</summary>
+    private DocumentTab? FindDiagramTab(int id)
+    {
+        foreach (var tab in _tabs.Open)
+        {
+            if (tab.Content is TabContent.Diagram shown && shown.Id == id)
+            {
+                return tab;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The open tab showing the comparison given <paramref name="id"/>; null when none does.</summary>
+    private DocumentTab? FindComparisonTab(int id)
+    {
+        foreach (var tab in _tabs.Open)
+        {
+            if (tab.Content is TabContent.Comparison shown && shown.Id == id)
+            {
+                return tab;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The open tab showing the report of the export <paramref name="run"/>; null when none does.</summary>
+    private DocumentTab? FindReportTab(ExportRun run)
+    {
+        foreach (var tab in _tabs.Open)
+        {
+            var report = tab.Report;
+            if (report is not null && report.Run == run)
             {
                 return tab;
             }
@@ -773,7 +929,7 @@ public sealed class Navigation
 
     /// <summary>Records where the active tab's view is in the history entry it shows, before it shows
     /// something else, with what of the tab the entry was shown as, which a later read-back of the view keeps
-    /// its place by.</summary>
+    /// its place by; and the diagram or comparison it shows as it is left.</summary>
     private void LeaveActiveTab()
     {
         var tab = _tabs.Active;
@@ -782,6 +938,7 @@ public sealed class Navigation
             return;
         }
 
+        KeepDocumentOf(tab);
         var position = tab.Load.Position;
         if (position is null)
         {

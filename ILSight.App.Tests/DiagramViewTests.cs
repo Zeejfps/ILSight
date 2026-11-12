@@ -244,15 +244,53 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Closing_a_diagram_drops_it_from_the_history()
+    public void Going_back_to_a_diagram_whose_tab_was_closed_shows_it_again_with_its_cards()
     {
         var app = PickFromTree("Vehicle", "Show in diagram");
-        var diagram = DiagramTab(app);
-        Assert.Contains(app.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Diagram);
+        var tab = DiagramTab(app);
+        var cards = ListCardTypes(tab);
+        Assert.NotEmpty(cards);
+        app.Show(app.Fixture("Greeter"), inNewTab: true);
+        app.Settle(2);
+        app.AppState.Navigation.CloseTab(tab);
+        app.Run(2);
 
-        app.AppState.Navigation.CloseTab(diagram);
+        app.GoBack();
+        SettleDiagram(app);
 
-        Assert.DoesNotContain(app.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Diagram);
+        var again = DiagramTab(app);
+        Assert.NotSame(tab, again);
+        Assert.Same(again, app.AppState.Navigation.ActiveTab);
+        Assert.Equal(cards, ListCardTypes(again));
+    }
+
+    [Fact]
+    public void Going_back_passes_over_a_diagram_whose_tab_was_closed_and_whose_assembly_was_closed()
+    {
+        var app = PickFromTree("Vehicle", "Show in diagram");
+        var tab = DiagramTab(app);
+        app.Show(app.Fixture("Greeter"), inNewTab: true);
+        app.Settle(2);
+        app.AppState.Navigation.CloseTab(tab);
+        var diagramAt = app.AppState.Navigation.HistoryIndex - 1;
+        Assert.IsType<HistoryEntry.Diagram>(app.AppState.Navigation.HistoryEntries[diagramAt]);
+        app.AppState.ListSession.CloseAssemblies([app.Fixture("Greeter").Root.Assembly]);
+        app.Run(2);
+
+        app.GoBack();
+        app.Settle(2);
+
+        Assert.Empty(ListDiagramTabs(app));
+        Assert.Equal(diagramAt - 1, app.AppState.Navigation.HistoryIndex);
+    }
+
+    private static List<string> ListCardTypes(DocumentTab tab)
+    {
+        var diagram = tab.Diagram;
+        Assert.NotNull(diagram);
+        return diagram.Cards
+            .Select(static c => c.Anchor.FullName)
+            .ToList();
     }
 
     [Fact]

@@ -217,7 +217,8 @@ public static class Diagrams
         return diagram;
     }
 
-    private static void TakeHomes(TypeDiagram diagram, List<AssemblyPath>? assemblies)
+    /// <summary>Takes each of <paramref name="assemblies"/>, if any, as one of the diagram's own.</summary>
+    public static void TakeHomes(TypeDiagram diagram, IReadOnlyList<AssemblyPath>? assemblies)
     {
         if (assemblies is null)
         {
@@ -330,6 +331,14 @@ public static class Diagrams
         }
 
         return diagram.HomeAssemblies.Contains(assemblyPath);
+    }
+
+    /// <summary>The types the diagram shows, as its cards are in the order added, which make it again.</summary>
+    public static List<TypeAnchor> ListAnchors(TypeDiagram diagram)
+    {
+        return diagram.Cards
+            .Select(static c => c.Anchor)
+            .ToList();
     }
 
     /// <summary>Counts a read of cards for the diagram as started, until <see cref="FinishReading"/>.</summary>

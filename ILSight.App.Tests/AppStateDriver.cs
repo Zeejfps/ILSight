@@ -240,7 +240,7 @@ internal sealed class AppStateDriver
     /// load or the lookup it left, as the app's commands start them, without waiting for them.</summary>
     public void GoToEntry(int index)
     {
-        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.Decompiler.Setup);
+        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup);
         if (move is null)
         {
             return;

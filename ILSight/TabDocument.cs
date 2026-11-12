@@ -85,16 +85,18 @@ public sealed class TabDocument
         Show(new TabContent.Report(report), title: null);
     }
 
-    /// <summary>Shows <paramref name="diagram"/>, titled <paramref name="title"/>, cancelling what was in flight.</summary>
-    public void ShowDiagram(TypeDiagram diagram, string title)
+    /// <summary>Shows <paramref name="diagram"/>, titled <paramref name="title"/> and given <paramref name="id"/>,
+    /// cancelling what was in flight.</summary>
+    public void ShowDiagram(TypeDiagram diagram, string title, int id)
     {
-        Show(new TabContent.Diagram(diagram, title), title);
+        Show(new TabContent.Diagram(diagram, title, id), title);
     }
 
-    /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, cancelling what was in flight.</summary>
-    public void ShowComparison(AssemblyComparison comparison, string title)
+    /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/> and given <paramref name="id"/>,
+    /// cancelling what was in flight.</summary>
+    public void ShowComparison(AssemblyComparison comparison, string title, int id)
     {
-        Show(new TabContent.Comparison(comparison, title), title);
+        Show(new TabContent.Comparison(comparison, title, id), title);
     }
 
     /// <summary>Shows nothing, as a new tab does, cancelling what was in flight.</summary>

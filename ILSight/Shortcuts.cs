@@ -103,13 +103,13 @@ internal static class Shortcuts
     /// started once the frame is drawn.</summary>
     private static void GoBack(UiState screen, AppState appState)
     {
-        Commands.MoveLater(screen, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler.Setup));
+        Commands.MoveLater(screen, appState.Navigation.GoBack(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
     }
 
     /// <summary>As <see cref="GoBack"/>, to the entry after the current one.</summary>
     private static void GoForward(UiState screen, AppState appState)
     {
-        Commands.MoveLater(screen, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler.Setup));
+        Commands.MoveLater(screen, appState.Navigation.GoForward(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
     }
 
     /// <summary>Runs the app-wide shortcuts pressed this frame, and goes back and forward with the

@@ -316,7 +316,7 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void Going_back_to_a_report_brings_its_tab_to_the_front_and_closing_it_drops_it_from_the_history()
+    public void Going_back_to_a_report_brings_its_tab_to_the_front()
     {
         var d = AppStateDriver.Opened();
         SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
@@ -328,11 +328,52 @@ public sealed class ExportsPanelTests : IDisposable
 
         d.GoBack();
         d.Settle();
-        var back = d.AppState.Navigation.ActiveTab;
+
+        Assert.Same(report, d.AppState.Navigation.ActiveTab);
+    }
+
+    [Fact]
+    public void Going_back_to_a_report_whose_tab_was_closed_shows_it_again_while_the_panel_has_it()
+    {
+        var d = AppStateDriver.Opened();
+        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        d.Settle();
+        var finished = d.AppState.FinishedExports[0];
+        ShowExportReport(d.AppState, finished);
+        var report = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(report);
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
         d.AppState.Navigation.CloseTab(report);
 
-        Assert.Same(report, back);
-        Assert.DoesNotContain(d.AppState.Navigation.HistoryEntries, static e => e is HistoryEntry.Report);
+        d.GoBack();
+        d.Settle();
+
+        var back = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(back);
+        Assert.NotSame(report, back);
+        Assert.Equal(finished, back.Report);
+    }
+
+    [Fact]
+    public void Going_back_passes_over_a_report_whose_tab_was_closed_and_whose_export_the_panel_no_longer_has()
+    {
+        var d = AppStateDriver.Opened();
+        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        d.Settle();
+        var finished = d.AppState.FinishedExports[0];
+        ShowExportReport(d.AppState, finished);
+        var report = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(report);
+        var reportAt = d.AppState.Navigation.HistoryIndex;
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.AppState.Navigation.CloseTab(report);
+        RemoveFinishedExport(d.AppState, finished);
+
+        d.GoBack();
+        d.Settle();
+
+        Assert.DoesNotContain(d.AppState.Navigation.OpenTabs, static t => t.Report is not null);
+        Assert.Equal(reportAt - 1, d.AppState.Navigation.HistoryIndex);
     }
 
     [Fact]

@@ -32,11 +32,13 @@ public abstract record TabContent
     /// <summary>The report of an export, which the screen writes out.</summary>
     public sealed record Report(ExportReport Export) : TabContent;
 
-    /// <summary>A diagram of types, which grows as types are shown in it, and what its tab is titled.</summary>
-    public sealed record Diagram(TypeDiagram Types, string Title) : TabContent;
+    /// <summary>A diagram of types, which grows as types are shown in it, what its tab is titled, and the id the
+    /// navigation gave it, never reused, which the history finds it by.</summary>
+    public sealed record Diagram(TypeDiagram Types, string Title, int Id) : TabContent;
 
-    /// <summary>What changed in the API from one assembly to another, and what its tab is titled.</summary>
-    public sealed record Comparison(AssemblyComparison Assemblies, string Title) : TabContent;
+    /// <summary>What changed in the API from one assembly to another, what its tab is titled, and the id the navigation
+    /// gave it, never reused, which the history finds it by.</summary>
+    public sealed record Comparison(AssemblyComparison Assemblies, string Title, int Id) : TabContent;
 
     /// <summary>Decompiling <see cref="Node"/> failed with <see cref="Message"/>.</summary>
     public sealed record Failed(BrowseNode Node, string Message) : TabContent;

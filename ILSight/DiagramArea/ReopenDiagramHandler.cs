@@ -4,9 +4,10 @@ using ILSight.Core.Diagrams;
 
 namespace ILSight.DiagramArea;
 
-/// <summary>Brings in the cards of a diagram reopened from the open list's saved documents
-/// (<see cref="Diagrams.ReopenDiagram"/>), reading them through <see cref="IPorts"/> without holding up the screen,
-/// and reports a diagram whose cards could not be read.</summary>
+/// <summary>Brings in the cards of a diagram made again: one reopened from the open list's saved documents
+/// (<see cref="Diagrams.ReopenDiagram"/>), or one going back to it made again once no tab showed it
+/// (<see cref="Navigation.GoToEntry"/>). Reads them through <see cref="IPorts"/> without holding up the screen, and
+/// reports a diagram whose cards could not be read.</summary>
 public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
 {
     public interface IPorts
@@ -27,13 +28,29 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
     public async Task HandleAsync(ReopenedTabs reopened, SavedDiagramRead read, CancellationToken ct)
     {
         var cards = await ports.ReadCardsAsync(read.Saved.Types, ct);
-        var diagram = read.Diagram;
-        Diagrams.FinishReading(diagram);
+        Diagrams.FinishReading(read.Diagram);
         if (!SavedDocuments.TryFinishWaiting(reopened, read.Reopened))
         {
             return;
         }
 
+        TakeCards(read.Diagram, read.Saved.Title ?? string.Empty, cards);
+    }
+
+    /// <summary>Brings in the cards <paramref name="read"/> started reading and adds them to its diagram, unless the
+    /// diagram was closed meanwhile. <paramref name="ct"/> is the workflow's token, which the edge that starts it links
+    /// to the diagram's closing.</summary>
+    public async Task ShowPlaceAsync(DiagramPlaceRead read, CancellationToken ct)
+    {
+        var cards = await ports.ReadCardsAsync(read.Types, ct);
+        Diagrams.FinishReading(read.Diagram);
+        TakeCards(read.Diagram, read.Title, cards);
+    }
+
+    /// <summary>Adds the cards read to <paramref name="diagram"/>, titled <paramref name="title"/>, unless it was closed
+    /// meanwhile, or reports why they could not be read.</summary>
+    private void TakeCards(TypeDiagram diagram, string title, Outcome<List<TypeCard>> cards)
+    {
         if (diagram.IsClosed)
         {
             return;
@@ -45,7 +62,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
                 Diagrams.AddCards(diagram, ok.Value);
                 break;
             case Outcome<List<TypeCard>>.Failed failed:
-                ports.ReportError(new AppProblem.DiagramNotReopened(read.Saved.Title ?? string.Empty, failed.Error));
+                ports.ReportError(new AppProblem.DiagramNotReopened(title, failed.Error));
                 break;
             default:
                 throw new UnreachableException();
