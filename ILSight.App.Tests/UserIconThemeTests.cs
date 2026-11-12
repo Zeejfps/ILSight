@@ -8,7 +8,6 @@ using static ILSight.SettingArea.Settings;
 using ILSight.BuiltInArea;
 using ILSight.UserArea;
 using ILSight.AppSettingArea;
-using ILSight.DisplayOptionArea;
 
 namespace ILSight.App.Tests;
 
@@ -45,8 +44,7 @@ public sealed class UserIconThemeTests : IDisposable
     private static string? CreateCustomIconTheme(AppState appState)
     {
         var themes = appState.IconThemes;
-        var custom = appState.UserIconThemes.CreateCustomTheme(appState.IconTheme,
-            (parent, theme) => IconThemeDraft.Compose(Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)), parent, theme));
+        var custom = appState.UserIconThemes.CreateCustomTheme(appState.IconTheme, parent => Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)));
         if (custom is null)
         {
             return null;

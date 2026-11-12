@@ -1,15 +1,24 @@
+using ILSight.UserArea;
+
 namespace ILSight;
 
 /// <summary>One theme file as it is written, without the themes it extends: its name and type, the theme
 /// it extends, its palette and its <c>ui</c>, <c>code</c> and <c>icons</c> colors by key, read as
 /// <see cref="ThemeJson"/> reads, leaving out a bad key or value.</summary>
-public sealed class ThemeFile : IThemeFile<ThemeFile, ThemeContents>
+public sealed class ThemeFile : IUserThemeFile<ThemeFile, ThemeContents, AppTheme>
 {
     public const char ColorPrefix = '#';
 
     public static ThemeKind Kind => ThemeKind.Color;
 
     public static string Extension => ".json";
+
+    /// <summary>A theme extending <paramref name="parent"/> that lists every color, each commented out at the one
+    /// <paramref name="shown"/> has (<see cref="ThemeDraft"/>).</summary>
+    public static string ComposeDraft(string name, ThemeId<ThemeFile> parent, AppTheme shown)
+    {
+        return ThemeDraft.Compose(name, parent, shown);
+    }
 
     public required ThemeJson Json { get; init; }
     public readonly Dictionary<string, ThemeValue> Palette = new();

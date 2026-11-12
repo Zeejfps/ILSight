@@ -4,7 +4,7 @@ using System.Text.Json;
 using ZGF.Gui.Immediate;
 using ILSight.CodeViewArea;
 
-namespace ILSight.DisplayOptionArea;
+namespace ILSight;
 
 /// <summary>The text of a new theme file that extends another and lists every color a theme can set,
 /// each commented out at the color shown now. A color left commented follows the parent, so derived

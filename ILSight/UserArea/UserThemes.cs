@@ -8,7 +8,7 @@ namespace ILSight.UserArea;
 /// there. What is wrong in a theme file is reported once, until it is fixed. Lives on the UI thread, as the
 /// app state that holds it does, and reaches the folder and the error reports through <see cref="IPorts"/>.</summary>
 public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TContents, TTheme>.IPorts ports)
-    where TFile : class, IThemeFile<TFile, TContents>
+    where TFile : class, IUserThemeFile<TFile, TContents, TTheme>
     where TContents : class
     where TTheme : class
 {
@@ -127,11 +127,12 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         return null;
     }
 
-    /// <summary>Writes a new theme of the user's that extends the one <paramref name="chosen"/> shows, as
-    /// <paramref name="draftOf"/> writes it from the id and the theme of the one it extends, then reads the themes
-    /// again. Returns its id and file, for the caller to switch to it and open it; null when the settings live in
-    /// memory only, or after reporting why the file cannot be written.</summary>
-    public CustomTheme<TFile>? CreateCustomTheme(ThemeId<TFile> chosen, Func<ThemeId<TFile>, TTheme, string> draftOf)
+    /// <summary>Writes a new theme of the user's that extends the one <paramref name="chosen"/> shows, named as
+    /// <paramref name="nameOf"/> names it from the id of the one it extends, as the kind drafts a new theme
+    /// (<see cref="IUserThemeFile{TSelf, TContents, TTheme}.ComposeDraft"/>), then reads the themes again. Returns
+    /// its id and file, for the caller to switch to it and open it; null when the settings live in memory only, or
+    /// after reporting why the file cannot be written.</summary>
+    public CustomTheme<TFile>? CreateCustomTheme(ThemeId<TFile> chosen, Func<ThemeId<TFile>, string> nameOf)
     {
         var folder = PrepareFolder();
         if (folder is null)
@@ -142,7 +143,7 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         var parent = Themes.GetShownId(chosen);
         var id = GetFreeCustomId(folder, parent);
         var path = GetThemeFilePath(folder, id);
-        var text = draftOf(parent, Themes.GetTheme(parent));
+        var text = TFile.ComposeDraft(nameOf(parent), parent, Themes.GetTheme(parent));
         if (!ports.TryWriteNewFile(path, text, out var reason))
         {
             ports.ReportError(new AppProblem.CustomThemeNotWritten(TFile.Kind, path, reason));

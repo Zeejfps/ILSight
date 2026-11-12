@@ -2,46 +2,23 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ILSight.UserArea;
 
-/// <summary>The seam around a folder of the user's themes of one kind on disk, for
-/// <see cref="UserThemes{TFile, TContents, TTheme}"/>: lists and reads its theme files, makes it with its schema
-/// and guide in it, writes new theme files, and watches it, telling of a change on the UI thread; and the app's
-/// error reports. What the disk refuses comes back as a result; a wait the token stops ends as cancelled, and
-/// stops the watch. Each kind of theme says how its files are read and where its schema comes from.</summary>
-public abstract class UserThemesAdapter<TFile, TContents, TTheme>(ErrorLog errors, ThemeFolderWatch watch) : UserThemes<TFile, TContents, TTheme>.IPorts
-    where TFile : class, IThemeFile<TFile, TContents>
-    where TContents : class
-    where TTheme : class
+/// <summary>A folder of the user's theme files on disk: the I/O the adapters of both kinds of theme do on theirs,
+/// each holding one. Lists and reads its files, makes it with a schema and a guide in it, writes new files, and
+/// watches it, telling of a change on the UI thread. What the disk refuses comes back as a result, except a read,
+/// which throws what the disk throws for the adapter to translate with the rest of what it reads. Decides
+/// nothing.</summary>
+public sealed class ThemeFolder(ThemeFolderWatch watch)
 {
     private const string GuideFileName = "README.md";
 
-    /// <summary>The name of the schema file in the folder, which is no theme.</summary>
-    protected abstract string SchemaFileName { get; }
-
-    /// <summary>The schema theme files of this kind name in <c>$schema</c>.</summary>
-    protected abstract string ReadSchema();
-
-    /// <summary>The README on writing themes of this kind.</summary>
-    protected abstract string ReadGuide();
-
-    /// <summary>The theme <paramref name="id"/> <paramref name="json"/>, the content of the file at
-    /// <paramref name="path"/>, writes, everything else it names read with it.</summary>
-    protected abstract TFile ReadTheme(ThemeId<TFile> id, string path, byte[] json);
-
-    /// <summary>The theme <paramref name="id"/> of the file at <paramref name="path"/>, which could not be read
-    /// for <paramref name="reason"/>.</summary>
-    protected abstract TFile CreateUnreadableTheme(ThemeId<TFile> id, string path, string reason);
-
-    public void ReportError(AppProblem problem)
-    {
-        Errors.Report(errors, problem);
-    }
-
-    public List<string> ListThemeFiles(string folder)
+    /// <summary>The files in <paramref name="folder"/> ending in <paramref name="extension"/>, in the order of their
+    /// names, without <paramref name="schemaFileName"/>; none when it is missing or cannot be listed.</summary>
+    public List<string> ListThemeFiles(string folder, string extension, string schemaFileName)
     {
         try
         {
-            return Directory.EnumerateFiles(folder, "*" + TFile.Extension)
-                .Where(p => !IsNamed(p, SchemaFileName))
+            return Directory.EnumerateFiles(folder, "*" + extension)
+                .Where(p => !IsNamed(p, schemaFileName))
                 .Order(StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
@@ -60,33 +37,22 @@ public abstract class UserThemesAdapter<TFile, TContents, TTheme>(ErrorLog error
         return string.Equals(Path.GetFileName(path), fileName, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>Reads the whole file and what it names now, so nothing is left to fail later.</summary>
-    public TFile ReadThemeFile(ThemeId<TFile> id, string path)
+    /// <summary>The whole file at <paramref name="path"/>; throws what the disk throws.</summary>
+    public byte[] ReadFile(string path)
     {
-        byte[] json;
-        try
-        {
-            json = File.ReadAllBytes(path);
-        }
-        catch (IOException e)
-        {
-            return CreateUnreadableTheme(id, path, e.Message);
-        }
-        catch (UnauthorizedAccessException e)
-        {
-            return CreateUnreadableTheme(id, path, e.Message);
-        }
-
-        return ReadTheme(id, path, json);
+        return File.ReadAllBytes(path);
     }
 
-    public bool TryMakeFolder(string folder, [NotNullWhen(false)] out string? reason)
+    /// <summary>Makes <paramref name="folder"/>, with <paramref name="schema"/> in it as
+    /// <paramref name="schemaFileName"/> and <paramref name="guide"/> as its README, each written only when it
+    /// says something else; false, with why in <paramref name="reason"/>, when it cannot.</summary>
+    public bool TryMakeFolder(string folder, string schemaFileName, string schema, string guide, [NotNullWhen(false)] out string? reason)
     {
         try
         {
             Directory.CreateDirectory(folder);
-            WriteIfChanged(Path.Combine(folder, SchemaFileName), ReadSchema());
-            WriteIfChanged(Path.Combine(folder, GuideFileName), ReadGuide());
+            WriteIfChanged(Path.Combine(folder, schemaFileName), schema);
+            WriteIfChanged(Path.Combine(folder, GuideFileName), guide);
             reason = null;
             return true;
         }
@@ -132,6 +98,8 @@ public abstract class UserThemesAdapter<TFile, TContents, TTheme>(ErrorLog error
         return File.Exists(path);
     }
 
+    /// <summary>Writes <paramref name="text"/> to a file at <paramref name="path"/>, which must not exist yet; false,
+    /// with why in <paramref name="reason"/>, when it cannot.</summary>
     public bool TryWriteNewFile(string path, string text, [NotNullWhen(false)] out string? reason)
     {
         try

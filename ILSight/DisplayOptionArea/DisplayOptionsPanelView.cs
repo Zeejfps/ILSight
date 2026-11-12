@@ -219,8 +219,7 @@ internal static class DisplayOptionsPanelView
     private static void CustomizeTheme(UiState screen, AppState appState, Strings t)
     {
         var themes = appState.Themes;
-        var custom = appState.UserThemes.CreateCustomTheme(appState.Theme,
-            (parent, theme) => ThemeDraft.Compose(t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)), parent, theme));
+        var custom = appState.UserThemes.CreateCustomTheme(appState.Theme, parent => t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)));
         if (custom is null)
         {
             return;
@@ -293,8 +292,7 @@ internal static class DisplayOptionsPanelView
     private static void CustomizeIconTheme(UiState screen, AppState appState, Strings t)
     {
         var themes = appState.IconThemes;
-        var custom = appState.UserIconThemes.CreateCustomTheme(appState.IconTheme,
-            (parent, theme) => IconThemeDraft.Compose(t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)), parent, theme));
+        var custom = appState.UserIconThemes.CreateCustomTheme(appState.IconTheme, parent => t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)));
         if (custom is null)
         {
             return;

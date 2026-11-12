@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using ILSight.BuiltInArea;
 using ILSight.UserArea;
 
@@ -82,19 +84,22 @@ public sealed class UserThemesTests
         ports.Files[PathOf("dracula-custom")] = "{ \"extends\": \"dracula\" }";
         var themes = Create(ports);
         themes.ReadThemes();
-        var drafted = new List<ThemeId<ThemeFile>>();
+        var named = new List<ThemeId<ThemeFile>>();
 
-        var custom = themes.CreateCustomTheme(Id("dracula"), (parent, _) =>
+        var custom = themes.CreateCustomTheme(Id("dracula"), parent =>
         {
-            drafted.Add(parent);
-            return "{ \"extends\": \"dracula\" }";
+            named.Add(parent);
+            return "My Dracula";
         });
 
         Assert.NotNull(custom);
         Assert.Equal(Id("dracula-custom-2"), custom.Id);
         Assert.Equal(PathOf("dracula-custom-2"), custom.Path);
-        Assert.Equal([Id("dracula")], drafted);
+        Assert.Equal([Id("dracula")], named);
         Assert.Contains(Id("dracula-custom-2"), themes.Themes.Ids);
+        Assert.Equal("My Dracula", themes.Themes.GetThemeName(custom.Id, CultureInfo.InvariantCulture));
+        var written = ports.Files[custom.Path] ?? throw new InvalidOperationException("The fake folder holds no text for the custom theme.");
+        Assert.Equal(Id("dracula"), Theming.ReadTheme(custom.Id, custom.Path, Encoding.UTF8.GetBytes(written)).Extends?.Id);
         Assert.Empty(ports.Reported);
     }
 
@@ -104,7 +109,7 @@ public sealed class UserThemesTests
         var ports = new FakeUserThemesPorts { CanWrite = false };
         var themes = Create(ports);
 
-        var custom = themes.CreateCustomTheme(Id("dark"), static (_, _) => "{}");
+        var custom = themes.CreateCustomTheme(Id("dark"), static _ => "Mine");
 
         Assert.Null(custom);
         var problem = Assert.IsType<AppProblem.CustomThemeNotWritten>(Assert.Single(ports.Reported));

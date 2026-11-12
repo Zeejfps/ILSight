@@ -7,7 +7,6 @@ using static ILSight.Theming;
 using ILSight.CodeViewArea;
 using ILSight.BuiltInArea;
 using ILSight.AppSettingArea;
-using ILSight.DisplayOptionArea;
 
 namespace ILSight.App.Tests;
 
@@ -42,8 +41,7 @@ public sealed class UserThemeTests : IDisposable
     private static string? CreateCustomTheme(AppState appState)
     {
         var themes = appState.Themes;
-        var custom = appState.UserThemes.CreateCustomTheme(appState.Theme,
-            (parent, theme) => ThemeDraft.Compose(Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)), parent, theme));
+        var custom = appState.UserThemes.CreateCustomTheme(appState.Theme, parent => Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)));
         if (custom is null)
         {
             return null;
