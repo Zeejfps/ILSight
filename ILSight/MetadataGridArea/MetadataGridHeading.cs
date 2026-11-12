@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using ILSight.Core.Metadata;
 using ILSight.Localization;
 
-namespace ILSight;
+namespace ILSight.MetadataGridArea;
 
 /// <summary>What a metadata grid's column headings are drawn from: each shows its filter text or
 /// its name, then the funnel that filters it.</summary>

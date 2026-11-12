@@ -9,6 +9,7 @@ using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
 using ILSight.AssemblyListKeeping;
 using ILSight.NuGetBrowsing;
+using ILSight.MetadataGridArea;
 using static ILSight.Settings;
 using static ILSight.ScreenLayout;
 

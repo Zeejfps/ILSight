@@ -5,6 +5,7 @@ using ILSight.Core.Metadata;
 using ILSight.CodeView;
 using ILSight.Commanding;
 using ILSight.DocumentViewing;
+using ILSight.MetadataGridArea;
 
 namespace ILSight;
 

@@ -1,4 +1,5 @@
 using ILSight.CodeView;
+using ILSight.MetadataGridArea;
 
 namespace ILSight;
 

@@ -15,6 +15,7 @@ using ILSight.DiagramViewport;
 using ILSight.DocumentViewing;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
+using ILSight.MetadataGridArea;
 
 namespace ILSight.App.Tests;
 

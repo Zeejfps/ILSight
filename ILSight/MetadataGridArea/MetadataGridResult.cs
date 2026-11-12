@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Metadata;
 
-namespace ILSight;
+namespace ILSight.MetadataGridArea;
 
 /// <summary>What the user asked of a <see cref="MetadataGridWidget.RenderMetadataGrid"/> this frame.</summary>
 /// <param name="Target">The table row a token cell leads to.</param>

@@ -1,5 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Exporting;
+using ILSight.MetadataGridArea;
 
 namespace ILSight;
 

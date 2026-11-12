@@ -5,7 +5,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 using ILSight.Localization;
 
-namespace ILSight;
+namespace ILSight.MetadataGridArea;
 
 public static class MetadataGridWidget
 {

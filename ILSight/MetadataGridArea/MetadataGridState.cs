@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 
-namespace ILSight;
+namespace ILSight.MetadataGridArea;
 
 /// <summary>Everything a <see cref="MetadataGridWidget.MetadataGridView"/> keeps between frames of one
 /// grid: the columns' widths, the sort and text filters, the selected cell and the text selected in it,

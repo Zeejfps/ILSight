@@ -6,7 +6,7 @@ using ILSight.Core.Metadata;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
 
-namespace ILSight;
+namespace ILSight.MetadataGridArea;
 
 /// <summary>One frame of a <see cref="MetadataGridWidget.RenderMetadataGrid"/>: what every step of
 /// drawing it shares, kept on the stack.</summary>

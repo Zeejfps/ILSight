@@ -9,6 +9,7 @@ using ILSight.Bookmarking;
 using ILSight.CodeTooltipping;
 using ILSight.Omnibars;
 using ILSight.Commanding;
+using ILSight.MetadataGridArea;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.CodeDisplay;
 using static ILSight.Diagrams;

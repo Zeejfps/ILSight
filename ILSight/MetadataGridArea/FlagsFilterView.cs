@@ -5,7 +5,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 using ILSight.Localization;
 
-namespace ILSight;
+namespace ILSight.MetadataGridArea;
 
 /// <summary>The content of a flags column's filter flyout: a chip per value of each mutually exclusive
 /// group, and a pill per independent flag.</summary>
