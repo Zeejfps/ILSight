@@ -8,7 +8,9 @@ namespace ILSight;
 /// and its opens. The lists and delete dialogs and the toolbar's list menu take it to switch lists in the frame of
 /// their input, without the rest of the app's state. It keeps a rule across the assemblies and the analyses (an
 /// analysis is of an assembly on the list), so it holds the list itself privately and closes assemblies by its own
-/// methods: what it hands out (<see cref="Assemblies"/>) reads the list and opens onto it, but closes nothing.</summary>
+/// methods: what it hands out (<see cref="Assemblies"/>) reads the list and opens onto it, but closes nothing. The
+/// tabs (<see cref="Navigation"/>), the reopened tabs, the reload and the opens keep rules of their own, and none of
+/// their members makes a part another list's, so it hands them out and their readers use them directly.</summary>
 public sealed class OpenListSession
 {
     private readonly ClosableAssemblyList _assemblies;
