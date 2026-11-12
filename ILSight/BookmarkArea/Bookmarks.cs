@@ -145,10 +145,61 @@ public static class Bookmarks
     {
         var anchor = Documents.FindAnchorAt(tab.Document, line);
         var name = appState.Bookmarks.CreateName(nameOf);
-        var info = ILSpyTree.Describe(node, anchor);
+        var info = Describe(node, anchor, tab.Document);
         var bookmark = Bookmarks.CreateAt(node, tab.Load.Language, line, anchor, name, info);
         appState.Bookmarks.TryAdd(bookmark);
         return new BookmarkToggle.Added(bookmark);
+    }
+
+    /// <summary>What ILSpy records about a bookmark on a line of <paramref name="place"/>'s
+    /// <paramref name="document"/> named by <paramref name="anchor"/>, or by none: then the token is that of the
+    /// entity the place stands for, as ILSpy falls back to. Reads the values the node and the document kept: the
+    /// anchor's entity is named as the decompile found it.</summary>
+    internal static ILSpyBookmarkInfo Describe(BrowseNode place, CodeAnchor? anchor, DecompiledDocument document)
+    {
+        var assembly = place.Assembly;
+        var token = place.Token is null ? 0u : (uint)place.Token.Value;
+        var entityName = place.EntityFullName;
+        if (anchor is not null)
+        {
+            token = (uint)anchor.Value.Token;
+            entityName = FindAnchoredName(document, anchor.Value, assembly.FilePath) ?? entityName;
+        }
+
+        var location = place.EntityFullName ?? place.ILSpyName;
+        return new ILSpyBookmarkInfo(assembly.FullName, assembly.FilePath.FileName, token, entityName ?? location ?? place.Text, location,
+            ListILSpyPath(place));
+    }
+
+    /// <summary>The full name of the entity <paramref name="anchor"/> names in <paramref name="document"/> when it is
+    /// one of the place's assembly at <paramref name="filePath"/>; null otherwise.</summary>
+    private static string? FindAnchoredName(DecompiledDocument document, CodeAnchor anchor, AssemblyPath filePath)
+    {
+        if (!anchor.FilePath.Equals(filePath))
+        {
+            return null;
+        }
+
+        return document.EntityNames.GetValueOrDefault((anchor.FilePath, anchor.Token));
+    }
+
+    /// <summary>The names ILSpy's tree gives the nodes down from the assembly to <paramref name="node"/>, as it finds
+    /// a node by; null when one of them has no name there.</summary>
+    private static IReadOnlyList<string>? ListILSpyPath(BrowseNode node)
+    {
+        var path = new List<string>();
+        for (var n = node; n is not null; n = n.Parent)
+        {
+            var name = n.ILSpyName;
+            if (name is null)
+            {
+                return null;
+            }
+
+            path.Add(name);
+        }
+        path.Reverse();
+        return path;
     }
 
     private static Bookmark CreateBookmark(NodePath place, DecompilationLanguage language, int line, CodeAnchor? anchor, string name,

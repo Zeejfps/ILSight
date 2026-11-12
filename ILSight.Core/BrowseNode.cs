@@ -84,6 +84,14 @@ public sealed class BrowseNode
     /// <summary>The file name a resource the node stands for is saved under; null for a node of anything else.</summary>
     public required string? ResourceFileName { get; init; }
 
+    /// <summary>The name ILSpy's tree gives the node standing for this one (<see cref="ILSpyTree.NameOf"/>); null for a
+    /// node it has no named counterpart of. Read when the node was made.</summary>
+    public required string? ILSpyName { get; init; }
+
+    /// <summary>The ILSpy full name of the type or member the node defines (<c>Namespace.Type.Member</c>); null for a
+    /// node that defines none. Read when the node was made.</summary>
+    public required string? EntityFullName { get; init; }
+
     /// <summary>The file name the node's code is saved under in <paramref name="language"/>.</summary>
     public string SuggestCodeFileName(DecompilationLanguage language)
     {

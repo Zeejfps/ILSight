@@ -14,9 +14,11 @@ internal static class BrowseRoots
     {
         return item switch
         {
-            LoadedModule module => Create(module, new NodeSubject.Module { Value = module }, GetModuleLabel(module), module.FullName, module.Name, canHaveChildren: true, isCode: true),
+            LoadedModule module => Create(module, new NodeSubject.Module { Value = module }, GetModuleLabel(module), module.FullName, module.Name, canHaveChildren: true, isCode: true,
+                ilspyName: module.FilePath.Text),
             LoadedPackage package => CreatePackageRoot(package),
-            FailedAssembly failed => Create(failed, new NodeSubject.FailedAssembly { Value = failed }, failed.FilePath.FileName, failed.FilePath.Text, failed.FilePath.FileName, canHaveChildren: false, isCode: false),
+            FailedAssembly failed => Create(failed, new NodeSubject.FailedAssembly { Value = failed }, failed.FilePath.FileName, failed.FilePath.Text, failed.FilePath.FileName, canHaveChildren: false, isCode: false,
+                ilspyName: null),
             _ => throw new UnreachableException(),
         };
     }
@@ -24,10 +26,13 @@ internal static class BrowseRoots
     private static BrowseNode CreatePackageRoot(LoadedPackage package)
     {
         var folder = PackageFolders.CreateRootFolder(package);
-        return Create(package, new NodeSubject.Package { Value = folder }, folder.Label, folder.FullName, folder.Label, canHaveChildren: true, isCode: true);
+        return Create(package, new NodeSubject.Package { Value = folder }, folder.Label, folder.FullName, folder.Label, canHaveChildren: true, isCode: true, ilspyName: null);
     }
 
-    private static BrowseNode Create(LoadedAssembly item, NodeSubject subject, string text, string fullName, string name, bool canHaveChildren, bool isCode)
+    /// <summary>The root of <paramref name="item"/>; <paramref name="ilspyName"/> is the name ILSpy's tree gives it (a
+    /// module's file path; none for a package or a failed file).</summary>
+    private static BrowseNode Create(LoadedAssembly item, NodeSubject subject, string text, string fullName, string name, bool canHaveChildren, bool isCode,
+        string? ilspyName)
     {
         return new BrowseNode
         {
@@ -47,6 +52,8 @@ internal static class BrowseRoots
             Name = name,
             IsCode = isCode,
             ResourceFileName = null,
+            ILSpyName = ilspyName,
+            EntityFullName = null,
         };
     }
 

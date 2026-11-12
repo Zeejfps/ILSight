@@ -47,38 +47,42 @@ public sealed class ILSpyTreeTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
         var calculator = assembly.Calculator();
-        var info = ILSpyTree.Describe(calculator, null);
+        var definedToken = calculator.Token;
+        Assert.NotNull(definedToken);
+        var token = (uint)definedToken.Value;
+        var name = calculator.EntityFullName;
+        Assert.NotNull(name);
 
-        Assert.Equal(calculator.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, info.Token, info.MemberName)));
-        Assert.Equal(calculator.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, ["no such file"], info.Token, info.MemberName)));
-        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, info.MemberName));
+        Assert.Equal(calculator.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, token, name)));
+        Assert.Equal(calculator.Path, PathOf(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, name)));
+        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name));
     }
 
     [Fact]
     public void A_token_that_names_an_entity_of_another_name_finds_nothing()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var info = ILSpyTree.Describe(assembly.Calculator(), null);
+        var definedToken = assembly.Calculator().Token;
+        Assert.NotNull(definedToken);
+        var token = (uint)definedToken.Value;
 
-        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, info.Token, Trees.FixturesNamespace + ".Renamed"));
-        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, ["no such file"], info.Token, ""));
+        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed"));
+        Assert.Null(ILSpyTree.Locate(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, ""));
     }
 
     [Fact]
-    public void A_bookmark_is_described_as_ILSpy_records_it()
+    public void A_node_and_its_document_keep_the_names_ILSpy_records_a_bookmark_by()
     {
         var assembly = Trees.TestAssembly;
         var calculator = assembly.Calculator();
         var document = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
         var anchor = Documents.FindAnchorAt(document, document.LineContaining("Changed?.Invoke(this, EventArgs.Empty);"));
+        Assert.NotNull(anchor);
 
-        var info = ILSpyTree.Describe(calculator, anchor);
+        var method = document.EntityNames.GetValueOrDefault((anchor.Value.FilePath, anchor.Value.Token));
 
-        Assert.Equal(assembly.FullName, info.AssemblyFullName);
-        Assert.Equal(assembly.FilePath.FileName, info.ModuleName);
-        Assert.Equal((uint)Assert.NotNull(anchor).Token, info.Token);
-        Assert.Equal(Trees.FixturesNamespace + ".Calculator.Add", info.MemberName);
-        Assert.Equal(Trees.FixturesNamespace + ".Calculator", info.LocationNodeName);
-        Assert.Equal([assembly.FilePath.Text, Trees.FixturesNamespace, Trees.FixturesNamespace + ".Calculator`1"], info.TreePath);
+        Assert.Equal(Trees.FixturesNamespace + ".Calculator.Add", method);
+        Assert.Equal(Trees.FixturesNamespace + ".Calculator", calculator.EntityFullName);
+        Assert.Equal([assembly.FilePath.Text, Trees.FixturesNamespace, Trees.FixturesNamespace + ".Calculator`1"], ILSpyTree.PathOf(calculator));
     }
 }

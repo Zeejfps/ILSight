@@ -253,7 +253,26 @@ public static class BrowseNodes
             Name = GetName(subject, assembly, text),
             IsCode = IsCode(subject),
             ResourceFileName = FindResourceData(subject)?.FileName,
+            ILSpyName = ILSpyTree.NameOf(subject),
+            EntityFullName = FindEntityFullName(subject),
         };
+    }
+
+    /// <summary>The ILSpy full name of the type or member a node of <paramref name="subject"/> defines; null for one
+    /// that defines none.</summary>
+    private static string? FindEntityFullName(NodeSubject subject)
+    {
+        if (subject is NodeSubject.TypeDefinition type)
+        {
+            return NodeDefinitions.GetSymbol(type.Definition).FullName;
+        }
+
+        if (subject is NodeSubject.MemberDefinition member)
+        {
+            return NodeDefinitions.GetSymbol(member.Definition).FullName;
+        }
+
+        return null;
     }
 
     /// <summary>The bytes of the resource <paramref name="node"/> stands for, as a saved copy holds them: for

@@ -245,6 +245,14 @@ public static class LoadedAssemblies
         throw new UnreachableException();
     }
 
+    /// <summary>The module of the type system this assembly's metadata is read into, waiting for its read as
+    /// <see cref="EnsureTypeSystem"/> does; null when the library could not read it (its first use says why).</summary>
+    internal static MetadataModule? FindMainModule(LoadedModule module)
+    {
+        var read = GetLibrary(module).TypeSystem.ReadAsync(CancellationToken.None).GetAwaiter().GetResult();
+        return read.Match<MetadataModule?>(static r => r.TypeSystem.MainModule, static _ => null);
+    }
+
     /// <summary>The module of the type system this assembly's metadata is read into, read the first time.</summary>
     public static MetadataModule EnsureMainModule(LoadedModule module)
     {

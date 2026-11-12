@@ -42,7 +42,85 @@ internal static class DocumentWriting
         }
 
         var built = lines.MoveToImmutable();
-        return new DecompiledDocument { Title = title, Language = builder.Language, Error = error, Lines = built, Definitions = builder.Definitions, Statements = ListStatements(builder), Folds = ListFoldRegions(builder, built) };
+        var statements = ListStatements(builder);
+        return new DecompiledDocument { Title = title, Language = builder.Language, Error = error, Lines = built, Definitions = builder.Definitions, Statements = statements,
+            EntityNames = NameAnchoredEntities(builder, statements), Folds = ListFoldRegions(builder, built) };
+    }
+
+    /// <summary>The ILSpy full name of the entity of <paramref name="builder"/>'s module each anchor names: a
+    /// statement's method, a definition's type or member, resolved through the module's type system. None when the
+    /// document names nothing of a module, or the type system could not be read.</summary>
+    private static Dictionary<(AssemblyPath FilePath, int Token), string> NameAnchoredEntities(DocumentBuilder builder,
+        Dictionary<int, CodeAnchor> statements)
+    {
+        var names = new Dictionary<(AssemblyPath FilePath, int Token), string>();
+        var module = builder.Assembly;
+        if (module is null)
+        {
+            return names;
+        }
+
+        var tokens = ListAnchoredTokens(builder, statements, module.FilePath);
+        if (tokens.Count == 0)
+        {
+            return names;
+        }
+
+        var main = LoadedAssemblies.FindMainModule(module);
+        if (main is null)
+        {
+            return names;
+        }
+
+        foreach (var token in tokens)
+        {
+            var entity = ResolveEntity(main, token);
+            if (entity is not null)
+            {
+                names[(module.FilePath, token)] = entity.FullName;
+            }
+        }
+        return names;
+    }
+
+    private static HashSet<int> ListAnchoredTokens(DocumentBuilder builder, Dictionary<int, CodeAnchor> statements, AssemblyPath filePath)
+    {
+        var tokens = new HashSet<int>();
+        foreach (var anchor in statements.Values)
+        {
+            if (anchor.FilePath.Equals(filePath))
+            {
+                tokens.Add(anchor.Token);
+            }
+        }
+        foreach (var reference in builder.Definitions.Keys)
+        {
+            if (reference is CodeReference.Entity entity && entity.FilePath.Equals(filePath))
+            {
+                tokens.Add(MetadataTokens.GetToken(entity.Handle));
+            }
+        }
+        return tokens;
+    }
+
+    private static IEntity? ResolveEntity(MetadataModule main, int token)
+    {
+        try
+        {
+            return main.ResolveEntity(MetadataTokens.EntityHandle(token));
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     public static void Write(DocumentBuilder builder, string text, SpanKind kind, CodeReference? reference = null, bool isDefinition = false)

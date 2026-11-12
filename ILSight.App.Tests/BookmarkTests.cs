@@ -54,6 +54,27 @@ public sealed class BookmarkTests : IDisposable
     }
 
     [Fact]
+    public void A_bookmark_records_what_ILSpy_records_from_the_values_the_node_and_the_document_kept()
+    {
+        var (d, tab, line) = OutlineAt("return First();", AppStateDriver.WithoutScreen());
+        var node = tab.Node;
+        Assert.NotNull(node);
+        var module = node.Assembly;
+
+        var anchor = Documents.FindAnchorAt(tab.Document, line);
+
+        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        var info = Assert.Single(d.AppState.Bookmarks.Items).ILSpy;
+        Assert.NotNull(anchor);
+        Assert.Equal(module.FullName, info.AssemblyFullName);
+        Assert.Equal(module.FilePath.FileName, info.ModuleName);
+        Assert.Equal((uint)anchor.Value.Token, info.Token);
+        Assert.Equal(FixturesNamespace + ".Outline.Third", info.MemberName);
+        Assert.Equal(FixturesNamespace + ".Outline", info.LocationNodeName);
+        Assert.Equal([module.FilePath.Text, FixturesNamespace, FixturesNamespace + ".Outline"], info.TreePath);
+    }
+
+    [Fact]
     public void Stepping_goes_to_the_next_enabled_bookmark_and_asks_the_view_to_reveal_its_line()
     {
         var (d, tab, line) = OutlineAt("return First();", AppStateDriver.WithoutScreen());

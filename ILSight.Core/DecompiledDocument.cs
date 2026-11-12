@@ -12,6 +12,11 @@ public sealed class DecompiledDocument
 
     public required IReadOnlyDictionary<int, CodeAnchor> Statements { get; init; }
 
+    /// <summary>The ILSpy full name of the entity each anchor of this document names (a statement's method, a
+    /// definition's type or member), by its assembly's path and token, as the decompile found it; none for an anchor
+    /// whose entity it could not resolve.</summary>
+    public required IReadOnlyDictionary<(AssemblyPath FilePath, int Token), string> EntityNames { get; init; }
+
     /// <summary>The line of each definition by its anchor, filled by <see cref="Documents.FindLine"/> the first time it is asked for.</summary>
     internal Dictionary<CodeAnchor, int>? DefinitionLines;
 
