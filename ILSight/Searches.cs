@@ -7,18 +7,6 @@ namespace ILSight;
 /// and sorting and picking from what it found.</summary>
 public static class Searches
 {
-    /// <summary>A search finding nodes of the browse tree <paramref name="session"/>, telling the user with
-    /// <paramref name="reportError"/> when it fails.</summary>
-    public static Search CreateSearch(BackgroundWork work, Action<AppProblem> reportError, BrowseSession session)
-    {
-        return new Search
-        {
-            Work = work,
-            ReportError = reportError,
-            Stream = (_, query, within, cancellationToken) => AssemblySearch.SearchAsync(session, within, query, cancellationToken),
-        };
-    }
-
     private const double DebounceSeconds = 0.15;
     private const string NamespaceScope = "innamespace";
     private const string AssemblyScope = "inassembly";
@@ -67,7 +55,7 @@ public static class Searches
 
     private static void Restart(Search search, AssemblyList assemblies)
     {
-        CancelRuns(search);
+        search.Runs.CancelAll();
         var searched = new SearchedQuery(search.Typed.Text, search.Kinds, assemblies.Version);
         search.LastSearched = searched;
         search.Rows.Clear();
@@ -76,17 +64,7 @@ public static class Searches
         var listed = assemblies.Assemblies;
         search.SearchedAssemblies.Clear();
         search.SearchedAssemblies.UnionWith(listed);
-        Start(search, assemblies, searched, listed);
-    }
-
-    private static void CancelRuns(Search search)
-    {
-        foreach (var run in search.Runs)
-        {
-            run.Cancel();
-        }
-
-        search.Runs.Clear();
+        Ask(search, searched, listed);
     }
 
     private static void Extend(Search search, AssemblyList assemblies, SearchedQuery searched)
@@ -98,7 +76,7 @@ public static class Searches
         var added = MarkSearched(search, listed);
         if (added.Count > 0)
         {
-            Start(search, assemblies, searched, added);
+            Ask(search, searched, added);
         }
     }
 
@@ -128,7 +106,9 @@ public static class Searches
         return added;
     }
 
-    private static void Start(Search search, AssemblyList assemblies, SearchedQuery searched, IEnumerable<LoadedModule> within)
+    /// <summary>Asks for <paramref name="searched"/> to be run over <paramref name="within"/>, unless it can find
+    /// nothing; the edge starts it once the frame is drawn (<see cref="RunSearchHandler"/>).</summary>
+    private static void Ask(Search search, SearchedQuery searched, IReadOnlyList<LoadedModule> within)
     {
         var query = SearchQueries.ParseQuery(searched.Query, searched.Kinds);
         search.InvalidRegex = query.Matcher as SearchMatcher.InvalidRegex;
@@ -137,51 +117,14 @@ public static class Searches
             return;
         }
 
-        var work = new CancellationTokenSource();
-        search.Runs.Add(work);
-        var batches = search.Stream(assemblies, query, within, work.Token);
-        Background.Start(search.Work, nameof(RunAsync), RunAsync(search, batches, work), search.ReportError);
+        search.Runs.Ask(new SearchRun { Query = query, Within = [.. within] });
     }
 
-    private static async Task RunAsync(Search search, IAsyncEnumerable<IReadOnlyList<SearchResult>> batches, CancellationTokenSource work)
+    /// <summary>Merges the hits of <paramref name="batch"/> that are still wanted into the rows, in their order, unless
+    /// a new query replaced <paramref name="run"/>, which found them.</summary>
+    public static void Deliver(Search search, IReadOnlyList<SearchResult> batch, SearchRun run)
     {
-        try
-        {
-            await foreach (var batch in batches)
-            {
-                Deliver(search, batch, work);
-            }
-        }
-        catch (OperationCanceledException) when (work.IsCancellationRequested)
-        {
-        }
-        catch (Exception e)
-        {
-            ReportFailure(search, work, e);
-        }
-        search.Runs.Remove(work);
-        work.Dispose();
-    }
-
-    private static bool IsCurrent(Search search, CancellationTokenSource work)
-    {
-        return search.Runs.Contains(work);
-    }
-
-    /// <summary>Reports why the run <paramref name="work"/> failed, unless another search replaced it.</summary>
-    private static void ReportFailure(Search search, CancellationTokenSource work, Exception error)
-    {
-        if (!IsCurrent(search, work))
-        {
-            return;
-        }
-
-        search.ReportError(new AppProblem.SearchFailed(error));
-    }
-
-    private static void Deliver(Search search, IReadOnlyList<SearchResult> batch, CancellationTokenSource work)
-    {
-        if (!IsCurrent(search, work))
+        if (!search.Runs.IsCurrent(run))
         {
             return;
         }

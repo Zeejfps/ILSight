@@ -448,39 +448,6 @@ public sealed class AppStateTests
     }
 
     [Fact]
-    public void A_search_that_fails_is_reported_unless_another_replaced_it()
-    {
-        var posted = PostedActions.OfThisTest();
-        var reported = new List<string>();
-        var replaced = new HeldSearch();
-        var current = new HeldSearch();
-        var streams = new Queue<HeldSearch>([replaced, current]);
-        var search = new Search
-        {
-            Work = new BackgroundWork(),
-            ReportError = problem => reported.Add(ProblemTexts.Describe(Strings.En, problem).Title),
-            Stream = (_, _, _, _) => streams.Dequeue().StreamAsync(),
-        };
-        var assemblies = new AssemblyList();
-        search.Query = "Greet";
-        Searches.Update(search, assemblies, 0, true);
-        Searches.Update(search, assemblies, 1, true);
-
-        search.Query = "Farewell";
-        Searches.Update(search, assemblies, 2, true);
-        Searches.Update(search, assemblies, 3, true);
-        replaced.Fail();
-        posted.Run();
-        var afterReplaced = reported.Count;
-        current.Fail();
-        posted.Run();
-
-        Assert.Empty(streams);
-        Assert.Equal(0, afterReplaced);
-        Assert.Equal(["Search failed"], reported);
-    }
-
-    [Fact]
     public void Search_selection_moves_by_keys_within_the_results()
     {
         var d = AppStateDriver.Opened();

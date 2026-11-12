@@ -208,10 +208,12 @@ internal static class AppFrames
     }
 
     /// <summary>Starts the work the screen asked for while it drew: the children of the tree's nodes it showed
-    /// loading, and the tooltips of the references hovered in code.</summary>
+    /// loading, the searches of the queries typed, and the tooltips of the references hovered in code.</summary>
     internal static void StartAskedWork(UiState uiState, AppState appState)
     {
         Commands.StartBuildingChildren(appState, uiState.Tree);
+        Commands.StartSearching(appState, uiState.Search);
+        Commands.StartSearching(appState, uiState.Omnibar.Search);
         Commands.StartLookingUpTooltips(appState.Workflows, appState.LookUpTooltipHandler, appState.Tooltips);
     }
 

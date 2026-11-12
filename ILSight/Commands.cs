@@ -174,6 +174,28 @@ public static class Commands
         appState.Workflows.Start(nameof(BuildChildrenHandler), ct => appState.BuildChildrenHandler.HandleAsync(tree, node, ct));
     }
 
+    /// <summary>Starts the runs <paramref name="search"/> asked for while the screen drew (<see cref="RunSearchHandler"/>)
+    /// now, each counted in the app's background work until it ends, on a token that a new query cancels too.
+    /// Allocates nothing while nothing is asked for.</summary>
+    public static void StartSearching(AppState appState, Search search)
+    {
+        if (!search.Runs.HasAsked)
+        {
+            return;
+        }
+
+        foreach (var run in search.Runs.TakeAsked())
+        {
+            StartSearchRun(appState, search, run);
+        }
+    }
+
+    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartSearchRun(AppState appState, Search search, SearchRun run)
+    {
+        appState.Workflows.Start(nameof(RunSearchHandler), ct => appState.RunSearchHandler.HandleAsync(search, run, ct), run.Work.Token);
+    }
+
     /// <summary>Starts looking up the tooltips <paramref name="tooltips"/> asked for while the code drew
     /// (<paramref name="handler"/>) now, a workflow per reference, each counted in the app's background work until it
     /// ends. Allocates nothing while nothing is asked for.</summary>

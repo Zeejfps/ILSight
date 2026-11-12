@@ -97,6 +97,9 @@ public sealed class AppState
     /// <summary>Imports bookmarks from files, this app's or the real ILSpy's.</summary>
     public required BookmarkImporting BookmarkImporting { get; init; }
 
+    /// <summary>Runs the search panel's and the omnibar's searches.</summary>
+    public required RunSearchHandler RunSearchHandler { get; init; }
+
     /// <summary>Looks up the tooltip of a reference hovered in code.</summary>
     public required LookUpTooltipHandler LookUpTooltipHandler { get; init; }
 

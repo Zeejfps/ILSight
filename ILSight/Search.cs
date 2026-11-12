@@ -8,20 +8,12 @@ namespace ILSight;
 /// hits in closed ones dropped, keeping the selection.</summary>
 public sealed class Search
 {
-    /// <summary>Where the work it starts in the background is counted until it ends.</summary>
-    public required BackgroundWork Work { get; init; }
-
-    /// <summary>Tells the user a search failed.</summary>
-    public required Action<AppProblem> ReportError { get; init; }
-
-    /// <summary>Streams a query's hits.</summary>
-    public required SearchStream Stream { get; init; }
-
     /// <summary>The hits so far, in the order the sort says, of the assemblies in
     /// <see cref="SearchedAssemblies"/> only; <see cref="Searches"/> keeps them so.</summary>
     public readonly List<SearchResult> Rows = new();
     public readonly HashSet<LoadedAssembly> SearchedAssemblies = new(ReferenceEqualityComparer.Instance);
-    public readonly List<CancellationTokenSource> Runs = new();
+    /// <summary>The runs that may still deliver hits.</summary>
+    public SearchRuns Runs { get; } = new();
     public readonly TypedText Typed = new();
     public SearchedQuery? LastSearched;
 
@@ -37,7 +29,7 @@ public sealed class Search
     public SearchKinds Kinds = SearchKinds.TypesAndMembers;
 
     /// <summary>Whether results may still arrive, or be sorted into the order asked for.</summary>
-    public bool IsBusy => Runs.Count > 0 || Sorting.IsSorting;
+    public bool IsBusy => Runs.IsRunning || Sorting.IsSorting;
 
     /// <summary>Whether <see cref="Rows"/> are the hits of the query as typed, rather than of one typed
     /// before it settled; more may still arrive.</summary>
