@@ -247,6 +247,18 @@ internal sealed class AppStateDriver
         Commands.StartLoads(AppState, change(AppState));
     }
 
+    /// <summary>Starts running <paramref name="run"/>, the comparison a change started, if any, as the app's commands
+    /// start it once the frame is drawn.</summary>
+    public void StartComparing(ComparisonRun? run)
+    {
+        if (run is null)
+        {
+            return;
+        }
+
+        Commands.StartComparing(AppState, run);
+    }
+
     /// <summary>Analyzes <paramref name="node"/> as the views do.</summary>
     public void Analyze(BrowseNode node)
     {

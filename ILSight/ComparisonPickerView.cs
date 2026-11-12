@@ -16,7 +16,10 @@ internal static class ComparisonPickerView
     private const string FilterId = "compare-picker-filter";
     private const string ListId = "compare-picker-list";
 
-    public static void Render(Ui<UiState> ui, AssemblyList assemblies)
+    /// <summary>The dialog picking what to compare an assembly with. Compare shows the comparison in
+    /// <paramref name="navigation"/>'s tabs in this frame, of <paramref name="assemblies"/> as they are open now, and
+    /// queues only the comparison's run.</summary>
+    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies)
     {
         var picker = ui.State.ComparisonPicker;
         var choice = picker.Choice;
@@ -72,7 +75,7 @@ internal static class ComparisonPickerView
         }
         if (compare)
         {
-            close |= TryCompareWithSelected(ui.State, choice, compared, t);
+            close |= TryCompareWithSelected(ui.State, navigation, assemblies, choice, compared, t);
         }
 
         if (close)
@@ -162,7 +165,8 @@ internal static class ComparisonPickerView
     }
 
     /// <summary>Compares the assembly to compare with the one selected, if any; true when it did.</summary>
-    private static bool TryCompareWithSelected(UiState screen, ComparisonChoice choice, LoadedModule compared, Strings t)
+    private static bool TryCompareWithSelected(UiState screen, Navigation navigation, AssemblyList assemblies, ComparisonChoice choice, LoadedModule compared,
+        Strings t)
     {
         var other = choice.Selected;
         if (other is null)
@@ -170,7 +174,7 @@ internal static class ComparisonPickerView
             return false;
         }
 
-        Commands.Later(screen, (compared, other, title: t.ComparisonTitle(compared.Name)), static (a, s) => CompareAssemblies(a, s.compared, s.other, s.title));
+        Commands.CompareLater(screen, CompareAssemblies(navigation, assemblies, compared, other, t.ComparisonTitle(compared.Name)));
         return true;
     }
 }

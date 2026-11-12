@@ -72,6 +72,7 @@ internal static class AppRoot
             DiagramGrowing = new DiagramGrowing(diagrams),
             ReopenDiagramHandler = new ReopenDiagramHandler(diagrams),
             LayOutDiagramHandler = new LayOutDiagramHandler(diagrams),
+            CompareAssembliesHandler = new CompareAssembliesHandler(new CompareAssembliesHandlerAdapter(errors)),
             GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
             AssemblyOpening = new AssemblyOpening(assemblyList),
             AssemblyReloading = new AssemblyReloading(assemblyList),

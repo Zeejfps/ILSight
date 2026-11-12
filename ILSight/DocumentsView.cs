@@ -19,17 +19,18 @@ internal static class DocumentsView
     /// <summary>The omnibar and content of <paramref name="tab"/>. What its omnibar or grid shows in
     /// <paramref name="navigation"/>'s tabs, a link into <paramref name="session"/>'s nodes among them, shows in this
     /// frame, in <paramref name="language"/> with <paramref name="options"/>, in the preview tab while
-    /// <paramref name="previewTabs"/>; only its decompile is queued.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, BrowseSession session, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
+    /// <paramref name="previewTabs"/>; only its decompile is queued. A comparison it shows compares
+    /// <paramref name="assemblies"/> as they are open.</summary>
+    public static void Render(Ui<UiState> ui, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilationLanguage language,
+        DecompilerOptions options, bool previewTabs, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         using var document = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        OmnibarView.Render(ui, navigation, language, options, previewTabs, tab);
-        Content(ui, navigation, session, language, options, previewTabs, bookmarks, tooltips, tab);
+        OmnibarView.Render(ui, navigation, assemblies, language, options, previewTabs, tab);
+        Content(ui, navigation, session, assemblies, language, options, previewTabs, bookmarks, tooltips, tab);
     }
 
-    private static void Content(Ui<UiState> ui, Navigation navigation, BrowseSession session, DecompilationLanguage language, DecompilerOptions options,
-        bool previewTabs, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
+    private static void Content(Ui<UiState> ui, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilationLanguage language,
+        DecompilerOptions options, bool previewTabs, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var t = ui.State.Strings;
         DocumentPanels.RecordShown(DocumentPanels.GetView(ui.State.Documents, tab), tab);
@@ -48,7 +49,7 @@ internal static class DocumentsView
                 DiagramView.Render(ui, tooltips, tab, diagram.Types);
                 break;
             case TabContent.Comparison comparison:
-                ComparisonView.Render(ui, tab, comparison.Assemblies);
+                ComparisonView.Render(ui, assemblies, tab, comparison.Assemblies);
                 break;
             case TabContent.Loading loading when !NodeContentLoader.DependsOnLanguage(loading.Node):
                 Hint(ui, t.MetadataLoading);

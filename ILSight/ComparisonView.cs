@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.Core;
 using ILSight.Core.Comparison;
 using ILSight.Localization;
 using static ILSight.Comparisons;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -17,7 +17,9 @@ internal static class ComparisonView
     private const string MenuId = "comparison-menu";
     private const string Arrow = "  →  ";
 
-    public static void Render(Ui<UiState> ui, DocumentTab tab, AssemblyComparison comparison)
+    /// <summary>The comparison <paramref name="tab"/> shows. Its tools change the comparison in this frame and compare
+    /// <paramref name="assemblies"/> as they are open, queuing only the comparison's run.</summary>
+    public static void Render(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
         Comparisons.SetRowStyle(rows, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
@@ -25,7 +27,7 @@ internal static class ComparisonView
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!ui.State.Display.ShowOmnibar)
         {
-            OwnToolbar(ui, tab, comparison);
+            OwnToolbar(ui, assemblies, tab, comparison);
         }
 
         Summary(ui, comparison);
@@ -40,19 +42,20 @@ internal static class ComparisonView
     }
 
     /// <summary>The tools in a bar of the tab's own, while the bar over documents, where they sit otherwise, is hidden.</summary>
-    private static void OwnToolbar(Ui<UiState> ui, DocumentTab tab, AssemblyComparison comparison)
+    private static void OwnToolbar(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         using (ui.PaneToolbar())
         {
-            Tools(ui, tab, comparison);
+            Tools(ui, assemblies, tab, comparison);
         }
 
         ui.Separator();
     }
 
     /// <summary>The comparison's tools, for the bar over the document: collapsing and expanding the tree,
-    /// swapping the assemblies' sides, and what it shows.</summary>
-    public static void Tools(Ui<UiState> ui, DocumentTab tab, AssemblyComparison comparison)
+    /// swapping the assemblies' sides, and what it shows; a change compares <paramref name="assemblies"/> as they are
+    /// open again.</summary>
+    public static void Tools(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         var t = ui.State.Strings;
         var icons = ui.State.Icons;
@@ -73,12 +76,12 @@ internal static class ComparisonView
             ui.Separator(ui.Theme.IconSize);
             if (ui.IconButton("swap", icons.ComparisonSwap, t.ComparisonSwap))
             {
-                Commands.Later(ui.State, comparison, static (a, c) => SwapComparedAssemblies(a, c));
+                Commands.CompareLater(ui.State, SwapComparedAssemblies(assemblies, comparison));
             }
 
             ui.Separator(ui.Theme.IconSize);
             OnlyDifferencesCheckbox(ui, rows);
-            HiddenMembersCheckbox(ui, comparison);
+            HiddenMembersCheckbox(ui, assemblies, comparison);
         }
     }
 
@@ -91,12 +94,12 @@ internal static class ComparisonView
         }
     }
 
-    private static void HiddenMembersCheckbox(Ui<UiState> ui, AssemblyComparison comparison)
+    private static void HiddenMembersCheckbox(Ui<UiState> ui, AssemblyList assemblies, AssemblyComparison comparison)
     {
         var all = comparison.Scope == ApiScope.AllDeclared;
         if (ui.Checkbox(ui.State.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members"))
         {
-            Commands.Later(ui.State, (comparison, scope: ScopeOf(all)), static (a, s) => ChangeComparedScope(a, s.comparison, s.scope));
+            Commands.CompareLater(ui.State, ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
         }
     }
 

@@ -21,13 +21,15 @@ public sealed class TabLoadsTests
         var decompiled = new List<DecompileTicket>();
         var read = new List<SavedDiagramRead>();
         var found = new List<ReopenedNodesLookup>();
+        var compared = new List<ComparisonRun>();
 
-        var loads = TabLoads.None.With(first).With(TabLoads.From([second], [], []));
-        loads.Switch(decompiled.Add, read.Add, found.Add);
+        var loads = TabLoads.None.With(first).With(TabLoads.From([second], [], [], []));
+        loads.Switch(decompiled.Add, read.Add, found.Add, compared.Add);
 
         Assert.Equal([first, second], decompiled);
         Assert.Empty(read);
         Assert.Empty(found);
+        Assert.Empty(compared);
     }
 
     [Fact]
@@ -35,7 +37,7 @@ public sealed class TabLoadsTests
     {
         var handed = 0;
 
-        TabLoads.None.With((DecompileTicket?)null).Switch(_ => handed++, _ => handed++, _ => handed++);
+        TabLoads.None.With((DecompileTicket?)null).Switch(_ => handed++, _ => handed++, _ => handed++, _ => handed++);
 
         Assert.Equal(0, handed);
     }

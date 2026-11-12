@@ -8,100 +8,90 @@ using ILSight.Core.Comparison;
 namespace ILSight;
 
 /// <summary>Comparisons of two assemblies' APIs, each in a tab of its own: comparing them, swapping their
-/// sides, and taking in more or less of them. Each comparison runs in the background against the
-/// assemblies open then, and is dropped when another starts or its tab closes meanwhile.</summary>
+/// sides, and taking in more or less of them, and the rows a comparison's tab shows. Each comparison is started here,
+/// against the assemblies open then, and returns its <see cref="ComparisonRun"/> for the edge to run
+/// (<see cref="CompareAssembliesHandler"/>), whose result is dropped when another starts or its tab closes
+/// meanwhile.</summary>
 public static class Comparisons
 {
-    /// <summary>Compares <paramref name="left"/> with <paramref name="right"/>, in the active tab while it
-    /// shows nothing, else in a new tab, titled <paramref name="title"/>.</summary>
-    public static void CompareAssemblies(AppState appState, LoadedModule left, LoadedModule right, string title)
+    /// <summary>Compares <paramref name="left"/> with <paramref name="right"/>, among <paramref name="assemblies"/>,
+    /// in <paramref name="navigation"/>'s active tab while it shows nothing, else in a new tab, titled
+    /// <paramref name="title"/>, kept open and made active. Returns the comparison it started, for the edge to run;
+    /// null when it shows why it can't run.</summary>
+    public static ComparisonRun? CompareAssemblies(Navigation navigation, AssemblyList assemblies, LoadedModule left, LoadedModule right, string title)
     {
-        appState.Navigation.LeaveActiveTab();
-        var tab = appState.Navigation.GetOrOpenEmptyTab();
+        navigation.LeaveActiveTab();
+        var tab = navigation.GetOrOpenEmptyTab();
         var comparison = new AssemblyComparison { LeftPath = left.FilePath, RightPath = right.FilePath };
         Tabs.ShowComparison(tab, title, comparison);
-        Tabs.Keep(appState.Tabs, tab);
-        Tabs.MakeActive(appState.Tabs, tab);
-        Compare(appState, comparison);
+        Tabs.Keep(navigation.Tabs, tab);
+        Tabs.MakeActive(navigation.Tabs, tab);
+        return StartComparing(assemblies, comparison);
     }
 
     /// <summary>Shows the comparison <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in,
-    /// and compares its assemblies again, now that the open list's assemblies are listed.</summary>
-    internal static void ReopenComparison(AppState appState, ReopenedTab reopened, ComparisonDocumentRecord saved)
+    /// one of <paramref name="tabs"/>, and compares its assemblies again among <paramref name="assemblies"/>, now that
+    /// the open list's assemblies are listed. Returns the comparison it started, for the edge to run; null when the tab
+    /// waits no more, as when it was pointed elsewhere, or when it shows why the comparison can't run.</summary>
+    internal static ComparisonRun? ReopenComparison(ReopenedTabs tabs, AssemblyList assemblies, ReopenedTab reopened, ComparisonDocumentRecord saved)
     {
-        if (!SavedDocuments.TryFinishWaiting(appState.Reopened, reopened))
+        if (!SavedDocuments.TryFinishWaiting(tabs, reopened))
         {
-            return;
+            return null;
         }
 
         var comparison = new AssemblyComparison { LeftPath = saved.LeftPath, RightPath = saved.RightPath };
         comparison.TakeInScope(saved.Scope);
         var title = saved.Title ?? string.Empty;
         Tabs.ShowComparison(reopened.Tab, title, comparison);
-        Compare(appState, comparison);
+        return StartComparing(assemblies, comparison);
     }
 
-    /// <summary>Compares the assemblies of <paramref name="comparison"/> the other way round, the right one on the left.</summary>
-    public static void SwapComparedAssemblies(AppState appState, AssemblyComparison comparison)
+    /// <summary>Compares the assemblies of <paramref name="comparison"/> the other way round, the right one on the
+    /// left, among <paramref name="assemblies"/>. Returns the comparison it started, as
+    /// <see cref="CompareAssemblies"/> does.</summary>
+    public static ComparisonRun? SwapComparedAssemblies(AssemblyList assemblies, AssemblyComparison comparison)
     {
         comparison.SwapSides();
-        Compare(appState, comparison);
+        return StartComparing(assemblies, comparison);
     }
 
-    /// <summary>Compares the assemblies of <paramref name="comparison"/> again, taking in what <paramref name="scope"/> says.</summary>
-    public static void ChangeComparedScope(AppState appState, AssemblyComparison comparison, ApiScope scope)
+    /// <summary>Compares the assemblies of <paramref name="comparison"/> again among <paramref name="assemblies"/>,
+    /// taking in what <paramref name="scope"/> says. Returns the comparison it started, as
+    /// <see cref="CompareAssemblies"/> does.</summary>
+    public static ComparisonRun? ChangeComparedScope(AssemblyList assemblies, AssemblyComparison comparison, ApiScope scope)
     {
         comparison.TakeInScope(scope);
-        Compare(appState, comparison);
+        return StartComparing(assemblies, comparison);
     }
 
-    /// <summary>Compares the assemblies of <paramref name="comparison"/>, as they are open now, in the
-    /// background, and shows what changed unless another comparison started or it was closed meanwhile.
-    /// Shows why when either is no longer open or the comparison fails.</summary>
-    private static void Compare(AppState appState, AssemblyComparison comparison)
+    /// <summary>Starts comparing the assemblies of <paramref name="comparison"/> as they are open now among
+    /// <paramref name="assemblies"/>, cancelling the comparison of it in flight, and returns what
+    /// <see cref="CompareAssembliesHandler"/> needs to run it. Shows why, and returns null, when either is no longer
+    /// open.</summary>
+    private static ComparisonRun? StartComparing(AssemblyList assemblies, AssemblyComparison comparison)
     {
-        Background.Start(appState.Work, nameof(CompareAsync), CompareAsync(appState, comparison), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task CompareAsync(AppState appState, AssemblyComparison comparison)
-    {
-        var left = FindOpen(appState, comparison.LeftPath);
+        var left = FindOpen(assemblies, comparison.LeftPath);
         if (left is null)
         {
-            ShowClosed(appState, comparison, comparison.LeftPath);
-            return;
+            ShowClosed(comparison, comparison.LeftPath);
+            return null;
         }
-        var right = FindOpen(appState, comparison.RightPath);
+        var right = FindOpen(assemblies, comparison.RightPath);
         if (right is null)
         {
-            ShowClosed(appState, comparison, comparison.RightPath);
-            return;
-        }
-        var scope = comparison.Scope;
-        var ticket = comparison.Work.Start();
-        var compared = await Background.Run(() => ApiEntries.Compare(left, right, scope, ticket.Token));
-        if (!comparison.Work.TryFinish(ticket))
-        {
-            return;
+            ShowClosed(comparison, comparison.RightPath);
+            return null;
         }
 
-        switch (compared)
-        {
-            case Outcome<ApiDiff>.Ok ok:
-                comparison.ShowDiff(ok.Value);
-                break;
-            case Outcome<ApiDiff>.Failed failed:
-                ReportFailure(appState, comparison, left, right, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        var work = comparison.Work.Start();
+        return new ComparisonRun { Comparison = comparison, Left = left, Right = right, Scope = comparison.Scope, Work = work };
     }
 
     /// <summary>The open assembly read from <paramref name="filePath"/> whose API can be compared; null when there is none.</summary>
-    private static LoadedModule? FindOpen(AppState appState, AssemblyPath filePath)
+    private static LoadedModule? FindOpen(AssemblyList assemblies, AssemblyPath filePath)
     {
-        foreach (var assembly in appState.Assemblies.Assemblies)
+        foreach (var assembly in assemblies.Assemblies)
         {
             if (assembly.FilePath.Equals(filePath))
             {
@@ -111,15 +101,9 @@ public static class Comparisons
         return null;
     }
 
-    private static void ShowClosed(AppState appState, AssemblyComparison comparison, AssemblyPath filePath)
+    private static void ShowClosed(AssemblyComparison comparison, AssemblyPath filePath)
     {
         comparison.ShowFailure(new ComparisonFailure.AssemblyClosed(filePath.FileName));
-    }
-
-    private static void ReportFailure(AppState appState, AssemblyComparison comparison, LoadedModule left, LoadedModule right, Exception error)
-    {
-        comparison.ShowFailure(new ComparisonFailure.Failed(left.NameAndVersion, right.NameAndVersion));
-        Errors.Report(appState, new AppProblem.ComparisonFailed(left.NameAndVersion, right.NameAndVersion, error));
     }
 
     /// <summary>Draws the rows in <paramref name="theme"/>, <paramref name="icons"/> and <paramref name="strings"/>,

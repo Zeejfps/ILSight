@@ -286,12 +286,13 @@ public static class SavedDocuments
     {
         var nodes = new List<WaitingNode>();
         var diagramReads = new List<SavedDiagramRead>();
+        var comparisonRuns = new List<ComparisonRun>();
         foreach (var reopened in ListWaiting(appState.Reopened))
         {
-            ShowReopened(appState, reopened, nodes, diagramReads);
+            ShowReopened(appState, reopened, nodes, diagramReads, comparisonRuns);
         }
 
-        return TabLoads.From([], diagramReads, ListLookups(nodes));
+        return TabLoads.From([], diagramReads, ListLookups(nodes), comparisonRuns);
     }
 
     /// <summary>The lookup of <paramref name="nodes"/>; none when no tab waits for a node.</summary>
@@ -305,10 +306,11 @@ public static class SavedDocuments
         return [new ReopenedNodesLookup { Nodes = nodes }];
     }
 
-    /// <summary>Shows the diagram <paramref name="reopened"/> showed, adding the read of its cards to
-    /// <paramref name="diagramReads"/>, or adds its node to <paramref name="nodes"/>, to be found with the
-    /// others.</summary>
-    private static void ShowReopened(AppState appState, ReopenedTab reopened, List<WaitingNode> nodes, List<SavedDiagramRead> diagramReads)
+    /// <summary>Shows the diagram or comparison <paramref name="reopened"/> showed, adding the read of its cards to
+    /// <paramref name="diagramReads"/>, or its run to <paramref name="comparisonRuns"/>, or adds its node to
+    /// <paramref name="nodes"/>, to be found with the others.</summary>
+    private static void ShowReopened(AppState appState, ReopenedTab reopened, List<WaitingNode> nodes, List<SavedDiagramRead> diagramReads,
+        List<ComparisonRun> comparisonRuns)
     {
         switch (reopened.Record)
         {
@@ -316,22 +318,23 @@ public static class SavedDocuments
                 nodes.Add(new WaitingNode { Reopened = reopened, Record = node, Place = FindListedPlace(appState, node) });
                 break;
             case DiagramDocumentRecord diagram:
-                AddRead(diagramReads, ReopenDiagram(appState, reopened, diagram));
+                AddStarted(diagramReads, ReopenDiagram(appState, reopened, diagram));
                 break;
             case ComparisonDocumentRecord comparison:
-                ReopenComparison(appState, reopened, comparison);
+                AddStarted(comparisonRuns, ReopenComparison(appState.Reopened, appState.Assemblies, reopened, comparison));
                 break;
         }
     }
 
-    private static void AddRead(List<SavedDiagramRead> diagramReads, SavedDiagramRead? read)
+    /// <summary>Adds <paramref name="work"/> to <paramref name="started"/> when a reopening started one.</summary>
+    private static void AddStarted<T>(List<T> started, T? work) where T : class
     {
-        if (read is null)
+        if (work is null)
         {
             return;
         }
 
-        diagramReads.Add(read);
+        started.Add(work);
     }
 
     /// <summary>Where <paramref name="node"/> was, when its file is open in the list; else null, as the

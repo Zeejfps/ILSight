@@ -50,6 +50,35 @@ public static class Commands
         };
     }
 
+    /// <summary>Asks for the comparison <paramref name="run"/> started, if any, to be run once the frame is drawn
+    /// (<see cref="StartComparing"/>): the draw changed the comparison in the frame of its input, and only comparing,
+    /// which takes longer than a frame, waits for the edge. Allocates nothing when none started.</summary>
+    public static void CompareLater(UiState uiState, ComparisonRun? run)
+    {
+        if (run is null)
+        {
+            return;
+        }
+
+        uiState.AppCommands.Enqueue(CreateCompare(run));
+    }
+
+    private static AppCommand CreateCompare(ComparisonRun run)
+    {
+        return appState =>
+        {
+            StartComparing(appState, run);
+        };
+    }
+
+    /// <summary>Starts running the comparison <paramref name="run"/> (<see cref="CompareAssembliesHandler"/>) now,
+    /// counted in the app's background work until it ends, on a token that a newer comparison of it and closing its tab
+    /// cancel too.</summary>
+    public static void StartComparing(AppState appState, ComparisonRun run)
+    {
+        appState.Workflows.Start(nameof(CompareAssembliesHandler), ct => appState.CompareAssembliesHandler.HandleAsync(run, ct), run.Work.Token);
+    }
+
     /// <summary>Asks for <paramref name="start"/> to be done to the app state and <paramref name="subject"/> once the
     /// frame is drawn, and for the work it started, if any, to be run then as <paramref name="run"/>, counted in the
     /// app's background work as <paramref name="name"/> until it ends, on a token that what
@@ -107,7 +136,8 @@ public static class Commands
     /// (<see cref="ReopenDiagramHandler"/>) on a token that closing the diagram cancels too.</summary>
     public static void StartLoads(AppState appState, TabLoads loads)
     {
-        loads.Switch(load => StartDecompiling(appState, load), read => StartReadingCards(appState, read), lookup => StartFindingNodes(appState, lookup));
+        loads.Switch(load => StartDecompiling(appState, load), read => StartReadingCards(appState, read), lookup => StartFindingNodes(appState, lookup),
+            run => StartComparing(appState, run));
     }
 
     /// <summary>Starts finding the nodes <paramref name="lookup"/>'s reopened tabs wait for

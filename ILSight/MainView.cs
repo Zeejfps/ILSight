@@ -29,7 +29,7 @@ public static class MainView
             StatusBarView.Render(ui, appState);
         }
         FrameworkPickerView.Render(ui, appState.Assemblies);
-        ComparisonPickerView.Render(ui, appState.Assemblies);
+        ComparisonPickerView.Render(ui, appState.Navigation, appState.Assemblies);
         NuGetPickerView.Render(ui);
         ProcessPickerView.Render(ui);
         CloseAssembliesDialogView.Render(ui, appState.Assemblies);
@@ -185,8 +185,8 @@ public static class MainView
             return;
         }
 
-        DocumentsView.Render(ui, appState.Navigation, appState.Session, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, appState.Bookmarks,
-            appState.Tooltips, tab);
+        DocumentsView.Render(ui, appState.Navigation, appState.Session, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs,
+            appState.Bookmarks, appState.Tooltips, tab);
     }
 
     private static void RemoveReleasedImages(Ui<UiState> ui)

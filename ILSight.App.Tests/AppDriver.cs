@@ -128,6 +128,12 @@ internal sealed class AppDriver
         Run(frames);
     }
 
+    /// <summary>Starts running <paramref name="run"/>, as <see cref="AppStateDriver.StartComparing"/> does.</summary>
+    public void StartComparing(ComparisonRun? run)
+    {
+        Driver.StartComparing(run);
+    }
+
     public void Analyze(BrowseNode node)
     {
         Driver.Analyze(node);

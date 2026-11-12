@@ -27,9 +27,9 @@ internal static class OmnibarView
     /// <summary>The bar over <paramref name="tab"/>. A crumb, child or match picked shows in
     /// <paramref name="navigation"/>'s tabs in this frame, in <paramref name="language"/> with
     /// <paramref name="options"/>, in the preview tab while <paramref name="previewTabs"/>; only its decompile is
-    /// queued.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
-        DocumentTab tab)
+    /// queued. A comparison's tools compare <paramref name="assemblies"/> as they are open.</summary>
+    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
+        bool previewTabs, DocumentTab tab)
     {
         if (!ui.State.Display.ShowOmnibar)
         {
@@ -43,7 +43,7 @@ internal static class OmnibarView
         }
         else
         {
-            PathBar(ui, navigation, language, options, previewTabs, tab, panel);
+            PathBar(ui, navigation, assemblies, language, options, previewTabs, tab, panel);
         }
 
         ui.Separator();
@@ -74,8 +74,8 @@ internal static class OmnibarView
         return false;
     }
 
-    private static void PathBar(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
-        DocumentTab tab, string panel)
+    private static void PathBar(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilationLanguage language, DecompilerOptions options,
+        bool previewTabs, DocumentTab tab, string panel)
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         view.Breadcrumb.Follow(tab.Node, ui.State.Tree);
@@ -95,7 +95,7 @@ internal static class OmnibarView
                     }
                 }
             }
-            ContentTools(ui, tab);
+            ContentTools(ui, assemblies, tab);
             SearchArea(ui, panel);
             SearchButton(ui, panel);
         }
@@ -103,7 +103,7 @@ internal static class OmnibarView
     }
 
     /// <summary>The tools of what the tab shows that no node stands for: a diagram's or a comparison's.</summary>
-    private static void ContentTools(Ui<UiState> ui, DocumentTab tab)
+    private static void ContentTools(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab)
     {
         switch (tab.Content)
         {
@@ -111,7 +111,7 @@ internal static class OmnibarView
                 DiagramView.Tools(ui, tab);
                 break;
             case TabContent.Comparison comparison:
-                ComparisonView.Tools(ui, tab, comparison.Assemblies);
+                ComparisonView.Tools(ui, assemblies, tab, comparison.Assemblies);
                 break;
         }
     }

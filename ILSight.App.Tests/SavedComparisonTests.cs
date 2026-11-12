@@ -30,7 +30,8 @@ public sealed class SavedComparisonTests : IDisposable
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, Patience);
         app.Settle(2);
         var assemblies = app.AppState.Assemblies.Assemblies;
-        CompareAssemblies(app.AppState, assemblies[0], assemblies[1], Names.Comparison(assemblies[0]));
+        app.StartComparing(CompareAssemblies(app.AppState.Navigation, app.AppState.Assemblies, assemblies[0], assemblies[1],
+            Names.Comparison(assemblies[0])));
         app.Frames.WaitUntil(() => app.AppState.Tabs.Active?.Comparison?.Result is ComparisonResult.Compared, Patience);
         app.Settle(2);
         return app;
@@ -67,8 +68,8 @@ public sealed class SavedComparisonTests : IDisposable
         var app = Compared();
         var tab = app.AppState.Tabs.Active!;
         var comparison = tab.Comparison!;
-        SwapComparedAssemblies(app.AppState, comparison);
-        ChangeComparedScope(app.AppState, comparison, ApiScope.AllDeclared);
+        app.StartComparing(SwapComparedAssemblies(app.AppState.Assemblies, comparison));
+        app.StartComparing(ChangeComparedScope(app.AppState.Assemblies, comparison, ApiScope.AllDeclared));
         Comparisons.ShowOnlyDifferences(DocumentPanels.GetView(app.Ui.Documents, tab).Comparison, false);
         app.Settle(2);
         var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
@@ -94,7 +95,7 @@ public sealed class SavedComparisonTests : IDisposable
         var tab = app.AppState.Tabs.Active!;
         Assert.Equal(LeftPath, ReadSavedComparison().LeftPath.Text);
 
-        SwapComparedAssemblies(app.AppState, tab.Comparison!);
+        app.StartComparing(SwapComparedAssemblies(app.AppState.Assemblies, tab.Comparison!));
         app.Settle(2);
         Assert.Equal(RightPath, ReadSavedComparison().LeftPath.Text);
 

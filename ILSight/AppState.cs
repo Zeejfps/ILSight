@@ -109,6 +109,9 @@ public sealed class AppState
     /// <summary>Lays out diagrams as their cards are measured.</summary>
     public required LayOutDiagramHandler LayOutDiagramHandler { get; init; }
 
+    /// <summary>Runs the comparisons of assemblies the tabs show.</summary>
+    public required CompareAssembliesHandler CompareAssembliesHandler { get; init; }
+
     /// <summary>Opens files and shows what an id names among them, as a command line asks.</summary>
     public required OpenAndShowIdHandler OpenAndShowIdHandler { get; init; }
 
