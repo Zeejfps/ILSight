@@ -18,14 +18,6 @@ public static class OptionFolds
         }
     }
 
-    public static void Unfold(FoldedGroups groups, string group)
-    {
-        if (groups.Folded.Remove(group))
-        {
-            groups.Revision++;
-        }
-    }
-
     /// <summary>Unfolds <paramref name="group"/> when it is folded, and folds it otherwise.</summary>
     public static void Flip(FoldedGroups groups, string group)
     {

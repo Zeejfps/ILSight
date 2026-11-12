@@ -360,15 +360,6 @@ public static class Exports
             .ToList();
     }
 
-    /// <summary>Ticks every assembly when <paramref name="all"/>, else none.</summary>
-    public static void IncludeAll(ExportSetup setup, bool all)
-    {
-        foreach (var choice in setup.Choices)
-        {
-            choice.Included = all;
-        }
-    }
-
     public static string GetSolutionNameOrDefault(ExportSetup setup)
     {
         var typed = setup.SolutionName.Trim();

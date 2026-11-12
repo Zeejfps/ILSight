@@ -142,7 +142,7 @@ public sealed class AppStateTests
     {
         var d = new AppStateDriver();
 
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, AppStateDriver.FixturePath, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(AppStateDriver.FixturePath)], ct));
 
         Assert.Null(Assert.Single(d.AppState.Navigation.OpenTabs).Location);
         d.RunUntil(() => d.AppState.Navigation.ActiveTab?.Node is not null);
@@ -226,7 +226,7 @@ public sealed class AppStateTests
         var d = new AppStateDriver();
         var missing = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.dll");
 
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, missing, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(missing)], ct));
         d.RunUntil(() => d.AppState.Navigation.ActiveTab?.Node is not null);
         d.Settle();
 
@@ -576,7 +576,7 @@ public sealed class AppStateTests
     public void Results_that_arrive_while_sorting_are_sorted_with_the_rest()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, typeof(object).Assembly.Location, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(typeof(object).Assembly.Location)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         var search = d.Ui.Search;
         search.Query = "e";
@@ -599,7 +599,7 @@ public sealed class AppStateTests
     public void Results_streamed_in_many_batches_end_up_in_sort_order()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, typeof(object).Assembly.Location, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(typeof(object).Assembly.Location)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         var search = d.Ui.Search;
         var sorting = Searches.StartSort(search, SearchSort.Name);
@@ -625,7 +625,7 @@ public sealed class AppStateTests
         var d = new AppStateDriver();
         using var temp = new TempDir();
         var copy = temp.Copy(AppStateDriver.FixturePath, "fixture.dll");
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, copy, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(copy)], ct));
         d.RunUntil(() => d.AppState.Navigation.ActiveTab?.Node is not null);
         d.Settle();
         var root = d.AppState.Navigation.ActiveTab?.Node;

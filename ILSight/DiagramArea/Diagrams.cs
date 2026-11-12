@@ -248,19 +248,6 @@ public static class Diagrams
         return diagram.Types.Contains(type);
     }
 
-    /// <summary>The card of <paramref name="type"/>, or null when the diagram does not show it.</summary>
-    public static TypeCard? FindCard(TypeDiagram diagram, CodeReference.Entity type)
-    {
-        foreach (var card in diagram.Cards)
-        {
-            if (card.Type == type)
-            {
-                return card;
-            }
-        }
-        return null;
-    }
-
     /// <summary>Adds the cards of <paramref name="cards"/> the diagram does not show yet, after the others.</summary>
     public static void AddCards(TypeDiagram diagram, IReadOnlyList<TypeCard> cards)
     {

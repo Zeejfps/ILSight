@@ -31,7 +31,7 @@ public sealed class ExportTests : IDisposable
     private static AppStateDriver OpenedSample()
     {
         var d = new AppStateDriver();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SampleAppPath, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
         d.RunUntil(() => AssemblyListing.IsListed(d.AppState.Assemblies, PathOf(SampleAppPath)));
         d.Settle();
         return d;
@@ -101,7 +101,7 @@ public sealed class ExportTests : IDisposable
     public void The_tree_menu_creates_a_diagram_in_a_folder_named_after_the_assembly_and_opens_it()
     {
         var app = new AppDriver();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SampleAppPath, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
         app.Frames.WaitUntil(() => AssemblyListing.IsListed(app.AppState.Assemblies, PathOf(SampleAppPath)), Patience);
         app.Settle(2);
         app.Frames.FilePicker.Answer = _temp.Path;
@@ -139,7 +139,7 @@ public sealed class ExportTests : IDisposable
     {
         var app = AppDriver.Opened();
         var sample = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, sample, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(sample)], ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.FilePath.Text == sample));
         var assembly = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == sample);
         var baml = assembly.Root.Child("Resources", "SampleApp.g.resources", "mainwindow.baml");
@@ -297,9 +297,10 @@ public sealed class ExportTests : IDisposable
     public void A_cancelled_export_ends_without_an_error()
     {
         var d = AppStateDriver.Opened();
-        var path = _temp.PathOf(Path.Combine("Project", "Fixtures.csproj"));
+        d.OpenExportSetup(null);
+        d.Ui.ExportSetup.Folder = _temp.PathOf("Project");
 
-        ExportProject(d.AppState, Assert.IsType<LoadedModule>(d.Node().Assembly), path);
+        d.StartExport();
         d.AppState.Export.CancelRunning();
         d.Settle();
 
@@ -344,8 +345,10 @@ public sealed class ExportTests : IDisposable
     public void A_cancelled_export_reports_that_it_was_cancelled()
     {
         var d = AppStateDriver.Opened();
+        d.OpenExportSetup(null);
+        d.Ui.ExportSetup.Folder = _temp.PathOf("Project");
 
-        ExportProject(d.AppState, Assert.IsType<LoadedModule>(d.Node().Assembly), _temp.PathOf(Path.Combine("Project", "Fixtures.csproj")));
+        d.StartExport();
         d.AppState.Export.CancelRunning();
         d.Settle();
 

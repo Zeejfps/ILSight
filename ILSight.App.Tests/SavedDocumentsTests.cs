@@ -391,19 +391,19 @@ public sealed class SavedDocumentsTests : IDisposable
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         d.AppState.Lists.Add(Other);
-        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
+        d.SwitchList(Other);
         d.Settle();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, AppStateDriver.FixturePath, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(AppStateDriver.FixturePath)], ct));
         d.RunUntil(() => AssemblyListing.ListFilePaths(d.AppState.Assemblies).Contains(PathOf(AppStateDriver.FixturePath)));
         d.Settle();
         d.Show(d.Fixture("Farewell"));
 
-        d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
+        d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
         var first = Assert.Single(d.AppState.Navigation.OpenTabs);
         var firstPanel = DocumentPanels.GetPanel(d.Ui.Documents, first);
         var firstDocuments = Docking.ListDocumentPanels(d.Ui.MainLayout);
-        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
+        d.SwitchList(Other);
         d.Settle();
         var other = Assert.Single(d.AppState.Navigation.OpenTabs);
 
@@ -431,10 +431,10 @@ public sealed class SavedDocumentsTests : IDisposable
         layout.Dock(DocumentPanels.GetPanel(d.Ui.Documents, farewell), greeterGroup, DockEdge.Right);
         d.Settle();
         d.AppState.Lists.Add(Other);
-        d.Start((a, ct) => SwitchAssemblyListAsync(a, Other, ct));
+        d.SwitchList(Other);
         d.Settle();
 
-        d.Start((a, ct) => SwitchAssemblyListAsync(a, SavedAssemblyLists.DefaultName, ct));
+        d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
 
         var tabs = d.AppState.Navigation.OpenTabs.ToList();

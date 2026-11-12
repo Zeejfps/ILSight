@@ -88,13 +88,6 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         ports.ReportError(problem);
     }
 
-    /// <summary>Opens the file at <paramref name="path"/>, as a file dialog or a download names it; nothing
-    /// when it is no absolute path.</summary>
-    public Task<DecompileTicket?> OpenAssemblyAsync(AppState appState, string path, CancellationToken ct)
-    {
-        return OpenFilesAtAsync(appState, [path], ct);
-    }
-
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as
     /// <see cref="OpenAssembliesAsync"/> does; folders are left out.</summary>
     public Task<DecompileTicket?> OpenDroppedFilesAsync(AppState appState, IReadOnlyList<string> paths, CancellationToken ct)

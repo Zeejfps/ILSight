@@ -29,7 +29,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppStateDriver OpenedTwo()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SecondPath, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         d.Settle();
         return d;
@@ -38,6 +38,16 @@ public sealed class ExportDialogTests : IDisposable
     private static LoadedModule Fixtures(AppStateDriver d)
     {
         return Assert.IsType<LoadedModule>(d.Node().Assembly);
+    }
+
+    /// <summary>Ticks every assembly of <paramref name="setup"/> when <paramref name="all"/>, else none, as ticking each
+    /// box does.</summary>
+    private static void TickAll(ExportSetup setup, bool all)
+    {
+        foreach (var choice in setup.Choices)
+        {
+            choice.Included = all;
+        }
     }
 
     [Fact]
@@ -86,7 +96,7 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
-        Exports.IncludeAll(setup, true);
+        TickAll(setup, true);
 
         setup.Choices[1].Name = setup.Choices[0].Name.ToUpperInvariant();
 
@@ -108,7 +118,7 @@ public sealed class ExportDialogTests : IDisposable
         Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
         setup.Folder = _temp.Path;
         Assert.True(Exports.CanExport(setup, d.CheckExportFiles()));
-        Exports.IncludeAll(setup, false);
+        TickAll(setup, false);
         Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
     }
 
@@ -120,9 +130,9 @@ public sealed class ExportDialogTests : IDisposable
         var setup = d.Ui.ExportSetup;
         var choice = Assert.Single(setup.Choices);
 
-        Exports.IncludeAll(setup, false);
+        TickAll(setup, false);
         Assert.IsType<ExportBlocker.NoAssembly>(Exports.FindBlocker(setup, NothingAmiss));
-        Exports.IncludeAll(setup, true);
+        TickAll(setup, true);
         Assert.IsType<ExportBlocker.NoFolder>(Exports.FindBlocker(setup, NothingAmiss));
         setup.Folder = FullPath;
         choice.Name = " ";
@@ -171,7 +181,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var d = OpenedTwo();
         var setup = ReadyToExport(d);
-        Exports.IncludeAll(setup, true);
+        TickAll(setup, true);
         setup.Choices[1].Name = setup.Choices[0].Name;
 
         var blocker = Exports.FindBlocker(setup, NothingAmiss with { IsKeyFileMissing = true });
@@ -217,7 +227,7 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
-        Exports.IncludeAll(setup, true);
+        TickAll(setup, true);
         setup.SolutionName = "Both";
 
         d.StartExport();
@@ -278,7 +288,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppStateDriver OpenedThree()
     {
         var d = OpenedTwo();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, typeof(FactAttribute).Assembly.Location, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(typeof(FactAttribute).Assembly.Location)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;
@@ -367,7 +377,7 @@ public sealed class ExportDialogTests : IDisposable
     public void The_main_page_shows_only_the_ticked_assemblies()
     {
         var app = AppDriver.Opened(height: 1400f);
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SecondPath, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         var second = app.AppState.Assemblies.Assemblies[1];
         app.Run(2);
@@ -422,7 +432,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = AppDriver.Opened(height: 1400f);
         app.OpenExportSetup(null);
-        Exports.IncludeAll(app.Ui.ExportSetup, false);
+        TickAll(app.Ui.ExportSetup, false);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
@@ -433,10 +443,10 @@ public sealed class ExportDialogTests : IDisposable
     private static AppDriver WithTwoIncluded()
     {
         var app = AppDriver.Opened(height: 1400f);
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SecondPath, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.OpenExportSetup(null);
-        Exports.IncludeAll(app.Ui.ExportSetup, true);
+        TickAll(app.Ui.ExportSetup, true);
         Exports.FinishChoosing(app.Ui.ExportSetup);
         app.Run(2);
         return app;
@@ -510,7 +520,7 @@ public sealed class ExportDialogTests : IDisposable
     public void Export_on_an_assembly_in_the_tree_opens_the_dialog_with_that_assembly_ticked()
     {
         var app = AppDriver.Opened();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, SecondPath, ct));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.Settle(2);
         var second = app.AppState.Assemblies.Assemblies[1];

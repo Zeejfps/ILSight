@@ -36,21 +36,6 @@ public static class ExportCommands
         appState.ExtractPackageFileHandler.Handle(place, path);
     }
 
-    /// <summary>Decompiles <paramref name="assembly"/> into a C# project whose file is <paramref name="projectPath"/>,
-    /// with what <paramref name="extras"/> asks for besides. The export dialog warns about a folder that holds files
-    /// before this is asked for.</summary>
-    public static void ExportProject(AppState appState, LoadedModule assembly, string projectPath, ProjectExtras? extras = null)
-    {
-        var work = new ExportWork.Project
-        {
-            Assembly = assembly,
-            Options = appState.DecompilerOptions,
-            ProjectFile = projectPath,
-            Extras = extras ?? ProjectExtras.None,
-        };
-        StartWriting(appState, work);
-    }
-
     /// <summary>Exports what <paramref name="request"/> asks for: one assembly as a project straight into the folder,
     /// several as a solution with a folder per project.</summary>
     public static void StartExport(AppState appState, ExportRequest request)

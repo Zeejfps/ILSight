@@ -129,8 +129,8 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         var diagram = ShowInNew(d, "Car");
         Assert.Equal(["Car", "IDriven", "Vehicle"], CardNames(diagram));
-        var vehicle = Diagrams.FindCard(diagram, TypeOf(d, "Vehicle"));
-        Assert.NotNull(vehicle);
+        var vehicleType = TypeOf(d, "Vehicle");
+        var vehicle = diagram.Cards.Single(c => c.Type == vehicleType);
 
         d.Start((a, ct) => a.DiagramGrowing.ExpandHeldAsync(diagram, vehicle, ct));
         d.Settle();

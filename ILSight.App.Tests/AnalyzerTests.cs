@@ -274,7 +274,7 @@ public sealed class AnalyzerTests
         using var temp = new TempDir();
         var copy = temp.Write("Copy.dll", File.ReadAllBytes(AppStateDriver.FixturePath));
         var d = new AppStateDriver();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, copy, ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(copy)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 1);
         d.Settle();
         var assembly = d.AppState.Assemblies.Assemblies.Single();

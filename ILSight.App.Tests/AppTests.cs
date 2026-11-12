@@ -434,8 +434,7 @@ public sealed class AppTests
 
     private static void FoldOptionGroupsBut(AppDriver app, string open)
     {
-        OptionFolds.Fold(app.Ui.FoldedOptionGroups, Enum.GetNames<CSharpVersion>().Append("Other").Append("FSharp"));
-        OptionFolds.Unfold(app.Ui.FoldedOptionGroups, open);
+        OptionFolds.Fold(app.Ui.FoldedOptionGroups, Enum.GetNames<CSharpVersion>().Append("Other").Append("FSharp").Where(g => g != open));
     }
 
     [Fact]

@@ -82,29 +82,6 @@ public static class AssemblyLists
         lists.RememberActiveDocuments(SaveDocuments(session, view));
     }
 
-    /// <summary>Opens the list named <paramref name="name"/> in place of the open one, with the
-    /// analyses and documents it had, as <see cref="SwitchAssemblyList"/> then <see cref="OpenListAsync"/> do.
-    /// Returns the loads that started in the tabs, and the finding of the list's analyses, for the edge that started
-    /// this to start.</summary>
-    public static Task<TabLoads> SwitchAssemblyListAsync(AppState appState, string name, CancellationToken ct)
-    {
-        return OpenWholeListAsync(appState, SwitchAssemblyList(appState.Lists, appState.ListSession, appState.View, name), ct);
-    }
-
-    /// <summary>As <see cref="OpenListAsync"/>, for a workflow that hands back the loads closing the list before left and
-    /// the finding of the list's analyses with the opening's loads, rather than having the edge start them beside the
-    /// opening.</summary>
-    private static async Task<TabLoads> OpenWholeListAsync(AppState appState, ListOpening? opening, CancellationToken ct)
-    {
-        var loads = await OpenListAsync(appState, opening, ct);
-        if (opening is null)
-        {
-            return loads;
-        }
-
-        return opening.Closing.With(loads).With(opening.Analyses);
-    }
-
     /// <summary>Makes the list named <paramref name="name"/> the open one, with the analyses and documents it had,
     /// without waiting for anything: the assemblies, documents, history and analyses of the one before go, kept with
     /// it for when it opens again; its documents reopen waiting for their places, its analyses wait to be found, and
@@ -181,13 +158,6 @@ public static class AssemblyLists
     {
         RememberActiveAssemblyList(appState.Lists, appState.ListSession, appState.View);
         return appState.Lists.Duplicate(source, name);
-    }
-
-    /// <summary>Removes the list named <paramref name="name"/>. When it was open, the list that takes
-    /// its place opens. Returns the loads that started in the tabs, for the edge that started this to start.</summary>
-    public static Task<TabLoads> DeleteAssemblyListAsync(AppState appState, string name, CancellationToken ct)
-    {
-        return OpenWholeListAsync(appState, DeleteAssemblyList(appState.Lists, appState.ListSession, appState.View, name), ct);
     }
 
     /// <summary>Removes the list named <paramref name="name"/>; when it was open, makes the list that takes its place

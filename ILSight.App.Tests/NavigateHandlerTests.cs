@@ -21,7 +21,7 @@ public sealed class NavigateHandlerTests
         var active = appState.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.Same(active, load?.Tab);
-        Assert.True(appState.Navigation.IsCurrentPlace(appState.Navigation.ActiveTab?.Location));
+        Assert.Equal(active.Location, Assert.IsType<HistoryEntry.Node>(appState.Navigation.HistoryEntries[appState.Navigation.HistoryIndex]).Place);
         Assert.True(resolvingWhileLooking);
         Assert.False(appState.IsResolving);
         Assert.Empty(lookup.Reported);

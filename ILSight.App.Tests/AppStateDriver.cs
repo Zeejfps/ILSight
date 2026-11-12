@@ -5,6 +5,7 @@ using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.ILSightAppArea;
 using ILSight.SettingArea;
+using ILSight.AssemblyListArea;
 using static ILSight.Analysis;
 using static ILSight.Navigation;
 using static ILSight.SettingArea.Settings;
@@ -181,7 +182,7 @@ internal sealed class AppStateDriver
     /// <summary>Opens the fixture assembly and waits until its root shows.</summary>
     public LoadedModule OpenFixtures()
     {
-        Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, FixturePath, ct));
+        Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(FixturePath)], ct));
         RunUntil(() => AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Assembly);
         Settle();
         return Assert.IsType<LoadedModule>(AppState.Navigation.ActiveTab?.Node?.Assembly);
@@ -210,6 +211,22 @@ internal sealed class AppStateDriver
     public void StartShowing(BrowseNode node, bool inNewTab = false)
     {
         Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Decompiler, inNewTab));
+    }
+
+    /// <summary>Switches to the list named <paramref name="name"/> as the lists dialog and the toolbar's list menu do: in
+    /// the frame, then the frame's edge starts opening it, without waiting for that.</summary>
+    public void SwitchList(string name)
+    {
+        Commands.OpenListLater(Ui, AssemblyLists.SwitchAssemblyList(AppState.Lists, AppState.ListSession, AppState.View, name));
+        NextFrame();
+    }
+
+    /// <summary>Deletes the list named <paramref name="name"/> as the delete dialog does: in the frame, then the frame's
+    /// edge starts opening the list that takes its place when it was open, without waiting for that.</summary>
+    public void DeleteList(string name)
+    {
+        Commands.OpenListLater(Ui, AssemblyLists.DeleteAssemblyList(AppState.Lists, AppState.ListSession, AppState.View, name));
+        NextFrame();
     }
 
     /// <summary>Goes to the history entry at <paramref name="index"/> as the toolbar does: in place, then starts the

@@ -67,9 +67,6 @@ public sealed class Navigation
     /// <summary>Where in <see cref="HistoryEntries"/> the tabs are now.</summary>
     public int HistoryIndex => _history.CurrentIndex;
 
-    /// <summary>The history entry the tabs are at now; null when the history is empty.</summary>
-    public HistoryEntry? CurrentEntry => _history.Current;
-
     /// <summary>Counts up whenever the history changes.</summary>
     public int HistoryRevision => _history.Revision;
 
@@ -86,12 +83,6 @@ public sealed class Navigation
     public bool IsOpen(DocumentTab tab)
     {
         return Tabs.IsOpen(_tabs, tab);
-    }
-
-    /// <summary>Whether <paramref name="place"/> is the place of the history entry the tabs are at.</summary>
-    public bool IsCurrentPlace(NodePath? place)
-    {
-        return _history.IsCurrentPlace(place);
     }
 
     /// <summary>Whether <paramref name="ticket"/> is the newest request's.</summary>

@@ -126,7 +126,7 @@ public sealed class BookmarkTests : IDisposable
 
         Assert.Equal("Outline", tab.Node?.Text);
         Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Flash?.Line);
-        Assert.Equal("Outline", Assert.IsType<HistoryEntry.Node>(d.AppState.Navigation.CurrentEntry).Place.Label);
+        Assert.Equal("Outline", Assert.IsType<HistoryEntry.Node>(d.AppState.Navigation.HistoryEntries[d.AppState.Navigation.HistoryIndex]).Place.Label);
     }
 
     [Fact]
@@ -281,7 +281,7 @@ public sealed class BookmarkTests : IDisposable
         var (app, d, _, _) = ShowBookmark();
         var bookmark = d.AppState.Bookmarks.Items[0];
         d.AppState.Lists.Add("Other");
-        d.Start((a, ct) => SwitchAssemblyListAsync(a, "Other", ct));
+        d.SwitchList("Other");
         d.Settle();
         app.Run(2);
         var location = app.TextRect(bookmark.Location);
