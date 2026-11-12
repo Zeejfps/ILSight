@@ -157,10 +157,9 @@ public static class BrowseSessions
                     load = running.Load;
                     break;
                 case ChildrenState.Unloaded:
-                    var building = new TaskCompletionSource<ChildrenState>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    held.Value = new ChildrenState.Running(building.Task);
-                    load = building.Task;
-                    _ = Task.Run(() => FinishBuilding(session, node, slot, building));
+                    // Running before the build can keep what it built: it waits for the lock held here.
+                    load = Task.Run(() => KeepBuilt(session, node, slot));
+                    held.Value = new ChildrenState.Running(load);
                     break;
                 default:
                     throw new UnreachableException();
@@ -277,8 +276,17 @@ public static class BrowseSessions
         return session.Children.GetValue(node, static _ => new Guarded<ChildrenState>(ChildrenState.NotLoaded));
     }
 
-    /// <summary>Builds the children, records the nodes they index, then hands them out.</summary>
+    /// <summary>Builds the children, records the nodes they index, then hands them out to those waiting
+    /// on <paramref name="building"/>.</summary>
     private static ChildrenState FinishBuilding(BrowseSession session, BrowseNode node, Guarded<ChildrenState> slot, TaskCompletionSource<ChildrenState> building)
+    {
+        var state = KeepBuilt(session, node, slot);
+        building.SetResult(state);
+        return state;
+    }
+
+    /// <summary>Builds the children, records the nodes they index, and keeps them in <paramref name="slot"/>.</summary>
+    private static ChildrenState KeepBuilt(BrowseSession session, BrowseNode node, Guarded<ChildrenState> slot)
     {
         var state = BuildChildren(session, node);
         using (var held = slot.Enter())
@@ -286,7 +294,6 @@ public static class BrowseSessions
             held.Value = state;
         }
 
-        building.SetResult(state);
         return state;
     }
 
