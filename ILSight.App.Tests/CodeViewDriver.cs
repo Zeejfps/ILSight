@@ -210,7 +210,8 @@ internal sealed class CodeViewDriver
     public static DecompiledDocument Decompile(Type type)
     {
         var assembly = new AssemblyList().Open(type.Assembly.Location);
-        var node = assembly.Root.Child(type.Namespace!, type.Name);
+        Assert.NotNull(type.Namespace);
+        var node = assembly.Root.Child(type.Namespace, type.Name);
         return node.Decompile(DecompilationLanguage.CSharp);
     }
 

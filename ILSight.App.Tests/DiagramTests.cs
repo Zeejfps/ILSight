@@ -24,7 +24,11 @@ public sealed class DiagramTests
     {
         DiagramView.ShowInNewDiagramLater(d.Ui, TypeOf(d, type), Names.Diagram(TypeOf(d, type)));
         d.Settle();
-        return d.AppState.Tabs.Active!.Diagram!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var diagram = tab.Diagram;
+        Assert.NotNull(diagram);
+        return diagram;
     }
 
     /// <summary>Shows the fixture <paramref name="type"/> on the diagram last worked in, as the views ask for it, and
@@ -49,9 +53,11 @@ public sealed class DiagramTests
 
         ShowIn(d, "Vehicle");
 
-        var tab = d.AppState.Tabs.Active!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         Assert.Equal("Vehicle diagram", tab.Title);
-        Assert.Equal("Vehicle", tab.Diagram!.Cards[0].Name);
+        Assert.NotNull(tab.Diagram);
+        Assert.Equal("Vehicle", tab.Diagram.Cards[0].Name);
         Assert.Equal(["Bike", "Car", "Garage", "Vehicle"], CardNames(tab.Diagram));
         Assert.Same(tab, d.AppState.Tabs.Diagram);
         Assert.Empty(d.AppState.Errors.Entries);
@@ -76,14 +82,16 @@ public sealed class DiagramTests
     {
         var d = AppStateDriver.Opened();
         ShowIn(d, "Vehicle");
-        var diagramTab = d.AppState.Tabs.Active!;
+        var diagramTab = d.AppState.Tabs.Active;
+        Assert.NotNull(diagramTab);
         d.Show(d.Fixture("Greeter"));
 
         ShowIn(d, "Counter");
 
         Assert.Same(diagramTab, d.AppState.Tabs.Active);
         Assert.Single(ListDiagramTabs(d));
-        Assert.Equal(["Bike", "Car", "Counter", "Garage", "Vehicle"], CardNames(diagramTab.Diagram!));
+        Assert.NotNull(diagramTab.Diagram);
+        Assert.Equal(["Bike", "Car", "Counter", "Garage", "Vehicle"], CardNames(diagramTab.Diagram));
     }
 
     [Fact]
@@ -120,7 +128,8 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         var diagram = ShowInNew(d, "Car");
         Assert.Equal(["Car", "IDriven", "Vehicle"], CardNames(diagram));
-        var vehicle = Diagrams.FindCard(diagram, TypeOf(d, "Vehicle"))!;
+        var vehicle = Diagrams.FindCard(diagram, TypeOf(d, "Vehicle"));
+        Assert.NotNull(vehicle);
 
         d.Start((a, ct) => a.DiagramGrowing.ExpandHeldAsync(diagram, vehicle, ct));
         d.Settle();
@@ -194,7 +203,8 @@ public sealed class DiagramTests
         DiagramFaces.LayOutLater(d.Ui, diagram, second);
         d.Settle();
 
-        Assert.Single(diagram.Layout!.Places);
+        Assert.NotNull(diagram.Layout);
+        Assert.Single(diagram.Layout.Places);
         Assert.False(diagram.IsBusy);
     }
 
@@ -204,8 +214,10 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         DiagramView.ShowInNewDiagramLater(d.Ui, TypeOf(d, "Vehicle"), Names.Diagram(TypeOf(d, "Vehicle")));
         d.NextFrame();
-        var tab = d.AppState.Tabs.Active!;
-        var diagram = tab.Diagram!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var diagram = tab.Diagram;
+        Assert.NotNull(diagram);
 
         CloseTab(d.AppState, tab);
         d.Settle();
@@ -222,7 +234,8 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         d.TurnOffPreviewTabs();
         ShowInNew(d, "Vehicle");
-        var tab = d.AppState.Tabs.Active!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
 
         var greeter = TypeOf(d, "Greeter");
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter, a.Navigation.BeginResolving(inNewTab: false), ct));
@@ -230,7 +243,7 @@ public sealed class DiagramTests
 
         Assert.NotSame(tab, d.AppState.Tabs.Active);
         Assert.NotNull(tab.Diagram);
-        Assert.Equal("Greeter", d.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Greeter", d.AppState.Tabs.Active?.Node?.Text);
     }
 
     [Fact]

@@ -38,7 +38,11 @@ public sealed class ComparisonTests
         d.StartComparing(CompareAssemblies(d.AppState.Navigation, d.AppState.Assemblies, Opened(d, assembly), Opened(d, other),
             Names.Comparison(Opened(d, assembly))));
         d.Settle();
-        return d.AppState.Tabs.Active!.Comparison!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var comparison = tab.Comparison;
+        Assert.NotNull(comparison);
+        return comparison;
     }
 
     /// <summary>What the newest comparison of <paramref name="comparison"/> found; fails the test when it found nothing.</summary>
@@ -65,7 +69,8 @@ public sealed class ComparisonTests
 
         var comparison = Compare(d, LeftPath, RightPath);
 
-        var tab = d.AppState.Tabs.Active!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         Assert.Equal("ApiDiffSample API diff", tab.Title);
         Assert.NotSame(tab, d.AppState.Tabs.Preview);
         var diff = DiffOf(comparison);
@@ -123,16 +128,19 @@ public sealed class ComparisonTests
         var d = OpenBoth();
         d.TurnOffPreviewTabs();
         var comparison = Compare(d, LeftPath, RightPath);
-        var comparisonTab = d.AppState.Tabs.Active!;
+        var comparisonTab = d.AppState.Tabs.Active;
+        Assert.NotNull(comparisonTab);
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
 
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, sides.Right.Reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
-        var shown = d.AppState.Tabs.Active!;
+        var shown = d.AppState.Tabs.Active;
+        Assert.NotNull(shown);
         Assert.NotSame(comparisonTab, shown);
-        Assert.Equal("Account", shown.Node!.Text);
+        Assert.NotNull(shown.Node);
+        Assert.Equal("Account", shown.Node.Text);
         Assert.Equal(RightPath, shown.Node.Assembly.FilePath.Text);
         Assert.Same(comparison, comparisonTab.Comparison);
     }
@@ -157,8 +165,10 @@ public sealed class ComparisonTests
         var d = OpenBoth();
         d.StartComparing(CompareAssemblies(d.AppState.Navigation, d.AppState.Assemblies, Opened(d, LeftPath), Opened(d, RightPath),
             Names.Comparison(Opened(d, LeftPath))));
-        var tab = d.AppState.Tabs.Active!;
-        var comparison = tab.Comparison!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var comparison = tab.Comparison;
+        Assert.NotNull(comparison);
 
         CloseTab(d.AppState, tab);
         d.Settle();
@@ -177,7 +187,7 @@ public sealed class ComparisonTests
 
         var picker = app.Ui.ComparisonPicker;
         Assert.True(picker.Choice.IsOpen);
-        Assert.Equal(LeftPath, picker.Choice.Compared!.FilePath.Text);
+        Assert.Equal(LeftPath, picker.Choice.Compared?.FilePath.Text);
         Assert.True(app.Frames.Drew("Compare " + LeftName + " with"));
         Assert.True(app.Frames.Drew(RightName));
     }
@@ -234,7 +244,10 @@ public sealed class ComparisonTests
     public void The_swap_button_in_the_bar_over_the_document_swaps_the_sides()
     {
         var app = ComparedOnScreen();
-        var comparison = app.AppState.Tabs.Active!.Comparison!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var comparison = tab.Comparison;
+        Assert.NotNull(comparison);
         Assert.True(app.TextRect(app.Ui.Icons.ComparisonSwap).Y < app.TextRect(Compared).Y);
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-2/swap")).Frame();

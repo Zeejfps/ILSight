@@ -46,7 +46,7 @@ public sealed class ComparisonPickerTests
         var picker = OpenPicker(d, OlderPath);
 
         Assert.Equal([NewerPath, AppStateDriver.FixturePath], ShownPaths(picker));
-        Assert.Equal(NewerPath, picker.Choice.Selected!.FilePath.Text);
+        Assert.Equal(NewerPath, picker.Choice.Selected?.FilePath.Text);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class ComparisonPickerTests
         picker.Filter = "Tests";
         picker.Update(d.AppState.Assemblies);
 
-        Assert.Equal(AppStateDriver.FixturePath, picker.Choice.Selected!.FilePath.Text);
+        Assert.Equal(AppStateDriver.FixturePath, picker.Choice.Selected?.FilePath.Text);
     }
 
     [Fact]

@@ -27,7 +27,8 @@ public sealed class BookmarkTests : IDisposable
         var d = driver ?? new AppStateDriver();
         d.OpenFixtures();
         d.Show(d.Fixture("Outline"));
-        var tab = d.AppState.Tabs.Active!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         return (d, tab, tab.Document.GetPosition(text).Line);
     }
 
@@ -39,13 +40,14 @@ public sealed class BookmarkTests : IDisposable
 
         var added = ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         var bookmark = Assert.Single(bookmarks.Items);
-        var marked = bookmarks.ListMarkedLines(tab.Document, tab.Node!);
+        Assert.NotNull(tab.Node);
+        var marked = bookmarks.ListMarkedLines(tab.Document, tab.Node);
         var removed = ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
 
         Assert.Equal(new BookmarkToggle.Added(bookmark), added);
         Assert.Equal(new BookmarkToggle.Removed(bookmark, 0), removed);
         Assert.Equal("Bookmark 1", bookmark.Name);
-        Assert.Equal(CodeAnchorKind.Statement, bookmark.Anchor!.Value.Kind);
+        Assert.Equal(CodeAnchorKind.Statement, bookmark.Anchor?.Kind);
         Assert.Equal("Outline:" + (line + 1), bookmark.Location);
         Assert.True(marked[line]);
         Assert.Empty(bookmarks.Items);
@@ -70,7 +72,8 @@ public sealed class BookmarkTests : IDisposable
         Assert.Same(bookmarks.Items[1], panel.Selected);
         Assert.Contains(new ViewCommand.ShowTab(tab, Beside: null), commands);
         Assert.Contains(new ViewCommand.RevealLine(tab, line), commands);
-        Assert.Contains(new ViewCommand.RevealNode(tab.Node!), commands);
+        Assert.NotNull(tab.Node);
+        Assert.Contains(new ViewCommand.RevealNode(tab.Node), commands);
     }
 
     [Fact]
@@ -82,10 +85,12 @@ public sealed class BookmarkTests : IDisposable
 
         d.AppState.Language = DecompilationLanguage.IL;
         d.Settle();
-        var il = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node!)).Key].Text;
+        Assert.NotNull(tab.Node);
+        var il = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node)).Key].Text;
         d.AppState.Language = DecompilationLanguage.CSharp;
         d.Show(d.Fixture("Outline").Children.Single(c => c.Text.StartsWith("Third()")));
-        var own = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node!)).Key].Text;
+        Assert.NotNull(tab.Node);
+        var own = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node)).Key].Text;
 
         Assert.StartsWith("IL_", il.TrimStart());
         Assert.Contains("return First();", own);
@@ -104,7 +109,8 @@ public sealed class BookmarkTests : IDisposable
         d.Settle();
 
         Assert.Null(bookmark.Anchor);
-        Assert.Empty(d.AppState.Bookmarks.ListMarkedLines(tab.Document, tab.Node!));
+        Assert.NotNull(tab.Node);
+        Assert.Empty(d.AppState.Bookmarks.ListMarkedLines(tab.Document, tab.Node));
     }
 
     [Fact]
@@ -119,7 +125,7 @@ public sealed class BookmarkTests : IDisposable
         d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         app.Settle(4);
 
-        Assert.Equal("Outline", tab.Node!.Text);
+        Assert.Equal("Outline", tab.Node?.Text);
         Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Flash?.Line);
         Assert.Equal("Outline", Assert.IsType<HistoryEntry.Node>(d.AppState.History.Current).Place.Label);
     }
@@ -188,7 +194,8 @@ public sealed class BookmarkTests : IDisposable
         Assert.Equal("Calls First", saved.Name);
         Assert.Equal(tab.Location, saved.Place);
         Assert.Equal(bookmarks.Items[0].Anchor, saved.Anchor);
-        Assert.True(next.AppState.Bookmarks.ListMarkedLines(nextTab.Document, nextTab.Node!)[line]);
+        Assert.NotNull(nextTab.Node);
+        Assert.True(next.AppState.Bookmarks.ListMarkedLines(nextTab.Document, nextTab.Node)[line]);
     }
 
     [Fact]
@@ -225,11 +232,11 @@ public sealed class BookmarkTests : IDisposable
         Assert.True(app.Frames.Drew("Bookmark 1"));
         Click(app, "Outline:" + (line + 1));
         d.Settle();
-        Assert.Equal("Greeter", tab.Node!.Text);
+        Assert.Equal("Greeter", tab.Node?.Text);
         Click(app, "Outline:" + (line + 1), KeyModifiers.Control);
         app.Settle(4);
 
-        Assert.Equal("Outline", tab.Node!.Text);
+        Assert.Equal("Outline", tab.Node?.Text);
         Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Flash?.Line);
     }
 
@@ -266,7 +273,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Click(app.TextRect(Icons.LinkBookmark));
         d.Settle();
 
-        Assert.Equal("Outline", tab.Node!.Text);
+        Assert.Equal("Outline", tab.Node?.Text);
     }
 
     [Fact]
@@ -287,7 +294,7 @@ public sealed class BookmarkTests : IDisposable
         app.Settle(4);
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
-        Assert.Equal("Outline", d.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Outline", d.AppState.Tabs.Active?.Node?.Text);
     }
 
     [Fact]
@@ -477,7 +484,8 @@ public sealed class BookmarkTests : IDisposable
 
         Assert.Null(d.AppState.Imports.Asking);
         Assert.Equal(["Bookmark 1", "Bookmark 2"], d.AppState.Bookmarks.Items.Select(b => b.Name));
-        Assert.True(d.AppState.Bookmarks.ListMarkedLines(tab.Document, tab.Node!)[line]);
+        Assert.NotNull(tab.Node);
+        Assert.True(d.AppState.Bookmarks.ListMarkedLines(tab.Document, tab.Node)[line]);
     }
 
     [Fact]
@@ -492,13 +500,15 @@ public sealed class BookmarkTests : IDisposable
         ImportBookmarks(d, path);
         d.Settle();
         var asked = d.AppState.Imports.Asking;
-        FinishBookmarkImport(d, asked!, BookmarkImportMode.Merge);
+        Assert.NotNull(asked);
+        FinishBookmarkImport(d, asked, BookmarkImportMode.Merge);
         var merged = bookmarks.Items.Select(b => b.Name).ToList();
         ImportBookmarks(d, path);
         d.Settle();
-        FinishBookmarkImport(d, d.AppState.Imports.Asking!, BookmarkImportMode.Replace);
+        var again = d.AppState.Imports.Asking;
+        Assert.NotNull(again);
+        FinishBookmarkImport(d, again, BookmarkImportMode.Replace);
 
-        Assert.NotNull(asked);
         Assert.Equal(["Mine", "Bookmark 2"], merged);
         Assert.Equal(["Bookmark 1", "Bookmark 2"], bookmarks.Items.Select(b => b.Name));
         Assert.Null(d.AppState.Imports.Asking);
@@ -515,9 +525,11 @@ public sealed class BookmarkTests : IDisposable
         ImportBookmarks(d, first);
         ImportBookmarks(d, second);
         d.Settle();
-        var asked = d.AppState.Imports.Asking!;
+        var asked = d.AppState.Imports.Asking;
+        Assert.NotNull(asked);
         FinishBookmarkImport(d, asked, BookmarkImportMode.Merge);
-        var next = d.AppState.Imports.Asking!;
+        var next = d.AppState.Imports.Asking;
+        Assert.NotNull(next);
         FinishBookmarkImport(d, next, BookmarkImportMode.Merge);
 
         Assert.NotSame(asked, next);
@@ -597,7 +609,7 @@ public sealed class BookmarkTests : IDisposable
 
     private static int TokenOf(string method)
     {
-        return typeof(Fixtures.Outline).GetMethod(method)!.MetadataToken;
+        return (typeof(Fixtures.Outline).GetMethod(method) ?? throw new MissingMethodException("Outline", method)).MetadataToken;
     }
 
     private string ILSpyFile(string records)
@@ -676,7 +688,8 @@ public sealed class BookmarkTests : IDisposable
         ImportBookmarks(d, path);
         d.Settle();
         var bookmarks = d.AppState.Bookmarks.Items;
-        var marked = d.AppState.Bookmarks.ListMarkedLines(tab.Document, tab.Node!);
+        Assert.NotNull(tab.Node);
+        var marked = d.AppState.Bookmarks.ListMarkedLines(tab.Document, tab.Node);
 
         Assert.Equal(["Bookmark0", "Bookmark1"], bookmarks.Select(b => b.Name));
         Assert.All(bookmarks, b => Assert.Equal(tab.Location, b.Place));
@@ -710,7 +723,9 @@ public sealed class BookmarkTests : IDisposable
 
         ImportBookmarks(d, path);
         d.Settle();
-        FinishBookmarkImport(d, d.AppState.Imports.Asking!, BookmarkImportMode.Merge);
+        var asked = d.AppState.Imports.Asking;
+        Assert.NotNull(asked);
+        FinishBookmarkImport(d, asked, BookmarkImportMode.Merge);
 
         Assert.Single(d.AppState.Bookmarks.Items);
         Assert.Empty(d.AppState.Errors.Entries);

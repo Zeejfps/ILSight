@@ -198,12 +198,12 @@ public sealed class DiagramViewTests
 
         ClickAt(app, CardText(app, "Bike"));
         app.Settle(2);
-        Assert.Equal("Bike", app.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Bike", app.AppState.Tabs.Active?.Node?.Text);
 
         app.Frames.ClickOn(Selector.WithText(VehicleDiagram)).Frame();
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
-        Assert.Equal("Mileage() : int", app.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Mileage() : int", app.AppState.Tabs.Active?.Node?.Text);
         Assert.NotNull(DiagramTab(app).Diagram);
     }
 
@@ -229,7 +229,8 @@ public sealed class DiagramViewTests
         var diagram = DiagramTab(app);
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
-        var code = app.AppState.Tabs.Active!;
+        var code = app.AppState.Tabs.Active;
+        Assert.NotNull(code);
         Assert.NotEqual(diagram, code);
 
         app.GoBack();
@@ -238,7 +239,7 @@ public sealed class DiagramViewTests
 
         app.GoForward();
         app.Settle(2);
-        Assert.Equal("Mileage() : int", app.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Mileage() : int", app.AppState.Tabs.Active?.Node?.Text);
     }
 
     [Fact]
@@ -333,7 +334,9 @@ public sealed class DiagramViewTests
 
         PickFromCardMenu(app, "Vehicle", "Add the types its properties hold");
 
-        Assert.Contains(DiagramTab(app).Diagram!.Cards, static c => c.Name == "Garage");
+        var diagram = DiagramTab(app).Diagram;
+        Assert.NotNull(diagram);
+        Assert.Contains(diagram.Cards, static c => c.Name == "Garage");
         var moved = CardText(app, "Vehicle");
         Assert.Equal(vehicle.X, moved.X, Near);
         Assert.Equal(vehicle.Y, moved.Y, Near);
@@ -350,7 +353,7 @@ public sealed class DiagramViewTests
         PickFromCardMenu(app, "IDriven", "Remove from diagram");
 
         Assert.False(WasDrawnOnDiagram(app, "IDriven"));
-        Assert.Equal(2, DiagramTab(app).Diagram!.Cards.Count);
+        Assert.Equal(2, DiagramTab(app).Diagram?.Cards.Count);
     }
 
     [Fact]
@@ -375,14 +378,19 @@ public sealed class DiagramViewTests
         PickFromCardMenu(app, "Breakdown", "Add base types");
         var tab = DiagramTab(app);
         var view = ViewOf(app, tab);
-        var exception = tab.Diagram!.Cards[1];
+        Assert.NotNull(tab.Diagram);
+        var exception = tab.Diagram.Cards[1];
         Assert.Equal("Exception", exception.Name);
-        Assert.DoesNotContain(Diagrams.FindFace(view, exception.Type)!.Rows, IsHiddenMember);
+        var face = Diagrams.FindFace(view, exception.Type);
+        Assert.NotNull(face);
+        Assert.DoesNotContain(face.Rows, IsHiddenMember);
 
         app.Frames.ClickOn(Selector.WithText("Show private and internal members"));
         SettleDiagram(app);
 
-        Assert.Contains(Diagrams.FindFace(view, exception.Type)!.Rows, IsHiddenMember);
+        var faceShowingAll = Diagrams.FindFace(view, exception.Type);
+        Assert.NotNull(faceShowingAll);
+        Assert.Contains(faceShowingAll.Rows, IsHiddenMember);
     }
 
     private static bool IsHiddenMember(CardRow row)

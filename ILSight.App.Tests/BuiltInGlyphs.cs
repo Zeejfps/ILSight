@@ -10,6 +10,8 @@ internal static class BuiltInGlyphs
     /// <summary>The text <paramref name="glyph"/>, a font glyph, is drawn as.</summary>
     public static string Text(IconGlyph glyph)
     {
-        return glyph.Text!;
+        var text = glyph.Text;
+        Assert.NotNull(text);
+        return text;
     }
 }
