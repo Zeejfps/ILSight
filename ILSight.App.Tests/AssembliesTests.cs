@@ -317,7 +317,7 @@ public sealed class AssembliesTests
         var error = new IOException("unreadable");
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(error) };
 
-        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState, [PathTo("Listed.dll")], d.AppState.Reload.Start(), CancellationToken.None);
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState.ListSession, [PathTo("Listed.dll")], d.AppState.Reload.Start(), CancellationToken.None);
 
         Assert.Same(error, Assert.IsType<AppProblem.OpenFailed>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.IsReloading);
@@ -333,7 +333,7 @@ public sealed class AssembliesTests
         appState.Locale = Locale.De;
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)) };
 
-        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState, [PathTo("Listed.dll")], appState.Reload.Start(), CancellationToken.None);
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState.ListSession, [PathTo("Listed.dll")], appState.Reload.Start(), CancellationToken.None);
 
         Assert.Empty(ListDecompiles(loads));
         Assert.False(appState.IsReloading);
@@ -350,7 +350,7 @@ public sealed class AssembliesTests
         appState.Locale = Locale.De;
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new IOException("unreadable")) };
 
-        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState, [PathTo("Listed.dll")], appState.Reload.Start(), CancellationToken.None);
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState.ListSession, [PathTo("Listed.dll")], appState.Reload.Start(), CancellationToken.None);
 
         Assert.Empty(ListDecompiles(loads));
         Assert.False(appState.IsReloading);
@@ -368,7 +368,7 @@ public sealed class AssembliesTests
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new IOException("unreadable")) };
 
-        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState, [PathTo("Listed.dll")], d.AppState.Reload.Start(), CancellationToken.None);
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState.ListSession, [PathTo("Listed.dll")], d.AppState.Reload.Start(), CancellationToken.None);
 
         var waiting = Assert.Single(Assert.Single(ListLookups(loads)).Nodes);
         Assert.Same(reopened, waiting.Reopened);
@@ -391,7 +391,7 @@ public sealed class AssembliesTests
 #pragma warning restore RL0807
         };
 
-        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState, [PathTo("Listed.dll")], appState.Reload.Start(), CancellationToken.None);
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState.ListSession, [PathTo("Listed.dll")], appState.Reload.Start(), CancellationToken.None);
 
         Assert.True(Assert.Single(ports.Stops).IsCancellationRequested);
         Assert.Empty(ports.Reported);

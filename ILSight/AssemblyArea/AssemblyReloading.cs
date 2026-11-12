@@ -10,7 +10,8 @@ namespace ILSight.AssemblyArea;
 /// <summary>Reading the assemblies of the list again: one of them, with a PDB or a target framework picked for it,
 /// or all of them from disk, then showing each tab's place in them again. The workflows return once the files are
 /// read, with the loads they started in the tabs for the edge to start, and reach the files and the user's error
-/// reports through <see cref="IPorts"/>.</summary>
+/// reports through <see cref="IPorts"/>. Each step takes the parts of the app state it uses; the workflows take the
+/// app state only to read how code is decompiled once the files are read, as it is then.</summary>
 public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 {
     public interface IPorts
@@ -47,12 +48,13 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             ports.ReportError(new AppProblem.PdbUnusable(pdbPath, assembly.Name, check));
             return [];
         }
-        if (!AssemblyListing.IsListed(appState.Assemblies, assembly))
+        var assemblies = appState.ListSession.Assemblies;
+        if (!AssemblyListing.IsListed(assemblies, assembly))
         {
             return [];
         }
 
-        appState.Assemblies.Pdbs.Pick(assembly.FilePath, pdbPath);
+        assemblies.Pdbs.Pick(assembly.FilePath, pdbPath);
         return await ReopenAssemblyAsync(appState, assembly, ct);
     }
 
@@ -63,7 +65,8 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// tabs.</summary>
     public Task<List<DecompileTicket>> SetTargetFrameworkAsync(AppState appState, LoadedModule assembly, TargetFrameworkId? framework, CancellationToken ct)
     {
-        if (!AssemblyListing.IsListed(appState.Assemblies, assembly))
+        var assemblies = appState.ListSession.Assemblies;
+        if (!AssemblyListing.IsListed(assemblies, assembly))
         {
             return Task.FromResult<List<DecompileTicket>>([]);
         }
@@ -73,7 +76,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             return Task.FromResult<List<DecompileTicket>>([]);
         }
 
-        PickTargetFramework(appState.Assemblies.TargetFrameworks, assembly, framework);
+        PickTargetFramework(assemblies.TargetFrameworks, assembly, framework);
         return ReopenAssemblyAsync(appState, assembly, ct);
     }
 
@@ -104,18 +107,20 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// started in the tabs. The other assemblies stay as they are.</summary>
     private async Task<List<DecompileTicket>> ReopenAssemblyAsync(AppState appState, LoadedAssembly assembly, CancellationToken ct)
     {
+        var session = appState.ListSession;
+        var reopens = appState.Reopens;
         var item = assembly.ListedItem;
-        var ticket = appState.Reopens.Start(item.FilePath);
-        var tabs = ListTabsShowing(appState, item);
+        var ticket = reopens.Start(item.FilePath);
+        var tabs = ListTabsShowing(session.Navigation, appState.Language, item);
         var places = tabs.ConvertAll(t => t.Location);
         var reopened = await ports.ReadAgainAsync(item, places, ct);
-        return FinishReopen(appState, item, reopened, ticket, tabs);
+        return FinishReopen(reopens, session, appState.Decompiler, item, reopened, ticket, tabs);
     }
 
-    private static List<ReloadingTab> ListTabsShowing(AppState appState, LoadedAssembly item)
+    private static List<ReloadingTab> ListTabsShowing(Navigation navigation, DecompilationLanguage language, LoadedAssembly item)
     {
         var showing = new List<ReloadingTab>();
-        foreach (var tab in appState.Navigation.OpenTabs)
+        foreach (var tab in navigation.OpenTabs)
         {
             var location = tab.Location;
             if (location is null)
@@ -128,7 +133,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
                 continue;
             }
 
-            showing.Add(new ReloadingTab { Tab = tab, Location = location, Version = tab.Version, Position = FindPositionToKeep(appState, tab) });
+            showing.Add(new ReloadingTab { Tab = tab, Location = location, Version = tab.Version, Position = FindPositionToKeep(tab, language) });
         }
         return showing;
     }
@@ -140,9 +145,10 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     /// <summary>Lists what the reopen read, unless another one started since, and shows each tab's place in it
     /// again, or reports why it failed. Returns the loads it started in the tabs.</summary>
-    private List<DecompileTicket> FinishReopen(AppState appState, LoadedAssembly item, Outcome<ReopenedFile> outcome, int ticket, List<ReloadingTab> tabs)
+    private List<DecompileTicket> FinishReopen(Reopens reopens, OpenListSession session, DecompilerSetup decompiler, LoadedAssembly item,
+        Outcome<ReopenedFile> outcome, int ticket, List<ReloadingTab> tabs)
     {
-        if (!appState.Reopens.TryFinish(item.FilePath, ticket))
+        if (!reopens.TryFinish(item.FilePath, ticket))
         {
             return [];
         }
@@ -150,7 +156,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         switch (outcome)
         {
             case Outcome<ReopenedFile>.Ok ok:
-                return ShowReopened(appState, item, ok.Value, tabs);
+                return ShowReopened(session.Assemblies, session.Navigation, decompiler, item, ok.Value, tabs);
             case Outcome<ReopenedFile>.Failed failed:
                 ports.ReportError(new AppProblem.AssemblyNotReloaded(item.Name, failed.Error));
                 return [];
@@ -159,17 +165,18 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
     }
 
-    private List<DecompileTicket> ShowReopened(AppState appState, LoadedAssembly item, ReopenedFile reopened, List<ReloadingTab> tabs)
+    private List<DecompileTicket> ShowReopened(AssemblyList assemblies, Navigation navigation, DecompilerSetup decompiler, LoadedAssembly item,
+        ReopenedFile reopened, List<ReloadingTab> tabs)
     {
         var loads = new List<DecompileTicket>();
-        if (!AssemblyListing.TryReplace(appState.Assemblies, item, reopened.Item))
+        if (!AssemblyListing.TryReplace(assemblies, item, reopened.Item))
         {
             return loads;
         }
 
         for (var i = 0; i < tabs.Count; i++)
         {
-            TryShowAgain(appState, tabs[i], reopened.Places[i], loads);
+            TryShowAgain(navigation, decompiler, tabs[i], reopened.Places[i], loads);
         }
         return loads;
     }
@@ -180,23 +187,24 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// Returns the loads that started in the tabs.</summary>
     public async Task<TabLoads> RefreshAssembliesAsync(AppState appState, IReadOnlyList<NodePath> expanded, CancellationToken ct)
     {
-        RememberOpenAssemblies(appState.Lists, appState.ListSession);
-        var intent = appState.Navigation.BeginRequest();
-        var ticket = appState.Reload.Start();
+        var session = appState.ListSession;
+        RememberOpenAssemblies(appState.Lists, session);
+        var intent = session.Navigation.BeginRequest();
+        var ticket = session.Reload.Start();
 
         var paths = appState.Lists.ActivePaths.ToList();
-        var tabs = ReleaseShownTabs(appState);
+        var tabs = ReleaseShownTabs(session.Navigation, appState.Language);
         var places = tabs.ConvertAll(t => t.Location);
-        OpenAssemblies.CloseAll(appState.Assemblies, appState.Analyzer);
+        OpenAssemblies.CloseAll(session.Assemblies, session.Analyzer);
 
         var reloaded = await ports.ReopenFilesAsync(paths, expanded, places, ticket.Token, ct);
-        return FinishReload(appState, reloaded, ticket, intent, tabs);
+        return FinishReload(session, appState.ViewCommands, appState.Decompiler, reloaded, ticket, intent, tabs);
     }
 
-    private static List<ReloadingTab> ReleaseShownTabs(AppState appState)
+    private static List<ReloadingTab> ReleaseShownTabs(Navigation navigation, DecompilationLanguage language)
     {
         var reloading = new List<ReloadingTab>();
-        foreach (var tab in appState.Navigation.OpenTabs)
+        foreach (var tab in navigation.OpenTabs)
         {
             var location = tab.Location;
             if (location is null)
@@ -204,23 +212,24 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
                 continue;
             }
 
-            var position = FindPositionToKeep(appState, tab);
+            var position = FindPositionToKeep(tab, language);
             Tabs.ShowReloading(tab, location);
             reloading.Add(new ReloadingTab { Tab = tab, Location = location, Version = tab.Version, Position = position });
         }
         return reloading;
     }
 
-    private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab)
+    private static ViewPosition? FindPositionToKeep(DocumentTab tab, DecompilationLanguage language)
     {
-        return Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
+        return Navigation.KeepPosition(tab.Position, tab.Language, language);
     }
 
     /// <summary>Shows what the reload found, unless another one started since, or reports why it failed. Returns
     /// the loads it started in the tabs.</summary>
-    private TabLoads FinishReload(AppState appState, Outcome<ReloadedNodes> outcome, ReloadTicket ticket, int intent, List<ReloadingTab> tabs)
+    private TabLoads FinishReload(OpenListSession session, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, Outcome<ReloadedNodes> outcome,
+        ReloadTicket ticket, int intent, List<ReloadingTab> tabs)
     {
-        if (!appState.Reload.TryFinish(ticket))
+        if (!session.Reload.TryFinish(ticket))
         {
             return TabLoads.None;
         }
@@ -228,9 +237,9 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         switch (outcome)
         {
             case Outcome<ReloadedNodes>.Ok ok:
-                return ShowReloaded(appState, ok.Value, intent, tabs);
+                return ShowReloaded(session, viewCommands, decompiler, ok.Value, intent, tabs);
             case Outcome<ReloadedNodes>.Failed failed:
-                var reopened = ShowReopenedDocuments(appState.Navigation, appState.Reopened, appState.Assemblies);
+                var reopened = ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
                 ports.ReportError(new AppProblem.AssembliesNotReloaded(failed.Error));
                 return reopened;
             default:
@@ -241,39 +250,42 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// <summary>Shows each tab's place again and what the tabs reopened from the saved documents showed, the nodes
     /// those wait for still to be found. Returns the loads it started in the tabs, the lookup of those nodes among
     /// them.</summary>
-    private TabLoads ShowReloaded(AppState appState, ReloadedNodes reloaded, int intent, List<ReloadingTab> tabs)
+    private TabLoads ShowReloaded(OpenListSession session, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadedNodes reloaded, int intent,
+        List<ReloadingTab> tabs)
     {
-        appState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes(reloaded.Expanded));
+        viewCommands.Enqueue(new ViewCommand.ExpandNodes(reloaded.Expanded));
         var loads = new List<DecompileTicket>();
         for (var i = 0; i < tabs.Count; i++)
         {
-            ReshowTab(appState, tabs[i], reloaded.Places[i], intent, loads);
+            ReshowTab(session.Navigation, viewCommands, decompiler, tabs[i], reloaded.Places[i], intent, loads);
         }
 
-        var reopened = ShowReopenedDocuments(appState.Navigation, appState.Reopened, appState.Assemblies);
+        var reopened = ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
         return TabLoads.None.With(loads).With(reopened);
     }
 
-    private void ReshowTab(AppState appState, ReloadingTab reloading, BrowseNode? node, int intent, List<DecompileTicket> loads)
+    private void ReshowTab(Navigation navigation, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadingTab reloading, BrowseNode? node,
+        int intent, List<DecompileTicket> loads)
     {
-        if (!TryShowAgain(appState, reloading, node, loads))
+        if (!TryShowAgain(navigation, decompiler, reloading, node, loads))
         {
             return;
         }
 
-        if (reloading.Tab == appState.Navigation.ActiveTab && appState.Navigation.IsCurrent(intent))
+        if (reloading.Tab == navigation.ActiveTab && navigation.IsCurrent(intent))
         {
-            appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
+            viewCommands.Enqueue(new ViewCommand.RevealNode(node));
         }
     }
 
     /// <summary>Shows <paramref name="node"/>, the tab's place found again, in the tab, or that its place
     /// is gone, unless the tab was closed or shows something else now. True when it shows the node, adding the
     /// load it started in the tab to <paramref name="loads"/>.</summary>
-    private bool TryShowAgain(AppState appState, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node, List<DecompileTicket> loads)
+    private bool TryShowAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, [NotNullWhen(true)] BrowseNode? node,
+        List<DecompileTicket> loads)
     {
         var tab = reloading.Tab;
-        if (!appState.Navigation.IsOpen(tab))
+        if (!navigation.IsOpen(tab))
         {
             return false;
         }
@@ -288,7 +300,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             ReleaseGoneTab(tab, reloading.Location);
             return false;
         }
-        var load = appState.Navigation.Restore(tab, node, appState.Decompiler, reloading.Position);
+        var load = navigation.Restore(tab, node, decompiler, reloading.Position);
         if (load is not null)
         {
             loads.Add(load);

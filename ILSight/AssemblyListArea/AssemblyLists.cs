@@ -17,7 +17,7 @@ public static class AssemblyLists
     public static Task<TabLoads> RestoreActiveAssemblyListAsync(AppState appState, CancellationToken ct)
     {
         var opening = BeginRestoringActiveAssemblyList(appState.Lists, appState.ListSession);
-        return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState, opening.Paths, opening.Reload, ct);
+        return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, opening.Paths, opening.Reload, ct);
     }
 
     /// <summary>Uses what the open list picked for its assemblies and begins reopening them as a reload, the app saying
@@ -158,7 +158,7 @@ public static class AssemblyLists
             return TabLoads.None;
         }
 
-        return await appState.OpenAssembliesAsReloadHandler.HandleAsync(appState, opening.Paths, opening.Reload, ct);
+        return await appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, opening.Paths, opening.Reload, ct);
     }
 
     /// <summary>Adds an empty list named <paramref name="name"/>, or numbered when that is taken,
