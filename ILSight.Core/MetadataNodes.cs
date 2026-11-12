@@ -107,7 +107,11 @@ internal static class MetadataNodes
             }
             catch (BadImageFormatException)
             {
+                // An entry that cannot be decoded shows its raw bytes, as one of a type ILSpy doesn't decode.
+                result.Add(CreatePart(parent, MetadataTables.CreateRawEntryPart(module, file, index, entry)));
+                continue;
             }
+
             result.Add(CreatePart(parent, MetadataTables.CreateRawEntryPart(module, file, index, entry)));
         }
         return result.ToArray();

@@ -35,10 +35,21 @@ public static class RunningProcesses
                 ScanSockets(ids);
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (IOException)
         {
             // The transport's listing failed partway: what was found is still worth listing.
+            return ListFound(ids);
         }
+        catch (UnauthorizedAccessException)
+        {
+            return ListFound(ids);
+        }
+
+        return ListFound(ids);
+    }
+
+    private static IReadOnlyList<ProcessId> ListFound(HashSet<int> ids)
+    {
         return ids.Order().Select(static id => new ProcessId(id)).ToList();
     }
 

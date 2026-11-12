@@ -102,8 +102,10 @@ internal static class ResourceText
             }
             catch (JsonException)
             {
+                return ResourceSyntax.Plain;
             }
         }
+
         return ResourceSyntax.Plain;
     }
 

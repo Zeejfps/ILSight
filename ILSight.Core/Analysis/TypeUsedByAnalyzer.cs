@@ -139,21 +139,25 @@ internal static class TypeUsedByAnalyzer
         }
 
         var metadata = module.Metadata;
-        if (!body.LocalSignature.IsNil)
+        if (!body.LocalSignature.IsNil && IsUsedByLocals(body.LocalSignature))
+        {
+            return true;
+        }
+
+        return MethodBodies.HasToken(body, (_, token) => IsUsedByMember(token));
+
+        bool IsUsedByLocals(StandaloneSignatureHandle locals)
         {
             try
             {
-                var localSignature = metadata.GetStandaloneSignature(body.LocalSignature);
-                if (IsUsedBySignature(localSignature))
-                {
-                    return true;
-                }
+                return IsUsedBySignature(metadata.GetStandaloneSignature(locals));
             }
             catch (BadImageFormatException)
             {
+                // Locals that cannot be read show no use of the type; the code still may.
+                return false;
             }
         }
-        return MethodBodies.HasToken(body, (_, token) => IsUsedByMember(token));
 
         bool IsUsedByMember(EntityHandle member)
         {
