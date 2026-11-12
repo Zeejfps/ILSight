@@ -8,8 +8,11 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
 - **Edges** are where the framework hands control to the app: `Main` / the composition root, a UI's command
   dispatcher, an HTTP endpoint or middleware, a worker loop, an `async void` event handler, tests; in a frame-driven
   UI, the frame edge before the draw and the commands the draw queues (the draw is not an edge). Only edges start
-  work (and create its token, linked to whatever may cancel it on purpose), catch everything (R009) and build and
-  wire use cases and adapters (R001's composition root). Mark their files `rulelab.infrastructure = true`.
+  work (and create its token, linked to whatever may cancel it on purpose; a deadline is a timeout, not on purpose),
+  catch everything (R009) and build and wire use cases and adapters (R001's composition root). Mark each edge type
+  with the project's own `[Edge]`
+  attribute (declare `EdgeAttribute`): it moves with the type when a file is split, a file name in `.editorconfig`
+  doesn't. `rulelab.infrastructure = true` is for a folder whose every file is edge or I/O code.
 - **Tests** follow R002, R003, R005, R007, R008, R010, R012, R013 (test methods needn't take a token) and R009's ban on empty
   catches; not the others. Name tests the way the codebase already does (one convention per codebase); a new codebase
   uses `Method_Scenario_Expected`. Assertion helpers carry `[DoesNotReturnIf(false)]` so they narrow nulls.
@@ -53,10 +56,12 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   reader, draft) is `static abstract` on the kind's type, which the use case takes as a type parameter
   (`UserThemes<TKind> where TKind : IThemeKind`, `TKind.Parse(id, text)`); the port carries values. Not injected, not
   passed by each caller (a handler is for the caller's own policy, such as the name it gives a new theme): a test that
-  passes its own copy doesn't run the real one. If a calculation's only dependency is the time, take `now` as a parameter and have no port; a shared
+  passes its own copy doesn't run the real one. The kind must be known when compiling: a kind chosen at run time can't
+  reach static members through the interface (CS8926), so there it is a value, a union whose cases answer (R008; not
+  tested). If a calculation's only dependency is the time, take `now` as a parameter and have no port; a shared
   service that stamps the time (an error log) is a port member and reads its own clock.
 - **The composition root** (`Program.cs`, DI registration, or `AppRoot.Build` without a container) builds the state,
-  use cases and adapters and chooses the adapters. It's an edge file; tests build the app through it with fakes.
+  use cases and adapters and chooses the adapters. It's an edge (`[Edge]`); tests build the app through it with fakes.
   Without DI it builds each use case once, onto the object the edges already receive. Ordinary code never constructs
   a use case or an adapter.
 - **Lifetime decides who builds:** what lives as long as the app, the root builds once; what lives per document or
@@ -89,7 +94,8 @@ Build: RL0201 (`!`), RL0202 (`== null`), RL0203 (nullable suppressions).
 - Annotate your own APIs: `[NotNullWhen(true)] out T?` on `Try*`, `[NotNull]` on guards, `[MemberNotNull]` on helpers
   that initialise fields. `IsSuccess` + a nullable `Value` is a union (R008), not `[MemberNotNullWhen]`.
 - Recipes: `.Select(x => x.P).OfType<T>()`; `Deserialize<T>(json) ?? throw new JsonException(...)`; EF navigations
-  are `Customer?`; options are `[Required] public required string Host { get; init; }` + `ValidateOnStart()`.
+  are `Customer?`; options are `[Required] public required string Host { get; init; }` +
+  `.ValidateDataAnnotations().ValidateOnStart()` (`ValidateOnStart()` alone checks nothing).
 - `== null` is right for types that overload `==` (Unity objects) and inside EF expression trees (`is` can't appear there).
 
 ## R003: The name is the contract
@@ -154,16 +160,18 @@ Take the first match:
 | a use case whose decisions interleave with I/O | one class, one public `HandleAsync`, one port (R001); use cases sharing a step: one class |
 | a use case with no decisions | **no class**: the endpoint calls data access |
 | 2+ implementations chosen at runtime | an interface |
-| state a framework binds or sets | framework-facing data: public as it requires, no rules |
+| state a framework can only bind or set when public | framework-facing data: public as it requires, no rules |
 | required by a framework | that type, kept thin, calling one of the above |
 | anything else | a private method |
 
-- Delete a type that only forwards. No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` / `Rules` /
+- Delete a type that only forwards (adapters excepted: they are the seam). No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` / `Rules` /
   `Logic` / `Common` / `Core`. Callers mustn't have to call methods in a set order: expose the whole job. No interface
   without two real implementations (R001 ports excepted). No public setters that skip the rule (a setter that keeps
   it is one of its methods), public mutable fields or collections on types with rules.
-- **Framework-facing state** (fields a widget binds by `ref`, properties a binder or ORM sets, members a framework calls
-  in its order) is public and settable, as the framework requires. A type is either framework-facing data (public, no
+- **Framework-facing state** (fields a widget binds by `ref`, properties a serializer or binder sets through public
+  setters: options, persistence row types; members a framework calls in its order) is public and settable, as the
+  framework requires. What makes it so is that the framework can reach it no other way: an entity EF maps through its
+  private fields keeps its rules (R005, R006), not split in two. A type is either framework-facing data (public, no
   rules) or owns its rules (private state changed only by its methods, collections read-only); never both. When one
   object needs both, the part with rules is its own type, held by the framework-facing one:
   `picker.Filter` / `picker.IsOpen` (bound by `ref`) beside `picker.Choice` (private list, `Offer`, `Choose`).
@@ -180,10 +188,13 @@ Take the first match:
   about. Test through public methods; never add an interface only to fake it.
 - A helper lives with the code that uses it: when only one area calls it, it belongs there; when its last caller
   moves, it moves too; with no callers left, delete it.
-- A helper that reaches no port is not a step and belongs to none of its callers (not private to a use case, then
-  copied; not public on it, then handed to code with no I/O): a change under a rule is a method of the type keeping
-  the rule (a rule across two objects nothing holds is a missing type), a calculation a static method on its concept.
-  One that reaches the port is a step: its callers share it and are one class.
+- A helper that reaches no port is not a step, and where it lives follows what it knows, not how many call it.
+  Knowledge of a rule or a concept goes where step 1 puts it, even with one caller today (not private to a use case: a
+  later caller can't reach it and skips the rule; not public on it: code with no I/O would be handed the use case): a
+  change under a rule is a method of the type keeping the rule (a rule across two objects nothing holds is a missing
+  type), a calculation a static method on its concept. Only what one caller decides for itself (its own policy: how it
+  words its status line) stays its private method; moved out and public, another feature picked it up and said
+  "reloaded" for files it opened. One that reaches the port is a step: its callers share it and are one class.
 
 ## R005: Data goes in through `required init` properties
 
@@ -200,7 +211,7 @@ Build: RL0501 (positional records with 2+ values).
   copy shares the private fields. `required` + `private set` is CS9032, and not needed.
 - Exceptions: inbound DTOs are nullable and not `required` (R006); database-generated keys aren't `required`; EF row
   types use `{ get; set; }`; a one-field wrapper may be positional; no `struct` when zero is invalid; options classes
-  need `[Required]` + `ValidateOnStart()` (binding ignores `required`); `where T : new()` → take a `Func<T>`.
+  need `[Required]` + `.ValidateDataAnnotations().ValidateOnStart()` (binding ignores `required`); `where T : new()` → take a `Func<T>`.
 
 ## R006: Parse boundary data into the domain
 
@@ -283,7 +294,8 @@ measured: RL0807 (a dropped value of a type marked `[MustUse]`).
 ## R009: Exceptions are for bugs; expected failures are results
 
 Build: RL0901 (empty catch), RL0902 (catch-all outside an edge), RL0804, CA2200 (`throw ex`), CA2201 (throwing `Exception`);
-suggestion while measured: RL0903 (an adapter's catch that turns cancellation into a result).
+suggestions while measured: RL0903 (an adapter's catch that turns cancellation into a result), RL0904 (an adapter's
+port member returning a sequence that isn't its own iterator).
 
 - Throw for bugs only (bad argument, wrong state, impossible case, corrupt data), with a built-in type and a message
   that includes the value. A custom exception type only if something catches it specifically.
@@ -293,37 +305,59 @@ suggestion while measured: RL0903 (an adapter's catch that turns cancellation in
   Decision code catches nothing; adapters catch only the one exception they translate. No log-and-rethrow.
 - A library that throws lazily (from property reads, on a corrupt file) is translated in the adapter, where it's
   read: each member reads what its answer needs inside its own catch and returns plain values or a result case. No
-  library object or deferred sequence (`Select` without `ToList`) leaves the adapter: it would throw outside the catch.
+  library object leaves the adapter, nor a sequence enumerated by code that isn't the adapter's (the library's lazy
+  sequence, a `Select` without `ToList`): it would throw outside the catch. To stream (too many rows to read whole, or
+  a caller that stops early), the port returns `IAsyncEnumerable<T>` and the adapter writes it as its own iterator:
+  each item read inside its catch by a helper (no `yield` in a `try` with a `catch`: CS1626), the source in an
+  `await using`, the caller's token passed to each read and let through. The caller reads the stream in one loop, with
+  no other call to the same source inside it (a second operation on an open reader).
 - Cancellation someone asked for isn't a failure; a timeout is:
   `catch (Exception ex) when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested)`. Shutdown
   isn't the only one: the edge links a workflow's token to everything that cancels it on purpose (newer work under
   newest-wins, a dialog that closed) and ends quietly when any did (`catch (OperationCanceledException) when
-  (link.IsCancellationRequested)`). Never make every cancellation quiet: the timeout is lost.
+  (link.IsCancellationRequested)`). Never make every cancellation quiet: the timeout is lost. **A deadline is a
+  timeout, whoever sets it** (`CancelAfter`, `WaitAsync(timeout)`): never linked as on purpose (a search ended quietly
+  and said "Searching..." for good). Whoever sets it translates its expiry: the adapter, bounding one call, into a
+  result case (`TimedOut`, the caller's token still let through); the edge, bounding the workflow, holds it apart and
+  reports it as a timeout.
 - **A canceller that appears partway through a workflow** (its state change returns a ticket newer work cancels)
   can't be linked by the edge that started it: the workflow ends at that change and returns the ticket (`[MustUse]`,
   R008), and that edge starts the I/O under it, linked to it
   (`runner.Start(ct => decompile.HandleAsync(tab, load, ct), load.Work.Token)`). Not a catch in the workflow, not a
   token added to the runner's (it ends the whole workflow: a reopen's last step was skipped). The state still refuses
   a result whose ticket isn't its newest: linking saves work, it doesn't decide what's shown. Where the workflow needs
-  the I/O's outcome after it, the port takes the ticket and answers `Stopped` (not a second bare token: it swaps).
+  the I/O's outcome after it, the port takes the ticket (not a second bare token: it swaps) and answers `Stopped` when
+  the ticket's work was cancelled; its adapter links the ticket with the workflow's token and lets the workflow's own
+  cancellation through (shutdown still ends the workflow, it doesn't become `Stopped`).
 - An adapter that turns failures into results lets cancellation through: catch the failures it reports, and a timeout
   as `catch (TaskCanceledException) when (!ct.IsCancellationRequested)`; never `OperationCanceledException` (or
   everything) into `Failed`, or shutdown is reported as a failure and every workflow must re-check its token.
+- **Cancellation stops a workflow only where stopping leaves nothing half done.** Up to the first effect that can't
+  be undone (a card charged), the request's token may stop it. That effect and what must follow are one transaction
+  (all in your own database), or the work is recorded durably first (pending) and a worker (an edge with its own token)
+  does the effect under a key the record holds (twice is once), then the rest; stopped by shutdown or a crash, it finds
+  the record again. The request ends at "accepted", or waits on its own token without stopping the work. Not
+  `CancellationToken.None` (unbounded, lost in a crash), not a grace period from the edge (lost in a crash or to a slow
+  database). The effect must be repeatable under its key: a provider that ignored it charged twice.
 
 ## R010: Async all the way, with a cancellation token, nothing fire-and-forget
 
 Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100 / 103 / 110.
 
 - If a caller can't be async (an attribute, a constructor), move the async work out of it; never block on a task.
-- Work that must outlive the request goes on a queue (an outbox), not a detached task.
+- Work that must outlive the request goes on a queue (an outbox), not a detached task; so does what must follow an
+  effect that can't be undone (R009).
 - Only an edge starts work. Features return a `Task` their caller awaits; one that starts its own work returns before
   it's done (callers read stale state) on a token nobody can cancel. List the job runner in `rulelab.ambient_types`.
 - **Frame-driven UIs** (the draw isn't an edge): the input's frame shows the input taken and nothing it made untrue
-  as current. Split each workflow at its first wait: what it changes before waiting on I/O (cached answers included)
-  changes in the input's frame, what it can't know yet shows as under way ("loading") in place of what it replaces,
-  and only the I/O is queued, taking what the change returned
+  as current. Split each workflow at its first wait: what it changes before waiting (cached answers included) changes
+  in the input's frame, what it can't know yet shows as under way ("loading") in place of what it replaces, and only
+  the waits are queued, taking what the change returned
   (`var ticket = downloads.Start(id); commands.Queue(ct => download.HandleAsync(downloads, ticket, ct));`); the frame
-  edge starts every queued command, even after a failed draw, and the ticket is `[MustUse]` (R008). Work found while drawing (icons, details) is recorded as
+  edge starts every queued command, even after a failed draw, and the ticket is `[MustUse]` (R008). A wait is
+  anything that can take longer than a frame: I/O, and CPU work that grows with the user's data (sorting their list,
+  parsing their file: queued, run off the UI thread with `Task.Run`; in the frame, a 3,000,000-row sort froze it for
+  half a second); bounded work stays in the frame. Work found while drawing (icons, details) is recorded as
   pending on its owner, once per item, and an edge starts it (the frame edge before the next draw, or one queued
   command): one workflow for a batch the port takes, else one per item.
 - **Screen state the edge reads back after the draw** (where a tab's view stands) is kept with the content the view
@@ -344,9 +378,9 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
 Build: suggestions only, RL1101 (a loop doing low-level work between steps), RL1102 (a condition in mechanics between steps).
 
 - A method's body is its steps, in the words one level below its name. Mechanics (index loops, arithmetic, string
-  building, LINQ) live in a method named for what it computes, on the concept it's about (`Pricing.CalculateTotal`).
-  Naming a step never needs a lambda or LINQ: on a hot path (per frame) the named method holds the loop and
-  allocates nothing.
+  building, LINQ) live in a method named for what it computes, on the concept it's about (`Pricing.CalculateTotal`);
+  only the caller's own policy (how it words its outcome) is the caller's private method (R004). Naming a step never
+  needs a lambda or LINQ: on a hot path (per frame) the named method holds the loop and allocates nothing.
 - `if` and `foreach` are fine at any level when the condition is a named question and each branch or iteration is a
   step. Comparing one value with a constant counts as a named question.
   ```csharp
@@ -359,7 +393,9 @@ Build: suggestions only, RL1101 (a loop doing low-level work between steps), RL1
 - Don't move an `if` or a loop into a helper just to hide it. Don't split a stateful leaf loop into helpers sharing
   `ref`. If extracted steps would share mutable state, compute an intermediate value first.
 - Lower levels return what they found (`T?`, a result union); they don't send email, log business events or read
-  config. Running delegates the caller passes in (`Match`, comparers) is fine.
+  config on their own account. Direction follows who asked: running delegates the caller passes in (`Match`,
+  comparers) is fine, and so is an adapter carrying out a port member its use case named for another use case's work
+  (R001: the other use case runs below the one that asked).
 - Name a database query as an `IQueryable<T>` extension that does only what its name says
   (`db.Invoices.WhereOverdue(today).OrderBy(...)`), never a C# method inside the lambda: EF throws at runtime.
 
@@ -390,16 +426,33 @@ return `bool` in a condition).
 ## R013: One type per file, named after it; `partial` only where a tool writes the other half
 
 Build: RL1301 (a second top-level type in a file), RL1302 (a file named after none of its types), RL1303 (a type
-written in two or more hand-written places). Generated code doesn't count.
+written in two or more hand-written places), RL1305 (a nested type that is a unit of its own: code that uses none of
+its container's private members, or a type code outside its container names); suggestions: RL1304 (a top-level shape
+only one type uses), RL1306 (a namespace named like a type). Generated code doesn't count.
 
 - One top-level type per file, named after it (`Order.cs`; `Result` and `Result<T>` share `Result.cs`). Related types
-  share a folder and its namespace, not a file: a feature is a folder of one-type files.
-- A type only one other type uses, and nobody outside names, is nested in it, private (a union's cases, `IPorts`, a
-  helper record, the wire DTOs only a format's reader uses). A helper only this file uses that can't be nested
-  (extension methods need a top-level static class) is a `file` type.
+  share a folder and its namespace, not a file.
+- **A group with parts gets a folder.** A group is the types named for a concept (`CodeView*`) plus its parts: types
+  only the group uses, whatever their names (repeat: any type whose users are all inside). A group with parts gets a
+  folder, where they're seen with it; a group with none (every type named for it and used across the app: `Theme*`)
+  stays put, since a folder would add a `using` to each user for nothing. Types several groups use stay in the folder
+  above them. The folder is named for its group (`SettingsFormat/`, `CodeView/`, `Exporting/`), never like a type in
+  it or in a namespace around it: the namespace hides that type (`SettingsJson.Read` finds the namespace).
+- **"Uses" means names it or reaches it through another type's members** (a property, parameter or return type others
+  call). The test: nested `private` in its one user, does everything compile? Narrow members first (one only its own
+  type calls is private). Nested, private, go its user's **parts**: shapes that declare no methods (records, DTOs,
+  enums, interfaces, delegates; a format's DTOs with their serializer context), and code that works on its container's
+  private members (a lock's scope, an enumerator). Nested, **public**, go the contract a type declares for others to
+  name through it: a union's cases (R008) and a use case's `IPorts` (R001: its adapter implements it). Any other type
+  with code of its own (a sub-view, one analyzer of a set, a converter, a test's fake), or that others name, has its own
+  file even with one user: nested, it reaches the user's private state (a nested tab strip broke the workspace's rule)
+  and doubles the file. A group used through one type is placed member by member; the shapes a moved type names go
+  with it.
+- A helper only this file uses that can't be nested (extension methods need a top-level static class) is a `file` type.
 - `partial` only where a tool writes the other half (`[GeneratedRegex]`, `[LibraryImport]`, a `JsonSerializerContext`, a
   UI generator, a designer file). Never to split a class you wrote: a class too big for one file is split into types by
   what each knows (R004): the part with state and a rule becomes a type that keeps it. Merging the parts into one file
   fixes nothing.
-- Files whose layout is itself data (scenario files pairing variants, test fixtures read as source) opt out of RL1301 /
-  RL1302 with `rulelab.one_type_per_file = false` in `.editorconfig`.
+- Files whose layout is itself data (scenario files pairing variants; test fixtures a test compiles and reads back, or
+  reads as source: their files, nesting and namespaces are what it tests) opt out of R013's layout checks with
+  `rulelab.one_type_per_file = false` in `.editorconfig`.
