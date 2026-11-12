@@ -103,7 +103,13 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
             return;
         }
 
-        BrowseSessions.GetChildren(session, fresh);
+        var built = BrowseSessions.GetChildren(session, fresh);
+        if (built is not ChildrenState.Ready)
+        {
+            // A fresh node whose children failed to build has none to carry the old ones' over to.
+            return;
+        }
+
         foreach (var child in loaded.Children)
         {
             var counterpart = session.FindLoadedChildLike(fresh, child);
@@ -135,7 +141,13 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
                 continue;
             }
 
-            BrowseSessions.GetChildren(session, node);
+            var built = BrowseSessions.GetChildren(session, node);
+            if (built is not ChildrenState.Ready)
+            {
+                // A node whose children failed to build has none to show expanded.
+                continue;
+            }
+
             nodes.Add(node);
         }
         return nodes;

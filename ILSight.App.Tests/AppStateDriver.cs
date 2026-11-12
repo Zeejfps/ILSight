@@ -101,16 +101,20 @@ internal sealed class AppStateDriver
     /// <summary>The time the driver's autosave goes by, in seconds.</summary>
     public double Now { get; set; }
 
+    /// <summary>What the last <see cref="Pump"/>'s autosave came to. A frame asks to come back when a write waits or
+    /// failed; the driver's time moves only when the test moves it, so the test reads it here.</summary>
+    public Saving Autosaved { get; private set; } = new Saving.Unchanged();
+
     public static string FixturePath => typeof(Greeter).Assembly.Location;
 
-    /// <summary>Runs what was posted, then what a frame does around drawing when there is a screen,
-    /// then the autosave.</summary>
     /// <summary>Has <paramref name="wake"/> called whenever something is posted to the test's queue.</summary>
     public void WakeOnPost(Action wake)
     {
         _posted.WakeOnPost(wake);
     }
 
+    /// <summary>Runs what was posted, then what a frame does around drawing when there is a screen,
+    /// then the autosave, keeping what it came to (<see cref="Autosaved"/>).</summary>
     public void Pump()
     {
         _posted.Run();
@@ -119,7 +123,7 @@ internal sealed class AppStateDriver
             NextFrame();
         }
 
-        AppState.SettingsSaving.SaveIfChanged(AppState, Now);
+        Autosaved = AppState.SettingsSaving.SaveIfChanged(AppState, Now);
     }
 
     /// <summary>Does what a frame does before and after it draws: the screen follows the trees and the

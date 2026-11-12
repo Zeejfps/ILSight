@@ -11,6 +11,7 @@ using ILSight.ILSightAppArea;
 using static ILSight.CodeDisplay;
 using static ILSight.ScreenLayout;
 using static ILSight.SettingArea.Settings;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -245,7 +246,7 @@ public sealed class DisplayOptionsTests
 
         SetDisplayOptions(app.Ui, options);
         app.Run();
-        app.AppState.SettingsSaving.Save(app.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaving.Save(app.AppState));
 
         var restored = new AppStateDriver(temp.Settings());
         Assert.Equal(options, restored.Ui.Display);

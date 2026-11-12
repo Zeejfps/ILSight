@@ -8,6 +8,7 @@ using static ILSight.SettingArea.Settings;
 using ILSight.BuiltInArea;
 using ILSight.UserArea;
 using ILSight.AppSettingArea;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -67,7 +68,7 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, ResolveIconTheme(appState).Icons.NodeClass);
 
         appState.IconTheme = Id("mine");
-        appState.SettingsSaving.SaveIfChanged(appState, 0);
+        Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, 0));
 
         Assert.Equal("mine", Settings().IconTheme.Text);
     }
@@ -88,7 +89,7 @@ public sealed class UserIconThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
         Assert.Same(appState.IconThemes.GetTheme(Id("lucide")), ResolveIconTheme(appState));
-        appState.SettingsSaving.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
         Assert.Equal("gone", Settings().IconTheme.Text);
     }
 

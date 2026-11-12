@@ -2,6 +2,7 @@ using ILSight.Core;
 using ILSight.CommandArea;
 using static ILSight.BookmarkArea.Bookmarks;
 using static ILSight.CodeDisplay;
+using ILSight.BookmarkArea;
 
 namespace ILSight.App.Tests;
 
@@ -161,7 +162,7 @@ public sealed class NestedNamespaceTests
         app.Show(outline, 2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
+        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
         app.Show(app.Fixture("Greeter"), 2);
         Nest(app, false);

@@ -2,6 +2,7 @@ using ILSight.Core;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.SettingArea.Settings;
 using static ILSight.App.Tests.TestPaths;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -38,7 +39,7 @@ public sealed class PickedPdbTests
         var d = OpenedCopy(temp, copy);
 
         Pick(d, FixturePdb);
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
         var next = new AppStateDriver(temp.Settings());
         next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle();
@@ -70,7 +71,7 @@ public sealed class PickedPdbTests
 
         d.Change(static a => a.ListSession.CloseAllAssemblies());
         RememberOpenAssemblies(d.AppState.Lists, d.AppState.ListSession);
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         Assert.Empty(d.AppState.Assemblies.Pdbs.All);
         Assert.Null(Assert.Single(temp.Settings().AssemblyLists).Pdbs);

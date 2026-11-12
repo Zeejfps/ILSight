@@ -2,6 +2,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using static ILSight.SettingArea.Settings;
 using static ILSight.ScreenLayout;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -34,7 +35,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         Assert.NotNull(analyzer);
         screen.Layout.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
         d.NextFrame();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings());
         var layout = next.Ui.Layout;
@@ -65,7 +66,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         Assert.NotNull(analyzer);
         screen.Layout.Dock(DockPanels.Search, analyzer, DockEdge.Center);
         d.NextFrame();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings()).Ui;
 

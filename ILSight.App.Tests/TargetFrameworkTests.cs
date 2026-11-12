@@ -6,6 +6,7 @@ using ILSight.AssemblyListArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.SettingArea.Settings;
 using static ILSight.App.Tests.TestPaths;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -38,7 +39,7 @@ public sealed class TargetFrameworkTests
         app.Settle(2);
 
         PickFramework(app, "net48");
-        app.AppState.SettingsSaving.Save(app.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaving.Save(app.AppState));
 
         var assembly = FixturesOf(app.AppState);
         Assert.True(assembly.IsTargetFrameworkPicked);

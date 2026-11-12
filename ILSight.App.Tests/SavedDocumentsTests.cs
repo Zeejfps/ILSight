@@ -15,6 +15,7 @@ using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.MetadataGridArea;
 using ILSight.DiagramArea;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -467,7 +468,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var settings = _temp.Settings();
         List<DocumentRecord> tabs = [HandTab("document-1", "First"), HandTab("document-1", "Twin"), HandTab(DockPanels.Assemblies, "Tree")];
         settings.AssemblyLists.Add(new AssemblyListRecord("Hand", [], Documents: new DocumentsRecord(tabs, null, null, null)));
-        TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
 
         var documents = _temp.Settings().AssemblyLists.Single(static l => l.Name == "Hand").Documents;
         Assert.NotNull(documents);
@@ -496,7 +497,7 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var d = new AppStateDriver(_temp.Settings());
         d.NextFrame();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var saved = _temp.Settings();
         var next = new AppStateDriver(saved);

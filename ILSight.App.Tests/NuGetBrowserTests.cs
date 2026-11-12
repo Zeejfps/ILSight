@@ -352,7 +352,7 @@ public sealed class NuGetBrowserTests
         await SearchAsync(ports, picker, now: 10);
         var package = Assert.Single(picker.Browser.Results);
 
-        picker.Browser.EnsureDetails(package, Version("2.0.0"));
+        Assert.IsType<VersionDetails.Loading>(picker.Browser.EnsureDetails(package, Version("2.0.0")));
         await RunFetchesAsync(ports, picker.Browser);
         var failed = picker.Browser.EnsureDetails(package, Version("2.0.0"));
         picker.Browser.RetryDetails(package, Version("2.0.0"));

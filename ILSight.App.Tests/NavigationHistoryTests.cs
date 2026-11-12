@@ -14,7 +14,7 @@ public sealed class NavigationHistoryTests
         history.RecordDiagram(1, diagram, "diagram");
         history.RecordDiagram(1, diagram, "diagram");
 
-        Assert.Single(history.Entries);
+        Assert.Equal("diagram", Assert.IsType<HistoryEntry.Diagram>(Assert.Single(history.Entries)).Title);
     }
 
     [Fact]

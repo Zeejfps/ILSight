@@ -7,6 +7,7 @@ using static ILSight.Theming;
 using ILSight.CodeViewArea;
 using ILSight.BuiltInArea;
 using ILSight.AppSettingArea;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -102,7 +103,7 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
         Assert.Same(appState.Themes.GetTheme(Id("dark")), ResolveTheme(appState));
-        appState.SettingsSaving.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
         Assert.Equal("gone", _temp.Settings().Theme.Text);
     }
 

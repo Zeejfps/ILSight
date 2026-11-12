@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.AssemblyArea;
 using static ILSight.AssemblyArea.AssemblyReloading;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -284,7 +285,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
-        appState.SettingsSaving.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
         var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = new BrowseNode?[places.Count] }) };
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, [], CancellationToken.None);
@@ -347,7 +348,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
-        appState.SettingsSaving.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
         appState.Locale = Locale.De;
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Ok(FixturesOf(d)) };
 
@@ -364,7 +365,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.WithoutScreen();
         var appState = d.AppState;
-        appState.SettingsSaving.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
         appState.Locale = Locale.De;
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new IOException("unreadable")) };
 

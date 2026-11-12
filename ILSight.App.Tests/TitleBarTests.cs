@@ -4,6 +4,7 @@ using ZGF.KeyboardModule;
 using static ILSight.CodeDisplay;
 using static ILSight.SettingArea.Settings;
 using static ILSight.ScreenLayout;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -135,7 +136,7 @@ public sealed class TitleBarTests : IDisposable
         var d = new AppStateDriver(_temp.Settings());
         SetDisplayOptions(d.Ui, d.Ui.Display with { SystemTitleBar = true });
         d.NextFrame();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings());
 

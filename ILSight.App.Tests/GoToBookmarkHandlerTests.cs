@@ -13,7 +13,7 @@ public sealed class GoToBookmarkHandlerTests
         d.Show(d.Fixture("Outline"));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
         d.Show(d.Fixture("Greeter"));
         return (d, Assert.Single(d.AppState.Bookmarks.Items));
     }

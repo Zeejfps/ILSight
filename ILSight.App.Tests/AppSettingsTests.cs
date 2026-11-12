@@ -131,7 +131,7 @@ public sealed class AppSettingsTests : IDisposable
         d.Ui.ExportSetup.Window.Bounds = new WindowBounds(-900, 200, 700, 800, false);
         DialogWindows.Settle(d.Ui.ExportSetup.Window, held: false);
         d.NextFrame();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(AppRoot.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings);
 
@@ -271,7 +271,7 @@ public sealed class AppSettingsTests : IDisposable
         }
 
         var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
-        appState.SettingsSaving.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
 
         Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotRead>(loadResult.Problem).Kept);
         Assert.Contains(ThemeId<ThemeFile>.Of("mine"), appState.Themes.Ids);
@@ -623,10 +623,10 @@ public sealed class AppSettingsTests : IDisposable
     {
         var settings = AppRoot.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
         settings.AssemblyLists = Enumerable.Range(0, 200).Select(i => new AssemblyListRecord($"list-{i}", [])).ToList();
-        TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
         settings.AssemblyLists = [new AssemblyListRecord("one", [])];
 
-        TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
 
         var json = JsonDocument.Parse(File.ReadAllText(SettingsFile));
         Assert.Equal(1, json.RootElement.GetProperty("AssemblyLists").GetArrayLength());

@@ -362,7 +362,7 @@ public sealed class NuGetPickerTests : IDisposable
             Assert.NotNull(selected);
             return picker.Browser.EnsureDetails(selected, Packages.Version("2.0.0"));
         }
-        DetailsNow();
+        Assert.IsType<VersionDetails.Loading>(DetailsNow());
         var work = new BackgroundWork();
         AppFrames.StartFetching(new WorkflowRunner(work, new ErrorLog()), new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(_client)),
             new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(_client)), picker.Browser);

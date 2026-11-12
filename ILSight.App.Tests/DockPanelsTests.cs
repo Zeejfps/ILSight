@@ -4,6 +4,7 @@ using ILSight.Core;
 using ILSight.AppSettingArea;
 using static ILSight.SettingArea.Settings;
 using static ILSight.ScreenLayout;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -17,7 +18,7 @@ public sealed class DockPanelsTests
         var layout = d.Ui.Layout;
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 50f, 300f, 400f));
         d.NextFrame();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(temp.Settings());
         var restored = next.Ui.Layout;
@@ -82,7 +83,7 @@ public sealed class DockPanelsTests
 
         d.Ui.Search.Kinds = SearchKinds.Literals;
         d.NextFrame();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         Assert.Equal(SearchKinds.Literals, new AppStateDriver(temp.Settings()).Ui.Search.Kinds);
     }
@@ -97,7 +98,7 @@ public sealed class DockPanelsTests
         d.Ui.Search.Kinds = SearchKinds.Literals;
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.NextFrame();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         Assert.Equal(SearchKinds.TypesAndMembers, settings.SearchKinds);
         Assert.Equal(DecompilationLanguage.CSharp, settings.Language);

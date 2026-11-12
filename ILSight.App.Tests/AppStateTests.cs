@@ -312,6 +312,28 @@ public sealed class AppStateTests
     }
 
     [Fact]
+    public void Reloading_leaves_a_node_whose_children_no_longer_build_collapsed()
+    {
+        using var temp = new TempDir();
+        var sample = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
+        var path = temp.Copy(sample, "Sample.dll");
+        var unreadable = File.ReadAllBytes(BrokenAssemblies.WriteUnreadableTypeSystem(temp, sample));
+        var d = new AppStateDriver();
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(path)], ct));
+        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 1);
+        d.Settle();
+        d.Ui.Tree.View.SetExpanded(d.AppState.Assemblies.Assemblies[0].Root, true);
+        File.WriteAllBytes(path, unreadable);
+
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
+        d.Settle();
+
+        var root = Assert.Single(d.AppState.Assemblies.Assemblies).Root;
+        Assert.IsType<ChildrenState.Failed>(root.ChildrenState);
+        Assert.False(d.Ui.Tree.View.IsExpanded(root));
+    }
+
+    [Fact]
     public void Going_back_after_a_reload_lands_on_the_reloaded_node()
     {
         var d = AppStateDriver.Opened();

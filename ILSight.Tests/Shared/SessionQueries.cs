@@ -26,9 +26,10 @@ internal static class SessionQueries
 
         public ChildrenState ChildrenState => TestSession.Shared.PeekChildren(node);
 
+        /// <summary>Builds the node's children; fails the test when they can't be built.</summary>
         public void EnsureChildren()
         {
-            BrowseSessions.GetChildren(TestSession.Shared, node);
+            Assert.IsType<ChildrenState.Ready>(BrowseSessions.GetChildren(TestSession.Shared, node));
         }
 
         public IReadOnlyList<BrowseNode> InnerNamespaces => TestSession.Shared.ListInnerNamespaces(node);

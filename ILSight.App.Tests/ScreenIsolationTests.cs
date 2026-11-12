@@ -16,6 +16,7 @@ using ILSight.AssemblyArea;
 using ILSight.MetadataArea;
 using static ILSight.SettingArea.Settings;
 using static ILSight.ScreenLayout;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -55,7 +56,7 @@ public sealed class ScreenIsolationTests : IDisposable
         ScopeSearch(d.Ui, d.Node(AppStateDriver.FixturesNamespace));
         d.Ui.BookmarkColumns.Restore([1f, 1f, 4f, 1f]);
         d.Settle();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var reached = FindScreenObject(d.AppState, d.Ui);
 

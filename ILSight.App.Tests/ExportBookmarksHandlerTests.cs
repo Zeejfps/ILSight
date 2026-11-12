@@ -12,7 +12,7 @@ public sealed class ExportBookmarksHandlerTests
         d.Show(d.Fixture("Outline"));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
         return d.AppState.Bookmarks;
     }
 

@@ -9,6 +9,7 @@ using static ILSight.Docking;
 using static ILSight.SettingArea.Settings;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.App.Tests.TestPaths;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -21,7 +22,7 @@ public sealed class AssemblyListingTests
     {
         using var temp = new TempDir();
         var d = AppStateDriver.Opened(temp.Settings());
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var loaded = temp.Settings();
 
@@ -39,7 +40,7 @@ public sealed class AssemblyListingTests
         var d = new AppStateDriver(settings);
 
         d.Start(AppStateDriver.OpenAtStartupAsync);
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
         d.Settle();
@@ -57,7 +58,7 @@ public sealed class AssemblyListingTests
 
         d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var roots = d.Ui.Tree.Roots;
         Assert.Equal([NodeIcon.FailedAssembly, NodeIcon.Assembly], roots.Select(r => r.Icon));
@@ -89,13 +90,13 @@ public sealed class AssemblyListingTests
         using var temp = new TempDir();
         var first = AppStateDriver.Opened(temp.Settings());
         first.Analyze(first.Fixture("Greeter"));
-        first.AppState.SettingsSaving.Save(first.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(first.AppState.SettingsSaving.Save(first.AppState));
         var d = new AppStateDriver(temp.Settings());
         d.AppState.Lists.Add(Other);
 
         d.SwitchList(Other);
         d.Settle();
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var lists = temp.Settings().AssemblyLists;
         Assert.Empty(d.AppState.Analyzer.Roots);

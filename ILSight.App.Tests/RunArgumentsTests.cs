@@ -193,7 +193,7 @@ public sealed class RunArgumentsTests
             new AssemblyListRecord(Other, [PathOf(AppStateDriver.FixturePath)]));
 
         var d = Start(settings, "--list=other", OtherAssembly);
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         AssemblyPath[] opened = [PathOf(AppStateDriver.FixturePath), PathOf(OtherAssembly)];
         Assert.Equal(Other, d.AppState.Lists.Active);
@@ -206,7 +206,7 @@ public sealed class RunArgumentsTests
     {
         using var temp = new TempDir();
         var d = Start(SettingsWith(temp, new AssemblyListRecord(SavedAssemblyLists.DefaultName, [PathOf(AppStateDriver.FixturePath)])), "--clear-list", OtherAssembly);
-        d.AppState.SettingsSaving.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         Assert.Equal([OtherAssembly], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
         Assert.Equal([OtherAssembly], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));

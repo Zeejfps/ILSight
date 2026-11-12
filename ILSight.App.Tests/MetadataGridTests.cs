@@ -7,6 +7,7 @@ using ZGF.KeyboardModule;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using ILSight.MetadataGridArea;
 using ILSight.MetadataArea;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -324,7 +325,7 @@ public sealed class MetadataGridTests
         using var temp = new TempDir();
         var settings = temp.Settings();
         settings.FlagsFilters = MetadataGridWidget.ListSaved(app.Ui.MetadataFilters);
-        TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
         var saved = temp.Settings().FlagsFilters;
         var restored = MetadataGridWidget.GetFilter(MetadataGridWidget.CreateFilters(saved), grid, attributes);
         Assert.Equal("Visibility = Public", FilterStatePresenter.Describe(restored));
