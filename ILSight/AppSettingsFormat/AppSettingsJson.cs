@@ -7,8 +7,9 @@ using ILSight.Core.Diagrams;
 using ILSight.Core.Metadata;
 using ILSight.Localization;
 using ILSight.Bookmarking;
+using ILSight.SettingsFormat;
 
-namespace ILSight.SettingsFormat;
+namespace ILSight.AppSettingsFormat;
 
 [JsonSourceGenerationOptions(WriteIndented = true, Converters =
 [

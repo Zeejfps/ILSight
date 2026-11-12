@@ -1,5 +1,6 @@
 using ILSight.Core;
 using ILSight.SettingsFormat;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight;
 

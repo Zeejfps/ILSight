@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ILSight.SettingsFormat;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight.Bookmarking;
 

@@ -6,7 +6,7 @@ using ILSight.Localization;
 using ILSight.SettingsFormat;
 using ILSight.Bookmarking;
 
-namespace ILSight;
+namespace ILSight.AppSettingsFormat;
 
 /// <summary>What persists between runs, in the user's app-data folder, as read from its file by
 /// <see cref="SettingsReading"/>: whatever the file held, every value here is one the app can use.</summary>

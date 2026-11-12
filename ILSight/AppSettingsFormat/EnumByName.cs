@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ILSight;
+namespace ILSight.AppSettingsFormat;
 
 /// <summary>Reads and writes <typeparamref name="T"/> by its names alone, so that a number in a file
 /// is refused instead of read as a value no name stands for.</summary>

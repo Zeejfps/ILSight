@@ -10,6 +10,7 @@ using ILSight.Omnibars;
 using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
 using ILSight.UserState;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight;
 

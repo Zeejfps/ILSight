@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight;
 

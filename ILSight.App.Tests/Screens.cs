@@ -1,4 +1,5 @@
 using ILSight.Localization;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight.App.Tests;
 

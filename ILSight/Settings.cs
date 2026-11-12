@@ -5,6 +5,7 @@ using static ILSight.AssemblyLists;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.SavedDocuments;
 using ILSight.SettingsFormat;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight;
 

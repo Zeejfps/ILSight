@@ -7,6 +7,7 @@ using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.CodeView;
 using ILSight.Bookmarking;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight.SettingsFormat;
 

@@ -3,6 +3,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Exporting;
 using ILSight.Commanding;
+using ILSight.AppSettingsFormat;
 using static ILSight.Analysis;
 using static ILSight.Navigation;
 using static ILSight.Settings;

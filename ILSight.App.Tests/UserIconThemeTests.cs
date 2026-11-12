@@ -9,6 +9,7 @@ using static ILSight.Settings;
 using ILSight.SettingsFormat;
 using ILSight.BuiltInAssets;
 using ILSight.UserState;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight.App.Tests;
 

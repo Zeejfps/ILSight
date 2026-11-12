@@ -13,6 +13,7 @@ using ILSight.SettingsFormat;
 using ILSight.CodeView;
 using ILSight.DiagramViewport;
 using ILSight.DocumentViewing;
+using ILSight.AppSettingsFormat;
 
 namespace ILSight.App.Tests;
 

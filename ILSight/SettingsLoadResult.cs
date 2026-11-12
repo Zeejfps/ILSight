@@ -1,3 +1,5 @@
+using ILSight.AppSettingsFormat;
+
 namespace ILSight;
 
 /// <summary>What reading the settings file gave: the settings, with defaults for what the file could not

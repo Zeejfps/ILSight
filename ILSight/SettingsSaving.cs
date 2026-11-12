@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.SettingsFormat;
+using ILSight.AppSettingsFormat;
 using static ILSight.AssemblyLists;
 
 namespace ILSight;
