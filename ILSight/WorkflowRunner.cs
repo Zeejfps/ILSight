@@ -9,6 +9,7 @@ namespace ILSight;
 /// until it ends unless it runs until shutdown; and has an exception it ends with reported once, unless it is the
 /// cancellation one of those asked for. A cancellation none of them asked for, such as a timeout, is reported.
 /// Lives on the UI thread, as the app state that holds it does.</summary>
+[Edge]
 public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
 {
     private readonly CancellationTokenSource _shutdown = new();

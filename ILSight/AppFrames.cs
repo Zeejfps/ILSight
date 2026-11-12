@@ -18,6 +18,7 @@ using static ILSight.Trees;
 namespace ILSight;
 
 /// <summary>What the app does around each frame, keeping the app state and the screen in step.</summary>
+[Edge]
 internal static class AppFrames
 {
     /// <summary>Has the screen, just created over <paramref name="appState"/>, follow what the app state was

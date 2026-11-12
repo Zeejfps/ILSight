@@ -17,6 +17,7 @@ namespace ILSight;
 /// app: keeps the app state and the screen in step around each frame, through <see cref="AppFrames"/>, and
 /// carries the commands each queues for the other. Neither state sees the other; only the app and the views
 /// see both.</summary>
+[Edge]
 public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 {
     private const string MonoFontFile = "JetBrainsMono-Regular.ttf";

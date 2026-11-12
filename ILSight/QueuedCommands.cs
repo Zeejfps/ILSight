@@ -8,6 +8,7 @@ using static ILSight.ScreenLayout;
 
 namespace ILSight;
 
+[Edge]
 internal static class QueuedCommands
 {
     /// <summary>Runs the commands the features queued for the view, in the order they were queued, dropping

@@ -1,5 +1,6 @@
 namespace ILSight;
 
+[Edge]
 public static class Commands
 {
     /// <summary>Asks for <paramref name="run"/> to be done to the app state once the frame is drawn.

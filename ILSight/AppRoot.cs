@@ -8,6 +8,7 @@ namespace ILSight;
 /// <summary>The composition root: builds the app state and the screen over it, the use cases on them and the
 /// adapters those reach the world through, choosing the desktop app's adapters. The launcher builds the app
 /// through it, and so do the tests.</summary>
+[Edge]
 internal static class AppRoot
 {
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, over

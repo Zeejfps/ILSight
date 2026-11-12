@@ -6,6 +6,7 @@ using ZGF.Gui.Immediate;
 
 namespace ILSight;
 
+[Edge]
 public static class ILSightAppLauncher
 {
     /// <summary>Hands <paramref name="arguments"/> to the window already open with the same settings
