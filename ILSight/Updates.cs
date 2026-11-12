@@ -54,6 +54,9 @@ public sealed class AppUpdates(AppUpdates.IPorts ports)
         Task<bool> TryApplyAfterExitAsync(UpdateInfo update, CancellationToken ct);
     }
 
+    private UpdateCheck? _check;
+    private UpdateRestart? _restart;
+
     public UpdateStatus Status { get; private set; } = new UpdateStatus.Idle();
 
     public static string GetVersion(UpdateInfo update)
@@ -68,16 +71,33 @@ public sealed class AppUpdates(AppUpdates.IPorts ports)
         return ports.IsInstalled() && Status is UpdateStatus.Idle or UpdateStatus.UpToDate or UpdateStatus.Failed;
     }
 
-    /// <summary>Looks for a newer version and downloads it. Only one the user <paramref name="asked"/>
-    /// for says when there is none or it failed: nobody is waiting on the one at startup.</summary>
-    public async Task CheckAsync(bool asked, CancellationToken ct)
+    /// <summary>Starts looking for a newer version, unless one can't be looked for now (see
+    /// <see cref="CanCheck"/>): the status says it is checking from now on. Only a check the user
+    /// <paramref name="asked"/> for says when there is none or it failed: nobody is waiting on the one at startup.
+    /// Returns what <see cref="CheckAsync"/> needs to look; null when no check started.</summary>
+    public UpdateCheck? StartCheck(bool asked)
     {
         if (!CanCheck())
+        {
+            return null;
+        }
+
+        var check = new UpdateCheck { Asked = asked };
+        _check = check;
+        Status = new UpdateStatus.Checking();
+        return check;
+    }
+
+    /// <summary>Looks for a newer version and downloads it, for <paramref name="check"/>, which
+    /// <see cref="StartCheck"/> started; a check it did not start does nothing.</summary>
+    public async Task CheckAsync(UpdateCheck check, CancellationToken ct)
+    {
+        if (check != _check)
         {
             return;
         }
 
-        Status = new UpdateStatus.Checking();
+        var asked = check.Asked;
         var found = await ports.LookUpUpdateAsync(ct);
         if (found is not Outcome<UpdateInfo?>.Ok ok)
         {
@@ -104,18 +124,34 @@ public sealed class AppUpdates(AppUpdates.IPorts ports)
         return asked ? new UpdateStatus.Failed() : new UpdateStatus.Idle();
     }
 
-    /// <summary>Hands the update that is ready to the updater, then has the app close the normal way, through
-    /// <paramref name="viewCommands"/>, so that it saves what it has, into the update. An updater that could not
-    /// be started leaves the app open, and says so.</summary>
-    public async Task RestartToUpdateAsync(Queue<ViewCommand> viewCommands, CancellationToken ct)
+    /// <summary>Starts restarting into the update that is ready, if one is: the status says it is restarting from
+    /// now on. Returns what <see cref="RestartToUpdateAsync"/> needs to hand it over; null when none is
+    /// ready.</summary>
+    public UpdateRestart? StartRestart()
     {
         if (Status is not UpdateStatus.Ready ready)
+        {
+            return null;
+        }
+
+        var restart = new UpdateRestart { Update = ready.Update };
+        _restart = restart;
+        Status = new UpdateStatus.Restarting();
+        return restart;
+    }
+
+    /// <summary>Hands the update <paramref name="restart"/> is of to the updater, then has the app close the
+    /// normal way, through <paramref name="viewCommands"/>, so that it saves what it has, into the update. An
+    /// updater that could not be started leaves the app open, and says so. A restart <see cref="StartRestart"/>
+    /// did not start does nothing.</summary>
+    public async Task RestartToUpdateAsync(UpdateRestart restart, Queue<ViewCommand> viewCommands, CancellationToken ct)
+    {
+        if (restart != _restart)
         {
             return;
         }
 
-        Status = new UpdateStatus.Restarting();
-        var started = await ports.TryApplyAfterExitAsync(ready.Update, ct);
+        var started = await ports.TryApplyAfterExitAsync(restart.Update, ct);
         if (!started)
         {
             Status = new UpdateStatus.Failed();
@@ -124,6 +160,18 @@ public sealed class AppUpdates(AppUpdates.IPorts ports)
 
         viewCommands.Enqueue(new ViewCommand.Quit());
     }
+}
+
+/// <summary>Given for one check by <see cref="AppUpdates.StartCheck"/>: whether the user asked for it.</summary>
+public sealed class UpdateCheck
+{
+    public required bool Asked { get; init; }
+}
+
+/// <summary>Given for one restart by <see cref="AppUpdates.StartRestart"/>: the update it hands over.</summary>
+public sealed class UpdateRestart
+{
+    public required UpdateInfo Update { get; init; }
 }
 
 /// <summary>The seam around Velopack: the releases of the app's GitHub repository, on the channel it was
@@ -154,23 +202,15 @@ public sealed class AppUpdatesAdapter : AppUpdates.IPorts
 
     public async Task<bool> TryDownloadAsync(UpdateInfo update, CancellationToken ct)
     {
-        var downloaded = await Background.Wait(Task.Run(() =>
-        {
-            _manager.Value.DownloadUpdates(update);
-            return update;
-        }, ct));
+        var downloaded = await Background.Wait(Task.Run(() => _manager.Value.DownloadUpdates(update), ct));
         ct.ThrowIfCancellationRequested();
-        return downloaded is Outcome<UpdateInfo>.Ok;
+        return downloaded is Outcome.Done;
     }
 
     public async Task<bool> TryApplyAfterExitAsync(UpdateInfo update, CancellationToken ct)
     {
-        var started = await Background.Wait(Task.Run(() =>
-        {
-            _manager.Value.WaitExitThenApplyUpdates(update, silent: false, restart: true);
-            return update;
-        }, ct));
+        var started = await Background.Wait(Task.Run(() => _manager.Value.WaitExitThenApplyUpdates(update, silent: false, restart: true), ct));
         ct.ThrowIfCancellationRequested();
-        return started is Outcome<UpdateInfo>.Ok;
+        return started is Outcome.Done;
     }
 }

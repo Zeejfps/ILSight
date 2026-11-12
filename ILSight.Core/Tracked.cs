@@ -2,31 +2,35 @@ using System.Collections;
 
 namespace ILSight.Core;
 
-/// <summary>A value that counts its own changes: <see cref="Changes"/> rises each time <see cref="TrySet"/> gives
-/// it a different one, and only then. A class, so that there is one count however many hold it.</summary>
+/// <summary>A value that counts its own changes: <see cref="Version"/> rises each time <see cref="Value"/> is set
+/// to a different one, and only then, so whoever must notice it changing compares <see cref="Version"/> with the
+/// last one it saw. A class, so that there is one count however many hold it.</summary>
 public sealed class Tracked<T>
 {
+    private T _value;
+
     public Tracked(T value)
     {
-        Value = value;
+        _value = value;
     }
 
-    public T Value { get; private set; }
-
-    public int Changes { get; private set; }
-
-    /// <summary>Takes <paramref name="value"/>; returns whether it differs from the one before.</summary>
-    public bool TrySet(T value)
+    /// <summary>The value; setting the one it holds changes nothing.</summary>
+    public T Value
     {
-        if (EqualityComparer<T>.Default.Equals(Value, value))
+        get => _value;
+        set
         {
-            return false;
-        }
+            if (EqualityComparer<T>.Default.Equals(_value, value))
+            {
+                return;
+            }
 
-        Value = value;
-        Changes++;
-        return true;
+            _value = value;
+            Version++;
+        }
     }
+
+    public int Version { get; private set; }
 }
 
 /// <summary>A set that counts its own changes: <see cref="Revision"/> rises with each one, and only then, so

@@ -185,8 +185,8 @@ internal static partial class AppFrames
 
     internal static void CloseTabAndFocusNext(UiState uiState, AppState appState, DocumentTab tab)
     {
-        var wasActive = CloseTab(appState, tab);
-        if (!wasActive)
+        var closed = CloseTab(appState, tab);
+        if (!closed.WasActive)
         {
             return;
         }

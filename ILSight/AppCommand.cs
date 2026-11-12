@@ -58,6 +58,15 @@ public static class Commands
         uiState.AppCommands.Enqueue(CreateStart(name, subject, workflow));
     }
 
+    /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task})"/>, for a
+    /// workflow that <paramref name="cancelledOnPurposeBy"/> cancels on purpose, such as the token of the work it was
+    /// started as, which newer work or closing a dialog cancels: its token fires with it too, and ending cancelled
+    /// by it is not a failure.</summary>
+    public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow, CancellationToken cancelledOnPurposeBy)
+    {
+        uiState.AppCommands.Enqueue(CreateStart(name, subject, workflow, cancelledOnPurposeBy));
+    }
+
     private static AppCommand CreateStart(string name, AppWorkflow workflow)
     {
         return appState =>
@@ -71,6 +80,14 @@ public static class Commands
         return appState =>
         {
             appState.Workflows.Start(name, ct => workflow(appState, subject, ct));
+        };
+    }
+
+    private static AppCommand CreateStart<T>(string name, T subject, Func<AppState, T, CancellationToken, Task> workflow, CancellationToken cancelledOnPurposeBy)
+    {
+        return appState =>
+        {
+            appState.Workflows.Start(name, ct => workflow(appState, subject, ct), cancelledOnPurposeBy);
         };
     }
 }

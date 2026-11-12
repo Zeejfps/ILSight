@@ -36,7 +36,7 @@ internal static class StatusBarView
 
                 if (appState.Updates.Status is UpdateStatus.Ready)
                 {
-                    RestartToUpdateButton(ui);
+                    RestartToUpdateButton(ui, appState.Updates);
                     Dot(ui);
                 }
                 var activity = DescribeActivity(appState, t);
@@ -92,14 +92,14 @@ internal static class StatusBarView
         ui.Text("·", color: ui.Theme.TextDisabled, size: ui.Theme.FontSizeSmall);
     }
 
-    private static void RestartToUpdateButton(Ui<UiState> ui)
+    private static void RestartToUpdateButton(Ui<UiState> ui, AppUpdates updates)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var i = ui.Clickable("restart-to-update");
         if (i.Clicked)
         {
-            Commands.Start(ui.State, nameof(AppUpdates.RestartToUpdateAsync), static (a, ct) => a.Updates.RestartToUpdateAsync(a.ViewCommands, ct));
+            AboutDialogView.Restart(ui, updates.StartRestart());
         }
 
         using (ui.Row(i.Id, new Box

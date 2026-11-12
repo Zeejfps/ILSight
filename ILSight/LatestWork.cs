@@ -18,18 +18,12 @@ public sealed class LatestWork
     public CancellationToken UntilClosed => _open.Token;
 
     /// <summary>Starts work, cancelling the work in flight, whose result is then dropped. Once closed, the
-    /// work is cancelled from the start and its result dropped too.</summary>
+    /// work is cancelled from the start and its result dropped too. The edge that starts the work links the
+    /// ticket's token to the workflow's, so that being overtaken or closed is a cancellation asked for.</summary>
     public WorkTicket Start()
     {
-        return Start(CancellationToken.None);
-    }
-
-    /// <summary>As <see cref="Start()"/>, for work that also stops once <paramref name="ct"/> fires, such as a
-    /// workflow's token: the ticket's token fires with either.</summary>
-    public WorkTicket Start(CancellationToken ct)
-    {
         Cancel();
-        var ticket = new WorkTicket(CancellationTokenSource.CreateLinkedTokenSource(_open.Token, ct));
+        var ticket = new WorkTicket(CancellationTokenSource.CreateLinkedTokenSource(_open.Token));
         if (!IsClosed)
         {
             _current = ticket;
@@ -52,11 +46,19 @@ public sealed class LatestWork
         return true;
     }
 
-    /// <summary>Cancels the work in flight, if any, whose result is then dropped.</summary>
+    /// <summary>Cancels the work in flight, if any, whose result is then dropped. Its ticket is let go of at
+    /// once, as work that ends cancelled never gets to <see cref="TryFinish"/>.</summary>
     public void Cancel()
     {
-        _current?.Cancel();
+        var current = _current;
+        if (current is null)
+        {
+            return;
+        }
+
         _current = null;
+        current.Cancel();
+        current.Release();
     }
 
     /// <summary>Cancels the work in flight for good: its result is dropped, and so is that of work started later.</summary>
@@ -76,9 +78,11 @@ public sealed class WorkTicket
     internal WorkTicket(CancellationTokenSource work)
     {
         _work = work;
+        Token = work.Token;
     }
 
-    public CancellationToken Token => _work.Token;
+    /// <summary>Fires once the work is cancelled; still readable once the ticket is let go of.</summary>
+    public CancellationToken Token { get; }
 
     internal void Cancel()
     {

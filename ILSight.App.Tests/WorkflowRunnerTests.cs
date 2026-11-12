@@ -6,7 +6,7 @@ public sealed class WorkflowRunnerTests
 {
     /// <summary>Waits, without holding up the thread the workflows' continuations may need, until the work
     /// <paramref name="work"/> counts has ended.</summary>
-    private static async Task WaitUntilEndedAsync(BackgroundWork work)
+    internal static async Task WaitUntilEndedAsync(BackgroundWork work)
     {
         var clock = Stopwatch.StartNew();
         while (work.Outstanding.Count > 0)
@@ -122,6 +122,83 @@ public sealed class WorkflowRunnerTests
         await WaitUntilEndedAsync(work);
 
         Assert.Equal("timed out", Assert.IsType<TaskCanceledException>(GetReportedError(errors)).Message);
+    }
+
+    [Fact]
+    public async Task Start_SupersededByNewerWork_EndsCancelledAndReportsNothing()
+    {
+        var work = new BackgroundWork();
+        var errors = new ErrorLog();
+        var runner = new WorkflowRunner(work, errors);
+        var latest = new LatestWork();
+        var given = CancellationToken.None;
+
+        runner.Start("older search", ct =>
+        {
+            given = ct;
+            return Task.Delay(Timeout.Infinite, ct);
+        }, latest.Start().Token);
+        latest.Start();
+        await WaitUntilEndedAsync(work);
+
+        Assert.True(given.IsCancellationRequested);
+        Assert.Empty(errors.Entries);
+    }
+
+    [Fact]
+    public async Task Start_DialogClosed_EndsCancelledAndReportsNothing()
+    {
+        var work = new BackgroundWork();
+        var errors = new ErrorLog();
+        var runner = new WorkflowRunner(work, errors);
+        using var dialog = new CancellationTokenSource();
+
+        runner.Start("fetching for the dialog", static ct => Task.Delay(Timeout.Infinite, ct), dialog.Token);
+        await dialog.CancelAsync();
+        await WaitUntilEndedAsync(work);
+
+        Assert.Empty(errors.Entries);
+    }
+
+    [Fact]
+    public async Task Start_ClosedBeforeTheEdgeStartedIt_StartsWithItsTokenCancelledAndReportsNothing()
+    {
+        var work = new BackgroundWork();
+        var errors = new ErrorLog();
+        var runner = new WorkflowRunner(work, errors);
+        using var dialog = new CancellationTokenSource();
+        await dialog.CancelAsync();
+        var given = CancellationToken.None;
+
+        runner.Start("queued, then closed", ct =>
+        {
+            given = ct;
+            ct.ThrowIfCancellationRequested();
+            return Task.CompletedTask;
+        }, dialog.Token);
+        await WaitUntilEndedAsync(work);
+
+        Assert.True(given.IsCancellationRequested);
+        Assert.Empty(errors.Entries);
+    }
+
+    [Fact]
+    public async Task Start_TimedOutWhileNothingCancelledItOnPurpose_ReportsItAsAFailure()
+    {
+        var work = new BackgroundWork();
+        var errors = new ErrorLog();
+        var runner = new WorkflowRunner(work, errors);
+        using var dialog = new CancellationTokenSource();
+        var latest = new LatestWork();
+
+        runner.Start("timing out", static async _ =>
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
+            await Task.Delay(Timeout.Infinite, timeout.Token);
+        }, dialog.Token, latest.Start().Token);
+        await WaitUntilEndedAsync(work);
+
+        Assert.IsType<TaskCanceledException>(GetReportedError(errors));
     }
 
     [Fact]

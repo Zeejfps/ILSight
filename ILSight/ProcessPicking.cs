@@ -5,32 +5,10 @@ using ILSight.Core.Processes;
 
 namespace ILSight;
 
-/// <summary>What the "open from running process" dialog does with what its widgets bind: opening and closing
-/// it, and the filter typed; and what is known of a module listing whatever came of it.</summary>
+/// <summary>What the "open from running process" dialog knows of the processes: which a filter matches, and
+/// what is known of a module listing whatever came of it.</summary>
 public static class ProcessPicking
 {
-    /// <summary>Opens the dialog, its filter taking focus. The processes are looked for again by
-    /// <see cref="ProcessBrowser.ScanAsync"/>, as they come and go.</summary>
-    public static void OpenPicker(ProcessPicker picker)
-    {
-        picker.IsOpen = true;
-        picker.Browser.FocusFilter();
-    }
-
-    /// <summary>Stops what the dialog started and forgets the process picked, once it closed.</summary>
-    public static void ClosePicker(ProcessPicker picker)
-    {
-        picker.IsOpen = false;
-        picker.Browser.Close();
-    }
-
-    /// <summary>Takes in the filter as typed; returns the process whose modules are to be listed now, or null.
-    /// See <see cref="ProcessBrowser.Update"/>.</summary>
-    public static RunningProcess? UpdatePicker(ProcessPicker picker)
-    {
-        return picker.Browser.Update(picker.Filter);
-    }
-
     /// <summary>Whether <paramref name="filter"/> is in the process's name, id or entry assembly's name.</summary>
     public static bool IsMatch(RunningProcess process, string filter)
     {
@@ -116,9 +94,17 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         Task<Outcome<IReadOnlyList<RunningProcess>>> ListProcessesAsync(CancellationToken ct);
 
         /// <summary>The modules <paramref name="process"/> has loaded and its entry assembly, listed without holding
-        /// up the screen; a listing that failed comes back as <see cref="Outcome{T}.Failed"/>, as does one
-        /// <paramref name="stop"/> stopped.</summary>
-        Task<Outcome<ModuleScan>> ListModulesAsync(RunningProcess process, CancellationToken stop, CancellationToken ct);
+        /// up the screen; a listing that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<ModuleScan>> ListModulesAsync(RunningProcess process, CancellationToken ct);
+    }
+
+    /// <summary>A listing <see cref="StartListing"/> started, for <see cref="ListModulesAsync"/> to run: the
+    /// process, and the work it runs as, which picking another process or closing the dialog cancels.</summary>
+    public sealed class ListingTicket
+    {
+        public required RunningProcess Process { get; init; }
+
+        public required WorkTicket Work { get; init; }
     }
 
     private readonly List<RunningProcess> _filtered = [];
@@ -126,6 +112,7 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
     private readonly LatestWork _listings = new();
     private string? _appliedFilter;
     private bool _focusFilter;
+    private bool _stopped = true;
 
     /// <summary>How far looking for the running processes has got.</summary>
     public ProcessScan Scan { get; private set; } = new ProcessScan.NotStarted();
@@ -176,19 +163,28 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         return focus;
     }
 
-    /// <summary>Looks for the processes again, keeping those shown until the new list comes, which takes their
-    /// place unless another scan started or the dialog closed meanwhile. A listing that failed says so and is
-    /// reported.</summary>
-    public async Task ScanAsync(CancellationToken ct)
+    /// <summary>Starts looking for the processes again, in place of the scan running, which is cancelled and its
+    /// list dropped; those shown are kept until the new list comes, and with none shown the dialog draws it
+    /// scanning from now on. Returns the work <see cref="ScanAsync"/> scans as, which another scan or closing the
+    /// dialog cancels.</summary>
+    public WorkTicket StartScan()
     {
-        var ticket = _scans.Start(ct);
+        _stopped = false;
         if (Scan is not ProcessScan.Scanned)
         {
             Scan = new ProcessScan.Scanning();
         }
 
+        return _scans.Start();
+    }
+
+    /// <summary>Looks for the processes, as <paramref name="scan"/>, which <see cref="StartScan"/> started:
+    /// the new list takes the place of those shown unless another scan started or the dialog closed meanwhile.
+    /// A listing that failed says so and is reported.</summary>
+    public async Task ScanAsync(WorkTicket scan, CancellationToken ct)
+    {
         var found = await ports.ListProcessesAsync(ct);
-        if (!_scans.TryFinish(ticket))
+        if (!_scans.TryFinish(scan))
         {
             return;
         }
@@ -204,8 +200,27 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         return new ProcessScan.Failed(failed.Error.Message);
     }
 
-    /// <summary>Stops the module listing running and drops the scan's result, and forgets the process picked.</summary>
-    public void Close()
+    /// <summary>Told each frame whether the dialog is open, however it was closed (the close box, Escape, Cancel or
+    /// Open): once it is not, stops the scan and the module listing running, dropping what they find, and forgets
+    /// the process picked.</summary>
+    public void StopUnlessOpen(bool isOpen)
+    {
+        if (isOpen)
+        {
+            _stopped = false;
+            return;
+        }
+
+        if (_stopped)
+        {
+            return;
+        }
+
+        _stopped = true;
+        Stop();
+    }
+
+    private void Stop()
     {
         _scans.Cancel();
         StopListing();
@@ -278,16 +293,27 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         return selected;
     }
 
-    /// <summary>Lists the modules of <paramref name="process"/> in place of the listing running, which is stopped
-    /// and its result dropped, and shows them unless another process was picked or the dialog closed meanwhile,
-    /// the entry assembly's picked out. A listing that failed unexpectedly is reported.</summary>
-    public async Task ListModulesAsync(RunningProcess process, CancellationToken ct)
+    /// <summary>Starts listing the modules of <paramref name="process"/> in place of the listing running, which is
+    /// stopped and its result dropped: the dialog draws them loading from now on. Returns what
+    /// <see cref="ListModulesAsync"/> needs to list them, whose work picking another process or closing the dialog
+    /// cancels.</summary>
+    public ListingTicket StartListing(RunningProcess process)
     {
-        var ticket = _listings.Start(ct);
+        _stopped = false;
+        var work = _listings.Start();
         ModuleSelection.Clear();
         Modules = new ModuleScan.Loading(process);
-        var listed = await ports.ListModulesAsync(process, ticket.Token, ct);
-        if (!_listings.TryFinish(ticket))
+        return new ListingTicket { Process = process, Work = work };
+    }
+
+    /// <summary>Lists the modules of the process <paramref name="listing"/> is of, and shows them unless another
+    /// process was picked or the dialog closed meanwhile, the entry assembly's picked out. A listing that failed
+    /// unexpectedly is reported.</summary>
+    public async Task ListModulesAsync(ListingTicket listing, CancellationToken ct)
+    {
+        var process = listing.Process;
+        var listed = await ports.ListModulesAsync(process, ct);
+        if (!_listings.TryFinish(listing.Work))
         {
             return;
         }
@@ -366,9 +392,9 @@ public sealed class ProcessBrowserAdapter(Action<AppProblem> reportError) : Proc
     }
 
     /// <summary>Lists on the thread pool, as finding the entry assembly looks for files.</summary>
-    public async Task<Outcome<ModuleScan>> ListModulesAsync(RunningProcess process, CancellationToken stop, CancellationToken ct)
+    public async Task<Outcome<ModuleScan>> ListModulesAsync(RunningProcess process, CancellationToken ct)
     {
-        var listed = await Background.Wait(Task.Run(() => ScanModulesAsync(process, stop), stop));
+        var listed = await Background.Wait(Task.Run(() => ScanModulesAsync(process, ct), ct));
         ct.ThrowIfCancellationRequested();
         return listed;
     }

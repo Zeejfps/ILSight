@@ -35,12 +35,12 @@ public static class Tabs
         tabs.ClosedChanges += tab.Changes;
         if (tab == tabs.Active)
         {
-            tabs.LastWorkedIn.TrySet(null);
+            tabs.LastWorkedIn.Value = null;
         }
 
         if (tab == tabs.Preview)
         {
-            tabs.Previewing.TrySet(null);
+            tabs.Previewing.Value = null;
         }
 
         if (tab == tabs.LastDiagram)
@@ -57,7 +57,7 @@ public static class Tabs
             throw new InvalidOperationException("Only an open tab can be active.");
         }
 
-        tabs.LastWorkedIn.TrySet(tab);
+        tabs.LastWorkedIn.Value = tab;
         if (tab.Diagram is not null)
         {
             tabs.LastDiagram = tab;
@@ -72,7 +72,7 @@ public static class Tabs
             throw new InvalidOperationException("Only an open tab can be the preview tab.");
         }
 
-        tabs.Previewing.TrySet(tab);
+        tabs.Previewing.Value = tab;
     }
 
     /// <summary>Keeps <paramref name="tab"/> open: it is no longer the preview tab, if it was.</summary>
@@ -83,7 +83,7 @@ public static class Tabs
             return;
         }
 
-        tabs.Previewing.TrySet(null);
+        tabs.Previewing.Value = null;
     }
 
     public static bool IsOpen(DocumentTabs tabs, DocumentTab tab)

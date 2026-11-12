@@ -175,8 +175,8 @@ public sealed class ComparisonTests
         PickCompareWith(app);
 
         var picker = app.Ui.ComparisonPicker;
-        Assert.True(picker.IsOpen);
-        Assert.Equal(LeftPath, picker.Compared!.FilePath.Text);
+        Assert.True(picker.Choice.IsOpen);
+        Assert.Equal(LeftPath, picker.Choice.Compared!.FilePath.Text);
         Assert.True(app.Frames.Drew("Compare " + LeftName + " with"));
         Assert.True(app.Frames.Drew(RightName));
     }
@@ -191,7 +191,7 @@ public sealed class ComparisonTests
         app.Frames.Key(KeyboardKey.Escape).Frame();
         app.Run();
 
-        Assert.False(app.Ui.ComparisonPicker.IsOpen);
+        Assert.False(app.Ui.ComparisonPicker.Choice.IsOpen);
         Assert.True(app.Frames.Drew(title));
 
         app.Run(60);
@@ -207,8 +207,8 @@ public sealed class ComparisonTests
 
         app.Frames.ClickOn(Selector.AtPath("compare-picker-cancel")).Frame(2);
 
-        Assert.False(app.Ui.ComparisonPicker.IsOpen);
-        Assert.Null(app.Ui.ComparisonPicker.Compared);
+        Assert.False(app.Ui.ComparisonPicker.Choice.IsOpen);
+        Assert.Null(app.Ui.ComparisonPicker.Choice.Compared);
         Assert.False(app.Frames.Drew("Compare " + LeftName + " with"));
     }
 
@@ -222,7 +222,7 @@ public sealed class ComparisonTests
         app.Frames.WaitUntil(() => HasCompared(app.AppState.Tabs.Active?.Comparison), Patience);
         app.Settle(2);
 
-        Assert.False(app.Ui.ComparisonPicker.IsOpen);
+        Assert.False(app.Ui.ComparisonPicker.Choice.IsOpen);
         Assert.True(app.Frames.Drew(Compared));
         Assert.True(app.Frames.Drew("4 added"));
         Assert.True(app.Frames.Drew("Account"));

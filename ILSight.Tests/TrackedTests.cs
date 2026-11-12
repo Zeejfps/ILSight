@@ -10,7 +10,7 @@ public sealed class TrackedTests
         var value = new Tracked<int>(3);
 
         Assert.Equal(3, value.Value);
-        Assert.Equal(0, value.Changes);
+        Assert.Equal(0, value.Version);
     }
 
     [Fact]
@@ -18,10 +18,10 @@ public sealed class TrackedTests
     {
         var value = new Tracked<bool>(false);
 
-        Assert.True(value.TrySet(true));
+        value.Value = true;
 
         Assert.True(value.Value);
-        Assert.Equal(1, value.Changes);
+        Assert.Equal(1, value.Version);
     }
 
     [Fact]
@@ -29,9 +29,9 @@ public sealed class TrackedTests
     {
         var value = new Tracked<bool>(false);
 
-        Assert.False(value.TrySet(false));
+        value.Value = false;
 
-        Assert.Equal(0, value.Changes);
+        Assert.Equal(0, value.Version);
     }
 
     [Fact]
@@ -39,11 +39,11 @@ public sealed class TrackedTests
     {
         var value = new Tracked<string?>("a");
 
-        value.TrySet(null);
-        value.TrySet(null);
-        value.TrySet("a");
+        value.Value = null;
+        value.Value = null;
+        value.Value = "a";
 
-        Assert.Equal(2, value.Changes);
+        Assert.Equal(2, value.Version);
     }
 
     [Fact]

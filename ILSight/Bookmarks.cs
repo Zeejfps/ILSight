@@ -108,10 +108,16 @@ public static class Bookmarks
         return AddBookmark(appState, tab, node, line, nameOf);
     }
 
+    /// <summary>Removes <paramref name="bookmark"/>, which marks the line, so is listed.</summary>
     private static BookmarkToggle RemoveBookmark(AppState appState, Bookmark bookmark)
     {
         var row = appState.Bookmarks.Remove(bookmark);
-        return new BookmarkToggle.Removed(bookmark, row);
+        if (row is null)
+        {
+            throw new UnreachableException($"Bookmark '{bookmark.Name}', found marking the line, was not listed.");
+        }
+
+        return new BookmarkToggle.Removed(bookmark, row.Value);
     }
 
     private static bool CanBookmarkLine(DocumentTab tab, int line)

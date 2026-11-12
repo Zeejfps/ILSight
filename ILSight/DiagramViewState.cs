@@ -63,7 +63,7 @@ public sealed class DiagramViewState
 
     /// <summary>Counts the changes to what the settings keep of the view: where it looks and how near,
     /// the folds, and the filter.</summary>
-    public int Changes => Camera.Changes + FoldsVersion + HiddenMembersFilter.Changes;
+    public int Changes => Camera.Changes + FoldsVersion + HiddenMembersFilter.Version;
 
     /// <summary>Set until the first layout is fitted to the view.</summary>
     public bool IsFitPending = true;

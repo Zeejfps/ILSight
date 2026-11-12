@@ -19,9 +19,10 @@ internal static class ComparisonPickerView
     public static void Render(Ui<UiState> ui, AssemblyList assemblies)
     {
         var picker = ui.State.ComparisonPicker;
+        var choice = picker.Choice;
         picker.Update(assemblies);
 
-        var compared = picker.Compared;
+        var compared = choice.Compared;
         if (compared is null)
         {
             return;
@@ -32,12 +33,12 @@ internal static class ComparisonPickerView
         var compare = false;
         var close = false;
         var card = new Box { Width = Sizing.Grow(0f, AppLayout.PickerWidth), Height = Sizing.Percent(AppLayout.PickerHeight) };
-        var isOpen = picker.IsOpen;
+        var isOpen = choice.IsOpen;
         using (var dialog = ui.Dialog(DialogId, t.ComparePickerTitle(compared.NameAndVersion), ref isOpen, card))
         {
             if (!isOpen)
             {
-                picker.LetGo();
+                choice.LetGo();
             }
 
             if (!dialog.IsOpen)
@@ -48,10 +49,10 @@ internal static class ComparisonPickerView
             var listId = ui.GetId(ListId);
             if (!ui.HasFocus(listId))
             {
-                MoveSelectionFromFilter(ui, picker, listId);
+                MoveSelectionFromFilter(ui, choice, listId);
             }
 
-            if (picker.TryTakeFilterFocus())
+            if (choice.TryTakeFilterFocus())
             {
                 ui.Focus(ui.GetId(FilterId));
             }
@@ -59,32 +60,32 @@ internal static class ComparisonPickerView
             compare |= ui.TextField(FilterId, ref picker.Filter, t.ComparePickerFilter, clearable: true);
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
             {
-                compare |= ListOrHint(ui, picker, listId);
+                compare |= ListOrHint(ui, choice, listId);
             }
 
             using (ui.Row(new Box { Gap = theme.GapTight }))
             {
                 ui.Spacer();
                 close |= ui.Button(t.PickerCancel, id: "compare-picker-cancel");
-                compare |= ui.Button(t.ComparePickerCompare, enabled: picker.Selected is not null, id: "compare-picker-compare", variant: ButtonVariant.Primary);
+                compare |= ui.Button(t.ComparePickerCompare, enabled: choice.Selected is not null, id: "compare-picker-compare", variant: ButtonVariant.Primary);
             }
         }
         if (compare)
         {
-            close |= TryCompareWithSelected(ui.State, picker, compared, t);
+            close |= TryCompareWithSelected(ui.State, choice, compared, t);
         }
 
         if (close)
         {
-            picker.Close();
+            choice.Close();
         }
     }
 
     /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>
-    private static void MoveSelectionFromFilter(Ui<UiState> ui, ComparisonPicker picker, int listId)
+    private static void MoveSelectionFromFilter(Ui<UiState> ui, ComparisonChoice choice, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);
-        var count = picker.Filtered.Count;
+        var count = choice.Filtered.Count;
         foreach (var stroke in ui.Input.Keys)
         {
             var movesCaret = stroke.Key is KeyboardKey.Home or KeyboardKey.End;
@@ -93,23 +94,23 @@ internal static class ComparisonPickerView
                 continue;
             }
 
-            var index = picker.Selection.Rows.Index;
+            var index = choice.Selection.Rows.Index;
             if (!UiWidgets.ApplyListKey(stroke, ref index, count, page))
             {
                 continue;
             }
 
-            picker.Selection.Rows.Select(index, count);
-            ItemSelections.TakeFrom(picker.Selection, picker.Filtered);
+            choice.Selection.Rows.Select(index, count);
+            ItemSelections.TakeFrom(choice.Selection, choice.Filtered);
         }
     }
 
     /// <summary>The assemblies offered, or why there are none. True when one was activated.</summary>
-    private static bool ListOrHint(Ui<UiState> ui, ComparisonPicker picker, int listId)
+    private static bool ListOrHint(Ui<UiState> ui, ComparisonChoice choice, int listId)
     {
-        if (picker.Filtered.Count > 0)
+        if (choice.Filtered.Count > 0)
         {
-            return Rows(ui, picker, listId);
+            return Rows(ui, choice, listId);
         }
 
         var theme = ui.Theme;
@@ -117,20 +118,20 @@ internal static class ComparisonPickerView
         return false;
     }
 
-    private static bool Rows(Ui<UiState> ui, ComparisonPicker picker, int listId)
+    private static bool Rows(Ui<UiState> ui, ComparisonChoice choice, int listId)
     {
         bool activated;
-        ItemSelections.ShowIn(picker.Selection, picker.Filtered);
-        using (var list = ui.SelectableList(listId, picker.Filtered.Count, picker.Selection.Rows))
+        ItemSelections.ShowIn(choice.Selection, choice.Filtered);
+        using (var list = ui.SelectableList(listId, choice.Filtered.Count, choice.Selection.Rows))
         {
             for (var i = list.First; i < list.End; i++)
             {
-                Row(ui, list, i, picker.Filtered[i]);
+                Row(ui, list, i, choice.Filtered[i]);
             }
 
             activated = list.Activated;
         }
-        ItemSelections.TakeFrom(picker.Selection, picker.Filtered);
+        ItemSelections.TakeFrom(choice.Selection, choice.Filtered);
         return activated;
     }
 
@@ -161,9 +162,9 @@ internal static class ComparisonPickerView
     }
 
     /// <summary>Compares the assembly to compare with the one selected, if any; true when it did.</summary>
-    private static bool TryCompareWithSelected(UiState screen, ComparisonPicker picker, LoadedModule compared, Strings t)
+    private static bool TryCompareWithSelected(UiState screen, ComparisonChoice choice, LoadedModule compared, Strings t)
     {
-        var other = picker.Selected;
+        var other = choice.Selected;
         if (other is null)
         {
             return false;

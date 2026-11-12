@@ -56,7 +56,8 @@ internal static partial class AppFrames
 
     /// <summary>Does what comes before the "open from NuGet" dialog draws: hands the package it downloaded over to
     /// be opened, closing it; and while it is open, starts the search what was typed asks for, so that the dialog
-    /// draws it searching, or asks for a frame once what is being typed will have settled.</summary>
+    /// draws it searching, or asks for a frame once what is being typed will have settled; and starts fetching the
+    /// icons and details the last frame showed for the first time.</summary>
     internal static void FollowNuGetPicker(Ui<UiState> ui, AppState appState)
     {
         var picker = ui.State.NuGetPicker;
@@ -67,11 +68,13 @@ internal static partial class AppFrames
         }
 
         var now = ui.RealTime;
-        var search = NuGetPicking.UpdatePicker(picker, now);
+        var search = picker.Update(now);
         if (search is not null)
         {
             StartSearching(appState, picker.Browser, search);
         }
+
+        StartFetching(appState.Workflows, picker.Browser);
 
         if (picker.Browser.IsSettling)
         {
@@ -90,25 +93,51 @@ internal static partial class AppFrames
             return;
         }
 
-        var process = ProcessPicking.UpdatePicker(picker);
+        var process = picker.Update();
         if (process is not null)
         {
             StartListingModules(appState, picker.Browser, process);
         }
     }
 
-    /// <summary>Starts listing the modules of <paramref name="process"/> now, before the frame draws. A method of
-    /// its own, so that the frames that start nothing allocate no closure.</summary>
+    /// <summary>Starts listing the modules of <paramref name="process"/> now, before the frame draws, on a token
+    /// that picking another process and closing the dialog cancel too. A method of its own, so that the frames
+    /// that start nothing allocate no closure.</summary>
     private static void StartListingModules(AppState appState, ProcessBrowser browser, RunningProcess process)
     {
-        appState.Workflows.Start(nameof(ProcessBrowser.ListModulesAsync), ct => browser.ListModulesAsync(process, ct));
+        var listing = browser.StartListing(process);
+        appState.Workflows.Start(nameof(ProcessBrowser.ListModulesAsync), ct => browser.ListModulesAsync(listing, ct), listing.Work.Token);
     }
 
-    /// <summary>Starts <paramref name="search"/> now, before the frame draws. A method of its own, so that the
-    /// frames that start nothing allocate no closure.</summary>
-    private static void StartSearching(AppState appState, NuGetBrowser browser, NuGetBrowser.FeedSearch search)
+    /// <summary>Starts <paramref name="wanted"/> now, before the frame draws, on a token that a newer search and
+    /// closing the dialog cancel too. A method of its own, so that the frames that start nothing allocate no
+    /// closure.</summary>
+    private static void StartSearching(AppState appState, NuGetBrowser browser, NuGetBrowser.FeedSearch wanted)
     {
-        appState.Workflows.Start(nameof(NuGetBrowser.SearchAsync), ct => browser.SearchAsync(search, ct));
+        var search = browser.StartSearch(wanted);
+        appState.Workflows.Start(nameof(NuGetBrowser.SearchAsync), ct => browser.SearchAsync(search, ct), search.Work.Token);
+    }
+
+    /// <summary>Starts a workflow of its own for each icon and each version's details the dialog asked for since
+    /// the last frame, so that one that fails does not stop the others, each on a token that closing the dialog
+    /// cancels too. Allocates nothing while nothing is asked for.</summary>
+    internal static void StartFetching(WorkflowRunner workflows, NuGetBrowser browser)
+    {
+        if (!browser.HasDownloadsToStart)
+        {
+            return;
+        }
+
+        var closed = browser.UntilClosed;
+        foreach (var icon in browser.TakeIconsToFetch())
+        {
+            workflows.Start(nameof(NuGetBrowser.DownloadIconAsync), ct => browser.DownloadIconAsync(icon, ct), closed);
+        }
+
+        foreach (var details in browser.TakeDetailsToFetch())
+        {
+            workflows.Start(nameof(NuGetBrowser.ReadDetailsAsync), ct => browser.ReadDetailsAsync(details, ct), closed);
+        }
     }
 
     /// <summary>Reads the open assemblies again, as F5 does, when the options that apply as they are read changed.</summary>
@@ -345,7 +374,13 @@ internal static partial class AppFrames
         }
 
         var updates = appState.Updates;
-        appState.Workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(asked: false, ct));
+        var check = updates.StartCheck(asked: false);
+        if (check is null)
+        {
+            return;
+        }
+
+        appState.Workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(check, ct));
     }
 
     /// <summary>Reads the user's themes and icon themes again whenever their folders change, from the app's start

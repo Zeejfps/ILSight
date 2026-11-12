@@ -20,21 +20,44 @@ public abstract record ComparisonDialog
     public sealed record Going(LoadedModule Compared) : ComparisonDialog;
 }
 
-/// <summary>The "compare with" dialog: the assembly to compare, and the other open assemblies whose API
-/// it can be compared with, those of its name first, filtered by name or path, one of them selected. It
-/// closes when the assembly to compare is closed.</summary>
+/// <summary>The "compare with" dialog as its widgets bind it: the filter typed; and <see cref="Choice"/>, the
+/// assembly to compare and those offered to compare it with, which keeps its own rules.</summary>
 public sealed class ComparisonPicker
 {
-    private readonly List<LoadedModule> _candidates = new();
+    public string Filter = "";
 
-    /// <summary>The assemblies offered, in the order shown.</summary>
-    public readonly List<LoadedModule> Filtered = new();
+    /// <summary>The assembly to compare, those it can be compared with and the one selected.</summary>
+    public ComparisonChoice Choice { get; } = new();
+
+    /// <summary>Opens the dialog to pick what to compare <paramref name="compared"/> with, its filter empty.</summary>
+    public void Open(LoadedModule compared)
+    {
+        Filter = "";
+        Choice.Open(compared);
+    }
+
+    /// <summary>Takes in the filter typed and the assemblies open; see <see cref="ComparisonChoice.Update"/>.</summary>
+    public void Update(AssemblyList assemblies)
+    {
+        Choice.Update(assemblies, Filter);
+    }
+}
+
+/// <summary>What the "compare with" dialog offers, and the rules it keeps: the assembly to compare, and the other
+/// open assemblies whose API it can be compared with, those of its name first, filtered by name or path, one of
+/// them selected. It closes when the assembly to compare is closed.</summary>
+public sealed class ComparisonChoice
+{
+    private readonly List<LoadedModule> _candidates = new();
+    private readonly List<LoadedModule> _filtered = new();
     private int _listedVersion = -1;
     private string? _appliedFilter;
     private bool _focusFilter;
 
+    /// <summary>The assemblies offered, in the order shown.</summary>
+    public IReadOnlyList<LoadedModule> Filtered => _filtered;
+
     public ComparisonDialog Dialog { get; private set; } = new ComparisonDialog.Closed();
-    public string Filter = "";
 
     /// <summary>The assembly selected to compare with, held by itself, so that it can't point past the
     /// assemblies offered as they change.</summary>
@@ -64,7 +87,6 @@ public sealed class ComparisonPicker
     public void Open(LoadedModule compared)
     {
         Dialog = new ComparisonDialog.Open(compared);
-        Filter = "";
         ItemSelections.Clear(Selection);
         _focusFilter = true;
         _listedVersion = -1;
@@ -94,9 +116,9 @@ public sealed class ComparisonPicker
         return focus;
     }
 
-    /// <summary>While open, lists the assemblies again when the open ones or the filter changed since the last
-    /// frame; closes the dialog when the assembly to compare is no longer open.</summary>
-    public void Update(AssemblyList assemblies)
+    /// <summary>While open, lists the assemblies again when the open ones or <paramref name="filter"/> changed
+    /// since the last frame; closes the dialog when the assembly to compare is no longer open.</summary>
+    public void Update(AssemblyList assemblies, string filter)
     {
         if (Dialog is not ComparisonDialog.Open open)
         {
@@ -104,7 +126,7 @@ public sealed class ComparisonPicker
         }
 
         RefreshCandidates(assemblies, open.Compared);
-        ApplyFilter();
+        ApplyFilter(filter);
     }
 
     private void RefreshCandidates(AssemblyList assemblies, LoadedModule compared)
@@ -134,27 +156,27 @@ public sealed class ComparisonPicker
     }
 
     /// <summary>Filters the candidates, selecting the first shown unless the one selected still is.</summary>
-    private void ApplyFilter()
+    private void ApplyFilter(string filter)
     {
         if (!IsOpen)
         {
             return;
         }
 
-        if (Filter == _appliedFilter)
+        if (filter == _appliedFilter)
         {
             return;
         }
 
-        _appliedFilter = Filter;
+        _appliedFilter = filter;
         var selected = Selected;
-        Filtered.Clear();
-        var filter = Filter.Trim();
+        _filtered.Clear();
+        var trimmed = filter.Trim();
         foreach (var candidate in _candidates)
         {
-            if (Matches(candidate, filter))
+            if (Matches(candidate, trimmed))
             {
-                Filtered.Add(candidate);
+                _filtered.Add(candidate);
             }
         }
         SelectAgain(selected);
@@ -177,7 +199,7 @@ public sealed class ComparisonPicker
 
     private void SelectAgain(LoadedModule? selected)
     {
-        if (Filtered.Count == 0)
+        if (_filtered.Count == 0)
         {
             ItemSelections.Clear(Selection);
             return;
@@ -185,9 +207,9 @@ public sealed class ComparisonPicker
         var index = 0;
         if (selected is not null)
         {
-            index = Math.Max(0, Filtered.IndexOf(selected));
+            index = Math.Max(0, _filtered.IndexOf(selected));
         }
 
-        ItemSelections.Select(Selection, Filtered[index], Filtered);
+        ItemSelections.Select(Selection, _filtered[index], _filtered);
     }
 }

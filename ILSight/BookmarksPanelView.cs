@@ -437,11 +437,17 @@ internal static class BookmarksPanelView
         return (stroke.Modifiers & (KeyModifiers.Control | KeyModifiers.Alt | KeyModifiers.Super)) != 0;
     }
 
-    /// <summary>Removes <paramref name="bookmark"/>, passing its selection to the bookmark now in its row.</summary>
+    /// <summary>Removes <paramref name="bookmark"/>, passing its selection to the bookmark now in its row; nothing
+    /// when it is no longer listed.</summary>
     internal static void Remove(BookmarksPanel panel, BookmarkList bookmarks, Bookmark bookmark)
     {
         var row = bookmarks.Remove(bookmark);
-        TakeRemoved(panel, bookmark, row, bookmarks.Items);
+        if (row is null)
+        {
+            return;
+        }
+
+        TakeRemoved(panel, bookmark, row.Value, bookmarks.Items);
     }
 
     /// <summary>Goes to the next enabled bookmark after the selected one, or the previous when

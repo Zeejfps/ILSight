@@ -83,7 +83,7 @@ internal static class NuGetPlaceholderView
         Note(ui, noMatch);
         if (ui.Button(t.NugetClearSearch, id: "nuget-clear"))
         {
-            NuGetPicking.ClearQuery(picker);
+            picker.ClearQuery();
         }
     }
 

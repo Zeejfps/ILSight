@@ -64,10 +64,34 @@ public sealed class AppUpdatesTests
         return AnswerAsync(new Outcome<UpdateInfo?>.Ok(Update(version)));
     }
 
+    /// <summary>Starts a check as the about dialog does, then runs it as the edge does; nothing when none started.</summary>
+    private static Task CheckAsync(AppUpdates updates, bool asked, CancellationToken ct)
+    {
+        var check = updates.StartCheck(asked);
+        if (check is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return updates.CheckAsync(check, ct);
+    }
+
+    /// <summary>Starts a restart as the about dialog does, then runs it as the edge does; nothing when none started.</summary>
+    private static Task RestartAsync(AppUpdates updates, Queue<ViewCommand> viewCommands, CancellationToken ct)
+    {
+        var restart = updates.StartRestart();
+        if (restart is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return updates.RestartToUpdateAsync(restart, viewCommands, ct);
+    }
+
     private static async Task<AppUpdates> CreateReadyAsync(FakePorts ports)
     {
         var updates = new AppUpdates(ports);
-        await updates.CheckAsync(asked: true, CancellationToken.None);
+        await CheckAsync(updates, asked: true, CancellationToken.None);
         Assert.IsType<UpdateStatus.Ready>(updates.Status);
         return updates;
     }
@@ -79,7 +103,7 @@ public sealed class AppUpdatesTests
         var updates = new AppUpdates(ports);
         using var shutdown = new CancellationTokenSource();
 
-        await updates.CheckAsync(asked: false, shutdown.Token);
+        await CheckAsync(updates, asked: false, shutdown.Token);
 
         var ready = Assert.IsType<UpdateStatus.Ready>(updates.Status);
         Assert.Equal("9.0.0", AppUpdates.GetVersion(ready.Update));
@@ -95,7 +119,7 @@ public sealed class AppUpdatesTests
         var ports = new FakePorts();
         var updates = new AppUpdates(ports);
 
-        await updates.CheckAsync(asked, CancellationToken.None);
+        await CheckAsync(updates, asked, CancellationToken.None);
 
         Assert.IsType(expected, updates.Status);
         Assert.Equal([nameof(FakePorts.LookUpUpdateAsync)], ports.Asked);
@@ -109,7 +133,7 @@ public sealed class AppUpdatesTests
         var ports = new FakePorts { Find = static _ => AnswerAsync(new Outcome<UpdateInfo?>.Failed(new HttpRequestException("Offline"))) };
         var updates = new AppUpdates(ports);
 
-        await updates.CheckAsync(asked, CancellationToken.None);
+        await CheckAsync(updates, asked, CancellationToken.None);
 
         Assert.IsType(expected, updates.Status);
         Assert.True(updates.CanCheck());
@@ -123,7 +147,7 @@ public sealed class AppUpdatesTests
         var ports = new FakePorts { Find = static _ => FoundAsync("9.0.0"), Downloads = false };
         var updates = new AppUpdates(ports);
 
-        await updates.CheckAsync(asked, CancellationToken.None);
+        await CheckAsync(updates, asked, CancellationToken.None);
 
         Assert.IsType(expected, updates.Status);
     }
@@ -134,7 +158,7 @@ public sealed class AppUpdatesTests
         var ports = new FakePorts { IsInstalledCopy = false, Find = static _ => FoundAsync("9.0.0") };
         var updates = new AppUpdates(ports);
 
-        await updates.CheckAsync(asked: true, CancellationToken.None);
+        await CheckAsync(updates, asked: true, CancellationToken.None);
 
         Assert.IsType<UpdateStatus.Idle>(updates.Status);
         Assert.Empty(ports.Asked);
@@ -147,9 +171,9 @@ public sealed class AppUpdatesTests
         var answer = new TaskCompletionSource<Outcome<UpdateInfo?>>();
         var ports = new FakePorts { Find = _ => answer.Task };
         var updates = new AppUpdates(ports);
-        var first = updates.CheckAsync(asked: false, CancellationToken.None);
+        var first = CheckAsync(updates, asked: false, CancellationToken.None);
 
-        await updates.CheckAsync(asked: true, CancellationToken.None);
+        await CheckAsync(updates, asked: true, CancellationToken.None);
         answer.SetResult(new Outcome<UpdateInfo?>.Ok(null));
         await first;
 
@@ -165,7 +189,7 @@ public sealed class AppUpdatesTests
         using var shutdown = new CancellationTokenSource();
         await shutdown.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => updates.CheckAsync(asked: true, shutdown.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CheckAsync(updates, asked: true, shutdown.Token));
 
         Assert.IsNotType<UpdateStatus.Failed>(updates.Status);
         Assert.DoesNotContain(nameof(FakePorts.TryDownloadAsync), ports.Asked);
@@ -178,7 +202,7 @@ public sealed class AppUpdatesTests
         var updates = await CreateReadyAsync(ports);
         var viewCommands = new Queue<ViewCommand>();
 
-        await updates.RestartToUpdateAsync(viewCommands, CancellationToken.None);
+        await RestartAsync(updates, viewCommands, CancellationToken.None);
 
         Assert.IsType<ViewCommand.Quit>(Assert.Single(viewCommands));
         Assert.IsType<UpdateStatus.Restarting>(updates.Status);
@@ -192,7 +216,7 @@ public sealed class AppUpdatesTests
         var updates = await CreateReadyAsync(ports);
         var viewCommands = new Queue<ViewCommand>();
 
-        await updates.RestartToUpdateAsync(viewCommands, CancellationToken.None);
+        await RestartAsync(updates, viewCommands, CancellationToken.None);
 
         Assert.Empty(viewCommands);
         Assert.IsType<UpdateStatus.Failed>(updates.Status);
@@ -205,9 +229,54 @@ public sealed class AppUpdatesTests
         var updates = new AppUpdates(ports);
         var viewCommands = new Queue<ViewCommand>();
 
-        await updates.RestartToUpdateAsync(viewCommands, CancellationToken.None);
+        await RestartAsync(updates, viewCommands, CancellationToken.None);
 
         Assert.Empty(viewCommands);
+        Assert.Empty(ports.Asked);
+        Assert.IsType<UpdateStatus.Idle>(updates.Status);
+    }
+
+    [Fact]
+    public async Task StartCheck_ClickedInTheAboutDialog_SaysItIsCheckingBeforeTheLookUpRuns()
+    {
+        var answer = new TaskCompletionSource<Outcome<UpdateInfo?>>();
+        var ports = new FakePorts { Find = _ => answer.Task };
+        var updates = new AppUpdates(ports);
+
+        var check = updates.StartCheck(asked: true);
+        var shownAtOnce = updates.Status;
+        var askedBeforeTheEdgeRan = ports.Asked.Count;
+        Assert.NotNull(check);
+        var checking = updates.CheckAsync(check, CancellationToken.None);
+        answer.SetResult(new Outcome<UpdateInfo?>.Ok(null));
+        await checking;
+
+        Assert.IsType<UpdateStatus.Checking>(shownAtOnce);
+        Assert.Equal(0, askedBeforeTheEdgeRan);
+        Assert.IsType<UpdateStatus.UpToDate>(updates.Status);
+    }
+
+    [Fact]
+    public async Task StartRestart_Clicked_SaysItIsRestartingBeforeTheUpdaterStarts()
+    {
+        var ports = new FakePorts { Find = static _ => FoundAsync("9.0.0") };
+        var updates = await CreateReadyAsync(ports);
+
+        var restart = updates.StartRestart();
+
+        Assert.NotNull(restart);
+        Assert.IsType<UpdateStatus.Restarting>(updates.Status);
+        Assert.NotEqual(nameof(FakePorts.TryApplyAfterExitAsync), ports.Asked[^1]);
+    }
+
+    [Fact]
+    public async Task CheckAsync_CheckItDidNotStart_DoesNothing()
+    {
+        var ports = new FakePorts();
+        var updates = new AppUpdates(ports);
+
+        await updates.CheckAsync(new UpdateCheck { Asked = true }, CancellationToken.None);
+
         Assert.Empty(ports.Asked);
         Assert.IsType<UpdateStatus.Idle>(updates.Status);
     }

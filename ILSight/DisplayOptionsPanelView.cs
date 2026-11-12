@@ -28,8 +28,6 @@ internal static class DisplayOptionsPanelView
     private const float WholeWidth = 1f;
     private const string PreviewText = "The quick brown fox jumps over the lazy dog";
 
-    private const int NothingPicked = -1;
-
     private static readonly ConditionalWeakTable<Strings, string[]> UiScaleLabels = new();
     private static readonly ConditionalWeakTable<Strings, string[]> TokenFormatLabels = new();
     private static readonly TokenFormat[] TokenFormats = Enum.GetValues<TokenFormat>();
@@ -197,11 +195,11 @@ internal static class DisplayOptionsPanelView
     private static void PickTheme(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen)
     {
         var labels = themes.ListNames(ui.State.Strings.Culture);
-        var current = themes.FindThemeIndex(chosen) ?? NothingPicked;
+        var current = themes.FindThemeIndex(chosen);
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
-        if (picked != NothingPicked)
+        if (picked is not null)
         {
-            Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => a.Theme = theme);
+            Commands.Later(ui.State, themes.Ids[picked.Value], static (a, theme) => a.Theme = theme);
         }
     }
 
@@ -271,11 +269,11 @@ internal static class DisplayOptionsPanelView
     private static void PickIconTheme(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen)
     {
         var labels = themes.ListNames(ui.State.Strings.Culture);
-        var current = themes.FindThemeIndex(chosen) ?? NothingPicked;
+        var current = themes.FindThemeIndex(chosen);
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
-        if (picked != NothingPicked)
+        if (picked is not null)
         {
-            Commands.Later(ui.State, themes.Ids[picked], static (a, theme) => a.IconTheme = theme);
+            Commands.Later(ui.State, themes.Ids[picked.Value], static (a, theme) => a.IconTheme = theme);
         }
     }
 
@@ -337,15 +335,16 @@ internal static class DisplayOptionsPanelView
     {
         var labels = UiScaleLabels.GetValue(ui.State.Strings, ListUiScaleLabels);
         var scales = DisplayOptions.UiScales;
-        var current = IndexOfScale(scales, ui.State.Display.UiScale);
+        var current = FindScaleIndex(scales, ui.State.Display.UiScale);
         var picked = PickFrom(ui, "ui-scale", labels, current);
-        if (picked != NothingPicked)
+        if (picked is not null)
         {
-            SetUiScale(ui.State, scales[picked]);
+            SetUiScale(ui.State, scales[picked.Value]);
         }
     }
 
-    private static int IndexOfScale(IReadOnlyList<float> scales, float scale)
+    /// <summary>Where <paramref name="scale"/> is among <paramref name="scales"/>, or null when it is none of them.</summary>
+    private static int? FindScaleIndex(IReadOnlyList<float> scales, float scale)
     {
         for (var i = 0; i < scales.Count; i++)
         {
@@ -354,7 +353,7 @@ internal static class DisplayOptionsPanelView
                 return i;
             }
         }
-        return NothingPicked;
+        return null;
     }
 
     private static string[] ListUiScaleLabels(Strings t)
@@ -373,7 +372,7 @@ internal static class DisplayOptionsPanelView
     private static void LanguagePicker(Ui<UiState> ui, Locale chosen)
     {
         var locales = Locales.All;
-        var current = NothingPicked;
+        int? current = null;
         for (var i = 0; i < locales.Count; i++)
         {
             if (locales[i].Locale == chosen)
@@ -382,9 +381,9 @@ internal static class DisplayOptionsPanelView
             }
         }
         var picked = PickFrom(ui, "language", LocaleLabels, current);
-        if (picked != NothingPicked)
+        if (picked is not null)
         {
-            Commands.Later(ui.State, locales[picked].Locale, static (a, locale) => a.Locale = locale);
+            Commands.Later(ui.State, locales[picked.Value].Locale, static (a, locale) => a.Locale = locale);
         }
     }
 
@@ -398,27 +397,27 @@ internal static class DisplayOptionsPanelView
     /// <summary>A dropdown as wide as the widest of <paramref name="labels"/> while the row has room, cut
     /// short with its label ellipsized when the row is narrow, showing the one at
     /// <paramref name="current"/>, or the first when it is none of them; returns the index picked on
-    /// this frame, or <see cref="NothingPicked"/>. Its items are told apart by <paramref name="itemIds"/>
+    /// this frame, or null. Its items are told apart by <paramref name="itemIds"/>
     /// when labels can repeat, else by their labels; the open menu closes when <paramref name="revision"/>
     /// changes, as when the items change under it.</summary>
-    private static int PickFrom(Ui<UiState> ui, string id, string[] labels, int current)
+    private static int? PickFrom(Ui<UiState> ui, string id, string[] labels, int? current)
     {
         return PickFrom<string>(ui, id, labels, current, null, 0);
     }
 
-    private static int PickFrom<TItem>(Ui<UiState> ui, string id, string[] labels, int current, IReadOnlyList<TItem>? itemIds,
+    private static int? PickFrom<TItem>(Ui<UiState> ui, string id, string[] labels, int? current, IReadOnlyList<TItem>? itemIds,
         int revision)
         where TItem : notnull
     {
         var width = ControlWidth(PickerMinWidth, ui.SelectButtonWidth(labels));
-        var shown = Math.Max(current, 0);
+        var shown = current ?? 0;
         using var menu = ui.SelectButton(id, labels[shown], width, revision: revision);
         if (!menu.IsOpen)
         {
-            return NothingPicked;
+            return null;
         }
 
-        var picked = NothingPicked;
+        int? picked = null;
         for (var i = 0; i < labels.Length; i++)
         {
             var itemId = ItemIdAt(itemIds, i);
@@ -692,11 +691,12 @@ internal static class DisplayOptionsPanelView
     private static void TokenFormatPicker(Ui<UiState> ui)
     {
         var labels = TokenFormatLabels.GetValue(ui.State.Strings, ListTokenFormatLabels);
-        var current = Array.IndexOf(TokenFormats, ui.State.Display.TreeTokens);
+        var index = Array.IndexOf(TokenFormats, ui.State.Display.TreeTokens);
+        int? current = index >= 0 ? index : null;
         var picked = PickFrom(ui, "tokens", labels, current);
-        if (picked != NothingPicked)
+        if (picked is not null)
         {
-            SetTreeTokens(ui.State, TokenFormats[picked]);
+            SetTreeTokens(ui.State, TokenFormats[picked.Value]);
         }
     }
 

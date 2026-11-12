@@ -117,16 +117,16 @@ public sealed class BookmarkList
         return _items.Any(other => Bookmarks.MarksSameLine(bookmark, other));
     }
 
-    /// <summary>Removes <paramref name="bookmark"/>; returns the row it was in, or -1 when it was not listed.</summary>
-    public int Remove(Bookmark bookmark)
+    /// <summary>Removes <paramref name="bookmark"/>; returns the row it was in, or null when it was not listed.</summary>
+    public int? Remove(Bookmark bookmark)
     {
-        var index = _items.IndexOf(bookmark);
-        if (index < 0)
+        var index = FindRow(bookmark);
+        if (index is null)
         {
-            return -1;
+            return null;
         }
 
-        _items.RemoveAt(index);
+        _items.RemoveAt(index.Value);
         return index;
     }
 

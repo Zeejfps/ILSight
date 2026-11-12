@@ -56,7 +56,7 @@ public sealed class DocumentTabs
     {
         get
         {
-            var changes = Open.Revision + LastWorkedIn.Changes + Previewing.Changes + ClosedChanges;
+            var changes = Open.Revision + LastWorkedIn.Version + Previewing.Version + ClosedChanges;
             foreach (var tab in Open)
             {
                 changes += tab.Changes;

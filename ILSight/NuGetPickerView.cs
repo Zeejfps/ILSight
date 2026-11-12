@@ -28,20 +28,20 @@ internal static class NuGetPickerView
     public static void Open(UiState uiState)
     {
         var picker = uiState.NuGetPicker;
-        NuGetPicking.OpenPicker(picker);
-        Commands.Start(uiState, nameof(NuGetPicking.ReadSetupAsync), picker, static (_, p, ct) => NuGetPicking.ReadSetupAsync(p, ct));
+        picker.Open();
+        Commands.Start(uiState, nameof(NuGetPicker.ReadSetupAsync), picker, static (_, p, ct) => p.ReadSetupAsync(ct));
     }
 
     /// <summary>Draws the dialog, over the search for what was typed, which starts before it draws (see
-    /// <see cref="AppFrames.FollowNuGetPicker"/>), and asks for the icons and details it showed for the first
-    /// time to be fetched once the frame is drawn.</summary>
+    /// <see cref="AppFrames.FollowNuGetPicker"/>); then tells what it found whether it is still open, which stops
+    /// what it started once it is not, however it was closed, freeing the images of the icons it showed. The icons
+    /// and details it showed for the first time are fetched from the next frame on, which it asks for.</summary>
     public static void Render(Ui<UiState> ui)
     {
         var picker = ui.State.NuGetPicker;
-        var wasOpen = picker.IsOpen;
         Dialog(ui, picker);
-        CloseIfDismissed(ui, picker, wasOpen);
-        DownloadWhatWasShown(ui, picker.Browser);
+        FreeImages(ui, picker.Browser.StopUnlessOpen(picker.IsOpen));
+        AskForFetchingFrame(ui, picker.Browser);
         DialogWindows.Settle(picker.Window, ui.Input.IsDown(PointerButton.Left));
     }
 
@@ -56,25 +56,28 @@ internal static class NuGetPickerView
         }
 
         Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssemblyAsync), path, static (a, p, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, p, ct));
-        Close(ui, picker);
+        picker.IsOpen = false;
     }
 
-    private static void DownloadWhatWasShown(Ui<UiState> ui, NuGetBrowser browser)
+    /// <summary>Has the next frame come at once while icons or details shown for the first time wait to be
+    /// fetched, which the frame edge starts (see <see cref="AppFrames.StartFetching"/>).</summary>
+    private static void AskForFetchingFrame(Ui<UiState> ui, NuGetBrowser browser)
     {
         if (!browser.HasDownloadsToStart)
         {
             return;
         }
 
-        Commands.Start(ui.State, nameof(NuGetBrowser.DownloadAskedAsync), browser, static (_, b, ct) => b.DownloadAskedAsync(ct));
+        ui.RequestUpdateIn(0);
     }
 
-    /// <summary>Closes the dialog and frees the images of the icons it showed.</summary>
-    private static void Close(Ui<UiState> ui, NuGetPicker picker)
+    /// <summary>Frees the images of the icons the dialog showed. Goes through them by index, as it runs every
+    /// frame: a foreach over the list would allocate its enumerator.</summary>
+    private static void FreeImages(Ui<UiState> ui, IReadOnlyList<string> images)
     {
-        foreach (var image in NuGetPicking.ClosePicker(picker))
+        for (var i = 0; i < images.Count; i++)
         {
-            ui.RemoveImage(image);
+            ui.RemoveImage(images[i]);
         }
     }
 
@@ -100,25 +103,21 @@ internal static class NuGetPickerView
         open |= Footer(ui, picker);
         if (open)
         {
-            Commands.Start(ui.State, nameof(NuGetBrowser.DownloadPickedAsync), picker.Browser, static (_, b, ct) => b.DownloadPickedAsync(ct));
+            Download(ui, picker.Browser, picker.Browser.StartDownload());
         }
     }
 
-    /// <summary>Stops what the dialog started once its close button or Escape dismissed it, which
-    /// only clears <see cref="NuGetPicker.IsOpen"/>.</summary>
-    private static void CloseIfDismissed(Ui<UiState> ui, NuGetPicker picker, bool wasOpen)
+    /// <summary>Asks for <paramref name="download"/>, which the dialog draws from this frame on, to be fetched
+    /// once the frame is drawn; nothing when no download started. Closing the dialog cancels it.</summary>
+    private static void Download(Ui<UiState> ui, NuGetBrowser browser, NuGetBrowser.DownloadTicket? download)
     {
-        if (!wasOpen)
+        if (download is null)
         {
             return;
         }
 
-        if (picker.IsOpen)
-        {
-            return;
-        }
-
-        Close(ui, picker);
+        Commands.Start(ui.State, nameof(NuGetBrowser.DownloadAsync), (Browser: browser, Download: download),
+            static (_, d, ct) => d.Browser.DownloadAsync(d.Download, ct), download.Work.Token);
     }
 
     /// <summary>The query, whether prereleases count, and the feed. Enter in the query opens the
@@ -159,9 +158,10 @@ internal static class NuGetPickerView
         }
     }
 
+    /// <summary>Downloads the package picked, or searches what was typed first; either shows from this frame on.</summary>
     private static void Submit(Ui<UiState> ui, NuGetPicker picker)
     {
-        Commands.Start(ui.State, nameof(NuGetBrowser.SubmitAsync), picker.Browser, static (_, b, ct) => b.SubmitAsync(ct));
+        Download(ui, picker.Browser, picker.Browser.Submit());
         ui.RequestUpdateIn(0);
     }
 
@@ -179,7 +179,7 @@ internal static class NuGetPickerView
             var current = source.Url.Text == picker.FeedUrl;
             if (ui.MenuRadioItem(source.Name, current, id: source.Url.Text))
             {
-                NuGetPicking.PickFeed(picker, source);
+                picker.PickFeed(source);
             }
         }
     }
@@ -523,7 +523,7 @@ internal static class NuGetPickerView
             ui.Spacer();
             if (ui.Button(t.NugetCancel, id: "nuget-cancel"))
             {
-                Close(ui, picker);
+                picker.IsOpen = false;
             }
 
             return ui.Button(t.NugetOpen, enabled: picker.Browser.CanOpen, id: "nuget-open", variant: ButtonVariant.Primary, busy: picker.Browser.IsDownloading);

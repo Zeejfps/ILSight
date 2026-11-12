@@ -18,7 +18,7 @@ public static class ScreenSettings
         uiState.ExportColumns.Restore(saved.ExportColumns);
         uiState.ProcessColumns.Restore(saved.ProcessColumns);
         uiState.ProcessModuleColumns.Restore(saved.ProcessModuleColumns);
-        NuGetPicking.RestoreSearch(uiState.NuGetPicker, saved.NuGet);
+        uiState.NuGetPicker.RestoreSearch(saved.NuGet);
         DialogWindows.Restore(uiState.NuGetPicker.Window, saved.NuGetWindow);
         DialogWindows.Restore(uiState.ExportSetup.Window, saved.ExportWindow);
         DialogWindows.Restore(uiState.ProcessPicker.Window, saved.ProcessWindow);

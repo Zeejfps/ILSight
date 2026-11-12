@@ -81,7 +81,7 @@ internal static class AboutDialogView
             var label = ui.Memo("about-restart", (t, Version: AppUpdates.GetVersion(ready.Update)), static a => a.t.AboutRestartToUpdate(a.Version));
             if (ui.Button(label, id: "about-updates"))
             {
-                Commands.Start(ui.State, nameof(AppUpdates.RestartToUpdateAsync), static (a, ct) => a.Updates.RestartToUpdateAsync(a.ViewCommands, ct));
+                Restart(ui, updates.StartRestart());
             }
 
             return;
@@ -89,8 +89,32 @@ internal static class AboutDialogView
         var text = ButtonText(ui, updates.Status);
         if (ui.Button(text, enabled: updates.CanCheck(), id: "about-updates", variant: ButtonVariant.Neutral))
         {
-            Commands.Start(ui.State, nameof(AppUpdates.CheckAsync), static (a, ct) => a.Updates.CheckAsync(asked: true, ct));
+            Check(ui, updates.StartCheck(asked: true));
         }
+    }
+
+    /// <summary>Asks for <paramref name="check"/>, which the status shows from this frame on, to look for a newer
+    /// version once the frame is drawn; nothing when no check started.</summary>
+    private static void Check(Ui<UiState> ui, UpdateCheck? check)
+    {
+        if (check is null)
+        {
+            return;
+        }
+
+        Commands.Start(ui.State, nameof(AppUpdates.CheckAsync), check, static (a, c, ct) => a.Updates.CheckAsync(c, ct));
+    }
+
+    /// <summary>Asks for <paramref name="restart"/>, which the status shows from this frame on, to hand the update
+    /// over once the frame is drawn; nothing when none is ready.</summary>
+    internal static void Restart(Ui<UiState> ui, UpdateRestart? restart)
+    {
+        if (restart is null)
+        {
+            return;
+        }
+
+        Commands.Start(ui.State, nameof(AppUpdates.RestartToUpdateAsync), restart, static (a, r, ct) => a.Updates.RestartToUpdateAsync(r, a.ViewCommands, ct));
     }
 
     private static string ButtonText(Ui<UiState> ui, UpdateStatus status)

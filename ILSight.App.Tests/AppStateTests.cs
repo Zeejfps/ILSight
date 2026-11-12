@@ -42,9 +42,9 @@ public sealed class AppStateTests
         d.Show(d.Fixture("Greeter"), inNewTab: true);
         var greeter = d.AppState.Tabs.Active!;
 
-        var wasActive = CloseTab(d.AppState, greeter);
+        var closed = CloseTab(d.AppState, greeter);
 
-        Assert.True(wasActive);
+        Assert.True(closed.WasActive);
         Assert.Null(d.AppState.Tabs.Active);
         Assert.Single(d.AppState.Tabs.Open);
     }

@@ -33,7 +33,7 @@ public static class Diagrams
     /// <summary>Shows members hidden from other assemblies on every card when <paramref name="shows"/>.</summary>
     public static void ShowHiddenMembers(DiagramViewState view, bool shows)
     {
-        view.HiddenMembersFilter.TrySet(shows);
+        view.HiddenMembersFilter.Value = shows;
     }
 
     /// <summary>Selects the card of <paramref name="type"/> and brings it into view once it is laid out.</summary>
@@ -60,7 +60,7 @@ public static class Diagrams
             RestoreFolds(view, saved.Folds);
         }
 
-        view.HiddenMembersFilter.TrySet(saved.ShowsHiddenMembers);
+        view.HiddenMembersFilter.Value = saved.ShowsHiddenMembers;
         view.IsFitPending = false;
     }
 

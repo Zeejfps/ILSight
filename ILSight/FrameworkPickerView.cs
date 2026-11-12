@@ -10,18 +10,24 @@ namespace ILSight;
 internal static class FrameworkPickerView
 {
     /// <summary>Opens the picker, drawn from this frame on, and asks for the runtime to be scanned for it once the
-    /// frame is drawn.</summary>
+    /// frame is drawn, unless it was: the picker draws it scanning from this frame on.</summary>
     public static void Open(UiState uiState)
     {
         var picker = uiState.Picker;
-        picker.Open();
-        Commands.Start(uiState, nameof(FrameworkPicker.ScanAsync), picker, static (_, p, ct) => p.ScanAsync(ct));
+        var scan = picker.Open();
+        if (scan is null)
+        {
+            return;
+        }
+
+        Commands.Start(uiState, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct));
     }
 
     public static void Render(Ui<UiState> ui, AssemblyList assemblies)
     {
         var t = ui.State.Strings;
         var picker = ui.State.Picker;
+        var browser = picker.Browser;
         picker.Update(assemblies);
 
         var theme = ui.Theme;
@@ -38,10 +44,10 @@ internal static class FrameworkPickerView
             var listId = ui.GetId("picker-list");
             if (!ui.HasFocus(listId))
             {
-                MoveSelectionFromFilter(ui, picker, listId);
+                MoveSelectionFromFilter(ui, browser, listId);
             }
 
-            if (picker.TryTakeFilterFocus())
+            if (browser.TryTakeFilterFocus())
             {
                 ui.Focus(ui.GetId("picker-filter"));
             }
@@ -50,7 +56,7 @@ internal static class FrameworkPickerView
 
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
             {
-                switch (picker.Scan)
+                switch (browser.Scan)
                 {
                     case RuntimeScan.NotStarted:
                     case RuntimeScan.Scanning:
@@ -61,7 +67,7 @@ internal static class FrameworkPickerView
                             color: theme.TextMuted, wrap: true);
                         break;
                     case RuntimeScan.Scanned:
-                        open |= Rows(ui, picker, listId);
+                        open |= Rows(ui, browser, listId);
                         break;
                     default:
                         throw new UnreachableException();
@@ -70,18 +76,18 @@ internal static class FrameworkPickerView
 
             using (ui.Row(new Box { Gap = theme.GapTight }))
             {
-                var counts = (Shown: picker.Filtered.Count, Selected: picker.Selection.Count, t);
+                var counts = (Shown: browser.Filtered.Count, Selected: browser.Selection.Count, t);
                 var summary = ui.Memo("picker-count", counts, static a => Summary(a.t, a.Shown, a.Selected));
                 ui.Text(summary, color: theme.TextMuted, size: theme.FontSizeSmall);
                 ui.Spacer();
                 close |= ui.Button(t.PickerCancel, id: "picker-cancel");
-                open |= ui.Button(t.PickerOpen, enabled: picker.HasSelection, id: "picker-open", variant: ButtonVariant.Primary);
+                open |= ui.Button(t.PickerOpen, enabled: browser.HasSelection, id: "picker-open", variant: ButtonVariant.Primary);
             }
         }
 
-        if (open && picker.HasSelection)
+        if (open && browser.HasSelection)
         {
-            Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssembliesAsync), picker.ListSelected(), static (a, selected, ct) => OpenSelectedAsync(a, selected, ct));
+            Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssembliesAsync), browser.ListSelected(), static (a, selected, ct) => OpenSelectedAsync(a, selected, ct));
             close = true;
         }
         if (close)
@@ -103,7 +109,7 @@ internal static class FrameworkPickerView
     }
 
     /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>
-    private static void MoveSelectionFromFilter(Ui<UiState> ui, FrameworkPicker picker, int listId)
+    private static void MoveSelectionFromFilter(Ui<UiState> ui, FrameworkBrowser browser, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);
         foreach (var stroke in ui.Input.Keys)
@@ -111,18 +117,18 @@ internal static class FrameworkPickerView
             var movesCaret = stroke.Key is KeyboardKey.Home or KeyboardKey.End;
             if (!movesCaret)
             {
-                UiWidgets.ApplyListKey(stroke, picker.Selection, picker.Filtered, page);
+                UiWidgets.ApplyListKey(stroke, browser.Selection, browser.Filtered, page);
             }
         }
     }
 
-    private static bool Rows(Ui<UiState> ui, FrameworkPicker picker, int listId)
+    private static bool Rows(Ui<UiState> ui, FrameworkBrowser browser, int listId)
     {
         var theme = ui.Theme;
-        using var list = ui.SelectableList(listId, picker.Filtered, picker.Selection);
+        using var list = ui.SelectableList(listId, browser.Filtered, browser.Selection);
         for (var i = list.First; i < list.End; i++)
         {
-            var assembly = picker.Filtered[i];
+            var assembly = browser.Filtered[i];
             using (ui.Id(assembly.FilePath.Text))
             using (var row = list.Row(i, ui.GetId("row"), new Box { Gap = theme.GapTight }))
             {

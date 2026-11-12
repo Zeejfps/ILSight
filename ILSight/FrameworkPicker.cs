@@ -4,9 +4,43 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>The "open from framework" dialog: the runtime's assemblies not open yet, scanned once,
-/// filtered by name.</summary>
-public sealed class FrameworkPicker(FrameworkPicker.IPorts ports)
+/// <summary>The "open from framework" dialog as its widgets bind it: whether it is open and the filter typed;
+/// and <see cref="Browser"/>, the runtime's assemblies it offers, which keeps its own rules.</summary>
+public sealed class FrameworkPicker
+{
+    public bool IsOpen;
+    public string Filter = "";
+
+    /// <summary>The runtime's assemblies, scanned once, those the filter shows and those picked out.</summary>
+    public required FrameworkBrowser Browser { get; init; }
+
+    /// <summary>Opens the dialog, its filter taking focus, and starts scanning the runtime unless it was scanned or
+    /// is being scanned: the first time the dialog opens, and again after a scan failed. The dialog draws it
+    /// scanning from this frame on. Returns the work <see cref="FrameworkBrowser.ScanAsync"/> scans as, or null when
+    /// there is nothing to scan.</summary>
+    public WorkTicket? Open()
+    {
+        IsOpen = true;
+        return Browser.Open();
+    }
+
+    /// <summary>While open, takes in the filter typed and the assemblies open; see
+    /// <see cref="FrameworkBrowser.Update"/>.</summary>
+    public void Update(AssemblyList assemblies)
+    {
+        if (!IsOpen)
+        {
+            return;
+        }
+
+        Browser.Update(assemblies, Filter);
+    }
+}
+
+/// <summary>What the "open from framework" dialog offers, and the rules it keeps: the runtime's assemblies not open
+/// yet, scanned once, filtered by name, those picked out among them. Its workflow returns once its work is done,
+/// and reaches the runtime and the user's error reports through <see cref="IPorts"/>.</summary>
+public sealed class FrameworkBrowser(FrameworkBrowser.IPorts ports)
 {
     public interface IPorts
     {
@@ -18,15 +52,16 @@ public sealed class FrameworkPicker(FrameworkPicker.IPorts ports)
         Task<Outcome<IReadOnlyList<RuntimeAssembly>>> ListAssembliesAsync(CancellationToken ct);
     }
 
-    /// <summary>The assemblies offered, in the order shown.</summary>
-    public readonly List<RuntimeAssembly> Filtered = new();
+    private readonly List<RuntimeAssembly> _filtered = new();
     private readonly HashSet<AssemblyPath> _listed = new();
+    private readonly LatestWork _scans = new();
     private int _listedVersion = -1;
     private string? _appliedFilter;
     private bool _focusFilter;
 
-    public bool IsOpen;
-    public string Filter = "";
+    /// <summary>The assemblies offered, in the order shown.</summary>
+    public IReadOnlyList<RuntimeAssembly> Filtered => _filtered;
+
     public MultiSelection<RuntimeAssembly> Selection { get; } = new();
 
     public bool HasSelection => Selection.Count > 0;
@@ -36,29 +71,35 @@ public sealed class FrameworkPicker(FrameworkPicker.IPorts ports)
     /// <summary>The picked-out assemblies, in the order they are shown.</summary>
     public List<RuntimeAssembly> ListSelected()
     {
-        return Selection.InOrder(Filtered);
+        return Selection.InOrder(_filtered);
     }
 
-    /// <summary>Opens the dialog, its filter taking focus. Until <see cref="ScanAsync"/> has scanned the runtime, it
-    /// says it is scanning.</summary>
-    public void Open()
+    /// <summary>As the dialog opens: has the filter take focus and filters again, and starts scanning the runtime
+    /// unless it was scanned or is being scanned, drawn scanning from now on. Returns the work
+    /// <see cref="ScanAsync"/> scans as, or null when there is nothing to scan.</summary>
+    public WorkTicket? Open()
     {
-        IsOpen = true;
         _focusFilter = true;
         _appliedFilter = null;
+        if (Scan is RuntimeScan.Scanned or RuntimeScan.Scanning)
+        {
+            return null;
+        }
+
+        Scan = new RuntimeScan.Scanning();
+        return _scans.Start();
     }
 
-    /// <summary>Scans the runtime for the assemblies to offer, unless it was scanned or is being scanned: the
-    /// first time the dialog opens, and again after a scan failed.</summary>
-    public async Task ScanAsync(CancellationToken ct)
+    /// <summary>Scans the runtime for the assemblies to offer, as <paramref name="scan"/>, which
+    /// <see cref="Open"/> started. A runtime that could not be scanned says so and is reported.</summary>
+    public async Task ScanAsync(WorkTicket scan, CancellationToken ct)
     {
-        if (Scan is RuntimeScan.Scanned or RuntimeScan.Scanning)
+        var scanned = await ports.ListAssembliesAsync(ct);
+        if (!_scans.TryFinish(scan))
         {
             return;
         }
 
-        Scan = new RuntimeScan.Scanning();
-        var scanned = await ports.ListAssembliesAsync(ct);
         _appliedFilter = null;
         Scan = scanned.Match<RuntimeScan>(static ok => new RuntimeScan.Scanned(ok.Value), ReportFailedScan);
     }
@@ -77,16 +118,11 @@ public sealed class FrameworkPicker(FrameworkPicker.IPorts ports)
         return focus;
     }
 
-    /// <summary>While open, re-filters when the assembly list or the filter text changed since the last frame.</summary>
-    public void Update(AssemblyList assemblies)
+    /// <summary>Re-filters when the assembly list or <paramref name="filter"/> changed since the last frame.</summary>
+    public void Update(AssemblyList assemblies, string filter)
     {
-        if (!IsOpen)
-        {
-            return;
-        }
-
         RefreshListed(assemblies);
-        ApplyFilter();
+        ApplyFilter(filter);
     }
 
     private void RefreshListed(AssemblyList assemblies)
@@ -102,32 +138,32 @@ public sealed class FrameworkPicker(FrameworkPicker.IPorts ports)
         _appliedFilter = null;
     }
 
-    private void ApplyFilter()
+    private void ApplyFilter(string filter)
     {
         if (Scan is not RuntimeScan.Scanned scanned)
         {
             return;
         }
 
-        if (Filter == _appliedFilter)
+        if (filter == _appliedFilter)
         {
             return;
         }
 
-        _appliedFilter = Filter;
-        Filtered.Clear();
-        var filter = Filter.Trim();
+        _appliedFilter = filter;
+        _filtered.Clear();
+        var trimmed = filter.Trim();
         foreach (var assembly in scanned.Assemblies)
         {
-            if (Offers(assembly, filter))
+            if (Offers(assembly, trimmed))
             {
-                Filtered.Add(assembly);
+                _filtered.Add(assembly);
             }
         }
-        Selection.Reconcile(Filtered);
+        Selection.Reconcile(_filtered);
         if (!HasSelection)
         {
-            Selection.MoveTo(0, extend: false, Filtered);
+            Selection.MoveTo(0, extend: false, _filtered);
         }
     }
 
@@ -150,8 +186,9 @@ public sealed class FrameworkPicker(FrameworkPicker.IPorts ports)
 }
 
 /// <summary>Reaches the runtime installed on this machine, and the app's error reports, for
-/// <see cref="FrameworkPicker"/>.</summary>
-public sealed class FrameworkPickerAdapter(Action<AppProblem> reportError, InstalledRuntime runtime) : FrameworkPicker.IPorts
+/// <see cref="FrameworkBrowser"/>. What the scan throws comes back as <see cref="Outcome{T}.Failed"/>, except the
+/// cancellation of the token the call was given, which it lets through.</summary>
+public sealed class FrameworkPickerAdapter(Action<AppProblem> reportError, InstalledRuntime runtime) : FrameworkBrowser.IPorts
 {
     public void ReportError(AppProblem problem)
     {
@@ -162,7 +199,9 @@ public sealed class FrameworkPickerAdapter(Action<AppProblem> reportError, Insta
     /// <see cref="Outcome{T}.Failed"/>.</summary>
     public async Task<Outcome<IReadOnlyList<RuntimeAssembly>>> ListAssembliesAsync(CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => RuntimeAssemblies.ListAssemblies(runtime), ct));
+        var scanned = await Background.Wait(Task.Run(() => RuntimeAssemblies.ListAssemblies(runtime), ct));
+        ct.ThrowIfCancellationRequested();
+        return scanned;
     }
 }
 

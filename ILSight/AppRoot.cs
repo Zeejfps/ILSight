@@ -131,7 +131,7 @@ internal static class AppRoot
             Omnibar = new Omnibar { Search = Searches.CreateSearch(work, reportError, session) },
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
             Runtime = runtime,
-            Picker = new FrameworkPicker(new FrameworkPickerAdapter(reportError, runtime)),
+            Picker = new FrameworkPicker { Browser = new FrameworkBrowser(new FrameworkPickerAdapter(reportError, runtime)) },
             NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser(new NuGetBrowserAdapter(reportError, new NuGetClient(nuGetRequests))) },
             ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(new ProcessBrowserAdapter(reportError)) },
             Display = saved.Display ?? DisplayOptions.Default,

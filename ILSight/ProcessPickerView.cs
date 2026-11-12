@@ -25,29 +25,28 @@ internal static class ProcessPickerView
     /// shown too, take the rest.</summary>
     private const float ProcessPaneShare = 0.4f;
 
-    /// <summary>Opens the dialog, drawn from this frame on, and asks for the processes to be looked for again
-    /// once the frame is drawn, as they come and go.</summary>
+    /// <summary>Opens the dialog, drawn scanning from this frame on, and asks for the processes to be looked for
+    /// again once the frame is drawn, as they come and go.</summary>
     public static void Open(UiState uiState)
     {
         var picker = uiState.ProcessPicker;
-        OpenPicker(picker);
-        Refresh(uiState, picker.Browser);
+        Scan(uiState, picker.Browser, picker.Open());
     }
 
-    /// <summary>Asks for the processes to be looked for again once the frame is drawn, keeping those shown until
-    /// the new list comes.</summary>
-    private static void Refresh(UiState uiState, ProcessBrowser browser)
+    /// <summary>Asks for the processes to be looked for once the frame is drawn, as <paramref name="scan"/>, which
+    /// the dialog draws from this frame on; another scan or closing the dialog cancels it.</summary>
+    private static void Scan(UiState uiState, ProcessBrowser browser, WorkTicket scan)
     {
-        Commands.Start(uiState, nameof(ProcessBrowser.ScanAsync), browser, static (_, b, ct) => b.ScanAsync(ct));
+        Commands.Start(uiState, nameof(ProcessBrowser.ScanAsync), (Browser: browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct), scan.Token);
     }
 
     /// <summary>Draws the dialog, over the filter applied and the modules of the process selected, which start
-    /// listing before it draws (see <see cref="AppFrames.FollowProcessPicker"/>).</summary>
+    /// listing before it draws (see <see cref="AppFrames.FollowProcessPicker"/>); then tells what it found whether
+    /// it is still open, which stops what it started once it is not, however it was closed.</summary>
     public static void Render(Ui<UiState> ui)
     {
         var picker = ui.State.ProcessPicker;
         var browser = picker.Browser;
-        var wasOpen = picker.IsOpen;
         var open = false;
         var close = false;
         using (var dialog = ui.WindowDialog("process-picker", ui.State.Strings.ProcessPickerTitle, ref picker.IsOpen,
@@ -65,13 +64,12 @@ internal static class ProcessPickerView
             Commands.Start(ui.State, nameof(AssemblyOpening.OpenAssembliesAsync), browser.ListToOpen(), static (a, paths, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, paths, ct));
             close = true;
         }
-        // Escape or the close button only clear IsOpen.
-        var dismissed = wasOpen && !picker.IsOpen;
-        if (close || dismissed)
+        if (close)
         {
-            ClosePicker(picker);
+            picker.IsOpen = false;
         }
 
+        browser.StopUnlessOpen(picker.IsOpen);
         DialogWindows.Settle(picker.Window, ui.Input.IsDown(PointerButton.Left));
     }
 
@@ -115,7 +113,7 @@ internal static class ProcessPickerView
             ui.Spacer();
             if (ui.Button(t.ProcessPickerRefresh, enabled: browser.Scan is not ProcessScan.Scanning, id: "process-refresh"))
             {
-                Refresh(ui.State, browser);
+                Scan(ui.State, browser, browser.StartScan());
             }
 
             close |= ui.Button(t.PickerCancel, id: "process-cancel");

@@ -30,20 +30,20 @@ public static class Docking
         DecompileAgainIfOutdated(appState, tab);
     }
 
-    /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing. Returns whether it was the
-    /// active tab, which leaves none active until the view focuses another.</summary>
-    public static bool CloseTab(AppState appState, DocumentTab tab)
+    /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing, unless it is closed already.
+    /// Returns whether it was the active tab, which leaves none active until the view focuses another.</summary>
+    public static ClosedTab CloseTab(AppState appState, DocumentTab tab)
     {
         if (!Tabs.IsOpen(appState.Tabs, tab))
         {
-            return false;
+            return new ClosedTab { WasActive = false };
         }
 
         appState.Intent.Begin();
         var wasActive = tab == appState.Tabs.Active;
         ForgetDiagramOf(appState, tab);
         Tabs.Remove(appState.Tabs, tab);
-        return wasActive;
+        return new ClosedTab { WasActive = wasActive };
     }
 
     /// <summary>Drops the diagram <paramref name="tab"/> shows, which it is about to stop showing, from
@@ -516,4 +516,11 @@ public static class Docking
     {
         return !DockPanels.IsView(panel);
     }
+}
+
+/// <summary>What closing a tab did (<see cref="Docking.CloseTab"/>): whether it was the active tab, which leaves
+/// none active until the view focuses another.</summary>
+public readonly record struct ClosedTab
+{
+    public required bool WasActive { get; init; }
 }
