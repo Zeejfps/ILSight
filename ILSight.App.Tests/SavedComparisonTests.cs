@@ -118,7 +118,7 @@ public sealed class SavedComparisonTests : IDisposable
     public void A_comparison_of_an_assembly_no_longer_open_comes_back_saying_so()
     {
         var app = Compared();
-        AssemblyListing.CloseAssembly(app.AppState.Assemblies, app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath));
+        app.AppState.ListSession.CloseAssemblies([app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath)]);
         app.Settle(2);
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
 

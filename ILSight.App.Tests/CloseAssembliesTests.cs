@@ -1,7 +1,6 @@
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using static ILSight.AssemblyArea.AssemblyClosing;
-using static ILSight.AssemblyArea.Assemblies;
 
 namespace ILSight.App.Tests;
 
@@ -112,9 +111,33 @@ public sealed class CloseAssembliesTests
         OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
         closer.Order[2].Included = true;
 
-        CloseAssemblies(d.AppState.Assemblies, ListToClose(closer));
+        d.AppState.ListSession.CloseAssemblies(ListToClose(closer));
 
         Assert.Equal([AppStateDriver.FixturePath], ListedPaths(d));
+    }
+
+    [Fact]
+    public void Closing_an_analyzed_assembly_from_the_dialog_drops_its_analysis_and_keeps_the_others()
+    {
+        var app = AppDriver.Opened();
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssemblyAsync(a, KeyboardPath, ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
+        app.Run(2);
+        var keyboard = Assert.IsType<LoadedModule>(app.AppState.Assemblies.Listed.Single(static a => a.FilePath.Text == KeyboardPath));
+        app.Analyze(app.Fixture("Greeter"));
+        app.Analyze(keyboard.Root.Child("ZGF.KeyboardModule", "KeyboardKey"));
+        app.Settle(2);
+        Assert.Equal(2, app.AppState.Analyzer.Roots.Count);
+
+        var fixtures = app.AppState.Assemblies.Listed.Single(static a => a.FilePath.Text == AppStateDriver.FixturePath);
+        OpenCloser(app.Ui.Closer, app.AppState.Assemblies, fixtures);
+        app.Run(2);
+        app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 1, Patience);
+        app.Run(2);
+
+        var left = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(app.AppState.Analyzer.Roots));
+        Assert.Equal("KeyboardKey", left.Symbol.Label);
     }
 
     [Fact]

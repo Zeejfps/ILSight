@@ -195,7 +195,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         var paths = appState.Lists.ActivePaths.ToList();
         var tabs = ReleaseShownTabs(session.Navigation, appState.Language);
         var places = tabs.ConvertAll(t => t.Location);
-        OpenAssemblies.CloseAll(session.Assemblies, session.Analyzer);
+        session.ClearAssemblies();
 
         var reloaded = await ports.ReopenFilesAsync(paths, expanded, places, ticket.Token, ct);
         return FinishReload(session, appState.ViewCommands, appState.Decompiler, reloaded, ticket, intent, tabs);

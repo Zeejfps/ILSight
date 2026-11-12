@@ -222,7 +222,7 @@ public sealed class ComparisonTests
         var d = OpenBoth();
         var comparison = Compare(d, LeftPath, RightPath);
 
-        AssemblyListing.CloseAssembly(d.AppState.Assemblies, Opened(d, RightPath));
+        d.AppState.ListSession.CloseAssemblies([Opened(d, RightPath)]);
         d.StartComparing(SwapComparedAssemblies(d.AppState.Assemblies, comparison));
         d.Settle();
 

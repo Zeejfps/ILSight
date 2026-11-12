@@ -4,7 +4,6 @@ using ILSight.CodeViewArea;
 using ILSight.DocumentViewArea;
 using ILSight.MetadataGridArea;
 using ILSight.SearchArea;
-using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.Docking;
 using static ILSight.DocumentPanels;
 
@@ -81,7 +80,7 @@ public sealed class AppStateTests
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.StartShowing(d.Fixture("Greeter"));
 
-        d.Change(static a => CloseAllAssemblies(a.ListSession));
+        d.Change(static a => a.ListSession.CloseAllAssemblies());
         d.NextFrame();
 
         Assert.False(d.Ui.Tree.View.HasSelection);
@@ -104,7 +103,7 @@ public sealed class AppStateTests
         var table = grid.Grid;
         Assert.NotNull(table);
         var rows = table.RowCount;
-        d.Change(static a => CloseAllAssemblies(a.ListSession));
+        d.Change(static a => a.ListSession.CloseAllAssemblies());
         d.NextFrame();
         var lineBefore = DocumentPanels.GetView(d.Ui.Documents, code).Code.Pending;
         var rowBefore = DocumentPanels.GetGridState(DocumentPanels.GetView(d.Ui.Documents, grid), table).Pending;
@@ -471,7 +470,7 @@ public sealed class AppStateTests
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
 
-        AssemblyListing.CloseAssembly(d.AppState.Assemblies, d.AppState.Assemblies.Assemblies.Single(a => a.Name == "System.Private.CoreLib"));
+        d.AppState.ListSession.CloseAssemblies([d.AppState.Assemblies.Assemblies.Single(a => a.Name == "System.Private.CoreLib")]);
         Searches.Update(search, d.AppState.Assemblies, 2, true);
         d.Settle();
 

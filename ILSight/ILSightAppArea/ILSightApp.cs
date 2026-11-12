@@ -199,7 +199,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
         if (arguments.ClearList)
         {
-            Commands.StartLoads(appState, CloseAllAssemblies(appState.ListSession));
+            Commands.StartLoads(appState, appState.ListSession.CloseAllAssemblies());
         }
 
         var files = arguments.Files;

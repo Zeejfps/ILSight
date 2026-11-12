@@ -6,7 +6,6 @@ using ZGF.KeyboardModule;
 using ILSight.CodeViewArea;
 using ILSight.CommandArea;
 using static ILSight.Analysis;
-using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
@@ -283,7 +282,7 @@ public sealed class AnalyzerTests
         var document = outline.Decompile(DecompilationLanguage.CSharp);
         var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
-        AssemblyListing.CloseAssembly(d.AppState.Assemblies, assembly);
+        d.AppState.ListSession.CloseAssemblies([assembly]);
         File.Delete(copy);
 
         d.Analyze(reference);
@@ -303,7 +302,7 @@ public sealed class AnalyzerTests
 
         analyzer.RemoveRoot(analyzer.Roots[0]);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
-        d.Change(static a => CloseAllAssemblies(a.ListSession));
+        d.Change(static a => a.ListSession.CloseAllAssemblies());
 
         Assert.Equal(["Greeter"], left);
         Assert.Empty(analyzer.Roots);

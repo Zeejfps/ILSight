@@ -1,5 +1,4 @@
 using ILSight.Core;
-using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.SettingArea.Settings;
 using static ILSight.App.Tests.TestPaths;
@@ -69,7 +68,7 @@ public sealed class PickedPdbTests
         var d = OpenedCopy(temp, copy);
         Pick(d, FixturePdb);
 
-        d.Change(static a => CloseAllAssemblies(a.ListSession));
+        d.Change(static a => a.ListSession.CloseAllAssemblies());
         RememberOpenAssemblies(d.AppState.Lists, d.AppState.ListSession);
         d.AppState.SettingsSaving.Save(d.AppState);
 

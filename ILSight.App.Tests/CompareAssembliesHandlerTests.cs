@@ -92,7 +92,7 @@ public sealed class CompareAssembliesHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var comparison = NewComparison(d);
-        AssemblyListing.CloseAssembly(d.AppState.Assemblies, d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath));
+        d.AppState.ListSession.CloseAssemblies([d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath)]);
 
         var run = Comparisons.SwapComparedAssemblies(d.AppState.Assemblies, comparison);
 

@@ -202,14 +202,14 @@ internal static class TreePaneView
             case 8:
                 if (DrawTool(ui, inMenu, "close-failed", icons.AssembliesCloseFailed, t.TreeCloseFailed, AssemblyListing.AnyFailedToLoad(assemblies)))
                 {
-                    Commands.Later(ui.State, static a => CloseFailedAssemblies(a.Assemblies));
+                    Commands.Later(ui.State, static a => a.ListSession.CloseFailedAssemblies());
                 }
 
                 return;
             case 9:
                 if (DrawTool(ui, inMenu, "clear-list", icons.AssembliesClearList, t.TreeClearList, any))
                 {
-                    Commands.Later(ui.State, static a => Commands.StartLoads(a, CloseAllAssemblies(a.ListSession)));
+                    Commands.Later(ui.State, static a => Commands.StartLoads(a, a.ListSession.CloseAllAssemblies()));
                 }
 
                 return;
@@ -346,7 +346,7 @@ internal static class TreePaneView
             return;
         }
 
-        Commands.Later(ui.State, picked.Assembly, static (a, assembly) => AssemblyListing.CloseAssembly(a.Assemblies, assembly));
+        Commands.Later(ui.State, picked.Assembly, static (a, assembly) => a.ListSession.CloseAssemblies([assembly]));
     }
 
     private static void Respond(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
@@ -513,7 +513,7 @@ internal static class TreePaneView
             ui.MenuSeparator();
             if (ui.MenuItem(t.TreeCloseAssembly, id: "close-assembly"))
             {
-                Commands.Later(ui.State, node.Assembly, static (a, assembly) => AssemblyListing.CloseAssembly(a.Assemblies, assembly));
+                Commands.Later(ui.State, node.Assembly, static (a, assembly) => a.ListSession.CloseAssemblies([assembly]));
             }
         }
     }

@@ -4,7 +4,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
-using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.DiagramArea.Diagrams;
 using static ILSight.DocumentPanels;
@@ -360,7 +359,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var d = new AppStateDriver(SettingsWith(new DocumentsRecord([greeter], MissingPanel, null, null)));
 
         d.Start(RestoreActiveAssemblyListAsync);
-        d.Change(static a => CloseAllAssemblies(a.ListSession));
+        d.Change(static a => a.ListSession.CloseAllAssemblies());
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);

@@ -1,4 +1,5 @@
 using System.Reflection.Metadata.Ecma335;
+using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Analysis;
@@ -22,6 +23,41 @@ public sealed class AnalysisSymbol
 
     /// <summary>What to navigate to it by; null when it cannot be shown.</summary>
     public required CodeReference.Navigable? Reference { get; init; }
+
+    /// <summary>Whether it is in <paramref name="item"/>, an assembly or a package on the list, or read out of
+    /// one; or is that assembly.</summary>
+    public bool IsIn(LoadedAssembly item)
+    {
+        var file = FindFile();
+        if (file is null)
+        {
+            return false;
+        }
+
+        var path = AssemblyPath.Of(file.FileName);
+        if (path.Equals(item.FilePath))
+        {
+            return true;
+        }
+
+        return item is LoadedPackage && path.IsUnder(item.FilePath);
+    }
+
+    /// <summary>The file of the assembly it is in, or is; null when it has none.</summary>
+    private MetadataFile? FindFile()
+    {
+        if (Symbol is IModule module)
+        {
+            return module.MetadataFile;
+        }
+
+        if (Symbol is IEntity entity)
+        {
+            return entity.ParentModule?.MetadataFile;
+        }
+
+        return null;
+    }
 
     /// <summary>Its assembly file and metadata token, to find it again with
     /// <see cref="Analyzers.Find"/> in a later run; null for an assembly.</summary>

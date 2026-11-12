@@ -104,7 +104,7 @@ public static class AssemblyListing
     /// <summary>Removes the item of the list holding <paramref name="assembly"/>: the assembly, or the
     /// package it was read out of, whose assemblies are forgotten with it. Documents and nodes already
     /// handed out stay valid.</summary>
-    public static void CloseAssembly(AssemblyList list, LoadedAssembly assembly)
+    internal static void CloseAssembly(AssemblyList list, LoadedAssembly assembly)
     {
         var item = assembly.ListedItem;
         using (var held = list.State.Enter())
@@ -222,7 +222,7 @@ public static class AssemblyListing
     }
 
     /// <summary>Closes every assembly.</summary>
-    public static void CloseAll(AssemblyList list)
+    internal static void CloseAll(AssemblyList list)
     {
         using (var held = list.State.Enter())
         {

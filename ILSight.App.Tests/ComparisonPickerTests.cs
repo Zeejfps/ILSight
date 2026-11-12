@@ -103,7 +103,7 @@ public sealed class ComparisonPickerTests
         var d = OpenThree();
         var picker = OpenPicker(d, OlderPath);
 
-        AssemblyListing.CloseAssembly(d.AppState.Assemblies, Opened(d, OlderPath));
+        d.AppState.ListSession.CloseAssemblies([Opened(d, OlderPath)]);
         picker.Update(d.AppState.Assemblies);
 
         Assert.False(picker.Choice.IsOpen);

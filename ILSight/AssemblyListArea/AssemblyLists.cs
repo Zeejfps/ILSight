@@ -137,7 +137,7 @@ public static class AssemblyLists
     /// reopening its assemblies in place of the open ones. Returns what is left to open.</summary>
     private static ListOpening BeginOpeningActiveList(SavedAssemblyLists lists, OpenListSession session)
     {
-        var closing = CloseAllAssemblies(session);
+        var closing = session.CloseAllAssemblies();
         ReopenDocuments(lists, session);
         session.Navigation.ClearHistory();
         var (paths, reload) = BeginRestoringActiveAssemblyList(lists, session);

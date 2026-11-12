@@ -165,6 +165,25 @@ public sealed class AnalyzerTree
         Analysis.CancelNode(root);
     }
 
+    /// <summary>Removes the analyses of what is in <paramref name="item"/>, an assembly or package taken off the list,
+    /// cancelling what runs under them.</summary>
+    public void RemoveAnalysesOf(LoadedAssembly item)
+    {
+        var of = new List<AnalyzerNode>();
+        foreach (var root in _roots)
+        {
+            if (root is AnalyzerSymbolNode analyzed && analyzed.Symbol.IsIn(item))
+            {
+                of.Add(root);
+            }
+        }
+
+        foreach (var root in of)
+        {
+            RemoveRoot(root);
+        }
+    }
+
     /// <summary>Removes every root, cancelling the analyses running under them.</summary>
     public void ClearRoots()
     {

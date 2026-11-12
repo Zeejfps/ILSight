@@ -80,7 +80,8 @@ internal static class AppRoot
     {
         var runtimeDirectories = RuntimeFolders.FindDirectories();
         var runtime = new InstalledRuntime { Directories = runtimeDirectories, FilesByName = RuntimeFolders.IndexFiles(runtimeDirectories) };
-        var assemblies = new AssemblyList { Runtime = runtime };
+        var closable = new ClosableAssemblyList(runtime);
+        var assemblies = closable.List;
         var errors = new ErrorLog();
         var work = new BackgroundWork();
         var opens = new OpenRequests();
@@ -99,10 +100,8 @@ internal static class AppRoot
         var appState = new AppState
         {
             ViewCommands = viewCommands,
-            ListSession = new OpenListSession
+            ListSession = new OpenListSession(closable, new AnalyzerTree())
             {
-                Assemblies = assemblies,
-                Analyzer = new AnalyzerTree(),
                 Navigation = new Navigation { ViewCommands = viewCommands, PreviewTabs = (settings.Display ?? DisplayOptions.Default).PreviewTabs },
                 Reopened = new ReopenedTabs(),
                 Reload = new Reload(),

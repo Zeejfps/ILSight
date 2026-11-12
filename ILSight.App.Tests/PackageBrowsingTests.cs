@@ -48,7 +48,7 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
 
-        AssemblyListing.CloseAssembly(app.AppState.Assemblies, Greeter(app).Assembly);
+        app.AppState.ListSession.CloseAssemblies([Greeter(app).Assembly]);
         app.Run(2);
 
         Assert.Empty(app.AppState.Assemblies.Listed);
