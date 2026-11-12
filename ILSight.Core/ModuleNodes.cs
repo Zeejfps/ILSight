@@ -11,12 +11,6 @@ internal static class ModuleNodes
         return BrowseNodes.Create(parent, new NodeSubject.Module { Value = module });
     }
 
-    /// <summary>The root of a listed file that could not be read, without children, showing why.</summary>
-    internal static BrowseNode CreateFailedRoot(FailedAssembly failed)
-    {
-        return BrowseNodes.Create(null, new NodeSubject.FailedAssembly { Value = failed });
-    }
-
     /// <summary>The metadata, the debug metadata when there is some, the references and the resources,
     /// then every namespace a type is in or a name nests in, flat and sorted by name, each knowing the
     /// one it nests in.</summary>
@@ -110,24 +104,5 @@ internal static class ModuleNodes
             .ThenBy(static c => c.Arity)
             .Select(static c => c.Node)
             .ToArray();
-    }
-
-    /// <summary>The module's name, version and the framework it was built for. The framework picked to
-    /// resolve its references against is left out, so that the label, by which paths find the node, stays
-    /// the same when another is picked.</summary>
-    internal static string GetModuleLabel(LoadedModule module)
-    {
-        var details = new[] { module.Version?.ToString(), FindBuiltForName(module) }.OfType<string>().ToArray();
-        return details.Length == 0 ? module.Name : $"{module.Name} ({string.Join(", ", details)})";
-    }
-
-    private static string? FindBuiltForName(LoadedModule module)
-    {
-        if (module.DetectedTargetFramework is null)
-        {
-            return null;
-        }
-
-        return module.DetectedTargetFramework.Readable;
     }
 }

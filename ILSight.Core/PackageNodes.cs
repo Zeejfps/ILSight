@@ -2,12 +2,6 @@ namespace ILSight.Core;
 
 internal static class PackageNodes
 {
-    /// <summary>The root of a listed package or bundle's tree.</summary>
-    internal static BrowseNode CreatePackageRoot(LoadedPackage package)
-    {
-        return BrowseNodes.Create(null, new NodeSubject.Package { Value = PackageFolders.CreateRootFolder(package) });
-    }
-
     /// <summary>The folder's folders, then its files. An assembly file is the root of that assembly's tree,
     /// read out of the package now, so that it shows as the assembly it is; any other file is shown as a
     /// resource is.</summary>

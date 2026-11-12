@@ -50,7 +50,7 @@ public static class Trees
         var roots = new BrowseNode[listed.Count];
         for (var i = 0; i < roots.Length; i++)
         {
-            roots[i] = BrowseSessions.EnsureRoot(tree.Session, listed[i]);
+            roots[i] = tree.Session.EnsureRoot(listed[i]);
         }
 
         FollowGoneRoots(tree, roots);

@@ -23,6 +23,25 @@ public sealed class BrowseSession
     /// <summary>Where each node's children stand, which can only be read or changed holding its lock.</summary>
     internal readonly ConditionalWeakTable<BrowseNode, Guarded<ChildrenState>> Children = new();
 
+    /// <summary>The root of the listed <paramref name="item"/>'s tree (a module not read out of a package, a package,
+    /// a file that could not be read), made from the item's values the first time, then kept. Reads no file. A module
+    /// read out of a package is no listed item: its root sits in its package's tree
+    /// (<see cref="BrowseSessions.EnsureRoot"/>).</summary>
+    public BrowseNode EnsureRoot(LoadedAssembly item)
+    {
+        if (item is LoadedModule module)
+        {
+            if (module.Place is not null)
+            {
+                throw new ArgumentException($"{module.Name} is read out of a package, which is the listed item.", nameof(item));
+            }
+
+            return ModuleRoots.GetValue(module, static m => BrowseRoots.Create(m));
+        }
+
+        return OtherRoots.GetValue(item, static a => BrowseRoots.Create(a));
+    }
+
     /// <summary>Where <paramref name="node"/>'s children stand now; never blocks or builds them.</summary>
     public ChildrenState PeekChildren(BrowseNode node)
     {

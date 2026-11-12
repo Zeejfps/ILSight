@@ -168,7 +168,7 @@ public static class BrowseNodes
             NodeSubject.MetadataTable table => table.Value.Title,
             NodeSubject.Package package => package.Value.Label,
             NodeSubject.PackageFile file => file.Value.File.Name,
-            NodeSubject.Module module => ModuleNodes.GetModuleLabel(module.Value),
+            NodeSubject.Module module => BrowseRoots.GetModuleLabel(module.Value),
             NodeSubject.Namespace ns => ns.Value.Label,
             NodeSubject.FailedAssembly failed => failed.Value.FilePath.FileName,
             _ => throw new UnreachableException(),

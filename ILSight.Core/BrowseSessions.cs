@@ -18,32 +18,12 @@ public static class BrowseSessions
     /// sits in the package's tree, under the folder holding its file.</summary>
     public static BrowseNode EnsureRoot(BrowseSession session, LoadedAssembly assembly)
     {
-        if (assembly is LoadedModule module)
+        if (assembly is LoadedModule module && module.Place is not null)
         {
-            return EnsureRoot(session, module);
+            return EnsureRootInPackage(session, module, module.Place);
         }
 
-        return session.OtherRoots.GetValue(assembly, static a => CreateRoot(a));
-    }
-
-    private static BrowseNode CreateRoot(LoadedAssembly assembly)
-    {
-        return assembly switch
-        {
-            FailedAssembly failed => ModuleNodes.CreateFailedRoot(failed),
-            LoadedPackage package => PackageNodes.CreatePackageRoot(package),
-            _ => throw new UnreachableException(),
-        };
-    }
-
-    internal static BrowseNode EnsureRoot(BrowseSession session, LoadedModule module)
-    {
-        if (module.Place is null)
-        {
-            return session.ModuleRoots.GetValue(module, static m => ModuleNodes.CreateModuleRoot(m, null));
-        }
-
-        return EnsureRootInPackage(session, module, module.Place);
+        return session.EnsureRoot(assembly);
     }
 
     /// <summary>The root of <paramref name="module"/> under the folder of its package's tree holding its

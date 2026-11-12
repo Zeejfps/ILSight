@@ -61,8 +61,38 @@ public sealed class BrowseSessionTests : IDisposable
         var first = new BrowseSession();
         var second = new BrowseSession();
 
-        Assert.Same(BrowseSessions.EnsureRoot(first, assembly), BrowseSessions.EnsureRoot(first, assembly));
-        Assert.NotSame(BrowseSessions.EnsureRoot(first, assembly), BrowseSessions.EnsureRoot(second, assembly));
-        Assert.IsType<ChildrenState.Unloaded>(second.PeekChildren(BrowseSessions.EnsureRoot(first, assembly)));
+        Assert.Same(first.EnsureRoot(assembly), first.EnsureRoot(assembly));
+        Assert.Same(first.EnsureRoot(assembly), BrowseSessions.EnsureRoot(first, assembly));
+        Assert.NotSame(first.EnsureRoot(assembly), second.EnsureRoot(assembly));
+        Assert.IsType<ChildrenState.Unloaded>(second.PeekChildren(first.EnsureRoot(assembly)));
+    }
+
+    [Fact]
+    public void A_listed_items_root_shows_what_a_node_made_from_its_subject_shows()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var module = Assert.IsType<LoadedModule>(list.Open(Trees.TestAssemblyPath));
+        var failed = Assert.IsType<FailedAssembly>(list.Open(_temp.Write("broken.dll", "no assembly")));
+        var session = new BrowseSession();
+
+        AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.Module { Value = module }), session.EnsureRoot(module));
+        AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.FailedAssembly { Value = failed }), session.EnsureRoot(failed));
+    }
+
+    private static void AssertShowsTheSame(BrowseNode expected, BrowseNode actual)
+    {
+        Assert.Equal(expected.Path, actual.Path);
+        Assert.Equal(expected.Text, actual.Text);
+        Assert.Same(expected.Assembly, actual.Assembly);
+        Assert.Equal(expected.Subject.GetType(), actual.Subject.GetType());
+        Assert.Equal(expected.FullName, actual.FullName);
+        Assert.Equal(expected.Visibility, actual.Visibility);
+        Assert.Equal(expected.Reference, actual.Reference);
+        Assert.Equal(expected.Activation, actual.Activation);
+        Assert.Equal(expected.Analysis, actual.Analysis);
+        Assert.Equal(expected.CanHaveChildren, actual.CanHaveChildren);
+        Assert.Equal(expected.Name, actual.Name);
+        Assert.Equal(expected.IsCode, actual.IsCode);
+        Assert.Equal(expected.ResourceFileName, actual.ResourceFileName);
     }
 }
