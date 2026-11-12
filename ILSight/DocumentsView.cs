@@ -40,23 +40,23 @@ internal static class DocumentsView
                 Hint(ui, t.DocumentsHint);
                 break;
             case TabContent.Picture picture:
-                ResourceImageView.Render(ui, bookmarks, tooltips, tab, picture);
+                ResourceImageView.Render(ui, navigation, bookmarks, tooltips, tab, picture);
                 break;
             case TabContent.Table table:
                 RenderGrid(ui, navigation, session, language, options, previewTabs, tab, table.Grid);
                 break;
             case TabContent.Diagram diagram:
-                DiagramView.Render(ui, tooltips, tab, diagram.Types);
+                DiagramView.Render(ui, navigation, tooltips, tab, diagram.Types);
                 break;
             case TabContent.Comparison comparison:
-                ComparisonView.Render(ui, assemblies, tab, comparison.Assemblies);
+                ComparisonView.Render(ui, navigation, assemblies, tab, comparison.Assemblies);
                 break;
             case TabContent.Loading loading when !NodeContentLoader.DependsOnLanguage(loading.Node):
                 Hint(ui, t.MetadataLoading);
                 break;
             case TabContent.Code or TabContent.Report or TabContent.Loading or TabContent.Failed or TabContent.Reloading
                 or TabContent.Reopening or TabContent.Gone:
-                RenderCode(ui, bookmarks, tooltips, tab);
+                RenderCode(ui, navigation, bookmarks, tooltips, tab);
                 break;
             default:
                 throw new UnreachableException();
@@ -77,12 +77,13 @@ internal static class DocumentsView
 
         if (picked.Definition != null)
         {
-            Commands.Start(ui.State, nameof(NavigateHandler), (definition: picked.Definition, picked.InNewTab), static (a, s, ct) => a.NavigateHandler.HandleAsync(a, s.definition, s.InNewTab, ct));
+            Commands.FollowLater(ui.State, picked.Definition, navigation.BeginResolving(picked.InNewTab));
         }
     }
 
-    /// <summary>The tab's document in the code view, with its bookmarks, or the note saying why it has none.</summary>
-    public static void RenderCode(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
+    /// <summary>The tab's document in the code view, with its bookmarks, or the note saying why it has none. A reference
+    /// followed from it begins in <paramref name="navigation"/> in this frame; only its lookup is queued.</summary>
+    public static void RenderCode(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var lines = !tab.IsBusy && tab.Node is not null && tab.Document.Error is null ? bookmarks.ListMarkedLines(tab.Document, tab.Node) : null;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
@@ -90,20 +91,20 @@ internal static class DocumentsView
         var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display);
         if (result.Intent is not null)
         {
-            Act(ui, tab, result.Intent);
+            Act(ui, navigation, tab, result.Intent);
         }
 
         Zoom(ui.State, result.Zoom);
     }
 
     /// <summary>Does what the user asked the code view of <paramref name="tab"/> to do.</summary>
-    private static void Act(Ui<UiState> ui, DocumentTab tab, CodeViewIntent intent)
+    private static void Act(Ui<UiState> ui, Navigation navigation, DocumentTab tab, CodeViewIntent intent)
     {
         var t = ui.State.Strings;
         switch (intent)
         {
             case CodeViewIntent.Navigate navigate:
-                Commands.Start(ui.State, nameof(NavigateHandler), navigate, static (a, n, ct) => a.NavigateHandler.HandleAsync(a, n.Target, n.InNewTab, ct));
+                Commands.FollowLater(ui.State, navigate.Target, navigation.BeginResolving(navigate.InNewTab));
                 break;
             case CodeViewIntent.ToggleBookmark toggle:
                 Commands.Later(ui.State, (screen: ui.State, tab, line: toggle.Line, t), static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t));
@@ -112,7 +113,7 @@ internal static class DocumentsView
                 Commands.Later(ui.State, (screen: ui.State, entity: analyze.Entity), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.entity));
                 break;
             case CodeViewIntent.ShowInMetadata metadata:
-                Commands.Start(ui.State, nameof(ShowInMetadataHandler), metadata.Target, static (a, target, ct) => a.ShowInMetadataHandler.HandleAsync(a, target, inNewTab: false, ct));
+                Commands.ShowInMetadataLater(ui.State, metadata.Target, navigation.BeginResolving(inNewTab: false));
                 break;
             case CodeViewIntent.ShowInApiReference reference:
                 Commands.Start(ui.State, nameof(ShowInApiReferenceHandler), reference.Entity, static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct));

@@ -161,7 +161,7 @@ public static class MainView
                 BookmarksPanelView.Render(ui, appState.Bookmarks, appState.Assemblies);
                 break;
             case DockView.Analyzer:
-                AnalyzerPanelView.Render(ui, appState.Analyzer);
+                AnalyzerPanelView.Render(ui, appState.Navigation, appState.Analyzer);
                 break;
             case DockView.DecompilerOptions:
                 DecompilerOptionsPanelView.Render(ui, appState.DecompilerOptions);

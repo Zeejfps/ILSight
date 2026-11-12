@@ -225,7 +225,7 @@ public sealed class DiagramTests
         var tab = d.AppState.Tabs.Active!;
 
         var greeter = TypeOf(d, "Greeter");
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter, inNewTab: false, ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
         Assert.NotSame(tab, d.AppState.Tabs.Active);

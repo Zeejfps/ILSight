@@ -213,6 +213,17 @@ public sealed class Navigation
         return load;
     }
 
+    /// <summary>Begins a request whose place a lookup finds, asked for from the active tab: what was still being
+    /// looked up for an older request is dropped, and the app says it is resolving until the lookup's answer is taken
+    /// (<see cref="UserIntent.EndResolving{T}(int, Outcome{T})"/>). What it finds shows in a new tab when
+    /// <paramref name="inNewTab"/>, else where <see cref="FindTab"/> leads then. Returns the ticket the lookup's answer
+    /// is shown by.</summary>
+    public ResolveTicket BeginResolving(bool inNewTab)
+    {
+        var destination = ChooseDestination(inNewTab);
+        return new ResolveTicket { Intent = Intent.BeginResolving(), Destination = destination };
+    }
+
     /// <summary>Goes to the history entry before the current one, as <see cref="GoToHistoryEntryHandler"/> does.</summary>
     public static Task<DecompileTicket?> GoBackAsync(AppState appState, CancellationToken ct)
     {

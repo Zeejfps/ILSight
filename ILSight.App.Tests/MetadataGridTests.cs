@@ -161,6 +161,23 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
+    public void The_frame_show_in_metadata_is_picked_in_says_the_app_is_resolving()
+    {
+        var app = AppDriver.Opened(width: 1800f);
+        var greeter = app.Node(AppStateDriver.FixturesNamespace, "Greeter");
+        app.Show(greeter, 3);
+        Trees.RevealNode(app.Ui.Tree, greeter);
+        app.Run(2);
+
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Show in metadata"));
+
+        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
+        app.Settle(3);
+        Assert.Same(Table(app, "TypeDef"), app.AppState.Tabs.Active?.Node);
+    }
+
+    [Fact]
     public void Clicking_the_link_icon_of_a_hovered_token_shows_its_row()
     {
         var (app, tab, grid, row) = ShowGreeterRow();

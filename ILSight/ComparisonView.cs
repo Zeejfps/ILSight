@@ -18,8 +18,9 @@ internal static class ComparisonView
     private const string Arrow = "  →  ";
 
     /// <summary>The comparison <paramref name="tab"/> shows. Its tools change the comparison in this frame and compare
-    /// <paramref name="assemblies"/> as they are open, queuing only the comparison's run.</summary>
-    public static void Render(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
+    /// <paramref name="assemblies"/> as they are open, queuing only the comparison's run; opening an entry's code
+    /// begins following it in <paramref name="navigation"/> in this frame, queuing only its lookup.</summary>
+    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
         Comparisons.SetRowStyle(rows, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
@@ -37,8 +38,8 @@ internal static class ComparisonView
             DocumentsView.Hint(ui, hint);
             return;
         }
-        Tree(ui, rows);
-        ContextMenu(ui, rows);
+        Tree(ui, navigation, rows);
+        ContextMenu(ui, navigation, rows);
     }
 
     /// <summary>The tools in a bar of the tab's own, while the bar over documents, where they sit otherwise, is hidden.</summary>
@@ -176,13 +177,13 @@ internal static class ComparisonView
         };
     }
 
-    private static void Tree(Ui<UiState> ui, ComparisonRows rows)
+    private static void Tree(Ui<UiState> ui, Navigation navigation, ComparisonRows rows)
     {
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box);
         if (result.Activated)
         {
-            Open(ui.State, result.Node, inNewTab: false);
+            Open(ui.State, navigation, result.Node, inNewTab: false);
         }
 
         if (result.ContextMenuRequested && result.Node is not null)
@@ -191,8 +192,9 @@ internal static class ComparisonView
         }
     }
 
-    /// <summary>Asks for the code of <paramref name="entry"/> to be opened in the right assembly, else in the left.</summary>
-    private static void Open(UiState screen, ApiEntry? entry, bool inNewTab)
+    /// <summary>Begins following the code of <paramref name="entry"/> in the right assembly, else in the left, and asks
+    /// for it to be looked up and shown.</summary>
+    private static void Open(UiState screen, Navigation navigation, ApiEntry? entry, bool inNewTab)
     {
         if (entry is null)
         {
@@ -205,7 +207,7 @@ internal static class ComparisonView
             return;
         }
 
-        Commands.Start(screen, nameof(NavigateHandler), (side.Reference, inNewTab), static (a, s, ct) => a.NavigateHandler.HandleAsync(a, s.Reference, s.inNewTab, ct));
+        Commands.FollowLater(screen, side.Reference, navigation.BeginResolving(inNewTab));
     }
 
     /// <summary>How the left assembly has <paramref name="entry"/>; null for a namespace or what it lacks.</summary>
@@ -242,7 +244,7 @@ internal static class ComparisonView
         };
     }
 
-    private static void ContextMenu(Ui<UiState> ui, ComparisonRows rows)
+    private static void ContextMenu(Ui<UiState> ui, Navigation navigation, ComparisonRows rows)
     {
         var t = ui.State.Strings;
         using var menu = ui.ContextMenu(MenuId);
@@ -261,12 +263,12 @@ internal static class ComparisonView
         var right = RightOf(entry);
         if (ui.MenuItem(t.ComparisonOpenLeft, enabled: left != null, id: "open-left") && left != null)
         {
-            Commands.Start(ui.State, nameof(NavigateHandler), left.Reference, static (a, r, ct) => a.NavigateHandler.HandleAsync(a, r, inNewTab: false, ct));
+            Commands.FollowLater(ui.State, left.Reference, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.ComparisonOpenRight, enabled: right != null, id: "open-right") && right != null)
         {
-            Commands.Start(ui.State, nameof(NavigateHandler), right.Reference, static (a, r, ct) => a.NavigateHandler.HandleAsync(a, r, inNewTab: false, ct));
+            Commands.FollowLater(ui.State, right.Reference, navigation.BeginResolving(inNewTab: false));
         }
     }
 }

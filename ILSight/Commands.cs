@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight;
 
 [Edge]
@@ -48,6 +50,28 @@ public static class Commands
         {
             StartDecompiling(appState, load);
         };
+    }
+
+    /// <summary>Asks for <paramref name="reference"/> to be looked up once the frame is drawn, for the request
+    /// <paramref name="lookup"/> began, and shown where it leads (<see cref="NavigateHandler"/>), then the load that
+    /// started there: the draw began the request in the frame of its input (the app says it is resolving), and only
+    /// the lookup, which takes longer than a frame, waits for the edge. Nothing when <paramref name="lookup"/> is
+    /// null.</summary>
+    public static void FollowLater(UiState uiState, CodeReference.Navigable reference, ResolveTicket? lookup)
+    {
+        if (lookup is null)
+        {
+            return;
+        }
+
+        Start(uiState, nameof(NavigateHandler), (reference, lookup), static (a, s, ct) => a.NavigateHandler.HandleAsync(a, s.reference, s.lookup, ct));
+    }
+
+    /// <summary>As <see cref="FollowLater"/>, showing the metadata table row that defines what
+    /// <paramref name="reference"/> points at (<see cref="ShowInMetadataHandler"/>).</summary>
+    public static void ShowInMetadataLater(UiState uiState, CodeReference.Navigable reference, ResolveTicket lookup)
+    {
+        Start(uiState, nameof(ShowInMetadataHandler), (reference, lookup), static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a, s.reference, s.lookup, ct));
     }
 
     /// <summary>Asks for the comparison <paramref name="run"/> started, if any, to be run once the frame is drawn

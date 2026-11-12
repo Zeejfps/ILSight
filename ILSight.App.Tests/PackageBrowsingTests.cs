@@ -33,7 +33,7 @@ public sealed class PackageBrowsingTests
         var app = OpenedPackage(temp);
         var greeter = Greeter(app);
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter.Definition, inNewTab: false, ct));
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(2);
 
         Assert.Same(greeter, app.AppState.Tabs.Active!.Node);

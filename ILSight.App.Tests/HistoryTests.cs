@@ -65,7 +65,7 @@ public sealed class HistoryTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(tab.Document.SpanAt(line, column + "return ".Length).Reference);
         var before = ScrollTo(app, 25, new TextPosition(line, column), new TextPosition(line, column + 6));
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(4);
         var followed = tab.Node!.Text;
         app.Start((a, ct) => GoBackAsync(a, ct));

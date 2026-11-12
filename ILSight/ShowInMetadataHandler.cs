@@ -17,17 +17,15 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
         Task<Outcome<MetadataTarget?>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct);
     }
 
-    /// <summary>Resolves <paramref name="reference"/> in the background, as <see cref="NavigateHandler"/> does,
-    /// then shows the metadata table row that defines it in the tab it was asked from, or a new one when
-    /// <paramref name="inNewTab"/>, and records it in the history. Returns the load that started in the tab, for the
-    /// edge that started this to start under the tab's work; null when none started. Reports a reference that leads
-    /// nowhere; drops it when something else was asked for meanwhile.</summary>
-    public async Task<DecompileTicket?> HandleAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab, CancellationToken ct)
+    /// <summary>Resolves <paramref name="reference"/> in the background for the request <paramref name="ticket"/>
+    /// began, as <see cref="NavigateHandler"/> does, then shows the metadata table row that defines it in the tab the
+    /// ticket leads to and records it in the history. Returns the load that started in the tab, for the edge that
+    /// started this to start under the tab's work; null when none started. Reports a reference that leads nowhere;
+    /// drops it when something else was asked for meanwhile.</summary>
+    public async Task<DecompileTicket?> HandleAsync(AppState appState, CodeReference.Navigable reference, ResolveTicket ticket, CancellationToken ct)
     {
-        var destination = appState.Navigation.ChooseDestination(inNewTab);
-        var ticket = appState.Intent.BeginResolving();
         var found = await ports.LookUpMetadataRowAsync(reference, ct);
-        return ShowResolvedRow(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
+        return ShowResolvedRow(appState, reference, appState.Intent.EndResolving(ticket.Intent, found), ticket.Destination);
     }
 
     /// <summary>Shows the row <paramref name="resolved"/> found, or reports it unresolved. Returns the load it

@@ -321,9 +321,9 @@ public sealed class AppStateTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
         var farewell = d.Fixture("Farewell");
 
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.StartShowing(farewell);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: true, ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
         ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Tabs.Open[0]);
         d.NextFrame();
         d.Settle();
@@ -342,7 +342,7 @@ public sealed class AppStateTests
         var (line, column) = document.GetPosition("Name;");
 
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Tabs.Open);
@@ -387,7 +387,7 @@ public sealed class AppStateTests
         var document = d.AppState.Tabs.Active!.Document;
         var (line, column) = document.GetPosition("Length");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: true, ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
         d.Settle();
         Assert.Equal(2, d.AppState.Assemblies.Assemblies.Count);
         Searches.Update(search, d.AppState.Assemblies, 2, true);

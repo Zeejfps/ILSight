@@ -13,7 +13,7 @@ public sealed class ShowInMetadataHandlerTests
         var row = Assert.NotNull(NodeLookup.FindMetadataRow(d.AppState.Assemblies, d.AppState.Session, reference));
         var lookup = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(row) };
 
-        var load = await new ShowInMetadataHandler(lookup).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
+        var load = await new ShowInMetadataHandler(lookup).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
 
         Assert.Same(row.Node, d.AppState.Tabs.Active?.Node);
         Assert.Same(row.Node, load?.Node);
@@ -31,8 +31,8 @@ public sealed class ShowInMetadataHandlerTests
         var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(null) };
         var failed = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Failed(error) };
 
-        var missingLoad = await new ShowInMetadataHandler(missing).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
-        var failedLoad = await new ShowInMetadataHandler(failed).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
+        var missingLoad = await new ShowInMetadataHandler(missing).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
+        var failedLoad = await new ShowInMetadataHandler(failed).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
 
         Assert.Null(Assert.IsType<AppProblem.Unresolved>(Assert.Single(missing.Reported)).Error);
         Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
@@ -53,8 +53,8 @@ public sealed class ShowInMetadataHandlerTests
         var found = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(row), WhileLooking = () => appState.Intent.Begin() };
         var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<MetadataTarget?>.Ok(null), WhileLooking = () => appState.Intent.Begin() };
 
-        var foundLoad = await new ShowInMetadataHandler(found).HandleAsync(appState, reference, inNewTab: false, CancellationToken.None);
-        var missingLoad = await new ShowInMetadataHandler(missing).HandleAsync(appState, reference, inNewTab: false, CancellationToken.None);
+        var foundLoad = await new ShowInMetadataHandler(found).HandleAsync(appState, reference, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
+        var missingLoad = await new ShowInMetadataHandler(missing).HandleAsync(appState, reference, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
 
         Assert.Same(shown, appState.Tabs.Active?.Node);
         Assert.Empty(found.Reported);

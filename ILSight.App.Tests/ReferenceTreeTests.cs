@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ILSight.Core;
 
 namespace ILSight.App.Tests;
@@ -16,5 +17,24 @@ public sealed class ReferenceTreeTests
         Assert.DoesNotContain(coreLib.Assembly, app.AppState.Assemblies.Listed);
         Assert.Same(coreLib, app.Ui.Tree.View.Selected);
         Assert.Same(coreLib, app.AppState.Tabs.Active!.Node);
+    }
+
+    [Fact]
+    public void The_frame_go_to_target_is_picked_in_says_the_app_is_resolving()
+    {
+        var app = AppDriver.Opened();
+        var greeter = app.Fixture("Greeter");
+        var baseType = greeter.Child("Base Types").Children[0];
+        app.Show(greeter, 3);
+        Trees.RevealNode(app.Ui.Tree, baseType);
+        app.Run(2);
+
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, baseType.Text), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, app.Ui.Strings.TreeGoToTarget));
+
+        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
+        app.Settle(3);
+        Assert.False(app.AppState.IsResolving);
+        Assert.NotSame(greeter, app.AppState.Tabs.Active?.Node);
     }
 }

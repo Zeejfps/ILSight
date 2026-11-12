@@ -124,20 +124,21 @@ public static class Diagrams
         appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
 
-    /// <summary>Opens the code of <paramref name="target"/>, picked on <paramref name="diagram"/>, beside it,
-    /// in a new tab when <paramref name="inNewTab"/>; going back returns to the diagram. Returns the load that started
-    /// in the tab, as <see cref="NavigateHandler"/> does.</summary>
-    public static Task<DecompileTicket?> OpenFromDiagramAsync(AppState appState, TypeDiagram diagram, CodeReference.Entity target, bool inNewTab,
-        CancellationToken ct)
+    /// <summary>Begins opening the code of a type or member picked on <paramref name="diagram"/> beside it, in a new
+    /// tab when <paramref name="inNewTab"/>: records the diagram in the history, so that going back returns to it, and
+    /// begins the request whose lookup finds the code (<see cref="Navigation.BeginResolving"/>). Returns its ticket, for
+    /// <see cref="NavigateHandler"/> to look up and show what was picked; null when no open tab shows the
+    /// diagram.</summary>
+    public static ResolveTicket? BeginOpeningFromDiagram(Navigation navigation, TypeDiagram diagram, bool inNewTab)
     {
-        var tab = appState.Navigation.FindTabShowing(diagram);
+        var tab = navigation.FindTabShowing(diagram);
         if (tab is null || tab.Content is not TabContent.Diagram shown)
         {
-            return Task.FromResult<DecompileTicket?>(null);
+            return null;
         }
 
-        appState.History.RecordDiagram(shown.Types, shown.Title);
-        return appState.NavigateHandler.HandleAsync(appState, target, inNewTab, ct);
+        navigation.History.RecordDiagram(shown.Types, shown.Title);
+        return navigation.BeginResolving(inNewTab);
     }
 
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is

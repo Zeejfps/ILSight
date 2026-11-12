@@ -13,7 +13,7 @@ internal static class AnalyzerPanelView
     private const string TreeId = "analyzer";
     private const string MenuId = "analyzer-menu";
 
-    public static void Render(Ui<UiState> ui, AnalyzerTree analyzer)
+    public static void Render(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
     {
         var t = ui.State.Strings;
         var rows = ui.State.Analyzer;
@@ -26,8 +26,8 @@ internal static class AnalyzerPanelView
             DocumentsView.Hint(ui, t.AnalyzerHint(Shortcuts.Analyze.Label));
             return;
         }
-        Tree(ui);
-        ContextMenu(ui, analyzer);
+        Tree(ui, navigation);
+        ContextMenu(ui, navigation, analyzer);
     }
 
     private static void Toolbar(Ui<UiState> ui, AnalyzerTree analyzer, AnalyzerRows rows)
@@ -61,7 +61,7 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void Tree(Ui<UiState> ui)
+    private static void Tree(Ui<UiState> ui, Navigation navigation)
     {
         var rows = ui.State.Analyzer;
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
@@ -74,7 +74,7 @@ internal static class AnalyzerPanelView
 
         if (result.Activated)
         {
-            GoTo(ui.State, result.Node);
+            GoTo(ui.State, navigation, result.Node);
         }
 
         if (result.ContextMenuRequested && result.Node is AnalyzerSymbolNode)
@@ -113,9 +113,9 @@ internal static class AnalyzerPanelView
         }
     }
 
-    /// <summary>Asks for what <paramref name="node"/> stands for to be shown, when it stands for a symbol with a
-    /// reference.</summary>
-    private static void GoTo(UiState screen, AnalyzerNode? node)
+    /// <summary>Begins following what <paramref name="node"/> stands for, when it stands for a symbol with a
+    /// reference, and asks for it to be looked up and shown.</summary>
+    private static void GoTo(UiState screen, Navigation navigation, AnalyzerNode? node)
     {
         if (node is not AnalyzerSymbolNode symbol)
         {
@@ -128,10 +128,10 @@ internal static class AnalyzerPanelView
             return;
         }
 
-        Commands.Start(screen, nameof(NavigateHandler), reference, static (a, r, ct) => a.NavigateHandler.HandleAsync(a, r, inNewTab: false, ct));
+        Commands.FollowLater(screen, reference, navigation.BeginResolving(inNewTab: false));
     }
 
-    private static void ContextMenu(Ui<UiState> ui, AnalyzerTree analyzer)
+    private static void ContextMenu(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
     {
         var t = ui.State.Strings;
         var rows = ui.State.Analyzer;
@@ -150,7 +150,7 @@ internal static class AnalyzerPanelView
         var target = node.Symbol.Reference;
         if (target != null)
         {
-            GoToItems(ui, target);
+            GoToItems(ui, navigation, target);
         }
 
         if (!isRoot && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
@@ -170,17 +170,17 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void GoToItems(Ui<UiState> ui, CodeReference.Navigable target)
+    private static void GoToItems(Ui<UiState> ui, Navigation navigation, CodeReference.Navigable target)
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.AnalyzerGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.Start(ui.State, nameof(NavigateHandler), target, static (a, r, ct) => a.NavigateHandler.HandleAsync(a, r, inNewTab: false, ct));
+            Commands.FollowLater(ui.State, target, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.Start(ui.State, nameof(NavigateHandler), target, static (a, r, ct) => a.NavigateHandler.HandleAsync(a, r, inNewTab: true, ct));
+            Commands.FollowLater(ui.State, target, navigation.BeginResolving(inNewTab: true));
         }
     }
 

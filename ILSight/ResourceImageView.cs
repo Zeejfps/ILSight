@@ -21,7 +21,7 @@ internal static class ResourceImageView
         public float Scale;
     }
 
-    public static void Render(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab, TabContent.Picture shown)
+    public static void Render(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab, TabContent.Picture shown)
     {
         var theme = ui.Theme;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
@@ -32,7 +32,7 @@ internal static class ResourceImageView
         ui.Separator();
         if (view.Picture.ShowsSource)
         {
-            DocumentsView.RenderCode(ui, bookmarks, tooltips, tab);
+            DocumentsView.RenderCode(ui, navigation, bookmarks, tooltips, tab);
             return;
         }
         Picture(ui, view, image);

@@ -14,7 +14,7 @@ public sealed class NavigateHandlerTests
         var resolvingWhileLooking = false;
         var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => resolvingWhileLooking = appState.IsResolving };
 
-        var load = await new NavigateHandler(lookup).HandleAsync(appState, reference, inNewTab: false, CancellationToken.None);
+        var load = await new NavigateHandler(lookup).HandleAsync(appState, reference, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
 
         Assert.Same(reference, Assert.Single(lookup.LookedUp));
         Assert.Same(farewell, appState.Tabs.Active?.Node);
@@ -35,8 +35,8 @@ public sealed class NavigateHandlerTests
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null) };
         var failed = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Failed(error) };
 
-        var missingLoad = await new NavigateHandler(missing).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
-        var failedLoad = await new NavigateHandler(failed).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
+        var missingLoad = await new NavigateHandler(missing).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
+        var failedLoad = await new NavigateHandler(failed).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
 
         var notThere = Assert.IsType<AppProblem.Unresolved>(Assert.Single(missing.Reported));
         Assert.Same(reference, notThere.Reference);
@@ -58,8 +58,8 @@ public sealed class NavigateHandlerTests
         var found = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(farewell), WhileLooking = () => appState.Intent.Begin() };
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<BrowseNode?>.Ok(null), WhileLooking = () => appState.Intent.Begin() };
 
-        var foundLoad = await new NavigateHandler(found).HandleAsync(appState, farewell.Definition, inNewTab: false, CancellationToken.None);
-        var missingLoad = await new NavigateHandler(missing).HandleAsync(appState, farewell.Definition, inNewTab: false, CancellationToken.None);
+        var foundLoad = await new NavigateHandler(found).HandleAsync(appState, farewell.Definition, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
+        var missingLoad = await new NavigateHandler(missing).HandleAsync(appState, farewell.Definition, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
 
         Assert.Same(shown, appState.Tabs.Active?.Node);
         Assert.Null(foundLoad);

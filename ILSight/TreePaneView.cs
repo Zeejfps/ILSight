@@ -405,7 +405,7 @@ internal static class TreePaneView
         var activation = NodeDefinitions.GetActivation(node.Subject);
         if (activation is Activation.Navigate jump)
         {
-            Commands.Start(screen, nameof(NavigateHandler), jump.Target, static (a, target, ct) => a.NavigateHandler.HandleAsync(a, target, inNewTab: false, ct));
+            Commands.FollowLater(screen, jump.Target, navigation.BeginResolving(inNewTab: false));
             return;
         }
         Commands.DecompileLater(screen, navigation.OpenNode(node, language, options, previewTabs));
@@ -453,7 +453,7 @@ internal static class TreePaneView
 
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))
         {
-            Commands.Start(ui.State, nameof(NavigateHandler), jump.Target, static (a, target, ct) => a.NavigateHandler.HandleAsync(a, target, inNewTab: false, ct));
+            Commands.FollowLater(ui.State, jump.Target, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))
@@ -471,7 +471,7 @@ internal static class TreePaneView
         var definition = NodeDefinitions.ReferenceOf(node.Subject);
         if (definition != null && ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
         {
-            Commands.Start(ui.State, nameof(ShowInMetadataHandler), definition, static (a, d, ct) => a.ShowInMetadataHandler.HandleAsync(a, d, inNewTab: false, ct));
+            Commands.ShowInMetadataLater(ui.State, definition, navigation.BeginResolving(inNewTab: false));
         }
 
         if (node.Subject is NodeSubject.TypeDefinition type)
