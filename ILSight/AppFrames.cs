@@ -386,7 +386,7 @@ internal static class AppFrames
             return null;
         }
 
-        var face = CodeDisplay.EnsureFace(codeFonts, chosen);
+        var face = EnsureFace(codeFonts, chosen);
         if (face != null)
         {
             return face;
@@ -395,6 +395,47 @@ internal static class AppFrames
         SetCodeFont(uiState, null);
         ShownChanges.TryTakeCodeFont(uiState, null);
         return codeFonts.Bundled;
+    }
+
+    /// <summary>The face of <paramref name="font"/>, the bundled one when it is null; null when its file
+    /// cannot be read.</summary>
+    private static FontFace? EnsureFace(CodeFontFaces faces, CodeFont? font)
+    {
+        if (font is null)
+        {
+            return faces.Bundled;
+        }
+
+        if (faces.ReadFaces.TryGetValue(font, out var face))
+        {
+            return face;
+        }
+
+        var data = ReadFontFile(font.Path);
+        if (data is null)
+        {
+            return null;
+        }
+
+        face = new FontFace(MonoFonts.Code, data, FaceIndex: font.FaceIndex);
+        faces.ReadFaces[font] = face;
+        return face;
+    }
+
+    private static byte[]? ReadFontFile(string path)
+    {
+        try
+        {
+            return File.ReadAllBytes(path);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Runs what the screen asked of the app state while it drew, and draws again to show it.</summary>
