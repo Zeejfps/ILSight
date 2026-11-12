@@ -83,12 +83,6 @@ public static class RunArgumentsPipe
         await pipe.FlushAsync(token);
     }
 
-    /// <summary>Whether <paramref name="e"/> only means the other side went away or sent nonsense.</summary>
-    internal static bool IsBroken(Exception e)
-    {
-        return e is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException or InvalidDataException;
-    }
-
     private static async Task WriteArgumentsAsync(Stream pipe, List<string> args, CancellationToken token)
     {
         await WriteIntAsync(pipe, args.Count, token);
@@ -291,29 +285,58 @@ public static class RunArgumentsPipe
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop);
         timeout.CancelAfter(RunArgumentsPipe.HandOverTimeout);
-        try
+        var arguments = await RunArgumentsPipe.TryReceiveAsync(pipe, stop, timeout.Token);
+        if (arguments is null)
         {
-            var arguments = await RunArgumentsPipe.ReceiveAsync(pipe, timeout.Token);
-            if (receiver.Inbox.Writer.TryWrite(arguments))
-            {
-                await RunArgumentsPipe.AcknowledgeAsync(pipe, timeout.Token);
-            }
+            return;
         }
-        catch (Exception e) when (RunArgumentsPipe.IsBroken(e) && !stop.IsCancellationRequested)
+
+        if (!receiver.Inbox.Writer.TryWrite(arguments))
         {
+            return;
         }
+
+        // A run that gets no acknowledgement, or a broken one, opens a window of its own: nothing more follows here.
+        await RunArgumentsPipe.AcknowledgeAsync(pipe, timeout.Token)
+            .ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);
     }
 
-    /// <summary>Waits a moment after the server broke, so that one that stays broken is not retried in a tight loop.</summary>
-    private static async Task WaitForBrokenPipeAsync(CancellationToken token)
+    /// <summary>The arguments of the run connected to <paramref name="pipe"/>; null when it went away, sent nonsense or
+    /// took too long (<paramref name="timeout"/>), which costs only its own arguments. Stopping
+    /// (<paramref name="stop"/>) goes through.</summary>
+    private static async Task<RunArguments?> TryReceiveAsync(Stream pipe, CancellationToken stop, CancellationToken timeout)
     {
         try
         {
-            await Task.Delay(BrokenPipeWait, token);
+            return await RunArgumentsPipe.ReceiveAsync(pipe, timeout);
         }
-        catch (OperationCanceledException)
+        catch (IOException)
         {
+            return null;
         }
+        catch (TimeoutException)
+        {
+            return null;
+        }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (OperationCanceledException) when (!stop.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Waits a moment after the server broke, so that one that stays broken is not retried in a tight loop;
+    /// stopping cuts it short, which the serving loop sees for itself.</summary>
+    private static async Task WaitForBrokenPipeAsync(CancellationToken token)
+    {
+        await Task.Delay(BrokenPipeWait, token).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);
     }
 
     /// <summary>Stops listening, then releases the role, which the next receiver can then take.</summary>
