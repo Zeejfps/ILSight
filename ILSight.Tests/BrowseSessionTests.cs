@@ -26,15 +26,16 @@ public sealed class BrowseSessionTests : IDisposable
     }
 
     [Fact]
-    public async Task Cancelling_a_wait_leaves_the_build_running_for_the_others()
+    public async Task The_caller_that_starts_a_build_awaits_it_to_its_end_even_when_cancelled()
     {
         var session = new BrowseSession();
         var root = BrowseSessions.EnsureRoot(session, new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => BrowseSessions.GetChildrenAsync(session, root, new CancellationToken(canceled: true)));
+        var started = await BrowseSessions.GetChildrenAsync(session, root, new CancellationToken(canceled: true));
         var state = await BrowseSessions.GetChildrenAsync(session, root);
 
-        Assert.NotEmpty(Assert.IsType<ChildrenState.Ready>(state).Children);
+        Assert.NotEmpty(Assert.IsType<ChildrenState.Ready>(started).Children);
+        Assert.Same(started, state);
     }
 
     [Fact]

@@ -108,9 +108,10 @@ public static class BrowseSessions
         }
     }
 
-    /// <summary>The children of <paramref name="node"/>, built on the thread pool when nobody asked for
-    /// them yet. Every caller waits for the same build; cancelling a wait leaves the build running for
-    /// the others. Ends <see cref="ChildrenState.Ready"/> or <see cref="ChildrenState.Failed"/>.</summary>
+    /// <summary>The children of <paramref name="node"/>, built on the thread pool when nobody asked for them yet.
+    /// The caller that starts the build awaits it, to its end, whatever its token says, so no build runs that nobody
+    /// awaits; a caller that finds it running waits for it until <paramref name="cancellationToken"/> fires. Ends
+    /// <see cref="ChildrenState.Ready"/> or <see cref="ChildrenState.Failed"/>.</summary>
     public static Task<ChildrenState> GetChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken cancellationToken = default)
     {
         var slot = EnsureSlot(session, node);
@@ -128,7 +129,7 @@ public static class BrowseSessions
                     // Running before the build can keep what it built: it waits for the lock held here.
                     load = Task.Run(() => KeepBuilt(session, node, slot));
                     held.Value = new ChildrenState.Running(load);
-                    break;
+                    return load;
                 default:
                     throw new UnreachableException();
             }
