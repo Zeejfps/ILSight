@@ -698,12 +698,11 @@ internal static class TreePaneView
     /// <summary>The folder the assembly's file is in; null for one read out of a package, whose path runs through it.</summary>
     private static string? FindFolderOf(LoadedModule assembly)
     {
-        var folder = Path.GetDirectoryName(assembly.FilePath.Text);
-        if (!Directory.Exists(folder))
+        if (assembly.Place is not null)
         {
             return null;
         }
 
-        return folder;
+        return Path.GetDirectoryName(assembly.FilePath.Text);
     }
 }
