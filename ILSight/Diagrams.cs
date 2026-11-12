@@ -3,7 +3,6 @@ using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -120,7 +119,7 @@ public static class Diagrams
 
     private static void BringToFront(AppState appState, DocumentTab tab)
     {
-        LeaveActiveTab(appState);
+        appState.Navigation.LeaveActiveTab();
         Tabs.MakeActive(appState.Tabs, tab);
         appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
     }
@@ -131,7 +130,7 @@ public static class Diagrams
     public static Task<DecompileTicket?> OpenFromDiagramAsync(AppState appState, TypeDiagram diagram, CodeReference.Entity target, bool inNewTab,
         CancellationToken ct)
     {
-        var tab = FindTabShowing(appState, diagram);
+        var tab = appState.Navigation.FindTabShowing(diagram);
         if (tab is null || tab.Content is not TabContent.Diagram shown)
         {
             return Task.FromResult<DecompileTicket?>(null);
@@ -146,8 +145,8 @@ public static class Diagrams
     /// the read of their cards it started, as <see cref="ShowInDiagram"/> does.</summary>
     public static NeighboursRead ShowInNewDiagram(AppState appState, CodeReference.Entity type, string title)
     {
-        LeaveActiveTab(appState);
-        var tab = GetOrOpenEmptyTab(appState);
+        appState.Navigation.LeaveActiveTab();
+        var tab = appState.Navigation.GetOrOpenEmptyTab();
         var diagram = new TypeDiagram();
         Tabs.ShowDiagram(tab, title, diagram);
         Tabs.Keep(appState.Tabs, tab);

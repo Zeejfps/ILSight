@@ -8,7 +8,6 @@ using static ILSight.Assemblies;
 using static ILSight.AssemblyLists;
 using static ILSight.Diagrams;
 using static ILSight.DocumentPanels;
-using static ILSight.Navigation;
 using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingsFormat;
 using ILSight.CodeView;
@@ -189,7 +188,7 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Run(3);
         app.Show(app.Fixture("Outline"), 4);
         var outline = app.AppState.Tabs.Active!;
-        KeepTabOpen(app.AppState, outline);
+        app.AppState.Navigation.KeepTabOpen(outline);
         var outlinePosition = ScrollTo(app, outline, 20, new TextPosition(21, 4), new TextPosition(22, 8));
         app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
         app.Run(3);
@@ -203,7 +202,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Start(RestoreActiveAssemblyListAsync);
         next.Settle(4);
-        ActivateTab(next.Ui, TabTitled(next, "Outline"));
+        ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Language, next.AppState.DecompilerOptions, TabTitled(next, "Outline"));
         next.Run(4);
 
         Assert.Equal(outlinePosition, CodeOf(next, TabTitled(next, "Outline")).Position);
@@ -217,7 +216,7 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Run(3);
         app.Show(app.Fixture("Outline"), 4);
         var outline = app.AppState.Tabs.Active!;
-        KeepTabOpen(app.AppState, outline);
+        app.AppState.Navigation.KeepTabOpen(outline);
         var outlinePosition = ScrollTo(app, outline, 20, new TextPosition(21, 4), new TextPosition(22, 8));
         app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
         var greeter = app.AppState.Tabs.Active!;
@@ -232,7 +231,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var fields = new CardFold.Own(diagram.Diagram!.Cards[0].Anchor, MemberSection.Fields);
         Diagrams.ToggleFold(view, fields);
         Diagrams.ShowHiddenMembers(view, true);
-        ActivateTab(app.Ui, greeter);
+        ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Language, app.AppState.DecompilerOptions, greeter);
         app.Run(3);
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
 
@@ -263,7 +262,7 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Run(3);
         app.Show(app.Node("Metadata", "Tables").Table("TypeDef"), 4);
         var tab = GridTab(app);
-        KeepTabOpen(app.AppState, tab);
+        app.AppState.Navigation.KeepTabOpen(tab);
         var row = tab.Grid!.RowNamed("Greeter");
         MetadataGridWidget.RevealRow(GridOf(app, tab), row);
         app.Run(3);
@@ -279,7 +278,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Start(RestoreActiveAssemblyListAsync);
         next.Settle(4);
-        ActivateTab(next.Ui, GridTab(next));
+        ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Language, next.AppState.DecompilerOptions, GridTab(next));
         next.Run(4);
 
         Assert.Equal(row, GridOf(next, GridTab(next)).Selected);
@@ -396,7 +395,7 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
-        KeepTabOpen(d.AppState, d.AppState.Tabs.Active!);
+        d.AppState.Navigation.KeepTabOpen(d.AppState.Tabs.Active!);
         var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, d.AppState.Tabs.Active!);
         d.Show(d.Fixture("Farewell"), inNewTab: true);
         var layout = d.Ui.Layout;

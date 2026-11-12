@@ -4,7 +4,6 @@ using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Comparison;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -17,8 +16,8 @@ public static class Comparisons
     /// shows nothing, else in a new tab, titled <paramref name="title"/>.</summary>
     public static void CompareAssemblies(AppState appState, LoadedModule left, LoadedModule right, string title)
     {
-        LeaveActiveTab(appState);
-        var tab = GetOrOpenEmptyTab(appState);
+        appState.Navigation.LeaveActiveTab();
+        var tab = appState.Navigation.GetOrOpenEmptyTab();
         var comparison = new AssemblyComparison { LeftPath = left.FilePath, RightPath = right.FilePath };
         Tabs.ShowComparison(tab, title, comparison);
         Tabs.Keep(appState.Tabs, tab);

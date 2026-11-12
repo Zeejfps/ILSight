@@ -2,7 +2,6 @@ using ILSight.Core;
 using ILSight.Core.Diagrams;
 using static ILSight.Diagrams;
 using static ILSight.Docking;
-using static ILSight.Navigation;
 
 namespace ILSight.App.Tests;
 
@@ -105,7 +104,7 @@ public sealed class DiagramTests
     public void A_new_diagram_takes_the_active_tab_while_it_shows_nothing()
     {
         var d = AppStateDriver.Opened();
-        var empty = OpenNewTab(d.AppState);
+        var empty = d.AppState.Navigation.OpenNewTab();
         Tabs.MakeActive(d.AppState.Tabs, empty);
         var tabs = d.AppState.Tabs.Open.Count;
 

@@ -27,7 +27,7 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
             return null;
         }
 
-        LeaveActiveTab(appState);
+        appState.Navigation.LeaveActiveTab();
         var entry = appState.History.MoveToEntry(index);
         switch (entry)
         {
@@ -61,14 +61,14 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
     /// started none.</summary>
     private async Task<DecompileTicket?> ShowEntryAsync(AppState appState, HistoryEntry.Node entry, CancellationToken ct)
     {
-        var destination = ChooseDestination(appState, inNewTab: false);
+        var destination = appState.Navigation.ChooseDestination(inNewTab: false);
         var place = entry.Place;
         var position = KeepPosition(entry.Position, entry.Language, appState.Language);
-        var shown = FindShownNode(appState, FindTab(appState, destination), place);
+        var shown = FindShownNode(appState, appState.Navigation.FindTab(destination, appState.PreviewTabs), place);
         if (shown is not null)
         {
             appState.Intent.Begin();
-            return ShowNodeIn(appState, destination, shown, position);
+            return appState.Navigation.ShowNodeIn(destination, shown, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, position);
         }
 
         var ticket = appState.Intent.BeginResolving();
@@ -106,7 +106,7 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => ShowNodeIn(appState, destination, found.Value, position),
+            found => appState.Navigation.ShowNodeIn(destination, found.Value, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, position),
             _ =>
             {
                 ReportHistoryPlaceGone(place, null);
@@ -130,7 +130,7 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
     private static void BringDiagramToFront(AppState appState, TypeDiagram diagram)
     {
         appState.Intent.Begin();
-        var tab = FindTabShowing(appState, diagram);
+        var tab = appState.Navigation.FindTabShowing(diagram);
         if (tab is null)
         {
             return;

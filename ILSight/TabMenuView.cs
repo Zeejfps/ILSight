@@ -1,7 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using static ILSight.DocumentPanels;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -43,7 +42,7 @@ internal static class TabMenuView
             return;
         }
 
-        Commands.Later(ui.State, tab, static (a, kept) => KeepTabOpen(a, kept));
+        Commands.Later(ui.State, tab, static (a, kept) => a.Navigation.KeepTabOpen(kept));
     }
 
     public static void Render(Ui<UiState> ui, DocumentTabs tabs)
@@ -112,7 +111,7 @@ internal static class TabMenuView
 
         if (ui.MenuItem(ui.State.Strings.TabKeepOpen, id: "keep-open"))
         {
-            Commands.Later(ui.State, tab, static (a, kept) => KeepTabOpen(a, kept));
+            Commands.Later(ui.State, tab, static (a, kept) => a.Navigation.KeepTabOpen(kept));
         }
 
         ui.MenuSeparator();

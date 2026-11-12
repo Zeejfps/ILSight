@@ -98,6 +98,20 @@ public sealed class OmnibarTests
     }
 
     [Fact]
+    public void The_frame_a_crumb_is_clicked_in_draws_the_tab_pointed_at_its_node()
+    {
+        var app = Showing("Greeter");
+        var tab = app.AppState.Tabs.Active ?? throw new InvalidOperationException("No tab is active.");
+
+        ClickCrumb(app, AppStateDriver.FixturesNamespace);
+        var drawn = DocumentPanels.GetView(app.Ui.Documents, tab).Shown;
+
+        Assert.Same(app.Node(AppStateDriver.FixturesNamespace), tab.Node);
+        Assert.NotNull(drawn);
+        Assert.True(drawn.IsShownBy(tab));
+    }
+
+    [Fact]
     public void Clicking_a_crumb_shows_its_node_in_the_preview_tab_as_a_pick_in_the_tree_does()
     {
         var app = Showing("Greeter");

@@ -4,7 +4,6 @@ using ZGF.KeyboardModule;
 using ILSight.Core.Comparison;
 using static ILSight.Comparisons;
 using static ILSight.Docking;
-using static ILSight.Navigation;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;

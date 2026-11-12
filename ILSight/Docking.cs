@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using static ILSight.Decompilation;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -14,21 +12,6 @@ public static class Docking
     public static DocumentTab OpenEmptyTab(AppState appState)
     {
         return appState.Tabs.AddNew();
-    }
-
-    /// <summary>Makes <paramref name="tab"/>, when it is open, the tab the user works in, pointing it again at
-    /// what it shows when the language or the options changed since. Returns the load that started in the tab, for
-    /// <see cref="DecompileIntoTabHandler"/> to bring in; null when none did.</summary>
-    public static DecompileTicket? FocusTab(AppState appState, DocumentTab tab)
-    {
-        if (!Tabs.IsOpen(appState.Tabs, tab))
-        {
-            return null;
-        }
-
-        appState.Intent.Begin();
-        Tabs.MakeActive(appState.Tabs, tab);
-        return StartDecompilingAgainIfOutdated(appState.ViewCommands, tab, appState.Language, appState.DecompilerOptions);
     }
 
     /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing, unless it is closed already.
@@ -91,7 +74,7 @@ public static class Docking
             return appState.Tabs.Open[0];
         }
 
-        return OpenNewTab(appState);
+        return appState.Navigation.OpenNewTab();
     }
 
     /// <summary>Closes every document tab, leaving none open.</summary>

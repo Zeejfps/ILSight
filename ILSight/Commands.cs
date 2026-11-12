@@ -28,20 +28,25 @@ public static class Commands
         };
     }
 
-    /// <summary>Asks for <paramref name="show"/> to be done to the app state and <paramref name="subject"/> once the
-    /// frame is drawn, pointing a tab at what it is to show, and for the load it started in the tab, if any, to be
-    /// started then (<see cref="StartDecompiling"/>). Pass a <c>static</c> lambda, handing it what it acts on as
-    /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
-    public static void ShowLater<T>(UiState uiState, T subject, Func<AppState, T, DecompileTicket?> show)
+    /// <summary>Asks for what <paramref name="load"/> started loading in its tab, if anything, to be brought in once
+    /// the frame is drawn (<see cref="StartDecompiling(AppState, DecompileTicket?)"/>): the draw points the tab in the
+    /// frame of its input, and only the decompile, which takes longer than a frame, waits for the edge. Allocates
+    /// nothing when no load started.</summary>
+    public static void DecompileLater(UiState uiState, DecompileTicket? load)
     {
-        uiState.AppCommands.Enqueue(CreateShow(subject, show));
+        if (load is null)
+        {
+            return;
+        }
+
+        uiState.AppCommands.Enqueue(CreateDecompile(load));
     }
 
-    private static AppCommand CreateShow<T>(T subject, Func<AppState, T, DecompileTicket?> show)
+    private static AppCommand CreateDecompile(DecompileTicket load)
     {
         return appState =>
         {
-            StartDecompiling(appState, show(appState, subject));
+            StartDecompiling(appState, load);
         };
     }
 

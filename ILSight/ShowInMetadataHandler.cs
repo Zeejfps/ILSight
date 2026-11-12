@@ -1,6 +1,5 @@
 using ILSight.Core;
 using ILSight.Core.Metadata;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -25,7 +24,7 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     /// nowhere; drops it when something else was asked for meanwhile.</summary>
     public async Task<DecompileTicket?> HandleAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab, CancellationToken ct)
     {
-        var destination = ChooseDestination(appState, inNewTab);
+        var destination = appState.Navigation.ChooseDestination(inNewTab);
         var ticket = appState.Intent.BeginResolving();
         var found = await ports.LookUpMetadataRowAsync(reference, ct);
         return ShowResolvedRow(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
@@ -36,7 +35,7 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     private DecompileTicket? ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => ShowRowIn(appState, destination, found.Value),
+            found => appState.Navigation.ShowRowIn(destination, found.Value, appState.Language, appState.DecompilerOptions, appState.PreviewTabs),
             _ =>
             {
                 ReportUnresolved(reference, null);

@@ -6,7 +6,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -25,7 +24,12 @@ internal static class OmnibarView
     private const int MenuRows = 12;
     private const float CrumbMinWidth = 24f;
 
-    public static void Render(Ui<UiState> ui, DocumentTab tab)
+    /// <summary>The bar over <paramref name="tab"/>. A crumb, child or match picked shows in
+    /// <paramref name="navigation"/>'s tabs in this frame, in <paramref name="language"/> with
+    /// <paramref name="options"/>, in the preview tab while <paramref name="previewTabs"/>; only its decompile is
+    /// queued.</summary>
+    public static void Render(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
+        DocumentTab tab)
     {
         if (!ui.State.Display.ShowOmnibar)
         {
@@ -35,11 +39,11 @@ internal static class OmnibarView
         var panel = DocumentPanels.GetPanel(ui.State.Documents, tab);
         if (ContinueSearch(ui, panel))
         {
-            SearchBar(ui);
+            SearchBar(ui, navigation, language, options, previewTabs);
         }
         else
         {
-            PathBar(ui, tab, panel);
+            PathBar(ui, navigation, language, options, previewTabs, tab, panel);
         }
 
         ui.Separator();
@@ -70,7 +74,8 @@ internal static class OmnibarView
         return false;
     }
 
-    private static void PathBar(Ui<UiState> ui, DocumentTab tab, string panel)
+    private static void PathBar(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
+        DocumentTab tab, string panel)
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         view.Breadcrumb.Follow(tab.Node, ui.State.Tree);
@@ -82,7 +87,7 @@ internal static class OmnibarView
             {
                 using (ui.Id(i))
                 {
-                    CrumbButton(ui, crumbs[i], i);
+                    CrumbButton(ui, navigation, language, options, previewTabs, crumbs[i], i);
                     var owner = ChildrenButton(ui, panel, crumbs, i);
                     if (owner != 0)
                     {
@@ -94,7 +99,7 @@ internal static class OmnibarView
             SearchArea(ui, panel);
             SearchButton(ui, panel);
         }
-        ChildrenMenu(ui, panel, menuOwner);
+        ChildrenMenu(ui, navigation, language, options, previewTabs, panel, menuOwner);
     }
 
     /// <summary>The tools of what the tab shows that no node stands for: a diagram's or a comparison's.</summary>
@@ -113,7 +118,8 @@ internal static class OmnibarView
 
     /// <summary>The node's icon and name, which gives up room, earlier crumbs first, while the path is
     /// too long for the bar.</summary>
-    private static void CrumbButton(Ui<UiState> ui, Crumb crumb, int depth)
+    private static void CrumbButton(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
+        Crumb crumb, int depth)
     {
         var theme = ui.Theme;
         var node = crumb.Node;
@@ -137,12 +143,12 @@ internal static class OmnibarView
         ui.Tooltip(i.Id, NodeText.Tooltip(node));
         if (i.Clicked)
         {
-            Commands.ShowLater(ui.State, (node, inNewTab: IsCommandHeld(ui)), static (a, s) => PickNode(a, s.node, s.inNewTab));
+            Commands.DecompileLater(ui.State, PickNode(navigation, node, IsCommandHeld(ui), language, options, previewTabs));
         }
 
         if (i.ClickedWith(PointerButton.Middle))
         {
-            Commands.ShowLater(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
+            Commands.DecompileLater(ui.State, navigation.ShowNode(node, language, options, previewTabs, inNewTab: true));
         }
     }
 
@@ -172,13 +178,14 @@ internal static class OmnibarView
 
     /// <summary>Shows <paramref name="node"/> as one picked in the tree is, or in a new tab when <paramref name="inNewTab"/>.
     /// Returns the load it started in the tab; null when it started none.</summary>
-    private static DecompileTicket? PickNode(AppState appState, BrowseNode node, bool inNewTab)
+    private static DecompileTicket? PickNode(Navigation navigation, BrowseNode node, bool inNewTab, DecompilationLanguage language, DecompilerOptions options,
+        bool previewTabs)
     {
         if (inNewTab)
         {
-            return ShowNode(appState, node, inNewTab: true);
+            return navigation.ShowNode(node, language, options, previewTabs, inNewTab: true);
         }
-        return PreviewNode(appState, node);
+        return navigation.PreviewNode(node, language, options, previewTabs);
     }
 
     private static bool IsCommandHeld(Ui<UiState> ui)
@@ -263,7 +270,8 @@ internal static class OmnibarView
     /// <summary>The list of the open crumb's children under its arrow <paramref name="owner"/>, with a
     /// filter over them; 0 when no list is open in this bar, which forgets one left open on a crumb gone
     /// from it.</summary>
-    private static void ChildrenMenu(Ui<UiState> ui, string panel, int owner)
+    private static void ChildrenMenu(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
+        string panel, int owner)
     {
         var omnibar = ui.State.Omnibar;
         var menu = omnibar.Menu;
@@ -312,7 +320,7 @@ internal static class OmnibarView
         }
 
         omnibar.CloseMenu();
-        Commands.ShowLater(ui.State, (node, inNewTab: picked.InNewTab), static (a, s) => PickNode(a, s.node, s.inNewTab));
+        Commands.DecompileLater(ui.State, PickNode(navigation, node, picked.InNewTab, language, options, previewTabs));
     }
 
     /// <summary>The filter, which takes focus as the list opens and walks the list with Up and Down.
@@ -415,7 +423,7 @@ internal static class OmnibarView
 
     /// <summary>The search box, whose Enter goes to the selected match, else the best, and whose Up and
     /// Down walk the matches suggested under it.</summary>
-    private static void SearchBar(Ui<UiState> ui)
+    private static void SearchBar(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
     {
         var t = ui.State.Strings;
         var omnibar = ui.State.Omnibar;
@@ -440,7 +448,7 @@ internal static class OmnibarView
         }
 
         omnibar.StopSearch();
-        Commands.ShowLater(ui.State, (node: match.Node, inNewTab: clicked.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
+        Commands.DecompileLater(ui.State, navigation.ShowNode(match.Node, language, options, previewTabs, clicked.InNewTab));
     }
 
     /// <summary>The query syntax, over the box while it is empty, so it never covers the suggestions.</summary>

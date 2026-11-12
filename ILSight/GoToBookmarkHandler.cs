@@ -1,6 +1,5 @@
 using ILSight.Core;
 using ILSight.Bookmarking;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -25,7 +24,7 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
     /// as when something else was asked for meanwhile.</summary>
     public async Task<DecompileTicket?> HandleAsync(AppState appState, Bookmark bookmark, CancellationToken ct)
     {
-        var destination = ChooseDestination(appState, inNewTab: false);
+        var destination = appState.Navigation.ChooseDestination(inNewTab: false);
         var ticket = appState.Intent.BeginResolving();
         var found = await ports.LookUpPlaceAsync(bookmark.Place, ct);
         var resolved = appState.Intent.EndResolving(ticket, found);
@@ -54,8 +53,8 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
     private static DecompileTicket? ShowBookmarkedNode(AppState appState, Bookmark bookmark, BrowseNode node, TabDestination destination)
     {
         appState.Bookmarks.Resolve(bookmark, node);
-        LeaveActiveTab(appState);
-        var load = ShowNodeIn(appState, destination, node, target: bookmark);
+        appState.Navigation.LeaveActiveTab();
+        var load = appState.Navigation.ShowNodeIn(destination, node, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, target: bookmark);
         appState.History.RecordPlace(node, appState.Language);
         return load;
     }

@@ -74,7 +74,7 @@ public static class MainView
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
     {
         QueuedCommands.RunViewCommands(ui.State, appState);
-        SyncActiveTab(ui.State, appState.Tabs.Active);
+        SyncActiveTab(ui.State, appState.Navigation, appState.Language, appState.DecompilerOptions);
     }
 
     private static void UpdateSearches(Ui<UiState> ui, AppState appState)
@@ -152,10 +152,10 @@ public static class MainView
         switch (view)
         {
             case DockView.Assemblies:
-                TreePaneView.Render(ui, appState.Tabs, appState.Assemblies, appState.Language);
+                TreePaneView.Render(ui, appState.Navigation, appState.Assemblies, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
                 break;
             case DockView.Search:
-                SearchPanelView.Render(ui);
+                SearchPanelView.Render(ui, appState.Navigation, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
                 break;
             case DockView.Bookmarks:
                 BookmarksPanelView.Render(ui, appState.Bookmarks, appState.Assemblies);
@@ -185,7 +185,8 @@ public static class MainView
             return;
         }
 
-        DocumentsView.Render(ui, appState.Bookmarks, appState.Tooltips, tab);
+        DocumentsView.Render(ui, appState.Navigation, appState.Session, appState.Language, appState.DecompilerOptions, appState.PreviewTabs, appState.Bookmarks,
+            appState.Tooltips, tab);
     }
 
     private static void RemoveReleasedImages(Ui<UiState> ui)

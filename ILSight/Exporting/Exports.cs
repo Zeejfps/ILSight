@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
-using static ILSight.Navigation;
 
 namespace ILSight.Exporting;
 
@@ -381,7 +380,7 @@ public static class Exports
     /// <summary>Shows the report of <paramref name="report"/> in a new tab.</summary>
     public static void ShowExportReport(AppState appState, ExportReport report)
     {
-        var tab = OpenNewTab(appState);
+        var tab = appState.Navigation.OpenNewTab();
         Tabs.MakeActive(appState.Tabs, tab);
         Tabs.ShowReport(tab, report);
     }

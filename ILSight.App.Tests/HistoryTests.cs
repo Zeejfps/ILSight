@@ -82,7 +82,7 @@ public sealed class HistoryTests
         var app = Opened();
         Show(app, "Outline");
         ScrollTo(app, 20, new TextPosition(21, 4), new TextPosition(22, 8));
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active ?? throw new InvalidOperationException("No tab is active.");
         var (line, column) = tab.Document.GetPosition("return First();");
         var scrolled = new CodeViewPosition(25, 0f, new TextPosition(line, column), new TextPosition(line, column + 6));
         CodeViewWidget.RestorePosition(CodeOf(app, tab), scrolled);
@@ -93,7 +93,7 @@ public sealed class HistoryTests
         app.Start((a, ct) => GoBackAsync(a, ct));
         app.Settle(4);
 
-        Assert.Equal("Outline", tab.Node!.Text);
+        Assert.Equal("Outline", tab.Node?.Text);
         Assert.Equal(scrolled, CodeOf(app, tab).Position);
     }
 

@@ -93,8 +93,8 @@ internal static class Shortcuts
         new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Tabs))),
         new(ReloadAll, static (ui, _) => Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, expanded, ct))),
         new(CloseTab, static (ui, _) => CloseActiveTab(ui.State)),
-        new(NextTab, static (ui, _) => CycleTab(ui.State, 1)),
-        new(PreviousTab, static (ui, _) => CycleTab(ui.State, -1)),
+        new(NextTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Language, appState.DecompilerOptions, 1)),
+        new(PreviousTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Language, appState.DecompilerOptions, -1)),
     ];
 
     /// <summary>Runs the app-wide shortcuts pressed this frame, and goes back and forward with the

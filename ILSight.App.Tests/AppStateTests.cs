@@ -131,7 +131,7 @@ public sealed class AppStateTests
         var farewellPanel = DocumentPanels.GetPanel(d.Ui.Documents, d.AppState.Tabs.Active!);
         var documents = d.Ui.Layout;
         documents.Dock(farewellPanel, documents.Root, DockEdge.Right);
-        ActivateTab(d.Ui, greeter);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, greeter);
         d.NextFrame();
 
         d.Show(d.Fixture("Outline"), inNewTab: true);
@@ -151,7 +151,7 @@ public sealed class AppStateTests
         var documents = d.Ui.Layout;
 
         documents.Dock(greeterPanel, documents.GroupOf(greeterPanel)!, DockEdge.Right);
-        SyncActiveTab(d.Ui, d.AppState.Tabs.Active);
+        SyncActiveTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions);
         d.NextFrame();
 
         Assert.Equal(2, d.AppState.Tabs.Open.Count);
@@ -297,7 +297,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
-        ActivateTab(d.Ui, d.AppState.Tabs.Open[0]);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Tabs.Open[0]);
         d.Settle();
         var tab = d.AppState.Tabs.Active!;
         var document = tab.Document;
@@ -324,7 +324,7 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
         d.StartShowing(farewell);
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: true, ct));
-        ActivateTab(d.Ui, d.AppState.Tabs.Open[0]);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Language, d.AppState.DecompilerOptions, d.AppState.Tabs.Open[0]);
         d.NextFrame();
         d.Settle();
 

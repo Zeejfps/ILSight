@@ -53,8 +53,11 @@ internal static class AppRoot
         var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session);
         var diagrams = new DiagramInfrastructure(errors, assemblies);
         var bookmarks = new BookmarkInfrastructure(errors, assemblies, session);
+        var viewCommands = new Queue<ViewCommand>();
         var appState = new AppState
         {
+            ViewCommands = viewCommands,
+            Navigation = new Navigation { ViewCommands = viewCommands },
             Work = work,
             Workflows = new WorkflowRunner(work, errors),
             DecompileIntoTabHandler = decompileIntoTab,

@@ -204,7 +204,7 @@ internal sealed class AppStateDriver
     /// starts decompiling it there, without waiting for that.</summary>
     public void StartShowing(BrowseNode node, bool inNewTab = false)
     {
-        Commands.StartDecompiling(AppState, ShowNode(AppState, node, inNewTab));
+        Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Language, AppState.DecompilerOptions, AppState.PreviewTabs, inNewTab));
     }
 
     /// <summary>Starts <paramref name="workflow"/> over the app state now, as the app starts the workflows the screen

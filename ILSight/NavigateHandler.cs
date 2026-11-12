@@ -1,5 +1,4 @@
 using ILSight.Core;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -25,7 +24,7 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
     /// for meanwhile.</summary>
     public async Task<DecompileTicket?> HandleAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab, CancellationToken ct)
     {
-        var destination = ChooseDestination(appState, inNewTab);
+        var destination = appState.Navigation.ChooseDestination(inNewTab);
         var ticket = appState.Intent.BeginResolving();
         var found = await ports.LookUpReferenceAsync(reference, ct);
         return ShowResolved(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
@@ -52,8 +51,8 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
 
     private static DecompileTicket? ShowFound(AppState appState, BrowseNode found, TabDestination destination)
     {
-        LeaveActiveTab(appState);
-        var load = ShowNodeIn(appState, destination, found);
+        appState.Navigation.LeaveActiveTab();
+        var load = appState.Navigation.ShowNodeIn(destination, found, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
         appState.History.RecordPlace(found, appState.Language);
         return load;
     }

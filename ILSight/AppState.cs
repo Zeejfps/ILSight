@@ -9,7 +9,8 @@ namespace ILSight;
 
 /// <summary>
 /// The app's data, and which tab, list and history entry are current. What the user can do to it are
-/// static functions grouped by feature, such as <see cref="Navigation"/> and <see cref="Docking"/>.
+/// static functions grouped by feature, such as <see cref="Docking"/>, and the methods of the parts that change
+/// together, such as <see cref="ILSight.Navigation"/>'s.
 /// It never sees the screen; a feature that needs the view to act later commands
 /// it through <see cref="ViewCommands"/>. Lives on the UI thread: background work (opening, decompiling,
 /// resolving, searching) is awaited there through <see cref="Background"/>. A result is dropped when
@@ -36,8 +37,18 @@ public sealed class AppState
     /// <summary>The named assembly lists, one of which <see cref="Assemblies"/> holds open.</summary>
     public SavedAssemblyLists Lists { get; } = new();
 
-    public NavigationHistory History { get; } = new();
-    public UserIntent Intent { get; } = new();
+    /// <summary>The open tabs, the history of what they showed and the newest thing asked for, which change
+    /// together: showing a node is one of its methods.</summary>
+    public required Navigation Navigation { get; init; }
+
+    /// <summary>The open tabs, <see cref="Navigation"/>'s.</summary>
+    public DocumentTabs Tabs => Navigation.Tabs;
+
+    /// <summary>Back and forward over what the tabs showed, <see cref="Navigation"/>'s.</summary>
+    public NavigationHistory History => Navigation.History;
+
+    /// <summary>What the user last asked for, <see cref="Navigation"/>'s.</summary>
+    public UserIntent Intent => Navigation.Intent;
     public Reload Reload { get; } = new();
 
     /// <summary>The files of the list being read again one at a time, as when another framework or
@@ -118,8 +129,6 @@ public sealed class AppState
 
     /// <summary>Whether the app looks for a newer version when it starts.</summary>
     public required bool IsUpdateCheckAutomatic { get; set; }
-    public DocumentTabs Tabs { get; } = new();
-
     /// <summary>The tabs reopened from the open list's saved documents that wait for what they showed.</summary>
     public ReopenedTabs Reopened { get; } = new();
 
@@ -160,7 +169,7 @@ public sealed class AppState
 
     /// <summary>The commands the features queue for the view when none is on the stack, for the screen to run
     /// in order before it draws next.</summary>
-    public Queue<ViewCommand> ViewCommands { get; } = new();
+    public required Queue<ViewCommand> ViewCommands { get; init; }
 
     /// <summary>Counts each time the screen hands over a change to what the settings keep of it.</summary>
     public int ViewSettingsChanges;

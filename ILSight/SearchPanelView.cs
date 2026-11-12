@@ -5,7 +5,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.Navigation;
+
 using static ILSight.ScreenLayout;
 
 namespace ILSight;
@@ -24,17 +24,20 @@ internal static class SearchPanelView
     private static readonly ConditionalWeakTable<Strings, string[]> Summaries = new();
     private static readonly ConditionalWeakTable<Strings, string[]> Headers = new();
 
-    public static void Render(Ui<UiState> ui)
+    /// <summary>The search panel. A result picked shows in <paramref name="navigation"/>'s tabs in this frame, in
+    /// <paramref name="language"/> with <paramref name="options"/>, in the preview tab while
+    /// <paramref name="previewTabs"/>; only its decompile is queued.</summary>
+    public static void Render(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
     {
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar(new Box { Gap = ui.Theme.Gap }))
         {
             KindsButton(ui);
-            Field(ui);
+            Field(ui, navigation, language, options, previewTabs);
             ResultCount(ui, ui.State.Search);
         }
         ui.Separator();
-        Results(ui);
+        Results(ui, navigation, language, options, previewTabs);
     }
 
     private static void KindsButton(Ui<UiState> ui)
@@ -137,7 +140,7 @@ internal static class SearchPanelView
         search.Kinds = kinds;
     }
 
-    private static void Field(Ui<UiState> ui)
+    private static void Field(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
     {
         var t = ui.State.Strings;
         var search = ui.State.Search;
@@ -160,7 +163,7 @@ internal static class SearchPanelView
             var row = PickSelected(search);
             if (row != null)
             {
-                Commands.ShowLater(ui.State, row.Node, static (a, node) => ShowNode(a, node));
+                Commands.DecompileLater(ui.State, navigation.ShowNode(row.Node, language, options, previewTabs));
             }
 
             return;
@@ -216,7 +219,7 @@ internal static class SearchPanelView
         return t.SearchResults(count);
     }
 
-    private static void Results(Ui<UiState> ui)
+    private static void Results(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs)
     {
         var t = ui.State.Strings;
         var search = ui.State.Search;
@@ -233,7 +236,7 @@ internal static class SearchPanelView
                 sorting.Work.Token);
         }
 
-        ResultRows(ui, table);
+        ResultRows(ui, navigation, language, options, previewTabs, table);
     }
 
     private const int NoColumn = -1;
@@ -267,25 +270,27 @@ internal static class SearchPanelView
         };
     }
 
-    private static void ResultRows(Ui<UiState> ui, TableFrame table)
+    private static void ResultRows(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
+        TableFrame table)
     {
         var search = ui.State.Search;
         using var body = table.Body(search.Rows.Count);
         ItemSelections.TakeFrom(search.Selection, search.Rows);
         for (var i = body.First; i < body.End; i++)
         {
-            ResultRow(ui, body, i);
+            ResultRow(ui, navigation, language, options, previewTabs, body, i);
         }
 
         ItemSelections.TakeFrom(search.Selection, search.Rows);
         var selected = search.SelectedRow;
         if (body.Activated && selected != null)
         {
-            Commands.ShowLater(ui.State, (node: selected.Node, inNewTab: body.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
+            Commands.DecompileLater(ui.State, navigation.ShowNode(selected.Node, language, options, previewTabs, body.InNewTab));
         }
     }
 
-    private static void ResultRow(Ui<UiState> ui, TableBody body, int index)
+    private static void ResultRow(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language, DecompilerOptions options, bool previewTabs,
+        TableBody body, int index)
     {
         var theme = ui.Theme;
         var result = ui.State.Search.Rows[index];
@@ -295,7 +300,7 @@ internal static class SearchPanelView
         {
             if (row.Interaction.Clicked)
             {
-                Commands.ShowLater(ui.State, node, static (a, n) => ShowNode(a, n));
+                Commands.DecompileLater(ui.State, navigation.ShowNode(node, language, options, previewTabs));
             }
 
             NameCell(ui, row, result);

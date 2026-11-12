@@ -1,7 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Testing;
 using ILSight.Core;
-using static ILSight.Navigation;
 
 namespace ILSight.App.Tests;
 
@@ -61,6 +60,21 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
+    public void The_frame_a_node_is_clicked_in_draws_the_preview_tab_showing_it()
+    {
+        var app = Revealed();
+        Pick(app, "Greeter");
+        var preview = app.AppState.Tabs.Preview ?? throw new InvalidOperationException("No tab previews.");
+        app.Frames.MoveTo(GetFixtureRow("Farewell"));
+
+        app.Frames.Press().Frame();
+
+        Assert.Equal("Farewell", preview.Node?.Text);
+        Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == "Farewell" && IsItalic(t));
+        Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Text == "Greeter" && IsItalic(t));
+    }
+
+    [Fact]
     public void Double_clicking_a_node_keeps_its_tab_open_and_the_next_node_picked_opens_a_new_preview_tab()
     {
         var app = Revealed();
@@ -84,7 +98,7 @@ public sealed class PreviewTabTests
         var app = Revealed();
         app.Show(app.Fixture("Greeter"), 2);
         var kept = app.AppState.Tabs.Active!;
-        KeepTabOpen(app.AppState, kept);
+        app.AppState.Navigation.KeepTabOpen(kept);
         Pick(app, "Farewell");
         var preview = app.AppState.Tabs.Preview;
 
@@ -103,7 +117,7 @@ public sealed class PreviewTabTests
         var greeter = app.Fixture("Greeter");
         app.Show(greeter, 2);
         var kept = app.AppState.Tabs.Active!;
-        KeepTabOpen(app.AppState, kept);
+        app.AppState.Navigation.KeepTabOpen(kept);
 
         var farewell = app.Fixture("Farewell").Definition;
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, farewell, inNewTab: false, ct));

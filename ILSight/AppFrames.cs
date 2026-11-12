@@ -8,7 +8,7 @@ using static ILSight.Decompilation;
 using static ILSight.Settings;
 using static ILSight.Appearance;
 using static ILSight.DocumentPanels;
-using static ILSight.Navigation;
+
 using static ILSight.RunArgumentsActions;
 using static ILSight.IconTheming;
 using static ILSight.ScreenSettings;
@@ -44,12 +44,12 @@ internal static class AppFrames
         ApplyThemeAndLanguage(uiState, ResolveTheme(appState), appState.Locale);
         ApplyIconTheme(uiState, ResolveIconTheme(appState));
         SyncTrees(uiState, appState.Assemblies, appState.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
-        UsePreviewTabs(appState, uiState.Display.PreviewTabs);
+        Navigation.UsePreviewTabs(appState, uiState.Display.PreviewTabs);
         FollowTabContent(uiState);
         FollowActiveTab(uiState, appState.Tabs.Active);
         QueuedCommands.RunViewCommands(uiState, appState);
         SyncTabViews(uiState, appState.Tabs);
-        FocusNextTabIfNone(uiState, appState.Tabs);
+        FocusNextTabIfNone(uiState, appState.Navigation, appState.Language, appState.DecompilerOptions);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         ShowNewErrors(uiState, appState.Errors);

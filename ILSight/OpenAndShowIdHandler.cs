@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using ILSight.Core;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -40,7 +39,7 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
             case Outcome<BrowseNode?>.Ok ok when ok.Value is not null:
                 if (!appState.Intent.IsStale(ticket))
                 {
-                    return ShowNode(appState, ok.Value);
+                    return appState.Navigation.ShowNode(ok.Value, appState.Language, appState.DecompilerOptions, appState.PreviewTabs);
                 }
 
                 break;

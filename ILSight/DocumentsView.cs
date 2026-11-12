@@ -9,7 +9,6 @@ using ILSight.Bookmarking;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.CodeDisplay;
 using static ILSight.Diagrams;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -17,14 +16,20 @@ namespace ILSight;
 /// it shows nothing.</summary>
 internal static class DocumentsView
 {
-    public static void Render(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
+    /// <summary>The omnibar and content of <paramref name="tab"/>. What its omnibar or grid shows in
+    /// <paramref name="navigation"/>'s tabs, a link into <paramref name="session"/>'s nodes among them, shows in this
+    /// frame, in <paramref name="language"/> with <paramref name="options"/>, in the preview tab while
+    /// <paramref name="previewTabs"/>; only its decompile is queued.</summary>
+    public static void Render(Ui<UiState> ui, Navigation navigation, BrowseSession session, DecompilationLanguage language, DecompilerOptions options,
+        bool previewTabs, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         using var document = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        OmnibarView.Render(ui, tab);
-        Content(ui, bookmarks, tooltips, tab);
+        OmnibarView.Render(ui, navigation, language, options, previewTabs, tab);
+        Content(ui, navigation, session, language, options, previewTabs, bookmarks, tooltips, tab);
     }
 
-    private static void Content(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
+    private static void Content(Ui<UiState> ui, Navigation navigation, BrowseSession session, DecompilationLanguage language, DecompilerOptions options,
+        bool previewTabs, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var t = ui.State.Strings;
         DocumentPanels.RecordShown(DocumentPanels.GetView(ui.State.Documents, tab), tab);
@@ -37,7 +42,7 @@ internal static class DocumentsView
                 ResourceImageView.Render(ui, bookmarks, tooltips, tab, picture);
                 break;
             case TabContent.Table table:
-                RenderGrid(ui, tab, table.Grid);
+                RenderGrid(ui, navigation, session, language, options, previewTabs, tab, table.Grid);
                 break;
             case TabContent.Diagram diagram:
                 DiagramView.Render(ui, tooltips, tab, diagram.Types);
@@ -57,13 +62,16 @@ internal static class DocumentsView
         }
     }
 
-    private static void RenderGrid(Ui<UiState> ui, DocumentTab tab, MetadataGrid grid)
+    private static void RenderGrid(Ui<UiState> ui, Navigation navigation, BrowseSession session, DecompilationLanguage language, DecompilerOptions options,
+        bool previewTabs, DocumentTab tab, MetadataGrid grid)
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters);
-        if (picked.Target is not null && tab.Node is not null)
+        var node = tab.Node;
+        if (picked.Target is not null && node is not null)
         {
-            Commands.ShowLater(ui.State, (node: tab.Node, target: picked.Target.Value, picked.InNewTab), static (a, s) => ShowMetadataLink(a, s.node, s.target, s.InNewTab));
+            var load = navigation.ShowMetadataLink(session, node, picked.Target.Value, picked.InNewTab, language, options, previewTabs);
+            Commands.DecompileLater(ui.State, load);
         }
 
         if (picked.Definition != null)
