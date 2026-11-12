@@ -1,14 +1,10 @@
-using ICSharpCode.Decompiler.TypeSystem;
-
 namespace ILSight.Core;
 
-/// <summary>A type a type derives from directly, as <see cref="Module"/> names it, and what it resolves to.</summary>
+/// <summary>A type a type derives from directly, as <see cref="Module"/> names it, and what it resolves to: a handle,
+/// holding none of the library's objects (the I/O side keeps the type and its definition against it).</summary>
 public sealed class BaseTypeInfo
 {
     public required LoadedModule Module { get; init; }
-
-    /// <summary>The type as it is derived from, with its type arguments.</summary>
-    public required IType Type { get; init; }
 
     public required BaseTypeTarget Target { get; init; }
 

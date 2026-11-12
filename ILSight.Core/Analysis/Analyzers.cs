@@ -66,16 +66,10 @@ public static class Analyzers
     {
         return subject switch
         {
-            NodeSubject.TypeDefinition type => Describe(type.Definition.Symbol),
-            NodeSubject.MemberDefinition member => Describe(member.Definition.Symbol),
-            NodeSubject.DerivedType derived => Describe(derived.Value.Symbol),
-            NodeSubject.BaseType baseType => baseType.Value.Target switch
-            {
-                BaseTypeTarget.Navigable navigable => Describe(navigable.Definition),
-                BaseTypeTarget.Unaddressed unaddressed => Describe(unaddressed.Definition),
-                BaseTypeTarget.Unresolved => null,
-                _ => throw new UnreachableException(),
-            },
+            NodeSubject.TypeDefinition type => Describe(NodeDefinitions.GetSymbol(type.Definition)),
+            NodeSubject.MemberDefinition member => Describe(NodeDefinitions.GetSymbol(member.Definition)),
+            NodeSubject.DerivedType derived => Describe(NodeDefinitions.GetSymbol(derived.Value)),
+            NodeSubject.BaseType baseType => DescribeBase(baseType.Value),
             NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
                 or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
                 or NodeSubject.BaseTypes or NodeSubject.DerivedTypes or NodeSubject.Resources or NodeSubject.ResourceContainer
@@ -83,6 +77,18 @@ public static class Analyzers
                 or NodeSubject.Package or NodeSubject.PackageFile or NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly => null,
             _ => throw new UnreachableException(),
         };
+    }
+
+    /// <summary>The definition a base type resolves to; null when it resolves to none.</summary>
+    private static AnalysisSymbol? DescribeBase(BaseTypeInfo baseType)
+    {
+        var definition = NodeDefinitions.GetSymbols(baseType).Definition;
+        if (definition is null)
+        {
+            return null;
+        }
+
+        return Describe(definition);
     }
 
     /// <summary>The type or member <paramref name="definition"/> names, loading its assembly's file

@@ -52,12 +52,12 @@ public static class BrowseNodes
 
         if (subject is NodeSubject.TypeDefinition type)
         {
-            return type.Definition.Symbol.Name;
+            return NodeDefinitions.GetSymbol(type.Definition).Name;
         }
 
         if (subject is NodeSubject.MemberDefinition member)
         {
-            return member.Definition.Symbol.Name;
+            return NodeDefinitions.GetSymbol(member.Definition).Name;
         }
 
         return text;
@@ -122,8 +122,8 @@ public static class BrowseNodes
     {
         return subject switch
         {
-            NodeSubject.TypeDefinition type => EntityText.FullName(type.Definition.Symbol),
-            NodeSubject.MemberDefinition member => EntityText.FullName(member.Definition.Symbol),
+            NodeSubject.TypeDefinition type => EntityText.FullName(NodeDefinitions.GetSymbol(type.Definition)),
+            NodeSubject.MemberDefinition member => EntityText.FullName(NodeDefinitions.GetSymbol(member.Definition)),
             NodeSubject.AssemblyReference reference => reference.Value.Reference.FullName,
             NodeSubject.TypeReference type => type.Value.FullName,
             NodeSubject.MemberReference member => member.Value.FullName,
@@ -146,20 +146,20 @@ public static class BrowseNodes
     {
         return subject switch
         {
-            NodeSubject.TypeDefinition type => EntityText.Label(type.Definition.Symbol),
-            NodeSubject.MemberDefinition member => EntityText.Label(member.Definition.Symbol),
+            NodeSubject.TypeDefinition type => EntityText.Label(NodeDefinitions.GetSymbol(type.Definition)),
+            NodeSubject.MemberDefinition member => EntityText.Label(NodeDefinitions.GetSymbol(member.Definition)),
             NodeSubject.References => "References",
             NodeSubject.AssemblyReference reference => reference.Value.Reference.Name,
             NodeSubject.ReferencedTypes => "Referenced types",
             NodeSubject.TypeReference type => type.Value.Label,
-            NodeSubject.MemberReference member => EntityText.Label(member.Value.Declared),
+            NodeSubject.MemberReference member => EntityText.Label(NodeDefinitions.GetDeclared(member.Value)),
             NodeSubject.ModuleReference module => module.Value.Name,
             NodeSubject.ImportedMethod import => import.Value.Label,
             NodeSubject.ForwardedType forwarded => forwarded.Value.Label,
             NodeSubject.BaseTypes => "Base Types",
-            NodeSubject.BaseType baseType => EntityText.TypeName(baseType.Value.Type),
+            NodeSubject.BaseType baseType => EntityText.TypeName(NodeDefinitions.GetSymbols(baseType.Value).Type),
             NodeSubject.DerivedTypes => "Derived Types",
-            NodeSubject.DerivedType derived => EntityText.TypeName(derived.Value.Symbol),
+            NodeSubject.DerivedType derived => EntityText.TypeName(NodeDefinitions.GetSymbol(derived.Value)),
             NodeSubject.Resources => "Resources",
             NodeSubject.ResourceContainer container => container.Value.Resource.Name,
             NodeSubject.ResourceEntry entry => entry.Value.Name,
@@ -181,7 +181,7 @@ public static class BrowseNodes
         return subject switch
         {
             NodeSubject.TypeDefinition type => EntityNodes.CanListMembers(type.Definition),
-            NodeSubject.MemberDefinition member => member.Definition.Symbol is IProperty or IEvent,
+            NodeSubject.MemberDefinition member => NodeDefinitions.GetSymbol(member.Definition) is IProperty or IEvent,
             NodeSubject.References references => ReferenceNodes.HasReferences(references.Owner),
             NodeSubject.AssemblyReference => true,
             NodeSubject.ReferencedTypes types => ForwardedTypes.UsesReference(LoadedAssemblies.EnsureReferenceUsage(types.Reference.Module), types.Reference.Reference.Handle),
@@ -191,7 +191,7 @@ public static class BrowseNodes
                 or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.Package or NodeSubject.Module => true,
             NodeSubject.Namespace ns => !ns.Value.IsEnclosingOnly,
             NodeSubject.MetadataTable table => table.Value.Part is MetadataPart.DebugDirectory,
-            NodeSubject.DerivedType derived => !derived.Value.Symbol.IsSealed,
+            NodeSubject.DerivedType derived => !NodeDefinitions.GetSymbol(derived.Value).IsSealed,
             NodeSubject.MemberReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseType
                 or NodeSubject.ResourceEntry or NodeSubject.PackageFile or NodeSubject.FailedAssembly => false,
             _ => throw new UnreachableException(),
@@ -211,8 +211,8 @@ public static class BrowseNodes
             NodeSubject.TypeReference type => ReferenceNodes.ListUsedOf(parent, type.Value),
             NodeSubject.ModuleReference module => ReferenceNodes.ListImports(parent, module.Value),
             NodeSubject.BaseTypes baseTypes => EntityNodes.ListBaseTypes(parent, baseTypes.Type),
-            NodeSubject.DerivedTypes derivedTypes => EntityNodes.FindDerivedTypes(derivedTypes.Type.Module, parent, derivedTypes.Type.Symbol),
-            NodeSubject.DerivedType derived => EntityNodes.FindDerivedTypes(derived.Value.Module, parent, derived.Value.Symbol),
+            NodeSubject.DerivedTypes derivedTypes => EntityNodes.FindDerivedTypes(derivedTypes.Type.Module, parent, NodeDefinitions.GetSymbol(derivedTypes.Type)),
+            NodeSubject.DerivedType derived => EntityNodes.FindDerivedTypes(derived.Value.Module, parent, NodeDefinitions.GetSymbol(derived.Value)),
             NodeSubject.Resources resources => ResourceNodes.ListResources(parent, resources.Owner),
             NodeSubject.ResourceContainer container => ResourceNodes.ListEntries(parent, container.Value),
             NodeSubject.Metadata metadata => MetadataNodes.ListMetadata(parent, metadata.Value),

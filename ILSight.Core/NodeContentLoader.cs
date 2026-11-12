@@ -94,7 +94,7 @@ public static class NodeContentLoader
         return node.Subject switch
         {
             NodeSubject.Module module => new CodeExport.WholeModule(module.Value),
-            NodeSubject.Namespace ns => new CodeExport.Namespace(ns.Value.Module, ns.Value.Name, ns.Value.Types),
+            NodeSubject.Namespace ns => new CodeExport.Namespace(ns.Value.Module, ns.Value.Name, NodeDefinitions.GetTypes(ns.Value)),
             _ => new CodeExport.Document(RequestOf(session, node)),
         };
     }
@@ -210,7 +210,7 @@ public static class NodeContentLoader
 
             if (child.Subject is NodeSubject.TypeDefinition type)
             {
-                entries.Add(new NamespaceEntry.Declared(type.Definition.Symbol, child.Text, type.Definition.Reference));
+                entries.Add(new NamespaceEntry.Declared(NodeDefinitions.GetSymbol(type.Definition), child.Text, type.Definition.Reference));
             }
 
             if (child.Subject is NodeSubject.ForwardedType forwarded)
@@ -235,7 +235,7 @@ public static class NodeContentLoader
         {
             NodeSubject.ForwardedType forwarded => new UsedEntry.Forwarded(ForwardedLineOf(node, forwarded)),
             NodeSubject.TypeReference type => new UsedEntry.Type(type.Value.FullName, NodeDefinitions.FindTarget(node.Subject), ListUsed(session, node)),
-            NodeSubject.MemberReference member => new UsedEntry.Member(node.Text, UsedMemberSpan(member.Value.Declared), NodeDefinitions.FindTarget(node.Subject)),
+            NodeSubject.MemberReference member => new UsedEntry.Member(node.Text, UsedMemberSpan(NodeDefinitions.GetDeclared(member.Value)), NodeDefinitions.FindTarget(node.Subject)),
             _ => throw new UnreachableException(),
         };
     }

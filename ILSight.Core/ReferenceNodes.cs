@@ -180,7 +180,10 @@ internal static class ReferenceNodes
 
     private static BrowseNode CreateUsedMember(BrowseNode parent, LoadedModule module, MemberReferenceHandle handle, IMember declared)
     {
-        var info = new MemberReferenceInfo { Module = module, Handle = handle, Declared = declared, FullName = $"{parent.FullName}.{EntityText.Label(declared)}" };
+        var info = LibraryObjects<MemberReferenceInfo, IMember>.Keep(new MemberReferenceInfo
+        {
+            Module = module, Handle = handle, FullName = $"{parent.FullName}.{EntityText.Label(declared)}", Shape = EntityText.ShapeOf(declared),
+        }, declared);
         return BrowseNodes.Create(parent, new NodeSubject.MemberReference { Value = info });
     }
 

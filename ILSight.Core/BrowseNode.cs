@@ -115,8 +115,8 @@ public sealed class BrowseNode
     /// <summary>The type or member the node defines; null for a node of anything else.</summary>
     internal IEntity? Entity => Subject switch
     {
-        NodeSubject.TypeDefinition type => type.Definition.Symbol,
-        NodeSubject.MemberDefinition member => member.Definition.Symbol,
+        NodeSubject.TypeDefinition type => NodeDefinitions.GetSymbol(type.Definition),
+        NodeSubject.MemberDefinition member => NodeDefinitions.GetSymbol(member.Definition),
         NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
             or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
             or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources

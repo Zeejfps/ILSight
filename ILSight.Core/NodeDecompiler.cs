@@ -203,7 +203,7 @@ internal static class NodeDecompiler
                 break;
             case DocumentRequest.Type type:
                 var definition = type.Definition;
-                WriteHeader(definition.Module, output, definition.Symbol, ConversionFlags.UseFullyQualifiedTypeNames | ConversionFlags.UseFullyQualifiedEntityNames);
+                WriteHeader(definition.Module, output, NodeDefinitions.GetSymbol(definition), ConversionFlags.UseFullyQualifiedTypeNames | ConversionFlags.UseFullyQualifiedEntityNames);
                 WriteSyntaxTree(definition.Module, output, settings, d => d.Decompile(definition.Handle), cancellationToken);
                 break;
             case DocumentRequest.Member member:
@@ -220,7 +220,7 @@ internal static class NodeDecompiler
     private static void WriteMember(DocumentRequest.Member request, DocumentBuilder output, DecompilerSettings settings, CancellationToken cancellationToken)
     {
         var module = request.Definition.Module;
-        var member = request.Definition.Symbol;
+        var member = NodeDefinitions.GetSymbol(request.Definition);
         var declaring = member.DeclaringTypeDefinition;
         if (declaring is null)
         {

@@ -33,8 +33,8 @@ public static class ILSpyTree
     {
         return subject switch
         {
-            NodeSubject.TypeDefinition type => type.Definition.Symbol.ReflectionName,
-            NodeSubject.MemberDefinition member => member.Definition.Symbol switch
+            NodeSubject.TypeDefinition type => NodeDefinitions.GetSymbol(type.Definition).ReflectionName,
+            NodeSubject.MemberDefinition member => NodeDefinitions.GetSymbol(member.Definition) switch
             {
                 IMethod method => "Method " + Signatures.ConvertSymbol(method),
                 IProperty property => "Property " + Signatures.ConvertSymbol(property),

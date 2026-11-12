@@ -22,16 +22,17 @@ public static class NodeDefinitions
         var definition = type.GetDefinition();
         if (definition is null)
         {
-            return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Unresolved(), Visibility = NodeVisibility.Open };
+            return KeepBase(new BaseTypeInfo { Module = module, Target = new BaseTypeTarget.Unresolved(), Visibility = NodeVisibility.Open }, type, null);
         }
 
         var reference = CodeReferences.Find(definition);
         if (reference == null)
         {
-            return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Unaddressed(definition), Visibility = NodeVisibility.Open };
+            return KeepBase(new BaseTypeInfo { Module = module, Target = new BaseTypeTarget.Unaddressed(), Visibility = NodeVisibility.Open }, type, definition);
         }
 
-        return new BaseTypeInfo { Module = module, Type = type, Target = new BaseTypeTarget.Navigable(definition, reference), Visibility = GetReferencedVisibility(definition) };
+        var info = new BaseTypeInfo { Module = module, Target = new BaseTypeTarget.Navigable(reference), Visibility = GetReferencedVisibility(definition) };
+        return KeepBase(info, type, definition);
     }
 
     /// <summary><paramref name="type"/> as <paramref name="module"/> forwards it.</summary>
@@ -53,15 +54,59 @@ public static class NodeDefinitions
     /// and forwarding <paramref name="forwarded"/>.</summary>
     internal static NamespaceInfo CreateNamespace(LoadedModule module, string name, IReadOnlyList<ITypeDefinition> types, IReadOnlyList<ForwardedTypeInfo> forwarded)
     {
-        return new NamespaceInfo
+        var info = new NamespaceInfo
         {
             Module = module,
             Name = name,
-            Types = types,
+            TypeCount = types.Count,
             Forwarded = forwarded,
             IsPublicApi = forwarded.Count > 0 || types.Any(EntityText.IsPublicApi),
             IsCompilerGenerated = forwarded.Count == 0 && types.All(Members.IsCompilerGenerated),
         };
+        return LibraryObjects<NamespaceInfo, IReadOnlyList<ITypeDefinition>>.Keep(info, types);
+    }
+
+    /// <summary>The types <paramref name="ns"/> holds itself, kept against it when it was made.</summary>
+    internal static IReadOnlyList<ITypeDefinition> GetTypes(NamespaceInfo ns)
+    {
+        return LibraryObjects<NamespaceInfo, IReadOnlyList<ITypeDefinition>>.Get(ns);
+    }
+
+    /// <summary>The library's type <paramref name="type"/> stands for, kept against it when it was made.</summary>
+    internal static ITypeDefinition GetSymbol(DefinedType type)
+    {
+        return LibraryObjects<DefinedType, ITypeDefinition>.Get(type);
+    }
+
+    /// <summary>The library's member <paramref name="member"/> stands for, kept against it when it was made.</summary>
+    internal static IMember GetSymbol(DefinedMember member)
+    {
+        return LibraryObjects<DefinedMember, IMember>.Get(member);
+    }
+
+    /// <summary>The library's derived type <paramref name="type"/> stands for, kept against it when it was made.</summary>
+    internal static ITypeDefinition GetSymbol(DerivedTypeInfo type)
+    {
+        return LibraryObjects<DerivedTypeInfo, ITypeDefinition>.Get(type);
+    }
+
+    /// <summary>The library's member <paramref name="member"/> stands for, as its type declares it, kept against it
+    /// when it was made.</summary>
+    internal static IMember GetDeclared(MemberReferenceInfo member)
+    {
+        return LibraryObjects<MemberReferenceInfo, IMember>.Get(member);
+    }
+
+    /// <summary>The library's type and definition <paramref name="baseType"/> stands for, kept against it when it
+    /// was made.</summary>
+    internal static BaseTypeSymbols GetSymbols(BaseTypeInfo baseType)
+    {
+        return LibraryObjects<BaseTypeInfo, BaseTypeSymbols>.Get(baseType);
+    }
+
+    private static BaseTypeInfo KeepBase(BaseTypeInfo info, IType type, ITypeDefinition? definition)
+    {
+        return LibraryObjects<BaseTypeInfo, BaseTypeSymbols>.Keep(info, new BaseTypeSymbols { Type = type, Definition = definition });
     }
 
     /// <summary>The derived type <paramref name="type"/>; null when it has no reference to be navigated to.</summary>
@@ -73,7 +118,8 @@ public static class NodeDefinitions
             return null;
         }
 
-        return new DerivedTypeInfo { Module = module, Symbol = type, Reference = reference, Visibility = GetReferencedVisibility(type) };
+        var info = new DerivedTypeInfo { Module = module, Reference = reference, Visibility = GetReferencedVisibility(type) };
+        return LibraryObjects<DerivedTypeInfo, ITypeDefinition>.Keep(info, type);
     }
 
     /// <summary>The definition of <paramref name="type"/> in <paramref name="module"/>; null when it has no
@@ -91,11 +137,12 @@ public static class NodeDefinitions
             return null;
         }
 
-        return new DefinedType
+        var defined = new DefinedType
         {
-            Module = module, Symbol = type, Handle = (TypeDefinitionHandle)type.MetadataToken, Reference = reference, Visibility = GetDefinitionVisibility(type),
-            Name = type.Name, Arity = type.TypeParameterCount,
+            Module = module, Handle = (TypeDefinitionHandle)type.MetadataToken, Reference = reference, Visibility = GetDefinitionVisibility(type),
+            Name = type.Name, Arity = type.TypeParameterCount, Shape = EntityText.ShapeOf(type),
         };
+        return LibraryObjects<DefinedType, ITypeDefinition>.Keep(defined, type);
     }
 
     /// <summary>The definition of <paramref name="member"/> in <paramref name="module"/>; null when it has
@@ -108,7 +155,8 @@ public static class NodeDefinitions
             return null;
         }
 
-        return new DefinedMember { Module = module, Symbol = member, Reference = reference, Visibility = GetDefinitionVisibility(member) };
+        var defined = new DefinedMember { Module = module, Reference = reference, Visibility = GetDefinitionVisibility(member), Shape = EntityText.ShapeOf(member) };
+        return LibraryObjects<DefinedMember, IMember>.Keep(defined, member);
     }
 
     /// <summary>A reference to the type or member a node of <paramref name="subject"/> defines, as documents
@@ -196,8 +244,8 @@ public static class NodeDefinitions
                 reference.Value.Module.FilePath, reference.Value.Reference.Handle)),
             NodeSubject.TypeReference type => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, type.Value.Label, type.Value.Module.FilePath,
                 type.Value.Handle)),
-            NodeSubject.MemberReference member => new Activation.Navigate(CodeReferences.CreateEntity(CodeReferences.GetKind(member.Value.Declared.SymbolKind),
-                member.Value.Declared.Name, member.Value.Module.FilePath, member.Value.Handle)),
+            NodeSubject.MemberReference member => new Activation.Navigate(CodeReferences.CreateEntity(CodeReferences.GetKind(NodeDefinitions.GetDeclared(member.Value).SymbolKind),
+                NodeDefinitions.GetDeclared(member.Value).Name, member.Value.Module.FilePath, member.Value.Handle)),
             NodeSubject.ForwardedType forwarded => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, forwarded.Value.Label,
                 forwarded.Value.Module.FilePath, forwarded.Value.Handle)),
             NodeSubject.ImportedMethod import => new Activation.Navigate(import.Value.Shown.Reference),
@@ -270,20 +318,20 @@ public static class NodeDefinitions
     {
         return subject switch
         {
-            NodeSubject.TypeDefinition type => new NodePathSegment.Definition(IdStringProvider.GetIdString(type.Definition.Symbol)),
-            NodeSubject.MemberDefinition member => new NodePathSegment.Definition(IdStringProvider.GetIdString(member.Definition.Symbol)),
+            NodeSubject.TypeDefinition type => new NodePathSegment.Definition(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(type.Definition))),
+            NodeSubject.MemberDefinition member => new NodePathSegment.Definition(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(member.Definition))),
             NodeSubject.References => new NodePathSegment.Folder(NodeFolder.References),
             NodeSubject.AssemblyReference reference => new NodePathSegment.AssemblyReference(reference.Value.Reference.Name),
             NodeSubject.ReferencedTypes => new NodePathSegment.Folder(NodeFolder.ReferencedTypes),
             NodeSubject.TypeReference type => new NodePathSegment.UsedType(type.Value.ReflectionName),
-            NodeSubject.MemberReference member => new NodePathSegment.UsedMember(GetUsedMemberId(member.Value.Declared)),
+            NodeSubject.MemberReference member => new NodePathSegment.UsedMember(GetUsedMemberId(NodeDefinitions.GetDeclared(member.Value))),
             NodeSubject.ModuleReference module => new NodePathSegment.ModuleReference(module.Value.Name),
             NodeSubject.ImportedMethod import => new NodePathSegment.ImportedMethod(import.Value.Id),
             NodeSubject.ForwardedType forwarded => new NodePathSegment.ForwardedType(forwarded.Value.ReflectionName),
             NodeSubject.BaseTypes => new NodePathSegment.Folder(NodeFolder.BaseTypes),
-            NodeSubject.BaseType baseType => new NodePathSegment.BaseType(baseType.Value.Type.ReflectionName),
+            NodeSubject.BaseType baseType => new NodePathSegment.BaseType(GetSymbols(baseType.Value).Type.ReflectionName),
             NodeSubject.DerivedTypes => new NodePathSegment.Folder(NodeFolder.DerivedTypes),
-            NodeSubject.DerivedType derived => new NodePathSegment.DerivedType(IdStringProvider.GetIdString(derived.Value.Symbol)),
+            NodeSubject.DerivedType derived => new NodePathSegment.DerivedType(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(derived.Value))),
             NodeSubject.Resources => new NodePathSegment.Folder(NodeFolder.Resources),
             NodeSubject.ResourceContainer container => new NodePathSegment.Resource(container.Value.Resource.Name),
             NodeSubject.ResourceEntry entry => new NodePathSegment.Resource(entry.Value.Name),

@@ -1,4 +1,3 @@
-using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core;
 
@@ -11,7 +10,9 @@ public sealed class NamespaceInfo
     /// <summary>The full name; empty for the global namespace.</summary>
     public required string Name { get; init; }
 
-    public required IReadOnlyList<ITypeDefinition> Types { get; init; }
+    /// <summary>How many types the namespace holds itself; the types are the I/O side's
+    /// (<see cref="NodeDefinitions.GetTypes"/>).</summary>
+    public required int TypeCount { get; init; }
 
     public required IReadOnlyList<ForwardedTypeInfo> Forwarded { get; init; }
 
@@ -19,7 +20,7 @@ public sealed class NamespaceInfo
     public string Label => Name.Length == 0 ? "-" : Name;
 
     /// <summary>Whether the module puts no types here, listing it only because others nest in it.</summary>
-    public bool IsEnclosingOnly => Types.Count == 0 && Forwarded.Count == 0;
+    public bool IsEnclosingOnly => TypeCount == 0 && Forwarded.Count == 0;
 
     /// <summary>Whether a type here is visible outside the module: one it forwards, or a public one.</summary>
     public required bool IsPublicApi { get; init; }

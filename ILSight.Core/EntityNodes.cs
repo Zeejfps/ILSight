@@ -10,7 +10,7 @@ internal static class EntityNodes
     {
         var definition = LoadedAssemblies.GetFile(type.Module).Metadata.GetTypeDefinition(type.Handle);
         return !definition.BaseType.IsNil || definition.GetInterfaceImplementations().Count > 0 || definition.GetNestedTypes().Length > 0 ||
-               DerivedTypes.CanHave(type.Symbol) || definition.GetFields().Count > 0 || definition.GetMethods().Count > 0 ||
+               DerivedTypes.CanHave(NodeDefinitions.GetSymbol(type)) || definition.GetFields().Count > 0 || definition.GetMethods().Count > 0 ||
                definition.GetProperties().Count > 0 || definition.GetEvents().Count > 0;
     }
 
@@ -19,7 +19,7 @@ internal static class EntityNodes
     /// accessors are left out.</summary>
     internal static BrowseNode[] ListMembers(BrowseNode parent, DefinedType definition)
     {
-        var type = definition.Symbol;
+        var type = NodeDefinitions.GetSymbol(definition);
         var module = definition.Module;
         var result = new List<BrowseNode>();
         if (type.DirectBaseTypes.Any())
@@ -69,7 +69,7 @@ internal static class EntityNodes
     internal static BrowseNode[] ListAccessors(BrowseNode parent, DefinedMember definition)
     {
         var result = new List<BrowseNode>();
-        foreach (var accessor in Members.Accessors(definition.Symbol))
+        foreach (var accessor in Members.Accessors(NodeDefinitions.GetSymbol(definition)))
         {
             AddIfListed(result, BrowseNodes.CreateForMember(definition.Module, parent, accessor));
         }
@@ -79,7 +79,7 @@ internal static class EntityNodes
 
     internal static BrowseNode[] ListBaseTypes(BrowseNode parent, DefinedType type)
     {
-        return type.Symbol.DirectBaseTypes
+        return NodeDefinitions.GetSymbol(type).DirectBaseTypes
             .Select(t => BrowseNodes.Create(parent, new NodeSubject.BaseType { Value = NodeDefinitions.CreateBaseType(type.Module, t) }))
             .ToArray();
     }

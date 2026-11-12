@@ -90,8 +90,9 @@ internal static class ModuleNodes
     /// how many type parameters they have.</summary>
     internal static BrowseNode[] ListNamespace(BrowseNode parent, NamespaceInfo ns)
     {
-        var children = new List<(string Name, int Arity, BrowseNode Node)>(ns.Types.Count + ns.Forwarded.Count);
-        foreach (var type in ns.Types)
+        var types = NodeDefinitions.GetTypes(ns);
+        var children = new List<(string Name, int Arity, BrowseNode Node)>(types.Count + ns.Forwarded.Count);
+        foreach (var type in types)
         {
             var node = BrowseNodes.CreateForType(ns.Module, parent, type);
             if (node is not null)
