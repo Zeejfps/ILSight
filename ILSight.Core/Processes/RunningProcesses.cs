@@ -89,17 +89,11 @@ public static class RunningProcesses
             return null; // its socket went with it
         }
 
-        try
-        {
-            var info = await DiagnosticsIpc.QueryProcessInfoAsync(endpoint, budget, cancellationToken).ConfigureAwait(false);
-            return new RunningProcess(id, name, info);
-        }
-        catch (Exception e) when (IsUnreachable(e))
-        {
-            // The endpoint is there but didn't answer: a suspended runtime, a stale transport, or one
-            // shutting down. Still worth listing, without what only it could say.
-            return new RunningProcess(id, name, null);
-        }
+        // An endpoint that is there but doesn't answer (a suspended runtime, a stale transport, or one shutting
+        // down) is still worth listing, without what only it could say.
+        return await AskUnlessUnreachableAsync(
+            async ct => new RunningProcess(id, name, await DiagnosticsIpc.QueryProcessInfoAsync(endpoint, budget, ct).ConfigureAwait(false)),
+            _ => new RunningProcess(id, name, null), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The modules process <paramref name="id"/> has loaded, as its runtime lists them as of now.</summary>
@@ -116,16 +110,13 @@ public static class RunningProcesses
             return new ModuleListing.Unreachable($"Process {id} has no diagnostics endpoint.");
         }
 
-        MemoryStream trace;
-        try
-        {
-            trace = await DiagnosticsIpc.CollectRundownAsync(endpoint, budget, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception e) when (IsUnreachable(e))
-        {
-            return new ModuleListing.Unreachable(e.Message);
-        }
+        return await AskUnlessUnreachableAsync(
+            async ct => ReadModules(await DiagnosticsIpc.CollectRundownAsync(endpoint, budget, ct).ConfigureAwait(false)),
+            static e => new ModuleListing.Unreachable(e.Message), cancellationToken).ConfigureAwait(false);
+    }
 
+    private static ModuleListing ReadModules(MemoryStream trace)
+    {
         using (trace)
         {
             return NettraceRundown.Read(trace) switch
@@ -311,14 +302,34 @@ public static class RunningProcesses
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    /// <summary>Whether an exception means the process didn't answer, rather than that this code is wrong.
-    /// Runtimes are asked together, so this tells losing one row from losing the list. A Unix socket whose
-    /// runtime is gone refuses the connection with a <see cref="System.Net.Sockets.SocketException"/>, a
-    /// <see cref="Win32Exception"/> and no <see cref="IOException"/>; a named pipe with no server behind it
-    /// times out.</summary>
-    internal static bool IsUnreachable(Exception e)
+    /// <summary>What <paramref name="ask"/> answers, or what <paramref name="unreachable"/> makes of why the process
+    /// didn't answer, rather than that this code is wrong. Runtimes are asked together, so this tells losing one row
+    /// from losing the list. A Unix socket whose runtime is gone refuses the connection with a
+    /// <see cref="System.Net.Sockets.SocketException"/>, a <see cref="Win32Exception"/> and no <see cref="IOException"/>;
+    /// a named pipe with no server behind it times out.</summary>
+    internal static async Task<T> AskUnlessUnreachableAsync<T>(Func<CancellationToken, Task<T>> ask, Func<Exception, T> unreachable,
+        CancellationToken ct)
     {
-        return e is IOException or Win32Exception or TimeoutException or UnauthorizedAccessException;
+        try
+        {
+            return await ask(ct).ConfigureAwait(false);
+        }
+        catch (IOException e)
+        {
+            return unreachable(e);
+        }
+        catch (Win32Exception e)
+        {
+            return unreachable(e);
+        }
+        catch (TimeoutException e)
+        {
+            return unreachable(e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return unreachable(e);
+        }
     }
 
     private static string? FindProcessName(ProcessId id)
@@ -328,7 +339,11 @@ public static class RunningProcesses
             using var process = Process.GetProcessById(id.Value);
             return process.ProcessName;
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
         {
             return null;
         }
@@ -341,7 +356,15 @@ public static class RunningProcesses
             using var process = Process.GetProcessById(id);
             return !process.HasExited;
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException or Win32Exception)
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+        catch (Win32Exception)
         {
             return false;
         }
@@ -424,7 +447,11 @@ public static class RunningProcesses
             }
             return best;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
         {
             return null;
         }

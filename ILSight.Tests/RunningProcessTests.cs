@@ -247,13 +247,19 @@ public sealed class RunningProcessTests
     }
 
     [Fact]
-    public void A_refused_connection_counts_as_unreachable_and_a_bug_does_not()
+    public async Task A_refused_connection_counts_as_unreachable_and_a_bug_does_not()
     {
-        Assert.True(RunningProcesses.IsUnreachable(new SocketException((int)SocketError.ConnectionRefused)));
-        Assert.True(RunningProcesses.IsUnreachable(new TimeoutException()));
-        Assert.True(RunningProcesses.IsUnreachable(new EndOfStreamException()));
-        Assert.False(RunningProcesses.IsUnreachable(new InvalidOperationException()));
-        Assert.False(RunningProcesses.IsUnreachable(new OperationCanceledException()));
+        Assert.True(await IsTakenForUnreachableAsync(new SocketException((int)SocketError.ConnectionRefused)));
+        Assert.True(await IsTakenForUnreachableAsync(new TimeoutException()));
+        Assert.True(await IsTakenForUnreachableAsync(new EndOfStreamException()));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => IsTakenForUnreachableAsync(new InvalidOperationException()));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => IsTakenForUnreachableAsync(new OperationCanceledException()));
+    }
+
+    /// <summary>Whether asking a process that fails with <paramref name="failure"/> answers that it is unreachable.</summary>
+    private static Task<bool> IsTakenForUnreachableAsync(Exception failure)
+    {
+        return RunningProcesses.AskUnlessUnreachableAsync(_ => Task.FromException<bool>(failure), static _ => true, CancellationToken.None);
     }
 
     /// <summary>A nettrace stream holding a trace object and one block of <paramref name="block"/>'s type.</summary>

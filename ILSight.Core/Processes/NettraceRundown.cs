@@ -66,7 +66,19 @@ internal static class NettraceRundown
         {
             return new RundownRead.Read(ReadModules(stream));
         }
-        catch (Exception e) when (e is InvalidDataException or EndOfStreamException or IOException or OverflowException)
+        catch (InvalidDataException e)
+        {
+            return new RundownRead.Corrupt(e.Message);
+        }
+        catch (EndOfStreamException e)
+        {
+            return new RundownRead.Corrupt(e.Message);
+        }
+        catch (IOException e)
+        {
+            return new RundownRead.Corrupt(e.Message);
+        }
+        catch (OverflowException e)
         {
             return new RundownRead.Corrupt(e.Message);
         }
