@@ -13,18 +13,17 @@ public static class NodeIcons
     /// <summary>The icon of a node of <paramref name="subject"/>.</summary>
     public static NodeIcon Of(NodeSubject subject)
     {
-        return subject switch
-        {
-            NodeSubject.Module => NodeIcon.Assembly,
-            NodeSubject.FailedAssembly => NodeIcon.FailedAssembly,
-            NodeSubject.Namespace => NodeIcon.Namespace,
-            NodeSubject.TypeDefinition type => Of(type.Definition.Shape),
-            NodeSubject.MemberDefinition member => Of(member.Definition.Shape),
-            NodeSubject.References => NodeIcon.ReferencesFolder,
-            NodeSubject.AssemblyReference => NodeIcon.AssemblyReference,
-            NodeSubject.ReferencedTypes => NodeIcon.ReferencedTypes,
-            NodeSubject.TypeReference => NodeIcon.TypeReference,
-            NodeSubject.MemberReference member => member.Value.Shape switch
+        return subject.Match(
+            module: static _ => NodeIcon.Assembly,
+            @namespace: static _ => NodeIcon.Namespace,
+            failedAssembly: static _ => NodeIcon.FailedAssembly,
+            typeDefinition: static type => Of(type.Definition.Shape),
+            memberDefinition: static member => Of(member.Definition.Shape),
+            references: static _ => NodeIcon.ReferencesFolder,
+            assemblyReference: static _ => NodeIcon.AssemblyReference,
+            referencedTypes: static _ => NodeIcon.ReferencedTypes,
+            typeReference: static _ => NodeIcon.TypeReference,
+            memberReference: static member => member.Value.Shape switch
             {
                 MemberShape.Field or MemberShape.Constant => NodeIcon.FieldReference,
                 MemberShape.Property or MemberShape.Indexer => NodeIcon.PropertyReference,
@@ -32,19 +31,19 @@ public static class NodeIcons
                 MemberShape.Method or MemberShape.Constructor or MemberShape.Operator => NodeIcon.MethodReference,
                 _ => throw new UnreachableException(),
             },
-            NodeSubject.ModuleReference => NodeIcon.ModuleReference,
-            NodeSubject.ImportedMethod => NodeIcon.ImportedMethod,
-            NodeSubject.ForwardedType => NodeIcon.ForwardedType,
-            NodeSubject.BaseTypes => NodeIcon.BaseTypes,
-            NodeSubject.BaseType => NodeIcon.BaseType,
-            NodeSubject.DerivedTypes => NodeIcon.DerivedTypes,
-            NodeSubject.DerivedType => NodeIcon.DerivedType,
-            NodeSubject.Resources => NodeIcon.ResourcesFolder,
-            NodeSubject.ResourceContainer => NodeIcon.ResourcesFile,
-            NodeSubject.ResourceEntry entry => entry.Value.IsImage ? NodeIcon.ResourceImage : NodeIcon.Resource,
-            NodeSubject.Metadata => NodeIcon.Metadata,
-            NodeSubject.MetadataTables => NodeIcon.MetadataTables,
-            NodeSubject.MetadataTable table => table.Value.Role switch
+            moduleReference: static _ => NodeIcon.ModuleReference,
+            importedMethod: static _ => NodeIcon.ImportedMethod,
+            forwardedType: static _ => NodeIcon.ForwardedType,
+            baseTypes: static _ => NodeIcon.BaseTypes,
+            baseType: static _ => NodeIcon.BaseType,
+            derivedTypes: static _ => NodeIcon.DerivedTypes,
+            derivedType: static _ => NodeIcon.DerivedType,
+            resources: static _ => NodeIcon.ResourcesFolder,
+            resourceContainer: static _ => NodeIcon.ResourcesFile,
+            resourceEntry: static entry => entry.Value.IsImage ? NodeIcon.ResourceImage : NodeIcon.Resource,
+            metadata: static _ => NodeIcon.Metadata,
+            metadataTables: static _ => NodeIcon.MetadataTables,
+            metadataTable: static table => table.Value.Role switch
             {
                 MetadataGridRole.Header => NodeIcon.MetadataHeader,
                 MetadataGridRole.Directory => NodeIcon.MetadataDirectory,
@@ -52,24 +51,19 @@ public static class NodeIcons
                 MetadataGridRole.Heap => NodeIcon.MetadataHeap,
                 _ => throw new UnreachableException(),
             },
-            NodeSubject.Package package => !package.Value.IsRoot ? NodeIcon.PackageFolder
+            package: static package => !package.Value.IsRoot ? NodeIcon.PackageFolder
                 : package.Value.Package.Package.IsBundle ? NodeIcon.Bundle : NodeIcon.Package,
-            NodeSubject.PackageFile file => file.Value.IsImage ? NodeIcon.ResourceImage : NodeIcon.Resource,
-            _ => throw new UnreachableException(),
-        };
+            packageFile: static file => file.Value.IsImage ? NodeIcon.ResourceImage : NodeIcon.Resource);
     }
 
     /// <summary>The icon of a symbol of <paramref name="shape"/>, as an analysis, a comparison or a diagram lists it.</summary>
     public static NodeIcon Of(SymbolShape shape)
     {
-        return shape switch
-        {
-            SymbolShape.Assembly => NodeIcon.Assembly,
-            SymbolShape.Namespace => NodeIcon.Namespace,
-            SymbolShape.Type type => Of(type.Shape),
-            SymbolShape.Member member => Of(member.Shape),
-            _ => throw new UnreachableException(),
-        };
+        return shape.Match(
+            static _ => NodeIcon.Assembly,
+            static _ => NodeIcon.Namespace,
+            static type => Of(type.Shape),
+            static member => Of(member.Shape));
     }
 
     public static NodeIcon Of(TypeShape shape)

@@ -220,13 +220,10 @@ internal static class ComparisonView
             return null;
         }
 
-        return entity.Sides switch
-        {
-            ApiSides.LeftOnly sides => sides.Left,
-            ApiSides.Both sides => sides.Left,
-            ApiSides.RightOnly => null,
-            _ => throw new UnreachableException(),
-        };
+        return entity.Sides.Match<ApiSide?>(
+            static sides => sides.Left,
+            static _ => null,
+            static sides => sides.Left);
     }
 
     /// <summary>How the right assembly has <paramref name="entry"/>; null for a namespace or what it lacks.</summary>
@@ -237,13 +234,10 @@ internal static class ComparisonView
             return null;
         }
 
-        return entity.Sides switch
-        {
-            ApiSides.RightOnly sides => sides.Right,
-            ApiSides.Both sides => sides.Right,
-            ApiSides.LeftOnly => null,
-            _ => throw new UnreachableException(),
-        };
+        return entity.Sides.Match<ApiSide?>(
+            static _ => null,
+            static sides => sides.Right,
+            static sides => sides.Right);
     }
 
     private static void ContextMenu(Ui<UiState> ui, Navigation navigation, ComparisonRows rows)

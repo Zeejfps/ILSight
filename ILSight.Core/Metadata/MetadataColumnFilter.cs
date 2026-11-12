@@ -54,4 +54,31 @@ public abstract class MetadataColumnFilter
         }
         return copy;
     }
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<ByText, TResult> byText, Func<ByFlags, TResult> byFlags)
+    {
+        return this switch
+        {
+            ByText c => byText(c),
+            ByFlags c => byFlags(c),
+            _ => throw new UnreachableException($"MetadataColumnFilter.Match does not handle {GetType().Name}."),
+        };
+    }
+
+    /// <summary>Does what the handler of whichever case this is does with it.</summary>
+    public void Switch(Action<ByText> byText, Action<ByFlags> byFlags)
+    {
+        switch (this)
+        {
+            case ByText c:
+                byText(c);
+                return;
+            case ByFlags c:
+                byFlags(c);
+                return;
+            default:
+                throw new UnreachableException($"MetadataColumnFilter.Switch does not handle {GetType().Name}.");
+        }
+    }
 }

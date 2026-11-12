@@ -261,29 +261,31 @@ internal static class ProcessPickerView
         for (var i = rows.First; i < rows.End; i++)
         {
             using var row = rows.Row(i);
-            switch (modules[i])
-            {
-                case RunningModule.OnDisk onDisk:
-                    using (row.Cell(0))
-                    {
-                        NodeIcons.Draw(ui, NodeIcon.Assembly);
-                        ui.Text(onDisk.Name, new Box { Width = Sizing.Grow() }, color: row.Selected ? theme.SelectionText : theme.Text,
-                            overflow: TextOverflow.Ellipsis);
-                    }
-                    row.TextCell(1, Path.GetDirectoryName(onDisk.Path.Text) ?? "", theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
-                    break;
-                case RunningModule.InMemory inMemory:
-                    using (row.Cell(0))
-                    {
-                        NodeIcons.Draw(ui, NodeIcon.Assembly);
-                        ui.Text(inMemory.Name, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
-                    }
-                    row.TextCell(1, t.ProcessPickerInMemory, theme.TextMuted);
-                    break;
-                default:
-                    throw new UnreachableException();
-            }
+            modules[i].Switch((ui, row, theme, t),
+                static (drawn, onDisk) => DrawOnDisk(drawn.ui, drawn.row, drawn.theme, onDisk),
+                static (drawn, inMemory) => DrawInMemory(drawn.ui, drawn.row, drawn.theme, drawn.t, inMemory));
         }
         return rows.Activated;
+    }
+
+    private static void DrawOnDisk(Ui<UiState> ui, TableRow row, UiTheme theme, RunningModule.OnDisk onDisk)
+    {
+        using (row.Cell(0))
+        {
+            NodeIcons.Draw(ui, NodeIcon.Assembly);
+            ui.Text(onDisk.Name, new Box { Width = Sizing.Grow() }, color: row.Selected ? theme.SelectionText : theme.Text,
+                overflow: TextOverflow.Ellipsis);
+        }
+        row.TextCell(1, Path.GetDirectoryName(onDisk.Path.Text) ?? "", theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
+    }
+
+    private static void DrawInMemory(Ui<UiState> ui, TableRow row, UiTheme theme, Strings t, RunningModule.InMemory inMemory)
+    {
+        using (row.Cell(0))
+        {
+            NodeIcons.Draw(ui, NodeIcon.Assembly);
+            ui.Text(inMemory.Name, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
+        }
+        row.TextCell(1, t.ProcessPickerInMemory, theme.TextMuted);
     }
 }

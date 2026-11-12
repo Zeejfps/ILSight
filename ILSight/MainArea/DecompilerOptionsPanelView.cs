@@ -199,14 +199,11 @@ internal static class DecompilerOptionsPanelView
     /// <summary>What a section of <paramref name="group"/> is known by where its folding is kept.</summary>
     private static string GetKey(DecompilerToggleGroup group)
     {
-        return group switch
-        {
-            DecompilerToggleGroup.Language language => language.IntroducedIn.ToString(),
-            DecompilerToggleGroup.Other => "Other",
-            DecompilerToggleGroup.FSharp => "FSharp",
-            DecompilerToggleGroup.ProjectExport => "ProjectExport",
-            _ => throw new UnreachableException(),
-        };
+        return group.Match(
+            static language => language.IntroducedIn.ToString(),
+            static _ => "Other",
+            static _ => "FSharp",
+            static _ => "ProjectExport");
     }
 
     /// <summary>True when every toggle in <paramref name="section"/> is on, false when none is, null otherwise.</summary>
@@ -281,14 +278,11 @@ internal static class DecompilerOptionsPanelView
 
     private static string Title(Strings t, DecompilerOptionSection section)
     {
-        return section.Group switch
-        {
-            DecompilerToggleGroup.Language language => CSharpVersions.Label(language.IntroducedIn),
-            DecompilerToggleGroup.FSharp => t.DecompilerOptionsFsharp,
-            DecompilerToggleGroup.Other => t.DecompilerOptionsOther,
-            DecompilerToggleGroup.ProjectExport => throw new UnreachableException("The export's toggles have no section here: the export dialog shows them."),
-            _ => throw new UnreachableException(),
-        };
+        return section.Group.Match(t,
+            static (_, language) => CSharpVersions.Label(language.IntroducedIn),
+            static (t, _) => t.DecompilerOptionsOther,
+            static (t, _) => t.DecompilerOptionsFsharp,
+            static (_, _) => throw new UnreachableException("The export's toggles have no section here: the export dialog shows them."));
     }
 
     private static bool AllFolded(FoldedGroups folded)

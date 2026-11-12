@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ILSight.Core.Metadata;
 using ILSight.Core.Resources;
 
@@ -147,5 +148,51 @@ public abstract class NodeSubject
     public sealed class PackageFile : NodeSubject
     {
         public required PackageFileInfo Value { get; init; }
+    }
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<Module, TResult> module, Func<Namespace, TResult> @namespace,
+        Func<FailedAssembly, TResult> failedAssembly, Func<TypeDefinition, TResult> typeDefinition,
+        Func<MemberDefinition, TResult> memberDefinition, Func<References, TResult> references,
+        Func<AssemblyReference, TResult> assemblyReference, Func<ReferencedTypes, TResult> referencedTypes,
+        Func<TypeReference, TResult> typeReference, Func<MemberReference, TResult> memberReference,
+        Func<ModuleReference, TResult> moduleReference, Func<ImportedMethod, TResult> importedMethod,
+        Func<ForwardedType, TResult> forwardedType, Func<BaseTypes, TResult> baseTypes,
+        Func<BaseType, TResult> baseType, Func<DerivedTypes, TResult> derivedTypes,
+        Func<DerivedType, TResult> derivedType, Func<Resources, TResult> resources,
+        Func<ResourceContainer, TResult> resourceContainer, Func<ResourceEntry, TResult> resourceEntry,
+        Func<Metadata, TResult> metadata, Func<MetadataTables, TResult> metadataTables,
+        Func<MetadataTable, TResult> metadataTable, Func<Package, TResult> package,
+        Func<PackageFile, TResult> packageFile)
+    {
+        return this switch
+        {
+            Module c => module(c),
+            Namespace c => @namespace(c),
+            FailedAssembly c => failedAssembly(c),
+            TypeDefinition c => typeDefinition(c),
+            MemberDefinition c => memberDefinition(c),
+            References c => references(c),
+            AssemblyReference c => assemblyReference(c),
+            ReferencedTypes c => referencedTypes(c),
+            TypeReference c => typeReference(c),
+            MemberReference c => memberReference(c),
+            ModuleReference c => moduleReference(c),
+            ImportedMethod c => importedMethod(c),
+            ForwardedType c => forwardedType(c),
+            BaseTypes c => baseTypes(c),
+            BaseType c => baseType(c),
+            DerivedTypes c => derivedTypes(c),
+            DerivedType c => derivedType(c),
+            Resources c => resources(c),
+            ResourceContainer c => resourceContainer(c),
+            ResourceEntry c => resourceEntry(c),
+            Metadata c => metadata(c),
+            MetadataTables c => metadataTables(c),
+            MetadataTable c => metadataTable(c),
+            Package c => package(c),
+            PackageFile c => packageFile(c),
+            _ => throw new UnreachableException($"NodeSubject.Match does not handle {GetType().Name}."),
+        };
     }
 }

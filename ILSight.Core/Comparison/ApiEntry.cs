@@ -56,4 +56,15 @@ public abstract class ApiEntry
 
         public override ApiChange Change => Sides.Change;
     }
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<Namespace, TResult> @namespace, Func<Entity, TResult> entity)
+    {
+        return this switch
+        {
+            Namespace c => @namespace(c),
+            Entity c => entity(c),
+            _ => throw new UnreachableException($"ApiEntry.Match does not handle {GetType().Name}."),
+        };
+    }
 }

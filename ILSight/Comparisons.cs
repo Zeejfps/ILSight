@@ -319,23 +319,17 @@ public static class Comparisons
     /// null for a namespace.</summary>
     private static string? DescribeDeclarations(ComparisonRows rows, ApiEntry entry)
     {
-        return entry switch
-        {
-            ApiEntry.Namespace => null,
-            ApiEntry.Entity entity => DescribeDeclarations(rows, entity.Sides),
-            _ => throw new UnreachableException(),
-        };
+        return entry.Match<string?>(
+            static _ => null,
+            entity => DescribeDeclarations(rows, entity.Sides));
     }
 
     private static string DescribeDeclarations(ComparisonRows rows, ApiSides sides)
     {
-        return sides switch
-        {
-            ApiSides.LeftOnly left => left.Left.Declaration,
-            ApiSides.RightOnly right => right.Right.Declaration,
-            ApiSides.Both both => DescribeDeclarations(rows, both),
-            _ => throw new UnreachableException(),
-        };
+        return sides.Match(
+            static left => left.Left.Declaration,
+            static right => right.Right.Declaration,
+            both => DescribeDeclarations(rows, both));
     }
 
     private static string DescribeDeclarations(ComparisonRows rows, ApiSides.Both sides)

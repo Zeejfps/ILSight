@@ -31,12 +31,9 @@ public sealed class ProcessBrowserAdapter(Action<AppProblem> reportError) : Proc
     private static async Task<ModuleScan> ScanModulesAsync(RunningProcess process, CancellationToken ct)
     {
         var listing = await RunningProcesses.GetModulesAsync(process.Id, ct);
-        return listing switch
-        {
-            ModuleListing.Listed listed => new ModuleScan.Loaded(process, listed.Modules, RunningProcesses.FindEntryAssembly(process, listed.Modules)),
-            ModuleListing.Unreachable unreachable => new ModuleScan.Unreachable(process, unreachable.Detail, RunningProcesses.FindEntryAssembly(process, [])),
-            ModuleListing.Unreadable unreadable => new ModuleScan.Unreadable(process, unreadable.Detail, RunningProcesses.FindEntryAssembly(process, [])),
-            _ => throw new UnreachableException(),
-        };
+        return listing.Match<ModuleScan>(
+            listed => new ModuleScan.Loaded(process, listed.Modules, RunningProcesses.FindEntryAssembly(process, listed.Modules)),
+            unreachable => new ModuleScan.Unreachable(process, unreachable.Detail, RunningProcesses.FindEntryAssembly(process, [])),
+            unreadable => new ModuleScan.Unreadable(process, unreadable.Detail, RunningProcesses.FindEntryAssembly(process, [])));
     }
 }

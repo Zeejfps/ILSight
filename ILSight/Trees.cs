@@ -496,18 +496,18 @@ public static class Trees
     public static TreeChildren<BrowseNode> GetChildren(BrowseTree tree, BrowseNode node)
     {
         var state = tree.NestsNamespaces ? tree.Session.PeekNestedChildren(node) : tree.Session.PeekChildren(node);
-        switch (state)
-        {
-            case ChildrenState.Ready ready:
-                return TreeChildren<BrowseNode>.Of(EnsureShownChildren(tree, node, ready.Children));
-            case ChildrenState.Failed failed:
-                return TreeChildren<BrowseNode>.Placeholder(CreateFailedRow(tree, failed.Error));
-            case ChildrenState.Running or ChildrenState.Unloaded:
-                tree.Builds.Ask(node);
-                return TreeChildren<BrowseNode>.Placeholder(CreateLoadingRow(tree));
-            default:
-                throw new UnreachableException();
-        }
+        return state.Match((tree, node),
+            static (asked, _) => ShowLoading(asked.tree, asked.node),
+            static (asked, _) => ShowLoading(asked.tree, asked.node),
+            static (shown, ready) => TreeChildren<BrowseNode>.Of(EnsureShownChildren(shown.tree, shown.node, ready.Children)),
+            static (shown, failed) => TreeChildren<BrowseNode>.Placeholder(CreateFailedRow(shown.tree, failed.Error)));
+    }
+
+    /// <summary>A loading row under <paramref name="node"/>, whose children are asked for.</summary>
+    private static TreeChildren<BrowseNode> ShowLoading(BrowseTree tree, BrowseNode node)
+    {
+        tree.Builds.Ask(node);
+        return TreeChildren<BrowseNode>.Placeholder(CreateLoadingRow(tree));
     }
 
     private static BrowseNode[] EnsureShownChildren(BrowseTree tree, BrowseNode node, IReadOnlyList<BrowseNode> children)

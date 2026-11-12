@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ILSight.Core.Metadata;
 
 namespace ILSight.Core;
@@ -59,4 +60,37 @@ public abstract record NodePathSegment
 
     /// <summary>Whether this names an entry of a package by its full path, from the package's root.</summary>
     internal bool IsPackageEntry => this is PackageFolder or PackageFile or EmbeddedModule;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<Namespace, TResult> @namespace, Func<Definition, TResult> definition,
+        Func<Folder, TResult> folder, Func<Metadata, TResult> metadata, Func<MetadataPart, TResult> metadataPart,
+        Func<AssemblyReference, TResult> assemblyReference, Func<ModuleReference, TResult> moduleReference,
+        Func<ImportedMethod, TResult> importedMethod, Func<UsedType, TResult> usedType,
+        Func<UsedMember, TResult> usedMember, Func<ForwardedType, TResult> forwardedType,
+        Func<BaseType, TResult> baseType, Func<DerivedType, TResult> derivedType, Func<Resource, TResult> resource,
+        Func<PackageFolder, TResult> packageFolder, Func<PackageFile, TResult> packageFile,
+        Func<EmbeddedModule, TResult> embeddedModule)
+    {
+        return this switch
+        {
+            Namespace c => @namespace(c),
+            Definition c => definition(c),
+            Folder c => folder(c),
+            Metadata c => metadata(c),
+            MetadataPart c => metadataPart(c),
+            AssemblyReference c => assemblyReference(c),
+            ModuleReference c => moduleReference(c),
+            ImportedMethod c => importedMethod(c),
+            UsedType c => usedType(c),
+            UsedMember c => usedMember(c),
+            ForwardedType c => forwardedType(c),
+            BaseType c => baseType(c),
+            DerivedType c => derivedType(c),
+            Resource c => resource(c),
+            PackageFolder c => packageFolder(c),
+            PackageFile c => packageFile(c),
+            EmbeddedModule c => embeddedModule(c),
+            _ => throw new UnreachableException($"NodePathSegment.Match does not handle {GetType().Name}."),
+        };
+    }
 }

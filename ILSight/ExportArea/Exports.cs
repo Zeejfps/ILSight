@@ -141,12 +141,9 @@ public static class Exports
 
     private static ExportProblem ProblemOf(PdbFailure failure)
     {
-        return failure switch
-        {
-            PdbFailure.NoDebugEntry f => new ExportProblem.NoPdbEntry(f.Assembly.Name),
-            PdbFailure.NotWritten f => new ExportProblem.PdbNotWritten(f.Assembly.Name, f.Error),
-            _ => throw new UnreachableException(),
-        };
+        return failure.Match<ExportProblem>(
+            static f => new ExportProblem.NoPdbEntry(f.Assembly.Name),
+            static f => new ExportProblem.PdbNotWritten(f.Assembly.Name, f.Error));
     }
 
     /// <summary><paramref name="report"/> listing the files <paramref name="extracted"/> wrote, and those
@@ -161,12 +158,9 @@ public static class Exports
 
     private static ExportProblem ProblemOf(ExtractFailure failure)
     {
-        return failure switch
-        {
-            ExtractFailure.OutsideFolder f => new ExportProblem.OutsideFolder(f.File.FullName),
-            ExtractFailure.NotWritten f => new ExportProblem.FileNotWritten(f.File.FullName, f.Error),
-            _ => throw new UnreachableException(),
-        };
+        return failure.Match<ExportProblem>(
+            static f => new ExportProblem.OutsideFolder(f.File.FullName),
+            static f => new ExportProblem.FileNotWritten(f.File.FullName, f.Error));
     }
 
     /// <summary>Shows the report of <paramref name="report"/> in a new tab.</summary>

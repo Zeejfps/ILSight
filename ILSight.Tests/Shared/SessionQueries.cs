@@ -59,12 +59,23 @@ internal static class SessionQueries
         }
 
         /// <summary>Whether the node is a resource or a package's file shown as a picture.</summary>
-        public bool IsImage => node.Subject switch
+        public bool IsImage
         {
-            NodeSubject.ResourceEntry entry => entry.Value.IsImage,
-            NodeSubject.PackageFile file => file.Value.IsImage,
-            _ => false,
-        };
+            get
+            {
+                if (node.Subject is NodeSubject.ResourceEntry entry)
+                {
+                    return entry.Value.IsImage;
+                }
+
+                if (node.Subject is NodeSubject.PackageFile file)
+                {
+                    return file.Value.IsImage;
+                }
+
+                return false;
+            }
+        }
 
         /// <summary>A reference to the type or member the node defines; fails the test when it defines none.</summary>
         public CodeReference.Entity Definition => Assert.IsType<CodeReference.Entity>(node.Reference);

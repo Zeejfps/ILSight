@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
@@ -24,4 +25,21 @@ public abstract record MetadataPartKey
 
     /// <summary>An entry of the debug directory: where it stands there, from 0, and its type.</summary>
     public sealed record DebugEntry(int Index, DebugDirectoryEntryType Type) : MetadataPartKey;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<Header, TResult> header, Func<DataDirectories, TResult> dataDirectories,
+        Func<DebugDirectory, TResult> debugDirectory, Func<Table, TResult> table, Func<Heap, TResult> heap,
+        Func<DebugEntry, TResult> debugEntry)
+    {
+        return this switch
+        {
+            Header c => header(c),
+            DataDirectories c => dataDirectories(c),
+            DebugDirectory c => debugDirectory(c),
+            Table c => table(c),
+            Heap c => heap(c),
+            DebugEntry c => debugEntry(c),
+            _ => throw new UnreachableException($"MetadataPartKey.Match does not handle {GetType().Name}."),
+        };
+    }
 }

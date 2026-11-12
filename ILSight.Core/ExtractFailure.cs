@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ILSight.Core;
 
 /// <summary>A file of a package that was not extracted, and why.</summary>
@@ -13,4 +15,15 @@ public abstract record ExtractFailure
     public sealed record OutsideFolder(PackageFile File) : ExtractFailure;
 
     public sealed record NotWritten(PackageFile File, ExportError Error) : ExtractFailure;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<OutsideFolder, TResult> outsideFolder, Func<NotWritten, TResult> notWritten)
+    {
+        return this switch
+        {
+            OutsideFolder c => outsideFolder(c),
+            NotWritten c => notWritten(c),
+            _ => throw new UnreachableException($"ExtractFailure.Match does not handle {GetType().Name}."),
+        };
+    }
 }

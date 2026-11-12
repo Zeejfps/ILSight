@@ -52,19 +52,28 @@ public static class NodeText
     /// module. Null for other nodes.</summary>
     public static string? Secondary(BrowseNode node)
     {
-        return node.Subject switch
+        var subject = node.Subject;
+        if (subject is NodeSubject.ForwardedType)
         {
-            NodeSubject.ForwardedType => Secondaries.GetValue(node, WriteForwardedTo),
-            NodeSubject.TypeReference type => EmptyToNull(type.Value.Namespace),
-            NodeSubject.ImportedMethod import => import.Value.DeclaringTypeName,
-            NodeSubject.Module => EmptyToNull(Secondaries.GetValue(node, WriteIdentity)),
-            NodeSubject.TypeDefinition or NodeSubject.MemberDefinition or NodeSubject.References or NodeSubject.AssemblyReference
-                or NodeSubject.ReferencedTypes or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.BaseTypes
-                or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType or NodeSubject.Resources or NodeSubject.ResourceContainer
-                or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable or NodeSubject.Package
-                or NodeSubject.PackageFile or NodeSubject.Namespace or NodeSubject.FailedAssembly => null,
-            _ => throw new UnreachableException(),
-        };
+            return Secondaries.GetValue(node, WriteForwardedTo);
+        }
+
+        if (subject is NodeSubject.TypeReference type)
+        {
+            return EmptyToNull(type.Value.Namespace);
+        }
+
+        if (subject is NodeSubject.ImportedMethod import)
+        {
+            return import.Value.DeclaringTypeName;
+        }
+
+        if (subject is NodeSubject.Module)
+        {
+            return EmptyToNull(Secondaries.GetValue(node, WriteIdentity));
+        }
+
+        return null;
     }
 
     private static string WriteForwardedTo(BrowseNode node)
