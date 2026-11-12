@@ -7,7 +7,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.BuiltInArea;
-using ILSight.DisplayChoices;
+using ILSight.DisplayOptionArea;
 using ILSight.ILSightAppArea;
 using static ILSight.CodeDisplay;
 using static ILSight.ScreenLayout;

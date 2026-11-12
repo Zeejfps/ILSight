@@ -1,12 +1,12 @@
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.KeyboardModule;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.MainScreen;
 using ILSight.AssemblyArea;
 using static ZGF.Desktop.ShortcutModifiers;
-using static ILSight.Exporting.Exports;
+using static ILSight.ExportArea.Exports;
 using static ILSight.DocumentPanels;
 using static ILSight.ScreenLayout;
 

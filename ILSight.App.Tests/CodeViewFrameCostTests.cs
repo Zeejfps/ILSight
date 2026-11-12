@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Xunit.Abstractions;
 using ILSight.Core;
 using ILSight.CodeViewArea;
-using ILSight.DisplayChoices;
+using ILSight.DisplayOptionArea;
 
 namespace ILSight.App.Tests;
 

@@ -9,9 +9,9 @@ using ILSight.CodeViewArea;
 using ILSight.BookmarkArea;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
-using ILSight.DisplayChoices;
+using ILSight.DisplayOptionArea;
 using ILSight.NuGet;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 
 namespace ILSight.SettingsKeeping;
 

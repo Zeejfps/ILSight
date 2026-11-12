@@ -1,0 +1,740 @@
+using System.Diagnostics;
+using ZGF.Desktop;
+using ZGF.Gui.Immediate;
+using ZGF.Gui.Immediate.Widgets;
+using ILSight.Core;
+using ZGF.KeyboardModule;
+using ILSight.CommandArea;
+using ILSight.ILSightAppArea;
+using ILSight.AssemblyArea;
+using static ILSight.ExportArea.Exports;
+using static ILSight.Preferences;
+
+namespace ILSight.ExportArea;
+
+/// <summary>
+/// Asks what to export, in a window of its own, on two pages that each scroll as one. The main page
+/// lists the ticked assemblies with their project names, then where they go, and the options; it
+/// warns in place about a folder that holds files, says beside the buttons what stops the export, and
+/// exports only once nothing does. The Choose page ticks assemblies among all the open ones,
+/// filtered by name or path.
+/// </summary>
+internal static class ExportDialogView
+{
+    /// <summary>Lists <paramref name="choices"/> afresh, ticked first, with no filter.</summary>
+    public static void Arrange(AssemblyPicker picker, IReadOnlyList<ExportChoice> choices)
+    {
+        picker.Order.Clear();
+        picker.Order.AddRange(choices.Where(static c => c.Included));
+        picker.Order.AddRange(choices.Where(static c => !c.Included));
+        picker.Anchor = null;
+        ClearFilter(picker);
+    }
+
+    /// <summary>Shows every assembly again.</summary>
+    private static void ClearFilter(AssemblyPicker picker)
+    {
+        picker.Filter = "";
+        picker.SelectedOnly = false;
+    }
+
+    /// <summary>The assemblies the page shows, in its order. Runs each frame the page shows, so it is a loop:
+    /// a lambda here would capture the picker.</summary>
+    public static List<ExportChoice> ListShown(AssemblyPicker picker)
+    {
+        var shown = new List<ExportChoice>();
+        foreach (var choice in picker.Order)
+        {
+            if (IsShown(picker, choice))
+            {
+                shown.Add(choice);
+            }
+        }
+        return shown;
+    }
+
+    private static bool IsShown(AssemblyPicker picker, ExportChoice choice)
+    {
+        if (picker.SelectedOnly && !choice.Included)
+        {
+            return false;
+        }
+
+        var filter = picker.Filter.Trim();
+        if (filter.Length == 0)
+        {
+            return true;
+        }
+
+        if (choice.Assembly.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return choice.Assembly.FilePath.Text.Contains(filter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Whether every shown assembly is ticked, none is, or some are (null).</summary>
+    public static bool? CalculateAllShownIncluded(AssemblyPicker picker)
+    {
+        var shown = ListShown(picker);
+        var count = shown.Count(static c => c.Included);
+        if (count == 0)
+        {
+            return false;
+        }
+
+        if (count == shown.Count)
+        {
+            return true;
+        }
+
+        return null;
+    }
+
+    /// <summary>Ticks every shown assembly when <paramref name="all"/>, else unticks them; the hidden
+    /// ones stay as they are.</summary>
+    public static void IncludeShown(AssemblyPicker picker, bool all)
+    {
+        foreach (var choice in ListShown(picker))
+        {
+            choice.Included = all;
+        }
+    }
+
+    /// <summary>Follows a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
+    /// (Shift held), every row in <paramref name="shown"/> from the anchor to it takes the same tick, as
+    /// in a list of checkboxes elsewhere; rows outside the range keep theirs. Without an anchor among
+    /// <paramref name="shown"/>, only <paramref name="clicked"/> changes. Either way it becomes the
+    /// anchor. <paramref name="shown"/> is the list as shown before the click, so a row that
+    /// Selected only hides once unticked still counts.</summary>
+    public static void TickClicked(AssemblyPicker picker, IReadOnlyList<ExportChoice> shown, ExportChoice clicked, bool extend)
+    {
+        var anchor = picker.Anchor;
+        picker.Anchor = clicked;
+        if (!extend || anchor is null)
+        {
+            return;
+        }
+
+        var from = IndexOf(shown, anchor);
+        var to = IndexOf(shown, clicked);
+        if (from < 0 || to < 0)
+        {
+            return;
+        }
+
+        for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
+        {
+            shown[i].Included = clicked.Included;
+        }
+    }
+
+    /// <summary>Where <paramref name="choice"/> is in <paramref name="shown"/>, by identity, or -1.</summary>
+    private static int IndexOf(IReadOnlyList<ExportChoice> shown, ExportChoice choice)
+    {
+        for (var i = 0; i < shown.Count; i++)
+        {
+            if (shown[i] == choice)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private const float WindowWidth = 640f;
+    private const float WindowHeight = 720f;
+
+    /// <summary>The columns of the table of ticked assemblies.</summary>
+    private const int AssemblyColumn = 0;
+    private const int VersionColumn = 1;
+    private const int ProjectNameColumn = 2;
+
+    /// <summary>The decompiler's names for the toggles the dialog offers.</summary>
+    private const string SdkStyleProjects = "UseSdkStyleProjectFormat";
+    private const string FolderPerNamespace = "UseNestedDirectoriesForNamespaces";
+    private const string RemoveDeadCode = "RemoveDeadCode";
+    private const string RemoveDeadStores = "RemoveDeadStores";
+    private const string DebugSymbolNames = "UseDebugSymbols";
+
+    public static void Render(Ui<UiState> ui, DecompilerOptions options)
+    {
+        Dialog(ui, options);
+        DialogWindows.Settle(ui.State.ExportSetup.Window, ui.Input.IsDown(PointerButton.Left));
+    }
+
+    private static void Dialog(Ui<UiState> ui, DecompilerOptions options)
+    {
+        var setup = ui.State.ExportSetup;
+        var choosing = setup.Page == ExportPage.Choose;
+        var title = PageTitle(ui.State.Strings, setup.Page);
+        using (var dialog = ui.WindowDialog("export-setup", title, ref setup.IsOpen, WindowWidth, WindowHeight, ref setup.Window.Bounds,
+            closeOnEscape: !choosing))
+        {
+            if (!dialog.IsOpen)
+            {
+                return;
+            }
+
+            if (choosing)
+            {
+                ChoosePage(ui, setup);
+                return;
+            }
+            Body(ui, options);
+            Footer(ui);
+        }
+    }
+
+    private static string PageTitle(Strings t, ExportPage page)
+    {
+        return page switch
+        {
+            ExportPage.Choose => t.ExportChooseTitle,
+            ExportPage.Main => t.ExportDialogTitle,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    /// <summary>Everything above the buttons, scrolling when the window is too short for it, so the
+    /// buttons stay in reach.</summary>
+    private static void Body(Ui<UiState> ui, DecompilerOptions options)
+    {
+        var theme = ui.Theme;
+        var setup = ui.State.ExportSetup;
+        using (ui.Scroll("export-body", new Box { Height = Sizing.Grow(), Gap = theme.DialogGap }))
+        {
+            Chosen(ui);
+            Destination(ui, setup);
+            ProjectOptions(ui, options);
+            CodeOptions(ui, options);
+            BuildOutput(ui, setup);
+        }
+    }
+
+    /// <summary>A heading and the controls under it, set apart from the next section.</summary>
+    private static Ui.Scope Section(Ui ui)
+    {
+        return ui.Column(new Box { Gap = ui.Theme.GapTight });
+    }
+
+    /// <summary>A muted caption over a field in a section.</summary>
+    private static void Caption(Ui ui, string text)
+    {
+        var theme = ui.Theme;
+        ui.Text(text, color: theme.TextMuted, size: theme.FontSizeSmall);
+    }
+
+    /// <summary>A bordered list on the field color, its rows clipped to its rounded corners.</summary>
+    private static Box ListFrame(UiTheme theme)
+    {
+        return new Box()
+        {
+            Gap = 0f,
+            Background = theme.Field,
+            BorderColor = theme.Border,
+            BorderWidth = theme.BorderWidth,
+            Radius = theme.RadiusSmall,
+            Clip = true,
+        };
+    }
+
+    /// <summary>The ticked assemblies as a table of their project names, its columns resized by
+    /// dragging their borders and its rows picked out to remove together, over a strip that adds and
+    /// removes assemblies and counts them.</summary>
+    private static void Chosen(Ui<UiState> ui)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        var setup = ui.State.ExportSetup;
+        var chosen = Exports.ListIncludedChoices(setup);
+        using (Section(ui))
+        {
+            ui.Label(t.ExportAssemblies, bold: true);
+            using (ui.Column(ListFrame(theme)))
+            {
+                if (chosen.Count == 0)
+                {
+                    NoneChosen(ui);
+                }
+                else
+                {
+                    ChosenTable(ui, chosen);
+                }
+
+                ui.Separator();
+                TableStrip(ui, setup);
+            }
+        }
+    }
+
+    private static void NoneChosen(Ui<UiState> ui)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        var box = new Box { Padding = new Spacing(theme.Gap, theme.GapTight) };
+        ui.Text(t.ExportNoneChosen, box, color: theme.TextMuted);
+    }
+
+    /// <summary>The table, its header naming the columns, a row per ticked assembly; the rows picked
+    /// out go once they are all recorded, when asked to.</summary>
+    private static void ChosenTable(Ui<UiState> ui, List<ExportChoice> chosen)
+    {
+        var t = ui.State.Strings;
+        var setup = ui.State.ExportSetup;
+        var table = ui.Table("chosen", ui.State.ExportColumns, setup.RowSelection);
+        table.Header([t.ExportAssemblyColumn, t.ExportVersionColumn, t.ExportProjectName]);
+        var removeRequested = false;
+        using (var rows = table.FitBody(chosen))
+        {
+            removeRequested = rows.RemoveRequested;
+            var clashing = setup.ClashingChoice;
+            for (var i = 0; i < chosen.Count; i++)
+            {
+                ChosenRow(ui, rows, i, setup, chosen, clashing);
+            }
+        }
+        if (removeRequested)
+        {
+            Exports.RemoveSelectedRows(setup);
+        }
+    }
+
+    /// <summary>An assembly being exported: its name, its version, then its project's name, edited
+    /// in place, with what to do under it when it clashes with another's. Its path shows on hover.</summary>
+    private static void ChosenRow(Ui<UiState> ui, TableRows<ExportChoice> rows, int index, ExportSetup setup, List<ExportChoice> chosen,
+        ExportChoice? clashing)
+    {
+        var t = ui.State.Strings;
+        var choice = chosen[index];
+        using var row = rows.Row(index);
+        using (row.Cell(AssemblyColumn))
+        {
+            AssemblyName(ui, choice);
+        }
+
+        using (row.Cell(VersionColumn))
+        {
+            VersionText(ui, choice);
+        }
+
+        using (row.Cell(ProjectNameColumn))
+        {
+            using (ui.Column(new Box { Width = Sizing.Grow(), Gap = 0f }))
+            {
+                ui.TextField("name", ref choice.Name, t.ExportProjectName, Sizing.Grow(), look: FieldLook.Cell);
+                if (choice == clashing)
+                {
+                    ClashNote(ui, choice);
+                }
+            }
+        }
+        ui.Tooltip(row.Id, choice.Assembly.FilePath.Text, TooltipAnchor.Pointer);
+        PickOutWhileEditing(ui, setup, chosen, choice);
+    }
+
+    /// <summary>Picks out the row of the project name being edited alone, so what Remove takes is
+    /// never in doubt.</summary>
+    private static void PickOutWhileEditing(Ui<UiState> ui, ExportSetup setup, List<ExportChoice> chosen, ExportChoice choice)
+    {
+        var nameId = ui.GetId("name");
+        if (!ui.HasFocus(nameId))
+        {
+            return;
+        }
+
+        if (setup.RowSelection.IsOnly(choice))
+        {
+            return;
+        }
+
+        setup.RowSelection.Select(choice, SelectionChange.Replace, chosen);
+    }
+
+    private static void AssemblyName(Ui<UiState> ui, ExportChoice choice)
+    {
+        ui.Text(choice.Assembly.Name, new Box { Width = Sizing.Grow() }, overflow: TextOverflow.Ellipsis);
+    }
+
+    private static void VersionText(Ui<UiState> ui, ExportChoice choice)
+    {
+        var theme = ui.Theme;
+        var version = choice.Assembly.Version;
+        if (version is null)
+        {
+            return;
+        }
+
+        ui.Text(version.ToString(), new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
+    }
+
+    private static void ClashNote(Ui<UiState> ui, ExportChoice choice)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        var box = new Box { Padding = new Spacing(theme.FieldPaddingX + theme.BorderWidth, 0f, 0f, theme.GapTight) };
+        ui.Text(t.ExportNameClash(choice.Name.Trim()), box, color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
+    }
+
+    /// <summary>The table's foot: + opens the Choose page, − removes the picked-out rows, and the
+    /// count of what is included.</summary>
+    private static void TableStrip(Ui<UiState> ui, ExportSetup setup)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        using (ui.Row(new Box { Gap = theme.GapTight, Padding = new Spacing(theme.GapTight, theme.GapTight, theme.Gap, theme.GapTight) }))
+        {
+            if (ui.IconButton("add", ui.State.Icons.ExportAdd, t.ExportAdd))
+            {
+                Exports.ChooseAssemblies(setup);
+            }
+
+            var anyPicked = setup.RowSelection.Count > 0;
+            if (ui.IconButton("remove-selected", ui.State.Icons.ExportRemovePicked, t.ExportRemoveSelected, enabled: anyPicked))
+            {
+                Exports.RemoveSelectedRows(setup);
+            }
+
+            ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
+            SelectedCount(ui, setup);
+        }
+    }
+
+    private static void SelectedCount(Ui<UiState> ui, ExportSetup setup)
+    {
+        var t = ui.State.Strings;
+        Caption(ui, t.ExportSelectedCount(setup.IncludedCount, setup.Choices.Count));
+    }
+
+    /// <summary>Where the export goes: the folder, a warning when it holds files, and for several
+    /// assemblies the solution's name.</summary>
+    private static void Destination(Ui<UiState> ui, ExportSetup setup)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        using (Section(ui))
+        {
+            ui.Label(t.ExportDestination, bold: true);
+            using (ui.Row(new Box { Gap = theme.GapTight }))
+            {
+                ui.TextField("folder", ref setup.Folder, t.ExportFolderPlaceholder, Sizing.Grow());
+                if (ui.Button(t.ExportBrowse, id: "browse"))
+                {
+                    ui.PickFolder(t.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
+                }
+            }
+            var files = FindFiles(ui, setup);
+            if (files?.FolderHoldsFiles == true)
+            {
+                ui.Text(t.ExportFolderWarning, color: theme.Warning, size: theme.FontSizeSmall, wrap: true);
+            }
+
+            SolutionName(ui, setup);
+        }
+    }
+
+    private static void SolutionName(Ui<UiState> ui, ExportSetup setup)
+    {
+        if (!setup.IsSolution)
+        {
+            return;
+        }
+
+        var t = ui.State.Strings;
+        var placeholder = ui.Memo("export-solution-default", setup.Folder, static f => Exports.GetDefaultSolutionName(f));
+        Caption(ui, t.ExportSolution);
+        ui.TextField("solution", ref setup.SolutionName, placeholder, width: Sizing.Grow());
+    }
+
+    /// <summary>How the projects are laid out. Kept with the decompiler options, so they stay for the
+    /// next export, but only shown here.</summary>
+    private static void ProjectOptions(Ui<UiState> ui, DecompilerOptions options)
+    {
+        var t = ui.State.Strings;
+        using (Section(ui))
+        {
+            ui.Label(t.ExportOptionsProject, bold: true);
+            Toggle(ui, options, SdkStyleProjects);
+            Toggle(ui, options, FolderPerNamespace);
+        }
+    }
+
+    /// <summary>The decompiler options that matter most for exported code. They are the same as in
+    /// the decompiler options panel, so changing them changes the code being browsed too, which the
+    /// note under the heading says before they are changed.</summary>
+    private static void CodeOptions(Ui<UiState> ui, DecompilerOptions options)
+    {
+        var t = ui.State.Strings;
+        using (Section(ui))
+        {
+            ui.Label(t.ExportOptionsCode, bold: true);
+            Caption(ui, t.ExportOptionsCodeNote);
+            Toggle(ui, options, RemoveDeadCode);
+            Toggle(ui, options, RemoveDeadStores);
+            Toggle(ui, options, DebugSymbolNames);
+        }
+    }
+
+    /// <summary>A checkbox for the decompiler toggle named <paramref name="name"/>, labelled as the
+    /// decompiler options panel labels it.</summary>
+    private static void Toggle(Ui<UiState> ui, DecompilerOptions options, string name)
+    {
+        var t = ui.State.Strings;
+        var toggle = DecompilerToggles.FindToggle(name);
+        if (toggle is null)
+        {
+            return;
+        }
+
+        var label = DecompilerOptionLabels.Label(t, name) ?? name;
+        var on = DecompilerToggles.IsOn(options, toggle);
+        if (ui.Checkbox(label, ref on, id: name, compact: true))
+        {
+            Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
+        }
+    }
+
+    /// <summary>What is written besides the code: the strong-name key to sign with, and PDBs.</summary>
+    private static void BuildOutput(Ui<UiState> ui, ExportSetup setup)
+    {
+        var t = ui.State.Strings;
+        using (Section(ui))
+        {
+            ui.Label(t.ExportBuildOutput, bold: true);
+            Signing(ui, setup);
+            Pdbs(ui, setup);
+        }
+    }
+
+    private static void Signing(Ui<UiState> ui, ExportSetup setup)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        Caption(ui, t.ExportKeyFile);
+        using (ui.Row(new Box { Gap = theme.GapTight }))
+        {
+            ui.TextField("key-file", ref setup.StrongNameKeyFile, t.ExportKeyFileNone, Sizing.Grow());
+            if (ui.Button(t.ExportBrowse, id: "browse-key"))
+            {
+                ui.PickFile(t.ExportChooseKeyTitle, null, [new FileFilter(t.FileFilterSnk, ["*.snk"])], path => setup.StrongNameKeyFile = path);
+            }
+        }
+        var files = FindFiles(ui, setup);
+        if (files?.IsKeyFileMissing == true)
+        {
+            ui.Text(t.ExportKeyFileMissing, color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
+        }
+    }
+
+    /// <summary>Whether to write PDBs, and only once they are written, whether they embed the sources.</summary>
+    private static void Pdbs(Ui<UiState> ui, ExportSetup setup)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        ui.Checkbox(t.ExportGeneratePdb, ref setup.GeneratePdb, id: "pdb", compact: true);
+        if (!setup.GeneratePdb)
+        {
+            return;
+        }
+
+        using (ui.Row(new Box { Padding = new Spacing(theme.CheckboxSize + theme.Gap, 0f, 0f, 0f) }))
+        {
+            ui.Checkbox(t.ExportEmbedSources, ref setup.EmbedSourcesInPdb, id: "embed", compact: true);
+        }
+    }
+
+    /// <summary>What stops the export, if anything, beside the buttons, set off from the body by a rule.</summary>
+    private static void Footer(Ui<UiState> ui)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        var setup = ui.State.ExportSetup;
+        ui.Separator();
+        using (ui.Row(new Box { Gap = theme.Gap }))
+        {
+            var blocker = Exports.FindBlocker(setup, FindFiles(ui, setup));
+            var color = IsMistake(blocker) ? theme.Danger : theme.TextMuted;
+            ui.Text(BlockerText(t, blocker), color: color, size: theme.FontSizeSmall, wrap: true);
+            if (ui.Button(t.ExportCancel, id: "export-cancel", variant: ButtonVariant.Ghost))
+            {
+                Exports.CloseExportSetup(setup);
+            }
+
+            if (ui.Button(t.ExportConfirm, enabled: blocker is null, id: "export-start", variant: ButtonVariant.Primary))
+            {
+                Commands.Later(ui.State, setup, static (a, s) => Start(s, a));
+            }
+        }
+    }
+
+    /// <summary>Whether <paramref name="blocker"/> is something typed wrong rather than not yet given.</summary>
+    private static bool IsMistake(ExportBlocker? blocker)
+    {
+        return blocker is ExportBlocker.Clash or ExportBlocker.KeyFileMissing;
+    }
+
+    private static string BlockerText(Strings t, ExportBlocker? blocker)
+    {
+        return blocker switch
+        {
+            null => "",
+            ExportBlocker.NoAssembly => t.ExportNeedsAssembly,
+            ExportBlocker.NoFolder => t.ExportNeedsFolder,
+            ExportBlocker.NamelessProject => t.ExportNeedsName,
+            ExportBlocker.Clash clash => t.ExportNameClash(clash.Name),
+            ExportBlocker.KeyFileMissing => t.ExportKeyFileMissing,
+            ExportBlocker.Checking => "",
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    /// <summary>All the open assemblies to tick, ticked ones first, narrowed by a filter. Only the list
+    /// scrolls, filling the window; Done or Escape goes back.</summary>
+    private static void ChoosePage(Ui<UiState> ui, ExportSetup setup)
+    {
+        var theme = ui.Theme;
+        if (ui.Input.TakeKey(KeyboardKey.Escape))
+        {
+            Exports.FinishChoosing(setup);
+        }
+
+        using (ui.Column(new Box { Height = Sizing.Grow(), Gap = theme.Gap }))
+        {
+            FilterRow(ui, setup.Picker);
+            SelectShownRow(ui, setup.Picker);
+            PickList(ui, setup.Picker);
+        }
+        ChooseFooter(ui, setup);
+    }
+
+    private static void FilterRow(Ui<UiState> ui, AssemblyPicker picker)
+    {
+        var t = ui.State.Strings;
+        using (ui.Row())
+        {
+            ui.TextField("filter", ref picker.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Icons.ExportFilter, clearable: true);
+            ui.Checkbox(t.ExportSelectedOnly, ref picker.SelectedOnly, id: "selected-only");
+        }
+    }
+
+    /// <summary>The box that ticks every shown assembly, lined up with the rows' boxes.</summary>
+    private static void SelectShownRow(Ui<UiState> ui, AssemblyPicker picker)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
+        {
+            var all = CalculateAllShownIncluded(picker);
+            if (ui.Checkbox(t.ExportSelectShown, ref all, id: "all", compact: true))
+            {
+                IncludeShown(picker, all == true);
+            }
+        }
+    }
+
+    private static void PickList(Ui<UiState> ui, AssemblyPicker picker)
+    {
+        var theme = ui.Theme;
+        var shown = ListShown(picker);
+        using (ui.Column(ListFrame(theme) with { Height = Sizing.Grow() }))
+        {
+            if (shown.Count == 0)
+            {
+                NoMatch(ui, picker);
+                return;
+            }
+            using (ui.Scroll("export-choices", new Box { Height = Sizing.Grow(), Padding = new Spacing(0f, theme.GapTight) }))
+            {
+                foreach (var choice in shown)
+                {
+                    PickRow(ui, picker, shown, choice);
+                }
+            }
+        }
+    }
+
+    /// <summary>Says that the filter hides every assembly, with a way to clear it.</summary>
+    private static void NoMatch(Ui<UiState> ui, AssemblyPicker picker)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        using (ui.Column(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignX = Align.Center, AlignY = Align.Center }))
+        {
+            ui.Text(t.ExportNoMatch, color: theme.TextMuted);
+            if (ui.Button(t.ExportClearFilter, id: "clear-filter", variant: ButtonVariant.Ghost))
+            {
+                ClearFilter(picker);
+            }
+        }
+    }
+
+    /// <summary>An assembly to tick, with its version, and its file's path on hover. Shift-click ticks
+    /// the range from the last row clicked.</summary>
+    private static void PickRow(Ui<UiState> ui, AssemblyPicker picker, List<ExportChoice> shown, ExportChoice choice)
+    {
+        var theme = ui.Theme;
+        using (ui.Id(choice.Assembly.FilePath.Text))
+        using (ui.Row(new Box { Gap = theme.Gap, Padding = new Spacing(theme.Gap, 0f) }))
+        {
+            var width = Sizing.Grow();
+            if (ui.Checkbox(choice.Assembly.Name, ref choice.Included, id: "include", width: width, compact: true))
+            {
+                TickClicked(picker, shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
+            }
+
+            ui.Tooltip(ui.GetId("include"), choice.Assembly.FilePath.Text, TooltipAnchor.Pointer);
+            var version = choice.Assembly.Version;
+            if (version is not null)
+            {
+                Caption(ui, version.ToString());
+            }
+        }
+    }
+
+    /// <summary>How many are ticked beside Done, set off from the list by a rule.</summary>
+    private static void ChooseFooter(Ui<UiState> ui, ExportSetup setup)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        ui.Separator();
+        using (ui.Row(new Box { Gap = theme.Gap }))
+        {
+            SelectedCount(ui, setup);
+            ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
+            if (ui.Button(t.ExportDone, id: "done", variant: ButtonVariant.Primary))
+            {
+                Exports.FinishChoosing(setup);
+            }
+        }
+    }
+
+    /// <summary>Closes the dialog and exports what it asks for, unless something stops the export, or what the disk
+    /// says about the folder and key file it names is still being looked at.</summary>
+    internal static void Start(ExportSetup setup, AppState appState)
+    {
+        var files = setup.Files.FindFacts(setup.Folder, setup.StrongNameKeyFile);
+        if (!Exports.CanExport(setup, files))
+        {
+            return;
+        }
+
+        Exports.CloseExportSetup(setup);
+        ExportCommands.StartExport(appState, Exports.CreateRequest(setup));
+    }
+
+    /// <summary>What the disk says about the folder and key file the dialog names, or null while it is being looked
+    /// at; a frame is asked for when no look at them was asked for yet, which the frame edge starts
+    /// (<see cref="AppFrames"/>).</summary>
+    private static ExportFileFacts? FindFiles(Ui<UiState> ui, ExportSetup setup)
+    {
+        var files = setup.Files;
+        var facts = files.FindFacts(setup.Folder, setup.StrongNameKeyFile);
+        if (facts is null && !files.HasAsked(setup.Folder, setup.StrongNameKeyFile))
+        {
+            ui.RequestUpdate();
+        }
+
+        return facts;
+    }
+}

@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.DisplayChoices;
+using ILSight.DisplayOptionArea;
 
 namespace ILSight;
 

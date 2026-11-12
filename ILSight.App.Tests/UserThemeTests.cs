@@ -7,7 +7,7 @@ using static ILSight.Theming;
 using ILSight.CodeViewArea;
 using ILSight.BuiltInArea;
 using ILSight.AppSettingArea;
-using ILSight.DisplayChoices;
+using ILSight.DisplayOptionArea;
 
 namespace ILSight.App.Tests;
 

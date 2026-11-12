@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Processes;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.ProcessBrowsing;
 using ILSight.NuGet;

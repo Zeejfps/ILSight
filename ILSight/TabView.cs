@@ -1,6 +1,6 @@
 using ILSight.CodeViewArea;
 using ILSight.MetadataGridArea;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 
 namespace ILSight;
 

@@ -8,7 +8,7 @@ using static ILSight.SettingsKeeping.Settings;
 using ILSight.BuiltInArea;
 using ILSight.UserState;
 using ILSight.AppSettingArea;
-using ILSight.DisplayChoices;
+using ILSight.DisplayOptionArea;
 
 namespace ILSight.App.Tests;
 

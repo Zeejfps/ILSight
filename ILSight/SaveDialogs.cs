@@ -3,8 +3,8 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
-using static ILSight.Exporting.Exports;
-using static ILSight.Exporting.ExportCommands;
+using static ILSight.ExportArea.Exports;
+using static ILSight.ExportArea.ExportCommands;
 
 namespace ILSight;
 

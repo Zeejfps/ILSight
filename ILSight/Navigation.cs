@@ -2,7 +2,7 @@ using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.AssemblyArea;
 using ILSight.BookmarkArea;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.UserState;
 using static ILSight.Decompilation;
 

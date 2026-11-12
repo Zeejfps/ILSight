@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
-using ILSight.DisplayChoices;
+using ILSight.DisplayOptionArea;
 using ILSight.NuGet;
 using ILSight.BookmarkArea;
 

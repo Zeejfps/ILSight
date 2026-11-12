@@ -1,4 +1,4 @@
-using ILSight.DiagramViewport;
+using ILSight.DiagramCameraArea;
 
 namespace ILSight.App.Tests;
 

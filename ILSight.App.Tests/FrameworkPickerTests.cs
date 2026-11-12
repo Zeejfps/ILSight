@@ -1,6 +1,6 @@
 using ILSight.Core;
 using ILSight.FrameworkPicking;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;

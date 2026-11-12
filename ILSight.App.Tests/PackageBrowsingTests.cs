@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using ILSight.Core;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.AssemblyArea;
 using static ILSight.App.Tests.BuiltInGlyphs;
 

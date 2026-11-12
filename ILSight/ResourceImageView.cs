@@ -6,9 +6,9 @@ using ILSight.Core.Resources;
 using ILSight.BookmarkArea;
 using ILSight.CodeTooltipArea;
 using ILSight.CommandArea;
-using ILSight.DocumentViewing;
-using static ILSight.Exporting.Exports;
-using static ILSight.Exporting.ExportCommands;
+using ILSight.DocumentViewArea;
+using static ILSight.ExportArea.Exports;
+using static ILSight.ExportArea.ExportCommands;
 
 namespace ILSight;
 

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 
 namespace ILSight;
 

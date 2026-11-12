@@ -1,4 +1,4 @@
-using ILSight.Exporting;
+using ILSight.ExportArea;
 
 namespace ILSight.AssemblyArea;
 

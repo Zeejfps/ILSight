@@ -1,6 +1,6 @@
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
-using ILSight.DiagramViewport;
+using ILSight.DiagramCameraArea;
 
 namespace ILSight.App.Tests;
 

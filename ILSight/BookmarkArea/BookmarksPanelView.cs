@@ -6,7 +6,7 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.CodeViewArea;
 using ILSight.CommandArea;
-using ILSight.DocumentViewing;
+using ILSight.DocumentViewArea;
 using static ILSight.BookmarkArea.Bookmarks;
 
 namespace ILSight.BookmarkArea;

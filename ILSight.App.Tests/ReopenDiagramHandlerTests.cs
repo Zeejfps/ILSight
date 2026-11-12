@@ -1,5 +1,5 @@
 using ILSight.Core.Diagrams;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 
 namespace ILSight.App.Tests;
 

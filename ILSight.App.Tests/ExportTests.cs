@@ -2,9 +2,9 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.Exporting;
-using static ILSight.Exporting.Exports;
-using static ILSight.Exporting.ExportCommands;
+using ILSight.ExportArea;
+using static ILSight.ExportArea.Exports;
+using static ILSight.ExportArea.ExportCommands;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.App.Tests.TestPaths;
 

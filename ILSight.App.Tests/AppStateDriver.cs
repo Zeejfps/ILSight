@@ -1,6 +1,6 @@
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.ILSightAppArea;

@@ -4,12 +4,12 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Analysis;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.CommandArea;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
 using static ILSight.AssemblyArea.Assemblies;
-using static ILSight.Diagramming.Diagrams;
+using static ILSight.DiagramArea.Diagrams;
 using static ILSight.ScreenLayout;
 
 namespace ILSight.MainScreen;

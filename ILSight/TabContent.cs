@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.Core.Resources;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.AssemblyArea;
 
 namespace ILSight;

@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 
 namespace ILSight.App.Tests;
 

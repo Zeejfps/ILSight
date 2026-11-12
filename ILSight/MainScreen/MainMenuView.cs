@@ -3,7 +3,7 @@ using ZGF.Gui.Hosting;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
@@ -11,7 +11,7 @@ using ILSight.UserState;
 using ILSight.NuGet;
 using static ILSight.MainScreen.Dialogs;
 using static ILSight.DocumentPanels;
-using static ILSight.Exporting.Exports;
+using static ILSight.ExportArea.Exports;
 using static ILSight.ScreenLayout;
 
 namespace ILSight.MainScreen;

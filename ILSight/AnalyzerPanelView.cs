@@ -3,7 +3,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Analysis;
 using ILSight.CommandArea;
-using ILSight.DocumentViewing;
+using ILSight.DocumentViewArea;
 using static ILSight.Analysis;
 using static ILSight.Navigation;
 using static ILSight.ScreenLayout;

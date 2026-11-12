@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 
 namespace ILSight.App.Tests;
 

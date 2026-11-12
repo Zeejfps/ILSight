@@ -2,7 +2,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.AssemblyArea;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;

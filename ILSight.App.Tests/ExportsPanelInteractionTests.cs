@@ -2,10 +2,10 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.Exporting;
-using ILSight.DocumentViewing;
-using static ILSight.Exporting.Exports;
-using static ILSight.Exporting.ExportCommands;
+using ILSight.ExportArea;
+using ILSight.DocumentViewArea;
+using static ILSight.ExportArea.Exports;
+using static ILSight.ExportArea.ExportCommands;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
 

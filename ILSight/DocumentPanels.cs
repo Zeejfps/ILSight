@@ -4,10 +4,10 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 using ILSight.CodeViewArea;
 using ILSight.CommandArea;
-using ILSight.DocumentViewing;
+using ILSight.DocumentViewArea;
 using ILSight.MetadataGridArea;
 using ILSight.Searching;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 
 namespace ILSight;
 

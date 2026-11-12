@@ -1,4 +1,4 @@
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 
 namespace ILSight;
 

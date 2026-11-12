@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 
 namespace ILSight.MainScreen;
 

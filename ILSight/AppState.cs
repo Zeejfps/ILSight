@@ -1,12 +1,12 @@
 using ZGF.Gui.Immediate;
 using ZGF.Desktop;
 using ILSight.Core;
-using ILSight.Exporting;
+using ILSight.ExportArea;
 using ILSight.BookmarkArea;
 using ILSight.CodeTooltipArea;
 using ILSight.UserState;
 using ILSight.Searching;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
 using ILSight.SettingsKeeping;
 using ILSight.MetadataArea;

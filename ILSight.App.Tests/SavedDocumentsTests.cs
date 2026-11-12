@@ -6,16 +6,16 @@ using ILSight.Core;
 using ILSight.Core.Diagrams;
 using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.Diagramming.Diagrams;
+using static ILSight.DiagramArea.Diagrams;
 using static ILSight.DocumentPanels;
 using static ILSight.App.Tests.TestPaths;
 using ILSight.CodeViewArea;
-using ILSight.DiagramViewport;
-using ILSight.DocumentViewing;
+using ILSight.DiagramCameraArea;
+using ILSight.DocumentViewArea;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.MetadataGridArea;
-using ILSight.Diagramming;
+using ILSight.DiagramArea;
 
 namespace ILSight.App.Tests;
 

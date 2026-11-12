@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Diagrams;
-using ILSight.Diagramming;
-using static ILSight.Diagramming.Diagrams;
+using ILSight.DiagramArea;
+using static ILSight.DiagramArea.Diagrams;
 using static ILSight.Docking;
 
 namespace ILSight.App.Tests;
