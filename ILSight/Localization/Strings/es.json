@@ -542,6 +542,7 @@
   "analyzer.extension_methods": "Métodos de extensión",
   "analyzer.instantiated_by": "Instanciado por",
   "status.reloading": "Recargando…",
+  "status.opening": "Abriendo…",
   "status.decompiling": "Descompilando…",
   "status.exporting_name": "Exportando {name}…",
   "status.exporting_part": "Exportando {part}/{parts} · {name}",

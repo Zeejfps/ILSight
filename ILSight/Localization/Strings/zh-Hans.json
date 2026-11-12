@@ -542,6 +542,7 @@
   "analyzer.extension_methods": "扩展方法",
   "analyzer.instantiated_by": "实例化者",
   "status.reloading": "正在重新加载…",
+  "status.opening": "正在打开…",
   "status.decompiling": "正在反编译…",
   "status.exporting_name": "正在导出 {name}…",
   "status.exporting_part": "正在导出 {part}/{parts} · {name}",

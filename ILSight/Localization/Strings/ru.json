@@ -542,6 +542,7 @@
   "analyzer.extension_methods": "Методы расширения",
   "analyzer.instantiated_by": "Создаётся в",
   "status.reloading": "Перезагрузка…",
+  "status.opening": "Открытие…",
   "status.decompiling": "Декомпиляция…",
   "status.exporting_name": "Экспорт {name}…",
   "status.exporting_part": "Экспорт {part}/{parts} · {name}",

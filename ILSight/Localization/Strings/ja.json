@@ -542,6 +542,7 @@
   "analyzer.extension_methods": "拡張メソッド",
   "analyzer.instantiated_by": "インスタンス化元",
   "status.reloading": "再読み込み中…",
+  "status.opening": "開いています…",
   "status.decompiling": "逆コンパイル中…",
   "status.exporting_name": "{name} をエクスポート中…",
   "status.exporting_part": "エクスポート中 {part}/{parts} · {name}",

@@ -64,6 +64,7 @@ internal static class ProcessPickerView
         if (open && browser.CanOpen)
         {
             Commands.OpenFilesLater(ui.State, navigation.BeginOpening(browser.ListToOpen()));
+            ui.RequestUpdate();
             close = true;
         }
         if (close)

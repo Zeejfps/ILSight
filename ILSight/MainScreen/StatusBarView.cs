@@ -69,6 +69,11 @@ internal static class StatusBarView
             return t.StatusReloading;
         }
 
+        if (appState.Navigation.IsOpening)
+        {
+            return t.StatusOpening;
+        }
+
         if (IsDecompiling(appState.Navigation.ActiveTab))
         {
             return t.StatusDecompiling;

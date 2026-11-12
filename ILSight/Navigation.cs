@@ -79,6 +79,9 @@ public sealed class Navigation
     /// <summary>True while the newest request is finding a place in the background.</summary>
     public bool IsResolving => _intent.IsResolving;
 
+    /// <summary>True while the newest request is opening the files it named.</summary>
+    public bool IsOpening => _intent.IsOpening;
+
     public bool IsOpen(DocumentTab tab)
     {
         return Tabs.IsOpen(_tabs, tab);
@@ -133,10 +136,17 @@ public sealed class Navigation
     }
 
     /// <summary>Begins a request to open <paramref name="paths"/>, as <see cref="UserIntent.BeginOpening"/>
-    /// does.</summary>
+    /// does: in the frame it is asked in, the app says it is opening them (<see cref="IsOpening"/>).</summary>
     public FileOpening? BeginOpening(IEnumerable<AssemblyPath> paths)
     {
         return _intent.BeginOpening(paths);
+    }
+
+    /// <summary>Takes what opening the files of <paramref name="ticket"/> came to, as
+    /// <see cref="UserIntent.EndOpening"/> does.</summary>
+    public void EndOpening(int ticket)
+    {
+        _intent.EndOpening(ticket);
     }
 
     /// <summary>What finding a place for <paramref name="ticket"/> came to, as

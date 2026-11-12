@@ -554,6 +554,7 @@
   "analyzer.instantiated_by": "Instantiated By",
 
   "status.reloading": "Reloading…",
+  "status.opening": "Opening…",
   "status.decompiling": "Decompiling…",
   "status.exporting_name": "Exporting {name}…",
   "status.exporting_part": "Exporting {part}/{parts} · {name}",

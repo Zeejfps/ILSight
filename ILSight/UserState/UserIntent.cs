@@ -10,9 +10,14 @@ public sealed class UserIntent
 
     private int _current;
     private int _resolving = NoTicket;
+    private int _opening = NoTicket;
 
     /// <summary>True while the current request is finding a place in the background.</summary>
     public bool IsResolving => _resolving == _current;
+
+    /// <summary>True while the current request is opening the files it named, until what they opened is taken
+    /// (<see cref="EndOpening"/>).</summary>
+    public bool IsOpening => _opening == _current;
 
     public int Begin()
     {
@@ -50,7 +55,21 @@ public sealed class UserIntent
             return null;
         }
 
-        return new FileOpening { Paths = files, Intent = Begin() };
+        var ticket = Begin();
+        _opening = ticket;
+        return new FileOpening { Paths = files, Intent = ticket };
+    }
+
+    /// <summary>Takes what opening the files of <paramref name="ticket"/> came to: the request is no longer opening,
+    /// unless another one has begun since.</summary>
+    public void EndOpening(int ticket)
+    {
+        if (ticket != _opening)
+        {
+            return;
+        }
+
+        _opening = NoTicket;
     }
 
     /// <summary>Begins a request that finds a place in the background: it is resolving until

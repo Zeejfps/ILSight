@@ -54,6 +54,7 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     /// opening failed. Returns the load it started in the tab; null when it started none.</summary>
     private DecompileTicket? ShowOpened(AppState appState, Outcome<LoadedAssembly?> outcome, int ticket)
     {
+        appState.Navigation.EndOpening(ticket);
         switch (outcome)
         {
             case Outcome<LoadedAssembly?>.Ok ok when ok.Value is not null:

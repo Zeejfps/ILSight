@@ -476,6 +476,27 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
+    public void The_frame_a_file_is_picked_to_open_in_says_it_is_opening_until_it_is_shown()
+    {
+        var app = AppDriver.Opened();
+        var other = typeof(AppState).Assembly.Location;
+        app.Run(2);
+        var saidOpeningBefore = app.Frames.Drew(app.Ui.Strings.StatusOpening);
+
+        app.Frames.FilePicker.Answer = other;
+        app.Frames.Key(Shortcuts.Open).Frame();
+        app.Frames.Frame();
+        var saidOpening = app.Frames.Drew(app.Ui.Strings.StatusOpening);
+        app.Frames.WaitUntil(() => AssemblyListing.ListFilePaths(app.AppState.Assemblies).Contains(PathOf(other)), Patience);
+        app.Settle(2);
+
+        Assert.False(saidOpeningBefore);
+        Assert.True(saidOpening);
+        Assert.False(app.AppState.Navigation.IsOpening);
+        Assert.False(app.Frames.Drew(app.Ui.Strings.StatusOpening));
+    }
+
+    [Fact]
     public void Files_dropped_while_a_dialog_is_open_stay_closed()
     {
         var app = AppDriver.Opened();
