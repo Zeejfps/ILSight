@@ -14,12 +14,16 @@ public sealed class RestoreAnalysesHandlerTests
         var saved = analyzer.ListSavedAnalyses();
         analyzer.ClearRoots();
         analyzer.AddPending(saved);
-        return Analysis.BeginRestoring(analyzer, d.AppState.Assemblies) ?? throw new InvalidOperationException("Two roots wait to be found.");
+        var restoring = Analysis.BeginRestoring(analyzer, d.AppState.Assemblies);
+        Assert.NotNull(restoring);
+        return restoring;
     }
 
     private static AnalysisSymbol SymbolOf(AppStateDriver d, string type)
     {
-        return Analyzers.Of(d.Fixture(type)) ?? throw new InvalidOperationException($"{type} can be analyzed.");
+        var symbol = Analyzers.Of(d.Fixture(type));
+        Assert.NotNull(symbol);
+        return symbol;
     }
 
     [Fact]

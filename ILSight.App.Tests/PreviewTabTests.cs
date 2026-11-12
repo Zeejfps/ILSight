@@ -64,7 +64,8 @@ public sealed class PreviewTabTests
     {
         var app = Revealed();
         Pick(app, "Greeter");
-        var preview = app.AppState.Tabs.Preview ?? throw new InvalidOperationException("No tab previews.");
+        var preview = app.AppState.Tabs.Preview;
+        Assert.NotNull(preview);
         app.Frames.MoveTo(GetFixtureRow("Farewell"));
 
         app.Frames.Press().Frame();

@@ -6,7 +6,9 @@ public sealed class RunAnalysisHandlerTests
 {
     private static AnalysisSymbol SymbolOf(AppStateDriver d, string type)
     {
-        return Analyzers.Of(d.Fixture(type)) ?? throw new InvalidOperationException($"{type} can be analyzed.");
+        var symbol = Analyzers.Of(d.Fixture(type));
+        Assert.NotNull(symbol);
+        return symbol;
     }
 
     /// <summary>The first analysis of Greeter, started.</summary>
@@ -14,7 +16,9 @@ public sealed class RunAnalysisHandlerTests
     {
         var symbol = SymbolOf(d, "Greeter");
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = Analyzers.KindsFor(symbol)[0] };
-        return Analysis.StartRun(kind) ?? throw new InvalidOperationException("A new analysis starts.");
+        var run = Analysis.StartRun(kind);
+        Assert.NotNull(run);
+        return run;
     }
 
     private static Outcome<IReadOnlyList<AnalysisSymbol>> Batch(params AnalysisSymbol[] symbols)

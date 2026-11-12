@@ -107,7 +107,8 @@ public sealed class OmnibarTests
     public void The_frame_a_crumb_is_clicked_in_draws_the_tab_pointed_at_its_node()
     {
         var app = Showing("Greeter");
-        var tab = app.AppState.Tabs.Active ?? throw new InvalidOperationException("No tab is active.");
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
 
         ClickCrumb(app, AppStateDriver.FixturesNamespace);
         var drawn = DocumentPanels.GetView(app.Ui.Documents, tab).Shown;

@@ -58,7 +58,9 @@ internal sealed class FakeFeed : HttpMessageHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var url = (request.RequestUri ?? throw new ArgumentException("The request names no URL.", nameof(request))).ToString();
+        var uri = request.RequestUri;
+        Assert.NotNull(uri);
+        var url = uri.ToString();
         Requested.Add(url);
         if (Holds)
         {

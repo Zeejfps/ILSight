@@ -8,8 +8,9 @@ public sealed class TabLoadsTests
     private static DecompileTicket StartLoading(DocumentTabs tabs, BrowseNode node)
     {
         var tab = tabs.AddNew();
-        return Decompilation.StartDecompiling(new Queue<ViewCommand>(), tab, node, DecompilationLanguage.CSharp, DecompilerOptions.Default)
-            ?? throw new InvalidOperationException("A new tab shows no node yet, so it starts loading one.");
+        var ticket = Decompilation.StartDecompiling(new Queue<ViewCommand>(), tab, node, DecompilationLanguage.CSharp, DecompilerOptions.Default);
+        Assert.NotNull(ticket);
+        return ticket;
     }
 
     [Fact]

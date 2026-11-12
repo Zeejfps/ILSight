@@ -10,8 +10,9 @@ public sealed class CompareAssembliesHandlerTests
     /// assemblies.</summary>
     private static ComparisonRun StartComparing(AppStateDriver d, AssemblyComparison comparison)
     {
-        return Comparisons.ChangeComparedScope(d.AppState.Assemblies, comparison, ApiScope.PublicApi)
-            ?? throw new InvalidOperationException("The fixture assembly is open, so its comparison runs.");
+        var run = Comparisons.ChangeComparedScope(d.AppState.Assemblies, comparison, ApiScope.PublicApi);
+        Assert.NotNull(run);
+        return run;
     }
 
     private static AssemblyComparison NewComparison(AppStateDriver d)
