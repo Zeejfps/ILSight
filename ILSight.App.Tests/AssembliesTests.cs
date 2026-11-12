@@ -364,7 +364,7 @@ public sealed class AssembliesTests
         var place = BrowseNodes.GetPath(d.Fixture("Greeter"));
         var record = new NodeDocumentRecord("document-9", "Greeter", place, DecompilationLanguage.CSharp, null);
         var tab = d.AppState.Navigation.OpenReopenedTab();
-        Tabs.WaitForNode(tab, place, record.Title, record.Language);
+        d.AppState.Navigation.WaitForNode(tab, place, record.Title, record.Language);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new IOException("unreadable")) };
 

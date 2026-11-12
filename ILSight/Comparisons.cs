@@ -26,10 +26,10 @@ public static class Comparisons
     }
 
     /// <summary>Shows the comparison <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in,
-    /// one of <paramref name="tabs"/>, and compares its assemblies again among <paramref name="assemblies"/>, now that
+    /// one of <paramref name="tabs"/>, through <paramref name="navigation"/>, and compares its assemblies again among <paramref name="assemblies"/>, now that
     /// the open list's assemblies are listed. Returns the comparison it started, for the edge to run; null when the tab
     /// waits no more, as when it was pointed elsewhere, or when it shows why the comparison can't run.</summary>
-    internal static ComparisonRun? ReopenComparison(ReopenedTabs tabs, AssemblyList assemblies, ReopenedTab reopened, ComparisonDocumentRecord saved)
+    internal static ComparisonRun? ReopenComparison(Navigation navigation, ReopenedTabs tabs, AssemblyList assemblies, ReopenedTab reopened, ComparisonDocumentRecord saved)
     {
         if (!SavedDocuments.TryFinishWaiting(tabs, reopened))
         {
@@ -39,7 +39,7 @@ public static class Comparisons
         var comparison = new AssemblyComparison { LeftPath = saved.LeftPath, RightPath = saved.RightPath };
         comparison.TakeInScope(saved.Scope);
         var title = saved.Title ?? string.Empty;
-        Tabs.ShowComparison(reopened.Tab, title, comparison);
+        navigation.RestoreComparison(reopened.Tab, comparison, title);
         return StartComparing(assemblies, comparison);
     }
 

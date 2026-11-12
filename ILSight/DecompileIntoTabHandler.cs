@@ -2,7 +2,7 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>Brings in what a tab was pointed at (<see cref="Decompilation.StartDecompiling"/>): the node decompiled,
+/// <summary>Brings in what a tab was pointed at (<see cref="Navigation"/>): the node decompiled,
 /// or its grid or picture read, then shows it in the tab and commands the view where to stand in it. Reaches the
 /// decompiler and the user's error reports through <see cref="IPorts"/>.</summary>
 public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports)
@@ -27,14 +27,15 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
     public async Task HandleAsync(Queue<ViewCommand> viewCommands, DecompileTicket ticket, CancellationToken ct)
     {
         var loaded = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, ct);
-        if (!ticket.Tab.Work.TryFinish(ticket.Work))
+        var load = ticket.Load;
+        if (!TryShowLoaded(load, ticket.Work, loaded))
         {
             return;
         }
 
         var tab = ticket.Tab;
-        var failure = ShowLoaded(tab, loaded);
-        var arrival = Tabs.TakeArrival(tab);
+        var arrival = load.TakeArrival();
+        var failure = FindFailure(load, loaded);
         if (failure is not null)
         {
             ReportFailure(ticket.Node, failure);
@@ -44,21 +45,21 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
         Decompilation.Arrive(viewCommands, tab, arrival);
     }
 
-    /// <summary>Shows in <paramref name="tab"/> what its load brought, or that it failed. Returns why it failed, or
-    /// why the document it brought could not be decompiled; null when neither.</summary>
-    private static Exception? ShowLoaded(DocumentTab tab, Outcome<NodeContent> loaded)
+    /// <summary>Shows on <paramref name="load"/> what it brought, or that it failed, unless a newer load started on the
+    /// tab, or the tab closed, since <paramref name="work"/> was given. Returns whether it landed.</summary>
+    private static bool TryShowLoaded(TabLoad load, WorkTicket work, Outcome<NodeContent> loaded)
+    {
+        return loaded.Match(
+            ok => load.TryShowLoaded(work, ok.Value),
+            failed => load.TryShowFailed(work, failed.Error.Message));
+    }
+
+    /// <summary>Why the load failed, or why the document it brought could not be decompiled; null when neither.</summary>
+    private static Exception? FindFailure(TabLoad load, Outcome<NodeContent> loaded)
     {
         return loaded.Match<Exception?>(
-            ok =>
-            {
-                Tabs.ShowLoaded(tab, ok.Value);
-                return tab.Document.Error;
-            },
-            failed =>
-            {
-                Tabs.ShowFailed(tab, failed.Error.Message);
-                return failed.Error;
-            });
+            _ => load.Document.Error,
+            failed => failed.Error);
     }
 
     /// <summary>Reports why <paramref name="node"/> could not be shown, unless its file failed to load,

@@ -350,7 +350,7 @@ public sealed class AppStateTests
         d.NextFrame();
 
         var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;
-        Assert.False(tab.IsBusy);
+        Assert.False(tab.Load.IsBusy);
         Assert.Same(document, tab.Document);
         Assert.IsType<PendingScroll.Restore>(view.Pending);
     }

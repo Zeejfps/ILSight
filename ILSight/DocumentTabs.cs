@@ -1,22 +1,40 @@
+using System.Runtime.CompilerServices;
 using ILSight.Core;
 
 namespace ILSight;
 
 /// <summary>The open document tabs, the one the user last worked in, the preview tab, which shows
 /// what is picked until it is kept open, and the diagram the user last worked in; each of those is always
-/// one of the open tabs, which <see cref="Tabs"/> sees to: change these only through it.</summary>
+/// one of the open tabs, which <see cref="Tabs"/> sees to: change these only through it; and which document each
+/// tab is (<see cref="GetDocument"/>), which only their holder, <see cref="Navigation"/>, changes.</summary>
 public sealed class DocumentTabs
 {
     /// <summary>The id the last tab opened was given.</summary>
     private int _lastTabId;
 
+    /// <summary>Which document each tab opened here is, kept as long as the tab is.</summary>
+    private readonly ConditionalWeakTable<DocumentTab, TabDocument> _documents = new();
+
     /// <summary>Opens a new tab, showing nothing yet, with an id no tab had before.</summary>
     public DocumentTab AddNew()
     {
         _lastTabId++;
-        var tab = new DocumentTab { Id = _lastTabId };
+        var document = new TabDocument();
+        var tab = new DocumentTab(_lastTabId, document);
+        _documents.Add(tab, document);
         Open.Add(tab);
         return tab;
+    }
+
+    /// <summary>Which document <paramref name="tab"/>, opened here, is, to change it.</summary>
+    public TabDocument GetDocument(DocumentTab tab)
+    {
+        if (!_documents.TryGetValue(tab, out var document))
+        {
+            throw new InvalidOperationException($"Tab {tab.Id} was not opened among these tabs.");
+        }
+
+        return document;
     }
 
     /// <summary>The tabs open, in order.</summary>

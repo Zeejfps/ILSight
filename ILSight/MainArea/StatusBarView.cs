@@ -89,7 +89,7 @@ internal static class StatusBarView
 
     private static bool IsDecompiling(DocumentTab? tab)
     {
-        return tab is not null && tab.IsBusy;
+        return tab is not null && tab.Load.IsBusy;
     }
 
     private static void Dot(Ui<UiState> ui)

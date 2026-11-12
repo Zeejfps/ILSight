@@ -207,7 +207,7 @@ internal static class AppFrames
 
         foreach (var tab in ListFrontTabs(uiState))
         {
-            Commands.StartDecompiling(appState, StartDecompilingAgainIfOutdated(appState.ViewCommands, tab, language, appState.DecompilerOptions));
+            Commands.StartDecompiling(appState, StartDecompilingAgainIfOutdated(tab, language, appState.DecompilerOptions));
         }
     }
 
@@ -259,7 +259,7 @@ internal static class AppFrames
 
         if (shown.IsShownBy(tab))
         {
-            Tabs.KeepPosition(tab, DocumentPanels.GetPosition(view, tab));
+            tab.Load.KeepPosition(DocumentPanels.GetPosition(view, tab));
             return;
         }
 

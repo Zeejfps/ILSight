@@ -13,7 +13,7 @@ public sealed class ReopenDiagramHandlerTests
         Assert.NotNull(vehicle);
         var saved = new DiagramDocumentRecord("document-1", "Vehicle diagram", [vehicle.Anchor], null, null);
         var tab = d.AppState.Navigation.OpenReopenedTab();
-        Tabs.WaitForDiagram(tab, saved.Title);
+        d.AppState.Navigation.WaitForDiagram(tab, saved.Title);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, saved);
         var read = Diagrams.ReopenDiagram(d.AppState.Navigation, d.AppState.Reopened, reopened, saved);
         Assert.NotNull(read);
@@ -49,7 +49,7 @@ public sealed class ReopenDiagramHandlerTests
         var ports = new FakeReopenDiagramHandlerPorts();
 
         var reading = new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None);
-        Tabs.Clear(read.Reopened.Tab);
+        d.AppState.Navigation.RestoreDiagram(read.Reopened.Tab, new TypeDiagram(), "Other diagram");
         Assert.Single(ports.Answers).SetResult(new Outcome<List<TypeCard>>.Failed(new InvalidOperationException("Gone.")));
         await reading;
 

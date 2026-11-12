@@ -123,7 +123,7 @@ public static class Bookmarks
 
     private static bool CanBookmarkLine(DocumentTab tab, int line)
     {
-        if (tab.IsBusy)
+        if (tab.Load.IsBusy)
         {
             return false;
         }
@@ -146,7 +146,7 @@ public static class Bookmarks
         var anchor = Documents.FindAnchorAt(tab.Document, line);
         var name = appState.Bookmarks.CreateName(nameOf);
         var info = ILSpyTree.Describe(node, anchor);
-        var bookmark = Bookmarks.CreateAt(node, tab.Language, line, anchor, name, info);
+        var bookmark = Bookmarks.CreateAt(node, tab.Load.Language, line, anchor, name, info);
         appState.Bookmarks.TryAdd(bookmark);
         return new BookmarkToggle.Added(bookmark);
     }

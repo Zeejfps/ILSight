@@ -213,7 +213,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             }
 
             var position = FindPositionToKeep(tab, language);
-            Tabs.ShowReloading(tab, location);
+            tab.Load.ShowReloading(location);
             reloading.Add(new ReloadingTab { Tab = tab, Location = location, Version = tab.Version, Position = position });
         }
         return reloading;
@@ -221,7 +221,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     private static ViewPosition? FindPositionToKeep(DocumentTab tab, DecompilationLanguage language)
     {
-        return Navigation.KeepPosition(tab.Position, tab.Language, language);
+        return Navigation.KeepPosition(tab.Load.Position, tab.Load.Language, language);
     }
 
     /// <summary>Shows what the reload found, unless another one started since, or reports why it failed. Returns
@@ -311,7 +311,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     private void ReleaseGoneTab(DocumentTab tab, NodePath location)
     {
-        Tabs.ShowGone(tab, location);
+        tab.Load.ShowGone(location);
         ports.ReportError(new AppProblem.GoneAfterReload(location));
     }
 

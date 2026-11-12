@@ -152,7 +152,7 @@ public sealed class HistoryTests
         Assert.NotNull(tab);
 
         Assert.Equal("Outline", tab.Node?.Text);
-        Assert.Equal(DecompilationLanguage.IL, tab.Language);
+        Assert.Equal(DecompilationLanguage.IL, tab.Load.Language);
         Assert.False(CodeOf(app, tab).HasSelection);
         Assert.Equal(0, CodeOf(app, tab).Position.TopLine);
     }

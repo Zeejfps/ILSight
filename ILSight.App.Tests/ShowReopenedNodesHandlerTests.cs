@@ -11,7 +11,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var place = BrowseNodes.GetPath(d.Fixture("Greeter"));
         var record = new NodeDocumentRecord("document-9", "Greeter", place, DecompilationLanguage.CSharp, null);
         var tab = d.AppState.Navigation.OpenReopenedTab();
-        Tabs.WaitForNode(tab, place, record.Title, record.Language);
+        d.AppState.Navigation.WaitForNode(tab, place, record.Title, record.Language);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
         return new WaitingNode { Reopened = reopened, Record = record, Place = place };
     }
@@ -61,12 +61,12 @@ public sealed class ShowReopenedNodesHandlerTests
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
-        Tabs.Clear(waiting.Reopened.Tab);
+        d.AppState.Navigation.RestoreDiagram(waiting.Reopened.Tab, new TypeDiagram(), "Other diagram");
         Assert.Single(ports.Answers).SetResult(new Outcome<List<BrowseNode?>>.Ok([d.Fixture("Greeter")]));
         var loads = await showing;
 
         Assert.Empty(loads);
-        Assert.IsType<TabContent.Empty>(waiting.Reopened.Tab.Content);
+        Assert.IsType<TabContent.Diagram>(waiting.Reopened.Tab.Content);
     }
 
     [Fact]

@@ -109,7 +109,7 @@ public sealed class DiagramGrowingTests
         var ports = new FakeDiagramGrowingPorts();
 
         var adding = new DiagramGrowing(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None);
-        Tabs.Cancel(read.Tab);
+        d.AppState.Navigation.CloseTab(read.Tab);
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<List<TypeCard>>.Failed(new InvalidOperationException("Gone.")));
         await adding;
 

@@ -203,7 +203,7 @@ public sealed class Navigation
     /// nothing. Returns the load it started in the tab, as <see cref="ShowNode"/> does.</summary>
     public DecompileTicket? Restore(DocumentTab tab, BrowseNode node, DecompilerSetup setup, ViewPosition? position)
     {
-        return StartDecompiling(ViewCommands, tab, node, setup.Language, setup.Options, new Arrival(position));
+        return StartDecompiling(tab, node, setup, new Arrival(position));
     }
 
     /// <summary>Shows <paramref name="node"/>, picked in the tree, as <see cref="ShowNode"/> does, unless
@@ -301,7 +301,7 @@ public sealed class Navigation
 
         _intent.Begin();
         Tabs.MakeActive(_tabs, tab);
-        return StartDecompilingAgainIfOutdated(ViewCommands, tab, setup.Language, setup.Options);
+        return StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options);
     }
 
     /// <summary>The assemblies an id is looked for in: those read from the files opened, a package's
@@ -398,7 +398,7 @@ public sealed class Navigation
         _intent.Begin();
         LeaveActiveTab();
         var tab = GetOrOpenEmptyTab();
-        Tabs.ShowDiagram(tab, title, diagram);
+        _tabs.GetDocument(tab).ShowDiagram(diagram, title);
         Tabs.Keep(_tabs, tab);
         Tabs.MakeActive(_tabs, tab);
         _history.RecordDiagram(diagram, title);
@@ -410,13 +410,20 @@ public sealed class Navigation
     /// is the active one.</summary>
     public void RestoreDiagram(DocumentTab tab, TypeDiagram diagram, string title)
     {
-        Tabs.ShowDiagram(tab, title, diagram);
+        _tabs.GetDocument(tab).ShowDiagram(diagram, title);
         if (tab != _tabs.Active)
         {
             return;
         }
 
         Tabs.MakeActive(_tabs, tab);
+    }
+
+    /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, its saved one compared again, in
+    /// <paramref name="tab"/>, which waited for it: no place in the history and no new intent.</summary>
+    public void RestoreComparison(DocumentTab tab, AssemblyComparison comparison, string title)
+    {
+        _tabs.GetDocument(tab).ShowComparison(comparison, title);
     }
 
     /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, in the active tab while it shows
@@ -427,7 +434,7 @@ public sealed class Navigation
         _intent.Begin();
         LeaveActiveTab();
         var tab = GetOrOpenEmptyTab();
-        Tabs.ShowComparison(tab, title, comparison);
+        _tabs.GetDocument(tab).ShowComparison(comparison, title);
         Tabs.Keep(_tabs, tab);
         Tabs.MakeActive(_tabs, tab);
         _history.RecordComparison(comparison, title);
@@ -441,8 +448,8 @@ public sealed class Navigation
         _intent.Begin();
         LeaveActiveTab();
         var tab = OpenNewTab();
+        _tabs.GetDocument(tab).ShowReport(report);
         Tabs.MakeActive(_tabs, tab);
-        Tabs.ShowReport(tab, report);
         _history.RecordReport(report);
     }
 
@@ -464,6 +471,30 @@ public sealed class Navigation
     public DocumentTab OpenReopenedTab()
     {
         return _tabs.AddNew();
+    }
+
+    /// <summary>Has <paramref name="tab"/>, reopened from the saved documents, wait, titled <paramref name="title"/>,
+    /// for the node at <paramref name="location"/>, which it showed in <paramref name="language"/> when they were saved,
+    /// to be found once the assemblies are listed: no place in the history and no new intent.</summary>
+    public void WaitForNode(DocumentTab tab, NodePath location, string? title, DecompilationLanguage language)
+    {
+        _tabs.GetDocument(tab).WaitForNode(location, title, language);
+    }
+
+    /// <summary>Has <paramref name="tab"/>, reopened from the saved documents, wait, titled <paramref name="title"/>,
+    /// for the diagram it showed when they were saved to be read once the assemblies are listed: no place in the
+    /// history and no new intent.</summary>
+    public void WaitForDiagram(DocumentTab tab, string? title)
+    {
+        _tabs.GetDocument(tab).WaitForDocument(title);
+    }
+
+    /// <summary>Has <paramref name="tab"/>, reopened from the saved documents, wait, titled <paramref name="title"/>,
+    /// for the assemblies the comparison it showed when they were saved compared to be listed: no place in the history
+    /// and no new intent.</summary>
+    public void WaitForComparison(DocumentTab tab, string? title)
+    {
+        _tabs.GetDocument(tab).WaitForDocument(title);
     }
 
     /// <summary>Makes <paramref name="tab"/>, reopened from the saved documents, the tab the user works in, as it was
@@ -565,7 +596,7 @@ public sealed class Navigation
         }
 
         ForgetDocumentOf(kept);
-        Tabs.Clear(kept);
+        _tabs.GetDocument(kept).Clear();
         Tabs.MakeActive(_tabs, kept);
     }
 
@@ -760,7 +791,7 @@ public sealed class Navigation
             return;
         }
 
-        var position = tab.Position;
+        var position = tab.Load.Position;
         if (position is null)
         {
             return;
@@ -771,7 +802,7 @@ public sealed class Navigation
             return;
         }
 
-        _history.LeaveEntry(tab.Language, position.Value, TabVersion.Of(tab));
+        _history.LeaveEntry(tab.Load.Language, position.Value, TabVersion.Of(tab));
     }
 
     /// <summary>Where what is asked for now from the active tab will show, in a new tab when
@@ -795,9 +826,26 @@ public sealed class Navigation
     {
         var shownIn = GetOrOpenTab(destination);
         Tabs.MakeActive(_tabs, shownIn);
-        var load = StartDecompiling(ViewCommands, shownIn, node, setup.Language, setup.Options, new Arrival(position, target, row));
+        var load = StartDecompiling(shownIn, node, setup, new Arrival(position, target, row));
         ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
         return load;
+    }
+
+    /// <summary>Points <paramref name="tab"/> at <paramref name="node"/>, shown loading from now on as
+    /// <paramref name="setup"/> says, cancelling what was in flight, and returns what
+    /// <see cref="DecompileIntoTabHandler"/> needs to bring it in, after which the view stands where
+    /// <paramref name="arrival"/> says. When the tab already shows <paramref name="node"/> as the setup would, only
+    /// commands the view to stand there, and returns null.</summary>
+    private DecompileTicket? StartDecompiling(DocumentTab tab, BrowseNode node, DecompilerSetup setup, Arrival arrival)
+    {
+        if (tab.Load.IsShowing(node, setup.Language, setup.Options))
+        {
+            Arrive(ViewCommands, tab, arrival);
+            return null;
+        }
+
+        var work = _tabs.GetDocument(tab).PointAt(node, setup.Language, setup.Options, arrival);
+        return new DecompileTicket { Tab = tab, Load = tab.Load, Node = node, Language = setup.Language, Options = setup.Options, Work = work };
     }
 
     /// <summary>The tab <paramref name="destination"/> leads to now, brought to the front, else a new one

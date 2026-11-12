@@ -248,7 +248,7 @@ public sealed class AppTests
         app.Settle();
 
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Language);
-        Assert.Equal(DecompilationLanguage.IL, app.AppState.Navigation.ActiveTab?.Language);
+        Assert.Equal(DecompilationLanguage.IL, app.AppState.Navigation.ActiveTab?.Load.Language);
     }
 
     [Fact]
@@ -261,7 +261,7 @@ public sealed class AppTests
         app.Settle(1);
 
         Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Language);
-        Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Navigation.ActiveTab?.Language);
+        Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Navigation.ActiveTab?.Load.Language);
         Assert.True(app.Frames.Drew("IL with C#"));
         Assert.True(app.Frames.Drew("C# 14.0 / VS 2026"));
         var tab = app.AppState.Navigation.ActiveTab;
@@ -280,7 +280,7 @@ public sealed class AppTests
         app.Settle(1);
 
         Assert.Equal(CSharpVersion.CSharp5, app.AppState.DecompilerOptions.LanguageVersion);
-        Assert.Equal(CSharpVersion.CSharp5, app.AppState.Navigation.ActiveTab?.Options.LanguageVersion);
+        Assert.Equal(CSharpVersion.CSharp5, app.AppState.Navigation.ActiveTab?.Load.Options.LanguageVersion);
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == "C# 5.0 / VS 2012");
 
         app.Frames.ClickOn(Selector.WithText("IL"));

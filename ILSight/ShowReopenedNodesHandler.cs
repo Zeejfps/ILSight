@@ -75,7 +75,7 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
 
         if (node is null)
         {
-            Tabs.ShowGone(tab, waiting.Record.Location);
+            tab.Load.ShowGone(waiting.Record.Location);
             return null;
         }
         var position = Navigation.KeepPosition(waiting.Record.View, waiting.Record.Language, appState.Language);

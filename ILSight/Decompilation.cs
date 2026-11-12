@@ -3,29 +3,12 @@ using ILSight.BookmarkArea;
 
 namespace ILSight;
 
-/// <summary>Pointing a tab at what it is to show, decompiled or read as a grid or picture: the tab shows it
-/// loading at once, and <see cref="DecompileIntoTabHandler"/> brings it in with the ticket this returns; and
-/// commanding the view where to stand in it once it is there.</summary>
+/// <summary>Decompiling what a tab shows again in another language or with other options: the tab shows it loading
+/// at once, and <see cref="DecompileIntoTabHandler"/> brings it in with the ticket this returns; and commanding the
+/// view where to stand in what a tab shows once it is there. Pointing a tab at a node is
+/// <see cref="Navigation"/>'s.</summary>
 public static class Decompilation
 {
-    /// <summary>Points <paramref name="tab"/> at <paramref name="node"/>, shown loading from now on in
-    /// <paramref name="language"/> with <paramref name="options"/>, cancelling what was in flight, and returns what
-    /// <see cref="DecompileIntoTabHandler"/> needs to bring it in, after which the view stands where
-    /// <paramref name="arrival"/> says. When the tab already shows <paramref name="node"/> as the language and options
-    /// would, only commands the view, through <paramref name="viewCommands"/>, to stand there, and returns null.</summary>
-    public static DecompileTicket? StartDecompiling(Queue<ViewCommand> viewCommands, DocumentTab tab, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, Arrival arrival = default)
-    {
-        if (Tabs.IsShowing(tab, node, language, options))
-        {
-            Arrive(viewCommands, tab, arrival);
-            return null;
-        }
-
-        var work = Tabs.StartLoading(tab, node, language, options, arrival);
-        return new DecompileTicket { Tab = tab, Node = node, Language = language, Options = options, Work = work };
-    }
-
     /// <summary>Commands the view, through <paramref name="viewCommands"/>, to return to the arrival's position, else
     /// to reveal the grid's row or the line its bookmark marks, else the node's definition.</summary>
     public static void Arrive(Queue<ViewCommand> viewCommands, DocumentTab tab, Arrival arrival)
@@ -88,30 +71,20 @@ public static class Decompilation
         return Bookmarks.FindLine(target, tab.Document, node);
     }
 
-    /// <summary>Points <paramref name="tab"/> again at the node it shows, as <see cref="StartDecompiling"/> does, if
-    /// it was shown in another language, or with other options, than <paramref name="language"/> and
-    /// <paramref name="options"/>, keeping the view where it was when the language is the same. Null when it needs
-    /// no decompiling again.</summary>
-    public static DecompileTicket? StartDecompilingAgainIfOutdated(Queue<ViewCommand> viewCommands, DocumentTab tab, DecompilationLanguage language,
-        DecompilerOptions options)
+    /// <summary>Starts the load of the node <paramref name="tab"/> shows again, as <see cref="TabLoad.StartAgainIfOutdated"/>
+    /// does, if it was shown in another language, or with other options, than <paramref name="language"/> and
+    /// <paramref name="options"/>. Returns what <see cref="DecompileIntoTabHandler"/> needs to bring it in; null when it
+    /// needs no decompiling again.</summary>
+    public static DecompileTicket? StartDecompilingAgainIfOutdated(DocumentTab tab, DecompilationLanguage language, DecompilerOptions options)
     {
-        var node = tab.Node;
-        if (node is null)
+        var load = tab.Load;
+        var work = load.StartAgainIfOutdated(language, options);
+        if (work is null)
         {
             return null;
         }
 
-        if (!NodeContentLoader.DependsOnLanguage(node))
-        {
-            return null;
-        }
-
-        if (Tabs.IsCurrent(tab, language, options))
-        {
-            return null;
-        }
-
-        var position = Navigation.KeepPosition(tab.Position, tab.Language, language);
-        return StartDecompiling(viewCommands, tab, node, language, options, new Arrival(position));
+        var node = load.Node ?? throw new InvalidOperationException("A load started again shows its node loading.");
+        return new DecompileTicket { Tab = tab, Load = load, Node = node, Language = language, Options = options, Work = work };
     }
 }

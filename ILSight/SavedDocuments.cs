@@ -90,22 +90,22 @@ public static class SavedDocuments
     private static ReopenedTab ReopenTab(OpenListSession session, DocumentRecord record)
     {
         var tab = session.Navigation.OpenReopenedTab();
-        WaitForSaved(tab, record);
+        WaitForSaved(session.Navigation, tab, record);
         return WaitFor(session.Reopened, tab, record);
     }
 
-    private static void WaitForSaved(DocumentTab tab, DocumentRecord record)
+    private static void WaitForSaved(Navigation navigation, DocumentTab tab, DocumentRecord record)
     {
         switch (record)
         {
             case NodeDocumentRecord node:
-                Tabs.WaitForNode(tab, node.Location, node.Title, node.Language);
+                navigation.WaitForNode(tab, node.Location, node.Title, node.Language);
                 break;
             case DiagramDocumentRecord diagram:
-                Tabs.WaitForDiagram(tab, diagram.Title);
+                navigation.WaitForDiagram(tab, diagram.Title);
                 break;
             case ComparisonDocumentRecord comparison:
-                Tabs.WaitForComparison(tab, comparison.Title);
+                navigation.WaitForComparison(tab, comparison.Title);
                 break;
         }
     }
@@ -233,7 +233,7 @@ public static class SavedDocuments
             return null;
         }
 
-        return new NodeDocumentRecord(panel.Panel, tab.Title, location, tab.Language, tab.PositionToReopen);
+        return new NodeDocumentRecord(panel.Panel, tab.Title, location, tab.Load.Language, tab.Load.PositionToReopen);
     }
 
     private static DiagramDocumentRecord SaveDiagram(DocumentTab tab, TypeDiagram diagram, TabPanel panel)
@@ -324,7 +324,7 @@ public static class SavedDocuments
                 AddStarted(diagramReads, ReopenDiagram(navigation, reopenedTabs, reopened, diagram));
                 break;
             case ComparisonDocumentRecord comparison:
-                AddStarted(comparisonRuns, ReopenComparison(reopenedTabs, assemblies, reopened, comparison));
+                AddStarted(comparisonRuns, ReopenComparison(navigation, reopenedTabs, assemblies, reopened, comparison));
                 break;
         }
     }

@@ -146,7 +146,7 @@ public sealed class FrameworkPickerTests
     public void Only_an_open_tab_can_be_active_or_the_preview()
     {
         var tabs = new DocumentTabs();
-        var closed = new DocumentTab { Id = 1 };
+        var closed = new DocumentTab(1, new TabDocument());
 
         Assert.Throws<InvalidOperationException>(() => Tabs.MakeActive(tabs, closed));
         Assert.Throws<InvalidOperationException>(() => Tabs.MakePreview(tabs, closed));

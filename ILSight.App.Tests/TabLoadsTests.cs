@@ -5,10 +5,10 @@ namespace ILSight.App.Tests;
 
 public sealed class TabLoadsTests
 {
-    private static DecompileTicket StartLoading(DocumentTabs tabs, BrowseNode node)
+    private static DecompileTicket StartLoading(Navigation navigation, BrowseNode node)
     {
-        var tab = tabs.AddNew();
-        var ticket = Decompilation.StartDecompiling(new Queue<ViewCommand>(), tab, node, DecompilationLanguage.CSharp, DecompilerOptions.Default);
+        var setup = new DecompilerSetup { Language = DecompilationLanguage.CSharp, Options = DecompilerOptions.Default };
+        var ticket = navigation.ShowNode(node, setup, inNewTab: true);
         Assert.NotNull(ticket);
         return ticket;
     }
@@ -17,9 +17,9 @@ public sealed class TabLoadsTests
     public void Loads_put_together_go_to_the_handler_of_their_kind_in_the_order_they_were_put_together()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var tabs = new DocumentTabs();
-        var first = StartLoading(tabs, d.Fixture("Greeter"));
-        var second = StartLoading(tabs, d.Fixture("Farewell"));
+        var navigation = new Navigation { ViewCommands = new Queue<ViewCommand>(), PreviewTabs = false };
+        var first = StartLoading(navigation, d.Fixture("Greeter"));
+        var second = StartLoading(navigation, d.Fixture("Farewell"));
         var decompiled = new List<DecompileTicket>();
         var read = new List<SavedDiagramRead>();
         var found = new List<ReopenedNodesLookup>();
@@ -53,7 +53,7 @@ public sealed class TabLoadsTests
         var path = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath).FilePath;
         var record = new ComparisonDocumentRecord("document-9", "Fixtures API diff", path, path, ApiScope.AllDeclared, null);
         var tab = d.AppState.Navigation.OpenReopenedTab();
-        Tabs.WaitForComparison(tab, record.Title);
+        d.AppState.Navigation.WaitForComparison(tab, record.Title);
         SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
         var runs = new List<ComparisonRun>();
         var other = 0;
