@@ -240,6 +240,13 @@ internal sealed class AppStateDriver
         Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
     }
 
+    /// <summary>Does <paramref name="change"/> to the app state now, as a command the views queue does once the frame
+    /// is drawn, then starts the loads it returns, as the app's commands start them.</summary>
+    public void Change(Func<AppState, TabLoads> change)
+    {
+        Commands.StartLoads(AppState, change(AppState));
+    }
+
     /// <summary>Analyzes <paramref name="node"/> as the views do.</summary>
     public void Analyze(BrowseNode node)
     {

@@ -69,7 +69,7 @@ public sealed class PickedPdbTests
         var d = OpenedCopy(temp, copy);
         Pick(d, FixturePdb);
 
-        d.Start(static (a, ct) => CloseAllAssembliesAsync(a, ct));
+        d.Change(CloseAllAssemblies);
         RememberOpenAssemblies(d.AppState);
         SaveSettings(d.AppState);
 

@@ -17,12 +17,13 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
         Task<Outcome<List<BrowseNode?>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct);
     }
 
-    /// <summary>Finds the nodes <paramref name="nodes"/> wait for and shows each, back where its view stood when it
-    /// was shown in the language the app shows now, or that it is gone; all of them gone when finding them failed.
-    /// A tab pointed elsewhere or closed meanwhile is left alone. Returns the loads that started in the tabs, for the
-    /// edge that started this to start under each tab's work.</summary>
-    public async Task<List<DecompileTicket>> HandleAsync(AppState appState, IReadOnlyList<WaitingNode> nodes, CancellationToken ct)
+    /// <summary>Finds the nodes <paramref name="lookup"/>'s tabs wait for and shows each, back where its view stood
+    /// when it was shown in the language the app shows now, or that it is gone; all of them gone when finding them
+    /// failed. A tab pointed elsewhere or closed meanwhile is left alone. Returns the loads that started in the tabs,
+    /// for the edge that started this to start under each tab's work.</summary>
+    public async Task<List<DecompileTicket>> HandleAsync(AppState appState, ReopenedNodesLookup lookup, CancellationToken ct)
     {
+        var nodes = lookup.Nodes;
         if (nodes.Count == 0)
         {
             return [];

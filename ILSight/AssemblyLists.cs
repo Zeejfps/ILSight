@@ -102,14 +102,13 @@ public static class AssemblyLists
     /// analyses start being found while the assemblies open. Returns the loads that started in the tabs.</summary>
     private static async Task<TabLoads> OpenActiveListAsync(AppState appState, CancellationToken ct)
     {
-        var closing = CloseAllAssembliesAsync(appState, ct);
+        var closing = CloseAllAssemblies(appState);
         ReopenDocuments(appState);
         appState.History.Clear();
         var restoring = RestoreActiveAssemblyListAsync(appState, ct);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         RestoreAnalyses(appState);
-        var loads = await Task.WhenAll(closing, restoring);
-        return loads[0].With(loads[1]);
+        return closing.With(await restoring);
     }
 
     /// <summary>Adds an empty list named <paramref name="name"/>, or numbered when that is taken,

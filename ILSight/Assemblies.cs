@@ -42,8 +42,8 @@ public static class Assemblies
 
     /// <summary>Closes every assembly of the open list, stopping its reload; tabs still waiting for it to
     /// reopen their places show what is left of them. Returns the loads that started in those tabs, for the edge that
-    /// started this to start.</summary>
-    public static Task<TabLoads> CloseAllAssembliesAsync(AppState appState, CancellationToken ct)
+    /// asked for this to start.</summary>
+    public static TabLoads CloseAllAssemblies(AppState appState)
     {
         appState.Intent.Begin();
         appState.Opens.Cancel();
@@ -51,6 +51,6 @@ public static class Assemblies
         OpenAssemblies.CloseAll(appState.Assemblies, appState.Analyzer);
         appState.Assemblies.Pdbs.ForgetAll();
         appState.Assemblies.TargetFrameworks.ForgetAll();
-        return ShowReopenedDocumentsAsync(appState, ct);
+        return ShowReopenedDocuments(appState);
     }
 }

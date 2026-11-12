@@ -28,17 +28,17 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
     {
         var ticket = appState.Reload.Start();
         var opened = await ports.OpenFilesAsync(paths, ticket.Token, ct);
-        return await FinishOpeningAsReloadAsync(appState, opened, ticket, ct);
+        return FinishOpeningAsReload(appState, opened, ticket);
     }
 
-    private async Task<TabLoads> FinishOpeningAsReloadAsync(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket, CancellationToken ct)
+    private TabLoads FinishOpeningAsReload(AppState appState, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket)
     {
         if (!appState.Reload.TryFinish(ticket))
         {
             return TabLoads.None;
         }
 
-        var reopened = ShowReopenedDocumentsAsync(appState, ct);
+        var reopened = ShowReopenedDocuments(appState);
         switch (outcome)
         {
             case Outcome<LoadedAssembly?>.Ok:
@@ -51,6 +51,6 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
                 throw new UnreachableException();
         }
 
-        return await reopened;
+        return reopened;
     }
 }

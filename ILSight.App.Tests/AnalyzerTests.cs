@@ -296,7 +296,7 @@ public sealed class AnalyzerTests
 
         analyzer.RemoveRoot(analyzer.Roots[0]);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
-        d.Start(static (a, ct) => CloseAllAssembliesAsync(a, ct));
+        d.Change(CloseAllAssemblies);
 
         Assert.Equal(["Greeter"], left);
         Assert.Empty(analyzer.Roots);

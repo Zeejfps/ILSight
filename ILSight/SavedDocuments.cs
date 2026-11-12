@@ -278,10 +278,11 @@ public static class SavedDocuments
     }
 
     /// <summary>Shows again what the reopened tabs still waiting showed, now that the open list's assemblies
-    /// are listed: shows their diagrams and comparisons, then finds their nodes without holding up the screen
-    /// (<see cref="ShowReopenedNodesHandler"/>), showing each or that it is gone. Returns the loads that started in
-    /// the tabs, the reading of the diagrams' cards among them, for the edge that started this to start.</summary>
-    internal static async Task<TabLoads> ShowReopenedDocumentsAsync(AppState appState, CancellationToken ct)
+    /// are listed: shows their diagrams and comparisons. Returns the loads that started in the tabs, for the edge that
+    /// started this to start: the reading of the diagrams' cards, and the lookup of the nodes the other tabs wait for
+    /// (<see cref="ShowReopenedNodesHandler"/>), which nothing after this needs and which the edge starts as work of its
+    /// own, so that what the caller started meanwhile does not wait for it.</summary>
+    internal static TabLoads ShowReopenedDocuments(AppState appState)
     {
         var nodes = new List<WaitingNode>();
         var diagramReads = new List<SavedDiagramRead>();
@@ -290,8 +291,18 @@ public static class SavedDocuments
             ShowReopened(appState, reopened, nodes, diagramReads);
         }
 
-        var decompiles = await appState.ShowReopenedNodesHandler.HandleAsync(appState, nodes, ct);
-        return TabLoads.From(decompiles, diagramReads);
+        return TabLoads.From([], diagramReads, ListLookups(nodes));
+    }
+
+    /// <summary>The lookup of <paramref name="nodes"/>; none when no tab waits for a node.</summary>
+    private static List<ReopenedNodesLookup> ListLookups(List<WaitingNode> nodes)
+    {
+        if (nodes.Count == 0)
+        {
+            return [];
+        }
+
+        return [new ReopenedNodesLookup { Nodes = nodes }];
     }
 
     /// <summary>Shows the diagram <paramref name="reopened"/> showed, adding the read of its cards to

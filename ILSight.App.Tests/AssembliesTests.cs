@@ -16,11 +16,19 @@ public sealed class AssembliesTests
         return Assert.IsType<AssemblyPath>(AssemblyPath.Parse(Path.Combine(Path.GetTempPath(), file)));
     }
 
+    /// <summary>The lookups of the nodes reopened tabs wait for among <paramref name="loads"/>.</summary>
+    private static List<ReopenedNodesLookup> ListLookups(TabLoads loads)
+    {
+        var lookups = new List<ReopenedNodesLookup>();
+        loads.Switch(static _ => { }, static _ => { }, lookups.Add);
+        return lookups;
+    }
+
     /// <summary>The decompiles among <paramref name="loads"/>.</summary>
     private static List<DecompileTicket> ListDecompiles(TabLoads loads)
     {
         var decompiles = new List<DecompileTicket>();
-        loads.Switch(decompiles.Add, static _ => { });
+        loads.Switch(decompiles.Add, static _ => { }, static _ => { });
         return decompiles;
     }
 
@@ -270,7 +278,7 @@ public sealed class AssembliesTests
         var ports = new FakeAssemblyReloadingPorts
         {
             Reopen = _ => new Outcome<ReloadedNodes>.Failed(new OperationCanceledException()),
-            WhileWorking = () => d.Start(static (a, ct) => CloseAllAssembliesAsync(a, ct)),
+            WhileWorking = () => d.Change(CloseAllAssemblies),
         };
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState, [], CancellationToken.None);
@@ -292,6 +300,27 @@ public sealed class AssembliesTests
 
         Assert.Same(error, Assert.IsType<AppProblem.OpenFailed>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.IsReloading);
+        Assert.Empty(ListDecompiles(loads));
+    }
+
+    [Fact]
+    public async Task HandleAsync_TabsWaitingForNodes_HandsBackTheLookupOfThemUnstarted()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var place = BrowseNodes.GetPath(d.Fixture("Greeter"));
+        var record = new NodeDocumentRecord("document-9", "Greeter", place, DecompilationLanguage.CSharp, null);
+        var tab = d.AppState.Tabs.AddNew();
+        Tabs.WaitForNode(tab, place, record.Title, record.Language);
+        var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
+        var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new IOException("unreadable")) };
+
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState, [PathTo("Listed.dll")], CancellationToken.None);
+
+        var waiting = Assert.Single(Assert.Single(ListLookups(loads)).Nodes);
+        Assert.Same(reopened, waiting.Reopened);
+        Assert.Equal(place, waiting.Place);
+        Assert.False(d.AppState.IsFindingDocuments);
+        Assert.IsType<TabContent.Reloading>(tab.Content);
         Assert.Empty(ListDecompiles(loads));
     }
 

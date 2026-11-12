@@ -24,7 +24,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var greeter = d.Fixture("Greeter");
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, [waiting], CancellationToken.None);
+        var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
         Assert.True(d.AppState.IsFindingDocuments);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<BrowseNode?>>.Ok([greeter]));
         var loads = await showing;
@@ -44,7 +44,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var waiting = WaitForGreeter(d);
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, [waiting], CancellationToken.None);
+        var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<BrowseNode?>>.Failed(new InvalidOperationException("Unreadable.")));
         var loads = await showing;
 
@@ -60,7 +60,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var waiting = WaitForGreeter(d);
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, [waiting], CancellationToken.None);
+        var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
         Tabs.Clear(waiting.Reopened.Tab);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<BrowseNode?>>.Ok([d.Fixture("Greeter")]));
         var loads = await showing;
@@ -75,7 +75,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var loads = await new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, [], CancellationToken.None);
+        var loads = await new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [] }, CancellationToken.None);
 
         Assert.Empty(loads);
         Assert.Empty(ports.Asked);

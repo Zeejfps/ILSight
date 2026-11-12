@@ -46,15 +46,15 @@ public static class RunArgumentsActions
             switching = OpenAssemblyListNamedAsync(appState, arguments.AssemblyList, ct);
         }
 
-        var clearing = Task.FromResult(TabLoads.None);
+        var clearing = TabLoads.None;
         if (arguments.ClearList)
         {
-            clearing = CloseAllAssembliesAsync(appState, ct);
+            clearing = CloseAllAssemblies(appState);
         }
 
         var opening = OpenRequestedFilesAsync(appState, arguments.Files, ct);
-        await Task.WhenAll(switching, clearing, opening);
-        return (await switching).With(await clearing).With(await opening);
+        await Task.WhenAll(switching, opening);
+        return (await switching).With(clearing).With(await opening);
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)

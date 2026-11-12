@@ -107,7 +107,14 @@ public static class Commands
     /// (<see cref="ReopenDiagramHandler"/>) on a token that closing the diagram cancels too.</summary>
     public static void StartLoads(AppState appState, TabLoads loads)
     {
-        loads.Switch(load => StartDecompiling(appState, load), read => StartReadingCards(appState, read));
+        loads.Switch(load => StartDecompiling(appState, load), read => StartReadingCards(appState, read), lookup => StartFindingNodes(appState, lookup));
+    }
+
+    /// <summary>Starts finding the nodes <paramref name="lookup"/>'s reopened tabs wait for
+    /// (<see cref="ShowReopenedNodesHandler"/>) as a workflow of its own, then each load it points a tab at.</summary>
+    private static void StartFindingNodes(AppState appState, ReopenedNodesLookup lookup)
+    {
+        StartShowing(appState, nameof(ShowReopenedNodesHandler), ct => appState.ShowReopenedNodesHandler.HandleAsync(appState, lookup, ct));
     }
 
     private static void StartReadingCards(AppState appState, SavedDiagramRead read)
