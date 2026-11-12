@@ -250,8 +250,9 @@ dropped `[MustUse]` value).
   the type owns → an abstract member; another layer → `Match`; the same kind of effect per case → `Match` returning a
   value, act once; async effects → `Match` returning `Task`; sync effects that differ → `Switch`. A question only some
   cases answer: a virtual member with a "doesn't apply" default (where harmless for a future case), or one `is` check
-  per case in another layer. Outside the union, never `switch` with `_`; inside, `Match` / `Switch` dispatch with a `_`
-  arm that throws `UnreachableException` (RL0801 exempts the union's own code).
+  per case in another layer. A union you can't change with no `Match` gets one, written once as an extension method.
+  Outside the union, never `switch` with `_`; inside (or in that extension), `Match` / `Switch` dispatch with a `_` arm
+  that throws `UnreachableException` (RL0801 exempts both).
 - **A value the caller must act on** is a result union, or, when its loss leaves state stuck (a ticket for work only the
   caller starts), a type marked `[MustUse]`. RL0807 is a suggestion: set `dotnet_diagnostic.RL0807.severity = error`
   where a drop must fail the build. Several kinds of work handed back together are one `[MustUse]` value with a handler
@@ -266,8 +267,9 @@ result), RL0904 (an adapter's sequence that isn't its own iterator).
 
 - Throw only for bugs (bad argument, wrong state, impossible case, corrupt data), with a built-in type and a message
   saying what was expected (a custom type only if something catches it). Expected failures are returned (a union per
-  operation, `Result<T>`, `Find*`, `Try*`; no library result types) and never discarded. Infrastructure failures
-  propagate.
+  operation, `Result<T>`, `Find*`, `Try*`; no library result types) and never discarded: a user's action the code
+  refuses says why where they acted, or is offered as unavailable with the reason, never nothing. Infrastructure
+  failures propagate.
 - **Catch only at the edge**, around one unit of work, logging once; no log-and-rethrow. Decision code catches
   nothing; adapters catch only the exception they translate. The one exception to both: a read of the user's data by a
   library listed in `rulelab.untrusted_libraries` (in an adapter, a conversion step, or where a library object that is
@@ -305,6 +307,11 @@ result), RL0904 (an adapter's sequence that isn't its own iterator).
 Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100 / 103 / 110.
 
 - Never block on a task (`.Result`, `.Wait()`); move async work out of a caller that can't be async (a constructor).
+  A task that has ended is read from a local inside its check (`var ended = task; if (ended.IsCompletedSuccessfully)
+  { ... ended.Result ... }`: VSTHRD002 accepts it). **The one blocking wait:** a thread that must stay its own with
+  nothing else to do (the entry thread a UI framework needs; the holder of a named `Mutex`) waits once, in an edge, for
+  work run elsewhere (the thread pool, another thread), VSTHRD002 suppressed with the reason. Not async `Main`; never
+  release a thread-affine lock after an `await`.
 - **Every async method takes `CancellationToken ct` last and passes it to every async call**, port members included.
   Exceptions: framework-facing signatures, test methods, and clean-up that must finish whatever stopped the work,
   which is `DisposeAsync` under `await using`, with no token.
@@ -398,7 +405,8 @@ it, where the loop starts commands the draw queued) or in those commands. A **ho
   edge starts every queued command, even after a failed draw.
 - **A draw takes what its input changes**: the parts, or the type keeping a rule across them (R004), never the whole
   state below the root view, never a command queued for want of the parts.
-- **Work a draw finds it needs** (an icon, a page of a table whose reads reach a file) is recorded as pending on its
+- **Work a draw finds it needs** (an icon, a page of a table whose reads reach a file: paged whatever its size, its
+  first window read with its content) is recorded as pending on its
   owner, once per item; the frame edge starts it right after that draw or before the next (one workflow per batch the
   port takes, else per item).
 - **What a bound field must cause** (a close box writing `IsOpen` by `ref`) belongs to the rule's owner, told the
