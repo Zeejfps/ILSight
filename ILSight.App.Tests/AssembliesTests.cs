@@ -68,11 +68,11 @@ public sealed class AssembliesTests
     {
         public Outcome<PdbCheck> PdbChecked { get; init; } = new Outcome<PdbCheck>.Ok(PdbCheck.Matches);
 
-        public Func<LoadedAssembly, IReadOnlyList<NodePath>, Outcome<Reopened>> ReadAgain { get; init; } =
-            static (_, _) => new Outcome<Reopened>.Failed(new IOException("Reading again was not expected."));
+        public Func<LoadedAssembly, IReadOnlyList<NodePath>, Outcome<ReopenedFile>> ReadAgain { get; init; } =
+            static (_, _) => new Outcome<ReopenedFile>.Failed(new IOException("Reading again was not expected."));
 
-        public Func<IReadOnlyList<NodePath>, Outcome<Reloaded>> Reopen { get; init; } =
-            static _ => new Outcome<Reloaded>.Failed(new IOException("Reopening was not expected."));
+        public Func<IReadOnlyList<NodePath>, Outcome<ReloadedNodes>> Reopen { get; init; } =
+            static _ => new Outcome<ReloadedNodes>.Failed(new IOException("Reopening was not expected."));
 
         public Action WhileWorking { get; init; } = static () => { };
 
@@ -96,12 +96,12 @@ public sealed class AssembliesTests
             return AnswerAsync(nameof(CheckPdbAsync), PdbChecked, ct);
         }
 
-        public Task<Outcome<Reopened>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
+        public Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
         {
             return AnswerAsync(nameof(ReadAgainAsync), ReadAgain(item, places), ct);
         }
 
-        public Task<Outcome<Reloaded>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
+        public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
             CancellationToken stop, CancellationToken ct)
         {
             OpenedPaths.Add(paths);
@@ -280,7 +280,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var fixtures = FixturesOf(d);
         var error = new IOException("unreadable");
-        var ports = new FakeReloadingPorts { ReadAgain = (_, _) => new Outcome<Reopened>.Failed(error) };
+        var ports = new FakeReloadingPorts { ReadAgain = (_, _) => new Outcome<ReopenedFile>.Failed(error) };
         using var shutdown = new CancellationTokenSource();
 
         var loads = await new AssemblyReloading(ports).UsePdbAsync(d.AppState, fixtures, "matching.pdb", shutdown.Token);
@@ -328,13 +328,13 @@ public sealed class AssembliesTests
         Assert.Same(tab, Assert.Single(loads).Tab);
     }
 
-    private static Outcome<Reopened> ReadAgain(AppState appState, LoadedAssembly item, IReadOnlyList<NodePath> places)
+    private static Outcome<ReopenedFile> ReadAgain(AppState appState, LoadedAssembly item, IReadOnlyList<NodePath> places)
     {
         var fresh = AssemblyListing.ReadAgain(appState.Assemblies, item);
         var found = places
             .Select(p => BrowseSessions.FindNode(appState.Session, fresh, p))
             .ToArray();
-        return new Outcome<Reopened>.Ok(new Reopened { Item = fresh, Places = found });
+        return new Outcome<ReopenedFile>.Ok(new ReopenedFile { Item = fresh, Places = found });
     }
 
     [Fact]
@@ -345,7 +345,7 @@ public sealed class AssembliesTests
         var fixtures = FixturesOf(d);
         var ports = new FakeReloadingPorts
         {
-            ReadAgain = (_, _) => new Outcome<Reopened>.Failed(new IOException("unreadable")),
+            ReadAgain = (_, _) => new Outcome<ReopenedFile>.Failed(new IOException("unreadable")),
             WhileWorking = () => appState.Reopens.Start(fixtures.FilePath),
         };
 
@@ -365,7 +365,7 @@ public sealed class AssembliesTests
         Assert.NotNull(tab);
         var location = tab.Location;
         Assert.NotNull(location);
-        var ports = new FakeReloadingPorts { Reopen = static places => new Outcome<Reloaded>.Ok(new Reloaded { Expanded = [], Places = new BrowseNode?[places.Count] }) };
+        var ports = new FakeReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = new BrowseNode?[places.Count] }) };
         using var shutdown = new CancellationTokenSource();
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState, [], shutdown.Token);
@@ -383,7 +383,7 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var error = new IOException("unreadable");
-        var ports = new FakeReloadingPorts { Reopen = _ => new Outcome<Reloaded>.Failed(error) };
+        var ports = new FakeReloadingPorts { Reopen = _ => new Outcome<ReloadedNodes>.Failed(error) };
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(d.AppState, [], CancellationToken.None);
 
@@ -399,7 +399,7 @@ public sealed class AssembliesTests
         var appState = d.AppState;
         var ports = new FakeReloadingPorts
         {
-            Reopen = _ => new Outcome<Reloaded>.Failed(new OperationCanceledException()),
+            Reopen = _ => new Outcome<ReloadedNodes>.Failed(new OperationCanceledException()),
             WhileWorking = () => d.Start(static (a, ct) => CloseAllAssembliesAsync(a, ct)),
         };
 

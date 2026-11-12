@@ -31,8 +31,6 @@ public sealed class DebugSymbols : IDebugInfoProvider
 
     public MetadataReader Metadata => File.Metadata;
 
-    public sealed record PdbImage(string Path, byte[] Image);
-
     public IList<SequencePoint> GetSequencePoints(MethodDefinitionHandle method)
     {
         var points = new List<SequencePoint>();

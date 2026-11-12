@@ -48,12 +48,12 @@ public static class Searches
         return 0;
     }
 
-    private static bool IsQueryChanged(Search search, Search.Searched searched)
+    private static bool IsQueryChanged(Search search, SearchedQuery searched)
     {
         return search.Typed.Text != searched.Query || search.Kinds != searched.Kinds;
     }
 
-    private static double RestartWhenSettled(Search search, AssemblyList assemblies, double now, Search.Searched? searched)
+    private static double RestartWhenSettled(Search search, AssemblyList assemblies, double now, SearchedQuery? searched)
     {
         var remaining = search.Typed.CalculateSecondsToSettle(now, DebounceSeconds);
         if (remaining > 0 && searched is not null && search.Kinds == searched.Kinds)
@@ -68,7 +68,7 @@ public static class Searches
     private static void Restart(Search search, AssemblyList assemblies)
     {
         CancelRuns(search);
-        var searched = new Search.Searched(search.Typed.Text, search.Kinds, assemblies.Version);
+        var searched = new SearchedQuery(search.Typed.Text, search.Kinds, assemblies.Version);
         search.LastSearched = searched;
         search.Rows.Clear();
         ItemSelections.Clear(search.Selection);
@@ -88,7 +88,7 @@ public static class Searches
         search.Runs.Clear();
     }
 
-    private static void Extend(Search search, AssemblyList assemblies, Search.Searched searched)
+    private static void Extend(Search search, AssemblyList assemblies, SearchedQuery searched)
     {
         searched = searched with { Version = assemblies.Version };
         search.LastSearched = searched;
@@ -126,7 +126,7 @@ public static class Searches
         return added;
     }
 
-    private static void Start(Search search, AssemblyList assemblies, Search.Searched searched, IEnumerable<LoadedModule> within)
+    private static void Start(Search search, AssemblyList assemblies, SearchedQuery searched, IEnumerable<LoadedModule> within)
     {
         var query = SearchQueries.ParseQuery(searched.Query, searched.Kinds);
         search.InvalidRegex = query.Matcher as SearchMatcher.InvalidRegex;

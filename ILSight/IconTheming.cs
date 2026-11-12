@@ -249,9 +249,12 @@ public static class IconTheming
         }
     }
 
-    private static IconThemeFile.IconFields ReadIconFields(IconThemeFile theme, ref Utf8JsonReader reader, string subject)
+    /// <summary>The fields of an icon as written, each null when left out.</summary>
+    private readonly record struct IconFields(string? Font, string? Glyph, string? Svg);
+
+    private static IconFields ReadIconFields(IconThemeFile theme, ref Utf8JsonReader reader, string subject)
     {
-        var fields = new IconThemeFile.IconFields();
+        var fields = new IconFields();
         while (Theming.TryReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
         {
             var key = subject + "." + name;
@@ -275,7 +278,7 @@ public static class IconTheming
     }
 
     /// <summary>The icon <paramref name="fields"/> make; null after reporting why they make none.</summary>
-    private static IconValue? MakeValue(IconThemeFile theme, string subject, IconThemeFile.IconFields fields, int line)
+    private static IconValue? MakeValue(IconThemeFile theme, string subject, IconFields fields, int line)
     {
         var (font, glyph, svg) = fields;
         if (svg is not null && font is null && glyph is null)

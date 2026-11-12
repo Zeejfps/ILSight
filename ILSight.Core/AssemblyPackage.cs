@@ -19,13 +19,4 @@ public sealed class AssemblyPackage
     public required bool IsBundle { get; init; }
 
     public required PackageFolder Root { get; init; }
-
-    /// <summary>The folders and files of a package as they are listed, sorted into a tree once all are in.</summary>
-    public sealed class FileTree
-    {
-        public required PackageFolder Root { get; init; }
-        public required Dictionary<string, PackageFolder> Folders { get; init; }
-        public readonly Dictionary<string, PackageFile> Files = new(StringComparer.Ordinal);
-
-    }
 }

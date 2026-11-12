@@ -1,6 +1,3 @@
-using System.Collections.Immutable;
-using System.Reflection.Metadata;
-
 namespace ILSight.Core;
 
 /// <summary>
@@ -11,12 +8,12 @@ namespace ILSight.Core;
 public sealed class AssemblyList
 {
     /// <summary>What was read, by path, reachable only holding the lock: assemblies, packages and the
-    /// assemblies read out of packages. Beside it the <see cref="Listing"/>, read without the lock and
+    /// assemblies read out of packages. Beside it the <see cref="AssemblyListSnapshot"/>, read without the lock and
     /// replaced only holding it. Hold it only through <see cref="AssemblyListing"/>, and never while reading files.</summary>
-    internal Guarded<Dictionary<AssemblyPath, LoadedAssembly>, Listing> State { get; } = new(new Dictionary<AssemblyPath, LoadedAssembly>(), Listing.Empty);
+    internal Guarded<Dictionary<AssemblyPath, LoadedAssembly>, AssemblyListSnapshot> State { get; } = new(new Dictionary<AssemblyPath, LoadedAssembly>(), AssemblyListSnapshot.Empty);
 
     /// <summary>The list as of now, all of one moment.</summary>
-    internal Listing Now => State.Snapshot;
+    internal AssemblyListSnapshot Now => State.Snapshot;
 
     /// <summary>The open assemblies that loaded, in the order they were opened, with an open package's
     /// assemblies where the package is. A snapshot: it never changes after it is read.</summary>
@@ -55,17 +52,4 @@ public sealed class AssemblyList
 
     /// <summary>Whether resolving a reference reads its assembly from a file, rather than only finding one listed.</summary>
     internal bool LoadsReferences => Now.ReadOptions.LoadsReferences;
-
-    /// <summary>What the list holds at a moment, replaced whole, so that no reader sees one part of a
-    /// change without the rest.</summary>
-    internal sealed record Listing(ImmutableArray<LoadedAssembly> Listed, ImmutableArray<LoadedModule> Loaded, int Version, int Generation, LoadOptions ReadOptions)
-    {
-        public static Listing Empty { get; } = new(ImmutableArray<LoadedAssembly>.Empty, ImmutableArray<LoadedModule>.Empty, 0, 0, LoadOptions.Default);
-    }
-
-    /// <summary>The options that apply as assemblies are read, changed together.</summary>
-    public sealed record LoadOptions(bool LoadsReferences, MetadataReaderOptions ReaderOptions)
-    {
-        public static LoadOptions Default { get; } = new(true, MetadataReaderOptions.ApplyWindowsRuntimeProjections);
-    }
 }

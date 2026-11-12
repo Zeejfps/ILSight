@@ -52,9 +52,9 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     private const string IconImagePrefix = "nuget-icon-";
 
     private readonly Dictionary<WebUrl, PackageIcon> _icons = [];
-    private readonly Dictionary<DetailsKey, VersionDetails> _details = [];
-    private readonly List<IconFetch> _iconsToFetch = [];
-    private readonly List<DetailsFetch> _detailsToFetch = [];
+    private readonly Dictionary<VersionDetailsKey, VersionDetails> _details = [];
+    private readonly List<PackageIconFetch> _iconsToFetch = [];
+    private readonly List<VersionDetailsFetch> _detailsToFetch = [];
     private readonly LatestWork _searches = new();
     private readonly LatestWork _downloads = new();
     private readonly TypedText _typedQuery = new();
@@ -432,19 +432,19 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     /// <summary>Starts searching as <paramref name="wanted"/> asks, in place of the search running, which is
     /// cancelled and its page dropped: from now on the dialog draws it searching. Returns what
     /// <see cref="SearchAsync"/> needs to search, whose work a newer search or closing the dialog cancels.</summary>
-    public SearchTicket StartSearch(FeedSearch wanted)
+    public FeedSearchTicket StartSearch(FeedSearch wanted)
     {
         KeepSearched(wanted);
         _run = new SearchRun.Running(wanted);
         _stopped = false;
-        return new SearchTicket { Search = wanted, Work = _searches.Start() };
+        return new FeedSearchTicket { Search = wanted, Work = _searches.Start() };
     }
 
     /// <summary>Searches as <paramref name="search"/> asks, and shows the page found unless another search started
     /// or the dialog closed meanwhile. A failed search says why and is reported, keeping the page shown when it
     /// only asked for another page of it. <paramref name="ct"/> is the work's token, linked to what else may
     /// cancel it.</summary>
-    public async Task SearchAsync(SearchTicket search, CancellationToken ct)
+    public async Task SearchAsync(FeedSearchTicket search, CancellationToken ct)
     {
         var wanted = search.Search;
         var found = await ports.SearchAsync(wanted, ct);
@@ -459,7 +459,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     /// <summary>What Enter does: starts downloading the selected package at <see cref="Version"/>, as
     /// <see cref="StartDownload"/> does, unless the query typed is still to be searched: then it is searched at
     /// once instead, so Enter never opens what an older query found. Null when no download started.</summary>
-    public DownloadTicket? Submit()
+    public PackageDownloadTicket? Submit()
     {
         if (IsSettling)
         {
@@ -478,7 +478,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     /// unless it cannot be opened now: from now on the dialog draws it downloading. Returns what
     /// <see cref="DownloadAsync"/> needs to download it, whose work closing the dialog cancels; null when
     /// nothing can be downloaded.</summary>
-    public DownloadTicket? StartDownload()
+    public PackageDownloadTicket? StartDownload()
     {
         var version = Version;
         var package = Selected;
@@ -492,7 +492,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         var name = $"{package.Id} {version}";
         _download = new DownloadState.Running(name);
         _stopped = false;
-        return new DownloadTicket
+        return new PackageDownloadTicket
         {
             Name = name,
             Cache = setup.Cache,
@@ -506,7 +506,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     /// <summary>Fetches the package <paramref name="download"/> names into the cache, for
     /// <see cref="TakeDownloaded"/> to hand over, unless the dialog dropped it by closing meanwhile. A failed
     /// download is reported.</summary>
-    public async Task DownloadAsync(DownloadTicket download, CancellationToken ct)
+    public async Task DownloadAsync(PackageDownloadTicket download, CancellationToken ct)
     {
         var fetched = await ports.DownloadPackageAsync(download.Cache, download.Feed, download.Id, download.Version, ct);
         if (!_downloads.TryFinish(download.Work))
@@ -621,7 +621,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         _iconCount++;
         icon = new PackageIcon { ImageId = IconImagePrefix + _iconCount };
         _icons.Add(url, icon);
-        _iconsToFetch.Add(new IconFetch { Url = url, Icon = icon });
+        _iconsToFetch.Add(new PackageIconFetch { Url = url, Icon = icon });
         return icon;
     }
 
@@ -642,7 +642,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         }
 
         var feed = _shown.Search.Feed;
-        var key = new DetailsKey(feed.Url, package.Id, version);
+        var key = new VersionDetailsKey(feed.Url, package.Id, version);
         if (_details.TryGetValue(key, out var details))
         {
             return details;
@@ -650,7 +650,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
         var loading = new VersionDetails.Loading();
         _details.Add(key, loading);
-        _detailsToFetch.Add(new DetailsFetch { Key = key, Feed = feed, Version = listed, Loading = loading });
+        _detailsToFetch.Add(new VersionDetailsFetch { Key = key, Feed = feed, Version = listed, Loading = loading });
         return loading;
     }
 
@@ -662,12 +662,12 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             return;
         }
 
-        _details.Remove(new DetailsKey(_shown.Search.Feed.Url, package.Id, version));
+        _details.Remove(new VersionDetailsKey(_shown.Search.Feed.Url, package.Id, version));
     }
 
     /// <summary>The icons asked for since this was last asked, each for a fetch of its own
     /// (<see cref="DownloadIconAsync"/>); none are left to fetch afterwards.</summary>
-    internal List<IconFetch> TakeIconsToFetch()
+    internal List<PackageIconFetch> TakeIconsToFetch()
     {
         var taken = _iconsToFetch.ToList();
         _iconsToFetch.Clear();
@@ -676,7 +676,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
     /// <summary>The details asked for since this was last asked, each for a read of its own
     /// (<see cref="ReadDetailsAsync"/>); none are left to read afterwards.</summary>
-    internal List<DetailsFetch> TakeDetailsToFetch()
+    internal List<VersionDetailsFetch> TakeDetailsToFetch()
     {
         var taken = _detailsToFetch.ToList();
         _detailsToFetch.Clear();
@@ -685,7 +685,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
     /// <summary>Fetches the icon <paramref name="fetch"/> asked for: it gets its pixels unless it cannot be
     /// fetched, which leaves its row the stand-in.</summary>
-    internal async Task DownloadIconAsync(IconFetch fetch, CancellationToken ct)
+    internal async Task DownloadIconAsync(PackageIconFetch fetch, CancellationToken ct)
     {
         var fetched = await ports.DownloadIconAsync(fetch.Url, IconPixels, ct);
         if (fetched is Outcome<ResourceImage>.Ok ok)
@@ -701,7 +701,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
     /// <summary>Reads the details <paramref name="fetch"/> asked for, which take the place of their loading
     /// unless they were dropped or asked for again meanwhile.</summary>
-    internal async Task ReadDetailsAsync(DetailsFetch fetch, CancellationToken ct)
+    internal async Task ReadDetailsAsync(VersionDetailsFetch fetch, CancellationToken ct)
     {
         var read = await ports.ReadDetailsAsync(fetch.Feed, fetch.Key.Id, fetch.Version, ct);
         if (!_details.TryGetValue(fetch.Key, out var current) || !ReferenceEquals(current, fetch.Loading))
@@ -897,39 +897,6 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         return new SearchRun.Failed(searched, error.Message);
     }
 
-    /// <summary>What a search asked of which feed.</summary>
-    public sealed record FeedSearch(NuGetSource Feed, string Query, bool IncludePrerelease, int Page);
-
-    /// <summary>A search <see cref="StartSearch"/> started, for <see cref="SearchAsync"/> to run: what it asks,
-    /// and the work it runs as, which a newer search or closing the dialog cancels.</summary>
-    [MustUse]
-    public sealed class SearchTicket
-    {
-        public required FeedSearch Search { get; init; }
-
-        public required WorkTicket Work { get; init; }
-    }
-
-    /// <summary>A download <see cref="StartDownload"/> started, for <see cref="DownloadAsync"/> to run: the
-    /// package and version, the feed it was found in and the cache it goes to, and the work it runs as, which
-    /// closing the dialog cancels.</summary>
-    [MustUse]
-    public sealed class DownloadTicket
-    {
-        /// <summary>The package and version, as the dialog and a failure name them.</summary>
-        public required string Name { get; init; }
-
-        public required PackageCache Cache { get; init; }
-
-        public required NuGetSource Feed { get; init; }
-
-        public required PackageId Id { get; init; }
-
-        public required PackageVersion Version { get; init; }
-
-        public required WorkTicket Work { get; init; }
-    }
-
     /// <summary>The page of packages shown, and the search that found it.</summary>
     private sealed record ShownPage(FeedSearch Search, FeedPage Found);
 
@@ -976,28 +943,5 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         public sealed record Running(string Name) : DownloadState;
 
         public sealed record Done(string Path) : DownloadState;
-    }
-
-    /// <summary>Which version of which package of which feed details are of.</summary>
-    internal readonly record struct DetailsKey(FeedUrl Feed, PackageId Id, PackageVersion Version);
-
-    /// <summary>An icon asked for, still to be fetched, and where from.</summary>
-    internal sealed record IconFetch
-    {
-        public required WebUrl Url { get; init; }
-
-        public required PackageIcon Icon { get; init; }
-    }
-
-    /// <summary>Details asked for, still to be read, and the loading they take the place of.</summary>
-    internal sealed record DetailsFetch
-    {
-        public required DetailsKey Key { get; init; }
-
-        public required NuGetSource Feed { get; init; }
-
-        public required FeedVersion Version { get; init; }
-
-        public required VersionDetails.Loading Loading { get; init; }
     }
 }

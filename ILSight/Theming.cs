@@ -368,7 +368,7 @@ public static class Theming
 
     /// <summary>Reads <paramref name="bytes"/>, which must hold one object, handing each of its keys to
     /// <paramref name="readKey"/>.</summary>
-    internal static void ReadJson(ThemeJson json, byte[] bytes, ThemeJson.TopLevelKey readKey)
+    internal static void ReadJson(ThemeJson json, byte[] bytes, TopLevelKeyReader readKey)
     {
         var content = SkipBom(bytes);
         json.LineStarts = FindLineStarts(content);
@@ -412,7 +412,7 @@ public static class Theming
         return starts;
     }
 
-    private static void ReadJsonRoot(ThemeJson json, ref Utf8JsonReader reader, ThemeJson.TopLevelKey readKey)
+    private static void ReadJsonRoot(ThemeJson json, ref Utf8JsonReader reader, TopLevelKeyReader readKey)
     {
         reader.Read();
         if (reader.TokenType != JsonTokenType.StartObject)

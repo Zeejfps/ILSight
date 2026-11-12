@@ -8,6 +8,14 @@ public static class AssemblyPackages
 {
     private const char Separator = '/';
 
+    /// <summary>The folders and files of a package as they are listed, sorted into a tree once all are in.</summary>
+    private sealed class FileTree
+    {
+        public required PackageFolder Root { get; init; }
+        public required Dictionary<string, PackageFolder> Folders { get; init; }
+        public readonly Dictionary<string, PackageFile> Files = new(StringComparer.Ordinal);
+    }
+
     /// <summary>The package at <paramref name="path"/>: a zip archive, else a single-file bundle; null
     /// when the file is neither.</summary>
     /// <exception cref="IOException">The file cannot be read.</exception>
@@ -50,7 +58,7 @@ public static class AssemblyPackages
     /// <summary>Adds <paramref name="entry"/> to <paramref name="tree"/> under its name with <c>/</c>
     /// between folders, remembering the name the zip gives it to read it by; leaves out one whose name
     /// leads out of the package.</summary>
-    private static void AddZipEntry(AssemblyPackage.FileTree tree, Dictionary<string, string> entryNames, ZipArchiveEntry entry)
+    private static void AddZipEntry(FileTree tree, Dictionary<string, string> entryNames, ZipArchiveEntry entry)
     {
         var fullName = FindNameInside(entry.FullName);
         if (string.IsNullOrEmpty(fullName))
@@ -145,13 +153,13 @@ public static class AssemblyPackages
         return (fullName.Substring(0, at), fullName.Substring(at + 1));
     }
 
-    private static AssemblyPackage.FileTree CreateTree()
+    private static FileTree CreateTree()
     {
         var root = new PackageFolder { Name = "", FullName = "" };
-        return new AssemblyPackage.FileTree { Root = root, Folders = new Dictionary<string, PackageFolder>(StringComparer.Ordinal) { [""] = root } };
+        return new FileTree { Root = root, Folders = new Dictionary<string, PackageFolder>(StringComparer.Ordinal) { [""] = root } };
     }
 
-    private static void AddFile(AssemblyPackage.FileTree tree, string fullName, long length)
+    private static void AddFile(FileTree tree, string fullName, long length)
     {
         var (folderName, name) = SplitName(fullName);
         if (name.Length == 0)
@@ -164,7 +172,7 @@ public static class AssemblyPackages
         tree.Files.TryAdd(fullName, file);
     }
 
-    private static PackageFolder AddFolder(AssemblyPackage.FileTree tree, string fullName)
+    private static PackageFolder AddFolder(FileTree tree, string fullName)
     {
         if (tree.Folders.TryGetValue(fullName, out var found))
         {
@@ -179,7 +187,7 @@ public static class AssemblyPackages
         return folder;
     }
 
-    private static AssemblyPackage CreatePackage(AssemblyPackage.FileTree tree, AssemblyPath path, bool isBundle, Func<PackageFile, byte[]> read)
+    private static AssemblyPackage CreatePackage(FileTree tree, AssemblyPath path, bool isBundle, Func<PackageFile, byte[]> read)
     {
         SortFolder(tree.Root);
         return new AssemblyPackage { FilePath = path, IsBundle = isBundle, Root = tree.Root, Files = tree.Files, Read = read };

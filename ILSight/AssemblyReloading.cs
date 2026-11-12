@@ -26,13 +26,13 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         /// <summary>Reads the file of <paramref name="item"/> again, its nodes loaded as far as the item's are, and
         /// finds the nodes at <paramref name="places"/> in it, without holding up the screen. The list keeps the
         /// item until it is replaced. What that threw comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<Reopened>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct);
+        Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct);
 
         /// <summary>Lists the files at <paramref name="paths"/> in the open list, in order, those that fail to load
         /// as failed, then has the nodes at <paramref name="expanded"/> load their children and finds the nodes at
         /// <paramref name="places"/>. Done without holding up the screen, and stopped once <paramref name="stop"/>
         /// fires; what that threw comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<Reloaded>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
+        Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
             CancellationToken stop, CancellationToken ct);
     }
 
@@ -141,7 +141,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     /// <summary>Lists what the reopen read, unless another one started since, and shows each tab's place in it
     /// again, or reports why it failed. Returns the loads it started in the tabs.</summary>
-    private List<DecompileTicket> FinishReopen(AppState appState, LoadedAssembly item, Outcome<Reopened> outcome, int ticket, List<ReloadingTab> tabs)
+    private List<DecompileTicket> FinishReopen(AppState appState, LoadedAssembly item, Outcome<ReopenedFile> outcome, int ticket, List<ReloadingTab> tabs)
     {
         if (!appState.Reopens.TryFinish(item.FilePath, ticket))
         {
@@ -151,9 +151,9 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         SaveSettings(appState);
         switch (outcome)
         {
-            case Outcome<Reopened>.Ok ok:
+            case Outcome<ReopenedFile>.Ok ok:
                 return ShowReopened(appState, item, ok.Value, tabs);
-            case Outcome<Reopened>.Failed failed:
+            case Outcome<ReopenedFile>.Failed failed:
                 ports.ReportError(new AppProblem.AssemblyNotReloaded(item.Name, failed.Error));
                 return [];
             default:
@@ -161,7 +161,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
     }
 
-    private List<DecompileTicket> ShowReopened(AppState appState, LoadedAssembly item, Reopened reopened, List<ReloadingTab> tabs)
+    private List<DecompileTicket> ShowReopened(AppState appState, LoadedAssembly item, ReopenedFile reopened, List<ReloadingTab> tabs)
     {
         var loads = new List<DecompileTicket>();
         if (!AssemblyListing.TryReplace(appState.Assemblies, item, reopened.Item))
@@ -220,7 +220,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     /// <summary>Shows what the reload found, unless another one started since, or reports why it failed. Returns
     /// the loads it started in the tabs.</summary>
-    private async Task<TabLoads> FinishReloadAsync(AppState appState, Outcome<Reloaded> outcome, ReloadTicket ticket, int intent, List<ReloadingTab> tabs,
+    private async Task<TabLoads> FinishReloadAsync(AppState appState, Outcome<ReloadedNodes> outcome, ReloadTicket ticket, int intent, List<ReloadingTab> tabs,
         CancellationToken ct)
     {
         if (!appState.Reload.TryFinish(ticket))
@@ -230,9 +230,9 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
         switch (outcome)
         {
-            case Outcome<Reloaded>.Ok ok:
+            case Outcome<ReloadedNodes>.Ok ok:
                 return await ShowReloadedAsync(appState, ok.Value, intent, tabs, ct);
-            case Outcome<Reloaded>.Failed failed:
+            case Outcome<ReloadedNodes>.Failed failed:
                 var reopened = ShowReopenedDocumentsAsync(appState, ct);
                 ports.ReportError(new AppProblem.AssembliesNotReloaded(failed.Error));
                 return await reopened;
@@ -243,7 +243,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     /// <summary>Shows each tab's place again and what the tabs reopened from the saved documents showed, and saves
     /// the settings while the nodes those wait for are found. Returns the loads it started in the tabs.</summary>
-    private async Task<TabLoads> ShowReloadedAsync(AppState appState, Reloaded reloaded, int intent, List<ReloadingTab> tabs, CancellationToken ct)
+    private async Task<TabLoads> ShowReloadedAsync(AppState appState, ReloadedNodes reloaded, int intent, List<ReloadingTab> tabs, CancellationToken ct)
     {
         appState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes(reloaded.Expanded));
         var loads = new List<DecompileTicket>();
@@ -304,24 +304,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     {
         Tabs.ShowGone(tab, location);
         ports.ReportError(new AppProblem.GoneAfterReload(location));
-    }
-
-    /// <summary>The nodes a reload found again: those the tree had expanded, with their children loaded, and
-    /// each tab's place, null where it is gone, in the order the places were asked for.</summary>
-    public sealed record Reloaded
-    {
-        public required List<BrowseNode> Expanded { get; init; }
-
-        public required BrowseNode?[] Places { get; init; }
-    }
-
-    /// <summary>A file of the list read again: the item to list in place of the one before, and each tab's place
-    /// in it, null where it is gone, in the order the places were asked for.</summary>
-    public sealed record Reopened
-    {
-        public required LoadedAssembly Item { get; init; }
-
-        public required BrowseNode?[] Places { get; init; }
     }
 
     /// <summary>A tab whose place is being found again, as it was when that started.</summary>

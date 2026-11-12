@@ -111,16 +111,6 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         return new SpanScope { Builder = _builder };
     }
 
-    private ref struct SpanScope
-    {
-        public required DocumentBuilder Builder { get; init; }
-
-        public void Dispose()
-        {
-            Builder.Kind = null;
-        }
-    }
-
     private bool IsStringDelimiter(string token)
     {
         return token.StartsWith('$') || (token == "\"" && _nodes.TryPeek(out var node) && node is InterpolatedStringExpression);

@@ -109,7 +109,7 @@ internal static class NuGetPickerView
 
     /// <summary>Asks for <paramref name="download"/>, which the dialog draws from this frame on, to be fetched
     /// once the frame is drawn; nothing when no download started. Closing the dialog cancels it.</summary>
-    private static void Download(Ui<UiState> ui, NuGetBrowser browser, NuGetBrowser.DownloadTicket? download)
+    private static void Download(Ui<UiState> ui, NuGetBrowser browser, PackageDownloadTicket? download)
     {
         if (download is null)
         {

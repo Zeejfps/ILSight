@@ -23,7 +23,7 @@ public sealed class Search
     public readonly HashSet<LoadedAssembly> SearchedAssemblies = new(ReferenceEqualityComparer.Instance);
     public readonly List<CancellationTokenSource> Runs = new();
     public readonly TypedText Typed = new();
-    public Searched? LastSearched;
+    public SearchedQuery? LastSearched;
 
     /// <summary>Why <see cref="LastSearched"/> finds nothing, when its <c>/regex/</c> is no valid
     /// regular expression; else null.</summary>
@@ -48,7 +48,4 @@ public sealed class Search
 
     public SearchSort Sort { get; set; }
     public bool Descending { get; set; }
-
-    /// <summary>The query last searched for, what it looked for, and the assembly list's version it searched.</summary>
-    public sealed record Searched(string Query, SearchKinds Kinds, int Version);
 }

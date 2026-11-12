@@ -27,16 +27,6 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         Task<Outcome<ModuleScan>> ListModulesAsync(RunningProcess process, CancellationToken ct);
     }
 
-    /// <summary>A listing <see cref="StartListing"/> started, for <see cref="ListModulesAsync"/> to run: the
-    /// process, and the work it runs as, which picking another process or closing the dialog cancels.</summary>
-    [MustUse]
-    public sealed class ListingTicket
-    {
-        public required RunningProcess Process { get; init; }
-
-        public required WorkTicket Work { get; init; }
-    }
-
     private readonly List<RunningProcess> _filtered = [];
     private readonly LatestWork _scans = new();
     private readonly LatestWork _listings = new();
@@ -227,19 +217,19 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
     /// stopped and its result dropped: the dialog draws them loading from now on. Returns what
     /// <see cref="ListModulesAsync"/> needs to list them, whose work picking another process or closing the dialog
     /// cancels.</summary>
-    public ListingTicket StartListing(RunningProcess process)
+    public ModuleListingTicket StartListing(RunningProcess process)
     {
         _stopped = false;
         var work = _listings.Start();
         ModuleSelection.Clear();
         Modules = new ModuleScan.Loading(process);
-        return new ListingTicket { Process = process, Work = work };
+        return new ModuleListingTicket { Process = process, Work = work };
     }
 
     /// <summary>Lists the modules of the process <paramref name="listing"/> is of, and shows them unless another
     /// process was picked or the dialog closed meanwhile, the entry assembly's picked out. A listing that failed
     /// unexpectedly is reported.</summary>
-    public async Task ListModulesAsync(ListingTicket listing, CancellationToken ct)
+    public async Task ListModulesAsync(ModuleListingTicket listing, CancellationToken ct)
     {
         var process = listing.Process;
         var listed = await ports.ListModulesAsync(process, ct);

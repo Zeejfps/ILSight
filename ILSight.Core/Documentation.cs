@@ -485,28 +485,6 @@ internal static class Documentation
         };
     }
 
-    /// <summary>Notes the column each parameter of the declaration starts at; parameters of types
-    /// inside it, such as a delegate's, are not the declaration's own.</summary>
-    private sealed class ParameterStarts(TokenWriter decorated, DocumentBuilder output) : DecoratingTokenWriter(decorated)
-    {
-        public List<int> Starts { get; } = new();
-
-        public override void StartNode(AstNode node)
-        {
-            if (IsDeclaredParameter(node))
-            {
-                Starts.Add(output.Column);
-            }
-
-            base.StartNode(node);
-        }
-
-        private static bool IsDeclaredParameter(AstNode node)
-        {
-            return node is ParameterDeclaration && node.Parent is EntityDeclaration;
-        }
-    }
-
     public static void AddRun(DocText doc, string text, DocStyle style, CodeReference? reference = null)
     {
         var collapsed = CollapseWhitespace(text);

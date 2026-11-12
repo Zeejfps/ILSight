@@ -14,9 +14,8 @@ namespace ILSight;
 /// marked in their labels and the groups' titles, and a group's box then sets only the toggles shown.</summary>
 internal static class DecompilerOptionsPanelView
 {
-    internal sealed record Section(string Key, DecompilerToggleGroup Group, DecompilerToggle[] Toggles);
 
-    private static readonly Section[] Sections = BuildSections();
+    private static readonly DecompilerOptionSection[] Sections = BuildSections();
 
     private static readonly CSharpVersion Newest = Sections.Max(static s => FindVersion(s.Group) ?? 0);
 
@@ -98,9 +97,9 @@ internal static class DecompilerOptionsPanelView
 
     /// <summary>The sections with only the toggles <paramref name="words"/> match, by the toggle's label,
     /// its name in the decompiler or its section's title; a section none match is left out.</summary>
-    internal static Section[] FindMatchingSections(Strings t, string[] words)
+    internal static DecompilerOptionSection[] FindMatchingSections(Strings t, string[] words)
     {
-        var matching = new List<Section>();
+        var matching = new List<DecompilerOptionSection>();
         foreach (var section in Sections)
         {
             var title = Title(t, section);
@@ -124,7 +123,7 @@ internal static class DecompilerOptionsPanelView
     /// showing a square when only some are on. Returns true when the row besides the checkbox was
     /// clicked to fold or unfold, which it can't while <paramref name="folded"/> is null, as during a
     /// search.</summary>
-    private static bool Header(Ui<UiState> ui, FoldedGroups? folded, Section section, DecompilerOptions options, float rowHeight,
+    private static bool Header(Ui<UiState> ui, FoldedGroups? folded, DecompilerOptionSection section, DecompilerOptions options, float rowHeight,
         string? tooNew)
     {
         var t = ui.State.Strings;
@@ -166,7 +165,7 @@ internal static class DecompilerOptionsPanelView
     }
 
     /// <summary>Whether <paramref name="section"/> is folded; none is while <paramref name="folded"/> is null.</summary>
-    private static bool IsFolded(FoldedGroups? folded, Section section)
+    private static bool IsFolded(FoldedGroups? folded, DecompilerOptionSection section)
     {
         if (folded is null)
         {
@@ -176,7 +175,7 @@ internal static class DecompilerOptionsPanelView
         return OptionFolds.IsFolded(folded, section.Key);
     }
 
-    private static bool IsAllowed(Section section, DecompilerOptions options)
+    private static bool IsAllowed(DecompilerOptionSection section, DecompilerOptions options)
     {
         if (section.Group is not DecompilerToggleGroup.Language language)
         {
@@ -212,7 +211,7 @@ internal static class DecompilerOptionsPanelView
     }
 
     /// <summary>True when every toggle in <paramref name="section"/> is on, false when none is, null otherwise.</summary>
-    private static bool? State(Section section, DecompilerOptions options)
+    private static bool? State(DecompilerOptionSection section, DecompilerOptions options)
     {
         var on = 0;
         foreach (var toggle in section.Toggles)
@@ -236,7 +235,7 @@ internal static class DecompilerOptionsPanelView
     }
 
     /// <summary>Whether any toggle in <paramref name="section"/> is set away from its default.</summary>
-    private static bool HasChangedToggle(Section section, DecompilerOptions options)
+    private static bool HasChangedToggle(DecompilerOptionSection section, DecompilerOptions options)
     {
         foreach (var toggle in section.Toggles)
         {
@@ -281,7 +280,7 @@ internal static class DecompilerOptionsPanelView
         return t.DecompilerOptionsTooNew(CSharpVersions.Label(version));
     }
 
-    private static string Title(Strings t, Section section)
+    private static string Title(Strings t, DecompilerOptionSection section)
     {
         return section.Group switch
         {
@@ -305,7 +304,7 @@ internal static class DecompilerOptionsPanelView
         return true;
     }
 
-    private static int RowCount(Section[] sections, FoldedGroups? folded)
+    private static int RowCount(DecompilerOptionSection[] sections, FoldedGroups? folded)
     {
         var count = 0;
         foreach (var section in sections)
@@ -317,7 +316,7 @@ internal static class DecompilerOptionsPanelView
     }
 
     /// <summary>The section a row is in, and the toggle it shows, or null for the section's header.</summary>
-    private static (Section Section, DecompilerToggle? Toggle) RowAt(Section[] sections, FoldedGroups? folded, int row)
+    private static (DecompilerOptionSection Section, DecompilerToggle? Toggle) RowAt(DecompilerOptionSection[] sections, FoldedGroups? folded, int row)
     {
         foreach (var section in sections)
         {
@@ -337,16 +336,16 @@ internal static class DecompilerOptionsPanelView
         throw new ArgumentOutOfRangeException(nameof(row));
     }
 
-    private static Section[] BuildSections()
+    private static DecompilerOptionSection[] BuildSections()
     {
         var all = DecompilerToggle.All;
         // A group compares by what it holds, so the language toggles fall into one section a version.
         var language = all.Where(static t => t.Group is DecompilerToggleGroup.Language)
             .GroupBy(static t => t.Group)
             .OrderByDescending(static g => FindVersion(g.Key))
-            .Select(static g => new Section(GetKey(g.Key), g.Key, g.ToArray()));
+            .Select(static g => new DecompilerOptionSection(GetKey(g.Key), g.Key, g.ToArray()));
         var rest = new DecompilerToggleGroup[] { new DecompilerToggleGroup.Other(), new DecompilerToggleGroup.FSharp() }
-            .Select(group => new Section(GetKey(group), group, all.Where(t => t.Group == group).ToArray()))
+            .Select(group => new DecompilerOptionSection(GetKey(group), group, all.Where(t => t.Group == group).ToArray()))
             .Where(static s => s.Toggles.Length > 0);
         return language.Concat(rest).ToArray();
     }

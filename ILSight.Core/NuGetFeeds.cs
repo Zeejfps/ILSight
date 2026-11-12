@@ -164,7 +164,7 @@ public static class NuGetFeeds
         Directory.CreateDirectory(folder);
     }
 
-    private static async Task<NuGetFeed.ServiceIndex> EnsureIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
+    private static async Task<ServiceIndex> EnsureIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
     {
         using var held = await feed.Index.EnterAsync(cancellationToken).ConfigureAwait(false);
         var index = held.Value;
@@ -178,14 +178,14 @@ public static class NuGetFeeds
         return index;
     }
 
-    private static async Task<NuGetFeed.ServiceIndex> GetIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
+    private static async Task<ServiceIndex> GetIndexAsync(NuGetFeed feed, CancellationToken cancellationToken)
     {
         using var document = await ReadJsonAsync(feed, feed.Source.Url.Address, cancellationToken).ConfigureAwait(false);
         var resources = FeedJson.ReadResources(document.RootElement);
         var search = GetResource(feed, resources, SearchType);
         var folder = GetResource(feed, resources, PackageFolderType);
         var registrations = FindOptionalResource(resources, RegistrationsType);
-        return new NuGetFeed.ServiceIndex(search, folder, registrations);
+        return new ServiceIndex(search, folder, registrations);
     }
 
     /// <summary>The URL of the first resource whose type is <paramref name="type"/>, or a version of it.</summary>

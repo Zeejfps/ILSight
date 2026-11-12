@@ -25,7 +25,4 @@ public sealed class NuGetFeed
     internal AsyncGuarded<ServiceIndex?> Index { get; } = new(null);
 
     public required NuGetSource Source { get; init; }
-
-    /// <summary>The resources of the feed's service index this reads; a feed may describe no versions.</summary>
-    public sealed record ServiceIndex(WebUrl Search, WebUrl PackageFolder, WebUrl? Registrations);
 }

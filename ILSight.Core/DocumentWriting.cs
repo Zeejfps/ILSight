@@ -1,4 +1,3 @@
-using static ILSight.Core.DocumentBuilder;
 using System.Diagnostics;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;

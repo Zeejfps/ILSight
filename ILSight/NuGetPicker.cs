@@ -1,4 +1,3 @@
-using static ILSight.NuGetBrowser;
 using ILSight.Core;
 
 namespace ILSight;

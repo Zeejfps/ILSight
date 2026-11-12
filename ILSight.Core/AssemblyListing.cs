@@ -5,7 +5,7 @@ using System.Reflection.PortableExecutable;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using AssemblyReference = ICSharpCode.Decompiler.Metadata.AssemblyReference;
-using HeldListing = ILSight.Core.Guarded<System.Collections.Generic.Dictionary<ILSight.Core.AssemblyPath, ILSight.Core.LoadedAssembly>, ILSight.Core.AssemblyList.Listing>.Scope;
+using HeldListing = ILSight.Core.Guarded<System.Collections.Generic.Dictionary<ILSight.Core.AssemblyPath, ILSight.Core.LoadedAssembly>, ILSight.Core.AssemblyListSnapshot>.Scope;
 
 namespace ILSight.Core;
 
@@ -206,7 +206,7 @@ public static class AssemblyListing
                 return false;
             }
 
-            held.Snapshot = now with { ReadOptions = new AssemblyList.LoadOptions(loadsReferences, readerOptions), Generation = now.Generation + 1 };
+            held.Snapshot = now with { ReadOptions = new AssemblyLoadOptions(loadsReferences, readerOptions), Generation = now.Generation + 1 };
         }
         return true;
     }
@@ -1016,7 +1016,7 @@ public static class AssemblyListing
         }
     }
 
-    private static bool IsSame(AssemblyList.LoadOptions options, bool loadsReferences, MetadataReaderOptions readerOptions)
+    private static bool IsSame(AssemblyLoadOptions options, bool loadsReferences, MetadataReaderOptions readerOptions)
     {
         return options.LoadsReferences == loadsReferences && options.ReaderOptions == readerOptions;
     }

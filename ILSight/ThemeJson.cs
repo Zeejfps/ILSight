@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace ILSight;
 
 /// <summary>One color or icon theme File's JSON as it is read: comments and trailing commas allowed,
@@ -14,10 +12,6 @@ public sealed class ThemeJson
 
     public readonly List<ThemeError> FoundErrors = new();
     public List<int> LineStarts = new();
-
-    /// <summary>Reads the value of a key at the top of the File, the reader on that value, which it must
-    /// move past.</summary>
-    public delegate void TopLevelKey(ref Utf8JsonReader reader, string key, int line);
 
     /// <summary>Where the File is, as errors name it.</summary>
     public required string File { get; init; }

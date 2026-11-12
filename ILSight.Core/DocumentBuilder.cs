@@ -121,6 +121,4 @@ internal sealed class DocumentBuilder : ITextOutput
     {
         DocumentWriting.MarkFoldEnd(this);
     }
-
-    public readonly record struct OpenFold(int Line, int Column, string Text, bool DefaultCollapsed, bool IsDefinition);
 }

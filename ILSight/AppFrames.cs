@@ -113,7 +113,7 @@ internal static class AppFrames
     /// <summary>Starts <paramref name="wanted"/> now, before the frame draws, on a token that a newer search and
     /// closing the dialog cancel too. A method of its own, so that the frames that start nothing allocate no
     /// closure.</summary>
-    private static void StartSearching(AppState appState, NuGetBrowser browser, NuGetBrowser.FeedSearch wanted)
+    private static void StartSearching(AppState appState, NuGetBrowser browser, FeedSearch wanted)
     {
         var search = browser.StartSearch(wanted);
         appState.Workflows.Start(nameof(NuGetBrowser.SearchAsync), ct => browser.SearchAsync(search, ct), search.Work.Token);

@@ -82,15 +82,4 @@ internal static class MethodUsesAnalyzer
             return null;
         }
     }
-
-    private sealed class TypeDefinitionCollector : TypeVisitor
-    {
-        public readonly List<ITypeDefinition> UsedTypes = new();
-
-        public override IType VisitTypeDefinition(ITypeDefinition type)
-        {
-            UsedTypes.Add(type);
-            return base.VisitTypeDefinition(type);
-        }
-    }
 }

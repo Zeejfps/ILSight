@@ -277,51 +277,6 @@ internal static partial class FeedJson
 
     private sealed record ResourceJson([property: JsonPropertyName("@id")] string? Id, [property: JsonPropertyName("@type")] TextListJson? Type);
 
-    /// <summary>Text a feed may give as one string or as a list of strings; what else a list holds is left out.</summary>
-    [JsonConverter(typeof(TextListConverter))]
-    private sealed record TextListJson(IReadOnlyList<string> Items);
-
-    private sealed class TextListConverter : JsonConverter<TextListJson>
-    {
-        public override TextListJson Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType == JsonTokenType.String)
-            {
-                return new TextListJson([reader.GetString() ?? ""]);
-            }
-
-            if (reader.TokenType != JsonTokenType.StartArray)
-            {
-                throw new JsonException("Expected a string or a list of them.");
-            }
-
-            var items = new List<string>();
-            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
-            {
-                if (reader.TokenType == JsonTokenType.String)
-                {
-                    items.Add(reader.GetString() ?? "");
-                }
-                else
-                {
-                    reader.Skip();
-                }
-            }
-            return new TextListJson(items);
-        }
-
-        public override void Write(Utf8JsonWriter writer, TextListJson value, JsonSerializerOptions options)
-        {
-            writer.WriteStartArray();
-            foreach (var item in value.Items)
-            {
-                writer.WriteStringValue(item);
-            }
-
-            writer.WriteEndArray();
-        }
-    }
-
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, NumberHandling = JsonNumberHandling.AllowReadingFromString)]
     [JsonSerializable(typeof(SearchPageJson))]
     [JsonSerializable(typeof(PackageJson))]

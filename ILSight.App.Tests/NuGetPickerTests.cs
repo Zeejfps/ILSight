@@ -529,7 +529,7 @@ public sealed class NuGetPickerTests : IDisposable
         using var cancelled = new CancellationTokenSource();
         await cancelled.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => adapter.SearchAsync(new NuGetBrowser.FeedSearch(_fake.Source, "", false, 0), cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => adapter.SearchAsync(new FeedSearch(_fake.Source, "", false, 0), cancelled.Token));
         Assert.Empty(_reported);
     }
 

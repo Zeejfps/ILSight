@@ -26,7 +26,4 @@ public sealed class IconThemeFile : IThemeFile<IconThemeFile, IconThemeContents>
     public IconThemeContents? Contents { get; set; }
 
     public IReadOnlyList<ThemeError> Errors => Json.Errors;
-
-    /// <summary>The fields of an icon as written, each null when left out.</summary>
-    public readonly record struct IconFields(string? Font, string? Glyph, string? Svg);
 }
