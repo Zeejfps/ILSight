@@ -77,6 +77,27 @@ public sealed class HistoryTests
     }
 
     [Fact]
+    public void Where_the_view_stood_when_its_tab_moved_on_in_the_frame_is_where_going_back_returns_to()
+    {
+        var app = Opened();
+        Show(app, "Outline");
+        ScrollTo(app, 20, new TextPosition(21, 4), new TextPosition(22, 8));
+        var tab = app.AppState.Tabs.Active!;
+        var (line, column) = tab.Document.GetPosition("return First();");
+        var scrolled = new CodeViewPosition(25, 0f, new TextPosition(line, column), new TextPosition(line, column + 6));
+        CodeViewWidget.RestorePosition(CodeOf(app, tab), scrolled);
+
+        app.Driver.Show(app.Fixture("Greeter"));
+        AppFrames.KeepScreenChanges(app.Ui, app.AppState);
+        app.Settle(4);
+        app.Start((a, ct) => GoBackAsync(a, ct));
+        app.Settle(4);
+
+        Assert.Equal("Outline", tab.Node!.Text);
+        Assert.Equal(scrolled, CodeOf(app, tab).Position);
+    }
+
+    [Fact]
     public void A_position_left_in_another_language_is_not_applied()
     {
         var app = Opened();

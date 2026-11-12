@@ -87,7 +87,7 @@ public static class SavedDocuments
 
     private static ReopenedTab ReopenTab(AppState appState, DocumentRecord record)
     {
-        var tab = Tabs.AddNew(appState.Tabs);
+        var tab = appState.Tabs.AddNew();
         WaitForSaved(tab, record);
         return WaitFor(appState.Reopened, tab, record);
     }

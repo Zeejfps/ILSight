@@ -183,28 +183,42 @@ internal static class AppFrames
     /// settings keep what changed of the screen.</summary>
     internal static void KeepScreenChanges(UiState uiState, AppState appState)
     {
-        KeepTabPositions(uiState, appState.Tabs);
+        KeepTabPositions(uiState, appState.Tabs, appState.History);
         KeepChangedViewSettings(uiState, appState);
     }
 
-    /// <summary>Allocates nothing.</summary>
-    private static void KeepTabPositions(UiState uiState, DocumentTabs tabs)
+    /// <summary>Keeps where each tab's view stands with what it drew: on the tab while it still shows that, else on
+    /// the history entry left from it, as when the tab moved on while the frame was drawn. Allocates nothing while
+    /// each tab shows what its view drew.</summary>
+    private static void KeepTabPositions(UiState uiState, DocumentTabs tabs, NavigationHistory history)
     {
         for (var i = 0; i < tabs.Open.Count; i++)
         {
-            KeepTabPosition(uiState, tabs.Open[i]);
+            KeepTabPosition(uiState, history, tabs.Open[i]);
         }
     }
 
-    private static void KeepTabPosition(UiState uiState, DocumentTab tab)
+    private static void KeepTabPosition(UiState uiState, NavigationHistory history, DocumentTab tab)
     {
-        var position = DocumentPanels.FindViewPosition(uiState.Documents, tab);
-        if (position is null)
+        var view = DocumentPanels.FindView(uiState.Documents, tab);
+        if (view is null)
         {
             return;
         }
 
-        Tabs.KeepPosition(tab, position.Value);
+        var shown = view.Shown;
+        if (shown is null)
+        {
+            return;
+        }
+
+        if (shown.IsShownBy(tab))
+        {
+            Tabs.KeepPosition(tab, DocumentPanels.GetPosition(view, tab));
+            return;
+        }
+
+        history.KeepPosition(shown, DocumentPanels.GetShownPosition(view));
     }
 
     private static void KeepChangedViewSettings(UiState uiState, AppState appState)

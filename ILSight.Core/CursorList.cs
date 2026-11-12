@@ -102,6 +102,16 @@ public sealed class CursorList<T> : IReadOnlyList<T> where T : class
         return true;
     }
 
+    /// <summary>Puts <paramref name="item"/> in the place of the item at <paramref name="index"/>, which stands in its
+    /// place: neither which items there are nor which is current changes.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not that of an item.</exception>
+    public void ReplaceAt(int index, T item)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _items.Count);
+        _items[index] = item;
+    }
+
     public List<T>.Enumerator GetEnumerator()
     {
         return _items.GetEnumerator();

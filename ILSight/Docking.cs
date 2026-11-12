@@ -13,7 +13,7 @@ public static class Docking
     /// <summary>Opens an empty tab for a panel the screen made for itself.</summary>
     public static DocumentTab OpenEmptyTab(AppState appState)
     {
-        return Tabs.AddNew(appState.Tabs);
+        return appState.Tabs.AddNew();
     }
 
     /// <summary>Makes <paramref name="tab"/>, when it is open, the tab the user works in, pointing it again at

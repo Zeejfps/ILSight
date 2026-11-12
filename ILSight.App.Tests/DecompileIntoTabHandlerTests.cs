@@ -23,7 +23,7 @@ public sealed class DecompileIntoTabHandlerTests
     public async Task HandleAsync_Decompiled_ShowsItAndCommandsTheViewWhereToStand()
     {
         var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
-        var tab = new DocumentTab();
+        var tab = new DocumentTab { Id = 1 };
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDecompileIntoTabHandlerPorts();
         var load = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.IL, DecompilerOptions.Default,
@@ -50,7 +50,7 @@ public sealed class DecompileIntoTabHandlerTests
     public async Task HandleAsync_CorruptFile_ShowsAndReportsTheFailure()
     {
         var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
-        var tab = new DocumentTab();
+        var tab = new DocumentTab { Id = 1 };
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDecompileIntoTabHandlerPorts();
         var load = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.CSharp, DecompilerOptions.Default,
@@ -75,7 +75,7 @@ public sealed class DecompileIntoTabHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var greeter = d.Fixture("Greeter");
         var farewell = d.Fixture("Farewell");
-        var tab = new DocumentTab();
+        var tab = new DocumentTab { Id = 1 };
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDecompileIntoTabHandlerPorts();
         var handler = new DecompileIntoTabHandler(ports);
@@ -104,7 +104,7 @@ public sealed class DecompileIntoTabHandlerTests
     {
         var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
         var tabs = new DocumentTabs();
-        var tab = Tabs.AddNew(tabs);
+        var tab = tabs.AddNew();
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDecompileIntoTabHandlerPorts();
         var load = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.CSharp, DecompilerOptions.Default);
@@ -125,7 +125,7 @@ public sealed class DecompileIntoTabHandlerTests
     public async Task HandleAsync_CancelledAtShutdown_EndsCancelledShowingAndReportingNothing()
     {
         var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
-        var tab = new DocumentTab();
+        var tab = new DocumentTab { Id = 1 };
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDecompileIntoTabHandlerPorts();
         var load = Decompilation.StartDecompiling(viewCommands, tab, greeter, DecompilationLanguage.CSharp, DecompilerOptions.Default);

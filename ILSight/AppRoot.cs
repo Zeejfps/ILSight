@@ -28,7 +28,7 @@ internal static class AppRoot
     internal static AppState RestoreAppState(AppSettings settings, BrowseSession session)
     {
         var appState = CreateAppState(settings, session);
-        var first = Tabs.AddNew(appState.Tabs);
+        var first = appState.Tabs.AddNew();
         Tabs.MakeActive(appState.Tabs, first);
         Settings.Restore(appState, settings);
         appState.UserThemes.ReadThemes();

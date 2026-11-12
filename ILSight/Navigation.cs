@@ -222,7 +222,7 @@ public static class Navigation
             return;
         }
 
-        appState.History.LeaveEntry(tab.Language, position.Value);
+        appState.History.LeaveEntry(tab.Language, position.Value, TabVersion.Of(tab));
     }
 
     /// <summary>Where what is asked for now from the active tab will show, in a new tab when
@@ -363,7 +363,7 @@ public static class Navigation
     /// <summary>Opens an empty tab, which the view docks beside the active one.</summary>
     internal static DocumentTab OpenNewTab(AppState appState)
     {
-        var tab = Tabs.AddNew(appState.Tabs);
+        var tab = appState.Tabs.AddNew();
         appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, appState.Tabs.Active));
         return tab;
     }

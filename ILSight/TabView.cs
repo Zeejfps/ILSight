@@ -30,4 +30,11 @@ public sealed class TabView
 
     /// <summary>The image the tab's picture is drawn as.</summary>
     public required string ImageId { get; init; }
+
+    /// <summary>What of the tab this view last took, drawn or returned to a place in, which where it stands belongs
+    /// to; null before it took any (<see cref="DocumentPanels.RecordShown"/>).</summary>
+    public TabVersion? Shown;
+
+    /// <summary>Whether what it last took was a grid, whose place is <see cref="Grid"/>'s, rather than code.</summary>
+    public bool ShownGrid;
 }

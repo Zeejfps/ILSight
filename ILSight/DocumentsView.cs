@@ -27,6 +27,7 @@ internal static class DocumentsView
     private static void Content(Ui<UiState> ui, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var t = ui.State.Strings;
+        DocumentPanels.RecordShown(DocumentPanels.GetView(ui.State.Documents, tab), tab);
         switch (tab.Content)
         {
             case TabContent.Empty:

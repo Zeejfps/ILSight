@@ -8,6 +8,19 @@ namespace ILSight.App.Tests;
 public sealed class DockingTests
 {
     [Fact]
+    public void Each_tab_opened_has_an_id_no_tab_had_before_even_once_one_closed()
+    {
+        var tabs = new DocumentTabs();
+        var first = tabs.AddNew();
+        var second = tabs.AddNew();
+
+        Tabs.Remove(tabs, second);
+        var third = tabs.AddNew();
+
+        Assert.Equal(3, new[] { first.Id, second.Id, third.Id }.Distinct().Count());
+    }
+
+    [Fact]
     public void A_view_docks_as_a_tab_beside_a_document_and_the_document_stays_the_active_tab()
     {
         var app = AppDriver.Opened();

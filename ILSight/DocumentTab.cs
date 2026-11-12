@@ -9,6 +9,11 @@ namespace ILSight;
 /// from the background. Changed through <see cref="Tabs"/>, on the UI thread only.</summary>
 public sealed class DocumentTab
 {
+    /// <summary>The tab's id, which <see cref="DocumentTabs.AddNew"/> hands out and never hands out again, so that
+    /// with <see cref="Version"/> it names what the tab showed wherever several tabs' content meets
+    /// (<see cref="TabVersion"/>).</summary>
+    public required int Id { get; init; }
+
     /// <summary>The load of what the tab shows: one started cancels the one before, whose result is then
     /// dropped; once the tab is closed, what is in flight is cancelled and its result dropped.</summary>
     public LatestWork Work { get; } = new();

@@ -163,15 +163,38 @@ public static class DocumentPanels
         }
     }
 
-    /// <summary>Where the view of <paramref name="tab"/> stands, or null when it has none.</summary>
-    public static ViewPosition? FindViewPosition(DocumentViews documents, DocumentTab tab)
+    /// <summary>The view of <paramref name="tab"/>, or null when it has none.</summary>
+    public static TabView? FindView(DocumentViews documents, DocumentTab tab)
     {
-        if (!documents.Views.TryGetValue(tab, out var view))
+        return documents.Views.GetValueOrDefault(tab);
+    }
+
+    /// <summary>Records that <paramref name="view"/> takes what <paramref name="tab"/> shows now, as it draws it or is
+    /// returned to a place in it: where it stands from now on belongs to that. Allocates nothing while the tab shows
+    /// what the view took last.</summary>
+    public static void RecordShown(TabView view, DocumentTab tab)
+    {
+        view.ShownGrid = tab.Grid is not null;
+        var shown = view.Shown;
+        if (shown is not null && shown.IsShownBy(tab))
         {
-            return null;
+            return;
         }
 
-        return GetPosition(view, tab);
+        view.Shown = TabVersion.Of(tab);
+    }
+
+    /// <summary>Where <paramref name="view"/> stands in what it last took (<see cref="RecordShown"/>), its grid's or
+    /// its code's, whatever its tab shows since.</summary>
+    public static ViewPosition GetShownPosition(TabView view)
+    {
+        var grid = view.Grid;
+        if (view.ShownGrid && grid is not null)
+        {
+            return ViewPosition.OfGrid(grid.Position);
+        }
+
+        return ViewPosition.OfCode(view.Code.Position);
     }
 
     /// <summary>The images of the views dropped since the last call, for the canvas to free.</summary>
@@ -197,6 +220,7 @@ public static class DocumentPanels
             return;
         }
 
+        RecordShown(view, tab);
         var shown = tab.Grid;
         if (shown is null)
         {
@@ -255,6 +279,7 @@ public static class DocumentPanels
             return;
         }
 
+        RecordShown(view, tab);
         CodeViewWidget.RevealLine(view.Code, line);
     }
 
@@ -273,6 +298,7 @@ public static class DocumentPanels
             return;
         }
 
+        RecordShown(view, tab);
         MetadataGridWidget.RevealRow(GetGridState(view, grid), row);
     }
 

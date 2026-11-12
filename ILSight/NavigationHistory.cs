@@ -35,7 +35,15 @@ public sealed class NavigationHistory
             return;
         }
 
-        _entries.Add(new HistoryEntry.Node(place, NodeIcons.Of(node.Subject), NodeDefinitions.GetVisibility(node.Subject).Accessibility, language, null));
+        _entries.Add(new HistoryEntry.Node
+        {
+            Place = place,
+            Icon = NodeIcons.Of(node.Subject),
+            Accessibility = NodeDefinitions.GetVisibility(node.Subject).Accessibility,
+            Language = language,
+            Position = null,
+            ShownAs = null,
+        });
     }
 
     /// <summary>Whether the place being shown is <paramref name="place"/>.</summary>
@@ -87,15 +95,42 @@ public sealed class NavigationHistory
         }
     }
 
-    /// <summary>Remembers where the view of the current place stands as it is left.</summary>
-    public void LeaveEntry(DecompilationLanguage language, ViewPosition position)
+    /// <summary>Remembers where the view of the current place stands as it is left, and what of the tab it is left
+    /// from it was shown as, <paramref name="shownAs"/>, for <see cref="KeepPosition"/>.</summary>
+    public void LeaveEntry(DecompilationLanguage language, ViewPosition position, TabVersion shownAs)
     {
         if (Current is not HistoryEntry.Node node)
         {
             return;
         }
 
-        _entries.TryReplaceCurrent(node with { Language = language, Position = position });
+        _entries.TryReplaceCurrent(node with { Language = language, Position = position, ShownAs = shownAs });
+    }
+
+    /// <summary>Keeps <paramref name="position"/>, where a tab's view stood with <paramref name="shownAs"/>, which the
+    /// tab no longer shows, on the entry left from it: the view was read back after the tab moved on. Nothing when
+    /// no entry was left from it. Allocates nothing while the entry holds that position already.</summary>
+    public void KeepPosition(TabVersion shownAs, ViewPosition position)
+    {
+        for (var i = 0; i < _entries.Count; i++)
+        {
+            if (_entries[i] is not HistoryEntry.Node node)
+            {
+                continue;
+            }
+
+            if (node.ShownAs != shownAs)
+            {
+                continue;
+            }
+
+            if (node.Position == position)
+            {
+                continue;
+            }
+
+            _entries.ReplaceAt(i, node with { Position = position });
+        }
     }
 
     /// <summary>Makes the entry at <paramref name="index"/> current, keeping every entry on either side.

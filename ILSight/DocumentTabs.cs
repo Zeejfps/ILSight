@@ -7,6 +7,18 @@ namespace ILSight;
 /// one of the open tabs, which <see cref="Tabs"/> sees to: change these only through it.</summary>
 public sealed class DocumentTabs
 {
+    /// <summary>The id the last tab opened was given.</summary>
+    private int _lastTabId;
+
+    /// <summary>Opens a new tab, showing nothing yet, with an id no tab had before.</summary>
+    public DocumentTab AddNew()
+    {
+        _lastTabId++;
+        var tab = new DocumentTab { Id = _lastTabId };
+        Open.Add(tab);
+        return tab;
+    }
+
     /// <summary>The tabs open, in order.</summary>
     public readonly TrackedList<DocumentTab> Open = new();
 

@@ -10,7 +10,7 @@ public sealed class ShowReopenedNodesHandlerTests
     {
         var place = BrowseNodes.GetPath(d.Fixture("Greeter"));
         var record = new NodeDocumentRecord("document-9", "Greeter", place, DecompilationLanguage.CSharp, null);
-        var tab = Tabs.AddNew(d.AppState.Tabs);
+        var tab = d.AppState.Tabs.AddNew();
         Tabs.WaitForNode(tab, place, record.Title, record.Language);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
         return new WaitingNode { Reopened = reopened, Record = record, Place = place };

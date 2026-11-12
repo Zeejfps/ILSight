@@ -11,7 +11,7 @@ public sealed class ReopenDiagramHandlerTests
         var vehicle = TypeCards.Read(d.AppState.Assemblies, d.Fixture("Vehicle").Definition);
         Assert.NotNull(vehicle);
         var saved = new DiagramDocumentRecord("document-1", "Vehicle diagram", [vehicle.Anchor], null, null);
-        var tab = Tabs.AddNew(d.AppState.Tabs);
+        var tab = d.AppState.Tabs.AddNew();
         Tabs.WaitForDiagram(tab, saved.Title);
         var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, saved);
         var read = Diagrams.ReopenDiagram(d.AppState, reopened, saved);
