@@ -1,4 +1,4 @@
-namespace ILSight.SettingsFormat;
+namespace ILSight.Bookmarking;
 
 /// <summary>ILSpy's view of a bookmark's document, as a settings or bookmarks file can hold it.</summary>
 internal sealed record BookmarkViewStateJson(

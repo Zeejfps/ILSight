@@ -5,6 +5,7 @@ using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
 using ILSight.SettingsFormat;
+using ILSight.Bookmarking;
 
 namespace ILSight.SettingsKeeping;
 

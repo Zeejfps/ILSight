@@ -1,7 +1,6 @@
 using ILSight.Core;
-using ILSight.Bookmarking;
 
-namespace ILSight;
+namespace ILSight.Bookmarking;
 
 /// <summary>Goes to the line a bookmark marks: finds its place in the open assemblies through <see cref="IPorts"/>,
 /// shows it in the active tab and records it in the history, or reports the bookmark gone.</summary>

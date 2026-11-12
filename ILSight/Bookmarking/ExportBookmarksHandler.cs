@@ -1,6 +1,5 @@
-using ILSight.Bookmarking;
 
-namespace ILSight;
+namespace ILSight.Bookmarking;
 
 /// <summary>Exports the bookmarks to a file the real ILSpy reads, through <see cref="IPorts"/>, and reports a file
 /// that could not be written.</summary>

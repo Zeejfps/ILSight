@@ -1,7 +1,7 @@
 using ILSight.Core;
-using ILSight.Bookmarking;
+using ILSight.SettingsFormat;
 
-namespace ILSight.SettingsFormat;
+namespace ILSight.Bookmarking;
 
 /// <summary>A bookmark as this app's settings or the real ILSpy's bookmarks file can hold it.</summary>
 internal sealed record BookmarkJson(

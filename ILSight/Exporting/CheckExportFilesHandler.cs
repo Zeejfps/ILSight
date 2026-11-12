@@ -1,6 +1,5 @@
-using ILSight.Exporting;
 
-namespace ILSight;
+namespace ILSight.Exporting;
 
 /// <summary>Looks at what the export dialog names on the disk through <see cref="IPorts"/>, without holding up the
 /// screen: whether the folder already holds files, which the export may replace, and whether a key file is named that
