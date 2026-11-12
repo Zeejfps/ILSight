@@ -8,6 +8,7 @@ using ZGF.KeyboardModule;
 using ILSight.BuiltInArea;
 using ILSight.SearchArea;
 using ILSight.MainArea;
+using ILSight.CommandArea;
 using static ILSight.Preferences;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
@@ -166,6 +167,40 @@ public sealed class AppTests
         app.Run(2);
         Assert.False(app.Ui.ErrorDialog.IsOpen);
         Assert.Equal(2, app.AppState.Errors.Entries.Count);
+    }
+
+    [Fact]
+    public void A_draw_that_fails_after_queuing_a_command_is_reported_and_the_command_still_runs()
+    {
+        var app = new AppDriver();
+        app.Run(2);
+        var ran = new List<string>();
+        var failure = new InvalidOperationException("The draw failed.");
+
+        app.Frames.Run(app.Frames.FrameTime, ui => app.App.RunFrame(ui, (drawn, _) =>
+        {
+            Commands.Later(drawn.State, ran, static (_, r) => r.Add("queued before the failure"));
+            throw failure;
+        }));
+
+        Assert.Equal(["queued before the failure"], ran);
+        var reported = Assert.IsType<AppProblem.Unexpected>(Assert.Single(app.AppState.Errors.Entries).Problem);
+        Assert.Same(failure, reported.Error);
+    }
+
+    [Fact]
+    public void A_draw_that_fails_asks_for_the_frame_that_shows_it_failed()
+    {
+        var app = new AppDriver();
+        app.Run(2);
+        app.Frames.Run(app.Frames.FrameTime, ui => app.App.RunFrame(ui, static (_, _) => { }));
+        Assert.False(app.Frames.UpdateRequested);
+
+        app.Frames.Run(app.Frames.FrameTime, ui => app.App.RunFrame(ui, static (_, _) => throw new InvalidOperationException("The draw failed.")));
+
+        Assert.True(app.Frames.UpdateRequested);
+        app.Run();
+        Assert.True(app.Ui.ErrorDialog.IsOpen);
     }
 
     [Fact]

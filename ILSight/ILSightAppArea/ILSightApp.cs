@@ -60,11 +60,33 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
 
     protected override void OnUpdate(Ui<UiState> ui)
     {
+        RunFrame(ui, MainView.Render);
+    }
+
+    /// <summary>One frame: the frame edge before <paramref name="draw"/>, the draw, and the frame edge after it,
+    /// which runs even when the draw fails, so every command the draw queued before failing starts: the state the
+    /// draw changed already says it has.</summary>
+    internal void RunFrame(Ui<UiState> ui, Action<Ui<UiState>, AppState> draw)
+    {
         StartFrame(ui.State, _appState);
         FollowNuGetPicker(ui, _appState);
         FollowProcessPicker(ui.State, _appState);
-        MainView.Render(ui, _appState);
+        Draw(ui, draw);
         FinishFrame(ui, _appState, _codeFonts);
+    }
+
+    /// <summary>Draws the frame; a draw that fails is reported, and the frame that shows the report asked for.</summary>
+    private void Draw(Ui<UiState> ui, Action<Ui<UiState>, AppState> draw)
+    {
+        try
+        {
+            draw(ui, _appState);
+        }
+        catch (Exception ex)
+        {
+            Errors.Report(_appState, new AppProblem.Unexpected(ex));
+            ui.RequestUpdate();
+        }
     }
 
     /// <summary>Refuses arguments as the window closes, while a run sending one can still be told to
