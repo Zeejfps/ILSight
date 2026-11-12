@@ -262,46 +262,15 @@ internal static class DiagnosticsIpc
 
                 var sessionId = BinaryPrimitives.ReadUInt64LittleEndian(ok.Payload);
 
-                // The runtime writes the rundown into this same connection as the session stops, so it is read
-                // while the stop is asked for: left unread, a full buffer would keep the stop from finishing.
-                var trace = new MemoryStream();
-                var drain = session.CopyToAsync(trace, token);
-                try
+                // Disposing the collection winds it up however the stop or the finish ended.
+                var collection = RundownCollection.Start(session, token);
+                await using (collection.ConfigureAwait(false))
                 {
                     await StopTracingAsync(endpoint, sessionId, token).ConfigureAwait(false);
-                    await drain.ConfigureAwait(false);
+                    return await collection.FinishAsync(token).ConfigureAwait(false);
                 }
-                catch (Exception e) when (e is IOException or SocketException or TimeoutException or OperationCanceledException or UnauthorizedAccessException)
-                {
-                    await AbandonCollectionAsync(session, drain, trace).ConfigureAwait(false);
-                    throw;
-                }
-                trace.Position = 0;
-                return trace;
             }
         });
-    }
-
-    /// <summary>
-    /// Winds up a collection that failed partway, in the one order that works. The connection goes first,
-    /// as the drain waits on a read of it that nothing else will end now. Then the drain, whose own failure
-    /// only echoes the one on its way to the caller, but must be awaited all the same: a faulted task nobody
-    /// awaited is raised again by the finalizer, minutes later and out of context. The half-read trace goes
-    /// last, once nothing writes to it.
-    /// </summary>
-    internal static async Task AbandonCollectionAsync(Stream session, Task drain, MemoryStream trace)
-    {
-        await session.DisposeAsync().ConfigureAwait(false);
-        try
-        {
-            await drain.ConfigureAwait(false);
-        }
-        catch (Exception e) when (e is IOException or SocketException or ObjectDisposedException or OperationCanceledException)
-        {
-            // Dropped: this is how a read ends when its connection is closed under it, which was just done,
-            // and the failure that made it so is already on its way to the caller.
-        }
-        await trace.DisposeAsync().ConfigureAwait(false);
     }
 
     private static async Task StopTracingAsync(DiagnosticsEndpoint endpoint, ulong sessionId, CancellationToken cancellationToken)
