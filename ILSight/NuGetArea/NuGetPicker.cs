@@ -45,26 +45,13 @@ public sealed class NuGetPicker
         IncludePrerelease = saved.IncludePrerelease;
     }
 
-    /// <summary>Opens the dialog, its query taking focus. Until <see cref="ReadSetupAsync"/> has read the
+    /// <summary>Opens the dialog, its query taking focus. Until <see cref="ReadNuGetSetupHandler"/> has read the
     /// user's NuGet.Config, it says it is reading it. Closing is only clearing <see cref="IsOpen"/>, as the
     /// window's close box does: <see cref="Browser"/> stops what the dialog started once it is told so.</summary>
     public void Open()
     {
         IsOpen = true;
         Browser.FocusQuery();
-    }
-
-    /// <summary>Reads the user's NuGet.Config the first time the dialog opens; with no feed kept, its first
-    /// feed is the one searched.</summary>
-    public async Task ReadSetupAsync(CancellationToken ct)
-    {
-        if (!Browser.IsSetupUnread)
-        {
-            return;
-        }
-
-        await Browser.ReadSetupAsync(ct);
-        SearchFirstFeedIfNone();
     }
 
     /// <summary>Searches and downloads with <paramref name="setup"/> from now on, in place of the one

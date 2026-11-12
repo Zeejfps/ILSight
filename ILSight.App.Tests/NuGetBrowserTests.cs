@@ -2,11 +2,11 @@ using ILSight.Core;
 using ILSight.Core.Resources;
 using ILSight.NuGetArea;
 using ILSight.ILSightAppArea;
-using static ILSight.NuGetArea.NuGetBrowser;
+using static ILSight.NuGetArea.FetchNuGetIconHandler;
 
 namespace ILSight.App.Tests;
 
-/// <summary>The "open from NuGet" dialog's workflows over a fake port: what each does with what the port
+/// <summary>The "open from NuGet" dialog's use cases over a fake port: what each does with what the port
 /// answers, and the tokens it asks with.</summary>
 public sealed class NuGetBrowserTests
 {
@@ -15,7 +15,8 @@ public sealed class NuGetBrowserTests
 
     /// <summary>Answers each port member with what the test set; keeps what was asked, the tokens it was asked
     /// with, and the problems reported.</summary>
-    private sealed class FakePorts : IPorts
+    private sealed class FakePorts : ReadNuGetSetupHandler.IPorts, SearchNuGetFeedHandler.IPorts, DownloadNuGetPackageHandler.IPorts,
+        FetchNuGetIconHandler.IPorts, ReadNuGetDetailsHandler.IPorts
     {
         public Outcome<NuGetSetup> SetupRead { get; init; } = new Outcome<NuGetSetup>.Failed(new IOException("Reading the config was not expected."));
 
@@ -138,11 +139,11 @@ public sealed class NuGetBrowserTests
         return Task.FromResult<Outcome<FeedPage>>(new Outcome<FeedPage>.Ok(page));
     }
 
-    /// <summary>A picker over <paramref name="ports"/> whose setup is read, its feed filled in, opened, and what it
-    /// found told so, as each frame does.</summary>
-    private static NuGetPicker CreatePicker(FakePorts ports)
+    /// <summary>A picker whose setup is read, its feed filled in, opened, and what it found told so, as each frame
+    /// does.</summary>
+    private static NuGetPicker CreatePicker()
     {
-        var picker = new NuGetPicker { Browser = new NuGetBrowser(ports) };
+        var picker = new NuGetPicker { Browser = new NuGetBrowser() };
         picker.UseSetup(Setup());
         picker.Open();
         picker.Browser.StopUnlessOpen(picker.IsOpen);
@@ -157,12 +158,13 @@ public sealed class NuGetBrowserTests
         return search;
     }
 
-    /// <summary>Starts the search the picker asks for at <paramref name="now"/> and runs it as the edge does, on the
-    /// token of the work it was started as, which a newer search or closing the dialog cancels.</summary>
-    private static Task SearchAsync(NuGetPicker picker, double now)
+    /// <summary>Starts the search the picker asks for at <paramref name="now"/> and runs it over
+    /// <paramref name="ports"/> as the edge does, on the token of the work it was started as, which a newer search or
+    /// closing the dialog cancels.</summary>
+    private static Task SearchAsync(FakePorts ports, NuGetPicker picker, double now)
     {
         var search = picker.Browser.StartSearch(AskSearch(picker, now));
-        return picker.Browser.SearchAsync(search, search.Work.Token);
+        return new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, search, search.Work.Token);
     }
 
     /// <summary>Closes the dialog as its close box does, then tells what it found, as the frame does; returns the
@@ -175,11 +177,11 @@ public sealed class NuGetBrowserTests
 
     /// <summary>Starts what the dialog asked to fetch as the frame edge does, a workflow for each, and returns the
     /// errors reported once they all ended.</summary>
-    private static async Task<ErrorLog> RunFetchesAsync(NuGetBrowser browser)
+    private static async Task<ErrorLog> RunFetchesAsync(FakePorts ports, NuGetBrowser browser)
     {
         var work = new BackgroundWork();
         var errors = new ErrorLog();
-        AppFrames.StartFetching(new WorkflowRunner(work, errors), browser);
+        AppFrames.StartFetching(new WorkflowRunner(work, errors), new FetchNuGetIconHandler(ports), new ReadNuGetDetailsHandler(ports), browser);
         await WorkflowRunnerTests.WaitUntilEndedAsync(work);
         return errors;
     }
@@ -188,11 +190,11 @@ public sealed class NuGetBrowserTests
     public async Task SearchAsync_PageFound_ShowsItSelectsItsFirstPackageAndKeepsTheFeed()
     {
         var ports = new FakePorts();
-        var picker = CreatePicker(ports);
+        var picker = CreatePicker();
         using var shutdown = new CancellationTokenSource();
         var search = AskSearch(picker, now: 10);
 
-        await picker.Browser.SearchAsync(picker.Browser.StartSearch(search), shutdown.Token);
+        await new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, picker.Browser.StartSearch(search), shutdown.Token);
 
         Assert.Same(search, Assert.Single(ports.Searched));
         Assert.Equal("Fixtures", Assert.Single(picker.Browser.Results).Id.Text);
@@ -208,9 +210,9 @@ public sealed class NuGetBrowserTests
     {
         var answer = new TaskCompletionSource<Outcome<FeedPage>>();
         var ports = new FakePorts { Search = _ => answer.Task };
-        var picker = CreatePicker(ports);
+        var picker = CreatePicker();
         using var shutdown = new CancellationTokenSource();
-        var searching = picker.Browser.SearchAsync(picker.Browser.StartSearch(AskSearch(picker, now: 10)), shutdown.Token);
+        var searching = new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, picker.Browser.StartSearch(AskSearch(picker, now: 10)), shutdown.Token);
         var token = Assert.Single(ports.Tokens);
         var stoppedBefore = token.IsCancellationRequested;
 
@@ -229,9 +231,9 @@ public sealed class NuGetBrowserTests
     public async Task SearchAsync_SearchFailed_SaysWhyAndReportsIt()
     {
         var ports = new FakePorts { Search = static _ => Task.FromResult<Outcome<FeedPage>>(new Outcome<FeedPage>.Failed(new IOException("The feed is down."))) };
-        var picker = CreatePicker(ports);
+        var picker = CreatePicker();
 
-        await SearchAsync(picker, now: 10);
+        await SearchAsync(ports, picker, now: 10);
 
         Assert.Equal("The feed is down.", picker.Browser.SearchError);
         Assert.Empty(picker.Browser.Results);
@@ -246,10 +248,10 @@ public sealed class NuGetBrowserTests
         var newer = new TaskCompletionSource<Outcome<FeedPage>>();
         var answers = new Queue<Task<Outcome<FeedPage>>>([older.Task, newer.Task]);
         var ports = new FakePorts { Search = _ => answers.Dequeue() };
-        var picker = CreatePicker(ports);
-        var olderSearch = SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        var olderSearch = SearchAsync(ports, picker, now: 10);
         picker.IncludePrerelease = true;
-        var newerSearch = SearchAsync(picker, now: 10);
+        var newerSearch = SearchAsync(ports, picker, now: 10);
 
         newer.SetResult(new Outcome<FeedPage>.Ok(Page("Newer")));
         await newerSearch;
@@ -268,8 +270,8 @@ public sealed class NuGetBrowserTests
     {
         var answer = new TaskCompletionSource<Outcome<FeedPage>>();
         var ports = new FakePorts { Search = _ => answer.Task };
-        var picker = CreatePicker(ports);
-        var searching = SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        var searching = SearchAsync(ports, picker, now: 10);
 
         Close(picker);
         var token = Assert.Single(ports.Tokens);
@@ -286,8 +288,8 @@ public sealed class NuGetBrowserTests
     public void Update_QueryTyped_AsksForNoSearchUntilItSettles()
     {
         var ports = new FakePorts();
-        var picker = CreatePicker(ports);
-        var searching = SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        var searching = SearchAsync(ports, picker, now: 10);
 
         picker.Query = "fix";
         var whileTyping = picker.Update(now: 20);
@@ -307,14 +309,14 @@ public sealed class NuGetBrowserTests
     public async Task ReadSetupAsync_ConfigUnreadable_ReportsItAndSearchesTheDefaultSetupsFirstFeed()
     {
         var ports = new FakePorts { SetupRead = new Outcome<NuGetSetup>.Failed(new IOException("Unreadable.")), DefaultSetup = Setup() };
-        var picker = new NuGetPicker { Browser = new NuGetBrowser(ports) };
+        var picker = new NuGetPicker { Browser = new NuGetBrowser() };
         picker.Open();
         using var shutdown = new CancellationTokenSource();
 
-        await picker.ReadSetupAsync(shutdown.Token);
-        await picker.ReadSetupAsync(shutdown.Token);
+        await new ReadNuGetSetupHandler(ports).HandleAsync(picker, shutdown.Token);
+        await new ReadNuGetSetupHandler(ports).HandleAsync(picker, shutdown.Token);
 
-        Assert.Equal([nameof(IPorts.ReadUserSetupAsync), nameof(IPorts.CreateDefaultSetup)], ports.Asked);
+        Assert.Equal([nameof(FakePorts.ReadUserSetupAsync), nameof(FakePorts.CreateDefaultSetup)], ports.Asked);
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
         Assert.IsType<AppProblem.NuGetConfigUnreadable>(Assert.Single(ports.Reported));
         Assert.False(picker.Browser.IsReadingSetup);
@@ -326,13 +328,13 @@ public sealed class NuGetBrowserTests
     {
         var read = new PackageVersionDetails(null, "MIT", null, null, 0, [], null, []);
         var ports = new FakePorts { Details = new Outcome<PackageVersionDetails>.Ok(read) };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         var package = Assert.Single(picker.Browser.Results);
 
         var loading = picker.Browser.EnsureDetails(package, Version("2.0.0"));
         var asked = picker.Browser.HasDownloadsToStart;
-        await RunFetchesAsync(picker.Browser);
+        await RunFetchesAsync(ports, picker.Browser);
         var details = picker.Browser.EnsureDetails(package, Version("2.0.0"));
 
         Assert.IsType<VersionDetails.Loading>(loading);
@@ -346,12 +348,12 @@ public sealed class NuGetBrowserTests
     public async Task StartFetching_DetailsFailed_SayWhyUntilRetried()
     {
         var ports = new FakePorts { Details = new Outcome<PackageVersionDetails>.Failed(new IOException("No catalog.")) };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         var package = Assert.Single(picker.Browser.Results);
 
         picker.Browser.EnsureDetails(package, Version("2.0.0"));
-        await RunFetchesAsync(picker.Browser);
+        await RunFetchesAsync(ports, picker.Browser);
         var failed = picker.Browser.EnsureDetails(package, Version("2.0.0"));
         picker.Browser.RetryDetails(package, Version("2.0.0"));
         var retried = picker.Browser.EnsureDetails(package, Version("2.0.0"));
@@ -367,31 +369,31 @@ public sealed class NuGetBrowserTests
     {
         var pixels = Pixels();
         var ports = new FakePorts { Search = static _ => AnswerPageAsync(Page("Fixtures", IconUrl)), Icon = new Outcome<ResourceImage>.Ok(pixels) };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
 
         var icon = picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results));
         Assert.NotNull(icon);
         var shownBefore = icon.Shown;
-        await RunFetchesAsync(picker.Browser);
+        await RunFetchesAsync(ports, picker.Browser);
 
         Assert.Null(shownBefore);
         Assert.Same(pixels, icon.Shown?.Pixels);
         Assert.Equal(icon.ImageId, icon.Shown?.ImageId);
         Assert.Same(icon, picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results)));
-        Assert.Single(ports.Asked, nameof(IPorts.DownloadIconAsync));
+        Assert.Single(ports.Asked, nameof(FakePorts.DownloadIconAsync));
     }
 
     [Fact]
     public async Task StartFetching_IconThatCannotBeDownloaded_KeepsNoPixels()
     {
         var ports = new FakePorts { Search = static _ => AnswerPageAsync(Page("Fixtures", IconUrl)) };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         var icon = picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results));
         Assert.NotNull(icon);
 
-        var errors = await RunFetchesAsync(picker.Browser);
+        var errors = await RunFetchesAsync(ports, picker.Browser);
 
         Assert.Null(icon.Shown);
         Assert.Empty(ports.Reported);
@@ -411,15 +413,15 @@ public sealed class NuGetBrowserTests
                 ? Task.FromResult<Outcome<ResourceImage>>(new Outcome<ResourceImage>.Ok(pixels))
                 : Task.FromException<Outcome<ResourceImage>>(new InvalidOperationException($"The icon at {url.Text} broke.")),
         };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         var icons = picker.Browser.Results
             .Select(picker.Browser.EnsureIcon)
             .ToList();
 
-        var errors = await RunFetchesAsync(picker.Browser);
+        var errors = await RunFetchesAsync(ports, picker.Browser);
 
-        Assert.Equal(3, ports.Asked.Count(a => a == nameof(IPorts.DownloadIconAsync)));
+        Assert.Equal(3, ports.Asked.Count(a => a == nameof(FakePorts.DownloadIconAsync)));
         var first = icons[0];
         var second = icons[1];
         Assert.NotNull(first);
@@ -436,23 +438,23 @@ public sealed class NuGetBrowserTests
     public async Task StartFetching_DialogClosedBeforeItRuns_DownloadsNothing()
     {
         var ports = new FakePorts { Search = static _ => AnswerPageAsync(Page("Fixtures", IconUrl)) };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results));
 
         var images = Close(picker);
-        await RunFetchesAsync(picker.Browser);
+        await RunFetchesAsync(ports, picker.Browser);
 
         Assert.Single(images);
-        Assert.DoesNotContain(nameof(IPorts.DownloadIconAsync), ports.Asked);
+        Assert.DoesNotContain(nameof(FakePorts.DownloadIconAsync), ports.Asked);
     }
 
     [Fact]
     public async Task StopUnlessOpen_WhileOpenOrOnceStopped_HandsBackNoImagesAndAllocatesNothing()
     {
         var ports = new FakePorts { Search = static _ => AnswerPageAsync(Page("Fixtures", IconUrl)) };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results));
         picker.Browser.StopUnlessOpen(true);
 
@@ -472,14 +474,14 @@ public sealed class NuGetBrowserTests
     public async Task DownloadAsync_Downloaded_HandsTheFileOverOnce()
     {
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         picker.Browser.FollowSelection();
         using var shutdown = new CancellationTokenSource();
 
         var download = picker.Browser.StartDownload();
         Assert.NotNull(download);
-        await picker.Browser.DownloadAsync(download, shutdown.Token);
+        await new DownloadNuGetPackageHandler(ports).HandleAsync(picker.Browser, download, shutdown.Token);
 
         Assert.Equal("fixtures.2.0.0.nupkg", picker.Browser.TakeDownloaded());
         Assert.Null(picker.Browser.TakeDownloaded());
@@ -491,17 +493,17 @@ public sealed class NuGetBrowserTests
     public async Task Submit_PackagePicked_SaysItIsDownloadingBeforeTheDownloadRuns()
     {
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         picker.Browser.FollowSelection();
 
         var download = picker.Browser.Submit();
         var downloading = picker.Browser.IsDownloading;
         var name = picker.Browser.DownloadingName;
         var canOpenAgain = picker.Browser.CanOpen;
-        var askedBeforeTheEdgeRan = ports.Asked.Contains(nameof(IPorts.DownloadPackageAsync));
+        var askedBeforeTheEdgeRan = ports.Asked.Contains(nameof(FakePorts.DownloadPackageAsync));
         Assert.NotNull(download);
-        await picker.Browser.DownloadAsync(download, download.Work.Token);
+        await new DownloadNuGetPackageHandler(ports).HandleAsync(picker.Browser, download, download.Work.Token);
 
         Assert.True(downloading);
         Assert.Equal("Fixtures 2.0.0", name);
@@ -514,8 +516,8 @@ public sealed class NuGetBrowserTests
     public async Task Submit_WhileTheQuerySettles_SearchesItInsteadOfDownloading()
     {
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
-        var picker = CreatePicker(ports);
-        await SearchAsync(picker, now: 10);
+        var picker = CreatePicker();
+        await SearchAsync(ports, picker, now: 10);
         picker.Browser.FollowSelection();
 
         picker.Query = "fix";
@@ -525,7 +527,7 @@ public sealed class NuGetBrowserTests
 
         Assert.Null(download);
         Assert.Equal("fix", search?.Query);
-        Assert.DoesNotContain(nameof(IPorts.DownloadPackageAsync), ports.Asked);
+        Assert.DoesNotContain(nameof(FakePorts.DownloadPackageAsync), ports.Asked);
         Assert.Null(picker.Browser.TakeDownloaded());
     }
 }

@@ -31,7 +31,8 @@ internal static class NuGetPickerView
     {
         var picker = uiState.NuGetPicker;
         picker.Open();
-        Commands.Start(uiState, nameof(NuGetPicker.ReadSetupAsync), picker, static (_, p, ct) => p.ReadSetupAsync(ct));
+        Commands.Start(uiState, nameof(ReadNuGetSetupHandler), (Handler: uiState.ReadNuGetSetupHandler, Picker: picker),
+            static (_, s, ct) => s.Handler.HandleAsync(s.Picker, ct));
     }
 
     /// <summary>Draws the dialog, over the search for what was typed, which starts before it draws (see
@@ -123,8 +124,8 @@ internal static class NuGetPickerView
             return;
         }
 
-        Commands.Start(ui.State, nameof(NuGetBrowser.DownloadAsync), (Browser: browser, Download: download),
-            static (_, d, ct) => d.Browser.DownloadAsync(d.Download, ct), download.Work.Token);
+        Commands.Start(ui.State, nameof(DownloadNuGetPackageHandler), (Handler: ui.State.DownloadNuGetPackageHandler, Browser: browser, Download: download),
+            static (_, d, ct) => d.Handler.HandleAsync(d.Browser, d.Download, ct), download.Work.Token);
     }
 
     /// <summary>The query, whether prereleases count, and the feed. Enter in the query opens the

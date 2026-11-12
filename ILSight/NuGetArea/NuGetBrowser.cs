@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.Core.Resources;
 
 namespace ILSight.NuGetArea;
 
@@ -9,45 +8,12 @@ namespace ILSight.NuGetArea;
 /// read the first time it opens; the feed searched a page at a time once what was typed settles, the
 /// newest search the only one whose page is shown; the package selected and the version of it picked;
 /// the icons and version details fetched the first time they are shown; and that version, fetched into
-/// the package cache for the dialog to open. Its workflows return once their work is done, and reach the
-/// feeds, the disk and the user's error reports through <see cref="IPorts"/>.
+/// the package cache for the dialog to open. The use cases that reach the feeds and the disk for it
+/// (<see cref="ReadNuGetSetupHandler"/>, <see cref="SearchNuGetFeedHandler"/>, <see cref="DownloadNuGetPackageHandler"/>,
+/// <see cref="FetchNuGetIconHandler"/>, <see cref="ReadNuGetDetailsHandler"/>) hand it what they found.
 /// </summary>
-public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
+public sealed class NuGetBrowser
 {
-    public interface IPorts
-    {
-        /// <summary>Tells the user a search, a download or reading the config failed.</summary>
-        void ReportError(AppProblem problem);
-
-        /// <summary>Reads the setup the user's NuGet.Config describes, without holding up the screen; a config
-        /// that cannot be read at all comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<NuGetSetup>> ReadUserSetupAsync(CancellationToken ct);
-
-        /// <summary>The setup to use when the user's config cannot be read: nuget.org and the default folders.</summary>
-        NuGetSetup CreateDefaultSetup();
-
-        /// <summary>The page <paramref name="search"/> asks of its feed; a search that failed comes back as
-        /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<FeedPage>> SearchAsync(FeedSearch search, CancellationToken ct);
-
-        /// <summary>What <paramref name="feed"/>'s catalog says of <paramref name="version"/> of package
-        /// <paramref name="id"/>; a read that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetSource feed, PackageId id, FeedVersion version, CancellationToken ct);
-
-        /// <summary>The icon at <paramref name="url"/>, <paramref name="side"/> pixels across; one that cannot be
-        /// fetched comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<ResourceImage>> DownloadIconAsync(WebUrl url, int side, CancellationToken ct);
-
-        /// <summary>The file of <paramref name="version"/> of package <paramref name="id"/>, fetched from
-        /// <paramref name="feed"/> into <paramref name="cache"/> unless it is there; a download that failed
-        /// comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetSource feed, PackageId id, PackageVersion version, CancellationToken ct);
-    }
-
-    /// <summary>How many pixels across a package's icon is fetched at, enough for its row on a screen
-    /// of twice the usual density.</summary>
-    public const int IconPixels = 64;
-
     private const double DebounceSeconds = 0.3;
     private const string IconImagePrefix = "nuget-icon-";
 
@@ -308,24 +274,17 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         KeptSearch = saved;
     }
 
-    /// <summary>Reads the user's NuGet.Config, unless it is read or being read; one that cannot be read at
-    /// all is reported, and nuget.org searched in its place.</summary>
-    public async Task ReadSetupAsync(CancellationToken ct)
+    /// <summary>Takes the user's NuGet.Config as being read, unless it is read or being read already: true when
+    /// it was unread, for the caller to read it and hand over the setup (<see cref="UseSetup"/>).</summary>
+    public bool TryBeginReadingSetup()
     {
         if (!IsSetupUnread)
         {
-            return;
+            return false;
         }
 
         _setup = new SetupState.Reading();
-        var read = await ports.ReadUserSetupAsync(ct);
-        UseSetup(read.Match(static ok => ok.Value, ReplaceUnreadableSetup));
-    }
-
-    private NuGetSetup ReplaceUnreadableSetup(Outcome<NuGetSetup>.Failed failed)
-    {
-        ports.ReportError(new AppProblem.NuGetConfigUnreadable(failed.Error));
-        return ports.CreateDefaultSetup();
+        return true;
     }
 
     /// <summary>Searches and downloads with <paramref name="setup"/> from now on.</summary>
@@ -431,7 +390,8 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
     /// <summary>Starts searching as <paramref name="wanted"/> asks, in place of the search running, which is
     /// cancelled and its page dropped: from now on the dialog draws it searching. Returns what
-    /// <see cref="SearchAsync"/> needs to search, whose work a newer search or closing the dialog cancels.</summary>
+    /// <see cref="SearchNuGetFeedHandler"/> needs to search, whose work a newer search or closing the dialog
+    /// cancels.</summary>
     public FeedSearchTicket StartSearch(FeedSearch wanted)
     {
         KeepSearched(wanted);
@@ -440,20 +400,19 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         return new FeedSearchTicket { Search = wanted, Work = _searches.Start() };
     }
 
-    /// <summary>Searches as <paramref name="search"/> asks, and shows the page found unless another search started
-    /// or the dialog closed meanwhile. A failed search says why and is reported, keeping the page shown when it
-    /// only asked for another page of it. <paramref name="ct"/> is the work's token, linked to what else may
-    /// cancel it.</summary>
-    public async Task SearchAsync(FeedSearchTicket search, CancellationToken ct)
+    /// <summary>Takes what <paramref name="search"/> <paramref name="found"/>, unless another search started or the
+    /// dialog closed meanwhile: the page found is shown; a failed search says why, keeping the page shown when it
+    /// only asked for another page of it. True when it was taken, for the caller to report a failure.</summary>
+    public bool TryFinishSearch(FeedSearchTicket search, Outcome<FeedPage> found)
     {
-        var wanted = search.Search;
-        var found = await ports.SearchAsync(wanted, ct);
         if (!_searches.TryFinish(search.Work))
         {
-            return;
+            return false;
         }
 
-        _run = found.Match<SearchRun>(ok => ShowFoundPage(wanted, ok.Value), failed => ReportSearchFailure(wanted, failed.Error));
+        var wanted = search.Search;
+        _run = found.Match<SearchRun>(ok => ShowFoundPage(wanted, ok.Value), failed => ShowSearchFailure(wanted, failed.Error));
+        return true;
     }
 
     /// <summary>What Enter does: starts downloading the selected package at <see cref="Version"/>, as
@@ -476,8 +435,8 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
 
     /// <summary>Starts downloading <see cref="Version"/> of the selected package, from the feed it was found in,
     /// unless it cannot be opened now: from now on the dialog draws it downloading. Returns what
-    /// <see cref="DownloadAsync"/> needs to download it, whose work closing the dialog cancels; null when
-    /// nothing can be downloaded.</summary>
+    /// <see cref="DownloadNuGetPackageHandler"/> needs to download it, whose work closing the dialog cancels; null
+    /// when nothing can be downloaded.</summary>
     public PackageDownloadTicket? StartDownload()
     {
         var version = Version;
@@ -503,24 +462,18 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         };
     }
 
-    /// <summary>Fetches the package <paramref name="download"/> names into the cache, for
-    /// <see cref="TakeDownloaded"/> to hand over, unless the dialog dropped it by closing meanwhile. A failed
-    /// download is reported.</summary>
-    public async Task DownloadAsync(PackageDownloadTicket download, CancellationToken ct)
+    /// <summary>Takes the package file <paramref name="download"/> <paramref name="fetched"/> into the cache, for
+    /// <see cref="TakeDownloaded"/> to hand over, unless the dialog dropped it by closing meanwhile; a failed
+    /// download leaves none. True when it was taken, for the caller to report a failure.</summary>
+    public bool TryFinishDownload(PackageDownloadTicket download, Outcome<string> fetched)
     {
-        var fetched = await ports.DownloadPackageAsync(download.Cache, download.Feed, download.Id, download.Version, ct);
         if (!_downloads.TryFinish(download.Work))
         {
-            return;
+            return false;
         }
 
-        _download = fetched.Match<DownloadState>(static ok => new DownloadState.Done(ok.Value), failed => ReportDownloadFailure(download.Name, failed.Error));
-    }
-
-    private DownloadState.None ReportDownloadFailure(string name, Exception error)
-    {
-        ports.ReportError(new AppProblem.PackageNotDownloaded(name, error));
-        return new DownloadState.None();
+        _download = fetched.Match<DownloadState>(static ok => new DownloadState.Done(ok.Value), static _ => new DownloadState.None());
+        return true;
     }
 
     /// <summary>The package file the last download fetched, once; null until it is in.</summary>
@@ -666,7 +619,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     }
 
     /// <summary>The icons asked for since this was last asked, each for a fetch of its own
-    /// (<see cref="DownloadIconAsync"/>); none are left to fetch afterwards.</summary>
+    /// (<see cref="FetchNuGetIconHandler"/>); none are left to fetch afterwards.</summary>
     internal List<PackageIconFetch> TakeIconsToFetch()
     {
         var taken = _iconsToFetch.ToList();
@@ -675,7 +628,7 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
     }
 
     /// <summary>The details asked for since this was last asked, each for a read of its own
-    /// (<see cref="ReadDetailsAsync"/>); none are left to read afterwards.</summary>
+    /// (<see cref="ReadNuGetDetailsHandler"/>); none are left to read afterwards.</summary>
     internal List<VersionDetailsFetch> TakeDetailsToFetch()
     {
         var taken = _detailsToFetch.ToList();
@@ -683,27 +636,10 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         return taken;
     }
 
-    /// <summary>Fetches the icon <paramref name="fetch"/> asked for: it gets its pixels unless it cannot be
-    /// fetched, which leaves its row the stand-in.</summary>
-    internal async Task DownloadIconAsync(PackageIconFetch fetch, CancellationToken ct)
+    /// <summary>Takes the details <paramref name="fetch"/> asked for as <paramref name="read"/>, in place of their
+    /// loading, unless they were dropped or asked for again meanwhile.</summary>
+    internal void ShowDetails(VersionDetailsFetch fetch, Outcome<PackageVersionDetails> read)
     {
-        var fetched = await ports.DownloadIconAsync(fetch.Url, IconPixels, ct);
-        if (fetched is Outcome<ResourceImage>.Ok ok)
-        {
-            ShowIcon(fetch.Icon, ok.Value);
-        }
-    }
-
-    private static void ShowIcon(PackageIcon icon, ResourceImage pixels)
-    {
-        icon.Shown = new ShownIcon(icon.ImageId, pixels, ResourceImages.IsDarkOnClear(pixels));
-    }
-
-    /// <summary>Reads the details <paramref name="fetch"/> asked for, which take the place of their loading
-    /// unless they were dropped or asked for again meanwhile.</summary>
-    internal async Task ReadDetailsAsync(VersionDetailsFetch fetch, CancellationToken ct)
-    {
-        var read = await ports.ReadDetailsAsync(fetch.Feed, fetch.Key.Id, fetch.Version, ct);
         if (!_details.TryGetValue(fetch.Key, out var current) || !ReferenceEquals(current, fetch.Loading))
         {
             return;
@@ -883,9 +819,9 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
         return new SearchRun.Found(searched);
     }
 
-    /// <summary>Reports the failed search and says why, keeping the page shown only when the search asked
-    /// for another page of it.</summary>
-    private SearchRun.Failed ReportSearchFailure(FeedSearch searched, Exception error)
+    /// <summary>Says why the search failed, keeping the page shown only when the search asked for another page
+    /// of it.</summary>
+    private SearchRun.Failed ShowSearchFailure(FeedSearch searched, Exception error)
     {
         var shown = FindShownSearch();
         if (!IsSamePackages(searched, shown))
@@ -893,7 +829,6 @@ public sealed class NuGetBrowser(NuGetBrowser.IPorts ports)
             ClearShown();
         }
 
-        ports.ReportError(new AppProblem.NuGetSearchFailed(searched.Feed.Name, error));
         return new SearchRun.Failed(searched, error.Message);
     }
 

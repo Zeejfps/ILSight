@@ -104,10 +104,10 @@ internal static class AppFrames
         var search = picker.Update(now);
         if (search is not null)
         {
-            StartSearching(appState, picker.Browser, search);
+            StartSearching(appState, ui.State.SearchNuGetFeedHandler, picker.Browser, search);
         }
 
-        StartFetching(appState.Workflows, picker.Browser);
+        StartFetching(appState.Workflows, ui.State.FetchNuGetIconHandler, ui.State.ReadNuGetDetailsHandler, picker.Browser);
 
         if (picker.Browser.IsSettling)
         {
@@ -145,16 +145,16 @@ internal static class AppFrames
     /// <summary>Starts <paramref name="wanted"/> now, before the frame draws, on a token that a newer search and
     /// closing the dialog cancel too. A method of its own, so that the frames that start nothing allocate no
     /// closure.</summary>
-    private static void StartSearching(AppState appState, NuGetBrowser browser, FeedSearch wanted)
+    private static void StartSearching(AppState appState, SearchNuGetFeedHandler searchFeed, NuGetBrowser browser, FeedSearch wanted)
     {
         var search = browser.StartSearch(wanted);
-        appState.Workflows.Start(nameof(NuGetBrowser.SearchAsync), ct => browser.SearchAsync(search, ct), search.Work.Token);
+        appState.Workflows.Start(nameof(SearchNuGetFeedHandler), ct => searchFeed.HandleAsync(browser, search, ct), search.Work.Token);
     }
 
     /// <summary>Starts a workflow of its own for each icon and each version's details the dialog asked for since
     /// the last frame, so that one that fails does not stop the others, each on a token that closing the dialog
     /// cancels too. Allocates nothing while nothing is asked for.</summary>
-    internal static void StartFetching(WorkflowRunner workflows, NuGetBrowser browser)
+    internal static void StartFetching(WorkflowRunner workflows, FetchNuGetIconHandler fetchIcon, ReadNuGetDetailsHandler readDetails, NuGetBrowser browser)
     {
         if (!browser.HasDownloadsToStart)
         {
@@ -164,12 +164,12 @@ internal static class AppFrames
         var closed = browser.UntilClosed;
         foreach (var icon in browser.TakeIconsToFetch())
         {
-            workflows.Start(nameof(NuGetBrowser.DownloadIconAsync), ct => browser.DownloadIconAsync(icon, ct), closed);
+            workflows.Start(nameof(FetchNuGetIconHandler), ct => fetchIcon.HandleAsync(icon, ct), closed);
         }
 
         foreach (var details in browser.TakeDetailsToFetch())
         {
-            workflows.Start(nameof(NuGetBrowser.ReadDetailsAsync), ct => browser.ReadDetailsAsync(details, ct), closed);
+            workflows.Start(nameof(ReadNuGetDetailsHandler), ct => readDetails.HandleAsync(browser, details, ct), closed);
         }
     }
 

@@ -46,9 +46,11 @@ public sealed class NuGetPickerTests : IDisposable
     private readonly FakeFeed _fake = new();
     private readonly List<string> _reported = new();
     private readonly List<Task> _started = [];
+    private readonly NuGetClient _client;
 
     public NuGetPickerTests()
     {
+        _client = new NuGetClient(_fake);
         _fake.AnswerSearches(FixturesPackage);
     }
 
@@ -63,10 +65,24 @@ public sealed class NuGetPickerTests : IDisposable
         return new NuGetSetup { Sources = [_fake.Source], Cache = cache };
     }
 
+    private void Report(AppProblem problem)
+    {
+        _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title);
+    }
+
+    private SearchNuGetFeedHandler CreateSearchFeed()
+    {
+        return new SearchNuGetFeedHandler(new SearchNuGetFeedHandlerAdapter(Report, _client));
+    }
+
+    private DownloadNuGetPackageHandler CreateDownloadPackage()
+    {
+        return new DownloadNuGetPackageHandler(new DownloadNuGetPackageHandlerAdapter(Report, _client));
+    }
+
     private NuGetPicker OpenPicker(PostedActions posted, SavedNuGetSearch? saved = null)
     {
-        var ports = new NuGetBrowserAdapter(problem => _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), new NuGetClient(_fake));
-        var picker = new NuGetPicker { Browser = new NuGetBrowser(ports) };
+        var picker = new NuGetPicker { Browser = new NuGetBrowser() };
         picker.RestoreSearch(saved);
         picker.UseSetup(Setup());
         picker.Open();
@@ -85,7 +101,7 @@ public sealed class NuGetPickerTests : IDisposable
         if (wanted is not null)
         {
             var search = picker.Browser.StartSearch(wanted);
-            _started.Add(picker.Browser.SearchAsync(search, search.Work.Token));
+            _started.Add(CreateSearchFeed().HandleAsync(picker.Browser, search, search.Work.Token));
         }
 
         if (!picker.Browser.IsSettling)
@@ -108,7 +124,7 @@ public sealed class NuGetPickerTests : IDisposable
     {
         var download = picker.Browser.StartDownload();
         Assert.NotNull(download);
-        Start(picker.Browser.DownloadAsync(download, download.Work.Token));
+        Start(CreateDownloadPackage().HandleAsync(picker.Browser, download, download.Work.Token));
     }
 
     /// <summary>Closes the dialog as its close box does, then tells what it found, as the frame does.</summary>
@@ -338,7 +354,7 @@ public sealed class NuGetPickerTests : IDisposable
     }
 
     /// <summary>The details of version 2.0.0 of the package selected, once they are no longer loading.</summary>
-    private static VersionDetails ReadDetails(NuGetPicker picker, PostedActions posted)
+    private VersionDetails ReadDetails(NuGetPicker picker, PostedActions posted)
     {
         VersionDetails? DetailsNow()
         {
@@ -348,7 +364,8 @@ public sealed class NuGetPickerTests : IDisposable
         }
         DetailsNow();
         var work = new BackgroundWork();
-        AppFrames.StartFetching(new WorkflowRunner(work, new ErrorLog()), picker.Browser);
+        AppFrames.StartFetching(new WorkflowRunner(work, new ErrorLog()), new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(_client)),
+            new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(_client)), picker.Browser);
         Poll.Until(() => work.Outstanding.Count == 0, posted.Run);
         var details = DetailsNow();
         Assert.NotNull(details);
@@ -531,7 +548,7 @@ public sealed class NuGetPickerTests : IDisposable
     [Fact]
     public async Task The_adapter_lets_the_cancellation_of_its_token_through_rather_than_failing()
     {
-        var adapter = new NuGetBrowserAdapter(problem => _reported.Add(ProblemTexts.Describe(Strings.En, problem).Title), new NuGetClient(_fake));
+        var adapter = new SearchNuGetFeedHandlerAdapter(Report, new NuGetClient(_fake));
         using var cancelled = new CancellationTokenSource();
         await cancelled.CancelAsync();
 
@@ -620,7 +637,7 @@ public sealed class NuGetPickerTests : IDisposable
         app.Run(2);
 
         Assert.True(drawn);
-        Assert.Equal(NuGetBrowser.IconPixels, icon.Shown?.Pixels.Width);
+        Assert.Equal(FetchNuGetIconHandler.IconPixels, icon.Shown?.Pixels.Width);
         Assert.False(app.Frames.Canvas.HasImage(icon.ImageId));
     }
 

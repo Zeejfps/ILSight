@@ -196,6 +196,7 @@ internal static class AppRoot
         HttpMessageHandler? nuGetRequests)
     {
         var appCommands = new Queue<AppCommand>();
+        var nuGet = new NuGetClient(nuGetRequests);
         var uiState = new UiState
         {
             AppCommands = appCommands,
@@ -206,7 +207,12 @@ internal static class AppRoot
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
             ShippedLicenses = FindShippedLicenses(),
             Picker = new FrameworkPicker { Browser = new FrameworkBrowser(new FrameworkPickerAdapter(reportError, runtime)) },
-            NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser(new NuGetBrowserAdapter(reportError, new NuGetClient(nuGetRequests))) },
+            NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser() },
+            ReadNuGetSetupHandler = new ReadNuGetSetupHandler(new ReadNuGetSetupHandlerAdapter(reportError)),
+            SearchNuGetFeedHandler = new SearchNuGetFeedHandler(new SearchNuGetFeedHandlerAdapter(reportError, nuGet)),
+            DownloadNuGetPackageHandler = new DownloadNuGetPackageHandler(new DownloadNuGetPackageHandlerAdapter(reportError, nuGet)),
+            FetchNuGetIconHandler = new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(nuGet)),
+            ReadNuGetDetailsHandler = new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(nuGet)),
             ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(new ProcessBrowserAdapter(reportError)) },
             Display = saved.Display ?? DisplayOptions.Default,
             Analyzer = new AnalyzerRows { AppCommands = appCommands },

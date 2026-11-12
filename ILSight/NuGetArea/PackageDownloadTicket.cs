@@ -2,7 +2,7 @@ using ILSight.Core;
 
 namespace ILSight.NuGetArea;
 
-/// <summary>A download <see cref="NuGetBrowser.StartDownload"/> started, for <see cref="NuGetBrowser.DownloadAsync"/> to
+/// <summary>A download <see cref="NuGetBrowser.StartDownload"/> started, for <see cref="DownloadNuGetPackageHandler"/> to
 /// run: the package and version, the feed it was found in and the cache it goes to, and the work it runs as, which
 /// closing the dialog cancels.</summary>
 [MustUse]

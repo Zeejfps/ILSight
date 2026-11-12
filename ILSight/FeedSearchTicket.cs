@@ -3,7 +3,7 @@ using ILSight.NuGetArea;
 
 namespace ILSight;
 
-/// <summary>A search <see cref="NuGetBrowser.StartSearch"/> started, for <see cref="NuGetBrowser.SearchAsync"/> to run:
+/// <summary>A search <see cref="NuGetBrowser.StartSearch"/> started, for <see cref="SearchNuGetFeedHandler"/> to run:
 /// what it asks, and the work it runs as, which a newer search or closing the dialog cancels.</summary>
 [MustUse]
 public sealed class FeedSearchTicket
