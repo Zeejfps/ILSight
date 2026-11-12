@@ -53,6 +53,7 @@ internal static class AppRoot
         var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session);
         var diagrams = new DiagramInfrastructure(errors, assemblies);
         var bookmarks = new BookmarkInfrastructure(errors, assemblies, session);
+        var analysis = new AnalysisInfrastructure(errors, assemblies);
         var viewCommands = new Queue<ViewCommand>();
         var appState = new AppState
         {
@@ -73,6 +74,9 @@ internal static class AppRoot
             ReopenDiagramHandler = new ReopenDiagramHandler(diagrams),
             LayOutDiagramHandler = new LayOutDiagramHandler(diagrams),
             CompareAssembliesHandler = new CompareAssembliesHandler(new CompareAssembliesHandlerAdapter(errors)),
+            RunAnalysisHandler = new RunAnalysisHandler(analysis),
+            AnalyzeReferenceHandler = new AnalyzeReferenceHandler(navigation),
+            RestoreAnalysesHandler = new RestoreAnalysesHandler(analysis),
             GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
             AssemblyOpening = new AssemblyOpening(assemblyList),
             AssemblyReloading = new AssemblyReloading(assemblyList),

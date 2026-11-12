@@ -23,14 +23,16 @@ public sealed class TabLoadsTests
         var read = new List<SavedDiagramRead>();
         var found = new List<ReopenedNodesLookup>();
         var compared = new List<ComparisonRun>();
+        var restored = new List<AnalysesRestore>();
 
         var loads = TabLoads.None.With(first).With(TabLoads.From([second], [], [], []));
-        loads.Switch(decompiled.Add, read.Add, found.Add, compared.Add);
+        loads.Switch(decompiled.Add, read.Add, found.Add, compared.Add, restored.Add);
 
         Assert.Equal([first, second], decompiled);
         Assert.Empty(read);
         Assert.Empty(found);
         Assert.Empty(compared);
+        Assert.Empty(restored);
     }
 
     [Fact]
@@ -38,7 +40,7 @@ public sealed class TabLoadsTests
     {
         var handed = 0;
 
-        TabLoads.None.With((DecompileTicket?)null).Switch(_ => handed++, _ => handed++, _ => handed++, _ => handed++);
+        TabLoads.None.With((DecompileTicket?)null).With((AnalysesRestore?)null).Switch(_ => handed++, _ => handed++, _ => handed++, _ => handed++, _ => handed++);
 
         Assert.Equal(0, handed);
     }
@@ -56,7 +58,7 @@ public sealed class TabLoadsTests
         var other = 0;
 
         var loads = SavedDocuments.ShowReopenedDocuments(d.AppState.Tabs, d.AppState.Reopened, d.AppState.Assemblies);
-        loads.Switch(_ => other++, _ => other++, _ => other++, runs.Add);
+        loads.Switch(_ => other++, _ => other++, _ => other++, runs.Add, _ => other++);
 
         var run = Assert.Single(runs);
         Assert.Same(tab.Comparison, run.Comparison);

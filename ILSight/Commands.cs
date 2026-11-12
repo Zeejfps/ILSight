@@ -74,6 +74,56 @@ public static class Commands
         Start(uiState, nameof(ShowInMetadataHandler), (reference, lookup), static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a, s.reference, s.lookup, ct));
     }
 
+    /// <summary>Asks for what <paramref name="reference"/> points at to be analyzed once the frame is drawn: the analyzer
+    /// opens with a root that shows as loading (<see cref="AnalyzerPanelView.Analyze(UiState, AnalyzerTree, CodeReference.Navigable)"/>),
+    /// and what the reference points at is found and analyzed then (<see cref="StartAnalyzing"/>).</summary>
+    public static void AnalyzeLater(UiState uiState, CodeReference.Navigable reference)
+    {
+        uiState.AppCommands.Enqueue(CreateAnalyze(uiState, reference));
+    }
+
+    private static AppCommand CreateAnalyze(UiState uiState, CodeReference.Navigable reference)
+    {
+        return appState =>
+        {
+            StartAnalyzing(appState, AnalyzerPanelView.Analyze(uiState, appState.Analyzer, reference));
+        };
+    }
+
+    /// <summary>Starts finding what the reference of <paramref name="pending"/> points at and analyzing it in its root
+    /// (<see cref="AnalyzeReferenceHandler"/>) now, counted in the app's background work until it ends.</summary>
+    public static void StartAnalyzing(AppState appState, PendingAnalysis pending)
+    {
+        appState.Workflows.Start(nameof(AnalyzeReferenceHandler), ct => appState.AnalyzeReferenceHandler.HandleAsync(appState.Analyzer, appState.ViewCommands, pending, ct));
+    }
+
+    /// <summary>Starts running the analysis <paramref name="run"/> is for (<see cref="RunAnalysisHandler"/>) now,
+    /// counted in the app's background work until it ends, on a token that cancelling the analysis cancels too;
+    /// nothing when no run started.</summary>
+    public static void StartAnalysis(AppState appState, AnalysisRun? run)
+    {
+        if (run is null)
+        {
+            return;
+        }
+
+        appState.Workflows.Start(nameof(RunAnalysisHandler), ct => appState.RunAnalysisHandler.HandleAsync(appState.Analyzer, run, ct), run.Work.Token);
+    }
+
+    /// <summary>Starts finding the symbols of the analyses <paramref name="restore"/> waits for
+    /// (<see cref="RestoreAnalysesHandler"/>) now, counted in the app's background work until it ends; nothing when none
+    /// waits.</summary>
+    public static void StartRestoringAnalyses(AppState appState, AnalysesRestore? restore)
+    {
+        if (restore is null)
+        {
+            return;
+        }
+
+        appState.Workflows.Start(nameof(RestoreAnalysesHandler),
+            ct => appState.RestoreAnalysesHandler.HandleAsync(appState.Analyzer, appState.Assemblies, appState.ViewCommands, restore, ct));
+    }
+
     /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening"/>), then the load of the last one shown: the input began the request in its own
     /// frame, and only opening the files, which takes longer than a frame, waits for the edge. Nothing when
@@ -99,7 +149,36 @@ public static class Commands
             return;
         }
 
-        Start(uiState, nameof(AssemblyLists.OpenListAsync), opening, static (a, o, ct) => AssemblyLists.OpenListAsync(a, o, ct));
+        uiState.AppCommands.Enqueue(CreateOpenList(opening));
+    }
+
+    private static AppCommand CreateOpenList(ListOpening opening)
+    {
+        return appState =>
+        {
+            StartOpeningList(appState, opening);
+        };
+    }
+
+    /// <summary>Asks for the list named <paramref name="name"/> to be switched to once the frame is drawn
+    /// (<see cref="AssemblyLists.SwitchAssemblyList"/>), and its files opened then (<see cref="StartOpeningList"/>).</summary>
+    public static void SwitchListLater(UiState uiState, string name)
+    {
+        Later(uiState, name, static (a, n) => StartOpeningList(a, AssemblyLists.SwitchAssemblyList(a, n)));
+    }
+
+    /// <summary>Starts opening the assemblies of the list <paramref name="opening"/> began opening
+    /// (<see cref="AssemblyLists.OpenListAsync"/>) now, then the loads that started in the tabs, and beside it the
+    /// finding of the list's analyses (<see cref="StartRestoringAnalyses"/>); nothing when it is null.</summary>
+    public static void StartOpeningList(AppState appState, ListOpening? opening)
+    {
+        if (opening is null)
+        {
+            return;
+        }
+
+        StartShowing(appState, nameof(AssemblyLists.OpenListAsync), ct => AssemblyLists.OpenListAsync(appState, opening, ct));
+        StartRestoringAnalyses(appState, opening.Analyses);
     }
 
     /// <summary>Asks for what going to a history entry left, <paramref name="move"/>, to be started once the frame is
@@ -219,7 +298,7 @@ public static class Commands
     public static void StartLoads(AppState appState, TabLoads loads)
     {
         loads.Switch(load => StartDecompiling(appState, load), read => StartReadingCards(appState, read), lookup => StartFindingNodes(appState, lookup),
-            run => StartComparing(appState, run));
+            run => StartComparing(appState, run), restore => StartRestoringAnalyses(appState, restore));
     }
 
     /// <summary>Starts finding the nodes <paramref name="lookup"/>'s reopened tabs wait for

@@ -48,7 +48,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         RegisterChosenIconFonts(host);
         Commands.StartShowing(_appState, nameof(OpenStartupAssembliesAsync), ct => OpenStartupAssembliesAsync(_appState, _startupFiles, ct));
         StartRedrawingOnAssemblyChanges(host);
-        RestoreAnalyses(_appState);
+        Commands.StartRestoringAnalyses(_appState, Analysis.BeginRestoring(_appState.Analyzer, _appState.Assemblies));
         WatchUserThemesOnStartup(_appState);
         CheckForUpdatesOnStartup(_appState);
         Background.StartForever(ApplyPendingArgumentsAsync(), problem => Errors.Report(_appState, problem));

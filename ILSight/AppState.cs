@@ -112,6 +112,15 @@ public sealed class AppState
     /// <summary>Runs the comparisons of assemblies the tabs show.</summary>
     public required CompareAssembliesHandler CompareAssembliesHandler { get; init; }
 
+    /// <summary>Runs the analyses the analyzer shows.</summary>
+    public required RunAnalysisHandler RunAnalysisHandler { get; init; }
+
+    /// <summary>Analyzes what a reference in the code points at.</summary>
+    public required AnalyzeReferenceHandler AnalyzeReferenceHandler { get; init; }
+
+    /// <summary>Analyzes again what was analyzed in the last run.</summary>
+    public required RestoreAnalysesHandler RestoreAnalysesHandler { get; init; }
+
     /// <summary>Opens files and shows what an id names among them, as a command line asks.</summary>
     public required OpenAndShowIdHandler OpenAndShowIdHandler { get; init; }
 

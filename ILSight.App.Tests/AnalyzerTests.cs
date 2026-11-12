@@ -50,7 +50,7 @@ public sealed class AnalyzerTests
         var symbol = Core.Analysis.Analyzers.Of(elsewhere)!;
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = Core.Analysis.Analyzers.KindsFor(symbol).Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
 
-        RunAnalysis(d.AppState, kind);
+        Commands.StartAnalysis(d.AppState, StartRun(kind));
         d.RunUntil(() => kind.IsDone);
 
         var message = Assert.IsType<AnalyzerMessageNode>(Assert.Single(kind.Found));
@@ -172,7 +172,7 @@ public sealed class AnalyzerTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
         d.TakeViewCommands();
 
-        AddToAnalyzer(d.AppState, reference);
+        Commands.StartAnalyzing(d.AppState, BeginAnalyzing(d.AppState.Analyzer, reference));
         d.Settle();
 
         var root = Assert.Single(d.AppState.Analyzer.Found());
@@ -240,7 +240,7 @@ public sealed class AnalyzerTests
         AddToAnalyzer(d.AppState, d.Fixture("Greeter"));
         d.TakeViewCommands();
 
-        AddToAnalyzer(d.AppState, reference);
+        Commands.StartAnalyzing(d.AppState, BeginAnalyzing(analyzer, reference));
         d.Settle();
 
         Assert.Equal(2, analyzer.Roots.Count);

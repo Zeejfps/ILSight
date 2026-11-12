@@ -20,7 +20,7 @@ public sealed class AssembliesTests
     private static List<ReopenedNodesLookup> ListLookups(TabLoads loads)
     {
         var lookups = new List<ReopenedNodesLookup>();
-        loads.Switch(static _ => { }, static _ => { }, lookups.Add, static _ => { });
+        loads.Switch(static _ => { }, static _ => { }, lookups.Add, static _ => { }, static _ => { });
         return lookups;
     }
 
@@ -28,7 +28,7 @@ public sealed class AssembliesTests
     private static List<DecompileTicket> ListDecompiles(TabLoads loads)
     {
         var decompiles = new List<DecompileTicket>();
-        loads.Switch(decompiles.Add, static _ => { }, static _ => { }, static _ => { });
+        loads.Switch(decompiles.Add, static _ => { }, static _ => { }, static _ => { }, static _ => { });
         return decompiles;
     }
 

@@ -110,7 +110,7 @@ internal static class DocumentsView
                 Commands.Later(ui.State, (screen: ui.State, tab, line: toggle.Line, t), static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t));
                 break;
             case CodeViewIntent.Analyze analyze:
-                Commands.Later(ui.State, (screen: ui.State, entity: analyze.Entity), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.entity));
+                Commands.AnalyzeLater(ui.State, analyze.Entity);
                 break;
             case CodeViewIntent.ShowInMetadata metadata:
                 Commands.ShowInMetadataLater(ui.State, metadata.Target, navigation.BeginResolving(inNewTab: false));

@@ -4,7 +4,6 @@ using ZGF.Gui.Immediate;
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Analysis;
-using static ILSight.Navigation;
 
 namespace ILSight;
 
@@ -82,41 +81,53 @@ public static class Analysis
         running.Work.Cancel();
     }
 
-    /// <summary>Runs the analysis over <paramref name="assemblies"/> unless it already started, counted in
-    /// <paramref name="backgroundWork"/>, calling <paramref name="changed"/> each time results come in. When it fails, it ends with a row
-    /// telling why and hands the exception to <paramref name="failed"/>.</summary>
-    internal static void StartAnalysisOnce(BackgroundWork backgroundWork, AnalyzerKindNode kind, AssemblyList assemblies, Action changed, Action<Exception> failed, Action<AppProblem> reportError)
+    /// <summary>Marks the analysis <paramref name="kind"/> stands for as running, unless it already started. Returns
+    /// the run, for <see cref="RunAnalysisHandler"/> to run over the open assemblies; null when it started
+    /// before.</summary>
+    public static AnalysisRun? StartRun(AnalyzerKindNode kind)
     {
         if (kind.HasStarted)
         {
-            return;
+            return null;
         }
 
         var work = new CancellationTokenSource();
         kind.Run = new AnalyzerRun.Running(work);
-        Background.Start(backgroundWork, nameof(RunKindAsync), RunKindAsync(kind, work, assemblies, changed, failed), reportError);
+        return new AnalysisRun { Kind = kind, Work = work };
     }
 
-    private static async Task RunKindAsync(AnalyzerKindNode kind, CancellationTokenSource work, AssemblyList assemblies, Action changed, Action<Exception> failed)
+    /// <summary>Adds <paramref name="found"/>, what <paramref name="run"/> found so far, to its analysis, and notes in
+    /// <paramref name="analyzer"/> that it found more; nothing once the run was stopped.</summary>
+    public static void AddFound(AnalyzerTree analyzer, AnalysisRun run, IReadOnlyList<AnalysisSymbol> found)
     {
-        var token = work.Token;
-        try
+        var kind = run.Kind;
+        if (kind.Work != run.Work)
         {
-            await foreach (var batch in Analyzers.RunAsync(assemblies, kind.Subject, kind.Kind, token))
-            {
-                Deliver(kind, work, CreateNodes(batch), changed);
-            }
+            return;
+        }
 
-            Finish(kind, work, [], changed);
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        kind.Found.AddRange(CreateNodes(found));
+        analyzer.NoteFindings();
+    }
+
+    /// <summary>Ends the analysis <paramref name="run"/> filled as done, with a row telling <paramref name="error"/>
+    /// when it failed, and notes it in <paramref name="analyzer"/>; nothing once the run was stopped.</summary>
+    public static void FinishRun(AnalyzerTree analyzer, AnalysisRun run, string? error)
+    {
+        var kind = run.Kind;
+        if (kind.Work != run.Work)
         {
+            return;
         }
-        catch (Exception e)
+
+        if (error is not null)
         {
-            Finish(kind, work, [new AnalyzerMessageNode { Error = e.Message }], changed);
-            failed(e);
+            kind.Found.Add(new AnalyzerMessageNode { Error = error });
         }
+
+        kind.Run = new AnalyzerRun.Done();
+        run.Work.Dispose();
+        analyzer.NoteFindings();
     }
 
     private static List<AnalyzerNode> CreateNodes(IReadOnlyList<AnalysisSymbol> symbols)
@@ -124,30 +135,6 @@ public static class Analysis
         return symbols
             .Select(static s => (AnalyzerNode)new AnalyzerSymbolNode { Symbol = s })
             .ToList();
-    }
-
-    private static void Deliver(AnalyzerKindNode kind, CancellationTokenSource work, List<AnalyzerNode> found, Action changed)
-    {
-        if (kind.Work != work)
-        {
-            return;
-        }
-
-        kind.Found.AddRange(found);
-        changed();
-    }
-
-    private static void Finish(AnalyzerKindNode kind, CancellationTokenSource work, List<AnalyzerNode> found, Action changed)
-    {
-        if (kind.Work != work)
-        {
-            return;
-        }
-
-        kind.Found.AddRange(found);
-        kind.Run = new AnalyzerRun.Done();
-        work.Dispose();
-        changed();
     }
 
     /// <summary>Analyzes the type or member <paramref name="node"/> stands for in the analyzer. Returns
@@ -170,163 +157,87 @@ public static class Analysis
         return appState.Analyzer.AddRoot(symbol);
     }
 
-    /// <summary>Runs the analysis <paramref name="kind"/> stands for over the open assemblies in the
-    /// background, unless it already started. When it fails, why is reported.</summary>
-    public static void RunAnalysis(AppState appState, AnalyzerKindNode kind)
+    /// <summary>Adds a root to <paramref name="analyzer"/> that shows as loading while what
+    /// <paramref name="reference"/> points at is found. Returns it with the reference, for
+    /// <see cref="AnalyzeReferenceHandler"/> to find and analyze.</summary>
+    public static PendingAnalysis BeginAnalyzing(AnalyzerTree analyzer, CodeReference.Navigable reference)
     {
-        var tree = appState.Analyzer;
-        StartAnalysisOnce(appState.Work, kind, appState.Assemblies, () => tree.NoteFindings(), error => ReportAnalysisFailure(appState, kind, error),
-            problem => Errors.Report(appState, problem));
+        return new PendingAnalysis { Root = analyzer.AddPending(savedAs: null), Reference = reference };
     }
 
-    private static void ReportAnalysisFailure(AppState appState, AnalyzerKindNode kind, Exception error)
+    /// <summary>The roots of <paramref name="analyzer"/> restored from the saved analyses that still wait for their
+    /// symbols, with the generation of <paramref name="assemblies"/> now, for <see cref="RestoreAnalysesHandler"/> to
+    /// find; null when none waits.</summary>
+    public static AnalysesRestore? BeginRestoring(AnalyzerTree analyzer, AssemblyList assemblies)
     {
-        Errors.Report(appState, new AppProblem.AnalysisFailed(kind.Subject.Label, kind.Kind, error));
-    }
-
-    /// <summary>Adds a root that shows as loading, in the analyzer, while what <paramref name="reference"/>
-    /// points at is found in the background, opening its assembly if it is not, and turns the root into
-    /// its analysis, which the view is commanded to show. The root goes when the reference does not
-    /// resolve, which is reported. Once the root was removed, as clearing the list removes them all,
-    /// what is found is dropped.</summary>
-    public static void AddToAnalyzer(AppState appState, CodeReference.Navigable reference)
-    {
-        Background.Start(appState.Work, nameof(AddToAnalyzerAsync), AddToAnalyzerAsync(appState, reference), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task AddToAnalyzerAsync(AppState appState, CodeReference.Navigable reference)
-    {
-        var root = appState.Analyzer.AddPending(savedAs: null);
-        var assemblies = appState.Assemblies;
-        var session = appState.Session;
-        var found = await Background.Run(() => NodeLookup.Find(assemblies, session, reference));
-        if (!appState.Analyzer.HasRoot(root))
+        var pending = analyzer.ListRestoring();
+        if (pending.Count == 0)
         {
-            return;
+            return null;
         }
 
-        switch (found)
+        return new AnalysesRestore
         {
-            case Outcome<BrowseNode>.Ok ok when ok.Value is not null:
-                AnalyzeFound(appState, root, ok.Value);
-                break;
-            case Outcome<BrowseNode>.Ok:
-                appState.Analyzer.RemoveRoot(root);
-                ReportUnresolvedReference(appState, reference, null);
-                break;
-            case Outcome<BrowseNode>.Failed failed:
-                appState.Analyzer.RemoveRoot(root);
-                ReportUnresolvedReference(appState, reference, failed.Error);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+            Roots = pending.ConvertAll(static r => r.Root),
+            Analyzed = pending.ConvertAll(static r => r.SavedAs),
+            Generation = assemblies.Generation,
+        };
     }
 
-    private static void ReportUnresolvedReference(AppState appState, CodeReference reference, Exception? error)
-    {
-        Errors.Report(appState, new AppProblem.Unresolved(reference, error));
-    }
-
-    private static void AnalyzeFound(AppState appState, AnalyzerPendingNode root, BrowseNode node)
+    /// <summary>Turns <paramref name="root"/> into the analysis of what <paramref name="node"/> stands for, which
+    /// <paramref name="viewCommands"/> has the view show; removes it when that cannot be analyzed.</summary>
+    public static void AnalyzeFound(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, BrowseNode node)
     {
         var symbol = Analyzers.Of(node);
         if (symbol is null)
         {
-            appState.Analyzer.RemoveRoot(root);
+            analyzer.RemoveRoot(root);
             return;
         }
-        ResolveAnalysis(appState, root, symbol);
+        ResolveAnalysis(analyzer, viewCommands, root, symbol);
     }
 
     /// <summary>Turns <paramref name="root"/> into the analysis of <paramref name="symbol"/>, and commands
     /// the view to show the root that analyzes it.</summary>
-    private static void ResolveAnalysis(AppState appState, AnalyzerPendingNode root, AnalysisSymbol symbol)
+    private static void ResolveAnalysis(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, AnalysisSymbol symbol)
     {
-        var shown = appState.Analyzer.ResolveRoot(root, symbol);
+        var shown = analyzer.ResolveRoot(root, symbol);
         if (shown is null)
         {
             return;
         }
 
-        appState.ViewCommands.Enqueue(new ViewCommand.ShowAnalysis(shown));
+        viewCommands.Enqueue(new ViewCommand.ShowAnalysis(shown));
     }
 
-    /// <summary>Finds the symbols of the roots restored from the saved analyses in the background,
-    /// opening their assemblies' files without listing them, and turns each root into the analysis of
-    /// its symbol, or removes it when its symbol is gone, unless the list was cleared meanwhile.
-    /// Reports why the symbols could not be found.</summary>
-    public static void RestoreAnalyses(AppState appState)
-    {
-        Background.Start(appState.Work, nameof(RestoreAnalysesAsync), RestoreAnalysesAsync(appState), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task RestoreAnalysesAsync(AppState appState)
-    {
-        var pending = appState.Analyzer.ListRestoring();
-        if (pending.Count == 0)
-        {
-            return;
-        }
-
-        var restoring = pending.ConvertAll(static r => r.Root);
-        var analyzed = pending.ConvertAll(static r => r.SavedAs);
-        var assemblies = appState.Assemblies;
-        var generation = assemblies.Generation;
-        var found = await Background.Run(() => FindAnalyzed(assemblies, analyzed));
-        if (WasListCleared(appState, generation))
-        {
-            return;
-        }
-
-        switch (found)
-        {
-            case Outcome<List<AnalysisSymbol?>>.Ok ok:
-                AnalyzeAgain(appState, restoring, ok.Value);
-                break;
-            case Outcome<List<AnalysisSymbol?>>.Failed failed:
-                Errors.Report(appState, new AppProblem.AnalysesNotRestored(failed.Error));
-                RemoveRoots(appState, restoring);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    private static bool WasListCleared(AppState appState, int generation)
-    {
-        return appState.Assemblies.Generation != generation;
-    }
-
-    private static List<AnalysisSymbol?> FindAnalyzed(AssemblyList assemblies, List<CodeAnchor> analyzed)
-    {
-        return analyzed.ConvertAll(a => Analyzers.Find(assemblies, a));
-    }
-
-    private static void AnalyzeAgain(AppState appState, List<AnalyzerPendingNode> restoring, List<AnalysisSymbol?> found)
+    /// <summary>Turns each of <paramref name="restoring"/> into the analysis of the symbol found for it, in order, or
+    /// removes it when none was.</summary>
+    public static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, IReadOnlyList<AnalyzerPendingNode> restoring,
+        List<AnalysisSymbol?> found)
     {
         for (var i = 0; i < restoring.Count; i++)
         {
-            AnalyzeAgain(appState, restoring[i], found[i]);
+            AnalyzeAgain(analyzer, viewCommands, restoring[i], found[i]);
         }
     }
 
-    private static void RemoveRoots(AppState appState, List<AnalyzerPendingNode> restoring)
+    /// <summary>Removes each of <paramref name="restoring"/> from <paramref name="analyzer"/>.</summary>
+    public static void RemoveRoots(AnalyzerTree analyzer, IReadOnlyList<AnalyzerPendingNode> restoring)
     {
         foreach (var root in restoring)
         {
-            appState.Analyzer.RemoveRoot(root);
+            analyzer.RemoveRoot(root);
         }
     }
 
-    private static void AnalyzeAgain(AppState appState, AnalyzerPendingNode root, AnalysisSymbol? symbol)
+    private static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, AnalysisSymbol? symbol)
     {
         if (symbol is null)
         {
-            appState.Analyzer.RemoveRoot(root);
+            analyzer.RemoveRoot(root);
             return;
         }
-        ResolveAnalysis(appState, root, symbol);
+        ResolveAnalysis(analyzer, viewCommands, root, symbol);
     }
 
     public static void SetRowStyle(AnalyzerRows rows, UiTheme theme, NodeIconPalette iconColors, AppIcons icons, Strings strings)
@@ -477,7 +388,7 @@ public static class Analysis
             return;
         }
 
-        rows.AppCommands.Enqueue(Commands.Create(kind, static (a, k) => Analysis.RunAnalysis(a, k)));
+        rows.AppCommands.Enqueue(Commands.Create(kind, static (a, k) => Commands.StartAnalysis(a, Analysis.StartRun(k))));
     }
 
     private static IReadOnlyList<AnalyzerNode> ListResults(AnalyzerRows rows, AnalyzerKindNode kind)

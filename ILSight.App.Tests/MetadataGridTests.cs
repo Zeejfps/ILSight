@@ -18,7 +18,7 @@ public sealed class MetadataGridTests
 
     private static (AppDriver App, DocumentTab Tab, MetadataGrid Grid) ShowTable(string name, int frames = 3)
     {
-        var app = AppDriver.Opened(width: 1800f);
+        var app = AppDriver.Opened(width: 2400f);
         app.Show(Table(app, name), frames);
         var tab = app.AppState.Tabs.Active!;
         return (app, tab, tab.Grid!);

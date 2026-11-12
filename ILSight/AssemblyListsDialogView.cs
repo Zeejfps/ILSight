@@ -161,7 +161,7 @@ internal static class AssemblyListsDialogView
             ui.Text(t.ListsCount(count), color: theme.TextMuted, size: theme.FontSizeSmall);
             if (ui.Button(t.ListsActivate, enabled: !active, id: "activate", variant: ButtonVariant.Ghost))
             {
-                Commands.Start(ui.State, nameof(SwitchAssemblyListAsync), name, static (a, n, ct) => SwitchAssemblyListAsync(a, n, ct));
+                Commands.SwitchListLater(ui.State, name);
             }
 
             return row.Interaction.DoubleClicked;
@@ -258,7 +258,7 @@ internal static class AssemblyListsDialogView
             AssemblyLists.StartRenaming(ui.State.ListsDialog, name);
             return;
         }
-        Commands.Start(ui.State, nameof(SwitchAssemblyListAsync), name, static (a, n, ct) => SwitchAssemblyListAsync(a, n, ct));
+        Commands.SwitchListLater(ui.State, name);
     }
 
     /// <summary>Keeps the name being typed when another row is picked, and drops a deletion being asked about.</summary>
@@ -327,7 +327,7 @@ internal static class AssemblyListsDialogView
         var active = picked == lists.Active;
         if (ui.MenuItem(t.ListsActivate, enabled: !active, id: "activate"))
         {
-            Commands.Start(ui.State, nameof(SwitchAssemblyListAsync), picked, static (a, n, ct) => SwitchAssemblyListAsync(a, n, ct));
+            Commands.SwitchListLater(ui.State, picked);
         }
 
         if (ui.MenuItem(t.ListsRename, Shortcuts.Rename, id: "rename"))

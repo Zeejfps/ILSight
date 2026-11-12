@@ -45,7 +45,7 @@ internal sealed class AppStateDriver
             _ui = AppRoot.CreateScreen(AppState, nuGetRequests);
         }
 
-        RestoreAnalyses(AppState);
+        Commands.StartRestoringAnalyses(AppState, Analysis.BeginRestoring(AppState.Analyzer, AppState.Assemblies));
     }
 
     private static SettingsLoadResult NoProblem(AppSettings? settings)
@@ -293,7 +293,7 @@ internal sealed class AppStateDriver
     /// <summary>Analyzes what <paramref name="reference"/> points at as the views do.</summary>
     public void Analyze(CodeReference.Navigable reference)
     {
-        AnalyzerPanelView.Analyze(Ui, AppState, reference);
+        Commands.StartAnalyzing(AppState, AnalyzerPanelView.Analyze(Ui, AppState.Analyzer, reference));
     }
 
     /// <summary>Opens the export dialog on the open assemblies, with <paramref name="picked"/> ticked.</summary>
