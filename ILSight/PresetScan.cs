@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight.AssemblyListKeeping;
+namespace ILSight;
 
 /// <summary>The ready-made lists this machine offers, as the lists dialog's preset menu shows them. Looking for them
 /// reads the installed frameworks' folders, which can take longer than a frame: the menu, opened the first time, asks
