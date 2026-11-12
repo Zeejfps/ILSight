@@ -13,9 +13,8 @@ public static class RuntimeAssemblies
     }
 
     /// <summary>The runtime's file of the assembly named <paramref name="simpleName"/>, or null.</summary>
-    /// <exception cref="IOException">The runtime's directories cannot be listed for now.</exception>
     internal static string? Find(InstalledRuntime runtime, string simpleName)
     {
-        return runtime.FilesByName.Value.GetValueOrDefault(simpleName);
+        return runtime.FilesByName.GetValueOrDefault(simpleName);
     }
 }

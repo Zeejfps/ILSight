@@ -78,7 +78,9 @@ internal static class AppRoot
     /// reach the world through, before anything is restored into it.</summary>
     private static AppState CreateAppState(AppSettings settings, BrowseSession session)
     {
-        var assemblies = new AssemblyList { Runtime = new InstalledRuntime { Directories = RuntimeFolders.FindDirectories() } };
+        var runtimeDirectories = RuntimeFolders.FindDirectories();
+        var runtime = new InstalledRuntime { Directories = runtimeDirectories, FilesByName = RuntimeFolders.IndexFiles(runtimeDirectories) };
+        var assemblies = new AssemblyList { Runtime = runtime };
         var errors = new ErrorLog();
         var work = new BackgroundWork();
         var opens = new OpenRequests();

@@ -139,19 +139,35 @@ public static class RuntimeFolders
     }
 
     /// <summary>The assembly files in <paramref name="directories"/>, by simple name, the first directory's
-    /// first.</summary>
-    internal static IReadOnlyDictionary<string, string> IndexFiles(ImmutableArray<(string Framework, string Path)> directories)
+    /// first; a directory that cannot be listed gives none.</summary>
+    public static IReadOnlyDictionary<string, string> IndexFiles(ImmutableArray<(string Framework, string Path)> directories)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (_, dir) in directories)
         {
-            foreach (var file in Directory.EnumerateFiles(dir, "*.dll"))
+            foreach (var file in ListAssemblyFiles(dir))
             {
                 result.TryAdd(Path.GetFileNameWithoutExtension(file), file);
             }
         }
 
         return result;
+    }
+
+    private static List<string> ListAssemblyFiles(string directory)
+    {
+        try
+        {
+            return Directory.EnumerateFiles(directory, "*.dll").ToList();
+        }
+        catch (IOException)
+        {
+            return [];
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     /// <summary>Every managed assembly in <paramref name="directories"/>, sorted by name.</summary>

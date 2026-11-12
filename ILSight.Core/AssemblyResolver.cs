@@ -151,24 +151,16 @@ public sealed class AssemblyResolver : IAssemblyResolver
         return FindInRuntime(reference.Name);
     }
 
-    /// <summary>The running runtime's file of <paramref name="name"/>; null when it has none, or its
-    /// directories cannot be listed for now.</summary>
+    /// <summary>The running runtime's file of <paramref name="name"/>; null when it has none.</summary>
     private AssemblyPath? FindInRuntime(string name)
     {
-        try
-        {
-            var found = RuntimeAssemblies.Find(List.Runtime, name);
-            if (found is null)
-            {
-                return null;
-            }
-
-            return AssemblyPath.Parse(found);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        var found = RuntimeAssemblies.Find(List.Runtime, name);
+        if (found is null)
         {
             return null;
         }
+
+        return AssemblyPath.Parse(found);
     }
 
     /// <summary>The main assembly's directory; for one read out of a package, then each folder of the
