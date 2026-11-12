@@ -3,6 +3,7 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Bookmarking;
+using ILSight.Exporting;
 
 namespace ILSight;
 
@@ -54,6 +55,7 @@ internal static class AppRoot
         var diagrams = new DiagramInfrastructure(errors, assemblies);
         var bookmarks = new BookmarkInfrastructure(errors, assemblies, session);
         var analysis = new AnalysisInfrastructure(errors, assemblies);
+        var exports = new ExportInfrastructure(errors, session);
         var viewCommands = new Queue<ViewCommand>();
         var appState = new AppState
         {
@@ -70,6 +72,10 @@ internal static class AppRoot
             ShowReopenedNodesHandler = new ShowReopenedNodesHandler(navigation),
             BookmarkImporting = new BookmarkImporting(bookmarks),
             ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),
+            ExportWriting = new ExportWriting(exports),
+            SaveResourceHandler = new SaveResourceHandler(exports),
+            ExtractPackageFileHandler = new ExtractPackageFileHandler(exports),
+            CheckExportFilesHandler = new CheckExportFilesHandler(exports),
             DiagramGrowing = new DiagramGrowing(diagrams),
             ReopenDiagramHandler = new ReopenDiagramHandler(diagrams),
             LayOutDiagramHandler = new LayOutDiagramHandler(diagrams),

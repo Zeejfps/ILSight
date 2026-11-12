@@ -6,6 +6,7 @@ using ILSight.Core.Resources;
 using ILSight.Localization;
 using ILSight.Bookmarking;
 using static ILSight.Exporting.Exports;
+using static ILSight.Exporting.ExportCommands;
 
 namespace ILSight;
 

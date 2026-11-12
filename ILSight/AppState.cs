@@ -97,6 +97,18 @@ public sealed class AppState
     /// <summary>Imports bookmarks from files, this app's or the real ILSpy's.</summary>
     public required BookmarkImporting BookmarkImporting { get; init; }
 
+    /// <summary>Writes an export the exports panel queued, once its turn comes.</summary>
+    public required ExportWriting ExportWriting { get; init; }
+
+    /// <summary>Saves the bytes of a resource to a file straight away.</summary>
+    public required SaveResourceHandler SaveResourceHandler { get; init; }
+
+    /// <summary>Writes a file of a package to a file straight away.</summary>
+    public required ExtractPackageFileHandler ExtractPackageFileHandler { get; init; }
+
+    /// <summary>Looks at what the export dialog names on the disk.</summary>
+    public required CheckExportFilesHandler CheckExportFilesHandler { get; init; }
+
     /// <summary>Exports the bookmarks to a file the real ILSpy reads.</summary>
     public required ExportBookmarksHandler ExportBookmarksHandler { get; init; }
 

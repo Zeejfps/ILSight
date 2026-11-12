@@ -36,6 +36,10 @@ public sealed class ExportSetup
 
     public AssemblyPicker Picker { get; } = new();
 
+    /// <summary>What the disk says about <see cref="Folder"/> and <see cref="StrongNameKeyFile"/>, looked at again each
+    /// time either changes.</summary>
+    public ExportFileChecks Files { get; } = new();
+
     /// <summary>The rows of the ticked assemblies picked out on the main page, to remove together.</summary>
     public MultiSelection<ExportChoice> RowSelection { get; } = new();
 

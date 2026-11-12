@@ -296,6 +296,35 @@ internal sealed class AppStateDriver
         Commands.StartAnalyzing(AppState, AnalyzerPanelView.Analyze(Ui, AppState.Analyzer, reference));
     }
 
+    /// <summary>What the disk says about the folder and key file the export dialog names, once the frame edge has
+    /// looked at them.</summary>
+    public ExportFileFacts CheckExportFiles()
+    {
+        LookAtExportFiles();
+        var setup = Ui.ExportSetup;
+        var facts = setup.Files.FindFacts(setup.Folder, setup.StrongNameKeyFile);
+        if (facts is null)
+        {
+            throw new InvalidOperationException("The frame edge looks at what an open export dialog names.");
+        }
+
+        return facts.Value;
+    }
+
+    /// <summary>Presses Export in the export dialog once the frame edge has looked at what it names on the disk, as the
+    /// command the button queues does.</summary>
+    public void StartExport()
+    {
+        LookAtExportFiles();
+        ExportDialogView.Start(Ui.ExportSetup, AppState);
+    }
+
+    private void LookAtExportFiles()
+    {
+        NextFrame();
+        Settle();
+    }
+
     /// <summary>Opens the export dialog on the open assemblies, with <paramref name="picked"/> ticked.</summary>
     public void OpenExportSetup(LoadedModule? picked)
     {

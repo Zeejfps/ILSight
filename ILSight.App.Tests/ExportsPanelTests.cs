@@ -2,6 +2,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Exporting;
 using static ILSight.Exporting.Exports;
+using static ILSight.Exporting.ExportCommands;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
@@ -119,8 +120,8 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle();
-        var running = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Running")).Result);
-        app.AppState.Export.EnterAsync(TestJobs.Named("Later"));
+        var running = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Running")).Turn.Result);
+        Assert.False(app.AppState.Export.Enter(TestJobs.Named("Later")).Turn.IsCompleted);
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Running"));
@@ -135,7 +136,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         OpenPanel(app.Ui, DockView.Exports);
-        var start = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Fixtures")).Result);
+        var start = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Fixtures")).Turn.Result);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
@@ -213,9 +214,9 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle();
-        var running = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Running")).Result);
-        app.AppState.Export.EnterAsync(TestJobs.Named("Second"));
-        app.AppState.Export.EnterAsync(TestJobs.Named("Third"));
+        var running = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Running")).Turn.Result);
+        Assert.False(app.AppState.Export.Enter(TestJobs.Named("Second")).Turn.IsCompleted);
+        Assert.False(app.AppState.Export.Enter(TestJobs.Named("Third")).Turn.IsCompleted);
         app.Run(2);
 
         Assert.True(app.Frames.Drew("1 running · 2 queued · 1 finished"));
@@ -230,7 +231,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         OpenPanel(app.Ui, DockView.Exports);
-        var start = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Both")).Result);
+        var start = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Both")).Turn.Result);
         start.Progress.Report(new ExportProgress("Fixtures", 2, 4, 0.5f));
         app.Run(2);
 
@@ -266,7 +267,7 @@ public sealed class ExportsPanelTests : IDisposable
     public void The_status_bar_shows_only_the_running_export_and_opens_the_panel()
     {
         var app = AppDriver.Opened();
-        var start = Assert.IsType<ExportStart>(app.AppState.Export.EnterAsync(TestJobs.Named("Fixtures")).Result);
+        var start = Assert.IsType<ExportStart>(app.AppState.Export.Enter(TestJobs.Named("Fixtures")).Turn.Result);
         app.Run(2);
         Assert.False(app.Ui.Layout.Contains(DockPanels.Exports));
 

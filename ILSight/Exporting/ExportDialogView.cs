@@ -165,7 +165,6 @@ internal static class ExportDialogView
     private static void Dialog(Ui<UiState> ui, DecompilerOptions options)
     {
         var setup = ui.State.ExportSetup;
-        var checks = ui.GetState<FileChecks>(ui.GetId("export-file-checks"));
         var choosing = setup.Page == ExportPage.Choose;
         var title = PageTitle(ui.State.Strings, setup.Page);
         using (var dialog = ui.WindowDialog("export-setup", title, ref setup.IsOpen, WindowWidth, WindowHeight, ref setup.Window.Bounds,
@@ -181,8 +180,8 @@ internal static class ExportDialogView
                 ChoosePage(ui, setup);
                 return;
             }
-            Body(ui, options, checks);
-            Footer(ui, checks);
+            Body(ui, options);
+            Footer(ui);
         }
     }
 
@@ -198,17 +197,17 @@ internal static class ExportDialogView
 
     /// <summary>Everything above the buttons, scrolling when the window is too short for it, so the
     /// buttons stay in reach.</summary>
-    private static void Body(Ui<UiState> ui, DecompilerOptions options, FileChecks checks)
+    private static void Body(Ui<UiState> ui, DecompilerOptions options)
     {
         var theme = ui.Theme;
         var setup = ui.State.ExportSetup;
         using (ui.Scroll("export-body", new Box { Height = Sizing.Grow(), Gap = theme.DialogGap }))
         {
             Chosen(ui);
-            Destination(ui, setup, checks);
+            Destination(ui, setup);
             ProjectOptions(ui, options);
             CodeOptions(ui, options);
-            BuildOutput(ui, setup, checks);
+            BuildOutput(ui, setup);
         }
     }
 
@@ -408,7 +407,7 @@ internal static class ExportDialogView
 
     /// <summary>Where the export goes: the folder, a warning when it holds files, and for several
     /// assemblies the solution's name.</summary>
-    private static void Destination(Ui<UiState> ui, ExportSetup setup, FileChecks checks)
+    private static void Destination(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
@@ -423,8 +422,8 @@ internal static class ExportDialogView
                     ui.PickFolder(t.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
                 }
             }
-            var files = CheckFiles(checks, setup);
-            if (files.FolderHoldsFiles)
+            var files = FindFiles(ui, setup);
+            if (files?.FolderHoldsFiles == true)
             {
                 ui.Text(t.ExportFolderWarning, color: theme.Warning, size: theme.FontSizeSmall, wrap: true);
             }
@@ -495,18 +494,18 @@ internal static class ExportDialogView
     }
 
     /// <summary>What is written besides the code: the strong-name key to sign with, and PDBs.</summary>
-    private static void BuildOutput(Ui<UiState> ui, ExportSetup setup, FileChecks checks)
+    private static void BuildOutput(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
         using (Section(ui))
         {
             ui.Label(t.ExportBuildOutput, bold: true);
-            Signing(ui, setup, checks);
+            Signing(ui, setup);
             Pdbs(ui, setup);
         }
     }
 
-    private static void Signing(Ui<UiState> ui, ExportSetup setup, FileChecks checks)
+    private static void Signing(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
@@ -519,8 +518,8 @@ internal static class ExportDialogView
                 ui.PickFile(t.ExportChooseKeyTitle, null, [new FileFilter(t.FileFilterSnk, ["*.snk"])], path => setup.StrongNameKeyFile = path);
             }
         }
-        var files = CheckFiles(checks, setup);
-        if (files.IsKeyFileMissing)
+        var files = FindFiles(ui, setup);
+        if (files?.IsKeyFileMissing == true)
         {
             ui.Text(t.ExportKeyFileMissing, color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
         }
@@ -544,7 +543,7 @@ internal static class ExportDialogView
     }
 
     /// <summary>What stops the export, if anything, beside the buttons, set off from the body by a rule.</summary>
-    private static void Footer(Ui<UiState> ui, FileChecks checks)
+    private static void Footer(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
@@ -552,7 +551,7 @@ internal static class ExportDialogView
         ui.Separator();
         using (ui.Row(new Box { Gap = theme.Gap }))
         {
-            var blocker = Exports.FindBlocker(setup, CheckFiles(checks, setup));
+            var blocker = Exports.FindBlocker(setup, FindFiles(ui, setup));
             var color = IsMistake(blocker) ? theme.Danger : theme.TextMuted;
             ui.Text(BlockerText(t, blocker), color: color, size: theme.FontSizeSmall, wrap: true);
             if (ui.Button(t.ExportCancel, id: "export-cancel", variant: ButtonVariant.Ghost))
@@ -583,6 +582,7 @@ internal static class ExportDialogView
             ExportBlocker.NamelessProject => t.ExportNeedsName,
             ExportBlocker.Clash clash => t.ExportNameClash(clash.Name),
             ExportBlocker.KeyFileMissing => t.ExportKeyFileMissing,
+            ExportBlocker.Checking => "",
             _ => throw new UnreachableException(),
         };
     }
@@ -707,78 +707,32 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>Closes the dialog and exports what it asks for, unless something stops the export.</summary>
+    /// <summary>Closes the dialog and exports what it asks for, unless something stops the export, or what the disk
+    /// says about the folder and key file it names is still being looked at.</summary>
     internal static void Start(ExportSetup setup, AppState appState)
     {
-        var files = ReadFiles(setup);
+        var files = setup.Files.FindFacts(setup.Folder, setup.StrongNameKeyFile);
         if (!Exports.CanExport(setup, files))
         {
             return;
         }
 
         Exports.CloseExportSetup(setup);
-        StartExport(appState, Exports.CreateRequest(setup));
+        ExportCommands.StartExport(appState, Exports.CreateRequest(setup));
     }
 
-    /// <summary>What the disk said about the folder and key file the dialog names, each by the name
-    /// last looked at.</summary>
-    private sealed class FileChecks
+    /// <summary>What the disk says about the folder and key file the dialog names, or null while it is being looked
+    /// at; a frame is asked for when no look at them was asked for yet, which the frame edge starts
+    /// (<see cref="AppFrames"/>).</summary>
+    private static ExportFileFacts? FindFiles(Ui<UiState> ui, ExportSetup setup)
     {
-        public Memo<string, bool> Folder;
-        public Memo<string, bool> KeyFile;
-    }
-
-    /// <summary>What the disk says about the folder and key file the dialog names, each looked up
-    /// again only when its name changes.</summary>
-    private static ExportFileFacts CheckFiles(FileChecks checks, ExportSetup setup)
-    {
-        if (!checks.Folder.TryGet(setup.Folder, out var holdsFiles))
+        var files = setup.Files;
+        var facts = files.FindFacts(setup.Folder, setup.StrongNameKeyFile);
+        if (facts is null && !files.HasAsked(setup.Folder, setup.StrongNameKeyFile))
         {
-            holdsFiles = HoldsFiles(setup.Folder.Trim());
-            checks.Folder = new Memo<string, bool>(setup.Folder, holdsFiles);
+            ui.RequestUpdate();
         }
 
-        if (!checks.KeyFile.TryGet(setup.StrongNameKeyFile, out var isMissing))
-        {
-            isMissing = IsFileMissing(setup.StrongNameKeyFile.Trim());
-            checks.KeyFile = new Memo<string, bool>(setup.StrongNameKeyFile, isMissing);
-        }
-
-        return new ExportFileFacts { FolderHoldsFiles = holdsFiles, IsKeyFileMissing = isMissing };
-    }
-
-    /// <summary>What the disk says now about the folder and key file <paramref name="setup"/> names.</summary>
-    internal static ExportFileFacts ReadFiles(ExportSetup setup)
-    {
-        return new ExportFileFacts
-        {
-            FolderHoldsFiles = HoldsFiles(setup.Folder.Trim()),
-            IsKeyFileMissing = IsFileMissing(setup.StrongNameKeyFile.Trim()),
-        };
-    }
-
-    private static bool HoldsFiles(string folder)
-    {
-        if (!Path.IsPathFullyQualified(folder))
-        {
-            return false;
-        }
-
-        if (!Directory.Exists(folder))
-        {
-            return false;
-        }
-
-        return Directory.EnumerateFileSystemEntries(folder).Any();
-    }
-
-    private static bool IsFileMissing(string file)
-    {
-        if (file.Length == 0)
-        {
-            return false;
-        }
-
-        return !File.Exists(file);
+        return facts;
     }
 }

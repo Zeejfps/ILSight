@@ -90,10 +90,10 @@ public sealed class ExportDialogTests : IDisposable
         setup.Choices[1].Name = setup.Choices[0].Name.ToUpperInvariant();
 
         Assert.NotNull(setup.Clash);
-        Assert.False(Exports.CanExport(setup, ExportDialogView.ReadFiles(setup)));
+        Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
         setup.Choices[1].Name = "Other";
         Assert.Null(setup.Clash);
-        Assert.True(Exports.CanExport(setup, ExportDialogView.ReadFiles(setup)));
+        Assert.True(Exports.CanExport(setup, d.CheckExportFiles()));
     }
 
     [Fact]
@@ -104,11 +104,11 @@ public sealed class ExportDialogTests : IDisposable
         var setup = d.Ui.ExportSetup;
 
         setup.Folder = "relative";
-        Assert.False(Exports.CanExport(setup, ExportDialogView.ReadFiles(setup)));
+        Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
         setup.Folder = _temp.Path;
-        Assert.True(Exports.CanExport(setup, ExportDialogView.ReadFiles(setup)));
+        Assert.True(Exports.CanExport(setup, d.CheckExportFiles()));
         Exports.IncludeAll(setup, false);
-        Assert.False(Exports.CanExport(setup, ExportDialogView.ReadFiles(setup)));
+        Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
     }
 
     [Fact]
@@ -185,12 +185,12 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
-        Assert.False(ExportDialogView.ReadFiles(setup).FolderHoldsFiles);
+        Assert.False(d.CheckExportFiles().FolderHoldsFiles);
 
         setup.Folder = _temp.PathOf("Full");
         _temp.Write(Path.Combine("Full", "notes.txt"), "keep");
 
-        Assert.True(ExportDialogView.ReadFiles(setup).FolderHoldsFiles);
+        Assert.True(d.CheckExportFiles().FolderHoldsFiles);
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public sealed class ExportDialogTests : IDisposable
         setup.Folder = _temp.Path;
         setup.Choices[0].Name = "Renamed";
 
-        ExportDialogView.Start(d.Ui.ExportSetup, d.AppState);
+        d.StartExport();
         d.Settle();
 
         Assert.False(setup.IsOpen);
@@ -219,7 +219,7 @@ public sealed class ExportDialogTests : IDisposable
         Exports.IncludeAll(setup, true);
         setup.SolutionName = "Both";
 
-        ExportDialogView.Start(d.Ui.ExportSetup, d.AppState);
+        d.StartExport();
         d.Settle();
 
         Assert.True(File.Exists(_temp.PathOf("Both.sln")));
@@ -558,12 +558,12 @@ public sealed class ExportDialogTests : IDisposable
         setup.Folder = _temp.Path;
 
         setup.StrongNameKeyFile = _temp.PathOf("missing.snk");
-        Assert.True(ExportDialogView.ReadFiles(setup).IsKeyFileMissing);
-        Assert.False(Exports.CanExport(setup, ExportDialogView.ReadFiles(setup)));
+        Assert.True(d.CheckExportFiles().IsKeyFileMissing);
+        Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
 
         setup.StrongNameKeyFile = _temp.Write("signing.snk", [1, 2, 3]);
-        Assert.False(ExportDialogView.ReadFiles(setup).IsKeyFileMissing);
-        Assert.True(Exports.CanExport(setup, ExportDialogView.ReadFiles(setup)));
+        Assert.False(d.CheckExportFiles().IsKeyFileMissing);
+        Assert.True(Exports.CanExport(setup, d.CheckExportFiles()));
     }
 
     [Fact]
@@ -575,7 +575,7 @@ public sealed class ExportDialogTests : IDisposable
         setup.Folder = _temp.Path;
         setup.GeneratePdb = true;
 
-        ExportDialogView.Start(d.Ui.ExportSetup, d.AppState);
+        d.StartExport();
         d.Settle();
 
         var pdb = _temp.PathOf(LoadedAssemblies.GetPdbFileName(Fixtures(d)));

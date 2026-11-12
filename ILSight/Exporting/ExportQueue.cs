@@ -23,20 +23,21 @@ public sealed class ExportQueue
     /// <summary>The waiting exports, next first.</summary>
     public IEnumerable<QueuedExport> Waiting => _waiting.Select(static t => t.Export);
 
-    /// <summary>Queues <paramref name="job"/>, which has one part until it reports otherwise. The task
-    /// completes when its turn comes: at once when nothing runs. A started export ends its turn with
+    /// <summary>Queues <paramref name="job"/>, which has one part until it reports otherwise. Its turn comes at once
+    /// when nothing runs, else when the exports queued before it have ended. A started export ends its turn with
     /// <see cref="ExportStart.EndTurn"/>.</summary>
-    public Task<ExportTurn> EnterAsync(ExportJob job)
+    public ExportTicket Enter(ExportJob job)
     {
         _lastRun++;
+        var run = new ExportRun(_lastRun);
         var started = new TaskCompletionSource<ExportTurn>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _waiting.Add(new Turn(new QueuedExport(new ExportRun(_lastRun), job), started));
+        _waiting.Add(new Turn(new QueuedExport(run, job), started));
         if (!IsRunning)
         {
             StartNext();
         }
 
-        return started.Task;
+        return new ExportTicket { Run = run, Job = job, Turn = started.Task };
     }
 
     /// <summary>Asks the running export to stop; the waiting ones still get their turn.</summary>

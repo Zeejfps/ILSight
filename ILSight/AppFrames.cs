@@ -2,6 +2,7 @@ using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Processes;
+using ILSight.Exporting;
 using static ILSight.AssemblyLists;
 using static ILSight.CodeDisplay;
 using static ILSight.Decompilation;
@@ -37,8 +38,9 @@ internal static class AppFrames
     /// preferences pick, follows the open assemblies and analyses in the trees, what the open tabs show and
     /// the active tab; then the commands the features queued for the view run, the screen follows the tabs
     /// opened and closed in the layout and focuses another tab when none is active; then the open
-    /// assemblies are read again when the options that apply as they are read changed, and the tabs in
-    /// front decompile again when the language or the options changed.</summary>
+    /// assemblies are read again when the options that apply as they are read changed, the tabs in
+    /// front decompile again when the language or the options changed, and the disk is looked at for the
+    /// export dialog's folder and key file when they changed.</summary>
     internal static void StartFrame(UiState uiState, AppState appState)
     {
         ApplyThemeAndLanguage(uiState, ResolveTheme(appState), appState.Locale);
@@ -52,7 +54,33 @@ internal static class AppFrames
         FocusNextTabIfNone(uiState, appState.Navigation, appState.Language, appState.DecompilerOptions);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
+        FollowExportSetup(uiState.ExportSetup, appState);
         ShowNewErrors(uiState, appState.Errors);
+    }
+
+    /// <summary>While the export dialog is open, starts looking at what it names on the disk now, before the frame
+    /// draws, when the names changed since the last look (<see cref="CheckExportFilesHandler"/>), counted in the app's
+    /// background work until it ends.</summary>
+    private static void FollowExportSetup(ExportSetup setup, AppState appState)
+    {
+        if (!setup.IsOpen)
+        {
+            return;
+        }
+
+        var check = setup.Files.StartCheck(setup.Folder, setup.StrongNameKeyFile);
+        if (check is null)
+        {
+            return;
+        }
+
+        StartCheckingFiles(appState, setup.Files, check);
+    }
+
+    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartCheckingFiles(AppState appState, ExportFileChecks files, ExportFileCheck check)
+    {
+        appState.Workflows.Start(nameof(CheckExportFilesHandler), ct => appState.CheckExportFilesHandler.HandleAsync(files, check, ct));
     }
 
     /// <summary>Does what comes before the "open from NuGet" dialog draws: hands the package it downloaded over to

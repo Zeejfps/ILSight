@@ -1,17 +1,15 @@
-using ZGF.Gui.Immediate.Widgets;
-using static ILSight.Exporting.Exports;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
-using ILSight.Core.Diagrams;
 
 namespace ILSight.Exporting;
 
 
-/// <summary>Writing code, projects, solutions, portable PDBs, class diagrams and the files of packages to files in the
-/// background, one export at a time in the order they were asked for, which <see cref="AppState.Export"/>
-/// queues. Each that runs ends in an <see cref="ExportReport"/> in <see cref="AppState.FinishedExports"/>.
-/// Resources and single files of packages are written straight away.</summary>
+/// <summary>The exports of code, projects, solutions, portable PDBs, class diagrams and the files of packages: which
+/// are asked for and queued in <see cref="AppState.Export"/>, to be written one at a time in the order they were asked
+/// for (<see cref="ExportWriting"/>), the reports of those that ended in <see cref="AppState.FinishedExports"/>, and the
+/// export dialog's choices. Resources and single files of packages are written straight away
+/// (<see cref="SaveResourceHandler"/>, <see cref="ExtractPackageFileHandler"/>).</summary>
 public static class Exports
 {
     private const string ProjectExtension = ".csproj";
@@ -34,160 +32,16 @@ public static class Exports
         return NodeContentLoader.DependsOnLanguage(node);
     }
 
-    /// <summary>Saves <paramref name="node"/> to the file at <paramref name="path"/>: a resource's
-    /// bytes as they are, else its code in the current language, as one file. Projects come from the
-    /// export dialog.</summary>
-    public static void SaveCode(AppState appState, BrowseNode node, string path)
+    /// <summary>Queues the export <paramref name="job"/> and brings the exports panel to the front, where it waits,
+    /// runs and ends; its turn comes once the exports queued before it have ended (<see cref="ExportWriting"/>).</summary>
+    public static ExportTicket Enter(ExportQueue queue, Queue<ViewCommand> viewCommands, ExportJob job)
     {
-        if (node.HasResource)
-        {
-            SaveResource(appState, node, path);
-            return;
-        }
-        WriteCodeFile(appState, node, path);
-    }
-
-    /// <summary>Writes the bytes of the resource <paramref name="node"/> stands for to the file at
-    /// <paramref name="path"/>.</summary>
-    public static void SaveResource(AppState appState, BrowseNode node, string path)
-    {
-        try
-        {
-            var bytes = BrowseNodes.ReadResource(node);
-            File.WriteAllBytes(path, bytes);
-        }
-        catch (Exception e) when (IsFileError(e))
-        {
-            Errors.Report(appState, new AppProblem.ResourceNotSaved(node.Text, e.Message));
-        }
-    }
-
-    private static bool IsFileError(Exception e)
-    {
-        if (e is IOException)
-        {
-            return true;
-        }
-
-        if (e is UnauthorizedAccessException)
-        {
-            return true;
-        }
-
-        return e is InvalidDataException;
-    }
-
-    /// <summary>Writes the file of a package <paramref name="place"/> stands for, as the package holds
-    /// it, to the file at <paramref name="path"/>.</summary>
-    public static void ExtractPackageFile(AppState appState, PackagePlace place, string path)
-    {
-        try
-        {
-            var bytes = AssemblyPackages.ReadFile(place.Container.Package, place.File);
-            File.WriteAllBytes(path, bytes);
-        }
-        catch (Exception e) when (IsFileError(e))
-        {
-            Errors.Report(appState, new AppProblem.PackageFileNotExtracted(place.File.Name, e.Message));
-        }
-    }
-
-    private static void WriteCodeFile(AppState appState, BrowseNode node, string path)
-    {
-        var language = appState.Language;
-        var options = appState.DecompilerOptions;
-        var session = appState.Session;
-        var job = new ExportJob(node.Text, CodeKindOf(language), FolderOf(path));
-        RunExport(appState, job, node.Text, s => SaveCodeFile(session, node, language, options, path, s.Token), (r, written) => ReportWritten(r, written));
-    }
-
-    private static ExportKind CodeKindOf(DecompilationLanguage language)
-    {
-        if (language == DecompilationLanguage.CSharp)
-        {
-            return ExportKind.CSharpFile;
-        }
-
-        return ExportKind.ILFile;
-    }
-
-    /// <summary>Writes the code of <paramref name="node"/> to <paramref name="path"/>; returns the path written.</summary>
-    private static string SaveCodeFile(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        string path, CancellationToken cancellationToken)
-    {
-        NodeContentLoader.SaveCode(session, node, language, options, path, cancellationToken);
-        return path;
-    }
-
-    /// <summary>The folder of <paramref name="path"/>, which a save dialog gave, and so names a file in one.</summary>
-    private static string FolderOf(string path)
-    {
-        var folder = Path.GetDirectoryName(path);
-        if (folder is null)
-        {
-            throw new UnreachableException($"'{path}', which a save dialog gave, names no file in a folder.");
-        }
-
-        return folder;
-    }
-
-    /// <summary>Queues <paramref name="job"/> and shows the exports panel, where it waits, runs and
-    /// ends. Once its turn comes, does <paramref name="work"/> in the background, then records how it
-    /// ended, exporting <paramref name="subject"/> as a failure tells, and lets <paramref name="complete"/>
-    /// add what a finished one wrote. One taken out of the queue leaves nothing behind.</summary>
-    private static void RunExport<T>(AppState appState, ExportJob job, string subject, Func<ExportStart, T> work,
-        Func<ExportReport, T, ExportReport> complete)
-    {
-        Background.Start(appState.Work, nameof(RunExportAsync), RunExportAsync(appState, job, subject, work, complete), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task RunExportAsync<T>(AppState appState, ExportJob job, string subject, Func<ExportStart, T> work,
-        Func<ExportReport, T, ExportReport> complete)
-    {
-        appState.ViewCommands.Enqueue(new ViewCommand.OpenPanel(DockView.Exports));
-        var turn = await appState.Export.EnterAsync(job);
-        if (turn is not ExportStart start)
-        {
-            return;
-        }
-
-        var clock = Stopwatch.StartNew();
-        var outcome = await Background.Run(() => work(start));
-        start.EndTurn();
-        var report = outcome switch
-        {
-            Outcome<T>.Ok ok => complete(ReportFinished(start.Run, job, clock.Elapsed), ok.Value),
-            Outcome<T>.Failed failed => ReportEnded(start.Run, job, failed.Error, subject, clock.Elapsed),
-            _ => throw new UnreachableException(),
-        };
-        appState.FinishedExports.Add(report);
-    }
-
-    /// <summary>The report of the export <paramref name="run"/> of <paramref name="job"/> that finished,
-    /// with nothing written yet.</summary>
-    private static ExportReport ReportFinished(ExportRun run, ExportJob job, TimeSpan elapsed)
-    {
-        var finished = new ExportEnd.Finished { Written = [], Problems = [] };
-        return new ExportReport(run, job, finished, elapsed, Directory.Exists(job.Folder));
-    }
-
-    /// <summary>The report of the export <paramref name="run"/> of <paramref name="job"/> that ended
-    /// with <paramref name="error"/>: cancelled when it was cancelled, else failed, exporting
-    /// <paramref name="subject"/>.</summary>
-    private static ExportReport ReportEnded(ExportRun run, ExportJob job, Exception error, string subject, TimeSpan elapsed)
-    {
-        var folderExists = Directory.Exists(job.Folder);
-        if (error is OperationCanceledException)
-        {
-            return new ExportReport(run, job, new ExportEnd.Cancelled(), elapsed, folderExists);
-        }
-
-        var failed = new ExportEnd.Failed { Subject = subject, Error = error };
-        return new ExportReport(run, job, failed, elapsed, folderExists);
+        viewCommands.Enqueue(new ViewCommand.OpenPanel(DockView.Exports));
+        return queue.Enter(job);
     }
 
     /// <summary><paramref name="report"/> listing <paramref name="written"/>.</summary>
-    private static ExportReport ReportWritten(ExportReport report, params string[] written)
+    public static ExportReport ReportWritten(ExportReport report, params string[] written)
     {
         return ReportFinished(report, written, []);
     }
@@ -199,22 +53,10 @@ public static class Exports
         return report with { End = new ExportEnd.Finished { Written = written, Problems = problems } };
     }
 
-    /// <summary>Decompiles <paramref name="assembly"/> into a C# project whose file is
-    /// <paramref name="projectPath"/>, with what <paramref name="extras"/> asks for besides. The export
-    /// dialog warns about a folder that holds files before this is asked for.</summary>
-    public static void ExportProject(AppState appState, LoadedModule assembly, string projectPath, ProjectExtras? extras = null)
-    {
-        var withExtras = extras ?? ProjectExtras.None;
-        var options = appState.DecompilerOptions;
-        var job = new ExportJob(Path.GetFileNameWithoutExtension(projectPath), ExportKind.Project, FolderOf(projectPath));
-        RunExport(appState, job, assembly.Name, s => AssemblyExport.ExportProject(assembly, options, projectPath, withExtras, s.Progress, s.Token),
-            (r, project) => ReportProjects(r, [project], projectPath));
-    }
-
     /// <summary><paramref name="report"/> listing <paramref name="first"/>, each of
     /// <paramref name="projects"/> and the PDBs written beside them as written, with the parts the
     /// projects could not decompile and the PDBs that could not be written as its problems.</summary>
-    private static ExportReport ReportProjects(ExportReport report, IReadOnlyList<ExportedProject> projects, string first)
+    public static ExportReport ReportProjects(ExportReport report, IReadOnlyList<ExportedProject> projects, string first)
     {
         var pdbs = projects
             .Select(static p => p.Pdb)
@@ -238,16 +80,6 @@ public static class Exports
         return ReportFinished(report, written, problems);
     }
 
-    /// <summary>Decompiles each of <paramref name="projects"/> into a C# project in a folder of its own
-    /// beside the solution at <paramref name="solutionPath"/>.</summary>
-    private static void ExportSolution(AppState appState, List<SolutionProject> projects, string solutionPath, ProjectExtras extras)
-    {
-        var options = appState.DecompilerOptions;
-        var job = new ExportJob(Path.GetFileNameWithoutExtension(solutionPath), ExportKind.Solution, FolderOf(solutionPath));
-        RunExport(appState, job, "", s => AssemblyExport.ExportSolution(projects, options, solutionPath, extras, s.Progress, s.Token),
-            (r, exported) => ReportProjects(r, exported, solutionPath));
-    }
-
     /// <summary>The assembly of the node the active tab shows, or null when it shows none that was read.</summary>
     public static LoadedModule? FindActiveAssembly(DocumentTabs tabs)
     {
@@ -259,71 +91,41 @@ public static class Exports
         return assembly;
     }
 
-    /// <summary>Exports what <paramref name="request"/> asks for: one assembly as a project straight
-    /// into the folder, several as a solution with a folder per project.</summary>
-    public static void StartExport(AppState appState, ExportRequest request)
+    /// <summary>What <paramref name="request"/> asks to export, decompiled with <paramref name="options"/>: one
+    /// assembly as a project straight into the folder, several as a solution with a folder per project.</summary>
+    public static ExportWork ToWork(ExportRequest request, DecompilerOptions options)
     {
         var folder = request.Folder;
         var projects = request.Projects;
         if (request.IsSolution)
         {
             var solutionPath = Path.Combine(folder, request.SolutionFileName);
-            ExportSolution(appState, projects, solutionPath, request.Extras);
-            return;
+            return new ExportWork.Solution { Projects = projects, Options = options, SolutionFile = solutionPath, Extras = request.Extras };
         }
+
         var project = projects[0];
         var projectPath = Path.Combine(folder, AssemblyExport.CleanProjectName(project.Name) + ProjectExtension);
-        ExportProject(appState, project.Assembly, projectPath, request.Extras);
+        return new ExportWork.Project { Assembly = project.Assembly, Options = options, ProjectFile = projectPath, Extras = request.Extras };
     }
 
-    /// <summary>Writes a portable PDB of <paramref name="assembly"/>'s decompiled C# to
-    /// <paramref name="path"/>.</summary>
-    public static void GeneratePdb(AppState appState, LoadedModule assembly, string path)
+    /// <summary><paramref name="report"/> listing the diagrammer's <paramref name="page"/>, which is opened through
+    /// <paramref name="viewCommands"/>.</summary>
+    public static ExportReport OpenDiagram(Queue<ViewCommand> viewCommands, ExportReport report, string page)
     {
-        var options = appState.DecompilerOptions;
-        var job = new ExportJob(assembly.Name, ExportKind.Pdb, FolderOf(path));
-        RunExport(appState, job, assembly.Name, s => GeneratePdbFile(assembly, options, path, s), (r, written) => ReportWritten(r, written));
-    }
-
-    /// <summary>Writes the PDB of <paramref name="assembly"/> to <paramref name="path"/>; returns the path written.</summary>
-    private static string GeneratePdbFile(LoadedModule assembly, DecompilerOptions options, string path, ExportStart start)
-    {
-        AssemblyExport.GeneratePdb(assembly, options, path, start.Progress, start.Token);
-        return path;
-    }
-
-    /// <summary>Writes the HTML class diagrammer of <paramref name="assembly"/> into a folder of its
-    /// own in <paramref name="folder"/>, named after it, and opens it once written.</summary>
-    public static void CreateDiagram(AppState appState, LoadedModule assembly, string folder)
-    {
-        var diagramFolder = Path.Combine(folder, assembly.Name + DiagramFolderSuffix);
-        var job = new ExportJob(assembly.Name, ExportKind.Diagram, diagramFolder);
-        RunExport(appState, job, assembly.Name, s => ClassDiagrams.Write(assembly, diagramFolder, s.Progress, s.Token),
-            (r, page) => OpenDiagram(appState, r, page));
-    }
-
-    /// <summary><paramref name="report"/> listing the diagrammer's <paramref name="page"/>, which is
-    /// opened.</summary>
-    private static ExportReport OpenDiagram(AppState appState, ExportReport report, string page)
-    {
-        appState.ViewCommands.Enqueue(new ViewCommand.OpenFile(page));
+        viewCommands.Enqueue(new ViewCommand.OpenFile(page));
         return ReportWritten(report, page);
     }
 
-    /// <summary>Writes a portable PDB of each open assembly into <paramref name="folder"/>, named
-    /// after the assembly. Assemblies that cannot have one, or fail, are the report's problems.</summary>
-    public static void GeneratePdbs(AppState appState, string folder)
+    /// <summary>The folder the class diagrammer of <paramref name="assembly"/> is written into: a folder of its own in
+    /// <paramref name="folder"/>, named after it.</summary>
+    public static string GetDiagramFolder(LoadedModule assembly, string folder)
     {
-        var options = appState.DecompilerOptions;
-        var assemblies = appState.Assemblies.Assemblies;
-        var job = new ExportJob(Path.GetFileName(folder), ExportKind.Pdbs, folder);
-        RunExport(appState, job, "", s => AssemblyExport.GeneratePdbs(assemblies, options, folder, s.Progress, s.Token),
-            (r, failures) => ReportPdbs(r, assemblies, failures, folder));
+        return Path.Combine(folder, assembly.Name + DiagramFolderSuffix);
     }
 
     /// <summary><paramref name="report"/> listing the PDB of each of <paramref name="assemblies"/> that
     /// is not among <paramref name="failures"/> as written, and the failures as its problems.</summary>
-    private static ExportReport ReportPdbs(ExportReport report, IReadOnlyList<LoadedModule> assemblies, List<PdbFailure> failures,
+    public static ExportReport ReportPdbs(ExportReport report, IReadOnlyList<LoadedModule> assemblies, List<PdbFailure> failures,
         string folder)
     {
         var failed = failures
@@ -347,19 +149,9 @@ public static class Exports
         };
     }
 
-    /// <summary>Writes every file in the folder of a package <paramref name="place"/> stands for, shown as
-    /// <paramref name="name"/>, into <paramref name="folder"/>, at its path from that folder. Files that
-    /// cannot be written there are the report's problems.</summary>
-    public static void ExtractPackageFolder(AppState appState, string name, PackageFolderPlace place, string folder)
-    {
-        var job = new ExportJob(name, ExportKind.Files, folder);
-        RunExport(appState, job, name, s => AssemblyPackages.ExtractFolder(place.Container.Package, place.Folder, folder, s.Progress, s.Token),
-            (r, extracted) => ReportExtracted(r, extracted));
-    }
-
     /// <summary><paramref name="report"/> listing the files <paramref name="extracted"/> wrote, and those
     /// it could not as its problems.</summary>
-    private static ExportReport ReportExtracted(ExportReport report, ExtractedFiles extracted)
+    public static ExportReport ReportExtracted(ExportReport report, ExtractedFiles extracted)
     {
         var problems = extracted.Failures
             .Select(ProblemOf)
@@ -605,8 +397,8 @@ public static class Exports
 
     /// <summary>The first thing that keeps the export from starting, or null: it needs at least one
     /// assembly, a folder, a name for each project that no other takes, and no key file that is not
-    /// there, as <paramref name="files"/> says.</summary>
-    public static ExportBlocker? FindBlocker(ExportSetup setup, ExportFileFacts files)
+    /// there, as <paramref name="files"/> says, which is null while the disk is being looked at.</summary>
+    public static ExportBlocker? FindBlocker(ExportSetup setup, ExportFileFacts? files)
     {
         if (setup.IncludedCount == 0)
         {
@@ -629,7 +421,12 @@ public static class Exports
             return new ExportBlocker.Clash(clash);
         }
 
-        if (files.IsKeyFileMissing)
+        if (files is null)
+        {
+            return new ExportBlocker.Checking();
+        }
+
+        if (files.Value.IsKeyFileMissing)
         {
             return new ExportBlocker.KeyFileMissing();
         }
@@ -637,7 +434,7 @@ public static class Exports
         return null;
     }
 
-    public static bool CanExport(ExportSetup setup, ExportFileFacts files)
+    public static bool CanExport(ExportSetup setup, ExportFileFacts? files)
     {
         return FindBlocker(setup, files) is null;
     }
