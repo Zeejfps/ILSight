@@ -10,7 +10,6 @@ namespace ILSight.Core;
 /// it has got and stopping when cancelled.</summary>
 public static class AssemblyExport
 {
-    internal const string ProjectExtension = ".csproj";
     /// <summary>Decompiles <paramref name="assembly"/> into a project whose file is
     /// <paramref name="projectPath"/>, with its code and resources in the folder beside it, and
     /// writes what <paramref name="extras"/> asks for besides.</summary>
@@ -106,7 +105,7 @@ public static class AssemblyExport
         {
             cancellationToken.ThrowIfCancellationRequested();
             var project = projects[i];
-            var projectPath = FullFilePath.Of(ProjectPathIn(folder, project.Name));
+            var projectPath = FullFilePath.Of(ExportNames.ProjectPathIn(folder, project.Name));
             var part = Part(progress, project.Assembly, i, bounds);
             exported.Add(ExportProject(project.Assembly, options, projectPath, withExtras, part, cancellationToken));
         }
@@ -115,61 +114,6 @@ public static class AssemblyExport
         return exported;
     }
 
-    /// <summary>Where the project named <paramref name="name"/> of a solution in
-    /// <paramref name="folder"/> is written: in a folder of its own, named as it is.</summary>
-    public static string ProjectPathIn(string folder, string name)
-    {
-        var clean = CleanProjectName(name);
-        return Path.Combine(folder, clean, clean + ProjectExtension);
-    }
-
-    /// <summary>The file name of a solution named <paramref name="name"/>, with or without its
-    /// extension, made safe for a file name.</summary>
-    public static string SolutionFileName(string name)
-    {
-        var trimmed = name.Trim();
-        if (trimmed.EndsWith(SolutionExtension, StringComparison.OrdinalIgnoreCase))
-        {
-            trimmed = trimmed.Substring(0, trimmed.Length - SolutionExtension.Length);
-        }
-
-        return WholeProjectDecompiler.CleanUpFileName(trimmed, SolutionExtension);
-    }
-
-    private const string SolutionExtension = ".sln";
-
-    /// <summary><paramref name="name"/> made safe for a file and folder name.</summary>
-    public static string CleanProjectName(string name)
-    {
-        return WholeProjectDecompiler.CleanUpDirectoryName(name.Trim());
-    }
-
-    /// <summary>A project of each of <paramref name="assemblies"/>, named after it, with a number
-    /// after the names that other assemblies already took.</summary>
-    public static List<SolutionProject> NameProjects(IReadOnlyList<LoadedModule> assemblies)
-    {
-        var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var projects = new List<SolutionProject>();
-        foreach (var assembly in assemblies)
-        {
-            var name = ReserveProjectName(taken, assembly.Name);
-            projects.Add(new SolutionProject(assembly, name));
-        }
-        return projects;
-    }
-
-    private static string ReserveProjectName(HashSet<string> taken, string name)
-    {
-        var clean = CleanProjectName(name);
-        var candidate = clean;
-        var number = 2;
-        while (!taken.Add(candidate))
-        {
-            candidate = $"{clean}_{number}";
-            number++;
-        }
-        return candidate;
-    }
     private static ProjectItem ToSolutionItem(ExportedProject project)
     {
         var id = project.Id;

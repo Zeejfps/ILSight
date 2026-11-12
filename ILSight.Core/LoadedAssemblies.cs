@@ -143,17 +143,6 @@ public static class LoadedAssemblies
         }
     }
 
-    /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for this assembly. Reads the file.</summary>
-    public static PdbCheck CheckPdb(LoadedModule module, string pdbPath)
-    {
-        if (module.PEFile is null)
-        {
-            return PdbCheck.Unreadable;
-        }
-
-        return DebugSymbolFiles.CheckPdb(module.PEFile, pdbPath);
-    }
-
     /// <summary>The name a portable PDB of this assembly is written under.</summary>
     public static string GetPdbFileName(LoadedAssembly assembly)
     {

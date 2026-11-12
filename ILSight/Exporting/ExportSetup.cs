@@ -70,7 +70,7 @@ public sealed class ExportSetup
     }
 
     /// <summary>The solution's file name: the typed name, else the folder's.</summary>
-    public string SolutionFileName => AssemblyExport.SolutionFileName(Exports.GetSolutionNameOrDefault(this));
+    public string SolutionFileName => ExportNames.SolutionFileName(Exports.GetSolutionNameOrDefault(this));
 
     /// <summary>A project name two ticked assemblies share, which must change before exporting, or null.</summary>
     public string? Clash => ClashingChoice?.Name.Trim();
@@ -88,7 +88,7 @@ public sealed class ExportSetup
                     continue;
                 }
 
-                var name = AssemblyExport.CleanProjectName(choice.Name);
+                var name = ExportNames.CleanProjectName(choice.Name);
                 if (!names.Add(name))
                 {
                     return choice;

@@ -85,7 +85,7 @@ public sealed class BundleTests
         var bundle = Assert.IsType<LoadedPackage>(new AssemblyList().Open(path));
         var target = temp.PathOf("out");
 
-        var extracted = AssemblyPackages.ExtractFolder(bundle.Package, FolderOf(bundle.Root), target);
+        var extracted = PackageExtraction.ExtractFolder(bundle.Package, FolderOf(bundle.Root), target);
 
         var failure = Assert.IsType<ExtractFailure.NotWritten>(Assert.Single(extracted.Failures));
         Assert.Equal("Broken.dll", failure.File.Name);

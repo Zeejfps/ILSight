@@ -35,7 +35,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
     /// <see cref="Outcome{T}.Failed"/>.</summary>
     public async Task<Outcome<PdbCheck>> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => LoadedAssemblies.CheckPdb(assembly, pdbPath), ct));
+        return await Background.Wait(Task.Run(() => PdbFiles.Check(assembly, pdbPath), ct));
     }
 
     /// <summary>Reads on the thread pool and comes back on the UI thread, with whatever the reading threw as

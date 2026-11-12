@@ -6,14 +6,13 @@ using ICSharpCode.Decompiler.Metadata;
 
 namespace ILSight.Core;
 
-/// <summary>Finding the portable PDB of an assembly, and checking one picked for it.</summary>
+/// <summary>Finding the portable PDB of an assembly. Checking one picked for it is <see cref="PdbFiles"/>'.</summary>
 internal static class DebugSymbolFiles
 {
     private const string EmbeddedTitle = "Debug Metadata (Embedded)";
     private const string BesideTitle = "Debug Metadata (From portable PDB)";
     private const string EmbeddedDescription = "Embedded in this assembly";
     private const string BesideDescription = "Loaded from portable PDB: ";
-    private const string WindowsPdbSignature = "Microsoft C/C++ MSF 7.00";
 
     private sealed record PdbImage(string Path, byte[] Image);
 
@@ -60,65 +59,6 @@ internal static class DebugSymbolFiles
         {
             return null;
         }
-    }
-
-    /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>.</summary>
-    public static PdbCheck CheckPdb(PEFile assembly, string pdbPath)
-    {
-        try
-        {
-            var image = System.IO.File.ReadAllBytes(pdbPath);
-            if (IsWindowsPdb(image))
-            {
-                return PdbCheck.WindowsPdb;
-            }
-
-            var provider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(image));
-            var pdbReader = provider.GetMetadataReader();
-            if (pdbReader.DebugMetadataHeader is null)
-            {
-                return PdbCheck.Unreadable;
-            }
-
-            return CheckBuild(assembly, provider);
-        }
-        catch (Exception e) when (IsUnreadable(e))
-        {
-            return PdbCheck.Unreadable;
-        }
-    }
-
-    private static bool IsWindowsPdb(byte[] image)
-    {
-        var signature = System.Text.Encoding.ASCII.GetBytes(WindowsPdbSignature);
-        return image.AsSpan().StartsWith(signature);
-    }
-
-    /// <summary>Whether the PDB is of the build one of the assembly's CodeView entries names; any
-    /// PDB matches an assembly that names none.</summary>
-    private static PdbCheck CheckBuild(PEFile assembly, MetadataReaderProvider provider)
-    {
-        var namesBuild = false;
-        foreach (var entry in assembly.Reader.ReadDebugDirectory())
-        {
-            if (entry.Type != DebugDirectoryEntryType.CodeView)
-            {
-                continue;
-            }
-
-            namesBuild = true;
-            var codeView = assembly.Reader.ReadCodeViewDebugDirectoryData(entry);
-            if (IsBuiltWith(provider, codeView, entry))
-            {
-                return PdbCheck.Matches;
-            }
-        }
-        if (namesBuild)
-        {
-            return PdbCheck.OtherBuild;
-        }
-
-        return PdbCheck.Matches;
     }
 
     private static DebugSymbols? FindEmbedded(PEFile assembly, ImmutableArray<DebugDirectoryEntry> entries)
@@ -221,7 +161,7 @@ internal static class DebugSymbolFiles
         return System.IO.File.ReadAllBytes(path);
     }
 
-    private static bool IsBuiltWith(MetadataReaderProvider provider, CodeViewDebugDirectoryData codeView, DebugDirectoryEntry entry)
+    internal static bool IsBuiltWith(MetadataReaderProvider provider, CodeViewDebugDirectoryData codeView, DebugDirectoryEntry entry)
     {
         var header = provider.GetMetadataReader().DebugMetadataHeader;
         if (header is null)
@@ -238,7 +178,7 @@ internal static class DebugSymbolFiles
         return id.Stamp == entry.Stamp;
     }
 
-    private static bool IsUnreadable(Exception e)
+    internal static bool IsUnreadable(Exception e)
     {
         return e is BadImageFormatException or IOException or UnauthorizedAccessException or InvalidOperationException or InvalidDataException;
     }

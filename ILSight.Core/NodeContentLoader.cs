@@ -61,15 +61,6 @@ public static class NodeContentLoader
         return null;
     }
 
-    /// <summary>Writes <paramref name="node"/>'s code in <paramref name="language"/> to the file at
-    /// <paramref name="path"/>: for an assembly its whole module, for a namespace all its types, else
-    /// what the node shows. Throws when decompiling or writing fails.</summary>
-    public static void SaveCode(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options, string path,
-        CancellationToken cancellationToken = default)
-    {
-        NodeDecompiler.SaveCode(ExportOf(session, node), language, options, path, cancellationToken);
-    }
-
     /// <summary>The name a file of <paramref name="node"/>'s code in <paramref name="language"/> is
     /// offered under: the node's name, made safe for a file name, with the language's extension.</summary>
     public static string SuggestCodeFileName(BrowseNode node, DecompilationLanguage language)
@@ -132,7 +123,9 @@ public static class NodeContentLoader
         return new NodeContent.Picture(image, source);
     }
 
-    private static CodeExport ExportOf(BrowseSession session, BrowseNode node)
+    /// <summary>What saving <paramref name="node"/>'s code writes: for an assembly its whole module, for a namespace all
+    /// its types, else what the node shows.</summary>
+    internal static CodeExport ToCodeExport(BrowseSession session, BrowseNode node)
     {
         return node.Subject switch
         {

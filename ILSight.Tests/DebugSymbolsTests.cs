@@ -56,11 +56,11 @@ public sealed class DebugSymbolsTests
         var windows = temp.Write("windows.pdb", Encoding.ASCII.GetBytes("Microsoft C/C++ MSF 7.00\r\n\u001aDS\0\0\0"));
         var text = temp.Write("notes.pdb", "not a pdb");
 
-        Assert.Equal(PdbCheck.Matches, LoadedAssemblies.CheckPdb(test, TestPdbPath));
-        Assert.Equal(PdbCheck.OtherBuild, LoadedAssemblies.CheckPdb(sample, TestPdbPath));
-        Assert.Equal(PdbCheck.WindowsPdb, LoadedAssemblies.CheckPdb(test, windows));
-        Assert.Equal(PdbCheck.Unreadable, LoadedAssemblies.CheckPdb(test, text));
-        Assert.Equal(PdbCheck.Unreadable, LoadedAssemblies.CheckPdb(test, temp.PathOf("missing.pdb")));
+        Assert.Equal(PdbCheck.Matches, PdbFiles.Check(test, TestPdbPath));
+        Assert.Equal(PdbCheck.OtherBuild, PdbFiles.Check(sample, TestPdbPath));
+        Assert.Equal(PdbCheck.WindowsPdb, PdbFiles.Check(test, windows));
+        Assert.Equal(PdbCheck.Unreadable, PdbFiles.Check(test, text));
+        Assert.Equal(PdbCheck.Unreadable, PdbFiles.Check(test, temp.PathOf("missing.pdb")));
     }
 
     [Fact]

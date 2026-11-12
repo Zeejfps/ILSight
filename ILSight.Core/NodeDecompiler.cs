@@ -109,15 +109,9 @@ internal static class NodeDecompiler
         };
     }
 
-    /// <summary>Writes the code <paramref name="export"/> names to the file at <paramref name="path"/>.
-    /// Throws when decompiling fails. The file is replaced only once the code is whole.</summary>
-    public static void SaveCode(CodeExport export, DecompilationLanguage language, DecompilerOptions options, string path,
-        CancellationToken cancellationToken)
-    {
-        AtomicFile.Write(path, stream => WriteCode(export, language, options, stream, cancellationToken));
-    }
-
-    private static void WriteCode(CodeExport export, DecompilationLanguage language, DecompilerOptions options, Stream stream,
+    /// <summary>Writes the code <paramref name="export"/> names to <paramref name="stream"/>. Throws when decompiling
+    /// fails.</summary>
+    internal static void WriteCode(CodeExport export, DecompilationLanguage language, DecompilerOptions options, Stream stream,
         CancellationToken cancellationToken)
     {
         using var writer = new StreamWriter(stream);

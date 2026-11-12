@@ -37,7 +37,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
 
     private string WriteCodeFile(ExportWork.CodeFile work, CancellationToken ct)
     {
-        NodeContentLoader.SaveCode(session, work.Node, work.Language, work.Options, work.File, ct);
+        CodeFiles.Save(session, work.Node, work.Language, work.Options, work.File, ct);
         return work.File;
     }
 
@@ -74,7 +74,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
 
     public Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => AssemblyPackages.ExtractFolder(work.Place.Container.Package, work.Place.Folder, work.Folder, start.Progress, token), start,
+        return RunAsync(token => PackageExtraction.ExtractFolder(work.Place.Container.Package, work.Place.Folder, work.Folder, start.Progress, token), start,
             ct);
     }
 

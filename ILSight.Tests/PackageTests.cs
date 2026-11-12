@@ -337,7 +337,7 @@ public sealed class PackageTests
         var package = Assert.IsType<LoadedPackage>(new AssemblyList().Open(WritePackage(temp)));
         var target = temp.PathOf("out");
 
-        var extracted = AssemblyPackages.ExtractFolder(package.Package, FolderOf(package.Root.Child(LibFolder)), target);
+        var extracted = PackageExtraction.ExtractFolder(package.Package, FolderOf(package.Root.Child(LibFolder)), target);
 
         var dll = Path.Combine(target, "ILSight.Tests.dll");
         Assert.Empty(extracted.Failures);
@@ -353,7 +353,7 @@ public sealed class PackageTests
         var package = Assert.IsType<LoadedPackage>(new AssemblyList().Open(WritePackage(temp)));
         var target = temp.PathOf("out");
 
-        AssemblyPackages.ExtractFolder(package.Package, FolderOf(package.Root), target);
+        PackageExtraction.ExtractFolder(package.Package, FolderOf(package.Root), target);
 
         Assert.Equal("Read me", File.ReadAllText(Path.Combine(target, "readme.txt")));
         Assert.True(File.Exists(Path.Combine(target, "runtimes", "win-x64", "native", "native.dll")));
@@ -373,7 +373,7 @@ public sealed class PackageTests
         var package = Assert.IsType<LoadedPackage>(new AssemblyList().Open(path));
         var target = temp.PathOf("out");
 
-        var extracted = AssemblyPackages.ExtractFolder(package.Package, FolderOf(package.Root), target);
+        var extracted = PackageExtraction.ExtractFolder(package.Package, FolderOf(package.Root), target);
 
         Assert.Empty(extracted.Failures);
         Assert.False(File.Exists(temp.PathOf("escaped.txt")));

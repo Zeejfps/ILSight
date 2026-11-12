@@ -104,7 +104,7 @@ public static class Exports
         }
 
         var project = projects[0];
-        var projectPath = Path.Combine(folder, AssemblyExport.CleanProjectName(project.Name) + ProjectExtension);
+        var projectPath = Path.Combine(folder, ExportNames.CleanProjectName(project.Name) + ProjectExtension);
         return new ExportWork.Project { Assembly = project.Assembly, Options = options, ProjectFile = projectPath, Extras = request.Extras };
     }
 
@@ -285,7 +285,7 @@ public static class Exports
         }
 
         setup.Choices.Clear();
-        foreach (var project in AssemblyExport.NameProjects(assemblies))
+        foreach (var project in ExportNames.NameProjects(assemblies))
         {
             setup.Choices.Add(new ExportChoice { Assembly = project.Assembly, Name = project.Name });
         }
