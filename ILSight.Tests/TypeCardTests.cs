@@ -136,11 +136,29 @@ public sealed class TypeCardTests
     [Fact]
     public async Task The_types_deriving_from_a_class_or_implementing_an_interface_are_found_among_the_open_assemblies()
     {
-        var derived = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadDerivedAsync(List, Zoo("Animal"), CancellationToken.None));
-        var implementing = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadDerivedAsync(List, Zoo("IFeeds"), CancellationToken.None));
+        var derived = await TypeCards.ReadDerivedAsync(List, Zoo("Animal"), CancellationToken.None);
+        var implementing = await TypeCards.ReadDerivedAsync(List, Zoo("IFeeds"), CancellationToken.None);
 
-        Assert.Equal(["Lion", "Parrot"], NamesOf(derived.Value).Order());
-        Assert.Equal(["Lion"], NamesOf(implementing.Value));
+        Assert.Equal(["Lion", "Parrot"], NamesOf(derived.Found).Order());
+        Assert.Equal(["Lion"], NamesOf(implementing.Found));
+        Assert.Empty(derived.Unreadable);
+    }
+
+    [Fact]
+    public async Task The_cards_deriving_from_a_class_across_three_modules_the_middle_one_unreadable_are_the_others_beside_it()
+    {
+        using var temp = new TempDir();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var shapes = list.OpenModule(WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle"));
+        list.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice")));
+        list.OpenModule(WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order"));
+        var shape = shapes.Root.Child("Shapes", "Shape").Definition;
+
+        var derived = await TypeCards.ReadDerivedAsync(list, shape, CancellationToken.None);
+
+        Assert.Equal(["Circle", "Order"], NamesOf(derived.Found));
+        Assert.Equal("UnreadableTypes.dll", Assert.Single(derived.Unreadable).Module.FilePath.FileName);
+        Assert.NotEmpty(derived.Unreadable[0].Why.Message);
     }
 
     [Fact]

@@ -6,7 +6,8 @@ namespace ILSight.Tests;
 
 public sealed class SavedPathTests : IDisposable
 {
-    /// <summary>A name for each sort of node the tree has.</summary>
+    /// <summary>A name for each sort of node the tree has, but the row naming a module a search for derived types
+    /// could not read, which a list holding only the base's file doesn't reach (<see cref="BrowseTreeTests"/>).</summary>
     private static readonly string[] Kinds =
     [
         "Assembly", "ReferencesFolder", "AssemblyReference", "ResourcesFolder", "Resource", "Namespace", "Class", "Interface", "Struct",
@@ -106,6 +107,7 @@ public sealed class SavedPathTests : IDisposable
             baseType: static _ => "BaseType",
             derivedTypes: static _ => "DerivedTypes",
             derivedType: static _ => "DerivedType",
+            unreadableModule: static _ => "UnreadableModule",
             resources: static _ => "ResourcesFolder",
             resourceContainer: static _ => "ResourcesFile",
             resourceEntry: static entry => entry.Value.IsImage ? "ResourceImage" : "Resource",

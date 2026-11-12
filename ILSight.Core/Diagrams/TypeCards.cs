@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.Diagrams;
@@ -71,34 +70,29 @@ public static class TypeCards
 
     /// <summary>The cards of the types deriving directly from, or implementing, the type
     /// <paramref name="type"/> points at, among the assemblies <paramref name="list"/> holds now, once the reads of
-    /// the type systems the search can reach ended; a module the search reached that the library could not read, with
-    /// no cards, when there is one.</summary>
-    public static async Task<TypeSystemWork<List<TypeCard>>> ReadDerivedAsync(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
+    /// the type systems the search can reach ended, beside each module the search reached that the library could not
+    /// read; none when it points at no type; no cards and its module when the library could not read the type system
+    /// of an assembly resolving it reads.</summary>
+    public static async Task<ScopeSearch<TypeCard>> ReadDerivedAsync(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
         var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, cancellationToken);
         return await definition.Match(
             found => ReadDerivedAsync(list, found.Value, cancellationToken),
-            static _ => Task.FromResult<TypeSystemWork<List<TypeCard>>>(new TypeSystemWork<List<TypeCard>>.Done { Value = [] }),
-            static unreadable => Task.FromResult<TypeSystemWork<List<TypeCard>>>(new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module }));
+            static _ => Task.FromResult(new ScopeSearch<TypeCard> { Found = [], Unreadable = [] }),
+            static unreadable => Task.FromResult(new ScopeSearch<TypeCard> { Found = [], Unreadable = [unreadable.Module] }));
     }
 
-    private static async Task<TypeSystemWork<List<TypeCard>>> ReadDerivedAsync(AssemblyList list, ITypeDefinition definition, CancellationToken cancellationToken)
+    private static async Task<ScopeSearch<TypeCard>> ReadDerivedAsync(AssemblyList list, ITypeDefinition definition, CancellationToken cancellationToken)
     {
         var module = AssemblyListing.GetLoadedFrom(list, DecompilerFacts.GetMetadataFile(definition));
         var reachable = await DerivedTypes.ReadReachableAsync(module, cancellationToken);
-        var unreadable = new ConcurrentDictionary<LoadedModule, UnreadableModule>();
-        var cards = DerivedTypes.Find(list, reachable, unreadable, definition, cancellationToken)
+        var search = DerivedTypes.Search(list, reachable, definition, cancellationToken);
+        var cards = search.Found
             .Where(IsShown)
             .Select(Read)
             .OfType<TypeCard>()
             .ToList();
-        var first = unreadable.Values.FirstOrDefault();
-        if (first is not null)
-        {
-            return new TypeSystemWork<List<TypeCard>>.Unreadable { Module = first };
-        }
-
-        return new TypeSystemWork<List<TypeCard>>.Done { Value = cards };
+        return new ScopeSearch<TypeCard> { Found = cards, Unreadable = search.Unreadable };
     }
 
     /// <summary>The card of <paramref name="type"/>; null when it has no metadata file or token to be

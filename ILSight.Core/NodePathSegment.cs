@@ -47,6 +47,9 @@ public abstract record NodePathSegment
     /// <summary>A derived type by the documentation id of the type that derives.</summary>
     public sealed record DerivedType(string Id) : NodePathSegment;
 
+    /// <summary>A module the search for derived types reached that the library could not read, by its file's path.</summary>
+    public sealed record UnreadableModule(string Path) : NodePathSegment;
+
     /// <summary>A manifest resource by its name, or an entry of a container by its path there.</summary>
     public sealed record Resource(string Name) : NodePathSegment;
 
@@ -67,8 +70,8 @@ public abstract record NodePathSegment
         Func<AssemblyReference, TResult> assemblyReference, Func<ModuleReference, TResult> moduleReference,
         Func<ImportedMethod, TResult> importedMethod, Func<UsedType, TResult> usedType,
         Func<UsedMember, TResult> usedMember, Func<ForwardedType, TResult> forwardedType,
-        Func<BaseType, TResult> baseType, Func<DerivedType, TResult> derivedType, Func<Resource, TResult> resource,
-        Func<PackageFolder, TResult> packageFolder, Func<PackageFile, TResult> packageFile,
+        Func<BaseType, TResult> baseType, Func<DerivedType, TResult> derivedType,
+        Func<UnreadableModule, TResult> unreadableModule, Func<Resource, TResult> resource, Func<PackageFolder, TResult> packageFolder, Func<PackageFile, TResult> packageFile,
         Func<EmbeddedModule, TResult> embeddedModule)
     {
         return this switch
@@ -86,6 +89,7 @@ public abstract record NodePathSegment
             ForwardedType c => forwardedType(c),
             BaseType c => baseType(c),
             DerivedType c => derivedType(c),
+            UnreadableModule c => unreadableModule(c),
             Resource c => resource(c),
             PackageFolder c => packageFolder(c),
             PackageFile c => packageFile(c),

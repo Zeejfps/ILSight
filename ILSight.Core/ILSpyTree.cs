@@ -58,6 +58,7 @@ public static class ILSpyTree
             baseType: static _ => null,
             derivedTypes: static _ => null,
             derivedType: static _ => null,
+            unreadableModule: static _ => null,
             resources: static _ => null,
             resourceContainer: static _ => null,
             resourceEntry: static _ => null,

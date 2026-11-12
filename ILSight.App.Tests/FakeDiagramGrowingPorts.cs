@@ -13,6 +13,10 @@ internal sealed class FakeDiagramGrowingPorts : DiagramGrowing.IPorts
 
     public List<AppProblem> Reported { get; } = [];
 
+    /// <summary>The modules a search for derived types reached that could not be read, answered beside the cards the
+    /// test answers with; none unless the test adds them.</summary>
+    public List<UnreadableModule> SearchedUnreadable { get; } = [];
+
     public void ReportError(AppProblem problem)
     {
         Reported.Add(problem);
@@ -34,9 +38,13 @@ internal sealed class FakeDiagramGrowingPorts : DiagramGrowing.IPorts
             static failed => new Outcome<List<Lookup<TypeCard>>>.Failed(failed.Error));
     }
 
-    public Task<Outcome<List<TypeCard>>> ReadDerivedAsync(CodeReference.Entity type, CancellationToken ct)
+    public async Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(CodeReference.Entity type, CancellationToken ct)
     {
-        return AskAsync(nameof(ReadDerivedAsync), [type], ct);
+        var read = await AskAsync(nameof(ReadDerivedAsync), [type], ct);
+        var unreadable = SearchedUnreadable;
+        return read.Match<Outcome<ScopeSearch<TypeCard>>>(
+            ok => new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = ok.Value, Unreadable = unreadable }),
+            static failed => new Outcome<ScopeSearch<TypeCard>>.Failed(failed.Error));
     }
 
     private Task<Outcome<List<TypeCard>>> AskAsync(string read, IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)

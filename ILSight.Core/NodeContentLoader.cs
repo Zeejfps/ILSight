@@ -227,6 +227,13 @@ public static class NodeContentLoader
             baseType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
             derivedTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
             derivedType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
+            unreadableModule: static (s, _) => new DocumentRequest.Summary
+            {
+                Info = new SummaryInfo.Comments([s.Node.Text]),
+                Module = null,
+                Title = s.Node.Text,
+                FullName = s.Node.FullName,
+            },
             resources: static (s, _) => SummaryRequest(s.Node, DescribeResources(s.Children)),
             resourceContainer: static (s, container) => ContainerRequest(s.Node, s.Children, container.Value),
             resourceEntry: static (s, entry) => EntryRequest(s.Node, entry.Value),
@@ -364,6 +371,7 @@ public static class NodeContentLoader
                 Text = s.Node.Text,
                 Target = NodeDefinitions.FindTarget(s.Node.Subject),
             }]),
+            unreadableModule: static (_, _) => throw new UnreachableException(),
             resources: static (_, _) => throw new UnreachableException(),
             resourceContainer: static (_, _) => throw new UnreachableException(),
             resourceEntry: static (_, _) => throw new UnreachableException(),

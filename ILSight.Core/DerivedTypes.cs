@@ -24,12 +24,13 @@ internal static class DerivedTypes
     }
 
     /// <summary>The types deriving from <paramref name="type"/> among <paramref name="typeSystems"/>, the reads of the
-    /// modules the search can reach (<see cref="ReadReachableAsync"/>); those the library could not read and the search
-    /// reached are noted in <paramref name="unreadable"/>.</summary>
-    public static List<ITypeDefinition> Find(AssemblyList list, ModuleTypeSystems typeSystems, ConcurrentDictionary<LoadedModule, UnreadableModule> unreadable,
-        ITypeDefinition type, CancellationToken cancellationToken)
+    /// modules the search can reach (<see cref="ReadReachableAsync"/>), beside each module the search reached that the
+    /// library could not read, by file name.</summary>
+    public static ScopeSearch<ITypeDefinition> Search(AssemblyList list, ModuleTypeSystems typeSystems, ITypeDefinition type,
+        CancellationToken cancellationToken)
     {
         var found = new List<ITypeDefinition>();
+        var unreadable = new ConcurrentDictionary<LoadedModule, UnreadableModule>();
         foreach (var candidate in AnalyzerScope.Create(list, typeSystems, unreadable, type).GetTypes(cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -38,7 +39,12 @@ internal static class DerivedTypes
                 found.Add(candidate);
             }
         }
-        return found;
+
+        return new ScopeSearch<ITypeDefinition>
+        {
+            Found = found,
+            Unreadable = unreadable.Values.OrderBy(static u => u.Module.FilePath.FileName, StringComparer.OrdinalIgnoreCase).ToList(),
+        };
     }
 
     /// <summary>The types of <paramref name="type"/>'s own module that derive from it directly.</summary>

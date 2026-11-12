@@ -82,6 +82,7 @@ public static class Analyzers
             baseType: static baseType => DescribeBase(baseType.Value),
             derivedTypes: static _ => null,
             derivedType: static derived => Describe(NodeDefinitions.GetSymbol(derived.Value)),
+            unreadableModule: static _ => null,
             resources: static _ => null,
             resourceContainer: static _ => null,
             resourceEntry: static _ => null,

@@ -85,11 +85,13 @@ internal static class EntityNodes
     }
 
     /// <summary>The types in scope of <paramref name="type"/> that derive from it directly, as
-    /// <see cref="DerivedTypes"/> finds them, under <paramref name="parent"/>.</summary>
+    /// <see cref="DerivedTypes"/> finds them, then a node naming each module the search reached that the library could
+    /// not read, under <paramref name="parent"/>.</summary>
     internal static BrowseNode[] FindDerivedTypes(LoadedModule module, BrowseNode parent, ITypeDefinition type, ChildrenReads reads)
     {
         var result = new List<BrowseNode>();
-        foreach (var derived in DerivedTypes.Find(module.List, reads.RequireReachable(), reads.Unreadable, type, CancellationToken.None))
+        var search = DerivedTypes.Search(module.List, reads.RequireReachable(), type, CancellationToken.None);
+        foreach (var derived in search.Found)
         {
             var info = NodeDefinitions.FindDerivedType(module, derived);
             if (info is not null)
@@ -97,6 +99,12 @@ internal static class EntityNodes
                 result.Add(BrowseNodes.Create(parent, new NodeSubject.DerivedType { Value = info }));
             }
         }
+
+        foreach (var unreadable in search.Unreadable)
+        {
+            result.Add(BrowseNodes.Create(parent, new NodeSubject.UnreadableModule { Value = unreadable }));
+        }
+
         return result.ToArray();
     }
 

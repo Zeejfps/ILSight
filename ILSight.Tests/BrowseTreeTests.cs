@@ -114,6 +114,30 @@ public sealed class BrowseTreeTests
     }
 
     [Fact]
+    public void Derived_types_across_three_modules_the_middle_one_unreadable_list_the_others_types_and_a_row_naming_it()
+    {
+        using var temp = new TempDir();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var shapes = list.OpenModule(WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle"));
+        list.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice")));
+        list.OpenModule(WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order"));
+        var folder = shapes.Root.Child("Shapes", "Shape", "Derived Types");
+
+        var derived = folder.Children;
+
+        Assert.Equal(["Circle", "Order"], derived.Where(static c => c.Subject is NodeSubject.DerivedType).Select(static c => c.Text));
+        var row = derived[^1];
+        var unreadable = Assert.IsType<NodeSubject.UnreadableModule>(row.Subject).Value;
+        Assert.Equal("UnreadableTypes.dll", unreadable.Module.FilePath.FileName);
+        Assert.Equal($"UnreadableTypes.dll: couldn't be read ({unreadable.Why.Message})", row.Text);
+        Assert.Equal(3, derived.Count);
+        Assert.False(row.HasChildren);
+        Assert.Same(row, list.FindNode(row.Path));
+        Assert.Contains(row.Text, Documents.GetText(folder.Decompile(DecompilationLanguage.CSharp)));
+        Assert.Contains(row.Text, Documents.GetText(row.Decompile(DecompilationLanguage.CSharp)));
+    }
+
+    [Fact]
     public void A_derived_type_expands_to_the_types_deriving_from_it_in_turn()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };

@@ -6,7 +6,7 @@ namespace ILSight.DiagramArea;
 /// <summary>Growing diagrams by the cards of types: a type shown with the types of its assembly it is directly related
 /// to, and the types a card links to. The cards are read through <see cref="IPorts"/>, without holding up the screen,
 /// and dropped when their diagram was closed meanwhile; a type that cannot be read is reported, and so is a module
-/// that could not be read a type is in.</summary>
+/// that could not be read a type is in, or that the search for a type's derived types reached.</summary>
 public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
 {
     public interface IPorts
@@ -27,8 +27,9 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         Task<Outcome<List<Lookup<TypeCard>>>> ReadCardsAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct);
 
         /// <summary>The cards of the types of the open assemblies deriving from <paramref name="type"/>, or
-        /// implementing it, as <see cref="ReadWithNeighboursAsync"/> reads them.</summary>
-        Task<Outcome<List<TypeCard>>> ReadDerivedAsync(CodeReference.Entity type, CancellationToken ct);
+        /// implementing it, as <see cref="ReadWithNeighboursAsync"/> reads them, beside each module the search reached
+        /// that the library could not read.</summary>
+        Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(CodeReference.Entity type, CancellationToken ct);
     }
 
     /// <summary>Brings in the cards <paramref name="read"/> started reading and adds them to its diagram, taking the
@@ -104,7 +105,8 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     }
 
     /// <summary>Looks in the open assemblies for the types deriving from <paramref name="card"/>, or implementing it,
-    /// and adds them to <paramref name="diagram"/>, as <see cref="ExpandBasesAsync"/> adds its bases.</summary>
+    /// and adds them to <paramref name="diagram"/>, as <see cref="ExpandBasesAsync"/> adds its bases, naming each module
+    /// the search reached that could not be read.</summary>
     public async Task ExpandDerivedAsync(TypeDiagram diagram, TypeCard card, CancellationToken ct)
     {
         Diagrams.StartReading(diagram);
@@ -112,9 +114,10 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         FinishAdding(diagram, card, read);
     }
 
-    /// <summary>Adds the cards a read of the types related to <paramref name="card"/> found to
-    /// <paramref name="diagram"/>, unless it was closed meanwhile; reports a read that failed.</summary>
-    private void FinishAdding(TypeDiagram diagram, TypeCard card, Outcome<List<TypeCard>> read)
+    /// <summary>Adds the cards a search for the types deriving from <paramref name="card"/> found to
+    /// <paramref name="diagram"/>, unless it was closed meanwhile, and names each module it reached that could not be
+    /// read; reports a read that failed.</summary>
+    private void FinishAdding(TypeDiagram diagram, TypeCard card, Outcome<ScopeSearch<TypeCard>> read)
     {
         Diagrams.FinishReading(diagram);
         if (diagram.IsClosed)
@@ -123,8 +126,17 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         }
 
         read.Switch(
-            ok => Diagrams.AddCards(diagram, ok.Value),
+            ok => AddFound(diagram, ok.Value),
             failed => ReportUnreadable(card.Type, failed.Error));
+    }
+
+    private void AddFound(TypeDiagram diagram, ScopeSearch<TypeCard> search)
+    {
+        Diagrams.AddCards(diagram, search.Found);
+        foreach (var unreadable in search.Unreadable)
+        {
+            ReportModuleUnreadable(unreadable);
+        }
     }
 
     /// <summary>Adds the cards a read of the types <paramref name="card"/> links to found to

@@ -103,6 +103,13 @@ public abstract class NodeSubject
         public required DerivedTypeInfo Value { get; init; }
     }
 
+    /// <summary>A module the search for a type's derived types reached that the library could not read, named under the
+    /// folder beside the types found in the others, with why.</summary>
+    public sealed class UnreadableModule : NodeSubject
+    {
+        public required Core.UnreadableModule Value { get; init; }
+    }
+
     /// <summary>The folder of <see cref="Owner"/>'s manifest resources.</summary>
     public sealed class Resources : NodeSubject
     {
@@ -159,7 +166,7 @@ public abstract class NodeSubject
         Func<ModuleReference, TResult> moduleReference, Func<ImportedMethod, TResult> importedMethod,
         Func<ForwardedType, TResult> forwardedType, Func<BaseTypes, TResult> baseTypes,
         Func<BaseType, TResult> baseType, Func<DerivedTypes, TResult> derivedTypes,
-        Func<DerivedType, TResult> derivedType, Func<Resources, TResult> resources,
+        Func<DerivedType, TResult> derivedType, Func<UnreadableModule, TResult> unreadableModule, Func<Resources, TResult> resources,
         Func<ResourceContainer, TResult> resourceContainer, Func<ResourceEntry, TResult> resourceEntry,
         Func<Metadata, TResult> metadata, Func<MetadataTables, TResult> metadataTables,
         Func<MetadataTable, TResult> metadataTable, Func<Package, TResult> package,
@@ -184,6 +191,7 @@ public abstract class NodeSubject
             BaseType c => baseType(c),
             DerivedTypes c => derivedTypes(c),
             DerivedType c => derivedType(c),
+            UnreadableModule c => unreadableModule(c),
             Resources c => resources(c),
             ResourceContainer c => resourceContainer(c),
             ResourceEntry c => resourceEntry(c),
@@ -207,7 +215,7 @@ public abstract class NodeSubject
         Func<TState, ImportedMethod, TResult> importedMethod, Func<TState, ForwardedType, TResult> forwardedType,
         Func<TState, BaseTypes, TResult> baseTypes, Func<TState, BaseType, TResult> baseType,
         Func<TState, DerivedTypes, TResult> derivedTypes, Func<TState, DerivedType, TResult> derivedType,
-        Func<TState, Resources, TResult> resources, Func<TState, ResourceContainer, TResult> resourceContainer,
+        Func<TState, UnreadableModule, TResult> unreadableModule, Func<TState, Resources, TResult> resources, Func<TState, ResourceContainer, TResult> resourceContainer,
         Func<TState, ResourceEntry, TResult> resourceEntry, Func<TState, Metadata, TResult> metadata,
         Func<TState, MetadataTables, TResult> metadataTables, Func<TState, MetadataTable, TResult> metadataTable,
         Func<TState, Package, TResult> package, Func<TState, PackageFile, TResult> packageFile)
@@ -231,6 +239,7 @@ public abstract class NodeSubject
             BaseType c => baseType(state, c),
             DerivedTypes c => derivedTypes(state, c),
             DerivedType c => derivedType(state, c),
+            UnreadableModule c => unreadableModule(state, c),
             Resources c => resources(state, c),
             ResourceContainer c => resourceContainer(state, c),
             ResourceEntry c => resourceEntry(state, c),

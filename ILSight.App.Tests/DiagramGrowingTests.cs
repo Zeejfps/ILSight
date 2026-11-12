@@ -178,4 +178,29 @@ public sealed class DiagramGrowingTests
         Assert.Equal(["Vehicle"], CardNames(diagram));
         Assert.False(diagram.IsBusy);
     }
+
+    [Fact]
+    public async Task ExpandDerivedAsync_SearchReachedAModuleItCouldNotRead_AddsTheCardsFoundAndNamesIt()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var diagram = new TypeDiagram();
+        var vehicle = CardOf(d, "Vehicle");
+        Diagrams.AddCards(diagram, [vehicle]);
+        var module = d.AppState.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var why = new BadImageFormatException("Bad namespace.");
+        var ports = new FakeDiagramGrowingPorts();
+        ports.SearchedUnreadable.Add(new UnreadableModule { Module = module, Why = why });
+
+        var adding = new DiagramGrowing(ports).ExpandDerivedAsync(diagram, vehicle, CancellationToken.None);
+        var request = Assert.Single(ports.Requests);
+        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([CardOf(d, "Bike"), CardOf(d, "Car")]));
+        await adding;
+
+        Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadDerivedAsync), request.Read);
+        Assert.Equal(["Bike", "Car", "Vehicle"], CardNames(diagram));
+        var problem = Assert.IsType<AppProblem.ModuleUnreadable>(Assert.Single(ports.Reported));
+        Assert.Equal(module.FilePath.FileName, problem.Module);
+        Assert.Same(why, problem.Why);
+        Assert.False(diagram.IsBusy);
+    }
 }

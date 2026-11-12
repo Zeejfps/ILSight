@@ -30,13 +30,12 @@ public sealed class DiagramInfrastructure(ErrorLog errors, AssemblyList assembli
         return read;
     }
 
-    /// <summary>Reads on the thread pool once the reads of the type systems the search can reach ended; a module the
-    /// search reached that the library could not read fails the read, saying why.</summary>
-    public async Task<Outcome<List<TypeCard>>> ReadDerivedAsync(CodeReference.Entity type, CancellationToken ct)
+    /// <summary>Reads on the thread pool once the reads of the type systems the search can reach ended.</summary>
+    public async Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(CodeReference.Entity type, CancellationToken ct)
     {
         var read = await Background.Wait(Task.Run(() => TypeCards.ReadDerivedAsync(assemblies, type, ct), ct));
         ct.ThrowIfCancellationRequested();
-        return Outcome<List<TypeCard>>.FromTypeSystemWork(read);
+        return read;
     }
 
     public async Task<Outcome<List<Lookup<TypeCard>>>> ReadCardsAsync(IReadOnlyList<TypeAnchor> types, CancellationToken ct)

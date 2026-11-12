@@ -38,6 +38,7 @@ public static class NodeIcons
             baseType: static _ => NodeIcon.BaseType,
             derivedTypes: static _ => NodeIcon.DerivedTypes,
             derivedType: static _ => NodeIcon.DerivedType,
+            unreadableModule: static _ => NodeIcon.FailedAssembly,
             resources: static _ => NodeIcon.ResourcesFolder,
             resourceContainer: static _ => NodeIcon.ResourcesFile,
             resourceEntry: static entry => entry.Value.IsImage ? NodeIcon.ResourceImage : NodeIcon.Resource,

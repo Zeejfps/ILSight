@@ -151,7 +151,8 @@ public static class BrowseSessions
     }
 
     /// <summary>The children of <paramref name="node"/>, built once the reads of the type systems the build reads
-    /// ended, which the build is handed; the build fails, saying why, for a module the library could not read.</summary>
+    /// ended, which the build is handed; a build reading one module's type system fails, saying why, when the library
+    /// could not read it; derived types name each module the search reached that it could not read beside those found.</summary>
     private static async Task<ChildrenState> BuildChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
     {
         var module = BrowseNodes.FindModuleReadForChildren(node.Subject);
@@ -185,13 +186,6 @@ public static class BrowseSessions
             return new ChildrenState.Failed(e);
         }
 
-        var unreadable = reads.Unreadable.Values.FirstOrDefault();
-        if (unreadable is not null)
-        {
-            // The tree has no row to name a module the search for derived types couldn't read: the build fails, saying
-            // why, as it did when the read threw.
-            return new ChildrenState.Failed(unreadable.Why);
-        }
         foreach (var child in built)
         {
             Register(session, child);
