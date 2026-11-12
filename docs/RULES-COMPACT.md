@@ -496,25 +496,32 @@ container's private members). Generated code doesn't count.
 
 - One top-level type per file, named after it (`Order.cs`; `Result` and `Result<T>` share `Result.cs`). Related types
   share a folder and its namespace, not a file.
-- **A group with parts gets a folder.** A group is the types named for a concept (`CodeView*`) plus its parts: types
-  only the group uses, whatever their names. A group with parts gets a folder, where they're seen with it; a group with
-  none (every type named for it and used across the app: `Theme*`) stays put, since a folder would add a `using` to
-  each user for nothing. Place one type at a time, from its name and its references (no whole-project graph):
-  - **by its name**, when it's named for a group with a folder: the concept its name starts with, by words, a plural
-    as its singular (`Bookmarks` is a `Bookmark*` name), the longest with a folder (`CodeViewWidget`: `CodeView/`). A
-    use case's name starts with its verb: its concept is what it acts on (`ExportBookmarksHandler` is `Bookmark*`'s,
-    `ExportQueue` `Export*`'s). A suffix (`*Json`, `*View`, `*Handler`) is a role, not a group: `CodeViewPositionJson`
-    goes in `CodeView/`. The name decides even when one other group alone uses the type (`MainView`, only
-    `ILSightApp`'s, is `Main*`'s): names change with the type, uses with every caller;
-  - **else by its users**: the folder they're all in (nested names' folders count as the shorter's), else the folder
-    above them. Composition roots' uses don't count: the app's (it builds every adapter and use case, R001) and every
-    test's (a test is one, Scope): "only the root, or only it and its test, use it" marks a role, not a concept;
-  - a concept gets a folder when it gets a part (a type the second step puts with its named types). Folders sit side by
-    side, never one inside another (a nested namespace gives the outer group no `using`). The project's root keeps what
-    the whole app shares and the composition root.
+- **A concept with parts gets a folder.** A concept is what two or more types' names start with, by words: a plural as
+  its singular, irregular ones too (`Bookmarks` is a `Bookmark*` name, `Analyses` an `Analysis*` one); a use case's
+  name starts with its verb, so its concept is what it acts on (`ExportBookmarksHandler` is `Bookmark*`'s,
+  `ExportQueue` `Export*`'s); a suffix (`*Json`, `*View`, `*Handler`) is a role, not a concept (`CodeViewPositionJson`
+  is `CodeView*`'s). One type's name isn't a concept: a helper only `CodeViewWidget` uses is `CodeView*`'s. Its parts
+  are what its names don't show, and the folder shows them; a concept with none (every type named for it and used
+  across the app: `Theme*`) stays put, since a folder would add a `using` to each user for nothing. Each step reads a
+  type's name and its direct users, never where types already are, so a project has one layout, placed one type at a
+  time:
+  - **a concept gets a folder when it has a part**: a type not named for it that only types named for it use (the
+    longest concept its users' names share: `DetailTexts`, used by `MetadataDetailsView` and `MetadataGrid*`, is
+    `Metadata*`'s), unless its own name starts with a shorter form of that concept that has a folder: it goes there
+    (`DiagramFaces`, only `DiagramView*`'s, is in `Diagram*`'s folder; `DiagramView*` gets none);
+  - **by its name**, when it's named for a concept with a folder: the longest (`CodeViewWidget`: `CodeView*`'s, since
+    nothing only `Code*` types use makes `Code*` one). The name decides even when one other group alone uses the type
+    (`MainView`, only `ILSightApp`'s, is `Main*`'s): names change with the type, uses with every caller;
+  - **else by its users**: the folder they're all in (nested names' folders count as the shorter's; types that use
+    each other go where their other users are), else the folder above them. Composition roots' uses don't count: the
+    app's (it builds every adapter and use case, R001) and every test's (a test is one, Scope): "only the root, or only
+    it and its test, use it" marks a role, not a concept.
 
-  The folder is named for its group (`SettingsFormat/`, `CodeView/`, `Exporting/`), never like a type in it or in a
-  namespace around it: the namespace hides that type (`SettingsJson.Read` finds the namespace).
+  Folders sit side by side, never one inside another (a nested namespace gives the outer group no `using`). The
+  project's root keeps what the whole app shares and the composition root. **A folder is named `<Concept>Area`**
+  (`CodeViewArea/`, `BookmarkArea/`, `SettingArea/`), one form for all: a namespace hides a type of its name from the
+  code around it (`SettingsJson.Read` finds the namespace; `Process/` hides `System.Diagnostics.Process`), and a
+  concept's name, its plural and an activity's name are often types, a library's included.
 - **"Uses" means names it or reaches it through another type's members** (a property, parameter or return type others
   call). The test: nested `private` in its one user, does everything compile? Narrow members first (one only its own
   type calls is private). Nested, private, go its user's **parts**: shapes that declare no methods (records, DTOs,

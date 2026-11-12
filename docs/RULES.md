@@ -2429,9 +2429,9 @@ if (!string.IsNullOrEmpty(nickname)) { ... }       // narrows: [NotNullWhen(fals
 ## R013: One type per file, named after it; `partial` only where a tool writes the other half
 
 **Rule.** Each file declares one top-level type and is named after it (`Order.cs`). Related types share a folder (and
-its namespace), not a file; a group gets a folder of its own when it has parts its names don't show, and the folder is
-named for the group, never like a type; each type goes by its name, else by its users. A type is nested in another only
-when it is that type's part: privately, a shape (it declares no methods) that only that type uses, or code that works
+its namespace), not a file; a concept gets a folder of its own when it has parts its names don't show (types only its
+named types use), named for the concept with `Area` after it; each type goes by its name, else by its users. A type is
+nested in another only when it is that type's part: privately, a shape (it declares no methods) that only that type uses, or code that works
 on that type's private members as what it makes and hands out; publicly,
 the contract it declares for others to name through it (a union's cases, a use case's `IPorts`). A type with code of
 its own has its own file, even when one type uses it. A type is written in one place: `partial` only where a tool writes
@@ -2453,44 +2453,62 @@ code of its own brings the same bug back (S05).
 1. **One top-level type per file, named after it.** A generic type's file drops the parameters (`Result.cs`, or
    `Result{T}.cs`); types that share a name and differ in arity (`Result` and `Result<T>`) share it. A file of top-level
    statements holds nothing else.
-2. **Related types share a folder, not a file; a group with parts gets a folder.** A group is the types named for one
-   concept (`CodeView*`) and its parts: the types only the group uses, whatever their names. When a group has parts, it
-   gets a folder, so they are seen with it: in ILSight, `CodeView*` finds 8 of the 27 types the code view's folder
-   holds (its caret, folds, selection, ...). A group with no parts, whose types all carry its name and are used across
-   the app (ILSight's `Theme*`), stays where its users are: a folder would add a `using` to each file that uses it and
-   show nothing a name search doesn't. The namespace follows the folder. Each type is placed by its name, else by its
-   users, so the rule is applied one type at a time, from its name and its references; no whole-project graph is
-   needed (on ILSight the whole-project pass's layout is what this gives type by type: 0 of 468 types move):
-   - **By its name**, when it is named for a group with a folder. Its concept is what its name starts with, compared by
-     words, a plural as its singular (`Bookmarks` is a `Bookmark*` name), the longest that has a folder
-     (`CodeViewWidget` goes in `CodeView/`, not `Code/`). A thing's name starts with its concept; an action's name (a
-     use case's, R003) starts with its verb, and its concept is what it acts on: `ExportBookmarksHandler` is
-     `Bookmark*`'s, `ExportQueue` is `Export*`'s (of ILSight's 12 use cases named for an action, 8 work with types named
-     for their object, 1 with types named for its verb). A shared suffix (`*Json`, `*View`, `*Handler`) names a role every
-     concept has, not a group: a format's DTO named for a concept is that concept's (`CodeViewPositionJson` goes in
-     `CodeView/`; on ILSight, keeping the settings format's 30 types in one folder instead changed no measured cost).
-     The name decides even when one other group alone uses the type (`MainView`, used only by `ILSightApp`, is
-     `Main*`'s): a name changes when its type does, the uses whenever a caller is added.
+2. **Related types share a folder, not a file; a concept with parts gets a folder.** A concept is what the names of two
+   or more types start with, compared by words: a plural as its singular, an irregular one too (`Bookmarks` is a
+   `Bookmark*` name, `Analyses` an `Analysis*` one; a word that only ends in s, `Status`, is no plural). A thing's name
+   starts with its concept; an action's name (a use case's, R003) starts with its verb, and its concept is what it acts
+   on: `ExportBookmarksHandler` is `Bookmark*`'s, `ExportQueue` is `Export*`'s (of ILSight's 12 use cases named for an
+   action, 8 work with types named for their object, 1 with types named for its verb). A shared suffix (`*Json`,
+   `*View`, `*Handler`) names a role every concept has, not a concept: a format's DTO named for a concept is that
+   concept's (`CodeViewPositionJson` is `CodeView*`'s; on ILSight, keeping the settings format's 30 types in one folder
+   instead changed no measured cost). One type's name is not a concept: a helper only `CodeViewWidget` uses is a part of
+   `CodeView*`, the longest concept its user's name starts with (counting one type's name, ILSight would get 35 folders
+   instead of 25, most of the new ones one type's and its helpers, `CodeViewWidget`'s and `MainView`'s among them). A concept's parts
+   are the types its names don't show, and its folder shows them with it: in ILSight, `CodeView*` finds 8 of the 27
+   types the code view's folder holds (its caret, folds, selection, ...). A concept with no parts, whose types all carry
+   its name and are used across the app (ILSight's `Theme*`), stays where its users are: a folder would add a `using`
+   to each file that uses it and show nothing a name search doesn't. The namespace follows the folder. Every step
+   reads a type's name and its direct users, never where types already are, so a project has one layout, applied one
+   type at a time (on ILSight, re-reading each of its 510 app types from its name and its users' folders moves none;
+   the earlier wording, which made a folder only for a part already in it, fitted other layouts too, which placed 35
+   types differently):
+   - **A concept gets a folder when it has a part**: a type not named for it that only types named for it use (for
+     names that nest, the longest concept its users' names all start with: `DetailTexts`, used by `MetadataDetailsView`
+     and `MetadataGrid*` types, is a part of `Metadata*`). A type whose own name starts with a shorter form of that
+     concept, one that has a folder, is no part: its name puts it there (`DiagramFaces`, used only by `DiagramView*`
+     types, goes in `Diagram*`'s folder, so `DiagramView*` gets none). Counted as parts, such types would make folders
+     no part lands in (ILSight: 4); read as "shares the concept's first word" instead, a group whose part shares only
+     that word splits (ILSight's `ComparisonPicker*` and its `ComparisonChoice`).
+   - **Each type goes by its name**, when it is named for a concept with a folder: the longest (`CodeViewWidget` goes
+     in `CodeView*`'s folder: no type only `Code*` types use, so `Code*` has none; `MetadataDetailsView`, which only the
+     grid uses, in `Metadata*`'s). The name decides even when one other group alone uses the type (`MainView`, used only
+     by `ILSightApp`, is `Main*`'s): a name changes when its type does, the uses whenever a caller is added.
    - **Else by its users**: the folder they are all in (the folders of nested names count as the shorter's: a type only
-     `Diagram/` and `DiagramView/` use goes in `Diagram/`); a type several folders use stays in the folder above them.
-     Its users are the types that use it (point 4), except **composition roots**: the app's, which builds every adapter
-     and use case (R001), and every test (Scope: a test is one), which builds and checks what it tests. "Only the root
-     uses it" or "only its group and its test use it" marks a role, not a concept: of the 11 adapters ILSight's `AppRoot`
-     builds, the 6 only it uses are the 6 no test builds; counted, a test would move the part it tests out of its group
-     (12 of the 26 types in ILSight's `CodeView/`), and 151 of its 468 app types would be placed by whether a test uses
-     them.
-   - **A concept gets a folder when it gets a part**: a type the second step puts with the concept's named types.
-     Folders sit side by side, one level below the project's root, never one inside another: C# shows a nested
+     `Assembly*`'s and `AssemblyList*`'s folders use goes in `Assembly*`'s); a type several folders use stays in the
+     folder above them. Types that use each other go together, where their other users are: read one at a time, each
+     finds the other wherever it is (ILSight's `RunArgumentsPipe` and `RunArgumentsReceiver`, which only the app host's
+     types use besides each other, fitted the root as well as the host's folder). Its users are the types that use it
+     (point 4), except **composition roots**: the app's, which builds every adapter and use case (R001), and every test
+     (Scope: a test is one), which builds and checks what it tests. "Only the root uses it" or "only its group and its
+     test use it" marks a role, not a concept: of the 11 adapters ILSight's `AppRoot` builds, the 6 only it uses are the
+     6 no test builds; counted, a test would move the part it tests out of its group (12 of the 26 types in ILSight's
+     code view folder), and 151 of its 468 app types would be placed by whether a test uses them.
+   - **Folders sit side by side**, one level below the project's root, never one inside another: C# shows a nested
      namespace the types around it, not the other way round, and a group uses its parts, so nesting saves no `using`
      (S09: `DEMO_CS0246`), and a folder inside a folder claims types that aren't the outer group's. The project's root
      holds what the whole app shares and the composition root.
-3. **A folder is named for its group, never like a type**: not like a type in it, nor like one in a namespace around
-   it. A namespace hides a type of its name from the code around it: a folder named after its main type makes every
-   caller outside write `SettingsJson.SettingsJson.Read` (the plain call finds the namespace: `DEMO_CS0234`), and one
-   named after a type beside it doesn't compile (`DEMO_CS0101`) (S07). Name it for what its types are together: the
-   format (`SettingsFormat/`), the area (`CodeView/`), the activity where the plural is a type (`Exporting/`, since
-   `Exports` is one). In ILSight, 4 of the 6 groups had a natural name already taken by a type (`Exports`,
-   `Bookmarks`, `Theming`, `Docking`).
+3. **A folder is named for its concept with `Area` after it** (`CodeViewArea/`, `BookmarkArea/`, `SettingArea/`: the
+   concept's words, a plural as its singular), one form for every folder. A namespace hides a type of its name from the
+   code around it: a folder named after its main type makes every caller outside write `SettingsJson.SettingsJson.Read`
+   (the plain call finds the namespace: `DEMO_CS0234`), one named after a type beside it doesn't compile
+   (`DEMO_CS0101`), and one named like a library's type the code around it names hides that one too, which no search
+   of the project's types finds (`Process/` and `System.Diagnostics.Process`: `DEMO_CS0118`) (S07). A concept's own
+   name and its plural are often taken (R004 names a concept's class for it, often in the plural): on ILSight, 10 of
+   its 25 concepts' names and 15 of their plurals are a type's, its own or a library's it names (`Assembly`); an
+   activity's name (`Exporting`) exists for 7 of them, and a codebase that names actions so has them as types too
+   (ILSight's `Theming`, `Docking`). No ILSight type's name ends in `Area`, so the form is free for every folder and an
+   agent names one without a search (its folders had 24 names in 5 forms: `Bookmarking/`, `UserState/`,
+   `MainScreen/`, ...). RL1306 reports a type that takes a folder's name.
 4. **Nest a type's parts, not its collaborators.** First, what "uses" means: a type is used by every type whose code
    names it, and by every type that reaches it through another type's members (a property, parameter or return type:
    the composition root that sets `search.Stream` with a method group uses `SearchStream`, though it never writes the
@@ -2563,9 +2581,10 @@ code of its own brings the same bug back (S05).
 the DTOs nested in the reader); S06's group with a converter from 1 to 3. An edit to one feature touches several files
 of one folder instead of one file (not measured). A union with many cases stays one file: its cases are nested (R008
 S09's 24 cases; ILSight's `NodeSubject`). A collaborator moved out of its container needs a name that says what it is
-without the container's: ILSight's three test fakes named `FakeLookup` would collide in one namespace. A group's folder
-adds a `using` to each file outside that uses it: ILSight's 26 groups with parts add 452 against a flat project, 198 of
-them in tests (counting tests' uses, 13 groups would add 294, the tested parts left outside their groups).
+without the container's: ILSight's three test fakes named `FakeLookup` would collide in one namespace. A concept's folder
+adds a `using` to each file outside that uses it: ILSight's 25 concepts with parts add 471 against a flat project, 214 of
+them in tests (at d3dfb6d, counting tests' uses, 13 groups would have added 294, the tested parts left outside their
+groups). Its folder names change once, to the one form: 23 of its 24 folders, 255 types.
 
 **Enforcement.** RL1301 reports a second top-level type in a file, RL1302 a file named after none of its types, RL1303
 a type declared in two or more hand-written places, RL1305 a nested type that is a unit of its own (code that uses none
@@ -2583,16 +2602,18 @@ nested types that reach their container's privates, 7 are handed out and 2 are m
 sandbox. Reached through members and made outside, RL1305 found 4 more in the sandbox's measuring tools (records their
 callers read through `var`, now files) and, on ILSight, `MemberSelection`'s 2 at its HEAD and 5 of the 7 nested types
 its layout pass had moved by hand (a sixth follows in the next round; the seventh only a test reaches, another project).
-Not checked: whether a group has parts and where a type goes (by its name, else by its users, composition roots aside),
-which is judged one type at a time but for a whole project at once takes its use graph, and a folder is a project-wide
-move; and whether a member could be narrowed: another project's calls aren't seen, and on
+Not checked: whether a concept has parts and where a type goes. They are decided one type at a time from names and
+direct users, but reading a name isn't mechanical (where a use case's verb ends, `GoTo` or `LayOut`; irregular
+plurals), the app's composition root isn't marked, and a folder is a project-wide move. Nor the folder's name beyond
+RL1306: one compilation can't tell a concept's folder from a namespace kept for another reason (a scenario's variants,
+a test's fixtures). Nor whether a member could be narrowed: another project's calls aren't seen, and on
 ILSight 430 of the 597 members whose own project calls them only from their own type are called from another project
 (the app calls the core's, the tests both), while both production assemblies show their internals to the tests.
 
 ### Checklist
 
 - [ ] Each file declares one top-level type and is named after it (types that differ only in arity share it).
-- [ ] Related types share a folder, not a file; a group with parts (types only it uses) has its folder, named for the group and like no type; a type goes by its name (its first concept, by words, a plural as its singular, the longest with a folder; a use case's by what it acts on; a suffix is a role) even when another group alone uses it, else by its users (all in one folder: there; else the folder above them), composition roots (the app's and the tests) aside; folders sit side by side.
+- [ ] Related types share a folder, not a file; a concept (what two or more names start with, by words, a plural as its singular, irregular ones too; a use case's by what it acts on; a suffix is a role) gets a folder named `<Concept>Area` when it has a part: a type not named for it that only types named for it use (the longest concept its users' names share), unless its name puts it in a shorter form's folder; a type goes by its name (the longest concept with a folder) even when another group alone uses it, else by its users (all in one folder: there; types that use each other by their other users; else the folder above them), composition roots (the app's and the tests) aside; folders sit side by side.
 - [ ] Nested types are their container's parts: private, shapes only it uses and code that works on its private members as what it makes and hands out (a scope, an enumerator, a callback), never code it keeps and calls or code others make; public, a union's cases and a use case's `IPorts`; any other type with code of its own, or that others name or reach through members, has its own file (members narrowed to their users first).
 - [ ] A helper only one file uses that can't be nested (extension methods) is a `file` type.
 - [ ] `partial` appears only where a tool writes the other half; no type is written by hand in two places.
