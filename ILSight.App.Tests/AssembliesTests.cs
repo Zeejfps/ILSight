@@ -234,9 +234,9 @@ public sealed class AssembliesTests
     {
         var fresh = AssemblyListing.ReadAgain(appState.Assemblies, item);
         var found = places
-            .Select(p => BrowseSessions.FindNode(appState.Session, fresh, p))
+            .Select(p => BrowseSessions.FindNode(appState.Session, fresh.Item, p))
             .ToArray();
-        return new Outcome<ReopenedFile>.Ok(new ReopenedFile { Item = fresh, Places = found });
+        return new Outcome<ReopenedFile>.Ok(new ReopenedFile { Fresh = fresh, Places = found });
     }
 
     [Fact]

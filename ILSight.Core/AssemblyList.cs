@@ -160,6 +160,70 @@ public sealed class AssemblyList
         Changed?.Invoke();
     }
 
+    /// <summary>Lists <paramref name="fresh"/>, read again for the listed <paramref name="item"/>
+    /// (<see cref="AssemblyListing.ReadAgain"/>), where the item is, with the assemblies read out of it, and forgets
+    /// the item and the assemblies read out of it. Reads nothing: what is listed is what was read. Nodes already handed
+    /// out stay valid. False, leaving the list as it is, when the item is no longer listed.</summary>
+    internal bool TryReplace(LoadedAssembly item, FreshItem fresh)
+    {
+        using (var held = State.Enter())
+        {
+            var now = held.Snapshot;
+            if (!now.Listed.Contains(item))
+            {
+                return false;
+            }
+
+            if (!TryForgetKnown(held.Value, item))
+            {
+                return false;
+            }
+
+            ForgetReadOutOf(held.Value, item);
+            held.Value[fresh.Item.FilePath] = fresh.Item;
+            foreach (var assembly in fresh.ReadOutOf)
+            {
+                held.Value[assembly.FilePath] = assembly;
+            }
+
+            var listed = now.Listed.Replace(item, fresh.Item);
+            held.Snapshot = now with { Listed = listed, Loaded = ListLoaded(listed, now.Loaded, fresh), Version = now.Version + 1 };
+        }
+        if (fresh.Item is LoadedModule module)
+        {
+            AskTypeSystemRead(module);
+        }
+
+        Changed?.Invoke();
+        return true;
+    }
+
+    /// <summary>The modules of <paramref name="listed"/>, in its order: those listed <paramref name="before"/> for
+    /// each item but <paramref name="fresh"/>, and for it, itself when it is a module, else what was read out of
+    /// it.</summary>
+    private static ImmutableArray<LoadedModule> ListLoaded(ImmutableArray<LoadedAssembly> listed, ImmutableArray<LoadedModule> before,
+        FreshItem fresh)
+    {
+        var loaded = ImmutableArray.CreateBuilder<LoadedModule>();
+        foreach (var item in listed)
+        {
+            if (item != fresh.Item)
+            {
+                loaded.AddRange(before.Where(m => m.ListedItem == item));
+                continue;
+            }
+
+            if (item is LoadedModule module)
+            {
+                loaded.Add(module);
+                continue;
+            }
+
+            loaded.AddRange(fresh.ReadOutOf);
+        }
+        return loaded.ToImmutable();
+    }
+
     /// <summary>Closes every assembly, and stops the opens that started before: they no longer list what they
     /// read.</summary>
     internal void CloseAll()

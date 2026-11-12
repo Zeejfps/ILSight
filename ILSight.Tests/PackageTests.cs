@@ -118,11 +118,13 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var old = list.Assemblies.ToList();
 
-        var fresh = AssemblyListing.ReadAgain(list, old[1]);
-        var replaced = AssemblyListing.TryReplace(list, package, fresh);
+        var read = AssemblyListing.ReadAgain(list, old[1]);
+        var fresh = read.Item;
+        var replaced = list.TryReplace(package, read);
 
         Assert.True(replaced);
         Assert.Equal([fresh], list.Listed);
+        Assert.Equal(read.ReadOutOf, list.Assemblies);
         Assert.All(list.Assemblies, a => Assert.Same(fresh, ContainerOf(a)));
         Assert.Empty(list.Assemblies.Intersect(old));
         var root = TestAssemblyRoot(fresh.Root.Child(LibFolder));

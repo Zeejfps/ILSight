@@ -29,13 +29,14 @@ public sealed class AssemblyListTests
 
         var fresh = AssemblyListing.ReadAgain(list, first);
         var listedWhileRead = list.Listed.ToList();
-        var replaced = AssemblyListing.TryReplace(list, first, fresh);
+        var replaced = list.TryReplace(first, fresh);
 
         Assert.Equal([first, second], listedWhileRead);
         Assert.True(replaced);
-        Assert.Equal([fresh, second], list.Listed);
-        Assert.Equal("net48", Assert.IsType<LoadedModule>(fresh).FrameworkMoniker);
-        Assert.Same(fresh, list.FindNode(first.Root.Path)?.Assembly);
+        Assert.Equal([fresh.Item, second], list.Listed);
+        Assert.Equal([fresh.Item, second], list.Assemblies);
+        Assert.Equal("net48", Assert.IsType<LoadedModule>(fresh.Item).FrameworkMoniker);
+        Assert.Same(fresh.Item, list.FindNode(first.Root.Path)?.Assembly);
     }
 
     [Fact]
@@ -46,7 +47,7 @@ public sealed class AssemblyListTests
         var fresh = AssemblyListing.ReadAgain(list, assembly);
         list.Close(assembly);
 
-        Assert.False(AssemblyListing.TryReplace(list, assembly, fresh));
+        Assert.False(list.TryReplace(assembly, fresh));
         Assert.Empty(list.Listed);
     }
 

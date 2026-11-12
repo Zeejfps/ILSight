@@ -23,6 +23,13 @@ public sealed class ClosableAssemblyList
         List.Close(assembly);
     }
 
+    /// <summary>Lists <paramref name="fresh"/>, read again for the listed <paramref name="item"/>, in its place, as
+    /// <see cref="AssemblyList.TryReplace"/> does: reads nothing. False when the item is no longer listed.</summary>
+    public bool TryReplace(LoadedAssembly item, FreshItem fresh)
+    {
+        return List.TryReplace(item, fresh);
+    }
+
     /// <summary>Takes every assembly off the list, as <see cref="AssemblyList.CloseAll"/> does.</summary>
     public void CloseAll()
     {

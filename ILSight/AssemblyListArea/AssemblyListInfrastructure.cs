@@ -85,11 +85,11 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
     private ReopenedFile ReadAgain(LoadedAssembly item, IReadOnlyList<NodePath> places)
     {
         var fresh = AssemblyListing.ReadAgain(assemblies, item);
-        EnsureChildrenAsLoaded(BrowseSessions.EnsureRoot(session, item), BrowseSessions.EnsureRoot(session, fresh));
+        EnsureChildrenAsLoaded(BrowseSessions.EnsureRoot(session, item), BrowseSessions.EnsureRoot(session, fresh.Item));
         var placeNodes = places
-            .Select(p => BrowseSessions.FindNode(session, fresh, p))
+            .Select(p => BrowseSessions.FindNode(session, fresh.Item, p))
             .ToArray();
-        return new ReopenedFile { Item = fresh, Places = placeNodes };
+        return new ReopenedFile { Fresh = fresh, Places = placeNodes };
     }
 
     /// <summary>Loads the children of each node under <paramref name="fresh"/> whose counterpart under

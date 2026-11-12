@@ -121,60 +121,18 @@ public static class AssemblyListing
 
     /// <summary>Reads the item of the list holding <paramref name="assembly"/> again from its file: the
     /// assembly, or the package it was read out of with the assemblies in it, each taking what is picked
-    /// for it now. It is not listed until <see cref="TryReplace"/> puts it in the item's place. Reads the
-    /// file: call it off the UI thread.</summary>
+    /// for it now, handed back with them. It is not listed until <see cref="ClosableAssemblyList.TryReplace"/> puts
+    /// it in the item's place, which reads nothing more. Reads the file: call it off the UI thread.</summary>
     /// <exception cref="AssemblyLoadException">The file can no longer be read.</exception>
-    public static LoadedAssembly ReadAgain(AssemblyList list, LoadedAssembly assembly)
+    public static FreshItem ReadAgain(AssemblyList list, LoadedAssembly assembly)
     {
         var fresh = ReadAssemblyOrPackage(list, assembly.ListedItem.FilePath);
         if (fresh is LoadedPackage package)
         {
-            LoadedAssemblies.EnsureAssemblies(package);
+            return new FreshItem { Item = fresh, ReadOutOf = LoadedAssemblies.EnsureAssemblies(package) };
         }
 
-        return fresh;
-    }
-
-    /// <summary>Lists <paramref name="fresh"/>, which <see cref="ReadAgain"/> read for the listed
-    /// <paramref name="item"/>, where the item is, and forgets the item and the assemblies read out of
-    /// it. Nodes already handed out stay valid. False, leaving the list as it is, when the item is no
-    /// longer listed.</summary>
-    public static bool TryReplace(AssemblyList list, LoadedAssembly item, LoadedAssembly fresh)
-    {
-        using (var held = list.State.Enter())
-        {
-            var listed = held.Snapshot.Listed;
-            if (!listed.Contains(item))
-            {
-                return false;
-            }
-
-            if (!AssemblyList.TryForgetKnown(held.Value, item))
-            {
-                return false;
-            }
-
-            AssemblyList.ForgetReadOutOf(held.Value, item);
-            Know(held.Value, fresh);
-            ChangeListed(held, listed.Replace(item, fresh));
-        }
-        AskTypeSystemRead(list, fresh);
-        list.ChangedHandlers?.Invoke();
-        return true;
-    }
-
-    private static void Know(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly item)
-    {
-        byPath[item.FilePath] = item;
-        if (item is not LoadedPackage package)
-        {
-            return;
-        }
-
-        foreach (var assembly in LoadedAssemblies.EnsureAssemblies(package))
-        {
-            byPath[assembly.FilePath] = assembly;
-        }
+        return new FreshItem { Item = fresh, ReadOutOf = [] };
     }
 
     /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found, as

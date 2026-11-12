@@ -2,11 +2,11 @@ using ILSight.Core;
 
 namespace ILSight.AssemblyArea;
 
-/// <summary>A file of the list read again: the item to list in place of the one before, and each tab's place
-/// in it, null where it is gone, in the order the places were asked for.</summary>
+/// <summary>A file of the list read again: the item to list in place of the one before, with what was read out of
+/// it, and each tab's place in it, null where it is gone, in the order the places were asked for.</summary>
 public sealed record ReopenedFile
 {
-    public required LoadedAssembly Item { get; init; }
+    public required FreshItem Fresh { get; init; }
 
     public required BrowseNode?[] Places { get; init; }
 }

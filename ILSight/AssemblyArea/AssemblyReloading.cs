@@ -157,7 +157,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         switch (outcome)
         {
             case Outcome<ReopenedFile>.Ok ok:
-                return ShowReopened(session.Assemblies, session.Navigation, decompiler, item, ok.Value, tabs);
+                return ShowReopened(session, session.Navigation, decompiler, item, ok.Value, tabs);
             case Outcome<ReopenedFile>.Failed failed:
                 ports.ReportError(new AppProblem.AssemblyNotReloaded(item.Name, failed.Error));
                 return [];
@@ -166,11 +166,11 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
     }
 
-    private List<DecompileTicket> ShowReopened(AssemblyList assemblies, Navigation navigation, DecompilerSetup decompiler, LoadedAssembly item,
+    private List<DecompileTicket> ShowReopened(OpenListSession session, Navigation navigation, DecompilerSetup decompiler, LoadedAssembly item,
         ReopenedFile reopened, List<ReloadingTab> tabs)
     {
         var loads = new List<DecompileTicket>();
-        if (!AssemblyListing.TryReplace(assemblies, item, reopened.Item))
+        if (!session.TryReplaceAssembly(item, reopened.Fresh))
         {
             return loads;
         }

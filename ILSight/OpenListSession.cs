@@ -63,6 +63,13 @@ public sealed class OpenListSession
         }
     }
 
+    /// <summary>Lists <paramref name="fresh"/>, the listed <paramref name="item"/> read again, in its place, reading
+    /// nothing; false when the item is no longer listed.</summary>
+    public bool TryReplaceAssembly(LoadedAssembly item, FreshItem fresh)
+    {
+        return _assemblies.TryReplace(item, fresh);
+    }
+
     /// <summary>Takes the files that failed to load off the list.</summary>
     public void CloseFailedAssemblies()
     {
