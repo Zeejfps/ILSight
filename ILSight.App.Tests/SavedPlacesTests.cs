@@ -37,7 +37,7 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var (settings, problem) = AppRoot.ReadSettingsFile(FullFilePath.Of(_temp.Write("settings.json", json)));
         var d = new AppStateDriver(settings);
-        d.Start(RestoreActiveAssemblyListAsync);
+        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
         return (d, problem);
     }

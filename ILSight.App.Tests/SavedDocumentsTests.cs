@@ -187,7 +187,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
         Assert.Equal(position, CodeOf(next, TabTitled(next, "Outline")).Position);
     }
@@ -208,12 +208,12 @@ public sealed class SavedDocumentsTests : IDisposable
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
 
         var hidden = new AppDriver(height: 360f, settings: _temp.Settings());
-        hidden.Start(RestoreActiveAssemblyListAsync);
+        hidden.Start(AppStateDriver.OpenAtStartupAsync);
         hidden.Settle(4);
         hidden.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
         ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler, TabTitled(next, "Outline"));
         next.Run(4);
@@ -253,7 +253,7 @@ public sealed class SavedDocumentsTests : IDisposable
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
 
         Assert.Equal(ListTabPanels(app), ListTabPanels(next));
@@ -292,12 +292,12 @@ public sealed class SavedDocumentsTests : IDisposable
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
 
         var hidden = new AppDriver(height: 360f, settings: _temp.Settings());
-        hidden.Start(RestoreActiveAssemblyListAsync);
+        hidden.Start(AppStateDriver.OpenAtStartupAsync);
         hidden.Settle(4);
         hidden.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
         ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler, GridTab(next));
         next.Run(4);
@@ -312,7 +312,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         Assert.Contains("\"GridPosition\"", File.ReadAllText(_temp.PathOf("settings.json")));
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
 
         Assert.Equal(row, GridOf(next, GridTab(next)).Selected);
@@ -330,7 +330,7 @@ public sealed class SavedDocumentsTests : IDisposable
         documents.Tabs[documents.Tabs.IndexOf(saved)] = older;
 
         var next = new AppDriver(height: 360f, settings: settings);
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
 
         Assert.Equal(MetadataGridState.None, GridOf(next, GridTab(next)).Selected);
@@ -342,7 +342,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var missing = new NodeDocumentRecord(MissingPanel, "Missing", FixturePlace("Missing"), DecompilationLanguage.CSharp, null);
         var d = new AppStateDriver(SettingsWith(new DocumentsRecord([missing], MissingPanel, null, null)));
 
-        d.Start(RestoreActiveAssemblyListAsync);
+        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
@@ -358,7 +358,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var greeter = new NodeDocumentRecord(MissingPanel, "Greeter", FixturePlace("Greeter"), DecompilationLanguage.CSharp, null);
         var d = new AppStateDriver(SettingsWith(new DocumentsRecord([greeter], MissingPanel, null, null)));
 
-        d.Start(RestoreActiveAssemblyListAsync);
+        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Change(static a => a.ListSession.CloseAllAssemblies());
         d.Settle();
 
@@ -373,7 +373,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var saved = new DiagramDocumentRecord(DiagramPanel, "Vehicle diagram", [vehicle, FixtureType("Missing")], [PathOf(AppStateDriver.FixturePath)], null);
         var d = new AppStateDriver(SettingsWith(new DocumentsRecord([saved], DiagramPanel, null, null)));
 
-        d.Start(RestoreActiveAssemblyListAsync);
+        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);

@@ -239,7 +239,7 @@ public static class Commands
     }
 
     /// <summary>Asks for the assemblies of the list <paramref name="opening"/> began opening to be opened once the frame
-    /// is drawn (<see cref="AssemblyLists.OpenListAsync"/>), then the loads that started in the tabs: the draw switched
+    /// is drawn (<see cref="StartOpeningList"/>), then the loads that started in the tabs: the draw switched
     /// the list in the frame of its input, and only opening its files, which takes longer than a frame, waits for the
     /// edge. Nothing when <paramref name="opening"/> is null.</summary>
     public static void OpenListLater(UiState uiState, ListOpening? opening)
@@ -261,7 +261,7 @@ public static class Commands
     }
 
     /// <summary>Starts the loads closing the list before left (the lookup of the tabs it left waiting), opening the
-    /// assemblies of the list <paramref name="opening"/> began opening (<see cref="AssemblyLists.OpenListAsync"/>), then
+    /// assemblies of the list <paramref name="opening"/> began opening, as the reload it holds, then
     /// the loads that started in the tabs, and beside it the finding of the list's analyses
     /// (<see cref="StartRestoringAnalyses"/>), each now and none waiting for another; nothing when it is null.</summary>
     public static void StartOpeningList(AppState appState, ListOpening? opening)
@@ -272,8 +272,17 @@ public static class Commands
         }
 
         StartLoads(appState, opening.Closing);
-        StartShowing(appState, nameof(AssemblyLists.OpenListAsync), ct => AssemblyLists.OpenListAsync(appState, opening, ct));
+        StartReopening(appState, opening.Reopening);
         StartRestoringAnalyses(appState, opening.Analyses);
+    }
+
+    /// <summary>Starts opening the open list's assemblies <paramref name="reopening"/> began reopening, as the reload it
+    /// holds, then the loads that started in the tabs.</summary>
+    private static void StartReopening(AppState appState, ListReopening reopening)
+    {
+        var session = appState.ListSession;
+        var handler = appState.OpenAssembliesAsReloadHandler;
+        StartShowing(appState, nameof(OpenAssembliesAsReloadHandler), ct => handler.HandleAsync(session, reopening.Paths, reopening.Reload, ct));
     }
 
     /// <summary>Asks for what going to a history entry left, <paramref name="move"/>, to be started once the frame is

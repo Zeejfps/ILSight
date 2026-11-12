@@ -40,7 +40,7 @@ public sealed class PickedPdbTests
         Pick(d, FixturePdb);
         d.AppState.SettingsSaving.Save(d.AppState);
         var next = new AppStateDriver(temp.Settings());
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle();
 
         Assert.Equal(FixturePdb, Assert.Single(temp.Settings().AssemblyLists).Pdbs?[PathOf(copy)]);

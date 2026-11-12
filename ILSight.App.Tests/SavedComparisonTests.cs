@@ -42,7 +42,7 @@ public sealed class SavedComparisonTests : IDisposable
     {
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
         var next = new AppDriver(settings: _temp.Settings());
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Compared, Patience);
         next.Settle(2);
         return next;
@@ -123,7 +123,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
 
         var next = new AppDriver(settings: _temp.Settings());
-        next.Start(RestoreActiveAssemblyListAsync);
+        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Failed, Patience);
 
         var failed = Assert.IsType<ComparisonResult.Failed>(FindComparison(next)?.Result);

@@ -10,27 +10,6 @@ namespace ILSight.AssemblyListArea;
 /// <summary>Switching between the named assembly lists, and creating, renaming and deleting them.</summary>
 public static class AssemblyLists
 {
-    /// <summary>Opens the open list's assemblies as the app starts, as a reload, so that the list is
-    /// saved whole until they are all open, then shows what the tabs reopened from its documents showed.
-    /// Files that are gone or fail to load stay listed as failed. Returns the loads that started in the tabs, for the
-    /// edge that started this to start.</summary>
-    public static Task<TabLoads> RestoreActiveAssemblyListAsync(AppState appState, CancellationToken ct)
-    {
-        var opening = BeginRestoringActiveAssemblyList(appState.Lists, appState.ListSession);
-        return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, opening.Paths, opening.Reload, ct);
-    }
-
-    /// <summary>Uses what the open list picked for its assemblies and begins reopening them as a reload, the app saying
-    /// it is reloading. Returns the files to open and the reload.</summary>
-    private static (IReadOnlyList<AssemblyPath> Paths, ReloadTicket Reload) BeginRestoringActiveAssemblyList(SavedAssemblyLists lists,
-        OpenListSession session)
-    {
-        session.Assemblies.Pdbs.Use(lists.ActivePdbs);
-        session.Assemblies.TargetFrameworks.Use(lists.ActiveFrameworks);
-        var paths = lists.ActivePaths.ToList();
-        return (paths, session.Reload.Start());
-    }
-
     /// <summary>Opens the list named <paramref name="name"/> as the app starts, in place of the one the
     /// settings had open, with the analyses and documents it had. A list by that name is added when there is none.</summary>
     public static void StartWithAssemblyList(AppState appState, string name)
@@ -86,7 +65,7 @@ public static class AssemblyLists
     /// without waiting for anything: the assemblies, documents, history and analyses of the one before go, kept with
     /// it for when it opens again; its documents reopen waiting for their places, its analyses wait to be found, and
     /// its assemblies begin reopening as a reload. Returns what is left for the edge to open
-    /// (<see cref="OpenListAsync"/>); null when there is no list by that name.</summary>
+    /// (<see cref="Commands.StartOpeningList"/>); null when there is no list by that name.</summary>
     public static ListOpening? SwitchAssemblyList(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         RememberActiveAssemblyList(lists, session, view);
@@ -117,25 +96,10 @@ public static class AssemblyLists
         var closing = session.CloseAllAssemblies();
         ReopenDocuments(lists, session);
         session.Navigation.ClearHistory();
-        var (paths, reload) = BeginRestoringActiveAssemblyList(lists, session);
+        var reopening = session.BeginReopening(lists);
         session.Analyzer.AddPending(lists.ActiveAnalyses);
         var analyses = Analysis.BeginRestoring(session.Analyzer, session.Assemblies);
-        return new ListOpening { Paths = paths, Reload = reload, Closing = closing, Analyses = analyses };
-    }
-
-    /// <summary>Opens the assemblies of the list <paramref name="opening"/> began opening, as the reload it holds;
-    /// nothing when it is null. Finding the list's analyses is not this one's: the edge starts it beside this
-    /// (<see cref="Commands.StartOpeningList"/>), and nor are the loads closing the list before it left: the edge
-    /// starts them before this, which they need not wait for. Returns the loads that started in the tabs, for the edge
-    /// that started this to start.</summary>
-    public static async Task<TabLoads> OpenListAsync(AppState appState, ListOpening? opening, CancellationToken ct)
-    {
-        if (opening is null)
-        {
-            return TabLoads.None;
-        }
-
-        return await appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, opening.Paths, opening.Reload, ct);
+        return new ListOpening { Reopening = reopening, Closing = closing, Analyses = analyses };
     }
 
     /// <summary>Adds an empty list named <paramref name="name"/>, or numbered when that is taken,

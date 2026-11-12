@@ -64,6 +64,13 @@ internal sealed class AppStateDriver
         return new AppStateDriver(loadResult, arguments, withScreen: true);
     }
 
+    /// <summary>What the app starts as it starts with no files asked for: opening the active list
+    /// (<see cref="AppFrames.OpenStartupAssembliesAsync"/>).</summary>
+    public static Task<TabLoads> OpenAtStartupAsync(AppState appState, CancellationToken ct)
+    {
+        return AppFrames.OpenStartupAssembliesAsync(appState, new FilesToOpen([], null), ct);
+    }
+
     /// <summary>A driver that has opened the fixture assembly.</summary>
     public static AppStateDriver Opened(AppSettings? settings = null)
     {

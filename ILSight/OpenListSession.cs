@@ -41,6 +41,17 @@ public sealed class OpenListSession
 
     public required OpenRequests Opens { get; init; }
 
+    /// <summary>Uses what the open list of <paramref name="lists"/> picked for its assemblies and begins reopening them
+    /// as a reload, the app saying it is reloading. Returns the files to open and the reload, for the edge to open
+    /// (<see cref="AssemblyArea.OpenAssembliesAsReloadHandler"/>).</summary>
+    public ListReopening BeginReopening(SavedAssemblyLists lists)
+    {
+        Assemblies.Pdbs.Use(lists.ActivePdbs);
+        Assemblies.TargetFrameworks.Use(lists.ActiveFrameworks);
+        var paths = lists.ActivePaths.ToList();
+        return new ListReopening { Paths = paths, Reload = Reload.Start() };
+    }
+
     /// <summary>Takes <paramref name="items"/> off the list, and the analyses of them with them; one no longer on it is
     /// passed over.</summary>
     public void CloseAssemblies(IReadOnlyList<LoadedAssembly> items)

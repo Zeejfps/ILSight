@@ -508,12 +508,14 @@ internal static class AppFrames
         appState.Workflows.StartUntilShutdown(appState.UserIconThemes.WatchAsync);
     }
 
-    /// <summary>Opens the active list, then <paramref name="files"/> while it opens, once the app is running. Returns
-    /// the loads that started in the tabs: those reopened from the list's saved documents, and the one showing what
-    /// the files ask for.</summary>
+    /// <summary>Opens the active list's assemblies as a reload, so that the list is saved whole until they are all open
+    /// (files that are gone or fail to load stay listed as failed), and <paramref name="files"/> while it opens, once
+    /// the app is running. Returns the loads that started in the tabs: those reopened from the list's saved documents,
+    /// and the one showing what the files ask for.</summary>
     internal static async Task<TabLoads> OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
     {
-        var restoring = RestoreActiveAssemblyListAsync(appState, ct);
+        var reopening = appState.ListSession.BeginReopening(appState.Lists);
+        var restoring = appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, reopening.Paths, reopening.Reload, ct);
         var opening = OpenRequestedFilesAsync(appState, files, ct);
         await Task.WhenAll(restoring, opening);
         return (await restoring).With(await opening);
