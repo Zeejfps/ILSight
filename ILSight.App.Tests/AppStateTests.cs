@@ -360,20 +360,76 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         d.Show(d.Fixture("Greeter"));
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
         d.Settle();
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Settle();
 
         d.GoBack();
         d.NextFrame();
 
         var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;
+        Assert.Same(tab, d.AppState.Navigation.ActiveTab);
         Assert.False(tab.Load.IsBusy);
         Assert.Same(document, tab.Document);
         Assert.IsType<PendingScroll.Restore>(view.Pending);
+    }
+
+    [Fact]
+    public void Going_back_after_clicking_a_tab_returns_to_the_tab_the_user_was_at()
+    {
+        var d = AppStateDriver.Opened();
+        d.Show(d.Fixture("Greeter"));
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
+        d.Settle();
+
+        d.GoBack();
+        d.Settle();
+
+        Assert.Equal("Farewell", d.AppState.Navigation.ActiveTab?.Node?.Text);
+    }
+
+    [Fact]
+    public void Going_back_from_code_shown_after_clicking_a_tab_returns_to_what_that_tab_showed()
+    {
+        var d = AppStateDriver.Opened();
+        d.TurnOffPreviewTabs();
+        d.Show(d.Fixture("Greeter"));
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
+        d.Settle();
+        d.Show(d.Fixture("Counter"));
+
+        d.GoBack();
+        d.Settle();
+
+        Assert.Equal("Greeter", d.AppState.Navigation.ActiveTab?.Node?.Text);
+    }
+
+    [Fact]
+    public void Going_back_from_code_shown_in_the_tab_focused_after_a_close_returns_to_what_it_showed()
+    {
+        var d = AppStateDriver.Opened();
+        d.TurnOffPreviewTabs();
+        d.Show(d.Fixture("Greeter"));
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(d.Fixture("Outline"), inNewTab: true);
+        var outline = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(outline);
+        QueuedCommands.CloseTabAndFocusNext(d.Ui, d.AppState, outline);
+        d.Settle();
+        var focused = d.AppState.Navigation.ActiveTab?.Node?.Text;
+        Assert.NotNull(focused);
+        d.Show(d.Fixture("Counter"));
+
+        d.GoBack();
+        d.Settle();
+
+        Assert.Equal(focused, d.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal(2, d.AppState.Navigation.OpenTabs.Count);
     }
 
     [Fact]

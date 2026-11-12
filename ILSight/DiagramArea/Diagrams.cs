@@ -113,7 +113,7 @@ public static class Diagrams
         {
             return ShowInNewDiagram(appState, type, newTitle);
         }
-        appState.Navigation.ShowDiagramTab(tab, shown);
+        appState.Navigation.ShowDiagramTab(tab);
         return StartReadingWithNeighbours(tab, shown.Types, type);
     }
 

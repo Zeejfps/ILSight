@@ -202,8 +202,8 @@ public sealed class Navigation
     }
 
     /// <summary>Shows <paramref name="node"/>, picked in the tree, as <see cref="ShowNode"/> does, unless
-    /// a tab shows it already, which is brought to the front instead. Returns the load it started, as
-    /// <see cref="ShowNode"/> does.</summary>
+    /// a tab shows it already, which is brought to the front instead, its place recorded in the history as where the
+    /// user is. Returns the load it started, as <see cref="ShowNode"/> does.</summary>
     public DecompileTicket? PreviewNode(BrowseNode node, DecompilerSetup setup)
     {
         var showing = FindTabShowing(node);
@@ -213,6 +213,7 @@ public sealed class Navigation
         }
         Tabs.MakeActive(_tabs, showing);
         ViewCommands.Enqueue(new ViewCommand.ShowTab(showing, Beside: null));
+        RecordShownPlace(showing, setup.Language);
         return null;
     }
 
@@ -283,10 +284,11 @@ public sealed class Navigation
         }
     }
 
-    /// <summary>Makes <paramref name="tab"/>, when it is open, the tab the user works in, pointing it again at what it
-    /// shows when it was shown in another language than <paramref name="language"/> or with other options than
-    /// <paramref name="options"/>. Returns the load that started in the tab, for <see cref="DecompileIntoTabHandler"/>
-    /// to bring in; null when none did.</summary>
+    /// <summary>Makes <paramref name="tab"/>, when it is open, the tab the user works in (clicked, docked, brought
+    /// forward, or focused after the active one closed), its place recorded in the history as where the user is, and
+    /// points it again at what it shows when it was shown in another language than <paramref name="language"/> or with
+    /// other options than <paramref name="options"/>. Returns the load that started in the tab, for
+    /// <see cref="DecompileIntoTabHandler"/> to bring in; null when none did.</summary>
     public DecompileTicket? FocusTab(DocumentTab tab, DecompilerSetup setup)
     {
         if (!Tabs.IsOpen(_tabs, tab))
@@ -296,7 +298,41 @@ public sealed class Navigation
 
         _intent.Begin();
         Tabs.MakeActive(_tabs, tab);
+        RecordShownPlace(tab, setup.Language);
         return StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options);
+    }
+
+    /// <summary>Records the place <paramref name="tab"/> shows as where the user is now, as showing it records it: its
+    /// diagram, comparison or report, else its node, in <paramref name="language"/>; nothing for a tab showing
+    /// nothing.</summary>
+    private void RecordShownPlace(DocumentTab tab, DecompilationLanguage language)
+    {
+        var content = tab.Content;
+        if (content is TabContent.Diagram diagram)
+        {
+            _history.RecordDiagram(diagram.Id, diagram.Types, diagram.Title);
+            return;
+        }
+
+        if (content is TabContent.Comparison comparison)
+        {
+            _history.RecordComparison(comparison.Id, comparison.Assemblies, comparison.Title);
+            return;
+        }
+
+        if (content is TabContent.Report report)
+        {
+            _history.RecordReport(report.Export);
+            return;
+        }
+
+        var node = tab.Node;
+        if (node is null)
+        {
+            return;
+        }
+
+        _history.RecordPlace(node, language);
     }
 
     /// <summary>The assemblies an id is looked for in: those read from the files opened, a package's
@@ -359,30 +395,29 @@ public sealed class Navigation
     }
 
     /// <summary>Begins opening the code of a type or member picked on <paramref name="diagram"/> beside it, in a new
-    /// tab when <paramref name="inNewTab"/>: records the diagram in the history, so that going back returns to it, and
-    /// begins the request whose lookup finds the code (<see cref="BeginResolving"/>). Returns its ticket; null when no
-    /// open tab shows the diagram.</summary>
+    /// tab when <paramref name="inNewTab"/>: begins the request whose lookup finds the code
+    /// (<see cref="BeginResolving"/>); going back returns to the diagram, recorded when its tab was brought to the
+    /// front. Returns its ticket; null when no open tab shows the diagram.</summary>
     public ResolveTicket? BeginResolvingFromDiagram(TypeDiagram diagram, bool inNewTab)
     {
         var tab = FindTabShowing(diagram);
-        if (tab is null || tab.Content is not TabContent.Diagram shown)
+        if (tab is null || tab.Content is not TabContent.Diagram)
         {
             return null;
         }
 
-        _history.RecordDiagram(shown.Id, shown.Types, shown.Title);
         return BeginResolving(inNewTab);
     }
 
     /// <summary>Brings <paramref name="tab"/>, which shows a diagram, to the front as the tab the user works in: a new
     /// intent, and the diagram a place in the history.</summary>
-    public void ShowDiagramTab(DocumentTab tab, TabContent.Diagram shown)
+    public void ShowDiagramTab(DocumentTab tab)
     {
         _intent.Begin();
         LeaveActiveTab();
         Tabs.MakeActive(_tabs, tab);
         ViewCommands.Enqueue(new ViewCommand.ShowTab(tab, Beside: null));
-        _history.RecordDiagram(shown.Id, shown.Types, shown.Title);
+        RecordShownPlace(tab, tab.Load.Language);
     }
 
     /// <summary>Shows <paramref name="diagram"/>, titled <paramref name="title"/>, in the active tab while it shows

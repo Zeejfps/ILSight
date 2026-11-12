@@ -5,6 +5,7 @@ using ILSight.Core.Comparison;
 using ILSight.AssemblyArea;
 using static ILSight.Comparisons;
 using static ILSight.Docking;
+using static ILSight.DocumentPanels;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
@@ -117,6 +118,29 @@ public sealed class ComparisonTests
         d.Settle();
 
         Assert.Equal("Greeter", d.AppState.Navigation.ActiveTab?.Node?.Text);
+    }
+
+    [Fact]
+    public void Going_back_from_code_followed_out_of_a_comparison_clicked_again_returns_to_the_comparison()
+    {
+        var d = OpenWithFixtures();
+        d.TurnOffPreviewTabs();
+        d.Show(d.Fixture("Greeter"));
+        var comparison = Compare(d, LeftPath, RightPath);
+        var comparisonTab = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(comparisonTab);
+        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, comparisonTab);
+        d.Settle();
+        var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
+        var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, sides.Right.Reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Settle();
+
+        d.GoBack();
+        d.Settle();
+
+        Assert.Same(comparisonTab, d.AppState.Navigation.ActiveTab);
     }
 
     [Fact]
