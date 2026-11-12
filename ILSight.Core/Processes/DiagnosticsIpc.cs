@@ -332,49 +332,49 @@ internal static class DiagnosticsIpc
         }
     }
 
-    private static async Task<Stream> ConnectAsync(DiagnosticsEndpoint endpoint, CancellationToken cancellationToken)
+    private static Task<Stream> ConnectAsync(DiagnosticsEndpoint endpoint, CancellationToken cancellationToken)
     {
-        switch (endpoint)
+        return endpoint.Match(
+            socketEndpoint => ConnectSocketAsync(socketEndpoint, cancellationToken),
+            pipeEndpoint => ConnectPipeAsync(pipeEndpoint, cancellationToken));
+    }
+
+    private static async Task<Stream> ConnectPipeAsync(DiagnosticsEndpoint.NamedPipe pipeEndpoint, CancellationToken cancellationToken)
+    {
+        var pipe = new NamedPipeClientStream(".", pipeEndpoint.Name, PipeDirection.InOut, PipeOptions.Asynchronous);
+        var connected = false;
+        try
         {
-            case DiagnosticsEndpoint.NamedPipe pipeEndpoint:
+            await pipe.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            connected = true;
+            return pipe;
+        }
+        finally
+        {
+            if (!connected)
             {
-                var pipe = new NamedPipeClientStream(".", pipeEndpoint.Name, PipeDirection.InOut, PipeOptions.Asynchronous);
-                var connected = false;
-                try
-                {
-                    await pipe.ConnectAsync(cancellationToken).ConfigureAwait(false);
-                    connected = true;
-                    return pipe;
-                }
-                finally
-                {
-                    if (!connected)
-                        {
-                            await pipe.DisposeAsync().ConfigureAwait(false);
-                        }
-                    }
+                await pipe.DisposeAsync().ConfigureAwait(false);
             }
-            case DiagnosticsEndpoint.UnixSocket socketEndpoint:
+        }
+    }
+
+    private static async Task<Stream> ConnectSocketAsync(DiagnosticsEndpoint.UnixSocket socketEndpoint, CancellationToken cancellationToken)
+    {
+        var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        var connected = false;
+        try
+        {
+            await socket.ConnectAsync(new UnixDomainSocketEndPoint(socketEndpoint.Path), cancellationToken).ConfigureAwait(false);
+            var stream = new NetworkStream(socket, ownsSocket: true);
+            connected = true;
+            return stream;
+        }
+        finally
+        {
+            if (!connected)
             {
-                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                var connected = false;
-                try
-                {
-                    await socket.ConnectAsync(new UnixDomainSocketEndPoint(socketEndpoint.Path), cancellationToken).ConfigureAwait(false);
-                    var stream = new NetworkStream(socket, ownsSocket: true);
-                    connected = true;
-                    return stream;
-                }
-                finally
-                {
-                    if (!connected)
-                        {
-                            socket.Dispose();
-                        }
-                    }
+                socket.Dispose();
             }
-            default:
-                throw new InvalidOperationException($"Unknown endpoint {endpoint}.");
         }
     }
 

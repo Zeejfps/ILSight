@@ -119,12 +119,9 @@ public static class RunningProcesses
     {
         using (trace)
         {
-            return NettraceRundown.Read(trace) switch
-            {
-                RundownRead.Read read => new ModuleListing.Listed(ResolveModules(read.Modules, IsFile)),
-                RundownRead.Corrupt corrupt => new ModuleListing.Unreadable(corrupt.Detail),
-                var other => throw new InvalidOperationException($"Unknown rundown result {other}."),
-            };
+            return NettraceRundown.Read(trace).Match<ModuleListing>(
+                static read => new ModuleListing.Listed(ResolveModules(read.Modules, IsFile)),
+                static corrupt => new ModuleListing.Unreadable(corrupt.Detail));
         }
     }
 

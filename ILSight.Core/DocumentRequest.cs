@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ILSight.Core;
 
 /// <summary>What <see cref="NodeDecompiler"/> writes a document of, titled <see cref="Title"/>; a
@@ -34,4 +36,56 @@ internal abstract record DocumentRequest
 
     /// <summary>Why a listed file could not be read.</summary>
     public sealed record Failure(FailedAssembly Assembly, string Title, string FullName) : DocumentRequest(Title, FullName);
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    public TResult Match<TResult>(Func<ModulePreview, TResult> modulePreview, Func<Type, TResult> type,
+        Func<Member, TResult> member, Func<Summary, TResult> summary, Func<Resource, TResult> resource,
+        Func<Baml, TResult> baml, Func<Failure, TResult> failure)
+    {
+        return this switch
+        {
+            ModulePreview c => modulePreview(c),
+            Type c => type(c),
+            Member c => member(c),
+            Summary c => summary(c),
+            Resource c => resource(c),
+            Baml c => baml(c),
+            Failure c => failure(c),
+            _ => throw new UnreachableException($"DocumentRequest.Match does not handle {GetType().Name}."),
+        };
+    }
+
+    /// <summary>Does what the handler of whichever case this is does with it and <paramref name="state"/>, which
+    /// it is handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
+    public void Switch<TState>(TState state, Action<TState, ModulePreview> modulePreview, Action<TState, Type> type,
+        Action<TState, Member> member, Action<TState, Summary> summary, Action<TState, Resource> resource,
+        Action<TState, Baml> baml, Action<TState, Failure> failure)
+    {
+        switch (this)
+        {
+            case ModulePreview c:
+                modulePreview(state, c);
+                return;
+            case Type c:
+                type(state, c);
+                return;
+            case Member c:
+                member(state, c);
+                return;
+            case Summary c:
+                summary(state, c);
+                return;
+            case Resource c:
+                resource(state, c);
+                return;
+            case Baml c:
+                baml(state, c);
+                return;
+            case Failure c:
+                failure(state, c);
+                return;
+            default:
+                throw new UnreachableException($"DocumentRequest.Switch does not handle {GetType().Name}.");
+        }
+    }
 }

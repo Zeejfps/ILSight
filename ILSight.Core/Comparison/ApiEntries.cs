@@ -309,19 +309,18 @@ public static class ApiEntries
     /// fields, properties, events and methods; namespaces among themselves.</summary>
     private static int SortGroup(SymbolShape shape)
     {
-        return shape switch
-        {
-            SymbolShape.Member member => member.Shape switch
+        return shape.Match(
+            static _ => 0,
+            static _ => 0,
+            static _ => 0,
+            static member => member.Shape switch
             {
                 MemberShape.Field or MemberShape.Constant => 1,
                 MemberShape.Property or MemberShape.Indexer => 2,
                 MemberShape.Event => 3,
                 MemberShape.Method or MemberShape.Constructor or MemberShape.Operator => 4,
                 _ => throw new UnreachableException(),
-            },
-            SymbolShape.Type or SymbolShape.Namespace or SymbolShape.Assembly => 0,
-            _ => throw new UnreachableException(),
-        };
+            });
     }
 
     /// <summary>How many types and members under <paramref name="entries"/> changed as <paramref name="change"/>

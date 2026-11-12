@@ -171,17 +171,14 @@ internal static class NodeDecompiler
     /// <summary>The module the document of <paramref name="request"/> is read from; null for a package's.</summary>
     internal static LoadedModule? ModuleOf(DocumentRequest request)
     {
-        return request switch
-        {
-            DocumentRequest.ModulePreview preview => preview.Module,
-            DocumentRequest.Type type => type.Definition.Module,
-            DocumentRequest.Member member => member.Definition.Module,
-            DocumentRequest.Summary summary => summary.Module,
-            DocumentRequest.Resource resource => resource.Module,
-            DocumentRequest.Baml baml => baml.Module,
-            DocumentRequest.Failure => null,
-            _ => throw new UnreachableException(),
-        };
+        return request.Match<LoadedModule?>(
+            static preview => preview.Module,
+            static type => type.Definition.Module,
+            static member => member.Definition.Module,
+            static summary => summary.Module,
+            static resource => resource.Module,
+            static baml => baml.Module,
+            static _ => null);
     }
 
     /// <summary>Writes the code <paramref name="export"/> names to <paramref name="stream"/>. Throws when decompiling
@@ -190,18 +187,14 @@ internal static class NodeDecompiler
         Stream stream, CancellationToken cancellationToken)
     {
         using var writer = new StreamWriter(stream);
-        switch (export)
-        {
-            case CodeExport.WholeModule or CodeExport.Namespace:
-                WriteWholeCode(export, RequireTypeSystem(typeSystem), language, options, writer, cancellationToken);
-                break;
-            case CodeExport.Document document:
-                var written = DecompileOrThrow(document.Request, typeSystem, language, options, cancellationToken);
-                writer.Write(Documents.GetText(written));
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        export.Switch((typeSystem, language, options, writer, cancellationToken),
+            static (s, whole) => WriteWholeCode(whole, RequireTypeSystem(s.typeSystem), s.language, s.options, s.writer, s.cancellationToken),
+            static (s, ns) => WriteWholeCode(ns, RequireTypeSystem(s.typeSystem), s.language, s.options, s.writer, s.cancellationToken),
+            static (s, document) =>
+            {
+                var written = DecompileOrThrow(document.Request, s.typeSystem, s.language, s.options, s.cancellationToken);
+                s.writer.Write(Documents.GetText(written));
+            });
     }
 
     private static void WriteWholeCode(CodeExport export, DecompilerTypeSystem typeSystem, DecompilationLanguage language, DecompilerOptions options,
@@ -222,44 +215,58 @@ internal static class NodeDecompiler
     private static void WriteWholeCSharp(CodeExport export, DecompilerTypeSystem typeSystem, ITextOutput output, DecompilerSettings settings,
         CancellationToken cancellationToken)
     {
-        var syntaxTree = export switch
-        {
-            CodeExport.WholeModule whole => CreateCSharpDecompiler(whole.Module, typeSystem, settings, cancellationToken).DecompileWholeModuleAsSingleFile(),
-            CodeExport.Namespace ns => CreateCSharpDecompiler(ns.Module, typeSystem, settings, cancellationToken).DecompileTypes(TypeHandles(ns)),
-            _ => throw new UnreachableException(),
-        };
+        var syntaxTree = DecompileWhole(export, typeSystem, settings, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         syntaxTree.AcceptVisitor(new InsertParenthesesVisitor { InsertParenthesesForReadability = true });
         var writer = new TextTokenWriter(output, settings);
         syntaxTree.AcceptVisitor(new CSharpOutputVisitor(writer, settings.CSharpFormattingOptions));
     }
 
+    /// <summary>The syntax tree of the whole module or the namespace's types <paramref name="export"/> names.</summary>
+    private static SyntaxTree DecompileWhole(CodeExport export, DecompilerTypeSystem typeSystem, DecompilerSettings settings,
+        CancellationToken cancellationToken)
+    {
+        if (export is CodeExport.WholeModule whole)
+        {
+            return CreateCSharpDecompiler(whole.Module, typeSystem, settings, cancellationToken).DecompileWholeModuleAsSingleFile();
+        }
+
+        if (export is CodeExport.Namespace ns)
+        {
+            return CreateCSharpDecompiler(ns.Module, typeSystem, settings, cancellationToken).DecompileTypes(TypeHandles(ns));
+        }
+
+        throw new UnreachableException();
+    }
+
     private static void WriteWholeIL(CodeExport export, DecompilerTypeSystem typeSystem, ITextOutput output, DecompilationLanguage language,
         DecompilerSettings settings, CancellationToken cancellationToken)
     {
-        switch (export)
+        if (export is CodeExport.WholeModule whole)
         {
-            case CodeExport.WholeModule whole:
-                var file = LoadedAssemblies.GetFile(whole.Module);
-                var disassembler = CreateDisassembler(whole.Module, typeSystem, output, language, settings, cancellationToken);
-                disassembler.WriteAssemblyReferences(file.Metadata);
-                if (file.Metadata.IsAssembly)
-                {
-                    disassembler.WriteAssemblyHeader(file);
-                }
+            var file = LoadedAssemblies.GetFile(whole.Module);
+            var disassembler = CreateDisassembler(whole.Module, typeSystem, output, language, settings, cancellationToken);
+            disassembler.WriteAssemblyReferences(file.Metadata);
+            if (file.Metadata.IsAssembly)
+            {
+                disassembler.WriteAssemblyHeader(file);
+            }
 
-                output.WriteLine();
-                disassembler.WriteModuleHeader(file);
-                output.WriteLine();
-                disassembler.WriteModuleContents(file);
-                break;
-            case CodeExport.Namespace ns:
-                CreateDisassembler(ns.Module, typeSystem, output, language, settings, cancellationToken)
-                    .DisassembleNamespace(ns.Name, LoadedAssemblies.GetFile(ns.Module), TypeHandles(ns));
-                break;
-            default:
-                throw new UnreachableException();
+            output.WriteLine();
+            disassembler.WriteModuleHeader(file);
+            output.WriteLine();
+            disassembler.WriteModuleContents(file);
+            return;
         }
+
+        if (export is CodeExport.Namespace ns)
+        {
+            CreateDisassembler(ns.Module, typeSystem, output, language, settings, cancellationToken)
+                .DisassembleNamespace(ns.Name, LoadedAssemblies.GetFile(ns.Module), TypeHandles(ns));
+            return;
+        }
+
+        throw new UnreachableException();
     }
 
     private static List<TypeDefinitionHandle> TypeHandles(CodeExport.Namespace ns)
@@ -271,26 +278,23 @@ internal static class NodeDecompiler
 
     private static void WriteCSharp(DocumentRequest request, DocumentBuilder output, DecompilerSettings settings, CancellationToken cancellationToken)
     {
-        switch (request)
-        {
-            case DocumentRequest.ModulePreview preview:
-                WriteAssemblySummary(preview.Module, output);
-                WriteSyntaxTree(preview.Module, output, settings, d => d.DecompileModuleAndAssemblyAttributes(), cancellationToken);
-                break;
-            case DocumentRequest.Type type:
+        request.Switch((output, settings, cancellationToken),
+            static (s, preview) =>
+            {
+                WriteAssemblySummary(preview.Module, s.output);
+                WriteSyntaxTree(preview.Module, s.output, s.settings, d => d.DecompileModuleAndAssemblyAttributes(), s.cancellationToken);
+            },
+            static (s, type) =>
+            {
                 var definition = type.Definition;
-                WriteHeader(definition.Module, output, NodeDefinitions.GetSymbol(definition), ConversionFlags.UseFullyQualifiedTypeNames | ConversionFlags.UseFullyQualifiedEntityNames);
-                WriteSyntaxTree(definition.Module, output, settings, d => d.Decompile(definition.Handle), cancellationToken);
-                break;
-            case DocumentRequest.Member member:
-                WriteMember(member, output, settings, cancellationToken);
-                break;
-            case DocumentRequest.Summary or DocumentRequest.Resource or DocumentRequest.Baml:
-                WriteSummary(request, output, cancellationToken);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+                WriteHeader(definition.Module, s.output, NodeDefinitions.GetSymbol(definition), ConversionFlags.UseFullyQualifiedTypeNames | ConversionFlags.UseFullyQualifiedEntityNames);
+                WriteSyntaxTree(definition.Module, s.output, s.settings, d => d.Decompile(definition.Handle), s.cancellationToken);
+            },
+            static (s, member) => WriteMember(member, s.output, s.settings, s.cancellationToken),
+            static (s, summary) => WriteSummary(summary.Info, s.output, s.cancellationToken),
+            static (s, resource) => WriteResource(resource, s.output),
+            static (s, baml) => WriteXaml(baml, s.output, s.cancellationToken),
+            static (_, _) => throw new UnreachableException());
     }
 
     private static void WriteMember(DocumentRequest.Member request, DocumentBuilder output, DecompilerSettings settings, CancellationToken cancellationToken)
@@ -310,37 +314,34 @@ internal static class NodeDecompiler
     private static void WriteIL(DocumentRequest request, DocumentBuilder output, DecompilationLanguage language, DecompilerSettings settings,
         CancellationToken cancellationToken)
     {
-        switch (request)
-        {
-            case DocumentRequest.ModulePreview preview:
+        request.Switch((output, language, settings, cancellationToken),
+            static (s, preview) =>
+            {
                 var file = LoadedAssemblies.GetFile(preview.Module);
-                var disassembler = CreateDisassembler(preview.Module, RequireTypeSystem(output.TypeSystem), output, language, settings, cancellationToken);
-                WriteAssemblySummary(preview.Module, output);
-                output.WriteLine();
+                var disassembler = CreateDisassembler(preview.Module, RequireTypeSystem(s.output.TypeSystem), s.output, s.language, s.settings, s.cancellationToken);
+                WriteAssemblySummary(preview.Module, s.output);
+                s.output.WriteLine();
                 disassembler.WriteAssemblyReferences(file.Metadata);
                 if (file.Metadata.IsAssembly)
                 {
                     disassembler.WriteAssemblyHeader(file);
                 }
 
-                output.WriteLine();
+                s.output.WriteLine();
                 disassembler.WriteModuleHeader(file);
-                break;
-            case DocumentRequest.Type type:
-                CreateDisassembler(type.Definition.Module, RequireTypeSystem(output.TypeSystem), output, language, settings, cancellationToken)
-                    .DisassembleType(LoadedAssemblies.GetFile(type.Definition.Module), type.Definition.Handle);
-                break;
-            case DocumentRequest.Member member:
-                var memberDisassembler = CreateDisassembler(member.Definition.Module, RequireTypeSystem(output.TypeSystem), output, language, settings,
-                    cancellationToken);
+            },
+            static (s, type) => CreateDisassembler(type.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output, s.language, s.settings, s.cancellationToken)
+                .DisassembleType(LoadedAssemblies.GetFile(type.Definition.Module), type.Definition.Handle),
+            static (s, member) =>
+            {
+                var memberDisassembler = CreateDisassembler(member.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output, s.language, s.settings,
+                    s.cancellationToken);
                 DisassembleMember(memberDisassembler, LoadedAssemblies.GetFile(member.Definition.Module), member.Definition.Handle);
-                break;
-            case DocumentRequest.Summary or DocumentRequest.Resource or DocumentRequest.Baml:
-                WriteSummary(request, output, cancellationToken);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+            },
+            static (s, summary) => WriteSummary(summary.Info, s.output, s.cancellationToken),
+            static (s, resource) => WriteResource(resource, s.output),
+            static (s, baml) => WriteXaml(baml, s.output, s.cancellationToken),
+            static (_, _) => throw new UnreachableException());
     }
 
     private static void DisassembleMember(ReflectionDisassembler disassembler, MetadataFile file, EntityHandle handle)
@@ -557,120 +558,94 @@ internal static class NodeDecompiler
         return (flags & CorFlags.Prefers32Bit) != 0 ? "AnyCPU (32-bit preferred)" : "x86";
     }
 
-    private static void WriteSummary(DocumentRequest request, DocumentBuilder output, CancellationToken cancellationToken)
-    {
-        switch (request)
-        {
-            case DocumentRequest.Summary summary:
-                WriteSummary(summary.Info, output, cancellationToken);
-                break;
-            case DocumentRequest.Baml baml:
-                WriteXaml(baml, output, cancellationToken);
-                break;
-            case DocumentRequest.Resource resource:
-                WriteResource(resource, output);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-    }
-
     private static void WriteSummary(SummaryInfo summary, DocumentBuilder output, CancellationToken cancellationToken)
     {
-        switch (summary)
-        {
-            case SummaryInfo.Comments comments:
+        summary.Switch((output, cancellationToken),
+            static (s, comments) =>
+            {
                 foreach (var line in comments.Lines)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    s.cancellationToken.ThrowIfCancellationRequested();
                     if (line.Length == 0)
                     {
-                        output.WriteLine();
+                        s.output.WriteLine();
                     }
                     else
                     {
-                        WriteComment(output, line);
+                        WriteComment(s.output, line);
                     }
                 }
-                break;
-            case SummaryInfo.Namespace ns:
-                output.Write("namespace", SpanKind.Keyword);
-                output.Write(" ");
-                output.Write(ns.Name, SpanKind.Namespace);
-                output.WriteLine();
-                output.WriteLine();
+            },
+            static (s, ns) =>
+            {
+                s.output.Write("namespace", SpanKind.Keyword);
+                s.output.Write(" ");
+                s.output.Write(ns.Name, SpanKind.Namespace);
+                s.output.WriteLine();
+                s.output.WriteLine();
                 foreach (var entry in ns.Entries)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    WriteNamespaceEntry(output, entry);
+                    s.cancellationToken.ThrowIfCancellationRequested();
+                    WriteNamespaceEntry(s.output, entry);
                 }
-                break;
-            case SummaryInfo.ForwardedType forwarded:
-                WriteComment(output, ForwardedToText(forwarded.Destination));
-                output.Write(forwarded.FullName, SpanKind.Type, forwarded.Target);
-                output.WriteLine();
-                break;
-            case SummaryInfo.References references:
+            },
+            static (s, forwarded) =>
+            {
+                WriteComment(s.output, ForwardedToText(forwarded.Destination));
+                s.output.Write(forwarded.FullName, SpanKind.Type, forwarded.Target);
+                s.output.WriteLine();
+            },
+            static (s, references) =>
+            {
                 foreach (var assembly in references.Assemblies)
                 {
-                    WriteReferenceLine(output, assembly);
+                    WriteReferenceLine(s.output, assembly);
                 }
 
                 foreach (var module in references.Modules)
                 {
-                    WriteComment(output, module);
+                    WriteComment(s.output, module);
                 }
-
-                break;
-            case SummaryInfo.ModuleReference module:
-                WriteComment(output, module.Name);
-                WriteComment(output, DescribeModule(module.ContainsMetadata));
-                WriteImports(output, module.Imports);
-                break;
-            case SummaryInfo.ImportedMethod import:
-                WriteLink(output, import.Method, SpanKind.Method);
-                WriteComment(output, $"Calls {import.EntryPoint} in {import.ModuleName}");
-                break;
-            case SummaryInfo.AssemblyReference reference:
-                WriteComment(output, reference.Reference.FullName);
+            },
+            static (s, module) =>
+            {
+                WriteComment(s.output, module.Name);
+                WriteComment(s.output, DescribeModule(module.ContainsMetadata));
+                WriteImports(s.output, module.Imports);
+            },
+            static (s, import) =>
+            {
+                WriteLink(s.output, import.Method, SpanKind.Method);
+                WriteComment(s.output, $"Calls {import.EntryPoint} in {import.ModuleName}");
+            },
+            static (s, reference) =>
+            {
+                WriteComment(s.output, reference.Reference.FullName);
                 var path = LoadedAssemblies.GetResolver(reference.Module).FindAssemblyFile(reference.Reference);
-                WriteComment(output, path is null ? "Not found" : $"Resolves to {path}");
-                break;
-            case SummaryInfo.Used used:
-                WriteUsed(output, used.Entries, "", cancellationToken);
-                break;
-            case SummaryInfo.Types types:
+                WriteComment(s.output, path is null ? "Not found" : $"Resolves to {path}");
+            },
+            static (s, used) => WriteUsed(s.output, used.Entries, "", s.cancellationToken),
+            static (s, types) =>
+            {
                 foreach (var type in types.Entries)
                 {
-                    WriteLink(output, type, SpanKind.Type);
+                    WriteLink(s.output, type, SpanKind.Type);
                 }
-
-                break;
-            case SummaryInfo.Error error:
+            },
+            static (s, error) =>
+            {
                 foreach (var line in error.Exception.ToString().Split('\n'))
                 {
-                    WriteComment(output, line.TrimEnd('\r'));
+                    WriteComment(s.output, line.TrimEnd('\r'));
                 }
-
-                break;
-            default:
-                throw new UnreachableException();
-        }
+            });
     }
 
     private static void WriteNamespaceEntry(DocumentBuilder output, NamespaceEntry entry)
     {
-        switch (entry)
-        {
-            case NamespaceEntry.Declared declared:
-                WriteTypeDeclaration(output, declared);
-                break;
-            case NamespaceEntry.Forwarded forwarded:
-                WriteForwardedType(output, forwarded.Line);
-                break;
-            default:
-                throw new UnreachableException();
-        }
+        entry.Switch(output,
+            static (o, declared) => WriteTypeDeclaration(o, declared),
+            static (o, forwarded) => WriteForwardedType(o, forwarded.Line));
     }
 
     /// <summary>A line for each type and member <paramref name="entries"/> lists as used from a reference,
@@ -681,23 +656,19 @@ internal static class NodeDecompiler
         {
             cancellationToken.ThrowIfCancellationRequested();
             output.Write(indent);
-            switch (entry)
-            {
-                case UsedEntry.Forwarded forwarded:
-                    WriteForwardedType(output, forwarded.Line);
-                    break;
-                case UsedEntry.Type type:
-                    output.Write(type.FullName, SpanKind.Type, type.Target);
-                    output.WriteLine();
-                    WriteUsed(output, type.Used, indent + UsedIndent, cancellationToken);
-                    break;
-                case UsedEntry.Member member:
-                    output.Write(member.Label, member.Kind, member.Target);
-                    output.WriteLine();
-                    break;
-                default:
-                    throw new UnreachableException();
-            }
+            entry.Switch((output, indent, cancellationToken),
+                static (s, type) =>
+                {
+                    s.output.Write(type.FullName, SpanKind.Type, type.Target);
+                    s.output.WriteLine();
+                    WriteUsed(s.output, type.Used, s.indent + UsedIndent, s.cancellationToken);
+                },
+                static (s, member) =>
+                {
+                    s.output.Write(member.Label, member.Kind, member.Target);
+                    s.output.WriteLine();
+                },
+                static (s, forwarded) => WriteForwardedType(s.output, forwarded.Line));
         }
     }
 

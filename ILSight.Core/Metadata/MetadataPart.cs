@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using ICSharpCode.Decompiler.Metadata;
@@ -22,4 +23,37 @@ public abstract record MetadataPart
     public sealed record DecodedDebugEntry(IReadOnlyList<string> Lines) : MetadataPart;
 
     public sealed record RawDebugEntry(PEFile File, DebugDirectoryEntry Entry) : MetadataPart;
+
+    /// <summary>What the handler of whichever case this is makes of it.</summary>
+    internal TResult Match<TResult>(Func<Grid, TResult> grid, Func<DebugDirectory, TResult> debugDirectory,
+        Func<RowCount, TResult> rowCount, Func<DecodedDebugEntry, TResult> decodedDebugEntry,
+        Func<RawDebugEntry, TResult> rawDebugEntry)
+    {
+        return this switch
+        {
+            Grid c => grid(c),
+            DebugDirectory c => debugDirectory(c),
+            RowCount c => rowCount(c),
+            DecodedDebugEntry c => decodedDebugEntry(c),
+            RawDebugEntry c => rawDebugEntry(c),
+            _ => throw new UnreachableException($"MetadataPart.Match does not handle {GetType().Name}."),
+        };
+    }
+
+    /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
+    /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
+    internal TResult Match<TState, TResult>(TState state, Func<TState, Grid, TResult> grid,
+        Func<TState, DebugDirectory, TResult> debugDirectory, Func<TState, RowCount, TResult> rowCount,
+        Func<TState, DecodedDebugEntry, TResult> decodedDebugEntry, Func<TState, RawDebugEntry, TResult> rawDebugEntry)
+    {
+        return this switch
+        {
+            Grid c => grid(state, c),
+            DebugDirectory c => debugDirectory(state, c),
+            RowCount c => rowCount(state, c),
+            DecodedDebugEntry c => decodedDebugEntry(state, c),
+            RawDebugEntry c => rawDebugEntry(state, c),
+            _ => throw new UnreachableException($"MetadataPart.Match does not handle {GetType().Name}."),
+        };
+    }
 }

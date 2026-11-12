@@ -81,4 +81,17 @@ public abstract class MetadataColumnFilter
                 throw new UnreachableException($"MetadataColumnFilter.Switch does not handle {GetType().Name}.");
         }
     }
+
+    /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
+    /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
+    public TResult Match<TState, TResult>(TState state, Func<TState, ByText, TResult> byText,
+        Func<TState, ByFlags, TResult> byFlags)
+    {
+        return this switch
+        {
+            ByText c => byText(state, c),
+            ByFlags c => byFlags(state, c),
+            _ => throw new UnreachableException($"MetadataColumnFilter.Match does not handle {GetType().Name}."),
+        };
+    }
 }

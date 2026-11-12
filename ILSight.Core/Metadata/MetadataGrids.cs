@@ -439,12 +439,9 @@ public static class MetadataGrids
             return false;
         }
 
-        return filter switch
-        {
-            MetadataColumnFilter.ByFlags flags => flags.Flags.IsEmpty || FilterStatePresenter.MatchesFilter(flags.Flags, GetBits(value)),
-            MetadataColumnFilter.ByText text => MatchesText(grid, column, value, text.Text),
-            _ => throw new UnreachableException(),
-        };
+        return filter.Match((grid, column, value),
+            static (s, text) => MatchesText(s.grid, s.column, s.value, text.Text),
+            static (s, flags) => flags.Flags.IsEmpty || FilterStatePresenter.MatchesFilter(flags.Flags, GetBits(s.value)));
     }
 
     private static bool MatchesText(MetadataGrid grid, int column, object value, string text)

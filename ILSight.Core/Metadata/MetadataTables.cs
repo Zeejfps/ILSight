@@ -743,13 +743,12 @@ internal static class MetadataTables
     /// <summary>The grid shown, made the first time it is asked for; null for a part shown as text.</summary>
     internal static MetadataGrid? EnsureGrid(MetadataTableInfo table)
     {
-        return table.Part switch
-        {
-            MetadataPart.Grid grid => grid.View.Value,
-            MetadataPart.DebugDirectory directory => directory.View.Value,
-            MetadataPart.RowCount or MetadataPart.DecodedDebugEntry or MetadataPart.RawDebugEntry => null,
-            _ => throw new UnreachableException(),
-        };
+        return table.Part.Match<MetadataGrid?>(
+            static grid => grid.View.Value,
+            static directory => directory.View.Value,
+            static _ => null,
+            static _ => null,
+            static _ => null);
     }
 
     internal static MetadataTableInfo CreateGridPart(LoadedModule module, MetadataFile file, string title, MetadataPartKey key, MetadataGridRole role,
@@ -784,14 +783,12 @@ internal static class MetadataTables
     /// as its raw bytes in hex; a grid's title alone.</summary>
     internal static IEnumerable<string> ListPartLines(MetadataTableInfo table)
     {
-        return table.Part switch
-        {
-            MetadataPart.Grid or MetadataPart.DebugDirectory => [table.Title],
-            MetadataPart.RowCount count => [$"{count.Table}: {count.Rows} rows"],
-            MetadataPart.DecodedDebugEntry decoded => decoded.Lines.Prepend(table.Title),
-            MetadataPart.RawDebugEntry raw => ListRawEntryLines(table, raw),
-            _ => throw new UnreachableException(),
-        };
+        return table.Part.Match<MetadataTableInfo, IEnumerable<string>>(table,
+            static (info, _) => [info.Title],
+            static (info, _) => [info.Title],
+            static (_, count) => [$"{count.Table}: {count.Rows} rows"],
+            static (info, decoded) => decoded.Lines.Prepend(info.Title),
+            static (info, raw) => ListRawEntryLines(info, raw));
     }
 
     private static IEnumerable<string> ListRawEntryLines(MetadataTableInfo table, MetadataPart.RawDebugEntry raw)

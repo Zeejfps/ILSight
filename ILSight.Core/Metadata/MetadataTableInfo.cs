@@ -22,21 +22,20 @@ public sealed class MetadataTableInfo
 
     /// <summary>What the part lists as a grid would: the debug directory a directory, and a table shown
     /// by its row count or a debug entry a table.</summary>
-    public MetadataGridRole Role => Part switch
-    {
-        MetadataPart.Grid grid => grid.Role,
-        MetadataPart.DebugDirectory => MetadataGridRole.Directory,
-        MetadataPart.RowCount or MetadataPart.DecodedDebugEntry or MetadataPart.RawDebugEntry => MetadataGridRole.Table,
-        _ => throw new UnreachableException(),
-    };
+    public MetadataGridRole Role => Part.Match(
+        static grid => grid.Role,
+        static _ => MetadataGridRole.Directory,
+        static _ => MetadataGridRole.Table,
+        static _ => MetadataGridRole.Table,
+        static _ => MetadataGridRole.Table);
 
     /// <summary>The table whose rows the grid lists; null for a part that lists no table's rows.</summary>
-    public TableIndex? ListedTable => Part switch
-    {
-        MetadataPart.Grid grid => grid.Schema.Table,
-        MetadataPart.DebugDirectory or MetadataPart.RowCount or MetadataPart.DecodedDebugEntry or MetadataPart.RawDebugEntry => null,
-        _ => throw new UnreachableException(),
-    };
+    public TableIndex? ListedTable => Part.Match<TableIndex?>(
+        static grid => grid.Schema.Table,
+        static _ => null,
+        static _ => null,
+        static _ => null,
+        static _ => null);
 
     /// <summary>Whether this is a table with no rows, which the tree usually hides.</summary>
     public bool IsEmptyTable => Part is MetadataPart.RowCount count && count.Rows == 0;
