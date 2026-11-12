@@ -22,6 +22,7 @@ internal ref struct MetadataGridFrame
     public required MetadataGrid Grid { get; init; }
     public required MetadataGridState State { get; init; }
     public required MetadataFilters Flags { get; init; }
+    public required MetadataGridViews Views { get; init; }
     public required Strings Strings { get; init; }
     public required int ListId { get; init; }
     public required int MenuId { get; init; }
@@ -32,13 +33,13 @@ internal ref struct MetadataGridFrame
     {
         var columns = State.Columns ??= Measure();
         State.RowHeight = Ui.Theme.RowHeight;
-        MetadataGridWidget.UpdateView(State, Flags);
+        MetadataGridWidget.UpdateView(State, Flags, Views);
 
         using var pane = Ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = Ui.Theme.PaneBackground });
         var table = Ui.Table(ListId, columns, State.Cell, State.Scroll);
         Header(table);
         FlagsFlyout();
-        MetadataGridWidget.UpdateView(State, Flags);
+        MetadataGridWidget.UpdateView(State, Flags, Views);
 
         _focused = table.Focused;
         table.TakeKeys(State.View.Length);
@@ -48,6 +49,7 @@ internal ref struct MetadataGridFrame
         }
 
         Rows(table, columns);
+        UnderWay();
         var picked = Menu();
         if (picked is not null)
         {
@@ -55,6 +57,30 @@ internal ref struct MetadataGridFrame
         }
 
         return _result;
+    }
+
+    /// <summary>Under the rows while a sort or filter is worked out off the screen's thread: that it is under way;
+    /// or why the newest one could not be worked out. Nothing otherwise.</summary>
+    private void UnderWay()
+    {
+        var failure = State.ArrangeFailure;
+        if (!State.IsViewUnderWay && failure is null)
+        {
+            return;
+        }
+
+        var theme = Ui.Theme;
+        using (Ui.Row(new Box { Height = theme.RowHeight, Gap = theme.GapTight, AlignY = Align.Center, Padding = new Spacing(theme.ShellPaddingX, 0f, theme.ShellPaddingX, 0f) }))
+        {
+            if (failure is not null)
+            {
+                Ui.Text(Strings.MetadataArrangeFailed(failure.Message), color: theme.TextMuted, size: theme.FontSizeSmall);
+                return;
+            }
+
+            Ui.Spinner(theme.PaneBackground);
+            Ui.Text(State.IsSortUnderWay ? Strings.MetadataSorting : Strings.MetadataFiltering, color: theme.TextMuted, size: theme.FontSizeSmall);
+        }
     }
 
     private TableColumns Measure()

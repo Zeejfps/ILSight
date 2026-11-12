@@ -38,7 +38,8 @@ internal static class MetadataDetailsView
         return details.Match(
             (Ui: ui, Texts: texts, Row: row, Width: width, Padding: padding),
             static (at, text) => TextHeight(at.Ui, MeasureText(at.Texts, at.Row, text.Content), at.Width - Left(at.Ui.Theme) - at.Ui.Theme.ShellPaddingX) + at.Padding,
-            static (at, table) => MathF.Min(MaxTableHeight, (table.Rows.Count + 1) * at.Ui.Theme.RowHeight + at.Padding));
+            static (at, table) => MathF.Min(MaxTableHeight, (table.Rows.Count + 1) * at.Ui.Theme.RowHeight + at.Padding),
+            static (at, _) => at.Ui.Theme.RowHeight + at.Padding);
     }
 
     /// <summary>How big <paramref name="row"/>'s <paramref name="text"/> is, measured once.</summary>
@@ -96,7 +97,8 @@ internal static class MetadataDetailsView
         details?.Switch(
             (Ui: ui, Grid: grid, Texts: texts, Row: row),
             static (at, text) => Text(at.Ui, at.Grid, at.Texts, at.Row, text),
-            static (at, table) => Table(at.Ui, table));
+            static (at, table) => Table(at.Ui, table),
+            static (at, failed) => Failed(at.Ui, failed));
     }
 
     /// <summary><paramref name="row"/>'s <paramref name="text"/> as a document, made once.</summary>
@@ -117,6 +119,13 @@ internal static class MetadataDetailsView
     {
         var shown = GetText(texts, row, grid.Title, text.Content);
         CodeViewWidget.RenderCodeView(ui, "details", shown.Document, shown.View, gutter: false);
+    }
+
+    /// <summary>Why the row's details could not be read, in their place.</summary>
+    private static void Failed(Ui<UiState> ui, MetadataRowDetails.Failed failed)
+    {
+        var theme = ui.Theme;
+        ui.Text(failed.Reason, new Box { Height = theme.RowHeight }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
     }
 
     private static void Table(Ui<UiState> ui, MetadataRowDetails.Table table)

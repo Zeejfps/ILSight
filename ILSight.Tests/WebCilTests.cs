@@ -34,6 +34,22 @@ public sealed class WebCilTests
     }
 
     [Fact]
+    public void A_webcil_modules_grid_is_read_whole_as_its_content_is_made()
+    {
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
+
+        var grid = Assert.IsType<NodeContent.Table>(assembly.Root.Child("Metadata").Child("Tables").Table("TypeDef").Content()).Grid;
+
+        var whole = Assert.IsType<MetadataGrid.ReadWhole>(grid);
+        var counter = grid.RowNamed("Counter");
+        Assert.Equal(grid.RowCount * grid.Columns.Count, whole.Values.Count);
+        Assert.Equal("Counter", whole.Values[counter * grid.Columns.Count + grid.Column("Name")]);
+        Assert.NotNull(MetadataGrids.FindTooltip(grid, counter, grid.Column("Attributes")));
+        Assert.NotNull(MetadataGrids.FindLink(grid, counter, grid.Column("BaseType")));
+        Assert.NotNull(MetadataGrids.FindDefinition(grid, counter));
+    }
+
+    [Fact]
     public void A_webcil_module_offers_no_pdb_to_generate()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.WebCilSamplePath);

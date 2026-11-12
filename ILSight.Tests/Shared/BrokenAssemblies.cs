@@ -33,6 +33,24 @@ internal static class BrokenAssemblies
         return temp.Write("Unreadable.dll", image.ToArray());
     }
 
+    /// <summary>A copy of the assembly at <paramref name="path"/> whose first parameter's name points past its string
+    /// heap: the file opens and lists its types, and reading that one cell of its metadata throws.</summary>
+    public static string WriteUnreadableParameterName(TempDir temp, string path)
+    {
+        var image = File.ReadAllBytes(path);
+        using (var pe = new PEReader(new MemoryStream(image)))
+        {
+            var reader = pe.GetMetadataReader();
+            var stringHeapSize = reader.GetHeapSize(HeapIndex.String);
+            var stringIndexSize = stringHeapSize < 0x10000 ? 2 : 4;
+            const int flagsAndSequenceSize = 4;
+            var offset = pe.PEHeaders.MetadataStartOffset + reader.GetTableMetadataOffset(TableIndex.Param) + flagsAndSequenceSize;
+            image.AsSpan(offset, stringIndexSize).Fill(0xFF);
+        }
+
+        return temp.Write("UnreadableParameter.dll", image);
+    }
+
     /// <summary>A copy of the assembly at <paramref name="path"/> whose first type after <c>&lt;Module&gt;</c> has a
     /// namespace that points past its string heap: the file opens, and reading its type system, which lists the
     /// namespaces, throws.</summary>

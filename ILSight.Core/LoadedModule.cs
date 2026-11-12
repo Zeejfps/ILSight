@@ -14,6 +14,11 @@ public sealed class LoadedModule : LoadedAssembly
     /// a WebCIL module lacks.</summary>
     public required bool CanPickPdb { get; init; }
 
+    /// <summary>Whether its file was read whole into memory when it was read (a PE image), so that reading its
+    /// metadata reaches nothing past it; a WebCIL module's file is mapped by the library, each read reaching the
+    /// disk.</summary>
+    public required bool IsImageInMemory { get; init; }
+
     /// <summary>The package this was read out of, and its file there; null for a file on disk.</summary>
     public required PackagePlace? Place { get; init; }
 

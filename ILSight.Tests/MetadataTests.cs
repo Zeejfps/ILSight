@@ -36,6 +36,26 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public void A_cell_whose_read_fails_shows_a_question_mark_and_why_on_hover()
+    {
+        using var temp = new TempDir();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableParameterName(temp, Trees.TestAssemblyPath));
+        var grid = Grid(Table(assembly, "Param"));
+        var name = grid.Column("Name");
+
+        var text = MetadataGrids.GetText(grid, 0, name);
+        var tooltip = MetadataGrids.FindTooltip(grid, 0, name);
+
+        Assert.IsType<MetadataGrid.InMemory>(grid);
+        Assert.Equal("?", text);
+        Assert.NotNull(tooltip);
+        Assert.False(string.IsNullOrWhiteSpace(tooltip.Text));
+        Assert.Equal("?", MetadataGrids.GetText(grid, 0, grid.Column("Name")));
+        Assert.NotEqual("?", MetadataGrids.GetText(grid, 1, name));
+        Assert.NotEqual("?", MetadataGrids.GetText(grid, 0, grid.Column("Sequence")));
+    }
+
+    [Fact]
     public void An_assembly_lists_its_metadata_and_its_portable_pdb_first()
     {
         var assembly = Trees.TestAssembly;

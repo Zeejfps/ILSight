@@ -16,6 +16,7 @@ using ILSight.SearchArea;
 using ILSight.MainArea;
 using ILSight.AssemblyArea;
 using ILSight.MetadataArea;
+using ILSight.MetadataGridArea;
 
 namespace ILSight;
 
@@ -168,6 +169,12 @@ public sealed class UiState : IUiState
 
     /// <summary>The metadata grids' flags filters.</summary>
     public required MetadataFilters MetadataFilters { get; init; }
+
+    /// <summary>The sorts and filters the metadata grids asked for while the screen drew, for the frame edge to start.</summary>
+    public MetadataGridViews MetadataGridViews { get; } = new();
+
+    /// <summary>Sorts and filters the rows <see cref="MetadataGridViews"/> asks for, off the screen's thread.</summary>
+    public required ArrangeMetadataGridHandler ArrangeMetadataGridHandler { get; init; }
 
     /// <summary>The export selected in the exports panel, or null; one that is gone is as none.</summary>
     public ExportRun? SelectedExport;

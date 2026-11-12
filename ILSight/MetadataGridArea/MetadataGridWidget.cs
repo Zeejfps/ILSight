@@ -21,6 +21,7 @@ public static class MetadataGridWidget
             Grid = state.Grid,
             State = state,
             Flags = flags,
+            Views = ui.State.MetadataGridViews,
             Strings = ui.State.Strings,
             ListId = listId,
             MenuId = HashCode.Combine(listId, MetadataGridFrame.MenuSalt),
@@ -62,17 +63,13 @@ public static class MetadataGridWidget
         state.Pending = new PendingGridScroll.Reveal(row);
     }
 
-    /// <summary>Sorts by <paramref name="column"/>, the other way when it already sorts by it, and
-    /// scrolls the selected row back into view.</summary>
+    /// <summary>Asks to sort by <paramref name="column"/>, the other way when it already sorts by it, and to scroll
+    /// the selected row back into view once sorted (<see cref="UpdateView"/> asks for the rows).</summary>
     internal static void SortBy(MetadataGridState state, int column)
     {
         state.Descending = state.SortColumn == column && !state.Descending;
         state.SortColumn = column;
-        state.Order = MetadataGrids.OrderRows(state.Grid, column, state.Descending);
-        if (state.Selected != MetadataGridState.None)
-        {
-            state.Pending = new PendingGridScroll.Reveal(state.Selected);
-        }
+        state.RevealWhenArranged = true;
     }
 
     /// <summary>The filter of <paramref name="column"/>, made on first use; a column of flags gets
@@ -105,19 +102,104 @@ public static class MetadataGridWidget
         return state.Grid.Columns[column].Flags != null;
     }
 
-    /// <summary>Filters and sorts the rows again when a filter or the sort changed.</summary>
-    internal static void UpdateView(MetadataGridState state, MetadataFilters flags)
+    /// <summary>Asks <paramref name="views"/> for the rows sorted and filtered again when a filter or the sort
+    /// changed: a wait, which the frame edge starts off the screen's thread, the view showing the rows it has until
+    /// they land (<see cref="ShowArranged"/>). The table's own rows, unsorted and unfiltered, read no cell, and show
+    /// at once.</summary>
+    internal static void UpdateView(MetadataGridState state, MetadataFilters flags, MetadataGridViews views)
     {
         var key = ComputeViewKey(state, flags);
-        if (key == state.ViewKey)
+        if (key == state.ViewAskedKey)
         {
             return;
         }
 
+        state.ViewAskedKey = key;
+        state.ArrangeFailure = null;
+        if (state.SortColumn == MetadataGridState.None && !HasActiveFilter(state))
+        {
+            views.Forget(state);
+            Show(state, key, null, Enumerable.Range(0, state.Grid.RowCount).ToArray());
+            return;
+        }
+
+        var order = state.OrderColumn == state.SortColumn && state.OrderDescending == state.Descending ? state.Order : null;
+        views.Ask(new MetadataGridViewAsk
+        {
+            State = state,
+            Key = key,
+            SortColumn = state.SortColumn,
+            Descending = state.Descending,
+            Order = order,
+            Filters = MetadataGrids.CopyFilters(state.Filters),
+        });
+    }
+
+    private static bool HasActiveFilter(MetadataGridState state)
+    {
+        foreach (var filter in state.Filters)
+        {
+            if (filter is not null && filter.IsActive)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Shows the rows <paramref name="ask"/> asked for, worked out as <paramref name="arranged"/>, keeping
+    /// the row selected where the new view shows it. Returns whether it did: not when a newer view was asked for
+    /// meanwhile.</summary>
+    internal static bool ShowArranged(MetadataGridViewAsk ask, MetadataGridView arranged)
+    {
+        var state = ask.State;
+        if (ask.Key != state.ViewAskedKey)
+        {
+            return false;
+        }
+
+        state.OrderColumn = ask.SortColumn;
+        state.OrderDescending = ask.Descending;
+        Show(state, ask.Key, arranged.Order, arranged.Rows);
+        return true;
+    }
+
+    /// <summary>Ends what <paramref name="ask"/> asked for with <paramref name="error"/>, which the view says, the rows
+    /// it showed left as they were. Returns whether it did: not when a newer view was asked for meanwhile.</summary>
+    internal static bool ShowArrangeFailed(MetadataGridViewAsk ask, Exception error)
+    {
+        var state = ask.State;
+        if (ask.Key != state.ViewAskedKey)
+        {
+            return false;
+        }
+
+        state.ViewKey = ask.Key;
+        state.ArrangeFailure = error;
+        state.RevealWhenArranged = false;
+        return true;
+    }
+
+    private static void Show(MetadataGridState state, int key, int[]? order, int[] rows)
+    {
         var selected = state.Selected;
         state.ViewKey = key;
-        state.View = MetadataGrids.FilterRows(state.Grid, state.Order, state.Filters);
+        state.ArrangeFailure = null;
+        state.Order = order;
+        if (order is null)
+        {
+            state.OrderColumn = MetadataGridState.None;
+            state.OrderDescending = false;
+        }
+
+        state.View = rows;
         KeepSelected(state, selected);
+        if (state.RevealWhenArranged && state.Selected != MetadataGridState.None)
+        {
+            state.Pending = new PendingGridScroll.Reveal(state.Selected);
+        }
+
+        state.RevealWhenArranged = false;
     }
 
     /// <summary>Selects <paramref name="row"/> where the new view shows it; nothing when it doesn't.</summary>

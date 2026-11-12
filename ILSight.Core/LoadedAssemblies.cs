@@ -45,6 +45,7 @@ public static class LoadedAssemblies
             IsTargetFrameworkPicked = picked is not null,
             CanGeneratePdb = file is PEFile pe && DebugSymbolFiles.CanGenerateFor(pe),
             CanPickPdb = file is PEFile,
+            IsImageInMemory = file is PEFile,
         };
         Libraries.Add(module, new ModuleLibrary
         {

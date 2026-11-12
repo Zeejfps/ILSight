@@ -8,6 +8,7 @@ using static ILSight.App.Tests.BuiltInGlyphs;
 using ILSight.MetadataGridArea;
 using ILSight.MetadataArea;
 using ILSight.SettingArea;
+using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -255,16 +256,73 @@ public sealed class MetadataGridTests
         var name = grid.Column("Name");
 
         app.Frames.ClickOn(Selector.WithText("Name"));
+        app.Settle();
         var ascendingOrder = GridOf(app, tab).Order;
         Assert.NotNull(ascendingOrder);
         var ascending = ascendingOrder.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
         app.Frames.ClickOn(Selector.WithText("Name"));
+        app.Settle();
         var descendingOrder = GridOf(app, tab).Order;
         Assert.NotNull(descendingOrder);
         var descending = descendingOrder.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
 
         Assert.Equal(ascending.Order(StringComparer.CurrentCulture), ascending);
         Assert.Equal(descending.OrderDescending(StringComparer.CurrentCulture), descending);
+    }
+
+    [Fact]
+    public void Sorting_a_large_table_shows_it_sorting_until_the_sorted_rows_land()
+    {
+        var app = AppDriver.Opened(width: 2400f);
+        var path = typeof(object).Assembly.Location;
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(path)], ct));
+        app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(PathOf(path)));
+        app.Settle();
+        var coreLib = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);
+        app.Show(coreLib.Root.Child("Metadata", "Tables").Table("Param"), 3);
+        var tab = app.AppState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        var grid = tab.Grid;
+        Assert.NotNull(grid);
+        var name = grid.Column("Name");
+
+        app.Frames.ClickOn(Selector.WithText("Name"));
+        var sorting = app.Frames.Canvas.Texts.Any(t => t.Inputs.Text == "Sorting…");
+        var shownWhileSorting = GridOf(app, tab).Order;
+        app.Settle(1);
+
+        var order = GridOf(app, tab).Order;
+        Assert.True(sorting);
+        Assert.Null(shownWhileSorting);
+        Assert.NotNull(order);
+        var names = order.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
+        Assert.Equal(names.Order(StringComparer.CurrentCulture), names);
+        Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Text == "Sorting…");
+    }
+
+    [Fact]
+    public async Task Only_the_newest_sort_asked_for_lands()
+    {
+        var (app, _, grid) = ShowTable("TypeDef");
+        var state = MetadataGridWidget.CreateState(grid);
+        var views = new MetadataGridViews();
+        var name = grid.Column("Name");
+        MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views);
+        MetadataGridWidget.SortBy(state, name);
+        MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views);
+        var older = Assert.Single(views.TakeAsked());
+        MetadataGridWidget.SortBy(state, name);
+        MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views);
+        var newer = Assert.Single(views.TakeAsked());
+        var handler = new ArrangeMetadataGridHandler(new FakeArrangeMetadataGridHandlerPorts());
+
+        var newerLanded = await handler.HandleAsync(newer, CancellationToken.None);
+        var olderLanded = await handler.HandleAsync(older, CancellationToken.None);
+
+        Assert.True(newerLanded);
+        Assert.False(olderLanded);
+        Assert.False(state.IsViewUnderWay);
+        Assert.Equal(MetadataGrids.OrderRows(grid, name, descending: true), state.Order);
     }
 
     [Fact]
@@ -299,8 +357,10 @@ public sealed class MetadataGridTests
 
         app.Frames.Click(FunnelOf(app, "Name"));
         app.Frames.Type("greet").Frame(2);
+        app.Settle();
         var filtered = GridOf(app, tab).View.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
+        app.Settle();
 
         Assert.Contains("Greeter", filtered);
         Assert.All(filtered, n => Assert.Contains("greet", n, StringComparison.OrdinalIgnoreCase));
@@ -474,7 +534,8 @@ public sealed class MetadataGridTests
         var state = GridOf(app, tab);
         var name = grid.Column("Name");
         state.Filters[name] = new MetadataColumnFilter.ByText { Text = MetadataGrids.GetText(grid, 1, name) };
-        MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters);
+        app.Run();
+        app.Settle(1);
         state.Open[(2, name)] = 4;
 
         MetadataGridWidget.MeasureTallRows(state, 10f, 0f);
@@ -493,7 +554,8 @@ public sealed class MetadataGridTests
 
         state.Filters[name] = new MetadataColumnFilter.ByText { Text = $"/^({MetadataGrids.GetText(grid, 1, name)}|{MetadataGrids.GetText(grid, 3, name)})$/" };
         state.Open[(2, name)] = 4;
-        app.Run(3);
+        app.Run();
+        app.Settle(3);
 
         var tops = FindTops(app, grid, 1, 3);
         Assert.Equal(line, tops[1] - tops[0], 0.01f);

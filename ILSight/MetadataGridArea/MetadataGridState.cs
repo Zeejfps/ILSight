@@ -26,7 +26,28 @@ public sealed class MetadataGridState
     internal bool Descending;
     internal int[]? Order;
     internal int[] View = [];
+
+    /// <summary>The key of the view shown (<see cref="View"/>), and of the newest one asked for, which differ while
+    /// a sort or filter is under way off the screen's thread.</summary>
     internal int ViewKey;
+    internal int ViewAskedKey;
+
+    /// <summary>The sort <see cref="Order"/> is: its column (none for the table's own order) and direction.</summary>
+    internal int OrderColumn = None;
+    internal bool OrderDescending;
+
+    /// <summary>Whether the selected row is scrolled back into view when the view asked for lands, as after a
+    /// sort.</summary>
+    internal bool RevealWhenArranged;
+
+    /// <summary>Why the newest view asked for could not be worked out; null when it could, or is under way.</summary>
+    internal Exception? ArrangeFailure;
+
+    /// <summary>Whether a sort or filter asked for is still being worked out.</summary>
+    internal bool IsViewUnderWay => ViewAskedKey != ViewKey;
+
+    /// <summary>Whether what is under way sorts the rows anew, rather than filtering them alone.</summary>
+    internal bool IsSortUnderWay => IsViewUnderWay && (SortColumn != OrderColumn || Descending != OrderDescending);
 
     public required ListSelection Rows { get; init; }
 

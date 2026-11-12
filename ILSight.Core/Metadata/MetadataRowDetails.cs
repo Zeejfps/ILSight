@@ -15,31 +15,37 @@ public abstract record MetadataRowDetails
     /// <summary>A decoded list, as a table.</summary>
     public sealed record Table(IReadOnlyList<string> Headers, IReadOnlyList<IReadOnlyList<string>> Rows) : MetadataRowDetails;
 
-    public TResult Match<TResult>(Func<Text, TResult> text, Func<Table, TResult> table)
+    /// <summary>Why the row's details could not be read: what the library threw reading them.</summary>
+    public sealed record Failed(string Reason) : MetadataRowDetails;
+
+    public TResult Match<TResult>(Func<Text, TResult> text, Func<Table, TResult> table, Func<Failed, TResult> failed)
     {
         return this switch
         {
             Text t => text(t),
             Table t => table(t),
+            Failed f => failed(f),
             _ => throw new UnreachableException($"MetadataRowDetails.Match does not handle {GetType().Name}."),
         };
     }
 
     /// <summary><see cref="Match{TResult}"/> handing <paramref name="state"/> to the handlers, so that a
     /// caller drawing every frame can pass static lambdas and allocate nothing.</summary>
-    public TResult Match<TState, TResult>(TState state, Func<TState, Text, TResult> text, Func<TState, Table, TResult> table)
+    public TResult Match<TState, TResult>(TState state, Func<TState, Text, TResult> text, Func<TState, Table, TResult> table,
+        Func<TState, Failed, TResult> failed)
     {
         return this switch
         {
             Text t => text(state, t),
             Table t => table(state, t),
+            Failed f => failed(state, f),
             _ => throw new UnreachableException($"MetadataRowDetails.Match does not handle {GetType().Name}."),
         };
     }
 
     /// <summary>Runs the handler for this case with <paramref name="state"/>, for effects that differ per
     /// case; static lambdas allocate nothing.</summary>
-    public void Switch<TState>(TState state, Action<TState, Text> text, Action<TState, Table> table)
+    public void Switch<TState>(TState state, Action<TState, Text> text, Action<TState, Table> table, Action<TState, Failed> failed)
     {
         switch (this)
         {
@@ -48,6 +54,9 @@ public abstract record MetadataRowDetails
                 break;
             case Table t:
                 table(state, t);
+                break;
+            case Failed f:
+                failed(state, f);
                 break;
             default:
                 throw new UnreachableException($"MetadataRowDetails.Switch does not handle {GetType().Name}.");

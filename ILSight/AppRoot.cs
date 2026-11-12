@@ -206,6 +206,7 @@ internal static class AppRoot
             Search = new Search(),
             Omnibar = new Omnibar { Search = new Search() },
             MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
+            ArrangeMetadataGridHandler = new ArrangeMetadataGridHandler(new ArrangeMetadataGridHandlerAdapter()),
             ShippedLicenses = FindShippedLicenses(),
             Picker = new FrameworkPicker { Browser = new FrameworkBrowser(new FrameworkPickerAdapter(reportError, runtime)) },
             NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser() },

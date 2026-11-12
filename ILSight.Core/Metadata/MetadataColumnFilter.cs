@@ -29,4 +29,29 @@ public abstract class MetadataColumnFilter
         ByFlags flags => !flags.Flags.IsEmpty,
         _ => throw new UnreachableException(),
     };
+
+    /// <summary>A copy of this filter as it stands, for a filter run to read while this one changes.</summary>
+    internal MetadataColumnFilter Copy()
+    {
+        return this switch
+        {
+            ByText text => new ByText { Text = text.Text },
+            ByFlags flags => new ByFlags { Flags = CopyFlags(flags.Flags) },
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static FilterState CopyFlags(FilterState state)
+    {
+        var copy = new FilterState { Schema = state.Schema, Mode = state.Mode, Revision = state.Revision };
+        foreach (var (name, group) in state.Groups)
+        {
+            copy.Groups[name] = group;
+        }
+        foreach (var (name, flag) in state.Flags)
+        {
+            copy.Flags[name] = flag;
+        }
+        return copy;
+    }
 }

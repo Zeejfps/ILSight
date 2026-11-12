@@ -5,6 +5,7 @@ using ILSight.SearchArea;
 using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
 using ILSight.MetadataArea;
+using ILSight.MetadataGridArea;
 
 namespace ILSight.CommandArea;
 
@@ -245,6 +246,28 @@ public static class Commands
     private static void StartLookingUp(WorkflowRunner workflows, LookUpTooltipHandler handler, CodeTooltips tooltips, TooltipLookup lookup)
     {
         workflows.Start(nameof(LookUpTooltipHandler), ct => handler.HandleAsync(tooltips, lookup, ct));
+    }
+
+    /// <summary>Starts the sorts and filters the metadata grids asked for while the screen drew
+    /// (<see cref="ArrangeMetadataGridHandler"/>), each counted in the app's background work until it ends. Allocates
+    /// nothing while nothing is asked for.</summary>
+    public static void StartArrangingGrids(WorkflowRunner workflows, ArrangeMetadataGridHandler handler, MetadataGridViews views)
+    {
+        if (!views.HasAsked)
+        {
+            return;
+        }
+
+        foreach (var ask in views.TakeAsked())
+        {
+            StartArranging(workflows, handler, ask);
+        }
+    }
+
+    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartArranging(WorkflowRunner workflows, ArrangeMetadataGridHandler handler, MetadataGridViewAsk ask)
+    {
+        workflows.Start(nameof(ArrangeMetadataGridHandler), ct => handler.HandleAsync(ask, ct));
     }
 
     /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn
