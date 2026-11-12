@@ -592,7 +592,7 @@ public static class DocumentPanels
     /// <summary>Asks for <paramref name="tab"/> to become the active tab.</summary>
     private static void AskToFocusTab(UiState uiState, DocumentTab tab)
     {
-        Commands.Later(uiState, tab, static (a, t) => Docking.FocusTab(a, t));
+        Commands.ShowLater(uiState, tab, static (a, t) => Docking.FocusTab(a, t));
     }
 
     /// <summary>Focuses another tab when the active one was closed by a feature, trying again only once

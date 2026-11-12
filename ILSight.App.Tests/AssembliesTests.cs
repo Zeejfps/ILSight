@@ -7,8 +7,8 @@ namespace ILSight.App.Tests;
 public sealed class AssembliesTests
 {
     /// <summary>Answers each port member of <see cref="AssemblyOpening"/> with what the test set, doing
-    /// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, and the
-    /// problems reported.</summary>
+    /// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, the loads it
+    /// was asked to bring in, and the problems reported.</summary>
     private sealed class FakeOpeningPorts : AssemblyOpening.IPorts
     {
         public Outcome<LoadedAssembly?> Opened { get; init; } = new Outcome<LoadedAssembly?>.Ok(null);
@@ -26,6 +26,8 @@ public sealed class AssembliesTests
         public List<CancellationToken> Stops { get; } = [];
 
         public List<CancellationToken> Tokens { get; } = [];
+
+        public List<DecompileTicket> Decompiled { get; } = [];
 
         public List<AppProblem> Reported { get; } = [];
 
@@ -52,6 +54,12 @@ public sealed class AssembliesTests
             return AnswerAsync(nameof(OpenReferencesAsync), ReferencesOpened, ct);
         }
 
+        public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
+        {
+            Decompiled.Add(load);
+            return Task.CompletedTask;
+        }
+
         private Task<T> AnswerAsync<T>(string member, T answer, CancellationToken ct)
         {
             Asked.Add(member);
@@ -62,8 +70,8 @@ public sealed class AssembliesTests
     }
 
     /// <summary>Answers each port member of <see cref="AssemblyReloading"/> with what the test set, doing
-    /// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, and the
-    /// problems reported.</summary>
+    /// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, the loads it
+    /// was asked to bring in, and the problems reported.</summary>
     private sealed class FakeReloadingPorts : AssemblyReloading.IPorts
     {
         public Outcome<PdbCheck> PdbChecked { get; init; } = new Outcome<PdbCheck>.Ok(PdbCheck.Matches);
@@ -83,6 +91,8 @@ public sealed class AssembliesTests
         public List<CancellationToken> Stops { get; } = [];
 
         public List<CancellationToken> Tokens { get; } = [];
+
+        public List<DecompileTicket> Decompiled { get; } = [];
 
         public List<AppProblem> Reported { get; } = [];
 
@@ -107,6 +117,12 @@ public sealed class AssembliesTests
             OpenedPaths.Add(paths);
             Stops.Add(stop);
             return AnswerAsync(nameof(ReopenFilesAsync), Reopen(places), ct);
+        }
+
+        public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
+        {
+            Decompiled.Add(load);
+            return Task.CompletedTask;
         }
 
         private Task<T> AnswerAsync<T>(string member, T answer, CancellationToken ct)

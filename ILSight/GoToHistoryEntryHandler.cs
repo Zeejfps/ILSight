@@ -15,10 +15,14 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         /// screen (it may read an assembly from disk); a lookup that failed comes back as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
         Task<Outcome<BrowseNode?>> LookUpPlaceAsync(NodePath place, CancellationToken ct);
+
+        /// <summary>Brings in what <paramref name="load"/> started loading in its tab and shows it there, commanding
+        /// the view through <paramref name="viewCommands"/> where to stand in it.</summary>
+        Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct);
     }
 
-    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward; nothing when
-    /// there is none there or it is the current one.</summary>
+    /// <summary>Goes to the history entry at <paramref name="index"/>, however far back or forward, returning once
+    /// the node it recorded is decompiled; nothing when there is none there or it is the current one.</summary>
     public async Task HandleAsync(AppState appState, int index, CancellationToken ct)
     {
         if (!CanGoTo(appState, index))
@@ -56,6 +60,20 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
 
     private async Task RestoreAsync(AppState appState, HistoryEntry.Node entry, CancellationToken ct)
     {
+        var load = await ShowEntryAsync(appState, entry, ct);
+        if (load is null)
+        {
+            return;
+        }
+
+        await ports.DecompileIntoTabAsync(appState.ViewCommands, load, ct);
+    }
+
+    /// <summary>Shows the node <paramref name="entry"/> recorded: the one the tab shows when it is still there, else
+    /// the one found at its place, or reports the place gone. Returns the load it started in the tab; null when it
+    /// started none.</summary>
+    private async Task<DecompileTicket?> ShowEntryAsync(AppState appState, HistoryEntry.Node entry, CancellationToken ct)
+    {
         var destination = ChooseDestination(appState, inNewTab: false);
         var place = entry.Place;
         var position = KeepPosition(entry.Position, entry.Language, appState.Language);
@@ -63,13 +81,12 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         if (shown is not null)
         {
             appState.Intent.Begin();
-            ShowNodeIn(appState, destination, shown, position);
-            return;
+            return ShowNodeIn(appState, destination, shown, position);
         }
 
         var ticket = appState.Intent.BeginResolving();
         var found = await ports.LookUpPlaceAsync(place, ct);
-        ShowHistoryPlace(appState, place, position, appState.Intent.EndResolving(ticket, found), destination);
+        return ShowHistoryPlace(appState, place, position, appState.Intent.EndResolving(ticket, found), destination);
     }
 
     private static BrowseNode? FindShownNode(AppState appState, DocumentTab? tab, NodePath place)
@@ -98,14 +115,22 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         return node;
     }
 
-    private void ShowHistoryPlace(AppState appState, NodePath place, ViewPosition? position, Resolution<BrowseNode> resolved,
+    private DecompileTicket? ShowHistoryPlace(AppState appState, NodePath place, ViewPosition? position, Resolution<BrowseNode> resolved,
         TabDestination destination)
     {
-        resolved.Switch((appState, place, position, destination, handler: this),
-            static (s, found) => ShowNodeIn(s.appState, s.destination, found.Value, s.position),
-            static (s, _) => s.handler.ReportHistoryPlaceGone(s.place, null),
-            static (s, failed) => s.handler.ReportHistoryPlaceGone(s.place, failed.Error),
-            static (_, _) => { });
+        return resolved.Match<DecompileTicket?>(
+            found => ShowNodeIn(appState, destination, found.Value, position),
+            _ =>
+            {
+                ReportHistoryPlaceGone(place, null);
+                return null;
+            },
+            failed =>
+            {
+                ReportHistoryPlaceGone(place, failed.Error);
+                return null;
+            },
+            static _ => null);
     }
 
     private void ReportHistoryPlaceGone(NodePath place, Exception? error)

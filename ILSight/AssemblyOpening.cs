@@ -26,10 +26,15 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found in the open list,
         /// as <see cref="OpenFilesAsync"/> lists files.</summary>
         Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct);
+
+        /// <summary>Brings in what <paramref name="load"/> started loading in its tab and shows it there, commanding
+        /// the view through <paramref name="viewCommands"/> where to stand in it.</summary>
+        Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct);
     }
 
     /// <summary>Opens the files, then shows the last one opened, unless something else was asked for
-    /// meanwhile. Reports why opening failed, unless the opens were cancelled.</summary>
+    /// meanwhile, returning once it is decompiled. Reports why opening failed, unless the opens were
+    /// cancelled.</summary>
     public async Task OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
     {
         var files = paths.ToArray();
@@ -40,17 +45,25 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
 
         var ticket = appState.Intent.Begin();
         var opened = await ports.OpenFilesAsync(files, appState.Opens.Token, ct);
-        ShowOpened(appState, opened, ticket);
+        var load = ShowOpened(appState, opened, ticket);
+        if (load is null)
+        {
+            return;
+        }
+
+        await ports.DecompileIntoTabAsync(appState.ViewCommands, load, ct);
     }
 
-    private void ShowOpened(AppState appState, Outcome<LoadedAssembly?> outcome, int ticket)
+    /// <summary>Shows the last assembly opened, unless something else was asked for meanwhile, or reports why
+    /// opening failed. Returns the load it started in the tab; null when it started none.</summary>
+    private DecompileTicket? ShowOpened(AppState appState, Outcome<LoadedAssembly?> outcome, int ticket)
     {
         switch (outcome)
         {
             case Outcome<LoadedAssembly?>.Ok ok when ok.Value is not null:
                 if (!appState.Intent.IsStale(ticket))
                 {
-                    ShowNode(appState, BrowseSessions.EnsureRoot(appState.Session, ok.Value));
+                    return ShowNode(appState, BrowseSessions.EnsureRoot(appState.Session, ok.Value));
                 }
 
                 break;
@@ -62,6 +75,8 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
             default:
                 throw new UnreachableException();
         }
+
+        return null;
     }
 
     /// <summary>Reports why opening failed, unless the opening was cancelled.</summary>

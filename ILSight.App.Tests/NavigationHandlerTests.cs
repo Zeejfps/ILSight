@@ -6,7 +6,7 @@ namespace ILSight.App.Tests;
 public sealed class NavigateHandlerTests
 {
     /// <summary>Finds <see cref="Found"/> for any reference, doing <see cref="WhileLooking"/> meanwhile; keeps the
-    /// references looked up and the problems reported.</summary>
+    /// references looked up, the loads it was asked to bring in, and the problems reported.</summary>
     private sealed class FakeLookup : NavigateHandler.IPorts
     {
         public required Outcome<BrowseNode?> Found { get; init; }
@@ -14,6 +14,8 @@ public sealed class NavigateHandlerTests
         public Action WhileLooking { get; init; } = static () => { };
 
         public List<CodeReference.Navigable> LookedUp { get; } = [];
+
+        public List<DecompileTicket> Decompiled { get; } = [];
 
         public List<AppProblem> Reported { get; } = [];
 
@@ -27,6 +29,12 @@ public sealed class NavigateHandlerTests
             LookedUp.Add(reference);
             WhileLooking();
             return Task.FromResult(Found);
+        }
+
+        public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
+        {
+            Decompiled.Add(load);
+            return Task.CompletedTask;
         }
     }
 
@@ -44,6 +52,7 @@ public sealed class NavigateHandlerTests
 
         Assert.Same(reference, Assert.Single(lookup.LookedUp));
         Assert.Same(farewell, appState.Tabs.Active?.Node);
+        Assert.Same(appState.Tabs.Active, Assert.Single(lookup.Decompiled).Tab);
         Assert.True(appState.History.IsCurrentPlace(appState.Tabs.Active?.Location));
         Assert.True(resolvingWhileLooking);
         Assert.False(appState.IsResolving);
@@ -85,6 +94,7 @@ public sealed class NavigateHandlerTests
         await new NavigateHandler(missing).HandleAsync(appState, farewell.Definition, inNewTab: false, CancellationToken.None);
 
         Assert.Same(shown, appState.Tabs.Active?.Node);
+        Assert.Empty(found.Decompiled);
         Assert.Empty(found.Reported);
         Assert.Empty(missing.Reported);
     }
@@ -100,6 +110,8 @@ public sealed class ShowInMetadataHandlerTests
 
         public Action WhileLooking { get; init; } = static () => { };
 
+        public List<DecompileTicket> Decompiled { get; } = [];
+
         public List<AppProblem> Reported { get; } = [];
 
         public void ReportError(AppProblem problem)
@@ -111,6 +123,12 @@ public sealed class ShowInMetadataHandlerTests
         {
             WhileLooking();
             return Task.FromResult(Found);
+        }
+
+        public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
+        {
+            Decompiled.Add(load);
+            return Task.CompletedTask;
         }
     }
 
@@ -125,6 +143,7 @@ public sealed class ShowInMetadataHandlerTests
         await new ShowInMetadataHandler(lookup).HandleAsync(d.AppState, reference, inNewTab: false, CancellationToken.None);
 
         Assert.Same(row.Node, d.AppState.Tabs.Active?.Node);
+        Assert.Same(row.Node, Assert.Single(lookup.Decompiled).Node);
         Assert.False(d.AppState.IsResolving);
         Assert.Empty(lookup.Reported);
     }
@@ -180,6 +199,8 @@ public sealed class GoToHistoryEntryHandlerTests
 
         public List<NodePath> LookedUp { get; } = [];
 
+        public List<DecompileTicket> Decompiled { get; } = [];
+
         public List<AppProblem> Reported { get; } = [];
 
         public void ReportError(AppProblem problem)
@@ -192,6 +213,12 @@ public sealed class GoToHistoryEntryHandlerTests
             LookedUp.Add(place);
             WhileLooking();
             return Task.FromResult(Found);
+        }
+
+        public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
+        {
+            Decompiled.Add(load);
+            return Task.CompletedTask;
         }
     }
 
@@ -221,6 +248,7 @@ public sealed class GoToHistoryEntryHandlerTests
 
         Assert.Equal(PlaceOf(d.AppState, back), Assert.Single(lookup.LookedUp));
         Assert.Same(greeter, d.AppState.Tabs.Active?.Node);
+        Assert.Same(greeter, Assert.Single(lookup.Decompiled).Node);
         Assert.Equal(back, d.AppState.History.CurrentIndex);
         Assert.False(d.AppState.IsResolving);
         Assert.Empty(lookup.Reported);

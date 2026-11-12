@@ -27,7 +27,7 @@ public sealed class AppStateTests
         var greeter = d.Fixture("Greeter");
         d.TakeViewCommands();
 
-        ShowNode(d.AppState, greeter, inNewTab: true);
+        d.StartShowing(greeter, inNewTab: true);
         var commands = d.TakeViewCommands();
 
         var tab = d.AppState.Tabs.Active!;
@@ -54,7 +54,7 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         var ns = d.Node(AppStateDriver.FixturesNamespace);
-        ShowNode(d.AppState, d.Fixture("Greeter"));
+        d.StartShowing(d.Fixture("Greeter"));
 
         CloseAllAssemblies(d.AppState);
         d.NextFrame();
@@ -209,7 +209,7 @@ public sealed class AppStateTests
         var farewell = d.Fixture("Farewell");
 
         d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, [], ct));
-        ShowNode(d.AppState, farewell);
+        d.StartShowing(farewell);
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Tabs.Open);
@@ -321,7 +321,7 @@ public sealed class AppStateTests
         var farewell = d.Fixture("Farewell");
 
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: false, ct));
-        ShowNode(d.AppState, farewell);
+        d.StartShowing(farewell);
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, inNewTab: true, ct));
         ActivateTab(d.Ui, d.AppState.Tabs.Open[0]);
         d.NextFrame();
@@ -357,7 +357,7 @@ public sealed class AppStateTests
 
         var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;
 
-        ShowNode(d.AppState, d.Node(AppStateDriver.FixturesNamespace));
+        d.StartShowing(d.Node(AppStateDriver.FixturesNamespace));
         d.NextFrame();
         Assert.IsNotType<PendingScroll.Reveal>(view.Pending);
         d.Settle();

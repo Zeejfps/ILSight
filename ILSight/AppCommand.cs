@@ -41,6 +41,37 @@ public static class Commands
         };
     }
 
+    /// <summary>Asks for <paramref name="show"/> to be done to the app state and <paramref name="subject"/> once the
+    /// frame is drawn, pointing a tab at what it is to show, and for the load it started in the tab, if any, to be
+    /// started then (<see cref="StartDecompiling"/>). Pass a <c>static</c> lambda, handing it what it acts on as
+    /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
+    public static void ShowLater<T>(UiState uiState, T subject, Func<AppState, T, DecompileTicket?> show)
+    {
+        uiState.AppCommands.Enqueue(CreateShow(subject, show));
+    }
+
+    private static AppCommand CreateShow<T>(T subject, Func<AppState, T, DecompileTicket?> show)
+    {
+        return appState =>
+        {
+            StartDecompiling(appState, show(appState, subject));
+        };
+    }
+
+    /// <summary>Starts bringing in what <paramref name="load"/> started loading in its tab
+    /// (<see cref="DecompileIntoTabHandler"/>) now, counted in the app's background work until it ends, on a token
+    /// that newer work on the tab and closing it cancel too; nothing when no load started.</summary>
+    public static void StartDecompiling(AppState appState, DecompileTicket? load)
+    {
+        if (load is null)
+        {
+            return;
+        }
+
+        appState.Workflows.Start(nameof(DecompileIntoTabHandler), ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, ct),
+            load.Work.Token);
+    }
+
     /// <summary>Asks for <paramref name="workflow"/> to be started over the app state once the frame is drawn, in its
     /// place among the commands queued, and counted in the app's background work as <paramref name="name"/> until it
     /// ends. It runs on the UI thread up to its first await before the next command does. Pass a <c>static</c>

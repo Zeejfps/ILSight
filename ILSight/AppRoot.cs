@@ -46,12 +46,14 @@ internal static class AppRoot
         var settingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile };
         var themes = Theming.CreateCatalog(BuiltInThemes.Files);
         var iconThemes = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
-        var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
-        var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session);
+        var decompileIntoTab = new DecompileIntoTabHandler(new DecompileIntoTabHandlerAdapter(errors, session));
+        var navigation = new NavigationInfrastructure(errors, assemblies, session, opens, decompileIntoTab);
+        var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session, decompileIntoTab);
         var appState = new AppState
         {
             Work = work,
             Workflows = new WorkflowRunner(work, errors),
+            DecompileIntoTabHandler = decompileIntoTab,
             NavigateHandler = new NavigateHandler(navigation),
             ShowInMetadataHandler = new ShowInMetadataHandler(navigation),
             ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),

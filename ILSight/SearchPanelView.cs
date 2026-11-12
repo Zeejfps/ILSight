@@ -160,7 +160,7 @@ internal static class SearchPanelView
             var row = PickSelected(search);
             if (row != null)
             {
-                Commands.Later(ui.State, row.Node, static (a, node) => ShowNode(a, node));
+                Commands.ShowLater(ui.State, row.Node, static (a, node) => ShowNode(a, node));
             }
 
             return;
@@ -278,7 +278,7 @@ internal static class SearchPanelView
         var selected = search.SelectedRow;
         if (body.Activated && selected != null)
         {
-            Commands.Later(ui.State, (node: selected.Node, inNewTab: body.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
+            Commands.ShowLater(ui.State, (node: selected.Node, inNewTab: body.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
         }
     }
 
@@ -292,7 +292,7 @@ internal static class SearchPanelView
         {
             if (row.Interaction.Clicked)
             {
-                Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n));
+                Commands.ShowLater(ui.State, node, static (a, n) => ShowNode(a, n));
             }
 
             NameCell(ui, row, result);

@@ -2,94 +2,42 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>Decompiling what a tab points at, or reading its grid or picture, in the background, and
-/// commanding the view where to stand in it once it arrives.</summary>
+/// <summary>Pointing a tab at what it is to show, decompiled or read as a grid or picture: the tab shows it
+/// loading at once, and <see cref="DecompileIntoTabHandler"/> brings it in with the ticket this returns; and
+/// commanding the view where to stand in it once it is there.</summary>
 public static class Decompilation
 {
-    /// <summary>Starts decompiling <paramref name="node"/> in <paramref name="tab"/>, or reading its grid,
-    /// cancelling what was in flight, then commands the view to stand where <paramref name="arrival"/> says.
-    /// When the tab already shows <paramref name="node"/> as the language and options would, only does the latter.</summary>
-    public static void DecompileIntoTab(AppState appState, DocumentTab tab, BrowseNode node, Arrival arrival = default)
+    /// <summary>Points <paramref name="tab"/> at <paramref name="node"/>, shown loading from now on in
+    /// <paramref name="language"/> with <paramref name="options"/>, cancelling what was in flight, and returns what
+    /// <see cref="DecompileIntoTabHandler"/> needs to bring it in, after which the view stands where
+    /// <paramref name="arrival"/> says. When the tab already shows <paramref name="node"/> as the language and options
+    /// would, only commands the view, through <paramref name="viewCommands"/>, to stand there, and returns null.</summary>
+    public static DecompileTicket? StartDecompiling(Queue<ViewCommand> viewCommands, DocumentTab tab, BrowseNode node, DecompilationLanguage language,
+        DecompilerOptions options, Arrival arrival = default)
     {
-        if (Tabs.IsShowing(tab, node, appState.Language, appState.DecompilerOptions))
+        if (Tabs.IsShowing(tab, node, language, options))
         {
-            Arrive(appState, tab, arrival);
-            return;
+            Arrive(viewCommands, tab, arrival);
+            return null;
         }
-        var load = Tabs.StartLoading(tab, node, appState.Language, appState.DecompilerOptions, arrival);
-        StartDecompiling(appState, tab, node, load);
+
+        var work = Tabs.StartLoading(tab, node, language, options, arrival);
+        return new DecompileTicket { Tab = tab, Node = node, Language = language, Options = options, Work = work };
     }
 
-    private static void StartDecompiling(AppState appState, DocumentTab tab, BrowseNode node, WorkTicket load)
-    {
-        Background.Start(appState.Work, nameof(DecompileAsync), DecompileAsync(appState, tab, node, load), problem => Errors.Report(appState, problem));
-    }
-
-    private static async Task DecompileAsync(AppState appState, DocumentTab tab, BrowseNode node, WorkTicket load)
-    {
-        var loading = NodeContentLoader.GetContentAsync(appState.Session, node, tab.Language, tab.Options, load.Token);
-        await Background.Wait(loading);
-        FinishLoading(appState, tab, node, load, loading);
-    }
-
-    private static void FinishLoading(AppState appState, DocumentTab tab, BrowseNode node, WorkTicket load, Task<NodeContent> loading)
-    {
-        if (!tab.Work.TryFinish(load))
-        {
-            return;
-        }
-
-        if (loading.IsCanceled)
-        {
-            return;
-        }
-
-        var error = loading.Exception?.GetBaseException();
-        if (error is not null)
-        {
-            Tabs.ShowFailed(tab, error.Message);
-        }
-        else
-        {
-            Tabs.ShowLoaded(tab, loading.Result);
-        }
-
-        var arrival = Tabs.TakeArrival(tab);
-        var failure = error ?? tab.Document.Error;
-        if (failure is not null)
-        {
-            ReportFailure(appState, node, failure);
-            Arrive(appState, tab, new Arrival());
-            return;
-        }
-        Arrive(appState, tab, arrival);
-    }
-
-    /// <summary>Reports why <paramref name="node"/> could not be shown, unless its file failed to load,
-    /// which its tab tells already.</summary>
-    private static void ReportFailure(AppState appState, BrowseNode node, Exception error)
-    {
-        if (node.Assembly is FailedAssembly)
-        {
-            return;
-        }
-
-        Errors.Report(appState, new AppProblem.DecompilationFailed(BrowseNodes.GetFullName(node), error));
-    }
-
-    /// <summary>Commands the view to return to the arrival's position, else to reveal the grid's row or the
-    /// line its bookmark marks, else the node's definition.</summary>
-    private static void Arrive(AppState appState, DocumentTab tab, Arrival arrival)
+    /// <summary>Commands the view, through <paramref name="viewCommands"/>, to return to the arrival's position, else
+    /// to reveal the grid's row or the line its bookmark marks, else the node's definition.</summary>
+    public static void Arrive(Queue<ViewCommand> viewCommands, DocumentTab tab, Arrival arrival)
     {
         var position = arrival.Position;
         if (position is not null)
         {
-            appState.ViewCommands.Enqueue(new ViewCommand.RestoreView(tab, position.Value));
+            viewCommands.Enqueue(new ViewCommand.RestoreView(tab, position.Value));
             return;
         }
         if (tab.Grid is not null)
         {
-            RevealRow(appState, tab, arrival.Row);
+            RevealRow(viewCommands, tab, arrival.Row);
             return;
         }
         var line = FindLineToReveal(tab, arrival.Target);
@@ -98,17 +46,17 @@ public static class Decompilation
             return;
         }
 
-        appState.ViewCommands.Enqueue(new ViewCommand.RevealLine(tab, line.Value));
+        viewCommands.Enqueue(new ViewCommand.RevealLine(tab, line.Value));
     }
 
-    private static void RevealRow(AppState appState, DocumentTab tab, int? row)
+    private static void RevealRow(Queue<ViewCommand> viewCommands, DocumentTab tab, int? row)
     {
         if (row is null)
         {
             return;
         }
 
-        appState.ViewCommands.Enqueue(new ViewCommand.RevealRow(tab, row.Value));
+        viewCommands.Enqueue(new ViewCommand.RevealRow(tab, row.Value));
     }
 
     /// <summary>The line <paramref name="target"/> marks, else the node's definition; null when there is neither.</summary>
@@ -139,32 +87,47 @@ public static class Decompilation
         return Bookmarks.FindLine(target, tab.Document, node);
     }
 
-    /// <summary>Decompiles the node <paramref name="tab"/> shows again if it was shown in another language,
-    /// or with other options, than the app state's, keeping the view where it was when the language is the same.</summary>
-    public static void DecompileAgainIfOutdated(AppState appState, DocumentTab tab)
+    /// <summary>Points <paramref name="tab"/> again at the node it shows, as <see cref="StartDecompiling"/> does, if
+    /// it was shown in another language, or with other options, than <paramref name="language"/> and
+    /// <paramref name="options"/>, keeping the view where it was when the language is the same. Null when it needs
+    /// no decompiling again.</summary>
+    public static DecompileTicket? StartDecompilingAgainIfOutdated(Queue<ViewCommand> viewCommands, DocumentTab tab, DecompilationLanguage language,
+        DecompilerOptions options)
     {
         var node = tab.Node;
         if (node is null)
         {
-            return;
+            return null;
         }
 
         if (!NodeContentLoader.DependsOnLanguage(node))
         {
-            return;
+            return null;
         }
 
-        if (Tabs.IsCurrent(tab, appState.Language, appState.DecompilerOptions))
+        if (Tabs.IsCurrent(tab, language, options))
         {
-            return;
+            return null;
         }
 
-        var position = FindPositionToKeep(appState, tab);
-        DecompileIntoTab(appState, tab, node, new Arrival(position));
+        var position = Navigation.KeepPosition(tab.Position, tab.Language, language);
+        return StartDecompiling(viewCommands, tab, node, language, options, new Arrival(position));
     }
+}
 
-    private static ViewPosition? FindPositionToKeep(AppState appState, DocumentTab tab)
-    {
-        return Navigation.KeepPosition(tab.Position, tab.Language, appState.Language);
-    }
+/// <summary>A load <see cref="Decompilation.StartDecompiling"/> started in a tab, for
+/// <see cref="DecompileIntoTabHandler"/> to bring in: the tab and the node it shows loading, the language and
+/// options to show it in, and the work of the tab it runs as, which newer work on the tab or closing it
+/// cancels.</summary>
+public sealed class DecompileTicket
+{
+    public required DocumentTab Tab { get; init; }
+
+    public required BrowseNode Node { get; init; }
+
+    public required DecompilationLanguage Language { get; init; }
+
+    public required DecompilerOptions Options { get; init; }
+
+    public required WorkTicket Work { get; init; }
 }

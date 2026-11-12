@@ -1048,12 +1048,14 @@ public sealed class FrameworkPickerTests
 public sealed class OpenAndShowIdHandlerTests
 {
     /// <summary>Opens nothing and finds <see cref="Found"/>, doing <see cref="WhileOpening"/> meanwhile; keeps the
-    /// problems reported.</summary>
+    /// loads it was asked to bring in and the problems reported.</summary>
     private sealed class FakeOpening : OpenAndShowIdHandler.IPorts
     {
         public required Outcome<BrowseNode?> Found { get; init; }
 
         public Action WhileOpening { get; init; } = static () => { };
+
+        public List<DecompileTicket> Decompiled { get; } = [];
 
         public List<AppProblem> Reported { get; } = [];
 
@@ -1067,6 +1069,12 @@ public sealed class OpenAndShowIdHandlerTests
             WhileOpening();
             return Task.FromResult(Found);
         }
+
+        public Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct)
+        {
+            Decompiled.Add(load);
+            return Task.CompletedTask;
+        }
     }
 
     [Fact]
@@ -1079,6 +1087,7 @@ public sealed class OpenAndShowIdHandlerTests
         await new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None);
 
         Assert.Same(greeter, d.AppState.Tabs.Active?.Node);
+        Assert.Same(greeter, Assert.Single(opening.Decompiled).Node);
         Assert.Empty(opening.Reported);
     }
 

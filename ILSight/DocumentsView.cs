@@ -60,7 +60,7 @@ internal static class DocumentsView
         var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters);
         if (picked.Target is not null && tab.Node is not null)
         {
-            Commands.Later(ui.State, (node: tab.Node, target: picked.Target.Value, picked.InNewTab), static (a, s) => ShowMetadataLink(a, s.node, s.target, s.InNewTab));
+            Commands.ShowLater(ui.State, (node: tab.Node, target: picked.Target.Value, picked.InNewTab), static (a, s) => ShowMetadataLink(a, s.node, s.target, s.InNewTab));
         }
 
         if (picked.Definition != null)

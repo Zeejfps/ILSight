@@ -174,7 +174,7 @@ internal static partial class AppFrames
 
         foreach (var tab in ListFrontTabs(uiState))
         {
-            DecompileAgainIfOutdated(appState, tab);
+            Commands.StartDecompiling(appState, StartDecompilingAgainIfOutdated(appState.ViewCommands, tab, language, appState.DecompilerOptions));
         }
     }
 

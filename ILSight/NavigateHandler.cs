@@ -16,31 +16,55 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
         /// holding up the screen (it may read an assembly from disk); a lookup that failed comes back as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
         Task<Outcome<BrowseNode?>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct);
+
+        /// <summary>Brings in what <paramref name="load"/> started loading in its tab and shows it there, commanding
+        /// the view through <paramref name="viewCommands"/> where to stand in it.</summary>
+        Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct);
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background (it may load an assembly), then shows
     /// it in the tab it was asked from, or a new one when <paramref name="inNewTab"/>, and records it in the
-    /// history. Reports a reference that leads nowhere; drops it when something else was asked for meanwhile.</summary>
+    /// history, returning once it is decompiled there. Reports a reference that leads nowhere; drops it when
+    /// something else was asked for meanwhile.</summary>
     public async Task HandleAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab, CancellationToken ct)
     {
         var destination = ChooseDestination(appState, inNewTab);
         var ticket = appState.Intent.BeginResolving();
         var found = await ports.LookUpReferenceAsync(reference, ct);
-        ShowResolved(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
+        var load = ShowResolved(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
+        if (load is null)
+        {
+            return;
+        }
+
+        await ports.DecompileIntoTabAsync(appState.ViewCommands, load, ct);
     }
 
-    private void ShowResolved(AppState appState, CodeReference reference, Resolution<BrowseNode> resolved, TabDestination destination)
+    /// <summary>Shows what <paramref name="resolved"/> found, or reports it unresolved. Returns the load it started
+    /// in the tab; null when it started none.</summary>
+    private DecompileTicket? ShowResolved(AppState appState, CodeReference reference, Resolution<BrowseNode> resolved, TabDestination destination)
     {
-        resolved.Switch((appState, reference, destination, handler: this),
-            static (s, found) =>
+        return resolved.Match<DecompileTicket?>(
+            found => ShowFound(appState, found.Value, destination),
+            _ =>
             {
-                LeaveActiveTab(s.appState);
-                ShowNodeIn(s.appState, s.destination, found.Value);
-                s.appState.History.RecordPlace(found.Value, s.appState.Language);
+                ReportUnresolved(reference, null);
+                return null;
             },
-            static (s, _) => s.handler.ReportUnresolved(s.reference, null),
-            static (s, failed) => s.handler.ReportUnresolved(s.reference, failed.Error),
-            static (_, _) => { });
+            failed =>
+            {
+                ReportUnresolved(reference, failed.Error);
+                return null;
+            },
+            static _ => null);
+    }
+
+    private static DecompileTicket? ShowFound(AppState appState, BrowseNode found, TabDestination destination)
+    {
+        LeaveActiveTab(appState);
+        var load = ShowNodeIn(appState, destination, found);
+        appState.History.RecordPlace(found, appState.Language);
+        return load;
     }
 
     private void ReportUnresolved(CodeReference reference, Exception? error)

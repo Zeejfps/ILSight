@@ -34,27 +34,31 @@ public static class Navigation
     }
 
     /// <summary>Shows <paramref name="node"/> in the preview tab, or the active tab while tabs do not
-    /// preview, or else a new tab kept open, reveals it in the tree and records it in the history.</summary>
-    public static void ShowNode(AppState appState, BrowseNode node, bool inNewTab = false)
+    /// preview, or else a new tab kept open, reveals it in the tree and records it in the history. Returns the
+    /// load it started in the tab, for <see cref="DecompileIntoTabHandler"/> to bring in; null when the tab shows
+    /// the node already.</summary>
+    public static DecompileTicket? ShowNode(AppState appState, BrowseNode node, bool inNewTab = false)
     {
         appState.Intent.Begin();
         LeaveActiveTab(appState);
-        ShowNodeIn(appState, ChooseDestination(appState, inNewTab), node);
+        var load = ShowNodeIn(appState, ChooseDestination(appState, inNewTab), node);
         appState.History.RecordPlace(node, appState.Language);
+        return load;
     }
 
     /// <summary>Shows <paramref name="node"/>, picked in the tree, as <see cref="ShowNode"/> does, unless
-    /// a tab shows it already, which is brought to the front instead.</summary>
-    public static void PreviewNode(AppState appState, BrowseNode node)
+    /// a tab shows it already, which is brought to the front instead. Returns the load it started, as
+    /// <see cref="ShowNode"/> does.</summary>
+    public static DecompileTicket? PreviewNode(AppState appState, BrowseNode node)
     {
         var showing = FindTabShowing(appState, node);
         if (showing is null)
         {
-            ShowNode(appState, node);
-            return;
+            return ShowNode(appState, node);
         }
         Tabs.MakeActive(appState.Tabs, showing);
         appState.ViewCommands.Enqueue(new ViewCommand.ShowTab(showing, Beside: null));
+        return null;
     }
 
     /// <summary>The tab showing <paramref name="node"/>, the active one first; null when none does.</summary>
@@ -77,16 +81,17 @@ public static class Navigation
     }
 
     /// <summary>Shows <paramref name="node"/>, opened from the tree, as <see cref="PreviewNode"/> does and
-    /// keeps the tab showing it open; while tabs do not preview, as <see cref="ShowNode"/> does.</summary>
-    public static void OpenNode(AppState appState, BrowseNode node)
+    /// keeps the tab showing it open; while tabs do not preview, as <see cref="ShowNode"/> does. Returns the load
+    /// it started, as <see cref="ShowNode"/> does.</summary>
+    public static DecompileTicket? OpenNode(AppState appState, BrowseNode node)
     {
         if (!appState.PreviewTabs)
         {
-            ShowNode(appState, node);
-            return;
+            return ShowNode(appState, node);
         }
-        PreviewNode(appState, node);
+        var load = PreviewNode(appState, node);
         KeepActiveTabOpen(appState);
+        return load;
     }
 
     private static void KeepActiveTabOpen(AppState appState)
@@ -139,33 +144,36 @@ public static class Navigation
     }
 
     /// <summary>Shows the table row a metadata token leads to where <see cref="ShowNode"/> shows a
-    /// node, and records it in the history.</summary>
-    public static void ShowMetadataTarget(AppState appState, MetadataTarget target, bool inNewTab)
+    /// node, and records it in the history. Returns the load it started, as <see cref="ShowNode"/> does.</summary>
+    public static DecompileTicket? ShowMetadataTarget(AppState appState, MetadataTarget target, bool inNewTab)
     {
         appState.Intent.Begin();
-        ShowRowIn(appState, ChooseDestination(appState, inNewTab), target);
+        return ShowRowIn(appState, ChooseDestination(appState, inNewTab), target);
     }
 
     /// <summary>Shows the table row <paramref name="address"/>, a link of the grid <paramref name="grid"/>
-    /// shows, leads to, as <see cref="ShowMetadataTarget"/> does; nothing when it leads nowhere.</summary>
-    public static void ShowMetadataLink(AppState appState, BrowseNode grid, MetadataAddress address, bool inNewTab)
+    /// shows, leads to, as <see cref="ShowMetadataTarget"/> does; nothing when it leads nowhere. Returns the load
+    /// it started, as <see cref="ShowNode"/> does.</summary>
+    public static DecompileTicket? ShowMetadataLink(AppState appState, BrowseNode grid, MetadataAddress address, bool inNewTab)
     {
         var target = BrowseSessions.FindMetadataRow(appState.Session, grid, address);
         if (target is null)
         {
-            return;
+            return null;
         }
 
-        ShowMetadataTarget(appState, target.Value, inNewTab);
+        return ShowMetadataTarget(appState, target.Value, inNewTab);
     }
 
     /// <summary>Shows the table row <paramref name="target"/> leads to in the tab <paramref name="destination"/>
-    /// leads to now, and records it in the history.</summary>
-    internal static void ShowRowIn(AppState appState, TabDestination destination, MetadataTarget target)
+    /// leads to now, and records it in the history. Returns the load it started, as <see cref="ShowNode"/>
+    /// does.</summary>
+    internal static DecompileTicket? ShowRowIn(AppState appState, TabDestination destination, MetadataTarget target)
     {
         LeaveActiveTab(appState);
-        ShowNodeIn(appState, destination, target.Node, row: target.Row);
+        var load = ShowNodeIn(appState, destination, target.Node, row: target.Row);
         appState.History.RecordPlace(target.Node, appState.Language);
+        return load;
     }
 
     /// <summary>Goes to the history entry before the current one, as <see cref="GoToHistoryEntryHandler"/> does.</summary>
@@ -224,8 +232,10 @@ public static class Navigation
     }
 
     /// <summary>Shows <paramref name="node"/> in the tab <paramref name="destination"/> leads to now, makes
-    /// that tab active, and commands the view to bring it to the front and reveal the node in the tree.</summary>
-    internal static void ShowNodeIn(
+    /// that tab active, and commands the view to bring it to the front and reveal the node in the tree. Returns the
+    /// load it started in the tab, for <see cref="DecompileIntoTabHandler"/> to bring in; null when the tab shows
+    /// the node already.</summary>
+    internal static DecompileTicket? ShowNodeIn(
         AppState appState,
         TabDestination destination,
         BrowseNode node,
@@ -235,8 +245,9 @@ public static class Navigation
     {
         var shownIn = GetOrOpenTab(appState, destination);
         Tabs.MakeActive(appState.Tabs, shownIn);
-        DecompileIntoTab(appState, shownIn, node, new Arrival(position, target, row));
+        var load = StartDecompiling(appState.ViewCommands, shownIn, node, appState.Language, appState.DecompilerOptions, new Arrival(position, target, row));
         appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
+        return load;
     }
 
     /// <summary>The tab <paramref name="destination"/> leads to now, brought to the front, else a new one

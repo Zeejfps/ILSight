@@ -164,22 +164,41 @@ public static class Bookmarks
         var assemblies = appState.Assemblies;
         var session = appState.Session;
         var resolved = await appState.Intent.ResolveAsync(() => NodeLookup.Find(assemblies, session, place), CancellationToken.None);
-        ShowBookmarkPlace(appState, bookmark, resolved, destination);
+        var load = ShowBookmarkPlace(appState, bookmark, resolved, destination);
+        if (load is null)
+        {
+            return;
+        }
+
+        await appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, CancellationToken.None);
     }
 
-    private static void ShowBookmarkPlace(AppState appState, Bookmark bookmark, Resolution<BrowseNode> resolved, TabDestination destination)
+    /// <summary>Shows the place <paramref name="resolved"/> found, or reports the bookmark gone. Returns the load it
+    /// started in the tab; null when it started none.</summary>
+    private static DecompileTicket? ShowBookmarkPlace(AppState appState, Bookmark bookmark, Resolution<BrowseNode> resolved, TabDestination destination)
     {
-        resolved.Switch((appState, bookmark, destination),
-            static (s, found) =>
+        return resolved.Match<DecompileTicket?>(
+            found => ShowBookmarkedNode(appState, bookmark, found.Value, destination),
+            _ =>
             {
-                s.appState.Bookmarks.Resolve(s.bookmark, found.Value);
-                LeaveActiveTab(s.appState);
-                ShowNodeIn(s.appState, s.destination, found.Value, target: s.bookmark);
-                s.appState.History.RecordPlace(found.Value, s.appState.Language);
+                ReportBookmarkGone(appState, bookmark, null);
+                return null;
             },
-            static (s, _) => ReportBookmarkGone(s.appState, s.bookmark, null),
-            static (s, failed) => ReportBookmarkGone(s.appState, s.bookmark, failed.Error),
-            static (_, _) => { });
+            failed =>
+            {
+                ReportBookmarkGone(appState, bookmark, failed.Error);
+                return null;
+            },
+            static _ => null);
+    }
+
+    private static DecompileTicket? ShowBookmarkedNode(AppState appState, Bookmark bookmark, BrowseNode node, TabDestination destination)
+    {
+        appState.Bookmarks.Resolve(bookmark, node);
+        LeaveActiveTab(appState);
+        var load = ShowNodeIn(appState, destination, node, target: bookmark);
+        appState.History.RecordPlace(node, appState.Language);
+        return load;
     }
 
     private static void ReportBookmarkGone(AppState appState, Bookmark bookmark, Exception? error)

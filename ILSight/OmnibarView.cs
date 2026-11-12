@@ -137,12 +137,12 @@ internal static class OmnibarView
         ui.Tooltip(i.Id, NodeText.Tooltip(node));
         if (i.Clicked)
         {
-            Commands.Later(ui.State, (node, inNewTab: IsCommandHeld(ui)), static (a, s) => PickNode(a, s.node, s.inNewTab));
+            Commands.ShowLater(ui.State, (node, inNewTab: IsCommandHeld(ui)), static (a, s) => PickNode(a, s.node, s.inNewTab));
         }
 
         if (i.ClickedWith(PointerButton.Middle))
         {
-            Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
+            Commands.ShowLater(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
         }
     }
 
@@ -170,15 +170,15 @@ internal static class OmnibarView
         return theme.TextMuted;
     }
 
-    /// <summary>Shows <paramref name="node"/> as one picked in the tree is, or in a new tab when <paramref name="inNewTab"/>.</summary>
-    private static void PickNode(AppState appState, BrowseNode node, bool inNewTab)
+    /// <summary>Shows <paramref name="node"/> as one picked in the tree is, or in a new tab when <paramref name="inNewTab"/>.
+    /// Returns the load it started in the tab; null when it started none.</summary>
+    private static DecompileTicket? PickNode(AppState appState, BrowseNode node, bool inNewTab)
     {
         if (inNewTab)
         {
-            ShowNode(appState, node, inNewTab: true);
-            return;
+            return ShowNode(appState, node, inNewTab: true);
         }
-        PreviewNode(appState, node);
+        return PreviewNode(appState, node);
     }
 
     private static bool IsCommandHeld(Ui<UiState> ui)
@@ -312,7 +312,7 @@ internal static class OmnibarView
         }
 
         omnibar.CloseMenu();
-        Commands.Later(ui.State, (node, inNewTab: picked.InNewTab), static (a, s) => PickNode(a, s.node, s.inNewTab));
+        Commands.ShowLater(ui.State, (node, inNewTab: picked.InNewTab), static (a, s) => PickNode(a, s.node, s.inNewTab));
     }
 
     /// <summary>The filter, which takes focus as the list opens and walks the list with Up and Down.
@@ -440,7 +440,7 @@ internal static class OmnibarView
         }
 
         omnibar.StopSearch();
-        Commands.Later(ui.State, (node: match.Node, inNewTab: clicked.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
+        Commands.ShowLater(ui.State, (node: match.Node, inNewTab: clicked.InNewTab), static (a, s) => ShowNode(a, s.node, s.inNewTab));
     }
 
     /// <summary>The query syntax, over the box while it is empty, so it never covers the suggestions.</summary>

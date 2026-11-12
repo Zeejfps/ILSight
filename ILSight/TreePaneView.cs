@@ -354,7 +354,7 @@ internal static class TreePaneView
 
         if (IsPicked(result))
         {
-            Commands.Later(ui.State, node, static (a, n) => Preview(a, n));
+            Commands.ShowLater(ui.State, node, static (a, n) => Preview(a, n));
         }
 
         if (result.Activated)
@@ -379,15 +379,16 @@ internal static class TreePaneView
         return !result.ContextMenuRequested;
     }
 
-    /// <summary>Shows <paramref name="node"/>, just picked, in the preview tab while tabs preview.</summary>
-    private static void Preview(AppState appState, BrowseNode node)
+    /// <summary>Shows <paramref name="node"/>, just picked, in the preview tab while tabs preview. Returns the load
+    /// it started in the tab; null when it started none.</summary>
+    private static DecompileTicket? Preview(AppState appState, BrowseNode node)
     {
         if (!appState.PreviewTabs)
         {
-            return;
+            return null;
         }
 
-        PreviewNode(appState, node);
+        return PreviewNode(appState, node);
     }
 
     /// <summary>Asks to go where <paramref name="node"/> points when it stands for a reference, else to open it in a
@@ -400,7 +401,7 @@ internal static class TreePaneView
             Commands.Start(screen, nameof(NavigateHandler), jump.Target, static (a, target, ct) => a.NavigateHandler.HandleAsync(a, target, inNewTab: false, ct));
             return;
         }
-        Commands.Later(screen, node, static (a, n) => OpenNode(a, n));
+        Commands.ShowLater(screen, node, static (a, n) => OpenNode(a, n));
     }
 
     private static void OpenContextMenu(Ui<UiState> ui, BrowseNode node, PointF at)
@@ -433,12 +434,12 @@ internal static class TreePaneView
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
         {
-            Commands.Later(ui.State, node, static (a, n) => OpenNode(a, n));
+            Commands.ShowLater(ui.State, node, static (a, n) => OpenNode(a, n));
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.Later(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
+            Commands.ShowLater(ui.State, node, static (a, n) => ShowNode(a, n, inNewTab: true));
         }
 
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))

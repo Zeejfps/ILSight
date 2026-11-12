@@ -374,8 +374,15 @@ internal sealed class AppStateDriver
 
     public void Show(BrowseNode node, bool inNewTab = false)
     {
-        ShowNode(AppState, node, inNewTab);
+        StartShowing(node, inNewTab);
         Settle();
+    }
+
+    /// <summary>Shows <paramref name="node"/> as the views ask once the frame is drawn: points a tab at it, then
+    /// starts decompiling it there, without waiting for that.</summary>
+    public void StartShowing(BrowseNode node, bool inNewTab = false)
+    {
+        Commands.StartDecompiling(AppState, ShowNode(AppState, node, inNewTab));
     }
 
     /// <summary>Starts <paramref name="workflow"/> over the app state now, as the app starts the workflows the screen

@@ -16,27 +16,47 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
         /// leads nowhere, looked for without holding up the screen (it may read an assembly from disk); a lookup
         /// that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
         Task<Outcome<MetadataTarget?>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct);
+
+        /// <summary>Brings in what <paramref name="load"/> started loading in its tab and shows it there, commanding
+        /// the view through <paramref name="viewCommands"/> where to stand in it.</summary>
+        Task DecompileIntoTabAsync(Queue<ViewCommand> viewCommands, DecompileTicket load, CancellationToken ct);
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background, as <see cref="NavigateHandler"/> does,
     /// then shows the metadata table row that defines it in the tab it was asked from, or a new one when
-    /// <paramref name="inNewTab"/>, and records it in the history. Reports a reference that leads nowhere; drops it
-    /// when something else was asked for meanwhile.</summary>
+    /// <paramref name="inNewTab"/>, and records it in the history, returning once its table is read there. Reports a
+    /// reference that leads nowhere; drops it when something else was asked for meanwhile.</summary>
     public async Task HandleAsync(AppState appState, CodeReference.Navigable reference, bool inNewTab, CancellationToken ct)
     {
         var destination = ChooseDestination(appState, inNewTab);
         var ticket = appState.Intent.BeginResolving();
         var found = await ports.LookUpMetadataRowAsync(reference, ct);
-        ShowResolvedRow(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
+        var load = ShowResolvedRow(appState, reference, appState.Intent.EndResolving(ticket, found), destination);
+        if (load is null)
+        {
+            return;
+        }
+
+        await ports.DecompileIntoTabAsync(appState.ViewCommands, load, ct);
     }
 
-    private void ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
+    /// <summary>Shows the row <paramref name="resolved"/> found, or reports it unresolved. Returns the load it
+    /// started in the tab; null when it started none.</summary>
+    private DecompileTicket? ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
     {
-        resolved.Switch((appState, reference, destination, handler: this),
-            static (s, found) => ShowRowIn(s.appState, s.destination, found.Value),
-            static (s, _) => s.handler.ReportUnresolved(s.reference, null),
-            static (s, failed) => s.handler.ReportUnresolved(s.reference, failed.Error),
-            static (_, _) => { });
+        return resolved.Match<DecompileTicket?>(
+            found => ShowRowIn(appState, destination, found.Value),
+            _ =>
+            {
+                ReportUnresolved(reference, null);
+                return null;
+            },
+            failed =>
+            {
+                ReportUnresolved(reference, failed.Error);
+                return null;
+            },
+            static _ => null);
     }
 
     private void ReportUnresolved(CodeReference reference, Exception? error)

@@ -345,10 +345,17 @@ public static class SavedDocuments
             Outcome<List<BrowseNode?>>.Failed => places.ConvertAll(static _ => (BrowseNode?)null),
             _ => throw new UnreachableException(),
         };
+        var loads = new List<Task>();
         for (var i = 0; i < nodes.Count; i++)
         {
-            ShowReopenedNode(appState, nodes[i], shown[i]);
+            var load = ShowReopenedNode(appState, nodes[i], shown[i]);
+            if (load is not null)
+            {
+                loads.Add(appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, CancellationToken.None));
+            }
         }
+
+        await Task.WhenAll(loads);
     }
 
     private static List<BrowseNode?> FindNodes(AssemblyList list, BrowseSession session, List<NodePath?> places)
@@ -368,28 +375,30 @@ public static class SavedDocuments
 
     /// <summary>Shows <paramref name="node"/>, found where the waiting tab's node was, back where its view
     /// stood when it was shown in the language the app shows now, or that it is gone; unless the tab
-    /// was pointed elsewhere or closed meanwhile.</summary>
-    private static void ShowReopenedNode(AppState appState, WaitingNode waiting, BrowseNode? node)
+    /// was pointed elsewhere or closed meanwhile. Returns the load it started in the tab; null when it started
+    /// none.</summary>
+    private static DecompileTicket? ShowReopenedNode(AppState appState, WaitingNode waiting, BrowseNode? node)
     {
         if (!TryFinishWaiting(appState.Reopened, waiting.Reopened))
         {
-            return;
+            return null;
         }
 
         var tab = waiting.Reopened.Tab;
         if (!Tabs.IsOpen(appState.Tabs, tab))
         {
-            return;
+            return null;
         }
 
         if (node is null)
         {
             Tabs.ShowGone(tab, waiting.Record.Location);
-            return;
+            return null;
         }
         var position = FindSavedPosition(appState, waiting.Record);
-        DecompileIntoTab(appState, tab, node, new Arrival(position));
+        var load = StartDecompiling(appState.ViewCommands, tab, node, appState.Language, appState.DecompilerOptions, new Arrival(position));
         RevealIfActive(appState, tab, node);
+        return load;
     }
 
     private static ViewPosition? FindSavedPosition(AppState appState, NodeDocumentRecord saved)

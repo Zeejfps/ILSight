@@ -179,7 +179,7 @@ internal static partial class AppFrames
         var becomesActive = focus || uiState.Layout.Focused == panel;
         if (becomesActive)
         {
-            FocusTab(appState, tab);
+            Commands.StartDecompiling(appState, FocusTab(appState, tab));
         }
     }
 

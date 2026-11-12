@@ -63,6 +63,9 @@ public sealed class AppState
     /// app shuts down.</summary>
     public required WorkflowRunner Workflows { get; init; }
 
+    /// <summary>Brings in what the tabs are pointed at: nodes decompiled, grids and pictures read.</summary>
+    public required DecompileIntoTabHandler DecompileIntoTabHandler { get; init; }
+
     /// <summary>Follows references to what they lead to.</summary>
     public required NavigateHandler NavigateHandler { get; init; }
 
