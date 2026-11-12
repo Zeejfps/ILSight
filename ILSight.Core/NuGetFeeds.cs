@@ -185,7 +185,7 @@ public static class NuGetFeeds
         var search = GetResource(feed, resources, SearchType);
         var folder = GetResource(feed, resources, PackageFolderType);
         var registrations = FindOptionalResource(resources, RegistrationsType);
-        return new ServiceIndex(search, folder, registrations);
+        return new ServiceIndex { Search = search, PackageFolder = folder, Registrations = registrations };
     }
 
     /// <summary>The URL of the first resource whose type is <paramref name="type"/>, or a version of it.</summary>

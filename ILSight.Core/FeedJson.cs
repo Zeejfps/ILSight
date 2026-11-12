@@ -32,14 +32,18 @@ internal static partial class FeedJson
             .OfType<FeedPackage>()
             .ToList();
         var total = (int)Math.Min(page.TotalHits ?? 0, int.MaxValue);
-        return new FeedPage(packages, Math.Max(total, packages.Count));
+        return new FeedPage { Packages = packages, TotalHits = Math.Max(total, packages.Count) };
     }
 
     /// <exception cref="InvalidDataException">It is no registration of a version.</exception>
     public static FeedRegistration ReadRegistration(JsonElement root)
     {
         var registration = Read(root, FeedJsonContext.Default.RegistrationJson, "a registration");
-        return new FeedRegistration(ReadDate(registration.Published), registration.CatalogEntry);
+        return new FeedRegistration
+        {
+            Published = ReadDate(registration.Published),
+            CatalogEntry = registration.CatalogEntry,
+        };
     }
 
     /// <summary>The details in a version's catalog entry, published when <paramref name="listedAt"/>
@@ -117,8 +121,14 @@ internal static partial class FeedJson
             return null;
         }
 
-        return new FeedPackage(id, version, json.Description ?? "", JoinNames(json.Authors), WebUrl.Parse(json.IconUrl), ListVersions(json.Versions, version))
+        return new FeedPackage
         {
+            Id = id,
+            Version = version,
+            Description = json.Description ?? "",
+            Authors = JoinNames(json.Authors),
+            IconUrl = WebUrl.Parse(json.IconUrl),
+            Versions = ListVersions(json.Versions, version),
             TotalDownloads = json.TotalDownloads ?? 0,
             Verified = json.Verified ?? false,
             Owners = JoinNames(json.Owners),
@@ -141,7 +151,7 @@ internal static partial class FeedJson
             .ToList();
         if (versions.Count == 0)
         {
-            versions.Add(new FeedVersion(latest, 0, null));
+            versions.Add(new FeedVersion { Version = latest, Downloads = 0, DetailsUrl = null });
         }
 
         return versions;
@@ -167,40 +177,59 @@ internal static partial class FeedJson
             return null;
         }
 
-        return new FeedVersion(version, json.Downloads ?? 0, WebUrl.Parse(json.Id));
+        return new FeedVersion
+        {
+            Version = version,
+            Downloads = json.Downloads ?? 0,
+            DetailsUrl = WebUrl.Parse(json.Id),
+        };
     }
 
     private static PackageVersionDetails Parse(CatalogEntryJson json, DateTimeOffset? listedAt)
     {
-        return new PackageVersionDetails(
-            ReadDate(json.Published) ?? listedAt,
-            json.LicenseExpression ?? "",
-            WebUrl.Parse(json.LicenseUrl),
-            WebUrl.Parse(json.ProjectUrl),
-            json.PackageSize ?? 0,
-            (json.DependencyGroups ?? []).OfType<DependencyGroupJson>().Select(static g => Parse(g)).ToList(),
-            json.Deprecation is null ? null : Parse(json.Deprecation),
-            (json.Vulnerabilities ?? []).OfType<VulnerabilityJson>().Select(static v => Parse(v)).ToList());
+        return new PackageVersionDetails
+        {
+            Published = ReadDate(json.Published) ?? listedAt,
+            License = json.LicenseExpression ?? "",
+            LicenseUrl = WebUrl.Parse(json.LicenseUrl),
+            ProjectUrl = WebUrl.Parse(json.ProjectUrl),
+            PackageSize = json.PackageSize ?? 0,
+            DependencyGroups = (json.DependencyGroups ?? []).OfType<DependencyGroupJson>().Select(static g => Parse(g)).ToList(),
+            Deprecation = json.Deprecation is null ? null : Parse(json.Deprecation),
+            Vulnerabilities = (json.Vulnerabilities ?? []).OfType<VulnerabilityJson>().Select(static v => Parse(v)).ToList(),
+        };
     }
 
     private static DependencyGroup Parse(DependencyGroupJson json)
     {
-        return new DependencyGroup(
-            json.TargetFramework ?? "",
-            (json.Dependencies ?? []).OfType<DependencyJson>().Select(static d => new PackageDependency(d.Id ?? "", d.Range ?? "")).ToList());
+        return new DependencyGroup
+        {
+            TargetFramework = json.TargetFramework ?? "",
+            Dependencies = (json.Dependencies ?? []).OfType<DependencyJson>().Select(static d => new PackageDependency
+            {
+                Id = d.Id ?? "",
+                Range = d.Range ?? "",
+            }).ToList(),
+        };
     }
 
     private static PackageDeprecation Parse(DeprecationJson json)
     {
-        return new PackageDeprecation(
-            json.Reasons is null ? [] : json.Reasons.Items.Where(static r => r.Length > 0).ToList(),
-            json.Message ?? "",
-            json.AlternatePackage?.Id ?? "");
+        return new PackageDeprecation
+        {
+            Reasons = json.Reasons is null ? [] : json.Reasons.Items.Where(static r => r.Length > 0).ToList(),
+            Message = json.Message ?? "",
+            AlternatePackage = json.AlternatePackage?.Id ?? "",
+        };
     }
 
     private static PackageVulnerability Parse(VulnerabilityJson json)
     {
-        return new PackageVulnerability(ParseSeverity(json.Severity), WebUrl.Parse(json.AdvisoryUrl));
+        return new PackageVulnerability
+        {
+            Severity = ParseSeverity(json.Severity),
+            AdvisoryUrl = WebUrl.Parse(json.AdvisoryUrl),
+        };
     }
 
     /// <summary>The severity; 0 for anything but a whole number that fits an int, or its digits.</summary>
@@ -228,54 +257,124 @@ internal static partial class FeedJson
 
     private static FeedResource Parse(ResourceJson json)
     {
-        return new FeedResource(json.Type is null ? [] : json.Type.Items, WebUrl.Parse(json.Id));
+        return new FeedResource { Types = json.Type is null ? [] : json.Type.Items, Url = WebUrl.Parse(json.Id) };
     }
 
-    private sealed record SearchPageJson(long? TotalHits, List<JsonElement>? Data);
+    private sealed record SearchPageJson
+    {
+        public long? TotalHits { get; init; }
 
-    private sealed record PackageJson(
-        string? Id,
-        string? Version,
-        string? Description,
-        TextListJson? Authors,
-        string? IconUrl,
-        long? TotalDownloads,
-        bool? Verified,
-        TextListJson? Owners,
-        TextListJson? Tags,
-        string? ProjectUrl,
-        string? LicenseUrl,
-        List<JsonElement>? Vulnerabilities,
-        List<VersionJson?>? Versions);
+        public List<JsonElement>? Data { get; init; }
+    }
 
-    private sealed record VersionJson(string? Version, long? Downloads, [property: JsonPropertyName("@id")] string? Id);
+    private sealed record PackageJson
+    {
+        public string? Id { get; init; }
 
-    private sealed record RegistrationJson(string? Published, JsonElement? CatalogEntry);
+        public string? Version { get; init; }
 
-    private sealed record CatalogEntryJson(
-        string? Published,
-        string? LicenseExpression,
-        string? LicenseUrl,
-        string? ProjectUrl,
-        long? PackageSize,
-        List<DependencyGroupJson?>? DependencyGroups,
-        DeprecationJson? Deprecation,
-        List<VulnerabilityJson?>? Vulnerabilities);
+        public string? Description { get; init; }
 
-    private sealed record DependencyGroupJson(string? TargetFramework, List<DependencyJson?>? Dependencies);
+        public TextListJson? Authors { get; init; }
 
-    private sealed record DependencyJson(string? Id, string? Range);
+        public string? IconUrl { get; init; }
 
-    private sealed record DeprecationJson(TextListJson? Reasons, string? Message, AlternatePackageJson? AlternatePackage);
+        public long? TotalDownloads { get; init; }
+
+        public bool? Verified { get; init; }
+
+        public TextListJson? Owners { get; init; }
+
+        public TextListJson? Tags { get; init; }
+
+        public string? ProjectUrl { get; init; }
+
+        public string? LicenseUrl { get; init; }
+
+        public List<JsonElement>? Vulnerabilities { get; init; }
+
+        public List<VersionJson?>? Versions { get; init; }
+    }
+
+    private sealed record VersionJson
+    {
+        public string? Version { get; init; }
+
+        public long? Downloads { get; init; }
+
+        [JsonPropertyName("@id")]
+        public string? Id { get; init; }
+    }
+
+    private sealed record RegistrationJson
+    {
+        public string? Published { get; init; }
+
+        public JsonElement? CatalogEntry { get; init; }
+    }
+
+    private sealed record CatalogEntryJson
+    {
+        public string? Published { get; init; }
+
+        public string? LicenseExpression { get; init; }
+
+        public string? LicenseUrl { get; init; }
+
+        public string? ProjectUrl { get; init; }
+
+        public long? PackageSize { get; init; }
+
+        public List<DependencyGroupJson?>? DependencyGroups { get; init; }
+
+        public DeprecationJson? Deprecation { get; init; }
+
+        public List<VulnerabilityJson?>? Vulnerabilities { get; init; }
+    }
+
+    private sealed record DependencyGroupJson
+    {
+        public string? TargetFramework { get; init; }
+
+        public List<DependencyJson?>? Dependencies { get; init; }
+    }
+
+    private sealed record DependencyJson
+    {
+        public string? Id { get; init; }
+
+        public string? Range { get; init; }
+    }
+
+    private sealed record DeprecationJson
+    {
+        public TextListJson? Reasons { get; init; }
+
+        public string? Message { get; init; }
+
+        public AlternatePackageJson? AlternatePackage { get; init; }
+    }
 
     private sealed record AlternatePackageJson(string? Id);
 
     /// <summary>A vulnerability, whose severity a feed may give as a number or as its digits.</summary>
-    private sealed record VulnerabilityJson(string? AdvisoryUrl, JsonElement? Severity);
+    private sealed record VulnerabilityJson
+    {
+        public string? AdvisoryUrl { get; init; }
+
+        public JsonElement? Severity { get; init; }
+    }
 
     private sealed record ServiceIndexJson(List<JsonElement>? Resources);
 
-    private sealed record ResourceJson([property: JsonPropertyName("@id")] string? Id, [property: JsonPropertyName("@type")] TextListJson? Type);
+    private sealed record ResourceJson
+    {
+        [JsonPropertyName("@id")]
+        public string? Id { get; init; }
+
+        [JsonPropertyName("@type")]
+        public TextListJson? Type { get; init; }
+    }
 
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, NumberHandling = JsonNumberHandling.AllowReadingFromString)]
     [JsonSerializable(typeof(SearchPageJson))]

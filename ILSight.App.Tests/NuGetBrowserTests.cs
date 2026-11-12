@@ -121,12 +121,25 @@ public sealed class NuGetBrowserTests
         var parsed = PackageId.Parse(id);
         Assert.NotNull(parsed);
         var version = Version("2.0.0");
-        return new FeedPackage(parsed, version, "The fixtures.", "Zee", WebUrl.Parse(iconUrl), [new FeedVersion(version, 10, null)]);
+        return new FeedPackage
+        {
+            Id = parsed,
+            Version = version,
+            Description = "The fixtures.",
+            Authors = "Zee",
+            IconUrl = WebUrl.Parse(iconUrl),
+            Versions = [new FeedVersion
+            {
+                Version = version,
+                Downloads = 10,
+                DetailsUrl = null,
+            }],
+        };
     }
 
     private static FeedPage Page(string id, string? iconUrl = null)
     {
-        return new FeedPage([Package(id, iconUrl)], 1);
+        return new FeedPage { Packages = [Package(id, iconUrl)], TotalHits = 1 };
     }
 
     private static ResourceImage Pixels()
@@ -326,7 +339,17 @@ public sealed class NuGetBrowserTests
     [Fact]
     public async Task StartFetching_DetailsRead_TakeThePlaceOfTheLoading()
     {
-        var read = new PackageVersionDetails(null, "MIT", null, null, 0, [], null, []);
+        var read = new PackageVersionDetails
+        {
+            Published = null,
+            License = "MIT",
+            LicenseUrl = null,
+            ProjectUrl = null,
+            PackageSize = 0,
+            DependencyGroups = [],
+            Deprecation = null,
+            Vulnerabilities = [],
+        };
         var ports = new FakePorts { Details = new Outcome<PackageVersionDetails>.Ok(read) };
         var picker = CreatePicker();
         await SearchAsync(ports, picker, now: 10);
@@ -405,7 +428,11 @@ public sealed class NuGetBrowserTests
     {
         var pixels = Pixels();
         var urls = new[] { "https://feed.test/a/icon", "https://feed.test/b/icon", "https://feed.test/c/icon" };
-        var page = new FeedPage([Package("A", urls[0]), Package("B", urls[1]), Package("C", urls[2])], 3);
+        var page = new FeedPage
+        {
+            Packages = [Package("A", urls[0]), Package("B", urls[1]), Package("C", urls[2])],
+            TotalHits = 3,
+        };
         var ports = new FakePorts
         {
             Search = _ => AnswerPageAsync(page),

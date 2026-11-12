@@ -131,7 +131,11 @@ public sealed class BrowseNode
         metadata: static _ => null,
         metadataTables: static _ => null,
         metadataTable: static _ => null,
-        package: static package => new PackageFolderPlace(package.Value.Package, package.Value.Folder),
+        package: static package => new PackageFolderPlace
+        {
+            Container = package.Value.Package,
+            Folder = package.Value.Folder,
+        },
         packageFile: static _ => null);
 
     /// <summary>The type or member the node defines; null for a node of anything else.</summary>

@@ -851,7 +851,11 @@ public static class AssemblyListing
         }
 
         var image = ReadPackageFile(list, package, file);
-        return LoadedAssemblies.CreateModule(list, path, image, new PackagePlace(container, file));
+        return LoadedAssemblies.CreateModule(list, path, image, new PackagePlace
+        {
+            Container = container,
+            File = file,
+        });
     }
 
     private static PEFile ReadPackageFile(AssemblyList list, AssemblyPackage package, PackageFile file)

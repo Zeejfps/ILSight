@@ -5,8 +5,20 @@ namespace ILSight.Core;
 /// and, newest first, every version listed with it. Text a feed leaves out is empty, counts it
 /// leaves out are 0, and URLs it leaves out, or gives as no web URL, are null.
 /// </summary>
-public sealed record FeedPackage(PackageId Id, PackageVersion Version, string Description, string Authors, WebUrl? IconUrl, IReadOnlyList<FeedVersion> Versions)
+public sealed record FeedPackage
 {
+    public required PackageId Id { get; init; }
+
+    public required PackageVersion Version { get; init; }
+
+    public required string Description { get; init; }
+
+    public required string Authors { get; init; }
+
+    public required WebUrl? IconUrl { get; init; }
+
+    public required IReadOnlyList<FeedVersion> Versions { get; init; }
+
     /// <summary>How many times every version was downloaded.</summary>
     public long TotalDownloads { get; internal init; }
 

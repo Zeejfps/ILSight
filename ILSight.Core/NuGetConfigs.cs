@@ -18,7 +18,11 @@ public static class NuGetConfigs
     /// <summary>What a config that says nothing means: nuget.org, and the default packages folder.</summary>
     public static NuGetConfig CreateDefault()
     {
-        return new NuGetConfig([NuGetSource.NuGetOrg], GetGlobalPackagesFolder(null, "", ReadEnvironment()));
+        return new NuGetConfig
+        {
+            Sources = [NuGetSource.NuGetOrg],
+            GlobalPackagesFolder = GetGlobalPackagesFolder(null, "", ReadEnvironment()),
+        };
     }
 
     /// <summary>The environment of the user running the app.</summary>
@@ -48,7 +52,7 @@ public static class NuGetConfigs
         var document = TryLoad(path);
         var sources = ListSources(document);
         var folder = GetGlobalPackagesFolder(document, path, environment);
-        return new NuGetConfig(sources, folder);
+        return new NuGetConfig { Sources = sources, GlobalPackagesFolder = folder };
     }
 
     private static XDocument? TryLoad(string path)

@@ -6,12 +6,21 @@ namespace ILSight.Core;
 /// page; the size of its file; what it depends on for each framework; and why it is deprecated, or
 /// the vulnerabilities known in it, when either is so.
 /// </summary>
-public sealed record PackageVersionDetails(
-    DateTimeOffset? Published,
-    string License,
-    WebUrl? LicenseUrl,
-    WebUrl? ProjectUrl,
-    long PackageSize,
-    IReadOnlyList<DependencyGroup> DependencyGroups,
-    PackageDeprecation? Deprecation,
-    IReadOnlyList<PackageVulnerability> Vulnerabilities);
+public sealed record PackageVersionDetails
+{
+    public required DateTimeOffset? Published { get; init; }
+
+    public required string License { get; init; }
+
+    public required WebUrl? LicenseUrl { get; init; }
+
+    public required WebUrl? ProjectUrl { get; init; }
+
+    public required long PackageSize { get; init; }
+
+    public required IReadOnlyList<DependencyGroup> DependencyGroups { get; init; }
+
+    public required PackageDeprecation? Deprecation { get; init; }
+
+    public required IReadOnlyList<PackageVulnerability> Vulnerabilities { get; init; }
+}

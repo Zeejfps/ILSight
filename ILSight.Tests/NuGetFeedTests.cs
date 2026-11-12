@@ -70,7 +70,12 @@ public sealed class NuGetFeedTests
         Assert.Equal(["logging", "structured"], package.Tags);
         Assert.Equal("https://serilog.net/", package.ProjectUrl?.Text);
         Assert.Equal(1, package.Vulnerabilities);
-        Assert.Equal(new FeedVersion(Packages.Version("4.4.0"), 5, WebUrl.Parse("https://feed.test/reg/serilog/4.4.0.json")), package.Versions[0]);
+        Assert.Equal(new FeedVersion
+        {
+            Version = Packages.Version("4.4.0"),
+            Downloads = 5,
+            DetailsUrl = WebUrl.Parse("https://feed.test/reg/serilog/4.4.0.json"),
+        }, package.Versions[0]);
     }
 
     [Fact]
@@ -106,7 +111,12 @@ public sealed class NuGetFeedTests
             """);
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion(Packages.Version("1.0.0"), 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion
+        {
+            Version = Packages.Version("1.0.0"),
+            Downloads = 0,
+            DetailsUrl = WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"),
+        });
 
         Assert.Equal(0, Assert.Single(details.Vulnerabilities).Severity);
     }
@@ -127,13 +137,22 @@ public sealed class NuGetFeedTests
             """);
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion(Packages.Version("1.0.0"), 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json")));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion
+        {
+            Version = Packages.Version("1.0.0"),
+            Downloads = 0,
+            DetailsUrl = WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"),
+        });
 
         Assert.Equal(new DateTimeOffset(2024, 5, 1, 10, 0, 0, TimeSpan.Zero), details.Published);
         Assert.Equal("MIT", details.License);
         Assert.Equal(2048, details.PackageSize);
         Assert.Equal(["net8.0", "netstandard2.0"], details.DependencyGroups.Select(g => g.TargetFramework));
-        Assert.Equal(new PackageDependency("Dep", "[1.0.0, )"), Assert.Single(details.DependencyGroups[0].Dependencies));
+        Assert.Equal(new PackageDependency
+        {
+            Id = "Dep",
+            Range = "[1.0.0, )",
+        }, Assert.Single(details.DependencyGroups[0].Dependencies));
         Assert.Equal("Tiny2", details.Deprecation?.AlternatePackage);
         Assert.Equal(3, Assert.Single(details.Vulnerabilities).Severity);
     }
@@ -169,7 +188,12 @@ public sealed class NuGetFeedTests
         fake.Answer("https://feed.test/catalog/array.json", "[]");
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
         var id = Packages.Id("Tiny");
-        var version = new FeedVersion(Packages.Version("1.0.0"), 0, WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"));
+        var version = new FeedVersion
+        {
+            Version = Packages.Version("1.0.0"),
+            Downloads = 0,
+            DetailsUrl = WebUrl.Parse("https://feed.test/reg/tiny/1.0.0.json"),
+        };
 
         await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.ReadDetailsAsync(feed, id, version));
     }
@@ -206,7 +230,12 @@ public sealed class NuGetFeedTests
         fake.Answer("https://feed.test/reg/tiny/1.0.0-beta.json", """{ "catalogEntry": { "licenseUrl": "https://license.test" } }""");
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion(Packages.Version("1.0.0-Beta"), 0, null));
+        var details = await NuGetFeeds.ReadDetailsAsync(feed, Packages.Id("Tiny"), new FeedVersion
+        {
+            Version = Packages.Version("1.0.0-Beta"),
+            Downloads = 0,
+            DetailsUrl = null,
+        });
 
         Assert.Equal("https://license.test", details.LicenseUrl?.Text);
         Assert.Null(details.Published);
