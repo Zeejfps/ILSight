@@ -1,3 +1,5 @@
+using ICSharpCode.Decompiler.TypeSystem;
+using System.Collections.Concurrent;
 using ILSight.Core;
 using ILSight.Core.Analysis;
 
@@ -98,5 +100,19 @@ public sealed class AnalysisTests
         var unreadable = Assert.IsType<AnalysisFind.Unreadable>(Assert.Single(found, static f => f is AnalysisFind.Unreadable));
         Assert.Equal("UnreadableTypes.dll", unreadable.Name);
         Assert.NotEmpty(unreadable.Why);
+    }
+
+    [Fact]
+    public async Task A_scope_scans_the_list_as_it_stood_when_its_reads_were_awaited()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var core = list.OpenModule(typeof(AssemblyList).Assembly.Location);
+        var reads = await AnalyzerScope.ReadReachableAsync(list, core, CancellationToken.None);
+        list.OpenModule(Trees.TestAssemblyPath);
+        var type = Assert.IsAssignableFrom<IEntity>(NodeDefinitions.GetSymbol(Assert.IsType<NodeSubject.TypeDefinition>(core.Root.Child("ILSight.Core", "AssemblyPath").Subject).Definition));
+
+        var scanned = AnalyzerScope.Create(list, reads, new ConcurrentDictionary<LoadedModule, UnreadableModule>(), type).ListTypeSystems(CancellationToken.None).ToList();
+
+        Assert.Equal([core.FilePath.FileName], scanned.Select(static t => Path.GetFileName(t.MainModule.MetadataFile.FileName)));
     }
 }

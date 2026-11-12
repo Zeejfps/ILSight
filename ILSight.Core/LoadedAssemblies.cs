@@ -247,9 +247,10 @@ public static class LoadedAssemblies
     /// those the library could not read, with what it threw, in the order given.</summary>
     internal static async Task<ModuleTypeSystems> ReadTypeSystemsAsync(IEnumerable<LoadedModule> modules, CancellationToken ct)
     {
+        var asked = modules.ToList();
         var read = new Dictionary<MetadataFile, DecompilerTypeSystem>();
         var unreadable = new List<UnreadableModule>();
-        foreach (var module in modules)
+        foreach (var module in asked)
         {
             var outcome = await ReadTypeSystemAsync(module, ct);
             var typeSystem = outcome.Match<DecompilerTypeSystem?>(static r => r.TypeSystem, u => NoteUnreadable(unreadable, module, u));
@@ -258,7 +259,7 @@ public static class LoadedAssemblies
                 read[GetFile(module)] = typeSystem;
             }
         }
-        return new ModuleTypeSystems { Read = read, Unreadable = unreadable };
+        return new ModuleTypeSystems { Modules = asked, Read = read, Unreadable = unreadable };
     }
 
     private static DecompilerTypeSystem? NoteUnreadable(List<UnreadableModule> unreadable, LoadedModule module, TypeSystemRead.Unreadable read)

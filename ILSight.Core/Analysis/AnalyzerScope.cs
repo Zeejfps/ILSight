@@ -61,7 +61,8 @@ internal sealed class AnalyzerScope
         return new AnalyzerScope
         {
             List = list,
-            Assemblies = list.Assemblies,
+            // The modules read for it, the list as it stood then: one listed since was not read, and is not scanned.
+            Assemblies = typeSystems.Modules,
             TypeSystems = typeSystems,
             Unreadable = unreadable,
             EffectiveAccessibility = accessibility,
