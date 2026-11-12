@@ -30,7 +30,7 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
 ## R001: A decision-making class reaches the outside world through one port
 
 Build: RL0101 (time, randomness, I/O, listed services used directly, outside adapters and the types only they use), RL0103 (a static class whose functions take
-the same port), RL0105 (infrastructure, or a type holding it, in a port signature); suggestions while measured: RL0102
+the same port), RL0105 (infrastructure, or a type holding it, in a port signature, through a union's cases too); suggestions while measured: RL0102
 (a use case or adapter constructed outside the composition root), RL0104 (another use case reached around the port).
 
 - A class that makes decisions touches I/O, time, randomness, configuration, logging and shared state only through a
@@ -47,12 +47,24 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   **narrow from the bottom up**, callees first, then the caller. A caller converted before its callee keeps passing
   the state on as before, until the callee is narrowed (convert it next); never through a port member carrying the
   whole state, which narrows nothing (its test still builds the state, and a fake besides) and which RL0105 reports
-  when the state holds a listed service.
+  when the state holds a listed service. **A value read after a wait, as it stands then, is taken as its owner** (a
+  reload reads the decompiler setup after reading the files): the type that holds it current, made if only the whole
+  state holds it (the language and options, the setup made again when one changes). Taken as a value at the start,
+  a language switched during the wait was lost (tabs in C#, the toolbar saying IL); a port member for it needs the
+  state handed to its adapter after both are built. What must be read as it was asked is a value.
 - Name port members for what the class needs (`FindOrderAsync`, `Now`, `LogOrderConfirmed`). Their signatures carry
   values: no `DbContext`, `IQueryable`, `HttpClient` or `ILogger`, and no type that holds one (a library's feed object
   keeping an `HttpClient`). Pass what the class decides with (`PackageSource`); the adapter keeps the library's
   objects. Each class lists only what it uses. A library's own I/O client is infrastructure: only adapters call it,
-  and it is tested through its own seam (an `HttpMessageHandler`). A decision that compared objects ("the same feed"
+  and it is tested through its own seam (an `HttpMessageHandler`). **A library object that reads lazily** (a type
+  system that decodes when first asked and resolves references through the library's hook, reading other files) is
+  I/O wherever it is read: only adapters and the I/O code they share read it. Where the app must keep it, the state
+  keeps a **handle** (the values read when it was read: name, path, the rows a tree shows; no library object) and the
+  I/O side keeps the object against it (`ConditionalWeakTable<Handle, T>` on a listed I/O type), so it goes when the
+  handle goes; decision code asks its port for anything more. List the library's lazily-reading types too (RL0101,
+  RL0105). Walked in a draw, a referenced file was read in the frame and a corrupt one threw there; a port for the
+  library's hook only faked the reads in tests; a store keyed by a value kept a closed module and served it stale; held
+  beside the values, a later status bar walked it unreported. A decision that compared objects ("the same feed"
   = the same object the library made once per URL) is restated on a value key whose own equality is that identity's
   (`FeedUrl`: the URL ignoring case, with `Equals` and `GetHashCode`), not a map each place must remember: compared by
   their fields, the same feed retyped in other letters searched again.
@@ -76,14 +88,20 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   reader, draft) is `static abstract` on the kind's type, which the use case takes as a type parameter
   (`UserThemes<TKind> where TKind : IThemeKind`, `TKind.Parse(id, text)`); the port carries values. Not injected, not
   passed by each caller (a handler is for the caller's own policy, such as the name it gives a new theme): a test that
-  passes its own copy doesn't run the real one. The kind must be known when compiling: a kind chosen at run time can't
+  passes its own copy doesn't run the real one. **When the content decides what else to read** (an icon theme names
+  its fonts and pictures), the kind's pure code says what it names, as a value (each file with its line); the use case
+  reads the content, then what it names, through its port, and the kind finishes. Not the kind's reader run by the
+  adapter with a reading delegate (the use case's test never runs the real reader: a theme saved with Windows line
+  endings lost its font and the test passed), nor an adapter reading every file that could be named (5 reads for 3). The kind must be known when compiling: a kind chosen at run time can't
   reach static members through the interface (CS8926), so there it is a value, a union whose cases answer (R008; not
   tested). If a calculation's only dependency is the time, take `now` as a parameter and have no port; a shared
   service that stamps the time (an error log) is a port member and reads its own clock.
 - **The composition root** (`Program.cs`, DI registration, or `AppRoot.Build` without a container) builds the state,
   use cases and adapters and chooses the adapters. It's an edge (`[Edge]`); tests build the app through it with fakes.
   Without DI it builds each use case once, onto the object the edges already receive. Ordinary code never constructs
-  a use case or an adapter.
+  a use case or an adapter. A function that takes the state only to reach a use case on it, deciding nothing around
+  the call, only forwards: the edge calls the use case (after the state's own method for a step before it), not a
+  function handed the use case.
 - **Lifetime decides who builds:** what lives as long as the app, the root builds once; what lives per document or
   request (an adapter bound to one file, a unit of work) comes from a factory the root builds and hands to the edges
   (`state.Documents.Open(path)`). Per-document data alone needs no factory: pass it.
@@ -231,7 +249,12 @@ Take the first match:
   document the user asks for is a new intent and a place in the history, so a kind with no history entry (a
   comparison, a report) gets one; what nobody asked for (a tab the screen opens for its own panel) is named and changes
   neither. With entries for nodes and diagrams only, Back skipped the place before a comparison and a late lookup
-  replaced a report; with every tab opening a new intent, the screen's own tab dropped the user's lookup.
+  replaced a report; with every tab opening a new intent, the screen's own tab dropped the user's lookup. **Back to a
+  closed document shows its place again:** an entry holds its place as a value (a node's path, a diagram's types as it
+  was left; never the document), so Back shows it in the tab showing it, else in one made again; it passes over a
+  place naming nothing open, found when Back reaches it; closing a tab leaves the history alone. Forgotten on close,
+  the place was lost, and a later way of replacing a tab's document left an entry Back did nothing for; held as the
+  document, every closed one stayed alive.
 - **The parts end where the rule does, and the type keeps its rule against what it hands out.** Its parts are what
   the rule decides with (which document each tab is, the active tab, history, intent): it holds privately each part
   some member of which could make the rule false, and makes those changes its methods. An object keeping a rule of its
@@ -359,7 +382,8 @@ port member returning a sequence that isn't its own iterator).
 - A library that throws lazily (from property reads, on a corrupt file) is translated in the adapter, where it's
   read: each member reads what its answer needs inside its own catch and returns plain values or a result case. No
   library object leaves the adapter, nor a sequence enumerated by code that isn't the adapter's (the library's lazy
-  sequence, a `Select` without `ToList`): it would throw outside the catch. To stream (too many rows to read whole, or
+  sequence, a `Select` without `ToList`): it would throw outside the catch. One the app must keep stays on the I/O
+  side behind a handle (R001). To stream (too many rows to read whole, or
   a caller that stops early), the port returns `IAsyncEnumerable<T>` and the adapter writes it as its own iterator:
   each item read inside its catch by a helper (no `yield` in a `try` with a `catch`: CS1626), the source in an
   `await using`, the caller's token passed to each read and let through. The caller reads the stream in one loop, with
