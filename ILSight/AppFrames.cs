@@ -208,10 +208,11 @@ internal static class AppFrames
     }
 
     /// <summary>Starts the work the screen asked for while it drew: the children of the tree's nodes it showed
-    /// loading.</summary>
+    /// loading, and the tooltips of the references hovered in code.</summary>
     internal static void StartAskedWork(UiState uiState, AppState appState)
     {
         Commands.StartBuildingChildren(appState, uiState.Tree);
+        Commands.StartLookingUpTooltips(appState.Workflows, appState.LookUpTooltipHandler, appState.Tooltips);
     }
 
     /// <summary>Keeps what the screen changed while it drew: the tabs keep where their views stand, and the

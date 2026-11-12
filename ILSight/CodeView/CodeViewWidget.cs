@@ -713,7 +713,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        TooltipLookups.TryGetTooltip(tooltips, entity, out var tooltip);
+        tooltips.TryGetTooltip(entity, out var tooltip);
         return tooltip;
     }
 

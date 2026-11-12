@@ -30,6 +30,7 @@ internal sealed class CodeViewDriver
     private static readonly Lazy<DecompiledDocument> s_outline = new(() => Decompile(typeof(Outline)));
 
     private readonly PostedActions _posted = PostedActions.OfThisTest();
+    private readonly WorkflowRunner _workflows = new(new BackgroundWork(), new ErrorLog());
 
     /// <summary>A view of <paramref name="document"/>. What background work posts back, such as a
     /// tooltip's lookup, runs on the test's thread at the start of each frame, as the app runs it, and wakes the
@@ -44,8 +45,26 @@ internal sealed class CodeViewDriver
 
     private void Render(Ui<UiState> ui)
     {
-        using var screen = ui.Screen();
-        Last = CodeViewWidget.RenderCodeView(ui, "code", Document, State, Bookmarks, tooltips: Tooltips, display: Display);
+        using (ui.Screen())
+        {
+            Last = CodeViewWidget.RenderCodeView(ui, "code", Document, State, Bookmarks, tooltips: Tooltips, display: Display);
+        }
+
+        StartAskedLookups();
+    }
+
+    /// <summary>Starts looking up the tooltips the view asked for while it drew, as the app's frame edge does, over
+    /// the assemblies they are of.</summary>
+    private void StartAskedLookups()
+    {
+        var tooltips = Tooltips;
+        if (tooltips is null || !tooltips.HasAsked)
+        {
+            return;
+        }
+
+        var handler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(tooltips.Assemblies));
+        Commands.StartLookingUpTooltips(_workflows, handler, tooltips);
     }
 
     /// <summary>A driver that has run <paramref name="frames"/> frames of <paramref name="document"/>.</summary>

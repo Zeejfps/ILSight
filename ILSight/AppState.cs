@@ -97,6 +97,9 @@ public sealed class AppState
     /// <summary>Imports bookmarks from files, this app's or the real ILSpy's.</summary>
     public required BookmarkImporting BookmarkImporting { get; init; }
 
+    /// <summary>Looks up the tooltip of a reference hovered in code.</summary>
+    public required LookUpTooltipHandler LookUpTooltipHandler { get; init; }
+
     /// <summary>Builds the children of a node the tree showed loading.</summary>
     public required BuildChildrenHandler BuildChildrenHandler { get; init; }
 

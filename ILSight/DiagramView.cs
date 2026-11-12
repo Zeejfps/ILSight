@@ -729,7 +729,7 @@ internal static class DiagramView
             return null;
         }
 
-        TooltipLookups.TryGetTooltip(tooltips, target, out var tooltip);
+        tooltips.TryGetTooltip(target, out var tooltip);
         return tooltip;
     }
 

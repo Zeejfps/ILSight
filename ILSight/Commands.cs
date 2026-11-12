@@ -174,6 +174,28 @@ public static class Commands
         appState.Workflows.Start(nameof(BuildChildrenHandler), ct => appState.BuildChildrenHandler.HandleAsync(tree, node, ct));
     }
 
+    /// <summary>Starts looking up the tooltips <paramref name="tooltips"/> asked for while the code drew
+    /// (<paramref name="handler"/>) now, a workflow per reference, each counted in the app's background work until it
+    /// ends. Allocates nothing while nothing is asked for.</summary>
+    public static void StartLookingUpTooltips(WorkflowRunner workflows, LookUpTooltipHandler handler, CodeTooltips tooltips)
+    {
+        if (!tooltips.HasAsked)
+        {
+            return;
+        }
+
+        foreach (var lookup in tooltips.TakeAsked())
+        {
+            StartLookingUp(workflows, handler, tooltips, lookup);
+        }
+    }
+
+    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartLookingUp(WorkflowRunner workflows, LookUpTooltipHandler handler, CodeTooltips tooltips, TooltipLookup lookup)
+    {
+        workflows.Start(nameof(LookUpTooltipHandler), ct => handler.HandleAsync(tooltips, lookup, ct));
+    }
+
     /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening"/>), then the load of the last one shown: the input began the request in its own
     /// frame, and only opening the files, which takes longer than a frame, waits for the edge. Nothing when

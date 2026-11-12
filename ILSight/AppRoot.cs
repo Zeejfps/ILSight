@@ -49,8 +49,7 @@ internal static class AppRoot
     }
 
     /// <summary>The app state <paramref name="settings"/> describe, with its use cases over the adapters they
-    /// reach the world through, before anything is restored into it. The tooltips report to the error log rather
-    /// than to the app state, which they are part of.</summary>
+    /// reach the world through, before anything is restored into it.</summary>
     private static AppState CreateAppState(AppSettings settings, BrowseSession session)
     {
         var assemblies = new AssemblyList();
@@ -86,6 +85,7 @@ internal static class AppRoot
             ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),
             SettingsSaving = new SettingsSaving(new SettingsSavingAdapter(errors)),
             BuildChildrenHandler = new BuildChildrenHandler(tree),
+            LookUpTooltipHandler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(assemblies)),
             ExpandNamespacesHandler = new ExpandNamespacesHandler(tree),
             ExportWriting = new ExportWriting(exports),
             SaveResourceHandler = new SaveResourceHandler(exports),
@@ -109,7 +109,7 @@ internal static class AppRoot
             Window = settings.Window,
             Assemblies = assemblies,
             Errors = errors,
-            Tooltips = new CodeTooltips { Assemblies = assemblies, Work = work, ReportError = problem => Errors.Report(errors, problem), Version = assemblies.Version },
+            Tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version },
             Themes = themes,
             UserThemes = new UserThemes<ThemeFile, ThemeContents, AppTheme>(new UserColorThemesAdapter(errors)) { Themes = themes, Folder = settingsPlace.ThemesFolder },
             IconThemes = iconThemes,
