@@ -312,7 +312,6 @@ internal static class AppFrames
         OpenAskedFiles(ui);
         OpenAskedFolders(ui);
         BringToFrontIfAsked(ui);
-        QuitIfAsked(ui);
     }
 
     private static void BringToFrontIfAsked(Ui<UiState> ui)
@@ -324,14 +323,6 @@ internal static class AppFrames
 
         ui.State.FrontAsked = false;
         ui.BringWindowToFront();
-    }
-
-    private static void QuitIfAsked(Ui<UiState> ui)
-    {
-        if (ui.State.QuitAsked)
-        {
-            ui.Quit();
-        }
     }
 
     private static void OpenAskedWebPages(Ui<UiState> ui)

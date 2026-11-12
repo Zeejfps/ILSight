@@ -66,7 +66,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var row = grid.RowNamed("Greeter");
         MetadataGridWidget.RevealRow(GridOf(app, tab), row);
         app.Run(3);
-        app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
+        Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
         return row;
     }
 
@@ -185,7 +185,7 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Run(3);
         Assert.Equal(before, File.ReadAllText(file));
 
-        app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
+        Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
@@ -205,12 +205,12 @@ public sealed class SavedDocumentsTests : IDisposable
         var outlinePosition = ScrollTo(app, outline, 20, new TextPosition(21, 4), new TextPosition(22, 8));
         app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
         app.Run(3);
-        app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
+        Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var hidden = new AppDriver(height: 360f, settings: _temp.Settings());
         hidden.Start(AppStateDriver.OpenAtStartupAsync);
         hidden.Settle(4);
-        hidden.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
+        Assert.True(hidden.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Start(AppStateDriver.OpenAtStartupAsync);
@@ -250,7 +250,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Diagrams.ShowHiddenMembers(view, true);
         ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Decompiler.Setup, greeter);
         app.Run(3);
-        app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
+        Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Start(AppStateDriver.OpenAtStartupAsync);
@@ -289,12 +289,12 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Run(3);
         app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
         app.Run(3);
-        app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
+        Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var hidden = new AppDriver(height: 360f, settings: _temp.Settings());
         hidden.Start(AppStateDriver.OpenAtStartupAsync);
         hidden.Settle(4);
-        hidden.App.SaveOnExit(new WindowBounds(10, 20, 1000, 360, false));
+        Assert.True(hidden.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Start(AppStateDriver.OpenAtStartupAsync);

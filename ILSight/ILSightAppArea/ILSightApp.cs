@@ -8,6 +8,7 @@ using static ILSight.Analysis;
 using static ILSight.ILSightAppArea.AppFrames;
 using static ILSight.ILSightAppArea.Appearance;
 using ILSight.AssemblyListArea;
+using ILSight.SettingArea;
 using static ILSight.ILSightAppArea.RunArgumentsActions;
 using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.IconTheming;
@@ -32,6 +33,10 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
     private readonly FilesToOpen _startupFiles;
     private readonly Channel<RunArguments> _inbox;
     private readonly CodeFontFaces _codeFonts = new() { Bundled = ReadFont(MonoFonts.Code, MonoFontFile) };
+
+    /// <summary>Whether the last request to close was refused, the settings not saved: the next one closes, saved or
+    /// not, the user having been told.</summary>
+    private bool _closeRefused;
 
     internal ILSightApp(
         AppState appState,
@@ -73,6 +78,26 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         FollowProcessPicker(ui.State, _appState);
         Draw(ui, draw);
         FinishFrame(ui, _appState, _codeFonts);
+        QuitIfAsked(ui);
+    }
+
+    /// <summary>Closes the window when the app asked to (to restart into an update), as a request to close it does
+    /// (<see cref="TryClose"/>): a refusal leaves it open, and the next frame shows why.</summary>
+    private void QuitIfAsked(Ui<UiState> ui)
+    {
+        if (!ui.State.QuitAsked)
+        {
+            return;
+        }
+
+        ui.State.QuitAsked = false;
+        if (!TryClose(ui.WindowBounds))
+        {
+            ui.RequestUpdate();
+            return;
+        }
+
+        ui.Quit();
     }
 
     /// <summary>Draws the frame; a draw that fails is reported, and the frame that shows the report asked for.</summary>
@@ -89,10 +114,33 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         }
     }
 
-    /// <summary>Refuses arguments as the window closes, while a run sending one can still be told to
-    /// open its own: no frame runs after this to follow it.</summary>
+    /// <summary>Asks <see cref="TryClose"/> whether the window may close; when it may not, the next frame shows
+    /// why.</summary>
     protected override bool OnCloseRequested(ImmediateGuiAppHost<UiState> host)
     {
+        var closes = TryClose(host.WindowBounds);
+        if (!closes)
+        {
+            host.Invalidate();
+        }
+
+        return closes;
+    }
+
+    /// <summary>Saves the settings, with the window at <paramref name="window"/>, as the user asks to close it, while it
+    /// can still show a failure; true when it may close. A save that fails keeps it open once (the error panel shows why
+    /// in the next frame), and the next request closes it, saved or not. Arguments are refused once it closes, while a
+    /// run sending one can still be told to open its own: no frame runs after this to follow it.</summary>
+    internal bool TryClose(WindowBounds window)
+    {
+        var write = SaveOnExit(window);
+        var refuses = write.Match(static _ => false, _ => !_closeRefused);
+        _closeRefused = refuses;
+        if (refuses)
+        {
+            return false;
+        }
+
         _inbox.Writer.TryComplete();
         return true;
     }
@@ -102,7 +150,6 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         _inbox.Writer.TryComplete();
         _appState.Workflows.CancelAll();
         StopRedrawingOnAssemblyChanges(host);
-        SaveOnExit(host.WindowBounds);
     }
 
     private static void ShowAppIcon(ImmediateGuiAppHost<UiState> host)
@@ -218,10 +265,10 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         Errors.Report(_appState, ignored);
     }
 
-    internal void SaveOnExit(WindowBounds window)
+    private SettingsWriteResult SaveOnExit(WindowBounds window)
     {
         KeepWindow(_appState, window);
         KeepViewSettings(_appState, TakeViewSettings(UiState));
-        _appState.SettingsSaving.Save(_appState);
+        return _appState.SettingsSaving.Save(_appState);
     }
 }

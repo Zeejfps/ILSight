@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ILSight.SettingArea;
 
 /// <summary>What writing the settings file did. A <c>Reason</c> names the file and says why, as the
@@ -12,4 +14,14 @@ public abstract record SettingsWriteResult
     public sealed record Written : SettingsWriteResult;
 
     public sealed record Failed(string Reason) : SettingsWriteResult;
+
+    public TResult Match<TResult>(Func<Written, TResult> written, Func<Failed, TResult> failed)
+    {
+        return this switch
+        {
+            Written w => written(w),
+            Failed f => failed(f),
+            _ => throw new UnreachableException($"SettingsWriteResult.Match does not handle {GetType().Name}."),
+        };
+    }
 }

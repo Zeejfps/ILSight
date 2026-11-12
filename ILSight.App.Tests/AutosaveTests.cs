@@ -5,6 +5,7 @@ using ILSight.Core;
 using static ILSight.Preferences;
 using static ILSight.SettingArea.Settings;
 using ILSight.AppSettingArea;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -150,6 +151,25 @@ public sealed class AutosaveTests : IDisposable
     }
 
     [Fact]
+    public void A_close_whose_settings_cannot_be_saved_is_refused_once_showing_why_and_the_next_closes()
+    {
+        var settings = _temp.Settings();
+        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
+        var app = new AppDriver(settings: settings);
+        app.Run(2);
+        var window = new WindowBounds(10, 20, 1000, 700, false);
+        using var held = new FileStream(_temp.PathOf("settings.json"), FileMode.Open, FileAccess.Read, FileShare.None);
+
+        var first = app.App.TryClose(window);
+        app.Run(2);
+
+        Assert.False(first);
+        Assert.IsType<AppProblem.SettingsNotSaved>(Assert.Single(app.AppState.Errors.Entries).Problem);
+        Assert.True(app.Frames.Drew("Cannot save the settings"));
+        Assert.True(app.App.TryClose(window));
+    }
+
+    [Fact]
     public void Closing_the_app_while_the_export_window_is_held_saves_where_it_is_now()
     {
         var app = new AppDriver(settings: _temp.Settings());
@@ -158,7 +178,7 @@ public sealed class AutosaveTests : IDisposable
         app.Frames.Press().Frame();
         app.Ui.ExportSetup.Window.Bounds = MovedExportWindow;
         app.Run(2);
-        app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
+        Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
 
         Assert.Equal(MovedExportWindow, _temp.Settings().ExportWindow);
     }

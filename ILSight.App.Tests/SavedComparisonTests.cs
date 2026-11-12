@@ -40,7 +40,7 @@ public sealed class SavedComparisonTests : IDisposable
 
     private AppDriver Restart(AppDriver app)
     {
-        app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
+        Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
         var next = new AppDriver(settings: _temp.Settings());
         next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Compared, Patience);
@@ -120,7 +120,7 @@ public sealed class SavedComparisonTests : IDisposable
         var app = Compared();
         app.AppState.ListSession.CloseAssemblies([app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath)]);
         app.Settle(2);
-        app.App.SaveOnExit(new WindowBounds(10, 20, 1000, 700, false));
+        Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
 
         var next = new AppDriver(settings: _temp.Settings());
         next.Start(AppStateDriver.OpenAtStartupAsync);
