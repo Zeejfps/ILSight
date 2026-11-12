@@ -3,6 +3,7 @@ using ILSight.Core;
 
 namespace ILSight.Tests;
 
+[Collection(nameof(TimedTests))]
 public sealed class SearchTests
 {
     [Fact]
