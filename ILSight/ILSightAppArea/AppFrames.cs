@@ -4,13 +4,13 @@ using ILSight.Core;
 using ILSight.Core.Processes;
 using ILSight.ExportArea;
 using ILSight.CommandArea;
-using ILSight.ProcessBrowsing;
+using ILSight.ProcessArea;
 using ILSight.NuGetArea;
 using ILSight.AssemblyArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.CodeDisplay;
 using static ILSight.Decompilation;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using static ILSight.ILSightAppArea.Appearance;
 using static ILSight.DocumentPanels;
 

@@ -4,7 +4,7 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.AssemblyListArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;

@@ -3,7 +3,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.BuiltInArea;
-using ILSight.UserState;
+using ILSight.UserArea;
 
 namespace ILSight;
 

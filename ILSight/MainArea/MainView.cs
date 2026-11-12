@@ -7,12 +7,12 @@ using ILSight.BookmarkArea;
 using ILSight.ComparisonPickerArea;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
-using ILSight.ProcessBrowsing;
+using ILSight.ProcessArea;
 using ILSight.FrameworkArea;
 using ILSight.AssemblyListArea;
 using ILSight.DisplayOptionArea;
 using ILSight.NuGetArea;
-using ILSight.Searching;
+using ILSight.SearchArea;
 using ILSight.AssemblyArea;
 using static ILSight.DocumentPanels;
 

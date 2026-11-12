@@ -3,7 +3,7 @@ using ILSight.Core.Metadata;
 using ILSight.AssemblyArea;
 using ILSight.BookmarkArea;
 using ILSight.ExportArea;
-using ILSight.UserState;
+using ILSight.UserArea;
 using static ILSight.Decompilation;
 
 namespace ILSight;

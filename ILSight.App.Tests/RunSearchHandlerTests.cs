@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.Searching;
+using ILSight.SearchArea;
 
 namespace ILSight.App.Tests;
 

@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
-using ILSight.Searching;
+using ILSight.SearchArea;
 using static ILSight.DocumentPanels;
 
 namespace ILSight;

@@ -14,7 +14,7 @@ using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.DisplayOptionArea;
 using ILSight.DiagramArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 

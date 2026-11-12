@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.BookmarkArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 
 namespace ILSight;
 

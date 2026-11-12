@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.AppSettingArea;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using static ILSight.ScreenLayout;
 
 namespace ILSight.App.Tests;

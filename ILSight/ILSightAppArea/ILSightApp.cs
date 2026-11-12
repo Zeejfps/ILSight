@@ -11,7 +11,7 @@ using ILSight.AssemblyListArea;
 using static ILSight.ILSightAppArea.RunArgumentsActions;
 using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.IconTheming;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using static ILSight.ILSightAppArea.ScreenSettings;
 using static ILSight.Theming;
 

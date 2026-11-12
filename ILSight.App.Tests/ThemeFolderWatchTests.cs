@@ -1,4 +1,4 @@
-using ILSight.UserState;
+using ILSight.UserArea;
 
 namespace ILSight.App.Tests;
 

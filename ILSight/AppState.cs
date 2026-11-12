@@ -4,11 +4,11 @@ using ILSight.Core;
 using ILSight.ExportArea;
 using ILSight.BookmarkArea;
 using ILSight.CodeTooltipArea;
-using ILSight.UserState;
-using ILSight.Searching;
+using ILSight.UserArea;
+using ILSight.SearchArea;
 using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 using ILSight.MetadataArea;
 
 namespace ILSight;

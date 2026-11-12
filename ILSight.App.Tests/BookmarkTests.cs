@@ -5,7 +5,7 @@ using ILSight.CodeViewArea;
 using ILSight.BookmarkArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.BookmarkArea.Bookmarks;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using static ILSight.ScreenLayout;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.App.Tests.TestPaths;

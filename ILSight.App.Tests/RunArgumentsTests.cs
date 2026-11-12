@@ -4,9 +4,9 @@ using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.ILSightAppArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 using static ILSight.ILSightAppArea.RunArgumentsActions;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;

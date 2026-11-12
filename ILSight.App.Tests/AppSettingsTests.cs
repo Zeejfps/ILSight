@@ -4,7 +4,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using static ILSight.App.Tests.TestPaths;
 using ILSight.BookmarkArea;
 using ILSight.CommandArea;
@@ -12,7 +12,7 @@ using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.DisplayOptionArea;
 using ILSight.DiagramArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 

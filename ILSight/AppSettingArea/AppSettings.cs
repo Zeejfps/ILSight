@@ -5,7 +5,7 @@ using ILSight.Core.Metadata;
 using ILSight.BookmarkArea;
 using ILSight.AssemblyListArea;
 using ILSight.DisplayOptionArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 
 namespace ILSight.AppSettingArea;
 

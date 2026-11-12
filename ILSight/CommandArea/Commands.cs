@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.CodeTooltipArea;
 using ILSight.AssemblyListArea;
-using ILSight.Searching;
+using ILSight.SearchArea;
 using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
 using ILSight.MetadataArea;

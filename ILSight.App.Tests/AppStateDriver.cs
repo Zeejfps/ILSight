@@ -4,10 +4,10 @@ using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.ILSightAppArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 using static ILSight.Analysis;
 using static ILSight.Navigation;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 
 namespace ILSight.App.Tests;
 

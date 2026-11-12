@@ -9,7 +9,7 @@ using ILSight.BookmarkArea;
 using ILSight.AssemblyListArea;
 using ILSight.DisplayOptionArea;
 using ILSight.NuGetArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 
 namespace ILSight.AppSettingArea;
 

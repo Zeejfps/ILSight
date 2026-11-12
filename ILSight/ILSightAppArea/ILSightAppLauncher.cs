@@ -2,7 +2,7 @@ using System.Threading.Channels;
 using ILSight.Core;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 
 namespace ILSight.ILSightAppArea;
 

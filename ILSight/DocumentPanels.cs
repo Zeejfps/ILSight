@@ -6,7 +6,7 @@ using ILSight.CodeViewArea;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
 using ILSight.MetadataGridArea;
-using ILSight.Searching;
+using ILSight.SearchArea;
 using ILSight.DiagramArea;
 
 namespace ILSight;

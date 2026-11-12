@@ -11,7 +11,7 @@ using ILSight.DisplayOptionArea;
 using ILSight.ILSightAppArea;
 using static ILSight.CodeDisplay;
 using static ILSight.ScreenLayout;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 
 namespace ILSight.App.Tests;
 

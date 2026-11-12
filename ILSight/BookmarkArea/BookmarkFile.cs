@@ -1,6 +1,6 @@
 using System.Text.Json;
 using ILSight.AppSettingArea;
-using ILSight.SettingsKeeping;
+using ILSight.SettingArea;
 
 namespace ILSight.BookmarkArea;
 

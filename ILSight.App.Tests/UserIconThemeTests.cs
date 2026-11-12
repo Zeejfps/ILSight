@@ -4,9 +4,9 @@ using ILSight.Core;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.IconTheming;
 using static ILSight.ScreenLayout;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using ILSight.BuiltInArea;
-using ILSight.UserState;
+using ILSight.UserArea;
 using ILSight.AppSettingArea;
 using ILSight.DisplayOptionArea;
 

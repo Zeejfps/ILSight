@@ -3,7 +3,7 @@ using ZGF.Geometry;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using static ILSight.Preferences;
-using static ILSight.SettingsKeeping.Settings;
+using static ILSight.SettingArea.Settings;
 using ILSight.AppSettingArea;
 
 namespace ILSight.App.Tests;

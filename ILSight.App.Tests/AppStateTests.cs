@@ -3,7 +3,7 @@ using ILSight.Core;
 using ILSight.CodeViewArea;
 using ILSight.DocumentViewArea;
 using ILSight.MetadataGridArea;
-using ILSight.Searching;
+using ILSight.SearchArea;
 using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.Docking;
 using static ILSight.DocumentPanels;

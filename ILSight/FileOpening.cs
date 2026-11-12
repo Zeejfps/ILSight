@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.UserState;
+using ILSight.UserArea;
 using ILSight.AssemblyArea;
 
 namespace ILSight;
