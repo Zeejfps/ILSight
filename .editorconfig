@@ -96,6 +96,7 @@ dotnet_diagnostic.RL1102.severity = suggestion
 [{ILSight.Tests,ILSight.App.Tests}/**.cs]
 rulelab.test_code = true
 
-# Decompiler fixtures: source the tests compile and read as input, laid out as the tests need (R013 doesn't apply).
-[ILSight.Tests/Fixtures/**.cs]
+# Fixtures: source the tests compile and read back as input (the decompiler's, and the app's own types the app tests
+# open, such as Outline.Inner, which the folding tests look for), laid out as the tests need (R013 doesn't apply).
+[{ILSight.Tests,ILSight.App.Tests}/Fixtures/**.cs]
 rulelab.one_type_per_file = false
