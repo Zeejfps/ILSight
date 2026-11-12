@@ -416,4 +416,37 @@ public sealed class AssembliesTests
         Assert.Empty(ports.Reported);
         Assert.Same(TabLoads.None, loads);
     }
+
+    [Fact]
+    public async Task HandleAsync_ReopeningEndedBeforeAFileLanded_TakesItOffThoseOnTheirWay()
+    {
+        var d = AppStateDriver.WithoutScreen();
+        var session = d.AppState.ListSession;
+        d.AppState.Lists.RememberActivePaths([PathTo("Listed.dll")]);
+        var reopening = session.BeginReopening(d.AppState.Lists);
+        Assert.Equal([PathTo("Listed.dll")], session.Assemblies.Arriving);
+        var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = new Outcome<LoadedAssembly?>.Failed(new IOException("unreadable")) };
+
+        var loads = await new OpenAssembliesAsReloadHandler(ports).HandleAsync(session, reopening.Paths, reopening.Reload, CancellationToken.None);
+
+        Assert.Empty(ListDecompiles(loads));
+        Assert.Empty(session.Assemblies.Arriving);
+    }
+
+    [Fact]
+    public void Switching_lists_while_the_reopening_runs_leaves_none_of_its_files_on_their_way()
+    {
+        var d = AppStateDriver.WithoutScreen();
+        var appState = d.AppState;
+        appState.Lists.RememberActivePaths([PathTo("Listed.dll")]);
+        var reopening = appState.ListSession.BeginReopening(appState.Lists);
+        appState.Lists.Add("Other", [PathTo("Other.dll")]);
+
+        var opening = AssemblyListArea.AssemblyLists.SwitchAssemblyList(appState.Lists, appState.ListSession, appState.View, "Other");
+
+        Assert.NotNull(opening);
+        Assert.False(appState.ListSession.TryFinishReopening(reopening.Reload));
+        Assert.Equal([PathTo("Other.dll")], appState.Assemblies.Arriving);
+        Assert.Equal([PathTo("Other.dll")], opening.Reopening.Paths);
+    }
 }

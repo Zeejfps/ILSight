@@ -204,6 +204,11 @@ internal static class AnalyzerPanelView
     internal static void Analyze(AnalyzerRows rows, AppState appState, AnalysisSymbol symbol)
     {
         var root = AddToAnalyzer(appState, symbol);
+        if (root is null)
+        {
+            return;
+        }
+
         Analysis.ShowRoot(rows, root);
     }
 

@@ -55,10 +55,18 @@ public static class AssemblyListing
         }
     }
 
-    private static void ChangeListed(HeldListing held, ImmutableArray<LoadedAssembly> listed)
+    /// <summary>Lists <paramref name="listed"/>, <paramref name="landed"/> no longer on its way.</summary>
+    private static void ChangeListed(HeldListing held, ImmutableArray<LoadedAssembly> listed, AssemblyPath landed)
     {
         var now = held.Snapshot;
-        held.Snapshot = now with { Listed = listed, Loaded = ListLoaded(listed), Version = now.Version + 1 };
+        held.Snapshot = now with { Listed = listed, Loaded = ListLoaded(listed), Version = now.Version + 1, Arriving = WithoutArrival(now.Arriving, landed) };
+    }
+
+    /// <summary><paramref name="arriving"/> without <paramref name="landed"/>, however often it was asked for: an
+    /// assembly is listed for it.</summary>
+    private static ImmutableArray<AssemblyPath> WithoutArrival(ImmutableArray<AssemblyPath> arriving, AssemblyPath landed)
+    {
+        return arriving.RemoveAll(landed.Equals);
     }
 
     private static ImmutableArray<LoadedModule> ListLoaded(ImmutableArray<LoadedAssembly> listed)
@@ -525,10 +533,11 @@ public static class AssemblyListing
             var listed = held.Snapshot.Listed;
             if (listed.Contains(assembly))
             {
+                held.Snapshot = held.Snapshot with { Arriving = WithoutArrival(held.Snapshot.Arriving, assembly.FilePath) };
                 return true;
             }
 
-            ChangeListed(held, ListInPlaceOfFailure(listed, assembly));
+            ChangeListed(held, ListInPlaceOfFailure(listed, assembly), assembly.FilePath);
         }
         AskTypeSystemRead(list, assembly);
         list.ChangedHandlers?.Invoke();

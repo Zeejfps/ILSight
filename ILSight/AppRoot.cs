@@ -100,7 +100,7 @@ internal static class AppRoot
         var appState = new AppState
         {
             ViewCommands = viewCommands,
-            ListSession = new OpenListSession(closable, new AnalyzerTree())
+            ListSession = new OpenListSession(closable)
             {
                 Navigation = new Navigation { ViewCommands = viewCommands, PreviewTabs = (settings.Display ?? DisplayOptions.Default).PreviewTabs },
                 Reopened = new ReopenedTabs(),

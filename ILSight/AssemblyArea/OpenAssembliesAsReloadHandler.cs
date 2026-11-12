@@ -31,7 +31,7 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
 
     private TabLoads FinishOpeningAsReload(OpenListSession session, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket)
     {
-        if (!session.Reload.TryFinish(ticket))
+        if (!session.TryFinishReopening(ticket))
         {
             return TabLoads.None;
         }

@@ -17,12 +17,15 @@ public sealed class OpenListSession
 
     private readonly AnalyzerTree _analyzer;
 
-    /// <param name="assemblies">The list itself, which only the session closes.</param>
-    /// <param name="analyzer">The symbols being analyzed and what the analyses found.</param>
-    public OpenListSession(ClosableAssemblyList assemblies, AnalyzerTree analyzer)
+    /// <summary>The files the reopening under way asked for, on their way until each lands; none when none runs.</summary>
+    private IReadOnlyList<AssemblyPath> _reopening = [];
+
+    /// <param name="assemblies">The list itself, which only the session closes, and whose read side the analyzer it
+    /// makes checks each add against.</param>
+    public OpenListSession(ClosableAssemblyList assemblies)
     {
         _assemblies = assemblies;
-        _analyzer = analyzer;
+        _analyzer = new AnalyzerTree(assemblies.List);
     }
 
     /// <summary>The open list's assemblies, to read and to open onto; closing them is the session's.</summary>
@@ -42,14 +45,47 @@ public sealed class OpenListSession
     public required OpenRequests Opens { get; init; }
 
     /// <summary>Uses what the open list of <paramref name="lists"/> picked for its assemblies and begins reopening them
-    /// as a reload, the app saying it is reloading. Returns the files to open and the reload, for the edge to open
-    /// (<see cref="AssemblyArea.OpenAssembliesAsReloadHandler"/>).</summary>
+    /// as a reload, the app saying it is reloading, its files on their way (<see cref="AssemblyList.Arriving"/>) and
+    /// those of the reopening it stops no longer, with the analyses of them. Returns the files to open and the reload,
+    /// for the edge to open (<see cref="AssemblyArea.OpenAssembliesAsReloadHandler"/>, which ends it through
+    /// <see cref="TryFinishReopening"/>).</summary>
     public ListReopening BeginReopening(SavedAssemblyLists lists)
     {
         Assemblies.Pdbs.Use(lists.ActivePdbs);
         Assemblies.TargetFrameworks.Use(lists.ActiveFrameworks);
         var paths = lists.ActivePaths.ToList();
-        return new ListReopening { Paths = paths, Reload = Reload.Start() };
+        StopReopeningArrivals();
+        var reload = Reload.Start();
+        _assemblies.BeginArriving(paths);
+        _reopening = paths;
+        return new ListReopening { Paths = paths, Reload = reload };
+    }
+
+    /// <summary>Ends the reopening <paramref name="ticket"/> was given for (<see cref="BeginReopening"/>): what it
+    /// asked for that never landed stops arriving, and the analyses of it go. False when another reload started or it
+    /// was stopped since, and its result should be ignored: what stopped it took its files off those on their
+    /// way.</summary>
+    public bool TryFinishReopening(ReloadTicket ticket)
+    {
+        if (!Reload.TryFinish(ticket))
+        {
+            return false;
+        }
+
+        StopReopeningArrivals();
+        return true;
+    }
+
+    /// <summary>Takes what the reopening asked for that hasn't landed off those on their way, and the analyses of
+    /// it with it, as closing it would.</summary>
+    private void StopReopeningArrivals()
+    {
+        var stopped = _assemblies.StopArriving(_reopening);
+        _reopening = [];
+        foreach (var path in stopped)
+        {
+            _analyzer.RemoveAnalysesOf(path);
+        }
     }
 
     /// <summary>Takes <paramref name="items"/> off the list, and the analyses of them with them; one no longer on it is
@@ -84,6 +120,7 @@ public sealed class OpenListSession
     public void ClearAssemblies()
     {
         _assemblies.CloseAll();
+        _reopening = [];
         _analyzer.ClearRoots();
     }
 

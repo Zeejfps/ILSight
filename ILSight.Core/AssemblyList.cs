@@ -26,6 +26,12 @@ public sealed class AssemblyList
     /// (<see cref="FailedAssembly"/>) among them. A snapshot, like <see cref="Assemblies"/>.</summary>
     public IReadOnlyList<LoadedAssembly> Listed => Now.Listed;
 
+    /// <summary>The files asked for that haven't landed, in the order they were asked for (a file asked for twice,
+    /// twice): a reopening's, until an assembly is listed for each, it stops arriving or the list is cleared. A
+    /// snapshot, like <see cref="Listed"/>; only the type holding the list (<see cref="ClosableAssemblyList"/>) adds
+    /// or stops them.</summary>
+    public IReadOnlyList<AssemblyPath> Arriving => Now.Arriving;
+
     /// <summary>Increments whenever <see cref="Assemblies"/> changes.</summary>
     public int Version => Now.Version;
 
@@ -123,6 +129,70 @@ public sealed class AssemblyList
             }
         }
         return false;
+    }
+
+    /// <summary>Whether the list holds the file at <paramref name="file"/>, landed or on its way: an item listed for it
+    /// (failed ones included), a listed package it was read out of, or the file or such a package
+    /// <see cref="Arriving"/>.</summary>
+    public bool Holds(AssemblyPath file)
+    {
+        var now = Now;
+        foreach (var item in now.Listed)
+        {
+            if (file.Equals(item.FilePath))
+            {
+                return true;
+            }
+
+            if (item is LoadedPackage && file.IsUnder(item.FilePath))
+            {
+                return true;
+            }
+        }
+
+        foreach (var arriving in now.Arriving)
+        {
+            if (file.Equals(arriving) || file.IsUnder(arriving))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Records <paramref name="paths"/> as on their way, each once more.</summary>
+    internal void BeginArriving(IReadOnlyList<AssemblyPath> paths)
+    {
+        using (var held = State.Enter())
+        {
+            var now = held.Snapshot;
+            held.Snapshot = now with { Arriving = now.Arriving.AddRange(paths) };
+        }
+    }
+
+    /// <summary>Takes <paramref name="paths"/> off those on their way, each once; returns those that were still on
+    /// their way, which never landed.</summary>
+    internal List<AssemblyPath> StopArriving(IReadOnlyList<AssemblyPath> paths)
+    {
+        var stopped = new List<AssemblyPath>();
+        using (var held = State.Enter())
+        {
+            var arriving = held.Snapshot.Arriving;
+            foreach (var path in paths)
+            {
+                var index = arriving.IndexOf(path);
+                if (index < 0)
+                {
+                    continue;
+                }
+
+                arriving = arriving.RemoveAt(index);
+                stopped.Add(path);
+            }
+
+            held.Snapshot = held.Snapshot with { Arriving = arriving };
+        }
+        return stopped;
     }
 
     /// <summary>The open files' paths, in order, failed ones included, for persisting the list.</summary>
@@ -225,12 +295,12 @@ public sealed class AssemblyList
     }
 
     /// <summary>Closes every assembly, and stops the opens that started before: they no longer list what they
-    /// read.</summary>
+    /// read, and nothing is on its way any more.</summary>
     internal void CloseAll()
     {
         using (var held = State.Enter())
         {
-            var now = held.Snapshot with { Generation = held.Snapshot.Generation + 1 };
+            var now = held.Snapshot with { Generation = held.Snapshot.Generation + 1, Arriving = [] };
             held.Snapshot = now;
             if (now.Listed.IsEmpty && held.Value.Count == 0)
             {

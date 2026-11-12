@@ -54,4 +54,27 @@ public sealed class AnalyzeReferenceHandlerTests
         Assert.Empty(analyzer.Roots);
         Assert.Empty(ports.Reported);
     }
+
+    [Fact]
+    public async Task HandleAsync_AssemblyClosedWhileLooking_LeavesNoAnalysisAndSavesNothing()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var analyzer = d.AppState.Analyzer;
+        var greeter = d.Fixture("Greeter");
+        var assembly = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
+        var ports = new FakeAnalyzeReferenceHandlerPorts
+        {
+            Found = new Outcome<BrowseNode?>.Ok(greeter),
+            WhileLooking = () => d.AppState.ListSession.CloseAssemblies([assembly]),
+        };
+        d.TakeViewCommands();
+
+        await new AnalyzeReferenceHandler(ports).HandleAsync(analyzer, d.AppState.ViewCommands, pending, CancellationToken.None);
+
+        Assert.Empty(analyzer.Roots);
+        Assert.Empty(analyzer.ListSavedAnalyses());
+        Assert.Empty(d.TakeViewCommands());
+        Assert.Empty(ports.Reported);
+    }
 }

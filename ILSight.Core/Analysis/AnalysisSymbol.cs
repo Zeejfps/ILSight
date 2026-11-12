@@ -50,6 +50,19 @@ public sealed class AnalysisSymbol
         return item is LoadedPackage && file.IsUnder(item.FilePath);
     }
 
+    /// <summary>Whether it is in the file at <paramref name="path"/>, an assembly or a package, or read out of it; or
+    /// is that assembly.</summary>
+    public bool IsIn(AssemblyPath path)
+    {
+        var file = File;
+        if (file is null)
+        {
+            return false;
+        }
+
+        return file.Equals(path) || file.IsUnder(path);
+    }
+
     public override string ToString()
     {
         return Label;

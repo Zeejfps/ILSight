@@ -151,8 +151,8 @@ public static class Analysis
     }
 
     /// <summary>Analyzes <paramref name="symbol"/> in the analyzer. Returns the root analyzing it, the one
-    /// already there when it was analyzed before.</summary>
-    public static AnalyzerSymbolNode AddToAnalyzer(AppState appState, AnalysisSymbol symbol)
+    /// already there when it was analyzed before; null when its assembly is no longer on the list.</summary>
+    public static AnalyzerSymbolNode? AddToAnalyzer(AppState appState, AnalysisSymbol symbol)
     {
         return appState.Analyzer.AddRoot(symbol);
     }

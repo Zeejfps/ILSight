@@ -8,14 +8,25 @@ namespace ILSight;
 /// The analyzer's tree: the symbols the user asked to analyze, newest last, each standing as a
 /// <see cref="AnalyzerPendingNode"/> until it is found, with the analyses under them. Results stream
 /// in from the background and keep the order the analysis finds them in, or ILSpy's sorting when it
-/// asks for one. The roots change only through its methods, which keep the counts below.
+/// asks for one. The roots change only through its methods, which keep the counts below, and an analysis is of an
+/// assembly the list holds: an add that lands after its assembly was closed, or stopped arriving, is refused.
 /// </summary>
 public sealed class AnalyzerTree
 {
     private readonly TrackedList<AnalyzerNode> _roots = new();
 
+    /// <summary>The open list, read to check each add against.</summary>
+    private readonly AssemblyList _assemblies;
+
     /// <summary>What <see cref="ListSavedAnalyses"/> listed when <see cref="Revision"/> last changed.</summary>
     private List<CodeAnchor> _saved = [];
+
+    /// <param name="assemblies">The open list, which the session holding both closes: read only, to check each add
+    /// against.</param>
+    public AnalyzerTree(AssemblyList assemblies)
+    {
+        _assemblies = assemblies;
+    }
 
     /// <summary>The symbols analyzed, newest last.</summary>
     public IReadOnlyList<AnalyzerNode> Roots => _roots;
@@ -52,9 +63,15 @@ public sealed class AnalyzerTree
     }
 
     /// <summary>Adds <paramref name="symbol"/> as a root, unless a root analyzes it already, and
-    /// returns the root that does.</summary>
-    public AnalyzerSymbolNode AddRoot(AnalysisSymbol symbol)
+    /// returns the root that does; null, adding nothing, when the list neither lists nor has on its way the file it is
+    /// in.</summary>
+    public AnalyzerSymbolNode? AddRoot(AnalysisSymbol symbol)
     {
+        if (!IsOnTheList(symbol))
+        {
+            return null;
+        }
+
         var existing = FindRoot(symbol);
         if (existing is not null)
         {
@@ -127,12 +144,20 @@ public sealed class AnalyzerTree
 
     /// <summary>Turns the waiting <paramref name="pending"/> into the analysis of <paramref name="symbol"/>,
     /// in its place; when another root analyzes it already, <paramref name="pending"/> goes. Returns
-    /// the root that analyzes <paramref name="symbol"/>, or null once <paramref name="pending"/> was removed.</summary>
+    /// the root that analyzes <paramref name="symbol"/>, or null once <paramref name="pending"/> was removed, and when
+    /// the list neither lists nor has on its way the file <paramref name="symbol"/> is in (its assembly was closed, or
+    /// stopped arriving, while it was looked for): <paramref name="pending"/> goes then.</summary>
     public AnalyzerSymbolNode? ResolveRoot(AnalyzerPendingNode pending, AnalysisSymbol symbol)
     {
         var index = _roots.IndexOf(pending);
         if (index < 0)
         {
+            return null;
+        }
+
+        if (!IsOnTheList(symbol))
+        {
+            RemoveRoot(pending);
             return null;
         }
 
@@ -182,6 +207,37 @@ public sealed class AnalyzerTree
         {
             RemoveRoot(root);
         }
+    }
+
+    /// <summary>Removes the analyses of what is in the file at <paramref name="path"/>, which stopped arriving before
+    /// it was listed, cancelling what runs under them.</summary>
+    public void RemoveAnalysesOf(AssemblyPath path)
+    {
+        var of = new List<AnalyzerNode>();
+        foreach (var root in _roots)
+        {
+            if (root is AnalyzerSymbolNode analyzed && analyzed.Symbol.IsIn(path))
+            {
+                of.Add(root);
+            }
+        }
+
+        foreach (var root in of)
+        {
+            RemoveRoot(root);
+        }
+    }
+
+    /// <summary>Whether the list holds the file <paramref name="symbol"/> is in, landed or on its way.</summary>
+    private bool IsOnTheList(AnalysisSymbol symbol)
+    {
+        var file = symbol.File;
+        if (file is null)
+        {
+            return false;
+        }
+
+        return _assemblies.Holds(file);
     }
 
     /// <summary>Removes every root, cancelling the analyses running under them.</summary>

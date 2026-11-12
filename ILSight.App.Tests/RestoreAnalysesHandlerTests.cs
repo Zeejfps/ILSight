@@ -71,4 +71,46 @@ public sealed class RestoreAnalysesHandlerTests
         Assert.Empty(ports.Reported);
         Assert.Equal(2, d.AppState.Analyzer.Roots.Count);
     }
+
+    [Fact]
+    public async Task HandleAsync_AssemblyClosedWhileLooking_RestoresNoAnalysisOfIt()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var restore = WaitForGreeterAndFarewell(d);
+        var greeter = SymbolOf(d, "Greeter");
+        var farewell = SymbolOf(d, "Farewell");
+        var assembly = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var ports = new FakeRestoreAnalysesHandlerPorts
+        {
+            Found = new Outcome<List<AnalysisSymbol?>>.Ok([greeter, farewell]),
+            WhileLooking = () => d.AppState.ListSession.CloseAssemblies([assembly]),
+        };
+
+        await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
+
+        Assert.Empty(d.AppState.Analyzer.Roots);
+        Assert.Empty(d.AppState.Analyzer.ListSavedAnalyses());
+        Assert.Empty(ports.Reported);
+    }
+
+    [Fact]
+    public async Task HandleAsync_FilesStillOnTheirWay_AnalyzesEachAsItsLookupAnswers()
+    {
+        var opened = AppStateDriver.OpenedWithoutScreen();
+        var greeter = SymbolOf(opened, "Greeter");
+        var d = AppStateDriver.WithoutScreen();
+        var analyzer = d.AppState.Analyzer;
+        d.AppState.Lists.RememberActivePaths([AssemblyPath.Of(AppStateDriver.FixturePath)]);
+        var reopening = d.AppState.ListSession.BeginReopening(d.AppState.Lists);
+        analyzer.AddPending([greeter.Definition ?? throw new InvalidOperationException("Greeter has no definition.")]);
+        var restore = Analysis.BeginRestoring(analyzer, d.AppState.Assemblies);
+        Assert.NotNull(restore);
+        var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<AnalysisSymbol?>>.Ok([greeter]) };
+
+        await new RestoreAnalysesHandler(ports).HandleAsync(analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
+
+        Assert.Empty(d.AppState.Assemblies.Listed);
+        Assert.Equal(greeter, Assert.Single(analyzer.Found()).Symbol);
+        Assert.Equal([AssemblyPath.Of(AppStateDriver.FixturePath)], reopening.Paths);
+    }
 }

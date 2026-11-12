@@ -30,6 +30,20 @@ public sealed class ClosableAssemblyList
         return List.TryReplace(item, fresh);
     }
 
+    /// <summary>Records <paramref name="paths"/>, asked for, as on their way (<see cref="AssemblyList.Arriving"/>)
+    /// until an assembly is listed for each, they stop arriving or the list is cleared.</summary>
+    public void BeginArriving(IReadOnlyList<AssemblyPath> paths)
+    {
+        List.BeginArriving(paths);
+    }
+
+    /// <summary>Takes <paramref name="paths"/>, whose asking stopped, off those on their way, each once; returns those
+    /// that were still on their way, which never landed.</summary>
+    public List<AssemblyPath> StopArriving(IReadOnlyList<AssemblyPath> paths)
+    {
+        return List.StopArriving(paths);
+    }
+
     /// <summary>Takes every assembly off the list, as <see cref="AssemblyList.CloseAll"/> does.</summary>
     public void CloseAll()
     {
