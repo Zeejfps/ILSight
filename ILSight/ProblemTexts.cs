@@ -2,6 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Localization;
 using ILSight.Bookmarking;
+using ILSight.SettingsKeeping;
 
 namespace ILSight;
 

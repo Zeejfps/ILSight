@@ -4,8 +4,9 @@ using ILSight.Commanding;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.AppHosting;
+using ILSight.SettingsKeeping;
 using static ILSight.AppHosting.RunArgumentsActions;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;

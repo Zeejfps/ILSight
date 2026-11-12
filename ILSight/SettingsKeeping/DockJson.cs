@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ZGF.Gui.Immediate.Widgets;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Turns a dock layout into what a settings file holds, and back.</summary>
 internal static class DockJson

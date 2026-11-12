@@ -3,6 +3,7 @@ using ILSight.Core;
 using ILSight.SettingsFormat;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
+using ILSight.SettingsKeeping;
 
 namespace ILSight.AppHosting;
 

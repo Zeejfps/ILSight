@@ -11,7 +11,7 @@ using ILSight.DisplayChoices;
 using ILSight.AppHosting;
 using static ILSight.CodeDisplay;
 using static ILSight.ScreenLayout;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 
 namespace ILSight.App.Tests;
 

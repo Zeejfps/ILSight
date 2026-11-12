@@ -2,7 +2,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.KeyboardModule;
 using static ILSight.CodeDisplay;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using static ILSight.ScreenLayout;
 
 namespace ILSight.App.Tests;

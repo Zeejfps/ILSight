@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using static ILSight.ScreenLayout;
 
 namespace ILSight.App.Tests;

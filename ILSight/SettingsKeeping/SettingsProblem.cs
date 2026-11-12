@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>What was wrong with the settings file, for the screen to tell in the chosen language. A
 /// <c>Detail</c> is as the system or the JSON reader said it.</summary>

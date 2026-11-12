@@ -4,10 +4,9 @@ using ILSight.Core;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.SavedDocuments;
-using ILSight.SettingsFormat;
 using ILSight.AppSettingsFormat;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Restoring what the settings keep into the app state, and the settings as the app state holds them now, to
 /// be saved (<see cref="SettingsSaving"/>).</summary>

@@ -1,10 +1,9 @@
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.SettingsFormat;
 using ILSight.AppSettingsFormat;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Saves the settings through <see cref="IPorts"/>: when something in them changed, unless the assemblies are
 /// reloading or a failed write waits to be tried again, and whenever asked. A failed write is reported, unless writes

@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Where the settings live, whether they may be written there, and where the user's themes and
 /// icon themes are found beside them.</summary>

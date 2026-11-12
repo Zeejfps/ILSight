@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Reaches the app's error reports and the settings file, for <see cref="SettingsSaving"/>.</summary>
 public sealed class SettingsSavingAdapter(ErrorLog errors) : SettingsSaving.IPorts

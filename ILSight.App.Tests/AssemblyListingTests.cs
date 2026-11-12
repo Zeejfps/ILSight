@@ -6,7 +6,7 @@ using ILSight.Commanding;
 using ILSight.AssemblyListKeeping;
 using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Docking;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.App.Tests.TestPaths;
 

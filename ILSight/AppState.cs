@@ -9,6 +9,7 @@ using ILSight.UserState;
 using ILSight.Searching;
 using ILSight.Diagramming;
 using ILSight.AssemblyHandling;
+using ILSight.SettingsKeeping;
 
 namespace ILSight;
 

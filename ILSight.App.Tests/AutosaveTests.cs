@@ -4,7 +4,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Localization;
 using static ILSight.Preferences;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using ILSight.SettingsFormat;
 using ILSight.AppSettingsFormat;
 

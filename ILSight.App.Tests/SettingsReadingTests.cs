@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.SettingsKeeping;
 
 namespace ILSight.App.Tests;
 

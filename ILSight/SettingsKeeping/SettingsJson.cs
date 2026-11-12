@@ -12,8 +12,9 @@ using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
 using ILSight.Diagramming;
+using ILSight.SettingsFormat;
 
-namespace ILSight.SettingsFormat;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Turns what the app keeps into the shapes in this folder, and back. A file is read one field at a time, so
 /// that a value which is not what its field holds leaves out that field alone, for its default to stand in,

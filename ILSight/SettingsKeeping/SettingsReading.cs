@@ -1,8 +1,7 @@
 using ILSight.Core;
-using ILSight.SettingsFormat;
 using ILSight.AppSettingsFormat;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Reads the settings file the app starts with through <see cref="IPorts"/>: each value read on its own, so a
 /// value the file holds wrong leaves out only that one, for its default to stand in. A file that could not be read

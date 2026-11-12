@@ -5,9 +5,10 @@ using ILSight.Exporting;
 using ILSight.Commanding;
 using ILSight.AppSettingsFormat;
 using ILSight.AppHosting;
+using ILSight.SettingsKeeping;
 using static ILSight.Analysis;
 using static ILSight.Navigation;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 
 namespace ILSight.App.Tests;
 

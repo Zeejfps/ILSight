@@ -4,8 +4,9 @@ using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
+using ILSight.SettingsFormat;
 
-namespace ILSight.SettingsFormat;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>The settings file as it is written: what <see cref="AppSettings"/> keeps, under the names
 /// the file has it by. It is only ever written; <see cref="SettingsJson"/> reads a file one field at

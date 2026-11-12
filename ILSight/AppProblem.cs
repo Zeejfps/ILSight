@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Analysis;
 using ILSight.Bookmarking;
+using ILSight.SettingsKeeping;
 
 namespace ILSight;
 

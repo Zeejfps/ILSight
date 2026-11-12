@@ -5,7 +5,7 @@ using ILSight.Localization;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.IconTheming;
 using static ILSight.ScreenLayout;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using ILSight.SettingsFormat;
 using ILSight.BuiltInAssets;
 using ILSight.UserState;

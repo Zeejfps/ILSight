@@ -4,7 +4,7 @@ using System.Reflection.PortableExecutable;
 using ILSight.Core;
 using ILSight.Core.Metadata;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Writing places for the settings and bookmark files, and reading back what they wrote.</summary>
 public static class SavedPlaces

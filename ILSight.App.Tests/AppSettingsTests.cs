@@ -4,15 +4,15 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using static ILSight.App.Tests.TestPaths;
-using ILSight.SettingsFormat;
 using ILSight.Bookmarking;
 using ILSight.Commanding;
 using ILSight.AppSettingsFormat;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.Diagramming;
+using ILSight.SettingsKeeping;
 
 namespace ILSight.App.Tests;
 

@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>What writing the settings file did. A <c>Reason</c> names the file and says why, as the
 /// system said it.</summary>

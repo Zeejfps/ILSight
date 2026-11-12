@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>Reaches the settings file on disk, for <see cref="SettingsReading"/>.</summary>
 public sealed class SettingsReadingAdapter : SettingsReading.IPorts

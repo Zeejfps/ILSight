@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>A settings file as it is being read: the fields it holds, and which of them were left out.</summary>
 internal sealed class SettingsReader

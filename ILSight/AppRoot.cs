@@ -20,6 +20,7 @@ using ILSight.AppHosting;
 using ILSight.MainScreen;
 using ILSight.Diagramming;
 using ILSight.AssemblyHandling;
+using ILSight.SettingsKeeping;
 
 namespace ILSight;
 

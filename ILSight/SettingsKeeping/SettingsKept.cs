@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>How a settings file that could not be read whole is kept from being saved over.</summary>
 public abstract record SettingsKept

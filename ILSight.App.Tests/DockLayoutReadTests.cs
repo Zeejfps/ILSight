@@ -1,3 +1,5 @@
+using ILSight.SettingsKeeping;
+
 namespace ILSight.App.Tests;
 
 public sealed class DockLayoutReadTests

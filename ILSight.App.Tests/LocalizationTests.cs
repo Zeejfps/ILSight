@@ -1,4 +1,4 @@
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using System.Globalization;
 using System.Reflection;
 using ILSight.Localization;

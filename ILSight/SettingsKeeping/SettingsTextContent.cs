@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.AppSettingsFormat;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>What the settings file's text holds: not JSON of the settings, <c>null</c>, or the settings, each value
 /// read on its own.</summary>

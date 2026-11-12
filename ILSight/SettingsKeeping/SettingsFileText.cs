@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>What reading the settings file gave: no file, its text, or why it could not be read, as the system
 /// said it.</summary>

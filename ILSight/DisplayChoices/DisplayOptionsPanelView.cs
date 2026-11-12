@@ -5,6 +5,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Localization;
 using ILSight.Commanding;
+using ILSight.SettingsKeeping;
 using static ILSight.CodeDisplay;
 using static ILSight.IconTheming;
 using static ILSight.Theming;

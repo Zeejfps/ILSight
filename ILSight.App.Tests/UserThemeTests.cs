@@ -3,7 +3,7 @@ using System.Text;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Localization;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using static ILSight.Theming;
 using ILSight.SettingsFormat;
 using ILSight.CodeView;

@@ -9,7 +9,7 @@ using static ILSight.AppHosting.AppFrames;
 using static ILSight.AppHosting.Appearance;
 using static ILSight.AppHosting.RunArgumentsActions;
 using static ILSight.IconTheming;
-using static ILSight.Settings;
+using static ILSight.SettingsKeeping.Settings;
 using static ILSight.AppHosting.ScreenSettings;
 using static ILSight.Theming;
 

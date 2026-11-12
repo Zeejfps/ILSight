@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ZGF.Gui.Immediate.Widgets;
 
-namespace ILSight;
+namespace ILSight.SettingsKeeping;
 
 /// <summary>What a dock layout a settings file holds reads as.</summary>
 internal abstract record DockLayoutRead
