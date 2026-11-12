@@ -496,6 +496,7 @@ public sealed class ExportDialogTests : IDisposable
         app.Frames.FilePicker.Answer = _temp.Path;
         app.Frames.ClickOn(Selector.AtPath("browse")).Frame(2);
         Assert.Equal(_temp.Path, app.Ui.ExportSetup.Folder);
+        app.Settle();
 
         app.Frames.ClickOn(Selector.AtPath("export-start")).Frame(2);
         app.Settle(1);
