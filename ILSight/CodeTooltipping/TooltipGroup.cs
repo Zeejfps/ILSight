@@ -1,7 +1,7 @@
 using ZGF.Gui;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 /// <summary>A group of the documentation: the summary, or every section of one kind under its
 /// heading, one entry per section.</summary>

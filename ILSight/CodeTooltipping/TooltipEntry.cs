@@ -1,6 +1,6 @@
 using ZGF.Gui;
 
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 /// <summary>A section's label, the parameter or exception it is about, and its blocks.</summary>
 internal sealed record TooltipEntry

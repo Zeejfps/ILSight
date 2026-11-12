@@ -1,3 +1,3 @@
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 internal abstract record TooltipBlock;

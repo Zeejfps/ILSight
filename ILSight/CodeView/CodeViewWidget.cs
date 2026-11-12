@@ -8,6 +8,7 @@ using ZGF.KeyboardModule;
 using TextOverflow = ZGF.Gui.Immediate.TextOverflow;
 using System.Text;
 using ILSight.Bookmarking;
+using ILSight.CodeTooltipping;
 
 namespace ILSight.CodeView;
 

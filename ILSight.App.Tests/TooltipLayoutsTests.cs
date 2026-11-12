@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using ZGF.Gui;
 using ILSight.Core;
 using ILSight.Localization;
+using ILSight.CodeTooltipping;
 
 namespace ILSight.App.Tests;
 

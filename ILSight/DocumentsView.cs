@@ -6,6 +6,7 @@ using ILSight.Core.Metadata;
 using ILSight.Localization;
 using ILSight.CodeView;
 using ILSight.Bookmarking;
+using ILSight.CodeTooltipping;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.CodeDisplay;
 using static ILSight.Diagrams;

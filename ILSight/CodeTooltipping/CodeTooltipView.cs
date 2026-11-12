@@ -6,7 +6,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ILSight.CodeView;
 
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 /// <summary>What hovering a type or member in code shows: its declaration highlighted as code in a
 /// band of its own, on one line when it fits and else with a parameter per line, over the type or

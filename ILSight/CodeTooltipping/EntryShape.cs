@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 /// <summary>How a group sets out its entries: parameters with their names in a column,
 /// exceptions with their descriptions under them, anything else as its blocks.</summary>

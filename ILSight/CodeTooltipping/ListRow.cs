@@ -1,6 +1,6 @@
 using ZGF.Gui;
 
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 internal sealed record ListRow
 {

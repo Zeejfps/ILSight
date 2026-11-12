@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 /// <summary>
 /// The tooltips of references hovered in code: each is asked for while the code draws, looked up once, in the

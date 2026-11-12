@@ -1,6 +1,6 @@
 using ZGF.Gui;
 
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 /// <summary>A code tooltip as rich text: its declaration on one line and cut where each parameter
 /// starts, the type or namespace it is in, its <c>where</c> clauses, and its documentation in

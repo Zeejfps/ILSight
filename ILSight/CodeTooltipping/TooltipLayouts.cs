@@ -3,7 +3,7 @@ using ZGF.Gui;
 using ILSight.Core;
 using ILSight.Localization;
 
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 /// <summary>How a code tooltip's declaration and documentation are set out as rich text.</summary>
 internal static class TooltipLayouts

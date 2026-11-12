@@ -1,7 +1,7 @@
 using ZGF.Gui;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.CodeTooltipping;
 
 /// <summary>The text styles a code tooltip is set in: prose at the theme's text size, headings
 /// smaller and muted, code in the code palette's colors.</summary>
