@@ -11,6 +11,7 @@ using ILSight.Omnibars;
 using ILSight.DocumentViewing;
 using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
+using ILSight.AssemblyListKeeping;
 
 namespace ILSight;
 

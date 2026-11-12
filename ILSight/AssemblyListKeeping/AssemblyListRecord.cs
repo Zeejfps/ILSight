@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.AssemblyListKeeping;
 
 /// <summary>A named assembly list as the settings keep it: its name, its assemblies' file paths, in
 /// order, the symbols analyzed in it, by assembly path the PDBs picked for its assemblies and the

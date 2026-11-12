@@ -11,6 +11,7 @@ using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
 using ILSight.UserState;
 using ILSight.AppSettingsFormat;
+using ILSight.AssemblyListKeeping;
 
 namespace ILSight;
 

@@ -1,5 +1,5 @@
 using static ILSight.Assemblies;
-using static ILSight.AssemblyLists;
+using static ILSight.AssemblyListKeeping.AssemblyLists;
 
 namespace ILSight;
 

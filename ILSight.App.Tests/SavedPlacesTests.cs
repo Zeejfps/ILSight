@@ -1,6 +1,6 @@
 using ILSight.Core;
 using System.Text.Json;
-using static ILSight.AssemblyLists;
+using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Bookmarking.Bookmarks;
 using ILSight.SettingsFormat;
 

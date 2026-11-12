@@ -10,6 +10,7 @@ using ILSight.Commanding;
 using ILSight.DocumentViewing;
 using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
+using ILSight.AssemblyListKeeping;
 using static ILSight.DocumentPanels;
 
 namespace ILSight;

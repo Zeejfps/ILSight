@@ -8,6 +8,7 @@ using ILSight.Core.Metadata;
 using ILSight.Localization;
 using ILSight.Bookmarking;
 using ILSight.SettingsFormat;
+using ILSight.AssemblyListKeeping;
 
 namespace ILSight.AppSettingsFormat;
 

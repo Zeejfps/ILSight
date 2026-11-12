@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.AssemblyListKeeping;
 
 /// <summary>What the assembly lists dialog is doing: closed; open on the lists; renaming one, with the name
 /// typed so far; or asking whether to delete one.</summary>

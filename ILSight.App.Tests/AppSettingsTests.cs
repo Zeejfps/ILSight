@@ -10,6 +10,7 @@ using ILSight.SettingsFormat;
 using ILSight.Bookmarking;
 using ILSight.Commanding;
 using ILSight.AppSettingsFormat;
+using ILSight.AssemblyListKeeping;
 
 namespace ILSight.App.Tests;
 

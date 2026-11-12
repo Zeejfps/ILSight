@@ -4,9 +4,9 @@ using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.Commanding;
-using static ILSight.AssemblyLists;
+using static ILSight.AssemblyListKeeping.AssemblyLists;
 
-namespace ILSight;
+namespace ILSight.AssemblyListKeeping;
 
 /// <summary>
 /// The named assembly lists, the active one marked with a check, each with how many assemblies it

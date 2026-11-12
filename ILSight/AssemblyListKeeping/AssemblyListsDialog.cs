@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate.Widgets;
 
-namespace ILSight;
+namespace ILSight.AssemblyListKeeping;
 
 /// <summary>What the assembly lists dialog shows: what it is doing, and the list picked in it.</summary>
 public sealed class AssemblyListsDialog

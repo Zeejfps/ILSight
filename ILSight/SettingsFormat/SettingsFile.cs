@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Localization;
 using ILSight.AppSettingsFormat;
+using ILSight.AssemblyListKeeping;
 
 namespace ILSight.SettingsFormat;
 

@@ -1,9 +1,9 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Commanding;
-using static ILSight.AssemblyLists;
+using static ILSight.AssemblyListKeeping.AssemblyLists;
 
-namespace ILSight;
+namespace ILSight.AssemblyListKeeping;
 
 /// <summary>Asks, over the assembly lists dialog, whether to delete the list picked there, saying
 /// which list opens in its place when it is the active one.</summary>

@@ -5,7 +5,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 using static ILSight.Assemblies;
-using static ILSight.AssemblyLists;
+using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Diagrams;
 using static ILSight.DocumentPanels;
 using static ILSight.App.Tests.TestPaths;
@@ -14,6 +14,7 @@ using ILSight.CodeView;
 using ILSight.DiagramViewport;
 using ILSight.DocumentViewing;
 using ILSight.AppSettingsFormat;
+using ILSight.AssemblyListKeeping;
 
 namespace ILSight.App.Tests;
 

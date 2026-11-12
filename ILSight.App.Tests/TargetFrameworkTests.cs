@@ -2,7 +2,8 @@ using System.IO.Compression;
 using ZGF.Gui;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using static ILSight.AssemblyLists;
+using ILSight.AssemblyListKeeping;
+using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Settings;
 using static ILSight.App.Tests.TestPaths;
 

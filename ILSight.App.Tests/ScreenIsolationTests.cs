@@ -7,6 +7,7 @@ using ILSight.Exporting;
 using ILSight.Bookmarking;
 using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
+using ILSight.AssemblyListKeeping;
 using static ILSight.Settings;
 using static ILSight.ScreenLayout;
 

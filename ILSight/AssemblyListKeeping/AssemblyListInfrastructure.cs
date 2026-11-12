@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.AssemblyListKeeping;
 
 /// <summary>Reaches the app's error reports, the file system and the open assemblies off the UI thread, for
 /// <see cref="AssemblyOpening"/>, <see cref="AssemblyReloading"/> and <see cref="OpenAssembliesAsReloadHandler"/>.</summary>

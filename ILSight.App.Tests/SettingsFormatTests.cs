@@ -13,6 +13,7 @@ using ILSight.SettingsFormat;
 using ILSight.CodeView;
 using ILSight.Bookmarking;
 using ILSight.AppSettingsFormat;
+using ILSight.AssemblyListKeeping;
 
 namespace ILSight.App.Tests;
 

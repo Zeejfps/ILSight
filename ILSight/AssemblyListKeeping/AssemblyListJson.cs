@@ -1,4 +1,6 @@
-namespace ILSight.SettingsFormat;
+using ILSight.SettingsFormat;
+
+namespace ILSight.AssemblyListKeeping;
 
 /// <summary>An assembly list as a settings file can hold it. Without a name it is no list.</summary>
 internal sealed record AssemblyListJson(

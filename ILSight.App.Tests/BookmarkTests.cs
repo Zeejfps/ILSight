@@ -4,7 +4,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ILSight.CodeView;
 using ILSight.Bookmarking;
-using static ILSight.AssemblyLists;
+using static ILSight.AssemblyListKeeping.AssemblyLists;
 using static ILSight.Bookmarking.Bookmarks;
 using static ILSight.Settings;
 using static ILSight.ScreenLayout;

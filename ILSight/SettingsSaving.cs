@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ILSight.Core;
 using ILSight.SettingsFormat;
 using ILSight.AppSettingsFormat;
-using static ILSight.AssemblyLists;
+using static ILSight.AssemblyListKeeping.AssemblyLists;
 
 namespace ILSight;
 

@@ -5,7 +5,7 @@ using static ILSight.Analysis;
 using static ILSight.Assemblies;
 using static ILSight.SavedDocuments;
 
-namespace ILSight;
+namespace ILSight.AssemblyListKeeping;
 
 /// <summary>Switching between the named assembly lists, and creating, renaming and deleting them.</summary>
 public static class AssemblyLists

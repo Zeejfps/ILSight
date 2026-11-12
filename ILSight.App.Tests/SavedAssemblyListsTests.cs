@@ -1,3 +1,4 @@
+using ILSight.AssemblyListKeeping;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
