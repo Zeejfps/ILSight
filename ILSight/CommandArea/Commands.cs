@@ -114,6 +114,12 @@ public static class Commands
             return;
         }
 
+        StartRunningAnalysis(appState, run);
+    }
+
+    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    private static void StartRunningAnalysis(AppState appState, AnalysisRun run)
+    {
         appState.Workflows.Start(nameof(RunAnalysisHandler), ct => appState.RunAnalysisHandler.HandleAsync(appState.Analyzer, run, ct), run.Work.Token);
     }
 
@@ -127,6 +133,12 @@ public static class Commands
             return;
         }
 
+        StartFindingAnalysesSymbols(appState, restore);
+    }
+
+    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    private static void StartFindingAnalysesSymbols(AppState appState, AnalysesRestore restore)
+    {
         appState.Workflows.Start(nameof(RestoreAnalysesHandler),
             ct => appState.RestoreAnalysesHandler.HandleAsync(appState.Analyzer, appState.Assemblies, appState.ViewCommands, restore, ct));
     }
@@ -422,8 +434,15 @@ public static class Commands
                 return;
             }
 
-            appState.Workflows.Start(name, ct => run(appState, subject, work, ct), cancelledOnPurposeBy(work));
+            StartWork(appState, name, subject, work, run, cancelledOnPurposeBy);
         };
+    }
+
+    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    private static void StartWork<T, TWork>(AppState appState, string name, T subject, TWork work,
+        Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy) where TWork : class
+    {
+        appState.Workflows.Start(name, ct => run(appState, subject, work, ct), cancelledOnPurposeBy(work));
     }
 
     /// <summary>Starts bringing in what <paramref name="load"/> started loading in its tab
@@ -436,6 +455,12 @@ public static class Commands
             return;
         }
 
+        StartBringingIn(appState, load);
+    }
+
+    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    private static void StartBringingIn(AppState appState, DecompileTicket load)
+    {
         appState.Workflows.Start(nameof(DecompileIntoTabHandler), ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, ct),
             load.Work.Token);
     }

@@ -491,7 +491,13 @@ internal static class AppFrames
             return;
         }
 
-        appState.Workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(check, ct));
+        StartChecking(appState.Workflows, updates, check);
+    }
+
+    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    private static void StartChecking(WorkflowRunner workflows, AppUpdates updates, UpdateCheck check)
+    {
+        workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(check, ct));
     }
 
     /// <summary>Reads the user's themes and icon themes again whenever their folders change, from the app's start
