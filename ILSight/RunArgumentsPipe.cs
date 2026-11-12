@@ -28,7 +28,9 @@ public static class RunArgumentsPipe
     {
         try
         {
-            return Task.Run(() => TrySendAsync(address, arguments)).GetAwaiter().GetResult();
+            using var timeout = new CancellationTokenSource(HandOverTimeout);
+            var token = timeout.Token;
+            return Task.Run(() => TrySendAsync(address, arguments, token)).GetAwaiter().GetResult();
         }
         catch (Exception e) when (IsBroken(e))
         {
@@ -36,10 +38,8 @@ public static class RunArgumentsPipe
         }
     }
 
-    private static async Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments)
+    private static async Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments, CancellationToken token)
     {
-        using var timeout = new CancellationTokenSource(HandOverTimeout);
-        var token = timeout.Token;
         await using var pipe = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
@@ -211,7 +211,7 @@ public static class RunArgumentsPipe
     {
         try
         {
-            ServeAsync(receiver).GetAwaiter().GetResult();
+            ServeAsync(receiver, receiver.Stop.Token).GetAwaiter().GetResult();
         }
         finally
         {
@@ -221,9 +221,8 @@ public static class RunArgumentsPipe
 
     /// <summary>Listens until stopped, on one server: replacing it for each run would drop the runs
     /// already waiting in its backlog.</summary>
-    private static async Task ServeAsync(RunArgumentsReceiver receiver)
+    private static async Task ServeAsync(RunArgumentsReceiver receiver, CancellationToken token)
     {
-        var token = receiver.Stop.Token;
         while (!token.IsCancellationRequested)
         {
             try
