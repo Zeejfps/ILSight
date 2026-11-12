@@ -5,16 +5,29 @@ namespace ILSight.Core.Diagrams;
 /// from it to the types it derives from, implements and holds in its properties; and whether anything
 /// can derive from it. <see cref="AssemblyPath"/> is the file of the assembly that defines it, and
 /// <see cref="Anchor"/> names the type so that it is found again in another run.</summary>
-public sealed record TypeCard(
-    CodeReference.Entity Type,
-    TypeAnchor Anchor,
-    string Name,
-    string FullName,
-    AssemblyPath AssemblyPath,
-    TypeShape Shape,
-    NodeAccessibility Accessibility,
-    TypeStereotype Stereotype,
-    IReadOnlyList<CardSection> Sections,
-    IReadOnlyList<InheritedGroup> Inherited,
-    IReadOnlyList<TypeLink> Links,
-    bool CanHaveDerived);
+public sealed record TypeCard
+{
+    public required CodeReference.Entity Type { get; init; }
+
+    public required TypeAnchor Anchor { get; init; }
+
+    public required string Name { get; init; }
+
+    public required string FullName { get; init; }
+
+    public required AssemblyPath AssemblyPath { get; init; }
+
+    public required TypeShape Shape { get; init; }
+
+    public required NodeAccessibility Accessibility { get; init; }
+
+    public required TypeStereotype Stereotype { get; init; }
+
+    public required IReadOnlyList<CardSection> Sections { get; init; }
+
+    public required IReadOnlyList<InheritedGroup> Inherited { get; init; }
+
+    public required IReadOnlyList<TypeLink> Links { get; init; }
+
+    public required bool CanHaveDerived { get; init; }
+}

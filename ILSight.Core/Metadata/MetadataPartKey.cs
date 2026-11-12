@@ -24,7 +24,12 @@ public abstract record MetadataPartKey
     public sealed record Heap(string Name) : MetadataPartKey;
 
     /// <summary>An entry of the debug directory: where it stands there, from 0, and its type.</summary>
-    public sealed record DebugEntry(int Index, DebugDirectoryEntryType Type) : MetadataPartKey;
+    public sealed record DebugEntry : MetadataPartKey
+    {
+        public required int Index { get; init; }
+
+        public required DebugDirectoryEntryType Type { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<Header, TResult> header, Func<DataDirectories, TResult> dataDirectories,

@@ -183,9 +183,9 @@ public sealed class MetadataTests
         Assert.Equal("AutoLayout (0000)", Assert.Single(tooltip.Groups[1].Flags).Name);
         var flags = tooltip.Groups[^1];
         Assert.False(flags.IsChoice);
-        Assert.Contains(new MetadataFlag("BeforeFieldInit (100000)", true), flags.Flags);
-        Assert.Contains(new MetadataFlag("Abstract (0080)", false), flags.Flags);
-        Assert.Contains(new MetadataFlag("IsTypeForwarder (200000)", false), flags.Flags);
+        Assert.Contains(new MetadataFlag { Name = "BeforeFieldInit (100000)", IsSet = true }, flags.Flags);
+        Assert.Contains(new MetadataFlag { Name = "Abstract (0080)", IsSet = false }, flags.Flags);
+        Assert.Contains(new MetadataFlag { Name = "IsTypeForwarder (200000)", IsSet = false }, flags.Flags);
     }
 
     [Fact]
@@ -429,7 +429,7 @@ public sealed class MetadataTests
 
         Assert.False(coff.HasDetails);
         Assert.Equal(16, bits.Count);
-        Assert.Contains(new MetadataFlag("File is executable (0002)", true), bits);
+        Assert.Contains(new MetadataFlag { Name = "File is executable (0002)", IsSet = true }, bits);
         Assert.Null(MetadataGrids.FindTooltip(coff, 0, coff.Column("Value")));
         Assert.False(Grid(Table(assembly, "TypeDef")).HasDetails);
     }
@@ -541,8 +541,20 @@ public sealed class MetadataTests
         Assert.Equal(nameof(EditAndContinueOperation.AddMethod), MetadataGrids.FindTooltip(log, 1, log.Column("FuncCode"))?.Text);
         Assert.Equal(1, map.RowCount);
         Assert.Equal(type, Hex(map, 0, "Handle"));
-        Assert.Equal(new MetadataAddress(TableIndex.TypeDef, 0), MetadataGrids.FindLink(map, 0, map.Column("Handle")));
-        Assert.Equal(new MetadataTarget(Table(assembly, "TypeDef"), 0), TestSession.Shared.FindMetadataRow(Table(assembly, "EncMap"), new MetadataAddress(TableIndex.TypeDef, 0)));
+        Assert.Equal(new MetadataAddress
+        {
+            Table = TableIndex.TypeDef,
+            Row = 0,
+        }, MetadataGrids.FindLink(map, 0, map.Column("Handle")));
+        Assert.Equal(new MetadataTarget
+        {
+            Node = Table(assembly, "TypeDef"),
+            Row = 0,
+        }, TestSession.Shared.FindMetadataRow(Table(assembly, "EncMap"), new MetadataAddress
+        {
+            Table = TableIndex.TypeDef,
+            Row = 0,
+        }));
     }
 
     /// <summary>An assembly whose metadata logs two changes to its one type, as an edit and continue

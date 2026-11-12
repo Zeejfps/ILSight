@@ -20,15 +20,32 @@ namespace ILSight.Core.Metadata
 		internal static MetadataTooltip Explain(FlagsSchema schema, uint value)
 		{
 			var groups = schema.MutexGroups
-				.Select(g => new MetadataFlagGroup(g.Name, true, [new MetadataFlag(GetLabel(g, value & g.Mask), true)]))
+				.Select(g => new MetadataFlagGroup
+				{
+					Header = g.Name,
+					IsChoice = true,
+					Flags = [new MetadataFlag
+					{
+						Name = GetLabel(g, value & g.Mask),
+						IsSet = true,
+					}],
+				})
 				.ToList();
 			if (schema.IndependentFlags.Count > 0)
             {
-                groups.Add(new MetadataFlagGroup(groups.Count > 0 ? "Flags" : null, false,
-					schema.IndependentFlags.Select(f => new MetadataFlag($"{f.Name} ({f.Bit:X4})", (value & f.Bit) != 0)).ToArray()));
+                groups.Add(new MetadataFlagGroup
+                {
+                    Header = groups.Count > 0 ? "Flags" : null,
+                    IsChoice = false,
+                    Flags = schema.IndependentFlags.Select(f => new MetadataFlag
+                    {
+                        Name = $"{f.Name} ({f.Bit:X4})",
+                        IsSet = (value & f.Bit) != 0,
+                    }).ToArray(),
+                });
             }
 
-            return new MetadataTooltip(null, groups);
+            return new MetadataTooltip { Text = null, Groups = groups };
 		}
 
 		private static string GetLabel(MutexGroup group, uint value)
@@ -224,10 +241,12 @@ namespace ILSight.Core.Metadata
     {
         return state.IsEmpty
     				? null
-    				: new SavedFilterState(
-    					SaveGroups(state),
-    					state.Flags.Where(static f => f.Value != TriState.DontCare).ToDictionary(static f => f.Key, static f => f.Value),
-    					state.Mode);
+    				: new SavedFilterState
+    				{
+    					Groups = SaveGroups(state),
+    					Flags = state.Flags.Where(static f => f.Value != TriState.DontCare).ToDictionary(static f => f.Key, static f => f.Value),
+    					Mode = state.Mode,
+    				};
     }
 
 		/// <summary>Applies what <see cref="SaveFilter"/> kept, skipping groups and flags the schema no longer has.</summary>

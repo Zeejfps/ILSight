@@ -8,8 +8,12 @@ namespace ILSight.Core.Metadata
 	/// independent single-bit flags. The filter UI renders from this shape; the matcher
 	/// applies it bitwise.
 	/// </summary>
-	public sealed record FlagsSchema(
-		Type EnumType,
-		IReadOnlyList<MutexGroup> MutexGroups,
-		IReadOnlyList<IndependentFlag> IndependentFlags);
+	public sealed record FlagsSchema
+	{
+		public required Type EnumType { get; init; }
+
+		public required IReadOnlyList<MutexGroup> MutexGroups { get; init; }
+
+		public required IReadOnlyList<IndependentFlag> IndependentFlags { get; init; }
+	}
 }

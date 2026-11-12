@@ -85,7 +85,7 @@ public static class ApiEntries
             return;
         }
 
-        var compared = new Compared(entity, reference);
+        var compared = new Compared { Entity = entity, Reference = reference };
         var key = ApiKeys.Of(entity);
         var candidate = key;
         var number = 2;
@@ -195,7 +195,7 @@ public static class ApiEntries
     private static ApiEntry CompareBoth(Compared left, Compared right, ApiScope scope, CancellationToken cancellationToken)
     {
         var children = CompareAll(ListChildren(left, scope), ListChildren(right, scope), scope, cancellationToken);
-        return EntryOf(right, new ApiSides.Both(SideOf(left), SideOf(right)), children);
+        return EntryOf(right, new ApiSides.Both { Left = SideOf(left), Right = SideOf(right) }, children);
     }
 
     private static ApiEntry EntryOf(Compared compared, ApiSides sides, List<ApiEntry> children)
@@ -260,7 +260,7 @@ public static class ApiEntries
 
     private static ApiSide SideOf(Compared compared)
     {
-        return new ApiSide(compared.Reference, ApiDeclarations.Of(compared.Entity));
+        return new ApiSide { Reference = compared.Reference, Declaration = ApiDeclarations.Of(compared.Entity) };
     }
 
     /// <summary>The nested types and members of <paramref name="compared"/> that <paramref name="scope"/>
@@ -353,5 +353,10 @@ public static class ApiEntries
     }
 
     /// <summary>A type or member taken into a comparison, with the reference it is opened by.</summary>
-    private readonly record struct Compared(IEntity Entity, CodeReference.Entity Reference);
+    private readonly record struct Compared
+    {
+        public required IEntity Entity { get; init; }
+
+        public required CodeReference.Entity Reference { get; init; }
+    }
 }

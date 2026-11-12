@@ -166,8 +166,12 @@ public sealed class SettingsFormatTests : IDisposable
             ExportColumns = [2f, 0.5f],
             FlagsFilters = new Dictionary<string, SavedFilterState>
             {
-                ["TypeDef/Attributes"] = new SavedFilterState(new Dictionary<string, uint[]> { ["Visibility"] = [1u, 2u] },
-                    new Dictionary<string, TriState> { ["Sealed"] = TriState.Required }, MatchMode.Any),
+                ["TypeDef/Attributes"] = new SavedFilterState
+                {
+                    Groups = new Dictionary<string, uint[]> { ["Visibility"] = [1u, 2u] },
+                    Flags = new Dictionary<string, TriState> { ["Sealed"] = TriState.Required },
+                    Mode = MatchMode.Any,
+                },
             },
             Window = new WindowBounds(10, 20, 1200, 800, true),
             ExportWindow = new WindowBounds(30, 40, 900, 600, false),

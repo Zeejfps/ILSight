@@ -85,44 +85,270 @@ namespace ILSight.Core.Metadata
 
         static FlagsSchema Bits(Type type, string[] meanings)
         {
-            return new FlagsSchema(type, [], meanings.Select(static (m, i) => new IndependentFlag(m, 1u << i)).ToArray());
+            return new FlagsSchema
+            {
+                EnumType = type,
+                MutexGroups = [],
+                IndependentFlags = meanings.Select(static (m, i) => new IndependentFlag
+                {
+                    Name = m,
+                    Bit = 1u << i,
+                }).ToArray(),
+            };
         }
 
         static List<Entry> DosEntries(PEFile module)
 		{
 			var reader = module.Reader.GetEntireImage().GetReader(0, 64);
 			var entries = new List<Entry>(31) {
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_magic", "Magic Number (MZ)"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_cblp", "Bytes on last page of file"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_cp", "Pages in file"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_crlc", "Relocations"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_cparhdr", "Size of header in paragraphs"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_minalloc", "Minimum extra paragraphs needed"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_maxalloc", "Maximum extra paragraphs needed"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_ss", "Initial (relative) SS value"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_sp", "Initial SP value"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_csum", "Checksum"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_ip", "Initial IP value"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_cs", "Initial (relative) CS value"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_lfarlc", "File address of relocation table"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_ovno", "Overlay number"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res[0]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res[1]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res[2]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res[3]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_oemid", "OEM identifier (for e_oeminfo)"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_oeminfo", "OEM information; e_oemid specific"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[0]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[1]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[2]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[3]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[4]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[5]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[6]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[7]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[8]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadUInt16(), 2, "e_res2[9]", "Reserved words"),
-				new Entry(reader.Offset, reader.ReadInt32(), 4, "e_lfanew", "File address of new exe header"),
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_magic",
+					Meaning = "Magic Number (MZ)",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_cblp",
+					Meaning = "Bytes on last page of file",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_cp",
+					Meaning = "Pages in file",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_crlc",
+					Meaning = "Relocations",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_cparhdr",
+					Meaning = "Size of header in paragraphs",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_minalloc",
+					Meaning = "Minimum extra paragraphs needed",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_maxalloc",
+					Meaning = "Maximum extra paragraphs needed",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_ss",
+					Meaning = "Initial (relative) SS value",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_sp",
+					Meaning = "Initial SP value",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_csum",
+					Meaning = "Checksum",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_ip",
+					Meaning = "Initial IP value",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_cs",
+					Meaning = "Initial (relative) CS value",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_lfarlc",
+					Meaning = "File address of relocation table",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_ovno",
+					Meaning = "Overlay number",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res[0]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res[1]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res[2]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res[3]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_oemid",
+					Meaning = "OEM identifier (for e_oeminfo)",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_oeminfo",
+					Meaning = "OEM information; e_oemid specific",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[0]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[1]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[2]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[3]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[4]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[5]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[6]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[7]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[8]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadUInt16(),
+					Size = 2,
+					Member = "e_res2[9]",
+					Meaning = "Reserved words",
+				},
+				new Entry
+				{
+					Offset = reader.Offset,
+					Value = reader.ReadInt32(),
+					Size = 4,
+					Member = "e_lfanew",
+					Meaning = "File address of new exe header",
+				},
 			};
 			return entries;
 		}
@@ -133,13 +359,63 @@ namespace ILSight.Core.Metadata
 			var header = headers.CoffHeader;
 			var linkerDateTime = DateTimeOffset.FromUnixTimeSeconds(unchecked((uint)header.TimeDateStamp)).DateTime;
 			return new List<Entry> {
-				new Entry(headers.CoffHeaderStartOffset, (int)header.Machine, 2, "Machine", header.Machine.ToString()),
-				new Entry(headers.CoffHeaderStartOffset + 2, (int)header.NumberOfSections, 2, "Number of Sections", "Number of sections; indicates size of the Section Table, which immediately follows the headers."),
-				new Entry(headers.CoffHeaderStartOffset + 4, header.TimeDateStamp, 4, "Time/Date Stamp", $"{linkerDateTime} (UTC) / {linkerDateTime.ToLocalTime()} - Time and date the file was created in seconds since January 1st 1970 00:00:00 or 0. Note that for deterministic builds this value is meaningless."),
-				new Entry(headers.CoffHeaderStartOffset + 8, header.PointerToSymbolTable, 4, "Pointer to Symbol Table", "Always 0 in .NET executables."),
-				new Entry(headers.CoffHeaderStartOffset + 12, header.NumberOfSymbols, 4, "Number of Symbols", "Always 0 in .NET executables."),
-				new Entry(headers.CoffHeaderStartOffset + 16, (int)header.SizeOfOptionalHeader, 2, "Optional Header Size", "Size of the optional header."),
-				new Entry(headers.CoffHeaderStartOffset + 18, (int)header.Characteristics, 2, "Characteristics", "Flags indicating attributes of the file.", CharacteristicsBits),
+				new Entry
+				{
+					Offset = headers.CoffHeaderStartOffset,
+					Value = (int)header.Machine,
+					Size = 2,
+					Member = "Machine",
+					Meaning = header.Machine.ToString(),
+				},
+				new Entry
+				{
+					Offset = headers.CoffHeaderStartOffset + 2,
+					Value = (int)header.NumberOfSections,
+					Size = 2,
+					Member = "Number of Sections",
+					Meaning = "Number of sections; indicates size of the Section Table, which immediately follows the headers.",
+				},
+				new Entry
+				{
+					Offset = headers.CoffHeaderStartOffset + 4,
+					Value = header.TimeDateStamp,
+					Size = 4,
+					Member = "Time/Date Stamp",
+					Meaning = $"{linkerDateTime} (UTC) / {linkerDateTime.ToLocalTime()} - Time and date the file was created in seconds since January 1st 1970 00:00:00 or 0. Note that for deterministic builds this value is meaningless.",
+				},
+				new Entry
+				{
+					Offset = headers.CoffHeaderStartOffset + 8,
+					Value = header.PointerToSymbolTable,
+					Size = 4,
+					Member = "Pointer to Symbol Table",
+					Meaning = "Always 0 in .NET executables.",
+				},
+				new Entry
+				{
+					Offset = headers.CoffHeaderStartOffset + 12,
+					Value = header.NumberOfSymbols,
+					Size = 4,
+					Member = "Number of Symbols",
+					Meaning = "Always 0 in .NET executables.",
+				},
+				new Entry
+				{
+					Offset = headers.CoffHeaderStartOffset + 16,
+					Value = (int)header.SizeOfOptionalHeader,
+					Size = 2,
+					Member = "Optional Header Size",
+					Meaning = "Size of the optional header.",
+				},
+				new Entry
+				{
+					Offset = headers.CoffHeaderStartOffset + 18,
+					Value = (int)header.Characteristics,
+					Size = 2,
+					Member = "Characteristics",
+					Meaning = "Flags indicating attributes of the file.",
+					Flags = CharacteristicsBits,
+				},
 			};
 		}
 
@@ -151,37 +427,248 @@ namespace ILSight.Core.Metadata
 			var isPE32Plus = header.Magic == PEMagic.PE32Plus;
 
 			var entries = new List<Entry>();
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Magic", header.Magic.ToString()));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadByte(), 1, "Major Linker Version", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadByte(), 1, "Minor Linker Version", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Code Size", "Size of the code (text) section, or the sum of all code sections if there are multiple sections."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Initialized Data Size", "Size of the initialized data section, or the sum of all initialized data sections if there are multiple data sections."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Uninitialized Data Size", "Size of the uninitialized data section, or the sum of all uninitialized data sections if there are multiple uninitialized data sections."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Entry Point RVA", "RVA of entry point, needs to point to bytes 0xFF 0x25 followed by the RVA in a section marked execute / read for EXEs or 0 for DLLs"));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Base Of Code", "RVA of the code section."));
-			entries.Add(new Entry(isPE32Plus ? 0 : headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? 0UL : reader.ReadUInt32(), isPE32Plus ? 0 : 4, "Base Of Data", "PE32 only (not present in PE32Plus): RVA of the data section, relative to the Image Base."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Image Base", "Shall be a multiple of 0x10000."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Section Alignment", "Shall be greater than File Alignment."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "File Alignment", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Major OS Version", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Minor OS Version", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Major Image Version", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Minor Image Version", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Major Subsystem Version", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Minor Subsystem Version", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt32(), 4, "Win32VersionValue", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Image Size", "Size, in bytes, of image, including all headers and padding; shall be a multiple of Section Alignment."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Header Size", "Combined size of MS-DOS Header, PE Header, PE Optional Header and padding; shall be a multiple of the file alignment."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "File Checksum", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Subsystem", header.Subsystem.ToString()));
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt16(),
+				Size = 2,
+				Member = "Magic",
+				Meaning = header.Magic.ToString(),
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadByte(),
+				Size = 1,
+				Member = "Major Linker Version",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadByte(),
+				Size = 1,
+				Member = "Minor Linker Version",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Code Size",
+				Meaning = "Size of the code (text) section, or the sum of all code sections if there are multiple sections.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Initialized Data Size",
+				Meaning = "Size of the initialized data section, or the sum of all initialized data sections if there are multiple data sections.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Uninitialized Data Size",
+				Meaning = "Size of the uninitialized data section, or the sum of all uninitialized data sections if there are multiple uninitialized data sections.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Entry Point RVA",
+				Meaning = "RVA of entry point, needs to point to bytes 0xFF 0x25 followed by the RVA in a section marked execute / read for EXEs or 0 for DLLs",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Base Of Code",
+				Meaning = "RVA of the code section.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = isPE32Plus ? 0 : headers.PEHeaderStartOffset + reader.Offset,
+				Value = isPE32Plus ? 0UL : reader.ReadUInt32(),
+				Size = isPE32Plus ? 0 : 4,
+				Member = "Base Of Data",
+				Meaning = "PE32 only (not present in PE32Plus): RVA of the data section, relative to the Image Base.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(),
+				Size = isPE32Plus ? 8 : 4,
+				Member = "Image Base",
+				Meaning = "Shall be a multiple of 0x10000.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Section Alignment",
+				Meaning = "Shall be greater than File Alignment.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "File Alignment",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt16(),
+				Size = 2,
+				Member = "Major OS Version",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt16(),
+				Size = 2,
+				Member = "Minor OS Version",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt16(),
+				Size = 2,
+				Member = "Major Image Version",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt16(),
+				Size = 2,
+				Member = "Minor Image Version",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt16(),
+				Size = 2,
+				Member = "Major Subsystem Version",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt16(),
+				Size = 2,
+				Member = "Minor Subsystem Version",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt32(),
+				Size = 4,
+				Member = "Win32VersionValue",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Image Size",
+				Meaning = "Size, in bytes, of image, including all headers and padding; shall be a multiple of Section Alignment.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Header Size",
+				Meaning = "Combined size of MS-DOS Header, PE Header, PE Optional Header and padding; shall be a multiple of the file alignment.",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "File Checksum",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt16(),
+				Size = 2,
+				Member = "Subsystem",
+				Meaning = header.Subsystem.ToString(),
+			});
 			var dllCharacteristics = reader.ReadUInt16();
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset - 2, dllCharacteristics, 2, "DLL Characteristics", header.DllCharacteristics.ToString(), DllCharacteristicsBits));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Stack Reserve Size", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Stack Commit Size", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Heap Reserve Size", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Heap Commit Size", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt32(), 4, "Loader Flags", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Number of Data Directories", ""));
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset - 2,
+				Value = dllCharacteristics,
+				Size = 2,
+				Member = "DLL Characteristics",
+				Meaning = header.DllCharacteristics.ToString(),
+				Flags = DllCharacteristicsBits,
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(),
+				Size = isPE32Plus ? 8 : 4,
+				Member = "Stack Reserve Size",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(),
+				Size = isPE32Plus ? 8 : 4,
+				Member = "Stack Commit Size",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(),
+				Size = isPE32Plus ? 8 : 4,
+				Member = "Heap Reserve Size",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(),
+				Size = isPE32Plus ? 8 : 4,
+				Member = "Heap Commit Size",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadUInt32(),
+				Size = 4,
+				Member = "Loader Flags",
+				Meaning = "",
+			});
+			entries.Add(new Entry
+			{
+				Offset = headers.PEHeaderStartOffset + reader.Offset,
+				Value = reader.ReadInt32(),
+				Size = 4,
+				Member = "Number of Data Directories",
+				Meaning = "",
+			});
 			return entries;
 		}
 
@@ -250,6 +737,19 @@ namespace ILSight.Core.Metadata
 
         /// <summary>One row of a PE header: <see cref="Value"/> is <see cref="Size"/> bytes at
         /// <see cref="Offset"/>, and <see cref="Flags"/> breaks a flags value down.</summary>
-        private sealed record Entry(int Offset, object? Value, int Size, string Member, string Meaning, FlagsSchema? Flags = null);
+        private sealed record Entry
+        {
+            public required int Offset { get; init; }
+
+            public required object? Value { get; init; }
+
+            public required int Size { get; init; }
+
+            public required string Member { get; init; }
+
+            public required string Meaning { get; init; }
+
+            public FlagsSchema? Flags { get; init; }
+        }
 	}
 }

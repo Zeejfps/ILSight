@@ -9,9 +9,9 @@ public sealed class LayOutDiagramHandlerTests
     private static DiagramMeasures MeasuresOf(params CodeReference.Entity[] types)
     {
         var cards = types
-            .Select(static t => new MeasuredCard(t, 120f, 80f))
+            .Select(static t => new MeasuredCard { Type = t, Width = 120f, Height = 80f })
             .ToList();
-        return new DiagramMeasures(cards, []);
+        return new DiagramMeasures { Cards = cards, Links = [] };
     }
 
     [Fact]

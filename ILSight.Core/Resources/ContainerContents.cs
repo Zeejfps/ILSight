@@ -10,7 +10,12 @@ public abstract record ContainerContents
     {
     }
 
-    public sealed record ResourcesFile(Lazy<List<KeyValuePair<string, object?>>> Entries, Lazy<Metadata.MetadataGrid> Grid) : ContainerContents;
+    public sealed record ResourcesFile : ContainerContents
+    {
+        public required Lazy<List<KeyValuePair<string, object?>>> Entries { get; init; }
+
+        public required Lazy<Metadata.MetadataGrid> Grid { get; init; }
+    }
 
     public sealed record AvaloniaAssets : ContainerContents;
 

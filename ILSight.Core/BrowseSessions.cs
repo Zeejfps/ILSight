@@ -471,7 +471,7 @@ public static class BrowseSessions
         }
 
         var row = MetadataTokens.GetRowNumber(handle) - 1;
-        return new MetadataTarget(table, row);
+        return new MetadataTarget { Node = table, Row = row };
     }
 
     /// <summary>Whether <paramref name="node"/> is the folder of <paramref name="file"/>'s metadata.</summary>

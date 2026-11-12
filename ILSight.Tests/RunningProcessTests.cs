@@ -92,7 +92,7 @@ public sealed class RunningProcessTests
             var listing = await RunningProcesses.GetModulesAsync(Self, CancellationToken.None);
 
             var modules = Assert.IsType<ModuleListing.Listed>(listing).Modules;
-            Assert.Contains(new RunningModule.InMemory("SampleApp"), modules);
+            Assert.Contains(new RunningModule.InMemory { Name = "SampleApp" }, modules);
         }
         finally
         {
@@ -147,20 +147,20 @@ public sealed class RunningProcessTests
 
         var modules = RunningProcesses.ResolveModules(
         [
-            new RundownModule(core, "", "ILSight.Core"),
-            new RundownModule("", core, "ILSight.Core"),
-            new RundownModule("", "", "Generated"),
-            new RundownModule("", "", "Generated"),
-            new RundownModule(gone, "", null),
-            new RundownModule("", "", null),
+            new RundownModule { IlPath = core, NativePath = "", AssemblyName = "ILSight.Core" },
+            new RundownModule { IlPath = "", NativePath = core, AssemblyName = "ILSight.Core" },
+            new RundownModule { IlPath = "", NativePath = "", AssemblyName = "Generated" },
+            new RundownModule { IlPath = "", NativePath = "", AssemblyName = "Generated" },
+            new RundownModule { IlPath = gone, NativePath = "", AssemblyName = null },
+            new RundownModule { IlPath = "", NativePath = "", AssemblyName = null },
         ], FilesAt(core));
 
         Assert.Equal(
         [
-            new RunningModule.InMemory("(dynamic module)"),
-            new RunningModule.InMemory(gone),
-            new RunningModule.InMemory("Generated"),
-            new RunningModule.OnDisk("ILSight.Core.dll", AssemblyPath.Of(core)),
+            new RunningModule.InMemory { Name = "(dynamic module)" },
+            new RunningModule.InMemory { Name = gone },
+            new RunningModule.InMemory { Name = "Generated" },
+            new RunningModule.OnDisk { Name = "ILSight.Core.dll", Path = AssemblyPath.Of(core) },
         ], modules);
     }
 
@@ -169,13 +169,18 @@ public sealed class RunningProcessTests
     {
         var modules = new RunningModule[]
         {
-            new RunningModule.InMemory("ILSight.Core"),
-            new RunningModule.OnDisk("ILSight.Core.dll", AssemblyPath.Of(CoreAssemblyPath)),
+            new RunningModule.InMemory { Name = "ILSight.Core" },
+            new RunningModule.OnDisk { Name = "ILSight.Core.dll", Path = AssemblyPath.Of(CoreAssemblyPath) },
         };
 
         Assert.Equal(AssemblyPath.Of(CoreAssemblyPath), RunningProcesses.FindEntryAssembly(CreateProcess(entryName: "ILSight.Core", commandLine: null), modules));
         Assert.Null(RunningProcesses.FindEntryAssembly(CreateProcess(entryName: "Elsewhere", commandLine: null), modules));
-        Assert.Null(RunningProcesses.FindEntryAssembly(new RunningProcess(Self, "x", null), modules));
+        Assert.Null(RunningProcesses.FindEntryAssembly(new RunningProcess
+        {
+            Id = Self,
+            Name = "x",
+            Info = null,
+        }, modules));
     }
 
     [Fact]
@@ -306,13 +311,18 @@ public sealed class RunningProcessTests
 
     private static RunningProcess CreateProcess(string? entryName, string? commandLine)
     {
-        return new RunningProcess(Self, "x", new ProcessInfo
+        return new RunningProcess
         {
-            CommandLine = commandLine,
-            Architecture = null,
-            EntryAssemblyName = entryName,
-            RuntimeVersion = null,
-        });
+            Id = Self,
+            Name = "x",
+            Info = new ProcessInfo
+            {
+                CommandLine = commandLine,
+                Architecture = null,
+                EntryAssemblyName = entryName,
+                RuntimeVersion = null,
+            },
+        };
     }
 
     private static string? Find(string commandLine, Func<string, bool>? exists = null)

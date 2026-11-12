@@ -188,12 +188,12 @@ internal static class DiagramFaces
     private static DiagramMeasures MeasuresOf(Ui<UiState> ui, TypeDiagram diagram, List<CardFace> faces)
     {
         var cards = faces
-            .Select(static f => new MeasuredCard(f.Card.Type, f.Width, f.Height))
+            .Select(static f => new MeasuredCard { Type = f.Card.Type, Width = f.Width, Height = f.Height })
             .ToList();
         var links = diagram.Links
             .Select(l => MeasureLink(ui, l))
             .ToList();
-        return new DiagramMeasures(cards, links);
+        return new DiagramMeasures { Cards = cards, Links = links };
     }
 
     private static MeasuredLink MeasureLink(Ui<UiState> ui, TypeLink link)
@@ -201,11 +201,11 @@ internal static class DiagramFaces
         var label = LabelOf(link);
         if (label is null)
         {
-            return new MeasuredLink(link, 0f, 0f);
+            return new MeasuredLink { Link = link, LabelWidth = 0f, LabelHeight = 0f };
         }
 
         var size = MeasureLabel(ui, label);
-        return new MeasuredLink(link, size.Width, size.Height);
+        return new MeasuredLink { Link = link, LabelWidth = size.Width, LabelHeight = size.Height };
     }
 
     /// <summary>How large <paramref name="label"/> is drawn on a link, with room around it.</summary>

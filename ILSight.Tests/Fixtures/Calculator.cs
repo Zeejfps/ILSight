@@ -64,7 +64,12 @@ public struct Size
     public int Height;
 }
 
-public record Point(int X, int Y);
+public record Point
+{
+    public required int X { get; init; }
+
+    public required int Y { get; init; }
+}
 
 public delegate void Callback(int value);
 

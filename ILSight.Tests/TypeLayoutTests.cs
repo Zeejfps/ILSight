@@ -27,18 +27,18 @@ public sealed class TypeLayoutTests
     {
         MeasuredCard[] cards =
         [
-            new(Animal, 160f, 120f),
-            new(Lion, 140f, 80f),
-            new(Parrot, 120f, 60f),
-            new(Keeper, 150f, 90f),
+            new MeasuredCard { Type = Animal, Width = 160f, Height = 120f },
+            new MeasuredCard { Type = Lion, Width = 140f, Height = 80f },
+            new MeasuredCard { Type = Parrot, Width = 120f, Height = 60f },
+            new MeasuredCard { Type = Keeper, Width = 150f, Height = 90f },
         ];
         MeasuredLink[] links =
         [
-            new(LionIsAnimal, 0f, 0f),
-            new(ParrotIsAnimal, 0f, 0f),
-            new(KeeperHoldsAnimals, 60f, 16f),
+            new MeasuredLink { Link = LionIsAnimal, LabelWidth = 0f, LabelHeight = 0f },
+            new MeasuredLink { Link = ParrotIsAnimal, LabelWidth = 0f, LabelHeight = 0f },
+            new MeasuredLink { Link = KeeperHoldsAnimals, LabelWidth = 60f, LabelHeight = 16f },
         ];
-        return new DiagramMeasures(cards, links);
+        return new DiagramMeasures { Cards = cards, Links = links };
     }
 
     private static (PointF TopLeft, MeasuredCard Card) Placed(TypeLayout layout, DiagramMeasures measures, CodeReference.Entity type)
@@ -136,7 +136,21 @@ public sealed class TypeLayoutTests
     [Fact]
     public void A_link_to_a_card_not_measured_is_left_out()
     {
-        var measures = new DiagramMeasures([new MeasuredCard(Lion, 100f, 50f)], [new MeasuredLink(LionIsAnimal, 0f, 0f)]);
+        var measures = new DiagramMeasures
+        {
+            Cards = [new MeasuredCard
+            {
+                Type = Lion,
+                Width = 100f,
+                Height = 50f,
+            }],
+            Links = [new MeasuredLink
+            {
+                Link = LionIsAnimal,
+                LabelWidth = 0f,
+                LabelHeight = 0f,
+            }],
+        };
 
         var layout = DiagramLayouts.Arrange(measures);
 
@@ -148,7 +162,21 @@ public sealed class TypeLayoutTests
     public void A_type_holding_itself_is_routed_as_a_loop()
     {
         var self = new TypeLink.HoldsOne { From = Keeper, To = Keeper, Property = "Next" };
-        var measures = new DiagramMeasures([new MeasuredCard(Keeper, 100f, 50f)], [new MeasuredLink(self, 30f, 14f)]);
+        var measures = new DiagramMeasures
+        {
+            Cards = [new MeasuredCard
+            {
+                Type = Keeper,
+                Width = 100f,
+                Height = 50f,
+            }],
+            Links = [new MeasuredLink
+            {
+                Link = self,
+                LabelWidth = 30f,
+                LabelHeight = 14f,
+            }],
+        };
 
         var layout = DiagramLayouts.Arrange(measures);
 
@@ -158,7 +186,7 @@ public sealed class TypeLayoutTests
     [Fact]
     public void Nothing_to_lay_out_is_an_empty_layout()
     {
-        var layout = DiagramLayouts.Arrange(new DiagramMeasures([], []));
+        var layout = DiagramLayouts.Arrange(new DiagramMeasures { Cards = [], Links = [] });
 
         Assert.Empty(layout.Places);
         Assert.Equal(0f, layout.Width);

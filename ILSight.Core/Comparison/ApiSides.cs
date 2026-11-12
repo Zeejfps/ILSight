@@ -22,8 +22,12 @@ public abstract record ApiSides
         public override ApiChange Change => ApiChange.Added;
     }
 
-    public sealed record Both(ApiSide Left, ApiSide Right) : ApiSides
+    public sealed record Both : ApiSides
     {
+        public required ApiSide Left { get; init; }
+
+        public required ApiSide Right { get; init; }
+
         /// <summary>Whether the two assemblies declare it differently.</summary>
         public bool IsDeclaredDifferently => Left.Declaration != Right.Declaration;
 

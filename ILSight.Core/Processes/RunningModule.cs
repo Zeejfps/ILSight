@@ -14,11 +14,14 @@ public abstract record RunningModule
     }
 
     /// <summary>The file name of a module on disk; the assembly's simple name of one in memory.</summary>
-    public abstract string Name { get; init; }
+    public required string Name { get; init; }
 
-    public sealed record OnDisk(string Name, AssemblyPath Path) : RunningModule;
+    public sealed record OnDisk : RunningModule
+    {
+        public required AssemblyPath Path { get; init; }
+    }
 
-    public sealed record InMemory(string Name) : RunningModule;
+    public sealed record InMemory : RunningModule;
 
     /// <summary>Does what the handler of whichever case this is does with it and <paramref name="state"/>, which
     /// it is handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>

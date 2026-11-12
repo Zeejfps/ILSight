@@ -754,29 +754,89 @@ internal static class MetadataTables
     internal static MetadataTableInfo CreateGridPart(LoadedModule module, MetadataFile file, string title, MetadataPartKey key, MetadataGridRole role,
         GridSchema schema)
     {
-        return new MetadataTableInfo { Module = module, File = file, Title = title, Key = key, Part = new MetadataPart.Grid(role, schema, new Lazy<MetadataGrid>(() => MetadataGrids.CreateGrid(title, module, file, schema))) };
+        return new MetadataTableInfo
+        {
+            Module = module,
+            File = file,
+            Title = title,
+            Key = key,
+            Part = new MetadataPart.Grid
+            {
+                Role = role,
+                Schema = schema,
+                View = new Lazy<MetadataGrid>(() => MetadataGrids.CreateGrid(title, module, file, schema)),
+            },
+        };
     }
 
     internal static MetadataTableInfo CreateDebugDirectoryPart(LoadedModule module, PEFile file)
     {
         const string title = "Debug Directory";
         var schema = PEHeaderEntries.DebugDirectory(file);
-        return new MetadataTableInfo { Module = module, File = file, Title = title, Key = new MetadataPartKey.DebugDirectory(), Part = new MetadataPart.DebugDirectory(file, new Lazy<MetadataGrid>(() => MetadataGrids.CreateGrid(title, module, file, schema))) };
+        return new MetadataTableInfo
+        {
+            Module = module,
+            File = file,
+            Title = title,
+            Key = new MetadataPartKey.DebugDirectory(),
+            Part = new MetadataPart.DebugDirectory
+            {
+                File = file,
+                View = new Lazy<MetadataGrid>(() => MetadataGrids.CreateGrid(title, module, file, schema)),
+            },
+        };
     }
 
     internal static MetadataTableInfo CreateRowCountPart(LoadedModule module, MetadataFile file, TableIndex table, int rows)
     {
-        return new MetadataTableInfo { Module = module, File = file, Title = $"{(byte)table:X2} {table} ({rows})", Key = new MetadataPartKey.Table(table), Part = new MetadataPart.RowCount(table, rows) };
+        return new MetadataTableInfo
+        {
+            Module = module,
+            File = file,
+            Title = $"{(byte)table:X2} {table} ({rows})",
+            Key = new MetadataPartKey.Table(table),
+            Part = new MetadataPart.RowCount
+            {
+                Table = table,
+                Rows = rows,
+            },
+        };
     }
 
     internal static MetadataTableInfo CreateDecodedEntryPart(LoadedModule module, PEFile file, int index, DebugDirectoryEntry entry, IReadOnlyList<string> lines)
     {
-        return new MetadataTableInfo { Module = module, File = file, Title = entry.Type.ToString(), Key = new MetadataPartKey.DebugEntry(index, entry.Type), Part = new MetadataPart.DecodedDebugEntry(lines) };
+        return new MetadataTableInfo
+        {
+            Module = module,
+            File = file,
+            Title = entry.Type.ToString(),
+            Key = new MetadataPartKey.DebugEntry
+            {
+                Index = index,
+                Type = entry.Type,
+            },
+            Part = new MetadataPart.DecodedDebugEntry(lines),
+        };
     }
 
     internal static MetadataTableInfo CreateRawEntryPart(LoadedModule module, PEFile file, int index, DebugDirectoryEntry entry)
     {
-        return new MetadataTableInfo { Module = module, File = file, Title = entry.Type.ToString(), Key = new MetadataPartKey.DebugEntry(index, entry.Type), Part = new MetadataPart.RawDebugEntry(file, entry) };
+        return new MetadataTableInfo
+        {
+            Module = module,
+            File = file,
+            Title = entry.Type.ToString(),
+            Key = new MetadataPartKey.DebugEntry
+            {
+                Index = index,
+                Type = entry.Type,
+            },
+            Part = new MetadataPart.RawDebugEntry
+            {
+                File = file,
+                Entry = entry,
+            },
+        };
     }
 
     /// <summary>A part shown as text, as comment lines: a table's row count, or a debug entry decoded or

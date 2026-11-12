@@ -23,13 +23,20 @@ public sealed class LayoutTransitionTests
 
     private static TypeLayout Arrange(float vehicleHeight, bool withCar = true)
     {
-        var cards = new List<MeasuredCard> { new MeasuredCard(Vehicle, 120f, vehicleHeight) };
+        var cards = new List<MeasuredCard>
+        {
+            new MeasuredCard { Type = Vehicle, Width = 120f, Height = vehicleHeight },
+        };
         if (withCar)
         {
-            cards.Add(new MeasuredCard(Car, 100f, 60f));
+            cards.Add(new MeasuredCard { Type = Car, Width = 100f, Height = 60f });
         }
 
-        return DiagramLayouts.Arrange(new DiagramMeasures(cards, [new MeasuredLink(CarIsVehicle, 0f, 0f)]));
+        return DiagramLayouts.Arrange(new DiagramMeasures
+        {
+            Cards = cards,
+            Links = [new MeasuredLink { Link = CarIsVehicle, LabelWidth = 0f, LabelHeight = 0f }],
+        });
     }
 
     [Fact]

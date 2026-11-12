@@ -5,4 +5,11 @@ namespace ILSight.Core.Processes;
 
 /// <summary>A module as a runtime's rundown reports it: the paths it gives, either of which may be empty,
 /// and the simple name of the assembly that holds it, when the rundown named that too.</summary>
-internal sealed record RundownModule(string IlPath, string NativePath, string? AssemblyName);
+internal sealed record RundownModule
+{
+    public required string IlPath { get; init; }
+
+    public required string NativePath { get; init; }
+
+    public required string? AssemblyName { get; init; }
+}

@@ -92,8 +92,13 @@ public static class RunningProcesses
         // An endpoint that is there but doesn't answer (a suspended runtime, a stale transport, or one shutting
         // down) is still worth listing, without what only it could say.
         return await AskUnlessUnreachableAsync(
-            async ct => new RunningProcess(id, name, await DiagnosticsIpc.QueryProcessInfoAsync(endpoint, budget, ct).ConfigureAwait(false)),
-            _ => new RunningProcess(id, name, null), cancellationToken).ConfigureAwait(false);
+            async ct => new RunningProcess
+            {
+                Id = id,
+                Name = name,
+                Info = await DiagnosticsIpc.QueryProcessInfoAsync(endpoint, budget, ct).ConfigureAwait(false),
+            },
+            _ => new RunningProcess { Id = id, Name = name, Info = null }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The modules process <paramref name="id"/> has loaded, as its runtime lists them as of now.</summary>
@@ -140,7 +145,7 @@ public static class RunningProcesses
             {
                 if (seenPaths.Add(path))
                 {
-                    result.Add(new RunningModule.OnDisk(path.FileName, path));
+                    result.Add(new RunningModule.OnDisk { Name = path.FileName, Path = path });
                 }
 
                 continue;
@@ -149,7 +154,7 @@ public static class RunningProcesses
             var name = module.AssemblyName ?? FindNonBlank(module.IlPath) ?? FindNonBlank(module.NativePath) ?? "(dynamic module)";
             if (seenNames.Add(name))
             {
-                result.Add(new RunningModule.InMemory(name));
+                result.Add(new RunningModule.InMemory { Name = name });
             }
         }
 

@@ -176,9 +176,19 @@ public static class GridSchemas
         var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
         var numeric = type.IsEnum || Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
         var flags = FlagsSchemaInferer.IsFlags(typeof(T)) ? FlagsSchemaInferer.For(typeof(T)) : null;
-        schema.Columns.Add(new GridColumn(new MetadataColumn(name, isToken, numeric, flags), format,
-            (r, rid) => value(GetRow<TRow>(r), rid),
-            tooltip is null ? null : (r, rid) => tooltip(GetRow<TRow>(r), rid)));
+        schema.Columns.Add(new GridColumn
+        {
+            Column = new MetadataColumn
+            {
+                Name = name,
+                IsToken = isToken,
+                IsNumeric = numeric,
+                Flags = flags,
+            },
+            Format = format,
+            Value = (r, rid) => value(GetRow<TRow>(r), rid),
+            Tooltip = tooltip is null ? null : (r, rid) => tooltip(GetRow<TRow>(r), rid),
+        });
     }
 
     /// <summary>

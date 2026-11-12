@@ -10,10 +10,20 @@ public abstract record MetadataRowDetails
     }
 
     /// <summary>A decoded text, with the file extension of the language it is in, if known.</summary>
-    public sealed record Text(string Content, string? Extension) : MetadataRowDetails;
+    public sealed record Text : MetadataRowDetails
+    {
+        public required string Content { get; init; }
+
+        public required string? Extension { get; init; }
+    }
 
     /// <summary>A decoded list, as a table.</summary>
-    public sealed record Table(IReadOnlyList<string> Headers, IReadOnlyList<IReadOnlyList<string>> Rows) : MetadataRowDetails;
+    public sealed record Table : MetadataRowDetails
+    {
+        public required IReadOnlyList<string> Headers { get; init; }
+
+        public required IReadOnlyList<IReadOnlyList<string>> Rows { get; init; }
+    }
 
     /// <summary>Why the row's details could not be read: what the library threw reading them.</summary>
     public sealed record Failed(string Reason) : MetadataRowDetails;

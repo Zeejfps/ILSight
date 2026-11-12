@@ -166,7 +166,7 @@ public static class SavedPlaces
             return null;
         }
 
-        return new MetadataPartKey.DebugEntry(at, parsed);
+        return new MetadataPartKey.DebugEntry { Index = at, Type = parsed };
     }
 
     /// <summary>The value of <typeparamref name="T"/> named <paramref name="name"/>; null for any other

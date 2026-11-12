@@ -22,7 +22,14 @@ internal static class AvaloniaResources
     private static readonly XName XmlOffset = XmlIndexNamespace + "Offset";
     private static readonly XName XmlSize = XmlIndexNamespace + "Size";
 
-    private readonly record struct IndexEntry(string Path, int Offset, int Size);
+    private readonly record struct IndexEntry
+    {
+        public required string Path { get; init; }
+
+        public required int Offset { get; init; }
+
+        public required int Size { get; init; }
+    }
 
     public static bool IsContainerName(string name)
     {
@@ -67,7 +74,7 @@ internal static class AvaloniaResources
             var path = reader.ReadString();
             var offset = reader.ReadInt32();
             var size = reader.ReadInt32();
-            entries.Add(new IndexEntry(path, offset, size));
+            entries.Add(new IndexEntry { Path = path, Offset = offset, Size = size });
         }
         return entries;
     }
@@ -90,7 +97,7 @@ internal static class AvaloniaResources
         var path = (string)Required(entry, XmlPath);
         var offset = (int)Required(entry, XmlOffset);
         var size = (int)Required(entry, XmlSize);
-        return new IndexEntry(path, offset, size);
+        return new IndexEntry { Path = path, Offset = offset, Size = size };
     }
 
     private static XElement Required(XElement entry, XName name)

@@ -320,15 +320,15 @@ public static partial class ClassDiagrams
         RecordOutside(naming, id, referred);
         if (propertyName is not null)
         {
-            return new DiagramReference(id, propertyName);
+            return new DiagramReference { To = id, Label = propertyName };
         }
 
         if (openGeneric is null)
         {
-            return new DiagramReference(id, null);
+            return new DiagramReference { To = id, Label = null };
         }
 
-        return new DiagramReference(id, GetTypeName(naming, type));
+        return new DiagramReference { To = id, Label = GetTypeName(naming, type) };
     }
 
     private static void RecordOutside(DiagramNames naming, string id, IType type)
@@ -600,12 +600,14 @@ public static partial class ClassDiagrams
         var flat = properties
             .Where(p => !related.Contains(p))
             .ToArray();
-        return new DeclaredMembers(
-            GroupByDeclaringType(flat, static p => p),
-            GroupByDeclaringType(hasOne, static p => p),
-            GroupByDeclaringType(hasMany, static r => r.Property),
-            GroupByDeclaringType(methods, static m => m),
-            GroupByDeclaringType(fields, static f => f));
+        return new DeclaredMembers
+        {
+            FlatProperties = GroupByDeclaringType(flat, static p => p),
+            HasOne = GroupByDeclaringType(hasOne, static p => p),
+            HasMany = GroupByDeclaringType(hasMany, static r => r.Property),
+            Methods = GroupByDeclaringType(methods, static m => m),
+            Fields = GroupByDeclaringType(fields, static f => f),
+        };
     }
 
     private static Dictionary<IType, T[]> GroupByDeclaringType<T>(IEnumerable<T> items, Func<T, IMember> memberOf)
@@ -640,7 +642,7 @@ public static partial class ClassDiagrams
             return null;
         }
 
-        return new ManyRelation(property, elementType);
+        return new ManyRelation { Property = property, ElementType = elementType };
     }
 
     private static string WriteBody(DiagramTypes diagram, ITypeDefinition type, DeclaredMembers members)
@@ -953,7 +955,12 @@ public static partial class ClassDiagrams
 
     /// <summary>A reference from one type of a diagram to another: the id it points to, and the label it
     /// is drawn with, when it has one.</summary>
-    private readonly record struct DiagramReference(string To, string? Label);
+    private readonly record struct DiagramReference
+    {
+        public required string To { get; init; }
+
+        public required string? Label { get; init; }
+    }
 
     /// <summary>The types of a diagram, each as a mermaid class definition of its own members, with
     /// properties holding diagram types drawn as relations instead, and the members it inherits kept
@@ -972,14 +979,25 @@ public static partial class ClassDiagrams
     }
 
     /// <summary>A property holding many of a diagram's types, and the type it holds.</summary>
-    private readonly record struct ManyRelation(IProperty Property, IType ElementType);
+    private readonly record struct ManyRelation
+    {
+        public required IProperty Property { get; init; }
+
+        public required IType ElementType { get; init; }
+    }
 
     /// <summary>A type's members as the diagram splits them, each kind by the type declaring it:
     /// plain properties, properties holding one or many diagram types, methods and fields.</summary>
-    private sealed record DeclaredMembers(
-        Dictionary<IType, IProperty[]> FlatProperties,
-        Dictionary<IType, IProperty[]> HasOne,
-        Dictionary<IType, ManyRelation[]> HasMany,
-        Dictionary<IType, IMethod[]> Methods,
-        Dictionary<IType, IField[]> Fields);
+    private sealed record DeclaredMembers
+    {
+        public required Dictionary<IType, IProperty[]> FlatProperties { get; init; }
+
+        public required Dictionary<IType, IProperty[]> HasOne { get; init; }
+
+        public required Dictionary<IType, ManyRelation[]> HasMany { get; init; }
+
+        public required Dictionary<IType, IMethod[]> Methods { get; init; }
+
+        public required Dictionary<IType, IField[]> Fields { get; init; }
+    }
 }

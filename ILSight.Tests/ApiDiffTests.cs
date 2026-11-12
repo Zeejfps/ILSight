@@ -213,8 +213,8 @@ public sealed class ApiDiffTests
 
         Assert.Equal(ApiChange.Removed, new ApiSides.LeftOnly(describe.Left).Change);
         Assert.Equal(ApiChange.Added, new ApiSides.RightOnly(describe.Right).Change);
-        Assert.Equal(ApiChange.Changed, new ApiSides.Both(describe.Left, describe.Right).Change);
-        Assert.Equal(ApiChange.Unchanged, new ApiSides.Both(describe.Right, describe.Right).Change);
+        Assert.Equal(ApiChange.Changed, new ApiSides.Both { Left = describe.Left, Right = describe.Right }.Change);
+        Assert.Equal(ApiChange.Unchanged, new ApiSides.Both { Left = describe.Right, Right = describe.Right }.Change);
         Assert.Equal(ApiChange.Added, Entity(new ApiSides.RightOnly(describe.Right)).Change);
     }
 

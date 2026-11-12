@@ -97,7 +97,11 @@ public sealed class BrowseSessionTests : IDisposable
         var (header, tables) = await MetadataHeaderAndTablesAsync(session);
         var before = session.PeekChildren(tables);
 
-        var target = Assert.IsType<MetadataTarget>(session.FindMetadataRow(header, new MetadataAddress(TableIndex.TypeDef, 1)));
+        var target = Assert.IsType<MetadataTarget>(session.FindMetadataRow(header, new MetadataAddress
+        {
+            Table = TableIndex.TypeDef,
+            Row = 1,
+        }));
 
         Assert.IsType<ChildrenState.Unloaded>(before);
         var typeDefs = (await BrowseSessions.ListChildrenAsync(session, tables)).Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef);
@@ -113,7 +117,11 @@ public sealed class BrowseSessionTests : IDisposable
         var built = (await BrowseSessions.ListChildrenAsync(session, tables));
         var methods = built.Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.MethodDef);
 
-        var target = Assert.IsType<MetadataTarget>(session.FindMetadataRow(methods, new MetadataAddress(TableIndex.TypeDef, 0)));
+        var target = Assert.IsType<MetadataTarget>(session.FindMetadataRow(methods, new MetadataAddress
+        {
+            Table = TableIndex.TypeDef,
+            Row = 0,
+        }));
 
         Assert.Same(built.Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef), target.Node);
         Assert.Equal(0, target.Row);
@@ -124,7 +132,7 @@ public sealed class BrowseSessionTests : IDisposable
     {
         var session = new BrowseSession();
         var (header, tables) = await MetadataHeaderAndTablesAsync(session);
-        Assert.NotNull(session.FindMetadataRow(header, new MetadataAddress(TableIndex.TypeDef, 0)));
+        Assert.NotNull(session.FindMetadataRow(header, new MetadataAddress { Table = TableIndex.TypeDef, Row = 0 }));
 
         var made = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(tables)).Children;
 

@@ -13,17 +13,32 @@ internal static class ResourceNodes
 {
     public static ResourceData CreateData(ResourceEntryInfo entry)
     {
-        return new ResourceData(entry.Description, entry.FileName, () => ReadData(entry));
+        return new ResourceData
+        {
+            Description = entry.Description,
+            FileName = entry.FileName,
+            ReadData = () => ReadData(entry),
+        };
     }
 
     public static ResourceData CreateData(ResourceContainerInfo container)
     {
-        return new ResourceData(container.Description, container.FileName, () => ReadData(container));
+        return new ResourceData
+        {
+            Description = container.Description,
+            FileName = container.FileName,
+            ReadData = () => ReadData(container),
+        };
     }
 
     public static ResourceData CreateData(PackageFileInfo file)
     {
-        return new ResourceData(file.Description, file.FileName, () => PackageContents.ReadFileData(file));
+        return new ResourceData
+        {
+            Description = file.Description,
+            FileName = file.FileName,
+            ReadData = () => PackageContents.ReadFileData(file),
+        };
     }
 
     public static string Describe(MetadataResource resource)
@@ -113,7 +128,16 @@ internal static class ResourceNodes
     {
         var entries = new Lazy<List<KeyValuePair<string, object?>>>(() => ResourceNodes.ReadEntries(resource));
         var grid = new Lazy<Metadata.MetadataGrid>(() => Metadata.MetadataGrids.CreateGrid(resource.Name, module, LoadedAssemblies.GetFile(module), ResourceNodes.Schema(module, entries)));
-        return new ResourceContainerInfo { Module = module, Resource = resource, Contents = new ContainerContents.ResourcesFile(entries, grid) };
+        return new ResourceContainerInfo
+        {
+            Module = module,
+            Resource = resource,
+            Contents = new ContainerContents.ResourcesFile
+            {
+                Entries = entries,
+                Grid = grid,
+            },
+        };
     }
 
     internal static ResourceContainerInfo CreateAvaloniaAssets(LoadedModule module, MetadataResource resource)

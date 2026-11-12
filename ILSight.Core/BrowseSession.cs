@@ -71,7 +71,7 @@ public sealed class BrowseSession
             return null;
         }
 
-        return new MetadataTarget(table, address.Row);
+        return new MetadataTarget { Node = table, Row = address.Row };
     }
 
     /// <summary>The "Metadata" folder <paramref name="node"/> belongs to, and what it lists.</summary>

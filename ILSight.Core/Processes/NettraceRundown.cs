@@ -46,9 +46,23 @@ internal static class NettraceRundown
 
     private const int MaxNameLength = 1024;
 
-    private sealed record EventMetadata(string ProviderName, int EventId, int Version);
+    private sealed record EventMetadata
+    {
+        public required string ProviderName { get; init; }
 
-    private sealed record ModuleEvent(long AssemblyId, string IlPath, string NativePath);
+        public required int EventId { get; init; }
+
+        public required int Version { get; init; }
+    }
+
+    private sealed record ModuleEvent
+    {
+        public required long AssemblyId { get; init; }
+
+        public required string IlPath { get; init; }
+
+        public required string NativePath { get; init; }
+    }
 
     /// <summary>What the events being read have told so far.</summary>
     private sealed class Reading
@@ -130,7 +144,12 @@ internal static class NettraceRundown
         }
 
         return reading.Modules
-            .Select(module => new RundownModule(module.IlPath, module.NativePath, reading.AssemblyNames.GetValueOrDefault(module.AssemblyId)))
+            .Select(module => new RundownModule
+            {
+                IlPath = module.IlPath,
+                NativePath = module.NativePath,
+                AssemblyName = reading.AssemblyNames.GetValueOrDefault(module.AssemblyId),
+            })
             .ToList();
     }
 
@@ -420,7 +439,7 @@ internal static class NettraceRundown
         ReadUtf16NullTerminated(reader, payloadEnd); // the event's name, empty for a manifest-based provider
         reader.ReadInt64(); // the keywords
         var version = reader.ReadInt32();
-        reading.Metadata[id] = new EventMetadata(providerName, eventId, version);
+        reading.Metadata[id] = new EventMetadata { ProviderName = providerName, EventId = eventId, Version = version };
     }
 
     private static void ReadEvent(BinaryReader reader, int metadataId, long payloadEnd, Reading reading)
@@ -440,7 +459,7 @@ internal static class NettraceRundown
             reader.ReadInt32(); // reserved
             var ilPath = ReadUtf16NullTerminated(reader, payloadEnd);
             var nativePath = ReadUtf16NullTerminated(reader, payloadEnd);
-            reading.Modules.Add(new ModuleEvent(assemblyId, ilPath, nativePath));
+            reading.Modules.Add(new ModuleEvent { AssemblyId = assemblyId, IlPath = ilPath, NativePath = nativePath });
         }
         else if (IsAssemblyEvent(meta))
         {

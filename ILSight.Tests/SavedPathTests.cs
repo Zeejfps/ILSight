@@ -25,7 +25,12 @@ public sealed class SavedPathTests : IDisposable
     }
 
     /// <summary>A record struct, which the fixtures have none of.</summary>
-    private readonly record struct Interval(int Start, int End);
+    private readonly record struct Interval
+    {
+        public required int Start { get; init; }
+
+        public required int End { get; init; }
+    }
 
     public static IEnumerable<object[]> SavedKinds()
     {

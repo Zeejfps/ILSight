@@ -14,15 +14,37 @@ public abstract record MetadataPart
     {
     }
 
-    internal sealed record Grid(MetadataGridRole Role, GridSchema Schema, Lazy<MetadataGrid> View) : MetadataPart;
+    internal sealed record Grid : MetadataPart
+    {
+        public required MetadataGridRole Role { get; init; }
 
-    public sealed record DebugDirectory(PEFile File, Lazy<MetadataGrid> View) : MetadataPart;
+        public required GridSchema Schema { get; init; }
 
-    public sealed record RowCount(TableIndex Table, int Rows) : MetadataPart;
+        public required Lazy<MetadataGrid> View { get; init; }
+    }
+
+    public sealed record DebugDirectory : MetadataPart
+    {
+        public required PEFile File { get; init; }
+
+        public required Lazy<MetadataGrid> View { get; init; }
+    }
+
+    public sealed record RowCount : MetadataPart
+    {
+        public required TableIndex Table { get; init; }
+
+        public required int Rows { get; init; }
+    }
 
     public sealed record DecodedDebugEntry(IReadOnlyList<string> Lines) : MetadataPart;
 
-    public sealed record RawDebugEntry(PEFile File, DebugDirectoryEntry Entry) : MetadataPart;
+    public sealed record RawDebugEntry : MetadataPart
+    {
+        public required PEFile File { get; init; }
+
+        public required DebugDirectoryEntry Entry { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     internal TResult Match<TResult>(Func<Grid, TResult> grid, Func<DebugDirectory, TResult> debugDirectory,

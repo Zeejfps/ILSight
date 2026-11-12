@@ -291,7 +291,7 @@ public static class MetadataGrids
         var value = FindValue(grid, row, column);
         if (value is MetadataCellFailure failed)
         {
-            return new MetadataTooltip(failed.Reason, []);
+            return new MetadataTooltip { Text = failed.Reason, Groups = [] };
         }
 
         var info = grid.GridColumns[column];
@@ -310,13 +310,13 @@ public static class MetadataGrids
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new MetadataTooltip(e.Message, []);
+            return new MetadataTooltip { Text = e.Message, Groups = [] };
         }
 #pragma warning restore RL0902
         return given switch
         {
             MetadataTooltip tooltip => tooltip,
-            string text when !string.IsNullOrWhiteSpace(text) => new MetadataTooltip(text, []),
+            string text when !string.IsNullOrWhiteSpace(text) => new MetadataTooltip { Text = text, Groups = [] },
             _ => null,
         };
     }
@@ -363,7 +363,7 @@ public static class MetadataGrids
         }
 
         var count = file.Metadata.GetTableRowCount(table);
-        return new MetadataAddress(table, Math.Min(token & 0xFFFFFF, count) - 1);
+        return new MetadataAddress { Table = table, Row = Math.Min(token & 0xFFFFFF, count) - 1 };
     }
 
     /// <summary>Whether this metadata's tables list <paramref name="table"/> as a grid of rows, as they

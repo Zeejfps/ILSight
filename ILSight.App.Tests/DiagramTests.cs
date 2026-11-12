@@ -195,10 +195,10 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         var diagram = ShowInNew(d, "Vehicle");
         var all = diagram.Cards
-            .Select(static c => new MeasuredCard(c.Type, 120f, 80f))
+            .Select(static c => new MeasuredCard { Type = c.Type, Width = 120f, Height = 80f })
             .ToList();
-        var first = new DiagramMeasures(all, []);
-        var second = new DiagramMeasures([all[0]], []);
+        var first = new DiagramMeasures { Cards = all, Links = [] };
+        var second = new DiagramMeasures { Cards = [all[0]], Links = [] };
 
         DiagramFaces.LayOutLater(d.Ui, diagram, first);
         DiagramFaces.LayOutLater(d.Ui, diagram, second);

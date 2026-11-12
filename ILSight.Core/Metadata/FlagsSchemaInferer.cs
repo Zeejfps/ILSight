@@ -29,7 +29,7 @@ namespace ILSight.Core.Metadata
 		static readonly Dictionary<Type, IndependentFlag[]> extraFlags = new() {
 			// ECMA-335 II.23.1.15 Forwarder: set on ExportedType rows that forward the
 			// type to another assembly.
-			[typeof(TypeAttributes)] = [new IndependentFlag("IsTypeForwarder", 0x00200000)],
+			[typeof(TypeAttributes)] = [new IndependentFlag { Name = "IsTypeForwarder", Bit = 0x00200000 }],
 		};
 
 		/// <summary>Masks that gather independent flags rather than mutually exclusive values.</summary>
@@ -132,13 +132,17 @@ namespace ILSight.Core.Metadata
                         continue;
                     }
 
-                    groupBuckets[mask].Add(new MutexValue($"{ValueName(name, maskName)} ({value:X4})", value));
+                    groupBuckets[mask].Add(new MutexValue
+                    {
+                        Label = $"{ValueName(name, maskName)} ({value:X4})",
+                        Value = value,
+                    });
 					placed = true;
 					break;
 				}
 				if (!placed && BitOperations.IsPow2(value))
                 {
-                    independentFlags.Add(new IndependentFlag(name, value));
+                    independentFlags.Add(new IndependentFlag { Name = name, Bit = value });
                 }
             }
 
@@ -166,12 +170,12 @@ namespace ILSight.Core.Metadata
                 values.Sort(static (a, b) => a.Value.CompareTo(b.Value));
 				var zeroName = zeroNames.GetValueOrDefault(mask) ?? unclaimedZero;
 				values.Insert(0, zeroName is not null
-					? new MutexValue($"{ValueName(zeroName, maskName)} (0000)", 0)
-					: new MutexValue("(none)", 0));
-				groups.Add(new MutexGroup(GroupName(maskName), mask, values));
+					? new MutexValue { Label = $"{ValueName(zeroName, maskName)} (0000)", Value = 0 }
+					: new MutexValue { Label = "(none)", Value = 0 });
+				groups.Add(new MutexGroup { Name = GroupName(maskName), Mask = mask, Values = values });
 			}
 
-			return new FlagsSchema(enumType, groups, independentFlags);
+			return new FlagsSchema { EnumType = enumType, MutexGroups = groups, IndependentFlags = independentFlags };
 		}
 
         static bool IsMask(string name)

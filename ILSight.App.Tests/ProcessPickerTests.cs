@@ -12,11 +12,24 @@ public sealed class ProcessPickerTests
 {
     private static readonly RunningProcess Web = Process(10, "Web", "Web.Api");
     private static readonly RunningProcess Worker = Process(22, "dotnet", "Jobs.Worker");
-    private static readonly RunningProcess Silent = new(new ProcessId(31), "Stuck", null);
+    private static readonly RunningProcess Silent = new RunningProcess
+    {
+        Id = new ProcessId(31),
+        Name = "Stuck",
+        Info = null,
+    };
 
-    private static readonly RunningModule WebDll = new RunningModule.OnDisk("Web.Api.dll", FakePath("Web.Api.dll"));
-    private static readonly RunningModule CoreLib = new RunningModule.OnDisk("System.Private.CoreLib.dll", FakePath("System.Private.CoreLib.dll"));
-    private static readonly RunningModule Generated = new RunningModule.InMemory("Generated");
+    private static readonly RunningModule WebDll = new RunningModule.OnDisk
+    {
+        Name = "Web.Api.dll",
+        Path = FakePath("Web.Api.dll"),
+    };
+    private static readonly RunningModule CoreLib = new RunningModule.OnDisk
+    {
+        Name = "System.Private.CoreLib.dll",
+        Path = FakePath("System.Private.CoreLib.dll"),
+    };
+    private static readonly RunningModule Generated = new RunningModule.InMemory { Name = "Generated" };
 
     /// <summary>Answers each port member with what the test set; keeps the tokens it was asked with, and the
     /// problems reported.</summary>
@@ -75,13 +88,18 @@ public sealed class ProcessPickerTests
 
     private static RunningProcess Process(int id, string name, string entry)
     {
-        return new RunningProcess(new ProcessId(id), name, new ProcessInfo
+        return new RunningProcess
         {
-            CommandLine = null,
-            Architecture = "arm64",
-            EntryAssemblyName = entry,
-            RuntimeVersion = "10.0.0",
-        });
+            Id = new ProcessId(id),
+            Name = name,
+            Info = new ProcessInfo
+            {
+                CommandLine = null,
+                Architecture = "arm64",
+                EntryAssemblyName = entry,
+                RuntimeVersion = "10.0.0",
+            },
+        };
     }
 
     /// <summary>Runs <paramref name="scan"/> as the edge does, on the token of the work it was started as, which the
@@ -436,6 +454,10 @@ public sealed class ProcessPickerTests
         await SelectAndListAsync(picker, self);
 
         var modules = Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules).Modules;
-        Assert.Contains(new RunningModule.OnDisk("ILSight.Core.dll", PathOf(typeof(AssemblyList).Assembly.Location)), modules);
+        Assert.Contains(new RunningModule.OnDisk
+        {
+            Name = "ILSight.Core.dll",
+            Path = PathOf(typeof(AssemblyList).Assembly.Location),
+        }, modules);
     }
 }

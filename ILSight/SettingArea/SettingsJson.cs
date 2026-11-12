@@ -803,7 +803,7 @@ internal static class SettingsJson
 
     public static SavedFilterState Parse(SavedFilterStateJson json)
     {
-        return new SavedFilterState(ParseGroups(json.Groups), json.Flags, json.Mode);
+        return new SavedFilterState { Groups = ParseGroups(json.Groups), Flags = json.Flags, Mode = json.Mode };
     }
 
     private static Dictionary<string, uint[]>? ParseGroups(Dictionary<string, uint[]?>? groups)

@@ -103,19 +103,21 @@ public static class TypeCards
             return null;
         }
 
-        return new TypeCard(
-            Type: reference,
-            Anchor: new TypeAnchor(reference.FilePath, type.ReflectionName),
-            Name: EntityText.Label(type),
-            FullName: EntityText.FullName(type),
-            AssemblyPath: reference.FilePath,
-            Shape: EntityText.ShapeOf(type),
-            Accessibility: EntityText.Map(type.Accessibility),
-            Stereotype: StereotypeOf(type),
-            Sections: ReadSections(type),
-            Inherited: ReadInherited(type),
-            Links: ReadLinks(type, reference),
-            CanHaveDerived: DerivedTypes.CanHave(type));
+        return new TypeCard
+        {
+            Type = reference,
+            Anchor = new TypeAnchor(reference.FilePath, type.ReflectionName),
+            Name = EntityText.Label(type),
+            FullName = EntityText.FullName(type),
+            AssemblyPath = reference.FilePath,
+            Shape = EntityText.ShapeOf(type),
+            Accessibility = EntityText.Map(type.Accessibility),
+            Stereotype = StereotypeOf(type),
+            Sections = ReadSections(type),
+            Inherited = ReadInherited(type),
+            Links = ReadLinks(type, reference),
+            CanHaveDerived = DerivedTypes.CanHave(type),
+        };
     }
 
     private static TypeStereotype StereotypeOf(ITypeDefinition type)
@@ -165,7 +167,7 @@ public static class TypeCards
             return;
         }
 
-        sections.Add(new CardSection(kind, shown));
+        sections.Add(new CardSection { Kind = kind, Members = shown });
     }
 
     /// <summary>The fields as the tree lists them: an enum's values in the order declared, else
@@ -205,7 +207,13 @@ public static class TypeCards
             return null;
         }
 
-        return new CardMember(reference, EntityText.Label(member), EntityText.ShapeOf(member), EntityText.Map(member.Accessibility));
+        return new CardMember
+        {
+            Reference = reference,
+            Text = EntityText.Label(member),
+            Shape = EntityText.ShapeOf(member),
+            Accessibility = EntityText.Map(member.Accessibility),
+        };
     }
 
     /// <summary>What <paramref name="type"/> inherits from each of its base classes but object, nearest
@@ -226,7 +234,7 @@ public static class TypeCards
         var definition = ancestor.GetDefinition();
         if (definition is null)
         {
-            return new InheritedGroup(EntityText.ShortTypeName(ancestor), null, []);
+            return new InheritedGroup { From = EntityText.ShortTypeName(ancestor), AssemblyPath = null, Members = [] };
         }
 
         var members = definition.Fields
@@ -238,7 +246,12 @@ public static class TypeCards
             .Select(ToCardMember)
             .OfType<CardMember>()
             .ToList();
-        return new InheritedGroup(EntityText.ShortTypeName(ancestor), CodeReferences.Find(definition)?.FilePath, members);
+        return new InheritedGroup
+        {
+            From = EntityText.ShortTypeName(ancestor),
+            AssemblyPath = CodeReferences.Find(definition)?.FilePath,
+            Members = members,
+        };
     }
 
     /// <summary>Whether a type deriving from the one declaring <paramref name="member"/> inherits it: an
@@ -323,7 +336,7 @@ public static class TypeCards
                 continue;
             }
 
-            relations.Add(new Relation(definition, BaseLinkOf(type, definition)));
+            relations.Add(new Relation { Target = definition, ToLink = BaseLinkOf(type, definition) });
         }
     }
 
@@ -397,7 +410,7 @@ public static class TypeCards
             return null;
         }
 
-        return new Relation(definition, toLink);
+        return new Relation { Target = definition, ToLink = toLink };
     }
 
     /// <summary>The types of <paramref name="type"/>'s own module it is related to, either way: those it
@@ -418,5 +431,10 @@ public static class TypeCards
 
     /// <summary>A type <see cref="Target"/> another is related to, and the link <see cref="ToLink"/> makes
     /// between the two once both are found.</summary>
-    private readonly record struct Relation(ITypeDefinition Target, Func<CodeReference.Entity, CodeReference.Entity, TypeLink> ToLink);
+    private readonly record struct Relation
+    {
+        public required ITypeDefinition Target { get; init; }
+
+        public required Func<CodeReference.Entity, CodeReference.Entity, TypeLink> ToLink { get; init; }
+    }
 }

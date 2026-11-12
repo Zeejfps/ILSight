@@ -5,4 +5,11 @@ namespace ILSight.Core.Processes;
 
 /// <summary>A running .NET process, found by its diagnostics endpoint: its id and name, and what its runtime
 /// said of itself, or null when it didn't answer, as one suspended at startup or shutting down doesn't.</summary>
-public sealed record RunningProcess(ProcessId Id, string Name, ProcessInfo? Info);
+public sealed record RunningProcess
+{
+    public required ProcessId Id { get; init; }
+
+    public required string Name { get; init; }
+
+    public required ProcessInfo? Info { get; init; }
+}

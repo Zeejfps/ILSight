@@ -23,7 +23,13 @@ public static class DiagramLayouts
     /// <summary>The straight line from <paramref name="start"/> to <paramref name="end"/>, its controls on it.</summary>
     public static RoutePiece CreateLine(PointF start, PointF end)
     {
-        return new RoutePiece(start, Lerp(start, end, OneThird), Lerp(start, end, TwoThirds), end);
+        return new RoutePiece
+        {
+            Start = start,
+            Control1 = Lerp(start, end, OneThird),
+            Control2 = Lerp(start, end, TwoThirds),
+            End = end,
+        };
     }
 
     /// <summary>The point <paramref name="t"/> of the way from <paramref name="from"/> to <paramref name="to"/>.</summary>
@@ -41,14 +47,22 @@ public static class DiagramLayouts
         var firstControl = Lerp(startSide, middleSide, Half);
         var secondControl = Lerp(middleSide, endSide, Half);
         var middle = Lerp(firstControl, secondControl, Half);
-        return (new RoutePiece(piece.Start, startSide, firstControl, middle), new RoutePiece(middle, secondControl, endSide, piece.End));
+        var first = new RoutePiece { Start = piece.Start, Control1 = startSide, Control2 = firstControl, End = middle };
+        var second = new RoutePiece { Start = middle, Control1 = secondControl, Control2 = endSide, End = piece.End };
+        return (first, second);
     }
 
     /// <summary>The curve <paramref name="t"/> of the way from <paramref name="from"/> to <paramref name="to"/>,
     /// each point moved alike.</summary>
     public static RoutePiece Blend(RoutePiece from, RoutePiece to, float t)
     {
-        return new RoutePiece(Lerp(from.Start, to.Start, t), Lerp(from.Control1, to.Control1, t), Lerp(from.Control2, to.Control2, t), Lerp(from.End, to.End, t));
+        return new RoutePiece
+        {
+            Start = Lerp(from.Start, to.Start, t),
+            Control1 = Lerp(from.Control1, to.Control1, t),
+            Control2 = Lerp(from.Control2, to.Control2, t),
+            End = Lerp(from.End, to.End, t),
+        };
     }
 
     /// <summary>Lays out the cards of <paramref name="measures"/> and routes the links between them; a
@@ -211,7 +225,14 @@ public static class DiagramLayouts
             throw new UnreachableException("Every edge of the graph carries the link it was made for.");
         }
 
-        return new LinkRoute(link, pieces, tip, LabelCenterOf(edge, origin), SourceTipOf(edge, origin));
+        return new LinkRoute
+        {
+            Link = link,
+            Pieces = pieces,
+            Tip = tip,
+            LabelCenter = LabelCenterOf(edge, origin),
+            SourceTip = SourceTipOf(edge, origin),
+        };
     }
 
     private static PointF? SourceTipOf(Edge edge, MsaglPoint origin)
@@ -262,7 +283,13 @@ public static class DiagramLayouts
 
     private static RoutePiece BezierPiece(CubicBezierSegment bezier, MsaglPoint origin)
     {
-        return new RoutePiece(Place(bezier.B(0), origin), Place(bezier.B(1), origin), Place(bezier.B(2), origin), Place(bezier.B(3), origin));
+        return new RoutePiece
+        {
+            Start = Place(bezier.B(0), origin),
+            Control1 = Place(bezier.B(1), origin),
+            Control2 = Place(bezier.B(2), origin),
+            End = Place(bezier.B(3), origin),
+        };
     }
 
     private static void AddSampled(List<RoutePiece> pieces, ICurve curve, MsaglPoint origin)
