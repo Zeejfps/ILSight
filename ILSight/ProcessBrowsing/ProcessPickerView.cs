@@ -7,6 +7,7 @@ using ZGF.KeyboardModule;
 using ILSight.Core.Processes;
 using ILSight.Localization;
 using ILSight.Commanding;
+using ILSight.UserState;
 using static ILSight.ProcessBrowsing.ProcessPicking;
 
 namespace ILSight.ProcessBrowsing;

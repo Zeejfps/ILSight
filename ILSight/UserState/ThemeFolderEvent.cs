@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>What <see cref="ThemeFolderWatch.NextChangeAsync"/> completes with; <see cref="Reason"/> says why
 /// a watch was <see cref="ThemeFolderEventKind.Lost"/>.</summary>

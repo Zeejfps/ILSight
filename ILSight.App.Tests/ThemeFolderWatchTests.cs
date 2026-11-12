@@ -1,3 +1,5 @@
+using ILSight.UserState;
+
 namespace ILSight.App.Tests;
 
 public sealed class ThemeFolderWatchTests : IDisposable

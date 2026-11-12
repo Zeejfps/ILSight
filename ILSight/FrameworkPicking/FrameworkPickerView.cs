@@ -5,6 +5,7 @@ using ILSight.Core;
 using ILSight.Localization;
 using ZGF.KeyboardModule;
 using ILSight.Commanding;
+using ILSight.UserState;
 
 namespace ILSight.FrameworkPicking;
 

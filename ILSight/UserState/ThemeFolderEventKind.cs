@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>How a wait on the themes folder ended.</summary>
 public enum ThemeFolderEventKind

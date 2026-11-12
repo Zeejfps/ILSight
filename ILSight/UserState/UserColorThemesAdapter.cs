@@ -1,6 +1,6 @@
 using ILSight.BuiltInAssets;
 
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>The seam around the user's color themes folder, for <see cref="UserThemes{TFile, TContents, TTheme}"/>
 /// of color themes: the theme files at the top of the folder.</summary>

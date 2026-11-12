@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>Watches a folder of the user's themes for changes to the files of the kinds it is made for,
 /// such as the theme files of the themes folder. <see cref="NextChangeAsync"/> completes once those files

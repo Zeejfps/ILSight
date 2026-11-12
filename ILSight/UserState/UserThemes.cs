@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>The user's themes of one kind, color or icon, kept in their folder beside the settings: read into
 /// <see cref="Themes"/>, and again whenever the user asks or, while <see cref="WatchAsync"/> runs, the folder

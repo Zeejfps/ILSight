@@ -1,4 +1,5 @@
 using ILSight.Localization;
+using ILSight.UserState;
 
 namespace ILSight.App.Tests;
 

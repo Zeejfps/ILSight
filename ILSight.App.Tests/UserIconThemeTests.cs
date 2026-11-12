@@ -8,6 +8,7 @@ using static ILSight.ScreenLayout;
 using static ILSight.Settings;
 using ILSight.SettingsFormat;
 using ILSight.BuiltInAssets;
+using ILSight.UserState;
 
 namespace ILSight.App.Tests;
 

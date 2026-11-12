@@ -1,3 +1,5 @@
+using ILSight.UserState;
+
 namespace ILSight.App.Tests;
 
 /// <summary>The adapter over a real folder: what it does with the watch as the app shuts down.</summary>

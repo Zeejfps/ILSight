@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>The fonts and pictures of a user's icon theme: files inside the folder the theme file is in,
 /// named by paths relative to it. A path that is absolute or leaves the folder is refused, and one that

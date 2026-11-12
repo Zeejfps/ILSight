@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>What the user last asked for. Each request takes a ticket; background work started for
 /// an older ticket is stale once the user asks for something else.</summary>

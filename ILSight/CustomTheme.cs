@@ -1,3 +1,5 @@
+using ILSight.UserState;
+
 namespace ILSight;
 
 /// <summary>A theme file of the user's, written by <see cref="UserThemes{TFile, TContents, TTheme}.CreateCustomTheme"/>:

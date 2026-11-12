@@ -9,6 +9,7 @@ using ILSight.CodeTooltipping;
 using ILSight.Omnibars;
 using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
+using ILSight.UserState;
 
 namespace ILSight;
 

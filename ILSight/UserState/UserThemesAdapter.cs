@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>The seam around a folder of the user's themes of one kind on disk, for
 /// <see cref="UserThemes{TFile, TContents, TTheme}"/>: lists and reads its theme files, makes it with its schema

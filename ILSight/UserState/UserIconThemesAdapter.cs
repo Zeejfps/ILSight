@@ -1,7 +1,7 @@
 using ILSight.Core;
 using ILSight.BuiltInAssets;
 
-namespace ILSight;
+namespace ILSight.UserState;
 
 /// <summary>The seam around the user's icon themes folder, for <see cref="UserThemes{TFile, TContents, TTheme}"/>
 /// of icon themes: the theme files at the top of the folder, and the fonts and pictures they name anywhere in it,
